@@ -149,7 +149,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 
     const token = jwt.sign(
       { userId: user._id },
-      'tu_secreto_super_seguro', // ⚠️ pon esto en un .env después
+      'tu_clave_secreta', // ⚠️ pon esto en un .env después
       { expiresIn: '1h' }
     );
 
