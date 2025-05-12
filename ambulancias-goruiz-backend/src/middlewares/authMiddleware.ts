@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-// Puedes mover esta clave a una variable de entorno .env más adelante
-const JWT_SECRET = 'tu_clave_secreta';
+// Cargar la clave secreta desde las variables de entorno (.env)
+const JWT_SECRET = process.env.JWT_SECRET || 'default_secret'; // 'default_secret' es un valor por defecto si no se encuentra en el .env
+
 
 interface JwtPayload {
   userId: string;
@@ -18,6 +19,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   }
 
   try {
+    // Verificar el token usando la clave secreta
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
     (req as any).userId = decoded.userId; // Puedes extender tipos después
     next();

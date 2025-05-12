@@ -1,28 +1,43 @@
-import express from 'express';
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import userRoutes from './routes/userRoutes';
-
+// Cargamos las variables de entorno definidas en .env
+import dotenv from 'dotenv';              // Para leer variables de entorno desde .env
 dotenv.config();
+// Importamos módulos necesarios
+import express from 'express';            // Framework para construir APIs
+import mongoose from 'mongoose';          // ODM para conectarse y trabajar con MongoDB
+import cors from 'cors';                  // Para permitir peticiones de distintos orígenes (CORS)
+import userRoutes from './routes/userRoutes';  // Importamos las rutas de usuario
 
+
+// Inicializamos Express
 const app = express();
+
+// Puerto de la aplicación, por defecto 5000 si no hay uno en .env
 const PORT = process.env.PORT || 5000;
 
-// Middlewares
-app.use(cors());
-app.use(express.json());
+// Leemos la URI de conexión a MongoDB desde las variables de entorno
+const MONGODB_URI = process.env.MONGODB_URI;
 
-// Rutas
-// console.log(userRoutes)
+// Si no hay URI en el .env, mostramos error y detenemos la aplicación
+if (!MONGODB_URI) {
+  console.error('❌ Error: MONGODB_URI no está definida en el archivo .env');
+  process.exit(1); // Finaliza el proceso con código de error
+}
+
+// Middlewares que procesan las peticiones entrantes
+app.use(cors());             // Permite peticiones desde otros dominios
+app.use(express.json());     // Permite leer el body en formato JSON
+
+// Rutas de la API para usuarios
 app.use('/api/users', userRoutes);
 
-// DB + servidor
-mongoose.connect(process.env.MONGODB_URI || '')
+// Conexión a la base de datos MongoDB y arranque del servidor
+mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('🟢 Conectado a MongoDB');
+
+    // Una vez conectados a MongoDB, iniciamos el servidor
     app.listen(PORT, () => {
-      console.log(`🚀 Servidor en http://localhost:${PORT}`);
+      console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
     });
   })
   .catch(err => {
