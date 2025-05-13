@@ -6,6 +6,7 @@ import express from 'express';            // Framework para construir APIs
 import mongoose from 'mongoose';          // ODM para conectarse y trabajar con MongoDB
 import cors from 'cors';                  // Para permitir peticiones de distintos orígenes (CORS)
 import userRoutes from './routes/userRoutes';  // Importamos las rutas de usuario
+import dienstRoutes from './routes/dienstRoutes'
 
 
 // Inicializamos Express
@@ -29,6 +30,9 @@ app.use(express.json());     // Permite leer el body en formato JSON
 
 // Rutas de la API para usuarios
 app.use('/api/users', userRoutes);
+
+// Rutas de la API para dienst (horarios de trabajo)
+app.use('/api/dienst', dienstRoutes);
 
 // Conexión a la base de datos MongoDB y arranque del servidor
 mongoose.connect(MONGODB_URI)
