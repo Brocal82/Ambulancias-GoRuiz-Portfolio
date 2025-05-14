@@ -32,7 +32,7 @@ app.use(express.json());     // Permite leer el body en formato JSON
 app.use('/api/users', userRoutes);
 
 // Rutas de la API para dienst (horarios de trabajo)
-app.use('/api/dienst', dienstRoutes);
+app.use('/api/diensts', dienstRoutes);
 
 // Conexión a la base de datos MongoDB y arranque del servidor
 mongoose.connect(MONGODB_URI)
