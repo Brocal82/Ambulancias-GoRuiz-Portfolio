@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import Dienst from '../models/Dienst';
 import { dienstSchema } from '../schemas/dienstSchema';
-import { ZodError } from 'zod';
+import { ZodError, z } from 'zod';
 
 export const createDienst = async (req: Request, res: Response) => {
   try {
@@ -28,10 +28,41 @@ export const createDienst = async (req: Request, res: Response) => {
 
 export const getAllDiensts = async (req: Request, res: Response) => {
   try {
-    const dienste = await Dienst.find(); // obtiene todos los documentos
-    res.status(200).json(dienste);
+    const diensts = await Dienst.find(); // obtiene todos los documentos
+    res.status(200).json(diensts);
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener los Diensts', error });
+  }
+};
+
+// Validación del ID usando Zod
+const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
+  message: 'ID no válido. Debe ser un ObjectId de MongoDB.',
+});
+
+export const getDienstById = async (req: Request, res: Response) => {
+  try {
+    const parsedId = idSchema.parse(req.params.id);
+
+    const dienst = await Dienst.findById(parsedId);
+
+    if (!dienst) {
+      res.status(404).json({ message: 'Dienst no encontrado' });
+      return
+    }
+    
+
+    res.status(200).json(dienst);
+  } catch (error) {
+    if (error instanceof ZodError) {
+       res.status(400).json({
+        message: 'ID inválido',
+        errors: error.errors,
+      });
+      return
+    }
+
+    res.status(500).json({ message: 'Error al obtener el Dienst', error });
   }
 };
 
