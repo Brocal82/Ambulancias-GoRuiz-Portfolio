@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Dienst from '../models/Dienst';
 import { dienstSchema } from '../schemas/dienstSchema';
 import { ZodError, z } from 'zod';
+import { partialDienstSchema } from '../schemas/dienstSchema';
 
 export const createDienst = async (req: Request, res: Response) => {
   try {
@@ -91,6 +92,36 @@ export const updateDienst = async (req: Request, res: Response) => {
     }
 
     res.status(500).json({ message: 'Error al actualizar el Dienst', error });
+  }
+};
+
+export const updateDienstPartial = async (req: Request, res: Response) => {
+  try {
+    const parsedId = idSchema.parse(req.params.id);
+    const updates = partialDienstSchema.parse(req.body);
+
+    const updatedDienst = await Dienst.findByIdAndUpdate(
+      parsedId,
+      { $set: updates },
+      { new: true }
+    );
+
+    if (!updatedDienst) {
+      res.status(404).json({ message: 'Dienst no encontrado' });
+      return
+    }
+
+    res.status(200).json(updatedDienst);
+  } catch (error) {
+    if (error instanceof ZodError) {
+        res.status(400).json({
+        message: 'Datos inválidos para actualización parcial',
+        errors: error.errors,
+      });
+      return
+    }
+
+    res.status(500).json({ message: 'Error al actualizar parcialmente el Dienst', error });
   }
 };
 

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+
 export const dienstSchema = z.object({
   dienstNumber: z.number().int().min(1),
   weekStartDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
@@ -21,3 +22,5 @@ export const dienstSchema = z.object({
     })
   ),
 });
+
+export const partialDienstSchema = dienstSchema.partial();
