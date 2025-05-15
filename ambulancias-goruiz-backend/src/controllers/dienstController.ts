@@ -125,4 +125,29 @@ export const updateDienstPartial = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteDienst = async (req: Request, res: Response) => {
+  try {
+    const parsedId = idSchema.parse(req.params.id);
+
+    const deletedDienst = await Dienst.findByIdAndDelete(parsedId);
+
+    if (!deletedDienst) {
+      res.status(404).json({ message: 'Dienst no encontrado' });
+      return
+    }
+
+      res.status(200).json({ message: 'Dienst eliminado correctamente' });
+  } catch (error) {
+    if (error instanceof ZodError) {
+        res.status(400).json({
+        message: 'ID inválido',
+        errors: error.errors,
+      });
+      return
+    }
+
+      res.status(500).json({ message: 'Error al eliminar el Dienst', error });
+  }
+};
+
 
