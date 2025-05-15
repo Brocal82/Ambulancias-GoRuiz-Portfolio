@@ -66,4 +66,32 @@ export const getDienstById = async (req: Request, res: Response) => {
   }
 };
 
+export const updateDienst = async (req: Request, res: Response) => {
+  try {
+    const parsedId = idSchema.parse(req.params.id);
+    const parsedData = dienstSchema.partial().parse(req.body); // actualizaciones parciales
+
+    const updatedDienst = await Dienst.findByIdAndUpdate(parsedId, parsedData, {
+      new: true,
+    });
+
+    if (!updatedDienst) {
+      res.status(404).json({ message: 'Dienst no encontrado' });
+      return
+    }
+
+    res.status(200).json(updatedDienst);
+  } catch (error) {
+    if (error instanceof ZodError) {
+        res.status(400).json({
+        message: 'Datos inválidos',
+        errors: error.errors,
+      });
+      return
+    }
+
+    res.status(500).json({ message: 'Error al actualizar el Dienst', error });
+  }
+};
+
 
