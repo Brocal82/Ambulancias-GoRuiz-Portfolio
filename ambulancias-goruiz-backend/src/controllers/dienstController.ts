@@ -3,6 +3,7 @@ import Dienst from '../models/Dienst';
 import { dienstSchema } from '../schemas/dienstSchema';
 import { ZodError, z } from 'zod';
 import { partialDienstSchema } from '../schemas/dienstSchema';
+import { dienstQuerySchema } from '../schemas/dienstQuerySchema'; // asegúrate de importar el schema
 
 export const createDienst = async (req: Request, res: Response) => {
   try {
@@ -149,5 +150,50 @@ export const deleteDienst = async (req: Request, res: Response) => {
       res.status(500).json({ message: 'Error al eliminar el Dienst', error });
   }
 };
+
+
+export const searchDienst = async (req: Request, res: Response) => {
+  try {
+    const parsedQuery = dienstQuerySchema.parse(req.query);
+
+    const query: any = {};
+
+    if (parsedQuery.dienstNumber) {
+      const num = parseInt(parsedQuery.dienstNumber, 10);
+      if (!isNaN(num)) query.dienstNumber = num;
+    }
+
+    if (parsedQuery.weekStartDate) {
+      query.weekStartDate = parsedQuery.weekStartDate;
+    }
+
+    if (parsedQuery.date) {
+      query['assignments.date'] = parsedQuery.date;
+    }
+
+    if (parsedQuery.driver) {
+      query['assignments.driver'] = parsedQuery.driver;
+    }
+
+    if (parsedQuery.medic) {
+      query['assignments.medic'] = parsedQuery.medic;
+    }
+
+    const dienste = await Dienst.find(query);
+
+    res.status(200).json(dienste);
+  } catch (error) {
+    if (error instanceof ZodError) {
+        res.status(400).json({
+        message: 'Parámetros de búsqueda inválidos',
+        errors: error.errors,
+      });
+      return
+    }
+
+    res.status(500).json({ message: 'Error al buscar Diensts', error });
+  }
+};
+
 
 
