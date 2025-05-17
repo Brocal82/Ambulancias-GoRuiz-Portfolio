@@ -1,33 +1,38 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
+
+export interface IDienstAssignment {
+  date: string;
+  vehicleNumber: string;
+  startTime: string;
+  endTime: string;
+  driver: Types.ObjectId;
+  medic: Types.ObjectId;
+}
 
 export interface IDienst extends Document {
   dienstNumber: number;
   weekStartDate: Date;
   weekEndDate: Date;
-  assignments: {
-    date: string;
-    vehicleNumber: string;
-    startTime: string;
-    endTime: string;
-    driver: string;
-    medic: string;
-  }[];
+  assignments: IDienstAssignment[];
 }
 
-const DienstSchema: Schema = new Schema({
+const AssignmentSchema = new Schema<IDienstAssignment>(
+  {
+    date: { type: String, required: true },
+    vehicleNumber: { type: String, required: true },
+    startTime: { type: String, required: true },
+    endTime: { type: String, required: true },
+    driver: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    medic: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  },
+  { _id: false }
+);
+
+const DienstSchema = new Schema<IDienst>({
   dienstNumber: { type: Number, required: true },
   weekStartDate: { type: Date, required: true },
   weekEndDate: { type: Date, required: true },
-  assignments: [
-    {
-      date: { type: String, required: true },
-      vehicleNumber: { type: String, required: true },
-      startTime: { type: String, required: true },
-      endTime: { type: String, required: true },
-      driver: { type: String, required: true },
-      medic: { type: String, required: true },
-    }
-  ]
+  assignments: [AssignmentSchema],
 });
 
 export default mongoose.model<IDienst>('Dienst', DienstSchema);
