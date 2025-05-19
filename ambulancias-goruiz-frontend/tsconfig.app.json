@@ -17,6 +17,7 @@
 
     /* Linting */
     "strict": true,
+    "forceConsistentCasingInFileNames": true,  // <--- esta línea es la que falta
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
