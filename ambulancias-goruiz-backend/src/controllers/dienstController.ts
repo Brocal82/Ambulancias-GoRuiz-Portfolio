@@ -158,3 +158,27 @@ export const searchDienst = async (req: Request, res: Response) => {
     return;
   }
 };
+
+export const getDienstsByUser = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+
+  try {
+    const diensts = await Dienst.find({
+      'assignments': {
+        $elemMatch: {
+          $or: [
+            { driver: userId },
+            { medic: userId }
+          ]
+        }
+      }
+    });
+
+    res.status(200).json(diensts);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching diensts', error });
+  }
+};
+
+
+

@@ -1,5 +1,5 @@
 import express from 'express';
-import { createDienst, getAllDiensts, getDienstById, updateDienst, updateDienstPartial, deleteDienst, searchDienst } from '../controllers/dienstController';
+import { createDienst, getAllDiensts, getDienstById, updateDienst, updateDienstPartial, deleteDienst, searchDienst, getDienstsByUser } from '../controllers/dienstController';
 
 const router = express.Router();
 
@@ -10,6 +10,7 @@ router.get('/:id', getDienstById);
 router.put('/:id', updateDienst);
 router.patch('/:id', updateDienstPartial);
 router.delete('/:id', deleteDienst);
+router.get('/user/:userId', getDienstsByUser);
 
 
 
