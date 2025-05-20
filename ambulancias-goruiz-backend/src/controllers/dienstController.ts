@@ -159,6 +159,8 @@ export const searchDienst = async (req: Request, res: Response) => {
   }
 };
 
+import mongoose from 'mongoose';
+
 export const getDienstsByUser = async (req: Request, res: Response) => {
   const { userId } = req.params;
 
@@ -167,18 +169,21 @@ export const getDienstsByUser = async (req: Request, res: Response) => {
       'assignments': {
         $elemMatch: {
           $or: [
-            { driver: userId },
-            { medic: userId }
+            { driver: new mongoose.Types.ObjectId(userId) },
+            { medic: new mongoose.Types.ObjectId(userId) }
           ]
         }
       }
-    });
+    }).populate("assignments.driver", "name")
+      .populate("assignments.medic", "name");
 
     res.status(200).json(diensts);
   } catch (error) {
+    console.error('Error fetching diensts:', error);
     res.status(500).json({ message: 'Error fetching diensts', error });
   }
 };
+
 
 
 

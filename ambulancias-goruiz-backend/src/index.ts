@@ -25,7 +25,13 @@ if (!MONGODB_URI) {
 }
 
 // Middlewares que procesan las peticiones entrantes
-app.use(cors());             // Permite peticiones desde otros dominios
+app.use(
+  cors({
+    origin: "http://localhost:5173", // 👈 tu frontend en desarrollo
+    credentials: true,               // 👈 permite el uso de cookies/sesiones
+  })
+);
+
 app.use(express.json());     // Permite leer el body en formato JSON
 
 // Rutas de la API para usuarios
