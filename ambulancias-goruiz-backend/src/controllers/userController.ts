@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { User } from '../models/User';
+import  User  from '../models/User';
 import { IUser } from '../types/User';
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken';
@@ -10,15 +10,13 @@ const validateEmail = (email: string): boolean => {
   return emailRegex.test(email);
 };
 
-// ✅ createUser como función async que devuelve void
 export const createUser = async (req: Request, res: Response): Promise<void> => {
-  const { name, email, password } = req.body as IUser;
+  const { name, email, password, role = 'worker' } = req.body as IUser & { role?: string };
 
   if (!password || password.length < 6) {
     res.status(400).json({ message: 'La contraseña es obligatoria y debe tener al menos 6 caracteres' });
     return;
   }
-  
 
   if (!name || !email) {
     res.status(400).json({ message: 'El nombre y el email son obligatorios' });
@@ -30,6 +28,12 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
     return;
   }
 
+  // ✅ Validación del rol permitido
+  if (role !== 'admin' && role !== 'worker') {
+    res.status(400).json({ message: 'Rol no válido. Debe ser "admin" o "worker"' });
+    return;
+  }
+
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -37,8 +41,15 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10)
-    const newUser = new User({ name, email, password: hashedPassword });
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({
+      name,
+      email,
+      password: hashedPassword,
+      role, // 👈 Se guarda el rol
+    });
+
     await newUser.save();
     console.log('✅ Usuario guardado:', newUser);
     res.status(201).json(newUser);
@@ -47,6 +58,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
     res.status(500).json({ message: 'Error al crear el usuario' });
   }
 };
+
 
 // ✅ getUsers como función async que devuelve void
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
