@@ -7,6 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'default_secret'; // 'default_secre
 
 interface JwtPayload {
   userId: string;
+  role: string;
 }
 
 export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
@@ -22,6 +23,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     // Verificar el token usando la clave secreta
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
     (req as any).userId = decoded.userId; // Puedes extender tipos después
+    (req as any).userRole = decoded.role;
     next();
   } catch (err) {
     res.status(403).json({ message: 'Token inválido o expirado' });
