@@ -9,7 +9,7 @@ const DienstPage = () => {
   useEffect(() => {
     const fetchDiensts = async () => {
       try {
-        const data = await getDienstByUser("681cd1ebe89a9eca109dbfac");
+        const data = await getDienstByUser("682ccb36201b2d758d326dc7");
         setDiensts(data);
       } catch (error) {
         console.error("Error al obtener los diensts:", error);
@@ -50,8 +50,11 @@ const DienstPage = () => {
                   (a) => a.date === day
                 );
 
+                // 👇 Nueva clase condicional para el fondo
+                const bgColor = assignment ? "bg-blue-100" : "bg-green-100";
+
                 return (
-                  <div key={day} className="mb-2 border-t pt-2">
+                    <div key={day} className={`mb-2 border-t pt-2 p-2 rounded ${bgColor}`}>
                     <p className="font-medium">📅 {day}</p>
                     {assignment ? (
                       <>
@@ -63,7 +66,7 @@ const DienstPage = () => {
                         <p>👩‍⚕️ Sanitario: {assignment.medic?.name}</p>
                       </>
                     ) : (
-                      <p className="text-green-600">🌴 Día libre</p>
+                      <p className="text-green-800 font-semibold">🌴 Día libre</p>
                     )}
                   </div>
                 );
