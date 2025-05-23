@@ -32,7 +32,7 @@ return (
         <h2 className="text-xl font-bold mb-4">Tus Diensts</h2>
         <ul className="space-y-8">
             {diensts.map((dienst, index) => {
-                const allWeekDates = Array.from({ length: 7 }, (_, i) => {
+                const allWeekDates = Array.from({ length: 14 }, (_, i) => {
                     const d = new Date(dienst.weekStartDate);
                     d.setDate(d.getDate() + i);
                     return d.toISOString().split("T")[0];
@@ -44,16 +44,12 @@ return (
                             <p className="text-lg font-semibold">
                                 Dienst #{dienst.dienstNumber}
                             </p>
-                            <p className="text-sm text-gray-600">
-                                Semana del{" "}
-                                {new Date(
-                                    dienst.weekStartDate
-                                ).toLocaleDateString()}{" "}
-                                al{" "}
-                                {new Date(
-                                    dienst.weekEndDate
-                                ).toLocaleDateString()}
+                            <p className="mb-2 text-sm text-gray-600">
+                                Desde el{" "}
+                                {new Date(dienst.weekStartDate).toLocaleDateString()} hasta el{" "}
+                                {new Date(new Date(dienst.weekStartDate).setDate(new Date(dienst.weekStartDate).getDate() + 13)).toLocaleDateString()}
                             </p>
+
                         </div>
 
                         {/* GRID DE DÍAS */}
