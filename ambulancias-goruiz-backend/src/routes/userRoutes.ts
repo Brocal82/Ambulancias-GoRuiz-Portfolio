@@ -1,8 +1,16 @@
 import { Router } from 'express';
-import { createUser, getUsers, updateUser, getUserById, deleteUser, loginUser } from '../controllers/userController';
+import {
+  createUser,
+  getUsers,
+  updateUser,
+  getUserById,
+  deleteUser,
+  loginUser,
+  getAllUsersDienst // 👈 nuevo import
+} from '../controllers/userController';
 
 import { authenticateToken } from '../middlewares/authMiddleware';
-import { authorizeRole, authorizeSelfOrAdmin } from '../middlewares/roleMiddleware'; // 👈 también importamos authorizeSelfOrAdmin
+import { authorizeRole, authorizeSelfOrAdmin } from '../middlewares/roleMiddleware';
 
 const router = Router();
 
@@ -10,10 +18,13 @@ const router = Router();
 router.post('/register', createUser);
 router.post('/login', loginUser);
 
-// Rutas protegidas
-router.get('/', authenticateToken, authorizeRole('admin'), getUsers); // SOLO ADMIN
-router.get('/:id', authenticateToken, authorizeSelfOrAdmin, getUserById); // 👈 propio usuario o admin
-router.put('/:id', authenticateToken, authorizeSelfOrAdmin, updateUser); // 👈 propio usuario o admin
-router.delete('/:id', authenticateToken, authorizeSelfOrAdmin, deleteUser); // 👈 propio usuario o admin
+// ⚠️ RUTA PERSONALIZADA antes de `/:id`
+router.get('/diensts', authenticateToken, authorizeRole('admin'), getAllUsersDienst); // 👈 nueva ruta
+
+// Rutas protegidas para usuarios
+router.get('/', authenticateToken, authorizeRole('admin'), getUsers);
+router.get('/:id', authenticateToken, authorizeSelfOrAdmin, getUserById);
+router.put('/:id', authenticateToken, authorizeSelfOrAdmin, updateUser);
+router.delete('/:id', authenticateToken, authorizeSelfOrAdmin, deleteUser);
 
 export default router;

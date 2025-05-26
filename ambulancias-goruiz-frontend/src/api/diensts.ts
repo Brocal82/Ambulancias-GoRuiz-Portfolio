@@ -1,11 +1,28 @@
 import axios from './axios';
+import type { Dienst } from '../types/dienst';
 
-export const getDienstByUser = async (userId: string) => {
+export const getDienstByUser = async (userId: string, token: string): Promise<Dienst[]> => {
   try {
-    const response = await axios.get(`/diensts/user/${userId}`);
+    const response = await axios.get<Dienst[]>(`/diensts/user/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`}
+      });
     return response.data;
   } catch (error) {
     console.error("Error al obtener los diensts del usuario:", error);
+    throw error;
+  }
+};
+
+export const getAllDiensts = async (token: string): Promise<Dienst[]> => {
+  try {
+    const response = await axios.get<Dienst[]>(`/diensts`, {
+      headers: {
+        Authorization: `Bearer ${token}`}
+      });
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener todos los diensts:", error);
     throw error;
   }
 };

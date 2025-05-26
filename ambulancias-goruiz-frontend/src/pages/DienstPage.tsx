@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { getDienstByUser } from "../api/diensts";
 import type { Dienst } from "../types/dienst";
+import { useAuth } from "../context/AuthContext";
+
 
 const DienstPage = () => {
+    const { userId, token } = useAuth();
     const [diensts, setDiensts] = useState<Dienst[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedAssignment, setSelectedAssignment] = useState<{
@@ -11,19 +14,22 @@ const DienstPage = () => {
     } | null>(null);
 
     useEffect(() => {
-        const fetchDiensts = async () => {
-            try {
-                const data = await getDienstByUser("682ccb36201b2d758d326dc7");
-                setDiensts(data);
-            } catch (error) {
-                console.error("Error al obtener los diensts:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+    const fetchDiensts = async () => {
+        if (!userId || !token) return; // Asegurarse que están disponibles
+        try {
+        const data = await getDienstByUser(userId, token); // ✅ 2 argumentos
+        setDiensts(data);
+        } catch (error) {
+        console.error("Error al obtener los diensts:", error);
+        } finally {
+        setLoading(false);
+        }
+    };
 
-        fetchDiensts();
-    }, []);
+    fetchDiensts();
+    }, [userId, token]);
+
+
 
     if (loading) return <p>Cargando diensts...</p>;
 

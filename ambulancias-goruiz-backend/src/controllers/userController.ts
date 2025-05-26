@@ -3,6 +3,7 @@ import  User  from '../models/User';
 import { IUser } from '../types/User';
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken';
+import Dienst from '../models/Dienst';
 
 // Función para validar el formato del email
 const validateEmail = (email: string): boolean => {
@@ -165,10 +166,31 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       { expiresIn: '1h' }
     );
 
-    res.status(200).json({ message: 'Login exitoso', token });
+    res.status(200).json({
+        message: 'Login exitoso',
+        token,
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role, // 👈 Aquí estás devolviendo el rol
+        },
+      });
+
   } catch (error) {
     console.error('❌ Error en login:', error);
     res.status(500).json({ message: 'Error al iniciar sesión' });
+  }
+};
+
+// ✅ Obtener todos los Diensts (solo para admin)
+export const getAllUsersDienst = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const diensts = await Dienst.find().populate('assignments.driver assignments.medic');
+    res.status(200).json(diensts);
+  } catch (error) {
+    console.error('❌ Error al obtener diensts:', error);
+    res.status(500).json({ message: 'Error al obtener diensts' });
   }
 };
 
