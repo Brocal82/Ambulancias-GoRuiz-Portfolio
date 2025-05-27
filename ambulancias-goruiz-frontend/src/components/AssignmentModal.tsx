@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { updateDienstPartial, removeAssignment } from "../api/diensts";
 import { getAllUsers } from "../api/users";
-import type { DienstAssignment, UserRef } from "../types/dienst";
+import type { DienstAssignment, UserRef, UpdateAssignment } from "../types/dienst";
 
 interface FlexibleAssignment extends Omit<DienstAssignment, 'driver' | 'medic'> {
   driver: string | UserRef;
@@ -39,16 +39,14 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       setStartTime(assignment.startTime);
       setEndTime(assignment.endTime);
       setVehicleNumber(assignment.vehicleNumber);
-      setSelectedDriverId(
-        typeof assignment.driver === "string"
-          ? assignment.driver
-          : assignment.driver._id
-      );
-      setSelectedMedicId(
-        typeof assignment.medic === "string"
-          ? assignment.medic
-          : assignment.medic._id
-      );
+      setSelectedDriverId(typeof assignment.driver === "string" ? assignment.driver : assignment.driver._id);
+      setSelectedMedicId(typeof assignment.medic === "string" ? assignment.medic : assignment.medic._id);
+    } else {
+      setStartTime("");
+      setEndTime("");
+      setVehicleNumber("");
+      setSelectedDriverId("");
+      setSelectedMedicId("");
     }
   }, [assignment]);
 
@@ -66,51 +64,55 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     if (isAdmin) fetchUsers();
   }, [token, isAdmin]);
 
-  if (!isOpen || !assignment) return null;
+  if (!isOpen) return null;
 
-  const handleSave = async () => {
-    if (!token || !assignment) return;
-
-    try {
-      const updatedAssignment = {
-        _id: assignment._id,
-        date: assignment.date,
-        startTime,
-        endTime,
-        vehicleNumber,
-        driver: selectedDriverId,
-        medic: selectedMedicId,
-      };
-
-      const updatedData = {
-        assignments: [updatedAssignment],
-      };
-
-      await updateDienstPartial(dienstId, updatedData, token);
-      alert("Cambios guardados");
-      onClose();
-    } catch (error) {
-      console.error("Error al guardar cambios:", error);
-      alert("Error al guardar los cambios.");
-    }
-  };
-
-const handleDelete = async () => {
-  if (!token || !assignment) return;
-
-  const confirmed = confirm("¿Estás seguro de eliminar este día del Dienst?");
-  if (!confirmed) return;
+const handleSave = async () => {
+  if (!token) return;
 
   try {
-    await removeAssignment(dienstId, assignment.date, token);
-    alert("Día eliminado (ahora es día libre)");
+    const updatedAssignment: UpdateAssignment = {
+      date,
+      startTime,
+      endTime,
+      vehicleNumber,
+      driver: selectedDriverId,
+      medic: selectedMedicId,
+    };
+
+    if (assignment?._id) {
+      updatedAssignment._id = assignment._id;
+    }
+
+    const updatedData = {
+      assignments: [updatedAssignment],
+    };
+
+    await updateDienstPartial(dienstId, updatedData, token);
+    alert("Cambios guardados");
     onClose();
   } catch (error) {
-    console.error("Error al eliminar el assignment:", error);
-    alert("Error al eliminar el assignment.");
+    console.error("Error al guardar cambios:", error);
+    alert("Error al guardar los cambios.");
   }
 };
 
+
+
+
+  const handleDelete = async () => {
+    if (!token || !assignment) return;
+    const confirmed = confirm("¿Estás seguro de eliminar este día del Dienst?");
+    if (!confirmed) return;
+
+    try {
+      await removeAssignment(dienstId, assignment.date, token);
+      alert("Día eliminado (ahora es día libre)");
+      onClose();
+    } catch (error) {
+      console.error("Error al eliminar el assignment:", error);
+      alert("Error al eliminar el assignment.");
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -120,9 +122,7 @@ const handleDelete = async () => {
         <div className="space-y-2">
           {isAdmin ? (
             <>
-              <label htmlFor="startTime" className="block text-sm font-medium">
-                Hora inicio
-              </label>
+              <label htmlFor="startTime" className="block text-sm font-medium">Hora inicio</label>
               <input
                 id="startTime"
                 type="time"
@@ -132,9 +132,7 @@ const handleDelete = async () => {
                 placeholder="Hora de inicio"
               />
 
-              <label htmlFor="endTime" className="block text-sm font-medium">
-                Hora fin
-              </label>
+              <label htmlFor="endTime" className="block text-sm font-medium">Hora fin</label>
               <input
                 id="endTime"
                 type="time"
@@ -144,9 +142,7 @@ const handleDelete = async () => {
                 placeholder="Hora de fin"
               />
 
-              <label htmlFor="vehicleNumber" className="block text-sm font-medium">
-                Vehículo
-              </label>
+              <label htmlFor="vehicleNumber" className="block text-sm font-medium">Vehículo</label>
               <input
                 id="vehicleNumber"
                 type="text"
@@ -156,9 +152,7 @@ const handleDelete = async () => {
                 placeholder="Número de vehículo"
               />
 
-              <label htmlFor="driver" className="block text-sm font-medium">
-                Conductor
-              </label>
+              <label htmlFor="driver" className="block text-sm font-medium">Conductor</label>
               <select
                 id="driver"
                 value={selectedDriverId}
@@ -173,9 +167,7 @@ const handleDelete = async () => {
                 ))}
               </select>
 
-              <label htmlFor="medic" className="block text-sm font-medium">
-                Sanitario
-              </label>
+              <label htmlFor="medic" className="block text-sm font-medium">Sanitario</label>
               <select
                 id="medic"
                 value={selectedMedicId}
@@ -197,30 +189,24 @@ const handleDelete = async () => {
                 Guardar cambios
               </button>
 
-              <button
-                onClick={handleDelete}
-                className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
-              >
-                Eliminar este día (hacer libre)
-              </button>
+              {assignment && (
+                <button
+                  onClick={handleDelete}
+                  className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
+                >
+                  Eliminar este día (hacer libre)
+                </button>
+              )}
             </>
-          ) : (
+          ) : assignment ? (
             <>
               <p>🕒 {startTime} - {endTime}</p>
               <p>🚑 Vehículo: {vehicleNumber}</p>
-              <p>
-                👨‍✈️ Conductor:{" "}
-                {typeof assignment.driver === "string"
-                  ? "(ID)"
-                  : assignment.driver?.name}
-              </p>
-              <p>
-                👩‍⚕️ Sanitario:{" "}
-                {typeof assignment.medic === "string"
-                  ? "(ID)"
-                  : assignment.medic?.name}
-              </p>
+              <p>👨‍✈️ Conductor: {typeof assignment.driver === "string" ? "(ID)" : assignment.driver?.name}</p>
+              <p>👩‍⚕️ Sanitario: {typeof assignment.medic === "string" ? "(ID)" : assignment.medic?.name}</p>
             </>
+          ) : (
+            <p className="text-green-700 font-semibold text-center text-xl">🌴 Día libre</p>
           )}
         </div>
 

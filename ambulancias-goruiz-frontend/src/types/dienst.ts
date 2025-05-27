@@ -23,7 +23,7 @@ export interface Dienst {
 
 
 export interface UpdateAssignment {
-  _id: string;
+  _id?: string;
   date: string;
   startTime: string;
   endTime: string;
