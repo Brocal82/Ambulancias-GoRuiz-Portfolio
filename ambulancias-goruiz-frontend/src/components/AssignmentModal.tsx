@@ -4,10 +4,12 @@ import { updateDienstPartial, removeAssignment } from "../api/diensts";
 import { getAllUsers } from "../api/users";
 import type { DienstAssignment, UserRef, UpdateAssignment } from "../types/dienst";
 
-interface FlexibleAssignment extends Omit<DienstAssignment, 'driver' | 'medic'> {
+interface FlexibleAssignment extends Omit<DienstAssignment, 'driver' | 'medic' | '_id'> {
+  _id?: string;
   driver: string | UserRef;
   medic: string | UserRef;
 }
+
 
 interface AssignmentModalProps {
   isOpen: boolean;
@@ -15,6 +17,7 @@ interface AssignmentModalProps {
   assignment?: FlexibleAssignment;
   dienstId: string;
   onClose: () => void;
+  onUpdate: () => void;
 }
 
 const AssignmentModal: React.FC<AssignmentModalProps> = ({
@@ -23,6 +26,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   assignment,
   dienstId,
   onClose,
+  onUpdate,
 }) => {
   const { role: userRole, token } = useAuth();
   const isAdmin = userRole === "admin";
@@ -90,6 +94,7 @@ const handleSave = async () => {
     await updateDienstPartial(dienstId, updatedData, token);
     alert("Cambios guardados");
     onClose();
+    onUpdate(); // ✅ actualiza la lista
   } catch (error) {
     console.error("Error al guardar cambios:", error);
     alert("Error al guardar los cambios.");
@@ -108,6 +113,7 @@ const handleSave = async () => {
       await removeAssignment(dienstId, assignment.date, token);
       alert("Día eliminado (ahora es día libre)");
       onClose();
+      onUpdate(); // ✅ recargar diensts
     } catch (error) {
       console.error("Error al eliminar el assignment:", error);
       alert("Error al eliminar el assignment.");
