@@ -9,6 +9,7 @@ const AdminPage = () => {
   const [selectedAssignment, setSelectedAssignment] = useState<{
     date: string;
     assignment?: Dienst["assignments"][0];
+    dienstId: string;
   } | null>(null);
 
   const { token } = useAuth();
@@ -32,20 +33,19 @@ const AdminPage = () => {
       <h1 className="text-2xl font-bold mb-4">Página de Administrador</h1>
 
       <ul className="space-y-8">
-        {diensts.map((dienst, index) => {
-          const allWeekDates = Array.from({ length: 7 }, (_, i) => {
+        {diensts.map((dienst) => {
+          const allWeekDates = Array.from({ length: 14 }, (_, i) => {
             const d = new Date(dienst.weekStartDate);
             d.setDate(d.getDate() + i);
             return d.toISOString().split("T")[0];
           });
 
           return (
-            <li key={index}>
+            <li key={dienst.dienstNumber}>
               <div className="mb-2">
                 <p className="text-lg font-semibold">Dienst #{dienst.dienstNumber}</p>
                 <p className="mb-2 text-sm text-gray-600">
-                  Desde el{" "}
-                  {new Date(dienst.weekStartDate).toLocaleDateString()} hasta el{" "}
+                  Desde el {new Date(dienst.weekStartDate).toLocaleDateString()} hasta el{" "}
                   {new Date(new Date(dienst.weekStartDate).setDate(new Date(dienst.weekStartDate).getDate() + 13)).toLocaleDateString()}
                 </p>
               </div>
@@ -62,7 +62,8 @@ const AdminPage = () => {
                       onClick={() =>
                         setSelectedAssignment({
                           date: day,
-                          assignment: assignment,
+                          assignment,
+                          dienstId: dienst._id,
                         })
                       }
                     >
@@ -90,12 +91,12 @@ const AdminPage = () => {
         })}
       </ul>
 
-      {/* ✅ Modal reutilizable */}
       {selectedAssignment && (
         <AssignmentModal
-          isOpen={!!selectedAssignment}
+          isOpen={true}
           date={selectedAssignment.date}
           assignment={selectedAssignment.assignment}
+          dienstId={selectedAssignment.dienstId}
           onClose={() => setSelectedAssignment(null)}
         />
       )}

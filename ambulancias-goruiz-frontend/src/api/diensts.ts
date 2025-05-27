@@ -26,3 +26,22 @@ export const getAllDiensts = async (token: string): Promise<Dienst[]> => {
     throw error;
   }
 };
+
+export const updateDienstPartial = async (
+  dienstId: string,
+  updateData: Partial<Dienst>,
+  token: string
+): Promise<Dienst> => {
+  try {
+    const response = await axios.patch<Dienst>(`/diensts/${dienstId}`, updateData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error al actualizar dienst:", error);
+    throw error;
+  }
+};
+

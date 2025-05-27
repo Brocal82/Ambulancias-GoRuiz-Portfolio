@@ -11,6 +11,7 @@ const WorkerPage = () => {
   const [selectedAssignment, setSelectedAssignment] = useState<{
     date: string;
     assignment?: Dienst["assignments"][0];
+    dienstId: string;
   } | null>(null);
 
   useEffect(() => {
@@ -35,7 +36,7 @@ const WorkerPage = () => {
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Tus Diensts</h2>
       <ul className="space-y-8">
-        {diensts.map((dienst, index) => {
+        {diensts.map((dienst) => {
           const allWeekDates = Array.from({ length: 14 }, (_, i) => {
             const d = new Date(dienst.weekStartDate);
             d.setDate(d.getDate() + i);
@@ -43,7 +44,7 @@ const WorkerPage = () => {
           });
 
           return (
-            <li key={index}>
+            <li key={dienst.dienstNumber}>
               <div className="mb-2">
                 <p className="text-lg font-semibold">Dienst #{dienst.dienstNumber}</p>
                 <p className="mb-2 text-sm text-gray-600">
@@ -64,7 +65,8 @@ const WorkerPage = () => {
                       onClick={() =>
                         setSelectedAssignment({
                           date: day,
-                          assignment: assignment,
+                          assignment,
+                          dienstId: dienst._id,
                         })
                       }
                     >
@@ -95,9 +97,10 @@ const WorkerPage = () => {
       {/* ✅ Modal reutilizable */}
       {selectedAssignment && (
         <AssignmentModal
-          isOpen={!!selectedAssignment}
+          isOpen={true}
           date={selectedAssignment.date}
           assignment={selectedAssignment.assignment}
+          dienstId={selectedAssignment.dienstId}
           onClose={() => setSelectedAssignment(null)}
         />
       )}

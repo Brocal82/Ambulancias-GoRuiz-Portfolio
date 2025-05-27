@@ -4,6 +4,7 @@ export interface UserRef {
 }
 
 export interface DienstAssignment {
+  _id: string;
   date: string;
   vehicleNumber: string;
   startTime: string;
@@ -13,6 +14,7 @@ export interface DienstAssignment {
 }
 
 export interface Dienst {
+  _id: string;
   dienstNumber: number;
   weekStartDate: string;
   weekEndDate: string;
