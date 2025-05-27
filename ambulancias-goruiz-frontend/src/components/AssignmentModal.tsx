@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { updateDienstPartial } from "../api/diensts";
+import { updateDienstPartial, removeAssignment } from "../api/diensts";
 import { getAllUsers } from "../api/users";
 import type { DienstAssignment, UserRef } from "../types/dienst";
 
@@ -95,6 +95,23 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
   };
 
+const handleDelete = async () => {
+  if (!token || !assignment) return;
+
+  const confirmed = confirm("¿Estás seguro de eliminar este día del Dienst?");
+  if (!confirmed) return;
+
+  try {
+    await removeAssignment(dienstId, assignment.date, token);
+    alert("Día eliminado (ahora es día libre)");
+    onClose();
+  } catch (error) {
+    console.error("Error al eliminar el assignment:", error);
+    alert("Error al eliminar el assignment.");
+  }
+};
+
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full">
@@ -178,6 +195,13 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
               >
                 Guardar cambios
+              </button>
+
+              <button
+                onClick={handleDelete}
+                className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
+              >
+                Eliminar este día (hacer libre)
               </button>
             </>
           ) : (

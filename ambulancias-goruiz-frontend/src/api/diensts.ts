@@ -45,3 +45,10 @@ export const updateDienstPartial = async (
   }
 };
 
+export const removeAssignment = async (dienstId: string, date: string, token: string): Promise<void> => {
+  await axios.patch(`/diensts/${dienstId}/remove-assignment`, { date }, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+

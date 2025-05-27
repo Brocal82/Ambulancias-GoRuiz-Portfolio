@@ -184,6 +184,25 @@ export const getDienstsByUser = async (req: Request, res: Response) => {
   }
 };
 
+// dienstController.ts
+export const removeAssignment = async (req: Request, res: Response) => {
+  const { date } = req.body;
+  const parsedId = idSchema.parse(req.params.id);
+
+  try {
+    const updatedDienst = await Dienst.findByIdAndUpdate(
+      parsedId,
+      { $pull: { assignments: { date } } },
+      { new: true }
+    ).populate("assignments.driver assignments.medic");
+
+    res.status(200).json(updatedDienst);
+  } catch (error) {
+    res.status(500).json({ message: "Error al eliminar el assignment", error });
+  }
+};
+
+
 
 
 
