@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Dienst, UserRef } from '../types/dienst';
 import { getAllDiensts } from '../api/diensts';
 import { useAuth } from '../context/AuthContext';
@@ -7,30 +7,29 @@ import AssignmentModal from '../components/AssignmentModal';
 const AdminPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
   const [selectedAssignment, setSelectedAssignment] = useState<{
-  date: string;
-  assignment?: Dienst["assignments"][0] & {
-    driver: string | UserRef;
-    medic: string | UserRef;
-  };
-  dienstId: string;
-} | null>(null);
-
+    date: string;
+    assignment?: Dienst["assignments"][0] & {
+      driver: string | UserRef;
+      medic: string | UserRef;
+    };
+    dienstId: string;
+  } | null>(null);
 
   const { token } = useAuth();
 
-  useEffect(() => {
-    const fetchDiensts = async () => {
-      if (!token) return;
-      try {
-        const data = await getAllDiensts(token);
-        setDiensts(data);
-      } catch (error) {
-        console.error("Error al obtener los diensts:", error);
-      }
-    };
-
-    fetchDiensts();
+  const fetchDiensts = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = await getAllDiensts(token);
+      setDiensts(data);
+    } catch (error) {
+      console.error("Error al obtener los diensts:", error);
+    }
   }, [token]);
+
+  useEffect(() => {
+    fetchDiensts();
+  }, [fetchDiensts]);
 
   return (
     <div className="p-4">
@@ -102,6 +101,7 @@ const AdminPage = () => {
           assignment={selectedAssignment.assignment}
           dienstId={selectedAssignment.dienstId}
           onClose={() => setSelectedAssignment(null)}
+          onUpdate={fetchDiensts}
         />
       )}
     </div>

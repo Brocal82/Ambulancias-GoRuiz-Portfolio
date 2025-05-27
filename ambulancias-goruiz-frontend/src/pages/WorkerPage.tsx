@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getDienstByUser } from "../api/diensts";
 import type { Dienst, UserRef } from "../types/dienst";
 import { useAuth } from "../context/AuthContext";
@@ -9,30 +9,29 @@ const WorkerPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<{
-  date: string;
-  assignment?: Dienst["assignments"][0] & {
-    driver: string | UserRef;
-    medic: string | UserRef;
-  };
-  dienstId: string;
-} | null>(null);
+    date: string;
+    assignment?: Dienst["assignments"][0] & {
+      driver: string | UserRef;
+      medic: string | UserRef;
+    };
+    dienstId: string;
+  } | null>(null);
 
+  const fetchDiensts = useCallback(async () => {
+    if (!userId || !token) return;
+    try {
+      const data = await getDienstByUser(userId, token);
+      setDiensts(data);
+    } catch (error) {
+      console.error("Error al obtener los diensts:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, token]);
 
   useEffect(() => {
-    const fetchDiensts = async () => {
-      if (!userId || !token) return;
-      try {
-        const data = await getDienstByUser(userId, token);
-        setDiensts(data);
-      } catch (error) {
-        console.error("Error al obtener los diensts:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDiensts();
-  }, [userId, token]);
+  }, [fetchDiensts]);
 
   if (loading) return <p>Cargando diensts...</p>;
 
@@ -98,7 +97,6 @@ const WorkerPage = () => {
         })}
       </ul>
 
-      {/* ✅ Modal reutilizable */}
       {selectedAssignment && (
         <AssignmentModal
           isOpen={true}
@@ -106,6 +104,7 @@ const WorkerPage = () => {
           assignment={selectedAssignment.assignment}
           dienstId={selectedAssignment.dienstId}
           onClose={() => setSelectedAssignment(null)}
+          onUpdate={fetchDiensts}
         />
       )}
     </div>
