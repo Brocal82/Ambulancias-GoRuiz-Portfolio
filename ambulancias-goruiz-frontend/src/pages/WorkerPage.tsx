@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getDienstByUser } from "../api/diensts";
-import type { Dienst } from "../types/dienst";
+import type { Dienst, UserRef } from "../types/dienst";
 import { useAuth } from "../context/AuthContext";
 import AssignmentModal from "../components/AssignmentModal";
 
@@ -9,10 +9,14 @@ const WorkerPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<{
-    date: string;
-    assignment?: Dienst["assignments"][0];
-    dienstId: string;
-  } | null>(null);
+  date: string;
+  assignment?: Dienst["assignments"][0] & {
+    driver: string | UserRef;
+    medic: string | UserRef;
+  };
+  dienstId: string;
+} | null>(null);
+
 
   useEffect(() => {
     const fetchDiensts = async () => {

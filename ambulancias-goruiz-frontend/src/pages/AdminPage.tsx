@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { Dienst } from '../types/dienst';
+import type { Dienst, UserRef } from '../types/dienst';
 import { getAllDiensts } from '../api/diensts';
 import { useAuth } from '../context/AuthContext';
 import AssignmentModal from '../components/AssignmentModal';
@@ -7,10 +7,14 @@ import AssignmentModal from '../components/AssignmentModal';
 const AdminPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
   const [selectedAssignment, setSelectedAssignment] = useState<{
-    date: string;
-    assignment?: Dienst["assignments"][0];
-    dienstId: string;
-  } | null>(null);
+  date: string;
+  assignment?: Dienst["assignments"][0] & {
+    driver: string | UserRef;
+    medic: string | UserRef;
+  };
+  dienstId: string;
+} | null>(null);
+
 
   const { token } = useAuth();
 

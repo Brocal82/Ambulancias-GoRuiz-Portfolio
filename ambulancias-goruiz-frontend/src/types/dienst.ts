@@ -18,5 +18,17 @@ export interface Dienst {
   dienstNumber: number;
   weekStartDate: string;
   weekEndDate: string;
-  assignments: DienstAssignment[];
+  assignments: (DienstAssignment | UpdateAssignment)[];
 }
+
+
+export interface UpdateAssignment {
+  _id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  vehicleNumber: string;
+  driver: string; // solo ID
+  medic: string;  // solo ID
+}
+
