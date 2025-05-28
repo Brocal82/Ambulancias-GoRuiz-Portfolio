@@ -1,9 +1,10 @@
-import { Request, Response } from 'express';
+import { Request, Response, RequestHandler } from 'express';
 import  User  from '../models/User';
 import { IUser } from '../types/User';
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken';
 import Dienst from '../models/Dienst';
+
 
 // Función para validar el formato del email
 const validateEmail = (email: string): boolean => {
@@ -193,4 +194,38 @@ export const getAllUsersDienst = async (_req: Request, res: Response): Promise<v
     res.status(500).json({ message: 'Error al obtener diensts' });
   }
 };
+
+
+export const getAvailableUsersForDate = async (req: Request, res: Response) => {
+  const { date } = req.query;
+
+  if (!date || typeof date !== 'string') {
+    res.status(400).json({ message: 'Fecha inválida' });
+    return; // <-- ✔️ evita seguir ejecutando
+  }
+
+  try {
+    const diensts = await Dienst.find({ "assignments.date": date });
+
+    const assignedUserIds = new Set<string>();
+    diensts.forEach((dienst) => {
+      dienst.assignments.forEach((a) => {
+        if (a.date === date) {
+          if (a.driver) assignedUserIds.add(a.driver.toString());
+          if (a.medic) assignedUserIds.add(a.medic.toString());
+        }
+      });
+    });
+
+    const users = await User.find({
+      _id: { $nin: Array.from(assignedUserIds) },
+    });
+
+    res.json(users); // ✔️ sin return
+  } catch (error) {
+    console.error("Error al obtener usuarios disponibles:", error);
+    res.status(500).json({ message: 'Error del servidor' });
+  }
+};
+
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { updateDienstPartial, removeAssignment } from "../api/diensts";
-import { getAllUsers } from "../api/users";
+import { getAvailableUsersForDate } from "../api/users";
 import type { DienstAssignment, UserRef, UpdateAssignment } from "../types/dienst";
 
 interface FlexibleAssignment extends Omit<DienstAssignment, 'driver' | 'medic' | '_id'> {
@@ -9,7 +9,6 @@ interface FlexibleAssignment extends Omit<DienstAssignment, 'driver' | 'medic' |
   driver: string | UserRef;
   medic: string | UserRef;
 }
-
 
 interface AssignmentModalProps {
   isOpen: boolean;
@@ -38,74 +37,86 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [selectedMedicId, setSelectedMedicId] = useState("");
   const [users, setUsers] = useState<UserRef[]>([]);
 
-useEffect(() => {
-  if (assignment) {
-    setStartTime(assignment.startTime);
-    setEndTime(assignment.endTime);
-    setVehicleNumber(assignment.vehicleNumber);
-    setSelectedDriverId(
-      typeof assignment.driver === "string"
-        ? assignment.driver
-        : assignment.driver?._id || ""
-    );
-    setSelectedMedicId(
-      typeof assignment.medic === "string"
-        ? assignment.medic
-        : assignment.medic?._id || ""
-    );
-  }
-}, [assignment]);
-
-
   useEffect(() => {
-    const fetchUsers = async () => {
-      if (!token) return;
-      try {
-        const data = await getAllUsers(token);
-        setUsers(data);
-      } catch (error) {
-        console.error("Error al cargar usuarios:", error);
-      }
-    };
+    if (assignment) {
+      setStartTime(assignment.startTime);
+      setEndTime(assignment.endTime);
+      setVehicleNumber(assignment.vehicleNumber);
+      setSelectedDriverId(
+        typeof assignment.driver === "string"
+          ? assignment.driver
+          : assignment.driver?._id || ""
+      );
+      setSelectedMedicId(
+        typeof assignment.medic === "string"
+          ? assignment.medic
+          : assignment.medic?._id || ""
+      );
+    }
+  }, [assignment]);
 
-    if (isAdmin) fetchUsers();
-  }, [token, isAdmin]);
+useEffect(() => {
+  const fetchAvailableUsers = async () => {
+    if (!token || !isAdmin || !date) return;
+
+    try {
+      const availableUsers = await getAvailableUsersForDate(date, token);
+
+      const currentDriver = typeof assignment?.driver === "object" ? assignment.driver : null;
+      const currentMedic = typeof assignment?.medic === "object" ? assignment.medic : null;
+
+      const mergedUsers: UserRef[] = [...availableUsers];
+
+      if (currentDriver && !availableUsers.some(u => u._id === currentDriver._id)) {
+        mergedUsers.unshift(currentDriver);
+      }
+
+      if (currentMedic && !availableUsers.some(u => u._id === currentMedic._id)) {
+        mergedUsers.unshift(currentMedic);
+      }
+
+      setUsers(mergedUsers);
+    } catch (error) {
+      console.error("Error al cargar usuarios disponibles:", error);
+    }
+  };
+
+  fetchAvailableUsers();
+}, [token, isAdmin, date, assignment]);
+
 
   if (!isOpen) return null;
 
-const handleSave = async () => {
-  if (!token) return;
+  const handleSave = async () => {
+    if (!token) return;
 
-  try {
-    const updatedAssignment: UpdateAssignment = {
-      date,
-      startTime,
-      endTime,
-      vehicleNumber,
-      driver: selectedDriverId,
-      medic: selectedMedicId,
-    };
+    try {
+      const updatedAssignment: UpdateAssignment = {
+        date,
+        startTime,
+        endTime,
+        vehicleNumber,
+        driver: selectedDriverId,
+        medic: selectedMedicId,
+      };
 
-    if (assignment?._id) {
-      updatedAssignment._id = assignment._id;
+      if (assignment?._id) {
+        updatedAssignment._id = assignment._id;
+      }
+
+      const updatedData = {
+        assignments: [updatedAssignment],
+      };
+
+      await updateDienstPartial(dienstId, updatedData, token);
+      alert("Cambios guardados");
+      onClose();
+      onUpdate();
+    } catch (error) {
+      console.error("Error al guardar cambios:", error);
+      alert("Error al guardar los cambios.");
     }
-
-    const updatedData = {
-      assignments: [updatedAssignment],
-    };
-
-    await updateDienstPartial(dienstId, updatedData, token);
-    alert("Cambios guardados");
-    onClose();
-    onUpdate(); // ✅ actualiza la lista
-  } catch (error) {
-    console.error("Error al guardar cambios:", error);
-    alert("Error al guardar los cambios.");
-  }
-};
-
-
-
+  };
 
   const handleDelete = async () => {
     if (!token || !assignment) return;
@@ -116,7 +127,7 @@ const handleSave = async () => {
       await removeAssignment(dienstId, assignment.date, token);
       alert("Día eliminado (ahora es día libre)");
       onClose();
-      onUpdate(); // ✅ recargar diensts
+      onUpdate();
     } catch (error) {
       console.error("Error al eliminar el assignment:", error);
       alert("Error al eliminar el assignment.");
@@ -138,7 +149,7 @@ const handleSave = async () => {
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 className="w-full border p-1 rounded"
-                placeholder="Hora de inicio"
+                placeholder="Ej: 08:00"
               />
 
               <label htmlFor="endTime" className="block text-sm font-medium">Hora fin</label>
@@ -148,7 +159,7 @@ const handleSave = async () => {
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
                 className="w-full border p-1 rounded"
-                placeholder="Hora de fin"
+                placeholder="Ej: 17:00"
               />
 
               <label htmlFor="vehicleNumber" className="block text-sm font-medium">Vehículo</label>
@@ -158,7 +169,7 @@ const handleSave = async () => {
                 value={vehicleNumber}
                 onChange={(e) => setVehicleNumber(e.target.value)}
                 className="w-full border p-1 rounded"
-                placeholder="Número de vehículo"
+                placeholder="Ej: 112-A"
               />
 
               <label htmlFor="driver" className="block text-sm font-medium">Conductor</label>

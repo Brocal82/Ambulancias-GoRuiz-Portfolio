@@ -6,7 +6,8 @@ import {
   getUserById,
   deleteUser,
   loginUser,
-  getAllUsersDienst // 👈 nuevo import
+  getAllUsersDienst,
+  getAvailableUsersForDate // 👈 importa aquí también
 } from '../controllers/userController';
 
 import { authenticateToken } from '../middlewares/authMiddleware';
@@ -18,8 +19,9 @@ const router = Router();
 router.post('/register', createUser);
 router.post('/login', loginUser);
 
-// ⚠️ RUTA PERSONALIZADA antes de `/:id`
-router.get('/diensts', authenticateToken, authorizeRole('admin'), getAllUsersDienst); // 👈 nueva ruta
+// ⚠️ Rutas personalizadas antes de `/:id`
+router.get('/diensts', authenticateToken, authorizeRole('admin'), getAllUsersDienst); // ✅ ya existente
+router.get('/available', authenticateToken, authorizeRole('admin'), getAvailableUsersForDate); // ✅ nueva ruta
 
 // Rutas protegidas para usuarios
 router.get('/', authenticateToken, authorizeRole('admin'), getUsers);

@@ -12,3 +12,11 @@ export const getAllUsers = async (token: string): Promise<UserRef[]> => {
     throw error;
   }
 };
+
+export const getAvailableUsersForDate = async (date: string, token: string): Promise<UserRef[]> => {
+  const response = await axios.get(`/users/available?date=${date}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
