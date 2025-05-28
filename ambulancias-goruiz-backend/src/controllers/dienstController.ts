@@ -91,6 +91,17 @@ export const updateDienstPartial = async (req: Request, res: Response) => {
     if (!dienst) return res.status(404).json({ message: 'Dienst no encontrado.' });
 
     for (const updatedAssignment of assignments) {
+      // 🚫 Validar que driver y medic no sean iguales (mismo ID)
+      if (
+        updatedAssignment.driver &&
+        updatedAssignment.medic &&
+        updatedAssignment.driver.toString() === updatedAssignment.medic.toString()
+      ) {
+        return res.status(400).json({
+          message: 'No se puede asignar a la misma persona como conductor y sanitario en el mismo día.',
+        });
+      }
+
       const index = dienst.assignments.findIndex(a => a.date === updatedAssignment.date);
 
       // Clonamos el assignment para poder modificarlo
@@ -117,6 +128,7 @@ export const updateDienstPartial = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al actualizar Dienst' });
   }
 };
+
 
 
 

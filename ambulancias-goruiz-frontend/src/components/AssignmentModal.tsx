@@ -2,13 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { updateDienstPartial, removeAssignment } from "../api/diensts";
 import { getAvailableUsersForDate } from "../api/users";
-import type { DienstAssignment, UserRef, UpdateAssignment } from "../types/dienst";
+import type { UserRef, UpdateAssignment } from "../types/dienst";
+import { mergeWithAssigned } from "../utils/mergeWithAssigned";
+import type { FlexibleAssignment } from "../types/assignment";
 
-interface FlexibleAssignment extends Omit<DienstAssignment, 'driver' | 'medic' | '_id'> {
-  _id?: string;
-  driver: string | UserRef;
-  medic: string | UserRef;
-}
 
 interface AssignmentModalProps {
   isOpen: boolean;
@@ -61,21 +58,8 @@ useEffect(() => {
 
     try {
       const availableUsers = await getAvailableUsersForDate(date, token);
-
-      const currentDriver = typeof assignment?.driver === "object" ? assignment.driver : null;
-      const currentMedic = typeof assignment?.medic === "object" ? assignment.medic : null;
-
-      const mergedUsers: UserRef[] = [...availableUsers];
-
-      if (currentDriver && !availableUsers.some(u => u._id === currentDriver._id)) {
-        mergedUsers.unshift(currentDriver);
-      }
-
-      if (currentMedic && !availableUsers.some(u => u._id === currentMedic._id)) {
-        mergedUsers.unshift(currentMedic);
-      }
-
-      setUsers(mergedUsers);
+      const merged = mergeWithAssigned(availableUsers, assignment);
+      setUsers(merged);
     } catch (error) {
       console.error("Error al cargar usuarios disponibles:", error);
     }
@@ -85,38 +69,45 @@ useEffect(() => {
 }, [token, isAdmin, date, assignment]);
 
 
+
   if (!isOpen) return null;
 
-  const handleSave = async () => {
-    if (!token) return;
+const handleSave = async () => {
+  if (!token) return;
 
-    try {
-      const updatedAssignment: UpdateAssignment = {
-        date,
-        startTime,
-        endTime,
-        vehicleNumber,
-        driver: selectedDriverId,
-        medic: selectedMedicId,
-      };
+  if (selectedDriverId && selectedMedicId && selectedDriverId === selectedMedicId) {
+    alert("🚫 No puedes asignar a la misma persona como conductor y sanitario.");
+    return;
+  }
 
-      if (assignment?._id) {
-        updatedAssignment._id = assignment._id;
-      }
+  try {
+    const updatedAssignment: UpdateAssignment = {
+      date,
+      startTime,
+      endTime,
+      vehicleNumber,
+      driver: selectedDriverId,
+      medic: selectedMedicId,
+    };
 
-      const updatedData = {
-        assignments: [updatedAssignment],
-      };
-
-      await updateDienstPartial(dienstId, updatedData, token);
-      alert("Cambios guardados");
-      onClose();
-      onUpdate();
-    } catch (error) {
-      console.error("Error al guardar cambios:", error);
-      alert("Error al guardar los cambios.");
+    if (assignment?._id) {
+      updatedAssignment._id = assignment._id;
     }
-  };
+
+    const updatedData = {
+      assignments: [updatedAssignment],
+    };
+
+    await updateDienstPartial(dienstId, updatedData, token);
+    alert("Cambios guardados");
+    onClose();
+    onUpdate();
+  } catch (error) {
+    console.error("Error al guardar cambios:", error);
+    alert("Error al guardar los cambios.");
+  }
+};
+
 
   const handleDelete = async () => {
     if (!token || !assignment) return;
