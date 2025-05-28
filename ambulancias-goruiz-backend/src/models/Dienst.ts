@@ -5,8 +5,8 @@ export interface IDienstAssignment {
   vehicleNumber: string;
   startTime: string;
   endTime: string;
-  driver: Types.ObjectId;
-  medic: Types.ObjectId;
+  driver?: Types.ObjectId;  // ahora es opcional
+  medic?: Types.ObjectId;   // ahora es opcional
 }
 
 export interface IDienst extends Document {
@@ -22,8 +22,8 @@ const AssignmentSchema = new Schema<IDienstAssignment>(
     vehicleNumber: { type: String, required: true },
     startTime: { type: String, required: true },
     endTime: { type: String, required: true },
-    driver: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    medic: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    driver: { type: Schema.Types.ObjectId, ref: 'User', required: false },
+    medic: { type: Schema.Types.ObjectId, ref: 'User', required: false },
   },
 );
 

@@ -90,23 +90,26 @@ export const updateDienstPartial = async (req: Request, res: Response) => {
     const dienst = await Dienst.findById(id);
     if (!dienst) return res.status(404).json({ message: 'Dienst no encontrado.' });
 
-    // Recorremos cada assignment enviado desde el frontend
     for (const updatedAssignment of assignments) {
       const index = dienst.assignments.findIndex(a => a.date === updatedAssignment.date);
 
+      // Clonamos el assignment para poder modificarlo
+      const updatedCopy = { ...updatedAssignment };
+
+      // Convertimos valores vacíos a undefined (permitiendo dejar campos vacíos)
+      if (updatedCopy.driver === "") updatedCopy.driver = undefined;
+      if (updatedCopy.medic === "") updatedCopy.medic = undefined;
+
       if (index !== -1) {
-        // Si existe un assignment con esa fecha, actualizamos SOLO ese
         dienst.assignments[index] = {
           ...dienst.assignments[index],
-          ...updatedAssignment,
+          ...updatedCopy,
         };
       } else {
-        // Si no existe un assignment con esa fecha, lo agregamos
-        dienst.assignments.push(updatedAssignment);
+        dienst.assignments.push(updatedCopy);
       }
     }
 
-    // Guardamos los cambios
     await dienst.save();
     res.json(dienst);
   } catch (error) {
@@ -114,6 +117,7 @@ export const updateDienstPartial = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al actualizar Dienst' });
   }
 };
+
 
 
 export const deleteDienst = async (req: Request, res: Response) => {

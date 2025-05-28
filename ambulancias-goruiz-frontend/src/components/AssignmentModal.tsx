@@ -38,21 +38,24 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [selectedMedicId, setSelectedMedicId] = useState("");
   const [users, setUsers] = useState<UserRef[]>([]);
 
-  useEffect(() => {
-    if (assignment) {
-      setStartTime(assignment.startTime);
-      setEndTime(assignment.endTime);
-      setVehicleNumber(assignment.vehicleNumber);
-      setSelectedDriverId(typeof assignment.driver === "string" ? assignment.driver : assignment.driver._id);
-      setSelectedMedicId(typeof assignment.medic === "string" ? assignment.medic : assignment.medic._id);
-    } else {
-      setStartTime("");
-      setEndTime("");
-      setVehicleNumber("");
-      setSelectedDriverId("");
-      setSelectedMedicId("");
-    }
-  }, [assignment]);
+useEffect(() => {
+  if (assignment) {
+    setStartTime(assignment.startTime);
+    setEndTime(assignment.endTime);
+    setVehicleNumber(assignment.vehicleNumber);
+    setSelectedDriverId(
+      typeof assignment.driver === "string"
+        ? assignment.driver
+        : assignment.driver?._id || ""
+    );
+    setSelectedMedicId(
+      typeof assignment.medic === "string"
+        ? assignment.medic
+        : assignment.medic?._id || ""
+    );
+  }
+}, [assignment]);
+
 
   useEffect(() => {
     const fetchUsers = async () => {

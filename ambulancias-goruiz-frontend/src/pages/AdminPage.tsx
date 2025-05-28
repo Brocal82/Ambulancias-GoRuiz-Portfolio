@@ -3,6 +3,7 @@ import type { Dienst, UserRef } from '../types/dienst';
 import { getAllDiensts } from '../api/diensts';
 import { useAuth } from '../context/AuthContext';
 import AssignmentModal from '../components/AssignmentModal';
+import { isPartialAssignment } from '../utils/assignmentUtils';
 
 const AdminPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
@@ -56,7 +57,11 @@ const AdminPage = () => {
               <div className="grid grid-cols-7 gap-2">
                 {allWeekDates.map((day) => {
                   const assignment = dienst.assignments.find((a) => a.date === day);
-                  const bgColor = assignment ? "bg-blue-100" : "bg-green-100";
+                  const bgColor = assignment
+                    ? isPartialAssignment(assignment)
+                      ? "bg-yellow-100" // parcialmente asignado
+                      : "bg-blue-100"   // completamente asignado
+                    : "bg-green-100";   // día libre
 
                   return (
                     <div
