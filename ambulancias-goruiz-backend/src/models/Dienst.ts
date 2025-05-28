@@ -25,7 +25,6 @@ const AssignmentSchema = new Schema<IDienstAssignment>(
     driver: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     medic: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
-  { _id: false }
 );
 
 const DienstSchema = new Schema<IDienst>({

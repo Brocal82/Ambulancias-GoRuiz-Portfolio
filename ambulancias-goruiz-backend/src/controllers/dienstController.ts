@@ -79,26 +79,42 @@ export const updateDienst = async (req: Request, res: Response) => {
 };
 
 export const updateDienstPartial = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { assignments } = req.body;
+
+  if (!assignments || !Array.isArray(assignments)) {
+    return res.status(400).json({ message: 'No se proporcionaron assignments válidos.' });
+  }
+
   try {
-    const parsedId = idSchema.parse(req.params.id);
-    const updates = partialDienstSchema.parse(req.body);
-    const updatedDienst = await Dienst.findByIdAndUpdate(parsedId, { $set: updates }, { new: true })
-      .populate('assignments.driver assignments.medic');
-    if (!updatedDienst) {
-      res.status(404).json({ message: 'Dienst no encontrado' });
-      return;
+    const dienst = await Dienst.findById(id);
+    if (!dienst) return res.status(404).json({ message: 'Dienst no encontrado.' });
+
+    // Recorremos cada assignment enviado desde el frontend
+    for (const updatedAssignment of assignments) {
+      const index = dienst.assignments.findIndex(a => a.date === updatedAssignment.date);
+
+      if (index !== -1) {
+        // Si existe un assignment con esa fecha, actualizamos SOLO ese
+        dienst.assignments[index] = {
+          ...dienst.assignments[index],
+          ...updatedAssignment,
+        };
+      } else {
+        // Si no existe un assignment con esa fecha, lo agregamos
+        dienst.assignments.push(updatedAssignment);
+      }
     }
-    res.status(200).json(updatedDienst);
-    return;
+
+    // Guardamos los cambios
+    await dienst.save();
+    res.json(dienst);
   } catch (error) {
-    if (error instanceof ZodError) {
-      res.status(400).json({ message: 'Datos inválidos', errors: error.errors });
-      return;
-    }
-    res.status(500).json({ message: 'Error al actualizar parcialmente el Dienst', error });
-    return;
+    console.error("Error al actualizar Dienst:", error);
+    res.status(500).json({ message: 'Error al actualizar Dienst' });
   }
 };
+
 
 export const deleteDienst = async (req: Request, res: Response) => {
   try {
