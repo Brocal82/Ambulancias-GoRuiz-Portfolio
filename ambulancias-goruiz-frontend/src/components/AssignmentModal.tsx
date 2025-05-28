@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { updateDienstPartial, removeAssignment } from "../api/diensts";
 import { getAvailableUsersForDate } from "../api/users";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 import type { UserRef, UpdateAssignment } from "../types/dienst";
 import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import type { FlexibleAssignment } from "../types/assignment";
-
 
 interface AssignmentModalProps {
   isOpen: boolean;
@@ -33,6 +35,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [selectedMedicId, setSelectedMedicId] = useState("");
   const [users, setUsers] = useState<UserRef[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (assignment) {
@@ -52,33 +55,43 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
   }, [assignment]);
 
-useEffect(() => {
-  const fetchAvailableUsers = async () => {
-    if (!token || !isAdmin || !date) return;
+  useEffect(() => {
+    const fetchAvailableUsers = async () => {
+      if (!token || !isAdmin || !date) return;
 
-    try {
-      const availableUsers = await getAvailableUsersForDate(date, token);
-      const merged = mergeWithAssigned(availableUsers, assignment);
-      setUsers(merged);
-    } catch (error) {
-      console.error("Error al cargar usuarios disponibles:", error);
-    }
-  };
+      try {
+        const availableUsers = await getAvailableUsersForDate(date, token);
+        const merged = mergeWithAssigned(availableUsers, assignment);
+        setUsers(merged);
+      } catch (error) {
+        console.error("Error al cargar usuarios disponibles:", error);
+        toast.error("❌ Error al cargar usuarios.");
+      }
+    };
 
-  fetchAvailableUsers();
-}, [token, isAdmin, date, assignment]);
-
-
+    fetchAvailableUsers();
+  }, [token, isAdmin, date, assignment]);
 
   if (!isOpen) return null;
 
 const handleSave = async () => {
   if (!token) return;
 
-  if (selectedDriverId && selectedMedicId && selectedDriverId === selectedMedicId) {
-    alert("🚫 No puedes asignar a la misma persona como conductor y sanitario.");
-    return;
-  }
+  // Validación mínima: deben estar definidas las horas
+if (!startTime || !endTime || !vehicleNumber) {
+  toast.warn("🚫 Debes rellenar hora de inicio, fin y vehículo.");
+  return;
+}
+
+if (
+  selectedDriverId &&
+  selectedMedicId &&
+  selectedDriverId === selectedMedicId
+) {
+  toast.warn("🚫 No puedes asignar a la misma persona como conductor y sanitario.");
+  return;
+}
+
 
   try {
     const updatedAssignment: UpdateAssignment = {
@@ -99,12 +112,12 @@ const handleSave = async () => {
     };
 
     await updateDienstPartial(dienstId, updatedData, token);
-    alert("Cambios guardados");
+    toast.success("✅ Cambios guardados correctamente");
     onClose();
     onUpdate();
   } catch (error) {
     console.error("Error al guardar cambios:", error);
-    alert("Error al guardar los cambios.");
+    toast.error("❌ Error al guardar los cambios.");
   }
 };
 
@@ -114,14 +127,17 @@ const handleSave = async () => {
     const confirmed = confirm("¿Estás seguro de eliminar este día del Dienst?");
     if (!confirmed) return;
 
+    setIsLoading(true);
     try {
       await removeAssignment(dienstId, assignment.date, token);
-      alert("Día eliminado (ahora es día libre)");
+      toast.success("✅ Día eliminado (ahora es libre)");
       onClose();
       onUpdate();
     } catch (error) {
       console.error("Error al eliminar el assignment:", error);
-      alert("Error al eliminar el assignment.");
+      toast.error("❌ Error al eliminar el assignment.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -140,7 +156,6 @@ const handleSave = async () => {
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 className="w-full border p-1 rounded"
-                placeholder="Ej: 08:00"
               />
 
               <label htmlFor="endTime" className="block text-sm font-medium">Hora fin</label>
@@ -150,7 +165,6 @@ const handleSave = async () => {
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
                 className="w-full border p-1 rounded"
-                placeholder="Ej: 17:00"
               />
 
               <label htmlFor="vehicleNumber" className="block text-sm font-medium">Vehículo</label>
@@ -160,7 +174,6 @@ const handleSave = async () => {
                 value={vehicleNumber}
                 onChange={(e) => setVehicleNumber(e.target.value)}
                 className="w-full border p-1 rounded"
-                placeholder="Ej: 112-A"
               />
 
               <label htmlFor="driver" className="block text-sm font-medium">Conductor</label>
@@ -195,17 +208,19 @@ const handleSave = async () => {
 
               <button
                 onClick={handleSave}
+                disabled={isLoading}
                 className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
               >
-                Guardar cambios
+                {isLoading ? "Guardando..." : "Guardar cambios"}
               </button>
 
               {assignment && (
                 <button
                   onClick={handleDelete}
+                  disabled={isLoading}
                   className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
                 >
-                  Eliminar este día (hacer libre)
+                  {isLoading ? "Eliminando..." : "Eliminar este día (hacer libre)"}
                 </button>
               )}
             </>
@@ -223,6 +238,7 @@ const handleSave = async () => {
 
         <button
           onClick={onClose}
+          disabled={isLoading}
           className="mt-4 w-full bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded"
         >
           Cerrar

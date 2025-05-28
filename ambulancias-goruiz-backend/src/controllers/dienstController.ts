@@ -91,25 +91,24 @@ export const updateDienstPartial = async (req: Request, res: Response) => {
     if (!dienst) return res.status(404).json({ message: 'Dienst no encontrado.' });
 
     for (const updatedAssignment of assignments) {
-      // 🚫 Validar que driver y medic no sean iguales (mismo ID)
-      if (
-        updatedAssignment.driver &&
-        updatedAssignment.medic &&
-        updatedAssignment.driver.toString() === updatedAssignment.medic.toString()
-      ) {
-        return res.status(400).json({
-          message: 'No se puede asignar a la misma persona como conductor y sanitario en el mismo día.',
-        });
-      }
-
       const index = dienst.assignments.findIndex(a => a.date === updatedAssignment.date);
 
       // Clonamos el assignment para poder modificarlo
       const updatedCopy = { ...updatedAssignment };
 
-      // Convertimos valores vacíos a undefined (permitiendo dejar campos vacíos)
+      // Convertimos valores vacíos a undefined
       if (updatedCopy.driver === "") updatedCopy.driver = undefined;
       if (updatedCopy.medic === "") updatedCopy.medic = undefined;
+
+      // ❗ Validación de campos obligatorios
+      if (
+        !updatedCopy.vehicleNumber ||
+        !updatedCopy.startTime ||
+        !updatedCopy.endTime
+      ) {
+        console.warn("Assignment incompleto ignorado:", updatedCopy);
+        continue; // Lo saltamos
+      }
 
       if (index !== -1) {
         dienst.assignments[index] = {
@@ -128,8 +127,6 @@ export const updateDienstPartial = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al actualizar Dienst' });
   }
 };
-
-
 
 
 export const deleteDienst = async (req: Request, res: Response) => {
@@ -233,6 +230,9 @@ export const removeAssignment = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error al eliminar el assignment", error });
   }
 };
+
+
+
 
 
 

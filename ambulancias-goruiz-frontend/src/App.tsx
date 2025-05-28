@@ -7,6 +7,8 @@ import Login from './pages/Login';
 import AdminPage from './pages/AdminPage';
 import WorkerPage from './pages/WorkerPage';
 import { AuthProvider } from './context/AuthContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function App() {
   return (
@@ -51,6 +53,9 @@ export default function App() {
             }
           />
         </Routes>
+
+        {/* ✅ Toast container para mostrar notificaciones */}
+        <ToastContainer position="top-right" autoClose={3000} />
       </BrowserRouter>
     </AuthProvider>
   );
