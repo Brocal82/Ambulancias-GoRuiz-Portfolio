@@ -20,7 +20,6 @@ const fetchAssignedDays = useCallback(async () => {
 
   try {
     const data = await getAssignedDaysForUser(userId, token);
-    console.log("DÍAS ASIGNADOS RECIBIDOS:", data);
 
     const flattened = data.flatMap((dienst) => {
       if (!dienst.assignments || !Array.isArray(dienst.assignments)) return [];
