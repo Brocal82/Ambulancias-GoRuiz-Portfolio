@@ -3,6 +3,8 @@ import Dienst from '../models/Dienst';
 import { dienstSchema, partialDienstSchema } from '../schemas/dienstSchema';
 import { dienstQuerySchema } from '../schemas/dienstQuerySchema';
 import { ZodError, z } from 'zod';
+import mongoose from 'mongoose';
+import { RequestHandler } from 'express';
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
   message: 'ID no válido',
@@ -78,36 +80,37 @@ export const updateDienst = async (req: Request, res: Response) => {
   }
 };
 
-export const updateDienstPartial = async (req: Request, res: Response) => {
+export const updateDienstPartial: RequestHandler = async (req, res) => {
   const { id } = req.params;
   const { assignments } = req.body;
 
   if (!assignments || !Array.isArray(assignments)) {
-    return res.status(400).json({ message: 'No se proporcionaron assignments válidos.' });
+    res.status(400).json({ message: "No se proporcionaron assignments válidos." });
+    return;
   }
 
   try {
     const dienst = await Dienst.findById(id);
-    if (!dienst) return res.status(404).json({ message: 'Dienst no encontrado.' });
+    if (!dienst) {
+      res.status(404).json({ message: "Dienst no encontrado." });
+      return;
+    }
 
     for (const updatedAssignment of assignments) {
-      const index = dienst.assignments.findIndex(a => a.date === updatedAssignment.date);
+      const index = dienst.assignments.findIndex((a) => a.date === updatedAssignment.date);
 
-      // Clonamos el assignment para poder modificarlo
       const updatedCopy = { ...updatedAssignment };
 
-      // Convertimos valores vacíos a undefined
       if (updatedCopy.driver === "") updatedCopy.driver = undefined;
       if (updatedCopy.medic === "") updatedCopy.medic = undefined;
 
-      // ❗ Validación de campos obligatorios
       if (
         !updatedCopy.vehicleNumber ||
         !updatedCopy.startTime ||
         !updatedCopy.endTime
       ) {
         console.warn("Assignment incompleto ignorado:", updatedCopy);
-        continue; // Lo saltamos
+        continue;
       }
 
       if (index !== -1) {
@@ -124,7 +127,7 @@ export const updateDienstPartial = async (req: Request, res: Response) => {
     res.json(dienst);
   } catch (error) {
     console.error("Error al actualizar Dienst:", error);
-    res.status(500).json({ message: 'Error al actualizar Dienst' });
+    res.status(500).json({ message: "Error al actualizar Dienst" });
   }
 };
 
@@ -188,7 +191,6 @@ export const searchDienst = async (req: Request, res: Response) => {
   }
 };
 
-import mongoose from 'mongoose';
 
 export const getDienstsByUser = async (req: Request, res: Response) => {
   const { userId } = req.params;
