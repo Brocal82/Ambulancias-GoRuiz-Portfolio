@@ -59,4 +59,19 @@ export const getAssignedDaysForUser = async (userId: string, token: string): Pro
   return response.data;
 };
 
+export const createDienst = async (dienstData: Partial<Dienst>, token: string): Promise<Dienst> => {
+  try {
+    const response = await axios.post<Dienst>(`/diensts`, dienstData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error al crear un dienst:", error);
+    throw error;
+  }
+};
+
+
 

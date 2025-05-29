@@ -29,8 +29,8 @@ const AssignmentSchema = new Schema<IDienstAssignment>(
 
 const DienstSchema = new Schema<IDienst>({
   dienstNumber: { type: Number, required: true },
-  weekStartDate: { type: Date, required: true },
-  weekEndDate: { type: Date, required: true },
+  weekStartDate: { type: Date, required: false },
+  weekEndDate: { type: Date, required: false },
   assignments: [AssignmentSchema],
 });
 
