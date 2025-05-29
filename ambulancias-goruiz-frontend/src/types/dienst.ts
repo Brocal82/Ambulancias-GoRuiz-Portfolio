@@ -1,3 +1,5 @@
+// frontend/src/types/dienst.ts
+
 export interface UserRef {
   _id: string;
   name: string;
@@ -21,7 +23,6 @@ export interface Dienst {
   assignments: (DienstAssignment | UpdateAssignment)[];
 }
 
-
 export interface UpdateAssignment {
   _id?: string;
   date: string;
@@ -32,3 +33,14 @@ export interface UpdateAssignment {
   medic: string;  // solo ID
 }
 
+// ✅ NUEVO: tipo para días asignados que devuelve el backend
+export interface AssignedDay {
+  dienstId: string;
+  dienstNumber: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  vehicleNumber: string;
+  driver?: string;
+  medic?: string;
+}

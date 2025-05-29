@@ -5,6 +5,7 @@ import { dienstQuerySchema } from '../schemas/dienstQuerySchema';
 import { ZodError, z } from 'zod';
 import mongoose from 'mongoose';
 import { RequestHandler } from 'express';
+import { AssignedDay } from '../types/Dienst';
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
   message: 'ID no válido',
@@ -230,6 +231,46 @@ export const removeAssignment = async (req: Request, res: Response) => {
     res.status(200).json(updatedDienst);
   } catch (error) {
     res.status(500).json({ message: "Error al eliminar el assignment", error });
+  }
+};
+
+export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const diensts = await Dienst.find({
+      $or: [
+        { 'assignments.driver': userId },
+        { 'assignments.medic': userId }
+      ]
+    }).lean();
+
+    const assignedDays: AssignedDay[] = [];
+
+    diensts.forEach((dienst) => {
+      dienst.assignments.forEach((assignment) => {
+        if (
+          assignment.driver?.toString() === userId ||
+          assignment.medic?.toString() === userId
+        ) {
+          assignedDays.push({
+            dienstId: dienst._id.toString(),
+            dienstNumber: dienst.dienstNumber,
+            date: assignment.date,
+            startTime: assignment.startTime,
+            endTime: assignment.endTime,
+            vehicleNumber: assignment.vehicleNumber,
+            driver: assignment.driver?.toString() || '',
+            medic: assignment.medic?.toString() || '',
+          });
+        }
+      });
+    });
+
+    res.status(200).json(assignedDays);
+  } catch (error) {
+    console.error("Error al obtener días asignados:", error);
+    res.status(500).json({ message: 'Error al obtener días asignados' });
   }
 };
 

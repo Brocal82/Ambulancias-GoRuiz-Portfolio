@@ -1,6 +1,7 @@
 import axios from './axios';
 import type { Dienst } from '../types/dienst';
 
+
 export const getDienstByUser = async (userId: string, token: string): Promise<Dienst[]> => {
   try {
     const response = await axios.get<Dienst[]>(`/diensts/user/${userId}`, {
@@ -49,6 +50,13 @@ export const removeAssignment = async (dienstId: string, date: string, token: st
   await axios.patch(`/diensts/${dienstId}/remove-assignment`, { date }, {
     headers: { Authorization: `Bearer ${token}` },
   });
+};
+
+export const getAssignedDaysForUser = async (userId: string, token: string): Promise<Dienst[]> => {
+  const response = await axios.get(`http://localhost:5000/api/diensts/assigned-days/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
 };
 
 

@@ -1,85 +1,115 @@
 import { useCallback, useEffect, useState } from "react";
-import { getDienstByUser } from "../api/diensts";
-import type { Dienst, UserRef } from "../types/dienst";
+import { getAssignedDaysForUser } from "../api/diensts";
 import { useAuth } from "../context/AuthContext";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
+import type { AssignedDay } from "../types/assignedDay";
 
 const WorkerPage = () => {
   const { userId, token } = useAuth();
-  const [diensts, setDiensts] = useState<Dienst[]>([]);
+  const [assignedDays, setAssignedDays] = useState<AssignedDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<{
     date: string;
-    assignment?: Dienst["assignments"][0] & {
-      driver: string | UserRef;
-      medic: string | UserRef;
-    };
+    assignment?: AssignedDay;
     dienstId: string;
   } | null>(null);
 
-  const fetchDiensts = useCallback(async () => {
-    if (!userId || !token) return;
-    try {
-      const data = await getDienstByUser(userId, token);
-      setDiensts(data);
-    } catch (error) {
-      console.error("Error al obtener los diensts:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, token]);
+const fetchAssignedDays = useCallback(async () => {
+  if (!userId || !token) return;
+
+  try {
+    const data = await getAssignedDaysForUser(userId, token);
+    console.log("DÍAS ASIGNADOS RECIBIDOS:", data);
+
+    const flattened = data.flatMap((dienst) => {
+      if (!dienst.assignments || !Array.isArray(dienst.assignments)) return [];
+
+
+      return dienst.assignments.map((a) => ({
+        dienstId: dienst._id,
+        dienstNumber: dienst.dienstNumber,
+        date: a.date,
+        startTime: a.startTime,
+        endTime: a.endTime,
+        vehicleNumber: a.vehicleNumber,
+        driver: typeof a.driver === "string" ? a.driver : a.driver?._id || "",
+        medic: typeof a.medic === "string" ? a.medic : a.medic?._id || "",
+      }));
+    });
+
+    setAssignedDays(flattened);
+  } catch (error) {
+    console.error("Error al obtener los días asignados:", error);
+  } finally {
+    setLoading(false);
+  }
+}, [userId, token]);
+
+
 
   useEffect(() => {
-    fetchDiensts();
-  }, [fetchDiensts]);
+    fetchAssignedDays();
+  }, [fetchAssignedDays]);
 
-  if (loading) return <p>Cargando diensts...</p>;
+  if (loading) return <p>Cargando días asignados...</p>;
 
-  return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Tus Diensts</h2>
-      <ul className="space-y-8">
-        {diensts.map((dienst) => {
-          const allWeekDates = Array.from({ length: 14 }, (_, i) => {
-            const d = new Date(dienst.weekStartDate);
-            d.setDate(d.getDate() + i);
+return (
+  <div className="p-4">
+    <h2 className="text-xl font-bold mb-4">Tus días asignados</h2>
+<>
+  {(() => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const daysToSubtract = (dayOfWeek + 6) % 7;
+    const firstMonday = new Date(today);
+    firstMonday.setDate(today.getDate() - daysToSubtract);
+
+    const weeks = [0, 1]; // Dos semanas
+    return (
+      <div className="space-y-8">
+        {weeks.map((weekOffset) => {
+          const weekStart = new Date(firstMonday);
+          weekStart.setDate(firstMonday.getDate() + weekOffset * 7);
+
+          const weekDates = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(weekStart);
+            d.setDate(weekStart.getDate() + i);
             return d.toISOString().split("T")[0];
           });
 
-          return (
-            <li key={dienst.dienstNumber}>
-              <div className="mb-2">
-                <p className="text-lg font-semibold">Dienst #{dienst.dienstNumber}</p>
-                <p className="mb-2 text-sm text-gray-600">
-                  Desde el {new Date(dienst.weekStartDate).toLocaleDateString()} hasta el{" "}
-                  {new Date(new Date(dienst.weekStartDate).setDate(new Date(dienst.weekStartDate).getDate() + 13)).toLocaleDateString()}
-                </p>
-              </div>
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
 
+          return (
+            <div key={weekOffset}>
+              <p className="text-lg font-semibold text-gray-700 mb-2">
+                Semana del {weekStart.toLocaleDateString("es-ES")} al {weekEnd.toLocaleDateString("es-ES")}
+              </p>
               <div className="grid grid-cols-7 gap-2">
-                {allWeekDates.map((day) => {
-                  const assignment = dienst.assignments.find((a) => a.date === day);
+                {weekDates.map((dateStr) => {
+                  const assignment = assignedDays.find((a) => a.date === dateStr);
                   const bgColor = assignment
                     ? isPartialAssignment(assignment)
-                      ? "bg-yellow-100" // parcialmente asignado
-                      : "bg-blue-100"   // completamente asignado
-                    : "bg-green-100";   // día libre
+                      ? "bg-yellow-100"
+                      : "bg-blue-100"
+                    : "bg-green-100";
 
                   return (
                     <div
-                      key={day}
+                      key={dateStr}
                       className={`border rounded p-2 text-sm cursor-pointer hover:shadow ${bgColor}`}
                       onClick={() =>
+                        assignment &&
                         setSelectedAssignment({
-                          date: day,
+                          date: assignment.date,
                           assignment,
-                          dienstId: dienst._id,
+                          dienstId: assignment.dienstId,
                         })
                       }
                     >
                       <p className="font-semibold">
-                        {new Date(day).toLocaleDateString("es-ES", {
+                        {new Date(dateStr).toLocaleDateString("es-ES", {
                           weekday: "short",
                           day: "2-digit",
                           month: "2-digit",
@@ -87,33 +117,42 @@ const WorkerPage = () => {
                       </p>
                       {assignment ? (
                         <>
-                          <p className="text-xs">🕒 {assignment.startTime} - {assignment.endTime}</p>
+                          <p className="text-xs">
+                            🕒 {assignment.startTime} - {assignment.endTime}
+                          </p>
                           <p className="text-xs">🚑 {assignment.vehicleNumber}</p>
                         </>
                       ) : (
-                        <p className="text-xs text-green-800 font-medium mt-2">🌴 Libre</p>
+                        <p className="text-xs text-green-800 mt-2">🌴 Libre</p>
                       )}
                     </div>
                   );
                 })}
               </div>
-            </li>
+            </div>
           );
         })}
-      </ul>
+      </div>
+    );
+  })()}
+</>
 
-      {selectedAssignment && (
-        <AssignmentModal
-          isOpen={true}
-          date={selectedAssignment.date}
-          assignment={selectedAssignment.assignment}
-          dienstId={selectedAssignment.dienstId}
-          onClose={() => setSelectedAssignment(null)}
-          onUpdate={fetchDiensts}
-        />
-      )}
-    </div>
-  );
-};
+
+
+
+
+    {selectedAssignment && (
+      <AssignmentModal
+        isOpen={true}
+        date={selectedAssignment.date}
+        assignment={selectedAssignment.assignment}
+        dienstId={selectedAssignment.dienstId}
+        onClose={() => setSelectedAssignment(null)}
+        onUpdate={fetchAssignedDays}
+      />
+    )}
+  </div>
+);
+}
 
 export default WorkerPage;

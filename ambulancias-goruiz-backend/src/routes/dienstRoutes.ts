@@ -8,11 +8,13 @@ import {
   deleteDienst,
   searchDienst,
   getDienstsByUser,
-  removeAssignment, // ✅ 👈 añade esta función al import
+  removeAssignment,
+  getAssignedDaysForUser
 } from '../controllers/dienstController';
 
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { authorizeRole } from '../middlewares/roleMiddleware';
+
 
 const router = express.Router();
 
@@ -21,6 +23,9 @@ router.post('/', authenticateToken, authorizeRole('admin'), createDienst);
 router.get('/', authenticateToken, authorizeRole('admin'), getAllDiensts);
 router.get('/search', authenticateToken, authorizeRole('admin'), searchDienst);
 router.get('/user/:userId', authenticateToken, getDienstsByUser);
+
+// ✅ NUEVA RUTA - antes de las que usan :id
+router.get('/assigned-days/:userId', authenticateToken, getAssignedDaysForUser)
 
 // 👇 Acceso según permisos
 router.get('/:id', authenticateToken, getDienstById);
