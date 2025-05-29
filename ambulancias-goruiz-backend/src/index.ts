@@ -1,51 +1,51 @@
 // Cargamos las variables de entorno definidas en .env
-import dotenv from 'dotenv';              // Para leer variables de entorno desde .env
+import dotenv from 'dotenv';
 dotenv.config();
-// Importamos módulos necesarios
-import express from 'express';            // Framework para construir APIs
-import mongoose from 'mongoose';          // ODM para conectarse y trabajar con MongoDB
-import cors from 'cors';                  // Para permitir peticiones de distintos orígenes (CORS)
-import userRoutes from './routes/userRoutes';  // Importamos las rutas de usuario
-import dienstRoutes from './routes/dienstRoutes'
 
+// Importamos módulos necesarios
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import userRoutes from './routes/userRoutes';
+import dienstRoutes from './routes/dienstRoutes';
+
+// ✅ Importamos el limpiador de Diensts antiguos
+import  cleanupOldDiensts  from './utils/cleanupOldDiensts';
 
 // Inicializamos Express
 const app = express();
 
-// Puerto de la aplicación, por defecto 5000 si no hay uno en .env
+// Puerto de la aplicación
 const PORT = process.env.PORT || 5000;
-
-// Leemos la URI de conexión a MongoDB desde las variables de entorno
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// Si no hay URI en el .env, mostramos error y detenemos la aplicación
+// Verificamos la URI
 if (!MONGODB_URI) {
   console.error('❌ Error: MONGODB_URI no está definida en el archivo .env');
-  process.exit(1); // Finaliza el proceso con código de error
+  process.exit(1);
 }
 
-// Middlewares que procesan las peticiones entrantes
+// Middlewares
 app.use(
   cors({
-    origin: "http://localhost:5173", // 👈 tu frontend en desarrollo
-    credentials: true,               // 👈 permite el uso de cookies/sesiones
+    origin: "http://localhost:5173",
+    credentials: true,
   })
 );
+app.use(express.json());
 
-app.use(express.json());     // Permite leer el body en formato JSON
-
-// Rutas de la API para usuarios
+// Rutas
 app.use('/api/users', userRoutes);
-
-// Rutas de la API para dienst (horarios de trabajo)
 app.use('/api/diensts', dienstRoutes);
 
-// Conexión a la base de datos MongoDB y arranque del servidor
+// Conexión y arranque del servidor
 mongoose.connect(MONGODB_URI)
-  .then(() => {
+  .then(async () => {
     console.log('🟢 Conectado a MongoDB');
 
-    // Una vez conectados a MongoDB, iniciamos el servidor
+    // ✅ Ejecutamos limpieza de Diensts antiguos automáticamente
+    await cleanupOldDiensts();
+
     app.listen(PORT, () => {
       console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
     });
