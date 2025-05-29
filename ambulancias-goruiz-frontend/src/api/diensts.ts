@@ -52,12 +52,15 @@ export const removeAssignment = async (dienstId: string, date: string, token: st
   });
 };
 
-export const getAssignedDaysForUser = async (userId: string, token: string): Promise<Dienst[]> => {
+import type { AssignedDay } from '../types/assignedDay';
+
+export const getAssignedDaysForUser = async (userId: string, token: string): Promise<AssignedDay[]> => {
   const response = await axios.get(`http://localhost:5000/api/diensts/assigned-days/${userId}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   return response.data;
 };
+
 
 export const createDienst = async (dienstData: Partial<Dienst>, token: string): Promise<Dienst> => {
   try {

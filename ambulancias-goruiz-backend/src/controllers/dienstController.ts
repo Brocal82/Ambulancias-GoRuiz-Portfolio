@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Dienst from '../models/Dienst';
+import Dienst, { IDienst, IDienstAssignment} from '../models/Dienst';
 import { dienstSchema, partialDienstSchema } from '../schemas/dienstSchema';
 import { dienstQuerySchema } from '../schemas/dienstQuerySchema';
 import { ZodError, z } from 'zod';
@@ -234,27 +234,32 @@ export const removeAssignment = async (req: Request, res: Response) => {
   }
 };
 
-export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
+export const getAssignedDaysForUser: RequestHandler = async (req, res): Promise<void> => {
   const { userId } = req.params;
 
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    res.status(400).json({ message: 'ID de usuario no válido' });
+    return;
+  }
+
   try {
-    const diensts = await Dienst.find({
+    const diensts = await Dienst.find<IDienst>({
       $or: [
-        { 'assignments.driver': userId },
-        { 'assignments.medic': userId }
+        { 'assignments.driver': new mongoose.Types.ObjectId(userId) },
+        { 'assignments.medic': new mongoose.Types.ObjectId(userId) }
       ]
-    }).lean();
+    });
 
     const assignedDays: AssignedDay[] = [];
 
     diensts.forEach((dienst) => {
-      dienst.assignments.forEach((assignment) => {
+      dienst.assignments.forEach((assignment: IDienstAssignment) => {
         if (
           assignment.driver?.toString() === userId ||
           assignment.medic?.toString() === userId
         ) {
           assignedDays.push({
-            dienstId: dienst._id.toString(),
+            dienstId: (dienst._id as string).toString(),
             dienstNumber: dienst.dienstNumber,
             date: assignment.date,
             startTime: assignment.startTime,
@@ -269,10 +274,11 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
 
     res.status(200).json(assignedDays);
   } catch (error) {
-    console.error("Error al obtener días asignados:", error);
+    console.error("❌ Error al obtener días asignados:", error);
     res.status(500).json({ message: 'Error al obtener días asignados' });
   }
 };
+
 
 
 
