@@ -107,6 +107,13 @@ const AdminPage = () => {
                             <>
                               <p className="text-xs">🕒 {assignment.startTime} - {assignment.endTime}</p>
                               <p className="text-xs">🚑 {assignment.vehicleNumber}</p>
+                              <p className="text-xs">
+                                👨‍✈️ Conductor: {typeof assignment.driver === "string" ? assignment.driver : assignment.driver?.name || "—"}
+                              </p>
+                              <p className="text-xs">
+                                🧑‍⚕️ Sanitario: {typeof assignment.medic === "string" ? assignment.medic : assignment.medic?.name || "—"}
+                              </p>
+
                             </>
                           ) : (
                             <p className="text-xs text-green-800 mt-2">🌴 Libre</p>

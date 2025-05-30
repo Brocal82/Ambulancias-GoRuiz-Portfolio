@@ -28,16 +28,20 @@ export const createDienst = async (req: Request, res: Response) => {
   }
 };
 
-export const getAllDiensts = async (_req: Request, res: Response) => {
+
+export const getAllDiensts: RequestHandler = async (req, res) => {
   try {
-    const diensts = await Dienst.find().populate('assignments.driver assignments.medic');
+    const diensts = await Dienst.find()
+      .populate('assignments.driver', 'name')
+      .populate('assignments.medic', 'name');
+
     res.status(200).json(diensts);
-    return;
   } catch (error) {
-    res.status(500).json({ message: 'Error al obtener los Diensts', error });
-    return;
+    console.error("Error al obtener los Diensts:", error);
+    res.status(500).json({ message: "Error al obtener los Diensts" });
   }
 };
+
 
 export const getDienstById = async (req: Request, res: Response) => {
   try {
@@ -234,7 +238,7 @@ export const removeAssignment = async (req: Request, res: Response) => {
   }
 };
 
-export const getAssignedDaysForUser: RequestHandler = async (req, res): Promise<void> => {
+export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
   const { userId } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -248,29 +252,42 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res): Promise<
         { 'assignments.driver': new mongoose.Types.ObjectId(userId) },
         { 'assignments.medic': new mongoose.Types.ObjectId(userId) }
       ]
-    });
+    })
+      .populate('assignments.driver', 'name')
+      .populate('assignments.medic', 'name')
+      .lean();
 
-    const assignedDays: AssignedDay[] = [];
+const assignedDays: AssignedDay[] = [];
 
-    diensts.forEach((dienst) => {
-      dienst.assignments.forEach((assignment: IDienstAssignment) => {
-        if (
-          assignment.driver?.toString() === userId ||
-          assignment.medic?.toString() === userId
-        ) {
-          assignedDays.push({
-            dienstId: (dienst._id as string).toString(),
-            dienstNumber: dienst.dienstNumber,
-            date: assignment.date,
-            startTime: assignment.startTime,
-            endTime: assignment.endTime,
-            vehicleNumber: assignment.vehicleNumber,
-            driver: assignment.driver?.toString() || '',
-            medic: assignment.medic?.toString() || '',
-          });
-        }
+diensts.forEach((dienst) => {
+  dienst.assignments.forEach((assignment: any) => {
+    const isAssigned =
+      assignment.driver?._id?.toString?.() === userId ||
+      assignment.driver?.toString?.() === userId ||
+      assignment.medic?._id?.toString?.() === userId ||
+      assignment.medic?.toString?.() === userId;
+
+    if (isAssigned) {
+      assignedDays.push({
+        dienstId: dienst._id.toString(),
+        dienstNumber: dienst.dienstNumber,
+        date: assignment.date,
+        startTime: assignment.startTime,
+        endTime: assignment.endTime,
+        vehicleNumber: assignment.vehicleNumber,
+        driver:
+          typeof assignment.driver === "object"
+            ? { _id: assignment.driver._id.toString(), name: assignment.driver.name }
+            : assignment.driver,
+        medic:
+          typeof assignment.medic === "object"
+            ? { _id: assignment.medic._id.toString(), name: assignment.medic.name }
+            : assignment.medic,
       });
-    });
+    }
+  });
+});
+
 
     res.status(200).json(assignedDays);
   } catch (error) {

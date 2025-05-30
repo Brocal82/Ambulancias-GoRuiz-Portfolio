@@ -1,5 +1,5 @@
-// src/types/assignedDay.ts
 
+// frontend/src/types/assignedDay.ts
 export interface AssignedDay {
   dienstId: string;
   dienstNumber: number;
@@ -7,6 +7,14 @@ export interface AssignedDay {
   startTime: string;
   endTime: string;
   vehicleNumber: string;
-  driver: string;
-  medic: string;
+  driver: string
+  medic: string 
 }
+
+
+
+
+
+
+
+

@@ -11,9 +11,10 @@ export interface DienstAssignment {
   vehicleNumber: string;
   startTime: string;
   endTime: string;
-  driver: UserRef;
-  medic: UserRef;
+  driver: string | UserRef;
+  medic: string | UserRef;
 }
+
 
 export interface Dienst {
   _id: string;

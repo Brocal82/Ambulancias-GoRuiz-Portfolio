@@ -4,6 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
 import type { AssignedDay } from "../types/assignedDay";
+import type { UserRef } from "../types/dienst";
+
 
 const WorkerPage = () => {
   const { userId, token } = useAuth();
@@ -102,10 +104,21 @@ const WorkerPage = () => {
                                   🕒 {assignment.startTime} - {assignment.endTime}
                                 </p>
                                 <p className="text-xs">🚑 {assignment.vehicleNumber}</p>
+                                <p className="text-xs">
+                                  👨‍✈️ {typeof assignment.driver === 'object' && assignment.driver !== null && 'name' in assignment.driver
+                                    ? (assignment.driver as UserRef).name
+                                    : ''}
+                                </p>
+                                <p className="text-xs">
+                                  🧑‍⚕️ {typeof assignment.medic === 'object' && assignment.medic !== null && 'name' in assignment.medic
+                                    ? (assignment.medic as UserRef).name
+                                    : ''}
+                                </p>
                               </>
                             ) : (
                               <p className="text-xs text-green-800 mt-2">🌴 Libre</p>
                             )}
+
                           </div>
                         );
                       })}
@@ -134,6 +147,10 @@ const WorkerPage = () => {
 }
 
 export default WorkerPage;
+
+
+
+
 
 
 
