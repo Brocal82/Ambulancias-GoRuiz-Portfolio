@@ -34,7 +34,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [selectedMedicId, setSelectedMedicId] = useState("");
-  const [users, setUsers] = useState<UserRef[]>([]);
+  const [availableDrivers, setAvailableDrivers] = useState<UserRef[]>([]);
+  const [availableMedics, setAvailableMedics] = useState<UserRef[]>([]);
+
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -55,22 +57,30 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
   }, [assignment]);
 
-  useEffect(() => {
-    const fetchAvailableUsers = async () => {
-      if (!token || !isAdmin || !date) return;
+useEffect(() => {
+  const fetchAvailableUsers = async () => {
+    if (!token || !isAdmin || !date) return;
 
-      try {
-        const availableUsers = await getAvailableUsersForDate(date, token);
-        const merged = mergeWithAssigned(availableUsers, assignment);
-        setUsers(merged);
-      } catch (error) {
-        console.error("Error al cargar usuarios disponibles:", error);
-        toast.error("❌ Error al cargar usuarios.");
-      }
-    };
+    try {
+      const [drivers, medics] = await Promise.all([
+        getAvailableUsersForDate(date, "driver", token),
+        getAvailableUsersForDate(date, "medic", token),
+      ]);
 
-    fetchAvailableUsers();
-  }, [token, isAdmin, date, assignment]);
+      const mergedDrivers = mergeWithAssigned(drivers, assignment);
+      const mergedMedics = mergeWithAssigned(medics, assignment);
+
+      setAvailableDrivers(mergedDrivers);
+      setAvailableMedics(mergedMedics);
+    } catch (error) {
+      console.error("Error al cargar usuarios disponibles:", error);
+      toast.error("❌ Error al cargar usuarios.");
+    }
+  };
+
+  fetchAvailableUsers();
+}, [token, isAdmin, date, assignment]);
+
 
   if (!isOpen) return null;
 
@@ -184,12 +194,13 @@ if (
                 className="w-full border p-1 rounded"
               >
                 <option value="">-- Selecciona conductor --</option>
-                {users.map((user) => (
+                {availableDrivers.map((user) => (
                   <option key={user._id} value={user._id}>
                     {user.name}
                   </option>
                 ))}
               </select>
+
 
               <label htmlFor="medic" className="block text-sm font-medium">Sanitario</label>
               <select
@@ -199,12 +210,13 @@ if (
                 className="w-full border p-1 rounded"
               >
                 <option value="">-- Selecciona sanitario --</option>
-                {users.map((user) => (
+                {availableMedics.map((user) => (
                   <option key={user._id} value={user._id}>
                     {user.name}
                   </option>
                 ))}
               </select>
+
 
               <button
                 onClick={handleSave}

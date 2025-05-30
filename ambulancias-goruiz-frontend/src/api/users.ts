@@ -1,5 +1,6 @@
 import axios from './axios';
 import type { UserRef } from '../types/dienst';
+import type { User } from '../types/user';
 
 export const getAllUsers = async (token: string): Promise<UserRef[]> => {
   try {
@@ -13,8 +14,12 @@ export const getAllUsers = async (token: string): Promise<UserRef[]> => {
   }
 };
 
-export const getAvailableUsersForDate = async (date: string, token: string): Promise<UserRef[]> => {
-  const response = await axios.get(`/users/available?date=${date}`, {
+export const getAvailableUsersForDate = async (
+  date: string,
+  desiredRole: 'driver' | 'medic' | 'both',
+  token: string
+): Promise<User[]> => {
+  const response = await axios.get(`/users/available?date=${date}&desiredRole=${desiredRole}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
