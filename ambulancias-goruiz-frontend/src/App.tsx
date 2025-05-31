@@ -1,9 +1,9 @@
-// src/App.tsx
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import AppLayout from './layouts/AppLayout';
 import Home from './pages/Home';
 import DienstPage from './pages/DienstPage';
 import Login from './pages/Login';
+import Register from './pages/Register'; // ✅ AÑADIDO
 import AdminPage from './pages/AdminPage';
 import WorkerPage from './pages/WorkerPage';
 import { AuthProvider } from './context/AuthContext';
@@ -16,6 +16,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Login />} />
+          <Route path="/register" element={<Register />} /> {/* ✅ AÑADIDO */}
 
           <Route
             path="/home"
@@ -54,7 +55,6 @@ export default function App() {
           />
         </Routes>
 
-        {/* ✅ Toast container para mostrar notificaciones */}
         <ToastContainer position="top-right" autoClose={3000} />
       </BrowserRouter>
     </AuthProvider>
