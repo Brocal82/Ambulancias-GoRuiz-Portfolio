@@ -67,8 +67,10 @@ useEffect(() => {
         getAvailableUsersForDate(date, "medic", token),
       ]);
 
-      const mergedDrivers = mergeWithAssigned(drivers, assignment);
-      const mergedMedics = mergeWithAssigned(medics, assignment);
+      // Mantener seleccionados visibles (mergeWithAssigned)
+      const mergedDrivers = mergeWithAssigned(drivers, assignment, "driver");
+      const mergedMedics = mergeWithAssigned(medics, assignment, "medic");
+
 
       setAvailableDrivers(mergedDrivers);
       setAvailableMedics(mergedMedics);
@@ -80,6 +82,7 @@ useEffect(() => {
 
   fetchAvailableUsers();
 }, [token, isAdmin, date, assignment]);
+
 
 
   if (!isOpen) return null;

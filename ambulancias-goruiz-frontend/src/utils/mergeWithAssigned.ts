@@ -1,21 +1,28 @@
 import type { UserRef } from "../types/dienst";
 import type { FlexibleAssignment } from "../types/assignment";
 
+/**
+ * Fusiona usuarios disponibles con el asignado actual, evitando duplicados.
+ * Si un usuario ya está asignado en el otro rol, no se vuelve a añadir.
+ */
 export function mergeWithAssigned(
   availableUsers: UserRef[],
-  assignment?: FlexibleAssignment
+  assignment: FlexibleAssignment | undefined,
+  currentRole: "driver" | "medic"
 ): UserRef[] {
   const merged = [...availableUsers];
 
-  const currentDriver = typeof assignment?.driver === "object" ? assignment.driver : null;
-  const currentMedic = typeof assignment?.medic === "object" ? assignment.medic : null;
+  const currentUser = typeof assignment?.[currentRole] === "object" ? assignment[currentRole] : null;
+  const otherRole = currentRole === "driver" ? "medic" : "driver";
+  const otherUser = typeof assignment?.[otherRole] === "object" ? assignment[otherRole] : null;
 
-  if (currentDriver && !availableUsers.some(u => u._id === currentDriver._id)) {
-    merged.unshift(currentDriver);
-  }
-
-  if (currentMedic && !availableUsers.some(u => u._id === currentMedic._id)) {
-    merged.unshift(currentMedic);
+  // Evita reinyectar si es el mismo usuario asignado en el otro rol
+  if (
+    currentUser &&
+    !merged.some(u => u._id === currentUser._id) &&
+    currentUser._id !== otherUser?._id
+  ) {
+    merged.unshift(currentUser);
   }
 
   return merged;

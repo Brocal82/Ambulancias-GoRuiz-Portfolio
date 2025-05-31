@@ -197,12 +197,18 @@ export const getAllUsersDienst = async (_req: Request, res: Response): Promise<v
 
 
 export const getAvailableUsersForDate = async (req: Request, res: Response) => {
-  const { date } = req.query;
+  const { date, desiredRole } = req.query;
 
   if (!date || typeof date !== 'string') {
-    res.status(400).json({ message: 'Fecha inválida' });
-    return; // <-- ✔️ evita seguir ejecutando
+    return res.status(400).json({ message: 'Fecha inválida' });
   }
+
+  const allowedRoles =
+    desiredRole === 'driver'
+      ? ['driver', 'both']
+      : desiredRole === 'medic'
+      ? ['medic', 'both']
+      : ['driver', 'medic', 'both']; // fallback
 
   try {
     const diensts = await Dienst.find({ "assignments.date": date });
@@ -219,13 +225,15 @@ export const getAvailableUsersForDate = async (req: Request, res: Response) => {
 
     const users = await User.find({
       _id: { $nin: Array.from(assignedUserIds) },
+      ambulanceRole: { $in: allowedRoles },
     });
 
-    res.json(users); // ✔️ sin return
+    res.json(users);
   } catch (error) {
     console.error("Error al obtener usuarios disponibles:", error);
     res.status(500).json({ message: 'Error del servidor' });
   }
 };
+
 
 
