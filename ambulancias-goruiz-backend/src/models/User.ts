@@ -4,7 +4,8 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
-  role: 'admin' | 'worker'; // <-- Añadir esto
+  role: 'admin' | 'worker';
+  ambulanceRole: 'driver' | 'medic' | 'both'; // ✅ NUEVO CAMPO
 }
 
 const userSchema = new Schema<IUser>({
@@ -14,7 +15,12 @@ const userSchema = new Schema<IUser>({
   role: {
     type: String,
     enum: ['admin', 'worker'],
-    default: 'worker', // 👈 importante que tenga un default
+    default: 'worker',
+    required: true,
+  },
+  ambulanceRole: {
+    type: String,
+    enum: ['driver', 'medic', 'both'], // ✅ Limita las opciones
     required: true,
   },
 });
