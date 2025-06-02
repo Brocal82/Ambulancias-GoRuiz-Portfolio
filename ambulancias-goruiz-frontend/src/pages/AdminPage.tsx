@@ -22,6 +22,8 @@ const AdminPage = () => {
     if (!token) return;
     try {
       const data = await getAllDiensts(token);
+
+
       // Solo Dienst 1-10 (plantillas)
       const plantillas = data.filter((d) => d.dienstNumber >= 1 && d.dienstNumber <= 10);
       setDiensts(plantillas);
