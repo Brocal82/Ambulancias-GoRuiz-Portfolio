@@ -2,39 +2,36 @@ import { useState } from 'react';
 import axios from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-type DecodedToken = {
-  userId: string;
-  role: 'admin' | 'worker' | string;
-};
+import { AxiosError } from 'axios';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
     try {
       const response = await axios.post('/users/login', { email, password });
-      const { token } = response.data;
+      const { token, user } = response.data;
 
-      const decodedToken: DecodedToken = JSON.parse(atob(token.split('.')[1]));
-      const userId = decodedToken.userId;
-      const role = decodedToken.role;
+      login(token, user._id, user.role); // 👈 Pasas también el role
 
-      login(token, userId, role);
 
-      if (role === 'admin') {
+      // 🔁 Redirigir según el rol
+      if (user.role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/worker');
       }
-    } catch (err) {
-      setError('Email o contraseña incorrectos');
-      console.error(err);
+    } catch (err: unknown) {
+      const axiosError = err as AxiosError<{ message: string }>;
+      setError(axiosError.response?.data?.message || 'Error al iniciar sesión');
     }
   };
 
@@ -47,18 +44,19 @@ const Login = () => {
 
         <input
           type="email"
-          placeholder="Email"
+          placeholder="Correo"
           value={email}
           onChange={e => setEmail(e.target.value)}
           className="w-full p-2 mb-3 border border-gray-300 rounded"
+          required
         />
-
         <input
           type="password"
           placeholder="Contraseña"
           value={password}
           onChange={e => setPassword(e.target.value)}
           className="w-full p-2 mb-4 border border-gray-300 rounded"
+          required
         />
 
         <button

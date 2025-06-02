@@ -7,7 +7,8 @@ import type { AssignedDay } from "../types/assignedDay";
 import type { UserRef } from "../types/dienst";
 
 
-const WorkerPage = () => {
+const WorkerDienstsPage = () => {
+
   const { userId, token } = useAuth();
   const [assignedDays, setAssignedDays] = useState<AssignedDay[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,7 +147,8 @@ const WorkerPage = () => {
   );
 }
 
-export default WorkerPage;
+export default WorkerDienstsPage;
+
 
 
 
