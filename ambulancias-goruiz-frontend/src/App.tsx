@@ -7,7 +7,7 @@ import Welcome from './pages/Welcome';
 import Register from './pages/Register';
 import AdminPage from './pages/AdminPage';
 import WorkerDashboard from './pages/WorkerDashboard';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './context/AuthProvider';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import WorkerDienstsPage from './pages/WorkerDienstsPage';

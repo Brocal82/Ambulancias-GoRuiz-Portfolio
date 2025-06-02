@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { getDienstByUser } from "../api/diensts";
 import type { Dienst, UserRef } from "../types/dienst";
-import { useAuth } from "../context/AuthContext";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
+import { useAuth } from "../hooks/useAuth";
 
 const DienstPage = () => {
   const { userId, token } = useAuth();

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { getAssignedDaysForUser } from "../api/diensts";
-import { useAuth } from "../context/AuthContext";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
 import type { AssignedDay } from "../types/assignedDay";
 import type { UserRef } from "../types/dienst";
+import { useAuth } from "../hooks/useAuth";
 
 
 const WorkerDienstsPage = () => {

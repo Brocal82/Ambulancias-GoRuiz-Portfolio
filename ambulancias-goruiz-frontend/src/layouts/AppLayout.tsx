@@ -1,7 +1,7 @@
 // src/layouts/AppLayout.tsx
 import type { ReactNode } from "react";
 import { useLocation, Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 
 interface AppLayoutProps {
   children: ReactNode;

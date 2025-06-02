@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Dienst, UserRef } from '../types/dienst';
 import { getAllDiensts, generateDienstsForWeek, deleteDienstsForWeek } from '../api/diensts';
-import { useAuth } from '../context/AuthContext';
 import AssignmentModal from '../components/AssignmentModal';
 import { isPartialAssignment } from '../utils/assignmentUtils';
+import { useAuth } from '../hooks/useAuth';
 
 const AdminPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
