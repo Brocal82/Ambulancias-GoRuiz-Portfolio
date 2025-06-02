@@ -13,59 +13,61 @@ const validateEmail = (email: string): boolean => {
 };
 
 export const createUser = async (req: Request, res: Response): Promise<void> => {
-  const { name, email, password, role = 'worker', ambulanceRole } = req.body as IUser & { role?: string; ambulanceRole?: string };
+  const {
+    name,
+    lastName,
+    email,
+    password,
+    role = 'worker',
+  } = req.body as IUser & { role?: string };
 
-      if (!password || password.length < 6) {
-        res.status(400).json({ message: 'La contraseña es obligatoria y debe tener al menos 6 caracteres' });
-        return;
-      }
+  if (!name || !lastName || !email) {
+    res.status(400).json({ message: 'Nombre, apellidos y email son obligatorios' });
+    return;
+  }
 
-      if (!name || !email) {
-        res.status(400).json({ message: 'El nombre y el email son obligatorios' });
-        return;
-      }
+  if (!password || password.length < 6) {
+    res.status(400).json({ message: 'La contraseña es obligatoria y debe tener al menos 6 caracteres' });
+    return;
+  }
 
-      if (!validateEmail(email)) {
-        res.status(400).json({ message: 'El formato del email no es válido' });
-        return;
-      }
+  if (!validateEmail(email)) {
+    res.status(400).json({ message: 'El formato del email no es válido' });
+    return;
+  }
 
-      if (role !== 'admin' && role !== 'worker') {
-        res.status(400).json({ message: 'Rol no válido. Debe ser "admin" o "worker"' });
-        return;
-      }
+  if (role !== 'admin' && role !== 'worker') {
+    res.status(400).json({ message: 'Rol no válido. Debe ser "admin" o "worker"' });
+    return;
+  }
 
-      if (!ambulanceRole || !['driver', 'medic', 'both'].includes(ambulanceRole)) {
-        res.status(400).json({ message: 'El rol de ambulancia es obligatorio y debe ser driver, medic o both' });
-        return;
-      }
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      res.status(400).json({ message: 'Ya existe un usuario con ese email' });
+      return;
+    }
 
-      try {
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-          res.status(400).json({ message: 'Ya existe un usuario con ese email' });
-          return;
-        }
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      name,
+      lastName,
+      email,
+      password: hashedPassword,
+      role,
+      // ambulanceRole se completará más adelante desde el perfil
+    });
 
-        const newUser = new User({
-          name,
-          email,
-          password: hashedPassword,
-          role,
-          ambulanceRole,
-        });
-
-        await newUser.save();
-        console.log('✅ Usuario guardado:', newUser);
-        res.status(201).json(newUser);
-      } catch (error) {
-        console.error('❌ Error al crear usuario:', error);
-        res.status(500).json({ message: 'Error al crear el usuario' });
-      }
-
+    await newUser.save();
+    console.log('✅ Usuario guardado:', newUser);
+    res.status(201).json(newUser);
+  } catch (error) {
+    console.error('❌ Error al crear usuario:', error);
+    res.status(500).json({ message: 'Error al crear el usuario' });
+  }
 };
+
 
 
 // ✅ getUsers como función async que devuelve void

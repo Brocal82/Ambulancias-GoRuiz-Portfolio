@@ -1,9 +1,11 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import AppLayout from './layouts/AppLayout';
 import Home from './pages/Home';
+import Profile from './pages/Profile';
 import DienstPage from './pages/DienstPage';
 import Login from './pages/Login';
-import Register from './pages/Register'; // ✅ AÑADIDO
+import Welcome from './pages/Welcome';
+import Register from './pages/Register';
 import AdminPage from './pages/AdminPage';
 import WorkerPage from './pages/WorkerPage';
 import { AuthProvider } from './context/AuthContext';
@@ -15,10 +17,10 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Login />} />         // 👉 para cuando abres localhost:5173
+          <Route path="/" element={<Welcome />} /> {/* ✅ Bienvenida */}
           <Route path="/login" element={<Login />} />    // 👉 para redirecciones explícitas
 
-          <Route path="/register" element={<Register />} /> {/* ✅ AÑADIDO */}
+          <Route path="/register" element={<Register />} />
 
           <Route
             path="/home"
@@ -28,6 +30,16 @@ export default function App() {
               </AppLayout>
             }
           />
+
+          <Route
+            path="/profile"
+            element={
+              <AppLayout>
+                <Profile />
+              </AppLayout>
+            }
+          />
+
 
           <Route
             path="/dienst"

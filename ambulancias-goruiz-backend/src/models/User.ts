@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IUser extends Document {
   name: string;
+  lastName: string; // ✅ Añadir aquí
   email: string;
   password: string;
   role: 'admin' | 'worker';
@@ -10,6 +11,7 @@ export interface IUser extends Document {
 
 const userSchema = new Schema<IUser>({
   name: { type: String, required: true },
+  lastName: { type: String, required: true }, // ✅ NUEVO
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: {
@@ -21,7 +23,7 @@ const userSchema = new Schema<IUser>({
   ambulanceRole: {
     type: String,
     enum: ['driver', 'medic', 'both'], // ✅ Limita las opciones
-    required: true,
+    required: false, // ✅ Permite que se complete luego en el perfil
   },
 });
 
