@@ -300,7 +300,8 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
   const { weekStartDate } = req.body;
 
   if (!weekStartDate) {
-    return res.status(400).json({ message: "Fecha de inicio requerida" });
+    res.status(400).json({ message: "Fecha de inicio requerida" });
+    return;
   }
 
   try {
@@ -317,7 +318,8 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
     });
 
     if (existing.length > 0) {
-      return res.status(400).json({ message: "Ya existen Diensts para esa semana" });
+      res.status(400).json({ message: "Ya existen Diensts para esa semana" });
+      return;
     }
 
     const diensts = Array.from({ length: 10 }, (_, i) => {
@@ -364,7 +366,8 @@ export const deleteDienstsForWeek: RequestHandler = async (req, res) => {
   const { weekStartDate } = req.body;
 
   if (!weekStartDate) {
-    return res.status(400).json({ message: "Fecha de inicio requerida" });
+    res.status(400).json({ message: "Fecha de inicio requerida" });
+    return;
   }
 
   try {
