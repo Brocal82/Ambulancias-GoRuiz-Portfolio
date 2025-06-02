@@ -15,7 +15,9 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Login />} />         // 👉 para cuando abres localhost:5173
+          <Route path="/login" element={<Login />} />    // 👉 para redirecciones explícitas
+
           <Route path="/register" element={<Register />} /> {/* ✅ AÑADIDO */}
 
           <Route
