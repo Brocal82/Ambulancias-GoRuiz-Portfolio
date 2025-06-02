@@ -9,7 +9,9 @@ import {
   searchDienst,
   getDienstsByUser,
   removeAssignment,
-  getAssignedDaysForUser
+  getAssignedDaysForUser,
+  generateDienstTemplatesForWeek,
+  deleteDienstsForWeek
 } from '../controllers/dienstController';
 
 import { authenticateToken } from '../middlewares/authMiddleware';
@@ -26,6 +28,9 @@ router.get('/user/:userId', authenticateToken, getDienstsByUser);
 
 // ✅ NUEVA RUTA - antes de las que usan :id
 router.get('/assigned-days/:userId', authenticateToken, getAssignedDaysForUser)
+
+router.post('/generate-week', authenticateToken, authorizeRole('admin'), generateDienstTemplatesForWeek);
+router.post('/delete-week', authenticateToken, authorizeRole('admin'), deleteDienstsForWeek);
 
 // 👇 Acceso según permisos
 router.get('/:id', authenticateToken, getDienstById);

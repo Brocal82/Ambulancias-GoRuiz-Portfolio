@@ -288,13 +288,108 @@ diensts.forEach((dienst) => {
   });
 });
 
+res.status(200).json(assignedDays);
+} catch (error) {
+console.error("❌ Error al obtener días asignados:", error);
+res.status(500).json({ message: 'Error al obtener días asignados' });
+}
+};
 
-    res.status(200).json(assignedDays);
+
+export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) => {
+  const { weekStartDate } = req.body;
+
+  if (!weekStartDate) {
+    return res.status(400).json({ message: "Fecha de inicio requerida" });
+  }
+
+  try {
+    const startDate = new Date(weekStartDate);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6);
+
+    // Verifica si ya existen Diensts para esa semana
+    const existing = await Dienst.find({
+      weekStartDate: {
+        $gte: startDate,
+        $lte: endDate,
+      },
+    });
+
+    if (existing.length > 0) {
+      return res.status(400).json({ message: "Ya existen Diensts para esa semana" });
+    }
+
+    const diensts = Array.from({ length: 10 }, (_, i) => {
+      const dienstNumber = i + 1;
+      const assignments = [];
+
+      for (let j = 0; j < 7; j++) {
+        const day = new Date(startDate);
+        day.setDate(day.getDate() + j);
+
+        const isDayOff = [5, 6].includes((dienstNumber + j) % 7);
+        if (isDayOff) continue;
+
+        const startTime = dienstNumber % 2 === 0 ? "06:00" : "14:00";
+        const endTime = dienstNumber % 2 === 0 ? "14:00" : "22:00";
+
+        assignments.push({
+          date: day.toISOString().split("T")[0],
+          vehicleNumber: `AMB-${dienstNumber.toString().padStart(2, "0")}`,
+          startTime,
+          endTime,
+          driver: "000000000000000000000001",
+          medic: "000000000000000000000002",
+        });
+      }
+
+      return {
+        dienstNumber,
+        weekStartDate: startDate,
+        weekEndDate: endDate,
+        assignments,
+      };
+    });
+
+    await Dienst.insertMany(diensts);
+    res.status(201).json({ message: "Diensts creados para la semana seleccionada" });
   } catch (error) {
-    console.error("❌ Error al obtener días asignados:", error);
-    res.status(500).json({ message: 'Error al obtener días asignados' });
+    console.error("❌ Error al generar Diensts:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
+
+export const deleteDienstsForWeek: RequestHandler = async (req, res) => {
+  const { weekStartDate } = req.body;
+
+  if (!weekStartDate) {
+    return res.status(400).json({ message: "Fecha de inicio requerida" });
+  }
+
+  try {
+    const start = new Date(weekStartDate);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+
+    const deleted = await Dienst.deleteMany({
+      weekStartDate: {
+        $gte: start,
+        $lte: end,
+      },
+    });
+
+    res.status(200).json({ message: "Diensts eliminados", count: deleted.deletedCount });
+  } catch (error) {
+    console.error("Error al eliminar Diensts:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+
+
+
+
 
 
 

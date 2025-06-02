@@ -76,5 +76,22 @@ export const createDienst = async (dienstData: Partial<Dienst>, token: string): 
   }
 };
 
+export const generateDienstsForWeek = async (weekStartDate: string, token: string): Promise<void> => {
+  await axios.post(
+    '/diensts/generate-week',
+    { weekStartDate },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+};
+
+export const deleteDienstsForWeek = async (weekStartDate: string, token: string): Promise<void> => {
+  await axios.post(
+    '/diensts/delete-week',
+    { weekStartDate },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+};
+
+
 
 

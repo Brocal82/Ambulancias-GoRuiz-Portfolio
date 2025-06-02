@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Dienst, UserRef } from '../types/dienst';
-import { getAllDiensts } from '../api/diensts';
+import { getAllDiensts, generateDienstsForWeek, deleteDienstsForWeek } from '../api/diensts';
 import { useAuth } from '../context/AuthContext';
 import AssignmentModal from '../components/AssignmentModal';
 import { isPartialAssignment } from '../utils/assignmentUtils';
@@ -22,9 +22,6 @@ const AdminPage = () => {
     if (!token) return;
     try {
       const data = await getAllDiensts(token);
-
-
-      // Solo Dienst 1-10 (plantillas)
       const plantillas = data.filter((d) => d.dienstNumber >= 1 && d.dienstNumber <= 10);
       setDiensts(plantillas);
     } catch (error) {
@@ -36,12 +33,11 @@ const AdminPage = () => {
     fetchDiensts();
   }, [fetchDiensts]);
 
-  // 🔁 Genera las 3 semanas a partir del lunes más cercano
   const getWeekStartDates = () => {
     const today = new Date();
     const monday = new Date(today);
     const day = monday.getDay();
-    const diff = day === 0 ? -6 : 1 - day; // domingo => -6, lunes => 0, martes => -1, ...
+    const diff = day === 0 ? -6 : 1 - day;
     monday.setDate(monday.getDate() + diff);
     return [0, 1, 2].map((i) => {
       const copy = new Date(monday);
@@ -62,12 +58,68 @@ const AdminPage = () => {
 
         return (
           <div key={index} className="mb-10">
-            <h2 className="text-lg font-semibold mb-2">
-              Semana del {weekStart.toLocaleDateString()} al {weekEnd.toLocaleDateString()}
-            </h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-semibold">
+                Semana del {weekStart.toLocaleDateString()} al {weekEnd.toLocaleDateString()}
+              </h2>
 
-            {diensts.map((dienst) => {
-              // Para esta semana, regeneramos las fechas
+              <div className="flex gap-2">
+                <button
+                  className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded"
+                  onClick={async () => {
+                    const confirmCreate = confirm(`¿Crear plantillas para la semana del ${weekStart.toLocaleDateString()}?`);
+                    if (!confirmCreate || !token) return;
+
+                    const mondayISO = weekStart.toISOString().split("T")[0];
+
+                    try {
+                      await generateDienstsForWeek(mondayISO, token);
+                      alert("✅ Plantillas creadas correctamente");
+                      fetchDiensts();
+                    } catch (err) {
+                      console.error("Error al crear plantillas:", err);
+                      alert("❌ No se pudieron crear las plantillas. Quizás ya existen.");
+                    }
+                  }}
+                >
+                  Crear
+                </button>
+
+                {diensts.some(d => new Date(d.weekStartDate).toISOString().split("T")[0] === weekStart.toISOString().split("T")[0]) && (
+                  <button
+                    className="text-sm bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+                    onClick={async () => {
+                      const confirmDelete = confirm(`¿Borrar todos los Diensts de la semana del ${weekStart.toLocaleDateString()}?`);
+                      if (!confirmDelete || !token) return;
+
+                      const mondayISO = weekStart.toISOString().split("T")[0];
+
+                      try {
+                        await deleteDienstsForWeek(mondayISO, token);
+                        alert("🗑️ Diensts eliminados correctamente");
+                        fetchDiensts();
+                      } catch (err) {
+                        console.error("Error al eliminar diensts:", err);
+                        alert("❌ No se pudieron eliminar los Diensts.");
+                      }
+                    }}
+                  >
+                    Borrar
+                  </button>
+                )}
+              </div>
+            </div>
+
+
+
+            {diensts
+              .filter(
+                (dienst) =>
+                  new Date(dienst.weekStartDate).toISOString().split("T")[0] ===
+                  weekStart.toISOString().split("T")[0]
+              )
+              .map((dienst) => {
+
               const weekDates = Array.from({ length: 7 }, (_, i) => {
                 const d = new Date(weekStart);
                 d.setDate(d.getDate() + i);
@@ -75,7 +127,7 @@ const AdminPage = () => {
               });
 
               return (
-                <div key={`${index}-${dienst.dienstNumber}`} className="mb-6">
+                <div key={`${weekStart.toISOString()}-${dienst.dienstNumber}`} className="mb-6">
                   <p className="font-semibold text-md mb-1">Dienst #{dienst.dienstNumber}</p>
                   <div className="grid grid-cols-7 gap-2">
                     {weekDates.map((day) => {
@@ -115,7 +167,6 @@ const AdminPage = () => {
                               <p className="text-xs">
                                 🧑‍⚕️ Sanitario: {typeof assignment.medic === "string" ? assignment.medic : assignment.medic?.name || "—"}
                               </p>
-
                             </>
                           ) : (
                             <p className="text-xs text-green-800 mt-2">🌴 Libre</p>
