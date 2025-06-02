@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import { updateDienstPartial, removeAssignment } from "../api/diensts";
 import { getAvailableUsersForDate } from "../api/users";
 import { toast } from "react-toastify";
