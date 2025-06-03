@@ -83,8 +83,14 @@ export const getUsers = async (req: Request, res: Response): Promise<void> => {
 
 // ✅ updateUser como función async que devuelve void
 export const updateUser = async (req: Request, res: Response): Promise<void> => {
-  const { id } = req.params;
-  const { name, email } = req.body;
+  const userId = req.params.id || req.user?.id;
+
+  if (!userId) {
+    res.status(400).json({ message: 'ID de usuario no proporcionado' });
+    return;
+  }
+
+  const { name, lastName, email, ambulanceRole, address, phone, emergencyPhone, pscheinExpiry, profileImage } = req.body;
 
   if (!name || !email) {
     res.status(400).json({ message: 'El nombre y el email son obligatorios' });
@@ -97,7 +103,21 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
   }
 
   try {
-    const updatedUser = await User.findByIdAndUpdate(id, { name, email }, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        name,
+        lastName,
+        email,
+        ambulanceRole,
+        address,
+        phone,
+        emergencyPhone,
+        pscheinExpiry,
+        profileImage,
+      },
+      { new: true, runValidators: true }
+    );
 
     if (!updatedUser) {
       res.status(404).json({ message: 'Usuario no encontrado' });

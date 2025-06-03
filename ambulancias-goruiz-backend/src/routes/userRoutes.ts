@@ -23,10 +23,14 @@ router.post('/login', loginUser);
 router.get('/diensts', authenticateToken, authorizeRole('admin'), getAllUsersDienst); // ✅ ya existente
 router.get('/available', authenticateToken, authorizeRole('admin'), getAvailableUsersForDate); // ✅ nueva ruta
 
+// Ruta para actualizar el perfil del usuario autenticado
+router.patch('/me', authenticateToken, updateUser);
+
 // Rutas protegidas para usuarios
 router.get('/', authenticateToken, authorizeRole('admin'), getUsers);
 router.get('/:id', authenticateToken, authorizeSelfOrAdmin, getUserById);
 router.put('/:id', authenticateToken, authorizeSelfOrAdmin, updateUser);
+
 router.delete('/:id', authenticateToken, authorizeSelfOrAdmin, deleteUser);
 
 export default router;
