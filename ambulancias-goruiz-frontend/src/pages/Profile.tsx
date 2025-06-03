@@ -1,102 +1,128 @@
 import { useState, useEffect } from 'react';
-import axios from '../api/axios';
 import { useAuth } from '../hooks/useAuth';
-import { toast } from 'react-toastify';
+import { getUserById, updateUserProfile } from '../api/users'; // Asegúrate de tener estas funciones
+import type { User } from '../types/user';
 
 const Profile = () => {
-  const { token, userId } = useAuth();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [ambulanceRole, setAmbulanceRole] = useState('');
+  const { userId, token } = useAuth();
+  const [formData, setFormData] = useState<Partial<User>>({});
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
+      if (!userId || !token) return;
       try {
-        const response = await axios.get(`/users/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setName(response.data.name);
-        setEmail(response.data.email);
-        setAmbulanceRole(response.data.ambulanceRole);
-        setLoading(false);
+        const user = await getUserById(userId, token);
+        setFormData(user);
       } catch (error) {
-        toast.error('Error al cargar el perfil');
-        console.error(error);
+        console.error(error)
+        setMessage('Error al cargar el perfil');
+      } finally {
+        setLoading(false);
       }
     };
+    fetchData();
+  }, [userId, token]);
 
-    if (token && userId) fetchProfile();
-  }, [token, userId]);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-  const handleUpdate = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!userId || !token) return;
     try {
-      await axios.put(`/users/${userId}`, { name, email }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      toast.success('Perfil actualizado');
+      await updateUserProfile(userId, formData, token);
+      setMessage('Perfil actualizado correctamente');
     } catch (error) {
-      toast.error('Error al actualizar el perfil');
-      console.error(error);
+      console.error(error)
+      setMessage('Error al guardar el perfil');
     }
   };
 
-  if (loading) return <p className="text-center mt-8">Cargando perfil...</p>;
+  if (loading) return <p className="p-4">Cargando...</p>;
 
   return (
-    <div className="max-w-md mx-auto mt-10 bg-white p-6 rounded shadow">
-      <h2 className="text-2xl font-bold mb-4">Mi Perfil</h2>
-      <form onSubmit={handleUpdate} className="space-y-4">
-        {/* Nombre */}
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Nombre
-          </label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="mt-1 block w-full p-2 border border-gray-300 rounded"
-            required
-          />
-        </div>
-
-        {/* Email */}
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            disabled
-            className="mt-1 block w-full p-2 border border-gray-300 rounded bg-gray-100 cursor-not-allowed"
-          />
-        </div>
-
+    <div className="max-w-xl mx-auto p-4 bg-white rounded shadow">
+      <h2 className="text-xl font-bold mb-4">Perfil de Usuario</h2>
+      {message && <p className="mb-4 text-sm text-blue-600">{message}</p>}
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Rol Ambulancia */}
-        <div>
-          <label htmlFor="ambulanceRole" className="block text-sm font-medium text-gray-700">
-            Rol en ambulancia
-          </label>
-          <select
-            id="ambulanceRole"
-            value={ambulanceRole}
-            disabled
-            className="mt-1 block w-full p-2 border border-gray-300 rounded bg-gray-100 cursor-not-allowed"
-          >
-            <option value="driver">Conductor</option>
-            <option value="medic">Sanitario</option>
-            <option value="both">Ambos</option>
-          </select>
-        </div>
+        <label htmlFor="ambulanceRole" className="block text-sm font-medium text-gray-700">
+          Rol en ambulancia
+        </label>
+        <select
+          id="ambulanceRole"
+          title="Rol en ambulancia"
+          value={formData.ambulanceRole || ''}
+          disabled
+          className="mt-1 block w-full p-2 border border-gray-300 rounded bg-gray-100 cursor-not-allowed"
+        >
+          <option value="driver">Conductor</option>
+          <option value="medic">Sanitario</option>
+          <option value="both">Ambos</option>
+        </select>
+
+
+        <label htmlFor="pscheinExpiry" className="block text-sm font-medium text-gray-700">
+          Fecha de caducidad del P-Schein
+        </label>
+        <input
+          type="date"
+          id="pscheinExpiry"
+          name="pscheinExpiry"
+          value={formData.pscheinExpiry || ''}
+          onChange={handleChange}
+          className={`w-full border rounded p-2 ${
+            formData.pscheinExpiry && new Date(formData.pscheinExpiry) < new Date()
+              ? 'border-red-500'
+              : 'border-gray-300'
+          }`}
+        />
+        {formData.pscheinExpiry && new Date(formData.pscheinExpiry) < new Date() && (
+          <p className="text-red-600 text-sm mt-1">⚠️ El P-Schein está caducado</p>
+        )}
+
+        <input
+          type="text"
+          name="address"
+          value={formData.address || ''}
+          onChange={handleChange}
+          className="w-full border rounded p-2"
+          placeholder="Dirección"
+        />
+
+        <input
+          type="text"
+          name="phone"
+          value={formData.phone || ''}
+          onChange={handleChange}
+          className="w-full border rounded p-2"
+          placeholder="Teléfono"
+        />
+
+        <input
+          type="text"
+          name="emergencyPhone"
+          value={formData.emergencyPhone || ''}
+          onChange={handleChange}
+          className="w-full border rounded p-2"
+          placeholder="Teléfono de emergencia"
+        />
+
+        <input
+          type="text"
+          name="profileImage"
+          value={formData.profileImage || ''}
+          onChange={handleChange}
+          className="w-full border rounded p-2"
+          placeholder="URL de la foto de perfil (opcional)"
+        />
 
         <button
           type="submit"
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white p-2 rounded"
+          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
         >
           Guardar cambios
         </button>
@@ -106,3 +132,4 @@ const Profile = () => {
 };
 
 export default Profile;
+
