@@ -56,15 +56,17 @@ const Profile = () => {
         </label>
         <select
           id="ambulanceRole"
-          title="Rol en ambulancia"
+          name="ambulanceRole"
           value={formData.ambulanceRole || ''}
-          disabled
-          className="mt-1 block w-full p-2 border border-gray-300 rounded bg-gray-100 cursor-not-allowed"
+          onChange={handleChange}
+          className="w-full border p-2 rounded"
         >
+          <option value="">Selecciona un rol</option>
           <option value="driver">Conductor</option>
           <option value="medic">Sanitario</option>
           <option value="both">Ambos</option>
         </select>
+
 
         <label htmlFor="pscheinExpiry" className="block text-sm font-medium text-gray-700">
           Fecha de caducidad del P-Schein
