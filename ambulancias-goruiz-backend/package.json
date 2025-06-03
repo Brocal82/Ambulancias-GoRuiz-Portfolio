@@ -4,7 +4,11 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "create:templates": "ts-node scripts/CreateDienstTemplates.ts"
+    "create:diensts": "ts-node scripts/createDiensts.ts",
+    "delete:diensts": "ts-node scripts/deleteAllDiensts.ts",
+    "create:users": "ts-node scripts/createUsers.ts",
+    "delete:users": "ts-node scripts/deleteAllUsers.ts",
+    "reset:users": "ts-node scripts/resetUsers.ts"
   },
   "keywords": [],
   "author": "",
