@@ -224,11 +224,12 @@ export const getAllUsersDienst = async (_req: Request, res: Response): Promise<v
 };
 
 
-export const getAvailableUsersForDate = async (req: Request, res: Response) => {
+export const getAvailableUsersForDate: RequestHandler = async (req: Request, res: Response) => {
   const { date, desiredRole } = req.query;
 
   if (!date || typeof date !== 'string') {
-    return res.status(400).json({ message: 'Fecha inválida' });
+     res.status(400).json({ message: 'Fecha inválida' });
+     return
   }
 
   const allowedRoles =
