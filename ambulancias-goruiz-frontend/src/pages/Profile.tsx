@@ -43,6 +43,22 @@ const Profile = () => {
 
   if (loading) return <p className="p-4">Cargando...</p>;
 
+  const getPscheinStatus = (): 'no-date' | 'expired' | 'warning' | 'valid' => {
+    if (!formData.pscheinExpiry) return 'no-date';
+
+    const expiryDate = new Date(formData.pscheinExpiry);
+    const today = new Date();
+    const sixMonthsFromNow = new Date();
+    sixMonthsFromNow.setMonth(today.getMonth() + 6);
+
+    if (expiryDate < today) return 'expired';
+    if (expiryDate < sixMonthsFromNow) return 'warning';
+    return 'valid';
+  };
+
+  const pscheinStatus = getPscheinStatus();
+
+
   return (
     <div className="max-w-xl mx-auto p-4 bg-white rounded shadow">
       <h2 className="text-xl font-bold mb-4">Perfil de Usuario</h2>
@@ -65,6 +81,7 @@ const Profile = () => {
         </select>
 
 
+        {/* Fecha de caducidad del P-Schein */}
         <label htmlFor="pscheinExpiry" className="block text-sm font-medium text-gray-700">
           Fecha de caducidad del P-Schein
         </label>
@@ -74,15 +91,23 @@ const Profile = () => {
           name="pscheinExpiry"
           value={formData.pscheinExpiry || ''}
           onChange={handleChange}
-          className={`w-full border rounded p-2 ${
-            formData.pscheinExpiry && new Date(formData.pscheinExpiry) < new Date()
+          className={`w-full border rounded p-2 ${pscheinStatus === 'expired'
               ? 'border-red-500'
-              : 'border-gray-300'
-          }`}
+              : pscheinStatus === 'warning'
+                ? 'border-orange-400'
+                : 'border-gray-300'
+            }`}
         />
-        {formData.pscheinExpiry && new Date(formData.pscheinExpiry) < new Date() && (
-          <p className="text-red-600 text-sm mt-1">⚠️ El P-Schein está caducado</p>
+
+        {pscheinStatus === 'expired' && (
+          <p className="text-red-600 text-sm mt-1">❌ El P-Schein está caducado</p>
         )}
+        {pscheinStatus === 'warning' && (
+          <p className="text-orange-600 text-sm mt-1">⚠️ El P-Schein caduca en menos de 6 meses</p>
+        )}
+
+
+
 
         <input
           type="text"
