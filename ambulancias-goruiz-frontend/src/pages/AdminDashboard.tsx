@@ -1,0 +1,62 @@
+// frontend/src/pages/AdminDashboard.tsx
+import { Link } from 'react-router-dom';
+
+const AdminDashboard = () => {
+  return (
+    <div className="min-h-screen bg-gray-100 p-6">
+      <h1 className="text-2xl font-bold mb-6 text-center">Panel del Administrador</h1>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+        <Link
+          to="/admin/users"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
+          <h2 className="text-lg font-semibold mb-2">👥 Trabajadores</h2>
+          <p className="text-sm text-gray-600">Gestiona los perfiles de usuario</p>
+        </Link>
+
+        <Link
+          to="/admin/diensts"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
+          <h2 className="text-lg font-semibold mb-2">📅 Diensts</h2>
+          <p className="text-sm text-gray-600">Edita los servicios semanales</p>
+        </Link>
+
+        <div
+        //   to="/admin/hospitals"
+          className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed"
+        >
+          <h2 className="text-lg font-semibold mb-2">🏥 Hospitales</h2>
+          <p className="text-sm text-gray-600">Añade y edita hospitales</p>
+        </div>
+
+        <div
+        //   to="/admin/mechanics"
+          className = "bg-white p-6 rounded shadow opacity-50 cursor-not-allowed"
+        >
+          <h2 className="text-lg font-semibold mb-2">🔧 Mecánicos</h2>
+          <p className="text-sm text-gray-600">Revisa reportes de ambulancias</p>
+        </div>
+
+        <div
+        //   to="/admin/vacations"
+          className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed"
+        >
+          <h2 className="text-lg font-semibold mb-2">🌴 Vacaciones</h2>
+          <p className="text-sm text-gray-600">Gestiona solicitudes del equipo</p>
+        </div>
+
+        <div
+        //   to="/admin/messages"
+          className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed"
+        >
+          <h2 className="text-lg font-semibold mb-2">✉️ Mensajes</h2>
+          <p className="text-sm text-gray-600">Envía comunicados importantes</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;

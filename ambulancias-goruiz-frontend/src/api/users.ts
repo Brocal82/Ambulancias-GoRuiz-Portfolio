@@ -1,10 +1,10 @@
 import axios from './axios';
-import type { UserRef } from '../types/dienst';
 import type { User } from '../types/user';
 
-export const getAllUsers = async (token: string): Promise<UserRef[]> => {
+// ✅ Obtener todos los usuarios completos (para Admin)
+export const getAllUsers = async (token: string): Promise<User[]> => {
   try {
-    const response = await axios.get<UserRef[]>('/users', {
+    const response = await axios.get<User[]>('/users', {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -14,6 +14,7 @@ export const getAllUsers = async (token: string): Promise<UserRef[]> => {
   }
 };
 
+// ✅ Obtener usuarios disponibles por fecha y rol
 export const getAvailableUsersForDate = async (
   date: string,
   desiredRole: 'driver' | 'medic' | 'both',
@@ -54,5 +55,3 @@ export const updateUserProfile = async (
     throw error;
   }
 };
-
-

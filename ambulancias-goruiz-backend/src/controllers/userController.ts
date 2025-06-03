@@ -70,16 +70,16 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 
 
 
-// ✅ getUsers como función async que devuelve void
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const users = await User.find();
+    const users = await User.find().sort({ lastName: 1 });
     res.status(200).json(users);
   } catch (error) {
     console.error('❌ Error al obtener usuarios:', error);
     res.status(500).json({ message: 'Error al obtener usuarios' });
   }
 };
+
 
 // ✅ updateUser como función async que devuelve void
 export const updateUser = async (req: Request, res: Response): Promise<void> => {
