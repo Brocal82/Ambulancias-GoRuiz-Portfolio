@@ -196,15 +196,23 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     );
 
     res.status(200).json({
-        message: 'Login exitoso',
-        token,
-        user: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role, // 👈 Aquí estás devolviendo el rol
-        },
-      });
+      message: 'Login exitoso',
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        lastName: user.lastName, // 👈 Añade esto
+        email: user.email,
+        role: user.role,
+        ambulanceRole: user.ambulanceRole,
+        pscheinExpiry: user.pscheinExpiry,
+        address: user.address,
+        phone: user.phone,
+        emergencyPhone: user.emergencyPhone,
+        profileImage: user.profileImage,
+      },
+    });
+
 
   } catch (error) {
     console.error('❌ Error en login:', error);
