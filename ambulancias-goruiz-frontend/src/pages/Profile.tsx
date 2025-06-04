@@ -5,7 +5,7 @@ import { getPscheinStatus } from '../utils/pscheinUtils';
 import type { User, AmbulanceRole } from '../types/user';
 
 const Profile = () => {
-  const { userId, token } = useAuth();
+  const { userId, token, role, login } = useAuth(); // ✅ usamos 'role' aquí
   const [formData, setFormData] = useState<Partial<User>>({});
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -14,8 +14,8 @@ const Profile = () => {
     const fetchData = async () => {
       if (!userId || !token) return;
       try {
-        const user = await getUserById(userId, token);
-        setFormData(user);
+        const fetchedUser = await getUserById(userId, token);
+        setFormData(fetchedUser);
       } catch (error) {
         console.error(error);
         setMessage('Error al cargar el perfil');
@@ -36,6 +36,10 @@ const Profile = () => {
     try {
       await updateUserProfile(userId, formData, token);
       setMessage('Perfil actualizado correctamente');
+
+      // ✅ Actualizar datos del contexto con los nuevos cambios
+      const updatedUser = await getUserById(userId, token);
+      login(token, userId, role || 'worker', updatedUser);
     } catch (error) {
       console.error(error);
       setMessage('Error al guardar el perfil');
@@ -54,20 +58,20 @@ const Profile = () => {
       <form onSubmit={handleSubmit} className="space-y-4">
         <label className="block text-sm font-medium text-gray-700">Rol en ambulancia</label>
         <div className="flex justify-between gap-2">
-          {roles.map((role) => (
+          {roles.map((currentRole) => (
             <button
-              key={role}
+              key={currentRole}
               type="button"
-              onClick={() => setFormData({ ...formData, ambulanceRole: role })}
+              onClick={() => setFormData({ ...formData, ambulanceRole: currentRole })}
               className={`flex-1 px-4 py-2 border rounded ${
-                formData.ambulanceRole === role
+                formData.ambulanceRole === currentRole
                   ? 'bg-green-500 text-white border-green-600'
                   : 'bg-white text-gray-800 border-gray-300'
               }`}
             >
-              {role === 'driver'
+              {currentRole === 'driver'
                 ? '🚑 Conductor'
-                : role === 'medic'
+                : currentRole === 'medic'
                 ? '🩺 Sanitario'
                 : '🟰 Ambos'}
             </button>
@@ -93,7 +97,6 @@ const Profile = () => {
                   : 'border-gray-300'
               }`}
             />
-
             {pscheinStatus === 'expired' && (
               <p className="text-red-600 text-sm mt-1">❌ El P-Schein está caducado</p>
             )}
