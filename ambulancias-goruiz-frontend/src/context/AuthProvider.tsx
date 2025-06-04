@@ -15,22 +15,42 @@ export const AuthProvider = ({ children }: Props) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = sessionStorage.getItem('token');
-    const storedUserId = sessionStorage.getItem('userId');
-    const storedRole = sessionStorage.getItem('role');
-    const storedUser = sessionStorage.getItem('user');
+    const initializeAuth = async () => {
+      const storedToken = sessionStorage.getItem('token');
+      const storedUserId = sessionStorage.getItem('userId');
+      const storedRole = sessionStorage.getItem('role');
 
-    if (storedToken && storedUserId && storedRole) {
-      setToken(storedToken);
-      setUserId(storedUserId);
-      setRole(storedRole);
-      if (storedUser) setUser(JSON.parse(storedUser));
-    }
+      if (storedToken && storedUserId && storedRole) {
+        setToken(storedToken);
+        setUserId(storedUserId);
+        setRole(storedRole);
+
+        try {
+          const res = await fetch(`/api/users/${storedUserId}`, {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          });
+
+          if (!res.ok) throw new Error('No se pudo obtener el usuario');
+
+          const freshUser: User = await res.json();
+          setUser(freshUser);
+          sessionStorage.setItem('user', JSON.stringify(freshUser));
+        } catch (error) {
+          console.error('❌ Error al refrescar usuario:', error);
+          logout();
+        }
+      }
+
+      setLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
-  // 🔔 Advertencia antes de que expire el token
+  // ⏰ Advertencia antes de que expire el token
   useEffect(() => {
     if (!token) return;
 
@@ -42,7 +62,7 @@ export const AuthProvider = ({ children }: Props) => {
 
     if (timeLeft > warningThreshold) {
       const timer = setTimeout(() => {
-        toast.warn('⚠️ Tu sesión está a punto de expirar. Por favor, guarda tu trabajo.', {
+        toast.warn('⚠️ Tu sesión está a punto de expirar.', {
           position: 'top-right',
           autoClose: 10000,
         });
@@ -70,13 +90,11 @@ export const AuthProvider = ({ children }: Props) => {
     setRole(null);
     setUser(null);
 
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('userId');
-    sessionStorage.removeItem('role');
-    sessionStorage.removeItem('user');
-
+    sessionStorage.clear();
     window.location.href = '/';
   };
+
+  if (loading) return <p className="p-4">Cargando sesión...</p>;
 
   return (
     <AuthContext.Provider value={{ token, userId, role, user, login, logout }}>
