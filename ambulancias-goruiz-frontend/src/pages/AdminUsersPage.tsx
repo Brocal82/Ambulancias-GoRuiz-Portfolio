@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { getAllUsers } from '../api/users';
+import { useEffect, useState, useCallback } from 'react';
+import { getAllUsers, updateUserProfile, deleteUser } from '../api/users';
 import { useAuth } from '../hooks/useAuth';
 import UserEditModal from '../components/users/UserEditModal';
 import type { User } from '../types/user';
@@ -11,7 +11,8 @@ const AdminUsersPage = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchUsers = async () => {
+  // ✅ 1. Definimos fetchUsers con useCallback para evitar el warning
+  const fetchUsers = useCallback(async () => {
     try {
       if (!token) return;
       const data = await getAllUsers(token);
@@ -25,28 +26,12 @@ const AdminUsersPage = () => {
       console.error(error);
       toast.error('Error al cargar usuarios');
     }
-  };
+  }, [token]);
 
-useEffect(() => {
-  const fetchUsers = async () => {
-    try {
-      if (!token) return;
-      const data = await getAllUsers(token);
-      const sortedUsers = data.sort((a, b) => {
-        const aLast = a.lastName || '';
-        const bLast = b.lastName || '';
-        return aLast.localeCompare(bLast);
-      });
-      setUsers(sortedUsers);
-    } catch (error) {
-      console.error(error);
-      toast.error('Error al cargar usuarios');
-    }
-  };
-
-  fetchUsers();
-}, [token]);
-
+  // ✅ 2. Lo usamos normalmente dentro del useEffect
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleEdit = (user: User) => {
     setSelectedUser(user);
@@ -58,14 +43,31 @@ useEffect(() => {
     setIsModalOpen(false);
   };
 
-  const handleSaveUser = async () => {
-    await fetchUsers(); // ✅ Recargar lista tras guardar
-    handleCloseModal();
+  const handleSaveUser = async (updatedUser: User) => {
+    if (!token) return;
+    try {
+      await updateUserProfile(updatedUser._id, updatedUser, token);
+      toast.success('Usuario actualizado correctamente');
+      await fetchUsers();
+      handleCloseModal();
+    } catch (_error) {
+      toast.error('Error al actualizar usuario');
+    }
   };
 
-  const handleDeleteUser = async () => {
-  toast.info('Funcionalidad de eliminar aún no implementada');
-};
+    const handleDeleteUser = async (userId: string) => {
+      if (!token) return;
+      try {
+        await deleteUser(userId, token);
+        toast.success('Usuario eliminado correctamente');
+        await fetchUsers();
+        handleCloseModal();
+      } catch (error) {
+        console.error(error);
+        toast.error('Error al eliminar usuario');
+      }
+    };
+
 
   return (
     <div className="p-6">

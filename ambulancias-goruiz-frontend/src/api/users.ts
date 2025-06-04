@@ -55,3 +55,11 @@ export const updateUserProfile = async (
     throw error;
   }
 };
+
+// ✅ Eliminar usuario
+export const deleteUser = async (userId: string, token: string): Promise<void> => {
+  await axios.delete(`/users/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
