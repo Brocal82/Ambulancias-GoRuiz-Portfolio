@@ -1,3 +1,4 @@
+// src/context/AuthProvider.tsx
 import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { AuthContext } from './AuthContext';
@@ -16,10 +17,10 @@ export const AuthProvider = ({ children }: Props) => {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUserId = localStorage.getItem('userId');
-    const storedRole = localStorage.getItem('role');
-    const storedUser = localStorage.getItem('user');
+    const storedToken = sessionStorage.getItem('token');
+    const storedUserId = sessionStorage.getItem('userId');
+    const storedRole = sessionStorage.getItem('role');
+    const storedUser = sessionStorage.getItem('user');
 
     if (storedToken && storedUserId && storedRole) {
       setToken(storedToken);
@@ -29,7 +30,7 @@ export const AuthProvider = ({ children }: Props) => {
     }
   }, []);
 
-  // 🔔 Mostrar advertencia si el token va a expirar pronto
+  // 🔔 Advertencia antes de que expire el token
   useEffect(() => {
     if (!token) return;
 
@@ -37,7 +38,7 @@ export const AuthProvider = ({ children }: Props) => {
     if (!expiration) return;
 
     const timeLeft = expiration - Date.now();
-    const warningThreshold = 60 * 1000; // 1 minuto antes
+    const warningThreshold = 60 * 1000; // 1 minuto
 
     if (timeLeft > warningThreshold) {
       const timer = setTimeout(() => {
@@ -57,10 +58,10 @@ export const AuthProvider = ({ children }: Props) => {
     setRole(newRole);
     setUser(newUser);
 
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('userId', newUserId);
-    localStorage.setItem('role', newRole);
-    localStorage.setItem('user', JSON.stringify(newUser));
+    sessionStorage.setItem('token', newToken);
+    sessionStorage.setItem('userId', newUserId);
+    sessionStorage.setItem('role', newRole);
+    sessionStorage.setItem('user', JSON.stringify(newUser));
   };
 
   const logout = () => {
@@ -68,11 +69,13 @@ export const AuthProvider = ({ children }: Props) => {
     setUserId(null);
     setRole(null);
     setUser(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("role");
-    localStorage.removeItem("user");
-    window.location.href = "/";
+
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('userId');
+    sessionStorage.removeItem('role');
+    sessionStorage.removeItem('user');
+
+    window.location.href = '/';
   };
 
   return (

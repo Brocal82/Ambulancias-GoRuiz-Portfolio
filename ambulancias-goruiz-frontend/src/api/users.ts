@@ -46,7 +46,7 @@ export const updateUserProfile = async (
   token: string
 ): Promise<User> => {
   try {
-    const response = await axios.put<User>(`/users/${userId}`, updatedData, {
+    const response = await axios.patch<User>(`/users/${userId}`, updatedData, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;

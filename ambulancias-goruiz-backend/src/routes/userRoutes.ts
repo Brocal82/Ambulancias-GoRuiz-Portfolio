@@ -30,6 +30,8 @@ router.patch('/me', authenticateToken, updateUser);
 router.get('/', authenticateToken, authorizeRole('admin'), getUsers);
 router.get('/:id', authenticateToken, authorizeSelfOrAdmin, getUserById);
 router.put('/:id', authenticateToken, authorizeSelfOrAdmin, updateUser);
+router.patch('/:id', authenticateToken, authorizeSelfOrAdmin, updateUser);
+
 
 router.delete('/:id', authenticateToken, authorizeSelfOrAdmin, deleteUser);
 

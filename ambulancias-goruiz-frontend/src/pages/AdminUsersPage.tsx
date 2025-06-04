@@ -50,9 +50,11 @@ const AdminUsersPage = () => {
       toast.success('Usuario actualizado correctamente');
       await fetchUsers();
       handleCloseModal();
-    } catch (_error) {
-      toast.error('Error al actualizar usuario');
-    }
+    } catch (error) {
+        console.error(error);
+        toast.error('Error al actualizar usuario');
+      }
+
   };
 
     const handleDeleteUser = async (userId: string) => {
