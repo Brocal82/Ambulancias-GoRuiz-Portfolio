@@ -20,7 +20,7 @@ const Login = () => {
       const response = await axios.post('/users/login', { email, password });
       const { token, user } = response.data;
 
-      login(token, user._id, user.role); // 👈 Pasas también el role
+      login(token, user._id, user.role, user); // 👈 Pasas también el role
 
 
       // 🔁 Redirigir según el rol

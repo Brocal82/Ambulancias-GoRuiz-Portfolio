@@ -1,11 +1,13 @@
 // src/context/AuthContext.ts
 import { createContext } from 'react';
+import type { User } from '../types/user'; // ✅ Importamos el tipo User
 
 export interface AuthContextType {
   token: string | null;
   userId: string | null;
   role: string | null;
-  login: (token: string, userId: string, role: string) => void;
+  user: User | null; // ✅ Añadido aquí
+  login: (token: string, userId: string, role: string, user: User) => void; // ✅ Añadimos user al login
   logout: () => void;
 }
 

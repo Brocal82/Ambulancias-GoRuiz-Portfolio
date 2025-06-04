@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { AuthContext } from './AuthContext';
+import type { User } from '../types/user';
 
 interface Props {
   children: ReactNode;
@@ -24,14 +25,21 @@ export const AuthProvider = ({ children }: Props) => {
     }
   }, []);
 
-  const login = (newToken: string, newUserId: string, newRole: string) => {
-    setToken(newToken);
-    setUserId(newUserId);
-    setRole(newRole);
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('userId', newUserId);
-    localStorage.setItem('role', newRole);
-  };
+  
+const [user, setUser] = useState<User | null>(null);
+
+const login = (newToken: string, newUserId: string, newRole: string, newUser: User) => {
+  setToken(newToken);
+  setUserId(newUserId);
+  setRole(newRole);
+  setUser(newUser); // ✅ aquí añadimos el usuario completo
+
+  localStorage.setItem('token', newToken);
+  localStorage.setItem('userId', newUserId);
+  localStorage.setItem('role', newRole);
+  localStorage.setItem('user', JSON.stringify(newUser)); // ✅ opcional: guardar también el user completo
+};
+
 
   const logout = () => {
     setToken(null);
@@ -44,7 +52,7 @@ export const AuthProvider = ({ children }: Props) => {
   };
 
   return (
-    <AuthContext.Provider value={{ token, userId, role, login, logout }}>
+    <AuthContext.Provider value={{ token, userId, role, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
