@@ -12,17 +12,20 @@ export function mergeWithAssigned(
 ): UserRef[] {
   const merged = [...availableUsers];
 
-  const currentUser = typeof assignment?.[currentRole] === "object" ? assignment[currentRole] : null;
-  const otherRole = currentRole === "driver" ? "medic" : "driver";
-  const otherUser = typeof assignment?.[otherRole] === "object" ? assignment[otherRole] : null;
+  const currentUser =
+    typeof assignment?.[currentRole] === "object" ? assignment[currentRole] : null;
 
-  // Evita reinyectar si es el mismo usuario asignado en el otro rol
+  const otherRole = currentRole === "driver" ? "medic" : "driver";
+  const otherUser =
+    typeof assignment?.[otherRole] === "object" ? assignment[otherRole] : null;
+
+  // ✅ Asegura que el usuario actual (con todos sus datos) se añade si no está en la lista
   if (
     currentUser &&
     !merged.some(u => u._id === currentUser._id) &&
     currentUser._id !== otherUser?._id
   ) {
-    merged.unshift(currentUser);
+    merged.unshift(currentUser); // lo colocamos al principio
   }
 
   return merged;

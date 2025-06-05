@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import UserEditModal from '../components/users/UserEditModal';
 import type { User } from '../types/user';
 import { toast } from 'react-toastify';
+import { getPscheinStatus } from '../utils/pscheinUtils';
 
 const AdminUsersPage = () => {
   const { token } = useAuth();
@@ -85,18 +86,32 @@ const AdminUsersPage = () => {
         </thead>
 
         <tbody>
-          {users.map((user) => (
-            <tr
-              key={user._id}
-              className="hover:bg-blue-50 cursor-pointer"
-              onClick={() => handleEdit(user)}
-            >
-              <td className="py-2 px-4 border">{user.lastName}</td>
-              <td className="py-2 px-4 border">{user.name}</td>
-              <td className="py-2 px-4 border">{user.email}</td>
-              <td className="py-2 px-4 border">{user.ambulanceRole}</td>
-            </tr>
-          ))}
+          {users.map((user) => {
+            const status = getPscheinStatus(user.pscheinExpiry);
+            const borderColor =
+              status === 'expired'
+                ? 'border-l-4 border-red-500'
+                : status === 'warning'
+                ? 'border-l-4 border-orange-400'
+                : '';
+
+            return (
+              <tr
+                key={user._id}
+                className={`hover:bg-blue-50 cursor-pointer ${borderColor}`}
+                onClick={() => handleEdit(user)}
+              >
+                <td className="py-2 px-4 border">{user.lastName}</td>
+                <td className="py-2 px-4 border">{user.name}</td>
+                <td className="py-2 px-4 border">{user.email}</td>
+                <td className="py-2 px-4 border">
+                  {user.ambulanceRole}
+                  {status === 'expired' && <span className="text-red-500 ml-2">❌</span>}
+                  {status === 'warning' && <span className="text-orange-400 ml-2">⚠️</span>}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 

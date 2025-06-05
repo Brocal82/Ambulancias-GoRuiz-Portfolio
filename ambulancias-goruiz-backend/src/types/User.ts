@@ -1,3 +1,4 @@
+// backend/src/types/User.ts
 export interface IUser {
   name: string;
   lastName: string;

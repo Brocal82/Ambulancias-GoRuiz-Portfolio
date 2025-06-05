@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { updateDienstPartial, removeAssignment } from "../api/diensts";
 import { getAvailableUsersForDate } from "../api/users";
+import { getPscheinStatus } from "../utils/pscheinUtils";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -68,7 +69,11 @@ useEffect(() => {
       ]);
 
       // Mantener seleccionados visibles (mergeWithAssigned)
-      const mergedDrivers = mergeWithAssigned(drivers, assignment, "driver");
+      const mergedDrivers = mergeWithAssigned(drivers, assignment, "driver")
+        .filter(driver => {
+          const status = getPscheinStatus(driver.pscheinExpiry);
+          return status !== 'expired';
+        });
       const mergedMedics = mergeWithAssigned(medics, assignment, "medic");
 
 
@@ -197,11 +202,19 @@ if (
                 className="w-full border p-1 rounded"
               >
                 <option value="">-- Selecciona conductor --</option>
-                {availableDrivers.map((user) => (
-                  <option key={user._id} value={user._id}>
-                    {user.name}
-                  </option>
-                ))}
+                {availableDrivers
+                  .filter((user) => getPscheinStatus(user.pscheinExpiry) !== 'expired')
+                  .map((user) => {
+                    const status = getPscheinStatus(user.pscheinExpiry);
+                    const icon = status === 'warning' ? ' ⚠️' : '';
+                    return (
+                      <option key={user._id} value={user._id}>
+                        {user.name}{icon}
+                      </option>
+                    );
+                  })}
+
+
               </select>
 
 

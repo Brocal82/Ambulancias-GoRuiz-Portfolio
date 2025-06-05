@@ -1,3 +1,4 @@
+// frontend/src/types/user.ts
 export type AmbulanceRole = 'driver' | 'medic' | 'both';
 export type AppRole = 'admin' | 'worker';
 
