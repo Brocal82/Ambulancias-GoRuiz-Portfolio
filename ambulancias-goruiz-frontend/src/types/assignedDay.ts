@@ -1,5 +1,6 @@
-
 // frontend/src/types/assignedDay.ts
+import type { UserRef } from "./dienst";
+
 export interface AssignedDay {
   dienstId: string;
   dienstNumber: number;
@@ -7,14 +8,7 @@ export interface AssignedDay {
   startTime: string;
   endTime: string;
   vehicleNumber: string;
-  driver: string
-  medic: string 
+  driver: UserRef;
+  medic: UserRef;
 }
-
-
-
-
-
-
-
 

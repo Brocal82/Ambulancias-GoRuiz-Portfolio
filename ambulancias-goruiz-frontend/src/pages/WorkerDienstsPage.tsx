@@ -3,7 +3,6 @@ import { getAssignedDaysForUser } from "../api/diensts";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
 import type { AssignedDay } from "../types/assignedDay";
-import type { UserRef } from "../types/dienst";
 import { useAuth } from "../hooks/useAuth";
 
 
@@ -106,15 +105,17 @@ const WorkerDienstsPage = () => {
                                 </p>
                                 <p className="text-xs">🚑 {assignment.vehicleNumber}</p>
                                 <p className="text-xs">
-                                  👨‍✈️ {typeof assignment.driver === 'object' && assignment.driver !== null && 'name' in assignment.driver
-                                    ? (assignment.driver as UserRef).name
+                                  👨‍✈️ {typeof assignment.driver === 'object' && assignment.driver
+                                    ? `${assignment.driver.lastName}, ${assignment.driver.name}`
                                     : ''}
                                 </p>
+
                                 <p className="text-xs">
-                                  🧑‍⚕️ {typeof assignment.medic === 'object' && assignment.medic !== null && 'name' in assignment.medic
-                                    ? (assignment.medic as UserRef).name
+                                  🧑‍⚕️ {typeof assignment.medic === 'object' && assignment.medic
+                                    ? `${assignment.medic.lastName}, ${assignment.medic.name}`
                                     : ''}
                                 </p>
+
                               </>
                             ) : (
                               <p className="text-xs text-green-800 mt-2">🌴 Libre</p>

@@ -209,7 +209,7 @@ if (
                     const icon = status === 'warning' ? ' ⚠️' : '';
                     return (
                       <option key={user._id} value={user._id}>
-                        {user.name}{icon}
+                        {user.lastName}, {user.name}{icon}
                       </option>
                     );
                   })}
@@ -228,7 +228,7 @@ if (
                 <option value="">-- Selecciona sanitario --</option>
                 {availableMedics.map((user) => (
                   <option key={user._id} value={user._id}>
-                    {user.name}
+                    {user.lastName}, {user.name}
                   </option>
                 ))}
               </select>
@@ -256,8 +256,19 @@ if (
             <>
               <p>🕒 {startTime} - {endTime}</p>
               <p>🚑 Vehículo: {vehicleNumber}</p>
-              <p>👨‍✈️ Conductor: {typeof assignment.driver === "string" ? "(ID)" : assignment.driver?.name}</p>
-              <p>👩‍⚕️ Sanitario: {typeof assignment.medic === "string" ? "(ID)" : assignment.medic?.name}</p>
+              <p>
+                👨‍✈️ Conductor:{" "}
+                {typeof assignment.driver === "object" && assignment.driver
+                  ? `${assignment.driver.lastName}, ${assignment.driver.name}`
+                  : "(ID)"}
+              </p>
+              <p>
+                👩‍⚕️ Sanitario:{" "}
+                {typeof assignment.medic === "object" && assignment.medic
+                  ? `${assignment.medic.lastName}, ${assignment.medic.name}`
+                  : "(ID)"}
+              </p>
+
             </>
           ) : (
             <p className="text-green-700 font-semibold text-center text-xl">🌴 Día libre</p>

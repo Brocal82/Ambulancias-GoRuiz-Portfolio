@@ -3,8 +3,10 @@
 export interface UserRef {
   _id: string;
   name: string;
-  pscheinExpiry?: string; // ✅ nuevo campo opcional
+  lastName: string;
+  pscheinExpiry?: string;
 }
+
 
 
 export interface DienstAssignment {

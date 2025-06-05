@@ -32,8 +32,8 @@ export const createDienst = async (req: Request, res: Response) => {
 export const getAllDiensts: RequestHandler = async (req, res) => {
   try {
     const diensts = await Dienst.find()
-      .populate('assignments.driver', 'name')
-      .populate('assignments.medic', 'name');
+      .populate('assignments.driver', 'name lastName')
+      .populate('assignments.medic', 'name lastName');
 
     res.status(200).json(diensts);
   } catch (error) {
@@ -247,52 +247,62 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
   }
 
   try {
-    const diensts = await Dienst.find<IDienst>({
+    const diensts = await Dienst.find({
       $or: [
         { 'assignments.driver': new mongoose.Types.ObjectId(userId) },
         { 'assignments.medic': new mongoose.Types.ObjectId(userId) }
       ]
     })
-      .populate('assignments.driver', 'name')
-      .populate('assignments.medic', 'name')
+      .populate("assignments.driver", "name lastName pscheinExpiry")
+      .populate("assignments.medic", "name lastName pscheinExpiry")
       .lean();
 
-const assignedDays: AssignedDay[] = [];
+    const assignedDays: AssignedDay[] = [];
 
-diensts.forEach((dienst) => {
-  dienst.assignments.forEach((assignment: any) => {
-    const isAssigned =
-      assignment.driver?._id?.toString?.() === userId ||
-      assignment.driver?.toString?.() === userId ||
-      assignment.medic?._id?.toString?.() === userId ||
-      assignment.medic?.toString?.() === userId;
+    diensts.forEach((dienst) => {
+      dienst.assignments.forEach((assignment: any) => {
+        const isAssigned =
+          assignment.driver?._id?.toString?.() === userId ||
+          assignment.driver?.toString?.() === userId ||
+          assignment.medic?._id?.toString?.() === userId ||
+          assignment.medic?.toString?.() === userId;
 
-    if (isAssigned) {
-      assignedDays.push({
-        dienstId: dienst._id.toString(),
-        dienstNumber: dienst.dienstNumber,
-        date: assignment.date,
-        startTime: assignment.startTime,
-        endTime: assignment.endTime,
-        vehicleNumber: assignment.vehicleNumber,
-        driver:
-          typeof assignment.driver === "object"
-            ? { _id: assignment.driver._id.toString(), name: assignment.driver.name }
-            : assignment.driver,
-        medic:
-          typeof assignment.medic === "object"
-            ? { _id: assignment.medic._id.toString(), name: assignment.medic.name }
-            : assignment.medic,
+        if (isAssigned) {
+          assignedDays.push({
+            dienstId: dienst._id.toString(),
+            dienstNumber: dienst.dienstNumber,
+            date: assignment.date,
+            startTime: assignment.startTime,
+            endTime: assignment.endTime,
+            vehicleNumber: assignment.vehicleNumber,
+            driver:
+              typeof assignment.driver === "object"
+                ? {
+                    _id: assignment.driver._id.toString(),
+                    name: assignment.driver.name,
+                    lastName: assignment.driver.lastName,
+                    pscheinExpiry: assignment.driver.pscheinExpiry,
+                  }
+                : assignment.driver,
+            medic:
+              typeof assignment.medic === "object"
+                ? {
+                    _id: assignment.medic._id.toString(),
+                    name: assignment.medic.name,
+                    lastName: assignment.medic.lastName,
+                    pscheinExpiry: assignment.medic.pscheinExpiry,
+                  }
+                : assignment.medic,
+          });
+        }
       });
-    }
-  });
-});
+    });
 
-res.status(200).json(assignedDays);
-} catch (error) {
-console.error("❌ Error al obtener días asignados:", error);
-res.status(500).json({ message: 'Error al obtener días asignados' });
-}
+    res.status(200).json(assignedDays);
+  } catch (error) {
+    console.error("❌ Error al obtener días asignados:", error);
+    res.status(500).json({ message: "Error al obtener días asignados" });
+  }
 };
 
 
