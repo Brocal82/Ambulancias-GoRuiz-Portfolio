@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { useAuth } from '../hooks/useAuth';
 import { getUserById, updateUserProfile } from '../api/users';
 import { getPscheinStatus } from '../utils/pscheinUtils';
@@ -30,21 +32,31 @@ const Profile = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userId || !token) return;
-    try {
-      await updateUserProfile(userId, formData, token);
-      setMessage('Perfil actualizado correctamente');
+const navigate = useNavigate(); // ⬅️ Antes del handleSubmit
 
-      // ✅ Actualizar datos del contexto con los nuevos cambios
-      const updatedUser = await getUserById(userId, token);
-      login(token, userId, role || 'worker', updatedUser);
-    } catch (error) {
-      console.error(error);
-      setMessage('Error al guardar el perfil');
-    }
-  };
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!userId || !token) return;
+
+  try {
+    await updateUserProfile(userId, formData, token);
+
+    const updatedUser = await getUserById(userId, token);
+    login(token, userId, role || 'worker', updatedUser);
+
+    // ✅ Notificación visual
+    toast.success('✅ Cambios guardados correctamente');
+
+    // ✅ Redirige después de 1 segundo
+    setTimeout(() => {
+      navigate(role === 'admin' ? '/admin' : '/worker');
+    }, 100);
+
+  } catch (error) {
+    console.error(error);
+    toast.error('❌ Error al guardar el perfil');
+  }
+};
 
   if (loading) return <p className="p-4">Cargando...</p>;
 
@@ -56,6 +68,35 @@ const Profile = () => {
       <h2 className="text-xl font-bold mb-4">Perfil de Usuario</h2>
       {message && <p className="mb-4 text-sm text-blue-600">{message}</p>}
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Nombre */}
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+          Nombre
+        </label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          value={formData.name || ''}
+          onChange={handleChange}
+          className="w-full border rounded p-2"
+          placeholder="Tu nombre"
+        />
+
+        {/* Apellidos */}
+        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+          Apellidos
+        </label>
+        <input
+          type="text"
+          id="lastName"
+          name="lastName"
+          value={formData.lastName || ''}
+          onChange={handleChange}
+          className="w-full border rounded p-2"
+          placeholder="Tus apellidos"
+        />
+
+        {/* Rol en ambulancia */}
         <label className="block text-sm font-medium text-gray-700">Rol en ambulancia</label>
         <div className="flex justify-between gap-2">
           {roles.map((currentRole) => (
@@ -78,6 +119,7 @@ const Profile = () => {
           ))}
         </div>
 
+        {/* P-Schein */}
         {(formData.ambulanceRole === 'driver' || formData.ambulanceRole === 'both') && (
           <>
             <label htmlFor="pscheinExpiry" className="block text-sm font-medium text-gray-700">
@@ -106,40 +148,60 @@ const Profile = () => {
           </>
         )}
 
+        {/* Dirección */}
+        <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+          Dirección
+        </label>
         <input
           type="text"
+          id="address"
           name="address"
           value={formData.address || ''}
           onChange={handleChange}
           className="w-full border rounded p-2"
-          placeholder="Dirección"
+          placeholder="Calle y número"
         />
 
+        {/* Teléfono */}
+        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+          Teléfono
+        </label>
         <input
           type="text"
+          id="phone"
           name="phone"
           value={formData.phone || ''}
           onChange={handleChange}
           className="w-full border rounded p-2"
-          placeholder="Teléfono"
+          placeholder="Número de teléfono"
         />
 
+        {/* Teléfono de emergencia */}
+        <label htmlFor="emergencyPhone" className="block text-sm font-medium text-gray-700">
+          Teléfono de emergencia
+        </label>
         <input
           type="text"
+          id="emergencyPhone"
           name="emergencyPhone"
           value={formData.emergencyPhone || ''}
           onChange={handleChange}
           className="w-full border rounded p-2"
-          placeholder="Teléfono de emergencia"
+          placeholder="Número de contacto en caso de emergencia"
         />
 
+        {/* Foto de perfil */}
+        <label htmlFor="profileImage" className="block text-sm font-medium text-gray-700">
+          URL de la foto de perfil
+        </label>
         <input
           type="text"
+          id="profileImage"
           name="profileImage"
           value={formData.profileImage || ''}
           onChange={handleChange}
           className="w-full border rounded p-2"
-          placeholder="URL de la foto de perfil (opcional)"
+          placeholder="URL de imagen (opcional)"
         />
 
         <button
@@ -149,6 +211,7 @@ const Profile = () => {
           Guardar cambios
         </button>
       </form>
+
     </div>
   );
 };
