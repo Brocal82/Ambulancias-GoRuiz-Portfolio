@@ -13,7 +13,7 @@ const createTemplates = async () => {
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-  const templates = Array.from({ length: 10 }, (_, i) => {
+  const templates = Array.from({ length: 2 }, (_, i) => {
     const dienstNumber = i + 1;
     
     const assignments: {

@@ -332,7 +332,7 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
       return;
     }
 
-    const diensts = Array.from({ length: 10 }, (_, i) => {
+    const diensts = Array.from({ length: 2 }, (_, i) => {
       const dienstNumber = i + 1;
       const assignments = [];
 
