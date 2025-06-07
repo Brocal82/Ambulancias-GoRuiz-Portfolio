@@ -198,40 +198,68 @@ if (
               <select
                 id="driver"
                 value={selectedDriverId}
-                onChange={(e) => setSelectedDriverId(e.target.value)}
+                onChange={(e) => {
+                  const selectedId = e.target.value;
+                  setSelectedDriverId(selectedId);
+                  if (selectedId === selectedMedicId) {
+                    setSelectedMedicId("");
+                  }
+                }}
                 className="w-full border p-1 rounded"
               >
                 <option value="">-- Selecciona conductor --</option>
                 {availableDrivers
-                  .filter((user) => getPscheinStatus(user.pscheinExpiry) !== 'expired')
+                  .filter((user) => getPscheinStatus(user.pscheinExpiry) !== "expired")
                   .map((user) => {
                     const status = getPscheinStatus(user.pscheinExpiry);
-                    const icon = status === 'warning' ? ' ⚠️' : '';
+                    const icon = status === "warning" ? " ⚠️" : "";
+                    const isAlsoSelectedInMedic = user._id === selectedMedicId;
+
                     return (
-                      <option key={user._id} value={user._id}>
+                      <option
+                        key={user._id}
+                        value={user._id}
+                        className={isAlsoSelectedInMedic ? "text-gray-400" : ""}
+                      >
                         {user.lastName}, {user.name}{icon}
                       </option>
                     );
                   })}
-
-
               </select>
+
+
 
 
               <label htmlFor="medic" className="block text-sm font-medium">Sanitario</label>
               <select
                 id="medic"
                 value={selectedMedicId}
-                onChange={(e) => setSelectedMedicId(e.target.value)}
+                onChange={(e) => {
+                  const selectedId = e.target.value;
+                  setSelectedMedicId(selectedId);
+                  if (selectedId === selectedDriverId) {
+                    setSelectedDriverId("");
+                  }
+                }}
                 className="w-full border p-1 rounded"
               >
                 <option value="">-- Selecciona sanitario --</option>
-                {availableMedics.map((user) => (
-                  <option key={user._id} value={user._id}>
-                    {user.lastName}, {user.name}
-                  </option>
-                ))}
+                {availableMedics.map((user) => {
+                  const isAlsoSelectedInDriver = user._id === selectedDriverId;
+
+                  return (
+                    <option
+                      key={user._id}
+                      value={user._id}
+                      className={isAlsoSelectedInDriver ? "text-gray-400" : ""}
+                    >
+                      {user.lastName}, {user.name}
+                    </option>
+                  );
+                })}
               </select>
+
+
 
 
               <button
