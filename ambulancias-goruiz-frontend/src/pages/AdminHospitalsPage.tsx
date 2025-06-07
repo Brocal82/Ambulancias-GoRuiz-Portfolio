@@ -59,35 +59,41 @@ const AdminHospitalsPage = () => {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4 text-center">Gestión de hospitales</h1>
-      <label htmlFor="hospitalNameSearch" className="block mb-4">
-        <span className="text-sm font-medium">Buscar por nombre:</span>
-        <input
-          id="hospitalNameSearch"
-          type="text"
-          value={searchName}
-          onChange={(e) => setSearchName(e.target.value)}
-          placeholder="Escribe el nombre del hospital"
-          className="border p-2 rounded w-full max-w-xs mt-1"
-        />
-      </label>
+      <div className="flex flex-col gap-4 max-w-sm mx-auto mb-6">
+        <div>
+          <label htmlFor="hospitalNameSearch" className="block text-sm font-medium mb-1">
+            Buscar por nombre:
+          </label>
+          <input
+            id="hospitalNameSearch"
+            type="text"
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+            placeholder="Escribe el nombre del hospital"
+            className="border p-2 rounded w-full bg-white shadow-sm"
+          />
+        </div>
 
+        <div>
+          <label htmlFor="specialtyFilter" className="block text-sm font-medium mb-1">
+            Filtrar por especialidad:
+          </label>
+          <select
+            id="specialtyFilter"
+            value={selectedSpecialty}
+            onChange={(e) => setSelectedSpecialty(e.target.value)}
+            className="border p-2 rounded w-full bg-white shadow-sm"
+          >
+            <option value="all">Todas las especialidades</option>
+            {specialties.map((spec) => (
+              <option key={spec} value={spec}>
+                {spec}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
-      <label htmlFor="specialtyFilter" className="block mb-4">
-        <span className="text-sm font-medium">Filtrar por especialidad:</span>
-        <select
-          id="specialtyFilter"
-          value={selectedSpecialty}
-          onChange={(e) => setSelectedSpecialty(e.target.value)}
-          className="border p-2 rounded w-full max-w-xs"
-        >
-          <option value="all">Todas las especialidades</option>
-          {specialties.map((spec) => (
-            <option key={spec} value={spec}>
-              {spec}
-            </option>
-          ))}
-        </select>
-      </label>
 
       <ul className="space-y-4">
         {filteredHospitals.map((hospital) => (
