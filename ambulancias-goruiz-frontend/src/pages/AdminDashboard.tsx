@@ -23,34 +23,25 @@ const AdminDashboard = () => {
           <p className="text-sm text-gray-600">Edita los servicios semanales</p>
         </Link>
 
-        <div
-        //   to="/admin/hospitals"
-          className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed"
+        <Link
+          to="/admin/hospitals"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
         >
           <h2 className="text-lg font-semibold mb-2">🏥 Hospitales</h2>
           <p className="text-sm text-gray-600">Añade y edita hospitales</p>
-        </div>
+        </Link>
 
-        <div
-        //   to="/admin/mechanics"
-          className = "bg-white p-6 rounded shadow opacity-50 cursor-not-allowed"
-        >
+        <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
           <h2 className="text-lg font-semibold mb-2">🔧 Mecánicos</h2>
           <p className="text-sm text-gray-600">Revisa reportes de ambulancias</p>
         </div>
 
-        <div
-        //   to="/admin/vacations"
-          className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed"
-        >
+        <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
           <h2 className="text-lg font-semibold mb-2">🌴 Vacaciones</h2>
           <p className="text-sm text-gray-600">Gestiona solicitudes del equipo</p>
         </div>
 
-        <div
-        //   to="/admin/messages"
-          className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed"
-        >
+        <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
           <h2 className="text-lg font-semibold mb-2">✉️ Mensajes</h2>
           <p className="text-sm text-gray-600">Envía comunicados importantes</p>
         </div>

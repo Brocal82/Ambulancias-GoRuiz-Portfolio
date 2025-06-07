@@ -17,7 +17,7 @@ import WorkerDienstsPage from './pages/WorkerDienstsPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminDienstsPage from './pages/AdminDienstsPage';
-import AdminHospitalsPage from './pages/AdminHospitalPage';
+import AdminHospitalsPage from './pages/AdminHospitalsPage';
 
 export default function App() {
   return (

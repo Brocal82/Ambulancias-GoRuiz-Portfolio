@@ -1,7 +1,7 @@
 import axios from './axios';
 import type { Hospital } from '../types/hospital';
 
-const BASE_URL = '/api/hospitals';
+const BASE_URL = '/hospitals';
 
 // Obtener todos los hospitales
 export const getAllHospitals = async (token: string): Promise<Hospital[]> => {
