@@ -17,6 +17,7 @@ import WorkerDienstsPage from './pages/WorkerDienstsPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminDienstsPage from './pages/AdminDienstsPage';
+import AdminHospitalsPage from './pages/AdminHospitalPage';
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="/admin" element={<AppLayout><AdminDashboard /></AppLayout>} />
             <Route path="/admin/users" element={<AppLayout><AdminUsersPage /></AppLayout>} />
             <Route path="/admin/diensts" element={<AppLayout><AdminDienstsPage /></AppLayout>} />
+            <Route path="/admin/hospitals" element={<AppLayout><AdminHospitalsPage /></AppLayout>} />
           </Route>
         </Routes>
         <ToastContainer position="top-right" autoClose={3000} />
