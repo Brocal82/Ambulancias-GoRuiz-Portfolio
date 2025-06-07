@@ -4,6 +4,7 @@ export interface UserRef {
   _id: string;
   name: string;
   lastName: string;
+  ambulanceRole?: 'driver' | 'medic' | 'both';
   pscheinExpiry?: string;
 }
 

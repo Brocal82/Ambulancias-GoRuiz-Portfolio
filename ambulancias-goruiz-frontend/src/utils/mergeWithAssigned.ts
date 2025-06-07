@@ -3,7 +3,7 @@ import type { FlexibleAssignment } from "../types/assignment";
 
 /**
  * Fusiona usuarios disponibles con el asignado actual, evitando duplicados.
- * Si un usuario ya está asignado en el otro rol, no se vuelve a añadir.
+ * Si un usuario ya está asignado en el otro rol y no tiene rol "both", no se vuelve a añadir.
  */
 export function mergeWithAssigned(
   availableUsers: UserRef[],
@@ -19,13 +19,17 @@ export function mergeWithAssigned(
   const otherUser =
     typeof assignment?.[otherRole] === "object" ? assignment[otherRole] : null;
 
-  // ✅ Asegura que el usuario actual (con todos sus datos) se añade si no está en la lista
-  if (
+  // ✅ Asegura que el usuario actual se añade si no está en la lista
+  const isAlreadyIncluded = currentUser && merged.some(u => u._id === currentUser._id);
+
+  const isConflictingWithOther =
     currentUser &&
-    !merged.some(u => u._id === currentUser._id) &&
-    currentUser._id !== otherUser?._id
-  ) {
-    merged.unshift(currentUser); // lo colocamos al principio
+    otherUser &&
+    currentUser._id === otherUser._id &&
+    currentUser.ambulanceRole !== "both";
+
+  if (currentUser && !isAlreadyIncluded && !isConflictingWithOther) {
+    merged.unshift(currentUser); // Lo colocamos al principio
   }
 
   return merged;

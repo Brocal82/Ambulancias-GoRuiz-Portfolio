@@ -5,7 +5,6 @@ import { getAvailableUsersForDate } from "../api/users";
 import { getPscheinStatus } from "../utils/pscheinUtils";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
 import type { UserRef, UpdateAssignment } from "../types/dienst";
 import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import type { FlexibleAssignment } from "../types/assignment";
@@ -58,86 +57,83 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
   }, [assignment]);
 
-useEffect(() => {
-  const fetchAvailableUsers = async () => {
-    if (!token || !isAdmin || !date) return;
+  useEffect(() => {
+    const fetchAvailableUsers = async () => {
+      if (!token || !isAdmin || !date) return;
 
-    try {
-      const [drivers, medics] = await Promise.all([
-        getAvailableUsersForDate(date, "driver", token),
-        getAvailableUsersForDate(date, "medic", token),
-      ]);
+      try {
+        const [drivers, medics] = await Promise.all([
+          getAvailableUsersForDate(date, "driver", token),
+          getAvailableUsersForDate(date, "medic", token),
+        ]);
 
-      // Mantener seleccionados visibles (mergeWithAssigned)
-      const mergedDrivers = mergeWithAssigned(drivers, assignment, "driver")
-        .filter(driver => {
-          const status = getPscheinStatus(driver.pscheinExpiry);
-          return status !== 'expired';
-        });
-      const mergedMedics = mergeWithAssigned(medics, assignment, "medic");
+        // Mantener seleccionados visibles (mergeWithAssigned)
+        const mergedDrivers = mergeWithAssigned(drivers, assignment, "driver");
+
+        const mergedMedics = mergeWithAssigned(medics, assignment, "medic");
 
 
-      setAvailableDrivers(mergedDrivers);
-      setAvailableMedics(mergedMedics);
-    } catch (error) {
-      console.error("Error al cargar usuarios disponibles:", error);
-      toast.error("❌ Error al cargar usuarios.");
-    }
-  };
+        setAvailableDrivers(mergedDrivers);
+        setAvailableMedics(mergedMedics);
+      } catch (error) {
+        console.error("Error al cargar usuarios disponibles:", error);
+        toast.error("❌ Error al cargar usuarios.");
+      }
+    };
 
-  fetchAvailableUsers();
-}, [token, isAdmin, date, assignment]);
+    fetchAvailableUsers();
+  }, [token, isAdmin, date, assignment]);
 
 
 
   if (!isOpen) return null;
 
-const handleSave = async () => {
-  if (!token) return;
+  const handleSave = async () => {
+    if (!token) return;
 
-  // Validación mínima: deben estar definidas las horas
-if (!startTime || !endTime || !vehicleNumber) {
-  toast.warn("🚫 Debes rellenar hora de inicio, fin y vehículo.");
-  return;
-}
-
-if (
-  selectedDriverId &&
-  selectedMedicId &&
-  selectedDriverId === selectedMedicId
-) {
-  toast.warn("🚫 No puedes asignar a la misma persona como conductor y sanitario.");
-  return;
-}
-
-
-  try {
-    const updatedAssignment: UpdateAssignment = {
-      date,
-      startTime,
-      endTime,
-      vehicleNumber,
-      driver: selectedDriverId,
-      medic: selectedMedicId,
-    };
-
-    if (assignment?._id) {
-      updatedAssignment._id = assignment._id;
+    // Validación mínima: deben estar definidas las horas
+    if (!startTime || !endTime || !vehicleNumber) {
+      toast.warn("🚫 Debes rellenar hora de inicio, fin y vehículo.");
+      return;
     }
 
-    const updatedData = {
-      assignments: [updatedAssignment],
-    };
+    if (
+      selectedDriverId &&
+      selectedMedicId &&
+      selectedDriverId === selectedMedicId
+    ) {
+      toast.warn("🚫 No puedes asignar a la misma persona como conductor y sanitario.");
+      return;
+    }
 
-    await updateDienstPartial(dienstId, updatedData, token);
-    toast.success("✅ Cambios guardados correctamente");
-    onClose();
-    onUpdate();
-  } catch (error) {
-    console.error("Error al guardar cambios:", error);
-    toast.error("❌ Error al guardar los cambios.");
-  }
-};
+
+    try {
+      const updatedAssignment: UpdateAssignment = {
+        date,
+        startTime,
+        endTime,
+        vehicleNumber,
+        driver: selectedDriverId,
+        medic: selectedMedicId,
+      };
+
+      if (assignment?._id) {
+        updatedAssignment._id = assignment._id;
+      }
+
+      const updatedData = {
+        assignments: [updatedAssignment],
+      };
+
+      await updateDienstPartial(dienstId, updatedData, token);
+      toast.success("✅ Cambios guardados correctamente");
+      onClose();
+      onUpdate();
+    } catch (error) {
+      console.error("Error al guardar cambios:", error);
+      toast.error("❌ Error al guardar los cambios.");
+    }
+  };
 
 
   const handleDelete = async () => {
@@ -195,71 +191,70 @@ if (
               />
 
               <label htmlFor="driver" className="block text-sm font-medium">Conductor</label>
-              <select
-                id="driver"
-                value={selectedDriverId}
-                onChange={(e) => {
-                  const selectedId = e.target.value;
-                  setSelectedDriverId(selectedId);
-                  if (selectedId === selectedMedicId) {
-                    setSelectedMedicId("");
-                  }
-                }}
-                className="w-full border p-1 rounded"
-              >
-                <option value="">-- Selecciona conductor --</option>
-                {availableDrivers
-                  .filter((user) => getPscheinStatus(user.pscheinExpiry) !== "expired")
-                  .map((user) => {
+                <select
+                  id="driver"
+                  value={selectedDriverId}
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    setSelectedDriverId(selectedId);
+                    if (selectedId === selectedMedicId) {
+                      setSelectedMedicId(""); // evita doble asignación
+                    }
+                  }}
+                  className="w-full border p-1 rounded"
+                >
+                  <option value="">-- Selecciona conductor --</option>
+                  {availableDrivers.map((user) => {
                     const status = getPscheinStatus(user.pscheinExpiry);
-                    const icon = status === "warning" ? " ⚠️" : "";
                     const isAlsoSelectedInMedic = user._id === selectedMedicId;
+                    const isExpired = status === "expired";
+                    const icon = status === "warning" ? " ⚠️" : isExpired ? " ❌" : "";
 
                     return (
                       <option
                         key={user._id}
                         value={user._id}
-                        className={isAlsoSelectedInMedic ? "text-gray-400" : ""}
+                        disabled={isExpired}
+                        className={
+                          isExpired || isAlsoSelectedInMedic ? "text-gray-400 italic" : ""
+                        }
                       >
                         {user.lastName}, {user.name}{icon}
                       </option>
                     );
                   })}
-              </select>
-
+                </select>
 
 
 
               <label htmlFor="medic" className="block text-sm font-medium">Sanitario</label>
-              <select
-                id="medic"
-                value={selectedMedicId}
-                onChange={(e) => {
-                  const selectedId = e.target.value;
-                  setSelectedMedicId(selectedId);
-                  if (selectedId === selectedDriverId) {
-                    setSelectedDriverId("");
-                  }
-                }}
-                className="w-full border p-1 rounded"
-              >
-                <option value="">-- Selecciona sanitario --</option>
-                {availableMedics.map((user) => {
-                  const isAlsoSelectedInDriver = user._id === selectedDriverId;
+                <select
+                  id="medic"
+                  value={selectedMedicId}
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    setSelectedMedicId(selectedId);
+                    if (selectedId === selectedDriverId) {
+                      setSelectedDriverId(""); // evita doble asignación si user tiene role "both"
+                    }
+                  }}
+                  className="w-full border p-1 rounded"
+                >
+                  <option value="">-- Selecciona sanitario --</option>
+                  {availableMedics.map((user) => {
+                    const isAlsoSelectedInDriver = user._id === selectedDriverId;
 
-                  return (
-                    <option
-                      key={user._id}
-                      value={user._id}
-                      className={isAlsoSelectedInDriver ? "text-gray-400" : ""}
-                    >
-                      {user.lastName}, {user.name}
-                    </option>
-                  );
-                })}
-              </select>
-
-
+                    return (
+                      <option
+                        key={user._id}
+                        value={user._id}
+                        className={isAlsoSelectedInDriver ? "text-gray-400" : ""}
+                      >
+                        {user.lastName}, {user.name}
+                      </option>
+                    );
+                  })}
+                </select>
 
 
               <button
@@ -316,3 +311,9 @@ if (
 };
 
 export default AssignmentModal;
+
+
+
+
+
+
