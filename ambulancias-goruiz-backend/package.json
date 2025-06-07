@@ -8,7 +8,9 @@
     "delete:diensts": "ts-node scripts/deleteAllDiensts.ts",
     "create:users": "ts-node scripts/createUsers.ts",
     "delete:users": "ts-node scripts/deleteAllUsers.ts",
-    "reset:users": "ts-node scripts/resetUsers.ts"
+    "reset:users": "ts-node scripts/resetUsers.ts",
+    "create:hospitals": "ts-node scripts/createHospitals.ts",
+    "delete:hospitals": "ts-node scripts/deleteHospitals.ts"
   },
   "keywords": [],
   "author": "",
