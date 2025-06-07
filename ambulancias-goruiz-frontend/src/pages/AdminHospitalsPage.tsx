@@ -8,6 +8,8 @@ const AdminHospitalsPage = () => {
   const { token } = useAuth();
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>('all');
+  const [searchName, setSearchName] = useState<string>('');
+
 
   useEffect(() => {
     const fetchHospitals = async () => {
@@ -46,14 +48,29 @@ const AdminHospitalsPage = () => {
     new Set(hospitals.flatMap((h) => h.specialties))
   );
 
-  const filteredHospitals =
-    selectedSpecialty === 'all'
-      ? hospitals
-      : hospitals.filter((h) => h.specialties.includes(selectedSpecialty));
+  const filteredHospitals = hospitals.filter((h) => {
+    const matchesSpecialty =
+      selectedSpecialty === 'all' || h.specialties.includes(selectedSpecialty);
+    const matchesName = h.name.toLowerCase().includes(searchName.toLowerCase());
+    return matchesSpecialty && matchesName;
+  });
+
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4 text-center">Gestión de hospitales</h1>
+      <label htmlFor="hospitalNameSearch" className="block mb-4">
+        <span className="text-sm font-medium">Buscar por nombre:</span>
+        <input
+          id="hospitalNameSearch"
+          type="text"
+          value={searchName}
+          onChange={(e) => setSearchName(e.target.value)}
+          placeholder="Escribe el nombre del hospital"
+          className="border p-2 rounded w-full max-w-xs mt-1"
+        />
+      </label>
+
 
       <label htmlFor="specialtyFilter" className="block mb-4">
         <span className="text-sm font-medium">Filtrar por especialidad:</span>
