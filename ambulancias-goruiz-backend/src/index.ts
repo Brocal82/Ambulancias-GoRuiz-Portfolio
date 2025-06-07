@@ -8,6 +8,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import userRoutes from './routes/userRoutes';
 import dienstRoutes from './routes/dienstRoutes';
+import hospitalRoutes from './routes/hospitalRoutes'
 
 // ✅ Importamos el limpiador de Diensts antiguos
 import  cleanupOldDiensts  from './utils/cleanupOldDiensts';
@@ -37,6 +38,8 @@ app.use(express.json());
 // Rutas
 app.use('/api/users', userRoutes);
 app.use('/api/diensts', dienstRoutes);
+app.use('/api/hospitals', hospitalRoutes);
+
 
 // Conexión y arranque del servidor
 mongoose.connect(MONGODB_URI)
