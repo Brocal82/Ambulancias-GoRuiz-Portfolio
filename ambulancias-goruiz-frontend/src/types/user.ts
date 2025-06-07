@@ -9,9 +9,14 @@ export interface User {
   email: string;
   role: AppRole;
   ambulanceRole?: AmbulanceRole;
-  pscheinExpiry?: string;         // formato ISO 'YYYY-MM-DD'
+  pscheinExpiry?: string;
   address?: string;
   phone?: string;
   emergencyPhone?: string;
-  profileImage?: string;          // URL o base64 si decides usarlo
+  profileImage?: string;
+
+  // ✅ Nuevas propiedades para filtros futuros
+  onLeave?: boolean;
+  onVacation?: boolean;
 }
+

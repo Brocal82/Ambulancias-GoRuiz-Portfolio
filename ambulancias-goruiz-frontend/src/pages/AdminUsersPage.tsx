@@ -11,8 +11,10 @@ const AdminUsersPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'driver' | 'medic' | 'both'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'onLeave' | 'onVacation'>('all');
 
-  // ✅ 1. Definimos fetchUsers con useCallback para evitar el warning
   const fetchUsers = useCallback(async () => {
     try {
       if (!token) return;
@@ -29,7 +31,6 @@ const AdminUsersPage = () => {
     }
   }, [token]);
 
-  // ✅ 2. Lo usamos normalmente dentro del useEffect
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
@@ -52,29 +53,84 @@ const AdminUsersPage = () => {
       await fetchUsers();
       handleCloseModal();
     } catch (error) {
-        console.error(error);
-        toast.error('Error al actualizar usuario');
-      }
-
+      console.error(error);
+      toast.error('Error al actualizar usuario');
+    }
   };
 
-    const handleDeleteUser = async (userId: string) => {
-      if (!token) return;
-      try {
-        await deleteUser(userId, token);
-        toast.success('Usuario eliminado correctamente');
-        await fetchUsers();
-        handleCloseModal();
-      } catch (error) {
-        console.error(error);
-        toast.error('Error al eliminar usuario');
-      }
-    };
+  const handleDeleteUser = async (userId: string) => {
+    if (!token) return;
+    try {
+      await deleteUser(userId, token);
+      toast.success('Usuario eliminado correctamente');
+      await fetchUsers();
+      handleCloseModal();
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al eliminar usuario');
+    }
+  };
 
+  const filteredUsers = users.filter((user) => {
+    const fullName = `${user.name} ${user.lastName}`.toLowerCase();
+    const matchesName = fullName.includes(searchTerm.toLowerCase());
+
+    const matchesRole = roleFilter === 'all' || user.ambulanceRole === roleFilter;
+
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'onLeave' && user.onLeave) ||
+      (statusFilter === 'onVacation' && user.onVacation);
+
+    return matchesName && matchesRole && matchesStatus;
+  });
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4 text-center">Usuarios registrados</h1>
+
+      <div className="flex flex-wrap gap-4 mb-4 items-end">
+        <label className="flex flex-col">
+          <span className="text-sm font-medium">Buscar por nombre:</span>
+          <input
+            type="text"
+            placeholder="Nombre o apellido"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="border p-2 rounded"
+          />
+        </label>
+
+        <label className="flex flex-col">
+          <span className="text-sm font-medium">Filtrar por rol:</span>
+          <select
+            onChange={(e) =>
+              setRoleFilter(e.target.value as 'all' | 'driver' | 'medic' | 'both')
+            }
+            className="border p-2 rounded"
+          >
+            <option value="all">Todos los roles</option>
+            <option value="driver">Conductores</option>
+            <option value="medic">Sanitarios</option>
+            <option value="both">Ambos</option>
+          </select>
+        </label>
+
+        <label className="flex flex-col">
+          <span className="text-sm font-medium">Filtrar por estado:</span>
+          <select
+            onChange={(e) =>
+              setStatusFilter(e.target.value as 'all' | 'onLeave' | 'onVacation')
+            }
+            className="border p-2 rounded"
+          >
+            <option value="all">Todos los estados</option>
+            <option value="onLeave">De baja médica</option>
+            <option value="onVacation">De vacaciones</option>
+          </select>
+        </label>
+      </div>
+
       <table className="min-w-full bg-white shadow rounded">
         <thead>
           <tr>
@@ -86,7 +142,7 @@ const AdminUsersPage = () => {
         </thead>
 
         <tbody>
-          {users.map((user) => {
+          {filteredUsers.map((user) => {
             const status = getPscheinStatus(user.pscheinExpiry);
             const borderColor =
               status === 'expired'
