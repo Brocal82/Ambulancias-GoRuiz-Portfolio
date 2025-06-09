@@ -3,6 +3,7 @@ import { getAllHospitals, updateHospital, createHospital, deleteHospital } from 
 import type { Hospital } from '../types/hospital';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'react-toastify';
+import Select from 'react-select';
 
 const AdminHospitalsPage = () => {
   const { token } = useAuth();
@@ -123,20 +124,25 @@ const AdminHospitalsPage = () => {
           <label htmlFor="specialtyFilter" className="block text-sm font-medium mb-1">
             Filtrar por especialidad:
           </label>
-          <select
+          <Select
             id="specialtyFilter"
-            value={selectedSpecialty}
-            onChange={(e) => setSelectedSpecialty(e.target.value)}
-            className="border p-2 rounded w-full bg-white shadow-sm"
-          >
-            <option value="all">Todas las especialidades</option>
-            {specialties.map((spec) => (
-              <option key={spec} value={spec}>
-                {spec}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: 'all', label: 'Todas las especialidades' },
+              ...specialties.map((spec) => ({ value: spec, label: spec })),
+            ]}
+            value={
+              selectedSpecialty === 'all'
+                ? { value: 'all', label: 'Todas las especialidades' }
+                : { value: selectedSpecialty, label: selectedSpecialty }
+            }
+            onChange={(option) => setSelectedSpecialty(option?.value || 'all')}
+            className="text-sm"
+            classNamePrefix="react-select"
+            placeholder="Selecciona una especialidad"
+            isSearchable
+          />
         </div>
+
 
         <button
           onClick={() => setShowForm(!showForm)}
