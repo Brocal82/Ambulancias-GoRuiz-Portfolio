@@ -5,37 +5,62 @@ import HospitalDetailsModal from '../components/hospitals/HospitalDetailsModal';
 import { useAuth } from '../hooks/useAuth';
 
 const WorkerHospitalsPage = () => {
-  const { token } = useAuth(); // ✅ OBTENEMOS EL TOKEN AQUÍ
+  const { token } = useAuth();
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
-  const [filter, setFilter] = useState('');
   const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(null);
 
+  const [search, setSearch] = useState('');
+  const [selectedSpecialty, setSelectedSpecialty] = useState('');
+
   useEffect(() => {
-    if (!token) return; // ✅ VERIFICAMOS QUE HAYA TOKEN
+    if (!token) return;
     getAllHospitals(token)
       .then(setHospitals)
-      .catch((err) => {
-        console.error('❌ Error al obtener hospitales:', err);
-      });
-  }, [token]); // ✅ DEPENDENCIA PARA CUANDO SE ACTUALIZA EL TOKEN
+      .catch((err) => console.error('Error al cargar hospitales:', err));
+  }, [token]);
 
-  const filteredHospitals = hospitals.filter((hospital) =>
-    hospital.specialties.some((s) =>
-      s.toLowerCase().includes(filter.toLowerCase())
-    )
-  );
+  const allSpecialties = Array.from(
+    new Set(hospitals.flatMap((h) => h.specialties))
+  ).sort();
+
+  const filteredHospitals = hospitals.filter((hospital) => {
+    const matchesName = hospital.name.toLowerCase().includes(search.toLowerCase());
+    const matchesSpecialty =
+      selectedSpecialty === '' ||
+      hospital.specialties.includes(selectedSpecialty);
+    return matchesName && matchesSpecialty;
+  });
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Hospitales disponibles</h1>
+      <div className="max-w-sm mx-auto mb-6">
+  <h1 className="text-xl font-bold mb-4 text-center">🏥 Hospitales disponibles</h1>
 
-      <input
-        type="text"
-        placeholder="Filtrar por especialidad..."
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-        className="border px-3 py-2 mb-4 w-full max-w-md rounded"
-      />
+  <div className="flex flex-col gap-4">
+    <input
+      type="text"
+      placeholder="Buscar hospital por nombre..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      className="border px-3 py-2 rounded w-full"
+    />
+
+    <select
+      aria-label="Filtrar por especialidad"
+      value={selectedSpecialty}
+      onChange={(e) => setSelectedSpecialty(e.target.value)}
+      className="border px-3 py-2 rounded w-full"
+    >
+      <option value="">Todas las especialidades</option>
+      {allSpecialties.map((spec) => (
+        <option key={spec} value={spec}>
+          {spec}
+        </option>
+      ))}
+    </select>
+  </div>
+</div>
+
 
       <ul className="space-y-4">
         {filteredHospitals.map((hospital) => (
@@ -53,7 +78,9 @@ const WorkerHospitalsPage = () => {
             </div>
             <div
               className={`text-sm px-3 py-1 rounded font-medium ${
-                hospital.isOpen ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                hospital.isOpen
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
               }`}
             >
               {hospital.isOpen ? '🟢 Abierto' : '🔴 Cerrado'}
