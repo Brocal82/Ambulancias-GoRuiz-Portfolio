@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getAllHospitals, updateHospital } from '../api/hospitals';
+import { getAllHospitals, updateHospital, createHospital, deleteHospital } from '../api/hospitals';
 import type { Hospital } from '../types/hospital';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'react-toastify';
@@ -9,7 +9,13 @@ const AdminHospitalsPage = () => {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>('all');
   const [searchName, setSearchName] = useState<string>('');
-
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    name: '',
+    address: '',
+    phone: '',
+    specialties: '',
+  });
 
   useEffect(() => {
     const fetchHospitals = async () => {
@@ -44,6 +50,45 @@ const AdminHospitalsPage = () => {
     }
   };
 
+  const handleAddHospital = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+
+    try {
+      const newHospital = await createHospital(
+        {
+          name: form.name,
+          address: form.address,
+          phone: form.phone,
+          specialties: form.specialties.split(',').map((s) => s.trim()),
+          isOpen: true,
+        },
+        token
+      );
+      setHospitals((prev) => [...prev, newHospital]);
+      toast.success('Hospital añadido correctamente');
+      setForm({ name: '', address: '', phone: '', specialties: '' });
+      setShowForm(false);
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al añadir hospital');
+    }
+  };
+
+  const handleDeleteHospital = async (id: string) => {
+    if (!token) return;
+    if (!confirm('¿Estás seguro de que quieres eliminar este hospital?')) return;
+
+    try {
+      await deleteHospital(id, token);
+      setHospitals((prev) => prev.filter((h) => h._id !== id));
+      toast.success('Hospital eliminado');
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al eliminar hospital');
+    }
+  };
+
   const specialties = Array.from(
     new Set(hospitals.flatMap((h) => h.specialties))
   );
@@ -55,10 +100,10 @@ const AdminHospitalsPage = () => {
     return matchesSpecialty && matchesName;
   });
 
-
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4 text-center">Gestión de hospitales</h1>
+
       <div className="flex flex-col gap-4 max-w-sm mx-auto mb-6">
         <div>
           <label htmlFor="hospitalNameSearch" className="block text-sm font-medium mb-1">
@@ -92,8 +137,56 @@ const AdminHospitalsPage = () => {
             ))}
           </select>
         </div>
-      </div>
 
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition mt-2"
+        >
+          {showForm ? 'Cancelar' : '➕ Añadir hospital'}
+        </button>
+
+        {showForm && (
+          <form onSubmit={handleAddHospital} className="bg-white p-4 rounded shadow space-y-3">
+            <input
+              type="text"
+              placeholder="Nombre"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="border p-2 rounded w-full"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Dirección"
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+              className="border p-2 rounded w-full"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Teléfono"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className="border p-2 rounded w-full"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Especialidades (coma separadas)"
+              value={form.specialties}
+              onChange={(e) => setForm({ ...form, specialties: e.target.value })}
+              className="border p-2 rounded w-full"
+            />
+            <button
+              type="submit"
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+            >
+              Guardar hospital
+            </button>
+          </form>
+        )}
+      </div>
 
       <ul className="space-y-4">
         {filteredHospitals.map((hospital) => (
@@ -127,6 +220,12 @@ const AdminHospitalsPage = () => {
             <p className="text-sm">
               <strong>Especialidades:</strong> {hospital.specialties.join(', ')}
             </p>
+            <button
+              onClick={() => handleDeleteHospital(hospital._id)}
+              className="text-red-600 text-sm underline self-end mt-2 hover:text-red-800"
+            >
+              Eliminar
+            </button>
           </li>
         ))}
       </ul>
