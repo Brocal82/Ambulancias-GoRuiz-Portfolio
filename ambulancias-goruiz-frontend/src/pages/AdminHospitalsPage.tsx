@@ -6,11 +6,13 @@ import { toast } from 'react-toastify';
 import Select from 'react-select';
 import { normalizeText } from '../utils/textUtils';
 import HospitalEditModal from '../components/hospitals/HospitalEditModal';
+import HospitalDetailsModal from '../components/hospitals/HospitalDetailsModal';
 
 const AdminHospitalsPage = () => {
   const { token } = useAuth();
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [editingHospital, setEditingHospital] = useState<Hospital | null>(null);
+  const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(null);
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>('all');
   const [searchName, setSearchName] = useState<string>('');
   const [showForm, setShowForm] = useState(false);
@@ -222,10 +224,16 @@ const AdminHospitalsPage = () => {
         {filteredHospitals.map((hospital) => (
           <li
             key={hospital._id}
-            className="p-4 border rounded shadow flex flex-col gap-2 bg-white"
+            className="p-4 border rounded shadow flex justify-between items-center bg-white"
           >
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold">{hospital.name}</h2>
+            <span
+              className="text-lg font-semibold cursor-pointer hover:underline"
+              onClick={() => setSelectedHospital(hospital)}
+            >
+              {hospital.name}
+            </span>
+
+            <div className="flex items-center gap-3">
               <label htmlFor={`hospital-status-${hospital._id}`} className="sr-only">
                 Estado del hospital
               </label>
@@ -240,17 +248,8 @@ const AdminHospitalsPage = () => {
                 <option value="open">🟢 Abierto</option>
                 <option value="closed">🔴 Cerrado</option>
               </select>
-            </div>
-            <p className="text-sm">
-              <strong>Dirección:</strong> {hospital.address}
-            </p>
-            <p className="text-sm">
-              <strong>Teléfono:</strong> {hospital.phone}
-            </p>
-            <p className="text-sm">
-              <strong>Especialidades:</strong> {hospital.specialties.join(', ')}
-            </p>
-            <div className="flex justify-end gap-4 mt-2">
+
+
               <button
                 onClick={() => setEditingHospital(hospital)}
                 className="text-blue-600 text-sm underline hover:text-blue-800"
@@ -264,23 +263,31 @@ const AdminHospitalsPage = () => {
                 Eliminar
               </button>
             </div>
-
           </li>
         ))}
       </ul>
+
        {editingHospital && (
-        <HospitalEditModal
-          hospital={editingHospital}
-          allSpecialties={specialties}
-          onClose={() => setEditingHospital(null)}
-          onUpdated={(updated) => {
-            setHospitals((prev) =>
-              prev.map((h) => (h._id === updated._id ? updated : h))
-            );
-            setEditingHospital(null);
-          }}
-        />
-      )}
+          <HospitalEditModal
+            hospital={editingHospital}
+            allSpecialties={specialties}
+            onClose={() => setEditingHospital(null)}
+            onUpdated={(updated) => {
+              setHospitals((prev) =>
+                prev.map((h) => (h._id === updated._id ? updated : h))
+              );
+              setEditingHospital(null);
+            }}
+          />
+        )}
+
+        {selectedHospital && (
+          <HospitalDetailsModal
+            hospital={selectedHospital}
+            onClose={() => setSelectedHospital(null)}
+          />
+        )}
+
     </div>
   );
 };
