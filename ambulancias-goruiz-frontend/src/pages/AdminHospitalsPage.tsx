@@ -5,10 +5,12 @@ import { useAuth } from '../hooks/useAuth';
 import { toast } from 'react-toastify';
 import Select from 'react-select';
 import { normalizeText } from '../utils/textUtils';
+import HospitalEditModal from '../components/hospitals/HospitalEditModal';
 
 const AdminHospitalsPage = () => {
   const { token } = useAuth();
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [editingHospital, setEditingHospital] = useState<Hospital | null>(null);
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>('all');
   const [searchName, setSearchName] = useState<string>('');
   const [showForm, setShowForm] = useState(false);
@@ -240,17 +242,40 @@ const AdminHospitalsPage = () => {
             <p className="text-sm">
               <strong>Especialidades:</strong> {hospital.specialties.join(', ')}
             </p>
-            <button
-              onClick={() => handleDeleteHospital(hospital._id)}
-              className="text-red-600 text-sm underline self-end mt-2 hover:text-red-800"
-            >
-              Eliminar
-            </button>
+            <div className="flex justify-end gap-4 mt-2">
+              <button
+                onClick={() => setEditingHospital(hospital)}
+                className="text-blue-600 text-sm underline hover:text-blue-800"
+              >
+                Editar
+              </button>
+              <button
+                onClick={() => handleDeleteHospital(hospital._id)}
+                className="text-red-600 text-sm underline hover:text-red-800"
+              >
+                Eliminar
+              </button>
+            </div>
+
           </li>
         ))}
       </ul>
+       {editingHospital && (
+        <HospitalEditModal
+          hospital={editingHospital}
+          allSpecialties={specialties}
+          onClose={() => setEditingHospital(null)}
+          onUpdated={(updated) => {
+            setHospitals((prev) =>
+              prev.map((h) => (h._id === updated._id ? updated : h))
+            );
+            setEditingHospital(null);
+          }}
+        />
+      )}
     </div>
   );
 };
 
 export default AdminHospitalsPage;
+

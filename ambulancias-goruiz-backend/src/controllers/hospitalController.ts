@@ -50,6 +50,7 @@ export const updateHospital = async (req: Request, res: Response) => {
         normalizeText(spec.charAt(0).toUpperCase() + spec.slice(1))
       );
     }
+console.log('🔧 Campos recibidos para actualizar:', updatedFields);
 
     const updated = await Hospital.findByIdAndUpdate(req.params.id, updatedFields, { new: true });
 
