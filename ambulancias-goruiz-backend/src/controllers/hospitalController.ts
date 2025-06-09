@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Hospital } from '../models/Hospital';
+import { normalizeText } from '../utils/textUtils';
 
 export const getAllHospitals = async (_req: Request, res: Response) => {
   try {
@@ -10,21 +11,56 @@ export const getAllHospitals = async (_req: Request, res: Response) => {
   }
 };
 
-export const createHospital = async (req: Request, res: Response) => {
+export const createHospital = async (req: Request, res: Response): Promise<void> => {
   try {
-    const newHospital = new Hospital(req.body);
-    await newHospital.save();
-    res.status(201).json(newHospital);
+    const { name, address, phone, specialties, isOpen } = req.body;
+
+    if (!name || !address || !phone || !specialties || !Array.isArray(specialties)) {
+      res.status(400).json({ message: 'Faltan campos obligatorios o tipo inválido' });
+      return;
+    }
+
+    const normalizedSpecialties = specialties.map((spec: string) =>
+      normalizeText(spec.charAt(0).toUpperCase() + spec.slice(1))
+    );
+
+    const hospital = new Hospital({
+      name,
+      address,
+      phone,
+      specialties: normalizedSpecialties,
+      isOpen,
+    });
+
+    const saved = await hospital.save();
+    res.status(201).json(saved);
   } catch (error) {
-    res.status(400).json({ message: 'Error al crear el hospital' });
+    console.error('Error al crear hospital:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
 
 export const updateHospital = async (req: Request, res: Response) => {
   try {
-    const updated = await Hospital.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updatedFields = { ...req.body };
+
+    // Normalizar especialidades si vienen en la petición
+    if (updatedFields.specialties && Array.isArray(updatedFields.specialties)) {
+      updatedFields.specialties = updatedFields.specialties.map((spec: string) =>
+        normalizeText(spec.charAt(0).toUpperCase() + spec.slice(1))
+      );
+    }
+
+    const updated = await Hospital.findByIdAndUpdate(req.params.id, updatedFields, { new: true });
+
+    if (!updated) {
+      res.status(404).json({ message: 'Hospital no encontrado' });
+      return;
+    }
+
     res.status(200).json(updated);
   } catch (error) {
+    console.error('❌ Error al actualizar hospital:', error);
     res.status(400).json({ message: 'Error al actualizar el hospital' });
   }
 };
