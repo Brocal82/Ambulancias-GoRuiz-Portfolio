@@ -47,6 +47,7 @@ export const updateHospital = async (req: Request, res: Response) => {
     if (updatedFields.specialties && Array.isArray(updatedFields.specialties)) {
       updatedFields.specialties = updatedFields.specialties.map((spec: string) => spec.trim());
     }
+console.log('🔧 Campos recibidos para actualizar:', updatedFields);
 
     const updated = await Hospital.findByIdAndUpdate(req.params.id, updatedFields, { new: true });
 
