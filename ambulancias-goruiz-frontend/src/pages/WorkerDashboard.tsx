@@ -21,10 +21,11 @@ const WorkerDashboard = () => {
           <p className="text-sm text-gray-600">Próximamente</p>
         </div>
 
-        <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
+        <Link to="/worker/hospitals" className="bg-white p-6 rounded shadow hover:shadow-md transition duration-200 block">
           <h2 className="text-lg font-semibold mb-2">🏥 Hospitales</h2>
-          <p className="text-sm text-gray-600">Próximamente</p>
-        </div>
+          <p className="text-sm text-gray-600">Ver hospitales disponibles</p>
+        </Link>
+
 
         <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
           <h2 className="text-lg font-semibold mb-2">🛠 Mecánicos</h2>
