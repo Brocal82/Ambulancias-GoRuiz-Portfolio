@@ -4,6 +4,7 @@ import type { Hospital } from '../types/hospital';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'react-toastify';
 import Select from 'react-select';
+import { normalizeText } from '../utils/textUtils';
 
 const AdminHospitalsPage = () => {
   const { token } = useAuth();
@@ -90,16 +91,29 @@ const AdminHospitalsPage = () => {
     }
   };
 
-  const specialties = Array.from(
-    new Set(hospitals.flatMap((h) => h.specialties))
-  );
+  const specialtiesSet = new Map<string, string>();
+
+  hospitals.forEach((h) => {
+    h.specialties.forEach((spec) => {
+      const normalized = normalizeText(spec);
+      if (!specialtiesSet.has(normalized)) {
+        specialtiesSet.set(normalized, spec); // guardamos el primero con tilde que aparece
+      }
+    });
+  });
+
+  const specialties = Array.from(specialtiesSet.values());
 
   const filteredHospitals = hospitals.filter((h) => {
     const matchesSpecialty =
-      selectedSpecialty === 'all' || h.specialties.includes(selectedSpecialty);
-    const matchesName = h.name.toLowerCase().includes(searchName.toLowerCase());
-    return matchesSpecialty && matchesName;
-  });
+      selectedSpecialty === 'all' ||
+      h.specialties.some(
+        (spec) => normalizeText(spec) === normalizeText(selectedSpecialty)
+      );
+      const matchesName = h.name.toLowerCase().includes(searchName.toLowerCase());
+      return matchesSpecialty && matchesName;
+    });
+
 
   return (
     <div className="p-6">
