@@ -20,15 +20,13 @@ export const createHospital = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const normalizedSpecialties = specialties.map((spec: string) =>
-      normalizeText(spec.charAt(0).toUpperCase() + spec.slice(1))
-    );
+    const cleanedSpecialties = specialties.map((spec: string) => spec.trim());
 
     const hospital = new Hospital({
       name,
       address,
       phone,
-      specialties: normalizedSpecialties,
+      specialties: cleanedSpecialties,
       isOpen,
     });
 
@@ -40,15 +38,14 @@ export const createHospital = async (req: Request, res: Response): Promise<void>
   }
 };
 
+
 export const updateHospital = async (req: Request, res: Response) => {
   try {
     const updatedFields = { ...req.body };
 
-    // Normalizar especialidades si vienen en la petición
+    // Limpiar espacios en blanco de especialidades sin quitar tildes ni cambiar formato
     if (updatedFields.specialties && Array.isArray(updatedFields.specialties)) {
-      updatedFields.specialties = updatedFields.specialties.map((spec: string) =>
-        normalizeText(spec.charAt(0).toUpperCase() + spec.slice(1))
-      );
+      updatedFields.specialties = updatedFields.specialties.map((spec: string) => spec.trim());
     }
 
     const updated = await Hospital.findByIdAndUpdate(req.params.id, updatedFields, { new: true });
@@ -64,6 +61,7 @@ export const updateHospital = async (req: Request, res: Response) => {
     res.status(400).json({ message: 'Error al actualizar el hospital' });
   }
 };
+
 
 export const deleteHospital = async (req: Request, res: Response) => {
   try {

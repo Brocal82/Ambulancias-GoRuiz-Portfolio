@@ -191,13 +191,21 @@ const AdminHospitalsPage = () => {
               className="border p-2 rounded w-full"
               required
             />
-            <input
+           <input
               type="text"
               placeholder="Especialidades (coma separadas)"
+              list="specialties"
               value={form.specialties}
               onChange={(e) => setForm({ ...form, specialties: e.target.value })}
               className="border p-2 rounded w-full"
             />
+
+            <datalist id="specialties">
+              {specialties.map((spec) => (
+                <option key={spec} value={spec} />
+              ))}
+            </datalist>
+
             <button
               type="submit"
               className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
