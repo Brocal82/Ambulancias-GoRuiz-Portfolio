@@ -3,6 +3,7 @@ import { getAllHospitals } from '../api/hospitals';
 import type { Hospital } from '../types/hospital';
 import HospitalDetailsModal from '../components/hospitals/HospitalDetailsModal';
 import { useAuth } from '../hooks/useAuth';
+import Select from 'react-select'
 
 const WorkerHospitalsPage = () => {
   const { token } = useAuth();
@@ -33,33 +34,45 @@ const WorkerHospitalsPage = () => {
 
   return (
     <div className="p-6">
-      <div className="max-w-sm mx-auto mb-6">
-  <h1 className="text-xl font-bold mb-4 text-center">🏥 Hospitales disponibles</h1>
+      <h1 className="text-2xl font-bold mb-4 text-center">🏥 Hospitales disponibles</h1>
 
-  <div className="flex flex-col gap-4">
-    <input
-      type="text"
-      placeholder="Buscar hospital por nombre..."
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-      className="border px-3 py-2 rounded w-full"
-    />
+      <div className="flex flex-col gap-4 max-w-sm mx-auto mb-6">
+        <div>
+          <label htmlFor="hospitalNameSearch" className="block text-sm font-medium mb-1">
+              Filtrar por nombre:
+          </label>
+          <input
+            type="text"
+            placeholder="Buscar hospital por nombre..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border px-3 py-2 rounded w-full"
+          />
+        </div>
+        <div>
+          <label htmlFor="specialtyFilter" className="block text-sm font-medium mb-1">
+              Filtrar por especialidad:
+          </label>
+          <Select
+            id="specialtyFilter"
+            options={[
+              { value: '', label: 'Todas las especialidades' },
+              ...allSpecialties.map((spec) => ({ value: spec, label: spec })),
+            ]}
+            value={
+              selectedSpecialty === ''
+                ? { value: '', label: 'Todas las especialidades' }
+                : { value: selectedSpecialty, label: selectedSpecialty }
+            }
+            onChange={(option) => setSelectedSpecialty(option?.value || '')}
+            className="text-sm"
+            classNamePrefix="react-select"
+            placeholder="Selecciona una especialidad"
+            isSearchable
+          />
+        </div>
 
-    <select
-      aria-label="Filtrar por especialidad"
-      value={selectedSpecialty}
-      onChange={(e) => setSelectedSpecialty(e.target.value)}
-      className="border px-3 py-2 rounded w-full"
-    >
-      <option value="">Todas las especialidades</option>
-      {allSpecialties.map((spec) => (
-        <option key={spec} value={spec}>
-          {spec}
-        </option>
-      ))}
-    </select>
-  </div>
-</div>
+      </div>
 
 
       <ul className="space-y-4">

@@ -126,7 +126,7 @@ const AdminHospitalsPage = () => {
       <div className="flex flex-col gap-4 max-w-sm mx-auto mb-6">
         <div>
           <label htmlFor="hospitalNameSearch" className="block text-sm font-medium mb-1">
-            Buscar por nombre:
+            Filtrar por nombre:
           </label>
           <input
             id="hospitalNameSearch"
