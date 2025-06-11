@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IDienstAssignment {
+  _id?: Types.ObjectId;
   date: string;
   vehicleNumber: string;
   startTime: string;
@@ -25,7 +26,9 @@ const AssignmentSchema = new Schema<IDienstAssignment>(
     driver: { type: Schema.Types.ObjectId, ref: 'User', required: false },
     medic: { type: Schema.Types.ObjectId, ref: 'User', required: false },
   },
+  { _id: true } // 👈 explícitamente indicamos que cada assignment debe tener su _id
 );
+
 
 const DienstSchema = new Schema<IDienst>({
   dienstNumber: { type: Number, required: true },
