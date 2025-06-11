@@ -7,6 +7,7 @@ import { useAuth } from "../hooks/useAuth";
 import { toast } from "react-toastify";
 import type { Trip, TripData } from "../types/trip";
 import type { AssignedDay } from "../types/assignedDay";
+import TripModal from "../components/trips/TripModal";
 
 
 
@@ -47,7 +48,17 @@ const MyWorkday = () => {
   const [canStartWork, setCanStartWork] = useState(false);
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [initialAmbulanceKm, setInitialAmbulanceKm] = useState("");
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
 
+  const handleOpenTripModal = (trip: Trip) => {
+    setSelectedTrip(trip);
+  };
+
+  const handleCloseTripModal = () => {
+  setSelectedTrip(null);
+};
+
+ 
 
   const fetchTrips = useCallback(async () => {
     if (!token) return;
@@ -406,26 +417,53 @@ return (
           </button>
         </div>
 
-        <h3 className="text-xl font-semibold mb-2">🧾 Viajes guardados hoy</h3>
-        <ul className="space-y-2">
-          {trips.map((trip: Trip, idx: number) => {
-            const totalKm = trip.kmEnd - trip.kmStart;
-            return (
-              <li key={trip._id || idx} className="bg-white p-3 rounded shadow">
-                <p><strong>{trip.auftragNumber}</strong> ({trip.timePickup} - {trip.timeEnd})</p>
-                <p>👤 Paciente: {trip.patientName || "Sin nombre"}</p>
-                <p>Dirección de recogida: {trip.fromAddress || "Sin dirección"}</p>
-                <p>Destino: {trip.toAddress || "Sin destino"}</p>
-                <p>KM inicio: {trip.kmStart} → KM fin: {trip.kmEnd} (Total: {totalKm} km)</p>
-                <p>Reportes: {trip.reports || "Sin observaciones"}</p>
-              </li>
-            );
-          })}
-        </ul>
+        <h3 className="text-xl font-semibold mb-2">🧾 Resumen de viajes</h3>
+          <ul className="space-y-2">
+            {trips.map((trip: Trip, idx: number) => {
+              const totalKm = trip.kmEnd - trip.kmStart;
+
+              // Calcular multiplicador
+              let multiplier = 1;
+              if (totalKm >= 20) multiplier = 2;
+              else if (totalKm >= 15) multiplier = 1.5;
+
+              return (
+                <li
+                  key={trip._id || idx}
+                  onClick={() => handleOpenTripModal(trip)}
+                  className="bg-white p-3 rounded shadow cursor-pointer hover:bg-blue-50"
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">
+                      {trip.auftragNumber}
+                      {trip.wasCancelled && (
+                        <span className="ml-2 text-red-600 font-medium">(cancelado)</span>
+                      )}
+                    </span>
+                    <span>
+                      {totalKm} km
+                      <span className="ml-3 text-green-700 font-bold text-xl">
+                        {multiplier}x
+                      </span>
+                    </span>
+
+
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
       </>
     )}
+
+    {selectedTrip && (
+      <TripModal trip={selectedTrip} onClose={handleCloseTripModal} />
+    )}
+
   </div>
 )
 };
 
 export default MyWorkday;
+
