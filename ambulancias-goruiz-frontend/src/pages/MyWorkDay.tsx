@@ -45,6 +45,9 @@ const MyWorkday = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [assignedDay, setAssignedDay] = useState<AssignedDay | null>(null);
   const [canStartWork, setCanStartWork] = useState(false);
+  const [vehicleNumber, setVehicleNumber] = useState("");
+  const [initialAmbulanceKm, setInitialAmbulanceKm] = useState("");
+
 
   const fetchTrips = useCallback(async () => {
     if (!token) return;
@@ -94,6 +97,12 @@ const MyWorkday = () => {
     fetchTrips();
     fetchAssignedDay();
   }, [fetchTrips, fetchAssignedDay]);
+
+  useEffect(() => {
+  if (assignedDay && !vehicleNumber) {
+    setVehicleNumber(assignedDay.vehicleNumber || "");
+  }
+}, [assignedDay, vehicleNumber]);
 
   const handleSaveTrip = async () => {
     if (!token) return;
@@ -183,6 +192,46 @@ return (
     ) : (
       <>
         <div className="bg-white p-4 rounded shadow mb-6 space-y-3">
+          {/* 👥 Equipo asignado y ambulancia por defecto */}
+          <div className="bg-gray-100 p-4 rounded shadow mb-6 flex justify-between items-start">
+            {/* 👥 Equipo asignado a la izquierda */}
+            {assignedDay && (
+              <div>
+                <p className="font-semibold text-lg mb-1">👥 Equipo asignado para hoy:</p>
+                <p>🚗 Conductor: {assignedDay.driver?.lastName}, {assignedDay.driver?.name}</p>
+                <p>🧑‍⚕️ Sanitario: {assignedDay.medic?.lastName}, {assignedDay.medic?.name}</p>
+              </div>
+            )}
+
+            {/* 🚐 Ambulancia y KM a la derecha */}
+            <div className="text-right">
+              <label htmlFor="vehicleNumber" className="block text-sm font-medium">🚐 Nº Ambulancia</label>
+              <input
+                id="vehicleNumber"
+                type="text"
+                placeholder="Ej. 42"
+                title="Número identificativo de la ambulancia"
+                value={vehicleNumber}
+                onChange={(e) => setVehicleNumber(e.target.value)}
+                className="border rounded p-1 w-28 text-right bg-white"
+              />
+
+              <label htmlFor="initialAmbulanceKm" className="block mt-2 text-sm font-medium">🔢 KM inicial</label>
+              <input
+                id="initialAmbulanceKm"
+                type="number"
+                placeholder="Ej. 123456"
+                title="Kilometraje de la ambulancia al comenzar el día"
+                value={initialAmbulanceKm}
+                onChange={(e) => setInitialAmbulanceKm(e.target.value)}
+                className="border rounded p-1 w-28 text-right bg-white"
+              />
+            </div>
+          </div>
+
+
+
+          {/* 👉 Empieza aquí tu formulario normal de viajes */}
           <div>
             <label htmlFor="auftragNumber" className="block text-sm">Número de Auftrag</label>
             <input
@@ -194,6 +243,7 @@ return (
               className="w-full border p-1 rounded"
             />
           </div>
+
 
           <div>
             <label htmlFor="patientName" className="block text-sm">Nombre del paciente</label>
