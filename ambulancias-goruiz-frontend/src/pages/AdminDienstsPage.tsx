@@ -85,7 +85,12 @@ const AdminPage = () => {
                   Crear
                 </button>
 
-                {diensts.some(d => new Date(d.weekStartDate).toISOString().split("T")[0] === weekStart.toISOString().split("T")[0]) && (
+                {diensts.some(d => {
+                  if (!d.weekStartDate) return false;
+                  const parsedDate = new Date(d.weekStartDate);
+                  return !isNaN(parsedDate.getTime()) &&
+                         parsedDate.toISOString().split("T")[0] === weekStart.toISOString().split("T")[0];
+                }) && (
                   <button
                     className="text-sm bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
                     onClick={async () => {
@@ -110,87 +115,82 @@ const AdminPage = () => {
               </div>
             </div>
 
-
-
             {diensts
-              .filter(
-                (dienst) =>
-                  new Date(dienst.weekStartDate).toISOString().split("T")[0] ===
-                  weekStart.toISOString().split("T")[0]
-              )
+              .filter((dienst) => {
+                if (!dienst.weekStartDate) return false;
+                const parsedDate = new Date(dienst.weekStartDate);
+                return !isNaN(parsedDate.getTime()) &&
+                       parsedDate.toISOString().split("T")[0] === weekStart.toISOString().split("T")[0];
+              })
               .map((dienst) => {
+                const weekDates = Array.from({ length: 7 }, (_, i) => {
+                  const d = new Date(weekStart);
+                  d.setDate(d.getDate() + i);
+                  return d.toISOString().split("T")[0];
+                });
 
-              const weekDates = Array.from({ length: 7 }, (_, i) => {
-                const d = new Date(weekStart);
-                d.setDate(d.getDate() + i);
-                return d.toISOString().split("T")[0];
-              });
+                return (
+                  <div key={`${weekStart.toISOString()}-${dienst.dienstNumber}`} className="mb-6">
+                    <p className="font-semibold text-md mb-1">Dienst #{dienst.dienstNumber}</p>
+                    <div className="grid grid-cols-7 gap-2">
+                      {weekDates.map((day) => {
+                        const assignment = dienst.assignments.find((a) => a.date === day);
+                        const bgColor = assignment
+                          ? isPartialAssignment(assignment)
+                            ? "bg-yellow-100"
+                            : "bg-blue-100"
+                          : "bg-green-100";
 
-              return (
-                <div key={`${weekStart.toISOString()}-${dienst.dienstNumber}`} className="mb-6">
-                  <p className="font-semibold text-md mb-1">Dienst #{dienst.dienstNumber}</p>
-                  <div className="grid grid-cols-7 gap-2">
-                    {weekDates.map((day) => {
-                      const assignment = dienst.assignments.find((a) => a.date === day);
-                      const bgColor = assignment
-                        ? isPartialAssignment(assignment)
-                          ? "bg-yellow-100"
-                          : "bg-blue-100"
-                        : "bg-green-100";
-
-                      return (
-                        <div
-                          key={day}
-                          className={`border rounded p-2 text-sm cursor-pointer hover:shadow ${bgColor}`}
-                          onClick={() =>
-                            setSelectedAssignment({
-                              date: day,
-                              assignment,
-                              dienstId: dienst._id,
-                            })
-                          }
-                        >
-                          <p className="font-semibold">
-                            {new Date(day).toLocaleDateString("es-ES", {
-                              weekday: "short",
-                              day: "2-digit",
-                              month: "2-digit",
-                            })}
-                          </p>
-                          {assignment ? (
-                            <>
-                              <p className="text-xs">🕒 {assignment.startTime} - {assignment.endTime}</p>
-                              <p className="text-xs">🚑 {assignment.vehicleNumber}</p>
-
-                              <p className="text-xs">
-                                👨‍✈️ Conductor:{" "}
-                                {typeof assignment.driver === "string"
-                                  ? assignment.driver
-                                  : assignment.driver
-                                  ? `${assignment.driver.lastName}, ${assignment.driver.name}`
-                                  : "—"}
-                              </p>
-
-                              <p className="text-xs">
-                                🧑‍⚕️ Sanitario:{" "}
-                                {typeof assignment.medic === "string"
-                                  ? assignment.medic
-                                  : assignment.medic
-                                  ? `${assignment.medic.lastName}, ${assignment.medic.name}`
-                                  : "—"}
-                              </p>
-                            </>
-
-                          ) : (
-                            <p className="text-xs text-green-800 mt-2">🌴 Libre</p>
-                          )}
-                        </div>
-                      );
-                    })}
+                        return (
+                          <div
+                            key={day}
+                            className={`border rounded p-2 text-sm cursor-pointer hover:shadow ${bgColor}`}
+                            onClick={() =>
+                              setSelectedAssignment({
+                                date: day,
+                                assignment,
+                                dienstId: dienst._id,
+                              })
+                            }
+                          >
+                            <p className="font-semibold">
+                              {new Date(day).toLocaleDateString("es-ES", {
+                                weekday: "short",
+                                day: "2-digit",
+                                month: "2-digit",
+                              })}
+                            </p>
+                            {assignment ? (
+                              <>
+                                <p className="text-xs">🕒 {assignment.startTime} - {assignment.endTime}</p>
+                                <p className="text-xs">🚑 {assignment.vehicleNumber}</p>
+                                <p className="text-xs">
+                                  👨‍✈️ Conductor:{" "}
+                                  {typeof assignment.driver === "string"
+                                    ? assignment.driver
+                                    : assignment.driver
+                                    ? `${assignment.driver.lastName}, ${assignment.driver.name}`
+                                    : "—"}
+                                </p>
+                                <p className="text-xs">
+                                  🧑‍⚕️ Sanitario:{" "}
+                                  {typeof assignment.medic === "string"
+                                    ? assignment.medic
+                                    : assignment.medic
+                                    ? `${assignment.medic.lastName}, ${assignment.medic.name}`
+                                    : "—"}
+                                </p>
+                              </>
+                            ) : (
+                              <p className="text-xs text-green-800 mt-2">🌴 Libre</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         );
       })}
