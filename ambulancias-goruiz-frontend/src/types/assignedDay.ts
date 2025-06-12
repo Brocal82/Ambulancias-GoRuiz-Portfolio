@@ -4,6 +4,7 @@ import type { UserRef } from "./dienst";
 export interface AssignedDay {
   dienstId: string;
   dienstNumber: number;
+  assignmentId: string;
   date: string;
   startTime: string;
   endTime: string;
@@ -11,4 +12,3 @@ export interface AssignedDay {
   driver: UserRef;
   medic: UserRef;
 }
-
