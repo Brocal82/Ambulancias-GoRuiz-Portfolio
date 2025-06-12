@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import type { Trip, TripData } from "../types/trip";
 import type { AssignedDay } from "../types/assignedDay";
 import TripModal from "../components/trips/TripModal";
+import { useNavigate } from "react-router-dom";
 
 
 
@@ -48,7 +49,12 @@ const MyWorkday = () => {
   const [canStartWork, setCanStartWork] = useState(false);
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [initialAmbulanceKm, setInitialAmbulanceKm] = useState("");
+  const [finalAmbulanceKm, setFinalAmbulanceKm] = useState("");
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const [isClosingDay, setIsClosingDay] = useState(false); // para controlar el estado del botón
+  const navigate = useNavigate();
+
+
 
   const handleOpenTripModal = (trip: Trip) => {
     setSelectedTrip(trip);
@@ -60,16 +66,24 @@ const MyWorkday = () => {
 
  
 
-  const fetchTrips = useCallback(async () => {
-    if (!token) return;
-    try {
-      const data = await getTripsByDate(today, token);
-      setTrips(data);
-    } catch (err) {
-      console.error(err);
-      toast.error("❌ Error al cargar los viajes del día");
-    }
-  }, [token, today]);
+const fetchTrips = useCallback(async () => {
+  if (!token) return;
+
+  const closedDay = localStorage.getItem("workdayClosed");
+  if (closedDay === today) {
+    console.log("📵 Día ya cerrado. No se cargan viajes.");
+    return;
+  }
+
+  try {
+    const data = await getTripsByDate(today, token);
+    setTrips(data);
+  } catch (err) {
+    console.error(err);
+    toast.error("❌ Error al cargar los viajes del día");
+  }
+}, [token, today]);
+
 
   const fetchAssignedDay = useCallback(async () => {
     if (!token || !user?._id) return;
@@ -108,6 +122,14 @@ const MyWorkday = () => {
     fetchTrips();
     fetchAssignedDay();
   }, [fetchTrips, fetchAssignedDay]);
+
+  useEffect(() => {
+  const closedDay = localStorage.getItem("workdayClosed");
+  if (closedDay === today) {
+    setIsClosingDay(true);
+  }
+}, [today]);
+
 
   useEffect(() => {
   if (assignedDay && !vehicleNumber) {
@@ -188,6 +210,64 @@ const MyWorkday = () => {
     }
   };
 
+  const handleCloseWorkday = async () => {
+    if (!token || !assignedDay || trips.length === 0) {
+      toast.warn("🚫 No hay suficientes datos para cerrar el día.");
+      return;
+    }
+
+    console.log("📦 assignedDay completo:", assignedDay);
+    console.log("🟡 Enviando assignmentId:", assignedDay.assignmentId);
+
+    if (!vehicleNumber || !initialAmbulanceKm || !finalAmbulanceKm) {
+      toast.warn("🚐 Por favor, introduce el número de ambulancia, los KM iniciales y los KM finales.");
+      return;
+    }
+
+    // ✅ Calcular total de KM de todos los viajes
+    const totalTripKm = trips.reduce((acc, trip) => {
+      const diff = trip.kmEnd - trip.kmStart;
+      return acc + (diff > 0 ? diff : 0);
+    }, 0);
+
+    try {
+      const summaryData = {
+        date: today,
+        assignmentId: assignedDay.assignmentId,
+        vehicleNumber,
+        initialKm: Number(initialAmbulanceKm),
+        finalKm: Number(finalAmbulanceKm),
+        trips,
+        totalTripKm,
+      };
+
+      const response = await fetch("http://localhost:5000/api/workday-summary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(summaryData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error desconocido");
+      }
+
+      toast.success("✅ Día cerrado y datos enviados al admin.");
+      setTrips([]); // ✅ Borrar viajes
+      setIsClosingDay(true); // ✅ Esto elimina el warning
+      localStorage.setItem("workdayClosed", today); // 🟢 Guardar que este día fue cerra
+      navigate("/worker"); // ✅ Volver al dashboard
+    } catch (error) {
+      console.error("❌ Error al cerrar el día:", error);
+      toast.error("❌ No se pudo cerrar el día.");
+    }
+  };
+
+
+
 return (
   <div className="p-6 max-w-3xl mx-auto">
     <h2 className="text-2xl font-bold mb-4">📋 Mi jornada de hoy: {today}</h2>
@@ -205,40 +285,57 @@ return (
         <div className="bg-white p-4 rounded shadow mb-6 space-y-3">
           {/* 👥 Equipo asignado y ambulancia por defecto */}
           <div className="bg-gray-100 p-4 rounded shadow mb-6 flex justify-between items-start">
-            {/* 👥 Equipo asignado a la izquierda */}
-            {assignedDay && (
-              <div>
-                <p className="font-semibold text-lg mb-1">👥 Equipo asignado para hoy:</p>
-                <p>🚗 Conductor: {assignedDay.driver?.lastName}, {assignedDay.driver?.name}</p>
-                <p>🧑‍⚕️ Sanitario: {assignedDay.medic?.lastName}, {assignedDay.medic?.name}</p>
-              </div>
-            )}
+  {/* 👥 Equipo asignado a la izquierda */}
+  {assignedDay && (
+    <div>
+      <p className="font-semibold text-lg mb-1">👥 Equipo asignado para hoy:</p>
+      <p>🚗 Conductor: {assignedDay.driver?.lastName}, {assignedDay.driver?.name}</p>
+      <p>🧑‍⚕️ Sanitario: {assignedDay.medic?.lastName}, {assignedDay.medic?.name}</p>
+    </div>
+  )}
 
-            {/* 🚐 Ambulancia y KM a la derecha */}
-            <div className="text-right">
-              <label htmlFor="vehicleNumber" className="block text-sm font-medium">🚐 Nº Ambulancia</label>
-              <input
-                id="vehicleNumber"
-                type="text"
-                placeholder="Ej. 42"
-                title="Número identificativo de la ambulancia"
-                value={vehicleNumber}
-                onChange={(e) => setVehicleNumber(e.target.value)}
-                className="border rounded p-1 w-28 text-right bg-white"
-              />
+  {/* 🚐 Ambulancia y KM a la derecha, agrupados y alineados */}
+    <div className="text-right w-full max-w-xs space-y-4">
+      <div>
+        <label htmlFor="vehicleNumber" className="block text-sm font-medium text-gray-700">🚐 Nº Ambulancia</label>
+        <input
+          id="vehicleNumber"
+          type="text"
+          placeholder="Ej. AMB-01"
+          title="Número identificativo de la ambulancia"
+          value={vehicleNumber}
+          onChange={(e) => setVehicleNumber(e.target.value)}
+          className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
+        />
+      </div>
 
-              <label htmlFor="initialAmbulanceKm" className="block mt-2 text-sm font-medium">🔢 KM inicial</label>
-              <input
-                id="initialAmbulanceKm"
-                type="number"
-                placeholder="Ej. 123456"
-                title="Kilometraje de la ambulancia al comenzar el día"
-                value={initialAmbulanceKm}
-                onChange={(e) => setInitialAmbulanceKm(e.target.value)}
-                className="border rounded p-1 w-28 text-right bg-white"
-              />
-            </div>
-          </div>
+      <div>
+        <label htmlFor="initialAmbulanceKm" className="block text-sm font-medium text-gray-700">🔢 KM inicial</label>
+        <input
+          id="initialAmbulanceKm"
+          type="number"
+          placeholder="Ej. 123456"
+          title="Kilometraje de la ambulancia al comenzar el día"
+          value={initialAmbulanceKm}
+          onChange={(e) => setInitialAmbulanceKm(e.target.value)}
+          className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="finalAmbulanceKm" className="block text-sm font-medium text-gray-700">🏁 KM final al regresar</label>
+        <input
+          id="finalAmbulanceKm"
+          type="number"
+          value={finalAmbulanceKm}
+          onChange={(e) => setFinalAmbulanceKm(e.target.value)}
+          className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
+          placeholder="Ej. 125678"
+        />
+      </div>
+    </div>
+  </div>
+
 
 
 
@@ -453,6 +550,16 @@ return (
               );
             })}
           </ul>
+
+          {!isClosingDay && (
+            <button
+              onClick={handleCloseWorkday}
+              className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
+            >
+              ✅ Cerrar día y enviar resumen
+            </button>
+          )}
+
 
       </>
     )}
