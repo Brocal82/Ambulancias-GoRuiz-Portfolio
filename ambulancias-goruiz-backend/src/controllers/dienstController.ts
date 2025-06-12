@@ -274,6 +274,7 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
             date: assignment.date,
             startTime: assignment.startTime,
             endTime: assignment.endTime,
+            assignmentId: assignment._id?.toString(), // ✅ NUEVO CAMPO
             vehicleNumber: assignment.vehicleNumber,
             driver:
               typeof assignment.driver === "object"
