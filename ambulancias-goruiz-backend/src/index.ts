@@ -42,7 +42,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/diensts', dienstRoutes);
 app.use('/api/hospitals', hospitalRoutes);
 app.use('/api/trips', tripRoutes);
-app.use("/api/workday-summary", workdaySummaryRoutes);
+app.use('/api/workday-summary', workdaySummaryRoutes);
 
 
 // Conexión y arranque del servidor

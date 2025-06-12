@@ -1,3 +1,4 @@
+//backend/src/routes/workdaySummaryRoutes.ts
 import express from "express";
 import { createWorkdaySummary } from "../controllers/workdaySummaryController";
 import { authenticateToken } from "../middlewares/authMiddleware";

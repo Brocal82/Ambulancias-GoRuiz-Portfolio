@@ -5,12 +5,18 @@ import mongoose from "mongoose";
 
 export const createWorkdaySummary = async (req: Request, res: Response) => {
   try {
-    const { date, assignmentId, vehicleNumber, initialKm, finalKm } = req.body;
+    const { date, assignmentId, vehicleNumber, initialKm, finalKm, trips } = req.body;
 
     if (!date || !assignmentId || !vehicleNumber || initialKm === undefined || finalKm === undefined) {
       res.status(400).json({ message: "Faltan campos obligatorios" });
       return;
     }
+
+    if (!Array.isArray(trips) || trips.length === 0) {
+      res.status(400).json({ message: "Debes enviar al menos un viaje en el resumen (trips)" });
+      return;
+    }
+
 
     const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
 
@@ -40,6 +46,7 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
       vehicleNumber,
       initialKm,
       finalKm,
+      trips,
     });
 
     res.status(201).json(newSummary);
