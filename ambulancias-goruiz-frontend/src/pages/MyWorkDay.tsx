@@ -54,6 +54,12 @@ const MyWorkday = () => {
   const [finalAmbulanceKm, setFinalAmbulanceKm] = useState("");
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [isClosingDay, setIsClosingDay] = useState(false); // para controlar el estado del botón
+  // --- NUEVOS estados para el flujo de cierre --------------------------
+  const [showCloseQuestion, setShowCloseQuestion] = useState(false); // ¿Final del día?
+  const [isFinalClosure, setIsFinalClosure] = useState<boolean | null>(null); // true = total | false = parcial
+  const [showReviewModal, setShowReviewModal] = useState(false); // se abrirá en la fase 2
+
+
   const navigate = useNavigate();
 
 
@@ -64,28 +70,28 @@ const MyWorkday = () => {
   };
 
   const handleCloseTripModal = () => {
-  setSelectedTrip(null);
-};
+    setSelectedTrip(null);
+  };
 
- 
 
-const fetchTrips = useCallback(async () => {
-  if (!token) return;
 
-  const closedDay = localStorage.getItem("workdayClosed");
-  if (closedDay === today) {
-    console.log("📵 Día ya cerrado. No se cargan viajes.");
-    return;
-  }
+  const fetchTrips = useCallback(async () => {
+    if (!token) return;
 
-  try {
-    const data = await getTripsByDate(today, token);
-    setTrips(data);
-  } catch (err) {
-    console.error(err);
-    toast.error("❌ Error al cargar los viajes del día");
-  }
-}, [token, today]);
+    const closedDay = localStorage.getItem("workdayClosed");
+    if (closedDay === today) {
+      console.log("📵 Día ya cerrado. No se cargan viajes.");
+      return;
+    }
+
+    try {
+      const data = await getTripsByDate(today, token);
+      setTrips(data);
+    } catch (err) {
+      console.error(err);
+      toast.error("❌ Error al cargar los viajes del día");
+    }
+  }, [token, today]);
 
 
   const fetchAssignedDay = useCallback(async () => {
@@ -108,37 +114,45 @@ const fetchTrips = useCallback(async () => {
   }, [token, user, today]);
 
   const checkStartPermission = (dienst: AssignedDay) => {
-      const [startHour, startMinute] = dienst.startTime.split(':').map(Number);
-      const now = new Date();
-      const dienstStart = new Date();
+    const [startHour, startMinute] = dienst.startTime.split(':').map(Number);
+    const now = new Date();
+    const dienstStart = new Date();
 
-      dienstStart.setHours(startHour);
-      dienstStart.setMinutes(startMinute - 30);
-      dienstStart.setSeconds(0);
+    dienstStart.setHours(startHour);
+    dienstStart.setMinutes(startMinute - 30);
+    dienstStart.setSeconds(0);
 
-      setCanStartWork(now >= dienstStart);
-    };
+    setCanStartWork(now >= dienstStart);
+  };
 
-  
+
 
   useEffect(() => {
     fetchTrips();
     fetchAssignedDay();
   }, [fetchTrips, fetchAssignedDay]);
 
+  
+  // Comprueba si el día ya fue cerrado (se guarda workdayClosed-YYYY-MM-DD)
+  
   useEffect(() => {
-  const closedDay = localStorage.getItem("workdayClosed");
-  if (closedDay === today) {
-    setIsClosingDay(true);
-  }
-}, [today]);
+    const closedDayKey = `workdayClosed-${today}`;      // 👉 clave única por fecha
+    const closedFlag = localStorage.getItem(closedDayKey);
+
+    if (closedFlag === "true") {
+      setIsClosingDay(true);   // bloquea formulario
+    } else {
+      setIsClosingDay(false);  // permite trabajar
+    }
+  }, [today]);
 
 
+
   useEffect(() => {
-  if (assignedDay && !vehicleNumber) {
-    setVehicleNumber(assignedDay.vehicleNumber || "");
-  }
-}, [assignedDay, vehicleNumber]);
+    if (assignedDay && !vehicleNumber) {
+      setVehicleNumber(assignedDay.vehicleNumber || "");
+    }
+  }, [assignedDay, vehicleNumber]);
 
   const handleSaveTrip = async () => {
     if (!token) return;
@@ -165,7 +179,7 @@ const fetchTrips = useCallback(async () => {
       return;
     }
 
-        if (!canStartTripNow(assignedDay.startTime)) {
+    if (!canStartTripNow(assignedDay.startTime)) {
       toast.error("❌ Solo puedes crear viajes 30 minutos antes del inicio del Dienst");
       return;
     }
@@ -216,61 +230,53 @@ const fetchTrips = useCallback(async () => {
     }
   };
 
-  const handleCloseWorkday = async () => {
-    if (!token || !assignedDay || trips.length === 0) {
-      toast.warn("🚫 No hay suficientes datos para cerrar el día.");
-      return;
-    }
 
-    console.log("📦 assignedDay completo:", assignedDay);
-    console.log("🟡 Enviando assignmentId:", assignedDay.assignmentId);
+  if (!vehicleNumber || !initialAmbulanceKm || !finalAmbulanceKm) {
+    toast.warn("🚐 Por favor, introduce el número de ambulancia, los KM iniciales y los KM finales.");
+    return;
+  }
 
-    if (!vehicleNumber || !initialAmbulanceKm || !finalAmbulanceKm) {
-      toast.warn("🚐 Por favor, introduce el número de ambulancia, los KM iniciales y los KM finales.");
-      return;
-    }
+//   // ✅ Calcular total de KM de todos los viajes
+//   const totalTripKm = trips.reduce((acc, trip) => {
+//     const diff = trip.kmEnd - trip.kmStart;
+//     return acc + (diff > 0 ? diff : 0);
+//   }, 0);
 
-    // ✅ Calcular total de KM de todos los viajes
-    const totalTripKm = trips.reduce((acc, trip) => {
-      const diff = trip.kmEnd - trip.kmStart;
-      return acc + (diff > 0 ? diff : 0);
-    }, 0);
+//   try {
+//     const summaryData = {
+//       date: today,
+//       assignmentId: assignedDay!.assignmentId,
+//       vehicleNumber,
+//       initialKm: Number(initialAmbulanceKm),
+//       finalKm: Number(finalAmbulanceKm),
+//       trips,
+//       totalTripKm,
+//     };
 
-    try {
-      const summaryData = {
-        date: today,
-        assignmentId: assignedDay.assignmentId,
-        vehicleNumber,
-        initialKm: Number(initialAmbulanceKm),
-        finalKm: Number(finalAmbulanceKm),
-        trips,
-        totalTripKm,
-      };
+//     const response = await fetch("http://localhost:5000/api/workday-summary", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${token}`,
+//       },
+//       body: JSON.stringify(summaryData),
+//     });
 
-      const response = await fetch("http://localhost:5000/api/workday-summary", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(summaryData),
-      });
+//     if (!response.ok) {
+//       const errorData = await response.json();
+//       throw new Error(errorData.message || "Error desconocido");
+//     }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error desconocido");
-      }
-
-      toast.success("✅ Día cerrado y datos enviados al admin.");
-      setTrips([]); // ✅ Borrar viajes
-      setIsClosingDay(true); // ✅ Esto elimina el warning
-      localStorage.setItem("workdayClosed", today); // 🟢 Guardar que este día fue cerra
-      navigate("/worker"); // ✅ Volver al dashboard
-    } catch (error) {
-      console.error("❌ Error al cerrar el día:", error);
-      toast.error("❌ No se pudo cerrar el día.");
-    }
-  };
+//     toast.success("✅ Día cerrado y datos enviados al admin.");
+//     setTrips([]); // ✅ Borrar viajes
+//     setIsClosingDay(true); // ✅ Esto elimina el warning
+//     localStorage.setItem("workdayClosed", today); // 🟢 Guardar que este día fue cerra
+//     navigate("/worker"); // ✅ Volver al dashboard
+//   } catch (error) {
+//     console.error("❌ Error al cerrar el día:", error);
+//     toast.error("❌ No se pudo cerrar el día.");
+//   }
+// };
 
 
 
@@ -278,7 +284,11 @@ return (
   <div className="p-6 max-w-3xl mx-auto">
     <h2 className="text-2xl font-bold mb-4">📋 Mi jornada de hoy: {today}</h2>
 
-    {!assignedDay ? (
+    {isClosingDay ? (
+      <div className="bg-red-100 text-red-800 p-4 rounded shadow mb-6">
+        ✅ Día cerrado. No hay Dienst activo para hoy.
+      </div>
+    ) : !assignedDay ? (
       <div className="bg-yellow-100 text-yellow-800 p-4 rounded shadow mb-6">
         🚫 Hoy no tienes un Dienst asignado.
       </div>
@@ -291,59 +301,60 @@ return (
         <div className="bg-white p-4 rounded shadow mb-6 space-y-3">
           {/* 👥 Equipo asignado y ambulancia por defecto */}
           <div className="bg-gray-100 p-4 rounded shadow mb-6 flex justify-between items-start">
-  {/* 👥 Equipo asignado a la izquierda */}
-  {assignedDay && (
-    <div>
-      <p className="text-sm text-gray-600 mb-1">
-        ⏰ Horario: <strong>{assignedDay.startTime}</strong> – <strong>{assignedDay.endTime}</strong>
-      </p>
-      <p className="font-semibold text-lg mb-1">👥 Equipo asignado para hoy:</p>
-      <p>🚗 Conductor: {assignedDay.driver?.lastName}, {assignedDay.driver?.name}</p>
-      <p>🧑‍⚕️ Sanitario: {assignedDay.medic?.lastName}, {assignedDay.medic?.name}</p>
-    </div>
-  )}
 
-  {/* 🚐 Ambulancia y KM a la derecha, agrupados y alineados */}
-    <div className="text-right w-full max-w-xs space-y-4">
-      <div>
-        <label htmlFor="vehicleNumber" className="block text-sm font-medium text-gray-700">🚐 Nº Ambulancia</label>
-        <input
-          id="vehicleNumber"
-          type="text"
-          placeholder="Ej. AMB-01"
-          title="Número identificativo de la ambulancia"
-          value={vehicleNumber}
-          onChange={(e) => setVehicleNumber(e.target.value)}
-          className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
-        />
-      </div>
+            {/* 👥 Equipo asignado a la izquierda */}
+            {assignedDay && (
+              <div>
+                <p className="text-sm text-gray-600 mb-1">
+                  ⏰ Horario: <strong>{assignedDay.startTime}</strong> – <strong>{assignedDay.endTime}</strong>
+                </p>
+                <p className="font-semibold text-lg mb-1">👥 Equipo asignado para hoy:</p>
+                <p>🚗 Conductor: {assignedDay.driver?.lastName}, {assignedDay.driver?.name}</p>
+                <p>🧑‍⚕️ Sanitario: {assignedDay.medic?.lastName}, {assignedDay.medic?.name}</p>
+              </div>
+            )}
 
-      <div>
-        <label htmlFor="initialAmbulanceKm" className="block text-sm font-medium text-gray-700">🔢 KM inicial</label>
-        <input
-          id="initialAmbulanceKm"
-          type="number"
-          placeholder="Ej. 123456"
-          title="Kilometraje de la ambulancia al comenzar el día"
-          value={initialAmbulanceKm}
-          onChange={(e) => setInitialAmbulanceKm(e.target.value)}
-          className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
-        />
-      </div>
+            {/* 🚐 Ambulancia y KM a la derecha, agrupados y alineados */}
+            <div className="text-right w-full max-w-xs space-y-4">
+              <div>
+                <label htmlFor="vehicleNumber" className="block text-sm font-medium text-gray-700">🚐 Nº Ambulancia</label>
+                <input
+                  id="vehicleNumber"
+                  type="text"
+                  placeholder="Ej. AMB-01"
+                  title="Número identificativo de la ambulancia"
+                  value={vehicleNumber}
+                  onChange={(e) => setVehicleNumber(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
+                />
+              </div>
 
-      <div>
-        <label htmlFor="finalAmbulanceKm" className="block text-sm font-medium text-gray-700">🏁 KM final al regresar</label>
-        <input
-          id="finalAmbulanceKm"
-          type="number"
-          value={finalAmbulanceKm}
-          onChange={(e) => setFinalAmbulanceKm(e.target.value)}
-          className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
-          placeholder="Ej. 125678"
-        />
-      </div>
-    </div>
-  </div>
+              <div>
+                <label htmlFor="initialAmbulanceKm" className="block text-sm font-medium text-gray-700">🔢 KM inicial</label>
+                <input
+                  id="initialAmbulanceKm"
+                  type="number"
+                  placeholder="Ej. 123456"
+                  title="Kilometraje de la ambulancia al comenzar el día"
+                  value={initialAmbulanceKm}
+                  onChange={(e) => setInitialAmbulanceKm(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="finalAmbulanceKm" className="block text-sm font-medium text-gray-700">🏁 KM final al regresar</label>
+                <input
+                  id="finalAmbulanceKm"
+                  type="number"
+                  value={finalAmbulanceKm}
+                  onChange={(e) => setFinalAmbulanceKm(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
+                  placeholder="Ej. 125678"
+                />
+              </div>
+            </div>
+          </div>
 
 
 
@@ -410,7 +421,7 @@ return (
                 className="w-full border p-1 rounded"
               />
             </div>
-            
+
             <div className="flex-1">
               <label htmlFor="timeAtHome" className="block text-sm">
                 Hora llegada domicilio
@@ -546,63 +557,108 @@ return (
         </div>
 
         <h3 className="text-xl font-semibold mb-2">🧾 Resumen de viajes</h3>
-          <ul className="space-y-2">
-            {/* ---------- LISTA DE TRIPS ---------- */}
-            {trips.map((trip: Trip, idx: number) => {
-              const totalKm = trip.kmEnd - trip.kmStart;
+        <ul className="space-y-2">
+          {/* ---------- LISTA DE TRIPS ---------- */}
+          {trips.map((trip: Trip, idx: number) => {
+            const totalKm = trip.kmEnd - trip.kmStart;
 
-              /** Decide el multiplicador:
-               *  1) Si el viaje tiene countsTrip (0 ó 1) porque se canceló y marcaste “Cuenta / No cuenta”,
-               *     usamos ese valor directamente.
-               *  2) Si no, aplicamos la regla automática por kilómetros.
-               */
-              const getMultiplier = () => {
-                if (typeof trip.countsTrip === "number") return trip.countsTrip;
-                if (totalKm >= 20) return 2;
-                if (totalKm >= 15) return 1.5;
-                return 1;
-              };
+            /** Decide el multiplicador:
+             *  1) Si el viaje tiene countsTrip (0 ó 1) porque se canceló y marcaste “Cuenta / No cuenta”,
+             *     usamos ese valor directamente.
+             *  2) Si no, aplicamos la regla automática por kilómetros.
+             */
+            const getMultiplier = () => {
+              if (typeof trip.countsTrip === "number") return trip.countsTrip;
+              if (totalKm >= 20) return 2;
+              if (totalKm >= 15) return 1.5;
+              return 1;
+            };
 
-              const multiplier = getMultiplier();
+            const multiplier = getMultiplier();
 
-              return (
-                <li
-                  key={trip._id || idx}
-                  onClick={() => handleOpenTripModal(trip)}
-                  className="bg-white p-3 rounded shadow cursor-pointer hover:bg-blue-50"
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold">
-                      {trip.auftragNumber}
-                      {trip.wasCancelled && (
-                        <span className="ml-2 text-red-600 font-medium">
-                          (cancelado)
-                        </span>
-                      )}
-                    </span>
-
-                    {/* 👉 Km totales + multiplicador (0 / 1 / 1.5 / 2) */}
-                    <span>
-                      {totalKm} km
-                      <span className="ml-3 text-green-700 font-bold text-xl">
-                        {multiplier}x
+            return (
+              <li
+                key={trip._id || idx}
+                onClick={() => handleOpenTripModal(trip)}
+                className="bg-white p-3 rounded shadow cursor-pointer hover:bg-blue-50"
+              >
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">
+                    {trip.auftragNumber}
+                    {trip.wasCancelled && (
+                      <span className="ml-2 text-red-600 font-medium">
+                        (cancelado)
                       </span>
+                    )}
+                  </span>
+
+                  {/* 👉 Km totales + multiplicador (0 / 1 / 1.5 / 2) */}
+                  <span>
+                    {totalKm} km
+                    <span className="ml-3 text-green-700 font-bold text-xl">
+                      {multiplier}x
                     </span>
-                  </div>
-                </li>
-              );
-            })}
+                  </span>
+                </div>
+              </li>
+            );
+          })}
 
-          </ul>
+        </ul>
 
-          {!isClosingDay && (
-            <button
-              onClick={handleCloseWorkday}
-              className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
-            >
-              ✅ Cerrar día y enviar resumen
-            </button>
-          )}
+        {!isClosingDay && (
+          <button
+            onClick={() => setShowCloseQuestion(true)}
+            className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
+          >
+            ✅ Cerrar día y enviar resumen
+          </button>
+        )}
+
+
+        {/* --------------------------------------------------------------
+  // PREGUNTA CLAVE: ¿es el final del día?
+---------------------------------------------------------------- */}
+        {showCloseQuestion && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+            <div className="bg-white p-6 rounded shadow-lg w-full max-w-sm space-y-4">
+              <h4 className="text-lg font-semibold text-center">¿Es el final del día?</h4>
+
+              <div className="space-y-2">
+                <button
+                  onClick={() => {
+                    setIsFinalClosure(true);
+                    setShowCloseQuestion(false);
+                    setShowReviewModal(true); // Modal de REPASO total (fase 2)
+                  }}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded"
+                >
+                  ✅ Sí, cierre completo
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsFinalClosure(false);
+                    setShowCloseQuestion(false);
+                    setShowReviewModal(true); // Modal de REPASO parcial (fase 2)
+                  }}
+                  className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded"
+                >
+                  ⚠️ No, enviar cierre parcial
+                </button>
+
+                <button
+                  onClick={() => setShowCloseQuestion(false)}
+                  className="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 rounded"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+
 
 
       </>
@@ -613,8 +669,10 @@ return (
     )}
 
   </div>
-)
+);
 };
 
+
 export default MyWorkday;
+
 
