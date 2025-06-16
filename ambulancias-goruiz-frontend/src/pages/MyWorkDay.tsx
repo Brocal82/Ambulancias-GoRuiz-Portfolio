@@ -9,6 +9,7 @@ import type { Trip, TripData } from "../types/trip";
 import type { AssignedDay } from "../types/assignedDay";
 import TripModal from "../components/trips/TripModal";
 import { useNavigate } from "react-router-dom";
+import FinalReviewModal from "../components/workday/FinalReviewModal";
 
 
 
@@ -91,7 +92,7 @@ const MyWorkday = () => {
       console.error(err);
       toast.error("❌ Error al cargar los viajes del día");
     }
-  }, [token, today]);
+  }, [token, today, isClosingDay]);
 
 
   const fetchAssignedDay = useCallback(async () => {
@@ -154,87 +155,146 @@ const MyWorkday = () => {
     }
   }, [assignedDay, vehicleNumber]);
 
-  const handleSaveTrip = async () => {
-    if (!token) return;
+const handleSaveTrip = async () => {
+  if (!token) return;
 
-    if (
-      !auftragNumber ||
-      !patientName ||
-      !fromAddress ||
-      !toAddress ||
-      !timeWarning ||
-      !timeAtHome ||
-      !timePickup ||
-      !timeArrival ||
-      !timeEnd ||
-      !kmStart ||
-      !kmEnd
-    ) {
-      toast.warn("🚫 Por favor, rellena todos los campos obligatorios");
+  if (
+    !auftragNumber ||
+    !patientName ||
+    !fromAddress ||
+    !toAddress ||
+    !timeWarning ||
+    !timeAtHome ||
+    !timePickup ||
+    !timeArrival ||
+    !timeEnd ||
+    !kmStart ||
+    !kmEnd
+  ) {
+    toast.warn("🚫 Por favor, rellena todos los campos obligatorios");
+    return;
+  }
+
+  if (!assignedDay) {
+    toast.error("❌ No tienes asignación de dienst para hoy");
+    return;
+  }
+
+  if (!canStartTripNow(assignedDay.startTime)) {
+    toast.error("❌ Solo puedes crear viajes 30 minutos antes del inicio del Dienst");
+    return;
+  }
+
+  try {
+    const newTrip: TripData = {
+      date: today,
+      assignmentId: assignedDay.dienstId,
+      driver: assignedDay.driver._id,
+      medic: assignedDay.medic._id,
+      auftragNumber,
+      patientName,
+      fromAddress,
+      toAddress,
+      timeWarning,
+      timeAtHome,
+      timePickup,
+      timeArrival,
+      timeEnd,
+      kmStart: Number(kmStart),
+      kmEnd: Number(kmEnd),
+      wasCancelled,
+      countsTrip,
+      reports,
+    };
+
+    const createdTrip = await createTrip(newTrip, token); // ✅ obtenemos el viaje creado
+    toast.success("✅ Viaje guardado");
+
+    // ✅ Añadir al estado para mostrarlo al instante
+    setTrips((prev) => [...prev, createdTrip]);
+
+    // ✅ Limpiar campos del formulario
+    setAuftragNumber("");
+    setPatientName("");
+    setFromAddress("");
+    setToAddress("");
+    setTimeWarning("");
+    setTimeAtHome("");
+    setTimePickup("");
+    setTimeArrival("");
+    setTimeEnd("");
+    setKmStart("");
+    setKmEnd("");
+    setWasCancelled(false);
+    setCountsTrip(true);
+    setReports("");
+
+  } catch (err) {
+    console.error(err);
+    toast.error("❌ Error al guardar el viaje");
+  }
+};
+
+
+  /**
+   * Confirma el CIERRE DEFINITIVO del día.
+   * - Envía resumen al backend
+   * - Limpia estados
+   * - Marca el día como cerrado en localStorage
+   * - Redirige al dashboard
+   */
+  const handleConfirmFinalClosure = async () => {
+    if (!token || !assignedDay) return;
+
+    // validaciones mínimas
+    if (!vehicleNumber || !initialAmbulanceKm || !finalAmbulanceKm) {
+      toast.warn("🚐 Introduce nº de ambulancia y KM inicial/final.");
       return;
     }
-
-    if (!assignedDay) {
-      toast.error("❌ No tienes asignación de dienst para hoy");
+    if (trips.length === 0) {
+      toast.warn("🚫 No hay viajes para enviar.");
       return;
     }
-
-    if (!canStartTripNow(assignedDay.startTime)) {
-      toast.error("❌ Solo puedes crear viajes 30 minutos antes del inicio del Dienst");
-      return;
-    }
-
 
     try {
-      const newTrip: TripData = {
+      // resumen que ya usabas antes
+      const totalTripKm = trips.reduce((acc, t) => acc + (t.kmEnd - t.kmStart), 0);
+
+      const summaryData = {
         date: today,
-        assignmentId: assignedDay.dienstId,
-        driver: assignedDay.driver._id,
-        medic: assignedDay.medic._id,
-        auftragNumber,
-        patientName,
-        fromAddress,
-        toAddress,
-        timeWarning,
-        timeAtHome,
-        timePickup,
-        timeArrival,
-        timeEnd,
-        kmStart: Number(kmStart),
-        kmEnd: Number(kmEnd),
-        wasCancelled,
-        countsTrip,
-        reports,
+        assignmentId: assignedDay.assignmentId,
+        vehicleNumber,
+        initialKm: Number(initialAmbulanceKm),
+        finalKm: Number(finalAmbulanceKm),
+        trips,
+        totalTripKm,
       };
 
-      await createTrip(newTrip, token);
-      toast.success("✅ Viaje guardado");
-      setAuftragNumber("");
-      setPatientName("");
-      setFromAddress("");
-      setToAddress("");
-      setTimeWarning("");
-      setTimeAtHome("")
-      setTimePickup("");
-      setTimeArrival("");
-      setTimeEnd("");
-      setKmStart("");
-      setKmEnd("");
-      setWasCancelled(false);
-      setCountsTrip(true);
-      setReports("");
-      fetchTrips();
+      await fetch("http://localhost:5000/api/workday-summary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(summaryData),
+      });
+
+      toast.success("✅ Día cerrado y datos enviados al admin.");
+
+      // limpiar estados + bloqueo
+      setTrips([]);
+      setIsClosingDay(true);
+      localStorage.setItem(`workdayClosed-${today}`, "true");
+
+      // cerrar modal y a dashboard
+      setShowReviewModal(false);
+      navigate("/worker");
     } catch (err) {
-      console.error(err);
-      toast.error("❌ Error al guardar el viaje");
+      console.error("❌ Error al cerrar el día:", err);
+      toast.error("❌ No se pudo cerrar el día.");
     }
   };
 
-
-  if (!vehicleNumber || !initialAmbulanceKm || !finalAmbulanceKm) {
-    toast.warn("🚐 Por favor, introduce el número de ambulancia, los KM iniciales y los KM finales.");
-    return;
-  }
 
 //   // ✅ Calcular total de KM de todos los viajes
 //   const totalTripKm = trips.reduce((acc, trip) => {
@@ -667,6 +727,19 @@ return (
     {selectedTrip && (
       <TripModal trip={selectedTrip} onClose={handleCloseTripModal} />
     )}
+    {/* ───────── Modal de REVISIÓN FINAL ───────── */}
+    {showReviewModal && isFinalClosure && assignedDay && (
+      <FinalReviewModal
+        isOpen={true}
+        onClose={() => setShowReviewModal(false)}
+        trips={trips}
+        vehicleNumber={vehicleNumber}
+        initialKm={initialAmbulanceKm}
+        finalKm={finalAmbulanceKm}
+        assignedDay={assignedDay}
+        onConfirm={handleConfirmFinalClosure}
+      />
+    )}
 
   </div>
 );
@@ -674,5 +747,6 @@ return (
 
 
 export default MyWorkday;
+
 
 
