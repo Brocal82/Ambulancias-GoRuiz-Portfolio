@@ -35,13 +35,15 @@ const MyWorkday = () => {
   const [fromAddress, setFromAddress] = useState("");
   const [toAddress, setToAddress] = useState("");
   const [timeWarning, setTimeWarning] = useState("");
+  const [timeAtHome, setTimeAtHome] = useState("");
   const [timePickup, setTimePickup] = useState("");
   const [timeArrival, setTimeArrival] = useState("");
   const [timeEnd, setTimeEnd] = useState("");
   const [kmStart, setKmStart] = useState("");
   const [kmEnd, setKmEnd] = useState("");
   const [wasCancelled, setWasCancelled] = useState(false);
-  const [cancelledAtPickup, setCancelledAtPickup] = useState(false);
+  const [countsTrip, setCountsTrip] = useState(true);   // ✅ por defecto el viaje cuenta
+
   const [reports, setReports] = useState("");
 
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -53,6 +55,7 @@ const MyWorkday = () => {
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [isClosingDay, setIsClosingDay] = useState(false); // para controlar el estado del botón
   const navigate = useNavigate();
+
 
 
 
@@ -146,6 +149,7 @@ const fetchTrips = useCallback(async () => {
       !fromAddress ||
       !toAddress ||
       !timeWarning ||
+      !timeAtHome ||
       !timePickup ||
       !timeArrival ||
       !timeEnd ||
@@ -178,13 +182,14 @@ const fetchTrips = useCallback(async () => {
         fromAddress,
         toAddress,
         timeWarning,
+        timeAtHome,
         timePickup,
         timeArrival,
         timeEnd,
         kmStart: Number(kmStart),
         kmEnd: Number(kmEnd),
         wasCancelled,
-        cancelledAtPickup,
+        countsTrip,
         reports,
       };
 
@@ -201,7 +206,6 @@ const fetchTrips = useCallback(async () => {
       setKmStart("");
       setKmEnd("");
       setWasCancelled(false);
-      setCancelledAtPickup(false);
       setReports("");
       fetchTrips();
     } catch (err) {
@@ -288,6 +292,9 @@ return (
   {/* 👥 Equipo asignado a la izquierda */}
   {assignedDay && (
     <div>
+      <p className="text-sm text-gray-600 mb-1">
+        ⏰ Horario: <strong>{assignedDay.startTime}</strong> – <strong>{assignedDay.endTime}</strong>
+      </p>
       <p className="font-semibold text-lg mb-1">👥 Equipo asignado para hoy:</p>
       <p>🚗 Conductor: {assignedDay.driver?.lastName}, {assignedDay.driver?.name}</p>
       <p>🧑‍⚕️ Sanitario: {assignedDay.medic?.lastName}, {assignedDay.medic?.name}</p>
@@ -401,6 +408,19 @@ return (
                 className="w-full border p-1 rounded"
               />
             </div>
+            {/* 🆕 Hora llegada domicilio */}
+            <div className="flex-1">
+              <label htmlFor="timeAtHome" className="block text-sm">
+                Hora llegada domicilio
+              </label>
+              <input
+                id="timeAtHome"
+                type="time"
+                value={timeAtHome}
+                onChange={(e) => setTimeAtHome(e.target.value)}
+                className="w-full border p-1 rounded"
+              />
+            </div>
             <div className="flex-1">
               <label htmlFor="kmStart" className="block text-sm">KM llegada al domicilio</label>
               <input
@@ -466,32 +486,41 @@ return (
             </div>
           </div>
 
-          <div>
+          {/* ✅ Viaje cancelado */}
+          <div className="space-y-2">
             <label className="inline-flex items-center space-x-2">
               <input
                 id="wasCancelled"
                 type="checkbox"
                 checked={wasCancelled}
-                onChange={(e) => setWasCancelled(e.target.checked)}
-                title="Indica si el viaje fue cancelado"
+                onChange={(e) => {
+                  setWasCancelled(e.target.checked);
+                  // Cuando se desmarca, volvemos a los valores por defecto
+                  if (!e.target.checked) setCountsTrip(true);
+                }}
               />
               <span>El viaje fue cancelado</span>
             </label>
+
+            {/* Solo aparece si se marcó cancelado */}
+            {wasCancelled && (
+              <div className="ml-6">
+                <label htmlFor="countsTrip" className="block text-sm font-medium mb-1">
+                  ¿Cuenta el viaje?
+                </label>
+                <select
+                  id="countsTrip"
+                  value={countsTrip ? "1" : "0"}
+                  onChange={(e) => setCountsTrip(e.target.value === "1")}
+                  className="border rounded px-2 py-1 w-full"
+                >
+                  <option value="1">✅ Sí, cuenta (1)</option>
+                  <option value="0">❌ No, no cuenta (0)</option>
+                </select>
+              </div>
+            )}
           </div>
 
-          <div>
-            <label className="inline-flex items-center space-x-2">
-              <input
-                id="cancelledAtPickup"
-                type="checkbox"
-                checked={cancelledAtPickup}
-                onChange={(e) => setCancelledAtPickup(e.target.checked)}
-                disabled={!wasCancelled}
-                title="Cancelado ya en punto de recogida"
-              />
-              <span>Cancelado ya en punto de recogida</span>
-            </label>
-          </div>
 
           <div>
             <label htmlFor="reports" className="block text-sm">Observaciones / reportes</label>
@@ -516,13 +545,23 @@ return (
 
         <h3 className="text-xl font-semibold mb-2">🧾 Resumen de viajes</h3>
           <ul className="space-y-2">
+            {/* ---------- LISTA DE TRIPS ---------- */}
             {trips.map((trip: Trip, idx: number) => {
               const totalKm = trip.kmEnd - trip.kmStart;
 
-              // Calcular multiplicador
-              let multiplier = 1;
-              if (totalKm >= 20) multiplier = 2;
-              else if (totalKm >= 15) multiplier = 1.5;
+              /** Decide el multiplicador:
+               *  1) Si el viaje tiene countsTrip (0 ó 1) porque se canceló y marcaste “Cuenta / No cuenta”,
+               *     usamos ese valor directamente.
+               *  2) Si no, aplicamos la regla automática por kilómetros.
+               */
+              const getMultiplier = () => {
+                if (typeof trip.countsTrip === "number") return trip.countsTrip;
+                if (totalKm >= 20) return 2;
+                if (totalKm >= 15) return 1.5;
+                return 1;
+              };
+
+              const multiplier = getMultiplier();
 
               return (
                 <li
@@ -534,21 +573,24 @@ return (
                     <span className="font-semibold">
                       {trip.auftragNumber}
                       {trip.wasCancelled && (
-                        <span className="ml-2 text-red-600 font-medium">(cancelado)</span>
+                        <span className="ml-2 text-red-600 font-medium">
+                          (cancelado)
+                        </span>
                       )}
                     </span>
+
+                    {/* 👉 Km totales + multiplicador (0 / 1 / 1.5 / 2) */}
                     <span>
                       {totalKm} km
                       <span className="ml-3 text-green-700 font-bold text-xl">
                         {multiplier}x
                       </span>
                     </span>
-
-
                   </div>
                 </li>
               );
             })}
+
           </ul>
 
           {!isClosingDay && (

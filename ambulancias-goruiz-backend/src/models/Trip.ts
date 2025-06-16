@@ -12,13 +12,13 @@ export interface ITrip extends Document {
   fromAddress: string;
   toAddress: string;
   timeWarning: string;
+  timeAtHome: string;
   timePickup: string;
   timeArrival: string;
   timeEnd: string;
   kmStart: number;
   kmEnd: number;
   wasCancelled: boolean;
-  cancelledAtPickup: boolean;
   reports?: string; // ✅ Añadido
 }
 
@@ -32,13 +32,13 @@ const TripSchema = new Schema<ITrip>({
   fromAddress: { type: String, required: true },
   toAddress: { type: String, required: true },
   timeWarning: { type: String, required: true },
+  timeAtHome: { type: String, required: true },
   timePickup: { type: String, required: true },
   timeArrival: { type: String, required: true },
   timeEnd: { type: String, required: true },
   kmStart: { type: Number, required: true },
   kmEnd: { type: Number, required: true },
   wasCancelled: { type: Boolean, required: true },
-  cancelledAtPickup: { type: Boolean, required: false, default: false },
   reports: { type: String, required: false, default: '' }, // ✅ Añadido aquí
 });
 

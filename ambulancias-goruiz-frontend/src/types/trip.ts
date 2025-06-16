@@ -11,6 +11,7 @@ export interface Trip {
   fromAddress: string;
   toAddress: string;
   timeWarning: string;    // hora aviso
+  timeAtHome: string;     // hora llegada domicilio
   timePickup: string;     // hora recogida paciente
   timeArrival: string;    // hora llegada destino
   timeEnd: string;        // hora libre
@@ -19,7 +20,7 @@ export interface Trip {
   totalKm?: number;       // nuevo, total km punto A a B
   reports?: string;       // nuevo, observaciones
   wasCancelled: boolean;
-  cancelledAtPickup?: boolean;
+  countsTrip: boolean;
 }
 
 // Tipo para creación: igual que Trip pero sin _id y totalKm (que se calcula backend)
