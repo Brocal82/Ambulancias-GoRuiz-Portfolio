@@ -200,12 +200,14 @@ const fetchTrips = useCallback(async () => {
       setFromAddress("");
       setToAddress("");
       setTimeWarning("");
+      setTimeAtHome("")
       setTimePickup("");
       setTimeArrival("");
       setTimeEnd("");
       setKmStart("");
       setKmEnd("");
       setWasCancelled(false);
+      setCountsTrip(true);
       setReports("");
       fetchTrips();
     } catch (err) {
@@ -408,7 +410,7 @@ return (
                 className="w-full border p-1 rounded"
               />
             </div>
-            {/* 🆕 Hora llegada domicilio */}
+            
             <div className="flex-1">
               <label htmlFor="timeAtHome" className="block text-sm">
                 Hora llegada domicilio
