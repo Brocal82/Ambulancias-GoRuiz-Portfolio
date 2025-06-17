@@ -623,19 +623,42 @@ return (
           {trips.map((trip: Trip, idx: number) => {
             const totalKm = trip.kmEnd - trip.kmStart;
 
-            /** Decide el multiplicador:
-             *  1) Si el viaje tiene countsTrip (0 ó 1) porque se canceló y marcaste “Cuenta / No cuenta”,
-             *     usamos ese valor directamente.
-             *  2) Si no, aplicamos la regla automática por kilómetros.
+            /** Decide el multiplicador del viaje
+             *  1. Si countsTrip === 0  →   0 x   (viaje cancelado que NO cuenta).
+             *  2. Si countsTrip === 1  →   aplica reglas normales.
+             *     a) ≥ 20 km                      → 2 x
+             *     b) ≥ 15 km                      → 1.5 x
+             *     c) Dienst sábado/domingo que empieza entre 14 y 17 h → 1.5 x
+             *     d) resto                        → 1 x
+             *  3. Si countsTrip es undefined (viaje no cancelado) → usa sólo reglas a-d.
              */
             const getMultiplier = () => {
-              if (typeof trip.countsTrip === "number") return trip.countsTrip;
+              /* helper local: ¿turno fin-de-semana tarde? */
+              const isWeekendAfternoonShift = () => {
+                if (!assignedDay) return false;
+                const day = new Date(assignedDay.date).getDay();      // 0 = dom, 6 = sáb
+                if (day !== 0 && day !== 6) return false;
+                const [h] = assignedDay.startTime.split(":").map(Number);
+                return h >= 14 && h <= 17;
+              };
+
+              /* --- 0) viaje cancelado que NO cuenta --- */
+              if (trip.countsTrip === 0) return 0;
+
+              /* --- 1) reglas para viajes que SÍ cuentan --- */
+              // 20 km o más
               if (totalKm >= 20) return 2;
+              // 15-19 km
               if (totalKm >= 15) return 1.5;
+              // sábado/domingo 14-17 h
+              if (isWeekendAfternoonShift()) return 1.5;
+
+              // por defecto
               return 1;
             };
 
             const multiplier = getMultiplier();
+
 
             return (
               <li
