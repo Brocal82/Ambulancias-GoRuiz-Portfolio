@@ -43,7 +43,7 @@ const MyWorkday = () => {
   const [kmStart, setKmStart] = useState("");
   const [kmEnd, setKmEnd] = useState("");
   const [wasCancelled, setWasCancelled] = useState(false);
-  const [countsTrip, setCountsTrip] = useState(true);   // ✅ por defecto el viaje cuenta
+  const [countsTrip, setCountsTrip] = useState<number>(1);   // ✅ por defecto el viaje cuenta
 
   const [reports, setReports] = useState("");
 
@@ -226,7 +226,7 @@ const handleSaveTrip = async () => {
     setKmStart("");
     setKmEnd("");
     setWasCancelled(false);
-    setCountsTrip(true);
+    setCountsTrip(1);
     setReports("");
 
   } catch (err) {
@@ -569,7 +569,7 @@ return (
                 onChange={(e) => {
                   setWasCancelled(e.target.checked);
                   // Cuando se desmarca, volvemos a los valores por defecto
-                  if (!e.target.checked) setCountsTrip(true);
+                  if (!e.target.checked) setCountsTrip(1);
                 }}
               />
               <span>El viaje fue cancelado</span>
@@ -583,13 +583,14 @@ return (
                 </label>
                 <select
                   id="countsTrip"
-                  value={countsTrip ? "1" : "0"}
-                  onChange={(e) => setCountsTrip(e.target.value === "1")}
+                  value={countsTrip}                    // ← ya es número
+                  onChange={(e) => setCountsTrip(Number(e.target.value))}
                   className="border rounded px-2 py-1 w-full"
                 >
-                  <option value="1">✅ Sí, cuenta (1)</option>
-                  <option value="0">❌ No, no cuenta (0)</option>
+                  <option value={1}>✅ Sí, cuenta (1)</option>
+                  <option value={0}>❌ No, no cuenta (0)</option>
                 </select>
+
               </div>
             )}
           </div>

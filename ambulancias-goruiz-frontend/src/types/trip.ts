@@ -20,7 +20,7 @@ export interface Trip {
   totalKm?: number;       // nuevo, total km punto A a B
   reports?: string;       // nuevo, observaciones
   wasCancelled: boolean;
-  countsTrip: boolean;
+  countsTrip?: number;
 }
 
 // Tipo para creación: igual que Trip pero sin _id y totalKm (que se calcula backend)

@@ -1,6 +1,6 @@
 // backend/src/models/Trip.ts
 
-import mongoose, { Schema, Document, Types } from 'mongoose';
+import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface ITrip extends Document {
   date: string;
@@ -19,28 +19,42 @@ export interface ITrip extends Document {
   kmStart: number;
   kmEnd: number;
   wasCancelled: boolean;
-  reports?: string; // ✅ Añadido
+  countsTrip: 0 | 1;            // 🆕  0 = NO cuenta · 1 = SÍ cuenta
+  reports?: string;
 }
 
 const TripSchema = new Schema<ITrip>({
   date: { type: String, required: true },
-  assignmentId: { type: Schema.Types.ObjectId, ref: 'Dienst', required: true },
-  driver: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  medic: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  assignmentId: { type: Schema.Types.ObjectId, ref: "Dienst", required: true },
+  driver: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  medic: { type: Schema.Types.ObjectId, ref: "User", required: true },
+
   auftragNumber: { type: String, required: true },
   patientName: { type: String, required: true },
   fromAddress: { type: String, required: true },
   toAddress: { type: String, required: true },
+
   timeWarning: { type: String, required: true },
   timeAtHome: { type: String, required: true },
   timePickup: { type: String, required: true },
   timeArrival: { type: String, required: true },
   timeEnd: { type: String, required: true },
+
   kmStart: { type: Number, required: true },
   kmEnd: { type: Number, required: true },
+
   wasCancelled: { type: Boolean, required: true },
-  reports: { type: String, required: false, default: '' }, // ✅ Añadido aquí
+
+  countsTrip: {                 // 🆕 0 ó 1, forzamos el rango
+    type: Number,
+    required: true,
+    enum: [0, 1],
+    default: 1,
+  },
+
+  reports: { type: String, default: "" },
 });
 
-export default mongoose.model<ITrip>('Trip', TripSchema);
+export default mongoose.model<ITrip>("Trip", TripSchema);
+
 
