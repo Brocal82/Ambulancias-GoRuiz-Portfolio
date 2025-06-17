@@ -40,8 +40,16 @@ export const AuthProvider = ({ children }: Props) => {
           sessionStorage.setItem('user', JSON.stringify(freshUser));
         } catch (error) {
           console.error('❌ Error al refrescar usuario:', error);
-          logout();
+
+          // 🔒 Cierre de sesión manual para evitar dependencia de logout
+          setToken(null);
+          setUserId(null);
+          setRole(null);
+          setUser(null);
+          sessionStorage.clear();
+          window.location.href = '/';
         }
+
       }
 
       setLoading(false);
@@ -84,15 +92,22 @@ export const AuthProvider = ({ children }: Props) => {
     sessionStorage.setItem('user', JSON.stringify(newUser));
   };
 
+  /** Cierre de sesión */
   const logout = () => {
+    // 🔸 NO tocamos las marcas de “workdayClosed-…”
+    //     → así permanecen asociadas al usuario y a la fecha.
+
+    /* Limpiar estado y storage */
     setToken(null);
     setUserId(null);
     setRole(null);
     setUser(null);
 
     sessionStorage.clear();
-    window.location.href = '/';
+    window.location.href = '/';   // redirección a la pantalla de login / inicio
   };
+
+
 
   if (loading) return <p className="p-4">Cargando sesión...</p>;
 

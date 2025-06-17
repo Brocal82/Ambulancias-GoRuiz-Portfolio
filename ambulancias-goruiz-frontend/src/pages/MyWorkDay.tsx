@@ -26,6 +26,11 @@ const canStartTripNow = (startTime: string): boolean => {
   return now >= start;
 };
 
+/** Devuelve la clave de localStorage que marca un día como cerrado
+ *   p.e.  workdayClosed-2025-07-02-64a1b…  */
+const getClosedDayKey = (date: string, uid?: string) =>
+  `workdayClosed-${date}-${uid ?? "anon"}`;
+
 
 const MyWorkday = () => {
   const { token, user } = useAuth(); // 👈 Asegúrate de tener acceso a user._id
@@ -76,23 +81,36 @@ const MyWorkday = () => {
 
 
 
-  const fetchTrips = useCallback(async () => {
-    if (!token) return;
+const fetchTrips = useCallback(async () => {
+  if (!token || !user?._id) return;
 
-    const closedDay = localStorage.getItem("workdayClosed");
-    if (closedDay === today) {
-      console.log("📵 Día ya cerrado. No se cargan viajes.");
-      return;
-    }
+  const closedKey = getClosedDayKey(today, user._id);
+  const closedFlag = localStorage.getItem(closedKey);
 
-    try {
-      const data = await getTripsByDate(today, token);
-      setTrips(data);
-    } catch (err) {
-      console.error(err);
-      toast.error("❌ Error al cargar los viajes del día");
-    }
-  }, [token, today, isClosingDay]);
+  if (closedFlag === "true") {
+    console.log("📵 Día cerrado, no se cargan viajes.");
+    setTrips([]); // ❗️evita renderizar viejos viajes
+    return;
+  }
+
+  try {
+        const data = await getTripsByDate(today, token);
+
+    // 🔒  Filtra: sólo viajes donde el usuario logueado sea conductor o sanitario
+    const mine = data.filter(
+      (t) => t.driver === user?._id || t.medic === user?._id
+    );
+
+    setTrips(mine);
+
+  } catch (err) {
+    console.error(err);
+    toast.error("❌ Error al cargar los viajes del día");
+  }
+}, [token, today, user?._id]);
+
+
+
 
 
   const fetchAssignedDay = useCallback(async () => {
@@ -126,6 +144,20 @@ const MyWorkday = () => {
     setCanStartWork(now >= dienstStart);
   };
 
+  useEffect(() => {
+  if (!user?._id) return;
+
+  const closedDayKey = getClosedDayKey(today, user._id);
+  const closedFlag   = localStorage.getItem(closedDayKey);
+
+  if (closedFlag === "true") {
+    setIsClosingDay(true);
+    setTrips([]);          // 👈 borra los viajes si estuvieran en memoria
+  } else {
+    setIsClosingDay(false);
+  }
+}, [today, user?._id]);
+
 
 
   useEffect(() => {
@@ -134,18 +166,9 @@ const MyWorkday = () => {
   }, [fetchTrips, fetchAssignedDay]);
 
   
-  // Comprueba si el día ya fue cerrado (se guarda workdayClosed-YYYY-MM-DD)
-  
-  useEffect(() => {
-    const closedDayKey = `workdayClosed-${today}`;      // 👉 clave única por fecha
-    const closedFlag = localStorage.getItem(closedDayKey);
 
-    if (closedFlag === "true") {
-      setIsClosingDay(true);   // bloquea formulario
-    } else {
-      setIsClosingDay(false);  // permite trabajar
-    }
-  }, [today]);
+
+
 
 
 
@@ -243,57 +266,66 @@ const handleSaveTrip = async () => {
    * - Marca el día como cerrado en localStorage
    * - Redirige al dashboard
    */
-  const handleConfirmFinalClosure = async () => {
-    if (!token || !assignedDay) return;
+/** Confirma el cierre definitivo del día (enviar al admin + bloquear jornada) */
+const handleConfirmFinalClosure = async () => {
+  if (!token || !assignedDay || !user?._id) return;
 
-    // validaciones mínimas
-    if (!vehicleNumber || !initialAmbulanceKm || !finalAmbulanceKm) {
-      toast.warn("🚐 Introduce nº de ambulancia y KM inicial/final.");
-      return;
-    }
-    if (trips.length === 0) {
-      toast.warn("🚫 No hay viajes para enviar.");
-      return;
-    }
+  /* ───── Validaciones rápidas ───── */
+  if (!vehicleNumber || !initialAmbulanceKm || !finalAmbulanceKm) {
+    toast.warn("🚐 Introduce nº de ambulancia y KM inicial/final.");
+    return;
+  }
+  if (trips.length === 0) {
+    toast.warn("🚫 No hay viajes para enviar.");
+    return;
+  }
 
-    try {
-      // resumen que ya usabas antes
-      const totalTripKm = trips.reduce((acc, t) => acc + (t.kmEnd - t.kmStart), 0);
+  try {
+    // Resumen a enviar
+    const totalTripKm = trips.reduce(
+      (acc, t) => acc + (t.kmEnd - t.kmStart),
+      0
+    );
 
-      const summaryData = {
-        date: today,
-        assignmentId: assignedDay.assignmentId,
-        vehicleNumber,
-        initialKm: Number(initialAmbulanceKm),
-        finalKm: Number(finalAmbulanceKm),
-        trips,
-        totalTripKm,
-      };
+    const summaryData = {
+      date: today,
+      assignmentId: assignedDay.assignmentId,
+      vehicleNumber,
+      initialKm: Number(initialAmbulanceKm),
+      finalKm: Number(finalAmbulanceKm),
+      trips,
+      totalTripKm,
+    };
 
-      await fetch("http://localhost:5000/api/workday-summary", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(summaryData),
-      });
+    await fetch("http://localhost:5000/api/workday-summary", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(summaryData),
+    });
 
-      toast.success("✅ Día cerrado y datos enviados al admin.");
+  toast.success("✅ Día cerrado y datos enviados al admin.");
 
-      // limpiar estados + bloqueo
-      setTrips([]);
-      setIsClosingDay(true);
-      localStorage.setItem(`workdayClosed-${today}`, "true");
+  // ✅ Guarda marca de día cerrado en localStorage por usuario
+  if (user?._id) {
+    const closedKey = getClosedDayKey(today, user._id);
+    localStorage.setItem(closedKey, "true");
+  }
 
-      // cerrar modal y a dashboard
-      setShowReviewModal(false);
-      navigate("/worker");
-    } catch (err) {
-      console.error("❌ Error al cerrar el día:", err);
-      toast.error("❌ No se pudo cerrar el día.");
-    }
-  };
+  // Limpia estados y redirige
+  setTrips([]);
+  setIsClosingDay(true);
+  setShowReviewModal(false);
+  navigate("/worker");
+
+  } catch (err) {
+    console.error("❌ Error al cerrar el día:", err);
+    toast.error("❌ No se pudo cerrar el día.");
+  }
+};
+
 
 
 //   // ✅ Calcular total de KM de todos los viajes
