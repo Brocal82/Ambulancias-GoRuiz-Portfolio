@@ -1,10 +1,12 @@
 //backend/src/routes/workdaySummaryRoutes.ts
 import express from "express";
-import { createWorkdaySummary } from "../controllers/workdaySummaryController";
+import { createWorkdaySummary, submitPartialClosure } from "../controllers/workdaySummaryController";
 import { authenticateToken } from "../middlewares/authMiddleware";
+
 
 const router = express.Router();
 
 router.post("/", authenticateToken, createWorkdaySummary);
+router.post('/partial', authenticateToken, submitPartialClosure);
 
 export default router;

@@ -1,5 +1,9 @@
+// backend/src/models/WorkdaySummary.ts
 import mongoose, { Schema, Document } from "mongoose";
 
+/* ─────────────────────────────────────────────
+ * 1.  Sub–schema de los viajes guardados
+ * ────────────────────────────────────────────*/
 interface TripEntry {
   auftragNumber: string;
   patientName: string;
@@ -16,6 +20,25 @@ interface TripEntry {
   reports?: string;
 }
 
+const tripSchema = new Schema<TripEntry>({
+  auftragNumber: { type: String, required: true },
+  patientName:   { type: String, required: true },
+  fromAddress:   { type: String, required: true },
+  toAddress:     { type: String, required: true },
+  timeWarning:   { type: String, required: true },
+  timePickup:    { type: String, required: true },
+  timeArrival:   { type: String, required: true },
+  timeEnd:       { type: String, required: true },
+  kmStart:       { type: Number, required: true },
+  kmEnd:         { type: Number, required: true },
+  wasCancelled:  { type: Boolean, required: true },
+  cancelledAtPickup: { type: Boolean, default: false },
+  reports:       { type: String, default: "" },
+});
+
+/* ─────────────────────────────────────────────
+ * 2.  Interface principal del resumen
+ * ────────────────────────────────────────────*/
 export interface IWorkdaySummary extends Document {
   date: string;
   assignmentId: string;
@@ -23,38 +46,38 @@ export interface IWorkdaySummary extends Document {
   medic: string;
   vehicleNumber: string;
   initialKm: number;
-  finalKm: number;
-  trips: TripEntry[]; // ✅ Añadido
+  finalKm?: number;               // ← opcional en cierres parciales
+  totalTripKm: number;
+  trips: TripEntry[];
+  /* NUEVOS CAMPOS */
+  isFinalClosure: boolean;        // true = cierre total, false = parcial
+  partialClosureReason?: string;  // texto libre cuando es parcial
 }
 
-const tripSchema = new Schema<TripEntry>({
-  auftragNumber: String,
-  patientName: String,
-  fromAddress: String,
-  toAddress: String,
-  timeWarning: String,
-  timePickup: String,
-  timeArrival: String,
-  timeEnd: String,
-  kmStart: Number,
-  kmEnd: Number,
-  wasCancelled: Boolean,
-  cancelledAtPickup: Boolean,
-  reports: String,
-});
-
+/* ─────────────────────────────────────────────
+ * 3.  Schema principal
+ * ────────────────────────────────────────────*/
 const workdaySummarySchema = new Schema<IWorkdaySummary>({
-  date: { type: String, required: true },
+  date:         { type: String, required: true },
   assignmentId: { type: String, required: true },
-  driver: { type: String, required: true },
-  medic: { type: String, required: true },
-  vehicleNumber: { type: String, required: true },
-  initialKm: { type: Number, required: true },
-  finalKm: { type: Number, required: true },
-  trips: { type: [tripSchema], required: true }, // ✅ Añadido
+  driver:       { type: String, required: true },
+  medic:        { type: String, required: true },
+  vehicleNumber:{ type: String, required: true },
+  initialKm:    { type: Number, required: true },
+  finalKm:      { type: Number },             // opcional
+  totalTripKm:  { type: Number, required: true },
+  trips:        { type: [tripSchema], required: true },
+
+  /* NUEVOS CAMPOS */
+  isFinalClosure:       { type: Boolean, default: true },
+  partialClosureReason: { type: String, default: "" },
 });
 
+/* ─────────────────────────────────────────────
+ * 4.  Export del modelo
+ * ────────────────────────────────────────────*/
 export default mongoose.model<IWorkdaySummary>(
   "WorkdaySummary",
   workdaySummarySchema
 );
+

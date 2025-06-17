@@ -55,3 +55,59 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error al guardar el resumen del día" });
   }
 };
+
+export const submitPartialClosure = async (req: Request, res: Response) => {
+  try {
+    const {
+      date,
+      assignmentId,
+      driver,               // ✅ nuevo
+      medic,                // ✅ nuevo
+      vehicleNumber,
+      initialKm,
+      finalKm,              // ✅ nuevo obligatorio
+      trips,
+      totalTripKm,          // ✅ nuevo obligatorio
+      partialClosureReason,
+    } = req.body;
+
+    // Validación de campos obligatorios
+    if (
+      !date ||
+      !assignmentId ||
+      !driver ||
+      !medic ||
+      !vehicleNumber ||
+      !initialKm ||
+      !finalKm ||
+      !trips?.length ||
+      !totalTripKm ||
+      !partialClosureReason
+    ) {
+      return res.status(400).json({ message: "Faltan datos para el cierre parcial." });
+    }
+
+    // Crear resumen parcial
+    const summary = new WorkdaySummary({
+      date,
+      assignmentId,
+      driver,
+      medic,
+      vehicleNumber,
+      initialKm,
+      finalKm,
+      trips,
+      totalTripKm,
+      partialClosureReason,
+      isFinalClosure: false,
+    });
+
+    await summary.save();
+
+    res.status(201).json({ message: "Cierre parcial guardado correctamente." });
+  } catch (error) {
+    console.error("❌ Error al guardar cierre parcial:", error);
+    res.status(500).json({ message: "Error al guardar el cierre parcial." });
+  }
+};
+

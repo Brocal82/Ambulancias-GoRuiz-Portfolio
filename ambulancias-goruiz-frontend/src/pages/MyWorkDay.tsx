@@ -10,6 +10,9 @@ import type { AssignedDay } from "../types/assignedDay";
 import TripModal from "../components/trips/TripModal";
 import { useNavigate } from "react-router-dom";
 import FinalReviewModal from "../components/workday/FinalReviewModal";
+import PartialReviewModal from "../components/workday/PartialReviewModal";
+import { sendPartialClosure } from "../api/workdaySummary";
+import type { PartialSummaryPayload } from "../types/workdaySummary";
 
 
 
@@ -325,6 +328,59 @@ const handleConfirmFinalClosure = async () => {
     toast.error("❌ No se pudo cerrar el día.");
   }
 };
+
+// ──────────────────────────────────────────────────────────────
+// ENVÍO DEL CIERRE PARCIAL
+// ──────────────────────────────────────────────────────────────
+const handleSendPartialClosure = async (reason: string, finalKmValue: number) => {
+  if (!token || !assignedDay) return;
+
+  if (trips.length === 0) {
+    toast.warn("🚫 No hay viajes para enviar.");
+    return;
+  }
+
+  try {
+    const totalTripKm = trips.reduce(
+  (sum, t) => sum + (t.kmEnd - t.kmStart),
+  0
+);
+
+const payload: PartialSummaryPayload = {
+  date: today,
+  assignmentId: assignedDay!.assignmentId,
+
+  driver: assignedDay!.driver._id,   // 👍
+  medic: assignedDay!.medic._id,     // 👍
+
+  vehicleNumber,
+  initialKm: Number(initialAmbulanceKm),
+
+  // 👇 usa el valor recibido por parámetro
+  finalKm: finalKmValue,
+
+  trips,
+  totalTripKm,
+  partialClosureReason: reason,
+  isFinalClosure: false,
+};
+
+
+    await sendPartialClosure(payload, token);
+
+    toast.success("✅ Cierre parcial enviado al admin.");
+
+    // limpiamos viajes y form → seguir trabajando
+    setTrips([]);
+    setWasCancelled(false);
+    setCountsTrip(1);
+    setShowReviewModal(false);
+  } catch (err) {
+    console.error("❌ Error al enviar cierre parcial:", err);
+    toast.error("❌ No se pudo enviar el cierre parcial.");
+  }
+};
+
 
 
 
@@ -781,21 +837,32 @@ return (
     )}
 
     {selectedTrip && (
-      <TripModal trip={selectedTrip} onClose={handleCloseTripModal} />
-    )}
-    {/* ───────── Modal de REVISIÓN FINAL ───────── */}
-    {showReviewModal && isFinalClosure && assignedDay && (
-      <FinalReviewModal
-        isOpen={true}
-        onClose={() => setShowReviewModal(false)}
-        trips={trips}
-        vehicleNumber={vehicleNumber}
-        initialKm={initialAmbulanceKm}
-        finalKm={finalAmbulanceKm}
-        assignedDay={assignedDay}
-        onConfirm={handleConfirmFinalClosure}
-      />
-    )}
+  <TripModal trip={selectedTrip} onClose={handleCloseTripModal} />
+)}
+
+{/* ───────── Modal de REVISIÓN FINAL ───────── */}
+{showReviewModal && isFinalClosure === true && assignedDay && (
+  <FinalReviewModal
+    isOpen={true}
+    onClose={() => setShowReviewModal(false)}
+    trips={trips}
+    vehicleNumber={vehicleNumber}
+    initialKm={initialAmbulanceKm}
+    finalKm={finalAmbulanceKm}
+    assignedDay={assignedDay}
+    onConfirm={handleConfirmFinalClosure}
+  />
+)}
+
+{/* ───────── Modal de CIERRE PARCIAL ───────── */}
+{showReviewModal && isFinalClosure === false && (
+  <PartialReviewModal
+    trips={trips}
+    onClose={() => setShowReviewModal(false)}
+    onSend={handleSendPartialClosure}    
+  />
+)}
+
 
   </div>
 );
