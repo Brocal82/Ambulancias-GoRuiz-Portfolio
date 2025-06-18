@@ -269,35 +269,46 @@ const handleSaveTrip = async () => {
    * - Marca el día como cerrado en localStorage
    * - Redirige al dashboard
    */
-/** Confirma el cierre definitivo del día (enviar al admin + bloquear jornada) */
-const handleConfirmFinalClosure = async () => {
+/* ────────────────────────────────────────────────
+   1.  CIERRE DEFINITIVO  (modal FinalReviewModal)
+   ────────────────────────────────────────────────*/
+const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number) => {
   if (!token || !assignedDay || !user?._id) return;
 
-  /* ───── Validaciones rápidas ───── */
-  if (!vehicleNumber || !initialAmbulanceKm || !finalAmbulanceKm) {
-    toast.warn("🚐 Introduce nº de ambulancia y KM inicial/final.");
+  /* ── Validaciones mínimas ── */
+  if (!vehicleNumber || !initialAmbulanceKm) {
+    toast.warn("🚐 Introduce nº de ambulancia y KM inicial.");
     return;
   }
   if (trips.length === 0) {
     toast.warn("🚫 No hay viajes para enviar.");
     return;
   }
+  if (isNaN(finalKmFromModal)) {
+    toast.warn("📏 Introduce los kilómetros finales en el modal.");
+    return;
+  }
 
   try {
-    // Resumen a enviar
-    const totalTripKm = trips.reduce(
-      (acc, t) => acc + (t.kmEnd - t.kmStart),
-      0
-    );
+    /* 👉 Guarda en state el km final escrito en el modal
+          (útil si vuelves a abrir el modal en la misma sesión) */
+    setFinalAmbulanceKm(String(finalKmFromModal));
+
+    /* Cálculo de km realizados */
+    const totalTripKm = trips.reduce((acc, t) => acc + (t.kmEnd - t.kmStart), 0);
 
     const summaryData = {
       date: today,
       assignmentId: assignedDay.assignmentId,
+      driver: assignedDay.driver._id,
+      medic:  assignedDay.medic._id,
       vehicleNumber,
       initialKm: Number(initialAmbulanceKm),
-      finalKm: Number(finalAmbulanceKm),
+      finalKm:   finalKmFromModal,
       trips,
       totalTripKm,
+      extraNote: note,               // ← opcional, por si usas el “textarea”
+      isFinalClosure: true,
     };
 
     await fetch("http://localhost:5000/api/workday-summary", {
@@ -309,29 +320,25 @@ const handleConfirmFinalClosure = async () => {
       body: JSON.stringify(summaryData),
     });
 
-  toast.success("✅ Día cerrado y datos enviados al admin.");
+    toast.success("✅ Día cerrado y datos enviados al admin.");
 
-  // ✅ Guarda marca de día cerrado en localStorage por usuario
-  if (user?._id) {
-    const closedKey = getClosedDayKey(today, user._id);
-    localStorage.setItem(closedKey, "true");
-  }
+    /* Marcar día cerrado solo para este usuario */
+    localStorage.setItem(getClosedDayKey(today, user._id), "true");
 
-  // Limpia estados y redirige
-  setTrips([]);
-  setIsClosingDay(true);
-  setShowReviewModal(false);
-  navigate("/worker");
-
+    /* Limpiar interfaz y redirigir */
+    setTrips([]);
+    setIsClosingDay(true);
+    setShowReviewModal(false);
+    navigate("/worker");
   } catch (err) {
     console.error("❌ Error al cerrar el día:", err);
     toast.error("❌ No se pudo cerrar el día.");
   }
 };
 
-// ──────────────────────────────────────────────────────────────
-// ENVÍO DEL CIERRE PARCIAL
-// ──────────────────────────────────────────────────────────────
+/* ────────────────────────────────────────────────
+   2.  CIERRE PARCIAL  (modal PartialReviewModal)
+   ────────────────────────────────────────────────*/
 const handleSendPartialClosure = async (reason: string, finalKmValue: number) => {
   if (!token || !assignedDay) return;
 
@@ -339,38 +346,39 @@ const handleSendPartialClosure = async (reason: string, finalKmValue: number) =>
     toast.warn("🚫 No hay viajes para enviar.");
     return;
   }
+  if (isNaN(finalKmValue)) {
+    toast.warn("📏 Introduce los kilómetros finales en el modal.");
+    return;
+  }
 
   try {
+    /* Guarda km final local para futuras aperturas del modal en la sesión */
+    setFinalAmbulanceKm(String(finalKmValue));
+
     const totalTripKm = trips.reduce(
-  (sum, t) => sum + (t.kmEnd - t.kmStart),
-  0
-);
+      (sum, t) => sum + (t.kmEnd - t.kmStart),
+      0
+    );
 
-const payload: PartialSummaryPayload = {
-  date: today,
-  assignmentId: assignedDay!.assignmentId,
-
-  driver: assignedDay!.driver._id,   // 👍
-  medic: assignedDay!.medic._id,     // 👍
-
-  vehicleNumber,
-  initialKm: Number(initialAmbulanceKm),
-
-  // 👇 usa el valor recibido por parámetro
-  finalKm: finalKmValue,
-
-  trips,
-  totalTripKm,
-  partialClosureReason: reason,
-  isFinalClosure: false,
-};
-
+    const payload: PartialSummaryPayload = {
+      date: today,
+      assignmentId: assignedDay.assignmentId,
+      driver: assignedDay.driver._id,
+      medic:  assignedDay.medic._id,
+      vehicleNumber,
+      initialKm: Number(initialAmbulanceKm),
+      finalKm: finalKmValue,
+      trips,
+      totalTripKm,
+      partialClosureReason: reason,
+      isFinalClosure: false,
+    };
 
     await sendPartialClosure(payload, token);
 
     toast.success("✅ Cierre parcial enviado al admin.");
 
-    // limpiamos viajes y form → seguir trabajando
+    /* Limpiar viajes para continuar la jornada */
     setTrips([]);
     setWasCancelled(false);
     setCountsTrip(1);
@@ -380,6 +388,7 @@ const payload: PartialSummaryPayload = {
     toast.error("❌ No se pudo enviar el cierre parcial.");
   }
 };
+
 
 
 
@@ -487,18 +496,6 @@ return (
                   value={initialAmbulanceKm}
                   onChange={(e) => setInitialAmbulanceKm(e.target.value)}
                   className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="finalAmbulanceKm" className="block text-sm font-medium text-gray-700">🏁 KM final al regresar</label>
-                <input
-                  id="finalAmbulanceKm"
-                  type="number"
-                  value={finalAmbulanceKm}
-                  onChange={(e) => setFinalAmbulanceKm(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
-                  placeholder="Ej. 125678"
                 />
               </div>
             </div>
