@@ -84,7 +84,7 @@ const PartialReviewModal: React.FC<Props> = ({
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded"
+            className="px-4 py-2 bg-orange-500 text-white hover:bg-orange-700 rounded"
           >
             Enviar al Admin
           </button>
