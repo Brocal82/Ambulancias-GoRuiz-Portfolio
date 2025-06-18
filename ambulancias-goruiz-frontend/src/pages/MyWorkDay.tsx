@@ -836,8 +836,21 @@ return (
       </>
     )}
 
-    {selectedTrip && (
+{selectedTrip && (
   <TripModal trip={selectedTrip} onClose={handleCloseTripModal} />
+)}
+
+{/* ───────── Modal de CIERRE PARCIAL ───────── */}
+{showReviewModal && !isFinalClosure && assignedDay && (
+  <PartialReviewModal
+    trips={trips}
+    assignedDay={assignedDay}
+    vehicleNumber={vehicleNumber}
+    initialKm={initialAmbulanceKm}
+    finalKm={finalAmbulanceKm}
+    onClose={() => setShowReviewModal(false)}
+    onSend={handleSendPartialClosure}
+  />
 )}
 
 {/* ───────── Modal de REVISIÓN FINAL ───────── */}
@@ -846,22 +859,15 @@ return (
     isOpen={true}
     onClose={() => setShowReviewModal(false)}
     trips={trips}
+    assignedDay={assignedDay}
     vehicleNumber={vehicleNumber}
     initialKm={initialAmbulanceKm}
     finalKm={finalAmbulanceKm}
-    assignedDay={assignedDay}
     onConfirm={handleConfirmFinalClosure}
   />
 )}
 
-{/* ───────── Modal de CIERRE PARCIAL ───────── */}
-{showReviewModal && isFinalClosure === false && (
-  <PartialReviewModal
-    trips={trips}
-    onClose={() => setShowReviewModal(false)}
-    onSend={handleSendPartialClosure}    
-  />
-)}
+
 
 
   </div>
