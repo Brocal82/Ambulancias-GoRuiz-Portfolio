@@ -21,6 +21,7 @@ export interface ITrip extends Document {
   wasCancelled: boolean;
   countsTrip: 0 | 1;            // 🆕  0 = NO cuenta · 1 = SÍ cuenta
   reports?: string;
+  sentInSummary: boolean;
 }
 
 const TripSchema = new Schema<ITrip>({
@@ -53,6 +54,7 @@ const TripSchema = new Schema<ITrip>({
   },
 
   reports: { type: String, default: "" },
+  sentInSummary: { type: Boolean, default: false },
 });
 
 export default mongoose.model<ITrip>("Trip", TripSchema);

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import WorkdaySummary from "../models/workdaySummary";
 import Dienst from "../models/Dienst";
+import Trip from "../models/Trip"; // ✅ NUEVO
 import mongoose from "mongoose";
 
 export const createWorkdaySummary = async (req: Request, res: Response) => {
@@ -16,7 +17,6 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
       res.status(400).json({ message: "Debes enviar al menos un viaje en el resumen (trips)" });
       return;
     }
-
 
     const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
 
@@ -49,6 +49,12 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
       trips,
     });
 
+    // 👉 Marcar viajes como enviados
+    await Trip.updateMany(
+      { _id: { $in: trips.map((t: any) => t._id) } },
+      { $set: { sentInSummary: true } }
+    );
+
     res.status(201).json(newSummary);
   } catch (error) {
     console.error("❌ Error al guardar resumen del día:", error);
@@ -61,13 +67,13 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
     const {
       date,
       assignmentId,
-      driver,               // ✅ nuevo
-      medic,                // ✅ nuevo
+      driver,
+      medic,
       vehicleNumber,
       initialKm,
-      finalKm,              // ✅ nuevo obligatorio
+      finalKm,
       trips,
-      totalTripKm,          // ✅ nuevo obligatorio
+      totalTripKm,
       partialClosureReason,
     } = req.body;
 
@@ -78,8 +84,8 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
       !driver ||
       !medic ||
       !vehicleNumber ||
-      !initialKm ||
-      !finalKm ||
+      initialKm === undefined ||
+      finalKm === undefined ||
       !trips?.length ||
       !totalTripKm ||
       !partialClosureReason
@@ -87,7 +93,6 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Faltan datos para el cierre parcial." });
     }
 
-    // Crear resumen parcial
     const summary = new WorkdaySummary({
       date,
       assignmentId,
@@ -104,10 +109,15 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
 
     await summary.save();
 
+    // 👉 Marcar viajes como enviados
+    await Trip.updateMany(
+      { _id: { $in: trips.map((t: any) => t._id) } },
+      { $set: { sentInSummary: true } }
+    );
+
     res.status(201).json({ message: "Cierre parcial guardado correctamente." });
   } catch (error) {
     console.error("❌ Error al guardar cierre parcial:", error);
     res.status(500).json({ message: "Error al guardar el cierre parcial." });
   }
 };
-

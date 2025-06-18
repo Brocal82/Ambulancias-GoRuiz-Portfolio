@@ -21,6 +21,7 @@ export interface Trip {
   reports?: string;       // nuevo, observaciones
   wasCancelled: boolean;
   countsTrip?: number;
+  sentInSummary?: boolean;
 }
 
 // Tipo para creación: igual que Trip pero sin _id y totalKm (que se calcula backend)

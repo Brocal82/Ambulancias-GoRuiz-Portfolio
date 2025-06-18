@@ -15,24 +15,29 @@ export const createTrip = async (req: Request, res: Response) => {
   } catch (error) {
     if (error instanceof ZodError) {
       console.error('Validation errors:', error.errors);
-       res.status(400).json({ message: 'Datos inválidos', errors: error.errors });
-       return
+      res.status(400).json({ message: 'Datos inválidos', errors: error.errors });
+      return;
     }
     console.error('❌ Error al crear el viaje:', error);
     res.status(500).json({ message: 'Error al crear el viaje' });
   }
 };
 
-// GET /api/trips/date/:date → Obtener viajes por fecha
+// GET /api/trips/date/:date → Obtener viajes por fecha (solo los no enviados)
 export const getTripsByDate = async (req: Request, res: Response) => {
   const { date } = req.params;
 
   try {
-    const trips = await Trip.find({ date });
+    const trips = await Trip.find({
+      date,
+      sentInSummary: false, // ✅ Solo viajes que aún no se han enviado en resumen
+    }).sort({ timeWarning: 1 }); // orden opcional si lo usas
+
     res.status(200).json(trips);
   } catch (error) {
     console.error('❌ Error al obtener viajes por fecha:', error);
     res.status(500).json({ message: 'Error al obtener viajes' });
   }
 };
+
 

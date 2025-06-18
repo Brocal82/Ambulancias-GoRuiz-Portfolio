@@ -15,8 +15,6 @@ import { sendPartialClosure } from "../api/workdaySummary";
 import type { PartialSummaryPayload } from "../types/workdaySummary";
 
 
-
-
 const canStartTripNow = (startTime: string): boolean => {
   const [startHour, startMinute] = startTime.split(':').map(Number);
   const now = new Date();
@@ -84,33 +82,41 @@ const MyWorkday = () => {
 
 
 
+/* ------------------------------------------------------------------ */
+/* 1) Obtiene SOLO los viajes pendientes (sentInSummary = false)      */
+/* 2) Muestra únicamente los del usuario log-in (driver / medic)      */
+/* ------------------------------------------------------------------ */
 const fetchTrips = useCallback(async () => {
   if (!token || !user?._id) return;
 
-  const closedKey = getClosedDayKey(today, user._id);
+  /* ——— Día cerrado completamente → no intentes cargar nada ——— */
+  const closedKey  = getClosedDayKey(today, user._id);
   const closedFlag = localStorage.getItem(closedKey);
-
   if (closedFlag === "true") {
-    console.log("📵 Día cerrado, no se cargan viajes.");
-    setTrips([]); // ❗️evita renderizar viejos viajes
+    console.log("📵 Día cerrado; no se cargan viajes.");
+    setTrips([]);               // limpia memoria
     return;
   }
 
+  /* ——— Día aún abierto → pide viajes al backend ——— */
   try {
-        const data = await getTripsByDate(today, token);
+    const data = await getTripsByDate(today, token);
 
-    // 🔒  Filtra: sólo viajes donde el usuario logueado sea conductor o sanitario
-    const mine = data.filter(
-      (t) => t.driver === user?._id || t.medic === user?._id
+    /* 1️⃣  ignora los viajes ya enviados en cualquier resumen          */
+    const pending = data.filter(t => !t.sentInSummary);
+
+    /* 2️⃣  muestra solo los viajes donde el usuario sea driver/medic   */
+    const mine = pending.filter(
+      t => t.driver === user._id || t.medic === user._id
     );
 
     setTrips(mine);
-
   } catch (err) {
     console.error(err);
     toast.error("❌ Error al cargar los viajes del día");
   }
 }, [token, today, user?._id]);
+
 
 
 
@@ -346,15 +352,13 @@ const handleSendPartialClosure = async (reason: string, finalKmValue: number) =>
     toast.warn("🚫 No hay viajes para enviar.");
     return;
   }
+
   if (isNaN(finalKmValue)) {
     toast.warn("📏 Introduce los kilómetros finales en el modal.");
     return;
   }
 
   try {
-    /* Guarda km final local para futuras aperturas del modal en la sesión */
-    setFinalAmbulanceKm(String(finalKmValue));
-
     const totalTripKm = trips.reduce(
       (sum, t) => sum + (t.kmEnd - t.kmStart),
       0
@@ -364,7 +368,7 @@ const handleSendPartialClosure = async (reason: string, finalKmValue: number) =>
       date: today,
       assignmentId: assignedDay.assignmentId,
       driver: assignedDay.driver._id,
-      medic:  assignedDay.medic._id,
+      medic: assignedDay.medic._id,
       vehicleNumber,
       initialKm: Number(initialAmbulanceKm),
       finalKm: finalKmValue,
@@ -378,16 +382,24 @@ const handleSendPartialClosure = async (reason: string, finalKmValue: number) =>
 
     toast.success("✅ Cierre parcial enviado al admin.");
 
-    /* Limpiar viajes para continuar la jornada */
+    // 🧹 Limpieza total del formulario para continuar la jornada
     setTrips([]);
     setWasCancelled(false);
     setCountsTrip(1);
     setShowReviewModal(false);
+    setVehicleNumber("");
+    setInitialAmbulanceKm("");
+    setFinalAmbulanceKm("");
+
+    // 🔁 Redirige a pantalla principal para reiniciar desde cero
+    navigate("/worker");
+
   } catch (err) {
     console.error("❌ Error al enviar cierre parcial:", err);
     toast.error("❌ No se pudo enviar el cierre parcial.");
   }
 };
+
 
 
 
