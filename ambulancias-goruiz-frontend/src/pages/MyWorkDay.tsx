@@ -15,22 +15,54 @@ import { sendPartialClosure } from "../api/workdaySummary";
 import type { PartialSummaryPayload } from "../types/workdaySummary";
 
 
-const canStartTripNow = (startTime: string): boolean => {
-  const [startHour, startMinute] = startTime.split(':').map(Number);
+/** Devuelve true si AHORA ya se pueden registrar viajes.
+ *  - Permite hacerlo 30 min antes de la hora de inicio.
+ *  - Funciona también cuando el Dienst empezó AYER (turno nocturno). */
+const canStartTripNow = (startTime: string, dienstDate: string): boolean => {
+  const [sh, sm] = startTime.split(":").map(Number);
+
+  // 🕒 Fecha de inicio real del Dienst
+  const start = new Date(dienstDate + "T00:00:00");
+  start.setHours(sh, sm - 30, 0, 0);          // 30 min antes
+
   const now = new Date();
-  const start = new Date();
-
-  start.setHours(startHour);
-  start.setMinutes(startMinute - 30);
-  start.setSeconds(0);
-
   return now >= start;
 };
+
 
 /** Devuelve la clave de localStorage que marca un día como cerrado
  *   p.e.  workdayClosed-2025-07-02-64a1b…  */
 const getClosedDayKey = (date: string, uid?: string) =>
   `workdayClosed-${date}-${uid ?? "anon"}`;
+
+/** Devuelve true si el Dienst cruza la medianoche
+ * (ej. 22:00 – 06:00)                                     */
+const crossesMidnight = (start: string, end: string) => {
+  const [sh] = start.split(":").map(Number);
+  const [eh] = end.split(":").map(Number);
+  return eh < sh;        // p.e. 06 < 22  ⇒ cruza
+};
+
+/** Devuelve true si AHORA mismo estoy dentro de un Dienst,
+ *  soportando turno nocturno que comenzó ayer.             */
+const isNowWithinDienst = (dienst: AssignedDay) => {
+  const now      = new Date();
+  const [sH, sM] = dienst.startTime.split(":").map(Number);
+  const [eH, eM] = dienst.endTime.split(":").map(Number);
+
+  // ⏱ crea dos fechas (posible cruce de día)
+  const start = new Date(dienst.date + "T00:00:00");
+  start.setHours(sH, sM, 0, 0);
+
+  const end = new Date(dienst.date + "T00:00:00");
+  end.setHours(eH, eM, 0, 0);
+  if (crossesMidnight(dienst.startTime, dienst.endTime)) {
+    end.setDate(end.getDate() + 1);   // suma un día
+  }
+
+  return now >= start && now <= end;
+};
+
 
 
 const MyWorkday = () => {
@@ -122,24 +154,46 @@ const fetchTrips = useCallback(async () => {
 
 
 
-  const fetchAssignedDay = useCallback(async () => {
-    if (!token || !user?._id) return;
-    try {
-      const days = await getAssignedDaysForUser(user._id, token);
-      const todayAssignment = days.find((day) => day.date === today);
-      if (todayAssignment) {
-        setAssignedDay(todayAssignment);
-        checkStartPermission(todayAssignment);
-      } else {
-        setAssignedDay(null);
-        setCanStartWork(false);
-      }
+const fetchAssignedDay = useCallback(async () => {
+  if (!token || !user?._id) return;
 
-    } catch (err) {
-      console.error(err);
-      toast.error("❌ Error al cargar el día asignado");
+  try {
+    const days = await getAssignedDaysForUser(user._id, token);
+
+    /* 1️⃣  Intentamos encontrar un Dienst con la fecha de HOY */
+    let todayAssignment = days.find((d) => d.date === today);
+
+    /* 2️⃣  Si no hay, buscamos el de AYER y verificamos que aún
+            siga activo (cruza medianoche y ahora ≤ hora fin). */
+    if (!todayAssignment) {
+      const yesterdayStr = new Date(Date.now() - 86_400_000)
+        .toISOString()
+        .split("T")[0];
+
+      const yestAssignment = days.find((d) => d.date === yesterdayStr);
+
+      if (
+        yestAssignment &&
+        crossesMidnight(yestAssignment.startTime, yestAssignment.endTime) &&
+        isNowWithinDienst(yestAssignment)
+      ) {
+        todayAssignment = yestAssignment;
+      }
     }
-  }, [token, user, today]);
+
+    if (todayAssignment) {
+      setAssignedDay(todayAssignment);
+      checkStartPermission(todayAssignment);        // ya existente
+    } else {
+      setAssignedDay(null);
+      setCanStartWork(false);
+    }
+  } catch (err) {
+    console.error(err);
+    toast.error("❌ Error al cargar el día asignado");
+  }
+}, [token, user?._id, today]);
+
 
   const checkStartPermission = (dienst: AssignedDay) => {
     const [startHour, startMinute] = dienst.startTime.split(':').map(Number);
@@ -212,10 +266,11 @@ const handleSaveTrip = async () => {
     return;
   }
 
-  if (!canStartTripNow(assignedDay.startTime)) {
-    toast.error("❌ Solo puedes crear viajes 30 minutos antes del inicio del Dienst");
-    return;
-  }
+  if (!canStartTripNow(assignedDay.startTime, assignedDay.date)) {
+  toast.error("❌ Solo puedes crear viajes 30 minutos antes del inicio del Dienst");
+  return;
+}
+
 
   try {
     const newTrip: TripData = {
@@ -514,147 +569,158 @@ return (
           </div>
 
 
-
-
-          {/* 👉 Empieza aquí tu formulario normal de viajes */}
-          <div>
-            <label htmlFor="auftragNumber" className="block text-sm">Número de Auftrag</label>
-            <input
-              id="auftragNumber"
-              placeholder="Ej: Krankentransport 123"
-              title="Número o nombre del traslado"
-              value={auftragNumber}
-              onChange={(e) => setAuftragNumber(e.target.value)}
-              className="w-full border p-1 rounded"
-            />
-          </div>
-
-
-          <div>
-            <label htmlFor="patientName" className="block text-sm">Nombre del paciente</label>
-            <input
-              id="patientName"
-              placeholder="Ej: Juan Pérez"
-              title="Nombre completo del paciente"
-              value={patientName}
-              onChange={(e) => setPatientName(e.target.value)}
-              className="w-full border p-1 rounded"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="fromAddress" className="block text-sm">Dirección de recogida</label>
-            <input
-              id="fromAddress"
-              placeholder="Calle Ejemplo 123"
-              title="Dirección de donde se recoge al paciente"
-              value={fromAddress}
-              onChange={(e) => setFromAddress(e.target.value)}
-              className="w-full border p-1 rounded"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="toAddress" className="block text-sm">Dirección de dejada</label>
-            <input
-              id="toAddress"
-              placeholder="Hospital Central, Berlín"
-              title="Dirección de destino del paciente"
-              value={toAddress}
-              onChange={(e) => setToAddress(e.target.value)}
-              className="w-full border p-1 rounded"
-            />
-          </div>
-
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label htmlFor="timeWarning" className="block text-sm">Hora aviso (entrada Auftrag)</label>
-              <input
-                id="timeWarning"
-                type="time"
-                title="Hora de entrada del Auftrag"
-                value={timeWarning}
-                onChange={(e) => setTimeWarning(e.target.value)}
-                className="w-full border p-1 rounded"
-              />
-            </div>
-
-            <div className="flex-1">
-              <label htmlFor="timeAtHome" className="block text-sm">
-                Hora llegada domicilio
+          {/* 👉  FORMULARIO DE VIAJE  */}
+          {/* ─────────────────────────────── */}
+          {/* 1️⃣  Auftrag + Paciente (2 col) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Nº Auftrag */}
+            <div>
+              <label htmlFor="auftragNumber" className="block text-sm">
+                Número de Auftrag
               </label>
               <input
-                id="timeAtHome"
-                type="time"
-                value={timeAtHome}
-                onChange={(e) => setTimeAtHome(e.target.value)}
-                className="w-full border p-1 rounded"
+                id="auftragNumber"
+                placeholder="Ej: Krankentransport 123"
+                value={auftragNumber}
+                onChange={(e) => setAuftragNumber(e.target.value)}
+                className="w-full border rounded p-1"
               />
             </div>
-            <div className="flex-1">
-              <label htmlFor="kmStart" className="block text-sm">KM llegada al domicilio</label>
+
+            {/* Nombre paciente */}
+            <div>
+              <label htmlFor="patientName" className="block text-sm">
+                Nombre del paciente
+              </label>
               <input
-                id="kmStart"
-                type="number"
-                placeholder="Ej. 123456"
-                title="Kilometraje al llegar al domicilio"
-                value={kmStart}
-                onChange={(e) => setKmStart(e.target.value)}
-                className="w-full border p-1 rounded"
+                id="patientName"
+                placeholder="Ej: Juan Pérez"
+                value={patientName}
+                onChange={(e) => setPatientName(e.target.value)}
+                className="w-full border rounded p-1"
               />
             </div>
           </div>
 
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label htmlFor="timePickup" className="block text-sm">Hora carga paciente</label>
+          {/* 2️⃣  Direcciones (2 col) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            {/* Origen */}
+            <div>
+              <label htmlFor="fromAddress" className="block text-sm">
+                Dirección de recogida
+              </label>
               <input
-                id="timePickup"
-                type="time"
-                title="Hora en que se recoge al paciente"
-                value={timePickup}
-                onChange={(e) => setTimePickup(e.target.value)}
-                className="w-full border p-1 rounded"
+                id="fromAddress"
+                placeholder="Calle Ejemplo 123"
+                value={fromAddress}
+                onChange={(e) => setFromAddress(e.target.value)}
+                className="w-full border rounded p-1"
               />
             </div>
-            <div className="flex-1">
-              <label htmlFor="timeArrival" className="block text-sm">Hora llegada destino</label>
+
+            {/* Destino */}
+            <div>
+              <label htmlFor="toAddress" className="block text-sm">
+                Dirección de dejada
+              </label>
               <input
-                id="timeArrival"
-                type="time"
-                title="Hora de llegada al destino"
-                value={timeArrival}
-                onChange={(e) => setTimeArrival(e.target.value)}
-                className="w-full border p-1 rounded"
+                id="toAddress"
+                placeholder="Hospital Central, Berlín"
+                value={toAddress}
+                onChange={(e) => setToAddress(e.target.value)}
+                className="w-full border rounded p-1"
               />
             </div>
           </div>
 
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label htmlFor="kmEnd" className="block text-sm">KM llegada a destino</label>
-              <input
-                id="kmEnd"
-                type="number"
-                placeholder="Ej. 123490"
-                title="Kilometraje al llegar al destino"
-                value={kmEnd}
-                onChange={(e) => setKmEnd(e.target.value)}
-                className="w-full border p-1 rounded"
-              />
-            </div>
-            <div className="flex-1">
-              <label htmlFor="timeEnd" className="block text-sm">Hora libre (fin)</label>
-              <input
-                id="timeEnd"
-                type="time"
-                title="Hora final del traslado"
-                value={timeEnd}
-                onChange={(e) => setTimeEnd(e.target.value)}
-                className="w-full border p-1 rounded"
-              />
-            </div>
+        {/* 3️⃣–5️⃣ Todos los campos de hora/KM en una sola fila */}
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mt-4">
+          {/* Hora aviso */}
+          <div>
+            <label htmlFor="timeWarning" className="block text-sm">Aviso</label>
+            <input
+              id="timeWarning"
+              type="time"
+              value={timeWarning}
+              onChange={(e) => setTimeWarning(e.target.value)}
+              className="w-full border rounded p-1"
+            />
           </div>
+
+          {/* Hora domicilio */}
+          <div>
+            <label htmlFor="timeAtHome" className="block text-sm">Domicilio</label>
+            <input
+              id="timeAtHome"
+              type="time"
+              value={timeAtHome}
+              onChange={(e) => setTimeAtHome(e.target.value)}
+              className="w-full border rounded p-1"
+            />
+          </div>
+
+          {/* KM domicilio */}
+          <div>
+            <label htmlFor="kmStart" className="block text-sm">KM dom.</label>
+            <input
+              id="kmStart"
+              type="number"
+              value={kmStart}
+              onChange={(e) => setKmStart(e.target.value)}
+              className="w-full border rounded p-1 bg-yellow-50"
+            />
+          </div>
+
+          {/* Hora carga */}
+          <div>
+            <label htmlFor="timePickup" className="block text-sm">Carga</label>
+            <input
+              id="timePickup"
+              type="time"
+              value={timePickup}
+              onChange={(e) => setTimePickup(e.target.value)}
+              className="w-full border rounded p-1"
+            />
+          </div>
+
+          {/* Hora destino */}
+          <div>
+            <label htmlFor="timeArrival" className="block text-sm">Destino</label>
+            <input
+              id="timeArrival"
+              type="time"
+              value={timeArrival}
+              onChange={(e) => setTimeArrival(e.target.value)}
+              className="w-full border rounded p-1"
+            />
+          </div>
+
+          {/* KM destino */}
+          <div>
+            <label htmlFor="kmEnd" className="block text-sm">KM dest.</label>
+            <input
+              id="kmEnd"
+              type="number"
+              value={kmEnd}
+              onChange={(e) => setKmEnd(e.target.value)}
+              className="w-full border rounded p-1 bg-yellow-50"
+            />
+          </div>
+
+          {/* Hora libre */}
+          <div>
+            <label htmlFor="timeEnd" className="block text-sm">Libre</label>
+            <input
+              id="timeEnd"
+              type="time"
+              value={timeEnd}
+              onChange={(e) => setTimeEnd(e.target.value)}
+              className="w-full border rounded p-1"
+            />
+          </div>
+        </div>
+
+
 
           {/* ✅ Viaje cancelado */}
           <div className="space-y-2">
