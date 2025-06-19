@@ -455,55 +455,6 @@ const handleSendPartialClosure = async (reason: string, finalKmValue: number) =>
   }
 };
 
-
-
-
-
-
-//   // ✅ Calcular total de KM de todos los viajes
-//   const totalTripKm = trips.reduce((acc, trip) => {
-//     const diff = trip.kmEnd - trip.kmStart;
-//     return acc + (diff > 0 ? diff : 0);
-//   }, 0);
-
-//   try {
-//     const summaryData = {
-//       date: today,
-//       assignmentId: assignedDay!.assignmentId,
-//       vehicleNumber,
-//       initialKm: Number(initialAmbulanceKm),
-//       finalKm: Number(finalAmbulanceKm),
-//       trips,
-//       totalTripKm,
-//     };
-
-//     const response = await fetch("http://localhost:5000/api/workday-summary", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//         Authorization: `Bearer ${token}`,
-//       },
-//       body: JSON.stringify(summaryData),
-//     });
-
-//     if (!response.ok) {
-//       const errorData = await response.json();
-//       throw new Error(errorData.message || "Error desconocido");
-//     }
-
-//     toast.success("✅ Día cerrado y datos enviados al admin.");
-//     setTrips([]); // ✅ Borrar viajes
-//     setIsClosingDay(true); // ✅ Esto elimina el warning
-//     localStorage.setItem("workdayClosed", today); // 🟢 Guardar que este día fue cerra
-//     navigate("/worker"); // ✅ Volver al dashboard
-//   } catch (error) {
-//     console.error("❌ Error al cerrar el día:", error);
-//     toast.error("❌ No se pudo cerrar el día.");
-//   }
-// };
-
-
-
 return (
   <div className="p-6 max-w-3xl mx-auto">
     <h2 className="text-2xl font-bold mb-4">📋 Mi jornada de hoy: {today}</h2>
@@ -530,11 +481,11 @@ return (
             {assignedDay && (
               <div>
                 <p className="text-sm text-gray-600 mb-1">
-                  ⏰ Horario: <strong>{assignedDay.startTime}</strong> – <strong>{assignedDay.endTime}</strong>
+                  ⏰ Dienst: <strong>{assignedDay.startTime}</strong> – <strong>{assignedDay.endTime}</strong>
                 </p>
-                <p className="font-semibold text-lg mb-1">👥 Equipo asignado para hoy:</p>
-                <p>🚗 Conductor: {assignedDay.driver?.lastName}, {assignedDay.driver?.name}</p>
-                <p>🧑‍⚕️ Sanitario: {assignedDay.medic?.lastName}, {assignedDay.medic?.name}</p>
+                <p className="font-semibold text-lg mb-1">Team:</p>
+                <p>🚗 {assignedDay.driver?.lastName}, {assignedDay.driver?.name}</p>
+                <p>🧑‍⚕️ {assignedDay.medic?.lastName}, {assignedDay.medic?.name}</p>
               </div>
             )}
 
