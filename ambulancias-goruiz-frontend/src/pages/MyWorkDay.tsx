@@ -89,6 +89,10 @@ const MyWorkday = () => {
   const [assignedDay, setAssignedDay] = useState<AssignedDay | null>(null);
   const [canStartWork, setCanStartWork] = useState(false);
   const [vehicleNumber, setVehicleNumber] = useState("");
+
+  const [vehicleConfirmed,    setVehicleConfirmed]    = useState(false);
+  const formBlocked = !vehicleConfirmed;
+
   const [initialAmbulanceKm, setInitialAmbulanceKm] = useState("");
   const [finalAmbulanceKm, setFinalAmbulanceKm] = useState("");
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
@@ -101,7 +105,20 @@ const MyWorkday = () => {
 
   const navigate = useNavigate();
 
+  const handleConfirmAmbulanceData = () => {
+  if (!vehicleNumber || !initialAmbulanceKm) {
+    toast.error("❌ Por favor, introduce el número de ambulancia y los KM iniciales.");
+    return;
+  }
 
+  setVehicleConfirmed(true);
+  toast.success("✅ Datos confirmados. Ya puedes registrar viajes.");
+
+  // Guardamos en localStorage
+  localStorage.setItem('vehicleNumber', vehicleNumber);
+  localStorage.setItem('initialAmbulanceKm', initialAmbulanceKm);
+  localStorage.setItem('vehicleConfirmed', 'true');
+};
 
 
   const handleOpenTripModal = (trip: Trip) => {
@@ -228,9 +245,19 @@ const fetchAssignedDay = useCallback(async () => {
     fetchAssignedDay();
   }, [fetchTrips, fetchAssignedDay]);
 
-  
 
+  // se ejecuta una sola vez al montar el componente
+useEffect(() => {
+  /* ─ Lee valores guardados (si existen) ─ */
+  const savedVehicle   = localStorage.getItem("vehicleNumber");
+  const savedInitialKm = localStorage.getItem("initialKm");
 
+  if (savedVehicle && savedInitialKm) {
+    setVehicleNumber(savedVehicle);
+    setInitialAmbulanceKm(savedInitialKm);
+    setVehicleConfirmed(true);   // ← señalamos que ya están confirmados
+  }
+}, []);                           // ← dependencia vacía → solo al montar
 
 
 
@@ -491,8 +518,15 @@ return (
 
             {/* 🚐 Ambulancia y KM a la derecha, agrupados y alineados */}
             <div className="text-right w-full max-w-xs space-y-4">
+
+              {/* Nº de ambulancia */}
               <div>
-                <label htmlFor="vehicleNumber" className="block text-sm font-medium text-gray-700">🚐 Nº Ambulancia</label>
+                <label
+                  htmlFor="vehicleNumber"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  🚐 Nº Ambulancia
+                </label>
                 <input
                   id="vehicleNumber"
                   type="text"
@@ -501,11 +535,18 @@ return (
                   value={vehicleNumber}
                   onChange={(e) => setVehicleNumber(e.target.value)}
                   className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
+                  disabled={vehicleConfirmed}       
                 />
               </div>
 
+              {/* KM inicial */}
               <div>
-                <label htmlFor="initialAmbulanceKm" className="block text-sm font-medium text-gray-700">🔢 KM inicial</label>
+                <label
+                  htmlFor="initialAmbulanceKm"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  🔢 KM inicial
+                </label>
                 <input
                   id="initialAmbulanceKm"
                   type="number"
@@ -514,9 +555,22 @@ return (
                   value={initialAmbulanceKm}
                   onChange={(e) => setInitialAmbulanceKm(e.target.value)}
                   className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
+                  disabled={vehicleConfirmed}      
                 />
               </div>
+
+              {/* Botón confirmar (solo si aún no se confirmó) */}
+              {!vehicleConfirmed && (
+                <button
+                  type="button"
+                  onClick={handleConfirmAmbulanceData}  
+                  className="mt-2 bg-green-600 text-white px-3 py-1 rounded w-full hover:bg-green-700"
+                >
+                  ✅ Confirmar datos iniciales
+                </button>
+              )}
             </div>
+
           </div>
 
 
@@ -529,7 +583,8 @@ return (
               <label htmlFor="auftragNumber" className="block text-sm">
                 Número de Auftrag
               </label>
-              <input
+              <input 
+                disabled={formBlocked}
                 id="auftragNumber"
                 placeholder="Ej: Krankentransport 123"
                 value={auftragNumber}
@@ -543,7 +598,8 @@ return (
               <label htmlFor="patientName" className="block text-sm">
                 Nombre del paciente
               </label>
-              <input
+              <input 
+                disabled={formBlocked}
                 id="patientName"
                 placeholder="Ej: Juan Pérez"
                 value={patientName}
@@ -560,7 +616,8 @@ return (
               <label htmlFor="fromAddress" className="block text-sm">
                 Dirección de recogida
               </label>
-              <input
+              <input 
+                disabled={formBlocked}
                 id="fromAddress"
                 placeholder="Calle Ejemplo 123"
                 value={fromAddress}
@@ -574,7 +631,8 @@ return (
               <label htmlFor="toAddress" className="block text-sm">
                 Dirección de dejada
               </label>
-              <input
+              <input 
+                disabled={formBlocked}
                 id="toAddress"
                 placeholder="Hospital Central, Berlín"
                 value={toAddress}
@@ -589,7 +647,8 @@ return (
           {/* Hora aviso */}
           <div>
             <label htmlFor="timeWarning" className="block text-sm">Aviso</label>
-            <input
+            <input 
+              disabled={formBlocked}
               id="timeWarning"
               type="time"
               value={timeWarning}
@@ -601,7 +660,8 @@ return (
           {/* Hora domicilio */}
           <div>
             <label htmlFor="timeAtHome" className="block text-sm">Domicilio</label>
-            <input
+            <input 
+              disabled={formBlocked}
               id="timeAtHome"
               type="time"
               value={timeAtHome}
@@ -613,7 +673,8 @@ return (
           {/* KM domicilio */}
           <div>
             <label htmlFor="kmStart" className="block text-sm">KM dom.</label>
-            <input
+            <input 
+              disabled={formBlocked}
               id="kmStart"
               type="number"
               value={kmStart}
@@ -625,7 +686,8 @@ return (
           {/* Hora carga */}
           <div>
             <label htmlFor="timePickup" className="block text-sm">Carga</label>
-            <input
+            <input 
+              disabled={formBlocked}
               id="timePickup"
               type="time"
               value={timePickup}
@@ -637,7 +699,8 @@ return (
           {/* Hora destino */}
           <div>
             <label htmlFor="timeArrival" className="block text-sm">Destino</label>
-            <input
+            <input 
+              disabled={formBlocked}
               id="timeArrival"
               type="time"
               value={timeArrival}
@@ -649,7 +712,8 @@ return (
           {/* KM destino */}
           <div>
             <label htmlFor="kmEnd" className="block text-sm">KM dest.</label>
-            <input
+            <input 
+              disabled={formBlocked}
               id="kmEnd"
               type="number"
               value={kmEnd}
@@ -661,7 +725,8 @@ return (
           {/* Hora libre */}
           <div>
             <label htmlFor="timeEnd" className="block text-sm">Libre</label>
-            <input
+            <input 
+              disabled={formBlocked}
               id="timeEnd"
               type="time"
               value={timeEnd}
@@ -676,7 +741,8 @@ return (
           {/* ✅ Viaje cancelado */}
           <div className="space-y-2">
             <label className="inline-flex items-center space-x-2">
-              <input
+              <input 
+                disabled={formBlocked}
                 id="wasCancelled"
                 type="checkbox"
                 checked={wasCancelled}
