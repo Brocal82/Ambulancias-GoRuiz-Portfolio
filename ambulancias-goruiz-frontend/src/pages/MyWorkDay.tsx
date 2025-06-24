@@ -12,8 +12,10 @@ import { useNavigate } from "react-router-dom";
 import FinalReviewModal from "../components/workday/FinalReviewModal";
 import PartialReviewModal from "../components/workday/PartialReviewModal";
 import { sendPartialClosure } from "../api/workdaySummary";
-import type { PartialSummaryPayload } from "../types/workdaySummary";
+import type { PartialSummaryPayload, FinalSummaryPayload } from "../types/workdaySummary";
 import { checkTripLogic, type TripDraft } from "../utils/tripValidators";
+import { sendFinalClosure } from "../api/workdaySummary"; // ← Asegúrate de importar esto arriba
+
 
 
 /** Devuelve true si AHORA ya se pueden registrar viajes.
@@ -439,71 +441,75 @@ const MyWorkday = () => {
     /* ────────────────────────────────────────────────
        1.  CIERRE DEFINITIVO  (modal FinalReviewModal)
        ────────────────────────────────────────────────*/
-    const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number) => {
-      if (!token || !assignedDay || !user?._id) return;
-  
-      /* ── Validaciones mínimas ── */
-      if (!vehicleNumber || !initialAmbulanceKm) {
-        toast.warn("🚐 Introduce nº de ambulancia y KM inicial.");
-        return;
+
+const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number) => {
+  if (!token || !assignedDay || !user?._id) return;
+
+  /* ── Validaciones mínimas ── */
+  if (!vehicleNumber || !initialAmbulanceKm) {
+    toast.warn("🚐 Introduce nº de ambulancia y KM inicial.");
+    return;
+  }
+
+  if (isNaN(finalKmFromModal)) {
+    toast.warn("📏 Introduce los kilómetros finales en el modal.");
+    return;
+  }
+
+  /* ── Validación de coherencia de KM ── */
+  const initialKmNumber = Number(initialAmbulanceKm);
+  if (finalKmFromModal < initialKmNumber) {
+    toast.error("❌ Los KM finales no pueden ser menores que los KM iniciales");
+    return;
+  }
+
+  try {
+    // 👉 Guarda en state el km final (para reabrir modal si es necesario)
+    setFinalAmbulanceKm(String(finalKmFromModal));
+
+    // ✅ Cálculo de km realizados con conversión segura
+    const totalTripKm = trips.reduce((acc, t) => {
+      const kmStart = Number(t.kmStart);
+      const kmEnd = Number(t.kmEnd);
+      if (!isNaN(kmStart) && !isNaN(kmEnd)) {
+        return acc + (kmEnd - kmStart);
       }
-      if (isNaN(finalKmFromModal)) {
-        toast.warn("📏 Introduce los kilómetros finales en el modal.");
-        return;
-      }
-  
-      /* ── Nueva validación de coherencia de KM ──── */
-      if (finalKmFromModal < Number(initialAmbulanceKm)) {
-        toast.error("❌ Los KM finales no pueden ser menores que los KM iniciales");
-        return;
-      }
-  
-      try {
-        /* 👉 Guarda en state el km final escrito en el modal
-              (útil si vuelves a abrir el modal en la misma sesión) */
-        setFinalAmbulanceKm(String(finalKmFromModal));
-  
-        /* Cálculo de km realizados */
-        const totalTripKm = trips.reduce((acc, t) => acc + (t.kmEnd - t.kmStart), 0);
-  
-        const summaryData = {
-          date: today,
-          assignmentId: assignedDay.assignmentId,
-          driver: assignedDay.driver._id,
-          medic: assignedDay.medic._id,
-          vehicleNumber,
-          initialKm: Number(initialAmbulanceKm),
-          finalKm: finalKmFromModal,
-          trips,
-          totalTripKm,
-          extraNote: note,               // ← opcional, por si usas el “textarea”
-          isFinalClosure: true,
-        };
-  
-        await fetch("http://localhost:5000/api/workday-summary", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(summaryData),
-        });
-  
-        toast.success("✅ Día cerrado y datos enviados al admin.");
-  
-        /* Marcar día cerrado solo para este usuario */
-        localStorage.setItem(getClosedDayKey(today, user._id), "true");
-  
-        /* Limpiar interfaz y redirigir */
-        setTrips([]);
-        setIsClosingDay(true);
-        setShowReviewModal(false);
-        navigate("/worker");
-      } catch (err) {
-        console.error("❌ Error al cerrar el día:", err);
-        toast.error("❌ No se pudo cerrar el día.");
-      }
+      return acc;
+    }, 0);
+
+    const summaryData: FinalSummaryPayload = {
+      date: today,
+      assignmentId: assignedDay.assignmentId,
+      driver: assignedDay.driver._id,
+      medic: assignedDay.medic._id,
+      vehicleNumber,
+      initialKm: initialKmNumber,
+      finalKm: finalKmFromModal,
+      totalTripKm,
+      trips,
+      extraNote: note,
+      isFinalClosure: true,
     };
+
+    await sendFinalClosure(summaryData, token);
+
+    toast.success("✅ Día cerrado y datos enviados al admin.");
+
+    // ✅ Marcar día cerrado solo para este usuario
+    localStorage.setItem(getClosedDayKey(today, user._id), "true");
+
+    // ✅ Limpieza y redirección
+    setTrips([]);
+    setIsClosingDay(true);
+    setShowReviewModal(false);
+    navigate("/worker");
+  } catch (err) {
+    console.error("❌ Error al cerrar el día:", err);
+    toast.error("❌ No se pudo cerrar el día.");
+  }
+};
+
+
   
     /* ────────────────────────────────────────────────
        2.  CIERRE PARCIAL  (modal PartialReviewModal)

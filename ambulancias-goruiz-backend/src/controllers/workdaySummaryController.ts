@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 
 export const createWorkdaySummary = async (req: Request, res: Response) => {
   try {
-    const { date, assignmentId, vehicleNumber, initialKm, finalKm, trips } = req.body;
+    const { date, assignmentId, vehicleNumber, initialKm, finalKm, trips, totalTripKm } = req.body;
 
     if (!date || !assignmentId || !vehicleNumber || initialKm === undefined || finalKm === undefined) {
       res.status(400).json({ message: "Faltan campos obligatorios" });
@@ -47,6 +47,7 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
       initialKm,
       finalKm,
       trips,
+      totalTripKm,
     });
 
     // 👉 Marcar viajes como enviados

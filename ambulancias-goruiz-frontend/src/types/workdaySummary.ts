@@ -16,3 +16,19 @@ export interface PartialSummaryPayload {
   isFinalClosure?: false;
 }
 
+/** Payload que se envía al endpoint /workday-summary (cierre total) */
+export interface FinalSummaryPayload {
+  date: string;
+  assignmentId: string;
+  vehicleNumber: string;
+  initialKm: number;
+  finalKm: number;
+  totalTripKm: number;
+  trips: Trip[];
+  driver: string;
+  medic: string;
+  extraNote?: string;
+  isFinalClosure: true;
+}
+
+
