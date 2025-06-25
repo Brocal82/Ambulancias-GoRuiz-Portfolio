@@ -37,8 +37,14 @@ export const parseHHMM = (hhmm: string): number => {
 /* Validador principal                                        */
 /* ---------------------------------------------------------- */
 export const checkTripLogic = (
-  v: TripDraft
+  v: TripDraft,
+  wasCancelled: boolean = false // ✅ nuevo parámetro opcional
 ): { error: string | null; badField: keyof TripDraft | null } => {
+  // ✅ Si el viaje fue cancelado, saltamos la validación
+  if (wasCancelled) {
+    return { error: null, badField: null };
+  }
+
   /* 1️⃣  HORAS en orden ------------------------------------ */
   const times: { label: string; key: keyof TripDraft }[] = [
     { label: "hora de AVISO",   key: "timeWarning" },
@@ -52,8 +58,7 @@ export const checkTripLogic = (
     const aMin = parseHHMM(String(v[times[i].key]));
     const bMin = parseHHMM(String(v[times[i + 1].key]));
 
-    // sólo si ambos están rellenos y son válidos
-      if (!isNaN(aMin) && !isNaN(bMin) && aMin > bMin) {
+    if (!isNaN(aMin) && !isNaN(bMin) && aMin > bMin) {
       return {
         error: `⏰ La ${times[i + 1].label} no puede ser anterior a la ${times[i].label}.`,
         badField: times[i + 1].key,
@@ -61,23 +66,22 @@ export const checkTripLogic = (
     }
   }
 
-
   /* 2️⃣  KM en orden --------------------------------------- */
   const kmStartNum = Number(v.kmStart);
-  const kmEndNum   = Number(v.kmEnd);
+  const kmEndNum = Number(v.kmEnd);
 
-    // Solo validamos si AMBOS están rellenados
-    if (
-      v.kmStart !== "" && v.kmEnd !== "" &&
-      !isNaN(kmStartNum) && !isNaN(kmEndNum) &&
-      kmEndNum < kmStartNum
-    ) {
-      return {
-        error: "📏 Los KM de destino no pueden ser menores que los de recogida.",
-        badField: "kmEnd",
-      };
-    }
-
+  if (
+    v.kmStart !== "" &&
+    v.kmEnd !== "" &&
+    !isNaN(kmStartNum) &&
+    !isNaN(kmEndNum) &&
+    kmEndNum < kmStartNum
+  ) {
+    return {
+      error: "📏 Los KM de destino no pueden ser menores que los de recogida.",
+      badField: "kmEnd",
+    };
+  }
 
   /* 3️⃣  OK ------------------------------------------------- */
   return { error: null, badField: null };
