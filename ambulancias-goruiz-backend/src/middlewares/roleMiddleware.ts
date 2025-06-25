@@ -1,3 +1,4 @@
+//backend/src/middlewares/roleMiddleware.ts
 import { Request, Response, NextFunction } from 'express';
 
 // Middleware para verificar que el usuario tiene el rol necesario
