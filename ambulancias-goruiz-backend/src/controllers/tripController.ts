@@ -8,18 +8,26 @@ import { ZodError } from 'zod';
 // POST /api/trips → Crear un viaje
 export const createTrip = async (req: Request, res: Response) => {
   try {
-    const parsedData = tripSchema.parse(req.body);
-    const newTrip = new Trip(parsedData);
+    const parsed = tripSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      console.warn("Validation errors:", parsed.error.errors);
+      return res.status(400).json({
+        message: "Errores de validación",
+        errors: parsed.error.errors.map((err) => ({
+          field: err.path[0],
+          message: err.message,
+        })),
+      });
+    }
+
+    const newTrip = new Trip(parsed.data);
     const savedTrip = await newTrip.save();
+
     res.status(201).json(savedTrip);
   } catch (error) {
-    if (error instanceof ZodError) {
-      console.error('Validation errors:', error.errors);
-      res.status(400).json({ message: 'Datos inválidos', errors: error.errors });
-      return;
-    }
-    console.error('❌ Error al crear el viaje:', error);
-    res.status(500).json({ message: 'Error al crear el viaje' });
+    console.error("❌ Error al crear el viaje:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
