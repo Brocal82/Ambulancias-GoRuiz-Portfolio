@@ -1,5 +1,4 @@
 // backend/src/models/Trip.ts
-
 import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface ITrip extends Document {
@@ -12,14 +11,15 @@ export interface ITrip extends Document {
   fromAddress: string;
   toAddress: string;
   timeWarning: string;
-  timeAtHome: string;
-  timePickup: string;
-  timeArrival: string;
-  timeEnd: string;
-  kmStart: number;
-  kmEnd: number;
+  timeAtHome?: string;
+  timePickup?: string;
+  timeArrival?: string;
+  timeEnd?: string;
+  kmStart?: number;
+  kmEnd?: number;
   wasCancelled: boolean;
-  countsTrip: 0 | 1;            // 🆕  0 = NO cuenta · 1 = SÍ cuenta
+  cancelledAtPickup?: boolean;
+  countsTrip: 0 | 1;
   reports?: string;
   sentInSummary: boolean;
 }
@@ -35,22 +35,23 @@ const TripSchema = new Schema<ITrip>({
   fromAddress: { type: String, required: true },
   toAddress: { type: String, required: true },
 
-  timeWarning: { type: String, required: true },
-  timeAtHome: { type: String, required: true },
-  timePickup: { type: String, required: true },
-  timeArrival: { type: String, required: true },
-  timeEnd: { type: String, required: true },
+  timeWarning: { type: String, required: true }, // ⏰ Siempre requerido
+  timeAtHome: { type: String, required: false },
+  timePickup: { type: String, required: false },
+  timeArrival: { type: String, required: false },
+  timeEnd: { type: String, required: false },
 
-  kmStart: { type: Number, required: true },
-  kmEnd: { type: Number, required: true },
+  kmStart: { type: Number, required: false },
+  kmEnd: { type: Number, required: false },
 
   wasCancelled: { type: Boolean, required: true },
+  cancelledAtPickup: { type: Boolean, required: false },
 
-  countsTrip: {                 // 🆕 0 ó 1, forzamos el rango
+  countsTrip: {
     type: Number,
-    required: true,
     enum: [0, 1],
     default: 1,
+    required: true,
   },
 
   reports: { type: String, default: "" },
