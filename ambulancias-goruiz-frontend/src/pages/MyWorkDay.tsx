@@ -216,7 +216,7 @@ const MyWorkday = () => {
     }
   }, [token, user?._id, today]);
 
-  
+
   const checkStartPermission = (dienst: AssignedDay) => {
     const [startHour, startMinute] = dienst.startTime.split(':').map(Number);
     const now = new Date();
@@ -243,7 +243,7 @@ const MyWorkday = () => {
     }
   }, [today, user?._id]);
 
-  
+
   useEffect(() => {
     fetchTrips();
     fetchAssignedDay();
@@ -264,29 +264,18 @@ const MyWorkday = () => {
     setVehicleConfirmed(savedVehicleConfirm);   // ← puede ser true o false
   }, []);
 
-  
-    useEffect(() => {
-      if (assignedDay && !vehicleNumber) {
-        setVehicleNumber(assignedDay.vehicleNumber || "");
-      }
-    }, [assignedDay, vehicleNumber]);
 
-  
-    // 🧠 Nueva validación unificada con campo marcado dinámicamente
-      useEffect(() => {
-        const result = checkTripLogic({
-          timeWarning,
-          timeAtHome,
-          timePickup,
-          timeArrival,
-          timeEnd,
-          kmStart,
-          kmEnd,
-        });
+  useEffect(() => {
+    if (assignedDay && !vehicleNumber) {
+      setVehicleNumber(assignedDay.vehicleNumber || "");
+    }
+  }, [assignedDay, vehicleNumber]);
 
-        setDraftError(result.error || "");
-        setBadField(result.badField);
-      }, [
+
+  // 🧠 Nueva validación unificada con campo marcado dinámicamente
+  useEffect(() => {
+    const result = checkTripLogic(
+      {
         timeWarning,
         timeAtHome,
         timePickup,
@@ -294,828 +283,829 @@ const MyWorkday = () => {
         timeEnd,
         kmStart,
         kmEnd,
-      ]);
-    const handleSaveTrip = async () => {
-  if (!token) return;
+      },
+      wasCancelled // ✅ nuevo argumento aquí
+    );
 
-  // 1️⃣ Validación de campos obligatorios
-  if (
-    !auftragNumber ||
-    !patientName ||
-    !fromAddress ||
-    !toAddress ||
-    !timeWarning ||
-    !timeAtHome ||
-    !timePickup ||
-    !timeArrival ||
-    !timeEnd ||
-    !kmStart ||
-    !kmEnd
-  ) {
-    toast.warn("🚫 Por favor, rellena todos los campos obligatorios");
-
-    // Enfoca el primer campo vacío (puedes añadir más si quieres)
-    if (!timeWarning) timeWarningRef.current?.focus();
-    else if (!timeAtHome) timeAtHomeRef.current?.focus();
-    else if (!timePickup) timePickupRef.current?.focus();
-    else if (!timeArrival) timeArrivalRef.current?.focus();
-    else if (!timeEnd) timeEndRef.current?.focus();
-    else if (!kmStart) kmStartRef.current?.focus();
-    else if (!kmEnd) kmEndRef.current?.focus();
-
-    return;
-  }
-
-  // 2️⃣ Validación de asignación y horario
-  if (!assignedDay) {
-    toast.error("❌ No tienes asignación de dienst para hoy");
-    return;
-  }
-
-  if (!canStartTripNow(assignedDay.startTime, assignedDay.date)) {
-    toast.error("❌ Solo puedes crear viajes 30 minutos antes del inicio del Dienst");
-    return;
-  }
-
-  // 3️⃣ Validación de lógica de horas y KM
-  const logicError = checkTripLogic({
+    setDraftError(result.error || "");
+    setBadField(result.badField);
+  }, [
     timeWarning,
     timeAtHome,
     timePickup,
     timeArrival,
     timeEnd,
-    kmStart: Number(kmStart),
-    kmEnd: Number(kmEnd),
-  });
+    kmStart,
+    kmEnd,
+    wasCancelled, // ✅ también añadir como dependencia
+  ]);
 
-  if (logicError.error) {
-    toast.error(logicError.error);
+  const handleSaveTrip = async () => {
+    if (!token) return;
 
-    // Foco automático en el campo con error lógico
-    switch (logicError.badField) {
-      case "timeWarning":
-        timeWarningRef.current?.focus();
-        break;
-      case "timeAtHome":
-        timeAtHomeRef.current?.focus();
-        break;
-      case "timePickup":
-        timePickupRef.current?.focus();
-        break;
-      case "timeArrival":
-        timeArrivalRef.current?.focus();
-        break;
-      case "timeEnd":
-        timeEndRef.current?.focus();
-        break;
-      case "kmStart":
-        kmStartRef.current?.focus();
-        break;
-      case "kmEnd":
-        kmEndRef.current?.focus();
-        break;
+    // 1️⃣ Validación de campos obligatorios solo si NO está cancelado
+    if (!wasCancelled) {
+      if (
+        !auftragNumber ||
+        !patientName ||
+        !fromAddress ||
+        !toAddress ||
+        !timeWarning ||
+        !timeAtHome ||
+        !timePickup ||
+        !timeArrival ||
+        !timeEnd ||
+        kmStart === "" ||
+        kmEnd === ""
+      ) {
+        toast.warn("🚫 Por favor, rellena todos los campos obligatorios");
+
+        // Enfoca el primer campo vacío (puedes añadir más si quieres)
+        if (!timeWarning) timeWarningRef.current?.focus();
+        else if (!timeAtHome) timeAtHomeRef.current?.focus();
+        else if (!timePickup) timePickupRef.current?.focus();
+        else if (!timeArrival) timeArrivalRef.current?.focus();
+        else if (!timeEnd) timeEndRef.current?.focus();
+        else if (!kmStart) kmStartRef.current?.focus();
+        else if (!kmEnd) kmEndRef.current?.focus();
+
+        return;
+      }
     }
 
-    return; // abortar si hay error
-  }
 
-  // 4️⃣ Guardar en MongoDB
-  try {
-    const newTrip: TripData = {
-      date: today,
-      assignmentId: assignedDay.dienstId,
-      driver: assignedDay.driver._id,
-      medic: assignedDay.medic._id,
-      auftragNumber,
-      patientName,
-      fromAddress,
-      toAddress,
-      timeWarning,
-      timeAtHome,
-      timePickup,
-      timeArrival,
-      timeEnd,
-      kmStart: Number(kmStart),
-      kmEnd: Number(kmEnd),
-      wasCancelled,
-      countsTrip,
-      reports,
-    };
 
-    const createdTrip = await createTrip(newTrip, token);
-    toast.success("✅ Viaje guardado");
+    // 2️⃣ Validación de asignación y horario
+    if (!assignedDay) {
+      toast.error("❌ No tienes asignación de dienst para hoy");
+      return;
+    }
 
-    // Mostrar en pantalla al instante
-    setTrips((prev) => [...prev, createdTrip]);
+    if (!canStartTripNow(assignedDay.startTime, assignedDay.date)) {
+      toast.error("❌ Solo puedes crear viajes 30 minutos antes del inicio del Dienst");
+      return;
+    }
 
-    // Limpiar formulario
-    setAuftragNumber("");
-    setPatientName("");
-    setFromAddress("");
-    setToAddress("");
-    setTimeWarning("");
-    setTimeAtHome("");
-    setTimePickup("");
-    setTimeArrival("");
-    setTimeEnd("");
-    setKmStart("");
-    setKmEnd("");
-    setWasCancelled(false);
-    setCountsTrip(1);
-    setReports("");
-  } catch (err) {
-    console.error(err);
-    toast.error("❌ Error al guardar el viaje");
-  }
-};
+    // 3️⃣ Validación de lógica de horas y KM
+    if (!wasCancelled) {
+      const logicError = checkTripLogic({
+        timeWarning,
+        timeAtHome,
+        timePickup,
+        timeArrival,
+        timeEnd,
+        kmStart: Number(kmStart),
+        kmEnd: Number(kmEnd),
+      });
 
-  
-  
-    /**
-     * Confirma el CIERRE DEFINITIVO del día.
-     * - Envía resumen al backend
-     * - Limpia estados
-     * - Marca el día como cerrado en localStorage
-     * - Redirige al dashboard
-     */
-    /* ────────────────────────────────────────────────
-       1.  CIERRE DEFINITIVO  (modal FinalReviewModal)
-       ────────────────────────────────────────────────*/
+      if (logicError.error) {
+        toast.error(logicError.error);
 
-const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number) => {
-  if (!token || !assignedDay || !user?._id) return;
+        // Foco automático en el campo con error lógico
+        switch (logicError.badField) {
+          case "timeWarning":
+            timeWarningRef.current?.focus();
+            break;
+          case "timeAtHome":
+            timeAtHomeRef.current?.focus();
+            break;
+          case "timePickup":
+            timePickupRef.current?.focus();
+            break;
+          case "timeArrival":
+            timeArrivalRef.current?.focus();
+            break;
+          case "timeEnd":
+            timeEndRef.current?.focus();
+            break;
+          case "kmStart":
+            kmStartRef.current?.focus();
+            break;
+          case "kmEnd":
+            kmEndRef.current?.focus();
+            break;
+        }
 
-  /* ── Validaciones mínimas ── */
-  if (!vehicleNumber || !initialAmbulanceKm) {
-    toast.warn("🚐 Introduce nº de ambulancia y KM inicial.");
-    return;
-  }
-
-  if (isNaN(finalKmFromModal)) {
-    toast.warn("📏 Introduce los kilómetros finales en el modal.");
-    return;
-  }
-
-  /* ── Validación de coherencia de KM ── */
-  const initialKmNumber = Number(initialAmbulanceKm);
-  if (finalKmFromModal < initialKmNumber) {
-    toast.error("❌ Los KM finales no pueden ser menores que los KM iniciales");
-    return;
-  }
-
-  try {
-    // 👉 Guarda en state el km final (para reabrir modal si es necesario)
-    setFinalAmbulanceKm(String(finalKmFromModal));
-
-    // ✅ Cálculo de km realizados con conversión segura
-    const totalTripKm = trips.reduce((acc, t) => {
-      const kmStart = Number(t.kmStart);
-      const kmEnd = Number(t.kmEnd);
-      if (!isNaN(kmStart) && !isNaN(kmEnd)) {
-        return acc + (kmEnd - kmStart);
+        return; // abortar si hay error
       }
-      return acc;
-    }, 0);
+    }
 
-    const summaryData: FinalSummaryPayload = {
-      date: today,
-      assignmentId: assignedDay.assignmentId,
-      driver: assignedDay.driver._id,
-      medic: assignedDay.medic._id,
-      vehicleNumber,
-      initialKm: initialKmNumber,
-      finalKm: finalKmFromModal,
-      totalTripKm,
-      trips,
-      extraNote: note,
-      isFinalClosure: true,
-    };
 
-    await sendFinalClosure(summaryData, token);
+    // 4️⃣ Guardar en MongoDB
+    try {
+      const newTrip: TripData = {
+        date: today,
+        assignmentId: assignedDay.dienstId,
+        driver: assignedDay.driver._id,
+        medic: assignedDay.medic._id,
+        auftragNumber,
+        patientName,
+        fromAddress,
+        toAddress,
+        timeWarning,
+        timeAtHome,
+        timePickup,
+        timeArrival,
+        timeEnd,
+        kmStart: Number(kmStart),
+        kmEnd: Number(kmEnd),
+        wasCancelled,
+        countsTrip,
+        reports,
+      };
 
-    toast.success("✅ Día cerrado y datos enviados al admin.");
+      const createdTrip = await createTrip(newTrip); // 👈 ya no se pasa `token`
+      toast.success("✅ Viaje guardado");
 
-    // ✅ Marcar día cerrado solo para este usuario
-    localStorage.setItem(getClosedDayKey(today, user._id), "true");
+      // Mostrar en pantalla al instante
+      setTrips((prev) => [...prev, createdTrip]);
 
-    // ✅ Limpieza y redirección
-    setTrips([]);
-    setIsClosingDay(true);
-    setShowReviewModal(false);
-    navigate("/worker");
-  } catch (err) {
-    console.error("❌ Error al cerrar el día:", err);
-    toast.error("❌ No se pudo cerrar el día.");
+      // Limpiar formulario
+      setAuftragNumber("");
+      setPatientName("");
+      setFromAddress("");
+      setToAddress("");
+      setTimeWarning("");
+      setTimeAtHome("");
+      setTimePickup("");
+      setTimeArrival("");
+      setTimeEnd("");
+      setKmStart("");
+      setKmEnd("");
+      setWasCancelled(false);
+      setCountsTrip(1);
+      setReports("");
+
+    } catch (err) {
+      console.error("❌ Error al crear trip:", err);
+
+      if (Array.isArray(err)) {
+        err.forEach((e) => {
+          toast.error(`⚠️ ${e.message}`);
+        });
+      } else if (err instanceof Error) {
+        toast.error(`❌ ${err.message}`);
+      } else {
+        toast.error("❌ Error desconocido al guardar el viaje");
+      }
+    }
   }
-};
 
 
-  
-    /* ────────────────────────────────────────────────
-       2.  CIERRE PARCIAL  (modal PartialReviewModal)
-       ────────────────────────────────────────────────*/
-    const handleSendPartialClosure = async (reason: string, finalKmValue: number) => {
-      if (!token || !assignedDay) return;
-  
-      if (isNaN(finalKmValue)) {
-        toast.warn("📏 Introduce los kilómetros finales en el modal.");
-        return;
-      }
-  
-      if (Number(finalKmValue) < Number(initialAmbulanceKm)) {
-        toast.warn("📏 Los KM finales no pueden ser menores que los KM iniciales.");
-        return;
-      }
-  
-  
-      try {
-        const totalTripKm = trips.reduce(
-          (sum, t) => sum + (t.kmEnd - t.kmStart),
-          0
-        );
-  
-        const payload: PartialSummaryPayload = {
-          date: today,
-          assignmentId: assignedDay.assignmentId,
-          driver: assignedDay.driver._id,
-          medic: assignedDay.medic._id,
-          vehicleNumber,
-          initialKm: Number(initialAmbulanceKm),
-          finalKm: finalKmValue,
-          trips,
-          totalTripKm,
-          partialClosureReason: reason,
-          isFinalClosure: false,
-        };
-  
-        await sendPartialClosure(payload, token);
-  
-        toast.success("✅ Cierre parcial enviado al admin.");
-  
-        // 🧹 Limpieza total del formulario para continuar la jornada
-        setTrips([]);
-        setWasCancelled(false);
-        setCountsTrip(1);
-        setShowReviewModal(false);
-        setVehicleNumber("");
-        setInitialAmbulanceKm("");
-        setFinalAmbulanceKm("");
-  
-        // 🔁 Redirige a pantalla principal para reiniciar desde cero
-        navigate("/worker");
-  
-      } catch (err) {
-        console.error("❌ Error al enviar cierre parcial:", err);
-        toast.error("❌ No se pudo enviar el cierre parcial.");
-      }
-    };
-  
-    return (
-      <div className="p-6 max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold mb-4">📋 Mi jornada de hoy: {today}</h2>
-  
-        {isClosingDay ? (
-          <div className="bg-red-100 text-red-800 p-4 rounded shadow mb-6">
-            ✅ Día cerrado. No hay Dienst activo para hoy.
-          </div>
-        ) : !assignedDay ? (
-          <div className="bg-yellow-100 text-yellow-800 p-4 rounded shadow mb-6">
-            🚫 Hoy no tienes un Dienst asignado.
-          </div>
-        ) : !canStartWork ? (
-          <div className="bg-blue-100 text-blue-800 p-4 rounded shadow mb-6">
-            ⏳ Podrás registrar viajes a partir de 30 minutos antes de tu Dienst. Hora de inicio: <strong>{assignedDay.startTime}</strong>
-          </div>
-        ) : (
-          <>
-            <div className="bg-white p-4 rounded shadow mb-6 space-y-3">
-              {/* 👥 Equipo asignado y ambulancia por defecto */}
-              <div className="bg-gray-100 p-4 rounded shadow mb-6 flex justify-between items-start">
-  
-                {/* 👥 Equipo asignado a la izquierda */}
-                {assignedDay && (
+
+
+  /**
+   * Confirma el CIERRE DEFINITIVO del día.
+   * - Envía resumen al backend
+   * - Limpia estados
+   * - Marca el día como cerrado en localStorage
+   * - Redirige al dashboard
+   */
+  /* ────────────────────────────────────────────────
+     1.  CIERRE DEFINITIVO  (modal FinalReviewModal)
+     ────────────────────────────────────────────────*/
+
+  const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number) => {
+    if (!token || !assignedDay || !user?._id) return;
+
+    /* ── Validaciones mínimas ── */
+    if (!vehicleNumber || !initialAmbulanceKm) {
+      toast.warn("🚐 Introduce nº de ambulancia y KM inicial.");
+      return;
+    }
+
+    if (isNaN(finalKmFromModal)) {
+      toast.warn("📏 Introduce los kilómetros finales en el modal.");
+      return;
+    }
+
+    /* ── Validación de coherencia de KM ── */
+    const initialKmNumber = Number(initialAmbulanceKm);
+    if (finalKmFromModal < initialKmNumber) {
+      toast.error("❌ Los KM finales no pueden ser menores que los KM iniciales");
+      return;
+    }
+
+    try {
+      // 👉 Guarda en state el km final (para reabrir modal si es necesario)
+      setFinalAmbulanceKm(String(finalKmFromModal));
+
+      // ✅ Cálculo de km realizados con conversión segura
+      const totalTripKm = trips.reduce((acc, t) => {
+        const kmStart = Number(t.kmStart);
+        const kmEnd = Number(t.kmEnd);
+        if (!isNaN(kmStart) && !isNaN(kmEnd)) {
+          return acc + (kmEnd - kmStart);
+        }
+        return acc;
+      }, 0);
+
+      const summaryData: FinalSummaryPayload = {
+        date: today,
+        assignmentId: assignedDay.assignmentId,
+        driver: assignedDay.driver._id,
+        medic: assignedDay.medic._id,
+        vehicleNumber,
+        initialKm: initialKmNumber,
+        finalKm: finalKmFromModal,
+        totalTripKm,
+        trips,
+        extraNote: note,
+        isFinalClosure: true,
+      };
+
+      await sendFinalClosure(summaryData, token);
+
+      toast.success("✅ Día cerrado y datos enviados al admin.");
+
+      // ✅ Marcar día cerrado solo para este usuario
+      localStorage.setItem(getClosedDayKey(today, user._id), "true");
+
+      // ✅ Limpieza y redirección
+      setTrips([]);
+      setIsClosingDay(true);
+      setShowReviewModal(false);
+      navigate("/worker");
+    } catch (err) {
+      console.error("❌ Error al cerrar el día:", err);
+      toast.error("❌ No se pudo cerrar el día.");
+    }
+  };
+
+
+
+  /* ────────────────────────────────────────────────
+     2.  CIERRE PARCIAL  (modal PartialReviewModal)
+     ────────────────────────────────────────────────*/
+  const handleSendPartialClosure = async (reason: string, finalKmValue: number) => {
+    if (!token || !assignedDay) return;
+
+    if (isNaN(finalKmValue)) {
+      toast.warn("📏 Introduce los kilómetros finales en el modal.");
+      return;
+    }
+
+    if (Number(finalKmValue) < Number(initialAmbulanceKm)) {
+      toast.warn("📏 Los KM finales no pueden ser menores que los KM iniciales.");
+      return;
+    }
+
+
+    try {
+      const totalTripKm = trips.reduce(
+        (sum, t) => sum + (t.kmEnd - t.kmStart),
+        0
+      );
+
+      const payload: PartialSummaryPayload = {
+        date: today,
+        assignmentId: assignedDay.assignmentId,
+        driver: assignedDay.driver._id,
+        medic: assignedDay.medic._id,
+        vehicleNumber,
+        initialKm: Number(initialAmbulanceKm),
+        finalKm: finalKmValue,
+        trips,
+        totalTripKm,
+        partialClosureReason: reason,
+        isFinalClosure: false,
+      };
+
+      await sendPartialClosure(payload, token);
+
+      toast.success("✅ Cierre parcial enviado al admin.");
+
+      // 🧹 Limpieza total del formulario para continuar la jornada
+      setTrips([]);
+      setWasCancelled(false);
+      setCountsTrip(1);
+      setShowReviewModal(false);
+      setVehicleNumber("");
+      setInitialAmbulanceKm("");
+      setFinalAmbulanceKm("");
+
+      // 🔁 Redirige a pantalla principal para reiniciar desde cero
+      navigate("/worker");
+
+    } catch (err) {
+      console.error("❌ Error al enviar cierre parcial:", err);
+      toast.error("❌ No se pudo enviar el cierre parcial.");
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-3xl mx-auto">
+      <h2 className="text-2xl font-bold mb-4">📋 Mi jornada de hoy: {today}</h2>
+
+      {isClosingDay ? (
+        <div className="bg-red-100 text-red-800 p-4 rounded shadow mb-6">
+          ✅ Día cerrado. No hay Dienst activo para hoy.
+        </div>
+      ) : !assignedDay ? (
+        <div className="bg-yellow-100 text-yellow-800 p-4 rounded shadow mb-6">
+          🚫 Hoy no tienes un Dienst asignado.
+        </div>
+      ) : !canStartWork ? (
+        <div className="bg-blue-100 text-blue-800 p-4 rounded shadow mb-6">
+          ⏳ Podrás registrar viajes a partir de 30 minutos antes de tu Dienst. Hora de inicio: <strong>{assignedDay.startTime}</strong>
+        </div>
+      ) : (
+        <>
+          <div className="bg-white p-4 rounded shadow mb-6 space-y-3">
+            {/* 👥 Equipo asignado y ambulancia por defecto */}
+            <div className="bg-gray-100 p-4 rounded shadow mb-6 flex justify-between items-start">
+
+              {/* 👥 Equipo asignado a la izquierda */}
+              {assignedDay && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">
+                    ⏰ Dienst: <strong>{assignedDay.startTime}</strong> – <strong>{assignedDay.endTime}</strong>
+                  </p>
+                  <p className="font-semibold text-lg mb-1">Team:</p>
+                  <p>🚗 {assignedDay.driver?.lastName}, {assignedDay.driver?.name}</p>
+                  <p>🧑‍⚕️ {assignedDay.medic?.lastName}, {assignedDay.medic?.name}</p>
+                </div>
+              )}
+
+              {/* 🚐 Ambulancia y KM a la derecha, agrupados y alineados */}
+              <div className="text-right w-full max-w-xs space-y-4">
+
+                {/* Nº de ambulancia */}
+                <div>
+                  <label
+                    htmlFor="vehicleNumber"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    🚐 Nº Ambulancia
+                  </label>
+                  <input
+                    id="vehicleNumber"
+                    type="text"
+                    placeholder="Ej. AMB-01"
+                    title="Número identificativo de la ambulancia"
+                    value={vehicleNumber}
+                    onChange={(e) => setVehicleNumber(e.target.value)}
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
+                    disabled={vehicleConfirmed}
+                  />
+                </div>
+
+                {/* KM inicial */}
+                <div>
+                  <label
+                    htmlFor="initialAmbulanceKm"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    🔢 KM inicial
+                  </label>
+                  <input
+                    id="initialAmbulanceKm"
+                    type="number"
+                    placeholder="Ej. 123456"
+                    title="Kilometraje de la ambulancia al comenzar el día"
+                    value={initialAmbulanceKm}
+                    onChange={(e) => setInitialAmbulanceKm(e.target.value)}
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
+                    disabled={vehicleConfirmed}
+                  />
+                </div>
+
+                {/* Botón confirmar (solo si aún no se confirmó) */}
+                {!vehicleConfirmed && (
+                  <button
+                    type="button"
+                    onClick={handleConfirmAmbulanceData}
+                    className="mt-2 bg-green-600 text-white px-3 py-1 rounded w-full hover:bg-green-700"
+                  >
+                    ✅ Confirmar datos iniciales
+                  </button>
+                )}
+              </div>
+
+            </div>
+
+
+            {vehicleConfirmed && (
+              <>
+                {/* 👉  FORMULARIO DE VIAJE  */}
+                {/* ─────────────────────────────── */}
+                {/* 1️⃣  Auftrag + Paciente (2 col) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Nº Auftrag */}
                   <div>
-                    <p className="text-sm text-gray-600 mb-1">
-                      ⏰ Dienst: <strong>{assignedDay.startTime}</strong> – <strong>{assignedDay.endTime}</strong>
-                    </p>
-                    <p className="font-semibold text-lg mb-1">Team:</p>
-                    <p>🚗 {assignedDay.driver?.lastName}, {assignedDay.driver?.name}</p>
-                    <p>🧑‍⚕️ {assignedDay.medic?.lastName}, {assignedDay.medic?.name}</p>
+                    <label htmlFor="auftragNumber" className="block text-sm">
+                      Número de Auftrag
+                    </label>
+                    <input
+                      disabled={formBlocked}
+                      id="auftragNumber"
+                      placeholder="Ej: Krankentransport 123"
+                      value={auftragNumber}
+                      onChange={(e) => setAuftragNumber(e.target.value)}
+                      className="w-full border rounded p-1"
+                    />
+                  </div>
+
+                  {/* Nombre paciente */}
+                  <div>
+                    <label htmlFor="patientName" className="block text-sm">
+                      Nombre del paciente
+                    </label>
+                    <input
+                      disabled={formBlocked}
+                      id="patientName"
+                      placeholder="Ej: Juan Pérez"
+                      value={patientName}
+                      onChange={(e) => setPatientName(e.target.value)}
+                      className="w-full border rounded p-1"
+                    />
+                  </div>
+                </div>
+
+                {/* 2️⃣  Direcciones (2 col) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  {/* Origen */}
+                  <div>
+                    <label htmlFor="fromAddress" className="block text-sm">
+                      Dirección de recogida
+                    </label>
+                    <input
+                      disabled={formBlocked}
+                      id="fromAddress"
+                      placeholder="Calle Ejemplo 123"
+                      value={fromAddress}
+                      onChange={(e) => setFromAddress(e.target.value)}
+                      className="w-full border rounded p-1"
+                    />
+                  </div>
+
+                  {/* Destino */}
+                  <div>
+                    <label htmlFor="toAddress" className="block text-sm">
+                      Dirección de dejada
+                    </label>
+                    <input
+                      disabled={formBlocked}
+                      id="toAddress"
+                      placeholder="Hospital Central, Berlín"
+                      value={toAddress}
+                      onChange={(e) => setToAddress(e.target.value)}
+                      className="w-full border rounded p-1"
+                    />
+                  </div>
+                </div>
+
+                {/* 3️⃣–5️⃣ Todos los campos de hora/KM en una sola fila */}
+                <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mt-4">
+                  {/* Hora aviso */}
+                  <div>
+                    <label htmlFor="timeWarning" className="block text-sm">Aviso</label>
+                    <input
+                      ref={timeWarningRef}
+                      disabled={formBlocked}
+                      id="timeWarning"
+                      type="time"
+                      value={timeWarning}
+                      onChange={(e) => setTimeWarning(e.target.value)}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeWarning" ? "border-red-500" : "border-gray-300"}`}
+                    />
+                  </div>
+
+                  {/* Hora domicilio */}
+                  <div>
+                    <label htmlFor="timeAtHome" className="block text-sm">Domicilio</label>
+                    <input
+                      ref={timeAtHomeRef}
+                      disabled={formBlocked}
+                      id="timeAtHome"
+                      type="time"
+                      value={timeAtHome}
+                      onChange={(e) => setTimeAtHome(e.target.value)}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeAtHome" ? "border-red-500" : "border-gray-300"}`}
+                    />
+                  </div>
+
+                  {/* KM domicilio */}
+                  <div>
+                    <label htmlFor="kmStart" className="block text-sm">KM dom.</label>
+                    <input
+                      ref={kmStartRef}
+                      disabled={formBlocked}
+                      id="kmStart"
+                      type="number"
+                      value={kmStart}
+                      onChange={(e) => setKmStart(e.target.value)}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "kmStart" ? "border-red-500" : "border-gray-300"}`}
+                    />
+                  </div>
+
+                  {/* Hora carga */}
+                  <div>
+                    <label htmlFor="timePickup" className="block text-sm">Carga</label>
+                    <input
+                      ref={timePickupRef}
+                      disabled={formBlocked}
+                      id="timePickup"
+                      type="time"
+                      value={timePickup}
+                      onChange={(e) => setTimePickup(e.target.value)}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timePickup" ? "border-red-500" : "border-gray-300"}`}
+                    />
+                  </div>
+
+                  {/* Hora destino */}
+                  <div>
+                    <label htmlFor="timeArrival" className="block text-sm">Destino</label>
+                    <input
+                      ref={timeArrivalRef}
+                      disabled={formBlocked}
+                      id="timeArrival"
+                      type="time"
+                      value={timeArrival}
+                      onChange={(e) => setTimeArrival(e.target.value)}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeArrival" ? "border-red-500" : "border-gray-300"}`}
+                    />
+                  </div>
+
+                  {/* KM destino */}
+                  <div>
+                    <label htmlFor="kmEnd" className="block text-sm">KM dest.</label>
+                    <input
+                      ref={kmEndRef}
+                      disabled={formBlocked}
+                      id="kmEnd"
+                      type="number"
+                      value={kmEnd}
+                      onChange={(e) => setKmEnd(e.target.value)}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "kmEnd" ? "border-red-500" : "border-gray-300"}`}
+                    />
+                  </div>
+
+                  {/* Hora libre */}
+                  <div>
+                    <label htmlFor="timeEnd" className="block text-sm">Libre</label>
+                    <input
+                      ref={timeEndRef}
+                      disabled={formBlocked}
+                      id="timeEnd"
+                      type="time"
+                      value={timeEnd}
+                      onChange={(e) => setTimeEnd(e.target.value)}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeEnd" ? "border-red-500" : "border-gray-300"}`}
+                    />
+                  </div>
+                </div>
+
+
+
+
+
+                {/* ✅ Viaje cancelado */}
+                <div className="space-y-2">
+                  <label className="inline-flex items-center space-x-2">
+                    <input
+                      disabled={formBlocked}
+                      id="wasCancelled"
+                      type="checkbox"
+                      checked={wasCancelled}
+                      onChange={(e) => {
+                        setWasCancelled(e.target.checked);
+                        // Cuando se desmarca, volvemos a los valores por defecto
+                        if (!e.target.checked) setCountsTrip(1);
+                      }}
+                    />
+                    <span>El viaje fue cancelado</span>
+                  </label>
+
+                  {/* Solo aparece si se marcó cancelado */}
+                  {wasCancelled && (
+                    <div className="ml-6">
+                      <label htmlFor="countsTrip" className="block text-sm font-medium mb-1">
+                        ¿Cuenta el viaje?
+                      </label>
+                      <select
+                        id="countsTrip"
+                        value={countsTrip}                    // ← ya es número
+                        onChange={(e) => setCountsTrip(Number(e.target.value))}
+                        className="border rounded px-2 py-1 w-full"
+                      >
+                        <option value={1}>✅ Sí, cuenta (1)</option>
+                        <option value={0}>❌ No, no cuenta (0)</option>
+                      </select>
+
+                    </div>
+                  )}
+                </div>
+
+
+                <div>
+                  <label htmlFor="reports" className="block text-sm">Observaciones / reportes</label>
+                  <textarea
+                    disabled={formBlocked}
+                    id="reports"
+                    placeholder="Observaciones sobre el traslado"
+                    title="Escribe aquí cualquier observación"
+                    value={reports}
+                    onChange={(e) => setReports(e.target.value)}
+                    className="w-full border p-1 rounded"
+                    rows={3}
+                  />
+                </div>
+
+                {/* ── Mensaje de validación en caliente ─────────── */}
+                {draftError && (
+                  <div className="bg-red-100 text-red-700 p-2 rounded">
+                    {draftError}
                   </div>
                 )}
-  
-                {/* 🚐 Ambulancia y KM a la derecha, agrupados y alineados */}
-                <div className="text-right w-full max-w-xs space-y-4">
-  
-                  {/* Nº de ambulancia */}
-                  <div>
-                    <label
-                      htmlFor="vehicleNumber"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      🚐 Nº Ambulancia
-                    </label>
-                    <input
-                      id="vehicleNumber"
-                      type="text"
-                      placeholder="Ej. AMB-01"
-                      title="Número identificativo de la ambulancia"
-                      value={vehicleNumber}
-                      onChange={(e) => setVehicleNumber(e.target.value)}
-                      className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
-                      disabled={vehicleConfirmed}
-                    />
-                  </div>
-  
-                  {/* KM inicial */}
-                  <div>
-                    <label
-                      htmlFor="initialAmbulanceKm"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      🔢 KM inicial
-                    </label>
-                    <input
-                      id="initialAmbulanceKm"
-                      type="number"
-                      placeholder="Ej. 123456"
-                      title="Kilometraje de la ambulancia al comenzar el día"
-                      value={initialAmbulanceKm}
-                      onChange={(e) => setInitialAmbulanceKm(e.target.value)}
-                      className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
-                      disabled={vehicleConfirmed}
-                    />
-                  </div>
-  
-                  {/* Botón confirmar (solo si aún no se confirmó) */}
-                  {!vehicleConfirmed && (
-                    <button
-                      type="button"
-                      onClick={handleConfirmAmbulanceData}
-                      className="mt-2 bg-green-600 text-white px-3 py-1 rounded w-full hover:bg-green-700"
-                    >
-                      ✅ Confirmar datos iniciales
-                    </button>
-                  )}
-                </div>
-  
-              </div>
-  
-  
-              {vehicleConfirmed && (
-                <>
-                  {/* 👉  FORMULARIO DE VIAJE  */}
-                  {/* ─────────────────────────────── */}
-                  {/* 1️⃣  Auftrag + Paciente (2 col) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Nº Auftrag */}
-                    <div>
-                      <label htmlFor="auftragNumber" className="block text-sm">
-                        Número de Auftrag
-                      </label>
-                      <input
-                        disabled={formBlocked}
-                        id="auftragNumber"
-                        placeholder="Ej: Krankentransport 123"
-                        value={auftragNumber}
-                        onChange={(e) => setAuftragNumber(e.target.value)}
-                        className="w-full border rounded p-1"
-                      />
-                    </div>
-  
-                    {/* Nombre paciente */}
-                    <div>
-                      <label htmlFor="patientName" className="block text-sm">
-                        Nombre del paciente
-                      </label>
-                      <input
-                        disabled={formBlocked}
-                        id="patientName"
-                        placeholder="Ej: Juan Pérez"
-                        value={patientName}
-                        onChange={(e) => setPatientName(e.target.value)}
-                        className="w-full border rounded p-1"
-                      />
-                    </div>
-                  </div>
-  
-                  {/* 2️⃣  Direcciones (2 col) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    {/* Origen */}
-                    <div>
-                      <label htmlFor="fromAddress" className="block text-sm">
-                        Dirección de recogida
-                      </label>
-                      <input
-                        disabled={formBlocked}
-                        id="fromAddress"
-                        placeholder="Calle Ejemplo 123"
-                        value={fromAddress}
-                        onChange={(e) => setFromAddress(e.target.value)}
-                        className="w-full border rounded p-1"
-                      />
-                    </div>
-  
-                    {/* Destino */}
-                    <div>
-                      <label htmlFor="toAddress" className="block text-sm">
-                        Dirección de dejada
-                      </label>
-                      <input
-                        disabled={formBlocked}
-                        id="toAddress"
-                        placeholder="Hospital Central, Berlín"
-                        value={toAddress}
-                        onChange={(e) => setToAddress(e.target.value)}
-                        className="w-full border rounded p-1"
-                      />
-                    </div>
-                  </div>
-  
-                  {/* 3️⃣–5️⃣ Todos los campos de hora/KM en una sola fila */}
-                  <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mt-4">
-                    {/* Hora aviso */}
-                    <div>
-                      <label htmlFor="timeWarning" className="block text-sm">Aviso</label>
-                      <input
-                        ref={timeWarningRef}
-                        disabled={formBlocked}
-                        id="timeWarning"
-                        type="time"
-                        value={timeWarning}
-                        onChange={(e) => setTimeWarning(e.target.value)}
-                        className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeWarning" ? "border-red-500" : "border-gray-300"}`}
-                      />
-                    </div>
-  
-                    {/* Hora domicilio */}
-                    <div>
-                      <label htmlFor="timeAtHome" className="block text-sm">Domicilio</label>
-                      <input
-                        ref={timeAtHomeRef}
-                        disabled={formBlocked}
-                        id="timeAtHome"
-                        type="time"
-                        value={timeAtHome}
-                        onChange={(e) => setTimeAtHome(e.target.value)}
-                        className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeAtHome" ? "border-red-500" : "border-gray-300"}`}
-                      />
-                    </div>
-  
-                    {/* KM domicilio */}
-                    <div>
-                      <label htmlFor="kmStart" className="block text-sm">KM dom.</label>
-                      <input
-                        ref={kmStartRef}
-                        disabled={formBlocked}
-                        id="kmStart"
-                        type="number"
-                        value={kmStart}
-                        onChange={(e) => setKmStart(e.target.value)}
-                        className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "kmStart" ? "border-red-500" : "border-gray-300"}`}
-                      />
-                    </div>
-  
-                    {/* Hora carga */}
-                    <div>
-                      <label htmlFor="timePickup" className="block text-sm">Carga</label>
-                      <input
-                        ref={timePickupRef}
-                        disabled={formBlocked}
-                        id="timePickup"
-                        type="time"
-                        value={timePickup}
-                        onChange={(e) => setTimePickup(e.target.value)}
-                        className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timePickup" ? "border-red-500" : "border-gray-300"}`}
-                      />
-                    </div>
-  
-                    {/* Hora destino */}
-                    <div>
-                      <label htmlFor="timeArrival" className="block text-sm">Destino</label>
-                      <input
-                        ref={timeArrivalRef}
-                        disabled={formBlocked}
-                        id="timeArrival"
-                        type="time"
-                        value={timeArrival}
-                        onChange={(e) => setTimeArrival(e.target.value)}
-                        className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeArrival" ? "border-red-500" : "border-gray-300"}`}
-                      />
-                    </div>
-  
-                    {/* KM destino */}
-                    <div>
-                      <label htmlFor="kmEnd" className="block text-sm">KM dest.</label>
-                      <input
-                        ref={kmEndRef}
-                        disabled={formBlocked}
-                        id="kmEnd"
-                        type="number"
-                        value={kmEnd}
-                        onChange={(e) => setKmEnd(e.target.value)}
-                        className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "kmEnd" ? "border-red-500" : "border-gray-300"}`}
-                      />
-                    </div>
-  
-                    {/* Hora libre */}
-                    <div>
-                      <label htmlFor="timeEnd" className="block text-sm">Libre</label>
-                      <input
-                        ref={timeEndRef}
-                        disabled={formBlocked}
-                        id="timeEnd"
-                        type="time"
-                        value={timeEnd}
-                        onChange={(e) => setTimeEnd(e.target.value)}
-                        className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeEnd" ? "border-red-500" : "border-gray-300"}`}
-                      />
-                    </div>
-                  </div>
-  
-  
-  
-  
-  
-                  {/* ✅ Viaje cancelado */}
-                  <div className="space-y-2">
-                    <label className="inline-flex items-center space-x-2">
-                      <input
-                        disabled={formBlocked}
-                        id="wasCancelled"
-                        type="checkbox"
-                        checked={wasCancelled}
-                        onChange={(e) => {
-                          setWasCancelled(e.target.checked);
-                          // Cuando se desmarca, volvemos a los valores por defecto
-                          if (!e.target.checked) setCountsTrip(1);
-                        }}
-                      />
-                      <span>El viaje fue cancelado</span>
-                    </label>
-  
-                    {/* Solo aparece si se marcó cancelado */}
-                    {wasCancelled && (
-                      <div className="ml-6">
-                        <label htmlFor="countsTrip" className="block text-sm font-medium mb-1">
-                          ¿Cuenta el viaje?
-                        </label>
-                        <select
-                          id="countsTrip"
-                          value={countsTrip}                    // ← ya es número
-                          onChange={(e) => setCountsTrip(Number(e.target.value))}
-                          className="border rounded px-2 py-1 w-full"
-                        >
-                          <option value={1}>✅ Sí, cuenta (1)</option>
-                          <option value={0}>❌ No, no cuenta (0)</option>
-                        </select>
-  
-                      </div>
-                    )}
-                  </div>
-  
-  
-                  <div>
-                    <label htmlFor="reports" className="block text-sm">Observaciones / reportes</label>
-                    <textarea
-                      disabled={formBlocked}
-                      id="reports"
-                      placeholder="Observaciones sobre el traslado"
-                      title="Escribe aquí cualquier observación"
-                      value={reports}
-                      onChange={(e) => setReports(e.target.value)}
-                      className="w-full border p-1 rounded"
-                      rows={3}
-                    />
-                  </div>
-  
-                  {/* ── Mensaje de validación en caliente ─────────── */}
-                  {draftError && (
-                    <div className="bg-red-100 text-red-700 p-2 rounded">
-                      {draftError}
-                    </div>
-                  )}
-  
-  
-                  <button
-                    onClick={handleSaveTrip}
-                    disabled={Boolean(draftError)}          // ⬅️  si hay error, se desactiva
-                    className={`w-full py-2 px-4 rounded text-white
+
+
+                <button
+                  onClick={handleSaveTrip}
+                  disabled={Boolean(draftError)}          // ⬅️  si hay error, se desactiva
+                  className={`w-full py-2 px-4 rounded text-white
                 ${draftError
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-blue-600 hover:bg-blue-700"}`}
-                  >
-                    Guardar viaje
-                  </button>
-  
-                  <h3 className="text-xl font-semibold mb-2">🧾 Resumen de viajes</h3>
-                  <ul className="space-y-2">
-                    {/* ---------- LISTA DE TRIPS ---------- */}
-                    {trips.map((trip: Trip, idx: number) => {
-                      const totalKm = trip.kmEnd - trip.kmStart;
-  
-                      /** Decide el multiplicador del viaje
-                       *  1. Si countsTrip === 0  →   0 x   (viaje cancelado que NO cuenta).
-                       *  2. Si countsTrip === 1  →   aplica reglas normales.
-                       *     a) ≥ 20 km                      → 2 x
-                       *     b) ≥ 15 km                      → 1.5 x
-                       *     c) Dienst sábado/domingo que empieza entre 14 y 17 h → 1.5 x
-                       *     d) resto                        → 1 x
-                       *  3. Si countsTrip es undefined (viaje no cancelado) → usa sólo reglas a-d.
-                       */
-                      const getMultiplier = () => {
-                        /* helper local: ¿turno fin-de-semana tarde? */
-                        const isWeekendAfternoonShift = () => {
-                          if (!assignedDay) return false;
-                          const day = new Date(assignedDay.date).getDay();      // 0 = dom, 6 = sáb
-                          if (day !== 0 && day !== 6) return false;
-                          const [h] = assignedDay.startTime.split(":").map(Number);
-                          return h >= 14 && h <= 17;
-                        };
-  
-                        /* --- 0) viaje cancelado que NO cuenta --- */
-                        if (trip.countsTrip === 0) return 0;
-  
-                        /* --- 1) reglas para viajes que SÍ cuentan --- */
-                        // 20 km o más
-                        if (totalKm >= 20) return 2;
-                        // 15-19 km
-                        if (totalKm >= 15) return 1.5;
-                        // sábado/domingo 14-17 h
-                        if (isWeekendAfternoonShift()) return 1.5;
-  
-                        // por defecto
-                        return 1;
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"}`}
+                >
+                  Guardar viaje
+                </button>
+
+                <h3 className="text-xl font-semibold mb-2">🧾 Resumen de viajes</h3>
+                <ul className="space-y-2">
+                  {/* ---------- LISTA DE TRIPS ---------- */}
+                  {trips.map((trip: Trip, idx: number) => {
+                    const totalKm = trip.kmEnd - trip.kmStart;
+
+                    /** Decide el multiplicador del viaje
+                     *  1. Si countsTrip === 0  →   0 x   (viaje cancelado que NO cuenta).
+                     *  2. Si countsTrip === 1  →   aplica reglas normales.
+                     *     a) ≥ 20 km                      → 2 x
+                     *     b) ≥ 15 km                      → 1.5 x
+                     *     c) Dienst sábado/domingo que empieza entre 14 y 17 h → 1.5 x
+                     *     d) resto                        → 1 x
+                     *  3. Si countsTrip es undefined (viaje no cancelado) → usa sólo reglas a-d.
+                     */
+                    const getMultiplier = () => {
+                      /* helper local: ¿turno fin-de-semana tarde? */
+                      const isWeekendAfternoonShift = () => {
+                        if (!assignedDay) return false;
+                        const day = new Date(assignedDay.date).getDay();      // 0 = dom, 6 = sáb
+                        if (day !== 0 && day !== 6) return false;
+                        const [h] = assignedDay.startTime.split(":").map(Number);
+                        return h >= 14 && h <= 17;
                       };
-  
-                      const multiplier = getMultiplier();
-  
-  
-                      return (
-                        <li
-                          key={trip._id || idx}
-                          onClick={() => handleOpenTripModal(trip)}
-                          className="bg-white p-3 rounded shadow cursor-pointer hover:bg-blue-50"
-                        >
-                          <div className="flex justify-between items-center">
-                            <span className="font-semibold">
-                              {trip.auftragNumber}
-                              {trip.wasCancelled && (
-                                <span className="ml-2 text-red-600 font-medium">
-                                  (cancelado)
-                                </span>
-                              )}
-                            </span>
-  
-                            {/* 👉 Km totales + multiplicador (0 / 1 / 1.5 / 2) */}
-                            <span>
-                              {totalKm} km
-                              <span className="ml-3 text-green-700 font-bold text-xl">
-                                {multiplier}x
+
+                      /* --- 0) viaje cancelado que NO cuenta --- */
+                      if (trip.countsTrip === 0) return 0;
+
+                      /* --- 1) reglas para viajes que SÍ cuentan --- */
+                      // 20 km o más
+                      if (totalKm >= 20) return 2;
+                      // 15-19 km
+                      if (totalKm >= 15) return 1.5;
+                      // sábado/domingo 14-17 h
+                      if (isWeekendAfternoonShift()) return 1.5;
+
+                      // por defecto
+                      return 1;
+                    };
+
+                    const multiplier = getMultiplier();
+
+
+                    return (
+                      <li
+                        key={trip._id || idx}
+                        onClick={() => handleOpenTripModal(trip)}
+                        className="bg-white p-3 rounded shadow cursor-pointer hover:bg-blue-50"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold">
+                            {trip.auftragNumber}
+                            {trip.wasCancelled && (
+                              <span className="ml-2 text-red-600 font-medium">
+                                (cancelado)
                               </span>
+                            )}
+                          </span>
+
+                          {/* 👉 Km totales + multiplicador (0 / 1 / 1.5 / 2) */}
+                          <span>
+                            {totalKm} km
+                            <span className="ml-3 text-green-700 font-bold text-xl">
+                              {multiplier}x
                             </span>
-                          </div>
-                        </li>
-                      );
-                    })}
-  
-                  </ul>
-  
-                  {vehicleConfirmed && !isClosingDay && (
-                    <button
-                      onClick={() => setShowCloseQuestion(true)}
-                      className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
-                    >
-                      ✅ Cerrar día y enviar resumen
-                    </button>
-                  )}
-  
-                </>
-              )}
-  
-              {!vehicleConfirmed && (
-                <div className="bg-orange-100 text-orange-800 p-4 rounded">
-                  🚑 Introduce el <strong>nº de ambulancia</strong> y los
-                  <strong> KM iniciales</strong> y pulsa
-                  <em> “Confirmar datos iniciales” </em> para poder crear viajes.
-                </div>
-              )}
-  
-            </div>
-  
-  
-            {/* --------------------------------------------------------------
-    // PREGUNTA CLAVE: ¿es el final del día?
-  ---------------------------------------------------------------- */}
-            {showCloseQuestion && (
-              <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
-                <div className="bg-white p-6 rounded shadow-lg w-full max-w-sm space-y-4">
-                  <h4 className="text-lg font-semibold text-center">¿Es el final del día?</h4>
-  
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => {
-                        setIsFinalClosure(true);
-                        setShowCloseQuestion(false);
-                        setShowReviewModal(true); // Modal de REPASO total (fase 2)
-                      }}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded"
-                    >
-                      ✅ Sí, cierre completo
-                    </button>
-  
-                    <button
-                      onClick={() => {
-                        setIsFinalClosure(false);
-                        setShowCloseQuestion(false);
-                        setShowReviewModal(true); // Modal de REPASO parcial (fase 2)
-                      }}
-                      className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded"
-                    >
-                      ⚠️ No, enviar cierre parcial
-                    </button>
-  
-                    <button
-                      onClick={() => setShowCloseQuestion(false)}
-                      className="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 rounded"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+
+                </ul>
+
+                {vehicleConfirmed && !isClosingDay && (
+                  <button
+                    onClick={() => setShowCloseQuestion(true)}
+                    className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
+                  >
+                    ✅ Cerrar día y enviar resumen
+                  </button>
+                )}
+
+              </>
+            )}
+
+            {!vehicleConfirmed && (
+              <div className="bg-orange-100 text-orange-800 p-4 rounded">
+                🚑 Introduce el <strong>nº de ambulancia</strong> y los
+                <strong> KM iniciales</strong> y pulsa
+                <em> “Confirmar datos iniciales” </em> para poder crear viajes.
               </div>
             )}
-  
-          </>
-        )}
-  
-        {selectedTrip && (
-          <TripModal trip={selectedTrip} onClose={handleCloseTripModal} />
-        )}
-  
-        {/* ───────── Modal de CIERRE PARCIAL ───────── */}
-        {showReviewModal && !isFinalClosure && assignedDay && (
-          <PartialReviewModal
-            trips={trips}
-            assignedDay={assignedDay}
-            vehicleNumber={vehicleNumber}
-            initialKm={initialAmbulanceKm}
-            finalKm={finalAmbulanceKm}
-            onClose={() => setShowReviewModal(false)}
-            onSend={handleSendPartialClosure}
-          />
-        )}
-  
-        {/* ───────── Modal de REVISIÓN FINAL ───────── */}
-        {showReviewModal && isFinalClosure === true && assignedDay && (
-          <FinalReviewModal
-            isOpen={true}
-            onClose={() => setShowReviewModal(false)}
-            trips={trips}
-            assignedDay={assignedDay}
-            vehicleNumber={vehicleNumber}
-            initialKm={initialAmbulanceKm}
-            finalKm={finalAmbulanceKm}
-            onConfirm={handleConfirmFinalClosure}
-          />
-        )}
-  
-      </div>
-    );
-  };
-  
-  export default MyWorkday;
+
+          </div>
 
 
+          {/* --------------------------------------------------------------
+    // PREGUNTA CLAVE: ¿es el final del día?
+  ---------------------------------------------------------------- */}
+          {showCloseQuestion && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+              <div className="bg-white p-6 rounded shadow-lg w-full max-w-sm space-y-4">
+                <h4 className="text-lg font-semibold text-center">¿Es el final del día?</h4>
+
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      setIsFinalClosure(true);
+                      setShowCloseQuestion(false);
+                      setShowReviewModal(true); // Modal de REPASO total (fase 2)
+                    }}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded"
+                  >
+                    ✅ Sí, cierre completo
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsFinalClosure(false);
+                      setShowCloseQuestion(false);
+                      setShowReviewModal(true); // Modal de REPASO parcial (fase 2)
+                    }}
+                    className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded"
+                  >
+                    ⚠️ No, enviar cierre parcial
+                  </button>
+
+                  <button
+                    onClick={() => setShowCloseQuestion(false)}
+                    className="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 rounded"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </>
+      )}
+
+      {selectedTrip && (
+        <TripModal trip={selectedTrip} onClose={handleCloseTripModal} />
+      )}
+
+      {/* ───────── Modal de CIERRE PARCIAL ───────── */}
+      {showReviewModal && !isFinalClosure && assignedDay && (
+        <PartialReviewModal
+          trips={trips}
+          assignedDay={assignedDay}
+          vehicleNumber={vehicleNumber}
+          initialKm={initialAmbulanceKm}
+          finalKm={finalAmbulanceKm}
+          onClose={() => setShowReviewModal(false)}
+          onSend={handleSendPartialClosure}
+        />
+      )}
+
+      {/* ───────── Modal de REVISIÓN FINAL ───────── */}
+      {showReviewModal && isFinalClosure === true && assignedDay && (
+        <FinalReviewModal
+          isOpen={true}
+          onClose={() => setShowReviewModal(false)}
+          trips={trips}
+          assignedDay={assignedDay}
+          vehicleNumber={vehicleNumber}
+          initialKm={initialAmbulanceKm}
+          finalKm={finalAmbulanceKm}
+          onConfirm={handleConfirmFinalClosure}
+        />
+      )}
+
+    </div>
+  );
+};
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+export default MyWorkday;
