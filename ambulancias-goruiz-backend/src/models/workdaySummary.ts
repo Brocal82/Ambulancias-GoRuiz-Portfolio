@@ -53,6 +53,7 @@ export interface IWorkdaySummary extends Document {
   trips: TripEntry[];
   isFinalClosure: boolean;
   partialClosureReason?: string;
+  extraNote?: string;
 }
 
 /* ─────────────────────────────────────────────
@@ -70,6 +71,7 @@ const workdaySummarySchema = new Schema<IWorkdaySummary>({
   trips:               { type: [tripSchema], required: true },
   isFinalClosure:      { type: Boolean, default: true },
   partialClosureReason:{ type: String, default: "" },
+  extraNote:            { type: String, default: "" },
 });
 
 /* ─────────────────────────────────────────────

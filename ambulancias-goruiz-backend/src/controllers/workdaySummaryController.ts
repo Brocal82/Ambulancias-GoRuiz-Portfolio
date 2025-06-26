@@ -6,17 +6,18 @@ import mongoose from "mongoose";
 
 export const createWorkdaySummary = async (req: Request, res: Response) => {
   try {
-    const { date, assignmentId, vehicleNumber, initialKm, finalKm, trips, totalTripKm } = req.body;
+    const { date, assignmentId, vehicleNumber, initialKm, finalKm, trips, totalTripKm, extraNote } = req.body;
 
     if (!date || !assignmentId || !vehicleNumber || initialKm === undefined || finalKm === undefined) {
       res.status(400).json({ message: "Faltan campos obligatorios" });
       return;
     }
 
-    if (!Array.isArray(trips) || trips.length === 0) {
-      res.status(400).json({ message: "Debes enviar al menos un viaje en el resumen (trips)" });
+    if (!Array.isArray(trips)) {
+      res.status(400).json({ message: "El campo trips debe ser un array" });
       return;
-    }
+}
+
 
     const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
 
@@ -39,22 +40,28 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
     const { driver, medic } = assignment;
 
     const newSummary = await WorkdaySummary.create({
-      date,
-      assignmentId,
-      driver,
-      medic,
-      vehicleNumber,
-      initialKm,
-      finalKm,
-      trips,
-      totalTripKm,
-    });
+  date,
+  assignmentId,
+  driver,
+  medic,
+  vehicleNumber,
+  initialKm,
+  finalKm,
+  trips,
+  totalTripKm,
+  extraNote,
+  isFinalClosure: true, 
+});
+
 
     // 👉 Marcar viajes como enviados
-    await Trip.updateMany(
-      { _id: { $in: trips.map((t: any) => t._id) } },
-      { $set: { sentInSummary: true } }
-    );
+    if (trips.length > 0) {
+      await Trip.updateMany(
+        { _id: { $in: trips.map((t: any) => t._id) } },
+        { $set: { sentInSummary: true } }
+      );
+    }
+
 
     res.status(201).json(newSummary);
   } catch (error) {
@@ -87,12 +94,13 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
       !vehicleNumber ||
       initialKm === undefined ||
       finalKm === undefined ||
-      !trips?.length ||
-      !totalTripKm ||
+      !Array.isArray(trips) ||
+      totalTripKm === undefined ||
       !partialClosureReason
     ) {
       return res.status(400).json({ message: "Faltan datos para el cierre parcial." });
     }
+
 
     const summary = new WorkdaySummary({
       date,
@@ -111,10 +119,13 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
     await summary.save();
 
     // 👉 Marcar viajes como enviados
-    await Trip.updateMany(
-      { _id: { $in: trips.map((t: any) => t._id) } },
-      { $set: { sentInSummary: true } }
-    );
+    if (trips.length > 0) {
+      await Trip.updateMany(
+        { _id: { $in: trips.map((t: any) => t._id) } },
+        { $set: { sentInSummary: true } }
+      );
+    }
+
 
     res.status(201).json({ message: "Cierre parcial guardado correctamente." });
   } catch (error) {
