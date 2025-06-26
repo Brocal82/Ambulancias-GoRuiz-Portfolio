@@ -70,17 +70,6 @@ const MyWorkday = () => {
   const { token, user } = useAuth(); // 👈 Asegúrate de tener acceso a user._id
   const today = new Date().toISOString().split("T")[0];
 
-  const [auftragNumber, setAuftragNumber] = useState("");
-  const [patientName, setPatientName] = useState("");
-  const [fromAddress, setFromAddress] = useState("");
-  const [toAddress, setToAddress] = useState("");
-  const [timeWarning, setTimeWarning] = useState("");
-  const [timeAtHome, setTimeAtHome] = useState("");
-  const [timePickup, setTimePickup] = useState("");
-  const [timeArrival, setTimeArrival] = useState("");
-  const [timeEnd, setTimeEnd] = useState("");
-  const [kmStart, setKmStart] = useState("");
-  const [kmEnd, setKmEnd] = useState("");
   const [wasCancelled, setWasCancelled] = useState(false);
   const [countsTrip, setCountsTrip] = useState<number>(1);   // ✅ por defecto el viaje cuenta
 
@@ -114,8 +103,9 @@ const MyWorkday = () => {
   const kmStartRef = useRef<HTMLInputElement>(null);
   const kmEndRef = useRef<HTMLInputElement>(null);
 
-  const [tripFormData2, setTripFormData2] = useState<TripData | null>(null);
   const [anschlussActive, setAnschlussActive] = useState(false);
+  const [previousTripFormData, setPreviousTripFormData] = useState<TripData | null>(null);
+
   const [tripFormData, setTripFormData] = useState<TripData>({
     date: "",              // <- nuevo
     assignmentId: "",      // <- nuevo
@@ -138,7 +128,6 @@ const MyWorkday = () => {
     reports: "",
   });
 
-  const [cancelledAtPickup] = useState(false);
 
 
 
@@ -235,6 +224,7 @@ const MyWorkday = () => {
       if (todayAssignment) {
         setAssignedDay(todayAssignment);
         checkStartPermission(todayAssignment);        // ya existente
+        console.log("🧠 assignedDay cargado correctamente:", todayAssignment);
       } else {
         setAssignedDay(null);
         setCanStartWork(false);
@@ -301,24 +291,36 @@ const MyWorkday = () => {
   }, [assignedDay, vehicleNumber]);
 
 
-  // 🧠 Nueva validación unificada con campo marcado dinámicamente
   useEffect(() => {
-    const result = checkTripLogic(
-      {
-        timeWarning,
-        timeAtHome,
-        timePickup,
-        timeArrival,
-        timeEnd,
-        kmStart,
-        kmEnd,
-      },
-      wasCancelled // ✅ nuevo argumento aquí
-    );
+  const result = checkTripLogic(
+    {
+      timeWarning: tripFormData.timeWarning,
+      timeAtHome: tripFormData.timeAtHome,
+      timePickup: tripFormData.timePickup,
+      timeArrival: tripFormData.timeArrival,
+      timeEnd: tripFormData.timeEnd,
+      kmStart: Number(tripFormData.kmStart),
+      kmEnd: Number(tripFormData.kmEnd),
+    },
+    wasCancelled
+  );
 
-    setDraftError(result.error || "");
-    setBadField(result.badField);
-  }, [
+  setDraftError(result.error || "");
+  setBadField(result.badField);
+}, [tripFormData, wasCancelled]);
+
+
+
+
+
+const handleSaveTrip = async () => {
+  if (!token) return;
+
+  const {
+    auftragNumber,
+    patientName,
+    fromAddress,
+    toAddress,
     timeWarning,
     timeAtHome,
     timePickup,
@@ -326,173 +328,112 @@ const MyWorkday = () => {
     timeEnd,
     kmStart,
     kmEnd,
-    wasCancelled, // ✅ también añadir como dependencia
-  ]);
+  } = tripFormData;
 
-  useEffect(() => {
-    if (tripFormData2 && anschlussActive) {
-      setTripFormData((prev) => ({
-        ...prev,
-        timeEnd: tripFormData2.timePickup,
-        kmEnd: tripFormData2.kmStart,
-      }));
-    }
-  }, [tripFormData2, anschlussActive]);
+  console.log("📦 tripFormData:", tripFormData);
+  console.log("🚐 kmStart:", kmStart, "kmEnd:", kmEnd);
+  console.log("📛 wasCancelled:", wasCancelled);
 
+  if (!wasCancelled) {
+    if (
+      !auftragNumber?.trim() ||
+      !patientName?.trim() ||
+      !fromAddress?.trim() ||
+      !toAddress?.trim() ||
+      !timeWarning ||
+      !timeAtHome ||
+      !timePickup ||
+      !timeArrival ||
+      !timeEnd ||
+      kmStart === 0 ||
+      kmEnd === 0
+    ) {
+      toast.warn("🚫 Por favor, rellena todos los campos obligatorios");
 
-
-
-  const handleSaveTrip = async () => {
-    if (!token) return;
-
-    // 1️⃣ Validación de campos obligatorios solo si NO está cancelado
-    if (!wasCancelled) {
-      if (
-        !auftragNumber ||
-        !patientName ||
-        !fromAddress ||
-        !toAddress ||
-        !timeWarning ||
-        !timeAtHome ||
-        !timePickup ||
-        !timeArrival ||
-        !timeEnd ||
-        kmStart === "" ||
-        kmEnd === ""
-      ) {
-        toast.warn("🚫 Por favor, rellena todos los campos obligatorios");
-
-        // Enfoca el primer campo vacío (puedes añadir más si quieres)
-        if (!timeWarning) timeWarningRef.current?.focus();
-        else if (!timeAtHome) timeAtHomeRef.current?.focus();
-        else if (!timePickup) timePickupRef.current?.focus();
-        else if (!timeArrival) timeArrivalRef.current?.focus();
-        else if (!timeEnd) timeEndRef.current?.focus();
-        else if (!kmStart) kmStartRef.current?.focus();
-        else if (!kmEnd) kmEndRef.current?.focus();
-
-        return;
-      }
-    }
-
-
-
-    // 2️⃣ Validación de asignación y horario
-    if (!assignedDay) {
-      toast.error("❌ No tienes asignación de dienst para hoy");
       return;
-    }
-
-    if (!canStartTripNow(assignedDay.startTime, assignedDay.date)) {
-      toast.error("❌ Solo puedes crear viajes 30 minutos antes del inicio del Dienst");
-      return;
-    }
-
-    // 3️⃣ Validación de lógica de horas y KM
-    if (!wasCancelled) {
-      const logicError = checkTripLogic({
-        timeWarning,
-        timeAtHome,
-        timePickup,
-        timeArrival,
-        timeEnd,
-        kmStart: Number(kmStart),
-        kmEnd: Number(kmEnd),
-      });
-
-      if (logicError.error) {
-        toast.error(logicError.error);
-
-        // Foco automático en el campo con error lógico
-        switch (logicError.badField) {
-          case "timeWarning":
-            timeWarningRef.current?.focus();
-            break;
-          case "timeAtHome":
-            timeAtHomeRef.current?.focus();
-            break;
-          case "timePickup":
-            timePickupRef.current?.focus();
-            break;
-          case "timeArrival":
-            timeArrivalRef.current?.focus();
-            break;
-          case "timeEnd":
-            timeEndRef.current?.focus();
-            break;
-          case "kmStart":
-            kmStartRef.current?.focus();
-            break;
-          case "kmEnd":
-            kmEndRef.current?.focus();
-            break;
-        }
-
-        return; // abortar si hay error
-      }
-    }
-
-
-    // 4️⃣ Guardar en MongoDB
-    try {
-      const newTrip: TripData = {
-        date: today,
-        assignmentId: assignedDay.dienstId,
-        driver: assignedDay.driver._id,
-        medic: assignedDay.medic._id,
-        auftragNumber,
-        patientName,
-        fromAddress,
-        toAddress,
-        timeWarning,
-        timeAtHome,
-        timePickup,
-        timeArrival,
-        timeEnd,
-        kmStart: Number(kmStart),
-        kmEnd: Number(kmEnd),
-        wasCancelled,
-        cancelledAtPickup,
-        countsTrip,
-        reports,
-      };
-
-      const createdTrip = await createTrip(newTrip); // 👈 ya no se pasa `token`
-      toast.success("✅ Viaje guardado");
-
-      // Mostrar en pantalla al instante
-      setTrips((prev) => [...prev, createdTrip]);
-
-      // Limpiar formulario
-      setAuftragNumber("");
-      setPatientName("");
-      setFromAddress("");
-      setToAddress("");
-      setTimeWarning("");
-      setTimeAtHome("");
-      setTimePickup("");
-      setTimeArrival("");
-      setTimeEnd("");
-      setKmStart("");
-      setKmEnd("");
-      setWasCancelled(false);
-      setCountsTrip(1);
-      setReports("");
-
-    } catch (err) {
-      console.error("❌ Error al crear trip:", err);
-
-      if (Array.isArray(err)) {
-        err.forEach((e) => {
-          toast.error(`⚠️ ${e.message}`);
-        });
-      } else if (err instanceof Error) {
-        toast.error(`❌ ${err.message}`);
-      } else {
-        toast.error("❌ Error desconocido al guardar el viaje");
-      }
     }
   }
+
+  if (!assignedDay) {
+    toast.error("❌ No tienes asignación de dienst para hoy");
+    return;
+  }
+
+  if (!canStartTripNow(assignedDay.startTime, assignedDay.date)) {
+    toast.error("❌ Solo puedes crear viajes 30 minutos antes del inicio del Dienst");
+    return;
+  }
+
+  if (!wasCancelled) {
+    const logicError = checkTripLogic({
+      timeWarning,
+      timeAtHome,
+      timePickup,
+      timeArrival,
+      timeEnd,
+      kmStart: Number(kmStart),
+      kmEnd: Number(kmEnd),
+    });
+
+    if (logicError.error) {
+      toast.error(logicError.error);
+      return;
+    }
+  }
+
+  try {
+    const newTrip: TripData = {
+      date: assignedDay.date,
+      assignmentId: assignedDay.assignmentId,
+      driver: assignedDay.driver._id,
+      medic: assignedDay.medic._id,
+      auftragNumber,
+      patientName,
+      fromAddress,
+      toAddress,
+      timeWarning,
+      timeAtHome,
+      timePickup,
+      timeArrival,
+      timeEnd,
+      kmStart,
+      kmEnd,
+      wasCancelled,
+      cancelledAtPickup: false,
+      countsTrip,
+      reports,
+    };
+
+    const createdTrip = await createTrip(newTrip);
+    toast.success("✅ Viaje guardado");
+    setTrips((prev) => [...prev, createdTrip]);
+
+    // Reset
+    setTripFormData({
+      ...tripFormData,
+      auftragNumber: "",
+      patientName: "",
+      fromAddress: "",
+      toAddress: "",
+      timeWarning: "",
+      timeAtHome: "",
+      timePickup: "",
+      timeArrival: "",
+      timeEnd: "",
+      kmStart: 0,
+      kmEnd: 0,
+    });
+
+    setWasCancelled(false);
+    setCountsTrip(1);
+    setReports("");
+  } catch (err) {
+    console.error("❌ Error al crear trip:", err);
+    toast.error("❌ Error al guardar el viaje");
+  }
+};
+
+
 
 
 
@@ -600,7 +541,7 @@ const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number)
 
     try {
       const totalTripKm = trips.reduce(
-        (sum, t) => sum + (t.kmEnd - t.kmStart),
+        (sum, t) => sum + (Number(t.kmEnd) - Number(t.kmStart)),
         0
       );
 
@@ -640,57 +581,57 @@ const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number)
     }
   };
 
-  // 🟦 Función para activar Anschluss
-    const handleAddAnschluss = () => {
-      if (!assignedDay) {
-        console.warn("❗ No hay Dienst asignado para crear Anschluss.");
-        return;
-      }
+// 🟦 Función para activar Anschluss
+const handleAddAnschluss = () => {
+  if (!assignedDay) {
+    console.warn("❗ No hay Dienst asignado para crear Anschluss.");
+    return;
+  }
 
-      if (!tripFormData.toAddress || !tripFormData.kmEnd) {
-        console.warn("❗ No se puede añadir Anschluss sin dirección destino ni kmEnd del primer viaje.");
-        return;
-      }
+  if (!tripFormData.toAddress) {
+    console.warn("❗ No se puede añadir Anschluss sin dirección destino del primer viaje.");
+    return;
+  }
 
-      const newTrip: TripData = {
-        date: today,
-        assignmentId: assignedDay.dienstId,
-        driver: assignedDay.driver._id,
-        medic: assignedDay.medic._id,
+  // 🟠 Guarda el paciente 1
+  setPreviousTripFormData(tripFormData);
 
-        auftragNumber: "",
-        patientName: "",
-        fromAddress: tripFormData.toAddress,
-        toAddress: "",
-        timeWarning: "",
-        timeAtHome: "",
-        timePickup: "",
-        timeArrival: "",
-        timeEnd: "",
-        kmStart: tripFormData.kmEnd || 0,
-        kmEnd: 0,
-        wasCancelled: false,
-        cancelledAtPickup: false,
-        countsTrip: 1,
-        reports: "",
-      };
+  // 🟦 Crea nuevo paciente 2, reseteando los campos
+  setTripFormData({
+    date: today,
+    assignmentId: assignedDay.dienstId,
+    driver: assignedDay.driver._id,
+    medic: assignedDay.medic._id,
+    auftragNumber: "", // reseteado
+    patientName: "",   // reseteado
+    fromAddress: tripFormData.toAddress, // <-- esta es la recogida nueva
+    toAddress: "",     // reseteado
+    timeWarning: "",
+    timeAtHome: "",
+    timePickup: "",
+    timeArrival: "",
+    timeEnd: "",
+    kmStart: tripFormData.kmEnd ?? 0,
+    kmEnd: 0,
+    wasCancelled: false,
+    cancelledAtPickup: false,
+    countsTrip: 1,
+    reports: "",
+  });
 
-      setTripFormData2(newTrip);
-      setAnschlussActive(true);
-    };
+  setAnschlussActive(true);
+};
 
 
-    // 🟥 Función para cancelar Anschluss
-    const handleCancelAnschluss = () => {
-      setAnschlussActive(false);
-      setTripFormData2(null);
+// 🟥 Función para cancelar Anschluss
+const handleCancelAnschluss = () => {
+  setAnschlussActive(false);
 
-      setTripFormData((prev) => ({
-        ...prev,
-        timeEnd: "",
-        kmEnd: 0,
-      }));
-    };
+  if (previousTripFormData) {
+    setTripFormData(previousTripFormData); // 🔁 Restauramos el paciente 1
+    setPreviousTripFormData(null);
+  }
+};
 
 
   return (
@@ -791,222 +732,284 @@ const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number)
                 {/* ─────────────────────────────── */}
                 {/* 1️⃣  Auftrag + Paciente (2 col) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Nº Auftrag */}
-                  <div>
-                    <label htmlFor="auftragNumber" className="block text-sm">
-                      Número de Auftrag
-                    </label>
-                    <input
-                      disabled={formBlocked}
-                      id="auftragNumber"
-                      placeholder="Ej: Krankentransport 123"
-                      value={auftragNumber}
-                      onChange={(e) => setAuftragNumber(e.target.value)}
-                      className="w-full border rounded p-1"
-                    />
-                  </div>
+  {/* Nº Auftrag */}
+  <div>
+    <label htmlFor="auftragNumber" className="block text-sm">
+      Número de Auftrag
+    </label>
+    <input
+      disabled={formBlocked}
+      id="auftragNumber"
+      placeholder="Ej: Krankentransport 123"
+      value={tripFormData.auftragNumber}
+      onChange={(e) =>
+        setTripFormData((prev) => ({
+          ...prev,
+          auftragNumber: e.target.value,
+        }))
+      }
+      className="w-full border rounded p-1"
+    />
+  </div>
 
-                  {/* Nombre paciente */}
-                  <div>
-                    <label htmlFor="patientName" className="block text-sm">
-                      Nombre del paciente
-                    </label>
-                    <input
-                      disabled={formBlocked}
-                      id="patientName"
-                      placeholder="Ej: Juan Pérez"
-                      value={patientName}
-                      onChange={(e) => setPatientName(e.target.value)}
-                      className="w-full border rounded p-1"
-                    />
-                  </div>
-                </div>
+  {/* Nombre paciente */}
+  <div>
+    <label htmlFor="patientName" className="block text-sm">
+      Nombre del paciente
+    </label>
+    <input
+      disabled={formBlocked}
+      id="patientName"
+      placeholder="Ej: Juan Pérez"
+      value={tripFormData.patientName}
+      onChange={(e) =>
+        setTripFormData((prev) => ({
+          ...prev,
+          patientName: e.target.value,
+        }))
+      }
+      className="w-full border rounded p-1"
+    />
+  </div>
+</div>
 
-                {/* 2️⃣  Direcciones (2 col) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  {/* Origen */}
-                  <div>
-                    <label htmlFor="fromAddress" className="block text-sm">
-                      Dirección de recogida
-                    </label>
-                    <input
-                      disabled={formBlocked}
-                      id="fromAddress"
-                      placeholder="Calle Ejemplo 123"
-                      value={fromAddress}
-                      onChange={(e) => setFromAddress(e.target.value)}
-                      className="w-full border rounded p-1"
-                    />
-                  </div>
+{/* 2️⃣  Direcciones (2 col) */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+  {/* Origen */}
+  <div>
+    <label htmlFor="fromAddress" className="block text-sm">
+      Dirección de recogida
+    </label>
+    <input
+      disabled={formBlocked}
+      id="fromAddress"
+      placeholder="Calle Ejemplo 123"
+      value={tripFormData.fromAddress}
+      onChange={(e) =>
+        setTripFormData((prev) => ({
+          ...prev,
+          fromAddress: e.target.value,
+        }))
+      }
+      className="w-full border rounded p-1"
+    />
+  </div>
 
-                  {/* Destino */}
-                  <div>
-                    <label htmlFor="toAddress" className="block text-sm">
-                      Dirección de dejada
-                    </label>
-                    <input
-                      disabled={formBlocked}
-                      id="toAddress"
-                      placeholder="Hospital Central, Berlín"
-                      value={toAddress}
-                      onChange={(e) => setToAddress(e.target.value)}
-                      className="w-full border rounded p-1"
-                    />
-                  </div>
-                </div>
+  {/* Destino */}
+  <div>
+    <label htmlFor="toAddress" className="block text-sm">
+      Dirección de dejada
+    </label>
+    <input
+      disabled={formBlocked}
+      id="toAddress"
+      placeholder="Hospital Central, Berlín"
+      value={tripFormData.toAddress}
+      onChange={(e) =>
+        setTripFormData((prev) => ({
+          ...prev,
+          toAddress: e.target.value,
+        }))
+      }
+      className="w-full border rounded p-1"
+    />
+  </div>
+</div>
+
 
                 {/* 3️⃣–5️⃣ Todos los campos de hora/KM en una sola fila */}
                 <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mt-4">
-                  {/* Hora aviso */}
-                  <div>
-                    <label htmlFor="timeWarning" className="block text-sm">Aviso</label>
-                    <input
-                      ref={timeWarningRef}
-                      disabled={formBlocked}
-                      id="timeWarning"
-                      type="time"
-                      value={timeWarning}
-                      onChange={(e) => setTimeWarning(e.target.value)}
-                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeWarning" ? "border-red-500" : "border-gray-300"}`}
-                    />
-                  </div>
-
-                  {/* Hora domicilio */}
-                  <div>
-                    <label htmlFor="timeAtHome" className="block text-sm">Domicilio</label>
-                    <input
-                      ref={timeAtHomeRef}
-                      disabled={formBlocked}
-                      id="timeAtHome"
-                      type="time"
-                      value={timeAtHome}
-                      onChange={(e) => setTimeAtHome(e.target.value)}
-                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeAtHome" ? "border-red-500" : "border-gray-300"}`}
-                    />
-                  </div>
-
-                  {/* KM domicilio */}
-                  <div>
-                    <label htmlFor="kmStart" className="block text-sm">KM dom.</label>
-                    <input
-                      ref={kmStartRef}
-                      disabled={formBlocked}
-                      id="kmStart"
-                      type="number"
-                      value={kmStart}
-                      onChange={(e) => setKmStart(e.target.value)}
-                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "kmStart" ? "border-red-500" : "border-gray-300"}`}
-                    />
-                  </div>
-
-                  {/* Hora carga */}
-                  <div>
-                    <label htmlFor="timePickup" className="block text-sm">Carga</label>
-                    <input
-                      ref={timePickupRef}
-                      disabled={formBlocked}
-                      id="timePickup"
-                      type="time"
-                      value={timePickup}
-                      onChange={(e) => setTimePickup(e.target.value)}
-                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timePickup" ? "border-red-500" : "border-gray-300"}`}
-                    />
-                  </div>
-
-                  {/* Hora destino */}
-                  <div>
-                    <label htmlFor="timeArrival" className="block text-sm">Destino</label>
-                    <input
-                      ref={timeArrivalRef}
-                      disabled={formBlocked}
-                      id="timeArrival"
-                      type="time"
-                      value={timeArrival}
-                      onChange={(e) => setTimeArrival(e.target.value)}
-                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeArrival" ? "border-red-500" : "border-gray-300"}`}
-                    />
-                  </div>
-
-                  {/* KM destino */}
-                  <div>
-                    <label htmlFor="kmEnd" className="block text-sm">KM dest.</label>
-                    <input
-                      ref={kmEndRef}
-                      disabled={formBlocked}
-                      id="kmEnd"
-                      type="number"
-                      value={kmEnd}
-                      onChange={(e) => setKmEnd(e.target.value)}
-                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "kmEnd" ? "border-red-500" : "border-gray-300"}`}
-                    />
-                  </div>
-
-                  {/* Hora libre */}
-                  <div>
-                    <label htmlFor="timeEnd" className="block text-sm">Libre</label>
-                    <input
-                      ref={timeEndRef}
-                      disabled={formBlocked}
-                      id="timeEnd"
-                      type="time"
-                      value={timeEnd}
-                      onChange={(e) => setTimeEnd(e.target.value)}
-                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeEnd" ? "border-red-500" : "border-gray-300"}`}
-                    />
-                  </div>
-                </div>
-
-                {/* 🔄 Botón Anschluss */}
-                <div className="flex items-center mb-2 space-x-2">
-                  <button
-                    type="button"
-                    onClick={anschlussActive ? handleCancelAnschluss : handleAddAnschluss}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold transition 
-                      ${anschlussActive ? 'bg-red-500 hover:bg-red-600' : 'bg-orange-500 hover:bg-orange-600'}`}
-                    title={anschlussActive ? "Cancelar Anschluss" : "Añadir Anschluss"}
-                  >
-                    {anschlussActive ? '✖' : '+'}
-                  </button>
-                  <span className="text-sm text-gray-700">
-                    {anschlussActive ? "Cancelar Anschluss" : "Anschluss"}
-                  </span>
-                </div>
-
-                {/* ❌ Storno (viaje cancelado) */}
-<div className="space-y-2">
-  <div className="flex items-center mb-2 space-x-2">
-    <button
-      type="button"
-      onClick={() => {
-        setWasCancelled(!wasCancelled);
-        if (wasCancelled) setCountsTrip(1); // Resetear si se desmarca
-      }}
-      className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold transition 
-        ${wasCancelled ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-300 hover:bg-gray-400'}`}
-      title="Marcar viaje como cancelado"
-    >
-      {wasCancelled ? '✖' : '🅂'}
-    </button>
-    <span className="text-sm text-gray-700">Storno</span>
+  {/* Hora aviso */}
+  <div>
+    <label htmlFor="timeWarning" className="block text-sm">Aviso</label>
+    <input
+      ref={timeWarningRef}
+      disabled={formBlocked}
+      id="timeWarning"
+      type="time"
+      value={tripFormData.timeWarning}
+      onChange={(e) =>
+        setTripFormData((prev) => ({
+          ...prev,
+          timeWarning: e.target.value,
+        }))
+      }
+      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeWarning" ? "border-red-500" : "border-gray-300"}`}
+    />
   </div>
 
-  {wasCancelled && (
-    <div className="ml-6">
-      <label htmlFor="countsTrip" className="block text-sm font-medium mb-1">
-        ¿Cuenta el viaje?
-      </label>
-      <select
-        id="countsTrip"
-        value={countsTrip}
-        onChange={(e) => setCountsTrip(Number(e.target.value))}
-        className="border rounded px-2 py-1 w-full"
-      >
-        <option value={1}>✅ Sí, cuenta (1)</option>
-        <option value={0}>❌ No, no cuenta (0)</option>
-      </select>
-    </div>
-  )}
+  {/* Hora domicilio */}
+  <div>
+    <label htmlFor="timeAtHome" className="block text-sm">Domicilio</label>
+    <input
+      ref={timeAtHomeRef}
+      disabled={formBlocked}
+      id="timeAtHome"
+      type="time"
+      value={tripFormData.timeAtHome}
+      onChange={(e) =>
+        setTripFormData((prev) => ({
+          ...prev,
+          timeAtHome: e.target.value,
+        }))
+      }
+      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeAtHome" ? "border-red-500" : "border-gray-300"}`}
+    />
+  </div>
+
+  {/* KM domicilio */}
+  <div>
+    <label htmlFor="kmStart" className="block text-sm">KM dom.</label>
+    <input
+      ref={kmStartRef}
+      disabled={formBlocked}
+      id="kmStart"
+      type="number"
+      value={tripFormData.kmStart}
+      onChange={(e) =>
+        setTripFormData((prev) => ({
+          ...prev,
+          kmStart: Number(e.target.value),
+        }))
+      }
+      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "kmStart" ? "border-red-500" : "border-gray-300"}`}
+    />
+  </div>
+
+  {/* Hora carga */}
+  <div>
+    <label htmlFor="timePickup" className="block text-sm">Carga</label>
+    <input
+      ref={timePickupRef}
+      disabled={formBlocked}
+      id="timePickup"
+      type="time"
+      value={tripFormData.timePickup}
+      onChange={(e) =>
+        setTripFormData((prev) => ({
+          ...prev,
+          timePickup: e.target.value,
+        }))
+      }
+      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timePickup" ? "border-red-500" : "border-gray-300"}`}
+    />
+  </div>
+
+  {/* Hora destino */}
+  <div>
+    <label htmlFor="timeArrival" className="block text-sm">Destino</label>
+    <input
+      ref={timeArrivalRef}
+      disabled={formBlocked}
+      id="timeArrival"
+      type="time"
+      value={tripFormData.timeArrival}
+      onChange={(e) =>
+        setTripFormData((prev) => ({
+          ...prev,
+          timeArrival: e.target.value,
+        }))
+      }
+      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeArrival" ? "border-red-500" : "border-gray-300"}`}
+    />
+  </div>
+
+  {/* KM destino */}
+  <div>
+    <label htmlFor="kmEnd" className="block text-sm">KM dest.</label>
+    <input
+      ref={kmEndRef}
+      disabled={formBlocked}
+      id="kmEnd"
+      type="number"
+      value={tripFormData.kmEnd}
+      onChange={(e) =>
+        setTripFormData((prev) => ({
+          ...prev,
+          kmEnd: Number(e.target.value),
+        }))
+      }
+      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "kmEnd" ? "border-red-500" : "border-gray-300"}`}
+    />
+  </div>
+
+  {/* Hora libre */}
+  <div>
+    <label htmlFor="timeEnd" className="block text-sm">Libre</label>
+    <input
+      ref={timeEndRef}
+      disabled={formBlocked}
+      id="timeEnd"
+      type="time"
+      value={tripFormData.timeEnd}
+      onChange={(e) =>
+        setTripFormData((prev) => ({
+          ...prev,
+          timeEnd: e.target.value,
+        }))
+      }
+      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeEnd" ? "border-red-500" : "border-gray-300"}`}
+    />
+  </div>
 </div>
+
+
+                {/* 🔄 Botón Anschluss: solo aparece si ya hay hora de carga */}
+                {(tripFormData.timePickup || anschlussActive) && (
+                  <div className="flex items-center mb-2 space-x-2">
+                    <button
+                      type="button"
+                      onClick={anschlussActive ? handleCancelAnschluss : handleAddAnschluss}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold transition 
+                        ${anschlussActive ? 'bg-red-500 hover:bg-red-600' : 'bg-orange-500 hover:bg-orange-600'}`}
+                      title={anschlussActive ? "Cancelar Anschluss" : "Añadir Anschluss"}
+                    >
+                      {anschlussActive ? '✖' : '+'}
+                    </button>
+                    <span className="text-sm text-gray-700">
+                      {anschlussActive ? "Cancelar Anschluss" : "Anschluss"}
+                    </span>
+                  </div>
+                )}
+
+
+
+
+                {/* ❌ Storno (viaje cancelado) */}
+                <div className="space-y-2">
+                  <div className="flex items-center mb-2 space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWasCancelled(!wasCancelled);
+                        if (wasCancelled) setCountsTrip(1); // Resetear si se desmarca
+                      }}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold transition 
+                        ${wasCancelled ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-300 hover:bg-gray-400'}`}
+                      title="Marcar viaje como cancelado"
+                    >
+                      {wasCancelled ? '✖' : '🅂'}
+                    </button>
+                    <span className="text-sm text-gray-700">Storno</span>
+                  </div>
+
+                  {wasCancelled && (
+                    <div className="ml-6">
+                      <label htmlFor="countsTrip" className="block text-sm font-medium mb-1">
+                        ¿Cuenta el viaje?
+                      </label>
+                      <select
+                        id="countsTrip"
+                        value={countsTrip}
+                        onChange={(e) => setCountsTrip(Number(e.target.value))}
+                        className="border rounded px-2 py-1 w-full"
+                      >
+                        <option value={1}>✅ Sí, cuenta (1)</option>
+                        <option value={0}>❌ No, no cuenta (0)</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
 
 
 

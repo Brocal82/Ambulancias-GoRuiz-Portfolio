@@ -15,17 +15,19 @@ export interface Trip {
   timePickup: string;     // hora recogida paciente
   timeArrival: string;    // hora llegada destino
   timeEnd: string;        // hora libre
-  kmStart: number;        // km llegada a recogida
-  kmEnd: number;          // km llegada a destino
+  kmStart: number;        // ✅ correcto para cálculos
+  kmEnd: number;
   totalKm?: number;       // nuevo, total km punto A a B
   reports?: string;       // nuevo, observaciones
   wasCancelled: boolean;
   cancelledAtPickup: boolean;
   countsTrip?: number;
   sentInSummary?: boolean;
+
 }
 
 // Tipo para creación: igual que Trip pero sin _id y totalKm (que se calcula backend)
 export type TripData = Omit<Trip, '_id' | 'totalKm'>;
+
 
 
