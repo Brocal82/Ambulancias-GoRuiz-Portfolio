@@ -28,6 +28,7 @@ export interface FinalSummaryPayload {
   driver: string;
   medic: string;
   extraNote?: string;
+  finalClosureReason?: string; 
   isFinalClosure: true;
 }
 
