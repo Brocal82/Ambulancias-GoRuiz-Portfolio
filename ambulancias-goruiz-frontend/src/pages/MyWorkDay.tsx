@@ -114,6 +114,35 @@ const MyWorkday = () => {
   const kmStartRef = useRef<HTMLInputElement>(null);
   const kmEndRef = useRef<HTMLInputElement>(null);
 
+  const [tripFormData2, setTripFormData2] = useState<TripData | null>(null);
+  const [anschlussActive, setAnschlussActive] = useState(false);
+  const [tripFormData, setTripFormData] = useState<TripData>({
+    date: "",              // <- nuevo
+    assignmentId: "",      // <- nuevo
+    driver: "",            // <- nuevo
+    medic: "",             // <- nuevo
+    auftragNumber: "",
+    patientName: "",
+    fromAddress: "",
+    toAddress: "",
+    timeWarning: "",
+    timeAtHome: "",
+    timePickup: "",
+    timeArrival: "",
+    timeEnd: "",
+    kmStart: 0,
+    kmEnd: 0,
+    wasCancelled: false,
+    cancelledAtPickup: false,
+    countsTrip: 1,
+    reports: "",
+  });
+
+  const [cancelledAtPickup] = useState(false);
+
+
+
+
 
   const navigate = useNavigate();
 
@@ -300,6 +329,19 @@ const MyWorkday = () => {
     wasCancelled, // ✅ también añadir como dependencia
   ]);
 
+  useEffect(() => {
+    if (tripFormData2 && anschlussActive) {
+      setTripFormData((prev) => ({
+        ...prev,
+        timeEnd: tripFormData2.timePickup,
+        kmEnd: tripFormData2.kmStart,
+      }));
+    }
+  }, [tripFormData2, anschlussActive]);
+
+
+
+
   const handleSaveTrip = async () => {
     if (!token) return;
 
@@ -410,6 +452,7 @@ const MyWorkday = () => {
         kmStart: Number(kmStart),
         kmEnd: Number(kmEnd),
         wasCancelled,
+        cancelledAtPickup,
         countsTrip,
         reports,
       };
@@ -465,72 +508,76 @@ const MyWorkday = () => {
      1.  CIERRE DEFINITIVO  (modal FinalReviewModal)
      ────────────────────────────────────────────────*/
 
-  const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number) => {
-    if (!token || !assignedDay || !user?._id) return;
+const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number) => {
+  if (!token || !assignedDay || !user?._id) return;
 
-    /* ── Validaciones mínimas ── */
-    if (!vehicleNumber || !initialAmbulanceKm) {
-      toast.warn("🚐 Introduce nº de ambulancia y KM inicial.");
-      return;
-    }
+  /* ── Validaciones mínimas ── */
+  if (!vehicleNumber || !initialAmbulanceKm) {
+    toast.warn("🚐 Introduce nº de ambulancia y KM inicial.");
+    return;
+  }
 
-    if (isNaN(finalKmFromModal)) {
-      toast.warn("📏 Introduce los kilómetros finales en el modal.");
-      return;
-    }
+  if (isNaN(finalKmFromModal)) {
+    toast.warn("📏 Introduce los kilómetros finales en el modal.");
+    return;
+  }
 
-    /* ── Validación de coherencia de KM ── */
-    const initialKmNumber = Number(initialAmbulanceKm);
-    if (finalKmFromModal < initialKmNumber) {
-      toast.error("❌ Los KM finales no pueden ser menores que los KM iniciales");
-      return;
-    }
+  /* ── Validación de coherencia de KM ── */
+  const initialKmNumber = Number(initialAmbulanceKm);
+  if (finalKmFromModal < initialKmNumber) {
+    toast.error("❌ Los KM finales no pueden ser menores que los KM iniciales");
+    return;
+  }
 
-    try {
-      // 👉 Guarda en state el km final (para reabrir modal si es necesario)
-      setFinalAmbulanceKm(String(finalKmFromModal));
+  try {
+    // 👉 Guarda en state el km final (para reabrir modal si es necesario)
+    setFinalAmbulanceKm(String(finalKmFromModal));
 
-      // ✅ Cálculo de km realizados con conversión segura
-      const totalTripKm = trips.reduce((acc, t) => {
-        const kmStart = Number(t.kmStart);
-        const kmEnd = Number(t.kmEnd);
-        if (!isNaN(kmStart) && !isNaN(kmEnd)) {
-          return acc + (kmEnd - kmStart);
-        }
-        return acc;
-      }, 0);
+    // ✅ Cálculo de km realizados con conversión segura
+    const totalTripKm = trips.reduce((acc, t) => {
+      const kmStart = Number(t.kmStart);
+      const kmEnd = Number(t.kmEnd);
+      if (!isNaN(kmStart) && !isNaN(kmEnd)) {
+        return acc + (kmEnd - kmStart);
+      }
+      return acc;
+    }, 0);
 
-      const summaryData: FinalSummaryPayload = {
-        date: today,
-        assignmentId: assignedDay.assignmentId,
-        driver: assignedDay.driver._id,
-        medic: assignedDay.medic._id,
-        vehicleNumber,
-        initialKm: initialKmNumber,
-        finalKm: finalKmFromModal,
-        totalTripKm,
-        trips,
-        extraNote: note,
-        isFinalClosure: true,
-      };
+    const summaryData: FinalSummaryPayload = {
+      date: today,
+      assignmentId: assignedDay.assignmentId,
+      driver: assignedDay.driver._id,
+      medic: assignedDay.medic._id,
+      vehicleNumber,
+      initialKm: initialKmNumber,
+      finalKm: finalKmFromModal,
+      totalTripKm,
+      trips,
+      extraNote: note,
+      isFinalClosure: true,
+    };
 
-      await sendFinalClosure(summaryData, token);
 
-      toast.success("✅ Día cerrado y datos enviados al admin.");
 
-      // ✅ Marcar día cerrado solo para este usuario
-      localStorage.setItem(getClosedDayKey(today, user._id), "true");
 
-      // ✅ Limpieza y redirección
-      setTrips([]);
-      setIsClosingDay(true);
-      setShowReviewModal(false);
-      navigate("/worker");
-    } catch (err) {
-      console.error("❌ Error al cerrar el día:", err);
-      toast.error("❌ No se pudo cerrar el día.");
-    }
-  };
+    await sendFinalClosure(summaryData, token);
+
+    toast.success("✅ Día cerrado y datos enviados al admin.");
+
+    // ✅ Marcar día cerrado solo para este usuario
+    localStorage.setItem(getClosedDayKey(today, user._id), "true");
+
+    // ✅ Limpieza y redirección
+    setTrips([]);
+    setIsClosingDay(true);
+    setShowReviewModal(false);
+    navigate("/worker");
+  } catch (err) {
+    console.error("❌ Error al cerrar el día:", err);
+    toast.error("❌ No se pudo cerrar el día.");
+  }
+};
+
 
 
 
@@ -592,6 +639,59 @@ const MyWorkday = () => {
       toast.error("❌ No se pudo enviar el cierre parcial.");
     }
   };
+
+  // 🟦 Función para activar Anschluss
+    const handleAddAnschluss = () => {
+      if (!assignedDay) {
+        console.warn("❗ No hay Dienst asignado para crear Anschluss.");
+        return;
+      }
+
+      if (!tripFormData.toAddress || !tripFormData.kmEnd) {
+        console.warn("❗ No se puede añadir Anschluss sin dirección destino ni kmEnd del primer viaje.");
+        return;
+      }
+
+      const newTrip: TripData = {
+        date: today,
+        assignmentId: assignedDay.dienstId,
+        driver: assignedDay.driver._id,
+        medic: assignedDay.medic._id,
+
+        auftragNumber: "",
+        patientName: "",
+        fromAddress: tripFormData.toAddress,
+        toAddress: "",
+        timeWarning: "",
+        timeAtHome: "",
+        timePickup: "",
+        timeArrival: "",
+        timeEnd: "",
+        kmStart: tripFormData.kmEnd || 0,
+        kmEnd: 0,
+        wasCancelled: false,
+        cancelledAtPickup: false,
+        countsTrip: 1,
+        reports: "",
+      };
+
+      setTripFormData2(newTrip);
+      setAnschlussActive(true);
+    };
+
+
+    // 🟥 Función para cancelar Anschluss
+    const handleCancelAnschluss = () => {
+      setAnschlussActive(false);
+      setTripFormData2(null);
+
+      setTripFormData((prev) => ({
+        ...prev,
+        timeEnd: "",
+        kmEnd: 0,
+      }));
+    };
+
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -856,46 +956,58 @@ const MyWorkday = () => {
                   </div>
                 </div>
 
-
-
-
-
-                {/* ✅ Viaje cancelado */}
-                <div className="space-y-2">
-                  <label className="inline-flex items-center space-x-2">
-                    <input
-                      disabled={formBlocked}
-                      id="wasCancelled"
-                      type="checkbox"
-                      checked={wasCancelled}
-                      onChange={(e) => {
-                        setWasCancelled(e.target.checked);
-                        // Cuando se desmarca, volvemos a los valores por defecto
-                        if (!e.target.checked) setCountsTrip(1);
-                      }}
-                    />
-                    <span>El viaje fue cancelado</span>
-                  </label>
-
-                  {/* Solo aparece si se marcó cancelado */}
-                  {wasCancelled && (
-                    <div className="ml-6">
-                      <label htmlFor="countsTrip" className="block text-sm font-medium mb-1">
-                        ¿Cuenta el viaje?
-                      </label>
-                      <select
-                        id="countsTrip"
-                        value={countsTrip}                    // ← ya es número
-                        onChange={(e) => setCountsTrip(Number(e.target.value))}
-                        className="border rounded px-2 py-1 w-full"
-                      >
-                        <option value={1}>✅ Sí, cuenta (1)</option>
-                        <option value={0}>❌ No, no cuenta (0)</option>
-                      </select>
-
-                    </div>
-                  )}
+                {/* 🔄 Botón Anschluss */}
+                <div className="flex items-center mb-2 space-x-2">
+                  <button
+                    type="button"
+                    onClick={anschlussActive ? handleCancelAnschluss : handleAddAnschluss}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold transition 
+                      ${anschlussActive ? 'bg-red-500 hover:bg-red-600' : 'bg-orange-500 hover:bg-orange-600'}`}
+                    title={anschlussActive ? "Cancelar Anschluss" : "Añadir Anschluss"}
+                  >
+                    {anschlussActive ? '✖' : '+'}
+                  </button>
+                  <span className="text-sm text-gray-700">
+                    {anschlussActive ? "Cancelar Anschluss" : "Anschluss"}
+                  </span>
                 </div>
+
+                {/* ❌ Storno (viaje cancelado) */}
+<div className="space-y-2">
+  <div className="flex items-center mb-2 space-x-2">
+    <button
+      type="button"
+      onClick={() => {
+        setWasCancelled(!wasCancelled);
+        if (wasCancelled) setCountsTrip(1); // Resetear si se desmarca
+      }}
+      className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold transition 
+        ${wasCancelled ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-300 hover:bg-gray-400'}`}
+      title="Marcar viaje como cancelado"
+    >
+      {wasCancelled ? '✖' : '🅂'}
+    </button>
+    <span className="text-sm text-gray-700">Storno</span>
+  </div>
+
+  {wasCancelled && (
+    <div className="ml-6">
+      <label htmlFor="countsTrip" className="block text-sm font-medium mb-1">
+        ¿Cuenta el viaje?
+      </label>
+      <select
+        id="countsTrip"
+        value={countsTrip}
+        onChange={(e) => setCountsTrip(Number(e.target.value))}
+        className="border rounded px-2 py-1 w-full"
+      >
+        <option value={1}>✅ Sí, cuenta (1)</option>
+        <option value={0}>❌ No, no cuenta (0)</option>
+      </select>
+    </div>
+  )}
+</div>
+
 
 
                 <div>

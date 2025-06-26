@@ -27,27 +27,23 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
   finalKm,
   assignedDay,
 }) => {
-  /* ---------- hooks: SIEMPRE antes de returns condicionales ---------- */
   const [note, setNote] = useState<string>("");
 
-  // si finalKm llega vacío ⇒ "", si no conviértelo a número
   const [finalKmLocal, setFinalKmLocal] = useState<number | "">(
     finalKm === "" ? "" : Number(finalKm)
   );
 
-  /* ---------- valores numéricos seguros ---------- */
   const parsedInitialKm = Number(initialKm);
-  const parsedFinalKm   = finalKmLocal === "" ? 0 : Number(finalKmLocal);
+  const parsedFinalKm = finalKmLocal === "" ? 0 : Number(finalKmLocal);
 
-  /* ---------- early-return DESPUÉS de declarar hooks ---------- */
   if (!isOpen) return null;
 
-  /* ---------- envío al admin ---------- */
   const handleSend = () => {
     if (finalKmLocal === "" || isNaN(Number(finalKmLocal))) {
       toast.warn("📏 Introduce los kilómetros finales.");
       return;
     }
+    // 👇 Aquí mandamos la nota como argumento a MyWorkDay.tsx
     onConfirm(note.trim(), Number(finalKmLocal));
   };
 
@@ -55,10 +51,8 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl overflow-y-auto max-h-[90vh] space-y-6">
 
-        {/* ✔️ Título con círculo naranja */}
         <h2 className="text-xl font-bold text-center">✅ Revisión final del día</h2>
 
-        {/* ───── Resumen cabecera + viajes ───── */}
         <ReviewSummary
           assignedDay={assignedDay}
           vehicleNumber={vehicleNumber}
@@ -67,9 +61,9 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
           trips={trips}
         />
 
-        {/* ───── Notas extra + KM finales ───── */}
+        {/* ✅ CAMBIO: placeholder más claro */}
         <textarea
-          placeholder="Notas del día (opcional)…"
+          placeholder="Motivo del cierre final (opcional)…"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           className="w-full h-24 border rounded p-2"
@@ -87,7 +81,6 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
           className="w-full border rounded p-2 mt-2"
         />
 
-        {/* ───── Botones — mismos estilos que modal parcial ───── */}
         <div className="flex justify-end gap-2 pt-4">
           <button
             onClick={onClose}
