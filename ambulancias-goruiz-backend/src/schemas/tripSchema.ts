@@ -30,7 +30,15 @@ export const tripSchema = z
     ]),
     timePickup: z.union([z.string().min(1), z.literal("")]).optional(),
     timeArrival: z.union([z.string().min(1), z.literal("")]).optional(),
-    timeEnd: z.union([z.string().min(1), z.literal("")]).optional(),
+    timeEnd: z.string().refine(
+      (val) =>
+        val === "" || val === "🔗 Anschluss" || /^([01]\d|2[0-3]):([0-5]\d)$/.test(val),
+      {
+        message: "Debe ser una hora válida o '🔗 Anschluss'",
+      }
+    )
+    .optional(),
+
     kmStart: z.union([z.number(), z.nan()]).optional(),
     kmEnd: z.union([z.number(), z.nan()]).optional(),
 
