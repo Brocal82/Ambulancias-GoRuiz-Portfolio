@@ -865,7 +865,7 @@ const handleCancelAnschluss = () => {
       disabled={formBlocked}
       id="kmStart"
       type="number"
-      value={tripFormData.kmStart}
+      value={tripFormData.kmStart === 0 ? "" : tripFormData.kmStart}
       onChange={(e) =>
         setTripFormData((prev) => ({
           ...prev,
@@ -875,6 +875,7 @@ const handleCancelAnschluss = () => {
       className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "kmStart" ? "border-red-500" : "border-gray-300"}`}
     />
   </div>
+
 
   {/* Hora carga */}
   <div>
@@ -922,7 +923,7 @@ const handleCancelAnschluss = () => {
       disabled={formBlocked}
       id="kmEnd"
       type="number"
-      value={tripFormData.kmEnd}
+      value={tripFormData.kmEnd === 0 ? "" : tripFormData.kmEnd}
       onChange={(e) =>
         setTripFormData((prev) => ({
           ...prev,

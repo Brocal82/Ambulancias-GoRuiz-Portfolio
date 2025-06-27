@@ -14,14 +14,14 @@
 export type TripDraft = {
   /* Horas en formato "HH:MM" ------------------------------- */
   timeWarning: string;
-  timeAtHome:  string;
-  timePickup:  string;
+  timeAtHome: string;
+  timePickup: string;
   timeArrival: string;
-  timeEnd:     string;
+  timeEnd: string;
 
   /* Kilómetros (string o number — lo convertiremos) -------- */
   kmStart: string | number;
-  kmEnd:   string | number;
+  kmEnd: string | number;
 };
 
 /* ---------------------------------------------------------- */
@@ -47,11 +47,11 @@ export const checkTripLogic = (
 
   /* 1️⃣  HORAS en orden ------------------------------------ */
   const times: { label: string; key: keyof TripDraft }[] = [
-    { label: "hora de AVISO",   key: "timeWarning" },
-    { label: "hora DOMICILIO",  key: "timeAtHome"  },
-    { label: "hora CARGA",      key: "timePickup"  },
-    { label: "hora DESTINO",    key: "timeArrival" },
-    { label: "hora LIBRE",      key: "timeEnd"     },
+    { label: "hora de AVISO", key: "timeWarning" },
+    { label: "hora DOMICILIO", key: "timeAtHome" },
+    { label: "hora CARGA", key: "timePickup" },
+    { label: "hora DESTINO", key: "timeArrival" },
+    { label: "hora LIBRE", key: "timeEnd" },
   ];
 
   for (let i = 0; i < times.length - 1; i++) {
@@ -70,11 +70,15 @@ export const checkTripLogic = (
   const kmStartNum = Number(v.kmStart);
   const kmEndNum = Number(v.kmEnd);
 
+  const bothKmFieldsFilled =
+    v.kmStart.toString().trim() !== "" && v.kmEnd.toString().trim() !== "";
+
   if (
-    v.kmStart !== "" &&
-    v.kmEnd !== "" &&
+    bothKmFieldsFilled &&
     !isNaN(kmStartNum) &&
     !isNaN(kmEndNum) &&
+    kmStartNum > 0 &&
+    kmEndNum > 0 &&
     kmEndNum < kmStartNum
   ) {
     return {
@@ -86,3 +90,4 @@ export const checkTripLogic = (
   /* 3️⃣  OK ------------------------------------------------- */
   return { error: null, badField: null };
 };
+
