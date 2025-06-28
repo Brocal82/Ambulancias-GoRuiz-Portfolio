@@ -15,6 +15,7 @@ import { sendPartialClosure } from "../api/workdaySummary";
 import type { PartialSummaryPayload, FinalSummaryPayload } from "../types/workdaySummary";
 import { checkTripLogic, type TripDraft } from "../utils/tripValidators";
 import { sendFinalClosure } from "../api/workdaySummary"; // ← Asegúrate de importar esto arriba
+import { getCurrentTimeString } from "../utils/timeUtils";
 
 
 
@@ -106,7 +107,7 @@ const MyWorkday = () => {
   const [anschlussActive, setAnschlussActive] = useState(false);
   const [previousTripFormData, setPreviousTripFormData] = useState<TripData | null>(null);
 
-    const anschlussGuardRef = useRef(false); // 🛡️ Protege contra duplicados
+  const anschlussGuardRef = useRef(false); // 🛡️ Protege contra duplicados
 
   const [tripFormData, setTripFormData] = useState<TripData>({
     date: "",              // <- nuevo
@@ -297,101 +298,31 @@ const MyWorkday = () => {
 
 
   useEffect(() => {
-  const result = checkTripLogic(
-    {
-      timeWarning: tripFormData.timeWarning,
-      timeAtHome: tripFormData.timeAtHome,
-      timePickup: tripFormData.timePickup,
-      timeArrival: tripFormData.timeArrival,
-      timeEnd: tripFormData.timeEnd,
-      kmStart: Number(tripFormData.kmStart),
-      kmEnd: Number(tripFormData.kmEnd),
-    },
-    wasCancelled
-  );
+    const result = checkTripLogic(
+      {
+        timeWarning: tripFormData.timeWarning,
+        timeAtHome: tripFormData.timeAtHome,
+        timePickup: tripFormData.timePickup,
+        timeArrival: tripFormData.timeArrival,
+        timeEnd: tripFormData.timeEnd,
+        kmStart: Number(tripFormData.kmStart),
+        kmEnd: Number(tripFormData.kmEnd),
+      },
+      wasCancelled
+    );
 
-  setDraftError(result.error || "");
-  setBadField(result.badField);
-}, [tripFormData, wasCancelled]);
-
-
+    setDraftError(result.error || "");
+    setBadField(result.badField);
+  }, [tripFormData, wasCancelled]);
 
 
 
-const handleSaveTrip = async () => {
-  if (!token) return;
 
-  const {
-    auftragNumber,
-    patientName,
-    fromAddress,
-    toAddress,
-    timeWarning,
-    timeAtHome,
-    timePickup,
-    timeArrival,
-    timeEnd,
-    kmStart,
-    kmEnd,
-  } = tripFormData;
 
-  console.log("📦 tripFormData:", tripFormData);
-  console.log("🚐 kmStart:", kmStart, "kmEnd:", kmEnd);
-  console.log("📛 wasCancelled:", wasCancelled);
+  const handleSaveTrip = async () => {
+    if (!token) return;
 
-  if (!wasCancelled) {
-    if (
-      !auftragNumber?.trim() ||
-      !patientName?.trim() ||
-      !fromAddress?.trim() ||
-      !toAddress?.trim() ||
-      !timeWarning ||
-      !timeAtHome ||
-      !timePickup ||
-      !timeArrival ||
-      !timeEnd ||
-      kmStart === 0 ||
-      kmEnd === 0
-    ) {
-      toast.warn("🚫 Por favor, rellena todos los campos obligatorios");
-
-      return;
-    }
-  }
-
-  if (!assignedDay) {
-    toast.error("❌ No tienes asignación de dienst para hoy");
-    return;
-  }
-
-  if (!canStartTripNow(assignedDay.startTime, assignedDay.date)) {
-    toast.error("❌ Solo puedes crear viajes 30 minutos antes del inicio del Dienst");
-    return;
-  }
-
-  if (!wasCancelled) {
-    const logicError = checkTripLogic({
-      timeWarning,
-      timeAtHome,
-      timePickup,
-      timeArrival,
-      timeEnd,
-      kmStart: Number(kmStart),
-      kmEnd: Number(kmEnd),
-    });
-
-    if (logicError.error) {
-      toast.error(logicError.error);
-      return;
-    }
-  }
-
-  try {
-    const newTrip: TripData = {
-      date: assignedDay.date,
-      assignmentId: assignedDay.assignmentId,
-      driver: assignedDay.driver._id,
-      medic: assignedDay.medic._id,
+    const {
       auftragNumber,
       patientName,
       fromAddress,
@@ -403,63 +334,133 @@ const handleSaveTrip = async () => {
       timeEnd,
       kmStart,
       kmEnd,
-      wasCancelled,
-      cancelledAtPickup: false,
-      countsTrip,
-      reports,
-    };
+    } = tripFormData;
 
-    const createdTrip = await createTrip(newTrip);
-    toast.success("✅ Viaje guardado");
-    setTrips((prev) => [...prev, createdTrip]);
+    console.log("📦 tripFormData:", tripFormData);
+    console.log("🚐 kmStart:", kmStart, "kmEnd:", kmEnd);
+    console.log("📛 wasCancelled:", wasCancelled);
 
-    // Reset
-    setTripFormData({
-      ...tripFormData,
-      auftragNumber: "",
-      patientName: "",
-      fromAddress: "",
-      toAddress: "",
-      timeWarning: "",
-      timeAtHome: "",
-      timePickup: "",
-      timeArrival: "",
-      timeEnd: "",
-      kmStart: 0,
-      kmEnd: 0,
-    });
+    if (!wasCancelled) {
+      if (
+        !auftragNumber?.trim() ||
+        !patientName?.trim() ||
+        !fromAddress?.trim() ||
+        !toAddress?.trim() ||
+        !timeWarning ||
+        !timeAtHome ||
+        !timePickup ||
+        !timeArrival ||
+        !timeEnd ||
+        kmStart === 0 ||
+        kmEnd === 0
+      ) {
+        toast.warn("🚫 Por favor, rellena todos los campos obligatorios");
 
-    setWasCancelled(false);
-    setCountsTrip(1);
-    setReports("");
-  } catch (err) {
-    console.error("❌ Error al crear trip:", err);
-    toast.error("❌ Error al guardar el viaje");
-  }
-};
+        return;
+      }
+    }
 
-const saveAnschlussPatient1 = async (trip: TripData) => {
-  if (!token || !assignedDay) return;
+    if (!assignedDay) {
+      toast.error("❌ No tienes asignación de dienst para hoy");
+      return;
+    }
 
-  try {
-    const newTrip: TripData = {
-      ...trip,
-      date: assignedDay.date,
-      assignmentId: assignedDay.assignmentId,
-      driver: assignedDay.driver._id,
-      medic: assignedDay.medic._id,
-      timeEnd: "🔗 Anschluss", // ⛑️ Añadimos valor simbólico obligatorio
-    };
+    if (!canStartTripNow(assignedDay.startTime, assignedDay.date)) {
+      toast.error("❌ Solo puedes crear viajes 30 minutos antes del inicio del Dienst");
+      return;
+    }
+
+    if (!wasCancelled) {
+      const logicError = checkTripLogic({
+        timeWarning,
+        timeAtHome,
+        timePickup,
+        timeArrival,
+        timeEnd,
+        kmStart: Number(kmStart),
+        kmEnd: Number(kmEnd),
+      });
+
+      if (logicError.error) {
+        toast.error(logicError.error);
+        return;
+      }
+    }
+
+    try {
+      const newTrip: TripData = {
+        date: assignedDay.date,
+        assignmentId: assignedDay.assignmentId,
+        driver: assignedDay.driver._id,
+        medic: assignedDay.medic._id,
+        auftragNumber,
+        patientName,
+        fromAddress,
+        toAddress,
+        timeWarning,
+        timeAtHome,
+        timePickup,
+        timeArrival,
+        timeEnd,
+        kmStart,
+        kmEnd,
+        wasCancelled,
+        cancelledAtPickup: false,
+        countsTrip,
+        reports,
+      };
+
+      const createdTrip = await createTrip(newTrip);
+      toast.success("✅ Viaje guardado");
+      setTrips((prev) => [...prev, createdTrip]);
+
+      // Reset
+      setTripFormData({
+        ...tripFormData,
+        auftragNumber: "",
+        patientName: "",
+        fromAddress: "",
+        toAddress: "",
+        timeWarning: "",
+        timeAtHome: "",
+        timePickup: "",
+        timeArrival: "",
+        timeEnd: "",
+        kmStart: 0,
+        kmEnd: 0,
+      });
+
+      setWasCancelled(false);
+      setCountsTrip(1);
+      setReports("");
+    } catch (err) {
+      console.error("❌ Error al crear trip:", err);
+      toast.error("❌ Error al guardar el viaje");
+    }
+  };
+
+  const saveAnschlussPatient1 = async (trip: TripData) => {
+    if (!token || !assignedDay) return;
+
+    try {
+      const newTrip: TripData = {
+        ...trip,
+        date: assignedDay.date,
+        assignmentId: assignedDay.assignmentId,
+        driver: assignedDay.driver._id,
+        medic: assignedDay.medic._id,
+        timeEnd: "🔗 Anschluss", // ⛑️ Añadimos valor simbólico obligatorio
+      };
 
 
-    const createdTrip = await createTrip(newTrip);
-    toast.success("✅ Paciente 1 (Anschluss) guardado");
-    setTrips((prev) => [...prev, createdTrip]);
-  } catch (err) {
-    console.error("❌ Error al guardar paciente 1:", err);
-    toast.error("❌ Error al guardar el paciente 1");
-  }
-};
+      const createdTrip = await createTrip(newTrip);
+      toast.success("✅ Paciente 1 (Anschluss) guardado");
+      setTrips((prev) => [...prev, createdTrip]);
+    } catch (err) {
+      console.error("❌ Error al guardar paciente 1:", err);
+      toast.error("❌ Error al guardar el paciente 1");
+    }
+  };
 
 
 
@@ -477,75 +478,75 @@ const saveAnschlussPatient1 = async (trip: TripData) => {
      1.  CIERRE DEFINITIVO  (modal FinalReviewModal)
      ────────────────────────────────────────────────*/
 
-const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number) => {
-  if (!token || !assignedDay || !user?._id) return;
+  const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number) => {
+    if (!token || !assignedDay || !user?._id) return;
 
-  /* ── Validaciones mínimas ── */
-  if (!vehicleNumber || !initialAmbulanceKm) {
-    toast.warn("🚐 Introduce nº de ambulancia y KM inicial.");
-    return;
-  }
+    /* ── Validaciones mínimas ── */
+    if (!vehicleNumber || !initialAmbulanceKm) {
+      toast.warn("🚐 Introduce nº de ambulancia y KM inicial.");
+      return;
+    }
 
-  if (isNaN(finalKmFromModal)) {
-    toast.warn("📏 Introduce los kilómetros finales en el modal.");
-    return;
-  }
+    if (isNaN(finalKmFromModal)) {
+      toast.warn("📏 Introduce los kilómetros finales en el modal.");
+      return;
+    }
 
-  /* ── Validación de coherencia de KM ── */
-  const initialKmNumber = Number(initialAmbulanceKm);
-  if (finalKmFromModal < initialKmNumber) {
-    toast.error("❌ Los KM finales no pueden ser menores que los KM iniciales");
-    return;
-  }
+    /* ── Validación de coherencia de KM ── */
+    const initialKmNumber = Number(initialAmbulanceKm);
+    if (finalKmFromModal < initialKmNumber) {
+      toast.error("❌ Los KM finales no pueden ser menores que los KM iniciales");
+      return;
+    }
 
-  try {
-    // 👉 Guarda en state el km final (para reabrir modal si es necesario)
-    setFinalAmbulanceKm(String(finalKmFromModal));
+    try {
+      // 👉 Guarda en state el km final (para reabrir modal si es necesario)
+      setFinalAmbulanceKm(String(finalKmFromModal));
 
-    // ✅ Cálculo de km realizados con conversión segura
-    const totalTripKm = trips.reduce((acc, t) => {
-      const kmStart = Number(t.kmStart);
-      const kmEnd = Number(t.kmEnd);
-      if (!isNaN(kmStart) && !isNaN(kmEnd)) {
-        return acc + (kmEnd - kmStart);
-      }
-      return acc;
-    }, 0);
+      // ✅ Cálculo de km realizados con conversión segura
+      const totalTripKm = trips.reduce((acc, t) => {
+        const kmStart = Number(t.kmStart);
+        const kmEnd = Number(t.kmEnd);
+        if (!isNaN(kmStart) && !isNaN(kmEnd)) {
+          return acc + (kmEnd - kmStart);
+        }
+        return acc;
+      }, 0);
 
-    const summaryData: FinalSummaryPayload = {
-      date: today,
-      assignmentId: assignedDay.assignmentId,
-      driver: assignedDay.driver._id,
-      medic: assignedDay.medic._id,
-      vehicleNumber,
-      initialKm: initialKmNumber,
-      finalKm: finalKmFromModal,
-      totalTripKm,
-      trips,
-      extraNote: note,
-      isFinalClosure: true,
-    };
-
-
+      const summaryData: FinalSummaryPayload = {
+        date: today,
+        assignmentId: assignedDay.assignmentId,
+        driver: assignedDay.driver._id,
+        medic: assignedDay.medic._id,
+        vehicleNumber,
+        initialKm: initialKmNumber,
+        finalKm: finalKmFromModal,
+        totalTripKm,
+        trips,
+        extraNote: note,
+        isFinalClosure: true,
+      };
 
 
-    await sendFinalClosure(summaryData, token);
 
-    toast.success("✅ Día cerrado y datos enviados al admin.");
 
-    // ✅ Marcar día cerrado solo para este usuario
-    localStorage.setItem(getClosedDayKey(today, user._id), "true");
+      await sendFinalClosure(summaryData, token);
 
-    // ✅ Limpieza y redirección
-    setTrips([]);
-    setIsClosingDay(true);
-    setShowReviewModal(false);
-    navigate("/worker");
-  } catch (err) {
-    console.error("❌ Error al cerrar el día:", err);
-    toast.error("❌ No se pudo cerrar el día.");
-  }
-};
+      toast.success("✅ Día cerrado y datos enviados al admin.");
+
+      // ✅ Marcar día cerrado solo para este usuario
+      localStorage.setItem(getClosedDayKey(today, user._id), "true");
+
+      // ✅ Limpieza y redirección
+      setTrips([]);
+      setIsClosingDay(true);
+      setShowReviewModal(false);
+      navigate("/worker");
+    } catch (err) {
+      console.error("❌ Error al cerrar el día:", err);
+      toast.error("❌ No se pudo cerrar el día.");
+    }
+  };
 
 
 
@@ -609,61 +610,61 @@ const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number)
     }
   };
 
-// 🟦 Función para activar Anschluss 
-const handleAddAnschluss = () => {
-  if (!assignedDay) {
-    console.warn("❗ No hay Dienst asignado para crear Anschluss.");
-    return;
-  }
+  // 🟦 Función para activar Anschluss 
+  const handleAddAnschluss = () => {
+    if (!assignedDay) {
+      console.warn("❗ No hay Dienst asignado para crear Anschluss.");
+      return;
+    }
 
-  if (!tripFormData.toAddress) {
-    console.warn("❗ No se puede añadir Anschluss sin dirección destino del primer viaje.");
-    return;
-  }
+    if (!tripFormData.toAddress) {
+      console.warn("❗ No se puede añadir Anschluss sin dirección destino del primer viaje.");
+      return;
+    }
 
-  // 🟠 Guarda el paciente 1
-  setPreviousTripFormData(tripFormData);
+    // 🟠 Guarda el paciente 1
+    setPreviousTripFormData(tripFormData);
 
-  // 🔒 Activa protección para que se guarde solo una vez
-  anschlussGuardRef.current = true;
+    // 🔒 Activa protección para que se guarde solo una vez
+    anschlussGuardRef.current = true;
 
-  // 🟦 Crea nuevo paciente 2, reseteando los campos
-  setTripFormData({
-    date: today,
-    assignmentId: assignedDay.dienstId,
-    driver: assignedDay.driver._id,
-    medic: assignedDay.medic._id,
-    auftragNumber: "", // reseteado
-    patientName: "",   // reseteado
-    fromAddress: tripFormData.toAddress, // <-- esta es la recogida nueva
-    toAddress: "",     // reseteado
-    timeWarning: "",
-    timeAtHome: "",
-    timePickup: "",
-    timeArrival: "",
-    timeEnd: "",
-    kmStart: tripFormData.kmEnd ?? 0,
-    kmEnd: 0,
-    wasCancelled: false,
-    cancelledAtPickup: false,
-    countsTrip: 1,
-    reports: "",
-  });
+    // 🟦 Crea nuevo paciente 2, reseteando los campos
+    setTripFormData({
+      date: today,
+      assignmentId: assignedDay.dienstId,
+      driver: assignedDay.driver._id,
+      medic: assignedDay.medic._id,
+      auftragNumber: "", // reseteado
+      patientName: "",   // reseteado
+      fromAddress: tripFormData.toAddress, // <-- esta es la recogida nueva
+      toAddress: "",     // reseteado
+      timeWarning: getCurrentTimeString(), // ⏰ se rellena al hacer click en Anschluss
+      timeAtHome: "",
+      timePickup: "",
+      timeArrival: "",
+      timeEnd: "",
+      kmStart: tripFormData.kmEnd ?? 0,
+      kmEnd: 0,
+      wasCancelled: false,
+      cancelledAtPickup: false,
+      countsTrip: 1,
+      reports: "",
+    });
 
-  setAnschlussActive(true);
-};
+    setAnschlussActive(true);
+  };
 
 
-// 🟥 Función para cancelar Anschluss
-const handleCancelAnschluss = () => {
-  setAnschlussActive(false);
-  anschlussGuardRef.current = false; // 🔓 Desactivamos la protección
+  // 🟥 Función para cancelar Anschluss
+  const handleCancelAnschluss = () => {
+    setAnschlussActive(false);
+    anschlussGuardRef.current = false; // 🔓 Desactivamos la protección
 
-  if (previousTripFormData) {
-    setTripFormData(previousTripFormData); // 🔁 Restauramos el paciente 1
-    setPreviousTripFormData(null);
-  }
-};
+    if (previousTripFormData) {
+      setTripFormData(previousTripFormData); // 🔁 Restauramos el paciente 1
+      setPreviousTripFormData(null);
+    }
+  };
 
 
 
@@ -765,274 +766,311 @@ const handleCancelAnschluss = () => {
                 {/* ─────────────────────────────── */}
                 {/* 1️⃣  Auftrag + Paciente (2 col) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  {/* Nº Auftrag */}
-  <div>
-    <label htmlFor="auftragNumber" className="block text-sm">
-      Número de Auftrag
-    </label>
-    <input
-      disabled={formBlocked}
-      id="auftragNumber"
-      placeholder="Ej: Krankentransport 123"
-      value={tripFormData.auftragNumber}
-      onChange={(e) =>
-        setTripFormData((prev) => ({
-          ...prev,
-          auftragNumber: e.target.value,
-        }))
-      }
-      className="w-full border rounded p-1"
-    />
-  </div>
+                  {/* Nº Auftrag */}
+                  <div>
+                    <label htmlFor="auftragNumber" className="block text-sm">
+                      Número de Auftrag
+                    </label>
+                    <input
+                      disabled={formBlocked}
+                      id="auftragNumber"
+                      placeholder="Ej: Krankentransport 123"
+                      value={tripFormData.auftragNumber}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          auftragNumber: e.target.value,
+                        }))
+                      }
+                      className="w-full border rounded p-1"
+                    />
+                  </div>
 
-  {/* Nombre paciente */}
-  <div>
-    <label htmlFor="patientName" className="block text-sm">
-      Nombre del paciente
-    </label>
-    <input
-      disabled={formBlocked}
-      id="patientName"
-      placeholder="Ej: Juan Pérez"
-      value={tripFormData.patientName}
-      onChange={(e) =>
-        setTripFormData((prev) => ({
-          ...prev,
-          patientName: e.target.value,
-        }))
-      }
-      className="w-full border rounded p-1"
-    />
-  </div>
-</div>
+                  {/* Nombre paciente */}
+                  <div>
+                    <label htmlFor="patientName" className="block text-sm">
+                      Nombre del paciente
+                    </label>
+                    <input
+                      disabled={formBlocked}
+                      id="patientName"
+                      placeholder="Ej: Juan Pérez"
+                      value={tripFormData.patientName}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          patientName: e.target.value,
+                        }))
+                      }
+                      className="w-full border rounded p-1"
+                    />
+                  </div>
+                </div>
 
-{/* 2️⃣  Direcciones (2 col) */}
-<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-  {/* Origen */}
-  <div>
-    <label htmlFor="fromAddress" className="block text-sm">
-      Dirección de recogida
-    </label>
-    <input
-      disabled={formBlocked}
-      id="fromAddress"
-      placeholder="Calle Ejemplo 123"
-      value={tripFormData.fromAddress}
-      onChange={(e) =>
-        setTripFormData((prev) => ({
-          ...prev,
-          fromAddress: e.target.value,
-        }))
-      }
-      className="w-full border rounded p-1"
-    />
-  </div>
+                {/* 2️⃣  Direcciones (2 col) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  {/* Origen */}
+                  <div>
+                    <label htmlFor="fromAddress" className="block text-sm">
+                      Dirección de recogida
+                    </label>
+                    <input
+                      disabled={formBlocked}
+                      id="fromAddress"
+                      placeholder="Calle Ejemplo 123"
+                      value={tripFormData.fromAddress}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          fromAddress: e.target.value,
+                        }))
+                      }
+                      className="w-full border rounded p-1"
+                    />
+                  </div>
 
-  {/* Destino */}
-  <div>
-    <label htmlFor="toAddress" className="block text-sm">
-      Dirección de dejada
-    </label>
-    <input
-      disabled={formBlocked}
-      id="toAddress"
-      placeholder="Hospital Central, Berlín"
-      value={tripFormData.toAddress}
-      onChange={(e) =>
-        setTripFormData((prev) => ({
-          ...prev,
-          toAddress: e.target.value,
-        }))
-      }
-      className="w-full border rounded p-1"
-    />
-  </div>
-</div>
+                  {/* Destino */}
+                  <div>
+                    <label htmlFor="toAddress" className="block text-sm">
+                      Dirección de dejada
+                    </label>
+                    <input
+                      disabled={formBlocked}
+                      id="toAddress"
+                      placeholder="Hospital Central, Berlín"
+                      value={tripFormData.toAddress}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          toAddress: e.target.value,
+                        }))
+                      }
+                      className="w-full border rounded p-1"
+                    />
+                  </div>
+                </div>
 
 
                 {/* 3️⃣–5️⃣ Todos los campos de hora/KM en una sola fila */}
                 <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mt-4">
-  {/* Hora aviso */}
-  <div>
-    <label htmlFor="timeWarning" className="block text-sm">Aviso</label>
-    <input
-      ref={timeWarningRef}
-      disabled={formBlocked}
-      id="timeWarning"
-      type="time"
-      value={tripFormData.timeWarning}
-      onChange={(e) =>
-        setTripFormData((prev) => ({
-          ...prev,
-          timeWarning: e.target.value,
-        }))
-      }
-      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeWarning" ? "border-red-500" : "border-gray-300"}`}
-    />
-  </div>
-
-  {/* Hora domicilio */}
-<div>
-  <label htmlFor="timeAtHome" className="block text-sm">Domicilio</label>
-  <input
-    ref={timeAtHomeRef}
-    disabled={formBlocked}
-    id="timeAtHome"
-    type="time"
-    value={tripFormData.timeAtHome}
-    onChange={(e) => {
-      const value = e.target.value;
-
-      setTripFormData((prev) => ({
-        ...prev,
-        timeAtHome: value,
-      }));
-
-      if (anschlussActive) {
-        setPreviousTripFormData((prev) =>
-          prev ? { ...prev, timeArrival: value } : null
-        );
-      }
-    }}
-    className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${
-      badField === "timeAtHome" ? "border-red-500" : "border-gray-300"
-    }`}
-  />
-</div>
+                  {/* Hora aviso */}
+                  <div>
+                    <label htmlFor="timeWarning" className="block text-sm">Aviso</label>
+                    <input
+                      ref={timeWarningRef}
+                      disabled={formBlocked}
+                      id="timeWarning"
+                      type="time"
+                      value={tripFormData.timeWarning}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeWarning: e.target.value,
+                        }))
+                      }
+                      onDoubleClick={() => {
+                        const currentTime = getCurrentTimeString();
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeWarning: currentTime,
+                        }));
+                      }}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeWarning" ? "border-red-500" : "border-gray-300"
+                        }`}
+                    />
+                  </div>
 
 
-{/* KM domicilio */}
-<div>
-  <label htmlFor="kmStart" className="block text-sm">KM dom.</label>
-  <input
-    ref={kmStartRef}
-    disabled={formBlocked}
-    id="kmStart"
-    type="number"
-    value={tripFormData.kmStart === 0 ? "" : tripFormData.kmStart}
-    onChange={(e) => {
-      const value = Number(e.target.value);
+                  {/* Hora domicilio */}
+                  <div>
+                    <label htmlFor="timeAtHome" className="block text-sm">Domicilio</label>
+                    <input
+                      ref={timeAtHomeRef}
+                      disabled={formBlocked}
+                      id="timeAtHome"
+                      type="time"
+                      value={tripFormData.timeAtHome}
+                      onChange={(e) => {
+                        const value = e.target.value;
 
-      setTripFormData((prev) => ({
-        ...prev,
-        kmStart: value,
-      }));
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeAtHome: value,
+                        }));
 
-      if (anschlussActive) {
-        setPreviousTripFormData((prev) =>
-          prev ? { ...prev, kmEnd: value } : null
-        );
-      }
-    }}
-    className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${
-      badField === "kmStart" ? "border-red-500" : "border-gray-300"
-    }`}
-  />
-</div>
+                        if (anschlussActive) {
+                          setPreviousTripFormData((prev) =>
+                            prev ? { ...prev, timeArrival: value } : null
+                          );
+                        }
+                      }}
+
+                      onDoubleClick={() => {
+                        const currentTime = getCurrentTimeString();
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeAtHome: currentTime,
+                        }));
+                      }}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeAtHome" ? "border-red-500" : "border-gray-300"
+                        }`}
+                    />
+                  </div>
 
 
+                  {/* KM domicilio */}
+                  <div>
+                    <label htmlFor="kmStart" className="block text-sm">KM dom.</label>
+                    <input
+                      ref={kmStartRef}
+                      disabled={formBlocked}
+                      id="kmStart"
+                      type="number"
+                      value={tripFormData.kmStart === 0 ? "" : tripFormData.kmStart}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
 
-{/* Hora carga */}
-<div>
-  <label htmlFor="timePickup" className="block text-sm">Carga</label>
-  <input
-    ref={timePickupRef}
-    disabled={formBlocked}
-    id="timePickup"
-    type="time"
-    value={tripFormData.timePickup}
-    onChange={async (e) => {
-  const newTime = e.target.value;
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          kmStart: value,
+                        }));
 
-  setTripFormData((prev) => {
-    const updated = { ...prev, timePickup: newTime };
-
-    // ✅ 2. Si Anschluss está activo y no se ha guardado aún
-    if (anschlussActive && previousTripFormData && anschlussGuardRef.current) {
-      anschlussGuardRef.current = false; // 🛡️ Desactivamos el guardia inmediatamente
-
-      const updatedTrip: TripData = {
-        ...previousTripFormData,
-        timeArrival: newTime,
-        kmEnd: updated.kmStart ?? 0,
-        timeEnd: "🔗 Anschluss",
-      };
-
-      saveAnschlussPatient1(updatedTrip);
-      setPreviousTripFormData(null);
-      setAnschlussActive(false);
-    }
-
-    return updated;
-  });
-}}
-
-    className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${
-      badField === "timePickup" ? "border-red-500" : "border-gray-300"
-    }`}
-  />
-</div>
+                        if (anschlussActive) {
+                          setPreviousTripFormData((prev) =>
+                            prev ? { ...prev, kmEnd: value } : null
+                          );
+                        }
+                      }}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "kmStart" ? "border-red-500" : "border-gray-300"
+                        }`}
+                    />
+                  </div>
 
 
 
+                  {/* Hora carga */}
+                  <div>
+                    <label htmlFor="timePickup" className="block text-sm">Carga</label>
+                    <input
+                      ref={timePickupRef}
+                      disabled={formBlocked}
+                      id="timePickup"
+                      type="time"
+                      value={tripFormData.timePickup}
+                      onChange={async (e) => {
+                        const newTime = e.target.value;
 
-  {/* Hora destino */}
-  <div>
-    <label htmlFor="timeArrival" className="block text-sm">Destino</label>
-    <input
-      ref={timeArrivalRef}
-      disabled={formBlocked}
-      id="timeArrival"
-      type="time"
-      value={tripFormData.timeArrival}
-      onChange={(e) =>
-        setTripFormData((prev) => ({
-          ...prev,
-          timeArrival: e.target.value,
-        }))
-      }
-      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeArrival" ? "border-red-500" : "border-gray-300"}`}
-    />
-  </div>
+                        setTripFormData((prev) => {
+                          const updated = { ...prev, timePickup: newTime };
 
-  {/* KM destino */}
-  <div>
-    <label htmlFor="kmEnd" className="block text-sm">KM dest.</label>
-    <input
-      ref={kmEndRef}
-      disabled={formBlocked}
-      id="kmEnd"
-      type="number"
-      value={tripFormData.kmEnd === 0 ? "" : tripFormData.kmEnd}
-      onChange={(e) =>
-        setTripFormData((prev) => ({
-          ...prev,
-          kmEnd: Number(e.target.value),
-        }))
-      }
-      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "kmEnd" ? "border-red-500" : "border-gray-300"}`}
-    />
-  </div>
+                          // ✅ 2. Si Anschluss está activo y no se ha guardado aún
+                          if (anschlussActive && previousTripFormData && anschlussGuardRef.current) {
+                            anschlussGuardRef.current = false; // 🛡️ Desactivamos el guardia inmediatamente
 
-  {/* Hora libre */}
-  <div>
-    <label htmlFor="timeEnd" className="block text-sm">Libre</label>
-    <input
-      ref={timeEndRef}
-      disabled={formBlocked}
-      id="timeEnd"
-      type="time"
-      value={tripFormData.timeEnd}
-      onChange={(e) =>
-        setTripFormData((prev) => ({
-          ...prev,
-          timeEnd: e.target.value,
-        }))
-      }
-      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeEnd" ? "border-red-500" : "border-gray-300"}`}
-    />
-  </div>
-</div>
+                            const updatedTrip: TripData = {
+                              ...previousTripFormData,
+                              timeArrival: newTime,
+                              kmEnd: updated.kmStart ?? 0,
+                              timeEnd: "🔗 Anschluss",
+                            };
+
+                            saveAnschlussPatient1(updatedTrip);
+                            setPreviousTripFormData(null);
+                            setAnschlussActive(false);
+                          }
+
+                          return updated;
+                        });
+                      }}
+
+                      onDoubleClick={() => {
+                        const currentTime = getCurrentTimeString();
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timePickup: currentTime,
+                        }));
+                      }}
+
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timePickup" ? "border-red-500" : "border-gray-300"
+                        }`}
+                    />
+                  </div>
+
+
+
+
+                  {/* Hora destino */}
+                  <div>
+                    <label htmlFor="timeArrival" className="block text-sm">Destino</label>
+                    <input
+                      ref={timeArrivalRef}
+                      disabled={formBlocked}
+                      id="timeArrival"
+                      type="time"
+                      value={tripFormData.timeArrival}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeArrival: e.target.value,
+                        }))
+                      }
+                      onDoubleClick={() => {
+                        const currentTime = getCurrentTimeString();
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeArrival: currentTime,
+                        }));
+                      }}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeArrival" ? "border-red-500" : "border-gray-300"}`}
+                    />
+                  </div>
+
+                  {/* KM destino */}
+                  <div>
+                    <label htmlFor="kmEnd" className="block text-sm">KM dest.</label>
+                    <input
+                      ref={kmEndRef}
+                      disabled={formBlocked}
+                      id="kmEnd"
+                      type="number"
+                      value={tripFormData.kmEnd === 0 ? "" : tripFormData.kmEnd}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          kmEnd: Number(e.target.value),
+                        }))
+                      }
+                     
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "kmEnd" ? "border-red-500" : "border-gray-300"}`}
+                    />
+                  </div>
+
+                  {/* Hora libre */}
+                  <div>
+                    <label htmlFor="timeEnd" className="block text-sm">Libre</label>
+                    <input
+                      ref={timeEndRef}
+                      disabled={formBlocked}
+                      id="timeEnd"
+                      type="time"
+                      value={tripFormData.timeEnd}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeEnd: e.target.value,
+                        }))
+                      }
+                       onDoubleClick={() => {
+                        const currentTime = getCurrentTimeString();
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeEnd: currentTime,
+                        }));
+                      }}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeEnd" ? "border-red-500" : "border-gray-300"}`}
+                    />
+                  </div>
+                </div>
 
 
                 {/* 🔄 Botón Anschluss: solo aparece si ya hay hora de carga */}
