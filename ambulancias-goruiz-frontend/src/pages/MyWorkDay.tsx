@@ -985,11 +985,29 @@ const MyWorkday = () => {
 
                       onDoubleClick={() => {
                         const currentTime = getCurrentTimeString();
-                        setTripFormData((prev) => ({
-                          ...prev,
-                          timePickup: currentTime,
-                        }));
+
+                        setTripFormData((prev) => {
+                          const updated = { ...prev, timePickup: currentTime };
+
+                          if (anschlussActive && previousTripFormData && anschlussGuardRef.current) {
+                            anschlussGuardRef.current = false;
+
+                            const updatedTrip: TripData = {
+                              ...previousTripFormData,
+                              timeArrival: currentTime,
+                              kmEnd: updated.kmStart ?? 0,
+                              timeEnd: "🔗 Anschluss",
+                            };
+
+                            saveAnschlussPatient1(updatedTrip);
+                            setPreviousTripFormData(null);
+                            setAnschlussActive(false);
+                          }
+
+                          return updated;
+                        });
                       }}
+
 
                       className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timePickup" ? "border-red-500" : "border-gray-300"
                         }`}
@@ -1040,7 +1058,7 @@ const MyWorkday = () => {
                           kmEnd: Number(e.target.value),
                         }))
                       }
-                     
+
                       className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "kmEnd" ? "border-red-500" : "border-gray-300"}`}
                     />
                   </div>
@@ -1060,7 +1078,7 @@ const MyWorkday = () => {
                           timeEnd: e.target.value,
                         }))
                       }
-                       onDoubleClick={() => {
+                      onDoubleClick={() => {
                         const currentTime = getCurrentTimeString();
                         setTripFormData((prev) => ({
                           ...prev,
