@@ -75,6 +75,7 @@ const ReviewSummary: React.FC<Props> = ({
           <thead className="bg-gray-100">
             <tr>
               <th className="p-1">Auftrag</th>
+              <th>Paciente</th>
               <th>Hora aviso</th>
               <th>Km dom.</th>
               <th>Km dest.</th>
@@ -90,6 +91,7 @@ const ReviewSummary: React.FC<Props> = ({
               return (
                 <tr key={i} className="border-t">
                   <td className={`p-1 text-center font-semibold ${t.wasCancelled ? "text-red-600" : ""}`}> {t.auftragNumber}</td>
+                  <td className="text-center">{t.patientName || "Sin nombre"}</td>
                   <td className="text-center">{t.timeWarning}</td>
                   <td className="text-center">{t.kmStart}</td>
                   <td className="text-center">{t.kmEnd}</td>
