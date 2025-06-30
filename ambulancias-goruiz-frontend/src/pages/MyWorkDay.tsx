@@ -16,6 +16,7 @@ import type { PartialSummaryPayload, FinalSummaryPayload } from "../types/workda
 import { checkTripLogic, type TripDraft } from "../utils/tripValidators";
 import { sendFinalClosure } from "../api/workdaySummary"; // ← Asegúrate de importar esto arriba
 import { getCurrentTimeString } from "../utils/timeUtils";
+import { saveAmbulanceData, loadAmbulanceData, clearAmbulanceData, confirmedAmbulanceKey} from "../utils/workdayKey";
 
 
 
@@ -131,38 +132,34 @@ const MyWorkday = () => {
     reports: "",
   });
 
-
-
-
-
-
-
-
-
   const navigate = useNavigate();
 
-  const handleConfirmAmbulanceData = () => {
-    if (!vehicleNumber || !initialAmbulanceKm) {
-      toast.error("❌ Por favor, introduce el número de ambulancia y los KM iniciales.");
-      return;
-    }
+const handleConfirmAmbulanceData = () => {
+  if (!vehicleNumber || !initialAmbulanceKm) {
+    toast.error("❌ Por favor, introduce el número de ambulancia y los KM iniciales.");
+    return;
+  }
 
-    setVehicleConfirmed(true);
-    toast.success("✅ Datos confirmados. Ya puedes registrar viajes.");
+  if (!assignedDay) return;
 
-    // Guardamos en localStorage
-    localStorage.setItem('vehicleNumber', vehicleNumber);
-    localStorage.setItem('initialAmbulanceKm', initialAmbulanceKm);
-    localStorage.setItem('vehicleConfirmed', 'true');
+  setVehicleConfirmed(true);
+  toast.success("✅ Datos confirmados. Ya puedes registrar viajes.");
+
+  // Guardamos los datos en localStorage por equipo
+  localStorage.setItem("vehicleNumber", vehicleNumber);
+  localStorage.setItem("initialAmbulanceKm", initialAmbulanceKm);
+  localStorage.setItem(confirmedAmbulanceKey(assignedDay.assignmentId), "true");
+};
+
+
+  const handleCloseTripModal = () => {
+    setSelectedTrip(null);
   };
 
   const handleOpenTripModal = (trip: Trip) => {
     setSelectedTrip(trip);
   };
 
-  const handleCloseTripModal = () => {
-    setSelectedTrip(null);
-  };
 
   /* ------------------------------------------------------------------ */
   /* 1) Obtiene SOLO los viajes pendientes (sentInSummary = false)      */
@@ -275,19 +272,25 @@ const MyWorkday = () => {
   }, [fetchTrips, fetchAssignedDay]);
 
 
-  // se ejecuta una sola vez al montar el componente
-  useEffect(() => {
-    const savedVehicle = localStorage.getItem("vehicleNumber");
-    const savedInitialKm = localStorage.getItem("initialAmbulanceKm");
-    const savedVehicleConfirm = localStorage.getItem("vehicleConfirmed") === "true";
+useEffect(() => {
+  if (!assignedDay) return;
 
-    if (savedVehicle && savedInitialKm) {
-      setVehicleNumber(savedVehicle);
-      setInitialAmbulanceKm(savedInitialKm);
-    }
+  // Carga los datos compartidos (vehículo y km iniciales)
+  const loaded = loadAmbulanceData(assignedDay.assignmentId);
+  if (loaded) {
+    setVehicleNumber(loaded.vehicleNumber);
+    setInitialAmbulanceKm(loaded.initialKm);
+  }
 
-    setVehicleConfirmed(savedVehicleConfirm);   // ← puede ser true o false
-  }, []);
+  // Verifica si ese equipo ya confirmó los datos
+  const isConfirmed =
+    localStorage.getItem(confirmedAmbulanceKey(assignedDay.assignmentId)) === "true";
+
+  setVehicleConfirmed(isConfirmed);
+}, [assignedDay]);
+
+
+
 
 
   useEffect(() => {
@@ -296,8 +299,17 @@ const MyWorkday = () => {
     }
   }, [assignedDay, vehicleNumber]);
 
-
   useEffect(() => {
+  if (assignedDay && vehicleNumber && initialAmbulanceKm) {
+    saveAmbulanceData(
+      assignedDay.assignmentId,
+      vehicleNumber,
+      initialAmbulanceKm
+    );
+  }
+}, [vehicleNumber, initialAmbulanceKm, assignedDay]);
+
+   useEffect(() => {
     const result = checkTripLogic(
       {
         timeWarning: tripFormData.timeWarning,
@@ -314,9 +326,7 @@ const MyWorkday = () => {
     setDraftError(result.error || "");
     setBadField(result.badField);
   }, [tripFormData, wasCancelled]);
-
-
-
+  
 
 
   const handleSaveTrip = async () => {
@@ -541,6 +551,7 @@ const MyWorkday = () => {
       setTrips([]);
       setIsClosingDay(true);
       setShowReviewModal(false);
+      clearAmbulanceData(assignedDay.assignmentId);
       navigate("/worker");
     } catch (err) {
       console.error("❌ Error al cerrar el día:", err);
