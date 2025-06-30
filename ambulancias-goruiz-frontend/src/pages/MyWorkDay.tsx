@@ -569,60 +569,67 @@ useEffect(() => {
      2.  CIERRE PARCIAL  (modal PartialReviewModal)
      ────────────────────────────────────────────────*/
   const handleSendPartialClosure = async (reason: string, finalKmValue: number) => {
-    if (!token || !assignedDay) return;
+  if (!token || !assignedDay) return;
 
-    if (isNaN(finalKmValue)) {
-      toast.warn("📏 Introduce los kilómetros finales en el modal.");
-      return;
-    }
+  if (isNaN(finalKmValue)) {
+    toast.warn("📏 Introduce los kilómetros finales en el modal.");
+    return;
+  }
 
-    if (Number(finalKmValue) < Number(initialAmbulanceKm)) {
-      toast.warn("📏 Los KM finales no pueden ser menores que los KM iniciales.");
-      return;
-    }
+  if (Number(finalKmValue) < Number(initialAmbulanceKm)) {
+    toast.warn("📏 Los KM finales no pueden ser menores que los KM iniciales.");
+    return;
+  }
 
+  try {
+    const totalTripKm = trips.reduce(
+      (sum, t) => sum + (Number(t.kmEnd) - Number(t.kmStart)),
+      0
+    );
 
-    try {
-      const totalTripKm = trips.reduce(
-        (sum, t) => sum + (Number(t.kmEnd) - Number(t.kmStart)),
-        0
-      );
+    const payload: PartialSummaryPayload = {
+      date: today,
+      assignmentId: assignedDay.assignmentId,
+      driver: assignedDay.driver._id,
+      medic: assignedDay.medic._id,
+      vehicleNumber,
+      initialKm: Number(initialAmbulanceKm),
+      finalKm: finalKmValue,
+      trips,
+      totalTripKm,
+      partialClosureReason: reason,
+      isFinalClosure: false,
+    };
 
-      const payload: PartialSummaryPayload = {
-        date: today,
-        assignmentId: assignedDay.assignmentId,
-        driver: assignedDay.driver._id,
-        medic: assignedDay.medic._id,
-        vehicleNumber,
-        initialKm: Number(initialAmbulanceKm),
-        finalKm: finalKmValue,
-        trips,
-        totalTripKm,
-        partialClosureReason: reason,
-        isFinalClosure: false,
-      };
+    await sendPartialClosure(payload, token);
 
-      await sendPartialClosure(payload, token);
+    toast.success("✅ Cierre parcial enviado al admin.");
 
-      toast.success("✅ Cierre parcial enviado al admin.");
+    // ✅ Borrar datos locales de ambulancia para forzar nuevo inicio
+    clearAmbulanceData(assignedDay.assignmentId);
+    localStorage.removeItem(confirmedAmbulanceKey(assignedDay.assignmentId));
 
-      // 🧹 Limpieza total del formulario para continuar la jornada
-      setTrips([]);
-      setWasCancelled(false);
-      setCountsTrip(1);
-      setShowReviewModal(false);
-      setVehicleNumber("");
-      setInitialAmbulanceKm("");
-      setFinalAmbulanceKm("");
+    // 🧹 Limpieza del formulario
+    setTrips([]);
+    setWasCancelled(false);
+    setCountsTrip(1);
+    setShowReviewModal(false);
+    setVehicleNumber("");
+    setInitialAmbulanceKm("");
+    setFinalAmbulanceKm("");
 
-      // 🔁 Redirige a pantalla principal para reiniciar desde cero
-      navigate("/worker");
+    // ✅ Asegura que se vuelva a mostrar la pantalla de confirmación
+    setVehicleConfirmed(false);
 
-    } catch (err) {
-      console.error("❌ Error al enviar cierre parcial:", err);
-      toast.error("❌ No se pudo enviar el cierre parcial.");
-    }
-  };
+    // 🔁 Redirige al dashboard
+    navigate("/worker");
+
+  } catch (err) {
+    console.error("❌ Error al enviar cierre parcial:", err);
+    toast.error("❌ No se pudo enviar el cierre parcial.");
+  }
+};
+
 
   // 🟦 Función para activar Anschluss 
   const handleAddAnschluss = () => {
