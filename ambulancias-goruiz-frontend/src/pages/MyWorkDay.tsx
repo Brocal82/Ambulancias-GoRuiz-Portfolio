@@ -544,8 +544,10 @@ useEffect(() => {
 
       toast.success("✅ Día cerrado y datos enviados al admin.");
 
-      // ✅ Marcar día cerrado solo para este usuario
-      localStorage.setItem(getClosedDayKey(today, user._id), "true");
+      // ✅ Marcar día cerrado para ambos (conductor y sanitario)
+      localStorage.setItem(getClosedDayKey(today, assignedDay.driver._id), "true");
+      localStorage.setItem(getClosedDayKey(today, assignedDay.medic._id), "true");
+
 
       // ✅ Limpieza y redirección
       setTrips([]);
@@ -553,6 +555,7 @@ useEffect(() => {
       setShowReviewModal(false);
       clearAmbulanceData(assignedDay.assignmentId);
       navigate("/worker");
+      
     } catch (err) {
       console.error("❌ Error al cerrar el día:", err);
       toast.error("❌ No se pudo cerrar el día.");
