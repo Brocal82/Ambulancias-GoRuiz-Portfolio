@@ -513,15 +513,8 @@ useEffect(() => {
       // 👉 Guarda en state el km final (para reabrir modal si es necesario)
       setFinalAmbulanceKm(String(finalKmFromModal));
 
-      // ✅ Cálculo de km realizados con conversión segura
-      const totalTripKm = trips.reduce((acc, t) => {
-        const kmStart = Number(t.kmStart);
-        const kmEnd = Number(t.kmEnd);
-        if (!isNaN(kmStart) && !isNaN(kmEnd)) {
-          return acc + (kmEnd - kmStart);
-        }
-        return acc;
-      }, 0);
+      const totalDienstKm = finalKmFromModal - initialKmNumber;
+
 
       const summaryData: FinalSummaryPayload = {
         date: today,
@@ -531,11 +524,14 @@ useEffect(() => {
         vehicleNumber,
         initialKm: initialKmNumber,
         finalKm: finalKmFromModal,
-        totalTripKm,
+        totalDienstKm,
         trips,
         extraNote: note,
         isFinalClosure: true,
       };
+
+
+
 
 
 
@@ -582,10 +578,10 @@ useEffect(() => {
   }
 
   try {
-    const totalTripKm = trips.reduce(
-      (sum, t) => sum + (Number(t.kmEnd) - Number(t.kmStart)),
-      0
-    );
+
+     const totalDienstKm = Number(finalKmValue) - Number(initialAmbulanceKm);
+
+
 
     const payload: PartialSummaryPayload = {
       date: today,
@@ -596,7 +592,7 @@ useEffect(() => {
       initialKm: Number(initialAmbulanceKm),
       finalKm: finalKmValue,
       trips,
-      totalTripKm,
+      totalDienstKm,
       partialClosureReason: reason,
       isFinalClosure: false,
     };
