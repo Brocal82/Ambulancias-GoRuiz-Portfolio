@@ -49,11 +49,12 @@ export interface IWorkdaySummary extends Document {
   vehicleNumber: string;
   initialKm: number;
   finalKm?: number;               // opcional en cierre parcial
-  totalTripKm: number;
+  totalDienstKm: number;
   trips: TripEntry[];
   isFinalClosure: boolean;
   partialClosureReason?: string;
   extraNote?: string;
+  totalEffectivePatients: number; // ✅ NUEVO
 }
 
 /* ─────────────────────────────────────────────
@@ -67,11 +68,12 @@ const workdaySummarySchema = new Schema<IWorkdaySummary>({
   vehicleNumber:       { type: String, required: true },
   initialKm:           { type: Number, required: true },
   finalKm:             { type: Number, required: false },
-  totalTripKm:         { type: Number, required: true },
+  totalDienstKm:       { type: Number, required: true },
   trips:               { type: [tripSchema], required: true },
   isFinalClosure:      { type: Boolean, default: true },
   partialClosureReason:{ type: String, default: "" },
   extraNote:            { type: String, default: "" },
+  totalEffectivePatients: { type: Number, required: true }, // ✅ NUEVO
 });
 
 /* ─────────────────────────────────────────────
