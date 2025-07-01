@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import ReviewSummary from "./ReviewSummary";
 import type { Trip } from "../../types/trip";
 import type { AssignedDay } from "../../types/assignedDay";
+import { calculateEffectivePatients } from "../../utils/prämienUtils";
 
 interface FinalReviewModalProps {
   isOpen: boolean;
@@ -35,6 +36,8 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
 
   const parsedInitialKm = Number(initialKm);
   const parsedFinalKm = finalKmLocal === "" ? 0 : Number(finalKmLocal);
+  const totalEffectivePatients = calculateEffectivePatients(trips, assignedDay.date);
+
 
   if (!isOpen) return null;
 
@@ -60,6 +63,11 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
           finalKm={parsedFinalKm}
           trips={trips}
         />
+
+        <p className="text-center font-semibold text-green-700">
+          Total de pacientes (con multiplicadores): {totalEffectivePatients}
+        </p>
+
 
         {/* ✅ CAMBIO: placeholder más claro */}
         <textarea
