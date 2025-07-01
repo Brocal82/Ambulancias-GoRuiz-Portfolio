@@ -9,7 +9,7 @@ export interface PartialSummaryPayload {
   initialKm: number;
   finalKm: number;       // ✅ nuevo obligatorio
   trips: Trip[];
-  totalTripKm: number;
+  totalDienstKm: number;
   partialClosureReason: string;
   driver: string;        // ✅ nuevo obligatorio
   medic: string;         // ✅ nuevo obligatorio
@@ -23,7 +23,7 @@ export interface FinalSummaryPayload {
   vehicleNumber: string;
   initialKm: number;
   finalKm: number;
-  totalTripKm: number;
+  totalDienstKm: number;
   trips: Trip[];
   driver: string;
   medic: string;
