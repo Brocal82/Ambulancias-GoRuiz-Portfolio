@@ -1,5 +1,4 @@
-// backend/src/models/WorkdaySummary.ts
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document, Types } from "mongoose";
 
 /* ─────────────────────────────────────────────
  * 1. Sub–schema de los viajes guardados
@@ -27,12 +26,12 @@ const tripSchema = new Schema<TripEntry>({
   fromAddress:         { type: String, required: true },
   toAddress:           { type: String, required: true },
   timeWarning:         { type: String, required: true },
-  timeAtHome:          { type: String, required: false },
-  timePickup:          { type: String, required: false },
-  timeArrival:         { type: String, required: false },
-  timeEnd:             { type: String, required: false },
-  kmStart:             { type: Number, required: false },
-  kmEnd:               { type: Number, required: false },
+  timeAtHome:          { type: String },
+  timePickup:          { type: String },
+  timeArrival:         { type: String },
+  timeEnd:             { type: String },
+  kmStart:             { type: Number },
+  kmEnd:               { type: Number },
   wasCancelled:        { type: Boolean, required: true },
   cancelledAtPickup:   { type: Boolean, default: false },
   reports:             { type: String, default: "" },
@@ -44,17 +43,17 @@ const tripSchema = new Schema<TripEntry>({
 export interface IWorkdaySummary extends Document {
   date: string;
   assignmentId: string;
-  driver: string;
-  medic: string;
+  driver: Types.ObjectId; // Referencia a User
+  medic: Types.ObjectId;  // Referencia a User
   vehicleNumber: string;
   initialKm: number;
-  finalKm?: number;               // opcional en cierre parcial
+  finalKm?: number;
   totalDienstKm: number;
   trips: TripEntry[];
   isFinalClosure: boolean;
   partialClosureReason?: string;
   extraNote?: string;
-  totalEffectivePatients: number; // ✅ NUEVO
+  totalEffectivePatients: number;
 }
 
 /* ─────────────────────────────────────────────
@@ -63,17 +62,17 @@ export interface IWorkdaySummary extends Document {
 const workdaySummarySchema = new Schema<IWorkdaySummary>({
   date:                { type: String, required: true },
   assignmentId:        { type: String, required: true },
-  driver:              { type: String, required: true },
-  medic:               { type: String, required: true },
+  driver:              { type: Schema.Types.ObjectId, ref: "User", required: true },
+  medic:               { type: Schema.Types.ObjectId, ref: "User", required: true },
   vehicleNumber:       { type: String, required: true },
   initialKm:           { type: Number, required: true },
-  finalKm:             { type: Number, required: false },
+  finalKm:             { type: Number },
   totalDienstKm:       { type: Number, required: true },
   trips:               { type: [tripSchema], required: true },
   isFinalClosure:      { type: Boolean, default: true },
   partialClosureReason:{ type: String, default: "" },
-  extraNote:            { type: String, default: "" },
-  totalEffectivePatients: { type: Number, required: true }, // ✅ NUEVO
+  extraNote:           { type: String, default: "" },
+  totalEffectivePatients: { type: Number, required: true },
 });
 
 /* ─────────────────────────────────────────────
@@ -83,5 +82,3 @@ export default mongoose.model<IWorkdaySummary>(
   "WorkdaySummary",
   workdaySummarySchema
 );
-
-
