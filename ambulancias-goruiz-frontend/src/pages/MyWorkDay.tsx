@@ -145,11 +145,11 @@ const handleConfirmAmbulanceData = () => {
   setVehicleConfirmed(true);
   toast.success("✅ Datos confirmados. Ya puedes registrar viajes.");
 
-  // Guardamos los datos en localStorage por equipo
-  localStorage.setItem("vehicleNumber", vehicleNumber);
-  localStorage.setItem("initialAmbulanceKm", initialAmbulanceKm);
+  // ✅ Guardamos los datos correctamente compartidos por equipo
+  saveAmbulanceData(assignedDay.assignmentId, vehicleNumber, initialAmbulanceKm);
   localStorage.setItem(confirmedAmbulanceKey(assignedDay.assignmentId), "true");
 };
+
 
 
   const handleCloseTripModal = () => {
@@ -289,15 +289,6 @@ useEffect(() => {
   setVehicleConfirmed(isConfirmed);
 }, [assignedDay]);
 
-
-
-
-
-  useEffect(() => {
-    if (assignedDay && !vehicleNumber) {
-      setVehicleNumber(assignedDay.vehicleNumber || "");
-    }
-  }, [assignedDay, vehicleNumber]);
 
   useEffect(() => {
   if (assignedDay && vehicleNumber && initialAmbulanceKm) {
