@@ -149,16 +149,41 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
 export const getAllWorkdaySummaries = async (req: Request, res: Response) => {
   try {
     const summaries = await WorkdaySummary.find()
-      .sort({ date: -1 }) // más recientes primero
-      .populate('driver', 'name lastName') // solo estos campos
-      .populate('medic', 'name lastName');
+  .sort({ date: -1 })
+  .populate('driver', 'name lastName')
+  .populate('medic', 'name lastName')
+  .lean();
 
-    res.status(200).json(summaries);
+const diensts = await Dienst.find().lean();
+
+const enriched = summaries.map((s: any) => {
+  const dienst = diensts.find(d =>
+    d.assignments.some(a => a._id && a._id.toString() === s.assignmentId.toString())
+
+  );
+
+  const assignment = dienst?.assignments.find(
+  a => a._id && a._id.toString() === s.assignmentId.toString()
+);
+
+
+  return {
+    ...s,
+    dienstId: dienst?._id ?? null,
+    dienstNumber: dienst?.dienstNumber ?? null,
+    startTime: assignment?.startTime ?? null,
+    endTime: assignment?.endTime ?? null,
+  };
+});
+
+res.status(200).json(enriched);
+
   } catch (error) {
     console.error("❌ Error al obtener resúmenes:", error);
     res.status(500).json({ message: "Error al obtener los resúmenes." });
   }
 };
+
 
 
 

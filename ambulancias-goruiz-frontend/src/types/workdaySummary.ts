@@ -1,3 +1,4 @@
+// frontend/src/types/workdaySummary.ts
 import type { Trip } from "./trip";
 
 export interface PopulatedUser {
@@ -56,4 +57,8 @@ export interface WorkdaySummary {
   partialClosureReason?: string;
   isFinalClosure: boolean;
   trips: Trip[];
+  dienstNumber?: number;
+  dienstId?: string;
+  startTime?: string;
+  endTime?: string;
 }
