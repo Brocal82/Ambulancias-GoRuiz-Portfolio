@@ -1,3 +1,4 @@
+//src/utils/prämienUtils.ts
 import type { Trip } from "../types/trip";
 
 export function calculateEffectivePatients(trips: Trip[], dienstDate: string): number {

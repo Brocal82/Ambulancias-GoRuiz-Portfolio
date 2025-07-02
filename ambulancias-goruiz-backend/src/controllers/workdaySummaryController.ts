@@ -1,3 +1,4 @@
+//src/controllers/workdaySummaryController.ts
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Dienst from "../models/Dienst";
@@ -21,24 +22,28 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
     } = req.body;
 
     if (!date || !assignmentId || !vehicleNumber || initialKm === undefined || finalKm === undefined) {
-      return res.status(400).json({ message: "Faltan campos obligatorios" });
+      res.status(400).json({ message: "Faltan campos obligatorios" });
+      return
     }
 
     if (!Array.isArray(trips)) {
-      return res.status(400).json({ message: "El campo trips debe ser un array" });
+      res.status(400).json({ message: "El campo trips debe ser un array" });
+      return
     }
 
     const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
     const dienst = await Dienst.findOne({ "assignments._id": assignmentObjectId });
 
     if (!dienst) {
-      return res.status(404).json({ message: "Dienst no encontrado con ese assignmentId" });
+      res.status(404).json({ message: "Dienst no encontrado con ese assignmentId" });
+      return
     }
 
     const assignment = dienst.assignments.find(a => a._id?.toString() === assignmentObjectId.toString());
 
     if (!assignment) {
-      return res.status(404).json({ message: "Asignación no encontrada" });
+      res.status(404).json({ message: "Asignación no encontrada" });
+      return
     }
 
     const { driver, medic } = assignment;
@@ -102,7 +107,8 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
       !Array.isArray(trips) ||
       !partialClosureReason
     ) {
-      return res.status(400).json({ message: "Faltan datos para el cierre parcial." });
+       res.status(400).json({ message: "Faltan datos para el cierre parcial." });
+       return
     }
 
     const totalEffectivePatients = calculateEffectivePatients(trips, date);
