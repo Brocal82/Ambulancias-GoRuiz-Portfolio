@@ -3,7 +3,7 @@ import { Trip } from "../types/Trip";
 
 export function calculateEffectivePatients(trips: Trip[], dienstDate: string): number {
   return trips.reduce((total, trip) => {
-    if (trip.wasCancelled && !trip.cancelledAtPickup) return total;
+    if (trip.wasCancelled && trip.countsTrip !== 1) return total;
 
     let multiplier = 1;
     const km = trip.kmStart !== undefined && trip.kmEnd !== undefined
@@ -26,3 +26,4 @@ export function calculateEffectivePatients(trips: Trip[], dienstDate: string): n
     return total + multiplier;
   }, 0);
 }
+
