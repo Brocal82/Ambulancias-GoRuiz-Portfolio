@@ -1,7 +1,7 @@
 //src/components/workday/ReviewSummary.tsx
 import React from "react";
 import type { Trip } from "../../types/trip";
-import type { AssignedDay } from "../../types/assignedDay";
+import type { AssignedDayFull } from "../../types/assignedDay";
 
 /* ---------- helpers ---------- */
 const calcTripKm = (t: Trip) => Math.max(0, t.kmEnd - t.kmStart);
@@ -21,7 +21,7 @@ const getMultiplier = (t: Trip, totalKm: number, isWeekendLate: boolean) => {
 };
 
 interface Props {
-  assignedDay: AssignedDay;
+  assignedDay: AssignedDayFull;
   vehicleNumber: string;
   initialKm: number;
   finalKm: number;

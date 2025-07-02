@@ -3,7 +3,7 @@ import { toast } from "react-toastify";
 
 import ReviewSummary from "./ReviewSummary";
 import type { Trip } from "../../types/trip";
-import type { AssignedDay } from "../../types/assignedDay";
+import type { AssignedDayFull } from "../../types/assignedDay";
 import { calculateEffectivePatients } from "../../utils/prämienUtils";
 
 interface FinalReviewModalProps {
@@ -15,7 +15,7 @@ interface FinalReviewModalProps {
   vehicleNumber: string;
   initialKm: string;
   finalKm: string;
-  assignedDay: AssignedDay;
+  assignedDay: AssignedDayFull;
 }
 
 const FinalReviewModal: React.FC<FinalReviewModalProps> = ({

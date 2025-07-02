@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import type { Trip } from "../../types/trip";
-import type { AssignedDay } from "../../types/assignedDay";
+import type { AssignedDayFull } from "../../types/assignedDay";
 import ReviewSummary from "./ReviewSummary";
 import { toast } from "react-toastify";
 import { calculateEffectivePatients } from "../../utils/prämienUtils";
 
 interface Props {
   trips: Trip[];
-  assignedDay: AssignedDay;
+  assignedDay: AssignedDayFull;
   vehicleNumber: string;
   initialKm: string;
   finalKm: string;
