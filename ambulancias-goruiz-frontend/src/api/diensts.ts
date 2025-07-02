@@ -1,7 +1,7 @@
 // frontend/src/api/diensts.ts
 import axios from './axios';
 import type { Dienst } from '../types/dienst';
-import type { AssignedDay } from '../types/assignedDay';
+import type { AssignedDayFull } from '../types/assignedDay';
 
 // Obtener Diensts del usuario
 export const getDienstByUser = async (userId: string, token: string): Promise<Dienst[]> => {
@@ -67,8 +67,8 @@ export const removeAssignment = async (
 export const getAssignedDaysForUser = async (
   userId: string,
   token: string
-): Promise<AssignedDay[]> => {
-  const response = await axios.get<AssignedDay[]>(`/diensts/assigned-days/${userId}`, {
+): Promise<AssignedDayFull[]> => {
+  const response = await axios.get<AssignedDayFull[]>(`/diensts/assigned-days/${userId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;

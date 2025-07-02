@@ -6,7 +6,7 @@ import { getAssignedDaysForUser } from "../api/diensts";
 import { useAuth } from "../hooks/useAuth";
 import { toast } from "react-toastify";
 import type { Trip, TripData } from "../types/trip";
-import type { AssignedDay } from "../types/assignedDay";
+import type { AssignedDayFull } from "../types/assignedDay";
 import TripModal from "../components/trips/TripModal";
 import { useNavigate } from "react-router-dom";
 import FinalReviewModal from "../components/workday/FinalReviewModal";
@@ -49,7 +49,7 @@ const crossesMidnight = (start: string, end: string) => {
 
 /** Devuelve true si AHORA mismo estoy dentro de un Dienst,
  *  soportando turno nocturno que comenzó ayer.             */
-const isNowWithinDienst = (dienst: AssignedDay) => {
+const isNowWithinDienst = (dienst: AssignedDayFull) => {
   const now = new Date();
   const [sH, sM] = dienst.startTime.split(":").map(Number);
   const [eH, eM] = dienst.endTime.split(":").map(Number);
@@ -78,7 +78,7 @@ const MyWorkday = () => {
   const [reports, setReports] = useState("");
 
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [assignedDay, setAssignedDay] = useState<AssignedDay | null>(null);
+  const [assignedDay, setAssignedDay] = useState<AssignedDayFull | null>(null);
   const [canStartWork, setCanStartWork] = useState(false);
   const [vehicleNumber, setVehicleNumber] = useState("");
 
@@ -239,7 +239,7 @@ const handleConfirmAmbulanceData = () => {
   }, [token, user?._id, today]);
 
 
-  const checkStartPermission = (dienst: AssignedDay) => {
+  const checkStartPermission = (dienst: AssignedDayFull) => {
     const [startHour, startMinute] = dienst.startTime.split(':').map(Number);
     const now = new Date();
     const dienstStart = new Date();
