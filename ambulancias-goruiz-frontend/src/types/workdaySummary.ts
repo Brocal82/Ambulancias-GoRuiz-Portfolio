@@ -1,23 +1,28 @@
-// frontend/src/types/workdaySummary.ts
-import type { Trip } from "./trip";   // ← ajusta la ruta si tu tipo Trip está en otro lugar
+import type { Trip } from "./trip";
 
-/** Payload que se envía al endpoint /workday-summary/partial */
+export interface PopulatedUser {
+  _id: string;
+  name: string;
+  lastName: string;
+}
+
 export interface PartialSummaryPayload {
+  // igual que antes...
   date: string;
   assignmentId: string;
   vehicleNumber: string;
   initialKm: number;
-  finalKm: number;       // ✅ nuevo obligatorio
+  finalKm: number;
   trips: Trip[];
   totalDienstKm: number;
   partialClosureReason: string;
-  driver: string;        // ✅ nuevo obligatorio
-  medic: string;         // ✅ nuevo obligatorio
+  driver: string;
+  medic: string;
   isFinalClosure?: false;
 }
 
-/** Payload que se envía al endpoint /workday-summary (cierre total) */
 export interface FinalSummaryPayload {
+  // igual que antes...
   date: string;
   assignmentId: string;
   vehicleNumber: string;
@@ -28,17 +33,20 @@ export interface FinalSummaryPayload {
   driver: string;
   medic: string;
   extraNote?: string;
-  finalClosureReason?: string; 
+  finalClosureReason?: string;
   isFinalClosure: true;
 }
 
-/** Tipo usado por el admin para visualizar cualquier resumen (final o parcial) */
+/**
+ * Tipo usado por el admin para visualizar cualquier resumen (final o parcial).
+ * Driver y Medic son strings o objetos poblados.
+ */
 export interface WorkdaySummary {
   _id: string;
   date: string;
   assignmentId: string;
-  driver: string;
-  medic: string;
+  driver: string | PopulatedUser;
+  medic: string | PopulatedUser;
   vehicleNumber: string;
   initialKm: number;
   finalKm: number;
@@ -49,6 +57,3 @@ export interface WorkdaySummary {
   isFinalClosure: boolean;
   trips: Trip[];
 }
-
-
-

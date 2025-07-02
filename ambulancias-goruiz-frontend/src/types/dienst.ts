@@ -1,5 +1,3 @@
-// frontend/src/types/dienst.ts
-
 export interface UserRef {
   _id: string;
   name: string;
@@ -7,8 +5,6 @@ export interface UserRef {
   ambulanceRole?: 'driver' | 'medic' | 'both';
   pscheinExpiry?: string;
 }
-
-
 
 export interface DienstAssignment {
   _id: string;
@@ -20,13 +16,12 @@ export interface DienstAssignment {
   medic: string | UserRef;
 }
 
-
 export interface Dienst {
   _id: string;
   dienstNumber: number;
   weekStartDate: string;
   weekEndDate: string;
-  assignments: (DienstAssignment | UpdateAssignment)[];
+  assignments: DienstAssignment[]; // ✅ Solo tipo completo
 }
 
 export interface UpdateAssignment {
