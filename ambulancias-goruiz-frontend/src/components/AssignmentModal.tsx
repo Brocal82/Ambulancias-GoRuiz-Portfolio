@@ -1,3 +1,4 @@
+//frontend/src/components/workday/AssignmentModal.tsx
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { updateDienstPartial, removeAssignment } from "../api/diensts";
@@ -5,7 +6,7 @@ import { getAvailableUsersForDate } from "../api/users";
 import { getPscheinStatus } from "../utils/pscheinUtils";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import type { UserRef, UpdateAssignment } from "../types/dienst";
+import type { UserRef, UpdateAssignment, Dienst } from "../types/dienst";
 import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import type { FlexibleAssignment } from "../types/assignment";
 
@@ -125,7 +126,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         assignments: [updatedAssignment],
       };
 
-      await updateDienstPartial(dienstId, updatedData, token);
+      await updateDienstPartial(dienstId, updatedData as unknown as Partial<Dienst>, token);
       toast.success("✅ Cambios guardados correctamente");
       onClose();
       onUpdate();
