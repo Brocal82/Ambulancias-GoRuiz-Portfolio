@@ -1,4 +1,4 @@
-// workdayKey.ts
+//src/utils/workdayKey.ts
 
 // 🔒 Cierre del día (por usuario)
 export const closedKey = (assignmentId: string, userId: string) =>
