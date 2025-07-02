@@ -57,9 +57,15 @@ const ReviewSummary: React.FC<Props> = ({
           </p>
           <p>
             👥{" "}
-            {assignedDay.driver.lastName}, {assignedDay.driver.name} &nbsp;/&nbsp;
-            {assignedDay.medic.lastName}, {assignedDay.medic.name}
+            {typeof assignedDay.driver === "string"
+              ? assignedDay.driver
+              : `${assignedDay.driver.lastName}, ${assignedDay.driver.name}`}
+            &nbsp;/&nbsp;
+            {typeof assignedDay.medic === "string"
+              ? assignedDay.medic
+              : `${assignedDay.medic.lastName}, ${assignedDay.medic.name}`}
           </p>
+
         </div>
 
         {/* derecha */}
