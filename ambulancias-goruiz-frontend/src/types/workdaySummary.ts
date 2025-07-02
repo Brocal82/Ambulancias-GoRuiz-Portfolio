@@ -32,4 +32,23 @@ export interface FinalSummaryPayload {
   isFinalClosure: true;
 }
 
+/** Tipo usado por el admin para visualizar cualquier resumen (final o parcial) */
+export interface WorkdaySummary {
+  _id: string;
+  date: string;
+  assignmentId: string;
+  driver: string;
+  medic: string;
+  vehicleNumber: string;
+  initialKm: number;
+  finalKm: number;
+  totalDienstKm: number;
+  totalEffectivePatients: number;
+  extraNote?: string;
+  partialClosureReason?: string;
+  isFinalClosure: boolean;
+  trips: Trip[];
+}
+
+
 

@@ -144,3 +144,15 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error al guardar el cierre parcial." });
   }
 };
+
+// GET /workday-summary → Obtener todos los resúmenes de jornada
+export const getAllWorkdaySummaries = async (req: Request, res: Response) => {
+  try {
+    const summaries = await WorkdaySummary.find().sort({ date: -1 }); // más recientes primero
+    res.status(200).json(summaries);
+  } catch (error) {
+    console.error("❌ Error al obtener resúmenes:", error);
+    res.status(500).json({ message: "Error al obtener los resúmenes." });
+  }
+};
+

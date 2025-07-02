@@ -31,6 +31,14 @@ const AdminDashboard = () => {
           <p className="text-sm text-gray-600">Añade y edita hospitales</p>
         </Link>
 
+        <Link
+          to="/admin/summaries"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
+          <h2 className="text-lg font-semibold mb-2">📄 Reportes Finales</h2>
+          <p className="text-sm text-gray-600">Ver cierres de jornada enviados</p>
+        </Link>
+
         <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
           <h2 className="text-lg font-semibold mb-2">🔧 Mecánicos</h2>
           <p className="text-sm text-gray-600">Revisa reportes de ambulancias</p>
@@ -51,3 +59,5 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
+

@@ -20,6 +20,7 @@ import AdminUsersPage from './pages/AdminUsersPage';
 import AdminDienstsPage from './pages/AdminDienstsPage';
 import AdminHospitalsPage from './pages/AdminHospitalsPage';
 import MyWorkday from './pages/MyWorkDay';
+import AdminSummariesPage from './pages/AdminSummariesPage';
 
 export default function App() {
   return (
@@ -42,6 +43,8 @@ export default function App() {
             <Route path="/admin/users" element={<AppLayout><AdminUsersPage /></AppLayout>} />
             <Route path="/admin/diensts" element={<AppLayout><AdminDienstsPage /></AppLayout>} />
             <Route path="/admin/hospitals" element={<AppLayout><AdminHospitalsPage /></AppLayout>} />
+            <Route path="/admin/summaries" element={<AppLayout><AdminSummariesPage /></AppLayout>} />
+
           </Route>
 
         </Routes>
