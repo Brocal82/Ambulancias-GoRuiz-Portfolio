@@ -56,15 +56,15 @@ const AdminSummariesPage = () => {
                 <tr>
                   <th className="p-2">Dienst / Horario</th>
                   <th>Ambulancia</th>
-                  <th>Driver</th>
-                  <th>Medic</th>
-                  <th>Pacientes</th>
+                  <th>👥 Team</th>
                   <th>Km (inicio → fin)</th>
                   <th>Km Totales</th>
+                  <th>Pacientes</th>
                   <th>Nota / Motivo</th>
                   <th>Cierre</th>
                 </tr>
               </thead>
+
               <tbody className="text-sm text-center">
                 {summariesForDate
                   .sort((a, b) => {
@@ -102,28 +102,31 @@ const AdminSummariesPage = () => {
                             </span>
                           </td>
                           <td>{s.vehicleNumber}</td>
-                          <td>
+                          <td className="whitespace-nowrap leading-tight">
                             {typeof s.driver === "object" && s.driver !== null
                               ? `${s.driver.lastName}, ${s.driver.name}`
                               : "-"}
-                          </td>
-                          <td>
+                            <br />
                             {typeof s.medic === "object" && s.medic !== null
                               ? `${s.medic.lastName}, ${s.medic.name}`
                               : "-"}
                           </td>
-                          <td>{s.totalEffectivePatients ?? "-"}</td>
-                          <td>
-                            {s.initialKm} → {s.finalKm}
+
+                          <td className="whitespace-nowrap leading-tight text-sm">
+                            <span className="text-gray-500">Inicio:</span> {s.initialKm}
+                            <br />
+                            <span className="text-gray-500">Final:</span> {s.finalKm}
                           </td>
+
                           <td>{s.totalDienstKm}</td>
+                          <td>{s.totalEffectivePatients ?? "-"}</td>
                           <td>{s.extraNote || s.partialClosureReason || "-"}</td>
                           <td>{s.isFinalClosure ? "✅ Final" : "🕗 Parcial"}</td>
                         </tr>
 
                         {isExpanded && (
                           <tr key={`${key}-details`}>
-                            <td colSpan={9} className="p-4 bg-gray-50">
+                             <td colSpan={9} className="p-4 bg-green-50 border border-green-400 rounded-lg shadow-sm">
                               <ReviewSummary
                                 assignedDay={{
                                   assignmentId: s.assignmentId,

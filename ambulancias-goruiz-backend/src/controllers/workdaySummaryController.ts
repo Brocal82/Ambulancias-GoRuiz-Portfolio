@@ -152,6 +152,7 @@ export const getAllWorkdaySummaries = async (req: Request, res: Response) => {
   .sort({ date: -1 })
   .populate('driver', 'name lastName')
   .populate('medic', 'name lastName')
+  .populate('trips')
   .lean();
 
 const diensts = await Dienst.find().lean();

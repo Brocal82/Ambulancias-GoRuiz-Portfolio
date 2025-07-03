@@ -55,16 +55,25 @@ const ReviewSummary: React.FC<Props> = ({
           <p>
             ⏰ {assignedDay.startTime} – {assignedDay.endTime}
           </p>
-          <p>
-            👥{" "}
-            {typeof assignedDay.driver === "string"
-              ? assignedDay.driver
-              : `${assignedDay.driver.lastName}, ${assignedDay.driver.name}`}
-            &nbsp;/&nbsp;
-            {typeof assignedDay.medic === "string"
-              ? assignedDay.medic
-              : `${assignedDay.medic.lastName}, ${assignedDay.medic.name}`}
-          </p>
+          <div>
+  <p className="font-semibold">👥 Team:</p>
+  <div className="ml-2 space-y-1">
+    <p>
+      {typeof assignedDay.driver === "string"
+        ? assignedDay.driver
+        : `${assignedDay.driver.lastName}, ${assignedDay.driver.name}`}
+    </p>
+    <p>
+      {typeof assignedDay.medic === "string"
+        ? assignedDay.medic
+        : `${assignedDay.medic.lastName}, ${assignedDay.medic.name}`}
+    </p>
+  </div>
+</div>
+
+        </div>
+        <div>
+
 
         </div>
 
@@ -83,33 +92,56 @@ const ReviewSummary: React.FC<Props> = ({
             <tr>
               <th className="p-1">Auftrag</th>
               <th>Paciente</th>
-              <th>Hora aviso</th>
+              <th>📍 Recogida</th>
+              <th>🎯 Destino</th>
+              <th>📞 Aviso</th>
+              <th>🏠 Llega domicilio</th>
               <th>Km dom.</th>
+              <th>👥 Carga</th>
+              <th>🏥 Llega destino</th>
               <th>Km dest.</th>
-              <th>Hora libre</th>
+              <th>🕓 Libre</th>
               <th>Km diff</th>
-              <th>⨉</th>
+              <th>Prämie</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white">
             {trips.map((t, i) => {
               const diff = calcTripKm(t);
               const mult = getMultiplier(t, diff, weekendLate);
               return (
-                <tr key={i} className="border-t">
-                  <td className={`p-1 text-center font-semibold ${t.wasCancelled ? "text-red-600" : ""}`}> {t.auftragNumber}</td>
-                  <td className="text-center">{t.patientName || "Sin nombre"}</td>
-                  <td className="text-center">{t.timeWarning}</td>
-                  <td className="text-center">{t.kmStart}</td>
-                  <td className="text-center">{t.kmEnd}</td>
-                  <td className="text-center">{t.timeEnd}</td>
-                  <td className="text-center">{diff}</td>
-                  <td className="text-center font-bold">{mult}x</td>
-                </tr>
+                <React.Fragment key={i}>
+                  <tr className="border-t">
+                    <td className={`p-1 text-center font-semibold ${t.wasCancelled ? "text-red-600" : ""}`}>
+                      {t.auftragNumber}
+                    </td>
+                    <td className="text-center">{t.patientName || "Sin nombre"}</td>
+                    <td className="text-center">{t.fromAddress}</td>
+                    <td className="text-center">{t.toAddress}</td>
+                    <td className="text-center">{t.timeWarning}</td>
+                    <td className="text-center">{t.timeAtHome}</td>
+                    <td className="text-center">{t.kmStart}</td>
+                    <td className="text-center">{t.timePickup}</td>
+                    <td className="text-center">{t.timeArrival}</td>
+                    <td className="text-center">{t.kmEnd}</td>
+                    <td className="text-center">{t.timeEnd}</td>
+                    <td className="text-center">{diff}</td>
+                    <td className="text-center font-bold">{mult}x</td>
+                  </tr>
+                  {t.reports && t.reports.trim() !== "" && (
+                    <tr className="text-[11px] text-gray-700 bg-gray-50">
+                      <td colSpan={13} className="italic px-2 py-1">
+                        📝 Observaciones: {t.reports}
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })}
           </tbody>
         </table>
+
+
       </div>
     </div>
   );
