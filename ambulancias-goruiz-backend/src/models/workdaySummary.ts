@@ -54,6 +54,7 @@ export interface IWorkdaySummary extends Document {
   partialClosureReason?: string;
   extraNote?: string;
   totalEffectivePatients: number;
+  totalRealTrips: number;
 }
 
 /* ─────────────────────────────────────────────
@@ -73,6 +74,8 @@ const workdaySummarySchema = new Schema<IWorkdaySummary>({
   partialClosureReason:{ type: String, default: "" },
   extraNote:           { type: String, default: "" },
   totalEffectivePatients: { type: Number, required: true },
+  totalRealTrips:        { type: Number, required: true },
+
 });
 
 /* ─────────────────────────────────────────────

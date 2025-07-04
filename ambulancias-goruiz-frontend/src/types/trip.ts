@@ -19,6 +19,7 @@ export interface Trip {
   kmEnd: number;
   totalKm?: number;       // nuevo, total km punto A a B
   reports?: string;       // nuevo, observaciones
+  countsForSummary: boolean;
   wasCancelled: boolean;
   cancelledAtPickup: boolean;
   countsTrip?: number;

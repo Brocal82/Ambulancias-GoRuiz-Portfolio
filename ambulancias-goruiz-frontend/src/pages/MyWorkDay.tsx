@@ -130,6 +130,7 @@ const MyWorkday = () => {
     cancelledAtPickup: false,
     countsTrip: 1,
     reports: "",
+     countsForSummary: true,
   });
 
   const navigate = useNavigate();
@@ -409,6 +410,7 @@ useEffect(() => {
         cancelledAtPickup: false,
         countsTrip,
         reports,
+        countsForSummary: true,
       };
 
       const createdTrip = await createTrip(newTrip);
@@ -505,6 +507,7 @@ useEffect(() => {
       setFinalAmbulanceKm(String(finalKmFromModal));
 
       const totalDienstKm = finalKmFromModal - initialKmNumber;
+
 
 
       const summaryData: FinalSummaryPayload = {
@@ -657,6 +660,7 @@ useEffect(() => {
       cancelledAtPickup: false,
       countsTrip: 1,
       reports: "",
+      countsForSummary: true,
     });
 
     setAnschlussActive(true);

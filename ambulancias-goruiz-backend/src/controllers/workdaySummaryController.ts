@@ -46,9 +46,29 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
       return
     }
 
+    console.log("📦 Trips recibidos en createWorkdaySummary:");
+trips.forEach((trip: any, index: number) => {
+  console.log(`  🚑 Trip ${index + 1}:`, {
+    auftragNumber: trip.auftragNumber,
+    wasCancelled: trip.wasCancelled,
+    cancelledAtPickup: trip.cancelledAtPickup
+  });
+});
+
+
     const { driver, medic } = assignment;
     const totalEffectivePatients = calculateEffectivePatients(trips, date);
     const totalDienstKm = finalKm - initialKm;
+    const totalRealTrips = trips.filter(t => {
+      const wasCancelled = t.wasCancelled === true;
+      const cancelledAtPickup = t.cancelledAtPickup === true;
+      return !wasCancelled || cancelledAtPickup;
+    }).length;
+
+    console.log("✅ totalRealTrips calculado:", totalRealTrips);
+
+
+
 
     const newSummary = await WorkdaySummary.create({
       date,
@@ -63,6 +83,7 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
       extraNote,
       isFinalClosure: true,
       totalEffectivePatients,
+      totalRealTrips,
     });
 
     if (trips.length > 0) {
@@ -113,6 +134,14 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
 
     const totalEffectivePatients = calculateEffectivePatients(trips, date);
     const totalDienstKm = finalKm - initialKm;
+    const totalRealTrips = trips.filter(t => {
+    const wasCancelled = t.wasCancelled === true;
+    const cancelledAtPickup = t.cancelledAtPickup === true;
+    return !wasCancelled || cancelledAtPickup;
+  }).length;
+
+
+
 
     const summary = new WorkdaySummary({
       date,
@@ -127,6 +156,7 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
       partialClosureReason,
       isFinalClosure: false,
       totalEffectivePatients,
+      totalRealTrips,
     });
 
     await summary.save();

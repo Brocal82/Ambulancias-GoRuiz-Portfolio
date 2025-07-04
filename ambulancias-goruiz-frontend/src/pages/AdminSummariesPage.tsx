@@ -1,3 +1,4 @@
+//frontend/src/pages/AdminSummariesPage
 import { useEffect, useState, Fragment } from "react";
 import { getAllSummaries } from "../api/workdaySummary";
 import type { WorkdaySummary } from "../types/workdaySummary";
@@ -19,6 +20,8 @@ const AdminSummariesPage = () => {
         const data = await getAllSummaries(token);
         setSummaries(data);
         console.log("✅ Summaries recibidos:", data);
+        console.log("🧾 totalRealTrips:", data.map(s => s.totalRealTrips));
+
       } catch (error) {
         console.error("❌ Error al obtener resúmenes:", error);
       } finally {
@@ -59,7 +62,8 @@ const AdminSummariesPage = () => {
                   <th>👥 Team</th>
                   <th>Km (inicio → fin)</th>
                   <th>Km Totales</th>
-                  <th>Pacientes</th>
+                  <th>🧾 Viajes</th>
+                  <th>💰 Prämie</th>
                   <th>Nota / Motivo</th>
                   <th>Cierre</th>
                 </tr>
@@ -84,16 +88,15 @@ const AdminSummariesPage = () => {
                     return (
                       <Fragment key={key}>
                         <tr
-                          className={`border-t hover:bg-blue-50 cursor-pointer ${
-                            isExpanded
+                          className={`border-t hover:bg-blue-50 cursor-pointer ${isExpanded
                               ? "bg-blue-100"
                               : !s.isFinalClosure
-                              ? "bg-orange-50"
-                              : ""
-                          }`}
-
+                                ? "bg-orange-50"
+                                : ""
+                            }`}
                           onClick={() => setExpandedKey(isExpanded ? null : key)}
                         >
+                          {/* Dienst / Horario */}
                           <td className="p-2 font-semibold">
                             Dienst #{s.dienstNumber ?? "-"}
                             <br />
@@ -101,7 +104,11 @@ const AdminSummariesPage = () => {
                               {s.startTime && s.endTime ? `${s.startTime} → ${s.endTime}` : "Sin horario"}
                             </span>
                           </td>
+
+                          {/* Ambulancia */}
                           <td>{s.vehicleNumber}</td>
+
+                          {/* 👥 Team */}
                           <td className="whitespace-nowrap leading-tight">
                             {typeof s.driver === "object" && s.driver !== null
                               ? `${s.driver.lastName}, ${s.driver.name}`
@@ -112,21 +119,33 @@ const AdminSummariesPage = () => {
                               : "-"}
                           </td>
 
+                          {/* Km inicio / fin */}
                           <td className="whitespace-nowrap leading-tight text-sm">
                             <span className="text-gray-500">Inicio:</span> {s.initialKm}
                             <br />
                             <span className="text-gray-500">Final:</span> {s.finalKm}
                           </td>
 
+                          {/* Km totales */}
                           <td>{s.totalDienstKm}</td>
+
+                          {/* 🧾 Viajes */}
+                          <td>{typeof s.totalRealTrips === "number" ? s.totalRealTrips : "-"}</td>
+
+
+                          {/* 💰 Prämie */}
                           <td>{s.totalEffectivePatients ?? "-"}</td>
+
+                          {/* Nota / Motivo */}
                           <td>{s.extraNote || s.partialClosureReason || "-"}</td>
+
+                          {/* Cierre */}
                           <td>{s.isFinalClosure ? "✅ Final" : "🕗 Parcial"}</td>
                         </tr>
 
                         {isExpanded && (
                           <tr key={`${key}-details`}>
-                             <td colSpan={9} className="p-4 bg-green-50 border border-green-400 rounded-lg shadow-sm">
+                            <td colSpan={9} className="p-4 bg-green-50 border border-green-400 rounded-lg shadow-sm">
                               <ReviewSummary
                                 assignedDay={{
                                   assignmentId: s.assignmentId,
@@ -154,6 +173,7 @@ const AdminSummariesPage = () => {
                           </tr>
                         )}
                       </Fragment>
+
                     );
                   })}
               </tbody>

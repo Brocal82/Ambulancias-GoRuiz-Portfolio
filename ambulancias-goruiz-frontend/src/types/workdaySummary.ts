@@ -53,6 +53,7 @@ export interface WorkdaySummary {
   finalKm: number;
   totalDienstKm: number;
   totalEffectivePatients: number;
+  totalRealTrips: number;
   extraNote?: string;
   partialClosureReason?: string;
   isFinalClosure: boolean;
@@ -62,3 +63,4 @@ export interface WorkdaySummary {
   startTime?: string;
   endTime?: string;
 }
+
