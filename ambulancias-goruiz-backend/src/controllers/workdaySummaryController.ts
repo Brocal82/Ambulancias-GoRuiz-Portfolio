@@ -47,16 +47,21 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
     }
 
     console.log("📦 Trips recibidos en createWorkdaySummary:");
-trips.forEach((trip: any, index: number) => {
-  console.log(`  🚑 Trip ${index + 1}:`, {
-    auftragNumber: trip.auftragNumber,
-    wasCancelled: trip.wasCancelled,
-    cancelledAtPickup: trip.cancelledAtPickup
-  });
-});
+    trips.forEach((trip: any, index: number) => {
+      console.log(`  🚑 Trip ${index + 1}:`, {
+        auftragNumber: trip.auftragNumber,
+        wasCancelled: trip.wasCancelled,
+        cancelledAtPickup: trip.cancelledAtPickup
+      });
+    });
 
+
+    const dienstNumber = dienst?.dienstNumber ?? null;
+    const startTime = assignment?.startTime ?? null;
+    const endTime = assignment?.endTime ?? null;
 
     const { driver, medic } = assignment;
+
     const totalEffectivePatients = calculateEffectivePatients(trips, date);
     const totalDienstKm = finalKm - initialKm;
     const totalRealTrips = trips.filter(t => {
@@ -64,6 +69,7 @@ trips.forEach((trip: any, index: number) => {
       const cancelledAtPickup = t.cancelledAtPickup === true;
       return !wasCancelled || cancelledAtPickup;
     }).length;
+
 
     console.log("✅ totalRealTrips calculado:", totalRealTrips);
 
@@ -84,7 +90,11 @@ trips.forEach((trip: any, index: number) => {
       isFinalClosure: true,
       totalEffectivePatients,
       totalRealTrips,
+      dienstNumber,
+      startTime,
+      endTime,
     });
+
 
     if (trips.length > 0) {
       await Trip.updateMany(
@@ -132,13 +142,22 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
        return
     }
 
+    const dienst = await Dienst.findOne({ "assignments._id": assignmentId });
+    const assignment = dienst?.assignments.find(a => a._id?.toString() === assignmentId);
+
+    const dienstNumber = dienst?.dienstNumber ?? null;
+    const startTime = assignment?.startTime ?? null;
+    const endTime = assignment?.endTime ?? null;
+
     const totalEffectivePatients = calculateEffectivePatients(trips, date);
     const totalDienstKm = finalKm - initialKm;
+
     const totalRealTrips = trips.filter(t => {
-    const wasCancelled = t.wasCancelled === true;
-    const cancelledAtPickup = t.cancelledAtPickup === true;
-    return !wasCancelled || cancelledAtPickup;
-  }).length;
+      const wasCancelled = t.wasCancelled === true;
+      const cancelledAtPickup = t.cancelledAtPickup === true;
+      return !wasCancelled || cancelledAtPickup;
+    }).length;
+
 
 
 
@@ -157,7 +176,11 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
       isFinalClosure: false,
       totalEffectivePatients,
       totalRealTrips,
+      dienstNumber,
+      startTime,
+      endTime,
     });
+
 
     await summary.save();
 
@@ -179,41 +202,39 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
 export const getAllWorkdaySummaries = async (req: Request, res: Response) => {
   try {
     const summaries = await WorkdaySummary.find()
-  .sort({ date: -1 })
-  .populate('driver', 'name lastName')
-  .populate('medic', 'name lastName')
-  .populate('trips')
-  .lean();
+      .sort({ date: -1 })
+      .populate('driver', 'name lastName')
+      .populate('medic', 'name lastName')
+      .populate('trips')
+      .lean();
 
-const diensts = await Dienst.find().lean();
+    const diensts = await Dienst.find().lean();
 
-const enriched = summaries.map((s: any) => {
-  const dienst = diensts.find(d =>
-    d.assignments.some(a => a._id && a._id.toString() === s.assignmentId.toString())
+    const enriched = summaries.map((s: any) => {
+      const dienst = diensts.find(d =>
+        d.assignments.some(a => a._id && a._id.toString() === s.assignmentId.toString())
+      );
 
-  );
+      const assignment = dienst?.assignments.find(
+        a => a._id && a._id.toString() === s.assignmentId.toString()
+      );
 
-  const assignment = dienst?.assignments.find(
-  a => a._id && a._id.toString() === s.assignmentId.toString()
-);
+      return {
+        ...s,
+        dienstId: dienst?._id ?? null,
+        dienstNumber: s.dienstNumber ?? dienst?.dienstNumber ?? null,
+        startTime: s.startTime ?? assignment?.startTime ?? null,
+        endTime: s.endTime ?? assignment?.endTime ?? null,
+      };
+    });
 
-
-  return {
-    ...s,
-    dienstId: dienst?._id ?? null,
-    dienstNumber: dienst?.dienstNumber ?? null,
-    startTime: assignment?.startTime ?? null,
-    endTime: assignment?.endTime ?? null,
-  };
-});
-
-res.status(200).json(enriched);
-
+    res.status(200).json(enriched);
   } catch (error) {
     console.error("❌ Error al obtener resúmenes:", error);
     res.status(500).json({ message: "Error al obtener los resúmenes." });
   }
 };
+
 
 
 

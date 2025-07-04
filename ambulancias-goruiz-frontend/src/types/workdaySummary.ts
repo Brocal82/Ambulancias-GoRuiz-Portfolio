@@ -20,23 +20,29 @@ export interface PartialSummaryPayload {
   driver: string;
   medic: string;
   isFinalClosure?: false;
+  dienstNumber?: number;
+  startTime?: string;
+  endTime?: string;
+
 }
 
 export interface FinalSummaryPayload {
-  // igual que antes...
   date: string;
   assignmentId: string;
-  vehicleNumber: string;
-  initialKm: number;
-  finalKm: number;
-  totalDienstKm: number;
-  trips: Trip[];
   driver: string;
   medic: string;
+  vehicleNumber: string;
+  initialKm: number;
+  finalKm?: number;
+  totalDienstKm: number;
+  trips: Trip[];
   extraNote?: string;
-  finalClosureReason?: string;
-  isFinalClosure: true;
+  isFinalClosure: boolean;
+  dienstNumber: number;
+  startTime: string;
+  endTime: string;
 }
+
 
 /**
  * Tipo usado por el admin para visualizar cualquier resumen (final o parcial).

@@ -46,6 +46,9 @@ export interface IWorkdaySummary extends Document {
   driver: Types.ObjectId; // Referencia a User
   medic: Types.ObjectId;  // Referencia a User
   vehicleNumber: string;
+  dienstNumber?: number;   // ✅ NUEVO
+  startTime?: string;      // ✅ NUEVO
+  endTime?: string;        // ✅ NUEVO
   initialKm: number;
   finalKm?: number;
   totalDienstKm: number;
@@ -66,6 +69,9 @@ const workdaySummarySchema = new Schema<IWorkdaySummary>({
   driver:              { type: Schema.Types.ObjectId, ref: "User", required: true },
   medic:               { type: Schema.Types.ObjectId, ref: "User", required: true },
   vehicleNumber:       { type: String, required: true },
+  dienstNumber:        { type: Number },     // ✅ NUEVO
+  startTime:           { type: String },     // ✅ NUEVO
+  endTime:             { type: String },     // ✅ NUEVO
   initialKm:           { type: Number, required: true },
   finalKm:             { type: Number },
   totalDienstKm:       { type: Number, required: true },

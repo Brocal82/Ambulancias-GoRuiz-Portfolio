@@ -509,7 +509,6 @@ useEffect(() => {
       const totalDienstKm = finalKmFromModal - initialKmNumber;
 
 
-
       const summaryData: FinalSummaryPayload = {
         date: today,
         assignmentId: assignedDay.assignmentId,
@@ -522,7 +521,12 @@ useEffect(() => {
         trips,
         extraNote: note,
         isFinalClosure: true,
+        dienstNumber: assignedDay.dienstNumber,
+        startTime: assignedDay.startTime,
+        endTime: assignedDay.endTime,
       };
+
+
 
 
 
@@ -589,7 +593,11 @@ useEffect(() => {
       totalDienstKm,
       partialClosureReason: reason,
       isFinalClosure: false,
-    };
+      dienstNumber: assignedDay.dienstNumber,
+      startTime: assignedDay.startTime,
+      endTime: assignedDay.endTime,
+          
+        };
 
     await sendPartialClosure(payload, token);
 
