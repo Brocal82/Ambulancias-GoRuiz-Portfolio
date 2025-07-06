@@ -21,6 +21,8 @@ import AdminDienstsPage from './pages/AdminDienstsPage';
 import AdminHospitalsPage from './pages/AdminHospitalsPage';
 import MyWorkday from './pages/MyWorkDay';
 import AdminSummariesPage from './pages/AdminSummariesPage';
+import WorkerPrämienPage from './pages/WorkerPrämienPage';
+
 
 export default function App() {
   return (
@@ -38,6 +40,7 @@ export default function App() {
             <Route path="/worker" element={<AppLayout><WorkerDashboard /></AppLayout>} />
             <Route path="/dienst" element={<AppLayout><WorkerDienstsPage /></AppLayout>} />
             <Route path="/worker/hospitals" element={<AppLayout><WorkerHospitalsPage /></AppLayout>} />
+            <Route path="/worker/praemien" element={<AppLayout><WorkerPrämienPage /></AppLayout>} />
             <Route path="/my-workday" element={<AppLayout><MyWorkday /></AppLayout>} />
             <Route path="/admin" element={<AppLayout><AdminDashboard /></AppLayout>} />
             <Route path="/admin/users" element={<AppLayout><AdminUsersPage /></AppLayout>} />
