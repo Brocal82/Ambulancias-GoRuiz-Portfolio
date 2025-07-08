@@ -87,7 +87,10 @@ const workdaySummarySchema = new Schema<IWorkdaySummary>({
 /* ─────────────────────────────────────────────
  * 4. Export del modelo
  * ───────────────────────────────────────────── */
-export default mongoose.model<IWorkdaySummary>(
+const WorkdaySummary = mongoose.models.WorkdaySummary || mongoose.model<IWorkdaySummary>(
   "WorkdaySummary",
   workdaySummarySchema
 );
+
+export default WorkdaySummary;
+

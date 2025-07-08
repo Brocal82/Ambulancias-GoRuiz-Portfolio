@@ -11,6 +11,7 @@ import dienstRoutes from './routes/dienstRoutes';
 import hospitalRoutes from './routes/hospitalRoutes';
 import tripRoutes from './routes/tripRoutes'
 import workdaySummaryRoutes from './routes/workdaySummaryRoutes'
+import praemienRoutes from  './routes/praemienRoutes'
 
 // ✅ Importamos el limpiador de Diensts antiguos
 import  cleanupOldDiensts  from './utils/cleanupOldDiensts';
@@ -43,6 +44,8 @@ app.use('/api/diensts', dienstRoutes);
 app.use('/api/hospitals', hospitalRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/workday-summary', workdaySummaryRoutes);
+app.use('/api/praemien', praemienRoutes);
+
 
 
 // Conexión y arranque del servidor
