@@ -160,7 +160,7 @@ const handleEdit = (user: User) => {
               <tr
                 key={user._id}
                 className={`hover:bg-blue-50 cursor-pointer ${borderColor}`}
-                onClick={() => navigate(`/admin/user/${user._id}`)}
+                onClick={() => handleEdit(user)}
 
               >
                 <td className="py-2 px-4 border">{user.lastName}</td>
