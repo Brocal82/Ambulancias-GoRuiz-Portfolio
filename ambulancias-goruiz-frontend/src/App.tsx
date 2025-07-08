@@ -22,6 +22,7 @@ import AdminHospitalsPage from './pages/AdminHospitalsPage';
 import MyWorkday from './pages/MyWorkDay';
 import AdminSummariesPage from './pages/AdminSummariesPage';
 import WorkerPrämienPage from './pages/WorkerPraemienPage';
+import AdminUserDetailDashboard from './pages/AdminUserDetailDashboard';
 
 
 export default function App() {
@@ -47,6 +48,8 @@ export default function App() {
             <Route path="/admin/diensts" element={<AppLayout><AdminDienstsPage /></AppLayout>} />
             <Route path="/admin/hospitals" element={<AppLayout><AdminHospitalsPage /></AppLayout>} />
             <Route path="/admin/summaries" element={<AppLayout><AdminSummariesPage /></AppLayout>} />
+            <Route path="/admin/user/:id" element={<AppLayout><AdminUserDetailDashboard /></AppLayout>} />
+
 
           </Route>
 

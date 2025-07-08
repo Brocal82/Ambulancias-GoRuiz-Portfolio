@@ -5,9 +5,14 @@ import UserEditModal from '../components/users/UserEditModal';
 import type { User } from '../types/user';
 import { toast } from 'react-toastify';
 import { getPscheinStatus } from '../utils/pscheinUtils';
+import { useNavigate } from 'react-router-dom';
+
+
+
 
 const AdminUsersPage = () => {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,10 +40,10 @@ const AdminUsersPage = () => {
     fetchUsers();
   }, [fetchUsers]);
 
-  const handleEdit = (user: User) => {
-    setSelectedUser(user);
-    setIsModalOpen(true);
-  };
+const handleEdit = (user: User) => {
+  navigate(`/admin/user/${user._id}`);
+};
+
 
   const handleCloseModal = () => {
     setSelectedUser(null);
@@ -155,7 +160,8 @@ const AdminUsersPage = () => {
               <tr
                 key={user._id}
                 className={`hover:bg-blue-50 cursor-pointer ${borderColor}`}
-                onClick={() => handleEdit(user)}
+                onClick={() => navigate(`/admin/user/${user._id}`)}
+
               >
                 <td className="py-2 px-4 border">{user.lastName}</td>
                 <td className="py-2 px-4 border">{user.name}</td>
