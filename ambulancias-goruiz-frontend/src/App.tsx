@@ -21,7 +21,7 @@ import AdminDienstsPage from './pages/AdminDienstsPage';
 import AdminHospitalsPage from './pages/AdminHospitalsPage';
 import MyWorkday from './pages/MyWorkDay';
 import AdminSummariesPage from './pages/AdminSummariesPage';
-import WorkerPrämienPage from './pages/WorkerPrämienPage';
+import WorkerPrämienPage from './pages/WorkerPraemienPage';
 
 
 export default function App() {

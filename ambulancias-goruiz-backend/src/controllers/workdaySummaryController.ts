@@ -6,7 +6,7 @@ import Trip from "../models/Trip";
 import WorkdaySummary from "../models/workdaySummary";
 import { calculateEffectivePatients } from "../utils/prämienUtils";
 
-/* ─────────────────────────────
+/* ─────────────────────────────s
  * CIERRE COMPLETO DEL DÍA
  * ───────────────────────────── */
 export const createWorkdaySummary = async (req: Request, res: Response) => {

@@ -1,3 +1,9 @@
+import { fileURLToPath } from 'url'
+import { dirname } from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
@@ -16,6 +22,11 @@ export default tseslint.config(
     plugins: {
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+    },
+    parserOptions: {
+      project: './tsconfig.app.json',
+      tsconfigRootDir: __dirname,
+      sourceType: 'module',
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
