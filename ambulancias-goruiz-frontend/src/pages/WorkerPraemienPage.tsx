@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { getMonthlyPraemienSummary } from '../api/praemien';
 import type { MonthlyPraemienDay } from '../api/praemien';
+import { saveMonthlyPraemie } from '../api/praemienHistory';
 import { useAuth } from '../hooks/useAuth';
 
 const PRAMIEN_LEVELS = [7, 8, 9, 10];
@@ -41,6 +42,26 @@ useEffect(() => {
   else if (media >= 7) setPremieLevel('🥉 Prämie 7');
   else setPremieLevel('❌ No alcanza mínimo');
 }, [media]);
+
+useEffect(() => {
+  if (!token) return;
+  if (media === 0) return;
+
+  console.log('Guardando resumen mensual...', { media, premieLevel });
+
+  const now = new Date();
+  const monthString = now.toISOString().slice(0, 7); // 'YYYY-MM'
+
+  saveMonthlyPraemie(token, {
+    month: monthString,
+    averagePatients: media,
+    premieLevel,
+  })
+    .then(() => console.log('Resumen mensual guardado correctamente'))
+    .catch(() => console.warn('No se pudo guardar el resumen mensual.'));
+}, [media, premieLevel, token]);
+
+
 
   // Calcula % cumplimiento para cada prämie y diferencia media diaria
   const calculatePraemieStats = (threshold: number) => {
