@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import Profile from './Profile';
 
 
 const TABS = [
@@ -32,7 +33,8 @@ const AdminUserDetailDashboard = () => {
       </nav>
 
       <section className="bg-white rounded p-6 shadow min-h-[400px]">
-        {activeTab === 'Perfil' && <p>Perfil del usuario (userId: {userId})</p>}
+        {activeTab === 'Perfil' && userId && <Profile userId={userId} />}
+
         {activeTab === 'Diensts' && <p>Listado de Diensts para el usuario</p>}
         {activeTab === 'Premien' && <p>Historial y Prämien actuales</p>}
         {activeTab === 'Vacaciones' && <p>Gestión de vacaciones (pendiente)</p>}

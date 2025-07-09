@@ -8,8 +8,6 @@ import { getPscheinStatus } from '../utils/pscheinUtils';
 import { useNavigate } from 'react-router-dom';
 
 
-
-
 const AdminUsersPage = () => {
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -160,7 +158,7 @@ const handleEdit = (user: User) => {
               <tr
                 key={user._id}
                 className={`hover:bg-blue-50 cursor-pointer ${borderColor}`}
-                onClick={() => handleEdit(user)}
+                onClick={() => navigate(`/admin/user/${user._id}`)}
 
               >
                 <td className="py-2 px-4 border">{user.lastName}</td>

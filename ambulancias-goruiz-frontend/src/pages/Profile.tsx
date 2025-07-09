@@ -6,27 +6,38 @@ import { getUserById, updateUserProfile } from '../api/users';
 import { getPscheinStatus } from '../utils/pscheinUtils';
 import type { User, AmbulanceRole } from '../types/user';
 
-const Profile = () => {
-  const { userId, token, role, login } = useAuth(); // ✅ usamos 'role' aquí
+
+interface ProfileProps {
+  userId?: string; // <-- Añadido
+}
+
+const Profile = ({ userId }: ProfileProps) => {
+  const { userId: userIdFromAuthContext, token, role, login } = useAuth(); // renombrado userId
   const [formData, setFormData] = useState<Partial<User>>({});
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!userId || !token) return;
-      try {
-        const fetchedUser = await getUserById(userId, token);
-        setFormData(fetchedUser);
-      } catch (error) {
-        console.error(error);
-        setMessage('Error al cargar el perfil');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [userId, token]);
+useEffect(() => {
+  setLoading(true);  // <--- Reinicia loading cada vez que cambia el userId
+  const fetchData = async () => {
+    if (!token) return;
+
+    const idToFetch = userId || userIdFromAuthContext;
+    if (!idToFetch) return;
+
+    try {
+      const fetchedUser = await getUserById(idToFetch, token);
+      setFormData(fetchedUser);
+    } catch (error) {
+      console.error(error);
+      setMessage('Error al cargar el perfil');
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchData();
+}, [userId, userIdFromAuthContext, token]);
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -36,27 +47,32 @@ const navigate = useNavigate(); // ⬅️ Antes del handleSubmit
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
-  if (!userId || !token) return;
+
+  // El id puede venir del prop 'userId' (admin viendo otro usuario) o del contexto de auth (usuario logueado)
+  const idToUpdate = userId || userIdFromAuthContext; // userIdFromAuthContext debe venir de useAuth() o prop
+
+  if (!idToUpdate || !token) return;
 
   try {
-    await updateUserProfile(userId, formData, token);
+    await updateUserProfile(idToUpdate, formData, token);
 
-    const updatedUser = await getUserById(userId, token);
-    login(token, userId, role || 'worker', updatedUser);
+    // Obtener el usuario actualizado para refrescar el formulario
+    const updatedUser = await getUserById(idToUpdate, token);
+    setFormData(updatedUser);
 
-    // ✅ Notificación visual
+    login(token, idToUpdate, role || 'worker', updatedUser);
+
     toast.success('✅ Cambios guardados correctamente');
 
-    // ✅ Redirige después de 1 segundo
     setTimeout(() => {
       navigate(role === 'admin' ? '/admin' : '/worker');
     }, 100);
-
   } catch (error) {
     console.error(error);
     toast.error('❌ Error al guardar el perfil');
   }
 };
+
 
   if (loading) return <p className="p-4">Cargando...</p>;
 
