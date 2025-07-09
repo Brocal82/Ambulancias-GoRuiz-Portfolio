@@ -6,7 +6,7 @@ import { getAvailableUsersForDate } from "../api/users";
 import { getPscheinStatus } from "../utils/pscheinUtils";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import type { UserRef, UpdateAssignment, Dienst } from "../types/dienst";
+import type { UserRef,  DienstAssignment } from "../types/dienst";
 import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import type { FlexibleAssignment } from "../types/assignment";
 
@@ -89,52 +89,47 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSave = async () => {
-    if (!token) return;
-
-    // Validación mínima: deben estar definidas las horas
-    if (!startTime || !endTime || !vehicleNumber) {
-      toast.warn("🚫 Debes rellenar hora de inicio, fin y vehículo.");
-      return;
-    }
-
-    if (
-      selectedDriverId &&
-      selectedMedicId &&
-      selectedDriverId === selectedMedicId
-    ) {
-      toast.warn("🚫 No puedes asignar a la misma persona como conductor y sanitario.");
-      return;
-    }
 
 
-    try {
-      const updatedAssignment: UpdateAssignment = {
-        date,
-        startTime,
-        endTime,
-        vehicleNumber,
-        driver: selectedDriverId,
-        medic: selectedMedicId,
-      };
+const handleSave = async () => {
+  if (!token) return;
 
-      if (assignment?._id) {
-        updatedAssignment._id = assignment._id;
-      }
+  // Validaciones...
+  if (!startTime || !endTime || !vehicleNumber) {
+    toast.warn("🚫 Debes rellenar hora de inicio, fin y vehículo.");
+    return;
+  }
+  if (selectedDriverId && selectedMedicId && selectedDriverId === selectedMedicId) {
+    toast.warn("🚫 No puedes asignar a la misma persona como conductor y sanitario.");
+    return;
+  }
 
-      const updatedData = {
-        assignments: [updatedAssignment],
-      };
+  try {
+    // Crear el assignment en el tipo esperado por el backend
+    const updatedAssignment: DienstAssignment = {
+      _id: assignment?._id || '', // obligatorio, vacío si no existe aún
+      date,
+      startTime,
+      endTime,
+      vehicleNumber,
+      driver: selectedDriverId,
+      medic: selectedMedicId,
+    };
 
-      await updateDienstPartial(dienstId, updatedData as unknown as Partial<Dienst>, token);
-      toast.success("✅ Cambios guardados correctamente");
-      onClose();
-      onUpdate();
-    } catch (error) {
-      console.error("Error al guardar cambios:", error);
-      toast.error("❌ Error al guardar los cambios.");
-    }
-  };
+    const updatedData = {
+      assignments: [updatedAssignment],
+    };
+
+    await updateDienstPartial(dienstId, updatedData, token);
+    toast.success("✅ Cambios guardados correctamente");
+    onClose();
+    onUpdate();
+  } catch (error) {
+    console.error("Error al guardar cambios:", error);
+    toast.error("❌ Error al guardar los cambios.");
+  }
+};
+
 
 
   const handleDelete = async () => {
