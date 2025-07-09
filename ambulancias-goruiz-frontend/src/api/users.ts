@@ -27,8 +27,7 @@ export const getAvailableUsersForDate = async (
   return response.data;
 };
 
-// ✅ Obtener perfil de usuario por ID
-export const getUserById = async (userId: string, token: string): Promise<User> => {
+export const getUserById = async (token: string, userId: string): Promise<User> => {
   try {
     const response = await axios.get<User>(`/users/${userId}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -39,6 +38,7 @@ export const getUserById = async (userId: string, token: string): Promise<User> 
     throw error;
   }
 };
+
 
 // ✅ Actualizar perfil de usuario
 export const updateUserProfile = async (

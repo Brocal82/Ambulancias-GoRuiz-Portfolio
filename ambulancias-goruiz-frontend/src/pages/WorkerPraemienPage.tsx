@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { getMonthlyPraemienSummary } from '../api/praemien';
 import type { MonthlyPraemienDay } from '../api/praemien';
 import { saveMonthlyPraemie } from '../api/praemienHistory';
+import WorkerPraemienHistory from './WorkerPraemienHistory';
 import { useAuth } from '../hooks/useAuth';
 
 const PRAMIEN_LEVELS = [7, 8, 9, 10];
@@ -172,6 +173,7 @@ useEffect(() => {
           </table>
         </div>
       </div>
+      <WorkerPraemienHistory />
     </div>
   );
 };

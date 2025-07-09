@@ -4,6 +4,7 @@ import { IUser } from '../types/User';
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken';
 import Dienst from '../models/Dienst';
+import mongoose from 'mongoose';
 
 
 // Función para validar el formato del email
@@ -132,8 +133,15 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
+
+
 export const getUserById = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    res.status(400).json({ message: 'ID de usuario no válido' });
+    return;
+  }
 
   try {
     const user = await User.findById(id);
@@ -148,6 +156,7 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
     res.status(500).json({ message: 'Error al obtener el usuario' });
   }
 };
+
 
 export const deleteUser = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;

@@ -26,7 +26,8 @@ useEffect(() => {
     if (!idToFetch) return;
 
     try {
-      const fetchedUser = await getUserById(idToFetch, token);
+      const fetchedUser = await getUserById(token, idToFetch);
+
       setFormData(fetchedUser);
     } catch (error) {
       console.error(error);
@@ -57,7 +58,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     await updateUserProfile(idToUpdate, formData, token);
 
     // Obtener el usuario actualizado para refrescar el formulario
-    const updatedUser = await getUserById(idToUpdate, token);
+    const updatedUser = await getUserById(token, idToUpdate);
+
     setFormData(updatedUser);
 
     login(token, idToUpdate, role || 'worker', updatedUser);
