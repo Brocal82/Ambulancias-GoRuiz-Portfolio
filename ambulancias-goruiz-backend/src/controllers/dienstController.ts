@@ -106,6 +106,11 @@ export const updateDienstPartial: RequestHandler = async (req, res) => {
 
       const updatedCopy = { ...updatedAssignment };
 
+      // Eliminar _id vacío para evitar error de Mongoose
+      if (updatedCopy._id === "") {
+        delete updatedCopy._id;
+      }
+
       if (updatedCopy.driver === "") updatedCopy.driver = undefined;
       if (updatedCopy.medic === "") updatedCopy.medic = undefined;
 
@@ -135,6 +140,7 @@ export const updateDienstPartial: RequestHandler = async (req, res) => {
     res.status(500).json({ message: "Error al actualizar Dienst" });
   }
 };
+
 
 
 export const deleteDienst = async (req: Request, res: Response) => {

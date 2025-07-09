@@ -23,3 +23,4 @@ export const isPartialAssignment = (assignment: FlexibleAssignment | undefined):
   // Completo (azul): todo está presente
   return false;
 };
+

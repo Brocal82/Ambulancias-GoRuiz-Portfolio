@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Profile from './Profile';
+import AdminUserDienstsTab from './AdminUserDienstsTab';
 
 
 const TABS = [
@@ -34,8 +35,7 @@ const AdminUserDetailDashboard = () => {
 
       <section className="bg-white rounded p-6 shadow min-h-[400px]">
         {activeTab === 'Perfil' && userId && <Profile userId={userId} />}
-
-        {activeTab === 'Diensts' && <p>Listado de Diensts para el usuario</p>}
+        {activeTab === 'Diensts' && userId && <AdminUserDienstsTab userId={userId} />}
         {activeTab === 'Premien' && <p>Historial y Prämien actuales</p>}
         {activeTab === 'Vacaciones' && <p>Gestión de vacaciones (pendiente)</p>}
         {activeTab === 'Mensajes' && <p>Mensajes individuales y generales (pendiente)</p>}
@@ -45,3 +45,5 @@ const AdminUserDetailDashboard = () => {
 };
 
 export default AdminUserDetailDashboard;
+
+
