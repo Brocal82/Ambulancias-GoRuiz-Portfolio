@@ -2,18 +2,17 @@ import { useCallback, useEffect, useState } from "react";
 import { getAssignedDaysForUser } from "../api/diensts";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
-import type { AssignedDay } from "../types/assignedDay";
+import type { AssignedDayFull } from "../types/assignedDay";
+import type { FlexibleAssignment } from "../types/assignment";
 import { useAuth } from "../hooks/useAuth";
 
-
 const WorkerDienstsPage = () => {
-
   const { userId, token } = useAuth();
-  const [assignedDays, setAssignedDays] = useState<AssignedDay[]>([]);
+  const [assignedDays, setAssignedDays] = useState<AssignedDayFull[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<{
     date: string;
-    assignment?: AssignedDay;
+    assignment?: FlexibleAssignment;
     dienstId: string;
   } | null>(null);
 
@@ -29,7 +28,6 @@ const WorkerDienstsPage = () => {
       setLoading(false);
     }
   }, [userId, token]);
-
 
   useEffect(() => {
     fetchAssignedDays();
@@ -67,7 +65,8 @@ const WorkerDienstsPage = () => {
                 return (
                   <div key={weekOffset}>
                     <p className="text-lg font-semibold text-gray-700 mb-2">
-                      Semana del {weekStart.toLocaleDateString("es-ES")} al {weekEnd.toLocaleDateString("es-ES")}
+                      Semana del {weekStart.toLocaleDateString("es-ES")} al{" "}
+                      {weekEnd.toLocaleDateString("es-ES")}
                     </p>
                     <div className="grid grid-cols-7 gap-2">
                       {weekDates.map((dateStr) => {
@@ -86,7 +85,7 @@ const WorkerDienstsPage = () => {
                               assignment &&
                               setSelectedAssignment({
                                 date: assignment.date,
-                                assignment,
+                                assignment: assignment as FlexibleAssignment,
                                 dienstId: assignment.dienstId,
                               })
                             }
@@ -105,22 +104,21 @@ const WorkerDienstsPage = () => {
                                 </p>
                                 <p className="text-xs">🚑 {assignment.vehicleNumber}</p>
                                 <p className="text-xs">
-                                  👨‍✈️ {typeof assignment.driver === 'object' && assignment.driver
+                                  👨‍✈️{" "}
+                                  {typeof assignment.driver === "object" && assignment.driver
                                     ? `${assignment.driver.lastName}, ${assignment.driver.name}`
-                                    : ''}
+                                    : ""}
                                 </p>
-
                                 <p className="text-xs">
-                                  🧑‍⚕️ {typeof assignment.medic === 'object' && assignment.medic
+                                  🧑‍⚕️{" "}
+                                  {typeof assignment.medic === "object" && assignment.medic
                                     ? `${assignment.medic.lastName}, ${assignment.medic.name}`
-                                    : ''}
+                                    : ""}
                                 </p>
-
                               </>
                             ) : (
                               <p className="text-xs text-green-800 mt-2">🌴 Libre</p>
                             )}
-
                           </div>
                         );
                       })}
@@ -132,7 +130,6 @@ const WorkerDienstsPage = () => {
           );
         })()}
       </>
-
 
       {selectedAssignment && (
         <AssignmentModal
@@ -146,16 +143,6 @@ const WorkerDienstsPage = () => {
       )}
     </div>
   );
-}
+};
 
 export default WorkerDienstsPage;
-
-
-
-
-
-
-
-
-
-

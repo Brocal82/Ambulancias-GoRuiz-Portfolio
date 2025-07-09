@@ -1,18 +1,21 @@
 import type { DienstAssignment, UpdateAssignment } from "../types/dienst";
-import type { AssignedDay } from "../types/assignedDay";
+import type { AssignedDay, AssignedDayFull } from "../types/assignedDay";
 
 type FlexibleAssignment =
   | DienstAssignment
   | (UpdateAssignment & { _id?: string })
-  | AssignedDay;
+  | AssignedDay
+  | AssignedDayFull; // añadimos AssignedDayFull
 
 export const isPartialAssignment = (assignment: FlexibleAssignment | undefined): boolean => {
   if (!assignment) return false;
 
   const hasStart = !!assignment.startTime;
   const hasEnd = !!assignment.endTime;
-  const hasDriver = !!assignment.driver;
-  const hasMedic = !!assignment.medic;
+
+  // driver y medic pueden ser string o objeto, chequeamos que no estén vacíos o nulos
+  const hasDriver = assignment.driver !== null && assignment.driver !== undefined && assignment.driver !== '';
+  const hasMedic = assignment.medic !== null && assignment.medic !== undefined && assignment.medic !== '';
 
   // Día libre (verde): sin horas
   if (!hasStart && !hasEnd) return false;
