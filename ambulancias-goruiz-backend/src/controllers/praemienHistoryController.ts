@@ -1,3 +1,4 @@
+//src/controllers/praemienHistoryController.ts
 import { Request, Response } from "express";
 import MonthlyPraemie from "../models/MonthlyPraemie";
 import WorkdaySummary from "../models/workdaySummary";

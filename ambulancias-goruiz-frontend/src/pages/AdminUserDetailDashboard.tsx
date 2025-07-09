@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Profile from './Profile';
 import AdminUserDienstsTab from './AdminUserDienstsTab';
+import AdminUserPraemienTab from './AdminUserPraemienTab';
 
 
 const TABS = [
@@ -36,10 +37,11 @@ const AdminUserDetailDashboard = () => {
       <section className="bg-white rounded p-6 shadow min-h-[400px]">
         {activeTab === 'Perfil' && userId && <Profile userId={userId} />}
         {activeTab === 'Diensts' && userId && <AdminUserDienstsTab userId={userId} />}
-        {activeTab === 'Premien' && <p>Historial y Prämien actuales</p>}
+        {activeTab === 'Premien' && userId && <AdminUserPraemienTab userId={userId} />}
         {activeTab === 'Vacaciones' && <p>Gestión de vacaciones (pendiente)</p>}
         {activeTab === 'Mensajes' && <p>Mensajes individuales y generales (pendiente)</p>}
       </section>
+
     </div>
   );
 };
