@@ -1,28 +1,32 @@
 import { Request, Response } from 'express';
 import WorkdaySummary from '../models/workdaySummary';
 import { startOfMonth, endOfMonth } from 'date-fns';
+import mongoose from 'mongoose';
 
 /**
- * Controlador que devuelve para el usuario logueado:
+ * Controlador que devuelve para el usuario logueado o el userId de query:
  * - lista de días con la cantidad total de pacientes efectivos (sumando cierres parciales y totales)
  * - media diaria de pacientes en el mes actual
  */
 export const getMonthlyPraemienSummary = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).userId; // acceder a userId inyectado por el middleware
+    const userIdFromQuery = req.query.userId as string | undefined;
+    const userId = userIdFromQuery || (req as any).userId;
+    
     if (!userId) {
       res.status(401).json({ message: 'No autorizado' });
       return;
     }
 
+    const objectUserId = new mongoose.Types.ObjectId(userId);
+
     const now = new Date();
     const monthStart = startOfMonth(now);
     const monthEnd = endOfMonth(now);
 
-    // Obtener todos los WorkdaySummary del mes actual para el usuario, sin filtrar por isFinalClosure
     const summaries = await WorkdaySummary.find({
       date: { $gte: monthStart.toISOString().split('T')[0], $lte: monthEnd.toISOString().split('T')[0] },
-      $or: [{ driver: userId }, { medic: userId }],
+      $or: [{ driver: objectUserId }, { medic: objectUserId }],
     }).select('date totalEffectivePatients');
 
     if (!summaries.length) {
@@ -33,18 +37,14 @@ export const getMonthlyPraemienSummary = async (req: Request, res: Response): Pr
       return;
     }
 
-    // Agrupar por fecha sumando pacientes de cierres parciales y totales
     const groupedByDate: Record<string, number> = {};
 
     summaries.forEach((s) => {
       const dateKey = s.date.toString().split('T')[0];
-      if (!groupedByDate[dateKey]) {
-        groupedByDate[dateKey] = 0;
-      }
+      if (!groupedByDate[dateKey]) groupedByDate[dateKey] = 0;
       groupedByDate[dateKey] += s.totalEffectivePatients || 0;
     });
 
-    // Convertir el objeto agrupado en array para el frontend
     const monthlyData = Object.entries(groupedByDate).map(([date, totalCountedPatients]) => ({
       date,
       totalCountedPatients,
@@ -65,57 +65,73 @@ export const getMonthlyPraemienSummary = async (req: Request, res: Response): Pr
 
 /**
  * Controlador que devuelve el histórico mensual de prämien (media pacientes por mes)
- * para el usuario logueado.
+ * para el usuario logueado o el userId en query.
  */
 export const getPraemienMonthlyHistory = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).userId;
+    const userIdFromQuery = req.query.userId as string | undefined;
+    const userId = userIdFromQuery || (req as any).userId;
+
     if (!userId) {
       res.status(401).json({ message: 'No autorizado' });
       return;
     }
 
-    // Obtenemos todos los registros finales (cierres totales) para este usuario
+    const objectUserId = new mongoose.Types.ObjectId(userId);
+
     const summaries = await WorkdaySummary.find({
-      $or: [{ driver: userId }, { medic: userId }],
-      isFinalClosure: true,
+      $or: [{ driver: objectUserId }, { medic: objectUserId }],
+      // Incluye cierres parciales y finales
     }).select('date totalEffectivePatients');
+
 
     if (!summaries.length) {
       res.status(200).json([]);
       return;
     }
 
-    // Agrupar por año y mes
-    const monthlyGroups: Record<string, { totalPatients: number; days: number }> = {};
+    const groupedByDate: Record<string, number> = {};
 
     summaries.forEach((summary) => {
-      const date = new Date(summary.date);
+      const dateKey = summary.date.toString().split('T')[0];
+      if (!groupedByDate[dateKey]) groupedByDate[dateKey] = 0;
+      groupedByDate[dateKey] += summary.totalEffectivePatients || 0;
+    });
+
+    const monthlyGroups: Record<string, { totalPatients: number; days: number }> = {};
+
+    Object.entries(groupedByDate).forEach(([dateStr, totalPatients]) => {
+      const date = new Date(dateStr);
       const year = date.getFullYear();
-      const month = date.getMonth() + 1; // Mes 1-12
+      const month = date.getMonth() + 1;
 
       const key = `${year}-${month}`;
 
-      if (!monthlyGroups[key]) {
-        monthlyGroups[key] = { totalPatients: 0, days: 0 };
-      }
-      monthlyGroups[key].totalPatients += summary.totalEffectivePatients || 0;
+      if (!monthlyGroups[key]) monthlyGroups[key] = { totalPatients: 0, days: 0 };
+      monthlyGroups[key].totalPatients += totalPatients;
       monthlyGroups[key].days += 1;
     });
 
-    // Construir array resultado
-    const result = Object.entries(monthlyGroups).map(([key, value]) => {
-      const [yearStr, monthStr] = key.split('-');
-      const averagePatients = value.totalPatients / value.days;
-      return {
-        year: Number(yearStr),
-        month: Number(monthStr),
-        averagePatients: Number(averagePatients.toFixed(2)),
-      };
-    });
+    // Obtener mes y año actuales para filtrar
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
 
-    // Ordenar de más reciente a más antiguo
-    result.sort((a, b) => (b.year - a.year) || (b.month - a.month));
+    // Construir array resultado excluyendo mes actual
+    const result = Object.entries(monthlyGroups)
+      .map(([key, value]) => {
+        const [yearStr, monthStr] = key.split('-');
+        const year = Number(yearStr);
+        const month = Number(monthStr);
+        const averagePatients = value.totalPatients / value.days;
+        return {
+          year,
+          month,
+          averagePatients: Number(averagePatients.toFixed(2)),
+        };
+      })
+      .filter(({ year, month }) => !(year === currentYear && month === currentMonth)) // Excluir mes actual
+      .sort((a, b) => (b.year - a.year) || (b.month - a.month));
 
     res.status(200).json(result);
 
@@ -124,3 +140,4 @@ export const getPraemienMonthlyHistory = async (req: Request, res: Response): Pr
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
+
