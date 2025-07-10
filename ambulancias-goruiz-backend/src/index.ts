@@ -12,6 +12,7 @@ import hospitalRoutes from './routes/hospitalRoutes';
 import tripRoutes from './routes/tripRoutes'
 import workdaySummaryRoutes from './routes/workdaySummaryRoutes'
 import praemienRoutes from  './routes/praemienRoutes'
+import vacationRoutes from './routes/vacationRoutes'
 
 // ✅ Importamos el limpiador de Diensts antiguos
 import  cleanupOldDiensts  from './utils/cleanupOldDiensts';
@@ -45,6 +46,8 @@ app.use('/api/hospitals', hospitalRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/workday-summary', workdaySummaryRoutes);
 app.use('/api/praemien', praemienRoutes);
+app.use('/api/vacations', vacationRoutes);
+
 
 
 

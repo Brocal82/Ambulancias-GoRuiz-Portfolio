@@ -1,16 +1,7 @@
-// backend/src/models/vacationRequest.ts
-import mongoose, { Schema, Document } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
+import type { IVacationRequest } from '../types/vacationRequest';
 
-export interface IVacationRequest extends Document {
-  user: mongoose.Types.ObjectId;
-  startDate: Date;
-  endDate: Date;
-  requestedAt: Date;
-  status: 'pending' | 'accepted' | 'cancelled' | 'option_sent';
-  adminOptionStartDate?: Date;
-  adminOptionEndDate?: Date;
-  userResponse?: 'accepted' | 'cancelled';
-}
+export interface IVacationRequestModel extends IVacationRequest, Document {}
 
 const VacationRequestSchema = new Schema<IVacationRequest>({
   user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -20,7 +11,8 @@ const VacationRequestSchema = new Schema<IVacationRequest>({
   status: { type: String, enum: ['pending', 'accepted', 'cancelled', 'option_sent'], default: 'pending' },
   adminOptionStartDate: { type: Date },
   adminOptionEndDate: { type: Date },
+  adminNote: { type: String },
   userResponse: { type: String, enum: ['accepted', 'cancelled'] },
 });
 
-export default mongoose.model<IVacationRequest>('VacationRequest', VacationRequestSchema);
+export default model<IVacationRequest>('VacationRequest', VacationRequestSchema);
