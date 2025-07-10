@@ -12,13 +12,14 @@ export const createTrip = async (req: Request, res: Response) => {
 
     if (!parsed.success) {
       console.warn("Validation errors:", parsed.error.errors);
-      return res.status(400).json({
+      res.status(400).json({
         message: "Errores de validación",
         errors: parsed.error.errors.map((err) => ({
           field: err.path[0],
           message: err.message,
         })),
       });
+      return
     }
 
     const newTrip = new Trip(parsed.data);
