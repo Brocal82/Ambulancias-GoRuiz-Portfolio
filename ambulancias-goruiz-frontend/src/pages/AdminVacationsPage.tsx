@@ -2,12 +2,18 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import type { IVacationRequest } from '../types/vacationRequest';
 import { getVacationRequests, updateVacationRequest } from '../api/vacation';
+import AlternativeDateModal from '../components/vacation/AlternativeDateModal';
 
 const AdminVacationRequests = () => {
     const { token } = useAuth();
     const [requests, setRequests] = useState<IVacationRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+    const [modalInitialStartDate, setModalInitialStartDate] = useState<Date>(new Date());
+    const [modalInitialEndDate, setModalInitialEndDate] = useState<Date>(new Date());
+
 
     const fetchRequests = async () => {
         if (!token) return;
@@ -31,7 +37,6 @@ const AdminVacationRequests = () => {
     type VacationStatus = "pending" | "accepted" | "cancelled" | "option_sent";
 
     const handleUpdateStatus = async (id: string, status: VacationStatus) => {
-
         if (!token) return;
         try {
             await updateVacationRequest(token, id, { status });
@@ -40,6 +45,35 @@ const AdminVacationRequests = () => {
             alert('Error actualizando la solicitud');
         }
     };
+
+    // NUEVA función para enviar opción alternativa
+    const handleSendAlternativeOption = async (
+        id: string,
+        alternativeStartDate: string,
+        alternativeEndDate: string,
+        adminNote: string
+    ) => {
+        if (!token) return;
+        try {
+            await updateVacationRequest(token, id, {
+                status: 'option_sent',
+                alternativeStartDate,
+                alternativeEndDate,
+                adminNote,
+            });
+            fetchRequests();
+        } catch {
+            alert('Error enviando opción alternativa');
+        }
+    };
+
+    const openAlternativeModal = (reqId: string, startDate: string, endDate: string) => {
+        setCurrentRequestId(reqId);
+        setModalInitialStartDate(new Date(startDate));
+        setModalInitialEndDate(new Date(endDate));
+        setIsModalOpen(true);
+    };
+
 
     if (loading) return <p>Cargando solicitudes...</p>;
     if (error) return <p className="text-red-500">{error}</p>;
@@ -67,27 +101,46 @@ const AdminVacationRequests = () => {
                             <td className="border border-gray-300 px-3 py-1 capitalize">{req.status}</td>
                             <td className="border border-gray-300 px-3 py-1 space-x-2">
                                 {req.status === 'pending' && (
-                                    <>
+                                    <div className="flex space-x-2">
                                         <button
-                                            className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
+                                            className="flex-1 bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
                                             onClick={() => handleUpdateStatus(req._id, 'accepted')}
                                         >
                                             Aceptar
                                         </button>
                                         <button
-                                            className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                                            className="flex-1 bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
                                             onClick={() => handleUpdateStatus(req._id, 'cancelled')}
                                         >
                                             Cancelar
                                         </button>
-                                    </>
+                                        <button
+                                            className="flex-1 bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600"
+                                            onClick={() => openAlternativeModal(req._id, req.startDate, req.endDate)}
+                                        >
+                                            Opción 2
+                                        </button>
+
+                                    </div>
                                 )}
-                                {/* Aquí luego botón para enviar opción alternativa */}
                             </td>
+
                         </tr>
                     ))}
                 </tbody>
             </table>
+            <AlternativeDateModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                initialStartDate={modalInitialStartDate}
+                initialEndDate={modalInitialEndDate}
+                onSubmit={(altStart, altEnd, note) => {
+                    if (currentRequestId) {
+                        handleSendAlternativeOption(currentRequestId, altStart, altEnd, note);
+                    }
+                }}
+            />
+
         </div>
     );
 };
