@@ -5,6 +5,7 @@ interface VacationRequestPayload {
   endDate: string;
 }
 
+// Crear nueva solicitud
 export const createVacationRequest = async (token: string, data: VacationRequestPayload) => {
   const response = await axiosInstance.post('/vacations', data, {
     headers: { Authorization: `Bearer ${token}` },
@@ -22,8 +23,8 @@ export const getVacationRequests = async (token: string) => {
 
 interface UpdateVacationPayload {
   status?: 'pending' | 'accepted' | 'cancelled' | 'option_sent';
-  alternativeStartDate?: string;
-  alternativeEndDate?: string;
+  adminOptionStartDate?: string;
+  adminOptionEndDate?: string;
   adminNote?: string;
 }
 
@@ -35,3 +36,22 @@ export const updateVacationRequest = async (token: string, id: string, data: Upd
   return response.data;
 };
 
+// Obtener solicitudes del trabajador logueado
+export const getUserVacationRequests = async (token: string) => {
+  const response = await axiosInstance.get('/vacations/user', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+interface RespondAlternativePayload {
+  accept: boolean;
+}
+
+// Responder a opción alternativa (aceptar o rechazar)
+export const respondToAlternativeDate = async (token: string, id: string, data: RespondAlternativePayload) => {
+  const response = await axiosInstance.post(`/vacations/${id}/respond`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};

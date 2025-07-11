@@ -23,7 +23,7 @@ import MyWorkday from './pages/MyWorkDay';
 import AdminSummariesPage from './pages/AdminSummariesPage';
 import WorkerPrämienPage from './pages/WorkerPraemienPage';
 import AdminUserDetailDashboard from './pages/AdminUserDetailDashboard';
-import WorkerVacationRequest from './pages/WorkerVacationRequest';
+import WorkerVacationsPage from './pages/WorkerVacationsPage';
 import AdminVacationsPage from './pages/AdminVacationsPage' 
 
 
@@ -44,7 +44,8 @@ export default function App() {
             <Route path="/dienst" element={<AppLayout><WorkerDienstsPage /></AppLayout>} />
             <Route path="/worker/hospitals" element={<AppLayout><WorkerHospitalsPage /></AppLayout>} />
             <Route path="/worker/praemien" element={<AppLayout><WorkerPrämienPage /></AppLayout>} />
-            <Route path="/worker/vacations" element={<WorkerVacationRequest />} />
+            <Route path="/worker/vacations" element={<WorkerVacationsPage />} />
+
             <Route path="/my-workday" element={<AppLayout><MyWorkday /></AppLayout>} />
             <Route path="/admin" element={<AppLayout><AdminDashboard /></AppLayout>} />
             <Route path="/admin/users" element={<AppLayout><AdminUsersPage /></AppLayout>} />

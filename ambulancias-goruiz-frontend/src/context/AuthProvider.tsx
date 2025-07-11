@@ -23,6 +23,10 @@ export const AuthProvider = ({ children }: Props) => {
       const storedUserId = sessionStorage.getItem('userId');
       const storedRole = sessionStorage.getItem('role');
 
+      console.log('AuthProvider - Stored token:', storedToken);
+    console.log('AuthProvider - Stored userId:', storedUserId);
+    console.log('AuthProvider - Stored role:', storedRole);
+
       if (storedToken && storedUserId && storedRole) {
         setToken(storedToken);
         setUserId(storedUserId);

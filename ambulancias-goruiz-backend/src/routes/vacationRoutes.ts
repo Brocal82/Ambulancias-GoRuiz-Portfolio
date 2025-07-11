@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getVacationRequests, createVacationRequest, updateVacationRequest, respondToAlternativeDate } from '../controllers/vacationController';
+import { getUserVacationRequests, getVacationRequests, createVacationRequest, updateVacationRequest, respondToAlternativeDate } from '../controllers/vacationController';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { authorizeRole } from '../middlewares/roleMiddleware';
 
@@ -16,5 +16,8 @@ router.patch('/:id', authenticateToken, authorizeRole('admin'), updateVacationRe
 
 // El trabajador responde a propuesta alternativa (aceptar o rechazar)
 router.post('/:id/respond', authenticateToken, respondToAlternativeDate);
+
+// Ruta para que el trabajador obtenga sus solicitudes
+router.get('/user', authenticateToken, getUserVacationRequests);
 
 export default router;
