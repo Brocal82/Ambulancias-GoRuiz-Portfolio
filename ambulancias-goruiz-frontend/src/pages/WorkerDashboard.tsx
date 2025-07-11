@@ -38,10 +38,13 @@ const WorkerDashboard = () => {
           <p className="text-sm text-gray-600">Próximamente</p>
         </div>
 
-        <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
+        <Link
+          to="/worker/vacations"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
           <h2 className="text-lg font-semibold mb-2">🌴 Vacaciones</h2>
-          <p className="text-sm text-gray-600">Próximamente</p>
-        </div>
+          <p className="text-sm text-gray-600">Gestiona tus solicitudes de vacaciones</p>
+        </Link>
 
       </div>
     </div>

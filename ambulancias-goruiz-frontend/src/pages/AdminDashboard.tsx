@@ -44,10 +44,13 @@ const AdminDashboard = () => {
           <p className="text-sm text-gray-600">Revisa reportes de ambulancias</p>
         </div>
 
-        <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
+        <Link
+          to="/admin/vacations"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
           <h2 className="text-lg font-semibold mb-2">🌴 Vacaciones</h2>
           <p className="text-sm text-gray-600">Gestiona solicitudes del equipo</p>
-        </div>
+        </Link>
 
         <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
           <h2 className="text-lg font-semibold mb-2">✉️ Mensajes</h2>
