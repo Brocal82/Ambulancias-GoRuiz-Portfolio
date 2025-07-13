@@ -126,7 +126,7 @@ const getStatusClass = (status: string) => {
       <th className="border border-gray-300 px-3 py-1">Fecha Inicio</th>
       <th className="border border-gray-300 px-3 py-1">Fecha Fin</th>
       <th className="border border-gray-300 px-3 py-1">Estado</th>
-      <th className="border border-gray-300 px-3 py-1">Opciones Alternativas</th>
+      <th className="border border-gray-300 px-3 py-1">Opciones/Mensajes</th>
       <th className="border border-gray-300 px-3 py-1">Acciones</th>
     </tr>
   </thead>
@@ -138,16 +138,19 @@ const getStatusClass = (status: string) => {
         <td className={`border border-gray-300 px-3 py-1 capitalize ${getStatusClass(req.status)}`}>
           {req.status}
         </td>
-        <td className="border border-gray-300 px-3 py-1 break-words max-w-xs">
-          {req.status === 'option_sent' && req.adminOptionStartDate && req.adminOptionEndDate ? (
-            <>
-              <p>Alternativa: {new Date(req.adminOptionStartDate).toLocaleDateString()} - {new Date(req.adminOptionEndDate).toLocaleDateString()}</p>
-              <p>Nota: {req.adminNote || '-'}</p>
-            </>
-          ) : (
-            '-'
-          )}
-        </td>
+        <td className="border border-gray-300 px-3 py-1 break-words max-w-xs text-left">
+  {req.status === 'option_sent' && req.adminOptionStartDate && req.adminOptionEndDate ? (
+    <>
+      <p><strong>Alternativa:</strong> {new Date(req.adminOptionStartDate).toLocaleDateString()} - {new Date(req.adminOptionEndDate).toLocaleDateString()}</p>
+      <p><strong>Nota:</strong> {req.adminNote || '-'}</p>
+    </>
+  ) : req.status === 'cancelled' && req.adminNote ? (
+    <p><strong>Motivo cancelación:</strong> {req.adminNote}</p>
+  ) : (
+    '-'
+  )}
+</td>
+
         <td className="border border-gray-300 px-3 py-1">
           {req.status === 'option_sent' && (
             <div className="flex justify-center space-x-2 flex-nowrap">
