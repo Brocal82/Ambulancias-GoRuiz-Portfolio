@@ -32,9 +32,30 @@ const WorkerVacationsPage = () => {
     }
   };
 
-  useEffect(() => {
-    fetchRequests();
-  }, [token]);
+ useEffect(() => {
+  const fetchRequests = async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const data = await getUserVacationRequests(token);
+      setRequests(data);
+      setError('');
+
+      // Mostrar formulario si no hay solicitudes
+      if (data.length === 0) {
+        setShowForm(true);
+      } else {
+        setShowForm(false);
+      }
+    } catch {
+      setError('Error al cargar las solicitudes.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchRequests();
+}, [token]);
 
   const handleRespondAlternative = async (id: string, accept: boolean) => {
     if (!token) return;

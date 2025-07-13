@@ -55,3 +55,12 @@ export const respondToAlternativeDate = async (token: string, id: string, data: 
   });
   return response.data;
 };
+
+// Eliminar solicitud (solo admin)
+export const deleteVacationRequest = async (token: string, id: string) => {
+  const response = await axiosInstance.delete(`/vacations/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+

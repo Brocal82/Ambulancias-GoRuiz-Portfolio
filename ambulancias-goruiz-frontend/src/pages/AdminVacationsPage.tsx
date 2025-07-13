@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { IVacationRequest } from '../types/vacationRequest';
-import { getVacationRequests, updateVacationRequest } from '../api/vacation';
+import { getVacationRequests, updateVacationRequest, deleteVacationRequest } from '../api/vacation';
 import AlternativeDateModal from '../components/vacation/AlternativeDateModal';
 import { useAuth } from '../hooks/useAuth';
 
@@ -65,6 +65,19 @@ const AdminVacationRequests = () => {
     }
   };
 
+  const handleDeleteRequest = async (id: string) => {
+  if (!token) return;
+  if (!window.confirm('¿Seguro que quieres eliminar esta solicitud?')) return;
+
+  try {
+    await deleteVacationRequest(token, id);
+    fetchRequests(); // refrescar lista
+  } catch {
+    alert('Error al eliminar la solicitud');
+  }
+};
+
+
   const openAlternativeModal = (reqId: string, startDate: string, endDate: string) => {
     setCurrentRequestId(reqId);
     setModalInitialStartDate(new Date(startDate));
@@ -79,60 +92,69 @@ const AdminVacationRequests = () => {
   return (
     <div className="max-w-4xl mx-auto p-4 bg-white rounded shadow">
       <h2 className="text-xl font-bold mb-4">Solicitudes de Vacaciones</h2>
-      <table className="w-full table-auto border-collapse border border-gray-300">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-300 px-3 py-1">Usuario</th>
-            <th className="border border-gray-300 px-3 py-1">Fecha Inicio</th>
-            <th className="border border-gray-300 px-3 py-1">Fecha Fin</th>
-            <th className="border border-gray-300 px-3 py-1">Estado</th>
-            <th className="border border-gray-300 px-3 py-1">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-  {requests.map(req => (
-    <tr key={req._id} className="text-center">
-      <td className="border border-gray-300 px-3 py-1">{req.user.name} {req.user.lastName}</td>
-      <td className="border border-gray-300 px-3 py-1">{new Date(req.startDate).toLocaleDateString()}</td>
-      <td className="border border-gray-300 px-3 py-1">{new Date(req.endDate).toLocaleDateString()}</td>
-      <td
-        className={`border border-gray-300 px-3 py-1 capitalize font-semibold ${
-          req.status === 'accepted' ? 'text-green-600' :
-          req.status === 'cancelled' ? 'text-red-600' :
-          'text-yellow-600'
-        }`}
-      >
-        {req.status}
-      </td>
-      <td className="border border-gray-300 px-3 py-1 space-y-1">
-        {req.status === 'pending' && (
-          <div className="flex justify-center space-x-2">
+     <table className="w-full table-auto border-collapse border border-gray-300">
+  <thead>
+    <tr className="bg-gray-100 text-center">
+      <th className="border border-gray-300 px-3 py-1">Usuario</th>
+      <th className="border border-gray-300 px-3 py-1">Fecha Inicio</th>
+      <th className="border border-gray-300 px-3 py-1">Fecha Fin</th>
+      <th className="border border-gray-300 px-3 py-1">Estado</th>
+      <th className="border border-gray-300 px-3 py-1">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {requests.map(req => (
+      <tr key={req._id} className="text-center">
+        <td className="border border-gray-300 px-3 py-1">{req.user.name} {req.user.lastName}</td>
+        <td className="border border-gray-300 px-3 py-1">{new Date(req.startDate).toLocaleDateString()}</td>
+        <td className="border border-gray-300 px-3 py-1">{new Date(req.endDate).toLocaleDateString()}</td>
+        <td
+          className={`border border-gray-300 px-3 py-1 capitalize font-semibold ${
+            req.status === 'accepted' ? 'text-green-600' :
+            req.status === 'cancelled' ? 'text-red-600' :
+            'text-yellow-600'
+          }`}
+        >
+          {req.status}
+        </td>
+        <td className="border border-gray-300 px-3 py-1">
+          <div className="flex justify-center space-x-2 flex-wrap">
+            {req.status === 'pending' && (
+              <>
+                <button
+                  className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 whitespace-nowrap"
+                  onClick={() => handleUpdateStatus(req._id, 'accepted')}
+                >
+                  Aceptar
+                </button>
+                <button
+                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 whitespace-nowrap"
+                  onClick={() => handleUpdateStatus(req._id, 'cancelled')}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 whitespace-nowrap"
+                  onClick={() => openAlternativeModal(req._id, req.startDate, req.endDate)}
+                >
+                  Opción 2
+                </button>
+              </>
+            )}
+            {/* Botón Eliminar siempre visible */}
             <button
-              className="flex-1 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 whitespace-nowrap"
-              onClick={() => handleUpdateStatus(req._id, 'accepted')}
+              className="bg-red-700 text-white px-3 py-1 rounded hover:bg-red-800 whitespace-nowrap"
+              onClick={() => handleDeleteRequest(req._id)}
             >
-              Aceptar
-            </button>
-            <button
-              className="flex-1 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 whitespace-nowrap"
-              onClick={() => handleUpdateStatus(req._id, 'cancelled')}
-            >
-              Cancelar
-            </button>
-            <button
-              className="flex-1 bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 whitespace-nowrap"
-              onClick={() => openAlternativeModal(req._id, req.startDate, req.endDate)}
-            >
-              Opción 2
+              Eliminar
             </button>
           </div>
-        )}
-      </td>
-    </tr>
-  ))}
-</tbody>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
 
-      </table>
       <AlternativeDateModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

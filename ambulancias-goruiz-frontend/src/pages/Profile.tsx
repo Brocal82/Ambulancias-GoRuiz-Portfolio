@@ -49,8 +49,7 @@ const navigate = useNavigate(); // ⬅️ Antes del handleSubmit
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
-  // El id puede venir del prop 'userId' (admin viendo otro usuario) o del contexto de auth (usuario logueado)
-  const idToUpdate = userId || userIdFromAuthContext; // userIdFromAuthContext debe venir de useAuth() o prop
+  const idToUpdate = userId || userIdFromAuthContext;
 
   if (!idToUpdate || !token) return;
 
@@ -62,7 +61,10 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     setFormData(updatedUser);
 
-    login(token, idToUpdate, role || 'worker', updatedUser);
+    // SOLO actualizar contexto si el usuario modificado es el mismo que el logueado
+    if (idToUpdate === userIdFromAuthContext) {
+      login(token, idToUpdate, role || 'worker', updatedUser);
+    }
 
     toast.success('✅ Cambios guardados correctamente');
 
@@ -74,6 +76,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     toast.error('❌ Error al guardar el perfil');
   }
 };
+
 
 
   if (loading) return <p className="p-4">Cargando...</p>;
