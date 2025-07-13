@@ -90,39 +90,48 @@ const AdminVacationRequests = () => {
           </tr>
         </thead>
         <tbody>
-          {requests.map(req => (
-            <tr key={req._id}>
-              <td className="border border-gray-300 px-3 py-1">{req.user.name} {req.user.lastName}</td>
-              <td className="border border-gray-300 px-3 py-1">{new Date(req.startDate).toLocaleDateString()}</td>
-              <td className="border border-gray-300 px-3 py-1">{new Date(req.endDate).toLocaleDateString()}</td>
-              <td className="border border-gray-300 px-3 py-1 capitalize">{req.status}</td>
-              <td className="border border-gray-300 px-3 py-1 space-x-2">
-                {req.status === 'pending' && (
-                  <div className="flex space-x-2">
-                    <button
-                      className="flex-1 bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
-                      onClick={() => handleUpdateStatus(req._id, 'accepted')}
-                    >
-                      Aceptar
-                    </button>
-                    <button
-                      className="flex-1 bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                      onClick={() => handleUpdateStatus(req._id, 'cancelled')}
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      className="flex-1 bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600"
-                      onClick={() => openAlternativeModal(req._id, req.startDate, req.endDate)}
-                    >
-                      Opción 2
-                    </button>
-                  </div>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
+  {requests.map(req => (
+    <tr key={req._id} className="text-center">
+      <td className="border border-gray-300 px-3 py-1">{req.user.name} {req.user.lastName}</td>
+      <td className="border border-gray-300 px-3 py-1">{new Date(req.startDate).toLocaleDateString()}</td>
+      <td className="border border-gray-300 px-3 py-1">{new Date(req.endDate).toLocaleDateString()}</td>
+      <td
+        className={`border border-gray-300 px-3 py-1 capitalize font-semibold ${
+          req.status === 'accepted' ? 'text-green-600' :
+          req.status === 'cancelled' ? 'text-red-600' :
+          'text-yellow-600'
+        }`}
+      >
+        {req.status}
+      </td>
+      <td className="border border-gray-300 px-3 py-1 space-y-1">
+        {req.status === 'pending' && (
+          <div className="flex justify-center space-x-2">
+            <button
+              className="flex-1 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 whitespace-nowrap"
+              onClick={() => handleUpdateStatus(req._id, 'accepted')}
+            >
+              Aceptar
+            </button>
+            <button
+              className="flex-1 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 whitespace-nowrap"
+              onClick={() => handleUpdateStatus(req._id, 'cancelled')}
+            >
+              Cancelar
+            </button>
+            <button
+              className="flex-1 bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 whitespace-nowrap"
+              onClick={() => openAlternativeModal(req._id, req.startDate, req.endDate)}
+            >
+              Opción 2
+            </button>
+          </div>
+        )}
+      </td>
+    </tr>
+  ))}
+</tbody>
+
       </table>
       <AlternativeDateModal
         isOpen={isModalOpen}

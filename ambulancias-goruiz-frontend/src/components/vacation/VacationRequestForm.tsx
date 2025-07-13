@@ -6,9 +6,13 @@ import { addDays } from 'date-fns';
 import 'react-date-range/dist/styles.css'; // estilos básicos
 import 'react-date-range/dist/theme/default.css'; // tema por defecto
 import { useAuth } from '../../hooks/useAuth';
-import  { createVacationRequest } from '../../api/vacation';
+import { createVacationRequest } from '../../api/vacation';
 
-const VacationRequestForm = () => {
+interface VacationRequestFormProps {
+  onSuccess?: () => void;
+}
+
+const VacationRequestForm = ({ onSuccess }: VacationRequestFormProps) => {
   const { token } = useAuth();
 
   const [selectionRange, setSelectionRange] = useState({
@@ -20,16 +24,15 @@ const VacationRequestForm = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
- const handleSelect = (ranges: RangeKeyDict) => {
-  const { startDate, endDate } = ranges.selection;
+  const handleSelect = (ranges: RangeKeyDict) => {
+    const { startDate, endDate } = ranges.selection;
 
-  setSelectionRange({
-    startDate: startDate ?? new Date(),
-    endDate: endDate ?? new Date(),
-    key: 'selection',
-  });
-};
-
+    setSelectionRange({
+      startDate: startDate ?? new Date(),
+      endDate: endDate ?? new Date(),
+      key: 'selection',
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +50,7 @@ const VacationRequestForm = () => {
         endDate: selectionRange.endDate.toISOString(),
       });
       setMessage('Solicitud enviada correctamente.');
+      if (onSuccess) onSuccess(); // Notificar éxito al padre
     } catch (error) {
       setMessage('Error al enviar la solicitud. Inténtalo de nuevo.');
     } finally {

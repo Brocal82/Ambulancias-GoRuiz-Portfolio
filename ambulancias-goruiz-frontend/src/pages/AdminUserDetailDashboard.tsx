@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import Profile from './Profile';
 import AdminUserDienstsTab from './AdminUserDienstsTab';
 import AdminUserPraemienTab from './AdminUserPraemienTab';
+import AdminUserVacationsTab from './AdminUserVacationsTab';
 import { useAuth } from '../hooks/useAuth';
 import { getUserById } from '../api/users';
 import type { User } from '../types/user';
@@ -62,11 +63,12 @@ const AdminUserDetailDashboard = () => {
         {activeTab === 'Perfil' && userId && <Profile userId={userId} />}
         {activeTab === 'Diensts' && userId && <AdminUserDienstsTab userId={userId} />}
         {activeTab === 'Premien' && userId && <AdminUserPraemienTab userId={userId} />}
-        {activeTab === 'Vacaciones' && <p>Gestión de vacaciones (pendiente)</p>}
+        {activeTab === 'Vacaciones' && userId && <AdminUserVacationsTab userId={userId} />}
         {activeTab === 'Mensajes' && <p>Mensajes individuales y generales (pendiente)</p>}
       </section>
     </div>
   );
 };
+
 
 export default AdminUserDetailDashboard;
