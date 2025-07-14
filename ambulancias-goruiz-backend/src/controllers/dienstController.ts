@@ -253,6 +253,7 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
   }
 
   try {
+    // Buscar todos los Diensts donde el usuario está asignado como driver o medic
     const diensts = await Dienst.find({
       $or: [
         { 'assignments.driver': new mongoose.Types.ObjectId(userId) },
@@ -263,45 +264,38 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
       .populate("assignments.medic", "name lastName pscheinExpiry")
       .lean();
 
+    // Construir el array con todos los días de esos Diensts (assignments completos)
     const assignedDays: AssignedDay[] = [];
 
     diensts.forEach((dienst) => {
       dienst.assignments.forEach((assignment: any) => {
-        const isAssigned =
-          assignment.driver?._id?.toString?.() === userId ||
-          assignment.driver?.toString?.() === userId ||
-          assignment.medic?._id?.toString?.() === userId ||
-          assignment.medic?.toString?.() === userId;
-
-        if (isAssigned) {
-          assignedDays.push({
-            dienstId: dienst._id.toString(),
-            dienstNumber: dienst.dienstNumber,
-            date: assignment.date,
-            startTime: assignment.startTime,
-            endTime: assignment.endTime,
-            assignmentId: assignment._id?.toString(), // ✅ NUEVO CAMPO
-            vehicleNumber: assignment.vehicleNumber,
-            driver:
-              typeof assignment.driver === "object"
-                ? {
-                    _id: assignment.driver._id.toString(),
-                    name: assignment.driver.name,
-                    lastName: assignment.driver.lastName,
-                    pscheinExpiry: assignment.driver.pscheinExpiry,
-                  }
-                : assignment.driver,
-            medic:
-              typeof assignment.medic === "object"
-                ? {
-                    _id: assignment.medic._id.toString(),
-                    name: assignment.medic.name,
-                    lastName: assignment.medic.lastName,
-                    pscheinExpiry: assignment.medic.pscheinExpiry,
-                  }
-                : assignment.medic,
-          });
-        }
+        assignedDays.push({
+          dienstId: dienst._id.toString(),
+          dienstNumber: dienst.dienstNumber,
+          date: assignment.date,
+          startTime: assignment.startTime,
+          endTime: assignment.endTime,
+          assignmentId: assignment._id?.toString(),
+          vehicleNumber: assignment.vehicleNumber,
+          driver:
+            assignment.driver && typeof assignment.driver === "object" && assignment.driver._id
+              ? {
+                  _id: assignment.driver._id.toString(),
+                  name: assignment.driver.name,
+                  lastName: assignment.driver.lastName,
+                  pscheinExpiry: assignment.driver.pscheinExpiry,
+                }
+              : assignment.driver || null,
+          medic:
+            assignment.medic && typeof assignment.medic === "object" && assignment.medic._id
+              ? {
+                  _id: assignment.medic._id.toString(),
+                  name: assignment.medic.name,
+                  lastName: assignment.medic.lastName,
+                  pscheinExpiry: assignment.medic.pscheinExpiry,
+                }
+              : assignment.medic || null,
+        });
       });
     });
 
@@ -311,6 +305,8 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
     res.status(500).json({ message: "Error al obtener días asignados" });
   }
 };
+
+
 
 
 export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) => {

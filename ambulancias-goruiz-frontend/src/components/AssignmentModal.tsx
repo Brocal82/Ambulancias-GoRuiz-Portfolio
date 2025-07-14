@@ -95,6 +95,11 @@ const handleSave = async () => {
   if (!token) return;
 
   // Validaciones...
+  if (!dienstId) {
+    toast.error("🚫 ID del Dienst no definido, no se pueden guardar los cambios.");
+    return;
+  }
+
   if (!startTime || !endTime || !vehicleNumber) {
     toast.warn("🚫 Debes rellenar hora de inicio, fin y vehículo.");
     return;
@@ -105,9 +110,8 @@ const handleSave = async () => {
   }
 
   try {
-    // Crear el assignment en el tipo esperado por el backend
     const updatedAssignment: DienstAssignment = {
-      _id: assignment?._id || '', // obligatorio, vacío si no existe aún
+      _id: assignment?._id || '',
       date,
       startTime,
       endTime,
@@ -129,6 +133,7 @@ const handleSave = async () => {
     toast.error("❌ Error al guardar los cambios.");
   }
 };
+
 
 
 

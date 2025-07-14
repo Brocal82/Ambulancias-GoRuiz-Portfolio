@@ -1,10 +1,11 @@
 // frontend/src/components/admin/AdminUserDienstsTab.tsx
 import { useCallback, useEffect, useState } from "react";
-import { getAssignedDaysForUser } from "../api/diensts";
+import { getDienstByUser, getAssignedDaysForUser } from "../api/diensts";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
 import type { AssignedDayFull } from "../types/assignedDay";
 import { useAuth } from "../hooks/useAuth";
+import type { Dienst } from '../types/dienst';
 
 interface Props {
   userId: string;
@@ -12,6 +13,7 @@ interface Props {
 
 const AdminUserDienstsTab = ({ userId }: Props) => {
   const { token } = useAuth();
+  const [diensts, setDiensts] = useState<Dienst[]>([]);
   const [assignedDays, setAssignedDays] = useState<AssignedDayFull[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<{
@@ -25,18 +27,46 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
 
     setLoading(true);
     try {
-      const data = await getAssignedDaysForUser(userId, token);
-      setAssignedDays(data);
+      // Carga ambas APIs paralelamente
+      const [assignedDaysData, dienstsData] = await Promise.all([
+        getAssignedDaysForUser(userId, token),
+        getDienstByUser(userId, token),
+      ]);
+      setAssignedDays(assignedDaysData);
+      setDiensts(dienstsData);
     } catch (error) {
-      console.error("Error al obtener los días asignados:", error);
+      console.error("Error al obtener los días asignados y diensts:", error);
     } finally {
       setLoading(false);
     }
   }, [userId, token]);
 
-  useEffect(() => {
-    fetchAssignedDays();
-  }, [fetchAssignedDays]);
+ useEffect(() => {
+  fetchAssignedDays();
+}, [fetchAssignedDays]);
+
+
+const getDienstIdForDate = (dateStr: string): string => {
+  const targetDate = new Date(dateStr);
+
+  for (const dienst of diensts) {
+    if (!dienst.weekStartDate || !dienst.weekEndDate) continue;
+
+    const start = new Date(dienst.weekStartDate);
+    const end = new Date(dienst.weekEndDate);
+
+    // Si dateStr está dentro de la semana del dienst
+    if (targetDate >= start && targetDate <= end) {
+      return dienst._id;
+    }
+  }
+
+  console.warn(`ID del Dienst no encontrado para la fecha ${dateStr}`);
+  return '';
+};
+
+
+
 
   if (loading) return <p>Cargando días asignados...</p>;
 
@@ -85,14 +115,19 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                         <div
                           key={dateStr}
                           className={`border rounded p-2 text-sm cursor-pointer hover:shadow ${bgColor}`}
-                          onClick={() =>
-                            assignment &&
+                          onClick={() => {
+                            const foundDienstId = assignment ? assignment.dienstId : getDienstIdForDate(dateStr);
+                            if (!foundDienstId) {
+                              console.warn(`ID del Dienst no encontrado para la fecha ${dateStr}`);
+                            }
                             setSelectedAssignment({
-                              date: assignment.date,
-                              assignment,
-                              dienstId: assignment.dienstId,
-                            })
-                          }
+                              date: dateStr,
+                              assignment: assignment || undefined,
+                              dienstId: foundDienstId,
+                            });
+                          }}
+
+
                         >
                           <p className="font-semibold">
                             {new Date(dateStr).toLocaleDateString("es-ES", {
