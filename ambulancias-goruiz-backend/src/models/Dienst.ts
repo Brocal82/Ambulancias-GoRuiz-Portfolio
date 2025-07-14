@@ -1,3 +1,4 @@
+//backend/src/models/Dienst.ts
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IDienstAssignment {
