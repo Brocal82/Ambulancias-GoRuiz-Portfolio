@@ -1,3 +1,4 @@
+//frontend/src/components/workda/PartialReviewModal.tsx
 import React, { useState } from "react";
 import type { Trip } from "../../types/trip";
 import type { AssignedDayFull } from "../../types/assignedDay";
