@@ -25,7 +25,7 @@ import WorkerPrämienPage from './pages/WorkerPraemienPage';
 import AdminUserDetailDashboard from './pages/AdminUserDetailDashboard';
 import WorkerVacationsPage from './pages/WorkerVacationsPage';
 import AdminVacationsPage from './pages/AdminVacationsPage' 
-
+import AdminAmbulancesPage from './pages/AdminAmbulancesPage';
 
 export default function App() {
   return (
@@ -52,7 +52,9 @@ export default function App() {
             <Route path="/admin/hospitals" element={<AppLayout><AdminHospitalsPage /></AppLayout>} />
             <Route path="/admin/vacations" element={<AppLayout><AdminVacationsPage /></AppLayout>} />
             <Route path="/admin/summaries" element={<AppLayout><AdminSummariesPage /></AppLayout>} />
+            <Route path="/admin/ambulances" element={<AppLayout><AdminAmbulancesPage /></AppLayout>} />
             <Route path="/admin/user/:userId" element={<AppLayout><AdminUserDetailDashboard /></AppLayout>} />
+
 
             
 

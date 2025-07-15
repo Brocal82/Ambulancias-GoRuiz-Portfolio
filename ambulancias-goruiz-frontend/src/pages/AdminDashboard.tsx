@@ -32,6 +32,14 @@ const AdminDashboard = () => {
         </Link>
 
         <Link
+          to="/admin/ambulances"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
+          <h2 className="text-lg font-semibold mb-2">🚑 Ambulancias</h2>
+          <p className="text-sm text-gray-600">Añade y edita ambulancias</p>
+        </Link>
+
+        <Link
           to="/admin/summaries"
           className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
         >
