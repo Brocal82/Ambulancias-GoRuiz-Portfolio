@@ -20,9 +20,11 @@ export interface PartialSummaryPayload {
   driver: string;
   medic: string;
   isFinalClosure?: false;
+  hasIssue?: boolean;
   dienstNumber?: number;
   startTime?: string;
   endTime?: string;
+
 
 }
 
@@ -38,9 +40,11 @@ export interface FinalSummaryPayload {
   trips: Trip[];
   extraNote?: string;
   isFinalClosure: boolean;
+  hasIssue?: boolean;
   dienstNumber: number;
   startTime: string;
   endTime: string;
+
 }
 
 
@@ -63,10 +67,12 @@ export interface WorkdaySummary {
   extraNote?: string;
   partialClosureReason?: string;
   isFinalClosure: boolean;
+  hasIssue?: boolean;
   trips: Trip[];
   dienstNumber?: number;
   dienstId?: string;
   startTime?: string;
   endTime?: string;
+
 }
 

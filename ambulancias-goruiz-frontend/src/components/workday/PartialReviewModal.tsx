@@ -1,10 +1,11 @@
-//frontend/src/components/workda/PartialReviewModal.tsx
+// frontend/src/components/workday/PartialReviewModal.tsx
 import React, { useState } from "react";
 import type { Trip } from "../../types/trip";
 import type { AssignedDayFull } from "../../types/assignedDay";
 import ReviewSummary from "./ReviewSummary";
 import { toast } from "react-toastify";
 import { calculateEffectivePatients } from "../../utils/prämienUtils";
+import IssueReportModal from "./IssueReportModal";
 
 interface Props {
   trips: Trip[];
@@ -13,7 +14,12 @@ interface Props {
   initialKm: string;
   finalKm: string;
   onClose: () => void;
-  onSend: (report: string, finalKm: number, totalEffectivePatients: number) => void; // ✅ actualizado
+  onSend: (
+    report: string,
+    finalKm: number,
+    totalEffectivePatients: number,
+    issueData?: any
+  ) => void;
 }
 
 const PartialReviewModal: React.FC<Props> = ({
@@ -26,10 +32,11 @@ const PartialReviewModal: React.FC<Props> = ({
 }) => {
   const [report, setReport] = useState("");
   const [finalKm, setFinalKm] = useState<number | "">("");
+  const [hasIssue, setHasIssue] = useState(false);
+  const [showIssueModal, setShowIssueModal] = useState(false);
 
   const parsedInitialKm = Number(initialKm);
   const parsedFinalKm = finalKm === "" ? 0 : Number(finalKm);
-
   const totalEffectivePatients = calculateEffectivePatients(trips, assignedDay.date);
 
   const handleSubmit = () => {
@@ -37,14 +44,11 @@ const PartialReviewModal: React.FC<Props> = ({
       toast.warn("✏️ Escribe un motivo del cierre parcial.");
       return;
     }
-
     if (finalKm === "" || isNaN(Number(finalKm))) {
       toast.warn("📏 Introduce los kilómetros finales.");
       return;
     }
-
-    // ✅ enviamos los pacientes efectivos
-    onSend(report.trim(), Number(finalKm), totalEffectivePatients);
+    onSend(report.trim(), parsedFinalKm, totalEffectivePatients);
   };
 
   return (
@@ -52,7 +56,6 @@ const PartialReviewModal: React.FC<Props> = ({
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl overflow-y-auto max-h-[90vh] space-y-6">
         <h2 className="text-xl font-bold text-center">🟠 Revisión parcial del día</h2>
 
-        {/* Reutilizamos el componente común */}
         <ReviewSummary
           assignedDay={assignedDay}
           vehicleNumber={vehicleNumber}
@@ -81,6 +84,41 @@ const PartialReviewModal: React.FC<Props> = ({
           }
           className="w-full border rounded p-2"
         />
+
+        {/* Checkbox Avería */}
+        <label className="flex items-center space-x-2 pb-4">
+          <input
+            type="checkbox"
+            checked={hasIssue}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setHasIssue(checked);
+              if (checked) setShowIssueModal(true);
+            }}
+          />
+          <span>⚠️ Avería</span>
+        </label>
+
+
+        {/* Modal técnico */}
+        {showIssueModal && (
+          <IssueReportModal
+            isOpen={true}
+            onClose={() => {
+              setShowIssueModal(false);
+              setHasIssue(false);
+            }}
+            assignedDay={assignedDay}
+            vehicleNumber={vehicleNumber}
+            ambulanceId={assignedDay.assignmentId}
+            finalKm={parsedFinalKm}
+            onSubmit={async (issueData) => {
+              setHasIssue(true);
+              setShowIssueModal(false);
+              onSend("⚠️ Avería", parsedFinalKm, totalEffectivePatients, issueData);
+            }}
+          />
+        )}
 
         <div className="flex justify-end gap-2 pt-4">
           <button

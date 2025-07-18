@@ -1,17 +1,20 @@
-//frontend/src/components/workday/FinalReviewModal.tsx
+// frontend/src/components/workday/FinalReviewModal.tsx
 import React, { useState } from "react";
 import { toast } from "react-toastify";
-
 import ReviewSummary from "./ReviewSummary";
 import type { Trip } from "../../types/trip";
 import type { AssignedDayFull } from "../../types/assignedDay";
 import { calculateEffectivePatients } from "../../utils/prämienUtils";
+import IssueReportModal from "./IssueReportModal";
 
 interface FinalReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  /** callback ⇒ (nota del día, km finales) */
-  onConfirm: (note: string, finalKm: number) => void;
+  onConfirm: (
+    note: string,
+    finalKm: number,
+    issueData?: any
+  ) => void;
   trips: Trip[];
   vehicleNumber: string;
   initialKm: string;
@@ -30,15 +33,15 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
   assignedDay,
 }) => {
   const [note, setNote] = useState<string>("");
-
   const [finalKmLocal, setFinalKmLocal] = useState<number | "">(
     finalKm === "" ? "" : Number(finalKm)
   );
+  const [hasIssue, setHasIssue] = useState(false);
+  const [showIssueModal, setShowIssueModal] = useState(false);
 
   const parsedInitialKm = Number(initialKm);
   const parsedFinalKm = finalKmLocal === "" ? 0 : Number(finalKmLocal);
   const totalEffectivePatients = calculateEffectivePatients(trips, assignedDay.date);
-
 
   if (!isOpen) return null;
 
@@ -47,14 +50,12 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
       toast.warn("📏 Introduce los kilómetros finales.");
       return;
     }
-    // 👇 Aquí mandamos la nota como argumento a MyWorkDay.tsx
-    onConfirm(note.trim(), Number(finalKmLocal));
+    onConfirm(note.trim(), parsedFinalKm);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl overflow-y-auto max-h-[90vh] space-y-6">
-
         <h2 className="text-xl font-bold text-center">✅ Revisión final del día</h2>
 
         <ReviewSummary
@@ -69,8 +70,6 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
           Total de pacientes (con multiplicadores): {totalEffectivePatients}
         </p>
 
-
-        {/* ✅ CAMBIO: placeholder más claro */}
         <textarea
           placeholder="Motivo del cierre final (opcional)…"
           value={note}
@@ -89,6 +88,41 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
           }
           className="w-full border rounded p-2 mt-2"
         />
+
+        {/* ✅ Checkbox Avería */}
+        <label className="flex items-center space-x-2 pb-4">
+          <input
+            type="checkbox"
+            checked={hasIssue}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setHasIssue(checked);
+              if (checked) setShowIssueModal(true);
+            }}
+          />
+          <span>⚠️ Avería</span>
+        </label>
+
+
+        {/* Modal técnico */}
+        {showIssueModal && (
+          <IssueReportModal
+            isOpen={true}
+            onClose={() => {
+              setShowIssueModal(false);
+              setHasIssue(false);
+            }}
+            assignedDay={assignedDay}
+            vehicleNumber={vehicleNumber}
+            ambulanceId={assignedDay.vehicleNumber}
+            finalKm={parsedFinalKm}
+            onSubmit={async (issueData) => {
+              setHasIssue(true);
+              setShowIssueModal(false);
+              onConfirm("⚠️ Avería", parsedFinalKm, issueData);
+            }}
+          />
+        )}
 
         <div className="flex justify-end gap-2 pt-4">
           <button
