@@ -5,6 +5,7 @@ import Dienst from "../models/Dienst";
 import Trip from "../models/Trip";
 import WorkdaySummary from "../models/workdaySummary";
 import { calculateEffectivePatients } from "../utils/prämienUtils";
+import WorkdayIssue from "../models/WorkdayIssue";
 
 /* ─────────────────────────────s
  * CIERRE COMPLETO DEL DÍA
@@ -234,6 +235,54 @@ export const getAllWorkdaySummaries = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error al obtener los resúmenes." });
   }
 };
+
+export const reportIssue = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const {
+      dienstNumber, date, startTime, endTime, team,
+      vehicleNumber, ambulanceId, finalKm,
+      timestamp, issueText, driver, medic
+    } = req.body;
+
+    if (!dienstNumber || !vehicleNumber || !ambulanceId || !timestamp || !issueText) {
+      res.status(400).json({ message: "Faltan datos obligatorios para reporte de avería." });
+      return;
+    }
+
+    // Validación opcional para asegurar que sean ID válidos
+    if (driver && !mongoose.isValidObjectId(driver)) {
+      res.status(400).json({ message: "driver no es un ObjectId válido" });
+      return;
+    }
+    if (medic && !mongoose.isValidObjectId(medic)) {
+      res.status(400).json({ message: "medic no es un ObjectId válido" });
+      return;
+    }
+
+    const newIssue = await WorkdayIssue.create({
+      dienstNumber,
+      date,
+      startTime,
+      endTime,
+      team,
+      vehicleNumber,
+      ambulanceId,
+      finalKm,
+      timestamp,
+      issueText,
+      driver,
+      medic,
+    });
+
+    res.status(201).json(newIssue);
+  } catch (err) {
+    console.error("❌ Error reportIssue:", err);
+    res.status(500).json({ message: "Error interno al generar reporte de avería." });
+  }
+};
+
+
+
 
 
 
