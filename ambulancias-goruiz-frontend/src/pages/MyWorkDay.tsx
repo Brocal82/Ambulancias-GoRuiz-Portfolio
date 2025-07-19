@@ -133,6 +133,9 @@ const MyWorkday = () => {
      countsForSummary: true,
   });
 
+  const [issueData, setIssueData] = useState<any | null>(null);
+
+
   const navigate = useNavigate();
 
 const handleConfirmAmbulanceData = () => {
@@ -581,27 +584,29 @@ useEffect(() => {
 
 
 
-    const payload: PartialSummaryPayload = {
-      date: today,
-      assignmentId: assignedDay.assignmentId,
-      driver: assignedDay.driver._id,
-      medic: assignedDay.medic._id,
-      vehicleNumber,
-      initialKm: Number(initialAmbulanceKm),
-      finalKm: finalKmValue,
-      trips,
-      totalDienstKm,
-      partialClosureReason: reason,
-      isFinalClosure: false,
-      dienstNumber: assignedDay.dienstNumber,
-      startTime: assignedDay.startTime,
-      endTime: assignedDay.endTime,
-          
-        };
+    const payload: PartialSummaryPayload & { issueData?: any } = {
+  date: today,
+  assignmentId: assignedDay.assignmentId,
+  driver: assignedDay.driver._id,
+  medic: assignedDay.medic._id,
+  vehicleNumber,
+  initialKm: Number(initialAmbulanceKm),
+  finalKm: finalKmValue,
+  trips,
+  totalDienstKm,
+  partialClosureReason: reason,
+  isFinalClosure: false,
+  dienstNumber: assignedDay.dienstNumber,
+  startTime: assignedDay.startTime,
+  endTime: assignedDay.endTime,
+  ...(issueData ? { issueData } : {}),
+};
+
 
     await sendPartialClosure(payload, token);
 
-    toast.success("✅ Cierre parcial enviado al admin.");
+    toast.success("✅ Cierre parcial enviado al admin." + (issueData ? " Incluye reporte de avería." : ""));
+
 
     // ✅ Borrar datos locales de ambulancia para forzar nuevo inicio
     clearAmbulanceData(assignedDay.assignmentId);
@@ -1357,9 +1362,13 @@ useEffect(() => {
           initialKm={initialAmbulanceKm}
           finalKm={finalAmbulanceKm}
           onClose={() => setShowReviewModal(false)}
-          onSend={handleSendPartialClosure}
+          onSend={(reason, finalKmValue, issue) => {
+            setIssueData(issue || null);
+            handleSendPartialClosure(reason, finalKmValue);
+          }}
         />
       )}
+
 
       {/* ───────── Modal de REVISIÓN FINAL ───────── */}
       {showReviewModal && isFinalClosure === true && assignedDay && (

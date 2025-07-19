@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast } from "react-toastify";
 import type { AssignedDayFull } from "../../types/assignedDay";
 
 interface Props {
@@ -8,18 +9,6 @@ interface Props {
   vehicleNumber: string;
   ambulanceId: string;
   finalKm: number;
-  onSubmit: (data: {
-    dienstNumber: number;
-    date: string;
-    startTime: string;
-    endTime: string;
-    team: string;
-    vehicleNumber: string;
-    ambulanceId: string;
-    finalKm: number;
-    timestamp: string;
-    issueText: string;
-  }) => Promise<void>;
 }
 
 const IssueReportModal: React.FC<Props> = ({
@@ -29,15 +18,26 @@ const IssueReportModal: React.FC<Props> = ({
   vehicleNumber,
   ambulanceId,
   finalKm,
-  onSubmit,
 }) => {
   const [description, setDescription] = useState("");
+  const [finalKmInput, setFinalKmInput] = useState<string>(finalKm > 0 ? finalKm.toString() : "");
 
   if (!isOpen) return null;
 
   const handleSend = async () => {
-    if (!description.trim()) return;
-    await onSubmit({
+    if (!description.trim()) {
+      toast.warn("📝 Describe la avería antes de enviar.");
+      return;
+    }
+
+    if (!finalKmInput.trim() || isNaN(Number(finalKmInput))) {
+      toast.warn("📏 Introduce un número válido de KM finales.");
+      return;
+    }
+
+    const finalKmValue = Number(finalKmInput);
+
+    const payload = {
       dienstNumber: assignedDay.dienstNumber!,
       date: assignedDay.date,
       startTime: assignedDay.startTime,
@@ -45,11 +45,27 @@ const IssueReportModal: React.FC<Props> = ({
       team: `${assignedDay.driver.lastName}, ${assignedDay.driver.name} + ${assignedDay.medic.lastName}, ${assignedDay.medic.name}`,
       vehicleNumber,
       ambulanceId,
-      finalKm,
+      finalKm: finalKmValue,
       timestamp: new Date().toISOString(),
       issueText: description.trim(),
-    });
-    onClose();
+      driver: assignedDay.driver._id,
+      medic: assignedDay.medic._id,
+    };
+
+    try {
+      const res = await fetch("/api/workday-summary/report-issue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      toast.success("🔧 Avería reportada correctamente.");
+      onClose();
+    } catch (err) {
+      console.error("Error al reportar avería:", err);
+      toast.error("❌ No se pudo reportar la avería.");
+    }
   };
 
   return (
@@ -62,14 +78,28 @@ const IssueReportModal: React.FC<Props> = ({
         <p><strong>🚗 Conductor:</strong> {assignedDay.driver.lastName}, {assignedDay.driver.name}</p>
         <p><strong>🧑‍⚕️ Sanitario:</strong> {assignedDay.medic.lastName}, {assignedDay.medic.name}</p>
         <p><strong>🚐 Ambulancia</strong> {vehicleNumber} (ID: {ambulanceId})</p>
-        <p><strong>Km finales</strong> {finalKm}</p>
-        <p><strong>⏱ Timestamp</strong> {new Date().toLocaleString()}</p>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">🔢 KM finales</label>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={finalKmInput}
+            onChange={(e) => setFinalKmInput(e.target.value.replace(/\D/g, ""))} // solo números
+            placeholder="Introduce los kilómetros finales"
+            className="w-full border rounded p-2"
+          />
+        </div>
+
+        <p><strong>⏱ Timestamp:</strong> {new Date().toLocaleString()}</p>
+
         <textarea
           placeholder="Describe la avería…"
           value={description}
-          onChange={e => setDescription(e.target.value)}
+          onChange={(e) => setDescription(e.target.value)}
           className="w-full h-32 border rounded p-2"
         />
+
         <div className="flex justify-end space-x-2">
           <button onClick={onClose} className="px-4 py-2 bg-gray-300 rounded">Cancelar</button>
           <button onClick={handleSend} className="px-4 py-2 bg-red-600 text-white rounded">Enviar avería</button>
