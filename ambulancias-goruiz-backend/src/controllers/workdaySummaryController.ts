@@ -281,6 +281,18 @@ export const reportIssue = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
+// Obtener todos los reportes de avería
+export const getAllIssueReports = async (req: Request, res: Response) => {
+  try {
+    const issues = await WorkdayIssue.find().sort({ timestamp: -1 }); // los más recientes primero
+    res.status(200).json(issues);
+  } catch (err) {
+    console.error("❌ Error al obtener reportes técnicos:", err);
+    res.status(500).json({ message: "Error al obtener reportes técnicos" });
+  }
+};
+
+
 
 
 

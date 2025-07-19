@@ -1,6 +1,7 @@
 // frontend/src/api/workdaySummary.ts
 import axios from "./axios";
 import type { PartialSummaryPayload, FinalSummaryPayload, WorkdaySummary } from "../types/workdaySummary"; // añade FinalSummaryPayload si no lo tienes
+import type { WorkdayIssue } from "../types/workdayIssue";
 
 // Ya existente
 export const sendPartialClosure = async (
@@ -29,4 +30,15 @@ export const getAllSummaries = async (token: string): Promise<WorkdaySummary[]> 
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;
+};
+
+export const getAllIssueReports = async (token: string): Promise<WorkdayIssue[]> => {
+  const res = await fetch("/api/workday-summary/issues", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) throw new Error("Error al obtener reportes técnicos");
+  return res.json();
 };
