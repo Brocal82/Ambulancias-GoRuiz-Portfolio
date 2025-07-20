@@ -5,32 +5,42 @@ import { getAllIssueReports } from "../api/workdaySummary";
 import type { WorkdayIssue } from "../types/workdayIssue";
 import { useAuth } from "../hooks/useAuth";
 import { toast } from "react-toastify";
+import { getAllAmbulances } from "../api/ambulances";
+import type { Ambulance } from "../types/ambulance";
 
 const AdminMechanicsPage = () => {
   const { token } = useAuth();
   const [issues, setIssues] = useState<WorkdayIssue[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
 
-  useEffect(() => {
-    const fetchIssues = async () => {
-      try {
-        if (!token) return;
-        const data = await getAllIssueReports(token);
-        // 🔽 Ordenar por fecha descendente
-        const sorted = [...data].sort(
-          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        );
-        setIssues(sorted);
-      } catch (err) {
-        console.error("Error al cargar averías:", err);
-        toast.error("❌ Error al cargar reportes de avería.");
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchIssues();
-  }, [token]);
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      if (!token) return;
+
+      // 🔧 Cargar reportes de avería
+      const issuesData = await getAllIssueReports(token);
+      const sortedIssues = [...issuesData].sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+      setIssues(sortedIssues);
+
+      // 🚑 Cargar ambulancias registradas
+      const ambulancesData = await getAllAmbulances();
+      setAmbulances(ambulancesData);
+    } catch (err) {
+      console.error("❌ Error al cargar reportes o ambulancias:", err);
+      toast.error("❌ Error al cargar reportes o ambulancias.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, [token]);
+
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -59,8 +69,15 @@ const AdminMechanicsPage = () => {
                 <strong>👥 Equipo:</strong> {issue.team}
               </p>
               <p className="text-sm text-gray-700">
-                <strong>🚐 Ambulancia:</strong> {issue.vehicleNumber} (ID: {issue.ambulanceId})
+                <strong>🚐 Ambulancia:</strong>{" "}
+                {(() => {
+                  const amb = ambulances.find(a => a._id === issue.ambulanceId);
+                  return amb
+                    ? `${amb.ambulanceNumber} — ${amb.brand} ${amb.modelName} (Matrícula: ${amb.licensePlate})`
+                    : `${issue.vehicleNumber} (ID: ${issue.ambulanceId})`;
+                })()}
               </p>
+
               <p className="text-sm text-gray-700">
                 <strong>📏 KM finales:</strong> {issue.finalKm}
               </p>
