@@ -1,20 +1,18 @@
-//src/components/workday/ReviewSummary.tsx
+// src/components/workday/ReviewSummary.tsx
 import React from "react";
 import type { Trip } from "../../types/trip";
-import type { AssignedDayFull } from "../../types/assignedDay";
+import type { AssignedDayFull } from "../../types/dienst";
 
 /* ---------- helpers ---------- */
 const calcTripKm = (t: Trip) => Math.max(0, t.kmEnd - t.kmStart);
 
 const getMultiplier = (t: Trip, totalKm: number, isWeekendLate: boolean) => {
-  // 0-1 fijado por cancelación
   if (t.countsTrip === 0) return 0;
   if (t.countsTrip === 1) {
     if (totalKm >= 20) return 2;
     if (totalKm >= 15 || isWeekendLate) return 1.5;
     return 1;
   }
-  // viajes “normales”
   if (totalKm >= 20) return 2;
   if (totalKm >= 15 || isWeekendLate) return 1.5;
   return 1;
@@ -22,7 +20,7 @@ const getMultiplier = (t: Trip, totalKm: number, isWeekendLate: boolean) => {
 
 interface Props {
   assignedDay: AssignedDayFull;
-  vehicleNumber: string;
+  ambulanceNumber: string; // ✅ actualizada
   initialKm: number;
   finalKm: number;
   trips: Trip[];
@@ -30,12 +28,11 @@ interface Props {
 
 const ReviewSummary: React.FC<Props> = ({
   assignedDay,
-  vehicleNumber,
+  ambulanceNumber,
   initialKm,
   finalKm,
   trips,
 }) => {
-  /* horario especial fin de semana 14-17 h */
   const weekendLate =
     [0, 6].includes(new Date(assignedDay.date).getDay()) &&
     (() => {
@@ -52,34 +49,27 @@ const ReviewSummary: React.FC<Props> = ({
         {/* izquierda */}
         <div>
           <p>📅 <strong>{assignedDay.date}</strong></p>
-          <p>
-            ⏰ {assignedDay.startTime} – {assignedDay.endTime}
-          </p>
+          <p>⏰ {assignedDay.startTime} – {assignedDay.endTime}</p>
           <div>
-  <p className="font-semibold">👥 Team:</p>
-  <div className="ml-2 space-y-1">
-    <p>
-      {typeof assignedDay.driver === "string"
-        ? assignedDay.driver
-        : `${assignedDay.driver.lastName}, ${assignedDay.driver.name}`}
-    </p>
-    <p>
-      {typeof assignedDay.medic === "string"
-        ? assignedDay.medic
-        : `${assignedDay.medic.lastName}, ${assignedDay.medic.name}`}
-    </p>
-  </div>
-</div>
-
-        </div>
-        <div>
-
-
+            <p className="font-semibold">👥 Team:</p>
+            <div className="ml-2 space-y-1">
+              <p>
+                {typeof assignedDay.driver === "string"
+                  ? assignedDay.driver
+                  : `${assignedDay.driver.lastName}, ${assignedDay.driver.name}`}
+              </p>
+              <p>
+                {typeof assignedDay.medic === "string"
+                  ? assignedDay.medic
+                  : `${assignedDay.medic.lastName}, ${assignedDay.medic.name}`}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* derecha */}
         <div className="text-right">
-          <p>🚐 <strong>{vehicleNumber}</strong></p>
+          <p>🚑 <strong>{ambulanceNumber}</strong></p>
           <p>🔢 {initialKm} → {finalKm}</p>
           <p className="font-semibold">🧮 Total: {totalKmDiff} km</p>
         </div>
@@ -140,12 +130,9 @@ const ReviewSummary: React.FC<Props> = ({
             })}
           </tbody>
         </table>
-
-
       </div>
     </div>
   );
 };
 
 export default ReviewSummary;
-

@@ -106,7 +106,8 @@ const AdminSummariesPage = () => {
                           </td>
 
                           {/* Ambulancia */}
-                          <td>{s.vehicleNumber}</td>
+                          <td>{s.ambulanceNumber ?? "—"}</td>
+
 
                           {/* 👥 Team */}
                           <td className="whitespace-nowrap leading-tight">
@@ -154,7 +155,7 @@ const AdminSummariesPage = () => {
                                   date: s.date,
                                   startTime: s.startTime || "",
                                   endTime: s.endTime || "",
-                                  vehicleNumber: s.vehicleNumber,
+                                  ambulanceId: s.ambulanceId,
                                   driver:
                                     typeof s.driver === "object"
                                       ? s.driver
@@ -164,7 +165,7 @@ const AdminSummariesPage = () => {
                                       ? s.medic
                                       : { name: "", lastName: s.medic as string, _id: "" },
                                 }}
-                                vehicleNumber={s.vehicleNumber}
+                                ambulanceNumber={s.ambulanceNumber ?? ""}
                                 initialKm={s.initialKm}
                                 finalKm={s.finalKm}
                                 trips={[...s.trips].sort((a, b) => a.timeWarning.localeCompare(b.timeWarning))}
@@ -173,6 +174,7 @@ const AdminSummariesPage = () => {
                           </tr>
                         )}
                       </Fragment>
+
 
                     );
                   })}

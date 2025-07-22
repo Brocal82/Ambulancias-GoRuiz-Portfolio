@@ -4,7 +4,7 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 export interface IDienstAssignment {
   _id?: Types.ObjectId;
   date: string;
-  vehicleNumber: string;
+  ambulanceId?: Types.ObjectId;
   startTime: string;
   endTime: string;
   driver?: Types.ObjectId;  // ahora es opcional
@@ -21,7 +21,7 @@ export interface IDienst extends Document {
 const AssignmentSchema = new Schema<IDienstAssignment>(
   {
     date: { type: String, required: true },
-    vehicleNumber: { type: String, required: true },
+    ambulanceId: { type: Schema.Types.ObjectId, ref: 'Ambulance', required: false }, 
     startTime: { type: String, required: true },
     endTime: { type: String, required: true },
     driver: { type: Schema.Types.ObjectId, ref: 'User', required: false },

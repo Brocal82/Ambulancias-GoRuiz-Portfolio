@@ -1,9 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { getAllAmbulances, createAmbulance, updateAmbulance, deleteAmbulance } from '../api/ambulances';
+import {
+  getAllAmbulances,
+  createAmbulance,
+  updateAmbulance,
+  deleteAmbulance
+} from '../api/ambulances';
 import type { Ambulance } from '../types/ambulance';
 import AmbulanceFormModal from '../components/ambulances/AmbulanceFormModal';
+import { useAuth } from '../hooks/useAuth';
 
 const AdminAmbulancesPage: React.FC = () => {
+  const { token } = useAuth();
+
   const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,9 +24,10 @@ const AdminAmbulancesPage: React.FC = () => {
   }, []);
 
   const fetchAmbulances = async () => {
+    if (!token) return;
     setLoading(true);
     try {
-      const data = await getAllAmbulances();
+      const data = await getAllAmbulances(token);
       setAmbulances(data);
       setError(null);
     } catch {
@@ -38,29 +47,42 @@ const AdminAmbulancesPage: React.FC = () => {
     setModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Seguro que quieres eliminar esta ambulancia?')) return;
-    try {
-      await deleteAmbulance(id);
-      fetchAmbulances();
-    } catch {
-      alert('Error al eliminar ambulancia');
-    }
-  };
+const handleDelete = async (id: string) => {
+  if (!token) {
+    alert('Token no disponible');
+    return;
+  }
 
-  const handleSave = async (ambulanceData: Omit<Ambulance, '_id'>, id?: string) => {
-    try {
-      if (id) {
-        await updateAmbulance(id, ambulanceData);
-      } else {
-        await createAmbulance(ambulanceData);
-      }
-      setModalOpen(false);
-      fetchAmbulances();
-    } catch {
-      alert('Error al guardar ambulancia');
+  if (!window.confirm('¿Seguro que quieres eliminar esta ambulancia?')) return;
+
+  try {
+    await deleteAmbulance(id, token);
+    fetchAmbulances();
+  } catch {
+    alert('Error al eliminar ambulancia');
+  }
+};
+
+
+const handleSave = async (ambulanceData: Omit<Ambulance, '_id'>, id?: string) => {
+  if (!token) {
+    alert('Token no disponible');
+    return;
+  }
+
+  try {
+    if (id) {
+      await updateAmbulance(id, ambulanceData, token);
+    } else {
+      await createAmbulance(ambulanceData, token);
     }
-  };
+    setModalOpen(false);
+    fetchAmbulances();
+  } catch {
+    alert('Error al guardar ambulancia');
+  }
+};
+
 
   if (loading) return <p className="text-center mt-10">Cargando ambulancias...</p>;
   if (error) return <p className="text-center mt-10 text-red-600">{error}</p>;

@@ -28,8 +28,11 @@ useEffect(() => {
       setIssues(sortedIssues);
 
       // 🚑 Cargar ambulancias registradas
-      const ambulancesData = await getAllAmbulances();
+      const ambulancesData = await getAllAmbulances(token);
       setAmbulances(ambulancesData);
+
+      // 👇 Agregado para debug
+      console.log("🩺 Ambulancias cargadas:", ambulancesData);
     } catch (err) {
       console.error("❌ Error al cargar reportes o ambulancias:", err);
       toast.error("❌ Error al cargar reportes o ambulancias.");
@@ -40,6 +43,7 @@ useEffect(() => {
 
   fetchData();
 }, [token]);
+
 
 
   return (
@@ -69,14 +73,16 @@ useEffect(() => {
                 <strong>👥 Equipo:</strong> {issue.team}
               </p>
               <p className="text-sm text-gray-700">
-                <strong>🚐 Ambulancia:</strong>{" "}
-                {(() => {
-                  const amb = ambulances.find(a => a._id === issue.ambulanceId);
-                  return amb
-                    ? `${amb.ambulanceNumber} — ${amb.brand} ${amb.modelName} (Matrícula: ${amb.licensePlate})`
-                    : `${issue.vehicleNumber} (ID: ${issue.ambulanceId})`;
-                })()}
-              </p>
+  <strong>🚐 Ambulancia:</strong>{" "}
+  {(() => {
+    console.log("🔍 Buscando ID:", issue.ambulanceId); // 👈 AÑADIDO
+    const amb = ambulances.find(a => a._id === issue.ambulanceId);
+    return amb
+      ? `${amb.ambulanceNumber} — ${amb.brand} ${amb.modelName} (Matrícula: ${amb.licensePlate})`
+      : `${issue.vehicleNumber} (ID: ${issue.ambulanceId})`;
+  })()}
+</p>
+
 
               <p className="text-sm text-gray-700">
                 <strong>📏 KM finales:</strong> {issue.finalKm}

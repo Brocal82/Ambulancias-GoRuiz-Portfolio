@@ -89,29 +89,29 @@ const AdminPage = () => {
                   if (!d.weekStartDate) return false;
                   const parsedDate = new Date(d.weekStartDate);
                   return !isNaN(parsedDate.getTime()) &&
-                         parsedDate.toISOString().split("T")[0] === weekStart.toISOString().split("T")[0];
+                    parsedDate.toISOString().split("T")[0] === weekStart.toISOString().split("T")[0];
                 }) && (
-                  <button
-                    className="text-sm bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
-                    onClick={async () => {
-                      const confirmDelete = confirm(`¿Borrar todos los Diensts de la semana del ${weekStart.toLocaleDateString()}?`);
-                      if (!confirmDelete || !token) return;
+                    <button
+                      className="text-sm bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+                      onClick={async () => {
+                        const confirmDelete = confirm(`¿Borrar todos los Diensts de la semana del ${weekStart.toLocaleDateString()}?`);
+                        if (!confirmDelete || !token) return;
 
-                      const mondayISO = weekStart.toISOString().split("T")[0];
+                        const mondayISO = weekStart.toISOString().split("T")[0];
 
-                      try {
-                        await deleteDienstsForWeek(mondayISO, token);
-                        alert("🗑️ Diensts eliminados correctamente");
-                        fetchDiensts();
-                      } catch (err) {
-                        console.error("Error al eliminar diensts:", err);
-                        alert("❌ No se pudieron eliminar los Diensts.");
-                      }
-                    }}
-                  >
-                    Borrar
-                  </button>
-                )}
+                        try {
+                          await deleteDienstsForWeek(mondayISO, token);
+                          alert("🗑️ Diensts eliminados correctamente");
+                          fetchDiensts();
+                        } catch (err) {
+                          console.error("Error al eliminar diensts:", err);
+                          alert("❌ No se pudieron eliminar los Diensts.");
+                        }
+                      }}
+                    >
+                      Borrar
+                    </button>
+                  )}
               </div>
             </div>
 
@@ -120,7 +120,7 @@ const AdminPage = () => {
                 if (!dienst.weekStartDate) return false;
                 const parsedDate = new Date(dienst.weekStartDate);
                 return !isNaN(parsedDate.getTime()) &&
-                       parsedDate.toISOString().split("T")[0] === weekStart.toISOString().split("T")[0];
+                  parsedDate.toISOString().split("T")[0] === weekStart.toISOString().split("T")[0];
               })
               .map((dienst) => {
                 const weekDates = Array.from({ length: 7 }, (_, i) => {
@@ -163,22 +163,35 @@ const AdminPage = () => {
                             {assignment ? (
                               <>
                                 <p className="text-xs">🕒 {assignment.startTime} - {assignment.endTime}</p>
-                                <p className="text-xs">🚑 {assignment.vehicleNumber}</p>
                                 <p className="text-xs">
-                                  👨‍✈️ Conductor:{" "}
+                                  🚑{" "}
+                                  {typeof assignment.ambulanceId === "object" && "ambulanceNumber" in assignment.ambulanceId
+                                    ? assignment.ambulanceId.ambulanceNumber
+                                    : typeof assignment.ambulanceId === "string" && assignment.ambulanceId.length > 0
+                                      ? assignment.ambulanceId
+                                      : "—"}
+                                </p>
+
+
+
+
+
+
+                                <p className="text-xs">
+                                  👨‍✈️ {" "}
                                   {typeof assignment.driver === "string"
                                     ? assignment.driver
                                     : assignment.driver
-                                    ? `${assignment.driver.lastName}, ${assignment.driver.name}`
-                                    : "—"}
+                                      ? `${assignment.driver.lastName}, ${assignment.driver.name}`
+                                      : "—"}
                                 </p>
                                 <p className="text-xs">
-                                  🧑‍⚕️ Sanitario:{" "}
+                                  🧑‍⚕️ {" "}
                                   {typeof assignment.medic === "string"
                                     ? assignment.medic
                                     : assignment.medic
-                                    ? `${assignment.medic.lastName}, ${assignment.medic.name}`
-                                    : "—"}
+                                      ? `${assignment.medic.lastName}, ${assignment.medic.name}`
+                                      : "—"}
                                 </p>
                               </>
                             ) : (
@@ -210,3 +223,11 @@ const AdminPage = () => {
 };
 
 export default AdminPage;
+
+
+
+
+
+
+
+

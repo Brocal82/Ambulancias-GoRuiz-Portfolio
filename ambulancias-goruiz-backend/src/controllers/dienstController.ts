@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-import Dienst, { IDienst, IDienstAssignment} from '../models/Dienst';
-import { dienstSchema, partialDienstSchema } from '../schemas/dienstSchema';
+import Dienst from '../models/Dienst';
+import Ambulance from '../models/Ambulance'; // ✅ Nuevo import
+import { dienstSchema } from '../schemas/dienstSchema';
 import { dienstQuerySchema } from '../schemas/dienstQuerySchema';
 import { ZodError, z } from 'zod';
 import mongoose from 'mongoose';
@@ -17,24 +18,21 @@ export const createDienst = async (req: Request, res: Response) => {
     const newDienst = new Dienst(parsedData);
     const savedDienst = await newDienst.save();
     res.status(201).json(savedDienst);
-    return;
   } catch (error) {
     if (error instanceof ZodError) {
       res.status(400).json({ message: 'Datos inválidos', errors: error.errors });
-      return;
+    } else {
+      res.status(500).json({ message: 'Error al crear Dienst', error });
     }
-    res.status(500).json({ message: 'Error al crear Dienst', error });
-    return;
   }
 };
-
 
 export const getAllDiensts: RequestHandler = async (req, res) => {
   try {
     const diensts = await Dienst.find()
       .populate('assignments.driver', 'name lastName')
-      .populate('assignments.medic', 'name lastName');
-
+      .populate('assignments.medic', 'name lastName')
+      .populate('assignments.ambulanceId');
     res.status(200).json(diensts);
   } catch (error) {
     console.error("Error al obtener los Diensts:", error);
@@ -42,24 +40,22 @@ export const getAllDiensts: RequestHandler = async (req, res) => {
   }
 };
 
-
 export const getDienstById = async (req: Request, res: Response) => {
   try {
     const parsedId = idSchema.parse(req.params.id);
-    const dienst = await Dienst.findById(parsedId).populate('assignments.driver assignments.medic');
+    const dienst = await Dienst.findById(parsedId)
+      .populate('assignments.driver assignments.medic assignments.ambulanceId');
     if (!dienst) {
       res.status(404).json({ message: 'Dienst no encontrado' });
       return;
     }
     res.status(200).json(dienst);
-    return;
   } catch (error) {
     if (error instanceof ZodError) {
       res.status(400).json({ message: 'ID inválido', errors: error.errors });
-      return;
+    } else {
+      res.status(500).json({ message: 'Error al obtener el Dienst', error });
     }
-    res.status(500).json({ message: 'Error al obtener el Dienst', error });
-    return;
   }
 };
 
@@ -68,20 +64,18 @@ export const updateDienst = async (req: Request, res: Response) => {
     const parsedId = idSchema.parse(req.params.id);
     const parsedData = dienstSchema.partial().parse(req.body);
     const updatedDienst = await Dienst.findByIdAndUpdate(parsedId, parsedData, { new: true })
-      .populate('assignments.driver assignments.medic');
+      .populate('assignments.driver assignments.medic assignments.ambulanceId');
     if (!updatedDienst) {
       res.status(404).json({ message: 'Dienst no encontrado' });
       return;
     }
     res.status(200).json(updatedDienst);
-    return;
   } catch (error) {
     if (error instanceof ZodError) {
       res.status(400).json({ message: 'Datos inválidos', errors: error.errors });
-      return;
+    } else {
+      res.status(500).json({ message: 'Error al actualizar el Dienst', error });
     }
-    res.status(500).json({ message: 'Error al actualizar el Dienst', error });
-    return;
   }
 };
 
@@ -103,22 +97,13 @@ export const updateDienstPartial: RequestHandler = async (req, res) => {
 
     for (const updatedAssignment of assignments) {
       const index = dienst.assignments.findIndex((a) => a.date === updatedAssignment.date);
-
       const updatedCopy = { ...updatedAssignment };
 
-      // Eliminar _id vacío para evitar error de Mongoose
-      if (updatedCopy._id === "") {
-        delete updatedCopy._id;
-      }
-
+      if (updatedCopy._id === "") delete updatedCopy._id;
       if (updatedCopy.driver === "") updatedCopy.driver = undefined;
       if (updatedCopy.medic === "") updatedCopy.medic = undefined;
 
-      if (
-        !updatedCopy.vehicleNumber ||
-        !updatedCopy.startTime ||
-        !updatedCopy.endTime
-      ) {
+      if (!updatedCopy.ambulanceId || !updatedCopy.startTime || !updatedCopy.endTime) {
         console.warn("Assignment incompleto ignorado:", updatedCopy);
         continue;
       }
@@ -141,8 +126,6 @@ export const updateDienstPartial: RequestHandler = async (req, res) => {
   }
 };
 
-
-
 export const deleteDienst = async (req: Request, res: Response) => {
   try {
     const parsedId = idSchema.parse(req.params.id);
@@ -152,14 +135,12 @@ export const deleteDienst = async (req: Request, res: Response) => {
       return;
     }
     res.status(200).json({ message: 'Dienst eliminado correctamente' });
-    return;
   } catch (error) {
     if (error instanceof ZodError) {
       res.status(400).json({ message: 'ID inválido', errors: error.errors });
-      return;
+    } else {
+      res.status(500).json({ message: 'Error al eliminar el Dienst', error });
     }
-    res.status(500).json({ message: 'Error al eliminar el Dienst', error });
-    return;
   }
 };
 
@@ -202,7 +183,6 @@ export const searchDienst = async (req: Request, res: Response) => {
   }
 };
 
-
 export const getDienstsByUser = async (req: Request, res: Response) => {
   const { userId } = req.params;
 
@@ -216,8 +196,9 @@ export const getDienstsByUser = async (req: Request, res: Response) => {
           ]
         }
       }
-    }).populate("assignments.driver", "name")
-      .populate("assignments.medic", "name");
+    })
+      .populate("assignments.driver", "name lastName")
+      .populate("assignments.medic", "name lastName");
 
     res.status(200).json(diensts);
   } catch (error) {
@@ -226,23 +207,7 @@ export const getDienstsByUser = async (req: Request, res: Response) => {
   }
 };
 
-// dienstController.ts
-export const removeAssignment = async (req: Request, res: Response) => {
-  const { date } = req.body;
-  const parsedId = idSchema.parse(req.params.id);
 
-  try {
-    const updatedDienst = await Dienst.findByIdAndUpdate(
-      parsedId,
-      { $pull: { assignments: { date } } },
-      { new: true }
-    ).populate("assignments.driver assignments.medic");
-
-    res.status(200).json(updatedDienst);
-  } catch (error) {
-    res.status(500).json({ message: "Error al eliminar el assignment", error });
-  }
-};
 
 export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
   const { userId } = req.params;
@@ -253,7 +218,6 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
   }
 
   try {
-    // Buscar todos los Diensts donde el usuario está asignado como driver o medic
     const diensts = await Dienst.find({
       $or: [
         { 'assignments.driver': new mongoose.Types.ObjectId(userId) },
@@ -262,39 +226,40 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
     })
       .populate("assignments.driver", "name lastName pscheinExpiry")
       .populate("assignments.medic", "name lastName pscheinExpiry")
+      .populate("assignments.ambulanceId", "ambulanceNumber") // ✅ añadimos esto
       .lean();
 
-    // Construir el array con todos los días de esos Diensts (assignments completos)
     const assignedDays: AssignedDay[] = [];
 
     diensts.forEach((dienst) => {
       dienst.assignments.forEach((assignment: any) => {
+        const ambulanceData = assignment.ambulanceId;
+
         assignedDays.push({
           dienstId: dienst._id.toString(),
           dienstNumber: dienst.dienstNumber,
+          assignmentId: assignment._id?.toString(),
           date: assignment.date,
           startTime: assignment.startTime,
           endTime: assignment.endTime,
-          assignmentId: assignment._id?.toString(),
-          vehicleNumber: assignment.vehicleNumber,
-          driver:
-            assignment.driver && typeof assignment.driver === "object" && assignment.driver._id
-              ? {
-                  _id: assignment.driver._id.toString(),
-                  name: assignment.driver.name,
-                  lastName: assignment.driver.lastName,
-                  pscheinExpiry: assignment.driver.pscheinExpiry,
-                }
-              : assignment.driver || null,
-          medic:
-            assignment.medic && typeof assignment.medic === "object" && assignment.medic._id
-              ? {
-                  _id: assignment.medic._id.toString(),
-                  name: assignment.medic.name,
-                  lastName: assignment.medic.lastName,
-                  pscheinExpiry: assignment.medic.pscheinExpiry,
-                }
-              : assignment.medic || null,
+          ambulanceId: typeof ambulanceData === "object" ? ambulanceData?._id?.toString() : undefined,
+          ambulanceNumber: typeof ambulanceData === "object" ? ambulanceData?.ambulanceNumber : undefined,
+          driver: assignment.driver?._id
+            ? {
+                _id: assignment.driver._id.toString(),
+                name: assignment.driver.name,
+                lastName: assignment.driver.lastName,
+                pscheinExpiry: assignment.driver.pscheinExpiry,
+              }
+            : assignment.driver || null,
+          medic: assignment.medic?._id
+            ? {
+                _id: assignment.medic._id.toString(),
+                name: assignment.medic.name,
+                lastName: assignment.medic.lastName,
+                pscheinExpiry: assignment.medic.pscheinExpiry,
+              }
+            : assignment.medic || null,
         });
       });
     });
@@ -305,9 +270,6 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
     res.status(500).json({ message: "Error al obtener días asignados" });
   }
 };
-
-
-
 
 export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) => {
   const { weekStartDate } = req.body;
@@ -322,7 +284,6 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + 6);
 
-    // Verifica si ya existen Diensts para esa semana
     const existing = await Dienst.find({
       weekStartDate: {
         $gte: startDate,
@@ -337,7 +298,11 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
 
     const diensts = Array.from({ length: 2 }, (_, i) => {
       const dienstNumber = i + 1;
-      const assignments = [];
+      const assignments: {
+        date: string;
+        startTime: string;
+        endTime: string;
+      }[] = [];
 
       for (let j = 0; j < 7; j++) {
         const day = new Date(startDate);
@@ -351,11 +316,8 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
 
         assignments.push({
           date: day.toISOString().split("T")[0],
-          vehicleNumber: `AMB-${dienstNumber.toString().padStart(2, "0")}`,
           startTime,
           endTime,
-          driver: "000000000000000000000001",
-          medic: "000000000000000000000002",
         });
       }
 
@@ -368,12 +330,13 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
     });
 
     await Dienst.insertMany(diensts);
-    res.status(201).json({ message: "Diensts creados para la semana seleccionada" });
+    res.status(201).json({ message: "Diensts generados correctamente" });
   } catch (error) {
     console.error("❌ Error al generar Diensts:", error);
-    res.status(500).json({ message: "Error interno del servidor" });
+    res.status(500).json({ message: "Error al generar Diensts" });
   }
 };
+
 
 export const deleteDienstsForWeek: RequestHandler = async (req, res) => {
   const { weekStartDate } = req.body;
@@ -402,16 +365,23 @@ export const deleteDienstsForWeek: RequestHandler = async (req, res) => {
   }
 };
 
+export const removeAssignment = async (req: Request, res: Response) => {
+  const { date } = req.body;
+  const parsedId = idSchema.parse(req.params.id);
 
+  try {
+    const updatedDienst = await Dienst.findByIdAndUpdate(
+      parsedId,
+      { $pull: { assignments: { date } } },
+      { new: true }
+    )
+      .populate("assignments.driver", "name lastName pscheinExpiry")
+      .populate("assignments.medic", "name lastName pscheinExpiry")
+      .populate("assignments.ambulanceId", "ambulanceNumber brand modelName licensePlate");
 
-
-
-
-
-
-
-
-
-
-
+    res.status(200).json(updatedDienst);
+  } catch (error) {
+    res.status(500).json({ message: "Error al eliminar el assignment", error });
+  }
+};
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getAssignedDaysForUser } from "../api/diensts";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
-import type { AssignedDayFull } from "../types/assignedDay";
+import type { AssignedDayFull } from "../types/dienst";
 import type { FlexibleAssignment } from "../types/assignment";
 import { useAuth } from "../hooks/useAuth";
 
@@ -102,7 +102,15 @@ const WorkerDienstsPage = () => {
                                 <p className="text-xs">
                                   🕒 {assignment.startTime} - {assignment.endTime}
                                 </p>
-                                <p className="text-xs">🚑 {assignment.vehicleNumber}</p>
+                                <p className="text-xs">
+                                  🚑{" "}
+                                  {typeof assignment.ambulanceNumber === "string"
+                                    ? assignment.ambulanceNumber
+                                    : "—"}
+                                </p>
+
+
+
                                 <p className="text-xs">
                                   👨‍✈️{" "}
                                   {typeof assignment.driver === "object" && assignment.driver

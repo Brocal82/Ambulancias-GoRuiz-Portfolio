@@ -1,7 +1,8 @@
 // backend/src/models/Ambulance.ts
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export interface IAmbulance extends Document {
+  _id: Types.ObjectId;
   brand: string;
   modelName: string;      // renombrado de model a modelName
   licensePlate: string;

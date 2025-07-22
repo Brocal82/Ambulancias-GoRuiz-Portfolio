@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getDienstByUser, getAssignedDaysForUser } from "../api/diensts";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
-import type { AssignedDayFull } from "../types/assignedDay";
+import type { AssignedDayFull } from "../types/dienst";
 import { useAuth } from "../hooks/useAuth";
 import type { Dienst } from '../types/dienst';
 
@@ -141,7 +141,10 @@ const getDienstIdForDate = (dateStr: string): string => {
                               <p className="text-xs">
                                 🕒 {assignment.startTime} - {assignment.endTime}
                               </p>
-                              <p className="text-xs">🚑 {assignment.vehicleNumber}</p>
+                              <p className="text-xs">
+                                  🚑 {assignment.ambulanceNumber ?? assignment.ambulanceId ?? "—"}
+                              </p>
+
                               <p className="text-xs">
                                 👨‍✈️ {assignment.driver?.lastName}, {assignment.driver?.name}
                               </p>
@@ -164,15 +167,22 @@ const getDienstIdForDate = (dateStr: string): string => {
       })()}
 
       {selectedAssignment && (
-        <AssignmentModal
-          isOpen={true}
-          date={selectedAssignment.date}
-          assignment={selectedAssignment.assignment}
-          dienstId={selectedAssignment.dienstId}
-          onClose={() => setSelectedAssignment(null)}
-          onUpdate={fetchAssignedDays}
-        />
-      )}
+  <AssignmentModal
+    isOpen={true}
+    date={selectedAssignment.date}
+    assignment={
+      selectedAssignment.assignment
+        ? {
+            ...selectedAssignment.assignment,
+            ambulanceId: selectedAssignment.assignment.ambulanceId ?? "",
+          }
+        : undefined
+    }
+    dienstId={selectedAssignment.dienstId}
+    onClose={() => setSelectedAssignment(null)}
+    onUpdate={fetchAssignedDays}
+  />
+)}
     </div>
   );
 };

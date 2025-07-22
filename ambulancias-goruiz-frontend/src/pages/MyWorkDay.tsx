@@ -6,7 +6,7 @@ import { getAssignedDaysForUser } from "../api/diensts";
 import { useAuth } from "../hooks/useAuth";
 import { toast } from "react-toastify";
 import type { Trip, TripData } from "../types/trip";
-import type { AssignedDayFull } from "../types/assignedDay";
+import type { AssignedDayFull } from "../types/dienst";
 import TripModal from "../components/trips/TripModal";
 import { useNavigate } from "react-router-dom";
 import FinalReviewModal from "../components/workday/FinalReviewModal";
@@ -16,7 +16,9 @@ import type { PartialSummaryPayload, FinalSummaryPayload } from "../types/workda
 import { checkTripLogic, type TripDraft } from "../utils/tripValidators";
 import { sendFinalClosure } from "../api/workdaySummary"; // ← Asegúrate de importar esto arriba
 import { getCurrentTimeString } from "../utils/timeUtils";
-import { saveAmbulanceData, loadAmbulanceData, clearAmbulanceData, confirmedAmbulanceKey} from "../utils/workdayKey";
+import { saveAmbulanceData, loadAmbulanceData, clearAmbulanceData, confirmedAmbulanceKey } from "../utils/workdayKey";
+import { getAllAmbulances } from "../api/ambulances";
+import type { Ambulance } from "../types/ambulance";
 
 
 
@@ -79,8 +81,13 @@ const MyWorkday = () => {
 
   const [trips, setTrips] = useState<Trip[]>([]);
   const [assignedDay, setAssignedDay] = useState<AssignedDayFull | null>(null);
+  const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
+  const [ambulanceId, setAmbulanceId] = useState<string>("");
+
+
   const [canStartWork, setCanStartWork] = useState(false);
-  const [vehicleNumber, setVehicleNumber] = useState("");
+ const [ambulanceNumber, setAmbulanceNumber] = useState("");
+
 
   const [vehicleConfirmed, setVehicleConfirmed] = useState(false);
   const formBlocked = !vehicleConfirmed;
@@ -130,7 +137,7 @@ const MyWorkday = () => {
     cancelledAtPickup: false,
     countsTrip: 1,
     reports: "",
-     countsForSummary: true,
+    countsForSummary: true,
   });
 
   const [issueData, setIssueData] = useState<any | null>(null);
@@ -138,21 +145,30 @@ const MyWorkday = () => {
 
   const navigate = useNavigate();
 
-const handleConfirmAmbulanceData = () => {
-  if (!vehicleNumber || !initialAmbulanceKm) {
-    toast.error("❌ Por favor, introduce el número de ambulancia y los KM iniciales.");
+  const handleConfirmAmbulanceData = () => {
+  if (!ambulanceId || !initialAmbulanceKm) {
+    toast.error("❌ Selecciona una ambulancia y KM iniciales.");
     return;
   }
 
   if (!assignedDay) return;
 
+  // 🔍 Obtenemos el número de ambulancia asociado
+  const selectedAmbulance = ambulances.find((a) => a._id === ambulanceId);
+  setAmbulanceNumber(selectedAmbulance?.ambulanceNumber || "??");
+
+
   setVehicleConfirmed(true);
   toast.success("✅ Datos confirmados. Ya puedes registrar viajes.");
 
   // ✅ Guardamos los datos correctamente compartidos por equipo
-  saveAmbulanceData(assignedDay.assignmentId, vehicleNumber, initialAmbulanceKm);
+  saveAmbulanceData(assignedDay.assignmentId, ambulanceId, initialAmbulanceKm);
   localStorage.setItem(confirmedAmbulanceKey(assignedDay.assignmentId), "true");
+
+  // 💾 (opcional) Puedes guardar también el número en localStorage si aún lo usas en pantalla
+  localStorage.setItem(`vehicleNumber-${assignedDay.assignmentId}`, ambulanceNumber);
 };
+
 
 
 
@@ -276,35 +292,35 @@ const handleConfirmAmbulanceData = () => {
   }, [fetchTrips, fetchAssignedDay]);
 
 
-useEffect(() => {
-  if (!assignedDay) return;
+  useEffect(() => {
+    if (!assignedDay) return;
 
-  // Carga los datos compartidos (vehículo y km iniciales)
-  const loaded = loadAmbulanceData(assignedDay.assignmentId);
-  if (loaded) {
-    setVehicleNumber(loaded.vehicleNumber);
-    setInitialAmbulanceKm(loaded.initialKm);
-  }
+    // Carga los datos compartidos (vehículo y km iniciales)
+    const loaded = loadAmbulanceData(assignedDay.assignmentId);
+    if (loaded) {
+      setAmbulanceNumber(loaded.ambulanceId);
+      setInitialAmbulanceKm(loaded.initialKm);
+    }
 
-  // Verifica si ese equipo ya confirmó los datos
-  const isConfirmed =
-    localStorage.getItem(confirmedAmbulanceKey(assignedDay.assignmentId)) === "true";
+    // Verifica si ese equipo ya confirmó los datos
+    const isConfirmed =
+      localStorage.getItem(confirmedAmbulanceKey(assignedDay.assignmentId)) === "true";
 
-  setVehicleConfirmed(isConfirmed);
-}, [assignedDay]);
+    setVehicleConfirmed(isConfirmed);
+  }, [assignedDay]);
 
 
   useEffect(() => {
-  if (assignedDay && vehicleNumber && initialAmbulanceKm) {
-    saveAmbulanceData(
-      assignedDay.assignmentId,
-      vehicleNumber,
-      initialAmbulanceKm
-    );
-  }
-}, [vehicleNumber, initialAmbulanceKm, assignedDay]);
+    if (assignedDay && ambulanceNumber && initialAmbulanceKm) {
+      saveAmbulanceData(
+        assignedDay.assignmentId,
+        ambulanceNumber,
+        initialAmbulanceKm
+      );
+    }
+  }, [ambulanceNumber, initialAmbulanceKm, assignedDay]);
 
-   useEffect(() => {
+  useEffect(() => {
     const result = checkTripLogic(
       {
         timeWarning: tripFormData.timeWarning,
@@ -321,7 +337,23 @@ useEffect(() => {
     setDraftError(result.error || "");
     setBadField(result.badField);
   }, [tripFormData, wasCancelled]);
-  
+
+  useEffect(() => {
+    const fetchAmbulances = async () => {
+      try {
+        if (!token) return;
+
+        const data = await getAllAmbulances(token);
+        setAmbulances(data);
+      } catch (err) {
+        console.error("❌ Error al cargar ambulancias:", err);
+      }
+    };
+
+    fetchAmbulances();
+  }, [token]);
+
+
 
 
   const handleSaveTrip = async () => {
@@ -488,7 +520,7 @@ useEffect(() => {
     if (!token || !assignedDay || !user?._id) return;
 
     /* ── Validaciones mínimas ── */
-    if (!vehicleNumber || !initialAmbulanceKm) {
+    if (!ambulanceNumber || !initialAmbulanceKm) {
       toast.warn("🚐 Introduce nº de ambulancia y KM inicial.");
       return;
     }
@@ -517,7 +549,8 @@ useEffect(() => {
         assignmentId: assignedDay.assignmentId,
         driver: assignedDay.driver._id,
         medic: assignedDay.medic._id,
-        vehicleNumber,
+        ambulanceNumber,
+        ambulanceId,
         initialKm: initialKmNumber,
         finalKm: finalKmFromModal,
         totalDienstKm,
@@ -552,7 +585,7 @@ useEffect(() => {
       setShowReviewModal(false);
       clearAmbulanceData(assignedDay.assignmentId);
       navigate("/worker");
-      
+
     } catch (err) {
       console.error("❌ Error al cerrar el día:", err);
       toast.error("❌ No se pudo cerrar el día.");
@@ -566,72 +599,75 @@ useEffect(() => {
      2.  CIERRE PARCIAL  (modal PartialReviewModal)
      ────────────────────────────────────────────────*/
   const handleSendPartialClosure = async (reason: string, finalKmValue: number) => {
-  if (!token || !assignedDay) return;
+    if (!token || !assignedDay) return;
 
-  if (isNaN(finalKmValue)) {
-    toast.warn("📏 Introduce los kilómetros finales en el modal.");
-    return;
-  }
+    if (isNaN(finalKmValue)) {
+      toast.warn("📏 Introduce los kilómetros finales en el modal.");
+      return;
+    }
 
-  if (Number(finalKmValue) < Number(initialAmbulanceKm)) {
-    toast.warn("📏 Los KM finales no pueden ser menores que los KM iniciales.");
-    return;
-  }
+    if (Number(finalKmValue) < Number(initialAmbulanceKm)) {
+      toast.warn("📏 Los KM finales no pueden ser menores que los KM iniciales.");
+      return;
+    }
 
-  try {
+    try {
 
-     const totalDienstKm = Number(finalKmValue) - Number(initialAmbulanceKm);
-
-
-
-    const payload: PartialSummaryPayload & { issueData?: any } = {
-  date: today,
-  assignmentId: assignedDay.assignmentId,
-  driver: assignedDay.driver._id,
-  medic: assignedDay.medic._id,
-  vehicleNumber,
-  initialKm: Number(initialAmbulanceKm),
-  finalKm: finalKmValue,
-  trips,
-  totalDienstKm,
-  partialClosureReason: reason,
-  isFinalClosure: false,
-  dienstNumber: assignedDay.dienstNumber,
-  startTime: assignedDay.startTime,
-  endTime: assignedDay.endTime,
-  ...(issueData ? { issueData } : {}),
-};
+      const totalDienstKm = Number(finalKmValue) - Number(initialAmbulanceKm);
 
 
-    await sendPartialClosure(payload, token);
 
-    toast.success("✅ Cierre parcial enviado al admin." + (issueData ? " Incluye reporte de avería." : ""));
+      const payload: PartialSummaryPayload & { issueData?: any } = {
+        date: today,
+        assignmentId: assignedDay.assignmentId,
+        driver: assignedDay.driver._id,
+        medic: assignedDay.medic._id,
+        ambulanceId,
+        ambulanceNumber, // 👈 usa este en lugar de vehicleNumber
+        initialKm: Number(initialAmbulanceKm),
+        finalKm: finalKmValue,
+        trips,
+        totalDienstKm,
+        partialClosureReason: reason,
+        isFinalClosure: false,
+        dienstNumber: assignedDay.dienstNumber,
+        startTime: assignedDay.startTime,
+        endTime: assignedDay.endTime,
+        ...(issueData ? { issueData } : {}),
+      };
 
 
-    // ✅ Borrar datos locales de ambulancia para forzar nuevo inicio
-    clearAmbulanceData(assignedDay.assignmentId);
-    localStorage.removeItem(confirmedAmbulanceKey(assignedDay.assignmentId));
 
-    // 🧹 Limpieza del formulario
-    setTrips([]);
-    setWasCancelled(false);
-    setCountsTrip(1);
-    setShowReviewModal(false);
-    setVehicleNumber("");
-    setInitialAmbulanceKm("");
-    setFinalAmbulanceKm("");
 
-    // ✅ Asegura que se vuelva a mostrar la pantalla de confirmación
-    setVehicleConfirmed(false);
+      await sendPartialClosure(payload, token);
 
-    // 🔁 Redirige al dashboard
-    navigate("/worker");
+      toast.success("✅ Cierre parcial enviado al admin." + (issueData ? " Incluye reporte de avería." : ""));
 
-  } catch (err) {
-    console.error("❌ Error al enviar cierre parcial:", err);
-    toast.error("❌ No se pudo enviar el cierre parcial.");
-  }
-};
+
+      // ✅ Borrar datos locales de ambulancia para forzar nuevo inicio
+      clearAmbulanceData(assignedDay.assignmentId);
+      localStorage.removeItem(confirmedAmbulanceKey(assignedDay.assignmentId));
+
+      // 🧹 Limpieza del formulario
+      setTrips([]);
+      setWasCancelled(false);
+      setCountsTrip(1);
+      setShowReviewModal(false);
+      setAmbulanceNumber("");
+      setInitialAmbulanceKm("");
+      setFinalAmbulanceKm("");
+
+      // ✅ Asegura que se vuelva a mostrar la pantalla de confirmación
+      setVehicleConfirmed(false);
+
+      // 🔁 Redirige al dashboard
+      navigate("/worker");
+
+    } catch (err) {
+      console.error("❌ Error al enviar cierre parcial:", err);
+      toast.error("❌ No se pudo enviar el cierre parcial.");
+    }
+  };
 
 
   // 🟦 Función para activar Anschluss 
@@ -732,23 +768,26 @@ useEffect(() => {
 
                 {/* Nº de ambulancia */}
                 <div>
-                  <label
-                    htmlFor="vehicleNumber"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    🚐 Nº Ambulancia
+                  <label htmlFor="ambulanceId" className="block text-sm font-medium text-gray-700">
+                    🚐 Selecciona ambulancia
                   </label>
-                  <input
-                    id="vehicleNumber"
-                    type="text"
-                    placeholder="Ej. AMB-01"
-                    title="Número identificativo de la ambulancia"
-                    value={vehicleNumber}
-                    onChange={(e) => setVehicleNumber(e.target.value)}
-                    className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
+                  <select
+                    id="ambulanceId"
+                    value={ambulanceId}
+                    onChange={(e) => setAmbulanceId(e.target.value)}
                     disabled={vehicleConfirmed}
-                  />
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
+                  >
+                    <option value="">-- Selecciona una ambulancia --</option>
+                    {ambulances.map((amb) => (
+                      <option key={amb._id} value={amb._id}>
+                        {amb.ambulanceNumber}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
+
 
                 {/* KM inicial */}
                 <div>
@@ -1358,7 +1397,7 @@ useEffect(() => {
         <PartialReviewModal
           trips={trips}
           assignedDay={assignedDay}
-          vehicleNumber={vehicleNumber}
+           ambulanceNumber={ambulanceNumber}
           initialKm={initialAmbulanceKm}
           finalKm={finalAmbulanceKm}
           onClose={() => setShowReviewModal(false)}
@@ -1377,12 +1416,14 @@ useEffect(() => {
           onClose={() => setShowReviewModal(false)}
           trips={trips}
           assignedDay={assignedDay}
-          vehicleNumber={vehicleNumber}
+          ambulanceId={ambulanceId}                  
+          ambulanceNumber={ambulanceNumber}          
           initialKm={initialAmbulanceKm}
           finalKm={finalAmbulanceKm}
           onConfirm={handleConfirmFinalClosure}
         />
       )}
+
 
     </div>
   );

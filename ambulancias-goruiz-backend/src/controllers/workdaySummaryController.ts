@@ -1,13 +1,12 @@
-//src/controllers/workdaySummaryController.ts
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Dienst from "../models/Dienst";
 import Trip from "../models/Trip";
 import WorkdaySummary from "../models/workdaySummary";
-import { calculateEffectivePatients } from "../utils/prämienUtils";
 import WorkdayIssue from "../models/WorkdayIssue";
+import { calculateEffectivePatients } from "../utils/prämienUtils";
 
-/* ─────────────────────────────s
+/* ─────────────────────────────
  * CIERRE COMPLETO DEL DÍA
  * ───────────────────────────── */
 export const createWorkdaySummary = async (req: Request, res: Response) => {
@@ -15,74 +14,51 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
     const {
       date,
       assignmentId,
-      vehicleNumber,
+      ambulanceId,
+      ambulanceNumber,
       initialKm,
       finalKm,
       trips,
       extraNote,
     } = req.body;
 
-    if (!date || !assignmentId || !vehicleNumber || initialKm === undefined || finalKm === undefined) {
-      res.status(400).json({ message: "Faltan campos obligatorios" });
-      return
+    if (!date || !assignmentId || !ambulanceId || initialKm === undefined || finalKm === undefined) {
+      return res.status(400).json({ message: "Faltan campos obligatorios" });
     }
 
     if (!Array.isArray(trips)) {
-      res.status(400).json({ message: "El campo trips debe ser un array" });
-      return
+      return res.status(400).json({ message: "El campo trips debe ser un array" });
     }
 
     const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
     const dienst = await Dienst.findOne({ "assignments._id": assignmentObjectId });
 
     if (!dienst) {
-      res.status(404).json({ message: "Dienst no encontrado con ese assignmentId" });
-      return
+      return res.status(404).json({ message: "Dienst no encontrado con ese assignmentId" });
     }
 
     const assignment = dienst.assignments.find(a => a._id?.toString() === assignmentObjectId.toString());
 
     if (!assignment) {
-      res.status(404).json({ message: "Asignación no encontrada" });
-      return
+      return res.status(404).json({ message: "Asignación no encontrada" });
     }
-
-    console.log("📦 Trips recibidos en createWorkdaySummary:");
-    trips.forEach((trip: any, index: number) => {
-      console.log(`  🚑 Trip ${index + 1}:`, {
-        auftragNumber: trip.auftragNumber,
-        wasCancelled: trip.wasCancelled,
-        cancelledAtPickup: trip.cancelledAtPickup
-      });
-    });
-
 
     const dienstNumber = dienst?.dienstNumber ?? null;
     const startTime = assignment?.startTime ?? null;
     const endTime = assignment?.endTime ?? null;
-
     const { driver, medic } = assignment;
 
     const totalEffectivePatients = calculateEffectivePatients(trips, date);
     const totalDienstKm = finalKm - initialKm;
-    const totalRealTrips = trips.filter(t => {
-      const wasCancelled = t.wasCancelled === true;
-      const cancelledAtPickup = t.cancelledAtPickup === true;
-      return !wasCancelled || cancelledAtPickup;
-    }).length;
-
-
-    console.log("✅ totalRealTrips calculado:", totalRealTrips);
-
-
-
+    const totalRealTrips = trips.filter(t => !t.wasCancelled || t.cancelledAtPickup).length;
 
     const newSummary = await WorkdaySummary.create({
       date,
       assignmentId,
+      ambulanceId,
+      ambulanceNumber,
       driver,
       medic,
-      vehicleNumber,
       initialKm,
       finalKm,
       totalDienstKm,
@@ -95,7 +71,6 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
       startTime,
       endTime,
     });
-
 
     if (trips.length > 0) {
       await Trip.updateMany(
@@ -121,7 +96,8 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
       assignmentId,
       driver,
       medic,
-      vehicleNumber,
+      ambulanceId,
+      ambulanceNumber,
       initialKm,
       finalKm,
       trips,
@@ -129,18 +105,11 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
     } = req.body;
 
     if (
-      !date ||
-      !assignmentId ||
-      !driver ||
-      !medic ||
-      !vehicleNumber ||
-      initialKm === undefined ||
-      finalKm === undefined ||
-      !Array.isArray(trips) ||
-      !partialClosureReason
+      !date || !assignmentId || !driver || !medic ||
+      !ambulanceId || initialKm === undefined || finalKm === undefined ||
+      !Array.isArray(trips) || !partialClosureReason
     ) {
-       res.status(400).json({ message: "Faltan datos para el cierre parcial." });
-       return
+      return res.status(400).json({ message: "Faltan datos para el cierre parcial." });
     }
 
     const dienst = await Dienst.findOne({ "assignments._id": assignmentId });
@@ -152,23 +121,15 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
 
     const totalEffectivePatients = calculateEffectivePatients(trips, date);
     const totalDienstKm = finalKm - initialKm;
-
-    const totalRealTrips = trips.filter(t => {
-      const wasCancelled = t.wasCancelled === true;
-      const cancelledAtPickup = t.cancelledAtPickup === true;
-      return !wasCancelled || cancelledAtPickup;
-    }).length;
-
-
-
-
+    const totalRealTrips = trips.filter(t => !t.wasCancelled || t.cancelledAtPickup).length;
 
     const summary = new WorkdaySummary({
       date,
       assignmentId,
       driver,
       medic,
-      vehicleNumber,
+      ambulanceId,
+      ambulanceNumber,
       initialKm,
       finalKm,
       totalDienstKm,
@@ -181,7 +142,6 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
       startTime,
       endTime,
     });
-
 
     await summary.save();
 
@@ -199,7 +159,9 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
   }
 };
 
-
+/* ─────────────────────────────
+ * GET TODOS LOS RESÚMENES
+ * ───────────────────────────── */
 export const getAllWorkdaySummaries = async (req: Request, res: Response) => {
   try {
     const summaries = await WorkdaySummary.find()
@@ -236,6 +198,9 @@ export const getAllWorkdaySummaries = async (req: Request, res: Response) => {
   }
 };
 
+/* ─────────────────────────────
+ * AVERÍAS
+ * ───────────────────────────── */
 export const reportIssue = async (req: Request, res: Response): Promise<void> => {
   try {
     const {
@@ -249,14 +214,13 @@ export const reportIssue = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // Validación opcional para asegurar que sean ID válidos
     if (driver && !mongoose.isValidObjectId(driver)) {
       res.status(400).json({ message: "driver no es un ObjectId válido" });
-      return;
+      return
     }
     if (medic && !mongoose.isValidObjectId(medic)) {
       res.status(400).json({ message: "medic no es un ObjectId válido" });
-      return;
+      return
     }
 
     const newIssue = await WorkdayIssue.create({
@@ -281,23 +245,12 @@ export const reportIssue = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-// Obtener todos los reportes de avería
 export const getAllIssueReports = async (req: Request, res: Response) => {
   try {
-    const issues = await WorkdayIssue.find().sort({ timestamp: -1 }); // los más recientes primero
+    const issues = await WorkdayIssue.find().sort({ timestamp: -1 });
     res.status(200).json(issues);
   } catch (err) {
     console.error("❌ Error al obtener reportes técnicos:", err);
     res.status(500).json({ message: "Error al obtener reportes técnicos" });
   }
 };
-
-
-
-
-
-
-
-
-
-

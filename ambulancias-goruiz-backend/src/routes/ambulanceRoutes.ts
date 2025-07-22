@@ -12,15 +12,13 @@ import { authorizeRole } from '../middlewares/roleMiddleware';
 
 const router = Router();
 
-// Rutas protegidas: requiere token válido y rol admin
-router.use(authenticateToken);
-router.use(authorizeRole('admin'));
+// 🟢 Rutas accesibles para cualquier usuario autenticado
+router.get('/', authenticateToken, getAllAmbulances);
+router.get('/:id', authenticateToken, getAmbulanceById);
 
-router.get('/', getAllAmbulances);
-router.get('/:id', getAmbulanceById);
-router.post('/', createAmbulance);
-router.put('/:id', updateAmbulance);
-router.delete('/:id', deleteAmbulance);
+// 🔒 Rutas protegidas para ADMIN únicamente
+router.post('/', authenticateToken, authorizeRole('admin'), createAmbulance);
+router.put('/:id', authenticateToken, authorizeRole('admin'), updateAmbulance);
+router.delete('/:id', authenticateToken, authorizeRole('admin'), deleteAmbulance);
 
 export default router;
-

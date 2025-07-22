@@ -1,4 +1,3 @@
-// frontend/src/types/workdaySummary.ts
 import type { Trip } from "./trip";
 
 export interface PopulatedUser {
@@ -8,10 +7,10 @@ export interface PopulatedUser {
 }
 
 export interface PartialSummaryPayload {
-  // igual que antes...
   date: string;
   assignmentId: string;
-  vehicleNumber: string;
+  ambulanceId: string;
+  ambulanceNumber?: string; // ✅ añadido
   initialKm: number;
   finalKm: number;
   trips: Trip[];
@@ -24,8 +23,6 @@ export interface PartialSummaryPayload {
   dienstNumber?: number;
   startTime?: string;
   endTime?: string;
-
-
 }
 
 export interface FinalSummaryPayload {
@@ -33,7 +30,8 @@ export interface FinalSummaryPayload {
   assignmentId: string;
   driver: string;
   medic: string;
-  vehicleNumber: string;
+  ambulanceId: string;
+  ambulanceNumber?: string; // ✅ añadido
   initialKm: number;
   finalKm?: number;
   totalDienstKm: number;
@@ -44,9 +42,7 @@ export interface FinalSummaryPayload {
   dienstNumber: number;
   startTime: string;
   endTime: string;
-
 }
-
 
 /**
  * Tipo usado por el admin para visualizar cualquier resumen (final o parcial).
@@ -58,7 +54,8 @@ export interface WorkdaySummary {
   assignmentId: string;
   driver: string | PopulatedUser;
   medic: string | PopulatedUser;
-  vehicleNumber: string;
+  ambulanceId: string;
+  ambulanceNumber?: string; // ✅ añadido
   initialKm: number;
   finalKm: number;
   totalDienstKm: number;
@@ -73,6 +70,4 @@ export interface WorkdaySummary {
   dienstId?: string;
   startTime?: string;
   endTime?: string;
-
 }
-

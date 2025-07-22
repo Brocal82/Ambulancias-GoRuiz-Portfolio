@@ -1,9 +1,8 @@
-// frontend/src/components/workday/FinalReviewModal.tsx
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import ReviewSummary from "./ReviewSummary";
 import type { Trip } from "../../types/trip";
-import type { AssignedDayFull } from "../../types/assignedDay";
+import type { AssignedDayFull } from "../../types/dienst";
 import { calculateEffectivePatients } from "../../utils/prämienUtils";
 import IssueReportModal from "./IssueReportModal";
 
@@ -16,7 +15,8 @@ interface FinalReviewModalProps {
     issueData?: any
   ) => void;
   trips: Trip[];
-  vehicleNumber: string;
+  ambulanceId: string;
+  ambulanceNumber: string;
   initialKm: string;
   finalKm: string;
   assignedDay: AssignedDayFull;
@@ -27,7 +27,8 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
   onClose,
   onConfirm,
   trips,
-  vehicleNumber,
+  ambulanceId,
+  ambulanceNumber,
   initialKm,
   finalKm,
   assignedDay,
@@ -60,7 +61,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
 
         <ReviewSummary
           assignedDay={assignedDay}
-          vehicleNumber={vehicleNumber}
+          ambulanceNumber={ambulanceNumber ?? "Desconocido"}
           initialKm={parsedInitialKm}
           finalKm={parsedFinalKm}
           trips={trips}
@@ -103,7 +104,6 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
           <span>⚠️ Avería</span>
         </label>
 
-
         {/* Modal técnico */}
         {showIssueModal && (
           <IssueReportModal
@@ -113,10 +113,9 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
               setHasIssue(false);
             }}
             assignedDay={assignedDay}
-            vehicleNumber={vehicleNumber}
-            ambulanceId={assignedDay.vehicleNumber}
+            ambulanceId={ambulanceId}
             finalKm={parsedFinalKm}
-            onSubmit={async (issueData) => {
+            onSubmit={(issueData: { issueText: string }) => {
               setHasIssue(true);
               setShowIssueModal(false);
               onConfirm("⚠️ Avería", parsedFinalKm, issueData);

@@ -1,7 +1,7 @@
 // frontend/src/components/workday/PartialReviewModal.tsx
 import React, { useState } from "react";
 import type { Trip } from "../../types/trip";
-import type { AssignedDayFull } from "../../types/assignedDay";
+import type { AssignedDayFull } from "../../types/dienst";
 import ReviewSummary from "./ReviewSummary";
 import { toast } from "react-toastify";
 import { calculateEffectivePatients } from "../../utils/prämienUtils";
@@ -10,7 +10,7 @@ import IssueReportModal from "./IssueReportModal";
 interface Props {
   trips: Trip[];
   assignedDay: AssignedDayFull;
-  vehicleNumber: string;
+  ambulanceNumber: string; // ✅ actualizado
   initialKm: string;
   finalKm: string;
   onClose: () => void;
@@ -25,7 +25,7 @@ interface Props {
 const PartialReviewModal: React.FC<Props> = ({
   trips,
   assignedDay,
-  vehicleNumber,
+  ambulanceNumber,
   initialKm,
   onClose,
   onSend,
@@ -58,7 +58,7 @@ const PartialReviewModal: React.FC<Props> = ({
 
         <ReviewSummary
           assignedDay={assignedDay}
-          vehicleNumber={vehicleNumber}
+          ambulanceNumber={ambulanceNumber}
           initialKm={parsedInitialKm}
           finalKm={parsedFinalKm}
           trips={trips}
@@ -99,7 +99,6 @@ const PartialReviewModal: React.FC<Props> = ({
           <span>⚠️ Avería</span>
         </label>
 
-
         {/* Modal técnico */}
         {showIssueModal && (
           <IssueReportModal
@@ -109,8 +108,7 @@ const PartialReviewModal: React.FC<Props> = ({
               setHasIssue(false);
             }}
             assignedDay={assignedDay}
-            vehicleNumber={vehicleNumber}
-            ambulanceId={assignedDay.assignmentId}
+            ambulanceId={assignedDay.ambulanceId ?? ""}
             finalKm={parsedFinalKm}
             onSubmit={async (issueData) => {
               setHasIssue(true);

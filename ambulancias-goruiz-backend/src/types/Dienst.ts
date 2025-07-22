@@ -6,17 +6,21 @@ export interface UserRef {
   pscheinExpiry?: string;
 }
 
+// backend/src/types/Dienst.ts
 export interface AssignedDay {
   dienstId: string;
   dienstNumber: number;
-  assignmentId: string; // ✅ Añadido
+  assignmentId: string;
   date: string;
   startTime: string;
   endTime: string;
-  vehicleNumber: string;
-  driver: UserRef | string;
-  medic: UserRef | string;
+  ambulanceId?: string;
+  ambulanceNumber?: string; // ✅ ← AÑADE esta línea
+  driver?: string | UserRef;
+  medic?: string | UserRef;
 }
+
+
 
 
 

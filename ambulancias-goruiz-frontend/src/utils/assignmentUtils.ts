@@ -1,5 +1,5 @@
 import type { DienstAssignment, UpdateAssignment } from "../types/dienst";
-import type { AssignedDay, AssignedDayFull } from "../types/assignedDay";
+import type { AssignedDayFull, AssignedDay } from "../types/dienst";
 
 type FlexibleAssignment =
   | DienstAssignment

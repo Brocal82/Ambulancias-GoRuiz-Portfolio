@@ -8,12 +8,13 @@ export const assignmentSchema = z.object({
     (val) => !isNaN(Date.parse(val)) || val.startsWith('template-'),
     { message: 'Fecha no válida' }
   ),
-  vehicleNumber: z.string().min(1),
+  ambulanceId: objectIdSchema,
   startTime: z.string().min(1),
   endTime: z.string().min(1),
   driver: objectIdSchema,
   medic: objectIdSchema,
 });
+
 
 export const dienstSchema = z.object({
   dienstNumber: z.number().int().min(1),

@@ -1,26 +1,48 @@
 import axios from './axios';
 import type { Ambulance } from '../types/ambulance';
 
-export const getAllAmbulances = async (): Promise<Ambulance[]> => {
-  const { data } = await axios.get('/ambulances');
+// ✅ GET todas las ambulancias (admin)
+export const getAllAmbulances = async (token: string): Promise<Ambulance[]> => {
+  const { data } = await axios.get('/ambulances', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return data;
 };
 
-export const getAmbulanceById = async (id: string): Promise<Ambulance> => {
-  const { data } = await axios.get(`/ambulances/${id}`);
+// ✅ GET por ID
+export const getAmbulanceById = async (id: string, token: string): Promise<Ambulance> => {
+  const { data } = await axios.get(`/ambulances/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return data;
 };
 
-export const createAmbulance = async (ambulance: Omit<Ambulance, '_id'>): Promise<Ambulance> => {
-  const { data } = await axios.post('/ambulances', ambulance);
+// ✅ POST nueva ambulancia
+export const createAmbulance = async (
+  ambulance: Omit<Ambulance, '_id'>,
+  token: string
+): Promise<Ambulance> => {
+  const { data } = await axios.post('/ambulances', ambulance, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return data;
 };
 
-export const updateAmbulance = async (id: string, ambulance: Partial<Ambulance>): Promise<Ambulance> => {
-  const { data } = await axios.put(`/ambulances/${id}`, ambulance);
+// ✅ PUT actualizar ambulancia
+export const updateAmbulance = async (
+  id: string,
+  ambulance: Partial<Ambulance>,
+  token: string
+): Promise<Ambulance> => {
+  const { data } = await axios.put(`/ambulances/${id}`, ambulance, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return data;
 };
 
-export const deleteAmbulance = async (id: string): Promise<void> => {
-  await axios.delete(`/ambulances/${id}`);
+// ✅ DELETE ambulancia
+export const deleteAmbulance = async (id: string, token: string): Promise<void> => {
+  await axios.delete(`/ambulances/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 };

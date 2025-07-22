@@ -1,4 +1,6 @@
-//frontend/src/types/dienst.ts
+// frontend/src/types/dienst.ts
+import type { Ambulance } from "./ambulance";
+
 export interface UserRef {
   _id: string;
   name: string;
@@ -10,19 +12,21 @@ export interface UserRef {
 export interface DienstAssignment {
   _id: string;
   date: string;
-  vehicleNumber: string;
+  ambulanceId?: string | { _id: string; ambulanceNumber: string };
+  ambulanceNumber?: string;
   startTime: string;
   endTime: string;
   driver: string | UserRef;
   medic: string | UserRef;
 }
 
+
 export interface Dienst {
   _id: string;
   dienstNumber: number;
   weekStartDate: string;
   weekEndDate: string;
-  assignments: DienstAssignment[]; // ✅ Solo tipo completo
+  assignments: DienstAssignment[];
 }
 
 export interface UpdateAssignment {
@@ -30,19 +34,38 @@ export interface UpdateAssignment {
   date: string;
   startTime: string;
   endTime: string;
-  vehicleNumber: string;
-  driver: string; // solo ID
-  medic: string;  // solo ID
+  ambulanceId: string;
+  driver: string;
+  medic: string;
 }
 
-// ✅ NUEVO: tipo para días asignados que devuelve el backend
 export interface AssignedDay {
   dienstId: string;
   dienstNumber: number;
+  assignmentId: string;
   date: string;
   startTime: string;
   endTime: string;
-  vehicleNumber: string;
-  driver?: string;
-  medic?: string;
+  ambulanceId?: string;
+  ambulanceNumber?: string;
+  driver?: string | UserRef;
+  medic?: string | UserRef;
 }
+
+export interface AssignedDayFull {
+  dienstId: string;
+  dienstNumber: number;
+  assignmentId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  ambulanceId?: string | Ambulance;
+  ambulanceNumber?: string;
+  driver: UserRef;
+  medic: UserRef;
+}
+
+
+
+
+

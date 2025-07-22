@@ -1,7 +1,6 @@
 // frontend/src/api/diensts.ts
 import axios from './axios';
-import type { Dienst } from '../types/dienst';
-import type { AssignedDayFull } from '../types/assignedDay';
+import type { Dienst, AssignedDayFull } from '../types/dienst';
 
 // Obtener Diensts del usuario
 export const getDienstByUser = async (userId: string, token: string): Promise<Dienst[]> => {

@@ -1,4 +1,4 @@
-//frontend/src/components/workday/AssignmentModal.tsx
+// frontend/src/components/workday/AssignmentModal.tsx
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { updateDienstPartial, removeAssignment } from "../api/diensts";
@@ -6,7 +6,7 @@ import { getAvailableUsersForDate } from "../api/users";
 import { getPscheinStatus } from "../utils/pscheinUtils";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import type { UserRef,  DienstAssignment } from "../types/dienst";
+import type { UserRef, DienstAssignment } from "../types/dienst";
 import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import type { FlexibleAssignment } from "../types/assignment";
 
@@ -32,19 +32,20 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [vehicleNumber, setVehicleNumber] = useState("");
+  const [ambulanceId, setAmbulanceId] = useState("");
+  const [ambulances, setAmbulances] = useState<{ _id: string; ambulanceNumber: string }[]>([]);
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [selectedMedicId, setSelectedMedicId] = useState("");
   const [availableDrivers, setAvailableDrivers] = useState<UserRef[]>([]);
   const [availableMedics, setAvailableMedics] = useState<UserRef[]>([]);
-
   const [isLoading, setIsLoading] = useState(false);
+
 
   useEffect(() => {
     if (assignment) {
       setStartTime(assignment.startTime);
       setEndTime(assignment.endTime);
-      setVehicleNumber(assignment.vehicleNumber);
+      setAmbulanceId(assignment.ambulanceId);
       setSelectedDriverId(
         typeof assignment.driver === "string"
           ? assignment.driver
@@ -61,21 +62,14 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   useEffect(() => {
     const fetchAvailableUsers = async () => {
       if (!token || !isAdmin || !date) return;
-
       try {
         const [drivers, medics] = await Promise.all([
           getAvailableUsersForDate(date, "driver", token),
           getAvailableUsersForDate(date, "medic", token),
         ]);
 
-        // Mantener seleccionados visibles (mergeWithAssigned)
-        const mergedDrivers = mergeWithAssigned(drivers, assignment, "driver");
-
-        const mergedMedics = mergeWithAssigned(medics, assignment, "medic");
-
-
-        setAvailableDrivers(mergedDrivers);
-        setAvailableMedics(mergedMedics);
+        setAvailableDrivers(mergeWithAssigned(drivers, assignment, "driver"));
+        setAvailableMedics(mergeWithAssigned(medics, assignment, "medic"));
       } catch (error) {
         console.error("Error al cargar usuarios disponibles:", error);
         toast.error("❌ Error al cargar usuarios.");
@@ -85,71 +79,78 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     fetchAvailableUsers();
   }, [token, isAdmin, date, assignment]);
 
+    useEffect(() => {
+    const fetchAmbulances = async () => {
+      if (!token) return;
+      try {
+        const response = await fetch("/api/ambulances", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        setAmbulances(data);
+      } catch (error) {
+        console.error("❌ Error al cargar ambulancias:", error);
+        toast.error("❌ Error al cargar ambulancias");
+      }
+    };
 
+    fetchAmbulances();
+  }, [token]);
 
   if (!isOpen) return null;
 
+  const handleSave = async () => {
+    if (!token) return;
 
+    if (!dienstId) {
+      toast.error("🚫 ID del Dienst no definido.");
+      return;
+    }
 
-const handleSave = async () => {
-  if (!token) return;
+    if (!startTime || !endTime || !ambulanceId) {
+      toast.warn("🚫 Rellena hora de inicio, fin y ambulancia.");
+      return;
+    }
 
-  // Validaciones...
-  if (!dienstId) {
-    toast.error("🚫 ID del Dienst no definido, no se pueden guardar los cambios.");
-    return;
-  }
+    if (selectedDriverId && selectedMedicId && selectedDriverId === selectedMedicId) {
+      toast.warn("🚫 No puedes asignar a la misma persona como conductor y sanitario.");
+      return;
+    }
 
-  if (!startTime || !endTime || !vehicleNumber) {
-    toast.warn("🚫 Debes rellenar hora de inicio, fin y vehículo.");
-    return;
-  }
-  if (selectedDriverId && selectedMedicId && selectedDriverId === selectedMedicId) {
-    toast.warn("🚫 No puedes asignar a la misma persona como conductor y sanitario.");
-    return;
-  }
+    try {
+      const updatedAssignment: DienstAssignment = {
+        _id: assignment?._id || "",
+        date,
+        startTime,
+        endTime,
+        ambulanceId,
+        driver: selectedDriverId,
+        medic: selectedMedicId,
+      };
 
-  try {
-    const updatedAssignment: DienstAssignment = {
-      _id: assignment?._id || '',
-      date,
-      startTime,
-      endTime,
-      vehicleNumber,
-      driver: selectedDriverId,
-      medic: selectedMedicId,
-    };
-
-    const updatedData = {
-      assignments: [updatedAssignment],
-    };
-
-    await updateDienstPartial(dienstId, updatedData, token);
-    toast.success("✅ Cambios guardados correctamente");
-    onClose();
-    onUpdate();
-  } catch (error) {
-    console.error("Error al guardar cambios:", error);
-    toast.error("❌ Error al guardar los cambios.");
-  }
-};
-
-
-
+      await updateDienstPartial(dienstId, { assignments: [updatedAssignment] }, token);
+      toast.success("✅ Cambios guardados");
+      onClose();
+      onUpdate();
+    } catch (error) {
+      console.error("Error al guardar cambios:", error);
+      toast.error("❌ Error al guardar cambios");
+    }
+  };
 
   const handleDelete = async () => {
     if (!token || !assignment) return;
-    const confirmed = confirm("¿Estás seguro de eliminar este día del Dienst?");
+    const confirmed = confirm("¿Seguro que deseas eliminar este día?");
     if (!confirmed) return;
 
     setIsLoading(true);
     try {
       await removeAssignment(dienstId, assignment.date, token);
-      toast.success("✅ Día eliminado (ahora es libre)");
+      toast.success("✅ Día eliminado");
       onClose();
       onUpdate();
     } catch (error) {
-      console.error("Error al eliminar el assignment:", error);
+      console.error("Error al eliminar assignment:", error);
       toast.error("❌ Error al eliminar el assignment.");
     } finally {
       setIsLoading(false);
@@ -173,6 +174,7 @@ const handleSave = async () => {
                 className="w-full border p-1 rounded"
               />
 
+
               <label htmlFor="endTime" className="block text-sm font-medium">Hora fin</label>
               <input
                 id="endTime"
@@ -182,80 +184,74 @@ const handleSave = async () => {
                 className="w-full border p-1 rounded"
               />
 
-              <label htmlFor="vehicleNumber" className="block text-sm font-medium">Vehículo</label>
-              <input
-                id="vehicleNumber"
-                type="text"
-                value={vehicleNumber}
-                onChange={(e) => setVehicleNumber(e.target.value)}
+
+              <label htmlFor="ambulanceId" className="block text-sm font-medium">🚑 Ambulancia</label>
+                <select
+                  id="ambulanceId"
+                  value={ambulanceId}
+                  onChange={(e) => setAmbulanceId(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 bg-white"
+                >
+                  <option value="">-- Selecciona una ambulancia --</option>
+                  {ambulances.map((amb) => (
+                    <option key={amb._id} value={amb._id}>
+                      {amb.ambulanceNumber}
+                    </option>
+                  ))}
+                </select>
+
+
+
+
+              <label htmlFor="driverSelect" className="block text-sm font-medium">Conductor</label>
+              <select
+                id="driverSelect"
+                title="Selecciona conductor"
+                value={selectedDriverId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setSelectedDriverId(id);
+                  if (id === selectedMedicId) setSelectedMedicId("");
+                }}
                 className="w-full border p-1 rounded"
-              />
+              >
+                <option value="">-- Selecciona conductor --</option>
+                {availableDrivers.map((user) => {
+                  const status = getPscheinStatus(user.pscheinExpiry);
+                  const icon =
+                    status === "warning" ? " ⚠️" : status === "expired" ? " ❌" : "";
+                  return (
+                    <option
+                      key={user._id}
+                      value={user._id}
+                      disabled={status === "expired"}
+                    >
+                      {user.lastName}, {user.name}
+                      {icon}
+                    </option>
+                  );
+                })}
+              </select>
 
-              <label htmlFor="driver" className="block text-sm font-medium">Conductor</label>
-                <select
-                  id="driver"
-                  value={selectedDriverId}
-                  onChange={(e) => {
-                    const selectedId = e.target.value;
-                    setSelectedDriverId(selectedId);
-                    if (selectedId === selectedMedicId) {
-                      setSelectedMedicId(""); // evita doble asignación
-                    }
-                  }}
-                  className="w-full border p-1 rounded"
-                >
-                  <option value="">-- Selecciona conductor --</option>
-                  {availableDrivers.map((user) => {
-                    const status = getPscheinStatus(user.pscheinExpiry);
-                    const isAlsoSelectedInMedic = user._id === selectedMedicId;
-                    const isExpired = status === "expired";
-                    const icon = status === "warning" ? " ⚠️" : isExpired ? " ❌" : "";
-
-                    return (
-                      <option
-                        key={user._id}
-                        value={user._id}
-                        disabled={isExpired}
-                        className={
-                          isExpired || isAlsoSelectedInMedic ? "text-gray-400 italic" : ""
-                        }
-                      >
-                        {user.lastName}, {user.name}{icon}
-                      </option>
-                    );
-                  })}
-                </select>
-
-
-
-              <label htmlFor="medic" className="block text-sm font-medium">Sanitario</label>
-                <select
-                  id="medic"
-                  value={selectedMedicId}
-                  onChange={(e) => {
-                    const selectedId = e.target.value;
-                    setSelectedMedicId(selectedId);
-                    if (selectedId === selectedDriverId) {
-                      setSelectedDriverId(""); // evita doble asignación si user tiene role "both"
-                    }
-                  }}
-                  className="w-full border p-1 rounded"
-                >
-                  <option value="">-- Selecciona sanitario --</option>
-                  {availableMedics.map((user) => {
-                    const isAlsoSelectedInDriver = user._id === selectedDriverId;
-
-                    return (
-                      <option
-                        key={user._id}
-                        value={user._id}
-                        className={isAlsoSelectedInDriver ? "text-gray-400" : ""}
-                      >
-                        {user.lastName}, {user.name}
-                      </option>
-                    );
-                  })}
-                </select>
+              <label htmlFor="medicSelect" className="block text-sm font-medium">Sanitario</label>
+              <select
+                id="medicSelect"
+                title="Selecciona sanitario"
+                value={selectedMedicId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setSelectedMedicId(id);
+                  if (id === selectedDriverId) setSelectedDriverId("");
+                }}
+                className="w-full border p-1 rounded"
+              >
+                <option value="">-- Selecciona sanitario --</option>
+                {availableMedics.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {user.lastName}, {user.name}
+                  </option>
+                ))}
+              </select>
 
 
               <button
@@ -272,27 +268,16 @@ const handleSave = async () => {
                   disabled={isLoading}
                   className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
                 >
-                  {isLoading ? "Eliminando..." : "Eliminar este día (hacer libre)"}
+                  {isLoading ? "Eliminando..." : "Eliminar este día"}
                 </button>
               )}
             </>
           ) : assignment ? (
             <>
               <p>🕒 {startTime} - {endTime}</p>
-              <p>🚑 Vehículo: {vehicleNumber}</p>
-              <p>
-                👨‍✈️ Conductor:{" "}
-                {typeof assignment.driver === "object" && assignment.driver
-                  ? `${assignment.driver.lastName}, ${assignment.driver.name}`
-                  : "(ID)"}
-              </p>
-              <p>
-                👩‍⚕️ Sanitario:{" "}
-                {typeof assignment.medic === "object" && assignment.medic
-                  ? `${assignment.medic.lastName}, ${assignment.medic.name}`
-                  : "(ID)"}
-              </p>
-
+              <p>🚑 Ambulancia ID: {ambulanceId}</p>
+              <p>👨‍✈️ Conductor: {typeof assignment.driver === "object" ? `${assignment.driver.lastName}, ${assignment.driver.name}` : "(ID)"}</p>
+              <p>👩‍⚕️ Sanitario: {typeof assignment.medic === "object" ? `${assignment.medic.lastName}, ${assignment.medic.name}` : "(ID)"}</p>
             </>
           ) : (
             <p className="text-green-700 font-semibold text-center text-xl">🌴 Día libre</p>
@@ -312,9 +297,3 @@ const handleSave = async () => {
 };
 
 export default AssignmentModal;
-
-
-
-
-
-

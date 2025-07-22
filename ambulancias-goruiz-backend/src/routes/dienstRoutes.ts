@@ -27,7 +27,7 @@ router.get('/search', authenticateToken, authorizeRole('admin'), searchDienst);
 router.get('/user/:userId', authenticateToken, getDienstsByUser);
 
 // ✅ NUEVA RUTA - antes de las que usan :id
-router.get('/assigned-days/:userId', authenticateToken, getAssignedDaysForUser)
+router.get('/assigned-days/:userId', authenticateToken, getAssignedDaysForUser);
 
 router.post('/generate-week', authenticateToken, authorizeRole('admin'), generateDienstTemplatesForWeek);
 router.post('/delete-week', authenticateToken, authorizeRole('admin'), deleteDienstsForWeek);

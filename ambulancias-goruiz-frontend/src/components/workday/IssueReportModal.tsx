@@ -1,23 +1,23 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
-import type { AssignedDayFull } from "../../types/assignedDay";
+import type { AssignedDayFull } from "../../types/dienst";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   assignedDay: AssignedDayFull;
-  vehicleNumber: string;
   ambulanceId: string;
   finalKm: number;
+  onSubmit: (issueData: { issueText: string }) => void;
 }
 
 const IssueReportModal: React.FC<Props> = ({
   isOpen,
   onClose,
   assignedDay,
-  vehicleNumber,
   ambulanceId,
   finalKm,
+  onSubmit,
 }) => {
   const [description, setDescription] = useState("");
   const [finalKmInput, setFinalKmInput] = useState<string>(finalKm > 0 ? finalKm.toString() : "");
@@ -43,8 +43,8 @@ const IssueReportModal: React.FC<Props> = ({
       startTime: assignedDay.startTime,
       endTime: assignedDay.endTime,
       team: `${assignedDay.driver.lastName}, ${assignedDay.driver.name} + ${assignedDay.medic.lastName}, ${assignedDay.medic.name}`,
-      vehicleNumber,
       ambulanceId,
+      ambulanceNumber: assignedDay.ambulanceNumber || "Desconocido",
       finalKm: finalKmValue,
       timestamp: new Date().toISOString(),
       issueText: description.trim(),
@@ -61,6 +61,7 @@ const IssueReportModal: React.FC<Props> = ({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       toast.success("🔧 Avería reportada correctamente.");
+      onSubmit({ issueText: description.trim() });
       onClose();
     } catch (err) {
       console.error("Error al reportar avería:", err);
@@ -77,7 +78,7 @@ const IssueReportModal: React.FC<Props> = ({
         <p><strong>Horario</strong> {assignedDay.startTime} – {assignedDay.endTime}</p>
         <p><strong>🚗 Conductor:</strong> {assignedDay.driver.lastName}, {assignedDay.driver.name}</p>
         <p><strong>🧑‍⚕️ Sanitario:</strong> {assignedDay.medic.lastName}, {assignedDay.medic.name}</p>
-        <p><strong>🚐 Ambulancia</strong> {vehicleNumber} (ID: {ambulanceId})</p>
+        <p><strong>🚐 Ambulancia:</strong> {assignedDay.ambulanceNumber || "Desconocido"} (ID: {ambulanceId})</p>
 
         <div>
           <label className="block text-sm font-medium mb-1">🔢 KM finales</label>
@@ -85,7 +86,7 @@ const IssueReportModal: React.FC<Props> = ({
             type="number"
             inputMode="numeric"
             value={finalKmInput}
-            onChange={(e) => setFinalKmInput(e.target.value.replace(/\D/g, ""))} // solo números
+            onChange={(e) => setFinalKmInput(e.target.value.replace(/\D/g, ""))}
             placeholder="Introduce los kilómetros finales"
             className="w-full border rounded p-2"
           />

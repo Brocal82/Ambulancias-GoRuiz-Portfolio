@@ -88,7 +88,13 @@ const DienstPage = () => {
                       {assignment ? (
                         <>
                           <p className="text-xs">🕒 {assignment.startTime} - {assignment.endTime}</p>
-                          <p className="text-xs">🚑 {assignment.vehicleNumber}</p>
+                          <p className="text-xs">
+                            🚑 {typeof assignment.ambulanceId === "object" && "ambulanceNumber" in assignment.ambulanceId
+                              ? assignment.ambulanceId.ambulanceNumber
+                              : "—"}
+                          </p>
+
+
                         </>
                       ) : (
                         <p className="text-xs text-green-800 font-medium mt-2">🌴 Libre</p>
