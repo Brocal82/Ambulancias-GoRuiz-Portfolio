@@ -81,15 +81,20 @@ const WorkerDienstsPage = () => {
                           <div
                             key={dateStr}
                             className={`border rounded p-2 text-sm cursor-pointer hover:shadow ${bgColor}`}
-                            onClick={() =>
-                              assignment &&
+                            onClick={() => {
+                              if (!assignment?.startTime || !assignment?.endTime || !assignment.driver || !assignment.medic) {
+                                return;
+                              }
+
                               setSelectedAssignment({
                                 date: assignment.date,
                                 assignment: assignment as FlexibleAssignment,
                                 dienstId: assignment.dienstId,
-                              })
-                            }
+                              });
+                            }}
                           >
+                              
+
                             <p className="font-semibold">
                               {new Date(dateStr).toLocaleDateString("es-ES", {
                                 weekday: "short",
