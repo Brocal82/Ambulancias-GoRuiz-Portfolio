@@ -43,12 +43,13 @@ const tripSchema = new Schema<TripEntry>({
 export interface IWorkdaySummary extends Document {
   date: string;
   assignmentId: string;
-  driver: Types.ObjectId; // Referencia a User
-  medic: Types.ObjectId;  // Referencia a User
-  vehicleNumber: string;
-  dienstNumber?: number;   // ✅ NUEVO
-  startTime?: string;      // ✅ NUEVO
-  endTime?: string;        // ✅ NUEVO
+  driver: Types.ObjectId;
+  medic: Types.ObjectId;
+  ambulanceId: Types.ObjectId;
+  ambulanceNumber: string;
+  dienstNumber?: number;
+  startTime?: string;
+  endTime?: string;
   initialKm: number;
   finalKm?: number;
   totalDienstKm: number;
@@ -68,10 +69,11 @@ const workdaySummarySchema = new Schema<IWorkdaySummary>({
   assignmentId:        { type: String, required: true },
   driver:              { type: Schema.Types.ObjectId, ref: "User", required: true },
   medic:               { type: Schema.Types.ObjectId, ref: "User", required: true },
-  vehicleNumber:       { type: String, required: true },
-  dienstNumber:        { type: Number },     // ✅ NUEVO
-  startTime:           { type: String },     // ✅ NUEVO
-  endTime:             { type: String },     // ✅ NUEVO
+  ambulanceId:         { type: Schema.Types.ObjectId, ref: "Ambulance", required: true },
+  ambulanceNumber:     { type: String, required: true },
+  dienstNumber:        { type: Number },
+  startTime:           { type: String },
+  endTime:             { type: String },
   initialKm:           { type: Number, required: true },
   finalKm:             { type: Number },
   totalDienstKm:       { type: Number, required: true },
@@ -81,7 +83,6 @@ const workdaySummarySchema = new Schema<IWorkdaySummary>({
   extraNote:           { type: String, default: "" },
   totalEffectivePatients: { type: Number, required: true },
   totalRealTrips:        { type: Number, required: true },
-
 });
 
 /* ─────────────────────────────────────────────
@@ -93,4 +94,3 @@ const WorkdaySummary = mongoose.models.WorkdaySummary || mongoose.model<IWorkday
 );
 
 export default WorkdaySummary;
-

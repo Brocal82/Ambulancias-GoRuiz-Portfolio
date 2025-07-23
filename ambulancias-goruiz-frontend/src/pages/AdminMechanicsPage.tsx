@@ -79,7 +79,7 @@ useEffect(() => {
     const amb = ambulances.find(a => a._id === issue.ambulanceId);
     return amb
       ? `${amb.ambulanceNumber} — ${amb.brand} ${amb.modelName} (Matrícula: ${amb.licensePlate})`
-      : `${issue.vehicleNumber} (ID: ${issue.ambulanceId})`;
+      : `${issue.ambulanceNumber} (ID: ${issue.ambulanceId})`;
   })()}
 </p>
 

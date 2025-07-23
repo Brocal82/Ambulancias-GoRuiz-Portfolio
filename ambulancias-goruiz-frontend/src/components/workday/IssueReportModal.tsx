@@ -78,7 +78,7 @@ const IssueReportModal: React.FC<Props> = ({
         <p><strong>Horario</strong> {assignedDay.startTime} – {assignedDay.endTime}</p>
         <p><strong>🚗 Conductor:</strong> {assignedDay.driver.lastName}, {assignedDay.driver.name}</p>
         <p><strong>🧑‍⚕️ Sanitario:</strong> {assignedDay.medic.lastName}, {assignedDay.medic.name}</p>
-        <p><strong>🚐 Ambulancia:</strong> {assignedDay.ambulanceNumber || "Desconocido"} (ID: {ambulanceId})</p>
+        <p><strong>🚐 Ambulancia:</strong> {assignedDay.ambulanceNumber || "Desconocido"}</p>
 
         <div>
           <label className="block text-sm font-medium mb-1">🔢 KM finales</label>

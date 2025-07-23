@@ -166,7 +166,7 @@ const MyWorkday = () => {
   localStorage.setItem(confirmedAmbulanceKey(assignedDay.assignmentId), "true");
 
   // 💾 (opcional) Puedes guardar también el número en localStorage si aún lo usas en pantalla
-  localStorage.setItem(`vehicleNumber-${assignedDay.assignmentId}`, ambulanceNumber);
+  localStorage.setItem(`ambulanceNumber-${assignedDay.assignmentId}`, ambulanceNumber);
 };
 
 
@@ -623,7 +623,7 @@ const MyWorkday = () => {
         driver: assignedDay.driver._id,
         medic: assignedDay.medic._id,
         ambulanceId,
-        ambulanceNumber, // 👈 usa este en lugar de vehicleNumber
+        ambulanceNumber,
         initialKm: Number(initialAmbulanceKm),
         finalKm: finalKmValue,
         trips,

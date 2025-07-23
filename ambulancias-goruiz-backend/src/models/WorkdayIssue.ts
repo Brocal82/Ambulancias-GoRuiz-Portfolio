@@ -6,7 +6,7 @@ const WorkdayIssueSchema = new mongoose.Schema({
   startTime: String,
   endTime: String,
   team: String,
-  vehicleNumber: String,
+  ambulanceNumber: { type: String, required: true },
   ambulanceId: String,
   finalKm: Number,
   timestamp: { type: String, required: true },

@@ -204,23 +204,34 @@ export const getAllWorkdaySummaries = async (req: Request, res: Response) => {
 export const reportIssue = async (req: Request, res: Response): Promise<void> => {
   try {
     const {
-      dienstNumber, date, startTime, endTime, team,
-      vehicleNumber, ambulanceId, finalKm,
-      timestamp, issueText, driver, medic
+      dienstNumber,
+      date,
+      startTime,
+      endTime,
+      team,
+      ambulanceNumber,       // ✅ ahora usamos ambulanceNumber
+      ambulanceId,
+      finalKm,
+      timestamp,
+      issueText,
+      driver,
+      medic,
     } = req.body;
 
-    if (!dienstNumber || !vehicleNumber || !ambulanceId || !timestamp || !issueText) {
+    // ✅ Validación con ambulanceNumber
+    if (!dienstNumber || !ambulanceNumber || !ambulanceId || !timestamp || !issueText) {
       res.status(400).json({ message: "Faltan datos obligatorios para reporte de avería." });
       return;
     }
 
     if (driver && !mongoose.isValidObjectId(driver)) {
       res.status(400).json({ message: "driver no es un ObjectId válido" });
-      return
+      return;
     }
+
     if (medic && !mongoose.isValidObjectId(medic)) {
       res.status(400).json({ message: "medic no es un ObjectId válido" });
-      return
+      return;
     }
 
     const newIssue = await WorkdayIssue.create({
@@ -229,7 +240,7 @@ export const reportIssue = async (req: Request, res: Response): Promise<void> =>
       startTime,
       endTime,
       team,
-      vehicleNumber,
+      ambulanceNumber,   // ✅ actualizado
       ambulanceId,
       finalKm,
       timestamp,
@@ -244,6 +255,7 @@ export const reportIssue = async (req: Request, res: Response): Promise<void> =>
     res.status(500).json({ message: "Error interno al generar reporte de avería." });
   }
 };
+
 
 export const getAllIssueReports = async (req: Request, res: Response) => {
   try {

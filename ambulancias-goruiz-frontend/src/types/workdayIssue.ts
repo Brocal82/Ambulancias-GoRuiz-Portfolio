@@ -5,7 +5,7 @@ export interface WorkdayIssue {
   startTime: string;
   endTime: string;
   team: string;
-  vehicleNumber: string;
+  ambulanceNumber: string;
   ambulanceId: string;
   finalKm: number;
   timestamp: string;
