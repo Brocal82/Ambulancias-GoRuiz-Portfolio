@@ -12,7 +12,7 @@ export interface UserRef {
 export interface DienstAssignment {
   _id: string;
   date: string;
-  ambulanceId?: string | { _id: string; ambulanceNumber: string };
+  ambulanceId?: string | Ambulance;
   ambulanceNumber?: string;
   startTime: string;
   endTime: string;
@@ -64,6 +64,7 @@ export interface AssignedDayFull {
   driver: UserRef;
   medic: UserRef;
 }
+
 
 
 

@@ -221,18 +221,26 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
     const diensts = await Dienst.find({
       $or: [
         { 'assignments.driver': new mongoose.Types.ObjectId(userId) },
-        { 'assignments.medic': new mongoose.Types.ObjectId(userId) }
-      ]
+        { 'assignments.medic': new mongoose.Types.ObjectId(userId) },
+      ],
     })
       .populate("assignments.driver", "name lastName pscheinExpiry")
       .populate("assignments.medic", "name lastName pscheinExpiry")
-      .populate("assignments.ambulanceId", "ambulanceNumber") // ✅ añadimos esto
+      .populate("assignments.ambulanceId", "ambulanceNumber") // 👈 importante
       .lean();
 
     const assignedDays: AssignedDay[] = [];
 
     diensts.forEach((dienst) => {
       dienst.assignments.forEach((assignment: any) => {
+        // Si el assignment no corresponde al usuario, lo saltamos (por si hay más de un assignment por día)
+        if (
+          assignment.driver?._id?.toString() !== userId &&
+          assignment.medic?._id?.toString() !== userId
+        ) {
+          return;
+        }
+
         const ambulanceData = assignment.ambulanceId;
 
         assignedDays.push({
@@ -242,8 +250,14 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
           date: assignment.date,
           startTime: assignment.startTime,
           endTime: assignment.endTime,
-          ambulanceId: typeof ambulanceData === "object" ? ambulanceData?._id?.toString() : undefined,
-          ambulanceNumber: typeof ambulanceData === "object" ? ambulanceData?.ambulanceNumber : undefined,
+          ambulanceId:
+            typeof ambulanceData === "object"
+              ? ambulanceData._id?.toString()
+              : ambulanceData?.toString(),
+          ambulanceNumber:
+            typeof ambulanceData === "object"
+              ? ambulanceData.ambulanceNumber
+              : undefined,
           driver: assignment.driver?._id
             ? {
                 _id: assignment.driver._id.toString(),
@@ -270,6 +284,7 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
     res.status(500).json({ message: "Error al obtener días asignados" });
   }
 };
+
 
 export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) => {
   const { weekStartDate } = req.body;

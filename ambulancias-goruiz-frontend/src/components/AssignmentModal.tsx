@@ -41,23 +41,33 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
 
-  useEffect(() => {
-    if (assignment) {
-      setStartTime(assignment.startTime);
-      setEndTime(assignment.endTime);
+useEffect(() => {
+  if (assignment) {
+    setStartTime(assignment.startTime);
+    setEndTime(assignment.endTime);
+
+    if (typeof assignment.ambulanceId === "string") {
       setAmbulanceId(assignment.ambulanceId);
-      setSelectedDriverId(
-        typeof assignment.driver === "string"
-          ? assignment.driver
-          : assignment.driver?._id || ""
-      );
-      setSelectedMedicId(
-        typeof assignment.medic === "string"
-          ? assignment.medic
-          : assignment.medic?._id || ""
-      );
+    } else if (assignment.ambulanceId && typeof assignment.ambulanceId === "object") {
+      setAmbulanceId(assignment.ambulanceId._id);
+    } else {
+      setAmbulanceId(""); // fallback
     }
-  }, [assignment]);
+
+    setSelectedDriverId(
+      typeof assignment.driver === "string"
+        ? assignment.driver
+        : assignment.driver?._id || ""
+    );
+    setSelectedMedicId(
+      typeof assignment.medic === "string"
+        ? assignment.medic
+        : assignment.medic?._id || ""
+    );
+  }
+}, [assignment]);
+
+
 
   useEffect(() => {
     const fetchAvailableUsers = async () => {
@@ -273,12 +283,18 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
               )}
             </>
           ) : assignment ? (
-            <>
-              <p>🕒 {startTime} - {endTime}</p>
-              <p>🚑 Ambulancia ID: {ambulanceId}</p>
-              <p>👨‍✈️ Conductor: {typeof assignment.driver === "object" ? `${assignment.driver.lastName}, ${assignment.driver.name}` : "(ID)"}</p>
-              <p>👩‍⚕️ Sanitario: {typeof assignment.medic === "object" ? `${assignment.medic.lastName}, ${assignment.medic.name}` : "(ID)"}</p>
-            </>
+              <>
+                <p>🕒 {startTime} - {endTime}</p>
+                <p>
+                  🚑 Ambulancia:{" "}
+                  {typeof assignment?.ambulanceId === "object"
+                    ? assignment.ambulanceId?.ambulanceNumber ?? "—"
+                    : assignment?.ambulanceNumber ?? "—"}
+                </p>
+
+                <p>👨‍✈️ Conductor: {typeof assignment.driver === "object" ? `${assignment.driver.lastName}, ${assignment.driver.name}` : "(ID)"}</p>
+                <p>👩‍⚕️ Sanitario: {typeof assignment.medic === "object" ? `${assignment.medic.lastName}, ${assignment.medic.name}` : "(ID)"}</p>
+              </>
           ) : (
             <p className="text-green-700 font-semibold text-center text-xl">🌴 Día libre</p>
           )}
@@ -297,3 +313,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 };
 
 export default AssignmentModal;
+
+
+
