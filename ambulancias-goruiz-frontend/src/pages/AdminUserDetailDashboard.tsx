@@ -4,6 +4,7 @@ import Profile from './Profile';
 import AdminUserDienstsTab from './AdminUserDienstsTab';
 import AdminUserPraemienTab from './AdminUserPraemienTab';
 import AdminUserVacationsTab from './AdminUserVacationsTab';
+import AdminUserMessageTab from './AdminUserMessageTab';
 import { useAuth } from '../hooks/useAuth';
 import { getUserById } from '../api/users';
 import type { User } from '../types/user';
@@ -64,7 +65,7 @@ const AdminUserDetailDashboard = () => {
         {activeTab === 'Diensts' && userId && <AdminUserDienstsTab userId={userId} />}
         {activeTab === 'Premien' && userId && <AdminUserPraemienTab userId={userId} />}
         {activeTab === 'Vacaciones' && userId && <AdminUserVacationsTab userId={userId} />}
-        {activeTab === 'Mensajes' && <p>Mensajes individuales y generales (pendiente)</p>}
+        {activeTab === 'Mensajes' && userId && <AdminUserMessageTab userId={userId} />}
       </section>
     </div>
   );
@@ -72,3 +73,4 @@ const AdminUserDetailDashboard = () => {
 
 
 export default AdminUserDetailDashboard;
+
