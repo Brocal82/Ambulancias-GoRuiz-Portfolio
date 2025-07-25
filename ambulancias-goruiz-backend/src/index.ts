@@ -9,14 +9,15 @@ import cors from 'cors';
 import userRoutes from './routes/userRoutes';
 import dienstRoutes from './routes/dienstRoutes';
 import hospitalRoutes from './routes/hospitalRoutes';
-import tripRoutes from './routes/tripRoutes'
-import workdaySummaryRoutes from './routes/workdaySummaryRoutes'
-import praemienRoutes from  './routes/praemienRoutes'
-import vacationRoutes from './routes/vacationRoutes'
-import ambulanceRoutes from './routes/ambulanceRoutes'
+import tripRoutes from './routes/tripRoutes';
+import workdaySummaryRoutes from './routes/workdaySummaryRoutes';
+import praemienRoutes from './routes/praemienRoutes';
+import vacationRoutes from './routes/vacationRoutes';
+import ambulanceRoutes from './routes/ambulanceRoutes';
+import messageRoutes from './routes/messageRoutes'; // ✅ NUEVO
 
 // ✅ Importamos el limpiador de Diensts antiguos
-import  cleanupOldDiensts  from './utils/cleanupOldDiensts';
+import cleanupOldDiensts from './utils/cleanupOldDiensts';
 
 // Inicializamos Express
 const app = express();
@@ -49,9 +50,7 @@ app.use('/api/workday-summary', workdaySummaryRoutes);
 app.use('/api/praemien', praemienRoutes);
 app.use('/api/vacations', vacationRoutes);
 app.use('/api/ambulances', ambulanceRoutes);
-
-
-
+app.use('/api/messages', messageRoutes); // ✅ NUEVO
 
 // Conexión y arranque del servidor
 mongoose.connect(MONGODB_URI)
