@@ -14,6 +14,7 @@ export interface User {
   phone?: string;
   emergencyPhone?: string;
   profileImage?: string;
+  documents?: string[];
 
   // ✅ Nuevas propiedades para filtros futuros
   onLeave?: boolean;
