@@ -2,80 +2,153 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../hooks/useAuth';
-import { getUserById, updateUserProfile } from '../api/users';
+import { getUserById, updateUserProfile, deleteUserDocument } from '../api/users';
 import { getPscheinStatus } from '../utils/pscheinUtils';
 import type { User, AmbulanceRole } from '../types/user';
 
-
 interface ProfileProps {
-  userId?: string; // <-- Añadido
+  userId?: string;
 }
 
 const Profile = ({ userId }: ProfileProps) => {
-  const { userId: userIdFromAuthContext, token, role, login } = useAuth(); // renombrado userId
+  const { userId: userIdFromAuthContext, token, role, login } = useAuth();
   const [formData, setFormData] = useState<Partial<User>>({});
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [documentsFiles, setDocumentsFiles] = useState<FileList | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
 
-useEffect(() => {
-  setLoading(true);  // <--- Reinicia loading cada vez que cambia el userId
-  const fetchData = async () => {
-    if (!token) return;
+  const navigate = useNavigate();
 
-    const idToFetch = userId || userIdFromAuthContext;
-    if (!idToFetch) return;
+  useEffect(() => {
+    setLoading(true);
+    const fetchData = async () => {
+      if (!token) return;
+      const idToFetch = userId || userIdFromAuthContext;
+      if (!idToFetch) return;
 
-    try {
-      const fetchedUser = await getUserById(token, idToFetch);
-
-      setFormData(fetchedUser);
-    } catch (error) {
-      console.error(error);
-      setMessage('Error al cargar el perfil');
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchData();
-}, [userId, userIdFromAuthContext, token]);
-
+      try {
+        const fetchedUser = await getUserById(token, idToFetch);
+        setFormData(fetchedUser);
+      } catch (error) {
+        console.error(error);
+        setMessage('Error al cargar el perfil');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [userId, userIdFromAuthContext, token]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-const navigate = useNavigate(); // ⬅️ Antes del handleSubmit
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    const idToUpdate = userId || userIdFromAuthContext;
+    if (!idToUpdate || !token) return;
 
+    try {
+      // Si hay archivos que subir
+      if (profileImageFile || documentsFiles) {
+        const form = new FormData();
+        if (profileImageFile) form.append('profileImage', profileImageFile);
+        if (documentsFiles) {
+          Array.from(documentsFiles).forEach((doc) => {
+            form.append('documents', doc);
+          });
+        }
+
+        // 🟢 Subimos archivos y leemos la respuesta
+        const uploadRes = await fetch('http://localhost:5000/api/users/me/upload', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: form,
+        });
+
+        const uploadData = await uploadRes.json();
+        console.log("🖼️ Imagen subida:", uploadData.profileImage);
+
+        // ✅ Actualizamos el formData con la nueva imagen (si viene)
+        if (uploadData?.profileImage) {
+          setFormData((prev) => ({ ...prev, profileImage: uploadData.profileImage }));
+        }
+      }
+
+      // Guardamos el resto del perfil (campos de texto)
+      await updateUserProfile(idToUpdate, formData, token);
+
+      // Volvemos a pedir los datos del usuario actualizado
+      const updatedUser = await getUserById(token, idToUpdate);
+      setFormData(updatedUser);
+
+      // Actualizamos el contexto para refrescar header
+      if (idToUpdate === userIdFromAuthContext) {
+        login(token, idToUpdate, role || 'worker', updatedUser);
+      }
+
+      toast.success('✅ Cambios guardados correctamente');
+
+      setTimeout(() => {
+        navigate(role === 'admin' ? '/admin' : '/worker');
+      }, 100);
+    } catch (error) {
+      console.error(error);
+      toast.error('❌ Error al guardar el perfil');
+    }
+  };
+
+  const handleDeleteDocument = async (filePath: string) => {
+    if (!token) return;
+
+    try {
+      const result = await deleteUserDocument(filePath, token);
+
+      toast.success('✅ Documento eliminado');
+
+      setFormData((prev) => ({
+        ...prev,
+        documents: result.documents,
+      }));
+    } catch (error) {
+      console.error(error);
+      toast.error('❌ No se pudo eliminar el documento');
+    }
+  };
+
+const handleDeleteProfileImage = async () => {
   const idToUpdate = userId || userIdFromAuthContext;
 
   if (!idToUpdate || !token) return;
 
   try {
-    await updateUserProfile(idToUpdate, formData, token);
+    const updatedUser = await updateUserProfile(
+  idToUpdate,
+  {
+    name: formData.name || '',
+    email: formData.email || '',
+    profileImage: '',
+  },
+  token
+);
 
-    // Obtener el usuario actualizado para refrescar el formulario
-    const updatedUser = await getUserById(token, idToUpdate);
-
+    toast.success('✅ Imagen de perfil eliminada');
     setFormData(updatedUser);
 
-    // SOLO actualizar contexto si el usuario modificado es el mismo que el logueado
     if (idToUpdate === userIdFromAuthContext) {
       login(token, idToUpdate, role || 'worker', updatedUser);
     }
-
-    toast.success('✅ Cambios guardados correctamente');
-
-    setTimeout(() => {
-      navigate(role === 'admin' ? '/admin' : '/worker');
-    }, 100);
   } catch (error) {
     console.error(error);
-    toast.error('❌ Error al guardar el perfil');
+    toast.error('❌ No se pudo eliminar la imagen de perfil');
   }
 };
+
+
 
 
 
@@ -88,11 +161,10 @@ const handleSubmit = async (e: React.FormEvent) => {
     <div className="max-w-xl mx-auto p-4 bg-white rounded shadow">
       <h2 className="text-xl font-bold mb-4">Perfil de Usuario</h2>
       {message && <p className="mb-4 text-sm text-blue-600">{message}</p>}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Nombre */}
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-          Nombre
-        </label>
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nombre</label>
         <input
           type="text"
           id="name"
@@ -104,9 +176,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         />
 
         {/* Apellidos */}
-        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-          Apellidos
-        </label>
+        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Apellidos</label>
         <input
           type="text"
           id="lastName"
@@ -125,17 +195,12 @@ const handleSubmit = async (e: React.FormEvent) => {
               key={currentRole}
               type="button"
               onClick={() => setFormData({ ...formData, ambulanceRole: currentRole })}
-              className={`flex-1 px-4 py-2 border rounded ${
-                formData.ambulanceRole === currentRole
+              className={`flex-1 px-4 py-2 border rounded ${formData.ambulanceRole === currentRole
                   ? 'bg-green-500 text-white border-green-600'
                   : 'bg-white text-gray-800 border-gray-300'
-              }`}
+                }`}
             >
-              {currentRole === 'driver'
-                ? '🚑 Conductor'
-                : currentRole === 'medic'
-                ? '🩺 Sanitario'
-                : '🟰 Ambos'}
+              {currentRole === 'driver' ? '🚑 Conductor' : currentRole === 'medic' ? '🩺 Sanitario' : '🟰 Ambos'}
             </button>
           ))}
         </div>
@@ -152,13 +217,12 @@ const handleSubmit = async (e: React.FormEvent) => {
               name="pscheinExpiry"
               value={formData.pscheinExpiry || ''}
               onChange={handleChange}
-              className={`w-full border rounded p-2 ${
-                pscheinStatus === 'expired'
+              className={`w-full border rounded p-2 ${pscheinStatus === 'expired'
                   ? 'border-red-500'
                   : pscheinStatus === 'warning'
-                  ? 'border-orange-400'
-                  : 'border-gray-300'
-              }`}
+                    ? 'border-orange-400'
+                    : 'border-gray-300'
+                }`}
             />
             {pscheinStatus === 'expired' && (
               <p className="text-red-600 text-sm mt-1">❌ El P-Schein está caducado</p>
@@ -170,9 +234,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         )}
 
         {/* Dirección */}
-        <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-          Dirección
-        </label>
+        <label htmlFor="address" className="block text-sm font-medium text-gray-700">Dirección</label>
         <input
           type="text"
           id="address"
@@ -184,9 +246,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         />
 
         {/* Teléfono */}
-        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-          Teléfono
-        </label>
+        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Teléfono</label>
         <input
           type="text"
           id="phone"
@@ -198,9 +258,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         />
 
         {/* Teléfono de emergencia */}
-        <label htmlFor="emergencyPhone" className="block text-sm font-medium text-gray-700">
-          Teléfono de emergencia
-        </label>
+        <label htmlFor="emergencyPhone" className="block text-sm font-medium text-gray-700">Teléfono de emergencia</label>
         <input
           type="text"
           id="emergencyPhone"
@@ -211,19 +269,64 @@ const handleSubmit = async (e: React.FormEvent) => {
           placeholder="Número de contacto en caso de emergencia"
         />
 
-        {/* Foto de perfil */}
-        <label htmlFor="profileImage" className="block text-sm font-medium text-gray-700">
-          URL de la foto de perfil
+        {/* 👇 Inputs nuevos para seleccionar archivos */}
+        <label htmlFor="profileImageUpload" className="block text-sm font-medium text-gray-700">
+          Cambiar imagen de perfil
         </label>
         <input
-          type="text"
-          id="profileImage"
-          name="profileImage"
-          value={formData.profileImage || ''}
-          onChange={handleChange}
+          type="file"
+          id="profileImageUpload"
+          accept="image/*"
+          onChange={(e) => setProfileImageFile(e.target.files?.[0] || null)}
           className="w-full border rounded p-2"
-          placeholder="URL de imagen (opcional)"
         />
+
+        <label htmlFor="documentsUpload" className="block text-sm font-medium text-gray-700 mt-4">
+          Subir documentos (PDF)
+        </label>
+        <input
+          type="file"
+          id="documentsUpload"
+          accept="application/pdf"
+          multiple
+          onChange={(e) => setDocumentsFiles(e.target.files)}
+          className="w-full border rounded p-2"
+        />
+
+       
+
+
+        {formData.documents && formData.documents.length > 0 && (
+          <div className="mt-4">
+            <p className="text-sm text-gray-600 font-medium mb-1">📄 Documentos subidos:</p>
+            <ul className="pl-2 text-sm text-gray-700 space-y-1">
+              {formData.documents.map((docUrl, index) => (
+                <li key={index} className="flex items-center justify-between">
+                  <div>
+                    {docUrl.split('/').pop()}
+                    <a
+                      href={`http://localhost:5000${docUrl}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline ml-2"
+                    >
+                      Ver documento
+                    </a>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteDocument(docUrl)}
+                    className="text-red-500 hover:text-red-700 text-sm ml-2"
+                    title="Eliminar documento"
+                  >
+                    ❌
+                  </button>
+                </li>
+              ))}
+
+            </ul>
+          </div>
+        )}
+
 
         <button
           type="submit"
@@ -232,7 +335,6 @@ const handleSubmit = async (e: React.FormEvent) => {
           Guardar cambios
         </button>
       </form>
-
     </div>
   );
 };
