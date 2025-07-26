@@ -18,6 +18,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     if (isWorker) navigate("/worker");
     if (isAdmin) navigate("/admin");
   };
+console.log("👤 Usuario en AppLayout:", user);
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900">
@@ -53,11 +54,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
               </span>
               <Link to="/profile" title="Perfil">
                 <img
-                  src={user.profileImage || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
+                  src={
+                    user.profileImage
+                      ? `http://localhost:5000${user.profileImage}`
+                      : "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+                  }
                   alt="Perfil"
-                  className="w-8 h-8 rounded-full hover:scale-105 transition-transform"
+                  className="w-8 h-8 rounded-full hover:scale-105 transition-transform border border-white"
+                  title="Ver perfil"
                 />
               </Link>
+
             </div>
           )}
 
