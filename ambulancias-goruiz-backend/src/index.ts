@@ -6,6 +6,7 @@ dotenv.config();
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import path from 'path'; // ✅ NUEVO
 import userRoutes from './routes/userRoutes';
 import dienstRoutes from './routes/dienstRoutes';
 import hospitalRoutes from './routes/hospitalRoutes';
@@ -40,6 +41,9 @@ app.use(
   })
 );
 app.use(express.json());
+
+// ✅ Servir archivos estáticos desde /uploads
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rutas
 app.use('/api/users', userRoutes);
