@@ -120,33 +120,37 @@ const Profile = ({ userId }: ProfileProps) => {
     }
   };
 
-const handleDeleteProfileImage = async () => {
-  const idToUpdate = userId || userIdFromAuthContext;
+// 🧹 Elimina la imagen de perfil del usuario tanto del frontend como del backend.
+// Esta función se puede usar para permitir que el usuario borre su foto actual.
+// Actualmente no se está usando. Puedes integrarla en el futuro si añades un botón "Eliminar imagen".
+// const handleDeleteProfileImage = async () => {
+//   const idToUpdate = userId || userIdFromAuthContext;
 
-  if (!idToUpdate || !token) return;
+//   if (!idToUpdate || !token) return;
 
-  try {
-    const updatedUser = await updateUserProfile(
-  idToUpdate,
-  {
-    name: formData.name || '',
-    email: formData.email || '',
-    profileImage: '',
-  },
-  token
-);
+//   try {
+//     const updatedUser = await updateUserProfile(
+//   idToUpdate,
+//   {
+//     name: formData.name || '',
+//     email: formData.email || '',
+//     profileImage: '',
+//   },
+//   token
+// );
 
-    toast.success('✅ Imagen de perfil eliminada');
-    setFormData(updatedUser);
+//     toast.success('✅ Imagen de perfil eliminada');
+//     setFormData(updatedUser);
 
-    if (idToUpdate === userIdFromAuthContext) {
-      login(token, idToUpdate, role || 'worker', updatedUser);
-    }
-  } catch (error) {
-    console.error(error);
-    toast.error('❌ No se pudo eliminar la imagen de perfil');
-  }
-};
+//     if (idToUpdate === userIdFromAuthContext) {
+//       login(token, idToUpdate, role || 'worker', updatedUser);
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     toast.error('❌ No se pudo eliminar la imagen de perfil');
+//   }
+// };
+
 
 
 
