@@ -282,5 +282,78 @@ export const getAvailableUsersForDate: RequestHandler = async (req: Request, res
   }
 };
 
+export const uploadUserFiles = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = (req as any).userId;
+    const files = req.files as {
+      [fieldname: string]: Express.Multer.File[];
+    };
+
+    const updates: Record<string, any> = {};
+
+    // ✅ Actualiza SOLO la nueva imagen, reemplazando la anterior
+    if (files?.profileImage?.[0]) {
+      updates.profileImage = `/uploads/${files.profileImage[0].filename}`;
+    }
+
+    // ✅ Si hay documentos nuevos, los acumulamos con los anteriores
+    if (files?.documents?.length) {
+      const existingUser = await User.findById(userId);
+      const currentDocuments = existingUser?.documents || [];
+      const newDocs = files.documents.map((file) => `/uploads/${file.filename}`);
+      updates.documents = [...currentDocuments, ...newDocs];
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updates },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      res.status(404).json({ message: 'Usuario no encontrado' });
+      return;
+    }
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error('❌ Error al subir archivos:', error);
+    res.status(500).json({ message: 'Error al subir archivos' });
+  }
+};
+
+export const deleteUserDocument = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = (req as any).userId;
+    const { filePath } = req.body;
+
+    if (!filePath) {
+      res.status(400).json({ message: 'Ruta de documento no proporcionada' });
+      return;
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ message: 'Usuario no encontrado' });
+      return;
+    }
+
+    // Filtrar documentos que no coinciden con el que se quiere eliminar
+    user.documents = (user.documents || []).filter((doc) => doc !== filePath);
+    await user.save();
+
+    res.status(200).json({ message: 'Documento eliminado correctamente', documents: user.documents });
+  } catch (error) {
+    console.error('❌ Error al eliminar documento:', error);
+    res.status(500).json({ message: 'Error al eliminar documento' });
+  }
+};
+
+
+
+
+
+
+
 
 

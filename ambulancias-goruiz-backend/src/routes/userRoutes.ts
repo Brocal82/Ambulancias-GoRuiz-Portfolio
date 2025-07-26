@@ -8,11 +8,14 @@ import {
   deleteUser,
   loginUser,
   getAllUsersDienst,
-  getAvailableUsersForDate // 👈 importa aquí también
+  getAvailableUsersForDate,
+  uploadUserFiles,
+  deleteUserDocument
 } from '../controllers/userController';
 
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { authorizeRole, authorizeSelfOrAdmin } from '../middlewares/roleMiddleware';
+import { upload } from '../middlewares/uploadMiddleware';
 
 const router = Router();
 
@@ -26,6 +29,9 @@ router.get('/available', authenticateToken, authorizeRole('admin'), getAvailable
 
 // Ruta para actualizar el perfil del usuario autenticado
 router.patch('/me', authenticateToken, updateUser);
+router.post('/me/upload', authenticateToken, upload.fields([{ name: 'profileImage', maxCount: 1 }, { name: 'documents', maxCount: 5 }]), uploadUserFiles);
+router.delete('/me/document', authenticateToken, deleteUserDocument);
+
 
 // Rutas protegidas para usuarios
 router.get('/', authenticateToken, authorizeRole('admin'), getUsers);
@@ -37,3 +43,5 @@ router.patch('/:id', authenticateToken, authorizeSelfOrAdmin, updateUser);
 router.delete('/:id', authenticateToken, authorizeSelfOrAdmin, deleteUser);
 
 export default router;
+
+
