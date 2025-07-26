@@ -1,4 +1,3 @@
-//backend/models/User.ts
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IUser extends Document {
@@ -13,6 +12,7 @@ export interface IUser extends Document {
   emergencyPhone?: string;
   pscheinExpiry?: string; // Formato ISO, ej: '2025-12-31'
   profileImage?: string;  // URL o base64 si usas subida
+  documents?: string[];   // Lista de archivos subidos (PDF, etc.)
 }
 
 const userSchema = new Schema<IUser>({
@@ -29,7 +29,7 @@ const userSchema = new Schema<IUser>({
   ambulanceRole: {
     type: String,
     enum: ['driver', 'medic', 'both'],
-    required: false, // se puede completar luego
+    required: false,
   },
   address: {
     type: String,
@@ -44,11 +44,15 @@ const userSchema = new Schema<IUser>({
     required: false,
   },
   pscheinExpiry: {
-    type: String, // ISO 8601 format: 'YYYY-MM-DD'
+    type: String,
     required: false,
   },
   profileImage: {
     type: String,
+    required: false,
+  },
+  documents: {
+    type: [String],
     required: false,
   },
 });
