@@ -12,7 +12,9 @@
     "create:hospitals": "ts-node scripts/createHospitals.ts",
     "delete:hospitals": "ts-node scripts/deleteHospitals.ts",
     "create:ambulances": "ts-node scripts/createAmbulances.ts",
-    "delete:ambulances": "ts-node scripts/deleteAllAmbulances.ts"
+    "delete:ambulances": "ts-node scripts/deleteAllAmbulances.ts",
+    "delete:uploads": "ts-node scripts/deleteUnusedUploads.ts"
+
   },
   "keywords": [],
   "author": "",
