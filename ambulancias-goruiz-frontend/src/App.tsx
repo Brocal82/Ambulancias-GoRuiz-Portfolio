@@ -17,7 +17,7 @@ import WorkerDienstsPage from './pages/WorkerDienstsPage';
 import WorkerHospitalsPage from './pages/WorkerHospitalsPage';
 import WorkerPrämienPage from './pages/WorkerPraemienPage';
 import WorkerVacationsPage from './pages/WorkerVacationsPage';
-import WorkerMessagesPage from './pages/WorkerMessagesPage'; // ✅ NUEVA
+import WorkerMessagesPage from './pages/WorkerMessagesPage';
 
 import MyWorkday from './pages/MyWorkDay';
 
@@ -31,6 +31,7 @@ import AdminAmbulancesPage from './pages/AdminAmbulancesPage';
 import AdminMechanicsPage from './pages/AdminMechanicsPage';
 import AdminUserDetailDashboard from './pages/AdminUserDetailDashboard';
 import AdminMessagesPage from './pages/AdminMessagesPage';
+import AdminSentMessages from './pages/AdminSentMessages'; 
 
 export default function App() {
   return (
@@ -61,6 +62,7 @@ export default function App() {
             <Route path="/admin/hospitals" element={<AppLayout><AdminHospitalsPage /></AppLayout>} />
             <Route path="/admin/vacations" element={<AppLayout><AdminVacationsPage /></AppLayout>} />
             <Route path="/admin/messages" element={<AppLayout><AdminMessagesPage /></AppLayout>} />
+            <Route path="/admin/messages/sent" element={<AppLayout><AdminSentMessages /></AppLayout>} />
             <Route path="/admin/summaries" element={<AppLayout><AdminSummariesPage /></AppLayout>} />
             <Route path="/admin/ambulances" element={<AppLayout><AdminAmbulancesPage /></AppLayout>} />
             <Route path="/admin/user/:userId" element={<AppLayout><AdminUserDetailDashboard /></AppLayout>} />

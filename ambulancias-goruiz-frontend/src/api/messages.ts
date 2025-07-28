@@ -17,6 +17,7 @@ export const sendMessage = async (
     subject: string;
     body: string;
     recipients: string[]; // uno o varios IDs de usuarios
+    toAllWorkers?: boolean; // ← ✅ nuevo campo opcional
   }
 ): Promise<Message> => {
   const response = await axios.post('/messages', messageData, {
@@ -24,3 +25,12 @@ export const sendMessage = async (
   });
   return response.data;
 };
+
+// ✅ Obtener mensajes enviados por el admin (solo mensajes masivos)
+export const getSentMessages = async (token: string): Promise<Message[]> => {
+  const response = await axios.get('/messages/sent', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+

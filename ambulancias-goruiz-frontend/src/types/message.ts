@@ -11,4 +11,5 @@ export interface Message {
   recipients: string[];
   sentAt: string;
   readBy: string[];
+  toAllWorkers?: boolean;
 }
