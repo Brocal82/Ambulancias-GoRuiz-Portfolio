@@ -550,7 +550,9 @@ const MyWorkday = () => {
         driver: assignedDay.driver._id,
         medic: assignedDay.medic._id,
         ambulanceNumber,
-        ambulanceId,
+        ambulanceId: typeof assignedDay.ambulanceId === "string"
+          ? assignedDay.ambulanceId
+          : assignedDay.ambulanceId?._id ?? "",
         initialKm: initialKmNumber,
         finalKm: finalKmFromModal,
         totalDienstKm,
@@ -561,6 +563,7 @@ const MyWorkday = () => {
         startTime: assignedDay.startTime,
         endTime: assignedDay.endTime,
       };
+
 
 
 
@@ -622,7 +625,9 @@ const MyWorkday = () => {
         assignmentId: assignedDay.assignmentId,
         driver: assignedDay.driver._id,
         medic: assignedDay.medic._id,
-        ambulanceId,
+        ambulanceId: typeof assignedDay.ambulanceId === "string"
+          ? assignedDay.ambulanceId
+          : assignedDay.ambulanceId?._id ?? "",
         ambulanceNumber,
         initialKm: Number(initialAmbulanceKm),
         finalKm: finalKmValue,
@@ -635,6 +640,7 @@ const MyWorkday = () => {
         endTime: assignedDay.endTime,
         ...(issueData ? { issueData } : {}),
       };
+
 
 
 

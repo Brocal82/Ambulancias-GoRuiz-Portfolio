@@ -10,7 +10,7 @@ import IssueReportModal from "./IssueReportModal";
 interface Props {
   trips: Trip[];
   assignedDay: AssignedDayFull;
-  ambulanceNumber: string; // ✅ actualizado
+  ambulanceNumber: string;
   initialKm: string;
   finalKm: string;
   onClose: () => void;
@@ -34,6 +34,7 @@ const PartialReviewModal: React.FC<Props> = ({
   const [finalKm, setFinalKm] = useState<number | "">("");
   const [hasIssue, setHasIssue] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
+  const [issueData, setIssueData] = useState<any | null>(null); // ✅ NUEVO
 
   const parsedInitialKm = Number(initialKm);
   const parsedFinalKm = finalKm === "" ? 0 : Number(finalKm);
@@ -48,7 +49,8 @@ const PartialReviewModal: React.FC<Props> = ({
       toast.warn("📏 Introduce los kilómetros finales.");
       return;
     }
-    onSend(report.trim(), parsedFinalKm, totalEffectivePatients);
+
+    onSend(report.trim(), parsedFinalKm, totalEffectivePatients, issueData);
   };
 
   return (
@@ -108,12 +110,16 @@ const PartialReviewModal: React.FC<Props> = ({
               setHasIssue(false);
             }}
             assignedDay={assignedDay}
-            ambulanceId={assignedDay.ambulanceId ?? ""}
+            ambulanceId={
+              typeof assignedDay.ambulanceId === "string"
+                ? assignedDay.ambulanceId
+                : assignedDay.ambulanceId?._id ?? ""
+            }
             finalKm={parsedFinalKm}
-            onSubmit={async (issueData) => {
-              setHasIssue(true);
+            onSubmit={(data) => {
+              setIssueData(data); // ✅ Guardamos localmente
               setShowIssueModal(false);
-              onSend("⚠️ Avería", parsedFinalKm, totalEffectivePatients, issueData);
+              toast.info("🛠️ Avería registrada. Ahora puedes enviar el cierre parcial.");
             }}
           />
         )}

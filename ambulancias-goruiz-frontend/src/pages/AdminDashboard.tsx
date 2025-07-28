@@ -19,7 +19,7 @@ const AdminDashboard = () => {
           to="/admin/diensts"
           className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
         >
-          <h2 className="text-lg font-semibold mb-2">📅 Diensts</h2>
+          <h2 className="text-lg font-semibold mb-2">📅 Dienstplan</h2>
           <p className="text-sm text-gray-600">Edita los servicios semanales</p>
         </Link>
 
