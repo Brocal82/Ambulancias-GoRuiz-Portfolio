@@ -34,3 +34,11 @@ export const getSentMessages = async (token: string): Promise<Message[]> => {
   return response.data;
 };
 
+// ✅ Marcar mensaje como leído o borrado (solo el usuario)
+export const deleteMessageForUser = async (token: string, messageId: string): Promise<void> => {
+  await axios.patch(`/messages/${messageId}/remove`, null, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+
