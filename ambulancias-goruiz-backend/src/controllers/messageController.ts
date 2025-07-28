@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 
 // 📨 Crear un nuevo mensaje
 export const createMessage = async (req: Request, res: Response): Promise<void> => {
-  const { subject, body, recipients } = req.body;
+  const { subject, body, recipients, toAllWorkers } = req.body;
   const senderId = (req as any).userId;
 
   if (!subject || !body || !recipients || !Array.isArray(recipients)) {
@@ -20,6 +20,7 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
       body,
       sender: senderId,
       recipients,
+      toAllWorkers: Boolean(toAllWorkers), // ✅ Guardamos el flag si existe
     });
 
     res.status(201).json(newMessage);
@@ -28,6 +29,7 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ message: 'Error al enviar el mensaje' });
   }
 };
+
 
 // 📬 Obtener todos los mensajes recibidos por el usuario autenticado
 export const getMyMessages = async (req: Request, res: Response): Promise<void> => {
@@ -45,3 +47,23 @@ export const getMyMessages = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ message: 'Error al obtener mensajes' });
   }
 };
+
+// 📤 Obtener mensajes enviados por el admin a todos los trabajadores
+export const getSentMessages = async (req: Request, res: Response): Promise<void> => {
+  const adminId = (req as any).userId;
+
+  try {
+    const messages = await Message.find({
+      sender: adminId,
+      toAllWorkers: true,
+    })
+      .sort({ sentAt: -1 })
+      .select('subject body sentAt'); // devolvemos solo campos necesarios
+
+    res.status(200).json(messages);
+  } catch (error) {
+    console.error('❌ Error al obtener mensajes enviados:', error);
+    res.status(500).json({ message: 'Error al obtener mensajes enviados' });
+  }
+};
+

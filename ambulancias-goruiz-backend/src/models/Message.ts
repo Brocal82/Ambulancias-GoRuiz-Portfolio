@@ -8,6 +8,7 @@ export interface IMessage extends Document {
   recipients: mongoose.Types.ObjectId[];
   sentAt: Date;
   readBy: mongoose.Types.ObjectId[];
+  toAllWorkers?: boolean;
 }
 
 const messageSchema = new Schema<IMessage>({
@@ -42,7 +43,12 @@ const messageSchema = new Schema<IMessage>({
       ref: 'User',
     },
   ],
+  toAllWorkers: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const Message = mongoose.model<IMessage>('Message', messageSchema);
 export default Message;
+
