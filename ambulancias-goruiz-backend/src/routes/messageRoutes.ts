@@ -1,6 +1,6 @@
 // backend/src/routes/messageRoutes.ts
 import { Router } from 'express';
-import { createMessage, getMyMessages, getSentMessages } from '../controllers/messageController';
+import { createMessage, getMyMessages, getSentMessages, deleteMessageForUser } from '../controllers/messageController';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { authorizeRole } from '../middlewares/roleMiddleware';
 
@@ -14,6 +14,9 @@ router.get('/', authenticateToken, authorizeRole('worker'), getMyMessages);
 
 // ✅ Solo el admin puede ver los mensajes que ha enviado a todos los trabajadores
 router.get('/sent', authenticateToken, authorizeRole('admin'), getSentMessages);
+
+// ✅ El trabajador puede marcar un mensaje como eliminado (solo para sí mismo)
+router.patch('/:id/remove', authenticateToken, authorizeRole('worker'), deleteMessageForUser);
 
 
 export default router;

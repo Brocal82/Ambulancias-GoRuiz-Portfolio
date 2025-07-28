@@ -33,11 +33,13 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
 
 // 📬 Obtener todos los mensajes recibidos por el usuario autenticado
 export const getMyMessages = async (req: Request, res: Response): Promise<void> => {
-  const userId = (req as any).userId;
-
+  const userId = new mongoose.Types.ObjectId((req as any).userId as string);
 
   try {
-    const messages = await Message.find({ recipients: userId })
+    const messages = await Message.find({
+      recipients: userId,
+      readBy: { $ne: userId },
+    })
       .sort({ sentAt: -1 })
       .populate('sender', 'name lastName');
 
@@ -47,6 +49,9 @@ export const getMyMessages = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ message: 'Error al obtener mensajes' });
   }
 };
+
+
+
 
 // 📤 Obtener mensajes enviados por el admin a todos los trabajadores
 export const getSentMessages = async (req: Request, res: Response): Promise<void> => {
@@ -66,4 +71,31 @@ export const getSentMessages = async (req: Request, res: Response): Promise<void
     res.status(500).json({ message: 'Error al obtener mensajes enviados' });
   }
 };
+
+// 🗑️ Marcar mensaje como leído/borrado por el usuario
+export const deleteMessageForUser = async (req: Request, res: Response): Promise<void> => {
+  const userId = (req as any).userId;
+  const messageId = req.params.id;
+
+  try {
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+      res.status(404).json({ message: 'Mensaje no encontrado' });
+      return;
+    }
+
+    // Si ya fue marcado como leído/borrado, no hacer nada
+    if (!message.readBy.includes(userId)) {
+      message.readBy.push(userId);
+      await message.save();
+    }
+
+    res.status(200).json({ message: 'Mensaje marcado como leído/borrado' });
+  } catch (error) {
+    console.error('❌ Error al marcar mensaje como leído:', error);
+    res.status(500).json({ message: 'Error al borrar el mensaje' });
+  }
+};
+
 
