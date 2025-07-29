@@ -1,3 +1,4 @@
+//src/pages/WorkerPraemienHistory.tsx
 import { useEffect, useState } from "react";
 import type { MonthlyPraemieHistoryItem } from "../api/praemien";
 import { getPraemienMonthlyHistory } from "../api/praemien";
@@ -54,7 +55,7 @@ const WorkerPraemienHistory = ({ userId }: Props) => {
               <tr key={`${year}-${month}`} className="hover:bg-blue-50">
                 <td className="border border-gray-300 px-4 py-2">{year}</td>
                 <td className="border border-gray-300 px-4 py-2">{monthNames[month - 1]}</td>
-                <td className="border border-gray-300 px-4 py-2 font-semibold">{averagePatients.toFixed(2)}</td>
+                <td className="border border-gray-300 px-4 py-2 font-semibold">{(Math.round(averagePatients * 2) / 2).toFixed(1)}</td>
                 <td className="border border-gray-300 px-4 py-2">{premieLevel}</td>
               </tr>
             );

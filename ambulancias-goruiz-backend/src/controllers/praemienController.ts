@@ -1,3 +1,4 @@
+//src/controllers/praemienController.ts
 import { Request, Response } from 'express';
 import WorkdaySummary from '../models/workdaySummary';
 import { startOfMonth, endOfMonth } from 'date-fns';
@@ -55,7 +56,8 @@ export const getMonthlyPraemienSummary = async (req: Request, res: Response): Pr
 
     res.status(200).json({
       monthlyData,
-      averagePatients: Number(averagePatients.toFixed(2)),
+      averagePatients: Math.round(averagePatients * 2) / 2,
+
     });
   } catch (error) {
     console.error('Error en getMonthlyPraemienSummary:', error);
@@ -127,7 +129,8 @@ export const getPraemienMonthlyHistory = async (req: Request, res: Response): Pr
         return {
           year,
           month,
-          averagePatients: Number(averagePatients.toFixed(2)),
+          averagePatients: Math.round(averagePatients * 2) / 2,
+
         };
       })
       .filter(({ year, month }) => !(year === currentYear && month === currentMonth)) // Excluir mes actual

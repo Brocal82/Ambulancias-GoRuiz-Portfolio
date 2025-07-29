@@ -1,3 +1,4 @@
+//src/pages/WorkerPraemienPage.tsx
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { getMonthlyPraemienSummary } from '../api/praemien';
@@ -80,7 +81,7 @@ useEffect(() => {
 
     return {
       percentage,
-      averageDiff: Math.round(averageDiff * 10) / 10, // redondeo decimal
+      averageDiff: Math.round(averageDiff * 2) / 2, // redondeo a múltiplos de 0.5
     };
   };
 

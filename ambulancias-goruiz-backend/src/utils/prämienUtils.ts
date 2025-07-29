@@ -2,7 +2,7 @@
 import { Trip } from "../types/Trip";
 
 export function calculateEffectivePatients(trips: Trip[], dienstDate: string): number {
-  return trips.reduce((total, trip) => {
+  const total = trips.reduce((total, trip) => {
     if (trip.wasCancelled && trip.countsTrip !== 1) return total;
 
     let multiplier = 1;
@@ -25,5 +25,8 @@ export function calculateEffectivePatients(trips: Trip[], dienstDate: string): n
 
     return total + multiplier;
   }, 0);
+
+  return Math.round(total * 2) / 2; // ✅ Redondeo final a múltiplo de 0.5
 }
+
 
