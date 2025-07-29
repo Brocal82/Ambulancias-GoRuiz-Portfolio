@@ -92,7 +92,17 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     return;
   }
 
-  const { name, lastName, email, ambulanceRole, address, phone, emergencyPhone, pscheinExpiry, profileImage } = req.body;
+  const {
+    name,
+    lastName,
+    email,
+    ambulanceRole,
+    address,
+    phone,
+    emergencyPhone,
+    pscheinExpiry,
+    profileImage,
+  } = req.body;
 
   if (!name || !email) {
     res.status(400).json({ message: 'El nombre y el email son obligatorios' });
@@ -105,21 +115,29 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
   }
 
   try {
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        name,
-        lastName,
-        email,
-        ambulanceRole,
-        address,
-        phone,
-        emergencyPhone,
-        pscheinExpiry,
-        profileImage,
-      },
-      { new: true, runValidators: true }
-    );
+    // 👇 Preparamos manualmente el objeto de actualización
+    const updates: any = {
+      name,
+      lastName,
+      email,
+      ambulanceRole,
+      address,
+      phone,
+      emergencyPhone,
+      pscheinExpiry,
+    };
+
+    // ✅ Si viene el campo profileImage vacío, lo quitamos de la base de datos
+    if (profileImage === '') {
+      updates.profileImage = '';
+    } else if (profileImage) {
+      updates.profileImage = profileImage;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updates, {
+      new: true,
+      runValidators: true,
+    });
 
     if (!updatedUser) {
       res.status(404).json({ message: 'Usuario no encontrado' });
@@ -133,6 +151,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     res.status(500).json({ message: 'Error al actualizar el usuario' });
   }
 };
+
 
 
 
