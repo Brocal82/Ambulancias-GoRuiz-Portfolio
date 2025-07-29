@@ -17,6 +17,8 @@ const Profile = ({ userId }: ProfileProps) => {
   const [documentsFiles, setDocumentsFiles] = useState<FileList | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
 
   const navigate = useNavigate();
 
@@ -51,6 +53,8 @@ const Profile = ({ userId }: ProfileProps) => {
     if (!idToUpdate || !token) return;
 
     try {
+      let uploadedProfileImage: string | undefined;
+
       // Si hay archivos que subir
       if (profileImageFile || documentsFiles) {
         const form = new FormData();
@@ -73,14 +77,20 @@ const Profile = ({ userId }: ProfileProps) => {
         const uploadData = await uploadRes.json();
         console.log("🖼️ Imagen subida:", uploadData.profileImage);
 
-        // ✅ Actualizamos el formData con la nueva imagen (si viene)
+        // ✅ Guardamos la nueva imagen (si viene) para el PATCH
         if (uploadData?.profileImage) {
-          setFormData((prev) => ({ ...prev, profileImage: uploadData.profileImage }));
+          uploadedProfileImage = uploadData.profileImage;
         }
       }
 
+      // 🟡 Mezclamos los datos con la imagen nueva si hay
+      const finalFormData = {
+        ...formData,
+        profileImage: uploadedProfileImage || formData.profileImage,
+      };
+
       // Guardamos el resto del perfil (campos de texto)
-      await updateUserProfile(idToUpdate, formData, token);
+      await updateUserProfile(idToUpdate, finalFormData, token);
 
       // Volvemos a pedir los datos del usuario actualizado
       const updatedUser = await getUserById(token, idToUpdate);
@@ -102,6 +112,7 @@ const Profile = ({ userId }: ProfileProps) => {
     }
   };
 
+
   const handleDeleteDocument = async (filePath: string) => {
     if (!token) return;
 
@@ -120,38 +131,50 @@ const Profile = ({ userId }: ProfileProps) => {
     }
   };
 
-// 🧹 Elimina la imagen de perfil del usuario tanto del frontend como del backend.
-// Esta función se puede usar para permitir que el usuario borre su foto actual.
-// Actualmente no se está usando. Puedes integrarla en el futuro si añades un botón "Eliminar imagen".
-// const handleDeleteProfileImage = async () => {
-//   const idToUpdate = userId || userIdFromAuthContext;
 
-//   if (!idToUpdate || !token) return;
+  // 🧹 Elimina la imagen de perfil del usuario y la deja en blanco.
+  // Se usa cuando el usuario quiere quitar su imagen de perfil actual.
+  const handleDeleteProfileImage = async () => {
+    if (
+      !token ||
+      !userIdFromAuthContext ||
+      !formData.name ||
+      !formData.lastName ||
+      !formData.email
+    ) {
+      toast.error("Faltan datos obligatorios para actualizar el perfil.");
+      return;
+    }
 
-//   try {
-//     const updatedUser = await updateUserProfile(
-//   idToUpdate,
-//   {
-//     name: formData.name || '',
-//     email: formData.email || '',
-//     profileImage: '',
-//   },
-//   token
-// );
+    try {
+      const updatedUser = await updateUserProfile(
+        userIdFromAuthContext,
+        {
+          name: formData.name,
+          lastName: formData.lastName,
+          email: formData.email,
+          ambulanceRole: formData.ambulanceRole,
+          address: formData.address,
+          phone: formData.phone,
+          emergencyPhone: formData.emergencyPhone,
+          pscheinExpiry: formData.pscheinExpiry,
+          profileImage: '', // 👈 eliminamos la imagen
+        },
+        token
+      );
 
-//     toast.success('✅ Imagen de perfil eliminada');
-//     setFormData(updatedUser);
+      // ✅ Actualizamos el estado local del perfil
+      setFormData(updatedUser);
 
-//     if (idToUpdate === userIdFromAuthContext) {
-//       login(token, idToUpdate, role || 'worker', updatedUser);
-//     }
-//   } catch (error) {
-//     console.error(error);
-//     toast.error('❌ No se pudo eliminar la imagen de perfil');
-//   }
-// };
+      // ✅ Actualizamos el contexto para que el header se actualice
+      login(token, userIdFromAuthContext, role || 'worker', updatedUser);
 
-
+      toast.success('✅ Imagen de perfil eliminada');
+    } catch (error) {
+      console.error('❌ Error al eliminar imagen de perfil:', error);
+      toast.error('❌ Error al eliminar la imagen');
+    }
+  };
 
 
 
@@ -167,47 +190,110 @@ const Profile = ({ userId }: ProfileProps) => {
       {message && <p className="mb-4 text-sm text-blue-600">{message}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Nombre */}
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nombre</label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={formData.name || ''}
-          onChange={handleChange}
-          className="w-full border rounded p-2"
-          placeholder="Tu nombre"
-        />
+        {/* 📸 Imagen + nombre + apellidos */}
+        <div className="flex items-start gap-4 mb-6">
+          {/* Imagen de perfil (1/3) */}
+          <div className="w-1/3 flex flex-col items-center gap-2">
+            <label
+              htmlFor="profileImageUpload"
+              className="cursor-pointer group"
+              title="Haz clic para cambiar la imagen de perfil"
+            >
+              <img
+  src={
+    previewImage
+      ? previewImage
+      : formData.profileImage?.startsWith('/uploads/')
+      ? `http://localhost:5000${formData.profileImage}`
+      : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
+  }
+  alt="Foto de perfil"
+  className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border border-gray-300 group-hover:opacity-80 transition"
+/>
 
-        {/* Apellidos */}
-        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Apellidos</label>
-        <input
-          type="text"
-          id="lastName"
-          name="lastName"
-          value={formData.lastName || ''}
-          onChange={handleChange}
-          className="w-full border rounded p-2"
-          placeholder="Tus apellidos"
-        />
+            </label>
+
+            {/* Botón para quitar imagen */}
+            {formData.profileImage && (
+              <button
+                type="button"
+                onClick={handleDeleteProfileImage}
+                className="text-red-500 hover:text-red-700 text-xs"
+              >
+                ❌ Quitar imagen
+              </button>
+            )}
+
+            {/* Input oculto */}
+            <input
+              type="file"
+              id="profileImageUpload"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                setProfileImageFile(file);
+                if (file) {
+                  setPreviewImage(URL.createObjectURL(file));
+                }
+              }}
+              className="hidden"
+              title="Cambiar imagen de perfil"
+            />
+
+          </div>
+
+          {/* Nombre y Apellidos (2/3) */}
+          <div className="w-2/3 space-y-2">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nombre</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name || ''}
+                onChange={handleChange}
+                className="w-full border rounded p-2"
+                placeholder="Tu nombre"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Apellidos</label>
+              <input
+                type="text"
+                id="lastName"
+                name="lastName"
+                value={formData.lastName || ''}
+                onChange={handleChange}
+                className="w-full border rounded p-2"
+                placeholder="Tus apellidos"
+              />
+            </div>
+          </div>
+        </div>
+
 
         {/* Rol en ambulancia */}
-        <label className="block text-sm font-medium text-gray-700">Rol en ambulancia</label>
-        <div className="flex justify-between gap-2">
-          {roles.map((currentRole) => (
-            <button
-              key={currentRole}
-              type="button"
-              onClick={() => setFormData({ ...formData, ambulanceRole: currentRole })}
-              className={`flex-1 px-4 py-2 border rounded ${formData.ambulanceRole === currentRole
-                  ? 'bg-green-500 text-white border-green-600'
-                  : 'bg-white text-gray-800 border-gray-300'
-                }`}
-            >
-              {currentRole === 'driver' ? '🚑 Conductor' : currentRole === 'medic' ? '🩺 Sanitario' : '🟰 Ambos'}
-            </button>
-          ))}
-        </div>
+        <div className="space-y-1">
+  <label className="block text-sm font-medium text-gray-700">Rol en ambulancia</label>
+  <div className="flex justify-between gap-2">
+    {roles.map((currentRole) => (
+      <button
+        key={currentRole}
+        type="button"
+        onClick={() => setFormData({ ...formData, ambulanceRole: currentRole })}
+        className={`flex-1 px-4 py-2 border rounded ${
+          formData.ambulanceRole === currentRole
+            ? 'bg-green-500 text-white border-green-600'
+            : 'bg-white text-gray-800 border-gray-300'
+        }`}
+      >
+        {currentRole === 'driver' ? '🚑 Conductor' : currentRole === 'medic' ? '🩺 Sanitario' : '🟰 Ambos'}
+      </button>
+    ))}
+  </div>
+</div>
+
 
         {/* P-Schein */}
         {(formData.ambulanceRole === 'driver' || formData.ambulanceRole === 'both') && (
@@ -222,10 +308,10 @@ const Profile = ({ userId }: ProfileProps) => {
               value={formData.pscheinExpiry || ''}
               onChange={handleChange}
               className={`w-full border rounded p-2 ${pscheinStatus === 'expired'
-                  ? 'border-red-500'
-                  : pscheinStatus === 'warning'
-                    ? 'border-orange-400'
-                    : 'border-gray-300'
+                ? 'border-red-500'
+                : pscheinStatus === 'warning'
+                  ? 'border-orange-400'
+                  : 'border-gray-300'
                 }`}
             />
             {pscheinStatus === 'expired' && (
@@ -238,66 +324,65 @@ const Profile = ({ userId }: ProfileProps) => {
         )}
 
         {/* Dirección */}
-        <label htmlFor="address" className="block text-sm font-medium text-gray-700">Dirección</label>
-        <input
-          type="text"
-          id="address"
-          name="address"
-          value={formData.address || ''}
-          onChange={handleChange}
-          className="w-full border rounded p-2"
-          placeholder="Calle y número"
-        />
+        <div className="space-y-1">
+  <label htmlFor="address" className="block text-sm font-medium text-gray-700">Dirección</label>
+  <input
+    type="text"
+    id="address"
+    name="address"
+    value={formData.address || ''}
+    onChange={handleChange}
+    className="w-full border rounded p-2"
+    placeholder="Calle y número"
+  />
+</div>
 
-        {/* Teléfono */}
-        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Teléfono</label>
-        <input
-          type="text"
-          id="phone"
-          name="phone"
-          value={formData.phone || ''}
-          onChange={handleChange}
-          className="w-full border rounded p-2"
-          placeholder="Número de teléfono"
-        />
 
-        {/* Teléfono de emergencia */}
-        <label htmlFor="emergencyPhone" className="block text-sm font-medium text-gray-700">Teléfono de emergencia</label>
-        <input
-          type="text"
-          id="emergencyPhone"
-          name="emergencyPhone"
-          value={formData.emergencyPhone || ''}
-          onChange={handleChange}
-          className="w-full border rounded p-2"
-          placeholder="Número de contacto en caso de emergencia"
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          {/* Teléfono */}
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Teléfono</label>
+            <input
+              type="text"
+              id="phone"
+              name="phone"
+              value={formData.phone || ''}
+              onChange={handleChange}
+              className="w-full border rounded p-2"
+              placeholder="Número de teléfono"
+            />
+          </div>
 
-        {/* 👇 Inputs nuevos para seleccionar archivos */}
-        <label htmlFor="profileImageUpload" className="block text-sm font-medium text-gray-700">
-          Cambiar imagen de perfil
-        </label>
-        <input
-          type="file"
-          id="profileImageUpload"
-          accept="image/*"
-          onChange={(e) => setProfileImageFile(e.target.files?.[0] || null)}
-          className="w-full border rounded p-2"
-        />
+          {/* Teléfono de emergencia */}
+          <div>
+            <label htmlFor="emergencyPhone" className="block text-sm font-medium text-gray-700">Teléfono de emergencia</label>
+            <input
+              type="text"
+              id="emergencyPhone"
+              name="emergencyPhone"
+              value={formData.emergencyPhone || ''}
+              onChange={handleChange}
+              className="w-full border rounded p-2"
+              placeholder="Número de contacto en caso de emergencia"
+            />
+          </div>
+        </div>
 
-        <label htmlFor="documentsUpload" className="block text-sm font-medium text-gray-700 mt-4">
-          Subir documentos (PDF)
-        </label>
-        <input
-          type="file"
-          id="documentsUpload"
-          accept="application/pdf"
-          multiple
-          onChange={(e) => setDocumentsFiles(e.target.files)}
-          className="w-full border rounded p-2"
-        />
 
-       
+        {/* Documentos PDF */}
+        <div className="space-y-1 mt-4">
+  <label htmlFor="documentsUpload" className="block text-sm font-medium text-gray-700">
+    Subir documentos (PDF)
+  </label>
+  <input
+    type="file"
+    id="documentsUpload"
+    accept="application/pdf"
+    multiple
+    onChange={(e) => setDocumentsFiles(e.target.files)}
+    className="w-full border rounded p-2"
+  />
+</div>
 
 
         {formData.documents && formData.documents.length > 0 && (
@@ -318,6 +403,7 @@ const Profile = ({ userId }: ProfileProps) => {
                     </a>
                   </div>
                   <button
+                    type="button"
                     onClick={() => handleDeleteDocument(docUrl)}
                     className="text-red-500 hover:text-red-700 text-sm ml-2"
                     title="Eliminar documento"
@@ -326,21 +412,20 @@ const Profile = ({ userId }: ProfileProps) => {
                   </button>
                 </li>
               ))}
-
             </ul>
           </div>
         )}
 
-
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 mt-4"
         >
           Guardar cambios
         </button>
       </form>
     </div>
   );
+
 };
 
 export default Profile;

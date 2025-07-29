@@ -47,10 +47,7 @@ export const updateUserProfile = async (
   token: string
 ): Promise<User> => {
   try {
-    // 🔍 Excluir profileImage antes de enviar al backend
-    const { profileImage, ...safeData } = updatedData;
-
-    const response = await axios.patch<User>(`/users/${userId}`, safeData, {
+    const response = await axios.patch<User>(`/users/${userId}`, updatedData, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -60,6 +57,7 @@ export const updateUserProfile = async (
     throw error;
   }
 };
+
 
 
 // ✅ Eliminar usuario
