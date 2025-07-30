@@ -186,7 +186,7 @@ const Profile = ({ userId }: ProfileProps) => {
 
   return (
     <div className="max-w-xl mx-auto p-4 bg-white rounded shadow">
-      <h2 className="text-xl font-bold mb-4">Perfil de Usuario</h2>
+      <h2 className="text-xl font-bold mb-6 text-center">Perfil de Usuario</h2>
       {message && <p className="mb-4 text-sm text-blue-600">{message}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -200,16 +200,16 @@ const Profile = ({ userId }: ProfileProps) => {
               title="Haz clic para cambiar la imagen de perfil"
             >
               <img
-  src={
-    previewImage
-      ? previewImage
-      : formData.profileImage?.startsWith('/uploads/')
-      ? `http://localhost:5000${formData.profileImage}`
-      : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
-  }
-  alt="Foto de perfil"
-  className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border border-gray-300 group-hover:opacity-80 transition"
-/>
+                src={
+                  previewImage
+                    ? previewImage
+                    : formData.profileImage?.startsWith('/uploads/')
+                      ? `http://localhost:5000${formData.profileImage}`
+                      : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
+                }
+                alt="Foto de perfil"
+                className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border border-gray-300 group-hover:opacity-80 transition"
+              />
 
             </label>
 
@@ -269,30 +269,43 @@ const Profile = ({ userId }: ProfileProps) => {
                 placeholder="Tus apellidos"
               />
             </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email || ''}
+                disabled
+                className="w-full border rounded p-2 bg-gray-100 text-gray-700 cursor-not-allowed"
+                title="Este email no puede modificarse"
+              />
+            </div>
+
           </div>
         </div>
 
 
         {/* Rol en ambulancia */}
         <div className="space-y-1">
-  <label className="block text-sm font-medium text-gray-700">Rol en ambulancia</label>
-  <div className="flex justify-between gap-2">
-    {roles.map((currentRole) => (
-      <button
-        key={currentRole}
-        type="button"
-        onClick={() => setFormData({ ...formData, ambulanceRole: currentRole })}
-        className={`flex-1 px-4 py-2 border rounded ${
-          formData.ambulanceRole === currentRole
-            ? 'bg-green-500 text-white border-green-600'
-            : 'bg-white text-gray-800 border-gray-300'
-        }`}
-      >
-        {currentRole === 'driver' ? '🚑 Conductor' : currentRole === 'medic' ? '🩺 Sanitario' : '🟰 Ambos'}
-      </button>
-    ))}
-  </div>
-</div>
+          <label className="block text-sm font-medium text-gray-700">Rol en ambulancia</label>
+          <div className="flex justify-between gap-2">
+            {roles.map((currentRole) => (
+              <button
+                key={currentRole}
+                type="button"
+                onClick={() => setFormData({ ...formData, ambulanceRole: currentRole })}
+                className={`flex-1 px-4 py-2 border rounded ${formData.ambulanceRole === currentRole
+                    ? 'bg-green-500 text-white border-green-600'
+                    : 'bg-white text-gray-800 border-gray-300'
+                  }`}
+              >
+                {currentRole === 'driver' ? '🚑 Conductor' : currentRole === 'medic' ? '🩺 Sanitario' : '🟰 Ambos'}
+              </button>
+            ))}
+          </div>
+        </div>
 
 
         {/* P-Schein */}
@@ -325,17 +338,17 @@ const Profile = ({ userId }: ProfileProps) => {
 
         {/* Dirección */}
         <div className="space-y-1">
-  <label htmlFor="address" className="block text-sm font-medium text-gray-700">Dirección</label>
-  <input
-    type="text"
-    id="address"
-    name="address"
-    value={formData.address || ''}
-    onChange={handleChange}
-    className="w-full border rounded p-2"
-    placeholder="Calle y número"
-  />
-</div>
+          <label htmlFor="address" className="block text-sm font-medium text-gray-700">Dirección</label>
+          <input
+            type="text"
+            id="address"
+            name="address"
+            value={formData.address || ''}
+            onChange={handleChange}
+            className="w-full border rounded p-2"
+            placeholder="Calle y número"
+          />
+        </div>
 
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -371,18 +384,18 @@ const Profile = ({ userId }: ProfileProps) => {
 
         {/* Documentos PDF */}
         <div className="space-y-1 mt-4">
-  <label htmlFor="documentsUpload" className="block text-sm font-medium text-gray-700">
-    Subir documentos (PDF)
-  </label>
-  <input
-    type="file"
-    id="documentsUpload"
-    accept="application/pdf"
-    multiple
-    onChange={(e) => setDocumentsFiles(e.target.files)}
-    className="w-full border rounded p-2"
-  />
-</div>
+          <label htmlFor="documentsUpload" className="block text-sm font-medium text-gray-700">
+            Subir documentos (PDF)
+          </label>
+          <input
+            type="file"
+            id="documentsUpload"
+            accept="application/pdf"
+            multiple
+            onChange={(e) => setDocumentsFiles(e.target.files)}
+            className="w-full border rounded p-2"
+          />
+        </div>
 
 
         {formData.documents && formData.documents.length > 0 && (
