@@ -17,6 +17,7 @@ interface TripEntry {
   kmEnd?: number;
   wasCancelled: boolean;
   cancelledAtPickup?: boolean;
+  countsTrip: 0 | 1;
   reports?: string;
 }
 
@@ -34,6 +35,7 @@ const tripSchema = new Schema<TripEntry>({
   kmEnd:               { type: Number },
   wasCancelled:        { type: Boolean, required: true },
   cancelledAtPickup:   { type: Boolean, default: false },
+  countsTrip:          { type: Number, enum: [0, 1], default: 1, required: true }, // ✅ AÑADIDO
   reports:             { type: String, default: "" },
 });
 

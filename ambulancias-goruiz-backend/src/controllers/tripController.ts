@@ -22,7 +22,11 @@ export const createTrip = async (req: Request, res: Response) => {
       return;
     }
 
-    const data = parsed.data;
+    const data = {
+      ...parsed.data,
+      countsTrip:
+        parsed.data.countsTrip === undefined ? 1 : parsed.data.countsTrip,
+    };
 
     // 👇 Lógica segura para calcular totalKm
     let totalKm = 0;
@@ -39,7 +43,7 @@ export const createTrip = async (req: Request, res: Response) => {
 
     const newTrip = new Trip({
       ...data,
-      totalKm, // ← aseguramos que se guarda limpio
+      totalKm,
     });
 
     const savedTrip = await newTrip.save();

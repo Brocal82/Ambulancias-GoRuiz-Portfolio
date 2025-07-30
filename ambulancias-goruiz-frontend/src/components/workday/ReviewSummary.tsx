@@ -20,7 +20,7 @@ const getMultiplier = (t: Trip, totalKm: number, isWeekendLate: boolean) => {
 
 interface Props {
   assignedDay: AssignedDayFull;
-  ambulanceNumber: string; // ✅ actualizada
+  ambulanceNumber: string;
   initialKm: number;
   finalKm: number;
   trips: Trip[];
@@ -46,7 +46,6 @@ const ReviewSummary: React.FC<Props> = ({
     <div className="space-y-4">
       {/* -------- CABECERA -------- */}
       <div className="flex justify-between text-sm">
-        {/* izquierda */}
         <div>
           <p>📅 <strong>{assignedDay.date}</strong></p>
           <p>⏰ {assignedDay.startTime} – {assignedDay.endTime}</p>
@@ -67,7 +66,6 @@ const ReviewSummary: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* derecha */}
         <div className="text-right">
           <p>🚑 <strong>{ambulanceNumber}</strong></p>
           <p>🔢 {initialKm} → {finalKm}</p>
@@ -75,7 +73,7 @@ const ReviewSummary: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* -------- LISTA / TABLA -------- */}
+      {/* -------- TABLA -------- */}
       <div className="overflow-x-auto">
         <table className="w-full text-xs border">
           <thead className="bg-gray-100">
@@ -99,6 +97,10 @@ const ReviewSummary: React.FC<Props> = ({
             {trips.map((t, i) => {
               const diff = calcTripKm(t);
               const mult = getMultiplier(t, diff, weekendLate);
+
+              const isStornoThatCounts = t.wasCancelled && t.countsTrip === 1;
+              const isStornoThatDoesNotCount = t.wasCancelled && t.countsTrip === 0;
+
               return (
                 <React.Fragment key={i}>
                   <tr className="border-t">
@@ -116,7 +118,15 @@ const ReviewSummary: React.FC<Props> = ({
                     <td className="text-center">{t.kmEnd}</td>
                     <td className="text-center">{t.timeEnd}</td>
                     <td className="text-center">{diff}</td>
-                    <td className="text-center font-bold">{mult}x</td>
+                    <td className="text-center font-bold">
+                      {isStornoThatDoesNotCount ? (
+                        "0x"
+                      ) : isStornoThatCounts ? (
+                        <span className="text-green-600">{mult}x</span>
+                      ) : (
+                        `${mult}x`
+                      )}
+                    </td>
                   </tr>
                   {t.reports && t.reports.trim() !== "" && (
                     <tr className="text-[11px] text-gray-700 bg-gray-50">

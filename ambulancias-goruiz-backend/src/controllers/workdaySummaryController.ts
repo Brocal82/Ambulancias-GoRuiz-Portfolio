@@ -49,9 +49,15 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
     const endTime = assignment?.endTime ?? null;
     const { driver, medic } = assignment;
 
-    const totalEffectivePatients = calculateEffectivePatients(trips, date);
+    // ✅ Asegura que countsTrip sea 0 o 1 (por defecto 1 si viene undefined)
+    const sanitizedTrips = trips.map((t: any) => ({
+      ...t,
+      countsTrip: typeof t.countsTrip === "number" ? t.countsTrip : 1,
+    }));
+
+    const totalEffectivePatients = calculateEffectivePatients(sanitizedTrips, date);
     const totalDienstKm = finalKm - initialKm;
-    const totalRealTrips = trips.filter(t => !t.wasCancelled || t.cancelledAtPickup).length;
+    const totalRealTrips = sanitizedTrips.filter(t => !t.wasCancelled || t.cancelledAtPickup).length;
 
     const newSummary = await WorkdaySummary.create({
       date,
@@ -63,7 +69,7 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
       initialKm,
       finalKm,
       totalDienstKm,
-      trips,
+      trips: sanitizedTrips,
       extraNote,
       isFinalClosure: true,
       totalEffectivePatients,
@@ -86,6 +92,7 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error al guardar el resumen del día" });
   }
 };
+
 
 /* ─────────────────────────────
  * CIERRE PARCIAL DEL DÍA
@@ -120,9 +127,15 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
     const startTime = assignment?.startTime ?? null;
     const endTime = assignment?.endTime ?? null;
 
-    const totalEffectivePatients = calculateEffectivePatients(trips, date);
+    // ✅ Igual que arriba
+    const sanitizedTrips = trips.map((t: any) => ({
+      ...t,
+      countsTrip: typeof t.countsTrip === "number" ? t.countsTrip : 1,
+    }));
+
+    const totalEffectivePatients = calculateEffectivePatients(sanitizedTrips, date);
     const totalDienstKm = finalKm - initialKm;
-    const totalRealTrips = trips.filter(t => !t.wasCancelled || t.cancelledAtPickup).length;
+    const totalRealTrips = sanitizedTrips.filter(t => !t.wasCancelled || t.cancelledAtPickup).length;
 
     const summary = new WorkdaySummary({
       date,
@@ -134,7 +147,7 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
       initialKm,
       finalKm,
       totalDienstKm,
-      trips,
+      trips: sanitizedTrips,
       partialClosureReason,
       isFinalClosure: false,
       totalEffectivePatients,
@@ -160,6 +173,7 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
   }
 };
 
+
 /* ─────────────────────────────
  * GET TODOS LOS RESÚMENES
  * ───────────────────────────── */
@@ -169,7 +183,10 @@ export const getAllWorkdaySummaries = async (req: Request, res: Response) => {
       .sort({ date: -1 })
       .populate('driver', 'name lastName')
       .populate('medic', 'name lastName')
-      .populate('trips')
+      .populate({
+        path: 'trips',
+        select: 'auftragNumber wasCancelled cancelledAtPickup countsTrip kmStart kmEnd timeWarning timeAtHome timePickup timeArrival timeEnd fromAddress toAddress patientName reports'
+      })
       .lean();
 
     const diensts = await Dienst.find().lean();
