@@ -11,7 +11,9 @@ interface TripModalProps {
 const TripModal: React.FC<TripModalProps> = ({ trip, onClose }) => {
   if (!trip) return null;
 
-  const totalKm = trip.kmEnd - trip.kmStart;
+  const totalKm = trip.wasCancelled ? 0 : (typeof trip.totalKm === "number" ? trip.totalKm : trip.kmEnd - trip.kmStart);
+
+
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">

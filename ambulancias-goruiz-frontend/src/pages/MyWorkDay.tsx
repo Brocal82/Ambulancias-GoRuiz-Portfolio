@@ -1257,7 +1257,9 @@ const MyWorkday = () => {
                 <ul className="space-y-2">
                   {/* ---------- LISTA DE TRIPS ---------- */}
                   {trips.map((trip: Trip, idx: number) => {
-                    const totalKm = trip.kmEnd - trip.kmStart;
+  const totalKm = trip.wasCancelled ? 0 : (typeof trip.totalKm === "number" ? trip.totalKm : trip.kmEnd - trip.kmStart);
+
+
 
                     /** Decide el multiplicador del viaje
                      *  1. Si countsTrip === 0  →   0 x   (viaje cancelado que NO cuenta).

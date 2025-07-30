@@ -19,18 +19,37 @@ export const createTrip = async (req: Request, res: Response) => {
           message: err.message,
         })),
       });
-      return
+      return;
     }
 
-    const newTrip = new Trip(parsed.data);
-    const savedTrip = await newTrip.save();
+    const data = parsed.data;
 
+    // 👇 Lógica segura para calcular totalKm
+    let totalKm = 0;
+
+    if (!data.wasCancelled) {
+      if (typeof data.kmStart === "number" && typeof data.kmEnd === "number") {
+        totalKm = data.kmEnd - data.kmStart;
+      }
+    } else if (data.wasCancelled && data.countsTrip === 1) {
+      totalKm = 0; // Cancelado pero cuenta → se guarda 0 km
+    } else {
+      totalKm = 0; // Cancelado y no cuenta → también 0 km
+    }
+
+    const newTrip = new Trip({
+      ...data,
+      totalKm, // ← aseguramos que se guarda limpio
+    });
+
+    const savedTrip = await newTrip.save();
     res.status(201).json(savedTrip);
   } catch (error) {
     console.error("❌ Error al crear el viaje:", error);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
+
 
 // GET /api/trips/date/:date → Obtener viajes por fecha (solo los no enviados)
 export const getTripsByDate = async (req: Request, res: Response) => {
