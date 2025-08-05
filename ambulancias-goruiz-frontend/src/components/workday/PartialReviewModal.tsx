@@ -87,19 +87,22 @@ const PartialReviewModal: React.FC<Props> = ({
           className="w-full border rounded p-2"
         />
 
-        {/* Checkbox Avería */}
-        <label className="flex items-center space-x-2 pb-4">
-          <input
-            type="checkbox"
-            checked={hasIssue}
-            onChange={(e) => {
-              const checked = e.target.checked;
-              setHasIssue(checked);
-              if (checked) setShowIssueModal(true);
-            }}
-          />
-          <span>⚠️ Avería</span>
-        </label>
+        {/* Botón Avería */}
+        <button
+          type="button"
+          className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border-2 font-medium transition-colors duration-200
+    ${hasIssue
+              ? "border-red-600 bg-red-200 text-red-800 hover:bg-red-500 hover:text-white"
+              : "border-gray-400 bg-white text-gray-700 hover:bg-red-100 hover:border-red-400 hover:text-red-700"
+            }`}
+          onClick={() => {
+            const checked = !hasIssue;
+            setHasIssue(checked);
+            if (checked) setShowIssueModal(true);
+          }}
+        >
+          ⚠️ <span>Avería</span>
+        </button>
 
         {/* Modal técnico */}
         {showIssueModal && (
@@ -138,9 +141,15 @@ const PartialReviewModal: React.FC<Props> = ({
             Enviar al Admin
           </button>
         </div>
+
       </div>
     </div>
   );
 };
 
 export default PartialReviewModal;
+
+
+
+
+
