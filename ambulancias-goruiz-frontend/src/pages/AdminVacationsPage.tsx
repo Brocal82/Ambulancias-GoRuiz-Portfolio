@@ -129,7 +129,9 @@ const AdminVacationRequests = () => {
   <tbody>
     {requests.map(req => (
       <tr key={req._id} className="text-center">
-        <td className="border border-gray-300 px-3 py-1">{req.user.name} {req.user.lastName}</td>
+        <td className="border border-gray-300 px-3 py-1">
+        {req.user ? `${req.user.name} ${req.user.lastName}` : <span className="text-red-500">Usuario no disponible</span>}
+      </td>
         <td className="border border-gray-300 px-3 py-1">{new Date(req.startDate).toLocaleDateString()}</td>
         <td className="border border-gray-300 px-3 py-1">{new Date(req.endDate).toLocaleDateString()}</td>
         <td
