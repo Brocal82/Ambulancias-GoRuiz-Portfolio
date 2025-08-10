@@ -3,6 +3,16 @@ import React from "react";
 import type { Trip } from "../../types/trip";
 import type { AssignedDayFull } from "../../types/dienst";
 
+// --- helper para mostrar nombre de usuario de forma segura ---
+const formatPerson = (p: any): string => {
+  if (!p) return "Usuario eliminado";
+  if (typeof p === "string") return p; // por si viene un id string
+  const last = p?.lastName ?? "";
+  const first = p?.name ?? "";
+  const full = [last, first].filter(Boolean).join(", ");
+  return full || "Usuario eliminado";
+};
+
 /* ---------- helpers ---------- */
 const calcTripKm = (t: Trip) => Math.max(0, t.kmEnd - t.kmStart);
 
@@ -47,28 +57,28 @@ const ReviewSummary: React.FC<Props> = ({
       {/* -------- CABECERA -------- */}
       <div className="flex justify-between text-sm">
         <div>
-          <p>📅 <strong>{assignedDay.date}</strong></p>
-          <p>⏰ {assignedDay.startTime} – {assignedDay.endTime}</p>
+          <p>
+            📅 <strong>{assignedDay.date}</strong>
+          </p>
+          <p>
+            ⏰ {assignedDay.startTime} – {assignedDay.endTime}
+          </p>
           <div>
             <p className="font-semibold">👥 Team:</p>
             <div className="ml-2 space-y-1">
-              <p>
-                {typeof assignedDay.driver === "string"
-                  ? assignedDay.driver
-                  : `${assignedDay.driver.lastName}, ${assignedDay.driver.name}`}
-              </p>
-              <p>
-                {typeof assignedDay.medic === "string"
-                  ? assignedDay.medic
-                  : `${assignedDay.medic.lastName}, ${assignedDay.medic.name}`}
-              </p>
+              <p>{formatPerson(assignedDay.driver)}</p>
+              <p>{formatPerson(assignedDay.medic)}</p>
             </div>
           </div>
         </div>
 
         <div className="text-right">
-          <p>🚑 <strong>{ambulanceNumber}</strong></p>
-          <p>🔢 {initialKm} → {finalKm}</p>
+          <p>
+            🚑 <strong>{ambulanceNumber}</strong>
+          </p>
+          <p>
+            🔢 {initialKm} → {finalKm}
+          </p>
           <p className="font-semibold">🧮 Total: {totalKmDiff} km</p>
         </div>
       </div>
@@ -99,15 +109,22 @@ const ReviewSummary: React.FC<Props> = ({
               const mult = getMultiplier(t, diff, weekendLate);
 
               const isStornoThatCounts = t.wasCancelled && t.countsTrip === 1;
-              const isStornoThatDoesNotCount = t.wasCancelled && t.countsTrip === 0;
+              const isStornoThatDoesNotCount =
+                t.wasCancelled && t.countsTrip === 0;
 
               return (
                 <React.Fragment key={i}>
                   <tr className="border-t">
-                    <td className={`p-1 text-center font-semibold ${t.wasCancelled ? "text-red-600" : ""}`}>
+                    <td
+                      className={`p-1 text-center font-semibold ${
+                        t.wasCancelled ? "text-red-600" : ""
+                      }`}
+                    >
                       {t.auftragNumber}
                     </td>
-                    <td className="text-center">{t.patientName || "Sin nombre"}</td>
+                    <td className="text-center">
+                      {t.patientName || "Sin nombre"}
+                    </td>
                     <td className="text-center">{t.fromAddress}</td>
                     <td className="text-center">{t.toAddress}</td>
                     <td className="text-center">{t.timeWarning}</td>

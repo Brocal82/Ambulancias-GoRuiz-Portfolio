@@ -112,35 +112,48 @@ const AdminVacationRequests = () => {
     setIsModalOpen(true);
   };
 
-  if (loading) return <p>Cargando solicitudes...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
-  if (requests.length === 0) return <p>No hay solicitudes de vacaciones.</p>;
 
-  return (
-    <div className="max-w-4xl mx-auto p-4 bg-white rounded shadow">
-      <h2 className="text-xl font-bold mb-4">Solicitudes de Vacaciones</h2>
-      {/* === NUEVO: Grid de meses === */}
-      <AdminVacationMonthGrid
-        requests={requests}
-        onMonthClick={(m) => {
-          setSelectedMonth(m);
-          console.log('Mes clicado:', m); // 0 = Enero, 11 = Diciembre
-          // En el PASO 2 abriremos aquí el modal con el listado filtrado
-        }}
-      />
+return (
+  <div className="max-w-4xl mx-auto p-4 bg-white rounded shadow">
+    <h2 className="text-xl font-bold mb-4">Solicitudes de Vacaciones</h2>
 
-      {/* === NUEVO: Modal del mes seleccionado === */}
-      <AdminVacationMonthModal
-        isOpen={selectedMonth !== null}
-        monthIndex={selectedMonth}
-        requests={requests}
-        year={new Date().getFullYear()}
-        onClose={() => setSelectedMonth(null)}
-        onActionDone={fetchRequests}
-      />
+    {/* === Grid de meses (siempre visible) === */}
+    <AdminVacationMonthGrid
+      requests={requests}
+      onMonthClick={(m) => {
+        setSelectedMonth(m);
+        console.log('Mes clicado:', m); // 0 = Enero, 11 = Diciembre
+      }}
+    />
 
+    {/* === Modal del mes seleccionado === */}
+    <AdminVacationMonthModal
+      isOpen={selectedMonth !== null}
+      monthIndex={selectedMonth}
+      requests={requests}
+      year={new Date().getFullYear()}
+      onClose={() => setSelectedMonth(null)}
+      onActionDone={fetchRequests}
+    />
 
-      <table className="w-full table-auto border-collapse border border-gray-300">
+    {/* === Estados de carga / error / vacío === */}
+    {loading && (
+      <p className="mt-2 text-sm text-gray-500">Cargando solicitudes...</p>
+    )}
+
+    {!loading && error && (
+      <p className="mt-2 text-sm text-red-600">{error}</p>
+    )}
+
+    {!loading && !error && requests.length === 0 && (
+      <p className="mt-2 text-sm text-gray-600">
+        No hay solicitudes de vacaciones.
+      </p>
+    )}
+
+    {/* === Tabla (solo si hay datos) === */}
+    {!loading && !error && requests.length > 0 && (
+      <table className="w-full table-auto border-collapse border border-gray-300 mt-4">
         <thead>
           <tr className="bg-gray-100 text-center">
             <th className="border border-gray-300 px-3 py-1">Usuario</th>
@@ -151,18 +164,33 @@ const AdminVacationRequests = () => {
           </tr>
         </thead>
         <tbody>
-          {requests.map(req => (
+          {requests.map((req) => (
             <tr key={req._id} className="text-center">
               <td className="border border-gray-300 px-3 py-1">
-                {req.user ? `${req.user.name} ${req.user.lastName}` : <span className="text-red-500">Usuario no disponible</span>}
+                {req.user ? (
+                  `${req.user.name} ${req.user.lastName}`
+                ) : (
+                  <span className="text-red-500">Usuario no disponible</span>
+                )}
               </td>
-              <td className="border border-gray-300 px-3 py-1">{new Date(req.startDate).toLocaleDateString()}</td>
-              <td className="border border-gray-300 px-3 py-1">{new Date(req.endDate).toLocaleDateString()}</td>
+              <td className="border border-gray-300 px-3 py-1">
+                {new Date(req.startDate).toLocaleDateString('es-ES', {
+                  timeZone: 'Europe/Berlin',
+                })}
+              </td>
+              <td className="border border-gray-300 px-3 py-1">
+                {new Date(req.endDate).toLocaleDateString('es-ES', {
+                  timeZone: 'Europe/Berlin',
+                })}
+              </td>
               <td
-                className={`border border-gray-300 px-3 py-1 capitalize font-semibold ${req.status === 'accepted' ? 'text-green-600' :
-                    req.status === 'cancelled' ? 'text-red-600' :
-                      'text-yellow-600'
-                  }`}
+                className={`border border-gray-300 px-3 py-1 capitalize font-semibold ${
+                  req.status === 'accepted'
+                    ? 'text-green-600'
+                    : req.status === 'cancelled'
+                    ? 'text-red-600'
+                    : 'text-yellow-600'
+                }`}
               >
                 {req.status}
               </td>
@@ -207,7 +235,13 @@ const AdminVacationRequests = () => {
                         </button>
                         <button
                           className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 whitespace-nowrap"
-                          onClick={() => openAlternativeModal(req._id, req.startDate, req.endDate)}
+                          onClick={() =>
+                            openAlternativeModal(
+                              req._id,
+                              req.startDate,
+                              req.endDate
+                            )
+                          }
                         >
                           Opción 2
                         </button>
@@ -230,27 +264,33 @@ const AdminVacationRequests = () => {
                   </div>
                 )}
               </td>
-
             </tr>
           ))}
         </tbody>
       </table>
+    )}
 
+    {/* === AlternativeDateModal existente === */}
+    <AlternativeDateModal
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+      initialStartDate={modalInitialStartDate}
+      initialEndDate={modalInitialEndDate}
+      onSubmit={(altStart, altEnd, note) => {
+        if (currentRequestId) {
+          handleSendAlternativeOption(
+            currentRequestId,
+            altStart,
+            altEnd,
+            note
+          );
+        }
+        setIsModalOpen(false);
+      }}
+    />
+  </div>
+);
 
-      <AlternativeDateModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        initialStartDate={modalInitialStartDate}
-        initialEndDate={modalInitialEndDate}
-        onSubmit={(altStart, altEnd, note) => {
-          if (currentRequestId) {
-            handleSendAlternativeOption(currentRequestId, altStart, altEnd, note);
-          }
-          setIsModalOpen(false);
-        }}
-      />
-    </div>
-  );
 };
 
 export default AdminVacationRequests;
