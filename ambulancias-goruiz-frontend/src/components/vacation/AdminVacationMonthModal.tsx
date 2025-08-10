@@ -27,9 +27,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 }) => {
     const { token } = useAuth();
 
-    // ---- seguridad: si no está abierto o no hay mes seleccionado, no renderiza
-    if (!isOpen || monthIndex === null) return null;
-
     // ---- filtros y ordenación internos (UX extra)
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState<'' | VacationStatus>('');
@@ -46,20 +43,11 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     const [altInitialStart, setAltInitialStart] = useState<Date>(new Date());
     const [altInitialEnd, setAltInitialEnd] = useState<Date>(new Date());
 
+    // ---- a11y: foco en botón cerrar + Escape
     const closeBtnRef = useRef<HTMLButtonElement | null>(null);
-
-
-    // ---- datos del mes seleccionado
-    const monthInfo = getYearMonths(year)[monthIndex];
-    const monthLabel = `${monthInfo.label} · ${year}`;
-
     useEffect(() => {
         if (!isOpen) return;
-
-        // Foco inicial en el botón de cerrar
         closeBtnRef.current?.focus();
-
-        // Cerrar con Escape
         const onKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
         };
@@ -67,12 +55,18 @@ const AdminVacationMonthModal: React.FC<Props> = ({
         return () => window.removeEventListener('keydown', onKeyDown);
     }, [isOpen, onClose]);
 
+    // ---- etiqueta del mes (segura cuando monthIndex es null)
+    const monthLabel = useMemo(() => {
+        if (monthIndex === null) return '';
+        const info = getYearMonths(year)[monthIndex];
+        return `${info.label} · ${year}`;
+    }, [monthIndex, year]);
 
     // ---- solicitudes del mes (incluye rangos que cruzan meses)
-    const monthRequests = useMemo(
-        () => filterRequestsByMonth(requests, monthIndex, year),
-        [requests, monthIndex, year]
-    );
+    const monthRequests = useMemo(() => {
+        if (monthIndex === null) return [];
+        return filterRequestsByMonth(requests, monthIndex, year);
+    }, [requests, monthIndex, year]);
 
     const monthCount = monthRequests.length;
 
@@ -81,7 +75,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
         for (const r of monthRequests) acc[r.status]++;
         return acc;
     }, [monthRequests]);
-
 
     // ---- aplicar filtros y ordenación
     const filtered = useMemo(() => {
@@ -193,6 +186,10 @@ const AdminVacationMonthModal: React.FC<Props> = ({
             alert('Error al eliminar la solicitud');
         }
     };
+
+    // ---- IMPORTANTE: ahora SÍ devolvemos null, pero DESPUÉS de declarar todos los hooks
+    if (!isOpen || monthIndex === null) return null;
+
 
     return (
         <>
