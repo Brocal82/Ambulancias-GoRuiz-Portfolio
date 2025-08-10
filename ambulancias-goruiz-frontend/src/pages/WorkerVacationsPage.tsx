@@ -4,6 +4,7 @@ import { getUserVacationRequests, respondToAlternativeDate } from '../api/vacati
 import { useAuth } from '../hooks/useAuth';
 import AlternativeDateModal from '../components/vacation/AlternativeDateModal';
 import VacationRequestForm from '../components/vacation/VacationRequestForm';
+import UserVacationList from '../components/vacation/UserVacationList';
 
 const WorkerVacationsPage = () => {
   const { token } = useAuth();
@@ -117,64 +118,15 @@ const getStatusClass = (status: string) => {
 
       {requests.length === 0 && !loading && !showForm && <p>No hay solicitudes de vacaciones.</p>}
 
-      {requests.length > 0 && (
-        // Dentro del componente WorkerVacationsPage, en el return:
+{requests.length > 0 && (
+  <div className="mt-4">
+    <UserVacationList
+      requests={requests}
+      onRespondAlternative={handleRespondAlternative}
+    />
+  </div>
+)}
 
-<table className="w-full table-auto border-collapse border border-gray-300 text-center">
-  <thead>
-    <tr className="bg-gray-100">
-      <th className="border border-gray-300 px-3 py-1">Fecha Inicio</th>
-      <th className="border border-gray-300 px-3 py-1">Fecha Fin</th>
-      <th className="border border-gray-300 px-3 py-1">Estado</th>
-      <th className="border border-gray-300 px-3 py-1">Opciones/Mensajes</th>
-      <th className="border border-gray-300 px-3 py-1">Acciones</th>
-    </tr>
-  </thead>
-  <tbody>
-    {requests.map(req => (
-      <tr key={req._id}>
-        <td className="border border-gray-300 px-3 py-1">{new Date(req.startDate).toLocaleDateString()}</td>
-        <td className="border border-gray-300 px-3 py-1">{new Date(req.endDate).toLocaleDateString()}</td>
-        <td className={`border border-gray-300 px-3 py-1 capitalize ${getStatusClass(req.status)}`}>
-          {req.status}
-        </td>
-        <td className="border border-gray-300 px-3 py-1 break-words max-w-xs text-left">
-  {req.status === 'option_sent' && req.adminOptionStartDate && req.adminOptionEndDate ? (
-    <>
-      <p><strong>Alternativa:</strong> {new Date(req.adminOptionStartDate).toLocaleDateString()} - {new Date(req.adminOptionEndDate).toLocaleDateString()}</p>
-      <p><strong>Nota:</strong> {req.adminNote || '-'}</p>
-    </>
-  ) : req.status === 'cancelled' && req.adminNote ? (
-    <p><strong>Motivo cancelación:</strong> {req.adminNote}</p>
-  ) : (
-    '-'
-  )}
-</td>
-
-        <td className="border border-gray-300 px-3 py-1">
-          {req.status === 'option_sent' && (
-            <div className="flex justify-center space-x-2 flex-nowrap">
-              <button
-                className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 whitespace-nowrap"
-                onClick={() => handleRespondAlternative(req._id, true)}
-              >
-                Aceptar
-              </button>
-              <button
-                className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 whitespace-nowrap"
-                onClick={() => handleRespondAlternative(req._id, false)}
-              >
-                Rechazar
-              </button>
-            </div>
-          )}
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
-
-      )}
 
       {/* El modal puede quedarse para otras funciones o eliminarse si no lo usas aquí */}
       <AlternativeDateModal
