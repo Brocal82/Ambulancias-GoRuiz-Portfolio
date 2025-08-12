@@ -23,9 +23,13 @@ const HospitalDetailsModal = ({ hospital, onClose }: Props) => {
         </div>
 
         <div className="flex justify-end">
-          <button onClick={onClose} className="mt-4 px-4 py-2 border rounded">
+          <button
+            onClick={onClose}
+            className="mt-4 px-6 py-2 bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 hover:shadow-lg transition-all duration-300 ease-in-out"
+          >
             Cerrar
           </button>
+
         </div>
       </div>
     </div>
