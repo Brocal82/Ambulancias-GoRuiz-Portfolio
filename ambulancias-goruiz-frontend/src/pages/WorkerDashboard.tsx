@@ -50,9 +50,25 @@ const WorkerDashboard = () => {
         </Link>
 
         <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
-          <h2 className="text-lg font-semibold mb-2">🛠 Mecánicos</h2>
+          <h2 className="text-lg font-semibold mb-2">🛠 Nóminas/Documentos</h2>
           <p className="text-sm text-gray-600">Próximamente</p>
         </div>
+
+        <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
+          <h2 className="text-lg font-semibold mb-2">🛠 Termin</h2>
+          <p className="text-sm text-gray-600">Próximamente</p>
+        </div>
+
+        <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
+          <h2 className="text-lg font-semibold mb-2">🛠 Juego/Formacion</h2>
+          <p className="text-sm text-gray-600">Próximamente</p>
+        </div>
+
+        <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
+          <h2 className="text-lg font-semibold mb-2">🛠 Ropa</h2>
+          <p className="text-sm text-gray-600">Próximamente</p>
+        </div>
+
       </div>
     </div>
   );
