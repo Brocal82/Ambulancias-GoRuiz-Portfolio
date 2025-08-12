@@ -10,6 +10,7 @@ import IssueReportModal from "./IssueReportModal";
 interface Props {
   trips: Trip[];
   assignedDay: AssignedDayFull;
+  ambulanceId: string;
   ambulanceNumber: string;
   initialKm: string;
   finalKm: string;
@@ -25,6 +26,7 @@ interface Props {
 const PartialReviewModal: React.FC<Props> = ({
   trips,
   assignedDay,
+  ambulanceId,
   ambulanceNumber,
   initialKm,
   onClose,
@@ -113,19 +115,17 @@ const PartialReviewModal: React.FC<Props> = ({
               setHasIssue(false);
             }}
             assignedDay={assignedDay}
-            ambulanceId={
-              typeof assignedDay.ambulanceId === "string"
-                ? assignedDay.ambulanceId
-                : assignedDay.ambulanceId?._id ?? ""
-            }
+            ambulanceId={ambulanceId}              // 👈 AHORA VIENE DE LAS PROPS
+            ambulanceNumber={ambulanceNumber}      // 👈 PASA TAMBIÉN EL NÚMERO ACTUAL
             finalKm={parsedFinalKm}
             onSubmit={(data) => {
-              setIssueData(data); // ✅ Guardamos localmente
+              setIssueData(data);
               setShowIssueModal(false);
               toast.info("🛠️ Avería registrada. Ahora puedes enviar el cierre parcial.");
             }}
           />
         )}
+
 
         <div className="flex justify-end gap-2 pt-4">
           <button

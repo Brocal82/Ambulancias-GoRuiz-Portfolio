@@ -86,7 +86,7 @@ const MyWorkday = () => {
 
 
   const [canStartWork, setCanStartWork] = useState(false);
- const [ambulanceNumber, setAmbulanceNumber] = useState("");
+  const [ambulanceNumber, setAmbulanceNumber] = useState("");
 
 
   const [vehicleConfirmed, setVehicleConfirmed] = useState(false);
@@ -146,28 +146,28 @@ const MyWorkday = () => {
   const navigate = useNavigate();
 
   const handleConfirmAmbulanceData = () => {
-  if (!ambulanceId || !initialAmbulanceKm) {
-    toast.error("❌ Selecciona una ambulancia y KM iniciales.");
-    return;
-  }
+    if (!ambulanceId || !initialAmbulanceKm) {
+      toast.error("❌ Selecciona una ambulancia y KM iniciales.");
+      return;
+    }
 
-  if (!assignedDay) return;
+    if (!assignedDay) return;
 
-  // 🔍 Obtenemos el número de ambulancia asociado
-  const selectedAmbulance = ambulances.find((a) => a._id === ambulanceId);
-  setAmbulanceNumber(selectedAmbulance?.ambulanceNumber || "??");
+    // 🔍 Obtenemos el número de ambulancia asociado
+    const selectedAmbulance = ambulances.find((a) => a._id === ambulanceId);
+    setAmbulanceNumber(selectedAmbulance?.ambulanceNumber || "??");
 
 
-  setVehicleConfirmed(true);
-  toast.success("✅ Datos confirmados. Ya puedes registrar viajes.");
+    setVehicleConfirmed(true);
+    toast.success("✅ Datos confirmados. Ya puedes registrar viajes.");
 
-  // ✅ Guardamos los datos correctamente compartidos por equipo
-  saveAmbulanceData(assignedDay.assignmentId, ambulanceId, initialAmbulanceKm);
-  localStorage.setItem(confirmedAmbulanceKey(assignedDay.assignmentId), "true");
+    // ✅ Guardamos los datos correctamente compartidos por equipo
+    saveAmbulanceData(assignedDay.assignmentId, ambulanceId, initialAmbulanceKm);
+    localStorage.setItem(confirmedAmbulanceKey(assignedDay.assignmentId), "true");
 
-  // 💾 (opcional) Puedes guardar también el número en localStorage si aún lo usas en pantalla
-  localStorage.setItem(`ambulanceNumber-${assignedDay.assignmentId}`, ambulanceNumber);
-};
+    // 💾 (opcional) Puedes guardar también el número en localStorage si aún lo usas en pantalla
+    localStorage.setItem(`ambulanceNumber-${assignedDay.assignmentId}`, ambulanceNumber);
+  };
 
 
 
@@ -1257,7 +1257,7 @@ const MyWorkday = () => {
                 <ul className="space-y-2">
                   {/* ---------- LISTA DE TRIPS ---------- */}
                   {trips.map((trip: Trip, idx: number) => {
-  const totalKm = trip.wasCancelled ? 0 : (typeof trip.totalKm === "number" ? trip.totalKm : trip.kmEnd - trip.kmStart);
+                    const totalKm = trip.wasCancelled ? 0 : (typeof trip.totalKm === "number" ? trip.totalKm : trip.kmEnd - trip.kmStart);
 
 
 
@@ -1405,7 +1405,8 @@ const MyWorkday = () => {
         <PartialReviewModal
           trips={trips}
           assignedDay={assignedDay}
-           ambulanceNumber={ambulanceNumber}
+          ambulanceId={ambulanceId}
+          ambulanceNumber={ambulanceNumber}
           initialKm={initialAmbulanceKm}
           finalKm={finalAmbulanceKm}
           onClose={() => setShowReviewModal(false)}
@@ -1424,8 +1425,8 @@ const MyWorkday = () => {
           onClose={() => setShowReviewModal(false)}
           trips={trips}
           assignedDay={assignedDay}
-          ambulanceId={ambulanceId}                  
-          ambulanceNumber={ambulanceNumber}          
+          ambulanceId={ambulanceId}
+          ambulanceNumber={ambulanceNumber}
           initialKm={initialAmbulanceKm}
           finalKm={finalAmbulanceKm}
           onConfirm={handleConfirmFinalClosure}

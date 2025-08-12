@@ -7,6 +7,7 @@ interface Props {
   onClose: () => void;
   assignedDay: AssignedDayFull;
   ambulanceId: string;
+  ambulanceNumber: string;
   finalKm: number;
   onSubmit: (issueData: { issueText: string }) => void;
 }
@@ -16,6 +17,7 @@ const IssueReportModal: React.FC<Props> = ({
   onClose,
   assignedDay,
   ambulanceId,
+  ambulanceNumber,
   finalKm,
   onSubmit,
 }) => {
@@ -25,6 +27,12 @@ const IssueReportModal: React.FC<Props> = ({
   if (!isOpen) return null;
 
   const handleSend = async () => {
+
+    if (!ambulanceId || ambulanceId.length < 24) {
+      toast.warn("🚑 Selecciona una ambulancia válida.");
+      return;
+    }
+
     if (!description.trim()) {
       toast.warn("📝 Describe la avería antes de enviar.");
       return;
@@ -43,14 +51,15 @@ const IssueReportModal: React.FC<Props> = ({
       startTime: assignedDay.startTime,
       endTime: assignedDay.endTime,
       team: `${assignedDay.driver.lastName}, ${assignedDay.driver.name} + ${assignedDay.medic.lastName}, ${assignedDay.medic.name}`,
-      ambulanceId,
-      ambulanceNumber: assignedDay.ambulanceNumber || "Desconocido",
+      ambulanceNumber: ambulanceNumber,   
+      ambulanceId,                     
       finalKm: finalKmValue,
       timestamp: new Date().toISOString(),
       issueText: description.trim(),
       driver: assignedDay.driver._id,
       medic: assignedDay.medic._id,
     };
+
 
     try {
       const res = await fetch("/api/workday-summary/report-issue", {
@@ -78,7 +87,7 @@ const IssueReportModal: React.FC<Props> = ({
         <p><strong>Horario</strong> {assignedDay.startTime} – {assignedDay.endTime}</p>
         <p><strong>🚗 Conductor:</strong> {assignedDay.driver.lastName}, {assignedDay.driver.name}</p>
         <p><strong>🧑‍⚕️ Sanitario:</strong> {assignedDay.medic.lastName}, {assignedDay.medic.name}</p>
-        <p><strong>🚐 Ambulancia:</strong> {assignedDay.ambulanceNumber || "Desconocido"}</p>
+        <p><strong>🚐 Ambulancia:</strong> {ambulanceNumber || "Desconocido"}</p>
 
         <div>
           <label className="block text-sm font-medium mb-1">🔢 KM finales</label>

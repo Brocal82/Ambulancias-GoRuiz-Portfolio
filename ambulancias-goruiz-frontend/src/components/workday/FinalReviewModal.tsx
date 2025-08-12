@@ -117,14 +117,16 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
             }}
             assignedDay={assignedDay}
             ambulanceId={ambulanceId}
+            ambulanceNumber={ambulanceNumber}   // 👈 AÑADIDO
             finalKm={parsedFinalKm}
             onSubmit={(issueData: { issueText: string }) => {
               setHasIssue(true);
               setShowIssueModal(false);
-              onConfirm("⚠️ Avería", parsedFinalKm, issueData);
+              onConfirm("⚠️ Avería", parsedFinalKm, issueData);
             }}
           />
         )}
+
 
         <div className="flex justify-end gap-2 pt-4">
           <button
