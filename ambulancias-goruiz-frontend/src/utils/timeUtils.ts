@@ -1,3 +1,4 @@
+//src/utils/timeUtils.ts
 export const getCurrentTimeString = (): string => {
   const now = new Date();
   const hours = now.getHours().toString().padStart(2, "0");
