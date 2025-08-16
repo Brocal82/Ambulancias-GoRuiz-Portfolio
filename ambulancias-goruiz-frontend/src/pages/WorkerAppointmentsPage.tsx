@@ -5,6 +5,29 @@ import type { Appointment } from '../types/appointment';
 import RequestAppointmentModal from '../components/appointments/RequestAppointmentModal';
 import ChooseSlotModal from '../components/appointments/ChooseSlotModal';
 import { toast } from 'react-toastify';
+import { APP_TZ } from '../config/app';
+
+/** Util: formato corto fecha/hora en la TZ de la app */
+function fmt(dtIso?: string): string {
+  if (!dtIso) return '—';
+  return new Date(dtIso).toLocaleString('de-DE', { timeZone: APP_TZ });
+}
+
+/** Badge de estado */
+function StatusBadge({ status }: { status: Appointment['status'] }) {
+  const map: Record<Appointment['status'], string> = {
+    pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+    proposed: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    confirmed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    rescheduled: 'bg-amber-50 text-amber-700 border-amber-200',
+    cancelled: 'bg-red-50 text-red-700 border-red-200',
+  };
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${map[status]}`}>
+      {status}
+    </span>
+  );
+}
 
 export default function WorkerAppointmentsPage() {
   const { token } = useAuth();
@@ -45,12 +68,15 @@ export default function WorkerAppointmentsPage() {
     };
   }, [token]);
 
+  // Próxima cita confirmada / reprogramada (futura más cercana)
   const nextConfirmed = useMemo(() => {
+    const now = Date.now();
     return items
       .filter(
         (a) =>
           (a.status === 'confirmed' || a.status === 'rescheduled') &&
-          a.selectedSlot?.start
+          a.selectedSlot?.start &&
+          new Date(a.selectedSlot.start).getTime() > now
       )
       .sort(
         (x, y) =>
@@ -59,80 +85,144 @@ export default function WorkerAppointmentsPage() {
       )[0];
   }, [items]);
 
+  // Solicitudes (pending/proposed)
+  const recent = useMemo(
+    () => items.filter((a) => a.status === 'pending' || a.status === 'proposed'),
+    [items]
+  );
+
+  // Otras citas: confirmed/rescheduled/cancelled (excluye la mostrada como "próxima")
+  const others = useMemo(() => {
+    const excludeId = nextConfirmed?._id;
+    return items
+      .filter((a) => (a.status === 'confirmed' || a.status === 'rescheduled' || a.status === 'cancelled'))
+      .filter((a) => a._id !== excludeId)
+      .sort((a, b) => {
+        const at = a.selectedSlot?.start ? new Date(a.selectedSlot.start).getTime() : 0;
+        const bt = b.selectedSlot?.start ? new Date(b.selectedSlot.start).getTime() : 0;
+        return bt - at; // más recientes primero
+      });
+  }, [items, nextConfirmed]);
+
+  const emptyState = !loading && items.length === 0;
+
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-2xl font-bold mb-4">Mis Citas</h1>
+    <div className="max-w-4xl mx-auto p-4 bg-white rounded shadow">
+      <div className="flex items-start justify-between">
+        <h2 className="text-xl font-bold">Mis Citas</h2>
+        <button
+          onClick={() => setOpenRequest(true)}
+          className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+          title="Pedir cita"
+        >
+          <span>+ Pedir cita</span>
+        </button>
+      </div>
+
+      {/* Estado de carga */}
+      {loading && <p className="mt-4 text-gray-600">Cargando citas…</p>}
 
       {/* Próxima cita confirmada */}
-      {nextConfirmed && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded">
-          <div className="font-semibold">Próxima cita confirmada</div>
-          <div className="text-sm">
-            {new Date(nextConfirmed.selectedSlot!.start).toLocaleString('de-DE', {
-              timeZone: 'Europe/Berlin',
-            })}{' '}
-            · {nextConfirmed.reason}
+      {!loading && nextConfirmed && (
+        <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold text-emerald-800">Próxima cita</h3>
+            <StatusBadge status={nextConfirmed.status} />
+          </div>
+          <div className="mt-2 text-sm text-emerald-900">
+            <div><span className="font-medium">Cuándo:</span> {fmt(nextConfirmed.selectedSlot?.start)}</div>
+            <div className="mt-1"><span className="font-medium">Motivo:</span> {nextConfirmed.reason}</div>
           </div>
         </div>
       )}
 
-      {/* Botón pedir cita */}
-      <div className="mb-4">
-        <button
-          onClick={() => setOpenRequest(true)}
-          className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-        >
-          Pedir cita
-        </button>
-      </div>
+      {/* Mis solicitudes (pending/proposed) */}
+      {!loading && recent.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-base font-semibold mb-3">Mis solicitudes</h3>
+          <ul className="space-y-3">
+            {recent.map((a) => {
+              const showChoose = a.status === 'proposed' && (a.proposedSlots?.length ?? 0) > 0;
+              return (
+                <li key={a._id} className="rounded-xl border p-4 hover:border-blue-300">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium truncate">{a.reason}</span>
+                        <StatusBadge status={a.status} />
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">{a.details}</p>
 
-      {/* Lista de citas */}
-      {loading ? (
-        <p>Cargando...</p>
-      ) : items.length === 0 ? (
-        <p>No tienes citas todavía.</p>
-      ) : (
-        <ul className="space-y-2">
-          {items.map((a) => (
-            <li key={a._id} className="bg-white p-4 rounded shadow">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="font-semibold">{a.reason}</div>
-                  <div className="text-sm text-gray-600">Estado: {a.status}</div>
-                  {a.selectedSlot && (
-                    <div className="text-sm">
-                      Seleccionada:{' '}
-                      {new Date(a.selectedSlot.start).toLocaleString('de-DE', {
-                        timeZone: 'Europe/Berlin',
-                      })}
+                      {a.status === 'proposed' && (a.proposedSlots?.length ?? 0) === 0 && (
+                        <p className="mt-2 text-sm text-amber-700">
+                          Tienes horarios propuestos pendientes (el admin aún no cargó opciones).
+                        </p>
+                      )}
+
+                      {a.status === 'proposed' && (a.proposedSlots?.length ?? 0) > 0 && (
+                        <p className="mt-2 text-sm text-indigo-700">
+                          Tienes horarios propuestos pendientes de elegir.
+                        </p>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* Si está propuesto, permitir elegir */}
-                {a.status === 'proposed' && (a.proposedSlots?.length ?? 0) > 0 && (
-                  <button
-                    className="px-3 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700"
-                    onClick={() => {
-                      setChooseId(a._id);
-                      setChooseSlots(a.proposedSlots);
-                      setOpenChoose(true);
-                    }}
-                  >
-                    Elegir hora
-                  </button>
-                )}
-              </div>
+                    {showChoose && (
+                      <button
+                        className="shrink-0 rounded bg-indigo-600 px-3 py-1.5 text-white hover:bg-indigo-700"
+                        onClick={() => {
+                          setChooseId(a._id);
+                          setChooseSlots(a.proposedSlots);
+                          setOpenChoose(true);
+                        }}
+                        title="Elegir uno de los horarios propuestos"
+                      >
+                        Elegir hora
+                      </button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
-              {/* Mensaje si aún no hay slots cargados */}
-              {a.status === 'proposed' && (a.proposedSlots?.length ?? 0) === 0 && (
-                <div className="mt-2 text-sm text-amber-700">
-                  Tienes horarios propuestos pendientes (el admin aún no cargó opciones).
+      {/* Historial y otras citas (confirmed/rescheduled/cancelled) */}
+      {!loading && others.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-base font-semibold mb-3">Historial y otras citas</h3>
+          <ul className="space-y-3">
+            {others.map((a) => (
+              <li key={a._id} className="rounded-xl border p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium truncate">{a.reason}</span>
+                      <StatusBadge status={a.status} />
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">{a.details}</p>
+                    <div className="text-sm text-gray-700 mt-2">
+                      <span className="font-medium">Cuándo:</span> {fmt(a.selectedSlot?.start)}
+                    </div>
+                  </div>
                 </div>
-              )}
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Estado vacío */}
+      {emptyState && (
+        <div className="mt-6 rounded-xl border border-gray-200 p-6 text-center">
+          <p className="text-gray-600">Aún no tienes citas. ¿Necesitas hablar con un admin?</p>
+          <button
+            onClick={() => setOpenRequest(true)}
+            className="mt-3 inline-flex rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+          >
+            Pedir cita
+          </button>
+        </div>
       )}
 
       {/* Modal: pedir cita */}
