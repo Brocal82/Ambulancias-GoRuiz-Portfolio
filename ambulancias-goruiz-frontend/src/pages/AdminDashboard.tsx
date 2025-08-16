@@ -77,10 +77,14 @@ const AdminDashboard = () => {
           <p className="text-sm text-gray-600">Próximamente</p>
         </div>
 
-        <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
-          <h2 className="text-lg font-semibold mb-2">🛠 Termin</h2>
-          <p className="text-sm text-gray-600">Próximamente</p>
-        </div>
+        <Link
+          to="/admin/appointments"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
+          <h2 className="text-lg font-semibold mb-2">🗓️ Citas</h2>
+          <p className="text-sm text-gray-600">Calendario y solicitudes</p>
+        </Link>
+
 
         <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
           <h2 className="text-lg font-semibold mb-2">🛠 Ropa</h2>

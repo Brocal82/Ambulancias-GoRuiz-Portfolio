@@ -54,10 +54,14 @@ const WorkerDashboard = () => {
           <p className="text-sm text-gray-600">Próximamente</p>
         </div>
 
-        <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
-          <h2 className="text-lg font-semibold mb-2">🛠 Termin</h2>
-          <p className="text-sm text-gray-600">Próximamente</p>
-        </div>
+        <Link
+          to="/worker/appointments"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
+          <h2 className="text-lg font-semibold mb-2">🗓️ Citas</h2>
+          <p className="text-sm text-gray-600">Pide y gestiona tus citas</p>
+        </Link>
+
 
         <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
           <h2 className="text-lg font-semibold mb-2">🛠 Juego/Formacion</h2>

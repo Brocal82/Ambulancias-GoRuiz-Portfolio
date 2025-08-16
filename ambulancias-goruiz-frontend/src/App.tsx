@@ -18,6 +18,7 @@ import WorkerHospitalsPage from './pages/WorkerHospitalsPage';
 import WorkerPrämienPage from './pages/WorkerPraemienPage';
 import WorkerVacationsPage from './pages/WorkerVacationsPage';
 import WorkerMessagesPage from './pages/WorkerMessagesPage';
+import WorkerAppointmentsPage from './pages/WorkerAppointmentsPage';
 
 import MyWorkday from './pages/MyWorkDay';
 
@@ -32,6 +33,7 @@ import AdminMechanicsPage from './pages/AdminMechanicsPage';
 import AdminUserDetailDashboard from './pages/AdminUserDetailDashboard';
 import AdminMessagesPage from './pages/AdminMessagesPage';
 import AdminSentMessages from './pages/AdminSentMessages'; 
+import AdminAppointmentsPage from './pages/AdminAppointmentsPage';
 
 export default function App() {
   return (
@@ -54,6 +56,7 @@ export default function App() {
             <Route path="/worker/vacations" element={<AppLayout><WorkerVacationsPage /></AppLayout>} />
             <Route path="/worker/messages" element={<AppLayout><WorkerMessagesPage /></AppLayout>} />
             <Route path="/my-workday" element={<AppLayout><MyWorkday /></AppLayout>} />
+            <Route path="/worker/appointments" element={<AppLayout><WorkerAppointmentsPage /></AppLayout>} />
 
             {/* Admin */}
             <Route path="/admin" element={<AppLayout><AdminDashboard /></AppLayout>} />
@@ -67,6 +70,7 @@ export default function App() {
             <Route path="/admin/ambulances" element={<AppLayout><AdminAmbulancesPage /></AppLayout>} />
             <Route path="/admin/user/:userId" element={<AppLayout><AdminUserDetailDashboard /></AppLayout>} />
             <Route path="/admin/mechanics" element={<AppLayout><AdminMechanicsPage /></AppLayout>} />
+            <Route path="/admin/appointments" element={<AppLayout><AdminAppointmentsPage /></AppLayout>} />
           </Route>
         </Routes>
         <ToastContainer position="top-right" autoClose={3000} />
