@@ -6,7 +6,7 @@ dotenv.config();
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import path from 'path'; // ✅ NUEVO
+import path from 'path'; 
 import userRoutes from './routes/userRoutes';
 import dienstRoutes from './routes/dienstRoutes';
 import hospitalRoutes from './routes/hospitalRoutes';
@@ -15,7 +15,8 @@ import workdaySummaryRoutes from './routes/workdaySummaryRoutes';
 import praemienRoutes from './routes/praemienRoutes';
 import vacationRoutes from './routes/vacationRoutes';
 import ambulanceRoutes from './routes/ambulanceRoutes';
-import messageRoutes from './routes/messageRoutes'; // ✅ NUEVO
+import messageRoutes from './routes/messageRoutes'; 
+import appointmentRoutes from './routes/appointmentRoutes'
 
 // ✅ Importamos el limpiador de Diensts antiguos
 import cleanupOldDiensts from './utils/cleanupOldDiensts';
@@ -55,6 +56,8 @@ app.use('/api/praemien', praemienRoutes);
 app.use('/api/vacations', vacationRoutes);
 app.use('/api/ambulances', ambulanceRoutes);
 app.use('/api/messages', messageRoutes); // ✅ NUEVO
+app.use('/api/appointments', appointmentRoutes);
+
 
 // Conexión y arranque del servidor
 mongoose.connect(MONGODB_URI)
