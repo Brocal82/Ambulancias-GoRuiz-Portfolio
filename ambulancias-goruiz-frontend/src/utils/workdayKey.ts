@@ -11,17 +11,19 @@ export const ambulanceDataKey = (assignmentId: string) =>
 export const saveAmbulanceData = (
   assignmentId: string,
   ambulanceId: string,
+  ambulanceNumber: string,
   initialKm: string
 ) => {
   localStorage.setItem(
     ambulanceDataKey(assignmentId),
-    JSON.stringify({ ambulanceId, initialKm })
+    JSON.stringify({ ambulanceId, ambulanceNumber, initialKm })
   );
 };
 
+
 export const loadAmbulanceData = (
   assignmentId: string
-): { ambulanceId: string; initialKm: string } | null => {
+): { ambulanceId: string; ambulanceNumber: string; initialKm: string } | null => {
   const raw = localStorage.getItem(ambulanceDataKey(assignmentId));
   if (!raw) return null;
 
@@ -31,6 +33,7 @@ export const loadAmbulanceData = (
     return null;
   }
 };
+
 export const confirmedAmbulanceKey = (assignmentId: string) =>
   `ambulanceConfirmed-${assignmentId}`;
 

@@ -145,29 +145,33 @@ const MyWorkday = () => {
 
   const navigate = useNavigate();
 
-  const handleConfirmAmbulanceData = () => {
-    if (!ambulanceId || !initialAmbulanceKm) {
-      toast.error("❌ Selecciona una ambulancia y KM iniciales.");
-      return;
-    }
+const handleConfirmAmbulanceData = () => {
+  if (!ambulanceId || !initialAmbulanceKm) {
+    toast.error("❌ Selecciona una ambulancia y KM iniciales.");
+    return;
+  }
 
-    if (!assignedDay) return;
+  if (!assignedDay) return;
 
-    // 🔍 Obtenemos el número de ambulancia asociado
-    const selectedAmbulance = ambulances.find((a) => a._id === ambulanceId);
-    setAmbulanceNumber(selectedAmbulance?.ambulanceNumber || "??");
+  // 🔍 Obtenemos el número de ambulancia asociado
+  const selectedAmbulance = ambulances.find((a) => a._id === ambulanceId);
+  const ambulanceNum = selectedAmbulance?.ambulanceNumber || "??";
+  setAmbulanceNumber(ambulanceNum);
 
+  setVehicleConfirmed(true);
+  toast.success("✅ Datos confirmados. Ya puedes registrar viajes.");
 
-    setVehicleConfirmed(true);
-    toast.success("✅ Datos confirmados. Ya puedes registrar viajes.");
+  // ✅ Guardamos los datos correctamente compartidos por equipo
+  saveAmbulanceData(
+    assignedDay.assignmentId,
+    ambulanceId,
+    ambulanceNumber,
+    initialAmbulanceKm
+  );
 
-    // ✅ Guardamos los datos correctamente compartidos por equipo
-    saveAmbulanceData(assignedDay.assignmentId, ambulanceId, initialAmbulanceKm);
-    localStorage.setItem(confirmedAmbulanceKey(assignedDay.assignmentId), "true");
+  localStorage.setItem(confirmedAmbulanceKey(assignedDay.assignmentId), "true");
+};
 
-    // 💾 (opcional) Puedes guardar también el número en localStorage si aún lo usas en pantalla
-    localStorage.setItem(`ambulanceNumber-${assignedDay.assignmentId}`, ambulanceNumber);
-  };
 
 
 
@@ -292,33 +296,43 @@ const MyWorkday = () => {
   }, [fetchTrips, fetchAssignedDay]);
 
 
-  useEffect(() => {
-    if (!assignedDay) return;
+useEffect(() => {
+  if (!assignedDay || !ambulances.length) return;
 
-    // Carga los datos compartidos (vehículo y km iniciales)
-    const loaded = loadAmbulanceData(assignedDay.assignmentId);
-    if (loaded) {
-      setAmbulanceNumber(loaded.ambulanceId);
-      setInitialAmbulanceKm(loaded.initialKm);
+  const loaded = loadAmbulanceData(assignedDay.assignmentId);
+  if (loaded) {
+    setAmbulanceId(loaded.ambulanceId);
+    setInitialAmbulanceKm(loaded.initialKm);
+
+    // Restaurar el número si está disponible, si no, buscarlo por ID
+    if (loaded.ambulanceNumber) {
+      setAmbulanceNumber(loaded.ambulanceNumber);
+    } else {
+      const amb = ambulances.find((a) => a._id === loaded.ambulanceId);
+      setAmbulanceNumber(amb?.ambulanceNumber || "??");
     }
+  }
 
-    // Verifica si ese equipo ya confirmó los datos
-    const isConfirmed =
-      localStorage.getItem(confirmedAmbulanceKey(assignedDay.assignmentId)) === "true";
+  const isConfirmed =
+    localStorage.getItem(confirmedAmbulanceKey(assignedDay.assignmentId)) === "true";
 
-    setVehicleConfirmed(isConfirmed);
-  }, [assignedDay]);
+  setVehicleConfirmed(isConfirmed);
+}, [assignedDay, ambulances]);
+
+
 
 
   useEffect(() => {
-    if (assignedDay && ambulanceNumber && initialAmbulanceKm) {
-      saveAmbulanceData(
-        assignedDay.assignmentId,
-        ambulanceNumber,
-        initialAmbulanceKm
-      );
-    }
-  }, [ambulanceNumber, initialAmbulanceKm, assignedDay]);
+  if (assignedDay && ambulanceId && ambulanceNumber && initialAmbulanceKm) {
+    saveAmbulanceData(
+      assignedDay.assignmentId,
+      ambulanceId,
+      ambulanceNumber,
+      initialAmbulanceKm
+    );
+  }
+}, [ambulanceId, ambulanceNumber, initialAmbulanceKm, assignedDay]);
+
 
   useEffect(() => {
     const result = checkTripLogic(
