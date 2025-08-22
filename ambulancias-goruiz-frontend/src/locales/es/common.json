@@ -8,6 +8,25 @@
       "title": "Bienvenido a Ambulancias GoRuiz",
       "login": "Iniciar Sesión",
       "register": "Registrarse"
+    },
+    "login": {
+      "title": "Iniciar sesión",
+      "back": "⬅️ Volver a inicio",
+      "email": "Correo",
+      "password": "Contraseña",
+      "submit": "Entrar",
+      "genericError": "Error al iniciar sesión"
+    },
+    "register": {
+      "title": "Registro",
+      "back": "⬅️ Volver a inicio",
+      "name": "Nombre",
+      "lastName": "Apellidos",
+      "email": "Email",
+      "password": "Contraseña",
+      "submit": "Registrarse",
+      "success": "Registro exitoso. Redirigiendo al login...",
+      "genericError": "Error al registrar"
     }
   }
 }

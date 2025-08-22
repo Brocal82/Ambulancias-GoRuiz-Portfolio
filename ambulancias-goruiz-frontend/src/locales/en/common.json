@@ -8,6 +8,25 @@
       "title": "Welcome to Ambulances GoRuiz",
       "login": "Login",
       "register": "Register"
+    },
+    "login": {
+      "title": "Login",
+      "back": "⬅️ Back to home",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "genericError": "Login failed"
+    },
+    "register": {
+      "title": "Register",
+      "back": "⬅️ Back to home",
+      "name": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign up",
+      "success": "Registration successful. Redirecting to login...",
+      "genericError": "Registration failed"
     }
   }
 }

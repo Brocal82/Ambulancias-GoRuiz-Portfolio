@@ -8,6 +8,25 @@
       "title": "Willkommen bei Krankentransport GoRuiz",
       "login": "Anmelden",
       "register": "Registrieren"
+    },
+    "login": {
+      "title": "Anmelden",
+      "back": "⬅️ Zur Startseite",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "submit": "Einloggen",
+      "genericError": "Fehler bei der Anmeldung"
+    },
+    "register": {
+      "title": "Registrieren",
+      "back": "⬅️ Zur Startseite",
+      "name": "Vorname",
+      "lastName": "Nachname",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "submit": "Registrieren",
+      "success": "Erfolgreich registriert. Weiterleitung zum Login...",
+      "genericError": "Fehler bei der Registrierung"
     }
   }
 }
