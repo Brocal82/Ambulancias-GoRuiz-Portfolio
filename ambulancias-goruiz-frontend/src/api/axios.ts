@@ -1,4 +1,5 @@
-import axios from "axios";
+import axios, { AxiosHeaders } from "axios";
+
 
 const axiosInstance = axios.create({
   baseURL: "http://localhost:5000/api",
@@ -17,17 +18,28 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ✅ Interceptor de respuestas: redirige si el token ha expirado o no autorizado
-axiosInstance.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      console.warn("Token expirado o acceso prohibido. Cerrando sesión...");
-      localStorage.clear();
-      window.location.href = "/login"; // 🔁 Redirección inmediata al login
+// ✅ Interceptor de peticiones: añade token y Accept-Language usando AxiosHeaders (tipado correcto)
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = sessionStorage.getItem("token");
+    const lang = (localStorage.getItem("lang") as string) || "es";
+
+    // Normaliza headers a instancia de AxiosHeaders
+    config.headers = AxiosHeaders.from(config.headers);
+
+    const headers = config.headers as AxiosHeaders;
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
     }
-    return Promise.reject(error);
-  }
+
+    headers.set("Accept-Language", lang);
+
+    return config;
+  },
+  (error) => Promise.reject(error)
 );
+
+
 
 export default axiosInstance;

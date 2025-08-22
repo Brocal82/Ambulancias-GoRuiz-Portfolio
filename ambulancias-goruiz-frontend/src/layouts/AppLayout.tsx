@@ -2,6 +2,8 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import LanguageSwitcher from "../components/ui/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -13,6 +15,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const navigate = useNavigate();
   const isWorker = role === "worker";
   const isAdmin = role === "admin";
+  const { t } = useTranslation();
+
 
   const goHome = () => {
     if (isWorker) navigate("/worker");
@@ -43,38 +47,42 @@ console.log("👤 Usuario en AppLayout:", user);
               d="M3 9.75L12 3l9 6.75M4.5 10.5V21h15v-10.5"
             />
           </svg>
-          <h1 className="text-xl font-bold">Ambulancias Goruiz</h1>
+          <h1 className="text-xl font-bold">{t('layout.appName')}</h1>
+
         </div>
 
         <div className="flex items-center gap-4">
-          {user && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium hidden sm:inline">
-                {user.lastName}, {user.name}
-              </span>
-              <Link to="/profile" title="Perfil">
-                <img
-                  src={
-                    user.profileImage
-                      ? `http://localhost:5000${user.profileImage}`
-                      : "https://cdn-icons-png.flaticon.com/512/149/149071.png"
-                  }
-                  alt="Perfil"
-                  className="w-8 h-8 rounded-full hover:scale-105 transition-transform border border-white"
-                  title="Ver perfil"
-                />
-              </Link>
+  {user && (
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-medium hidden sm:inline">
+        {user.lastName}, {user.name}
+      </span>
+      <Link to="/profile" title="Perfil">
+        <img
+          src={
+            user.profileImage
+              ? `http://localhost:5000${user.profileImage}`
+              : "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+          }
+          alt="Perfil"
+          className="w-8 h-8 rounded-full hover:scale-105 transition-transform border border-white"
+          title="Ver perfil"
+        />
+      </Link>
+    </div>
+  )}
 
-            </div>
-          )}
+  {/* 🔹 NUEVO: selector de idioma */}
+  <LanguageSwitcher />
 
-          <button
-            onClick={logout}
-            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
-          >
-            Cerrar sesión
-          </button>
-        </div>
+  <button
+    onClick={logout}
+    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+  >
+    Cerrar sesión
+  </button>
+</div>
+
       </header>
 
       <main className="p-4">{children}</main>

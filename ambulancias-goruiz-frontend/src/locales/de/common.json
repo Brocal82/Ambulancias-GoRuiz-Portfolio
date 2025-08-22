@@ -1,0 +1,13 @@
+{
+  "layout": {
+    "appName": "Ambulancias Goruiz (DE)",
+    "logout": "Abmelden"
+  },
+  "pages": {
+    "welcome": {
+      "title": "Willkommen bei Krankentransport GoRuiz",
+      "login": "Anmelden",
+      "register": "Registrieren"
+    }
+  }
+}
