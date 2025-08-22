@@ -7,16 +7,16 @@ const WorkerDashboard = () => {
       <h1 className="text-2xl font-bold mb-6 text-center">Panel del Trabajador</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+        <Link to="/profile" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+          <h2 className="text-lg font-semibold mb-2">👤 Perfil</h2>
+          <p className="text-sm text-gray-600">Edita tu información personal</p>
+        </Link>
 
         <Link to="/dienst" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
           <h2 className="text-lg font-semibold mb-2">📅 Dienstplan</h2>
           <p className="text-sm text-gray-600">Consulta tus días asignados</p>
         </Link>
 
-        <Link to="/profile" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
-          <h2 className="text-lg font-semibold mb-2">👤 Perfil</h2>
-          <p className="text-sm text-gray-600">Edita tu información personal</p>
-        </Link>
 
         <Link to="/my-workday" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
           <h2 className="text-lg font-semibold mb-2">📋 Mi jornada de hoy</h2>
