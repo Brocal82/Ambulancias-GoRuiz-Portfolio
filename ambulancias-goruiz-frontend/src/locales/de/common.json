@@ -121,6 +121,65 @@
         "title": "🛠 Kleidung",
         "desc": "Demnächst"
       }
+    },
+    "profile": {
+      "title": "Benutzerprofil",
+      "loading": "Wird geladen...",
+      "messages": {
+        "loadError": "Fehler beim Laden des Profils",
+        "saved": "✅ Änderungen gespeichert",
+        "saveError": "❌ Fehler beim Speichern des Profils",
+        "docDeleted": "✅ Dokument gelöscht",
+        "docDeleteError": "❌ Dokument konnte nicht gelöscht werden",
+        "removeImageSuccess": "✅ Profilbild entfernt",
+        "removeImageError": "❌ Fehler beim Entfernen des Bildes",
+        "missingRequired": "Erforderliche Daten zum Aktualisieren des Profils fehlen."
+      },
+      "labels": {
+        "name": "Vorname",
+        "lastName": "Nachname",
+        "email": "E-Mail",
+        "ambulanceRole": "Rolle im Rettungsdienst",
+        "pscheinExpiry": "Ablaufdatum des P-Schein",
+        "address": "Adresse",
+        "phone": "Telefon",
+        "emergencyPhone": "Notfalltelefon",
+        "documents": "Dokumente hochladen (PDF)",
+        "uploadedDocs": "📄 Hochgeladene Dokumente:"
+      },
+      "placeholders": {
+        "name": "Dein Vorname",
+        "lastName": "Dein Nachname",
+        "address": "Straße und Hausnummer",
+        "phone": "Telefonnummer",
+        "emergencyPhone": "Notfallkontakt"
+      },
+      "image": {
+        "alt": "Profilfoto",
+        "changeTitle": "Klicke, um das Profilbild zu ändern",
+        "remove": "❌ Bild entfernen",
+        "emailLocked": "Diese E-Mail kann nicht geändert werden",
+        "removeButtonTitle": "Profilbild löschen"
+      },
+      "documents": {
+        "upload": "Dokument hochladen",
+        "noneSelected": "Keine Dateien ausgewählt",
+        "view": "Dokument ansehen",
+        "deleteTitle": "Dokument löschen"
+      },
+      "roles": {
+        "driver": "🚑 Fahrer",
+        "medic": "🩺 Sanitäter",
+        "both": "🟰 Beide"
+      },
+      "pschein": {
+        "expired": "❌ Der P-Schein ist abgelaufen",
+        "warning": "⚠️ Der P-Schein läuft in weniger als 6 Monaten ab"
+      },
+      "actions": {
+        "save": "Änderungen speichern",
+        "close": "Schließen"
+      }
     }
   }
 }

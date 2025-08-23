@@ -121,6 +121,65 @@
         "title": "🛠 Clothing",
         "desc": "Coming soon"
       }
+    },
+    "profile": {
+      "title": "User Profile",
+      "loading": "Loading...",
+      "messages": {
+        "loadError": "Error loading profile",
+        "saved": "✅ Changes saved",
+        "saveError": "❌ Error saving profile",
+        "docDeleted": "✅ Document deleted",
+        "docDeleteError": "❌ Could not delete the document",
+        "removeImageSuccess": "✅ Profile image removed",
+        "removeImageError": "❌ Error removing the image",
+        "missingRequired": "Missing required data to update the profile."
+      },
+      "labels": {
+        "name": "First name",
+        "lastName": "Last name",
+        "email": "Email",
+        "ambulanceRole": "Ambulance role",
+        "pscheinExpiry": "P-Schein expiry date",
+        "address": "Address",
+        "phone": "Phone",
+        "emergencyPhone": "Emergency phone",
+        "documents": "Upload documents (PDF)",
+        "uploadedDocs": "📄 Uploaded documents:"
+      },
+      "placeholders": {
+        "name": "Your first name",
+        "lastName": "Your last name",
+        "address": "Street and number",
+        "phone": "Phone number",
+        "emergencyPhone": "Emergency contact number"
+      },
+      "image": {
+        "alt": "Profile photo",
+        "changeTitle": "Click to change profile image",
+        "remove": "❌ Remove image",
+        "emailLocked": "This email cannot be modified",
+        "removeButtonTitle": "Delete profile image"
+      },
+      "documents": {
+        "upload": "Upload document",
+        "noneSelected": "No files selected",
+        "view": "View document",
+        "deleteTitle": "Delete document"
+      },
+      "roles": {
+        "driver": "🚑 Driver",
+        "medic": "🩺 Medic",
+        "both": "🟰 Both"
+      },
+      "pschein": {
+        "expired": "❌ The P-Schein is expired",
+        "warning": "⚠️ The P-Schein expires in less than 6 months"
+      },
+      "actions": {
+        "save": "Save changes",
+        "close": "Close"
+      }
     }
   }
 }

@@ -121,6 +121,65 @@
         "title": "🛠 Ropa",
         "desc": "Próximamente"
       }
+    },
+    "profile": {
+      "title": "Perfil de Usuario",
+      "loading": "Cargando...",
+      "messages": {
+        "loadError": "Error al cargar el perfil",
+        "saved": "✅ Cambios guardados correctamente",
+        "saveError": "❌ Error al guardar el perfil",
+        "docDeleted": "✅ Documento eliminado",
+        "docDeleteError": "❌ No se pudo eliminar el documento",
+        "removeImageSuccess": "✅ Imagen de perfil eliminada",
+        "removeImageError": "❌ Error al eliminar la imagen",
+        "missingRequired": "Faltan datos obligatorios para actualizar el perfil."
+      },
+      "labels": {
+        "name": "Nombre",
+        "lastName": "Apellidos",
+        "email": "Email",
+        "ambulanceRole": "Rol en ambulancia",
+        "pscheinExpiry": "Fecha de caducidad del P-Schein",
+        "address": "Dirección",
+        "phone": "Teléfono",
+        "emergencyPhone": "Teléfono de emergencia",
+        "documents": "Subir documentos (PDF)",
+        "uploadedDocs": "📄 Documentos subidos:"
+      },
+      "placeholders": {
+        "name": "Tu nombre",
+        "lastName": "Tus apellidos",
+        "address": "Calle y número",
+        "phone": "Número de teléfono",
+        "emergencyPhone": "Número de contacto en caso de emergencia"
+      },
+      "image": {
+        "alt": "Foto de perfil",
+        "changeTitle": "Haz clic para cambiar la imagen de perfil",
+        "remove": "❌ Quitar imagen",
+        "emailLocked": "Este email no puede modificarse",
+        "removeButtonTitle": "Eliminar imagen de perfil"
+      },
+      "documents": {
+        "upload": "Subir Documento",
+        "noneSelected": "No hay archivos seleccionados",
+        "view": "Ver documento",
+        "deleteTitle": "Eliminar documento"
+      },
+      "roles": {
+        "driver": "🚑 Conductor",
+        "medic": "🩺 Sanitario",
+        "both": "🟰 Ambos"
+      },
+      "pschein": {
+        "expired": "❌ El P-Schein está caducado",
+        "warning": "⚠️ El P-Schein caduca en menos de 6 meses"
+      },
+      "actions": {
+        "save": "Guardar cambios",
+        "close": "Cerrar"
+      }
     }
   }
 }
