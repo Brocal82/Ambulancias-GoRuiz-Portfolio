@@ -1,105 +1,73 @@
-// frontend/src/pages/AdminDashboard.tsx
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const AdminDashboard = () => {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-2xl font-bold mb-6 text-center">Panel del Administrador</h1>
+      <h1 className="text-2xl font-bold mb-6 text-center">
+        {t('pages.adminDashboard.title')}
+      </h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-        <Link
-          to="/admin/users"
-          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
-        >
-          <h2 className="text-lg font-semibold mb-2">👥 Trabajadores</h2>
-          <p className="text-sm text-gray-600">Gestiona los perfiles de usuario</p>
-        </Link>
-        <Link
-          to="/admin/diensts"
-          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
-        >
-          <h2 className="text-lg font-semibold mb-2">📅 Dienstplan</h2>
-          <p className="text-sm text-gray-600">Edita los servicios semanales</p>
+        <Link to="/admin/users" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+          <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.users.title')}</h2>
+          <p className="text-sm text-gray-600">{t('pages.adminDashboard.users.desc')}</p>
         </Link>
 
-
-        <Link
-          to="/admin/summaries"
-          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
-        >
-          <h2 className="text-lg font-semibold mb-2">📄 Reportes Finales</h2>
-          <p className="text-sm text-gray-600">Ver cierres de jornada enviados</p>
+        <Link to="/admin/diensts" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+          <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.diensts.title')}</h2>
+          <p className="text-sm text-gray-600">{t('pages.adminDashboard.diensts.desc')}</p>
         </Link>
 
-
-        <Link
-          to="/admin/hospitals"
-          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
-        >
-          <h2 className="text-lg font-semibold mb-2">🏥 Hospitales</h2>
-          <p className="text-sm text-gray-600">Añade y edita hospitales</p>
+        <Link to="/admin/summaries" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+          <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.summaries.title')}</h2>
+          <p className="text-sm text-gray-600">{t('pages.adminDashboard.summaries.desc')}</p>
         </Link>
 
-        <Link
-          to="/admin/ambulances"
-          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
-        >
-          <h2 className="text-lg font-semibold mb-2">🚑 Ambulancias</h2>
-          <p className="text-sm text-gray-600">Añade y edita ambulancias</p>
+        <Link to="/admin/hospitals" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+          <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.hospitals.title')}</h2>
+          <p className="text-sm text-gray-600">{t('pages.adminDashboard.hospitals.desc')}</p>
         </Link>
 
-        
-
-        <Link
-          to="/admin/mechanics"
-          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
-        >
-          <h2 className="text-lg font-semibold mb-2">🔧 Mecánicos</h2>
-          <p className="text-sm text-gray-600">Revisa reportes de ambulancias</p>
+        <Link to="/admin/ambulances" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+          <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.ambulances.title')}</h2>
+          <p className="text-sm text-gray-600">{t('pages.adminDashboard.ambulances.desc')}</p>
         </Link>
 
-
-        <Link
-          to="/admin/vacations"
-          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
-        >
-          <h2 className="text-lg font-semibold mb-2">🌴 Vacaciones</h2>
-          <p className="text-sm text-gray-600">Gestiona solicitudes del equipo</p>
+        <Link to="/admin/mechanics" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+          <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.mechanics.title')}</h2>
+          <p className="text-sm text-gray-600">{t('pages.adminDashboard.mechanics.desc')}</p>
         </Link>
 
-
-
-        <Link
-          to="/admin/appointments"
-          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
-        >
-          <h2 className="text-lg font-semibold mb-2">🗓️ Citas</h2>
-          <p className="text-sm text-gray-600">Calendario y solicitudes</p>
+        <Link to="/admin/vacations" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+          <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.vacations.title')}</h2>
+          <p className="text-sm text-gray-600">{t('pages.adminDashboard.vacations.desc')}</p>
         </Link>
-        <Link
-          to="/admin/messages"
-          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
-        >
-          <h2 className="text-lg font-semibold mb-2">✉️ Mensajes</h2>
-          <p className="text-sm text-gray-600">Envía comunicados importantes</p>
+
+        <Link to="/admin/appointments" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+          <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.appointments.title')}</h2>
+          <p className="text-sm text-gray-600">{t('pages.adminDashboard.appointments.desc')}</p>
         </Link>
-        
+
+        <Link to="/admin/messages" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+          <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.messages.title')}</h2>
+          <p className="text-sm text-gray-600">{t('pages.adminDashboard.messages.desc')}</p>
+        </Link>
+
         <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
-          <h2 className="text-lg font-semibold mb-2">🛠 Nóminas/Docs/Firma</h2>
-          <p className="text-sm text-gray-600">Próximamente</p>
+          <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.payrollDocs.title')}</h2>
+          <p className="text-sm text-gray-600">{t('pages.adminDashboard.payrollDocs.desc')}</p>
         </div>
 
         <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
-          <h2 className="text-lg font-semibold mb-2">🛠 Ropa</h2>
-          <p className="text-sm text-gray-600">Próximamente</p>
+          <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.clothes.title')}</h2>
+          <p className="text-sm text-gray-600">{t('pages.adminDashboard.clothes.desc')}</p>
         </div>
-
-
       </div>
     </div>
   );
 };
 
 export default AdminDashboard;
-
-

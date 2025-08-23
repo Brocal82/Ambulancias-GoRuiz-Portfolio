@@ -27,6 +27,100 @@
       "submit": "Sign up",
       "success": "Registration successful. Redirecting to login...",
       "genericError": "Registration failed"
+    },
+    "adminDashboard": {
+      "title": "Admin Dashboard",
+      "users": {
+        "title": "👥 Workers",
+        "desc": "Manage user profiles"
+      },
+      "diensts": {
+        "title": "📅 Duty roster",
+        "desc": "Edit weekly services"
+      },
+      "summaries": {
+        "title": "📄 Final reports",
+        "desc": "View submitted day closures"
+      },
+      "hospitals": {
+        "title": "🏥 Hospitals",
+        "desc": "Add and edit hospitals"
+      },
+      "ambulances": {
+        "title": "🚑 Ambulances",
+        "desc": "Add and edit ambulances"
+      },
+      "mechanics": {
+        "title": "🔧 Mechanics",
+        "desc": "Review ambulance reports"
+      },
+      "vacations": {
+        "title": "🌴 Vacations",
+        "desc": "Manage team requests"
+      },
+      "appointments": {
+        "title": "🗓️ Appointments",
+        "desc": "Calendar and requests"
+      },
+      "messages": {
+        "title": "✉️ Messages",
+        "desc": "Send important announcements"
+      },
+      "payrollDocs": {
+        "title": "🛠 Payroll/Docs/Signature",
+        "desc": "Coming soon"
+      },
+      "clothes": {
+        "title": "🛠 Clothing",
+        "desc": "Coming soon"
+      }
+    },
+    "workerDashboard": {
+      "title": "Worker Dashboard",
+      "profile": {
+        "title": "👤 Profile",
+        "desc": "Edit your personal information"
+      },
+      "dienst": {
+        "title": "📅 Duty roster",
+        "desc": "See your assigned days"
+      },
+      "workday": {
+        "title": "📋 Today’s workday",
+        "desc": "Record and manage your daily trips"
+      },
+      "praemien": {
+        "title": "🎖 Bonuses",
+        "desc": "Check your monthly progress"
+      },
+      "hospitals": {
+        "title": "🏥 Hospitals",
+        "desc": "View available hospitals"
+      },
+      "messages": {
+        "title": "📨 Messages",
+        "desc": "Read admin messages"
+      },
+      "vacations": {
+        "title": "🌴 Vacations",
+        "desc": "Manage your vacation requests"
+      },
+      "appointments": {
+        "title": "🗓️ Appointments",
+        "desc": "Request and manage appointments"
+      },
+      "payrollDocs": {
+        "title": "🛠 Payroll/Documents",
+        "desc": "Coming soon"
+      },
+      "game": {
+        "title": "🛠 Game/Training",
+        "desc": "Coming soon"
+      },
+      "clothes": {
+        "title": "🛠 Clothing",
+        "desc": "Coming soon"
+      }
     }
   }
 }

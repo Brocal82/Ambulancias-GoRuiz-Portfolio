@@ -27,6 +27,100 @@
       "submit": "Registrarse",
       "success": "Registro exitoso. Redirigiendo al login...",
       "genericError": "Error al registrar"
+    },
+    "adminDashboard": {
+      "title": "Panel del Administrador",
+      "users": {
+        "title": "👥 Trabajadores",
+        "desc": "Gestiona los perfiles de usuario"
+      },
+      "diensts": {
+        "title": "📅 Dienstplan",
+        "desc": "Edita los servicios semanales"
+      },
+      "summaries": {
+        "title": "📄 Reportes Finales",
+        "desc": "Ver cierres de jornada enviados"
+      },
+      "hospitals": {
+        "title": "🏥 Hospitales",
+        "desc": "Añade y edita hospitales"
+      },
+      "ambulances": {
+        "title": "🚑 Ambulancias",
+        "desc": "Añade y edita ambulancias"
+      },
+      "mechanics": {
+        "title": "🔧 Mecánicos",
+        "desc": "Revisa reportes de ambulancias"
+      },
+      "vacations": {
+        "title": "🌴 Vacaciones",
+        "desc": "Gestiona solicitudes del equipo"
+      },
+      "appointments": {
+        "title": "🗓️ Citas",
+        "desc": "Calendario y solicitudes"
+      },
+      "messages": {
+        "title": "✉️ Mensajes",
+        "desc": "Envía comunicados importantes"
+      },
+      "payrollDocs": {
+        "title": "🛠 Nóminas/Docs/Firma",
+        "desc": "Próximamente"
+      },
+      "clothes": {
+        "title": "🛠 Ropa",
+        "desc": "Próximamente"
+      }
+    },
+    "workerDashboard": {
+      "title": "Panel del Trabajador",
+      "profile": {
+        "title": "👤 Perfil",
+        "desc": "Edita tu información personal"
+      },
+      "dienst": {
+        "title": "📅 Horario de turnos",
+        "desc": "Consulta tus días asignados"
+      },
+      "workday": {
+        "title": "📋 Mi jornada de hoy",
+        "desc": "Registra y gestiona tus viajes diarios"
+      },
+      "praemien": {
+        "title": "🎖 Premios",
+        "desc": "Consulta tu progreso mensual"
+      },
+      "hospitals": {
+        "title": "🏥 Hospitales",
+        "desc": "Ver hospitales disponibles"
+      },
+      "messages": {
+        "title": "📨 Mensajes",
+        "desc": "Lee los mensajes del administrador"
+      },
+      "vacations": {
+        "title": "🌴 Vacaciones",
+        "desc": "Gestiona tus solicitudes de vacaciones"
+      },
+      "appointments": {
+        "title": "🗓️ Citas",
+        "desc": "Pide y gestiona tus citas"
+      },
+      "payrollDocs": {
+        "title": "🛠 Nóminas/Documentos",
+        "desc": "Próximamente"
+      },
+      "game": {
+        "title": "🛠 Juego/Formacion",
+        "desc": "Próximamente"
+      },
+      "clothes": {
+        "title": "🛠 Ropa",
+        "desc": "Próximamente"
+      }
     }
   }
 }

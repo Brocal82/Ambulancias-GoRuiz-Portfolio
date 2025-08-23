@@ -27,6 +27,100 @@
       "submit": "Registrieren",
       "success": "Erfolgreich registriert. Weiterleitung zum Login...",
       "genericError": "Fehler bei der Registrierung"
+    },
+    "adminDashboard": {
+      "title": "Administrator-Panel",
+      "users": {
+        "title": "👥 Mitarbeitende",
+        "desc": "Verwalte Benutzerprofile"
+      },
+      "diensts": {
+        "title": "📅 Dienstplan",
+        "desc": "Wöchentliche Dienste bearbeiten"
+      },
+      "summaries": {
+        "title": "📄 Tagesabschlüsse",
+        "desc": "Gesendete Tagesabschlüsse ansehen"
+      },
+      "hospitals": {
+        "title": "🏥 Krankenhäuser",
+        "desc": "Krankenhäuser hinzufügen und bearbeiten"
+      },
+      "ambulances": {
+        "title": "🚑 Rettungswagen",
+        "desc": "Rettungswagen hinzufügen und bearbeiten"
+      },
+      "mechanics": {
+        "title": "🔧 Mechaniker",
+        "desc": "Fahrzeugmeldungen prüfen"
+      },
+      "vacations": {
+        "title": "🌴 Urlaub",
+        "desc": "Team-Anträge verwalten"
+      },
+      "appointments": {
+        "title": "🗓️ Termine",
+        "desc": "Kalender und Anfragen"
+      },
+      "messages": {
+        "title": "✉️ Nachrichten",
+        "desc": "Wichtige Mitteilungen senden"
+      },
+      "payrollDocs": {
+        "title": "🛠 Löhne/Dokumente/Signatur",
+        "desc": "Demnächst"
+      },
+      "clothes": {
+        "title": "🛠 Kleidung",
+        "desc": "Demnächst"
+      }
+    },
+    "workerDashboard": {
+      "title": "Mitarbeiter-Panel",
+      "profile": {
+        "title": "👤 Profil",
+        "desc": "Persönliche Daten bearbeiten"
+      },
+      "dienst": {
+        "title": "📅 Dienstplan",
+        "desc": "Deine zugewiesenen Tage ansehen"
+      },
+      "workday": {
+        "title": "📋 Mein heutiger Arbeitstag",
+        "desc": "Tägliche Fahrten erfassen und verwalten"
+      },
+      "praemien": {
+        "title": "🎖 Prämien",
+        "desc": "Monatlichen Fortschritt ansehen"
+      },
+      "hospitals": {
+        "title": "🏥 Krankenhäuser",
+        "desc": "Verfügbare Krankenhäuser ansehen"
+      },
+      "messages": {
+        "title": "📨 Nachrichten",
+        "desc": "Nachrichten des Admin lesen"
+      },
+      "vacations": {
+        "title": "🌴 Urlaub",
+        "desc": "Deine Urlaubsanträge verwalten"
+      },
+      "appointments": {
+        "title": "🗓️ Termine",
+        "desc": "Termine anfragen und verwalten"
+      },
+      "payrollDocs": {
+        "title": "🛠 Löhne/Dokumente",
+        "desc": "Demnächst"
+      },
+      "game": {
+        "title": "🛠 Spiel/Schulung",
+        "desc": "Demnächst"
+      },
+      "clothes": {
+        "title": "🛠 Kleidung",
+        "desc": "Demnächst"
+      }
     }
   }
 }
