@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { DateRange } from 'react-date-range';
 import type { RangeKeyDict } from 'react-date-range';
-
 import { addDays } from 'date-fns';
-import 'react-date-range/dist/styles.css'; // estilos básicos
-import 'react-date-range/dist/theme/default.css'; // tema por defecto
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
 import { useAuth } from '../../hooks/useAuth';
 import { createVacationRequest } from '../../api/vacation';
+import { useTranslation } from 'react-i18next';
 
 interface VacationRequestFormProps {
   onSuccess?: () => void;
@@ -14,6 +14,7 @@ interface VacationRequestFormProps {
 
 const VacationRequestForm = ({ onSuccess }: VacationRequestFormProps) => {
   const { token } = useAuth();
+  const { t } = useTranslation();
 
   const [selectionRange, setSelectionRange] = useState({
     startDate: new Date(),
@@ -37,7 +38,7 @@ const VacationRequestForm = ({ onSuccess }: VacationRequestFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) {
-      setMessage('Debes iniciar sesión para solicitar vacaciones.');
+      setMessage(t('pages.vacations.requestForm.mustLogin'));
       return;
     }
 
@@ -49,10 +50,10 @@ const VacationRequestForm = ({ onSuccess }: VacationRequestFormProps) => {
         startDate: selectionRange.startDate.toISOString(),
         endDate: selectionRange.endDate.toISOString(),
       });
-      setMessage('Solicitud enviada correctamente.');
-      if (onSuccess) onSuccess(); // Notificar éxito al padre
+      setMessage(t('pages.vacations.requestForm.success'));
+      if (onSuccess) onSuccess();
     } catch (error) {
-      setMessage('Error al enviar la solicitud. Inténtalo de nuevo.');
+      setMessage(t('pages.vacations.requestForm.error'));
     } finally {
       setLoading(false);
     }
@@ -60,7 +61,7 @@ const VacationRequestForm = ({ onSuccess }: VacationRequestFormProps) => {
 
   return (
     <div className="max-w-md mx-auto bg-white p-4 rounded shadow">
-      <h2 className="text-xl font-semibold mb-4">Solicitar Vacaciones</h2>
+      <h2 className="text-xl font-semibold mb-4">{t('pages.vacations.requestForm.title')}</h2>
 
       <DateRange
         ranges={[selectionRange]}
@@ -70,7 +71,7 @@ const VacationRequestForm = ({ onSuccess }: VacationRequestFormProps) => {
       />
 
       {message && (
-        <p className={`mt-2 ${message.includes('correctamente') ? 'text-green-600' : 'text-red-600'}`}>
+        <p className={`mt-2 ${message === t('pages.vacations.requestForm.success') ? 'text-green-600' : 'text-red-600'}`}>
           {message}
         </p>
       )}
@@ -80,7 +81,7 @@ const VacationRequestForm = ({ onSuccess }: VacationRequestFormProps) => {
         onClick={handleSubmit}
         className="mt-4 w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50"
       >
-        {loading ? 'Enviando...' : 'Enviar solicitud'}
+        {loading ? t('pages.vacations.requestForm.sending') : t('pages.vacations.requestForm.send')}
       </button>
     </div>
   );

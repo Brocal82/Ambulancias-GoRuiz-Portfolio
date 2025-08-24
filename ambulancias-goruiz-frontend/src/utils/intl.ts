@@ -26,3 +26,15 @@ export const formatNumber = (
   const lang = getCurrentLang();
   return new Intl.NumberFormat(lang, options).format(value);
 };
+
+export const monthLabel = (
+  year: number,
+  monthIndex: number,
+  options?: Intl.DateTimeFormatOptions
+): string => {
+  const lang = getCurrentLang();
+  return new Intl.DateTimeFormat(lang, { month: "long", ...options }).format(
+    new Date(year, monthIndex, 1)
+  );
+};
+

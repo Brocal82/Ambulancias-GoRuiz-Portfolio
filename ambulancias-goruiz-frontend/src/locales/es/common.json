@@ -181,7 +181,7 @@
         "close": "Cerrar"
       }
     },
-        "assignmentModal": {
+    "assignmentModal": {
       "title": "Detalle del día: {{date}}",
       "labels": {
         "startTime": "Hora inicio",
@@ -226,7 +226,7 @@
         "deleteError": "❌ Error al eliminar el assignment."
       }
     },
-        "hospitals": {
+    "hospitals": {
       "adminPage": {
         "title": "Gestión de hospitales",
         "filters": {
@@ -309,6 +309,107 @@
           "updated": "Hospital actualizado correctamente",
           "updateError": "Error al actualizar hospital"
         }
+      }
+    },
+    "vacations": {
+      "adminPage": {
+        "title": "Solicitudes de Vacaciones",
+        "loading": "Cargando solicitudes...",
+        "error": "Error al cargar las solicitudes.",
+        "empty": "No hay solicitudes de vacaciones.",
+        "table": {
+          "user": "Usuario",
+          "startDate": "Fecha Inicio",
+          "endDate": "Fecha Fin",
+          "status": "Estado",
+          "actions": "Acciones"
+        },
+        "status": {
+          "pending": "pendiente",
+          "accepted": "aceptada",
+          "cancelled": "rechazada",
+          "option_sent": "opción enviada"
+        },
+        "actions": {
+          "accept": "Aceptar",
+          "altOption": "Opción 2",
+          "cancel": "Cancelar",
+          "delete": "Eliminar",
+          "confirm": "Confirmar",
+          "sending": "Enviando...",
+          "confirmDelete": "¿Seguro que quieres eliminar esta solicitud?",
+          "cancelMessagePlaceholder": "Mensaje para el trabajador",
+          "confirmRejection": "Confirmar rechazo",
+          "close": "Cerrar"
+        },
+        "badges": {
+          "requested": "Solicitado:",
+          "proposal": "Propuesta:",
+          "note": "Nota:"
+        }
+      },
+      "workerPage": {
+        "title": "Mis Solicitudes de Vacaciones",
+        "toggleOpenForm": "Nueva solicitud",
+        "toggleCloseForm": "Cerrar formulario",
+        "empty": "No hay solicitudes de vacaciones.",
+        "loading": "Cargando solicitudes...",
+        "error": "Error al cargar las solicitudes.",
+        "formSuccess": "Solicitud enviada correctamente."
+      },
+      "requestForm": {
+        "title": "Solicitar Vacaciones",
+        "send": "Enviar solicitud",
+        "sending": "Enviando...",
+        "mustLogin": "Debes iniciar sesión para solicitar vacaciones.",
+        "success": "Solicitud enviada correctamente.",
+        "error": "Error al enviar la solicitud. Inténtalo de nuevo."
+      },
+      "list": {
+        "empty": "No hay solicitudes de vacaciones."
+      },
+      "listItem": {
+        "requested": "Solicitado:",
+        "proposal": "Propuesta:",
+        "note": "Nota:",
+        "accept": "Aceptar",
+        "reject": "Rechazar",
+        "status": {
+          "accepted": "Aceptada",
+          "cancelled": "Rechazada",
+          "option_sent": "Opción enviada",
+          "pending": "Pendiente"
+        }
+      },
+      "monthGrid": {
+        "title": "Vacaciones por mes · {{year}}",
+        "count": "{{count}} solicitudes",
+        "emptyBadge": "Vacío",
+        "ariaOpenMonth": "Abrir mes {{label}} {{year}}"
+      },
+      "monthModal": {
+        "countLine": "{{count}} solicitudes en este mes",
+        "filters": {
+          "userPlaceholder": "Filtrar por usuario...",
+          "statusLabel": "Filtrar por estado",
+          "all": "Todos los estados",
+          "pending": "Pendiente",
+          "accepted": "Aceptada",
+          "cancelled": "Rechazada",
+          "option_sent": "Opción enviada",
+          "sortToggle": "Orden: inicio {{dir}}",
+          "asc": "↑",
+          "desc": "↓"
+        },
+        "empty": "No hay solicitudes en este mes.",
+        "close": "Cerrar",
+        "confirmDelete": "¿Seguro que quieres eliminar esta solicitud?"
+      },
+      "altModal": {
+        "title": "Fechas alternativas",
+        "notePlaceholder": "Nota para el trabajador (opcional)",
+        "cancel": "Cancelar",
+        "send": "Enviar opción"
       }
     }
   }

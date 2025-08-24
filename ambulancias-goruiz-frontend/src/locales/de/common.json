@@ -310,6 +310,107 @@
           "updateError": "Fehler beim Aktualisieren des Krankenhauses"
         }
       }
+    },
+    "vacations": {
+      "adminPage": {
+        "title": "Urlaubsanträge",
+        "loading": "Anträge werden geladen...",
+        "error": "Fehler beim Laden der Anträge.",
+        "empty": "Keine Urlaubsanträge.",
+        "table": {
+          "user": "Benutzer",
+          "startDate": "Beginn",
+          "endDate": "Ende",
+          "status": "Status",
+          "actions": "Aktionen"
+        },
+        "status": {
+          "pending": "ausstehend",
+          "accepted": "genehmigt",
+          "cancelled": "abgelehnt",
+          "option_sent": "Option gesendet"
+        },
+        "actions": {
+          "accept": "Genehmigen",
+          "altOption": "Alternative",
+          "cancel": "Abbrechen",
+          "delete": "Löschen",
+          "confirm": "Bestätigen",
+          "sending": "Senden...",
+          "confirmDelete": "Möchtest du diesen Antrag wirklich löschen?",
+          "cancelMessagePlaceholder": "Nachricht für den Mitarbeiter",
+          "confirmRejection": "Ablehnung bestätigen",
+          "close": "Schließen"
+        },
+        "badges": {
+          "requested": "Angefragt:",
+          "proposal": "Vorschlag:",
+          "note": "Hinweis:"
+        }
+      },
+      "workerPage": {
+        "title": "Meine Urlaubsanträge",
+        "toggleOpenForm": "Neuer Antrag",
+        "toggleCloseForm": "Formular schließen",
+        "empty": "Keine Urlaubsanträge.",
+        "loading": "Anträge werden geladen...",
+        "error": "Fehler beim Laden der Anträge.",
+        "formSuccess": "Antrag erfolgreich gesendet."
+      },
+      "requestForm": {
+        "title": "Urlaub beantragen",
+        "send": "Antrag senden",
+        "sending": "Senden...",
+        "mustLogin": "Du musst angemeldet sein, um Urlaub zu beantragen.",
+        "success": "Antrag erfolgreich gesendet.",
+        "error": "Fehler beim Senden des Antrags. Bitte erneut versuchen."
+      },
+      "list": {
+        "empty": "Keine Urlaubsanträge."
+      },
+      "listItem": {
+        "requested": "Angefragt:",
+        "proposal": "Vorschlag:",
+        "note": "Hinweis:",
+        "accept": "Annehmen",
+        "reject": "Ablehnen",
+        "status": {
+          "accepted": "Genehmigt",
+          "cancelled": "Abgelehnt",
+          "option_sent": "Option gesendet",
+          "pending": "Ausstehend"
+        }
+      },
+      "monthGrid": {
+        "title": "Urlaub nach Monaten · {{year}}",
+        "count": "{{count}} Anträge",
+        "emptyBadge": "Leer",
+        "ariaOpenMonth": "Monat {{label}} {{year}} öffnen"
+      },
+      "monthModal": {
+        "countLine": "{{count}} Anträge in diesem Monat",
+        "filters": {
+          "userPlaceholder": "Nach Benutzer filtern...",
+          "statusLabel": "Nach Status filtern",
+          "all": "Alle Status",
+          "pending": "Ausstehend",
+          "accepted": "Genehmigt",
+          "cancelled": "Abgelehnt",
+          "option_sent": "Option gesendet",
+          "sortToggle": "Sortierung: Beginn {{dir}}",
+          "asc": "↑",
+          "desc": "↓"
+        },
+        "empty": "Keine Anträge in diesem Monat.",
+        "close": "Schließen",
+        "confirmDelete": "Möchtest du diesen Antrag wirklich löschen?"
+      },
+      "altModal": {
+        "title": "Alternative Termine",
+        "notePlaceholder": "Hinweis für den Mitarbeiter (optional)",
+        "cancel": "Abbrechen",
+        "send": "Option senden"
+      }
     }
   }
 }

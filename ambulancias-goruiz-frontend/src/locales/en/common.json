@@ -181,7 +181,7 @@
         "close": "Close"
       }
     },
-     "assignmentModal": {
+    "assignmentModal": {
       "title": "Day details: {{date}}",
       "labels": {
         "startTime": "Start time",
@@ -310,7 +310,107 @@
           "updateError": "Error updating hospital"
         }
       }
+    },
+    "vacations": {
+      "adminPage": {
+        "title": "Vacation Requests",
+        "loading": "Loading requests...",
+        "error": "Error loading requests.",
+        "empty": "No vacation requests.",
+        "table": {
+          "user": "User",
+          "startDate": "Start Date",
+          "endDate": "End Date",
+          "status": "Status",
+          "actions": "Actions"
+        },
+        "status": {
+          "pending": "pending",
+          "accepted": "accepted",
+          "cancelled": "rejected",
+          "option_sent": "option sent"
+        },
+        "actions": {
+          "accept": "Accept",
+          "altOption": "Alt option",
+          "cancel": "Cancel",
+          "delete": "Delete",
+          "confirm": "Confirm",
+          "sending": "Sending...",
+          "confirmDelete": "Are you sure you want to delete this request?",
+          "cancelMessagePlaceholder": "Message for the worker",
+          "confirmRejection": "Confirm rejection",
+          "close": "Close"
+        },
+        "badges": {
+          "requested": "Requested:",
+          "proposal": "Proposed:",
+          "note": "Note:"
+        }
+      },
+      "workerPage": {
+        "title": "My Vacation Requests",
+        "toggleOpenForm": "New request",
+        "toggleCloseForm": "Close form",
+        "empty": "No vacation requests.",
+        "loading": "Loading requests...",
+        "error": "Error loading requests.",
+        "formSuccess": "Request submitted successfully."
+      },
+      "requestForm": {
+        "title": "Request Vacation",
+        "send": "Submit request",
+        "sending": "Sending...",
+        "mustLogin": "You must be logged in to request vacations.",
+        "success": "Request submitted successfully.",
+        "error": "Error submitting the request. Try again."
+      },
+      "list": {
+        "empty": "No vacation requests."
+      },
+      "listItem": {
+        "requested": "Requested:",
+        "proposal": "Proposed:",
+        "note": "Note:",
+        "accept": "Accept",
+        "reject": "Reject",
+        "status": {
+          "accepted": "Accepted",
+          "cancelled": "Rejected",
+          "option_sent": "Option sent",
+          "pending": "Pending"
+        }
+      },
+      "monthGrid": {
+        "title": "Vacations by month · {{year}}",
+        "count": "{{count}} requests",
+        "emptyBadge": "Empty",
+        "ariaOpenMonth": "Open month {{label}} {{year}}"
+      },
+      "monthModal": {
+        "countLine": "{{count}} requests in this month",
+        "filters": {
+          "userPlaceholder": "Filter by user...",
+          "statusLabel": "Filter by status",
+          "all": "All statuses",
+          "pending": "Pending",
+          "accepted": "Accepted",
+          "cancelled": "Rejected",
+          "option_sent": "Option sent",
+          "sortToggle": "Sort: start {{dir}}",
+          "asc": "↑",
+          "desc": "↓"
+        },
+        "empty": "No requests in this month.",
+        "close": "Close",
+        "confirmDelete": "Are you sure you want to delete this request?"
+      },
+      "altModal": {
+        "title": "Alternative dates",
+        "notePlaceholder": "Note for the worker (optional)",
+        "cancel": "Cancel",
+        "send": "Send option"
+      }
     }
-
   }
 }

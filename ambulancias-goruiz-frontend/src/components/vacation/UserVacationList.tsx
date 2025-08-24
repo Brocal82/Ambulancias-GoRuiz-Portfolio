@@ -1,7 +1,7 @@
-// src/components/vacation/UserVacationList.tsx
 import React from 'react';
 import type { IVacationRequest } from '../../types/vacationRequest';
 import UserVacationListItem from './UserVacationListItem';
+import { useTranslation } from 'react-i18next';
 
 type Props = {
   requests: IVacationRequest[];
@@ -9,10 +9,12 @@ type Props = {
 };
 
 const UserVacationList: React.FC<Props> = ({ requests, onRespondAlternative }) => {
+  const { t } = useTranslation();
+
   if (!requests || requests.length === 0) {
     return (
       <div className="rounded-xl border border-dashed p-6 text-center text-sm text-gray-600">
-        No hay solicitudes de vacaciones.
+        {t('pages.vacations.list.empty')}
       </div>
     );
   }
