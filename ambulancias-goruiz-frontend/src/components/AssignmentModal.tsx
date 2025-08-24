@@ -9,6 +9,7 @@ import "react-toastify/dist/ReactToastify.css";
 import type { UserRef, DienstAssignment } from "../types/dienst";
 import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import type { FlexibleAssignment } from "../types/assignment";
+import { useTranslation } from "react-i18next";
 
 interface AssignmentModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 }) => {
   const { role: userRole, token } = useAuth();
   const isAdmin = userRole === "admin";
+  const { t } = useTranslation();
 
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -40,34 +42,27 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [availableMedics, setAvailableMedics] = useState<UserRef[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    if (assignment) {
+      setStartTime(assignment.startTime);
+      setEndTime(assignment.endTime);
 
-useEffect(() => {
-  if (assignment) {
-    setStartTime(assignment.startTime);
-    setEndTime(assignment.endTime);
+      if (typeof assignment.ambulanceId === "string") {
+        setAmbulanceId(assignment.ambulanceId);
+      } else if (assignment.ambulanceId && typeof assignment.ambulanceId === "object") {
+        setAmbulanceId(assignment.ambulanceId._id);
+      } else {
+        setAmbulanceId(""); // fallback
+      }
 
-    if (typeof assignment.ambulanceId === "string") {
-      setAmbulanceId(assignment.ambulanceId);
-    } else if (assignment.ambulanceId && typeof assignment.ambulanceId === "object") {
-      setAmbulanceId(assignment.ambulanceId._id);
-    } else {
-      setAmbulanceId(""); // fallback
+      setSelectedDriverId(
+        typeof assignment.driver === "string" ? assignment.driver : assignment.driver?._id || ""
+      );
+      setSelectedMedicId(
+        typeof assignment.medic === "string" ? assignment.medic : assignment.medic?._id || ""
+      );
     }
-
-    setSelectedDriverId(
-      typeof assignment.driver === "string"
-        ? assignment.driver
-        : assignment.driver?._id || ""
-    );
-    setSelectedMedicId(
-      typeof assignment.medic === "string"
-        ? assignment.medic
-        : assignment.medic?._id || ""
-    );
-  }
-}, [assignment]);
-
-
+  }, [assignment]);
 
   useEffect(() => {
     const fetchAvailableUsers = async () => {
@@ -82,14 +77,14 @@ useEffect(() => {
         setAvailableMedics(mergeWithAssigned(medics, assignment, "medic"));
       } catch (error) {
         console.error("Error al cargar usuarios disponibles:", error);
-        toast.error("❌ Error al cargar usuarios.");
+        toast.error(t("pages.assignmentModal.toasts.loadUsersError"));
       }
     };
 
     fetchAvailableUsers();
-  }, [token, isAdmin, date, assignment]);
+  }, [token, isAdmin, date, assignment, t]);
 
-    useEffect(() => {
+  useEffect(() => {
     const fetchAmbulances = async () => {
       if (!token) return;
       try {
@@ -100,12 +95,12 @@ useEffect(() => {
         setAmbulances(data);
       } catch (error) {
         console.error("❌ Error al cargar ambulancias:", error);
-        toast.error("❌ Error al cargar ambulancias");
+        toast.error(t("pages.assignmentModal.toasts.loadAmbulancesError"));
       }
     };
 
     fetchAmbulances();
-  }, [token]);
+  }, [token, t]);
 
   if (!isOpen) return null;
 
@@ -113,17 +108,17 @@ useEffect(() => {
     if (!token) return;
 
     if (!dienstId) {
-      toast.error("🚫 ID del Dienst no definido.");
+      toast.error(t("pages.assignmentModal.toasts.dienstIdMissing"));
       return;
     }
 
     if (!startTime || !endTime || !ambulanceId) {
-      toast.warn("🚫 Rellena hora de inicio, fin y ambulancia.");
+      toast.warn(t("pages.assignmentModal.toasts.requiredFields"));
       return;
     }
 
     if (selectedDriverId && selectedMedicId && selectedDriverId === selectedMedicId) {
-      toast.warn("🚫 No puedes asignar a la misma persona como conductor y sanitario.");
+      toast.warn(t("pages.assignmentModal.toasts.samePerson"));
       return;
     }
 
@@ -139,29 +134,29 @@ useEffect(() => {
       };
 
       await updateDienstPartial(dienstId, { assignments: [updatedAssignment] }, token);
-      toast.success("✅ Cambios guardados");
+      toast.success(t("pages.assignmentModal.toasts.saved"));
       onClose();
       onUpdate();
     } catch (error) {
       console.error("Error al guardar cambios:", error);
-      toast.error("❌ Error al guardar cambios");
+      toast.error(t("pages.assignmentModal.toasts.saveError"));
     }
   };
 
   const handleDelete = async () => {
     if (!token || !assignment) return;
-    const confirmed = confirm("¿Seguro que deseas eliminar este día?");
+    const confirmed = confirm(t("pages.assignmentModal.confirm.delete"));
     if (!confirmed) return;
 
     setIsLoading(true);
     try {
       await removeAssignment(dienstId, assignment.date, token);
-      toast.success("✅ Día eliminado");
+      toast.success(t("pages.assignmentModal.toasts.deleted"));
       onClose();
       onUpdate();
     } catch (error) {
       console.error("Error al eliminar assignment:", error);
-      toast.error("❌ Error al eliminar el assignment.");
+      toast.error(t("pages.assignmentModal.toasts.deleteError"));
     } finally {
       setIsLoading(false);
     }
@@ -170,12 +165,16 @@ useEffect(() => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full">
-        <h3 className="text-lg font-bold mb-4">Detalle del día: {date}</h3>
+        <h3 className="text-lg font-bold mb-4">
+          {t("pages.assignmentModal.title", { date })}
+        </h3>
 
         <div className="space-y-2">
           {isAdmin ? (
             <>
-              <label htmlFor="startTime" className="block text-sm font-medium">Hora inicio</label>
+              <label htmlFor="startTime" className="block text-sm font-medium">
+                {t("pages.assignmentModal.labels.startTime")}
+              </label>
               <input
                 id="startTime"
                 type="time"
@@ -184,8 +183,9 @@ useEffect(() => {
                 className="w-full border p-1 rounded"
               />
 
-
-              <label htmlFor="endTime" className="block text-sm font-medium">Hora fin</label>
+              <label htmlFor="endTime" className="block text-sm font-medium">
+                {t("pages.assignmentModal.labels.endTime")}
+              </label>
               <input
                 id="endTime"
                 type="time"
@@ -194,29 +194,29 @@ useEffect(() => {
                 className="w-full border p-1 rounded"
               />
 
+              <label htmlFor="ambulanceId" className="block text-sm font-medium">
+                {t("pages.assignmentModal.labels.ambulance")}
+              </label>
+              <select
+                id="ambulanceId"
+                value={ambulanceId}
+                onChange={(e) => setAmbulanceId(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 bg-white"
+              >
+                <option value="">{t("pages.assignmentModal.placeholders.selectAmbulance")}</option>
+                {ambulances.map((amb) => (
+                  <option key={amb._id} value={amb._id}>
+                    {amb.ambulanceNumber}
+                  </option>
+                ))}
+              </select>
 
-              <label htmlFor="ambulanceId" className="block text-sm font-medium">🚑 Ambulancia</label>
-                <select
-                  id="ambulanceId"
-                  value={ambulanceId}
-                  onChange={(e) => setAmbulanceId(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 bg-white"
-                >
-                  <option value="">-- Selecciona una ambulancia --</option>
-                  {ambulances.map((amb) => (
-                    <option key={amb._id} value={amb._id}>
-                      {amb.ambulanceNumber}
-                    </option>
-                  ))}
-                </select>
-
-
-
-
-              <label htmlFor="driverSelect" className="block text-sm font-medium">Conductor</label>
+              <label htmlFor="driverSelect" className="block text-sm font-medium">
+                {t("pages.assignmentModal.labels.driver")}
+              </label>
               <select
                 id="driverSelect"
-                title="Selecciona conductor"
+                title={t("pages.assignmentModal.placeholders.selectDriver")}
                 value={selectedDriverId}
                 onChange={(e) => {
                   const id = e.target.value;
@@ -225,17 +225,12 @@ useEffect(() => {
                 }}
                 className="w-full border p-1 rounded"
               >
-                <option value="">-- Selecciona conductor --</option>
+                <option value="">{t("pages.assignmentModal.placeholders.selectDriver")}</option>
                 {availableDrivers.map((user) => {
                   const status = getPscheinStatus(user.pscheinExpiry);
-                  const icon =
-                    status === "warning" ? " ⚠️" : status === "expired" ? " ❌" : "";
+                  const icon = status === "warning" ? " ⚠️" : status === "expired" ? " ❌" : "";
                   return (
-                    <option
-                      key={user._id}
-                      value={user._id}
-                      disabled={status === "expired"}
-                    >
+                    <option key={user._id} value={user._id} disabled={status === "expired"}>
                       {user.lastName}, {user.name}
                       {icon}
                     </option>
@@ -243,10 +238,12 @@ useEffect(() => {
                 })}
               </select>
 
-              <label htmlFor="medicSelect" className="block text-sm font-medium">Sanitario</label>
+              <label htmlFor="medicSelect" className="block text-sm font-medium">
+                {t("pages.assignmentModal.labels.medic")}
+              </label>
               <select
                 id="medicSelect"
-                title="Selecciona sanitario"
+                title={t("pages.assignmentModal.placeholders.selectMedic")}
                 value={selectedMedicId}
                 onChange={(e) => {
                   const id = e.target.value;
@@ -255,7 +252,7 @@ useEffect(() => {
                 }}
                 className="w-full border p-1 rounded"
               >
-                <option value="">-- Selecciona sanitario --</option>
+                <option value="">{t("pages.assignmentModal.placeholders.selectMedic")}</option>
                 {availableMedics.map((user) => (
                   <option key={user._id} value={user._id}>
                     {user.lastName}, {user.name}
@@ -263,13 +260,12 @@ useEffect(() => {
                 ))}
               </select>
 
-
               <button
                 onClick={handleSave}
                 disabled={isLoading}
                 className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
               >
-                {isLoading ? "Guardando..." : "Guardar cambios"}
+                {isLoading ? t("pages.assignmentModal.buttons.saving") : t("pages.assignmentModal.buttons.save")}
               </button>
 
               {assignment && (
@@ -278,25 +274,37 @@ useEffect(() => {
                   disabled={isLoading}
                   className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
                 >
-                  {isLoading ? "Eliminando..." : "Eliminar este día"}
+                  {isLoading ? t("pages.assignmentModal.buttons.deleting") : t("pages.assignmentModal.buttons.deleteDay")}
                 </button>
               )}
             </>
           ) : assignment ? (
-              <>
-                <p>🕒 {startTime} - {endTime}</p>
-                <p>
-                  🚑 Ambulancia:{" "}
-                  {typeof assignment?.ambulanceId === "object"
-                    ? assignment.ambulanceId?.ambulanceNumber ?? "—"
-                    : assignment?.ambulanceNumber ?? "—"}
-                </p>
+            <>
+              <p>🕒 {startTime} - {endTime}</p>
+              <p>
+                {t("pages.assignmentModal.readOnly.ambulance")}{" "}
+                {typeof assignment?.ambulanceId === "object"
+                  ? assignment.ambulanceId?.ambulanceNumber ?? t("pages.assignmentModal.info.dash")
+                  : assignment?.ambulanceNumber ?? t("pages.assignmentModal.info.dash")}
+              </p>
 
-                <p>👨‍✈️ Conductor: {typeof assignment.driver === "object" ? `${assignment.driver.lastName}, ${assignment.driver.name}` : "(ID)"}</p>
-                <p>👩‍⚕️ Sanitario: {typeof assignment.medic === "object" ? `${assignment.medic.lastName}, ${assignment.medic.name}` : "(ID)"}</p>
-              </>
+              <p>
+                {t("pages.assignmentModal.readOnly.driver")}{" "}
+                {typeof assignment.driver === "object"
+                  ? `${assignment.driver.lastName}, ${assignment.driver.name}`
+                  : "(ID)"}
+              </p>
+              <p>
+                {t("pages.assignmentModal.readOnly.medic")}{" "}
+                {typeof assignment.medic === "object"
+                  ? `${assignment.medic.lastName}, ${assignment.medic.name}`
+                  : "(ID)"}
+              </p>
+            </>
           ) : (
-            <p className="text-green-700 font-semibold text-center text-xl">🌴 Día libre</p>
+            <p className="text-green-700 font-semibold text-center text-xl">
+              {t("pages.assignmentModal.info.dayOff")}
+            </p>
           )}
         </div>
 
@@ -305,7 +313,7 @@ useEffect(() => {
           disabled={isLoading}
           className="mt-4 w-full bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded"
         >
-          Cerrar
+          {t("pages.assignmentModal.buttons.close")}
         </button>
       </div>
     </div>
@@ -313,6 +321,3 @@ useEffect(() => {
 };
 
 export default AssignmentModal;
-
-
-

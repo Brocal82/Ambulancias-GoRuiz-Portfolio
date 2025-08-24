@@ -180,6 +180,51 @@
         "save": "Änderungen speichern",
         "close": "Schließen"
       }
+    },
+    "assignmentModal": {
+      "title": "Tagesdetails: {{date}}",
+      "labels": {
+        "startTime": "Beginn",
+        "endTime": "Ende",
+        "ambulance": "🚑 Rettungswagen",
+        "driver": "Fahrer",
+        "medic": "Sanitäter"
+      },
+      "placeholders": {
+        "selectAmbulance": "-- Rettungswagen auswählen --",
+        "selectDriver": "-- Fahrer auswählen --",
+        "selectMedic": "-- Sanitäter auswählen --"
+      },
+      "readOnly": {
+        "ambulance": "🚑 Rettungswagen:",
+        "driver": "👨‍✈️ Fahrer:",
+        "medic": "👩‍⚕️ Sanitäter:"
+      },
+      "buttons": {
+        "save": "Änderungen speichern",
+        "deleteDay": "Diesen Tag löschen",
+        "close": "Schließen",
+        "saving": "Speichern...",
+        "deleting": "Löschen..."
+      },
+      "info": {
+        "dayOff": "🌴 Frei",
+        "dash": "—"
+      },
+      "confirm": {
+        "delete": "Bist du sicher, dass du diesen Tag löschen möchtest?"
+      },
+      "toasts": {
+        "loadUsersError": "❌ Fehler beim Laden der Benutzer.",
+        "loadAmbulancesError": "❌ Fehler beim Laden der Rettungswagen",
+        "dienstIdMissing": "🚫 Dienst-ID nicht definiert.",
+        "requiredFields": "🚫 Beginn, Ende und Rettungswagen ausfüllen.",
+        "samePerson": "🚫 Dieselbe Person kann nicht Fahrer und Sanitäter sein.",
+        "saved": "✅ Änderungen gespeichert",
+        "saveError": "❌ Fehler beim Speichern",
+        "deleted": "✅ Tag gelöscht",
+        "deleteError": "❌ Fehler beim Löschen des Assignments."
+      }
     }
   }
 }

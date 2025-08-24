@@ -180,6 +180,51 @@
         "save": "Save changes",
         "close": "Close"
       }
+    },
+     "assignmentModal": {
+      "title": "Day details: {{date}}",
+      "labels": {
+        "startTime": "Start time",
+        "endTime": "End time",
+        "ambulance": "🚑 Ambulance",
+        "driver": "Driver",
+        "medic": "Medic"
+      },
+      "placeholders": {
+        "selectAmbulance": "-- Select an ambulance --",
+        "selectDriver": "-- Select driver --",
+        "selectMedic": "-- Select medic --"
+      },
+      "readOnly": {
+        "ambulance": "🚑 Ambulance:",
+        "driver": "👨‍✈️ Driver:",
+        "medic": "👩‍⚕️ Medic:"
+      },
+      "buttons": {
+        "save": "Save changes",
+        "deleteDay": "Delete this day",
+        "close": "Close",
+        "saving": "Saving...",
+        "deleting": "Deleting..."
+      },
+      "info": {
+        "dayOff": "🌴 Day off",
+        "dash": "—"
+      },
+      "confirm": {
+        "delete": "Are you sure you want to delete this day?"
+      },
+      "toasts": {
+        "loadUsersError": "❌ Error loading users.",
+        "loadAmbulancesError": "❌ Error loading ambulances",
+        "dienstIdMissing": "🚫 Dienst ID not defined.",
+        "requiredFields": "🚫 Fill start time, end time and ambulance.",
+        "samePerson": "🚫 You can't assign the same person as driver and medic.",
+        "saved": "✅ Changes saved",
+        "saveError": "❌ Error saving changes",
+        "deleted": "✅ Day deleted",
+        "deleteError": "❌ Error deleting assignment."
+      }
     }
   }
 }

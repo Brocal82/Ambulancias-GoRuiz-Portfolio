@@ -180,6 +180,51 @@
         "save": "Guardar cambios",
         "close": "Cerrar"
       }
+    },
+        "assignmentModal": {
+      "title": "Detalle del día: {{date}}",
+      "labels": {
+        "startTime": "Hora inicio",
+        "endTime": "Hora fin",
+        "ambulance": "🚑 Ambulancia",
+        "driver": "Conductor",
+        "medic": "Sanitario"
+      },
+      "placeholders": {
+        "selectAmbulance": "-- Selecciona una ambulancia --",
+        "selectDriver": "-- Selecciona conductor --",
+        "selectMedic": "-- Selecciona sanitario --"
+      },
+      "readOnly": {
+        "ambulance": "🚑 Ambulancia:",
+        "driver": "👨‍✈️ Conductor:",
+        "medic": "👩‍⚕️ Sanitario:"
+      },
+      "buttons": {
+        "save": "Guardar cambios",
+        "deleteDay": "Eliminar este día",
+        "close": "Cerrar",
+        "saving": "Guardando...",
+        "deleting": "Eliminando..."
+      },
+      "info": {
+        "dayOff": "🌴 Día libre",
+        "dash": "—"
+      },
+      "confirm": {
+        "delete": "¿Seguro que deseas eliminar este día?"
+      },
+      "toasts": {
+        "loadUsersError": "❌ Error al cargar usuarios.",
+        "loadAmbulancesError": "❌ Error al cargar ambulancias",
+        "dienstIdMissing": "🚫 ID del Dienst no definido.",
+        "requiredFields": "🚫 Rellena hora de inicio, fin y ambulancia.",
+        "samePerson": "🚫 No puedes asignar a la misma persona como conductor y sanitario.",
+        "saved": "✅ Cambios guardados",
+        "saveError": "❌ Error al guardar cambios",
+        "deleted": "✅ Día eliminado",
+        "deleteError": "❌ Error al eliminar el assignment."
+      }
     }
   }
 }
