@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { IVacationRequest } from '../../types/vacationRequest';
-import { filterRequestsByMonth, getYearMonths } from '../../utils/vacationMonthUtils';
+import { filterRequestsByMonth } from '../../utils/vacationMonthUtils';
 import { updateVacationRequest, deleteVacationRequest } from '../../api/vacation';
 import AlternativeDateModal from './AlternativeDateModal';
 import { useAuth } from '../../hooks/useAuth';
