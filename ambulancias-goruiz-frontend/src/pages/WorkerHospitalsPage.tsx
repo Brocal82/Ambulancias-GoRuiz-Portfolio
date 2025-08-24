@@ -3,10 +3,13 @@ import { getAllHospitals } from '../api/hospitals';
 import type { Hospital } from '../types/hospital';
 import HospitalDetailsModal from '../components/hospitals/HospitalDetailsModal';
 import { useAuth } from '../hooks/useAuth';
-import Select from 'react-select'
+import Select from 'react-select';
+import { useTranslation } from 'react-i18next';
 
 const WorkerHospitalsPage = () => {
   const { token } = useAuth();
+  const { t } = useTranslation();
+
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(null);
 
@@ -34,16 +37,16 @@ const WorkerHospitalsPage = () => {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4 text-center">🏥 Hospitales disponibles</h1>
+      <h1 className="text-2xl font-bold mb-4 text-center">{t('pages.hospitals.workerPage.title')}</h1>
 
       <div className="flex flex-col gap-4 max-w-sm mx-auto mb-6">
         <div>
           <label htmlFor="hospitalNameSearch" className="block text-sm font-medium mb-1">
-              Filtrar por nombre:
+            {t('pages.hospitals.workerPage.filters.byName')}
           </label>
           <input
             type="text"
-            placeholder="Buscar hospital por nombre..."
+            placeholder={t('pages.hospitals.workerPage.filters.byNamePlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="border px-3 py-2 rounded w-full"
@@ -51,29 +54,27 @@ const WorkerHospitalsPage = () => {
         </div>
         <div>
           <label htmlFor="specialtyFilter" className="block text-sm font-medium mb-1">
-              Filtrar por especialidad:
+            {t('pages.hospitals.workerPage.filters.bySpecialty')}
           </label>
           <Select
             id="specialtyFilter"
             options={[
-              { value: '', label: 'Todas las especialidades' },
+              { value: '', label: t('pages.hospitals.workerPage.filters.allSpecialties') },
               ...allSpecialties.map((spec) => ({ value: spec, label: spec })),
             ]}
             value={
               selectedSpecialty === ''
-                ? { value: '', label: 'Todas las especialidades' }
+                ? { value: '', label: t('pages.hospitals.workerPage.filters.allSpecialties') }
                 : { value: selectedSpecialty, label: selectedSpecialty }
             }
             onChange={(option) => setSelectedSpecialty(option?.value || '')}
             className="text-sm"
             classNamePrefix="react-select"
-            placeholder="Selecciona una especialidad"
+            placeholder={t('pages.hospitals.workerPage.filters.selectSpecialtyPlaceholder')}
             isSearchable
           />
         </div>
-
       </div>
-
 
       <ul className="space-y-4">
         {filteredHospitals.map((hospital) => (
@@ -96,7 +97,9 @@ const WorkerHospitalsPage = () => {
                   : 'bg-red-100 text-red-800'
               }`}
             >
-              {hospital.isOpen ? '🟢 Abierto' : '🔴 Cerrado'}
+              {hospital.isOpen
+                ? t('pages.hospitals.workerPage.status.open')
+                : t('pages.hospitals.workerPage.status.closed')}
             </div>
           </li>
         ))}

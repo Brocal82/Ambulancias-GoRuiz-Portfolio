@@ -225,6 +225,91 @@
         "deleted": "✅ Día eliminado",
         "deleteError": "❌ Error al eliminar el assignment."
       }
+    },
+        "hospitals": {
+      "adminPage": {
+        "title": "Gestión de hospitales",
+        "filters": {
+          "byName": "Filtrar por nombre:",
+          "byNamePlaceholder": "Escribe el nombre del hospital",
+          "bySpecialty": "Filtrar por especialidad:",
+          "allSpecialties": "Todas las especialidades",
+          "selectSpecialtyPlaceholder": "Selecciona una especialidad"
+        },
+        "actions": {
+          "toggleFormOpen": "➕ Añadir hospital",
+          "toggleFormClose": "Cancelar",
+          "saveHospital": "Guardar hospital",
+          "edit": "Editar",
+          "delete": "Eliminar"
+        },
+        "form": {
+          "name": "Nombre",
+          "address": "Dirección",
+          "phone": "Teléfono",
+          "specialties": "Especialidades (coma separadas)"
+        },
+        "status": {
+          "label": "Estado del hospital",
+          "open": "🟢 Abierto",
+          "closed": "🔴 Cerrado"
+        },
+        "confirm": {
+          "delete": "¿Estás seguro de que quieres eliminar este hospital?"
+        },
+        "toasts": {
+          "loadError": "Error al cargar hospitales",
+          "stateUpdated": "Estado del hospital actualizado",
+          "stateUpdateError": "Error al actualizar estado",
+          "created": "Hospital añadido correctamente",
+          "createError": "Error al añadir hospital",
+          "deleted": "Hospital eliminado",
+          "deleteError": "Error al eliminar hospital"
+        }
+      },
+      "workerPage": {
+        "title": "🏥 Hospitales disponibles",
+        "filters": {
+          "byName": "Filtrar por nombre:",
+          "byNamePlaceholder": "Buscar hospital por nombre...",
+          "bySpecialty": "Filtrar por especialidad:",
+          "allSpecialties": "Todas las especialidades",
+          "selectSpecialtyPlaceholder": "Selecciona una especialidad"
+        },
+        "status": {
+          "open": "🟢 Abierto",
+          "closed": "🔴 Cerrado"
+        }
+      },
+      "detailsModal": {
+        "address": "Dirección:",
+        "phone": "Teléfono:",
+        "specialties": "Especialidades:",
+        "close": "Cerrar"
+      },
+      "editModal": {
+        "title": "Editar hospital",
+        "inputs": {
+          "name": "Nombre",
+          "address": "Dirección",
+          "phone": "Teléfono"
+        },
+        "specialties": {
+          "title": "Especialidades",
+          "newPlaceholder": "Nueva especialidad"
+        },
+        "status": {
+          "openCheckbox": "Hospital abierto"
+        },
+        "buttons": {
+          "cancel": "Cancelar",
+          "save": "Guardar"
+        },
+        "toasts": {
+          "updated": "Hospital actualizado correctamente",
+          "updateError": "Error al actualizar hospital"
+        }
+      }
     }
   }
 }

@@ -225,6 +225,92 @@
         "deleted": "✅ Day deleted",
         "deleteError": "❌ Error deleting assignment."
       }
+    },
+    "hospitals": {
+      "adminPage": {
+        "title": "Hospital management",
+        "filters": {
+          "byName": "Filter by name:",
+          "byNamePlaceholder": "Type the hospital name",
+          "bySpecialty": "Filter by specialty:",
+          "allSpecialties": "All specialties",
+          "selectSpecialtyPlaceholder": "Select a specialty"
+        },
+        "actions": {
+          "toggleFormOpen": "➕ Add hospital",
+          "toggleFormClose": "Cancel",
+          "saveHospital": "Save hospital",
+          "edit": "Edit",
+          "delete": "Delete"
+        },
+        "form": {
+          "name": "Name",
+          "address": "Address",
+          "phone": "Phone",
+          "specialties": "Specialties (comma separated)"
+        },
+        "status": {
+          "label": "Hospital status",
+          "open": "🟢 Open",
+          "closed": "🔴 Closed"
+        },
+        "confirm": {
+          "delete": "Are you sure you want to delete this hospital?"
+        },
+        "toasts": {
+          "loadError": "Error loading hospitals",
+          "stateUpdated": "Hospital status updated",
+          "stateUpdateError": "Error updating status",
+          "created": "Hospital added successfully",
+          "createError": "Error adding hospital",
+          "deleted": "Hospital deleted",
+          "deleteError": "Error deleting hospital"
+        }
+      },
+      "workerPage": {
+        "title": "🏥 Available hospitals",
+        "filters": {
+          "byName": "Filter by name:",
+          "byNamePlaceholder": "Search hospital by name...",
+          "bySpecialty": "Filter by specialty:",
+          "allSpecialties": "All specialties",
+          "selectSpecialtyPlaceholder": "Select a specialty"
+        },
+        "status": {
+          "open": "🟢 Open",
+          "closed": "🔴 Closed"
+        }
+      },
+      "detailsModal": {
+        "address": "Address:",
+        "phone": "Phone:",
+        "specialties": "Specialties:",
+        "close": "Close"
+      },
+      "editModal": {
+        "title": "Edit hospital",
+        "inputs": {
+          "name": "Name",
+          "address": "Address",
+          "phone": "Phone"
+        },
+        "specialties": {
+          "title": "Specialties",
+          "newPlaceholder": "New specialty"
+        },
+        "status": {
+          "openCheckbox": "Hospital open"
+        },
+        "buttons": {
+          "cancel": "Cancel",
+          "save": "Save"
+        },
+        "toasts": {
+          "updated": "Hospital updated successfully",
+          "updateError": "Error updating hospital"
+        }
+      }
     }
+
   }
 }

@@ -225,6 +225,91 @@
         "deleted": "✅ Tag gelöscht",
         "deleteError": "❌ Fehler beim Löschen des Assignments."
       }
+    },
+    "hospitals": {
+      "adminPage": {
+        "title": "Krankenhausverwaltung",
+        "filters": {
+          "byName": "Nach Name filtern:",
+          "byNamePlaceholder": "Krankenhausname eingeben",
+          "bySpecialty": "Nach Fachrichtung filtern:",
+          "allSpecialties": "Alle Fachrichtungen",
+          "selectSpecialtyPlaceholder": "Fachrichtung auswählen"
+        },
+        "actions": {
+          "toggleFormOpen": "➕ Krankenhaus hinzufügen",
+          "toggleFormClose": "Abbrechen",
+          "saveHospital": "Krankenhaus speichern",
+          "edit": "Bearbeiten",
+          "delete": "Löschen"
+        },
+        "form": {
+          "name": "Name",
+          "address": "Adresse",
+          "phone": "Telefon",
+          "specialties": "Fachrichtungen (durch Komma getrennt)"
+        },
+        "status": {
+          "label": "Krankenhausstatus",
+          "open": "🟢 Offen",
+          "closed": "🔴 Geschlossen"
+        },
+        "confirm": {
+          "delete": "Möchtest du dieses Krankenhaus wirklich löschen?"
+        },
+        "toasts": {
+          "loadError": "Fehler beim Laden der Krankenhäuser",
+          "stateUpdated": "Krankenhausstatus aktualisiert",
+          "stateUpdateError": "Fehler beim Aktualisieren des Status",
+          "created": "Krankenhaus erfolgreich hinzugefügt",
+          "createError": "Fehler beim Hinzufügen des Krankenhauses",
+          "deleted": "Krankenhaus gelöscht",
+          "deleteError": "Fehler beim Löschen des Krankenhauses"
+        }
+      },
+      "workerPage": {
+        "title": "🏥 Verfügbare Krankenhäuser",
+        "filters": {
+          "byName": "Nach Name filtern:",
+          "byNamePlaceholder": "Nach Krankenhausname suchen...",
+          "bySpecialty": "Nach Fachrichtung filtern:",
+          "allSpecialties": "Alle Fachrichtungen",
+          "selectSpecialtyPlaceholder": "Fachrichtung auswählen"
+        },
+        "status": {
+          "open": "🟢 Offen",
+          "closed": "🔴 Geschlossen"
+        }
+      },
+      "detailsModal": {
+        "address": "Adresse:",
+        "phone": "Telefon:",
+        "specialties": "Fachrichtungen:",
+        "close": "Schließen"
+      },
+      "editModal": {
+        "title": "Krankenhaus bearbeiten",
+        "inputs": {
+          "name": "Name",
+          "address": "Adresse",
+          "phone": "Telefon"
+        },
+        "specialties": {
+          "title": "Fachrichtungen",
+          "newPlaceholder": "Neue Fachrichtung"
+        },
+        "status": {
+          "openCheckbox": "Krankenhaus geöffnet"
+        },
+        "buttons": {
+          "cancel": "Abbrechen",
+          "save": "Speichern"
+        },
+        "toasts": {
+          "updated": "Krankenhaus erfolgreich aktualisiert",
+          "updateError": "Fehler beim Aktualisieren des Krankenhauses"
+        }
+      }
     }
   }
 }

@@ -3,6 +3,7 @@ import type { Hospital } from '../../types/hospital';
 import { updateHospital } from '../../api/hospitals';
 import { useAuth } from '../../hooks/useAuth';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   hospital: Hospital;
@@ -13,6 +14,7 @@ interface Props {
 
 const HospitalEditModal = ({ hospital, allSpecialties, onClose, onUpdated }: Props) => {
   const { token } = useAuth();
+  const { t } = useTranslation();
 
   const [form, setForm] = useState({
     name: hospital.name,
@@ -32,47 +34,42 @@ const HospitalEditModal = ({ hospital, allSpecialties, onClose, onUpdated }: Pro
     setForm({ ...form, isOpen: !form.isOpen });
   };
 
-const handleAddSpecialty = () => {
-  const trimmed = newSpecialty.trim();
-  console.log('✅ Añadiendo:', trimmed);
-  if (trimmed && !specialties.includes(trimmed)) {
-    setSpecialties((prev) => [...prev, trimmed]);
-    setNewSpecialty('');
-  }
-};
-
+  const handleAddSpecialty = () => {
+    const trimmed = newSpecialty.trim();
+    if (trimmed && !specialties.includes(trimmed)) {
+      setSpecialties((prev) => [...prev, trimmed]);
+      setNewSpecialty('');
+    }
+  };
 
   const handleRemoveSpecialty = (spec: string) => {
     setSpecialties((prev) => prev.filter((s) => s !== spec));
   };
 
   const handleSubmit = async () => {
-    console.log('⏩ Enviando datos:', { ...form, specialties });
-
     if (!token) return;
     try {
       const updated = await updateHospital(hospital._id, { ...form, specialties }, token);
-
       onUpdated(updated);
-      toast.success('Hospital actualizado correctamente');
+      toast.success(t('pages.hospitals.editModal.toasts.updated'));
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error('Error al actualizar hospital');
+      toast.error(t('pages.hospitals.editModal.toasts.updateError'));
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">Editar hospital</h2>
+        <h2 className="text-xl font-bold mb-4">{t('pages.hospitals.editModal.title')}</h2>
 
         <input
           type="text"
           name="name"
           value={form.name}
           onChange={handleChange}
-          placeholder="Nombre"
+          placeholder={t('pages.hospitals.editModal.inputs.name')}
           className="border p-2 rounded w-full mb-2"
         />
         <input
@@ -80,7 +77,7 @@ const handleAddSpecialty = () => {
           name="address"
           value={form.address}
           onChange={handleChange}
-          placeholder="Dirección"
+          placeholder={t('pages.hospitals.editModal.inputs.address')}
           className="border p-2 rounded w-full mb-2"
         />
         <input
@@ -88,12 +85,12 @@ const handleAddSpecialty = () => {
           name="phone"
           value={form.phone}
           onChange={handleChange}
-          placeholder="Teléfono"
+          placeholder={t('pages.hospitals.editModal.inputs.phone')}
           className="border p-2 rounded w-full mb-4"
         />
 
         <div className="mb-4">
-          <h3 className="font-medium mb-1">Especialidades</h3>
+          <h3 className="font-medium mb-1">{t('pages.hospitals.editModal.specialties.title')}</h3>
           <ul className="mb-2">
             {specialties.map((spec) => (
               <li key={spec} className="flex justify-between items-center bg-gray-100 px-2 py-1 rounded mb-1 text-sm">
@@ -113,7 +110,7 @@ const handleAddSpecialty = () => {
               type="text"
               value={newSpecialty}
               onChange={(e) => setNewSpecialty(e.target.value)}
-              placeholder="Nueva especialidad"
+              placeholder={t('pages.hospitals.editModal.specialties.newPlaceholder')}
               className="border p-1 rounded w-full"
             />
             <datalist id="specialty-options">
@@ -137,16 +134,16 @@ const handleAddSpecialty = () => {
               checked={form.isOpen}
               onChange={handleToggleStatus}
             />
-            Hospital abierto
+            {t('pages.hospitals.editModal.status.openCheckbox')}
           </label>
         </div>
 
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 border rounded">
-            Cancelar
+            {t('pages.hospitals.editModal.buttons.cancel')}
           </button>
           <button onClick={handleSubmit} className="px-4 py-2 bg-green-600 text-white rounded">
-            Guardar
+            {t('pages.hospitals.editModal.buttons.save')}
           </button>
         </div>
       </div>
