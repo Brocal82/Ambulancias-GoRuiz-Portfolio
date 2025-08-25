@@ -411,6 +411,39 @@
         "cancel": "Abbrechen",
         "send": "Option senden"
       }
+    },
+    "praemien": {
+      "page": {
+        "loading": "Prämienübersicht wird geladen...",
+        "error": "Fehler beim Laden der Prämien-Daten.",
+        "title": "🎖 Monatliche Prämien-Übersicht",
+        "globalLevel": "Erreichter Gesamtlevel:",
+        "patientsPerDay": "{{level}} Patienten / Tag",
+        "dailyHistoryTitle": "Tagesverlauf",
+        "table": {
+          "date": "Datum",
+          "patients": "Patienten",
+          "empty": "Keine Daten verfügbar"
+        }
+      },
+      "levels": {
+        "none": "❌ Mindestwert nicht erreicht",
+        "7": "🥉 Prämie 7",
+        "8": "🥈 Prämie 8",
+        "9": "🎖 Prämie 9",
+        "10": "🏆 Prämie 10"
+      },
+      "history": {
+        "loading": "Monatshistorie wird geladen...",
+        "empty": "Keine Monatshistorie verfügbar.",
+        "title": "Monatliche Prämien-Historie",
+        "table": {
+          "year": "Jahr",
+          "month": "Monat",
+          "avgPatients": "Durchschnitt Patienten",
+          "level": "Prämienstufe"
+        }
+      }
     }
   }
 }

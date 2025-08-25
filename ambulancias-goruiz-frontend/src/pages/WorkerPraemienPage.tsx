@@ -1,16 +1,18 @@
 //src/pages/WorkerPraemienPage.tsx
 import { useEffect, useState } from 'react';
-import { format } from 'date-fns';
 import { getMonthlyPraemienSummary } from '../api/praemien';
 import type { MonthlyPraemienDay } from '../api/praemien';
 import { saveMonthlyPraemie } from '../api/praemienHistory';
 import WorkerPraemienHistory from './WorkerPraemienHistory';
 import { useAuth } from '../hooks/useAuth';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '../utils/intl';
 
 const PRAMIEN_LEVELS = [7, 8, 9, 10];
 
 const WorkerPraemienPage = () => {
   const { token } = useAuth();
+  const { t } = useTranslation();
 
   const [summaries, setSummaries] = useState<MonthlyPraemienDay[]>([]);
   const [media, setMedia] = useState(0);
@@ -30,42 +32,45 @@ const WorkerPraemienPage = () => {
         setMedia(data.averagePatients);
       })
       .catch(() => {
-        setError('Error al cargar los datos de premios.');
+        setError(t('pages.praemien.page.error'));
       })
       .finally(() => {
         setLoading(false);
       });
-  }, [token]);
+  }, [token, t]);
 
-useEffect(() => {
-  if (media >= 10) setPremieLevel('🏆 Prämie 10');
-  else if (media >= 9) setPremieLevel('🎖 Prämie 9');
-  else if (media >= 8) setPremieLevel('🥈 Prämie 8');
-  else if (media >= 7) setPremieLevel('🥉 Prämie 7');
-  else setPremieLevel('❌ No alcanza mínimo');
-}, [media]);
+  // Determina el nivel global mostrado (solo cambia el texto)
+  useEffect(() => {
+    if (media >= 10) setPremieLevel(t('pages.praemien.levels.10'));
+    else if (media >= 9) setPremieLevel(t('pages.praemien.levels.9'));
+    else if (media >= 8) setPremieLevel(t('pages.praemien.levels.8'));
+    else if (media >= 7) setPremieLevel(t('pages.praemien.levels.7'));
+    else setPremieLevel(t('pages.praemien.levels.none'));
+  }, [media, t]);
 
-useEffect(() => {
-  if (!token) return;
-  if (media === 0) return;
+  // Guarda el resumen mensual (mantenemos la lógica; guardamos la etiqueta localizada actual)
+  useEffect(() => {
+    if (!token) return;
+    if (media === 0) return;
 
-  console.log('Guardando resumen mensual...', { media, premieLevel });
+    const now = new Date();
+    const monthString = now.toISOString().slice(0, 7); // 'YYYY-MM'
 
-  const now = new Date();
-  const monthString = now.toISOString().slice(0, 7); // 'YYYY-MM'
+    saveMonthlyPraemie(token, {
+      month: monthString,
+      averagePatients: media,
+      premieLevel,
+    })
+      .then(() => {
+        // ok
+      })
+      .catch(() => {
+        // silent warning, como antes
+        console.warn('No se pudo guardar el resumen mensual.');
+      });
+  }, [media, premieLevel, token]);
 
-  saveMonthlyPraemie(token, {
-    month: monthString,
-    averagePatients: media,
-    premieLevel,
-  })
-    .then(() => console.log('Resumen mensual guardado correctamente'))
-    .catch(() => console.warn('No se pudo guardar el resumen mensual.'));
-}, [media, premieLevel, token]);
-
-
-
-  // Calcula % cumplimiento para cada prämie y diferencia media diaria
+  // Calcula % cumplimiento y diferencia media diaria
   const calculatePraemieStats = (threshold: number) => {
     let totalDifference = 0;
     summaries.forEach((day) => {
@@ -74,10 +79,7 @@ useEffect(() => {
     const totalDays = summaries.length || 1; // evitar división por cero
     const averageDiff = totalDifference / totalDays;
 
-    const percentage = Math.min(
-      100,
-      Math.max(0, (media / threshold) * 100)
-    );
+    const percentage = Math.min(100, Math.max(0, (media / threshold) * 100));
 
     return {
       percentage,
@@ -85,19 +87,20 @@ useEffect(() => {
     };
   };
 
-  if (loading) return <p className="p-4 text-center">Cargando resumen de premios...</p>;
+  if (loading) return <p className="p-4 text-center">{t('pages.praemien.page.loading')}</p>;
   if (error) return <p className="p-4 text-center text-red-500">{error}</p>;
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <h1 className="text-3xl font-extrabold mb-6 text-center text-blue-700">
-        🎖 Resumen mensual de Prämien
+        {t('pages.praemien.page.title')}
       </h1>
 
       {/* Nivel global alcanzado */}
       {media > 0 && (
         <p className="text-center text-lg font-semibold mb-8">
-          Nivel global alcanzado: <span className="text-blue-700">{premieLevel}</span>
+          {t('pages.praemien.page.globalLevel')}{' '}
+          <span className="text-blue-700">{premieLevel}</span>
         </p>
       )}
 
@@ -111,13 +114,14 @@ useEffect(() => {
             <div key={level} className="mb-6">
               <div className="flex justify-between items-center mb-1">
                 <span className="font-semibold text-lg">
-                  {level} pacientes / día
+                  {t('pages.praemien.page.patientsPerDay', { level })}
                 </span>
                 <span
-                  className={`font-mono text-xl ${isPositive ? "text-green-600" : "text-red-600"
-                    }`}
+                  className={`font-mono text-xl ${
+                    isPositive ? 'text-green-600' : 'text-red-600'
+                  }`}
                 >
-                  {isPositive ? "+" : ""}
+                  {isPositive ? '+' : ''}
                   {averageDiff}
                 </span>
               </div>
@@ -125,12 +129,11 @@ useEffect(() => {
               {/* Barra */}
               <div className="w-full h-6 rounded bg-gray-300 overflow-hidden">
                 <div
-                  className={`h-6 rounded bg-gradient-to-r ${isPositive
-                      ? "from-green-400 to-green-600"
-                      : "from-red-400 to-red-600"
-                    }`}
+                  className={`h-6 rounded bg-gradient-to-r ${
+                    isPositive ? 'from-green-400 to-green-600' : 'from-red-400 to-red-600'
+                  }`}
                   style={{ width: `${percentage}%` }}
-                ></div>
+                />
               </div>
             </div>
           );
@@ -139,24 +142,25 @@ useEffect(() => {
 
       {/* Historial diario */}
       <div className="max-w-3xl mx-auto bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Historial diario</h2>
+        <h2 className="text-xl font-semibold mb-4">{t('pages.praemien.page.dailyHistoryTitle')}</h2>
 
         <div className="overflow-y-auto max-h-96 border rounded">
           <table className="w-full text-left table-auto border-collapse">
             <thead className="bg-blue-100 sticky top-0">
               <tr>
-                <th className="px-4 py-2 border-b border-blue-300">Fecha</th>
-                <th className="px-4 py-2 border-b border-blue-300">Pacientes</th>
+                <th className="px-4 py-2 border-b border-blue-300">
+                  {t('pages.praemien.page.table.date')}
+                </th>
+                <th className="px-4 py-2 border-b border-blue-300">
+                  {t('pages.praemien.page.table.patients')}
+                </th>
               </tr>
             </thead>
             <tbody>
               {summaries.map(({ date, totalCountedPatients }) => (
-                <tr
-                  key={date}
-                  className="hover:bg-blue-50 transition-colors cursor-default"
-                >
+                <tr key={date} className="hover:bg-blue-50 transition-colors cursor-default">
                   <td className="px-4 py-2 border-b border-gray-200">
-                    {format(new Date(date), "dd/MM/yyyy")}
+                    {formatDate(date, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                   </td>
                   <td className="px-4 py-2 border-b border-gray-200 font-semibold">
                     {totalCountedPatients}
@@ -166,7 +170,7 @@ useEffect(() => {
               {summaries.length === 0 && (
                 <tr>
                   <td colSpan={2} className="text-center py-6 text-gray-400">
-                    No hay datos disponibles
+                    {t('pages.praemien.page.table.empty')}
                   </td>
                 </tr>
               )}
@@ -174,9 +178,11 @@ useEffect(() => {
           </table>
         </div>
       </div>
+
       <WorkerPraemienHistory />
     </div>
   );
 };
 
 export default WorkerPraemienPage;
+

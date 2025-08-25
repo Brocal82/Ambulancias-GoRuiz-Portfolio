@@ -411,6 +411,39 @@
         "cancel": "Cancel",
         "send": "Send option"
       }
+    },
+    "praemien": {
+      "page": {
+        "loading": "Loading bonus summary...",
+        "error": "Failed to load bonus data.",
+        "title": "🎖 Monthly Prämien Summary",
+        "globalLevel": "Global level achieved:",
+        "patientsPerDay": "{{level}} patients / day",
+        "dailyHistoryTitle": "Daily history",
+        "table": {
+          "date": "Date",
+          "patients": "Patients",
+          "empty": "No data available"
+        }
+      },
+      "levels": {
+        "none": "❌ Minimum not reached",
+        "7": "🥉 Prämie 7",
+        "8": "🥈 Prämie 8",
+        "9": "🎖 Prämie 9",
+        "10": "🏆 Prämie 10"
+      },
+      "history": {
+        "loading": "Loading monthly history...",
+        "empty": "No monthly history available.",
+        "title": "Monthly Prämien History",
+        "table": {
+          "year": "Year",
+          "month": "Month",
+          "avgPatients": "Average patients",
+          "level": "Prämie level"
+        }
+      }
     }
   }
 }

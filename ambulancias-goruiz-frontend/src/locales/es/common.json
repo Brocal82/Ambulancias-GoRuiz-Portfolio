@@ -411,6 +411,39 @@
         "cancel": "Cancelar",
         "send": "Enviar opción"
       }
+    },
+    "praemien": {
+      "page": {
+        "loading": "Cargando resumen de premios...",
+        "error": "Error al cargar los datos de premios.",
+        "title": "🎖 Resumen mensual de Prämien",
+        "globalLevel": "Nivel global alcanzado:",
+        "patientsPerDay": "{{level}} pacientes / día",
+        "dailyHistoryTitle": "Historial diario",
+        "table": {
+          "date": "Fecha",
+          "patients": "Pacientes",
+          "empty": "No hay datos disponibles"
+        }
+      },
+      "levels": {
+        "none": "❌ No alcanza mínimo",
+        "7": "🥉 Prämie 7",
+        "8": "🥈 Prämie 8",
+        "9": "🎖 Prämie 9",
+        "10": "🏆 Prämie 10"
+      },
+      "history": {
+  "loading": "Cargando historial mensual...",
+  "empty": "No hay historial mensual disponible.",
+  "title": "Historial Mensual de Prämien",
+  "table": {
+    "year": "Año",
+    "month": "Mes",
+    "avgPatients": "Media Pacientes",
+    "level": "Nivel Prämie"
+  }
+}
     }
   }
 }
