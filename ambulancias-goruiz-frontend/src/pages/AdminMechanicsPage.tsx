@@ -7,6 +7,8 @@ import { useAuth } from "../hooks/useAuth";
 import { toast } from "react-toastify";
 import { getAllAmbulances } from "../api/ambulances";
 import type { Ambulance } from "../types/ambulance";
+// ⭐ NUEVO: importar helper para DD-MM-YYYY
+import { formatYYYYMMDDToDDMMYYYY } from "../utils/timeUtils";
 
 const AdminMechanicsPage = () => {
   const { token } = useAuth();
@@ -14,37 +16,34 @@ const AdminMechanicsPage = () => {
   const [loading, setLoading] = useState(true);
   const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if (!token) return;
 
-useEffect(() => {
-  const fetchData = async () => {
-    try {
-      if (!token) return;
+        // 🔧 Cargar reportes de avería
+        const issuesData = await getAllIssueReports(token);
+        const sortedIssues = [...issuesData].sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        setIssues(sortedIssues);
 
-      // 🔧 Cargar reportes de avería
-      const issuesData = await getAllIssueReports(token);
-      const sortedIssues = [...issuesData].sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      );
-      setIssues(sortedIssues);
+        // 🚑 Cargar ambulancias registradas
+        const ambulancesData = await getAllAmbulances(token);
+        setAmbulances(ambulancesData);
 
-      // 🚑 Cargar ambulancias registradas
-      const ambulancesData = await getAllAmbulances(token);
-      setAmbulances(ambulancesData);
+        // 👇 Agregado para debug
+        console.log("🩺 Ambulancias cargadas:", ambulancesData);
+      } catch (err) {
+        console.error("❌ Error al cargar reportes o ambulancias:", err);
+        toast.error("❌ Error al cargar reportes o ambulancias.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      // 👇 Agregado para debug
-      console.log("🩺 Ambulancias cargadas:", ambulancesData);
-    } catch (err) {
-      console.error("❌ Error al cargar reportes o ambulancias:", err);
-      toast.error("❌ Error al cargar reportes o ambulancias.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchData();
-}, [token]);
-
-
+    fetchData();
+  }, [token]);
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -64,7 +63,7 @@ useEffect(() => {
               </div>
 
               <p className="text-sm text-gray-700">
-                <strong>📅 Fecha:</strong> {issue.date}
+                <strong>📅 Fecha:</strong> {formatYYYYMMDDToDDMMYYYY(issue.date)} {/* ⭐ CAMBIO */}
               </p>
               <p className="text-sm text-gray-700">
                 <strong>⏱ Horario:</strong> {issue.startTime} – {issue.endTime}
@@ -73,16 +72,15 @@ useEffect(() => {
                 <strong>👥 Equipo:</strong> {issue.team}
               </p>
               <p className="text-sm text-gray-700">
-  <strong>🚐 Ambulancia:</strong>{" "}
-  {(() => {
-    console.log("🔍 Buscando ID:", issue.ambulanceId); // 👈 AÑADIDO
-    const amb = ambulances.find(a => a._id === issue.ambulanceId);
-    return amb
-      ? `${amb.ambulanceNumber} — ${amb.brand} ${amb.modelName} (Matrícula: ${amb.licensePlate})`
-      : `${issue.ambulanceNumber} (ID: ${issue.ambulanceId})`;
-  })()}
-</p>
-
+                <strong>🚐 Ambulancia:</strong>{" "}
+                {(() => {
+                  console.log("🔍 Buscando ID:", issue.ambulanceId);
+                  const amb = ambulances.find(a => a._id === issue.ambulanceId);
+                  return amb
+                    ? `${amb.ambulanceNumber} — ${amb.brand} ${amb.modelName} (Matrícula: ${amb.licensePlate})`
+                    : `${issue.ambulanceNumber} (ID: ${issue.ambulanceId})`;
+                })()}
+              </p>
 
               <p className="text-sm text-gray-700">
                 <strong>📏 KM finales:</strong> {issue.finalKm}

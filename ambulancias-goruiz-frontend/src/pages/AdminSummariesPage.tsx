@@ -1,9 +1,11 @@
-//frontend/src/pages/AdminSummariesPage
+// frontend/src/pages/AdminSummariesPage
 import { useEffect, useState, Fragment } from "react";
 import { getAllSummaries } from "../api/workdaySummary";
 import type { WorkdaySummary } from "../types/workdaySummary";
 import ReviewSummary from "../components/workday/ReviewSummary";
 import { useAuth } from "../hooks/useAuth";
+// ⭐ CAMBIO: importar el helper de formato
+import { formatYYYYMMDDToDDMMYYYY } from "../utils/timeUtils";
 
 const AdminSummariesPage = () => {
   const [summaries, setSummaries] = useState<WorkdaySummary[]>([]);
@@ -21,7 +23,6 @@ const AdminSummariesPage = () => {
         setSummaries(data);
         console.log("✅ Summaries recibidos:", data);
         console.log("🧾 totalRealTrips:", data.map(s => s.totalRealTrips));
-
       } catch (error) {
         console.error("❌ Error al obtener resúmenes:", error);
       } finally {
@@ -51,7 +52,8 @@ const AdminSummariesPage = () => {
 
       {Object.entries(groupedByDate).map(([date, summariesForDate]) => (
         <div key={date} className="mb-10">
-          <h2 className="text-lg font-semibold mb-2 pl-2 text-blue-700">📅 {date}</h2>
+          {/* ⭐ CAMBIO: usar el helper para mostrar DD-MM-YYYY */}
+          <h2 className="text-lg font-semibold mb-2 pl-2 text-blue-700">📅 {formatYYYYMMDDToDDMMYYYY(date)}</h2>
 
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white rounded shadow">
@@ -88,12 +90,13 @@ const AdminSummariesPage = () => {
                     return (
                       <Fragment key={key}>
                         <tr
-                          className={`border-t hover:bg-blue-50 cursor-pointer ${isExpanded
+                          className={`border-t hover:bg-blue-50 cursor-pointer ${
+                            isExpanded
                               ? "bg-blue-100"
                               : !s.isFinalClosure
-                                ? "bg-orange-50"
-                                : ""
-                            }`}
+                              ? "bg-orange-50"
+                              : ""
+                          }`}
                           onClick={() => setExpandedKey(isExpanded ? null : key)}
                         >
                           {/* Dienst / Horario */}
@@ -107,7 +110,6 @@ const AdminSummariesPage = () => {
 
                           {/* Ambulancia */}
                           <td>{s.ambulanceNumber ?? "—"}</td>
-
 
                           {/* 👥 Team */}
                           <td className="whitespace-nowrap leading-tight">
@@ -132,7 +134,6 @@ const AdminSummariesPage = () => {
 
                           {/* 🧾 Viajes */}
                           <td>{typeof s.totalRealTrips === "number" ? s.totalRealTrips : "-"}</td>
-
 
                           {/* 💰 Prämie */}
                           <td>{s.totalEffectivePatients ?? "-"}</td>
@@ -174,8 +175,6 @@ const AdminSummariesPage = () => {
                           </tr>
                         )}
                       </Fragment>
-
-
                     );
                   })}
               </tbody>

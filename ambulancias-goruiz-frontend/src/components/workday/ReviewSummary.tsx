@@ -2,6 +2,8 @@
 import React from "react";
 import type { Trip } from "../../types/trip";
 import type { AssignedDayFull } from "../../types/dienst";
+// ⭐ CAMBIO: importamos el helper de formato
+import { formatYYYYMMDDToDDMMYYYY } from "../../utils/timeUtils";
 
 // --- helper para mostrar nombre de usuario de forma segura ---
 const formatPerson = (p: any): string => {
@@ -58,7 +60,9 @@ const ReviewSummary: React.FC<Props> = ({
       <div className="flex justify-between text-sm">
         <div>
           <p>
-            📅 <strong>{assignedDay.date}</strong>
+            📅 <strong>{/* ⭐ CAMBIO */}
+              {formatYYYYMMDDToDDMMYYYY(assignedDay.date)}
+            </strong>
           </p>
           <p>
             ⏰ {assignedDay.startTime} – {assignedDay.endTime}

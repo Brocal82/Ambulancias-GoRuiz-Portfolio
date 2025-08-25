@@ -15,10 +15,11 @@ import { sendPartialClosure } from "../api/workdaySummary";
 import type { PartialSummaryPayload, FinalSummaryPayload } from "../types/workdaySummary";
 import { checkTripLogic, type TripDraft } from "../utils/tripValidators";
 import { sendFinalClosure } from "../api/workdaySummary"; // ← Asegúrate de importar esto arriba
-import { getCurrentTimeString } from "../utils/timeUtils";
+import { getCurrentTimeString, formatYYYYMMDDToDDMMYYYY } from "../utils/timeUtils";
 import { saveAmbulanceData, loadAmbulanceData, clearAmbulanceData, confirmedAmbulanceKey } from "../utils/workdayKey";
 import { getAllAmbulances } from "../api/ambulances";
 import type { Ambulance } from "../types/ambulance";
+
 
 
 
@@ -73,6 +74,8 @@ const isNowWithinDienst = (dienst: AssignedDayFull) => {
 const MyWorkday = () => {
   const { token, user } = useAuth(); // 👈 Asegúrate de tener acceso a user._id
   const today = new Date().toISOString().split("T")[0];
+
+  const todayFormatted = formatYYYYMMDDToDDMMYYYY(today);
 
   const [wasCancelled, setWasCancelled] = useState(false);
   const [countsTrip, setCountsTrip] = useState<number>(1);   // ✅ por defecto el viaje cuenta
@@ -751,7 +754,7 @@ useEffect(() => {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">📋 Mi jornada de hoy: {today}</h2>
+      <h2 className="text-2xl font-bold mb-4">📋 Mi jornada de hoy: {todayFormatted}</h2>
 
       {isClosingDay ? (
         <div className="bg-red-100 text-red-800 p-4 rounded shadow mb-6">

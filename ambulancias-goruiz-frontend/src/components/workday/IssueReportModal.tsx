@@ -1,6 +1,9 @@
+// src/components/workday/IssueReportModal.tsx
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import type { AssignedDayFull } from "../../types/dienst";
+// ⭐ NUEVO
+import { formatYYYYMMDDToDDMMYYYY } from "../../utils/timeUtils";
 
 interface Props {
   isOpen: boolean;
@@ -27,7 +30,6 @@ const IssueReportModal: React.FC<Props> = ({
   if (!isOpen) return null;
 
   const handleSend = async () => {
-
     if (!ambulanceId || ambulanceId.length < 24) {
       toast.warn("🚑 Selecciona una ambulancia válida.");
       return;
@@ -47,19 +49,18 @@ const IssueReportModal: React.FC<Props> = ({
 
     const payload = {
       dienstNumber: assignedDay.dienstNumber!,
-      date: assignedDay.date,
+      date: assignedDay.date, // ← mantenemos YYYY-MM-DD para backend
       startTime: assignedDay.startTime,
       endTime: assignedDay.endTime,
       team: `${assignedDay.driver.lastName}, ${assignedDay.driver.name} + ${assignedDay.medic.lastName}, ${assignedDay.medic.name}`,
-      ambulanceNumber: ambulanceNumber,   
-      ambulanceId,                     
+      ambulanceNumber: ambulanceNumber,
+      ambulanceId,
       finalKm: finalKmValue,
       timestamp: new Date().toISOString(),
       issueText: description.trim(),
       driver: assignedDay.driver._id,
       medic: assignedDay.medic._id,
     };
-
 
     try {
       const res = await fetch("/api/workday-summary/report-issue", {
@@ -83,7 +84,8 @@ const IssueReportModal: React.FC<Props> = ({
       <div className="bg-white p-6 rounded-lg w-full max-w-lg space-y-4">
         <h2 className="text-xl font-bold text-center">🔧 Reporte técnico de avería</h2>
         <p><strong>Dienst #</strong> {assignedDay.dienstNumber}</p>
-        <p><strong>Fecha</strong> {assignedDay.date}</p>
+        {/* ⭐ CAMBIO: fecha en DD-MM-YYYY */}
+        <p><strong>Fecha</strong> {formatYYYYMMDDToDDMMYYYY(assignedDay.date)}</p>
         <p><strong>Horario</strong> {assignedDay.startTime} – {assignedDay.endTime}</p>
         <p><strong>🚗 Conductor:</strong> {assignedDay.driver.lastName}, {assignedDay.driver.name}</p>
         <p><strong>🧑‍⚕️ Sanitario:</strong> {assignedDay.medic.lastName}, {assignedDay.medic.name}</p>
