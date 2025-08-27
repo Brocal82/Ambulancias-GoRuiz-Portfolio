@@ -444,6 +444,41 @@
           "level": "Prämie level"
         }
       }
+    },
+    "mechanics": {
+      "adminPage": {
+        "title": "🔧 Technical breakdown reports",
+        "loading": "Loading issues...",
+        "empty": "No breakdown reports yet.",
+        "dienst": "Dienst #{{num}}",
+        "labels": {
+          "date": "📅 Date:",
+          "time": "⏱ Time:",
+          "team": "👥 Team:",
+          "ambulance": "🚐 Ambulance:",
+          "finalKm": "📏 Final KM:",
+          "issue": "🛠️ Issue:"
+        },
+        "ambulanceFallback": "{{number}} (ID: {{id}})"
+      },
+      "issueModal": {
+        "title": "🔧 Technical breakdown report",
+        "dienst": "Dienst #{{num}}",
+        "date": "Date",
+        "time": "Time",
+        "driver": "🚗 Driver:",
+        "medic": "🧑‍⚕️ Medic:",
+        "ambulance": "🚐 Ambulance:",
+        "unknownAmbulance": "Unknown",
+        "finalKmLabel": "🔢 Final KM",
+        "finalKmPlaceholder": "Enter final kilometers",
+        "timestamp": "⏱ Timestamp:",
+        "descriptionPlaceholder": "Describe the issue…",
+        "actions": {
+          "cancel": "Cancel",
+          "send": "Send report"
+        }
+      }
     }
   }
 }

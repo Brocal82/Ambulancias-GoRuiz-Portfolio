@@ -434,16 +434,51 @@
         "10": "🏆 Prämie 10"
       },
       "history": {
-  "loading": "Cargando historial mensual...",
-  "empty": "No hay historial mensual disponible.",
-  "title": "Historial Mensual de Prämien",
-  "table": {
-    "year": "Año",
-    "month": "Mes",
-    "avgPatients": "Media Pacientes",
-    "level": "Nivel Prämie"
-  }
-}
+        "loading": "Cargando historial mensual...",
+        "empty": "No hay historial mensual disponible.",
+        "title": "Historial Mensual de Prämien",
+        "table": {
+          "year": "Año",
+          "month": "Mes",
+          "avgPatients": "Media Pacientes",
+          "level": "Nivel Prämie"
+        }
+      }
+    },
+    "mechanics": {
+      "adminPage": {
+        "title": "🔧 Reportes técnicos de averías",
+        "loading": "Cargando averías...",
+        "empty": "No hay reportes de avería aún.",
+        "dienst": "Dienst #{{num}}",
+        "labels": {
+          "date": "📅 Fecha:",
+          "time": "⏱ Horario:",
+          "team": "👥 Equipo:",
+          "ambulance": "🚐 Ambulancia:",
+          "finalKm": "📏 KM finales:",
+          "issue": "🛠️ Avería:"
+        },
+        "ambulanceFallback": "{{number}} (ID: {{id}})"
+      },
+      "issueModal": {
+        "title": "🔧 Reporte técnico de avería",
+        "dienst": "Dienst #{{num}}",
+        "date": "Fecha",
+        "time": "Horario",
+        "driver": "🚗 Conductor:",
+        "medic": "🧑‍⚕️ Sanitario:",
+        "ambulance": "🚐 Ambulancia:",
+        "unknownAmbulance": "Desconocido",
+        "finalKmLabel": "🔢 KM finales",
+        "finalKmPlaceholder": "Introduce los kilómetros finales",
+        "timestamp": "⏱ Timestamp:",
+        "descriptionPlaceholder": "Describe la avería…",
+        "actions": {
+          "cancel": "Cancelar",
+          "send": "Enviar avería"
+        }
+      }
     }
   }
 }

@@ -444,6 +444,41 @@
           "level": "Prämienstufe"
         }
       }
+    },
+    "mechanics": {
+      "adminPage": {
+        "title": "🔧 Technische Störungsmeldungen",
+        "loading": "Störungen werden geladen...",
+        "empty": "Noch keine Störungsmeldungen.",
+        "dienst": "Dienst #{{num}}",
+        "labels": {
+          "date": "📅 Datum:",
+          "time": "⏱ Uhrzeit:",
+          "team": "👥 Team:",
+          "ambulance": "🚐 Krankenwagen:",
+          "finalKm": "📏 End-KM:",
+          "issue": "🛠️ Störung:"
+        },
+        "ambulanceFallback": "{{number}} (ID: {{id}})"
+      },
+      "issueModal": {
+        "title": "🔧 Technische Störungsmeldung",
+        "dienst": "Dienst #{{num}}",
+        "date": "Datum",
+        "time": "Zeit",
+        "driver": "🚗 Fahrer:",
+        "medic": "🧑‍⚕️ Sanitäter:",
+        "ambulance": "🚐 Krankenwagen:",
+        "unknownAmbulance": "Unbekannt",
+        "finalKmLabel": "🔢 End-KM",
+        "finalKmPlaceholder": "Endkilometer eingeben",
+        "timestamp": "⏱ Zeitstempel:",
+        "descriptionPlaceholder": "Störung beschreiben…",
+        "actions": {
+          "cancel": "Abbrechen",
+          "send": "Störung senden"
+        }
+      }
     }
   }
 }

@@ -2,8 +2,8 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import type { AssignedDayFull } from "../../types/dienst";
-// ⭐ NUEVO
 import { formatYYYYMMDDToDDMMYYYY } from "../../utils/timeUtils";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   isOpen: boolean;
@@ -24,12 +24,16 @@ const IssueReportModal: React.FC<Props> = ({
   finalKm,
   onSubmit,
 }) => {
+  const { t } = useTranslation();
   const [description, setDescription] = useState("");
-  const [finalKmInput, setFinalKmInput] = useState<string>(finalKm > 0 ? finalKm.toString() : "");
+  const [finalKmInput, setFinalKmInput] = useState<string>(
+    finalKm > 0 ? finalKm.toString() : ""
+  );
 
   if (!isOpen) return null;
 
   const handleSend = async () => {
+    // Dejamos toasts para más tarde (i18n de toasts al final)
     if (!ambulanceId || ambulanceId.length < 24) {
       toast.warn("🚑 Selecciona una ambulancia válida.");
       return;
@@ -49,7 +53,7 @@ const IssueReportModal: React.FC<Props> = ({
 
     const payload = {
       dienstNumber: assignedDay.dienstNumber!,
-      date: assignedDay.date, // ← mantenemos YYYY-MM-DD para backend
+      date: assignedDay.date, // backend espera YYYY-MM-DD
       startTime: assignedDay.startTime,
       endTime: assignedDay.endTime,
       team: `${assignedDay.driver.lastName}, ${assignedDay.driver.name} + ${assignedDay.medic.lastName}, ${assignedDay.medic.name}`,
@@ -82,39 +86,68 @@ const IssueReportModal: React.FC<Props> = ({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg w-full max-w-lg space-y-4">
-        <h2 className="text-xl font-bold text-center">🔧 Reporte técnico de avería</h2>
-        <p><strong>Dienst #</strong> {assignedDay.dienstNumber}</p>
-        {/* ⭐ CAMBIO: fecha en DD-MM-YYYY */}
-        <p><strong>Fecha</strong> {formatYYYYMMDDToDDMMYYYY(assignedDay.date)}</p>
-        <p><strong>Horario</strong> {assignedDay.startTime} – {assignedDay.endTime}</p>
-        <p><strong>🚗 Conductor:</strong> {assignedDay.driver.lastName}, {assignedDay.driver.name}</p>
-        <p><strong>🧑‍⚕️ Sanitario:</strong> {assignedDay.medic.lastName}, {assignedDay.medic.name}</p>
-        <p><strong>🚐 Ambulancia:</strong> {ambulanceNumber || "Desconocido"}</p>
+        <h2 className="text-xl font-bold text-center">
+          {t("pages.mechanics.issueModal.title")}
+        </h2>
+
+        <p>
+          <strong>{t("pages.mechanics.issueModal.dienst", { num: assignedDay.dienstNumber })}</strong>
+        </p>
+
+        <p>
+          <strong>{t("pages.mechanics.issueModal.date")}</strong>{" "}
+          {formatYYYYMMDDToDDMMYYYY(assignedDay.date)}
+        </p>
+        <p>
+          <strong>{t("pages.mechanics.issueModal.time")}</strong>{" "}
+          {assignedDay.startTime} – {assignedDay.endTime}
+        </p>
+        <p>
+          <strong>{t("pages.mechanics.issueModal.driver")}</strong>{" "}
+          {assignedDay.driver.lastName}, {assignedDay.driver.name}
+        </p>
+        <p>
+          <strong>{t("pages.mechanics.issueModal.medic")}</strong>{" "}
+          {assignedDay.medic.lastName}, {assignedDay.medic.name}
+        </p>
+        <p>
+          <strong>{t("pages.mechanics.issueModal.ambulance")}</strong>{" "}
+          {ambulanceNumber || t("pages.mechanics.issueModal.unknownAmbulance")}
+        </p>
 
         <div>
-          <label className="block text-sm font-medium mb-1">🔢 KM finales</label>
+          <label className="block text-sm font-medium mb-1">
+            {t("pages.mechanics.issueModal.finalKmLabel")}
+          </label>
           <input
             type="number"
             inputMode="numeric"
             value={finalKmInput}
             onChange={(e) => setFinalKmInput(e.target.value.replace(/\D/g, ""))}
-            placeholder="Introduce los kilómetros finales"
+            placeholder={t("pages.mechanics.issueModal.finalKmPlaceholder")}
             className="w-full border rounded p-2"
           />
         </div>
 
-        <p><strong>⏱ Timestamp:</strong> {new Date().toLocaleString()}</p>
+        <p>
+          <strong>{t("pages.mechanics.issueModal.timestamp")}</strong>{" "}
+          {new Date().toLocaleString()}
+        </p>
 
         <textarea
-          placeholder="Describe la avería…"
+          placeholder={t("pages.mechanics.issueModal.descriptionPlaceholder")}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="w-full h-32 border rounded p-2"
         />
 
         <div className="flex justify-end space-x-2">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-300 rounded">Cancelar</button>
-          <button onClick={handleSend} className="px-4 py-2 bg-red-600 text-white rounded">Enviar avería</button>
+          <button onClick={onClose} className="px-4 py-2 bg-gray-300 rounded">
+            {t("pages.mechanics.issueModal.actions.cancel")}
+          </button>
+          <button onClick={handleSend} className="px-4 py-2 bg-red-600 text-white rounded">
+            {t("pages.mechanics.issueModal.actions.send")}
+          </button>
         </div>
       </div>
     </div>
@@ -122,3 +155,4 @@ const IssueReportModal: React.FC<Props> = ({
 };
 
 export default IssueReportModal;
+
