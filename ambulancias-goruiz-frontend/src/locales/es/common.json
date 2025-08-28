@@ -619,6 +619,15 @@
         "count_other": "{{count}} citas",
         "emptyBadge": "Vacío",
         "ariaOpenMonth": "Abrir mes {{label}} {{year}}"
+      },
+      "calendar": {
+        "weekdayLabels": ["L", "M", "X", "J", "V", "S", "D"],
+        "workerFallback": "Trabajador",
+        "aria": {
+          "day": "Día {{num}}",
+          "emptyCell": "Celda vacía",
+          "appointment": "Cita: {{worker}} a las {{time}}"
+        }
       }
 
     }

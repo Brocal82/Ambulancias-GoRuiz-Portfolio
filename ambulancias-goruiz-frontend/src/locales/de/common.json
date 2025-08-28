@@ -619,6 +619,15 @@
         "count_other": "{{count}} Termine",
         "emptyBadge": "Leer",
         "ariaOpenMonth": "Monat {{label}} {{year}} öffnen"
+      },
+      "calendar": {
+        "weekdayLabels": ["M", "D", "M", "D", "F", "S", "S"],
+        "workerFallback": "Mitarbeiter",
+        "aria": {
+          "day": "Tag {{num}}",
+          "emptyCell": "Leere Zelle",
+          "appointment": "Termin: {{worker}} um {{time}}"
+        }
       }
   }
   }

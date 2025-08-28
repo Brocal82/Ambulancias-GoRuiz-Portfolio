@@ -619,6 +619,15 @@
         "count_other": "{{count}} appointments",
         "emptyBadge": "Empty",
         "ariaOpenMonth": "Open month {{label}} {{year}}"
+      },
+      "calendar": {
+        "weekdayLabels": ["M", "T", "W", "T", "F", "S", "S"],
+        "workerFallback": "Worker",
+        "aria": {
+          "day": "Day {{num}}",
+          "emptyCell": "Empty cell",
+          "appointment": "Appointment: {{worker}} at {{time}}"
+        }
       }
   }
   }
