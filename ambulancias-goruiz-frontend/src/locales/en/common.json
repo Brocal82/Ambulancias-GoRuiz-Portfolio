@@ -561,6 +561,41 @@
           "confirm": "Confirm",
           "confirming": "Confirming..."
         }
+      },
+      "detail": {
+        "title": "Appointment details",
+        "rebook": "Reschedule",
+        "rebookTitle": "Reschedule",
+        "saveNewDatetime": "Save new date/time",
+        "labels": {
+          "worker": "Worker:",
+          "admin": "Admin:",
+          "currentWhen": "Current date/time:",
+          "status": "Status:",
+          "reason": "Reason",
+          "description": "Description"
+        },
+        "inputs": {
+          "newDate": "New date",
+          "newTime": "New time"
+        },
+        "placeholders": {
+          "date": "YYYY-MM-DD",
+          "time": "HH:MM"
+        },
+        "titles": {
+          "date": "Select a date",
+          "time": "Select a time"
+        },
+        "actions": {
+          "close": "Close",
+          "cancel": "Cancel",
+          "save": "Save",
+          "saving": "Saving...",
+          "cancelling": "Cancelling..."
+        },
+        "cancelThisTitle": "Cancel this appointment",
+        "confirmCancel": "Are you sure you want to cancel this appointment?"
       }
   }
   }

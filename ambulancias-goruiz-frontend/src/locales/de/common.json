@@ -561,6 +561,41 @@
           "confirm": "Bestätigen",
           "confirming": "Wird bestätigt..."
         }
+      },
+      "detail": {
+        "title": "Termindetails",
+        "rebook": "Verschieben",
+        "rebookTitle": "Verschieben",
+        "saveNewDatetime": "Neues Datum/Uhrzeit speichern",
+        "labels": {
+          "worker": "Mitarbeiter:",
+          "admin": "Admin:",
+          "currentWhen": "Aktuelles Datum/Uhrzeit:",
+          "status": "Status:",
+          "reason": "Grund",
+          "description": "Beschreibung"
+        },
+        "inputs": {
+          "newDate": "Neues Datum",
+          "newTime": "Neue Uhrzeit"
+        },
+        "placeholders": {
+          "date": "JJJJ-MM-TT",
+          "time": "HH:MM"
+        },
+        "titles": {
+          "date": "Datum auswählen",
+          "time": "Uhrzeit auswählen"
+        },
+        "actions": {
+          "close": "Schließen",
+          "cancel": "Abbrechen",
+          "save": "Speichern",
+          "saving": "Wird gespeichert...",
+          "cancelling": "Wird abgebrochen..."
+        },
+        "cancelThisTitle": "Diesen Termin absagen",
+        "confirmCancel": "Möchtest du diesen Termin wirklich absagen?"
       }
   }
   }

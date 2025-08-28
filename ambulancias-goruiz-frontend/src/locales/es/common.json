@@ -561,6 +561,41 @@
           "confirm": "Confirmar",
           "confirming": "Confirmando..."
         }
+      },
+      "detail": {
+        "title": "Detalle de cita",
+        "rebook": "Reprogramar",
+        "rebookTitle": "Reprogramar",
+        "saveNewDatetime": "Guardar nueva fecha/hora",
+        "labels": {
+          "worker": "Trabajador:",
+          "admin": "Admin:",
+          "currentWhen": "Fecha/Hora actual:",
+          "status": "Estado:",
+          "reason": "Motivo",
+          "description": "Descripción"
+        },
+        "inputs": {
+          "newDate": "Nueva fecha",
+          "newTime": "Nueva hora"
+        },
+        "placeholders": {
+          "date": "YYYY-MM-DD",
+          "time": "HH:MM"
+        },
+        "titles": {
+          "date": "Selecciona una fecha",
+          "time": "Selecciona una hora"
+        },
+        "actions": {
+          "close": "Cerrar",
+          "cancel": "Cancelar",
+          "save": "Guardar",
+          "saving": "Guardando...",
+          "cancelling": "Cancelando..."
+        },
+        "cancelThisTitle": "Cancelar esta cita",
+        "confirmCancel": "¿Seguro que quieres cancelar esta cita?"
       }
     }
   }
