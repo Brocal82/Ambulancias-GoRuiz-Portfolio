@@ -20,8 +20,9 @@ const AdminAppointmentMonthGrid: React.FC<Props> = ({
   year = new Date().getFullYear(),
   onMonthClick,
 }) => {
-  const { t } = useTranslation();
-  const months = getYearMonths(year);
+  const { t, i18n } = useTranslation();
+  const months = getYearMonths(year, i18n.language);
+
   const counts = countAppointmentsByMonth(items, year);
 
   return (

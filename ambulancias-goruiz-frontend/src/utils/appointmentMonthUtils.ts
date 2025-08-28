@@ -18,15 +18,14 @@ export function ymd(date: Date, tz: string = 'Europe/Berlin'): DayKey {
   return `${year}-${month}-${day}`;
 }
 
-/** Devuelve los 12 meses del año con label internacionalizado en español */
-export function getYearMonths(year: number) {
+/** Devuelve los 12 meses del año con label internacionalizado según el locale */
+export function getYearMonths(year: number, locale: string = 'es') {
   return Array.from({ length: 12 }).map((_, i) => ({
     monthIndex: i, // 0-11
-    label: new Date(year, i, 1)
-      .toLocaleString('es-ES', { month: 'long' })
-      .replace(/^\p{L}/u, c => c.toUpperCase()),
+    label: new Date(year, i, 1).toLocaleDateString(locale, { month: 'long' }),
   }));
 }
+
 
 /** Cuenta cuántas citas confirmadas/reprogramadas hay por mes de un año */
 export function countAppointmentsByMonth(appointments: Appointment[], year: number): number[] {
