@@ -21,7 +21,7 @@ export default function AdminAppointmentsPage() {
 
   // --- helpers ---
   const statusLabel = (s: Appointment['status']) =>
-    t(`appointments.statusLabel.${s}`);
+    t(`pages.appointments.statusLabel.${s}`);
 
   // --- Estado de pendientes ---
   const [pending, setPending] = useState<Appointment[]>([]);

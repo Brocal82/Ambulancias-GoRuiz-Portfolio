@@ -531,7 +531,37 @@
     },
     "empty": {
       "worker": "You don't have appointments yet. Need to contact an admin?"
-    }
+    },
+     "propose": {
+        "title": "Proposed time slots",
+        "optionLegend": "Option {{index}}",
+        "dateLabel": "Date (option {{index}})",
+        "datePlaceholder": "YYYY-MM-DD",
+        "dateTitle": "Select a date",
+        "dateHint": "Format: YYYY-MM-DD",
+        "timeLabel": "Start time (option {{index}})",
+        "timePlaceholder": "HH:MM",
+        "timeTitle": "Select a start time",
+        "timeHint": "24h format: HH:MM",
+        "actions": {
+          "cancel": "Cancel",
+          "submit": "Propose",
+          "submitting": "Sending..."
+        }
+      },
+      "choose": {
+        "title": "Choose a time slot",
+        "timezoneNote": {
+          "prefix": "Times displayed in"
+        },
+        "empty": "No options available. Please wait for the administrator to propose times.",
+        "optionAria": "Option {{index}}: {{label}}",
+        "actions": {
+          "cancel": "Cancel",
+          "confirm": "Confirm",
+          "confirming": "Confirming..."
+        }
+      }
   }
   }
 }

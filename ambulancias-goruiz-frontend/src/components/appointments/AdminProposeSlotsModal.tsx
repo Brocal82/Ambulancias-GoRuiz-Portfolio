@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { toast } from 'react-toastify';
 import { APP_TZ } from '../../config/app';
 import { localDateTimeToUtcISO } from '../../utils/tz';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   appointmentId: string;
@@ -23,6 +24,7 @@ export default function AdminProposeSlotsModal({
   defaultDurationMinutes = 30,
 }: Props) {
   const { token } = useAuth();
+  const { t } = useTranslation();
 
   const emptyRows: SlotRow[] = [
     { date: '', time: '' },
@@ -51,6 +53,7 @@ export default function AdminProposeSlotsModal({
 
   const validate = () => {
     if (!canSubmit) {
+      // Dejamos toasts y errores para la fase de toasts, no internacionalizamos mensajes de error aquí.
       throw new Error('Debes completar al menos 1 opción con fecha y hora.');
     }
     const now = Date.now();
@@ -98,11 +101,17 @@ export default function AdminProposeSlotsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg" role="dialog" aria-modal="true" aria-labelledby="propose-title">
+      <div
+        className="w-full max-w-2xl bg-white rounded-xl shadow-lg"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="propose-title"
+      >
         <div className="px-6 py-4 border-b">
-          <h2 id="propose-title" className="text-lg font-semibold">Propuestas</h2>
+          <h2 id="propose-title" className="text-lg font-semibold">
+            {t('pages.appointments.propose.title')}
+          </h2>
         </div>
-          
 
         <div className="px-6 py-4 space-y-4">
           {rows.map((row, idx) => {
@@ -110,15 +119,19 @@ export default function AdminProposeSlotsModal({
             const timeId = `slot-time-${idx}`;
 
             return (
-              <fieldset key={idx} className="grid grid-cols-1 sm:grid-cols-2 gap-4" aria-labelledby={`slot-legend-${idx}`}>
+              <fieldset
+                key={idx}
+                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                aria-labelledby={`slot-legend-${idx}`}
+              >
                 <legend id={`slot-legend-${idx}`} className="sr-only">
-                  Opción {idx + 1}
+                  {t('pages.appointments.propose.optionLegend', { index: idx + 1 })}
                 </legend>
 
                 {/* Fecha */}
                 <div>
                   <label htmlFor={dateId} className="block text-sm font-medium mb-1">
-                    Fecha (opción {idx + 1})
+                    {t('pages.appointments.propose.dateLabel', { index: idx + 1 })}
                   </label>
                   <input
                     id={dateId}
@@ -130,19 +143,19 @@ export default function AdminProposeSlotsModal({
                       setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, date: v } : r)));
                     }}
                     className="w-full border rounded px-3 py-2"
-                    placeholder="YYYY-MM-DD"
-                    title="Selecciona una fecha"
+                    placeholder={t('pages.appointments.propose.datePlaceholder')}
+                    title={t('pages.appointments.propose.dateTitle')}
                     aria-describedby={`${dateId}-hint`}
                   />
                   <p id={`${dateId}-hint`} className="text-xs text-gray-500 mt-1">
-                    Formato: AAAA-MM-DD
+                    {t('pages.appointments.propose.dateHint')}
                   </p>
                 </div>
 
                 {/* Hora */}
                 <div>
                   <label htmlFor={timeId} className="block text-sm font-medium mb-1">
-                    Hora inicio (opción {idx + 1})
+                    {t('pages.appointments.propose.timeLabel', { index: idx + 1 })}
                   </label>
                   <input
                     id={timeId}
@@ -154,12 +167,12 @@ export default function AdminProposeSlotsModal({
                       setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, time: v } : r)));
                     }}
                     className="w-full border rounded px-3 py-2"
-                    placeholder="HH:MM"
-                    title="Selecciona una hora de inicio"
+                    placeholder={t('pages.appointments.propose.timePlaceholder')}
+                    title={t('pages.appointments.propose.timeTitle')}
                     aria-describedby={`${timeId}-hint`}
                   />
                   <p id={`${timeId}-hint`} className="text-xs text-gray-500 mt-1">
-                    Formato de 24h: HH:MM
+                    {t('pages.appointments.propose.timeHint')}
                   </p>
                 </div>
 
@@ -176,14 +189,16 @@ export default function AdminProposeSlotsModal({
             className="px-4 py-2 rounded border hover:bg-gray-50"
             disabled={loading}
           >
-            Cancelar
+            {t('pages.appointments.propose.actions.cancel')}
           </button>
           <button
             onClick={handleSubmit}
             className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
             disabled={!canSubmit || loading}
           >
-            {loading ? 'Enviando...' : 'Proponer'}
+            {loading
+              ? t('pages.appointments.propose.actions.submitting')
+              : t('pages.appointments.propose.actions.submit')}
           </button>
         </div>
       </div>

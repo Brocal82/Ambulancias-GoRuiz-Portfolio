@@ -531,7 +531,37 @@
     },
     "empty": {
       "worker": "Du hast noch keine Termine. Möchtest du einen Admin kontaktieren?"
-    }
+    },
+     "propose": {
+        "title": "Vorgeschlagene Zeitfenster",
+        "optionLegend": "Option {{index}}",
+        "dateLabel": "Datum (Option {{index}})",
+        "datePlaceholder": "JJJJ-MM-TT",
+        "dateTitle": "Wähle ein Datum",
+        "dateHint": "Format: JJJJ-MM-TT",
+        "timeLabel": "Startzeit (Option {{index}})",
+        "timePlaceholder": "HH:MM",
+        "timeTitle": "Wähle eine Startzeit",
+        "timeHint": "24h-Format: HH:MM",
+        "actions": {
+          "cancel": "Abbrechen",
+          "submit": "Vorschlagen",
+          "submitting": "Senden..."
+        }
+      },
+      "choose": {
+        "title": "Zeitfenster wählen",
+        "timezoneNote": {
+          "prefix": "Zeiten angezeigt in"
+        },
+        "empty": "Keine Optionen verfügbar. Bitte warte, bis der Administrator Zeiten vorschlägt.",
+        "optionAria": "Option {{index}}: {{label}}",
+        "actions": {
+          "cancel": "Abbrechen",
+          "confirm": "Bestätigen",
+          "confirming": "Wird bestätigt..."
+        }
+      }
   }
   }
 }
