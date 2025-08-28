@@ -612,6 +612,13 @@
           "submit": "Enviar solicitud",
           "submitting": "Enviando..."
         }
+      },
+      "monthGrid": {
+        "title": "Citas por mes · {{year}}",
+        "count_one": "{{count}} cita",
+        "count_other": "{{count}} citas",
+        "emptyBadge": "Vacío",
+        "ariaOpenMonth": "Abrir mes {{label}} {{year}}"
       }
 
     }

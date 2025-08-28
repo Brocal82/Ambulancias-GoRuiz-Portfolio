@@ -612,6 +612,13 @@
           "submit": "Submit request",
           "submitting": "Sending..."
         }
+      },
+      "monthGrid": {
+        "title": "Appointments per month · {{year}}",
+        "count_one": "{{count}} appointment",
+        "count_other": "{{count}} appointments",
+        "emptyBadge": "Empty",
+        "ariaOpenMonth": "Open month {{label}} {{year}}"
       }
   }
   }

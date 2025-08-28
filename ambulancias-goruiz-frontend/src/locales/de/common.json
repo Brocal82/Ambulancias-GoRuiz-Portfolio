@@ -612,6 +612,13 @@
           "submit": "Anfrage senden",
           "submitting": "Wird gesendet..."
         }
+      },
+      "monthGrid": {
+        "title": "Termine pro Monat · {{year}}",
+        "count_one": "{{count}} Termin",
+        "count_other": "{{count}} Termine",
+        "emptyBadge": "Leer",
+        "ariaOpenMonth": "Monat {{label}} {{year}} öffnen"
       }
   }
   }

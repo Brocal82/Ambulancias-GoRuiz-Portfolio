@@ -4,6 +4,7 @@ import {
   getYearMonths,
   countAppointmentsByMonth,
 } from '../../utils/appointmentMonthUtils';
+import { useTranslation } from 'react-i18next';
 
 type Props = {
   /** Citas confirmadas/reprogramadas del año (pueden venir de la API de calendario). */
@@ -19,13 +20,16 @@ const AdminAppointmentMonthGrid: React.FC<Props> = ({
   year = new Date().getFullYear(),
   onMonthClick,
 }) => {
+  const { t } = useTranslation();
   const months = getYearMonths(year);
   const counts = countAppointmentsByMonth(items, year);
 
   return (
     <div className="bg-white rounded-2xl shadow p-4 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">Citas por mes · {year}</h3>
+        <h3 className="text-lg font-semibold">
+          {t('pages.appointments.monthGrid.title', { year })}
+        </h3>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -38,7 +42,7 @@ const AdminAppointmentMonthGrid: React.FC<Props> = ({
               key={monthIndex}
               type="button"
               onClick={() => onMonthClick?.(monthIndex)}
-              aria-label={`Abrir mes ${label} ${year}`}
+              aria-label={t('pages.appointments.monthGrid.ariaOpenMonth', { label, year })}
               className={[
                 'group relative flex flex-col items-start justify-between rounded-xl border p-4 text-left transition',
                 hasItems
@@ -59,12 +63,12 @@ const AdminAppointmentMonthGrid: React.FC<Props> = ({
                     : 'bg-gray-100 text-gray-600',
                 ].join(' ')}
               >
-                {count} {count === 1 ? 'cita' : 'citas'}
+                {t('pages.appointments.monthGrid.count', { count })}
               </span>
 
               {!hasItems && (
                 <span className="absolute right-3 top-3 text-xs text-gray-400">
-                  Vacío
+                  {t('pages.appointments.monthGrid.emptyBadge')}
                 </span>
               )}
             </button>
