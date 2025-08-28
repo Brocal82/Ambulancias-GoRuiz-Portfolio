@@ -6,6 +6,7 @@ import {
 } from '../api/appointments';
 import type { Appointment } from '../types/appointment';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 
 // Componentes ya creados en pasos anteriores
 import AdminProposeSlotsModal from '../components/appointments/AdminProposeSlotsModal';
@@ -14,9 +15,13 @@ import AdminAppointmentMonthGrid from '../components/appointments/AdminAppointme
 import AdminMonthCalendar from '../components/appointments/AdminMonthCalendar';
 import AdminAppointmentDetail from '../components/appointments/AdminAppointmentDetail';
 
-
 export default function AdminAppointmentsPage() {
   const { token } = useAuth();
+  const { t } = useTranslation('common');
+
+  // --- helpers ---
+  const statusLabel = (s: Appointment['status']) =>
+    t(`appointments.statusLabel.${s}`);
 
   // --- Estado de pendientes ---
   const [pending, setPending] = useState<Appointment[]>([]);
@@ -33,11 +38,9 @@ export default function AdminAppointmentsPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<Appointment | null>(null);
 
-
   // --- Año y mes seleccionados ---
   const year = useMemo(() => new Date().getFullYear(), []);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
-
 
   // --- Rango de TODO el año para cargar confirmadas/reprogramadas ---
   const { fromISO, toISO } = useMemo(() => {
@@ -60,6 +63,7 @@ export default function AdminAppointmentsPage() {
           setConfirmedYear(c);
         }
       } catch (e: any) {
+        // Dejamos toasts para la fase final (no internacionalizar aquí)
         toast.error(e?.response?.data?.message ?? 'Error al cargar citas');
       } finally {
         if (mounted) {
@@ -105,19 +109,21 @@ export default function AdminAppointmentsPage() {
       <div className="max-w-4xl mx-auto p-4 bg-white rounded shadow">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold mb-4">Citas (Admin)</h1>
+          <h1 className="text-2xl font-bold mb-4">
+            {t('pages.appointments.admin.title')}
+          </h1>
           <button
             onClick={refreshAll}
             className="px-3 py-2 rounded border bg-white hover:bg-gray-50"
           >
-            Refrescar
+            {t('pages.appointments.actions.refresh')}
           </button>
         </div>
 
         {/* 1) Cuadrícula de 12 meses */}
         <section>
           {loadingConfirmed ? (
-            <p>Cargando calendario anual...</p>
+            <p>{t('pages.appointments.status.loadingYear')}</p>
           ) : (
             <AdminAppointmentMonthGrid
               items={confirmedYear}
@@ -130,25 +136,26 @@ export default function AdminAppointmentsPage() {
         {/* 2) Calendario del mes seleccionado */}
         <section>
           {loadingConfirmed ? (
-            <p>Cargando mes...</p>
+            <p>{t('pages.appointments.status.loadingMonth')}</p>
           ) : (
             <AdminMonthCalendar
               items={confirmedYear}
               year={year}
               monthIndex={selectedMonth}
               onAppointmentClick={(a) => { setDetailItem(a); setDetailOpen(true); }}
-            // onAppointmentClick={(a) => { /* Paso siguiente: abrir detalle */ }}
             />
           )}
         </section>
 
         {/* 3) Bloque de Pendientes (para proponer horarios) */}
         <section className="mt-10 pt-6 border-t border-gray-200">
-          <h2 className="text-lg font-semibold mb-2">Pendientes</h2>
+          <h2 className="text-lg font-semibold mb-2">
+            {t('pages.appointments.pending.title')}
+          </h2>
           {loadingPending ? (
-            <p>Cargando...</p>
+            <p>{t('pages.appointments.status.loading')}</p>
           ) : pending.length === 0 ? (
-            <p>No hay solicitudes pendientes.</p>
+            <p>{t('pages.appointments.pending.empty')}</p>
           ) : (
             <ul className="space-y-2">
               {pending.map((a) => {
@@ -157,18 +164,21 @@ export default function AdminAppointmentsPage() {
                   <li key={a._id} className="bg-white p-4 rounded shadow">
                     <div className="font-semibold">{a.reason}</div>
                     <div className="text-sm text-gray-600">
-                      Trabajador:{' '}
+                      {t('pages.appointments.labels.worker')}{' '}
                       {worker
                         ? `${worker.lastName}, ${worker.name}`
                         : `ID: ${typeof a.workerId === 'string' ? a.workerId : ''}`}
                     </div>
-                    <div className="text-sm text-gray-600">Estado: {a.status}</div>
+                    <div className="text-sm text-gray-600">
+                      {t('pages.appointments.labels.status')}:{' '}
+                      {statusLabel(a.status)}
+                    </div>
 
                     <button
                       className="mt-2 px-3 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700"
                       onClick={() => { setSelectedId(a._id); setOpenPropose(true); }}
                     >
-                      Proponer horarios
+                      {t('pages.appointments.actions.proposeSlots')}
                     </button>
                   </li>
                 );
@@ -195,7 +205,6 @@ export default function AdminAppointmentsPage() {
             await Promise.all([refreshConfirmed(), refreshPending()]);
           }}
         />
-
       </div>
     </div>
   );

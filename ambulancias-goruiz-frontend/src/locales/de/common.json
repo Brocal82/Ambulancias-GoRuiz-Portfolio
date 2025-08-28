@@ -479,6 +479,59 @@
           "send": "Störung senden"
         }
       }
+    },
+    "appointments": {
+    "admin": {
+      "title": "Termine (Admin)"
+    },
+    "worker": {
+      "title": "Meine Termine"
+    },
+    "actions": {
+      "refresh": "Aktualisieren",
+      "proposeSlots": "Zeitslots vorschlagen",
+      "request": "Termin anfragen",
+      "requestTitle": "Neuen Termin anfragen",
+      "chooseSlot": "Slot wählen",
+      "chooseSlotTitle": "Einen der vorgeschlagenen Slots wählen"
+    },
+    "status": {
+      "loading": "Wird geladen...",
+      "loadingYear": "Jahreskalender wird geladen...",
+      "loadingMonth": "Monat wird geladen...",
+      "loadingMine": "Termine werden geladen…"
+    },
+    "statusLabel": {
+      "pending": "Ausstehend",
+      "proposed": "Vorgeschlagen",
+      "confirmed": "Bestätigt",
+      "rescheduled": "Verschoben",
+      "cancelled": "Abgesagt"
+    },
+    "pending": {
+      "title": "Ausstehend",
+      "empty": "Keine ausstehenden Anfragen."
+    },
+    "next": {
+      "title": "Nächster Termin"
+    },
+    "requests": {
+      "title": "Meine Anfragen",
+      "waitingOptions": "Du hast vorgeschlagene Zeiten offen (Admin hat noch keine Optionen eingetragen).",
+      "choosePrompt": "Du hast vorgeschlagene Zeiten zur Auswahl."
+    },
+    "history": {
+      "title": "Verlauf & weitere Termine"
+    },
+    "labels": {
+      "when": "Wann:",
+      "reason": "Grund:",
+      "worker": "Mitarbeiter:",
+      "status": "Status:"
+    },
+    "empty": {
+      "worker": "Du hast noch keine Termine. Möchtest du einen Admin kontaktieren?"
     }
+  }
   }
 }

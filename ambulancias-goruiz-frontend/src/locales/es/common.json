@@ -479,6 +479,59 @@
           "send": "Enviar avería"
         }
       }
+    },
+    "appointments": {
+    "admin": {
+      "title": "Citas (Admin)"
+    },
+    "worker": {
+      "title": "Mis Citas"
+    },
+    "actions": {
+      "refresh": "Refrescar",
+      "proposeSlots": "Proponer horarios",
+      "request": "Pedir cita",
+      "requestTitle": "Solicitar una nueva cita",
+      "chooseSlot": "Elegir hora",
+      "chooseSlotTitle": "Elegir uno de los horarios propuestos"
+    },
+    "status": {
+      "loading": "Cargando...",
+      "loadingYear": "Cargando calendario anual...",
+      "loadingMonth": "Cargando mes...",
+      "loadingMine": "Cargando citas…"
+    },
+    "statusLabel": {
+      "pending": "Pendiente",
+      "proposed": "Propuesta",
+      "confirmed": "Confirmada",
+      "rescheduled": "Reprogramada",
+      "cancelled": "Cancelada"
+    },
+    "pending": {
+      "title": "Pendientes",
+      "empty": "No hay solicitudes pendientes."
+    },
+    "next": {
+      "title": "Próxima cita"
+    },
+    "requests": {
+      "title": "Mis solicitudes",
+      "waitingOptions": "Tienes horarios propuestos pendientes (el admin aún no cargó opciones).",
+      "choosePrompt": "Tienes horarios propuestos pendientes de elegir."
+    },
+    "history": {
+      "title": "Historial y otras citas"
+    },
+    "labels": {
+      "when": "Cuándo:",
+      "reason": "Motivo:",
+      "worker": "Trabajador:",
+      "status": "Estado:"
+    },
+    "empty": {
+      "worker": "Aún no tienes citas. ¿Necesitas hablar con un admin?"
     }
+  }
   }
 }

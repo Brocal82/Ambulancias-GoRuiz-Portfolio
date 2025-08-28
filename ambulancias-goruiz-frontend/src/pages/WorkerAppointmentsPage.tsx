@@ -6,6 +6,7 @@ import RequestAppointmentModal from '../components/appointments/RequestAppointme
 import ChooseSlotModal from '../components/appointments/ChooseSlotModal';
 import { toast } from 'react-toastify';
 import { APP_TZ } from '../config/app';
+import { useTranslation } from 'react-i18next';
 
 /** Util: formato corto fecha/hora en la TZ de la app */
 function fmt(dtIso?: string): string {
@@ -13,8 +14,8 @@ function fmt(dtIso?: string): string {
   return new Date(dtIso).toLocaleString('de-DE', { timeZone: APP_TZ });
 }
 
-/** Badge de estado */
-function StatusBadge({ status }: { status: Appointment['status'] }) {
+/** Badge de estado (texto traducido) */
+function StatusBadge({ status, label }: { status: Appointment['status']; label: string }) {
   const map: Record<Appointment['status'], string> = {
     pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
     proposed: 'bg-indigo-50 text-indigo-700 border-indigo-200',
@@ -24,13 +25,15 @@ function StatusBadge({ status }: { status: Appointment['status'] }) {
   };
   return (
     <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${map[status]}`}>
-      {status}
+      {label}
     </span>
   );
 }
 
 export default function WorkerAppointmentsPage() {
   const { token } = useAuth();
+  const { t } = useTranslation('common');
+
   const [items, setItems] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,6 +50,7 @@ export default function WorkerAppointmentsPage() {
       const data = await getMyAppointments(token!);
       setItems(data);
     } catch (e: any) {
+      // Dejamos toasts para la fase final (no internacionalizar aquí)
       toast.error(e?.response?.data?.message ?? 'Error al recargar citas');
     }
   };
@@ -67,6 +71,10 @@ export default function WorkerAppointmentsPage() {
       mounted = false;
     };
   }, [token]);
+
+  // Traducción de estado
+  const statusLabel = (s: Appointment['status']) =>
+    t(`pages.appointments.statusLabel.${s}`);
 
   // Próxima cita confirmada / reprogramada (futura más cercana)
   const nextConfirmed = useMemo(() => {
@@ -109,29 +117,37 @@ export default function WorkerAppointmentsPage() {
   return (
     <div className="max-w-4xl mx-auto p-4 bg-white rounded shadow">
       <div className="flex items-start justify-between">
-        <h2 className="text-xl font-bold">Mis Citas</h2>
+        <h2 className="text-xl font-bold">{t('pages.appointments.worker.title')}</h2>
         <button
           onClick={() => setOpenRequest(true)}
           className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-          title="Pedir cita"
+          title={t('pages.appointments.actions.requestTitle')}
         >
-          <span>+ Pedir cita</span>
+          <span>+ {t('pages.appointments.actions.request')}</span>
         </button>
       </div>
 
       {/* Estado de carga */}
-      {loading && <p className="mt-4 text-gray-600">Cargando citas…</p>}
+      {loading && <p className="mt-4 text-gray-600">{t('pages.appointments.status.loadingMine')}</p>}
 
       {/* Próxima cita confirmada */}
       {!loading && nextConfirmed && (
         <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold text-emerald-800">Próxima cita</h3>
-            <StatusBadge status={nextConfirmed.status} />
+            <h3 className="text-base font-semibold text-emerald-800">
+              {t('pages.appointments.next.title')}
+            </h3>
+            <StatusBadge status={nextConfirmed.status} label={statusLabel(nextConfirmed.status)} />
           </div>
           <div className="mt-2 text-sm text-emerald-900">
-            <div><span className="font-medium">Cuándo:</span> {fmt(nextConfirmed.selectedSlot?.start)}</div>
-            <div className="mt-1"><span className="font-medium">Motivo:</span> {nextConfirmed.reason}</div>
+            <div>
+              <span className="font-medium">{t('pages.appointments.labels.when')}</span>{' '}
+              {fmt(nextConfirmed.selectedSlot?.start)}
+            </div>
+            <div className="mt-1">
+              <span className="font-medium">{t('pages.appointments.labels.reason')}</span>{' '}
+              {nextConfirmed.reason}
+            </div>
           </div>
         </div>
       )}
@@ -139,7 +155,7 @@ export default function WorkerAppointmentsPage() {
       {/* Mis solicitudes (pending/proposed) */}
       {!loading && recent.length > 0 && (
         <div className="mt-6">
-          <h3 className="text-base font-semibold mb-3">Mis solicitudes</h3>
+          <h3 className="text-base font-semibold mb-3">{t('pages.appointments.requests.title')}</h3>
           <ul className="space-y-3">
             {recent.map((a) => {
               const showChoose = a.status === 'proposed' && (a.proposedSlots?.length ?? 0) > 0;
@@ -149,19 +165,19 @@ export default function WorkerAppointmentsPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-medium truncate">{a.reason}</span>
-                        <StatusBadge status={a.status} />
+                        <StatusBadge status={a.status} label={statusLabel(a.status)} />
                       </div>
                       <p className="text-sm text-gray-600 mt-1">{a.details}</p>
 
                       {a.status === 'proposed' && (a.proposedSlots?.length ?? 0) === 0 && (
                         <p className="mt-2 text-sm text-amber-700">
-                          Tienes horarios propuestos pendientes (el admin aún no cargó opciones).
+                          {t('pages.appointments.requests.waitingOptions')}
                         </p>
                       )}
 
                       {a.status === 'proposed' && (a.proposedSlots?.length ?? 0) > 0 && (
                         <p className="mt-2 text-sm text-indigo-700">
-                          Tienes horarios propuestos pendientes de elegir.
+                          {t('pages.appointments.requests.choosePrompt')}
                         </p>
                       )}
                     </div>
@@ -174,9 +190,9 @@ export default function WorkerAppointmentsPage() {
                           setChooseSlots(a.proposedSlots);
                           setOpenChoose(true);
                         }}
-                        title="Elegir uno de los horarios propuestos"
+                        title={t('pages.appointments.actions.chooseSlotTitle')}
                       >
-                        Elegir hora
+                        {t('pages.appointments.actions.chooseSlot')}
                       </button>
                     )}
                   </div>
@@ -190,7 +206,7 @@ export default function WorkerAppointmentsPage() {
       {/* Historial y otras citas (confirmed/rescheduled/cancelled) */}
       {!loading && others.length > 0 && (
         <div className="mt-6">
-          <h3 className="text-base font-semibold mb-3">Historial y otras citas</h3>
+          <h3 className="text-base font-semibold mb-3">{t('pages.appointments.history.title')}</h3>
           <ul className="space-y-3">
             {others.map((a) => (
               <li key={a._id} className="rounded-xl border p-4">
@@ -198,11 +214,12 @@ export default function WorkerAppointmentsPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium truncate">{a.reason}</span>
-                      <StatusBadge status={a.status} />
+                      <StatusBadge status={a.status} label={statusLabel(a.status)} />
                     </div>
                     <p className="text-sm text-gray-600 mt-1">{a.details}</p>
                     <div className="text-sm text-gray-700 mt-2">
-                      <span className="font-medium">Cuándo:</span> {fmt(a.selectedSlot?.start)}
+                      <span className="font-medium">{t('pages.appointments.labels.when')}</span>{' '}
+                      {fmt(a.selectedSlot?.start)}
                     </div>
                   </div>
                 </div>
@@ -215,12 +232,12 @@ export default function WorkerAppointmentsPage() {
       {/* Estado vacío */}
       {emptyState && (
         <div className="mt-6 rounded-xl border border-gray-200 p-6 text-center">
-          <p className="text-gray-600">Aún no tienes citas. ¿Necesitas hablar con un admin?</p>
+          <p className="text-gray-600">{t('pages.appointments.empty.worker')}</p>
           <button
             onClick={() => setOpenRequest(true)}
             className="mt-3 inline-flex rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
           >
-            Pedir cita
+            {t('pages.appointments.actions.request')}
           </button>
         </div>
       )}

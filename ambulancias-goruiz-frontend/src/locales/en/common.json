@@ -479,6 +479,59 @@
           "send": "Send report"
         }
       }
+    },
+    "appointments": {
+    "admin": {
+      "title": "Appointments (Admin)"
+    },
+    "worker": {
+      "title": "My Appointments"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "proposeSlots": "Propose time slots",
+      "request": "Request appointment",
+      "requestTitle": "Request a new appointment",
+      "chooseSlot": "Choose slot",
+      "chooseSlotTitle": "Choose one of the proposed slots"
+    },
+    "status": {
+      "loading": "Loading...",
+      "loadingYear": "Loading yearly calendar...",
+      "loadingMonth": "Loading month...",
+      "loadingMine": "Loading appointments…"
+    },
+    "statusLabel": {
+      "pending": "Pending",
+      "proposed": "Proposed",
+      "confirmed": "Confirmed",
+      "rescheduled": "Rescheduled",
+      "cancelled": "Cancelled"
+    },
+    "pending": {
+      "title": "Pending",
+      "empty": "There are no pending requests."
+    },
+    "next": {
+      "title": "Next appointment"
+    },
+    "requests": {
+      "title": "My requests",
+      "waitingOptions": "You have proposed times pending (admin hasn't provided options yet).",
+      "choosePrompt": "You have proposed times waiting for your choice."
+    },
+    "history": {
+      "title": "History & other appointments"
+    },
+    "labels": {
+      "when": "When:",
+      "reason": "Reason:",
+      "worker": "Worker:",
+      "status": "Status:"
+    },
+    "empty": {
+      "worker": "You don't have appointments yet. Need to contact an admin?"
     }
+  }
   }
 }
