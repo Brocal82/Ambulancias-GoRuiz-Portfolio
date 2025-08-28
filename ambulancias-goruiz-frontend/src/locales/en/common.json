@@ -596,6 +596,22 @@
         },
         "cancelThisTitle": "Cancel this appointment",
         "confirmCancel": "Are you sure you want to cancel this appointment?"
+      },
+      "request": {
+        "title": "Request appointment",
+        "labels": {
+          "reason": "Reason",
+          "details": "Detail / Description"
+        },
+        "placeholders": {
+          "reasonExample": "e.g. Schedule review",
+          "detailsHint": "Briefly describe your request"
+        },
+        "actions": {
+          "cancel": "Cancel",
+          "submit": "Submit request",
+          "submitting": "Sending..."
+        }
       }
   }
   }

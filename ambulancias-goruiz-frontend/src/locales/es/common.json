@@ -596,7 +596,24 @@
         },
         "cancelThisTitle": "Cancelar esta cita",
         "confirmCancel": "¿Seguro que quieres cancelar esta cita?"
+      },
+      "request": {
+        "title": "Pedir cita",
+        "labels": {
+          "reason": "Motivo",
+          "details": "Detalle / Descripción"
+        },
+        "placeholders": {
+          "reasonExample": "Ej. Revisión de calendario",
+          "detailsHint": "Describe brevemente el motivo"
+        },
+        "actions": {
+          "cancel": "Cancelar",
+          "submit": "Enviar solicitud",
+          "submitting": "Enviando..."
+        }
       }
+
     }
   }
 }

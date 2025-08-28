@@ -596,6 +596,22 @@
         },
         "cancelThisTitle": "Diesen Termin absagen",
         "confirmCancel": "Möchtest du diesen Termin wirklich absagen?"
+      },
+       "request": {
+        "title": "Termin anfragen",
+        "labels": {
+          "reason": "Grund",
+          "details": "Details / Beschreibung"
+        },
+        "placeholders": {
+          "reasonExample": "z. B. Kalenderbesprechung",
+          "detailsHint": "Beschreibe dein Anliegen kurz"
+        },
+        "actions": {
+          "cancel": "Abbrechen",
+          "submit": "Anfrage senden",
+          "submitting": "Wird gesendet..."
+        }
       }
   }
   }
