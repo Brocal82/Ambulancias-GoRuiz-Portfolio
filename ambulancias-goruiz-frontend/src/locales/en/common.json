@@ -667,6 +667,50 @@
           "deleteTitle": "Delete message"
         }
       }
+    },
+    "ambulances": {
+      "adminPage": {
+        "title": "Ambulance Administration",
+        "loading": "Loading ambulances...",
+        "error": "Failed to load ambulances",
+        "empty": "No ambulances registered.",
+        "table": {
+          "brand": "Brand",
+          "model": "Model",
+          "licensePlate": "License plate",
+          "ambulanceNumber": "Ambulance number",
+          "actions": "Actions"
+        },
+        "actions": {
+          "new": "+ New Ambulance",
+          "edit": "Edit",
+          "delete": "Delete"
+        },
+        "confirmDelete": "Are you sure you want to delete this ambulance?",
+        "alerts": {
+          "tokenMissing": "Token not available",
+          "deleteError": "Failed to delete ambulance",
+          "saveError": "Failed to save ambulance"
+        }
+      },
+      "formModal": {
+        "titleNew": "Create New Ambulance",
+        "titleEdit": "Edit Ambulance",
+        "fields": {
+          "brand": "Brand:",
+          "model": "Model:",
+          "licensePlate": "License plate:",
+          "ambulanceNumber": "Ambulance number:"
+        },
+        "validation": {
+          "required": "This field is required",
+          "maxLength": "Must not exceed {{max}} characters"
+        },
+        "actions": {
+          "cancel": "Cancel",
+          "save": "Save"
+        }
+      }
     }
   }
 }

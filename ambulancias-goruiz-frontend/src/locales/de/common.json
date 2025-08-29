@@ -667,6 +667,50 @@
           "deleteTitle": "Nachricht löschen"
         }
       }
+    },
+    "ambulances": {
+      "adminPage": {
+        "title": "Rettungswagenverwaltung",
+        "loading": "Rettungswagen werden geladen...",
+        "error": "Rettungswagen konnten nicht geladen werden",
+        "empty": "Keine Rettungswagen registriert.",
+        "table": {
+          "brand": "Marke",
+          "model": "Modell",
+          "licensePlate": "Kennzeichen",
+          "ambulanceNumber": "Fahrzeugnummer",
+          "actions": "Aktionen"
+        },
+        "actions": {
+          "new": "+ Neuer Rettungswagen",
+          "edit": "Bearbeiten",
+          "delete": "Löschen"
+        },
+        "confirmDelete": "Möchtest du diesen Rettungswagen wirklich löschen?",
+        "alerts": {
+          "tokenMissing": "Token nicht verfügbar",
+          "deleteError": "Löschen fehlgeschlagen",
+          "saveError": "Speichern fehlgeschlagen"
+        }
+      },
+      "formModal": {
+        "titleNew": "Neuen Rettungswagen erstellen",
+        "titleEdit": "Rettungswagen bearbeiten",
+        "fields": {
+          "brand": "Marke:",
+          "model": "Modell:",
+          "licensePlate": "Kennzeichen:",
+          "ambulanceNumber": "Fahrzeugnummer:"
+        },
+        "validation": {
+          "required": "Dieses Feld ist erforderlich",
+          "maxLength": "Darf {{max}} Zeichen nicht überschreiten"
+        },
+        "actions": {
+          "cancel": "Abbrechen",
+          "save": "Speichern"
+        }
+      }
     }
   }
 }

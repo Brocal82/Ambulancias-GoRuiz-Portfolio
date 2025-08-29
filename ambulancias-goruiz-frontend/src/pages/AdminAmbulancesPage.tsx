@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   getAllAmbulances,
   createAmbulance,
@@ -8,9 +8,11 @@ import {
 import type { Ambulance } from '../types/ambulance';
 import AmbulanceFormModal from '../components/ambulances/AmbulanceFormModal';
 import { useAuth } from '../hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 
 const AdminAmbulancesPage: React.FC = () => {
   const { token } = useAuth();
+  const { t } = useTranslation();
 
   const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +23,7 @@ const AdminAmbulancesPage: React.FC = () => {
 
   useEffect(() => {
     fetchAmbulances();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchAmbulances = async () => {
@@ -31,7 +34,7 @@ const AdminAmbulancesPage: React.FC = () => {
       setAmbulances(data);
       setError(null);
     } catch {
-      setError('Error al cargar ambulancias');
+      setError(t('pages.ambulances.adminPage.error'));
     } finally {
       setLoading(false);
     }
@@ -47,69 +50,81 @@ const AdminAmbulancesPage: React.FC = () => {
     setModalOpen(true);
   };
 
-const handleDelete = async (id: string) => {
-  if (!token) {
-    alert('Token no disponible');
-    return;
-  }
-
-  if (!window.confirm('¿Seguro que quieres eliminar esta ambulancia?')) return;
-
-  try {
-    await deleteAmbulance(id, token);
-    fetchAmbulances();
-  } catch {
-    alert('Error al eliminar ambulancia');
-  }
-};
-
-
-const handleSave = async (ambulanceData: Omit<Ambulance, '_id'>, id?: string) => {
-  if (!token) {
-    alert('Token no disponible');
-    return;
-  }
-
-  try {
-    if (id) {
-      await updateAmbulance(id, ambulanceData, token);
-    } else {
-      await createAmbulance(ambulanceData, token);
+  const handleDelete = async (id: string) => {
+    if (!token) {
+      alert(t('pages.ambulances.adminPage.alerts.tokenMissing'));
+      return;
     }
-    setModalOpen(false);
-    fetchAmbulances();
-  } catch {
-    alert('Error al guardar ambulancia');
-  }
-};
 
+    if (!window.confirm(t('pages.ambulances.adminPage.confirmDelete'))) return;
 
-  if (loading) return <p className="text-center mt-10">Cargando ambulancias...</p>;
+    try {
+      await deleteAmbulance(id, token);
+      fetchAmbulances();
+    } catch {
+      alert(t('pages.ambulances.adminPage.alerts.deleteError'));
+    }
+  };
+
+  const handleSave = async (ambulanceData: Omit<Ambulance, '_id'>, id?: string) => {
+    if (!token) {
+      alert(t('pages.ambulances.adminPage.alerts.tokenMissing'));
+      return;
+    }
+
+    try {
+      if (id) {
+        await updateAmbulance(id, ambulanceData, token);
+      } else {
+        await createAmbulance(ambulanceData, token);
+      }
+      setModalOpen(false);
+      fetchAmbulances();
+    } catch {
+      alert(t('pages.ambulances.adminPage.alerts.saveError'));
+    }
+  };
+
+  if (loading) return <p className="text-center mt-10">{t('pages.ambulances.adminPage.loading')}</p>;
   if (error) return <p className="text-center mt-10 text-red-600">{error}</p>;
 
   return (
     <div className="max-w-5xl mx-auto p-6 bg-white rounded shadow mt-8">
-      <h1 className="text-2xl font-bold mb-6 text-center">Administración de Ambulancias</h1>
+      <h1 className="text-2xl font-bold mb-6 text-center">
+        {t('pages.ambulances.adminPage.title')}
+      </h1>
 
       <button
         onClick={handleOpenNew}
         className="mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
       >
-        + Nueva Ambulancia
+        {t('pages.ambulances.adminPage.actions.new')}
       </button>
 
       {ambulances.length === 0 ? (
-        <p className="text-center text-gray-500">No hay ambulancias registradas.</p>
+        <p className="text-center text-gray-500">
+          {t('pages.ambulances.adminPage.empty')}
+        </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full table-auto border border-gray-200 rounded">
             <thead className="bg-gray-100">
               <tr>
-                <th className="border border-gray-300 px-4 py-2 text-center">Marca</th>
-                <th className="border border-gray-300 px-4 py-2 text-center">Modelo</th>
-                <th className="border border-gray-300 px-4 py-2 text-center">Matrícula</th>
-                <th className="border border-gray-300 px-4 py-2 text-center">Número Ambulancia</th>
-                <th className="border border-gray-300 px-4 py-2 text-center">Acciones</th>
+                <th className="border border-gray-300 px-4 py-2 text-center">
+                  {t('pages.ambulances.adminPage.table.brand')}
+                </th>
+                <th className="border border-gray-300 px-4 py-2 text-center">
+                  {t('pages.ambulances.adminPage.table.model')}
+                </th>
+                <th className="border border-gray-300 px-4 py-2 text-center">
+                  {t('pages.ambulances.adminPage.table.licensePlate')}
+                </th>
+                <th className="border border-gray-300 px-4 py-2 text-center">
+                  {t('pages.ambulances.adminPage.table.ambulanceNumber')}
+                </th>
+                <th className="border border-gray-300 px-4 py-2 text-center">
+                  {t('pages.ambulances.adminPage.table.actions')}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -124,13 +139,13 @@ const handleSave = async (ambulanceData: Omit<Ambulance, '_id'>, id?: string) =>
                       onClick={() => handleEdit(amb)}
                       className="mr-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
-                      Editar
+                      {t('pages.ambulances.adminPage.actions.edit')}
                     </button>
                     <button
                       onClick={() => handleDelete(amb._id)}
                       className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
                     >
-                      Eliminar
+                      {t('pages.ambulances.adminPage.actions.delete')}
                     </button>
                   </td>
                 </tr>

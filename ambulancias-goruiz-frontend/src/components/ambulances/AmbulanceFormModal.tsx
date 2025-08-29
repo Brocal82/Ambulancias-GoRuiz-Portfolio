@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Ambulance } from '../../types/ambulance';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   isOpen: boolean;
@@ -11,12 +12,13 @@ interface Props {
 const MAX_LENGTH = 30;
 
 const AmbulanceFormModal: React.FC<Props> = ({ isOpen, onClose, onSave, initialData }) => {
+  const { t } = useTranslation();
+
   const [brand, setBrand] = useState('');
   const [modelName, setModelName] = useState('');
   const [licensePlate, setLicensePlate] = useState('');
   const [ambulanceNumber, setAmbulanceNumber] = useState('');
 
-  // Errores
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
@@ -35,18 +37,16 @@ const AmbulanceFormModal: React.FC<Props> = ({ isOpen, onClose, onSave, initialD
     }
   }, [initialData, isOpen]);
 
-  // Validar un campo
   const validateField = (name: string, value: string) => {
     if (!value.trim()) {
-      return 'Este campo es obligatorio';
+      return t('pages.ambulances.formModal.validation.required');
     }
     if (value.length > MAX_LENGTH) {
-      return `No puede tener más de ${MAX_LENGTH} caracteres`;
+      return t('pages.ambulances.formModal.validation.maxLength', { max: MAX_LENGTH });
     }
     return '';
   };
 
-  // Validar todos los campos
   const validateAll = () => {
     const newErrors: { [key: string]: string } = {};
     newErrors.brand = validateField('brand', brand);
@@ -54,11 +54,9 @@ const AmbulanceFormModal: React.FC<Props> = ({ isOpen, onClose, onSave, initialD
     newErrors.licensePlate = validateField('licensePlate', licensePlate);
     newErrors.ambulanceNumber = validateField('ambulanceNumber', ambulanceNumber);
     setErrors(newErrors);
-    // Retorna true si no hay errores
     return Object.values(newErrors).every((err) => err === '');
   };
 
-  // Manejar cambio y validación en cada input
   const handleChange = (field: string, value: string) => {
     switch (field) {
       case 'brand':
@@ -106,11 +104,11 @@ const AmbulanceFormModal: React.FC<Props> = ({ isOpen, onClose, onSave, initialD
         className="bg-white rounded p-6 w-full max-w-md shadow-lg"
       >
         <h2 className="text-xl font-semibold mb-4">
-          {initialData ? 'Editar Ambulancia' : 'Crear Nueva Ambulancia'}
+          {initialData ? t('pages.ambulances.formModal.titleEdit') : t('pages.ambulances.formModal.titleNew')}
         </h2>
 
         <label className="block mb-2">
-          Marca:
+          {t('pages.ambulances.formModal.fields.brand')}
           <input
             type="text"
             value={brand}
@@ -123,7 +121,7 @@ const AmbulanceFormModal: React.FC<Props> = ({ isOpen, onClose, onSave, initialD
         </label>
 
         <label className="block mb-2">
-          Modelo:
+          {t('pages.ambulances.formModal.fields.model')}
           <input
             type="text"
             value={modelName}
@@ -136,7 +134,7 @@ const AmbulanceFormModal: React.FC<Props> = ({ isOpen, onClose, onSave, initialD
         </label>
 
         <label className="block mb-2">
-          Matrícula:
+          {t('pages.ambulances.formModal.fields.licensePlate')}
           <input
             type="text"
             value={licensePlate}
@@ -151,7 +149,7 @@ const AmbulanceFormModal: React.FC<Props> = ({ isOpen, onClose, onSave, initialD
         </label>
 
         <label className="block mb-4">
-          Número Ambulancia:
+          {t('pages.ambulances.formModal.fields.ambulanceNumber')}
           <input
             type="text"
             value={ambulanceNumber}
@@ -171,7 +169,7 @@ const AmbulanceFormModal: React.FC<Props> = ({ isOpen, onClose, onSave, initialD
             onClick={onClose}
             className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100"
           >
-            Cancelar
+            {t('pages.ambulances.formModal.actions.cancel')}
           </button>
           <button
             type="submit"
@@ -180,7 +178,7 @@ const AmbulanceFormModal: React.FC<Props> = ({ isOpen, onClose, onSave, initialD
               isSaveDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
             }`}
           >
-            Guardar
+            {t('pages.ambulances.formModal.actions.save')}
           </button>
         </div>
       </form>

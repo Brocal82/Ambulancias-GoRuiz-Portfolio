@@ -668,6 +668,50 @@
           "deleteTitle": "Borrar mensaje"
         }
       }
+    },
+    "ambulances": {
+      "adminPage": {
+        "title": "Administración de Ambulancias",
+        "loading": "Cargando ambulancias...",
+        "error": "Error al cargar ambulancias",
+        "empty": "No hay ambulancias registradas.",
+        "table": {
+          "brand": "Marca",
+          "model": "Modelo",
+          "licensePlate": "Matrícula",
+          "ambulanceNumber": "Número Ambulancia",
+          "actions": "Acciones"
+        },
+        "actions": {
+          "new": "+ Nueva Ambulancia",
+          "edit": "Editar",
+          "delete": "Eliminar"
+        },
+        "confirmDelete": "¿Seguro que quieres eliminar esta ambulancia?",
+        "alerts": {
+          "tokenMissing": "Token no disponible",
+          "deleteError": "Error al eliminar ambulancia",
+          "saveError": "Error al guardar ambulancia"
+        }
+      },
+      "formModal": {
+        "titleNew": "Crear Nueva Ambulancia",
+        "titleEdit": "Editar Ambulancia",
+        "fields": {
+          "brand": "Marca:",
+          "model": "Modelo:",
+          "licensePlate": "Matrícula:",
+          "ambulanceNumber": "Número Ambulancia:"
+        },
+        "validation": {
+          "required": "Este campo es obligatorio",
+          "maxLength": "No puede tener más de {{max}} caracteres"
+        },
+        "actions": {
+          "cancel": "Cancelar",
+          "save": "Guardar"
+        }
+      }
     }
   }
 }
