@@ -629,6 +629,44 @@
           "appointment": "Termin: {{worker}} um {{time}}"
         }
       }
-  }
+  },
+  "messages": {
+      "adminPage": {
+        "title": "📨 Nachricht senden",
+        "labels": {
+          "subject": "Betreff",
+          "body": "Nachricht",
+          "recipients": "Empfänger"
+        },
+        "placeholders": {
+          "subject": "Betreff der Nachricht",
+          "body": "Schreibe den Inhalt der Nachricht"
+        },
+        "sendToAll": "An alle Mitarbeiter senden",
+        "actions": {
+          "send": "Nachricht senden",
+          "viewSent": "📨 Gesendete Nachrichten ansehen"
+        }
+      },
+      "sentPage": {
+        "title": "📨 An alle gesendete Nachrichten",
+        "sentOn": "Gesendet am",
+        "empty": "Es wurden noch keine allgemeinen Nachrichten gesendet.",
+        "actions": {
+          "back": "← Zurück",
+          "view": "Anzeigen",
+          "hide": "Ausblenden"
+        }
+      },
+      "workerPage": {
+        "title": "📨 Deine Nachrichten",
+        "loading": "Nachrichten werden geladen...",
+        "empty": "Du hast keine Nachrichten.",
+        "from": "Von:",
+        "actions": {
+          "deleteTitle": "Nachricht löschen"
+        }
+      }
+    }
   }
 }

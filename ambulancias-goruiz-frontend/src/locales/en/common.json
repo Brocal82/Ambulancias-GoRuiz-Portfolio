@@ -629,6 +629,44 @@
           "appointment": "Appointment: {{worker}} at {{time}}"
         }
       }
-  }
+  },
+  "messages": {
+      "adminPage": {
+        "title": "📨 Send Message",
+        "labels": {
+          "subject": "Subject",
+          "body": "Message",
+          "recipients": "Recipients"
+        },
+        "placeholders": {
+          "subject": "Message subject",
+          "body": "Write the message content"
+        },
+        "sendToAll": "Send to all workers",
+        "actions": {
+          "send": "Send message",
+          "viewSent": "📨 View sent messages"
+        }
+      },
+      "sentPage": {
+        "title": "📨 Messages sent to all",
+        "sentOn": "Sent on",
+        "empty": "No general messages have been sent yet.",
+        "actions": {
+          "back": "← Back",
+          "view": "View",
+          "hide": "Hide"
+        }
+      },
+      "workerPage": {
+        "title": "📨 Your Messages",
+        "loading": "Loading messages...",
+        "empty": "You have no messages.",
+        "from": "From:",
+        "actions": {
+          "deleteTitle": "Delete message"
+        }
+      }
+    }
   }
 }

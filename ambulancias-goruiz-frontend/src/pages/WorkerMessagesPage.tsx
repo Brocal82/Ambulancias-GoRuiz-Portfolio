@@ -4,9 +4,11 @@ import { getMyMessages, deleteMessageForUser } from '../api/messages';
 import type { Message } from '../types/message';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 
 const WorkerMessagesPage = () => {
   const { token } = useAuth();
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,12 +41,16 @@ const WorkerMessagesPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-2xl font-bold mb-6 text-center">📨 Tus Mensajes</h1>
+      <h1 className="text-2xl font-bold mb-6 text-center">
+        {t('pages.messages.workerPage.title')}
+      </h1>
 
       {loading ? (
-        <p className="text-center">Cargando mensajes...</p>
+        <p className="text-center">{t('pages.messages.workerPage.loading')}</p>
       ) : messages.length === 0 ? (
-        <p className="text-center text-gray-500">No tienes mensajes.</p>
+        <p className="text-center text-gray-500">
+          {t('pages.messages.workerPage.empty')}
+        </p>
       ) : (
         <div className="max-w-3xl mx-auto space-y-4">
           {messages.map((msg) => (
@@ -55,13 +61,13 @@ const WorkerMessagesPage = () => {
               <button
                 onClick={() => handleDelete(msg._id)}
                 className="absolute top-2 right-2 text-red-600 hover:text-red-800 text-xl font-bold"
-                title="Borrar mensaje"
+                title={t('pages.messages.workerPage.actions.deleteTitle')}
               >
                 ×
               </button>
               <h2 className="text-lg font-semibold">{msg.subject}</h2>
               <p className="text-sm text-gray-500 mb-2">
-                De: {msg.sender.name} {msg.sender.lastName} ·{' '}
+                {t('pages.messages.workerPage.from')} {msg.sender.name} {msg.sender.lastName} ·{' '}
                 {new Date(msg.sentAt).toLocaleString()}
               </p>
               <p>{msg.body}</p>
@@ -74,3 +80,4 @@ const WorkerMessagesPage = () => {
 };
 
 export default WorkerMessagesPage;
+

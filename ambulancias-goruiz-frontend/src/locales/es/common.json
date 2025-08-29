@@ -630,6 +630,44 @@
         }
       }
 
+    },
+    "messages": {
+      "adminPage": {
+        "title": "📨 Enviar Mensaje",
+        "labels": {
+          "subject": "Asunto",
+          "body": "Mensaje",
+          "recipients": "Receptores"
+        },
+        "placeholders": {
+          "subject": "Asunto del mensaje",
+          "body": "Escribe el contenido del mensaje"
+        },
+        "sendToAll": "Enviar a todos los trabajadores",
+        "actions": {
+          "send": "Enviar mensaje",
+          "viewSent": "📨 Ver mensajes enviados"
+        }
+      },
+      "sentPage": {
+        "title": "📨 Mensajes enviados a todos",
+        "sentOn": "Enviado el",
+        "empty": "No se han enviado mensajes generales aún.",
+        "actions": {
+          "back": "← Volver",
+          "view": "Ver",
+          "hide": "Ocultar"
+        }
+      },
+      "workerPage": {
+        "title": "📨 Tus Mensajes",
+        "loading": "Cargando mensajes...",
+        "empty": "No tienes mensajes.",
+        "from": "De:",
+        "actions": {
+          "deleteTitle": "Borrar mensaje"
+        }
+      }
     }
   }
 }
