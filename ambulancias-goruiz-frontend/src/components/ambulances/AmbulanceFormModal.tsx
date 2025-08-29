@@ -37,7 +37,7 @@ const AmbulanceFormModal: React.FC<Props> = ({ isOpen, onClose, onSave, initialD
     }
   }, [initialData, isOpen]);
 
-  const validateField = (name: string, value: string) => {
+  const validateField = (value: string) => {
     if (!value.trim()) {
       return t('pages.ambulances.formModal.validation.required');
     }
@@ -49,10 +49,10 @@ const AmbulanceFormModal: React.FC<Props> = ({ isOpen, onClose, onSave, initialD
 
   const validateAll = () => {
     const newErrors: { [key: string]: string } = {};
-    newErrors.brand = validateField('brand', brand);
-    newErrors.modelName = validateField('modelName', modelName);
-    newErrors.licensePlate = validateField('licensePlate', licensePlate);
-    newErrors.ambulanceNumber = validateField('ambulanceNumber', ambulanceNumber);
+    newErrors.brand = validateField(brand);
+    newErrors.modelName = validateField(modelName);
+    newErrors.licensePlate = validateField(licensePlate);
+    newErrors.ambulanceNumber = validateField(ambulanceNumber);
     setErrors(newErrors);
     return Object.values(newErrors).every((err) => err === '');
   };
@@ -61,19 +61,19 @@ const AmbulanceFormModal: React.FC<Props> = ({ isOpen, onClose, onSave, initialD
     switch (field) {
       case 'brand':
         setBrand(value);
-        setErrors((prev) => ({ ...prev, brand: validateField(field, value) }));
+        setErrors((prev) => ({ ...prev, brand: validateField(value) }));
         break;
       case 'modelName':
         setModelName(value);
-        setErrors((prev) => ({ ...prev, modelName: validateField(field, value) }));
+        setErrors((prev) => ({ ...prev, modelName: validateField(value) }));
         break;
       case 'licensePlate':
         setLicensePlate(value);
-        setErrors((prev) => ({ ...prev, licensePlate: validateField(field, value) }));
+        setErrors((prev) => ({ ...prev, licensePlate: validateField(value) }));
         break;
       case 'ambulanceNumber':
         setAmbulanceNumber(value);
-        setErrors((prev) => ({ ...prev, ambulanceNumber: validateField(field, value) }));
+        setErrors((prev) => ({ ...prev, ambulanceNumber: validateField(value) }));
         break;
     }
   };
