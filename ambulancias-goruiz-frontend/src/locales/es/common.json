@@ -737,6 +737,12 @@
         "loading": "Cargando días asignados...",
         "weekRange": "Semana del {{from}} al {{to}}",
         "freeDay": "Libre"
+      },
+      "dienstPage": {
+        "title": "Tus Diensts",
+        "loading": "Cargando diensts...",
+        "range": "Desde el {{from}} hasta el {{to}}",
+        "freeDay": "Libre"
       }
     }
   }

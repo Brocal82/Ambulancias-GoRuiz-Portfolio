@@ -1,13 +1,16 @@
-//src/pages/DienstPage.tsx
+// src/pages/DienstPage.tsx
 import { useCallback, useEffect, useState } from "react";
 import { getDienstByUser } from "../api/diensts";
 import type { Dienst, UserRef } from "../types/dienst";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
 import { useAuth } from "../hooks/useAuth";
+import { useTranslation } from "react-i18next";
 
 const DienstPage = () => {
   const { userId, token } = useAuth();
+  const { t, i18n } = useTranslation();
+
   const [diensts, setDiensts] = useState<Dienst[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<{
@@ -18,6 +21,14 @@ const DienstPage = () => {
     };
     dienstId: string;
   } | null>(null);
+
+  const fmtDate = (d: Date) => d.toLocaleDateString(i18n.language);
+  const fmtCellDate = (isoDay: string) =>
+    new Date(isoDay).toLocaleDateString(i18n.language, {
+      weekday: "short",
+      day: "2-digit",
+      month: "2-digit",
+    });
 
   const fetchDiensts = useCallback(async () => {
     if (!userId || !token) return;
@@ -35,15 +46,21 @@ const DienstPage = () => {
     fetchDiensts();
   }, [fetchDiensts]);
 
-  if (loading) return <p>Cargando diensts...</p>;
+  if (loading) return <p>{t("pages.diensts.dienstPage.loading")}</p>;
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Tus Diensts</h2>
+      <h2 className="text-xl font-bold mb-4">{t("pages.diensts.dienstPage.title")}</h2>
+
       <ul className="space-y-8">
         {diensts.map((dienst) => {
+          // rango de 14 días desde el inicio
+          const start = new Date(dienst.weekStartDate);
+          const end = new Date(start);
+          end.setDate(end.getDate() + 13);
+
           const allWeekDates = Array.from({ length: 14 }, (_, i) => {
-            const d = new Date(dienst.weekStartDate);
+            const d = new Date(start);
             d.setDate(d.getDate() + i);
             return d.toISOString().split("T")[0];
           });
@@ -51,10 +68,14 @@ const DienstPage = () => {
           return (
             <li key={dienst.dienstNumber}>
               <div className="mb-2">
-                <p className="text-lg font-semibold">Dienst #{dienst.dienstNumber}</p>
+                <p className="text-lg font-semibold">
+                  {t("pages.diensts.adminPage.dienstLabel", { num: dienst.dienstNumber })}
+                </p>
                 <p className="mb-2 text-sm text-gray-600">
-                  Desde el {new Date(dienst.weekStartDate).toLocaleDateString()} hasta el{" "}
-                  {new Date(new Date(dienst.weekStartDate).setDate(new Date(dienst.weekStartDate).getDate() + 13)).toLocaleDateString()}
+                  {t("pages.diensts.dienstPage.range", {
+                    from: fmtDate(start),
+                    to: fmtDate(end),
+                  })}
                 </p>
               </div>
 
@@ -79,26 +100,22 @@ const DienstPage = () => {
                         })
                       }
                     >
-                      <p className="font-semibold">
-                        {new Date(day).toLocaleDateString("es-ES", {
-                          weekday: "short",
-                          day: "2-digit",
-                          month: "2-digit",
-                        })}
-                      </p>
+                      <p className="font-semibold">{fmtCellDate(day)}</p>
+
                       {assignment ? (
                         <>
                           <p className="text-xs">🕒 {assignment.startTime} - {assignment.endTime}</p>
                           <p className="text-xs">
-                            🚑 {typeof assignment.ambulanceId === "object" && "ambulanceNumber" in assignment.ambulanceId
+                            🚑{" "}
+                            {typeof assignment.ambulanceId === "object" && "ambulanceNumber" in assignment.ambulanceId
                               ? assignment.ambulanceId.ambulanceNumber
                               : "—"}
                           </p>
-
-
                         </>
                       ) : (
-                        <p className="text-xs text-green-800 font-medium mt-2">🌴 Libre</p>
+                        <p className="text-xs text-green-800 font-medium mt-2">
+                          🌴 {t("pages.diensts.dienstPage.freeDay")}
+                        </p>
                       )}
                     </div>
                   );

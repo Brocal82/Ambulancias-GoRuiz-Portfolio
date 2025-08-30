@@ -736,6 +736,12 @@
         "loading": "Zugewiesene Tage werden geladen...",
         "weekRange": "Woche von {{from}} bis {{to}}",
         "freeDay": "Frei"
+      },
+      "dienstPage": {
+        "title": "Deine Diensts",
+        "loading": "Diensts werden geladen...",
+        "range": "Von {{from}} bis {{to}}",
+        "freeDay": "Frei"
       }
     }
   }

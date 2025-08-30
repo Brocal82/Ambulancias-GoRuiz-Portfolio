@@ -736,6 +736,12 @@
         "loading": "Loading assigned days...",
         "weekRange": "Week from {{from}} to {{to}}",
         "freeDay": "Off"
+      },
+      "dienstPage": {
+        "title": "Your Diensts",
+        "loading": "Loading diensts...",
+        "range": "From {{from}} to {{to}}",
+        "freeDay": "Off"
       }
     }
   }
