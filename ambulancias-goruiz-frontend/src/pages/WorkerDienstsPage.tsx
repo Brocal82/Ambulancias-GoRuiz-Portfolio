@@ -1,4 +1,4 @@
-//src/pages/WorkerDinestsPage.tsx
+// src/pages/WorkerDienstsPage.tsx
 import { useCallback, useEffect, useState } from "react";
 import { getAssignedDaysForUser } from "../api/diensts";
 import AssignmentModal from "../components/AssignmentModal";
@@ -6,9 +6,12 @@ import { isPartialAssignment } from "../utils/assignmentUtils";
 import type { AssignedDayFull } from "../types/dienst";
 import type { FlexibleAssignment } from "../types/assignment";
 import { useAuth } from "../hooks/useAuth";
+import { useTranslation } from "react-i18next";
 
 const WorkerDienstsPage = () => {
   const { userId, token } = useAuth();
+  const { t, i18n } = useTranslation();
+
   const [assignedDays, setAssignedDays] = useState<AssignedDayFull[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<{
@@ -16,6 +19,14 @@ const WorkerDienstsPage = () => {
     assignment?: FlexibleAssignment;
     dienstId: string;
   } | null>(null);
+
+  const fmtDate = (d: Date) => d.toLocaleDateString(i18n.language);
+  const fmtCellDate = (isoDay: string) =>
+    new Date(isoDay).toLocaleDateString(i18n.language, {
+      weekday: "short",
+      day: "2-digit",
+      month: "2-digit",
+    });
 
   const fetchAssignedDays = useCallback(async () => {
     if (!userId || !token) return;
@@ -34,16 +45,16 @@ const WorkerDienstsPage = () => {
     fetchAssignedDays();
   }, [fetchAssignedDays]);
 
-  if (loading) return <p>Cargando días asignados...</p>;
+  if (loading) return <p>{t("pages.diensts.workerPage.loading")}</p>;
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Tus días asignados</h2>
+      <h2 className="text-xl font-bold mb-4">{t("pages.diensts.workerPage.title")}</h2>
       <>
         {(() => {
           const today = new Date();
           const dayOfWeek = today.getDay();
-          const daysToSubtract = (dayOfWeek + 6) % 7;
+          const daysToSubtract = (dayOfWeek + 6) % 7; // lunes = 0
           const firstMonday = new Date(today);
           firstMonday.setDate(today.getDate() - daysToSubtract);
 
@@ -66,8 +77,10 @@ const WorkerDienstsPage = () => {
                 return (
                   <div key={weekOffset}>
                     <p className="text-lg font-semibold text-gray-700 mb-2">
-                      Semana del {weekStart.toLocaleDateString("es-ES")} al{" "}
-                      {weekEnd.toLocaleDateString("es-ES")}
+                      {t("pages.diensts.workerPage.weekRange", {
+                        from: fmtDate(weekStart),
+                        to: fmtDate(weekEnd),
+                      })}
                     </p>
                     <div className="grid grid-cols-7 gap-2">
                       {weekDates.map((dateStr) => {
@@ -83,7 +96,12 @@ const WorkerDienstsPage = () => {
                             key={dateStr}
                             className={`border rounded p-2 text-sm cursor-pointer hover:shadow ${bgColor}`}
                             onClick={() => {
-                              if (!assignment?.startTime || !assignment?.endTime || !assignment.driver || !assignment.medic) {
+                              if (
+                                !assignment?.startTime ||
+                                !assignment?.endTime ||
+                                !assignment.driver ||
+                                !assignment.medic
+                              ) {
                                 return;
                               }
 
@@ -94,15 +112,8 @@ const WorkerDienstsPage = () => {
                               });
                             }}
                           >
-                              
+                            <p className="font-semibold">{fmtCellDate(dateStr)}</p>
 
-                            <p className="font-semibold">
-                              {new Date(dateStr).toLocaleDateString("es-ES", {
-                                weekday: "short",
-                                day: "2-digit",
-                                month: "2-digit",
-                              })}
-                            </p>
                             {assignment ? (
                               <>
                                 <p className="text-xs">
@@ -114,9 +125,6 @@ const WorkerDienstsPage = () => {
                                     ? assignment.ambulanceNumber
                                     : "—"}
                                 </p>
-
-
-
                                 <p className="text-xs">
                                   👨‍✈️{" "}
                                   {typeof assignment.driver === "object" && assignment.driver
@@ -131,7 +139,7 @@ const WorkerDienstsPage = () => {
                                 </p>
                               </>
                             ) : (
-                              <p className="text-xs text-green-800 mt-2">🌴 Libre</p>
+                              <p className="text-xs text-green-800 mt-2">🌴 {t("pages.diensts.workerPage.freeDay")}</p>
                             )}
                           </div>
                         );

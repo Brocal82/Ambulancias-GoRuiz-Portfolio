@@ -731,6 +731,12 @@
         },
         "dienstLabel": "Dienst #{{num}}",
         "freeDay": "Libre"
+      },
+      "workerPage": {
+        "title": "Tus días asignados",
+        "loading": "Cargando días asignados...",
+        "weekRange": "Semana del {{from}} al {{to}}",
+        "freeDay": "Libre"
       }
     }
   }

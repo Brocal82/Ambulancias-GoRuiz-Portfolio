@@ -730,6 +730,12 @@
         },
         "dienstLabel": "Dienst #{{num}}",
         "freeDay": "Frei"
+      },
+      "workerPage": {
+        "title": "Deine zugewiesenen Tage",
+        "loading": "Zugewiesene Tage werden geladen...",
+        "weekRange": "Woche von {{from}} bis {{to}}",
+        "freeDay": "Frei"
       }
     }
   }

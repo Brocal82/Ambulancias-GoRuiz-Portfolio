@@ -730,6 +730,12 @@
         },
         "dienstLabel": "Dienst #{{num}}",
         "freeDay": "Off"
+      },
+      "workerPage": {
+        "title": "Your assigned days",
+        "loading": "Loading assigned days...",
+        "weekRange": "Week from {{from}} to {{to}}",
+        "freeDay": "Off"
       }
     }
   }
