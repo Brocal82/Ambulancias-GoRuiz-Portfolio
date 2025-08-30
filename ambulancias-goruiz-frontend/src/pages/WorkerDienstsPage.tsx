@@ -1,3 +1,4 @@
+//src/pages/WorkerDinestsPage.tsx
 import { useCallback, useEffect, useState } from "react";
 import { getAssignedDaysForUser } from "../api/diensts";
 import AssignmentModal from "../components/AssignmentModal";

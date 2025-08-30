@@ -711,6 +711,26 @@
           "save": "Save"
         }
       }
+    },
+        "diensts": {
+      "adminPage": {
+        "title": "Duty Roster (Admin)",
+        "weekRange": "Week from {{from}} to {{to}}",
+        "actions": {
+          "create": "Create",
+          "delete": "Delete"
+        },
+        "confirmCreate": "Create templates for the week of {{date}}?",
+        "confirmDelete": "Delete all Diensts for the week of {{date}}?",
+        "alerts": {
+          "createOk": "✅ Templates created successfully",
+          "createErr": "❌ Could not create templates. They may already exist.",
+          "deleteOk": "🗑️ Diensts deleted successfully",
+          "deleteErr": "❌ Could not delete the Diensts."
+        },
+        "dienstLabel": "Dienst #{{num}}",
+        "freeDay": "Off"
+      }
     }
   }
 }

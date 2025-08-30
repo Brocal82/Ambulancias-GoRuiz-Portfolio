@@ -712,6 +712,26 @@
           "save": "Guardar"
         }
       }
+    },
+    "diensts": {
+      "adminPage": {
+        "title": "Dienstplan (Admin)",
+        "weekRange": "Semana del {{from}} al {{to}}",
+        "actions": {
+          "create": "Crear",
+          "delete": "Borrar"
+        },
+        "confirmCreate": "¿Crear plantillas para la semana del {{date}}?",
+        "confirmDelete": "¿Borrar todos los Diensts de la semana del {{date}}?",
+        "alerts": {
+          "createOk": "✅ Plantillas creadas correctamente",
+          "createErr": "❌ No se pudieron crear las plantillas. Quizás ya existen.",
+          "deleteOk": "🗑️ Diensts eliminados correctamente",
+          "deleteErr": "❌ No se pudieron eliminar los Diensts."
+        },
+        "dienstLabel": "Dienst #{{num}}",
+        "freeDay": "Libre"
+      }
     }
   }
 }

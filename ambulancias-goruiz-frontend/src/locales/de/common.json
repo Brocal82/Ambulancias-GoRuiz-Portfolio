@@ -711,6 +711,26 @@
           "save": "Speichern"
         }
       }
+    },
+    "diensts": {
+      "adminPage": {
+        "title": "Dienstplan (Admin)",
+        "weekRange": "Woche von {{from}} bis {{to}}",
+        "actions": {
+          "create": "Erstellen",
+          "delete": "Löschen"
+        },
+        "confirmCreate": "Vorlagen für die Woche ab dem {{date}} erstellen?",
+        "confirmDelete": "Alle Diensts für die Woche ab dem {{date}} löschen?",
+        "alerts": {
+          "createOk": "✅ Vorlagen erfolgreich erstellt",
+          "createErr": "❌ Vorlagen konnten nicht erstellt werden. Evtl. existieren sie bereits.",
+          "deleteOk": "🗑️ Diensts erfolgreich gelöscht",
+          "deleteErr": "❌ Diensts konnten nicht gelöscht werden."
+        },
+        "dienstLabel": "Dienst #{{num}}",
+        "freeDay": "Frei"
+      }
     }
   }
 }

@@ -4,6 +4,7 @@ import { getAllDiensts, generateDienstsForWeek, deleteDienstsForWeek } from '../
 import AssignmentModal from '../components/AssignmentModal';
 import { isPartialAssignment } from '../utils/assignmentUtils';
 import { useAuth } from '../hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 
 const AdminPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
@@ -17,6 +18,17 @@ const AdminPage = () => {
   } | null>(null);
 
   const { token } = useAuth();
+  const { t, i18n } = useTranslation();
+
+  const fmtDate = (d: Date) =>
+    d.toLocaleDateString(i18n.language);
+
+  const fmtCellDate = (isoDay: string) =>
+    new Date(isoDay).toLocaleDateString(i18n.language, {
+      weekday: 'short',
+      day: '2-digit',
+      month: '2-digit',
+    });
 
   const fetchDiensts = useCallback(async () => {
     if (!token) return;
@@ -50,7 +62,7 @@ const AdminPage = () => {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Página de Administrador</h1>
+      <h1 className="text-2xl font-bold mb-4">{t('pages.diensts.adminPage.title')}</h1>
 
       {weekStartDates.map((weekStart, index) => {
         const weekEnd = new Date(weekStart);
@@ -60,29 +72,34 @@ const AdminPage = () => {
           <div key={index} className="mb-10">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-lg font-semibold">
-                Semana del {weekStart.toLocaleDateString()} al {weekEnd.toLocaleDateString()}
+                {t('pages.diensts.adminPage.weekRange', {
+                  from: fmtDate(weekStart),
+                  to: fmtDate(weekEnd)
+                })}
               </h2>
 
               <div className="flex gap-2">
                 <button
                   className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded"
                   onClick={async () => {
-                    const confirmCreate = confirm(`¿Crear plantillas para la semana del ${weekStart.toLocaleDateString()}?`);
+                    const confirmCreate = confirm(
+                      t('pages.diensts.adminPage.confirmCreate', { date: fmtDate(weekStart) })
+                    );
                     if (!confirmCreate || !token) return;
 
                     const mondayISO = weekStart.toISOString().split("T")[0];
 
                     try {
                       await generateDienstsForWeek(mondayISO, token);
-                      alert("✅ Plantillas creadas correctamente");
+                      alert(t('pages.diensts.adminPage.alerts.createOk'));
                       fetchDiensts();
                     } catch (err) {
                       console.error("Error al crear plantillas:", err);
-                      alert("❌ No se pudieron crear las plantillas. Quizás ya existen.");
+                      alert(t('pages.diensts.adminPage.alerts.createErr'));
                     }
                   }}
                 >
-                  Crear
+                  {t('pages.diensts.adminPage.actions.create')}
                 </button>
 
                 {diensts.some(d => {
@@ -91,27 +108,29 @@ const AdminPage = () => {
                   return !isNaN(parsedDate.getTime()) &&
                     parsedDate.toISOString().split("T")[0] === weekStart.toISOString().split("T")[0];
                 }) && (
-                    <button
-                      className="text-sm bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
-                      onClick={async () => {
-                        const confirmDelete = confirm(`¿Borrar todos los Diensts de la semana del ${weekStart.toLocaleDateString()}?`);
-                        if (!confirmDelete || !token) return;
+                  <button
+                    className="text-sm bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+                    onClick={async () => {
+                      const confirmDelete = confirm(
+                        t('pages.diensts.adminPage.confirmDelete', { date: fmtDate(weekStart) })
+                      );
+                      if (!confirmDelete || !token) return;
 
-                        const mondayISO = weekStart.toISOString().split("T")[0];
+                      const mondayISO = weekStart.toISOString().split("T")[0];
 
-                        try {
-                          await deleteDienstsForWeek(mondayISO, token);
-                          alert("🗑️ Diensts eliminados correctamente");
-                          fetchDiensts();
-                        } catch (err) {
-                          console.error("Error al eliminar diensts:", err);
-                          alert("❌ No se pudieron eliminar los Diensts.");
-                        }
-                      }}
-                    >
-                      Borrar
-                    </button>
-                  )}
+                      try {
+                        await deleteDienstsForWeek(mondayISO, token);
+                        alert(t('pages.diensts.adminPage.alerts.deleteOk'));
+                        fetchDiensts();
+                      } catch (err) {
+                        console.error("Error al eliminar diensts:", err);
+                        alert(t('pages.diensts.adminPage.alerts.deleteErr'));
+                      }
+                    }}
+                  >
+                    {t('pages.diensts.adminPage.actions.delete')}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -131,7 +150,9 @@ const AdminPage = () => {
 
                 return (
                   <div key={`${weekStart.toISOString()}-${dienst.dienstNumber}`} className="mb-6">
-                    <p className="font-semibold text-md mb-1">Dienst #{dienst.dienstNumber}</p>
+                    <p className="font-semibold text-md mb-1">
+                      {t('pages.diensts.adminPage.dienstLabel', { num: dienst.dienstNumber })}
+                    </p>
                     <div className="grid grid-cols-7 gap-2">
                       {weekDates.map((day) => {
                         const assignment = dienst.assignments.find((a) => a.date === day);
@@ -154,11 +175,7 @@ const AdminPage = () => {
                             }
                           >
                             <p className="font-semibold">
-                              {new Date(day).toLocaleDateString("es-ES", {
-                                weekday: "short",
-                                day: "2-digit",
-                                month: "2-digit",
-                              })}
+                              {fmtCellDate(day)}
                             </p>
                             {assignment ? (
                               <>
@@ -171,14 +188,8 @@ const AdminPage = () => {
                                       ? assignment.ambulanceId
                                       : "—"}
                                 </p>
-
-
-
-
-
-
                                 <p className="text-xs">
-                                  👨‍✈️ {" "}
+                                  👨‍✈️{" "}
                                   {typeof assignment.driver === "string"
                                     ? assignment.driver
                                     : assignment.driver
@@ -186,7 +197,7 @@ const AdminPage = () => {
                                       : "—"}
                                 </p>
                                 <p className="text-xs">
-                                  🧑‍⚕️ {" "}
+                                  🧑‍⚕️{" "}
                                   {typeof assignment.medic === "string"
                                     ? assignment.medic
                                     : assignment.medic
@@ -195,7 +206,7 @@ const AdminPage = () => {
                                 </p>
                               </>
                             ) : (
-                              <p className="text-xs text-green-800 mt-2">🌴 Libre</p>
+                              <p className="text-xs text-green-800 mt-2">🌴 {t('pages.diensts.adminPage.freeDay')}</p>
                             )}
                           </div>
                         );
@@ -223,11 +234,3 @@ const AdminPage = () => {
 };
 
 export default AdminPage;
-
-
-
-
-
-
-
-
