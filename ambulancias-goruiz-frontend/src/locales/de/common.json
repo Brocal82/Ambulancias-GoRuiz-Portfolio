@@ -801,6 +801,50 @@
         "vacations": "Urlaube",
         "messages": "Nachrichten"
       }
+    },
+    "workday": {
+      "partial": {
+        "title": "🟠 Teilabschluss des Tages",
+        "totalPatients": "Gesamtpatienten (mit Multiplikatoren): {{count}}",
+        "placeholders": {
+          "report": "Grund für den Teilabschluss...",
+          "finalKm": "Endkilometer des Rettungswagens"
+        },
+        "issue": {
+          "button": "Störung",
+          "registered": "🛠️ Störung erfasst. Du kannst den Teilabschluss jetzt senden."
+        },
+        "actions": {
+          "cancel": "Abbrechen",
+          "sendToAdmin": "An Admin senden"
+        },
+        "toasts": {
+          "reportRequired": "✏️ Bitte gib einen Grund für den Teilabschluss an.",
+          "finalKmRequired": "📏 Endkilometer eingeben."
+        }
+      },
+      "common": {
+        "unknownAmbulance": "Unbekannt"
+      },
+      "final": {
+        "title": "✅ Tagesabschluss",
+        "totalPatients": "Gesamtpatienten (mit Multiplikatoren): {{count}}",
+        "placeholders": {
+          "note": "Grund für den endgültigen Abschluss (optional)…",
+          "finalKm": "Endkilometer des Rettungswagens"
+        },
+        "issue": {
+          "button": "Störung",
+          "autoNote": "⚠️ Störung"
+        },
+        "actions": {
+          "cancel": "Abbrechen",
+          "sendToAdmin": "An Admin senden"
+        },
+        "toasts": {
+          "finalKmRequired": "📏 Endkilometer eingeben."
+        }
+      }
     }
   }
 }

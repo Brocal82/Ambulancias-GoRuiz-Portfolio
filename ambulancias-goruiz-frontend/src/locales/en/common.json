@@ -801,6 +801,50 @@
         "vacations": "Vacations",
         "messages": "Messages"
       }
+    },
+    "workday": {
+      "partial": {
+        "title": "🟠 Partial day review",
+        "totalPatients": "Total patients (with multipliers): {{count}}",
+        "placeholders": {
+          "report": "Reason for partial close...",
+          "finalKm": "Ambulance final kilometers"
+        },
+        "issue": {
+          "button": "Issue",
+          "registered": "🛠️ Issue recorded. You can now send the partial close."
+        },
+        "actions": {
+          "cancel": "Cancel",
+          "sendToAdmin": "Send to Admin"
+        },
+        "toasts": {
+          "reportRequired": "✏️ Please write a reason for the partial close.",
+          "finalKmRequired": "📏 Enter the final kilometers."
+        }
+      },
+      "common": {
+        "unknownAmbulance": "Unknown"
+      },
+      "final": {
+        "title": "✅ Final day review",
+        "totalPatients": "Total patients (with multipliers): {{count}}",
+        "placeholders": {
+          "note": "Reason for final close (optional)…",
+          "finalKm": "Ambulance final kilometers"
+        },
+        "issue": {
+          "button": "Issue",
+          "autoNote": "⚠️ Issue"
+        },
+        "actions": {
+          "cancel": "Cancel",
+          "sendToAdmin": "Send to Admin"
+        },
+        "toasts": {
+          "finalKmRequired": "📏 Enter the final kilometers."
+        }
+      }
     }
   }
 }

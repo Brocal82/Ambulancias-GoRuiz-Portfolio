@@ -6,6 +6,7 @@ import ReviewSummary from "./ReviewSummary";
 import { toast } from "react-toastify";
 import { calculateEffectivePatients } from "../../utils/prämienUtils";
 import IssueReportModal from "./IssueReportModal";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   trips: Trip[];
@@ -32,11 +33,13 @@ const PartialReviewModal: React.FC<Props> = ({
   onClose,
   onSend,
 }) => {
+  const { t } = useTranslation();
+
   const [report, setReport] = useState("");
   const [finalKm, setFinalKm] = useState<number | "">("");
   const [hasIssue, setHasIssue] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
-  const [issueData, setIssueData] = useState<any | null>(null); // ✅ NUEVO
+  const [issueData, setIssueData] = useState<any | null>(null);
 
   const parsedInitialKm = Number(initialKm);
   const parsedFinalKm = finalKm === "" ? 0 : Number(finalKm);
@@ -44,11 +47,11 @@ const PartialReviewModal: React.FC<Props> = ({
 
   const handleSubmit = () => {
     if (!report.trim()) {
-      toast.warn("✏️ Escribe un motivo del cierre parcial.");
+      toast.warn(t("pages.workday.partial.toasts.reportRequired"));
       return;
     }
     if (finalKm === "" || isNaN(Number(finalKm))) {
-      toast.warn("📏 Introduce los kilómetros finales.");
+      toast.warn(t("pages.workday.partial.toasts.finalKmRequired"));
       return;
     }
 
@@ -58,7 +61,9 @@ const PartialReviewModal: React.FC<Props> = ({
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl overflow-y-auto max-h-[90vh] space-y-6">
-        <h2 className="text-xl font-bold text-center">🟠 Revisión parcial del día</h2>
+        <h2 className="text-xl font-bold text-center">
+          {t("pages.workday.partial.title")}
+        </h2>
 
         <ReviewSummary
           assignedDay={assignedDay}
@@ -69,11 +74,11 @@ const PartialReviewModal: React.FC<Props> = ({
         />
 
         <p className="text-center font-semibold text-green-700">
-          Total de pacientes (con multiplicadores): {totalEffectivePatients}
+          {t("pages.workday.partial.totalPatients", { count: totalEffectivePatients })}
         </p>
 
         <textarea
-          placeholder="Motivo del cierre parcial..."
+          placeholder={t("pages.workday.partial.placeholders.report") as string}
           value={report}
           onChange={(e) => setReport(e.target.value)}
           className="w-full h-24 border rounded p-2"
@@ -81,7 +86,7 @@ const PartialReviewModal: React.FC<Props> = ({
 
         <input
           type="number"
-          placeholder="Kilómetros finales de la ambulancia"
+          placeholder={t("pages.workday.partial.placeholders.finalKm") as string}
           value={finalKm}
           onChange={(e) =>
             setFinalKm(e.target.value === "" ? "" : Number(e.target.value))
@@ -93,9 +98,10 @@ const PartialReviewModal: React.FC<Props> = ({
         <button
           type="button"
           className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border-2 font-medium transition-colors duration-200
-    ${hasIssue
-              ? "border-red-600 bg-red-200 text-red-800 hover:bg-red-500 hover:text-white"
-              : "border-gray-400 bg-white text-gray-700 hover:bg-red-100 hover:border-red-400 hover:text-red-700"
+            ${
+              hasIssue
+                ? "border-red-600 bg-red-200 text-red-800 hover:bg-red-500 hover:text-white"
+                : "border-gray-400 bg-white text-gray-700 hover:bg-red-100 hover:border-red-400 hover:text-red-700"
             }`}
           onClick={() => {
             const checked = !hasIssue;
@@ -103,7 +109,7 @@ const PartialReviewModal: React.FC<Props> = ({
             if (checked) setShowIssueModal(true);
           }}
         >
-          ⚠️ <span>Avería</span>
+          ⚠️ <span>{t("pages.workday.partial.issue.button")}</span>
         </button>
 
         {/* Modal técnico */}
@@ -115,39 +121,38 @@ const PartialReviewModal: React.FC<Props> = ({
               setHasIssue(false);
             }}
             assignedDay={assignedDay}
-            ambulanceId={ambulanceId}              // 👈 AHORA VIENE DE LAS PROPS
-            ambulanceNumber={ambulanceNumber}      // 👈 PASA TAMBIÉN EL NÚMERO ACTUAL
+            ambulanceId={ambulanceId}
+            ambulanceNumber={ambulanceNumber}
             finalKm={parsedFinalKm}
             onSubmit={(data) => {
               setIssueData(data);
               setShowIssueModal(false);
-              toast.info("🛠️ Avería registrada. Ahora puedes enviar el cierre parcial.");
+              toast.info(t("pages.workday.partial.issue.registered"));
             }}
           />
         )}
-
 
         <div className="flex justify-end gap-2 pt-4">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded"
           >
-            Cancelar
+            {t("pages.workday.partial.actions.cancel")}
           </button>
           <button
             onClick={handleSubmit}
             className="px-4 py-2 bg-orange-500 text-white hover:bg-orange-700 rounded"
           >
-            Enviar al Admin
+            {t("pages.workday.partial.actions.sendToAdmin")}
           </button>
         </div>
-
       </div>
     </div>
   );
 };
 
 export default PartialReviewModal;
+
 
 
 

@@ -803,6 +803,51 @@
         "vacations": "Vacaciones",
         "messages": "Mensajes"
       }
+    },
+        "workday": {
+      "partial": {
+        "title": "🟠 Revisión parcial del día",
+        "totalPatients": "Total de pacientes (con multiplicadores): {{count}}",
+        "placeholders": {
+          "report": "Motivo del cierre parcial...",
+          "finalKm": "Kilómetros finales de la ambulancia"
+        },
+        "issue": {
+          "button": "Avería",
+          "registered": "🛠️ Avería registrada. Ahora puedes enviar el cierre parcial."
+        },
+        "actions": {
+          "cancel": "Cancelar",
+          "sendToAdmin": "Enviar al Admin"
+        },
+        "toasts": {
+          "reportRequired": "✏️ Escribe un motivo del cierre parcial.",
+          "finalKmRequired": "📏 Introduce los kilómetros finales."
+        }
+      },
+      "common": {
+        "unknownAmbulance": "Desconocido"
+      },
+      "final": {
+        "title": "✅ Revisión final del día",
+        "totalPatients": "Total de pacientes (con multiplicadores): {{count}}",
+        "placeholders": {
+          "note": "Motivo del cierre final (opcional)…",
+          "finalKm": "Kilómetros finales de la ambulancia"
+        },
+        "issue": {
+          "button": "Avería",
+          "autoNote": "⚠️ Avería"
+        },
+        "actions": {
+          "cancel": "Cancelar",
+          "sendToAdmin": "Enviar al Admin"
+        },
+        "toasts": {
+          "finalKmRequired": "📏 Introduce los kilómetros finales."
+        }
+      }
     }
+
   }
 }
