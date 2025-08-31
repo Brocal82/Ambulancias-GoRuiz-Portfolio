@@ -1,11 +1,11 @@
 {
   "layout": {
-    "appName": "Ambulancias Goruiz (EN)",
+    "appName": "Ambulances GORRUIZ",
     "logout": "Logout"
   },
   "pages": {
     "welcome": {
-      "title": "Welcome to Ambulances GoRuiz",
+      "title": "Welcome to Ambulances GORRUIZ",
       "login": "Login",
       "register": "Register"
     },

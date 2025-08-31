@@ -88,7 +88,7 @@ console.log("👤 Usuario en AppLayout:", user);
       <main className="p-4">{children}</main>
 
       <footer className="bg-gray-200 text-center p-2 text-sm text-gray-600">
-        &copy; 2025 Ambulancias Goruiz
+        &copy; 2025 Ambulancias Gorruiz
       </footer>
     </div>
   );
