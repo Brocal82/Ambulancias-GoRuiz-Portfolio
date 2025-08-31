@@ -666,6 +666,26 @@
         "actions": {
           "deleteTitle": "Nachricht löschen"
         }
+      },
+      "userTab": {
+        "title": "📩 Nachricht an Mitarbeiter senden",
+        "fields": {
+          "subject": "Betreff",
+          "body": "Nachricht"
+        },
+        "placeholders": {
+          "subject": "Betreff der Nachricht eingeben",
+          "body": "Schreibe deine Nachricht hier..."
+        },
+        "actions": {
+          "send": "Nachricht senden",
+          "sending": "Senden..."
+        },
+        "toasts": {
+          "fillRequired": "Bitte Betreff und Nachrichtentext ausfüllen",
+          "sent": "Nachricht erfolgreich gesendet",
+          "error": "Beim Senden der Nachricht ist ein Fehler aufgetreten"
+        }
       }
     },
     "ambulances": {

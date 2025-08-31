@@ -667,6 +667,26 @@
         "actions": {
           "deleteTitle": "Borrar mensaje"
         }
+      },
+      "userTab": {
+        "title": "📩 Enviar mensaje al trabajador",
+        "fields": {
+          "subject": "Asunto",
+          "body": "Mensaje"
+        },
+        "placeholders": {
+          "subject": "Escribe el asunto del mensaje",
+          "body": "Escribe tu mensaje aquí..."
+        },
+        "actions": {
+          "send": "Enviar mensaje",
+          "sending": "Enviando..."
+        },
+        "toasts": {
+          "fillRequired": "Por favor, completa el asunto y el cuerpo del mensaje",
+          "sent": "Mensaje enviado correctamente",
+          "error": "Hubo un error al enviar el mensaje"
+        }
       }
     },
     "ambulances": {

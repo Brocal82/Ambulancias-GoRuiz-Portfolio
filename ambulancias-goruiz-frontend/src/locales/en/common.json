@@ -666,6 +666,26 @@
         "actions": {
           "deleteTitle": "Delete message"
         }
+      },
+      "userTab": {
+        "title": "📩 Send message to worker",
+        "fields": {
+          "subject": "Subject",
+          "body": "Message"
+        },
+        "placeholders": {
+          "subject": "Write the message subject",
+          "body": "Write your message here..."
+        },
+        "actions": {
+          "send": "Send message",
+          "sending": "Sending..."
+        },
+        "toasts": {
+          "fillRequired": "Please fill in both subject and message body",
+          "sent": "Message sent successfully",
+          "error": "There was an error sending the message"
+        }
       }
     },
     "ambulances": {
