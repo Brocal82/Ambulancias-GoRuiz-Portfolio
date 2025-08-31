@@ -742,6 +742,10 @@
         "loading": "Diensts werden geladen...",
         "range": "Von {{from}} bis {{to}}",
         "freeDay": "Frei"
+      },
+      "adminUserTab": {
+        "title": "Zugewiesene Dienste",
+        "loading": "Zugewiesene Tage werden geladen..."
       }
     }
   }

@@ -10,6 +10,7 @@ import type { UserRef, DienstAssignment } from "../types/dienst";
 import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import type { FlexibleAssignment } from "../types/assignment";
 import { useTranslation } from "react-i18next";
+import { formatYYYYMMDDToDDMMYYYY } from '../utils/timeUtils';
 
 interface AssignmentModalProps {
   isOpen: boolean;
@@ -166,7 +167,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full">
         <h3 className="text-lg font-bold mb-4">
-          {t("pages.assignmentModal.title", { date })}
+          {t("pages.assignmentModal.title", { date: formatYYYYMMDDToDDMMYYYY(date) })}
         </h3>
 
         <div className="space-y-2">

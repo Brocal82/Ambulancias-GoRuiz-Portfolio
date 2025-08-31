@@ -742,6 +742,10 @@
         "loading": "Loading diensts...",
         "range": "From {{from}} to {{to}}",
         "freeDay": "Off"
+      },
+      "adminUserTab": {
+        "title": "Assigned Diensts",
+        "loading": "Loading assigned days..."
       }
     }
   }

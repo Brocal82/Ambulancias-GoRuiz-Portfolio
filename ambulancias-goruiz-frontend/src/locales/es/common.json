@@ -743,6 +743,10 @@
         "loading": "Cargando diensts...",
         "range": "Desde el {{from}} hasta el {{to}}",
         "freeDay": "Libre"
+      },
+      "adminUserTab": {
+        "title": "Diensts asignados",
+        "loading": "Cargando días asignados..."
       }
     }
   }
