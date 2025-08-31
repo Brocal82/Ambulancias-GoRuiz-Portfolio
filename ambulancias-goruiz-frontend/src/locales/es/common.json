@@ -443,6 +443,12 @@
           "avgPatients": "Media Pacientes",
           "level": "Nivel Prämie"
         }
+      },
+      "adminUserTab": {
+        "currentTitle": "Prämie Actual",
+        "levelPrefix": "Nivel:",
+        "average": "Media: {{avg}} pacientes/día",
+        "noData": "No hay datos para la prämie actual."
       }
     },
     "mechanics": {

@@ -443,6 +443,12 @@
           "avgPatients": "Durchschnitt Patienten",
           "level": "Prämienstufe"
         }
+      },
+      "adminUserTab": {
+        "currentTitle": "Aktuelle Prämie",
+        "levelPrefix": "Stufe:",
+        "average": "Durchschnitt: {{avg}} Patienten/Tag",
+        "noData": "Keine Daten für die aktuelle Prämie."
       }
     },
     "mechanics": {
