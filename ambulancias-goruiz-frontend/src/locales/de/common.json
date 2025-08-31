@@ -410,6 +410,22 @@
         "notePlaceholder": "Hinweis für den Mitarbeiter (optional)",
         "cancel": "Abbrechen",
         "send": "Option senden"
+      },
+      "adminUserTab": {
+        "title": "Genehmigte Urlaube",
+        "loading": "Urlaube werden geladen...",
+        "error": "Fehler beim Laden der Urlaube.",
+        "empty": "Keine genehmigten Urlaube.",
+        "actions": {
+          "edit": "Bearbeiten",
+          "delete": "Löschen"
+        },
+        "confirmDelete": "Möchtest du diese Urlaubsanfrage wirklich löschen?",
+        "toasts": {
+          "deleted": "Anfrage gelöscht",
+          "deleteError": "Fehler beim Löschen der Anfrage"
+        },
+        "editPending": "Bearbeitungsfunktion für Anfrage {{id}} steht noch aus."
       }
     },
     "praemien": {

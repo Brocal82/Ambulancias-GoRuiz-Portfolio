@@ -410,7 +410,24 @@
         "notePlaceholder": "Nota para el trabajador (opcional)",
         "cancel": "Cancelar",
         "send": "Enviar opción"
+      },
+      "adminUserTab": {
+        "title": "Vacaciones aceptadas",
+        "loading": "Cargando vacaciones...",
+        "error": "Error al cargar las vacaciones.",
+        "empty": "No hay vacaciones aceptadas.",
+        "actions": {
+          "edit": "Editar",
+          "delete": "Eliminar"
+        },
+        "confirmDelete": "¿Estás seguro de eliminar esta solicitud de vacaciones?",
+        "toasts": {
+          "deleted": "Solicitud eliminada",
+          "deleteError": "Error al eliminar la solicitud"
+        },
+        "editPending": "Funcionalidad de editar la solicitud {{id}} pendiente de implementar."
       }
+    
     },
     "praemien": {
       "page": {

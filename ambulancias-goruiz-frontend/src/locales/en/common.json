@@ -410,6 +410,22 @@
         "notePlaceholder": "Note for the worker (optional)",
         "cancel": "Cancel",
         "send": "Send option"
+      },
+      "adminUserTab": {
+        "title": "Approved vacations",
+        "loading": "Loading vacations...",
+        "error": "Error loading vacations.",
+        "empty": "No approved vacations.",
+        "actions": {
+          "edit": "Edit",
+          "delete": "Delete"
+        },
+        "confirmDelete": "Are you sure you want to delete this vacation request?",
+        "toasts": {
+          "deleted": "Request deleted",
+          "deleteError": "Error deleting the request"
+        },
+        "editPending": "Edit functionality for request {{id}} is pending implementation."
       }
     },
     "praemien": {
