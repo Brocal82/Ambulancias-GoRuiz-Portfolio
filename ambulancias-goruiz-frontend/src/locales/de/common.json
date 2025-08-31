@@ -789,6 +789,18 @@
         "title": "Zugewiesene Dienste",
         "loading": "Zugewiesene Tage werden geladen..."
       }
+    },
+    "adminUserDetail": {
+      "title": "Mitarbeiterdetails",
+      "loading": "Mitarbeiterdaten werden geladen...",
+      "nameLabel": "Name:",
+      "tabs": {
+        "profile": "Profil",
+        "diensts": "Dienste",
+        "praemien": "Prämien",
+        "vacations": "Urlaube",
+        "messages": "Nachrichten"
+      }
     }
   }
 }

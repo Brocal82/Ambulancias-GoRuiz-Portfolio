@@ -789,6 +789,18 @@
         "title": "Assigned Diensts",
         "loading": "Loading assigned days..."
       }
+    },
+    "adminUserDetail": {
+      "title": "Worker Details",
+      "loading": "Loading worker data...",
+      "nameLabel": "Name:",
+      "tabs": {
+        "profile": "Profile",
+        "diensts": "Diensts",
+        "praemien": "Prämien",
+        "vacations": "Vacations",
+        "messages": "Messages"
+      }
     }
   }
 }

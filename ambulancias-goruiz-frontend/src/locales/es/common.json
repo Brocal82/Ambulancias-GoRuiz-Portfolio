@@ -791,6 +791,18 @@
         "title": "Diensts asignados",
         "loading": "Cargando días asignados..."
       }
+    },
+    "adminUserDetail": {
+      "title": "Detalle del Trabajador",
+      "loading": "Cargando datos del trabajador...",
+      "nameLabel": "Nombre:",
+      "tabs": {
+        "profile": "Perfil",
+        "diensts": "Diensts",
+        "praemien": "Prämien",
+        "vacations": "Vacaciones",
+        "messages": "Mensajes"
+      }
     }
   }
 }
