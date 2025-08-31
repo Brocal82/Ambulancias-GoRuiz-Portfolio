@@ -844,6 +844,30 @@
         "toasts": {
           "finalKmRequired": "📏 Enter the final kilometers."
         }
+      },
+      "reviewSummary": {
+        "labels": {
+          "team": "👥 Team:",
+          "observations": "📝 Notes:",
+          "deletedUser": "Deleted user",
+          "noName": "No name",
+          "totalKm": "Total: {{km}} km"
+        },
+        "table": {
+          "auftrag": "Auftrag",
+          "patient": "Patient",
+          "pickup": "📍 Pickup",
+          "destination": "🎯 Destination",
+          "warning": "📞 Warning",
+          "homeArrival": "🏠 Home arrival",
+          "kmStart": "Start km",
+          "pickupTime": "👥 Pickup",
+          "arrivalTime": "🏥 Arrival",
+          "kmEnd": "End km",
+          "timeEnd": "🕓 End",
+          "kmDiff": "Km diff",
+          "praemie": "Prämie"
+        }
       }
     }
   }

@@ -844,6 +844,30 @@
         "toasts": {
           "finalKmRequired": "📏 Endkilometer eingeben."
         }
+      },
+      "reviewSummary": {
+        "labels": {
+          "team": "👥 Team:",
+          "observations": "📝 Bemerkungen:",
+          "deletedUser": "Benutzer gelöscht",
+          "noName": "Ohne Name",
+          "totalKm": "Summe: {{km}} km"
+        },
+        "table": {
+          "auftrag": "Auftrag",
+          "patient": "Patient",
+          "pickup": "📍 Abholung",
+          "destination": "🎯 Ziel",
+          "warning": "📞 Meldung",
+          "homeArrival": "🏠 Ankunft zu Hause",
+          "kmStart": "Km Start",
+          "pickupTime": "👥 Aufnahme",
+          "arrivalTime": "🏥 Ankunft Ziel",
+          "kmEnd": "Km Ziel",
+          "timeEnd": "🕓 Frei",
+          "kmDiff": "Km Differenz",
+          "praemie": "Prämie"
+        }
       }
     }
   }

@@ -1,21 +1,9 @@
-// src/components/workday/ReviewSummary.tsx
 import React from "react";
 import type { Trip } from "../../types/trip";
 import type { AssignedDayFull } from "../../types/dienst";
-// ⭐ CAMBIO: importamos el helper de formato
 import { formatYYYYMMDDToDDMMYYYY } from "../../utils/timeUtils";
+import { useTranslation } from "react-i18next";
 
-// --- helper para mostrar nombre de usuario de forma segura ---
-const formatPerson = (p: any): string => {
-  if (!p) return "Usuario eliminado";
-  if (typeof p === "string") return p; // por si viene un id string
-  const last = p?.lastName ?? "";
-  const first = p?.name ?? "";
-  const full = [last, first].filter(Boolean).join(", ");
-  return full || "Usuario eliminado";
-};
-
-/* ---------- helpers ---------- */
 const calcTripKm = (t: Trip) => Math.max(0, t.kmEnd - t.kmStart);
 
 const getMultiplier = (t: Trip, totalKm: number, isWeekendLate: boolean) => {
@@ -45,6 +33,8 @@ const ReviewSummary: React.FC<Props> = ({
   finalKm,
   trips,
 }) => {
+  const { t } = useTranslation();
+
   const weekendLate =
     [0, 6].includes(new Date(assignedDay.date).getDay()) &&
     (() => {
@@ -54,21 +44,29 @@ const ReviewSummary: React.FC<Props> = ({
 
   const totalKmDiff = Math.max(0, finalKm - initialKm);
 
+  const formatPerson = (p: any): string => {
+    if (!p) return t("pages.workday.reviewSummary.labels.deletedUser");
+    if (typeof p === "string") return p;
+    const last = p?.lastName ?? "";
+    const first = p?.name ?? "";
+    const full = [last, first].filter(Boolean).join(", ");
+    return full || t("pages.workday.reviewSummary.labels.deletedUser");
+  };
+
   return (
     <div className="space-y-4">
       {/* -------- CABECERA -------- */}
       <div className="flex justify-between text-sm">
         <div>
           <p>
-            📅 <strong>{/* ⭐ CAMBIO */}
-              {formatYYYYMMDDToDDMMYYYY(assignedDay.date)}
-            </strong>
+            📅 <strong>{formatYYYYMMDDToDDMMYYYY(assignedDay.date)}</strong>
           </p>
-          <p>
-            ⏰ {assignedDay.startTime} – {assignedDay.endTime}
-          </p>
+          <p>⏰ {assignedDay.startTime} – {assignedDay.endTime}</p>
+
           <div>
-            <p className="font-semibold">👥 Team:</p>
+            <p className="font-semibold">
+              {t("pages.workday.reviewSummary.labels.team")}
+            </p>
             <div className="ml-2 space-y-1">
               <p>{formatPerson(assignedDay.driver)}</p>
               <p>{formatPerson(assignedDay.medic)}</p>
@@ -77,13 +75,9 @@ const ReviewSummary: React.FC<Props> = ({
         </div>
 
         <div className="text-right">
-          <p>
-            🚑 <strong>{ambulanceNumber}</strong>
-          </p>
-          <p>
-            🔢 {initialKm} → {finalKm}
-          </p>
-          <p className="font-semibold">🧮 Total: {totalKmDiff} km</p>
+          <p>🚑 <strong>{ambulanceNumber}</strong></p>
+          <p>🔢 {initialKm} → {finalKm}</p>
+          <p className="font-semibold">🧮 {t("pages.workday.reviewSummary.labels.totalKm", { km: totalKmDiff })}</p>
         </div>
       </div>
 
@@ -92,52 +86,46 @@ const ReviewSummary: React.FC<Props> = ({
         <table className="w-full text-xs border">
           <thead className="bg-gray-100">
             <tr>
-              <th className="p-1">Auftrag</th>
-              <th>Paciente</th>
-              <th>📍 Recogida</th>
-              <th>🎯 Destino</th>
-              <th>📞 Aviso</th>
-              <th>🏠 Llega domicilio</th>
-              <th>Km dom.</th>
-              <th>👥 Carga</th>
-              <th>🏥 Llega destino</th>
-              <th>Km dest.</th>
-              <th>🕓 Libre</th>
-              <th>Km diff</th>
-              <th>Prämie</th>
+              <th className="p-1">{t("pages.workday.reviewSummary.table.auftrag")}</th>
+              <th>{t("pages.workday.reviewSummary.table.patient")}</th>
+              <th>{t("pages.workday.reviewSummary.table.pickup")}</th>
+              <th>{t("pages.workday.reviewSummary.table.destination")}</th>
+              <th>{t("pages.workday.reviewSummary.table.warning")}</th>
+              <th>{t("pages.workday.reviewSummary.table.homeArrival")}</th>
+              <th>{t("pages.workday.reviewSummary.table.kmStart")}</th>
+              <th>{t("pages.workday.reviewSummary.table.pickupTime")}</th>
+              <th>{t("pages.workday.reviewSummary.table.arrivalTime")}</th>
+              <th>{t("pages.workday.reviewSummary.table.kmEnd")}</th>
+              <th>{t("pages.workday.reviewSummary.table.timeEnd")}</th>
+              <th>{t("pages.workday.reviewSummary.table.kmDiff")}</th>
+              <th>{t("pages.workday.reviewSummary.table.praemie")}</th>
             </tr>
           </thead>
           <tbody className="bg-white">
-            {trips.map((t, i) => {
-              const diff = calcTripKm(t);
-              const mult = getMultiplier(t, diff, weekendLate);
-
-              const isStornoThatCounts = t.wasCancelled && t.countsTrip === 1;
-              const isStornoThatDoesNotCount =
-                t.wasCancelled && t.countsTrip === 0;
+            {trips.map((tItem, i) => {
+              const diff = calcTripKm(tItem);
+              const mult = getMultiplier(tItem, diff, weekendLate);
+              const isStornoThatCounts = tItem.wasCancelled && tItem.countsTrip === 1;
+              const isStornoThatDoesNotCount = tItem.wasCancelled && tItem.countsTrip === 0;
 
               return (
                 <React.Fragment key={i}>
                   <tr className="border-t">
-                    <td
-                      className={`p-1 text-center font-semibold ${
-                        t.wasCancelled ? "text-red-600" : ""
-                      }`}
-                    >
-                      {t.auftragNumber}
+                    <td className={`p-1 text-center font-semibold ${tItem.wasCancelled ? "text-red-600" : ""}`}>
+                      {tItem.auftragNumber}
                     </td>
                     <td className="text-center">
-                      {t.patientName || "Sin nombre"}
+                      {tItem.patientName || t("pages.workday.reviewSummary.labels.noName")}
                     </td>
-                    <td className="text-center">{t.fromAddress}</td>
-                    <td className="text-center">{t.toAddress}</td>
-                    <td className="text-center">{t.timeWarning}</td>
-                    <td className="text-center">{t.timeAtHome}</td>
-                    <td className="text-center">{t.kmStart}</td>
-                    <td className="text-center">{t.timePickup}</td>
-                    <td className="text-center">{t.timeArrival}</td>
-                    <td className="text-center">{t.kmEnd}</td>
-                    <td className="text-center">{t.timeEnd}</td>
+                    <td className="text-center">{tItem.fromAddress}</td>
+                    <td className="text-center">{tItem.toAddress}</td>
+                    <td className="text-center">{tItem.timeWarning}</td>
+                    <td className="text-center">{tItem.timeAtHome}</td>
+                    <td className="text-center">{tItem.kmStart}</td>
+                    <td className="text-center">{tItem.timePickup}</td>
+                    <td className="text-center">{tItem.timeArrival}</td>
+                    <td className="text-center">{tItem.kmEnd}</td>
+                    <td className="text-center">{tItem.timeEnd}</td>
                     <td className="text-center">{diff}</td>
                     <td className="text-center font-bold">
                       {isStornoThatDoesNotCount ? (
@@ -149,10 +137,11 @@ const ReviewSummary: React.FC<Props> = ({
                       )}
                     </td>
                   </tr>
-                  {t.reports && t.reports.trim() !== "" && (
+
+                  {tItem.reports && tItem.reports.trim() !== "" && (
                     <tr className="text-[11px] text-gray-700 bg-gray-50">
                       <td colSpan={13} className="italic px-2 py-1">
-                        📝 Observaciones: {t.reports}
+                        {t("pages.workday.reviewSummary.labels.observations")} {tItem.reports}
                       </td>
                     </tr>
                   )}
