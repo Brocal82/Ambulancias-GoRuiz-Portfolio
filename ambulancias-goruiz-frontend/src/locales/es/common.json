@@ -811,133 +811,157 @@
       }
     },
     "workday": {
-    "title": "📋 Mi jornada de hoy: {{date}}",
-    "closedDay": "✅ Día cerrado. No hay Dienst activo para hoy.",
-    "noAssignment": "🚫 Hoy no tienes un Dienst asignado.",
-    "cantStart": "⏳ Podrás registrar viajes a partir de 30 minutos antes de tu Dienst. Hora de inicio: {{start}}",
-    "dienstTimeLabel": "⏰ Dienst:",
-    "teamLabel": "Team:",
-    "selectAmbulance": {
-      "label": "🚐 Selecciona ambulancia",
-      "placeholder": "-- Selecciona una ambulancia --"
-    },
-    "initialKm": "🔢 KM inicial",
-    "confirmInitialData": "✅ Confirmar datos iniciales",
-    "auftragNumber": "Número de Auftrag",
-    "patientName": "Nombre del paciente",
-    "fromAddress": "Dirección de recogida",
-    "toAddress": "Dirección de dejada",
-    "time": {
-      "warning": "Aviso",
-      "atHome": "Origen",
-      "pickup": "Carga",
-      "arrival": "Destino",
-      "end": "Libre"
-    },
-    "km": {
-      "start": "KM Origen",
-      "end": "KM Destino"
-    },
-    "anschluss": {
-      "addTitle": "Añadir Anschluss",
-      "cancelTitle": "Cancelar Anschluss",
-      "addLabel": "Anschluss",
-      "cancelLabel": "Cancelar Anschluss"
-    },
-    "storno": {
-      "label": "Storno",
-      "countsQuestion": "¿Cuenta el viaje?",
-      "counts": {
-        "yes": "✅ Sí, cuenta (1)",
-        "no": "❌ No, no cuenta (0)"
+      "title": "📋 Mi jornada de hoy: {{date}}",
+      "closedDay": "✅ Día cerrado. No hay Dienst activo para hoy.",
+      "noAssignment": "🚫 Hoy no tienes un Dienst asignado.",
+      "cantStart": "⏳ Podrás registrar viajes a partir de 30 minutos antes de tu Dienst. Hora de inicio: {{start}}",
+      "dienstTimeLabel": "⏰ Dienst:",
+      "teamLabel": "Team:",
+      "selectAmbulance": {
+        "label": "🚐 Selecciona ambulancia",
+        "placeholder": "-- Selecciona una ambulancia --"
+      },
+      "initialKm": "🔢 KM inicial",
+      "confirmInitialData": "✅ Confirmar datos iniciales",
+      "auftragNumber": "Número de Auftrag",
+      "patientName": "Nombre del paciente",
+      "fromAddress": "Dirección de recogida",
+      "toAddress": "Dirección de dejada",
+      "time": {
+        "warning": "Aviso",
+        "atHome": "Origen",
+        "pickup": "Carga",
+        "arrival": "Destino",
+        "end": "Libre"
+      },
+      "km": {
+        "start": "KM Origen",
+        "end": "KM Destino"
+      },
+      "anschluss": {
+        "addTitle": "Añadir Anschluss",
+        "cancelTitle": "Cancelar Anschluss",
+        "addLabel": "Anschluss",
+        "cancelLabel": "Cancelar Anschluss"
+      },
+      "storno": {
+        "label": "Storno",
+        "countsQuestion": "¿Cuenta el viaje?",
+        "counts": {
+          "yes": "✅ Sí, cuenta (1)",
+          "no": "❌ No, no cuenta (0)"
+        }
+      },
+      "reports": {
+        "label": "Observaciones / reportes",
+        "placeholder": "Observaciones sobre el traslado",
+        "title": "Escribe aquí cualquier observación"
+      },
+      "saveTrip": "Guardar viaje",
+      "tripSummary": "🧾 Resumen de viajes",
+      "tripCancelledTag": "(cancelado)",
+      "closeAndSend": "✅ Cerrar día y enviar resumen",
+      "needVehicleData": "🚐 Introduce el nº de ambulancia y los KM iniciales y pulsa \"Confirmar datos iniciales\" para poder crear viajes.",
+      "closeQuestion": {
+        "title": "¿Es el final del día?",
+        "yes": "✅ Sí, cierre completo",
+        "partial": "⚠️ No, enviar cierre parcial",
+        "cancel": "Cancelar"
+      },
+      "partial": {
+        "title": "🟠 Revisión parcial del día",
+        "totalPatients": "Total de pacientes (con multiplicadores): {{count}}",
+        "placeholders": {
+          "report": "Motivo del cierre parcial...",
+          "finalKm": "Kilómetros finales de la ambulancia"
+        },
+        "issue": {
+          "button": "Avería",
+          "registered": "🛠️ Avería registrada. Ahora puedes enviar el cierre parcial."
+        },
+        "actions": {
+          "cancel": "Cancelar",
+          "sendToAdmin": "Enviar al Admin"
+        },
+        "toasts": {
+          "reportRequired": "✏️ Escribe un motivo del cierre parcial.",
+          "finalKmRequired": "📏 Introduce los kilómetros finales."
+        }
+      },
+      "common": {
+        "unknownAmbulance": "Desconocido"
+      },
+      "final": {
+        "title": "✅ Revisión final del día",
+        "totalPatients": "Total de pacientes (con multiplicadores): {{count}}",
+        "placeholders": {
+          "note": "Motivo del cierre final (opcional)…",
+          "finalKm": "Kilómetros finales de la ambulancia"
+        },
+        "issue": {
+          "button": "Avería",
+          "autoNote": "⚠️ Avería"
+        },
+        "actions": {
+          "cancel": "Cancelar",
+          "sendToAdmin": "Enviar al Admin"
+        },
+        "toasts": {
+          "finalKmRequired": "📏 Introduce los kilómetros finales."
+        }
+      },
+      "reviewSummary": {
+        "labels": {
+          "team": "👥 Equipo:",
+          "observations": "📝 Observaciones:",
+          "deletedUser": "Usuario eliminado",
+          "noName": "Sin nombre",
+          "totalKm": "Total: {{km}} km"
+        },
+        "table": {
+          "auftrag": "Auftrag",
+          "patient": "Paciente",
+          "pickup": "Desde",
+          "destination": "Hacia",
+          "warning": "Aviso",
+          "homeArrival": "Origen",
+          "kmStart": "KM Origen",
+          "pickupTime": "Carga",
+          "arrivalTime": "Destino",
+          "kmEnd": "KM Destino",
+          "timeEnd": "Libre",
+          "kmDiff": "Km diff",
+          "praemie": "Prämie"
+        }
       }
     },
-    "reports": {
-      "label": "Observaciones / reportes",
-      "placeholder": "Observaciones sobre el traslado",
-      "title": "Escribe aquí cualquier observación"
-    },
-    "saveTrip": "Guardar viaje",
-    "tripSummary": "🧾 Resumen de viajes",
-    "tripCancelledTag": "(cancelado)",
-    "closeAndSend": "✅ Cerrar día y enviar resumen",
-    "needVehicleData": "🚐 Introduce el nº de ambulancia y los KM iniciales y pulsa \"Confirmar datos iniciales\" para poder crear viajes.",
-    "closeQuestion": {
-      "title": "¿Es el final del día?",
-      "yes": "✅ Sí, cierre completo",
-      "partial": "⚠️ No, enviar cierre parcial",
-      "cancel": "Cancelar"
-    },
-
-    "partial": {
-      "title": "🟠 Revisión parcial del día",
-      "totalPatients": "Total de pacientes (con multiplicadores): {{count}}",
-      "placeholders": {
-        "report": "Motivo del cierre parcial...",
-        "finalKm": "Kilómetros finales de la ambulancia"
-      },
-      "issue": {
-        "button": "Avería",
-        "registered": "🛠️ Avería registrada. Ahora puedes enviar el cierre parcial."
-      },
-      "actions": {
-        "cancel": "Cancelar",
-        "sendToAdmin": "Enviar al Admin"
-      },
-      "toasts": {
-        "reportRequired": "✏️ Escribe un motivo del cierre parcial.",
-        "finalKmRequired": "📏 Introduce los kilómetros finales."
-      }
-    },
-
-    "common": {
-      "unknownAmbulance": "Desconocido"
-    },
-
-    "final": {
-      "title": "✅ Revisión final del día",
-      "totalPatients": "Total de pacientes (con multiplicadores): {{count}}",
-      "placeholders": {
-        "note": "Motivo del cierre final (opcional)…",
-        "finalKm": "Kilómetros finales de la ambulancia"
-      },
-      "issue": {
-        "button": "Avería",
-        "autoNote": "⚠️ Avería"
-      },
-      "actions": {
-        "cancel": "Cancelar",
-        "sendToAdmin": "Enviar al Admin"
-      },
-      "toasts": {
-        "finalKmRequired": "📏 Introduce los kilómetros finales."
-      }
-    },
-
-    "reviewSummary": {
-      "labels": {
-        "team": "👥 Equipo:",
-        "observations": "📝 Observaciones:",
-        "deletedUser": "Usuario eliminado",
-        "noName": "Sin nombre",
-        "totalKm": "Total: {{km}} km"
-      },
-      "table": {
-        "auftrag": "Auftrag",
-        "patient": "Paciente",
-        "pickup": "📍 Recogida",
-        "destination": "🎯 Destino",
-        "warning": "📞 Aviso",
-        "homeArrival": "🏠 Llega domicilio",
-        "kmStart": "Km dom.",
-        "pickupTime": "👥 Carga",
-        "arrivalTime": "🏥 Llega destino",
-        "kmEnd": "Km dest.",
-        "timeEnd": "🕓 Libre",
-        "kmDiff": "Km diff",
-        "praemie": "Prämie"
+     "summaries": {
+      "admin": {
+        "title": "Reportes Finales de Jornada",
+        "loading": "Cargando resúmenes...",
+        "dateHeader": "📅 {{date}}",
+        "table": {
+          "headers": {
+            "dienstTime": "Dienst / Horario",
+            "ambulance": "Ambulancia",
+            "team": "👥 Equipo",
+            "kmRange": "Km (inicio → fin)",
+            "kmTotal": "Km Totales",
+            "trips": "🧾 Viajes",
+            "premie": "💰 Prämie",
+            "noteReason": "Nota / Motivo",
+            "closure": "Cierre"
+          }
+        },
+        "row": {
+          "dienstNumber": "Dienst #{{num}}",
+          "noSchedule": "Sin horario",
+          "start": "Inicio:",
+          "end": "Final:",
+          "final": "✅ Final",
+          "partial": "🕗 Parcial"
+        }
       }
     }
   }
-}
 }

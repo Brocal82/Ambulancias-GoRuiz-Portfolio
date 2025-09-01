@@ -914,22 +914,50 @@
         "noName": "No name",
         "totalKm": "Total: {{km}} km"
       },
-      "table": {
-        "auftrag": "Auftrag",
-        "patient": "Patient",
-        "pickup": "📍 Pickup",
-        "destination": "🎯 Destination",
-        "warning": "📞 Call",
-        "homeArrival": "🏠 Home arrival",
-        "kmStart": "KM start",
-        "pickupTime": "👥 Pickup",
-        "arrivalTime": "🏥 Arrival",
-        "kmEnd": "KM end",
-        "timeEnd": "🕓 Clear",
-        "kmDiff": "KM diff",
-        "praemie": "Prämie"
+        "table": {
+    "auftrag": "Auftrag",
+    "patient": "Patient",
+    "pickup": "From",
+    "destination": "To",
+    "warning": "Call",
+    "homeArrival": "Origin",
+    "kmStart": "KM start",
+    "pickupTime": "Pickup",
+    "arrivalTime": "Arrival",
+    "kmEnd": "KM end",
+    "timeEnd": "Free",
+    "kmDiff": "KM diff",
+    "praemie": "Bonus"
       }
     }
-  }
+  },
+  "summaries": {
+      "admin": {
+        "title": "Shift Reports",
+        "loading": "Loading summaries...",
+        "dateHeader": "📅 {{date}}",
+        "table": {
+          "headers": {
+            "dienstTime": "Dienst / Schedule",
+            "ambulance": "Ambulance",
+            "team": "👥 Team",
+            "kmRange": "Km (start → end)",
+            "kmTotal": "Total Km",
+            "trips": "🧾 Trips",
+            "premie": "💰 Bonus",
+            "noteReason": "Note / Reason",
+            "closure": "Closure"
+          }
+        },
+        "row": {
+          "dienstNumber": "Dienst #{{num}}",
+          "noSchedule": "No schedule",
+          "start": "Start:",
+          "end": "End:",
+          "final": "✅ Final",
+          "partial": "🕗 Partial"
+        }
+      }
+    }
 }
 }

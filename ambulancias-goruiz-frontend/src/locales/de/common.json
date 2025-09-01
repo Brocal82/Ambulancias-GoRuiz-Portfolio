@@ -915,21 +915,49 @@
         "totalKm": "Summe: {{km}} km"
       },
       "table": {
-        "auftrag": "Auftrag",
-        "patient": "Patient",
-        "pickup": "📍 Abholung",
-        "destination": "🎯 Ziel",
-        "warning": "📞 Meldung",
-        "homeArrival": "🏠 Wohnung erreicht",
-        "kmStart": "KM Start",
-        "pickupTime": "👥 Aufnahme",
-        "arrivalTime": "🏥 Ziel erreicht",
-        "kmEnd": "KM Ziel",
-        "timeEnd": "🕓 Frei",
-        "kmDiff": "KM Diff",
-        "praemie": "Prämie"
+  "auftrag": "Auftrag",
+  "patient": "Patient",
+  "pickup": "Von",
+  "destination": "Nach",
+  "warning": "Eingangszeit",
+  "homeArrival": "Eintreffzeit",
+  "kmStart": "KM Start",
+  "pickupTime": "Abholzeit",
+  "arrivalTime": "Ankunft",
+  "kmEnd": "KM Ziel",
+  "timeEnd": "Frei",
+  "kmDiff": "KM-Differenz",
+  "praemie": "Prämie"
       }
     }
-  }
+  },
+  "summaries": {
+      "admin": {
+        "title": "Tagesabschlussberichte",
+        "loading": "Zusammenfassungen werden geladen...",
+        "dateHeader": "📅 {{date}}",
+        "table": {
+          "headers": {
+            "dienstTime": "Dienst / Zeitplan",
+            "ambulance": "Krankenwagen",
+            "team": "👥 Team",
+            "kmRange": "Km (Start → Ende)",
+            "kmTotal": "Gesamt-Km",
+            "trips": "🧾 Fahrten",
+            "premie": "💰 Prämie",
+            "noteReason": "Notiz / Grund",
+            "closure": "Abschluss"
+          }
+        },
+        "row": {
+          "dienstNumber": "Dienst #{{num}}",
+          "noSchedule": "Kein Zeitplan",
+          "start": "Start:",
+          "end": "Ende:",
+          "final": "✅ Final",
+          "partial": "🕗 Teilabschluss"
+        }
+      }
+    }
 }
 }
