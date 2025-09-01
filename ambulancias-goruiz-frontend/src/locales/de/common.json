@@ -803,72 +803,133 @@
       }
     },
     "workday": {
-      "partial": {
-        "title": "🟠 Teilabschluss des Tages",
-        "totalPatients": "Gesamtpatienten (mit Multiplikatoren): {{count}}",
-        "placeholders": {
-          "report": "Grund für den Teilabschluss...",
-          "finalKm": "Endkilometer des Rettungswagens"
-        },
-        "issue": {
-          "button": "Störung",
-          "registered": "🛠️ Störung erfasst. Du kannst den Teilabschluss jetzt senden."
-        },
-        "actions": {
-          "cancel": "Abbrechen",
-          "sendToAdmin": "An Admin senden"
-        },
-        "toasts": {
-          "reportRequired": "✏️ Bitte gib einen Grund für den Teilabschluss an.",
-          "finalKmRequired": "📏 Endkilometer eingeben."
-        }
+    "title": "📋 Mein heutiger Arbeitstag: {{date}}",
+    "closedDay": "✅ Tag geschlossen. Heute ist kein Dienst aktiv.",
+    "noAssignment": "🚫 Du hast heute keinen Dienst zugewiesen.",
+    "cantStart": "⏳ Du kannst Fahrten ab 30 Minuten vor Dienstbeginn erfassen. Startzeit: {{start}}",
+    "dienstTimeLabel": "⏰ Dienst:",
+    "teamLabel": "Team:",
+    "selectAmbulance": {
+      "label": "🚐 Krankenwagen auswählen",
+      "placeholder": "-- Krankenwagen auswählen --"
+    },
+    "initialKm": "🔢 Start-KM",
+    "confirmInitialData": "✅ Anfangsdaten bestätigen",
+    "auftragNumber": "Auftrag-Nummer",
+    "patientName": "Patientenname",
+    "fromAddress": "Abholadresse",
+    "toAddress": "Zieladresse",
+    "time": {
+      "warning": "Eingangszeit",
+      "atHome": "Eintreffzeit",
+      "pickup": "Abholzeit",
+      "arrival": "Ankunft",
+      "end": "Frei"
+    },
+    "km": {
+      "start": "KM Start",
+      "end": "KM Ziel"
+    },
+    "anschluss": {
+      "addTitle": "Anschluss hinzufügen",
+      "cancelTitle": "Anschluss abbrechen",
+      "addLabel": "Anschluss",
+      "cancelLabel": "Anschluss abbrechen"
+    },
+    "storno": {
+      "label": "Storno",
+      "countsQuestion": "Zählt die Fahrt?",
+      "counts": {
+        "yes": "✅ Ja, zählt (1)",
+        "no": "❌ Nein, zählt nicht (0)"
+      }
+    },
+    "reports": {
+      "label": "Bemerkungen / Bericht",
+      "placeholder": "Bemerkungen zur Fahrt",
+      "title": "Hier beliebige Anmerkung eintragen"
+    },
+    "saveTrip": "Fahrt speichern",
+    "tripSummary": "🧾 Fahrtenübersicht",
+    "tripCancelledTag": "(storniert)",
+    "closeAndSend": "✅ Tag abschließen und Zusammenfassung senden",
+    "needVehicleData": "🚐 Gib die Fahrzeug-Nr. und die Start-KM ein und klicke „Anfangsdaten bestätigen“, um Fahrten anzulegen.",
+    "closeQuestion": {
+      "title": "Ist es das Tagesende?",
+      "yes": "✅ Ja, kompletter Abschluss",
+      "partial": "⚠️ Nein, Teilabschluss senden",
+      "cancel": "Abbrechen"
+    },
+
+    "partial": {
+      "title": "🟠 Teilprüfung des Tages",
+      "totalPatients": "Gesamtzahl der Patienten (mit Multiplikatoren): {{count}}",
+      "placeholders": {
+        "report": "Grund für den Teilabschluss...",
+        "finalKm": "End-Kilometer des Krankenwagens"
       },
-      "common": {
-        "unknownAmbulance": "Unbekannt"
+      "issue": {
+        "button": "Störung",
+        "registered": "🛠️ Störung erfasst. Du kannst jetzt den Teilabschluss senden."
       },
-      "final": {
-        "title": "✅ Tagesabschluss",
-        "totalPatients": "Gesamtpatienten (mit Multiplikatoren): {{count}}",
-        "placeholders": {
-          "note": "Grund für den endgültigen Abschluss (optional)…",
-          "finalKm": "Endkilometer des Rettungswagens"
-        },
-        "issue": {
-          "button": "Störung",
-          "autoNote": "⚠️ Störung"
-        },
-        "actions": {
-          "cancel": "Abbrechen",
-          "sendToAdmin": "An Admin senden"
-        },
-        "toasts": {
-          "finalKmRequired": "📏 Endkilometer eingeben."
-        }
+      "actions": {
+        "cancel": "Abbrechen",
+        "sendToAdmin": "An Admin senden"
       },
-      "reviewSummary": {
-        "labels": {
-          "team": "👥 Team:",
-          "observations": "📝 Bemerkungen:",
-          "deletedUser": "Benutzer gelöscht",
-          "noName": "Ohne Name",
-          "totalKm": "Summe: {{km}} km"
-        },
-        "table": {
-          "auftrag": "Auftrag",
-          "patient": "Patient",
-          "pickup": "📍 Abholung",
-          "destination": "🎯 Ziel",
-          "warning": "📞 Meldung",
-          "homeArrival": "🏠 Ankunft zu Hause",
-          "kmStart": "Km Start",
-          "pickupTime": "👥 Aufnahme",
-          "arrivalTime": "🏥 Ankunft Ziel",
-          "kmEnd": "Km Ziel",
-          "timeEnd": "🕓 Frei",
-          "kmDiff": "Km Differenz",
-          "praemie": "Prämie"
-        }
+      "toasts": {
+        "reportRequired": "✏️ Bitte gib einen Grund für den Teilabschluss an.",
+        "finalKmRequired": "📏 Bitte gib die End-Kilometer ein."
+      }
+    },
+
+    "common": {
+      "unknownAmbulance": "Unbekannt"
+    },
+
+    "final": {
+      "title": "✅ Endprüfung des Tages",
+      "totalPatients": "Gesamtzahl der Patienten (mit Multiplikatoren): {{count}}",
+      "placeholders": {
+        "note": "Grund für den Endabschluss (optional)…",
+        "finalKm": "End-Kilometer des Krankenwagens"
+      },
+      "issue": {
+        "button": "Störung",
+        "autoNote": "⚠️ Störung"
+      },
+      "actions": {
+        "cancel": "Abbrechen",
+        "sendToAdmin": "An Admin senden"
+      },
+      "toasts": {
+        "finalKmRequired": "📏 Bitte gib die End-Kilometer ein."
+      }
+    },
+
+    "reviewSummary": {
+      "labels": {
+        "team": "👥 Team:",
+        "observations": "📝 Anmerkungen:",
+        "deletedUser": "Benutzer gelöscht",
+        "noName": "Ohne Name",
+        "totalKm": "Summe: {{km}} km"
+      },
+      "table": {
+        "auftrag": "Auftrag",
+        "patient": "Patient",
+        "pickup": "📍 Abholung",
+        "destination": "🎯 Ziel",
+        "warning": "📞 Meldung",
+        "homeArrival": "🏠 Wohnung erreicht",
+        "kmStart": "KM Start",
+        "pickupTime": "👥 Aufnahme",
+        "arrivalTime": "🏥 Ziel erreicht",
+        "kmEnd": "KM Ziel",
+        "timeEnd": "🕓 Frei",
+        "kmDiff": "KM Diff",
+        "praemie": "Prämie"
       }
     }
   }
+}
 }

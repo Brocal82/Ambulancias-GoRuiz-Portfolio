@@ -11,86 +11,68 @@ import TripModal from "../components/trips/TripModal";
 import { useNavigate } from "react-router-dom";
 import FinalReviewModal from "../components/workday/FinalReviewModal";
 import PartialReviewModal from "../components/workday/PartialReviewModal";
-import { sendPartialClosure } from "../api/workdaySummary";
+import { sendPartialClosure, sendFinalClosure } from "../api/workdaySummary";
 import type { PartialSummaryPayload, FinalSummaryPayload } from "../types/workdaySummary";
 import { checkTripLogic, type TripDraft } from "../utils/tripValidators";
-import { sendFinalClosure } from "../api/workdaySummary"; // ← Asegúrate de importar esto arriba
 import { getCurrentTimeString, formatYYYYMMDDToDDMMYYYY } from "../utils/timeUtils";
 import { saveAmbulanceData, loadAmbulanceData, clearAmbulanceData, confirmedAmbulanceKey } from "../utils/workdayKey";
 import { getAllAmbulances } from "../api/ambulances";
 import type { Ambulance } from "../types/ambulance";
+import { useTranslation } from "react-i18next";
 
-
-
-
-/** Devuelve true si AHORA ya se pueden registrar viajes.
- *  - Permite hacerlo 30 min antes de la hora de inicio.
- *  - Funciona también cuando el Dienst empezó AYER (turno nocturno). */
+/** Devuelve true si AHORA ya se pueden registrar viajes. */
 const canStartTripNow = (startTime: string, dienstDate: string): boolean => {
   const [sh, sm] = startTime.split(":").map(Number);
-
-  // 🕒 Fecha de inicio real del Dienst
   const start = new Date(dienstDate + "T00:00:00");
-  start.setHours(sh, sm - 30, 0, 0);          // 30 min antes
-
+  start.setHours(sh, sm - 30, 0, 0); // 30 min antes
   const now = new Date();
   return now >= start;
 };
 
-/** Devuelve la clave de localStorage que marca un día como cerrado
- *   p.e.  workdayClosed-2025-07-02-64a1b…  */
-const getClosedDayKey = (date: string, uid?: string) =>
-  `workdayClosed-${date}-${uid ?? "anon"}`;
+/** Clave de día cerrado en localStorage */
+const getClosedDayKey = (date: string, uid?: string) => `workdayClosed-${date}-${uid ?? "anon"}`;
 
-/** Devuelve true si el Dienst cruza la medianoche
- * (ej. 22:00 – 06:00)                                     */
+/** ¿El Dienst cruza medianoche? */
 const crossesMidnight = (start: string, end: string) => {
   const [sh] = start.split(":").map(Number);
   const [eh] = end.split(":").map(Number);
-  return eh < sh;        // p.e. 06 < 22  ⇒ cruza
+  return eh < sh;
 };
 
-/** Devuelve true si AHORA mismo estoy dentro de un Dienst,
- *  soportando turno nocturno que comenzó ayer.             */
+/** ¿AHORA mismo dentro del Dienst (soporta nocturno que empezó ayer)? */
 const isNowWithinDienst = (dienst: AssignedDayFull) => {
   const now = new Date();
   const [sH, sM] = dienst.startTime.split(":").map(Number);
   const [eH, eM] = dienst.endTime.split(":").map(Number);
 
-  // ⏱ crea dos fechas (posible cruce de día)
   const start = new Date(dienst.date + "T00:00:00");
   start.setHours(sH, sM, 0, 0);
 
   const end = new Date(dienst.date + "T00:00:00");
   end.setHours(eH, eM, 0, 0);
   if (crossesMidnight(dienst.startTime, dienst.endTime)) {
-    end.setDate(end.getDate() + 1);   // suma un día
+    end.setDate(end.getDate() + 1);
   }
 
   return now >= start && now <= end;
 };
 
-
 const MyWorkday = () => {
-  const { token, user } = useAuth(); // 👈 Asegúrate de tener acceso a user._id
+  const { t } = useTranslation();
+  const { token, user } = useAuth();
   const today = new Date().toISOString().split("T")[0];
-
   const todayFormatted = formatYYYYMMDDToDDMMYYYY(today);
 
   const [wasCancelled, setWasCancelled] = useState(false);
-  const [countsTrip, setCountsTrip] = useState<number>(1);   // ✅ por defecto el viaje cuenta
-
+  const [countsTrip, setCountsTrip] = useState<number>(1);
   const [reports, setReports] = useState("");
-
   const [trips, setTrips] = useState<Trip[]>([]);
   const [assignedDay, setAssignedDay] = useState<AssignedDayFull | null>(null);
   const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
   const [ambulanceId, setAmbulanceId] = useState<string>("");
 
-
   const [canStartWork, setCanStartWork] = useState(false);
   const [ambulanceNumber, setAmbulanceNumber] = useState("");
-
 
   const [vehicleConfirmed, setVehicleConfirmed] = useState(false);
   const formBlocked = !vehicleConfirmed;
@@ -98,15 +80,15 @@ const MyWorkday = () => {
   const [initialAmbulanceKm, setInitialAmbulanceKm] = useState("");
   const [finalAmbulanceKm, setFinalAmbulanceKm] = useState("");
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
-  const [isClosingDay, setIsClosingDay] = useState(false); // para controlar el estado del botón
-  // --- NUEVOS estados para el flujo de cierre --------------------------
-  const [showCloseQuestion, setShowCloseQuestion] = useState(false); // ¿Final del día?
-  const [isFinalClosure, setIsFinalClosure] = useState<boolean | null>(null); // true = total | false = parcial
-  const [showReviewModal, setShowReviewModal] = useState(false); // se abrirá en la fase 2
-  // 💡 nuevo: error de validación en tiempo real
-  const [draftError, setDraftError] = useState<string>("");   // "" = sin error
+  const [isClosingDay, setIsClosingDay] = useState(false);
+
+  const [showCloseQuestion, setShowCloseQuestion] = useState(false);
+  const [isFinalClosure, setIsFinalClosure] = useState<boolean | null>(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+
+  const [draftError, setDraftError] = useState<string>("");
   const [badField, setBadField] = useState<keyof TripDraft | null>(null);
-  // 🧭 Refs para enfocar inputs con error
+
   const timeWarningRef = useRef<HTMLInputElement>(null);
   const timeAtHomeRef = useRef<HTMLInputElement>(null);
   const timePickupRef = useRef<HTMLInputElement>(null);
@@ -117,14 +99,13 @@ const MyWorkday = () => {
 
   const [anschlussActive, setAnschlussActive] = useState(false);
   const [previousTripFormData, setPreviousTripFormData] = useState<TripData | null>(null);
-
-  const anschlussGuardRef = useRef(false); // 🛡️ Protege contra duplicados
+  const anschlussGuardRef = useRef(false);
 
   const [tripFormData, setTripFormData] = useState<TripData>({
-    date: "",              // <- nuevo
-    assignmentId: "",      // <- nuevo
-    driver: "",            // <- nuevo
-    medic: "",             // <- nuevo
+    date: "",
+    assignmentId: "",
+    driver: "",
+    medic: "",
     auftragNumber: "",
     patientName: "",
     fromAddress: "",
@@ -144,78 +125,50 @@ const MyWorkday = () => {
   });
 
   const [issueData, setIssueData] = useState<any | null>(null);
-
-
   const navigate = useNavigate();
 
-const handleConfirmAmbulanceData = () => {
-  if (!ambulanceId || !initialAmbulanceKm) {
-    toast.error("❌ Selecciona una ambulancia y KM iniciales.");
-    return;
-  }
+  const handleConfirmAmbulanceData = () => {
+    if (!ambulanceId || !initialAmbulanceKm) {
+      toast.error("❌ Selecciona una ambulancia y KM iniciales.");
+      return;
+    }
+    if (!assignedDay) return;
 
-  if (!assignedDay) return;
+    // obtener número real y usarlo al guardar (evita estado desfasado)
+    const selectedAmbulance = ambulances.find((a) => a._id === ambulanceId);
+    const ambulanceNum = selectedAmbulance?.ambulanceNumber || "??";
+    setAmbulanceNumber(ambulanceNum);
 
-  // 🔍 Obtenemos el número de ambulancia asociado
-  const selectedAmbulance = ambulances.find((a) => a._id === ambulanceId);
-  const ambulanceNum = selectedAmbulance?.ambulanceNumber || "??";
-  setAmbulanceNumber(ambulanceNum);
+    setVehicleConfirmed(true);
+    toast.success("✅ Datos confirmados. Ya puedes registrar viajes.");
 
-  setVehicleConfirmed(true);
-  toast.success("✅ Datos confirmados. Ya puedes registrar viajes.");
+    saveAmbulanceData(
+      assignedDay.assignmentId,
+      ambulanceId,
+      ambulanceNum, // <— usar el valor real, no el state aún sincrónico
+      initialAmbulanceKm
+    );
 
-  // ✅ Guardamos los datos correctamente compartidos por equipo
-  saveAmbulanceData(
-    assignedDay.assignmentId,
-    ambulanceId,
-    ambulanceNumber,
-    initialAmbulanceKm
-  );
-
-  localStorage.setItem(confirmedAmbulanceKey(assignedDay.assignmentId), "true");
-};
-
-
-
-
-
-  const handleCloseTripModal = () => {
-    setSelectedTrip(null);
+    localStorage.setItem(confirmedAmbulanceKey(assignedDay.assignmentId), "true");
   };
 
-  const handleOpenTripModal = (trip: Trip) => {
-    setSelectedTrip(trip);
-  };
+  const handleCloseTripModal = () => setSelectedTrip(null);
+  const handleOpenTripModal = (trip: Trip) => setSelectedTrip(trip);
 
-
-  /* ------------------------------------------------------------------ */
-  /* 1) Obtiene SOLO los viajes pendientes (sentInSummary = false)      */
-  /* 2) Muestra únicamente los del usuario log-in (driver / medic)      */
-  /* ------------------------------------------------------------------ */
   const fetchTrips = useCallback(async () => {
     if (!token || !user?._id) return;
 
-    /* ——— Día cerrado completamente → no intentes cargar nada ——— */
     const closedKey = getClosedDayKey(today, user._id);
     const closedFlag = localStorage.getItem(closedKey);
     if (closedFlag === "true") {
-      console.log("📵 Día cerrado; no se cargan viajes.");
-      setTrips([]);               // limpia memoria
+      setTrips([]);
       return;
     }
 
-    /* ——— Día aún abierto → pide viajes al backend ——— */
     try {
       const data = await getTripsByDate(today, token);
-
-      /* 1️⃣  ignora los viajes ya enviados en cualquier resumen          */
-      const pending = data.filter(t => !t.sentInSummary);
-
-      /* 2️⃣  muestra solo los viajes donde el usuario sea driver/medic   */
-      const mine = pending.filter(
-        t => t.driver === user._id || t.medic === user._id
-      );
-
+      const pending = data.filter((t) => !t.sentInSummary);
+      const mine = pending.filter((t) => t.driver === user._id || t.medic === user._id);
       setTrips(mine);
     } catch (err) {
       console.error(err);
@@ -223,25 +176,17 @@ const handleConfirmAmbulanceData = () => {
     }
   }, [token, today, user?._id]);
 
-
   const fetchAssignedDay = useCallback(async () => {
     if (!token || !user?._id) return;
 
     try {
       const days = await getAssignedDaysForUser(user._id, token);
 
-      /* 1️⃣  Intentamos encontrar un Dienst con la fecha de HOY */
       let todayAssignment = days.find((d) => d.date === today);
 
-      /* 2️⃣  Si no hay, buscamos el de AYER y verificamos que aún
-              siga activo (cruza medianoche y ahora ≤ hora fin). */
       if (!todayAssignment) {
-        const yesterdayStr = new Date(Date.now() - 86_400_000)
-          .toISOString()
-          .split("T")[0];
-
+        const yesterdayStr = new Date(Date.now() - 86_400_000).toISOString().split("T")[0];
         const yestAssignment = days.find((d) => d.date === yesterdayStr);
-
         if (
           yestAssignment &&
           crossesMidnight(yestAssignment.startTime, yestAssignment.endTime) &&
@@ -253,8 +198,7 @@ const handleConfirmAmbulanceData = () => {
 
       if (todayAssignment) {
         setAssignedDay(todayAssignment);
-        checkStartPermission(todayAssignment);        // ya existente
-        console.log("🧠 assignedDay cargado correctamente:", todayAssignment);
+        checkStartPermission(todayAssignment);
       } else {
         setAssignedDay(null);
         setCanStartWork(false);
@@ -265,77 +209,54 @@ const handleConfirmAmbulanceData = () => {
     }
   }, [token, user?._id, today]);
 
-
   const checkStartPermission = (dienst: AssignedDayFull) => {
-    const [startHour, startMinute] = dienst.startTime.split(':').map(Number);
+    const [startHour, startMinute] = dienst.startTime.split(":").map(Number);
     const now = new Date();
     const dienstStart = new Date();
-
     dienstStart.setHours(startHour);
     dienstStart.setMinutes(startMinute - 30);
     dienstStart.setSeconds(0);
-
     setCanStartWork(now >= dienstStart);
   };
 
   useEffect(() => {
     if (!user?._id) return;
-
     const closedDayKey = getClosedDayKey(today, user._id);
     const closedFlag = localStorage.getItem(closedDayKey);
-
-    if (closedFlag === "true") {
-      setIsClosingDay(true);
-      setTrips([]);          // 👈 borra los viajes si estuvieran en memoria
-    } else {
-      setIsClosingDay(false);
-    }
+    setIsClosingDay(closedFlag === "true");
+    if (closedFlag === "true") setTrips([]);
   }, [today, user?._id]);
-
 
   useEffect(() => {
     fetchTrips();
     fetchAssignedDay();
   }, [fetchTrips, fetchAssignedDay]);
 
+  useEffect(() => {
+    if (!assignedDay || !ambulances.length) return;
 
-useEffect(() => {
-  if (!assignedDay || !ambulances.length) return;
-
-  const loaded = loadAmbulanceData(assignedDay.assignmentId);
-  if (loaded) {
-    setAmbulanceId(loaded.ambulanceId);
-    setInitialAmbulanceKm(loaded.initialKm);
-
-    // Restaurar el número si está disponible, si no, buscarlo por ID
-    if (loaded.ambulanceNumber) {
-      setAmbulanceNumber(loaded.ambulanceNumber);
-    } else {
-      const amb = ambulances.find((a) => a._id === loaded.ambulanceId);
-      setAmbulanceNumber(amb?.ambulanceNumber || "??");
+    const loaded = loadAmbulanceData(assignedDay.assignmentId);
+    if (loaded) {
+      setAmbulanceId(loaded.ambulanceId);
+      setInitialAmbulanceKm(loaded.initialKm);
+      if (loaded.ambulanceNumber) {
+        setAmbulanceNumber(loaded.ambulanceNumber);
+      } else {
+        const amb = ambulances.find((a) => a._id === loaded.ambulanceId);
+        setAmbulanceNumber(amb?.ambulanceNumber || "??");
+      }
     }
-  }
 
-  const isConfirmed =
-    localStorage.getItem(confirmedAmbulanceKey(assignedDay.assignmentId)) === "true";
-
-  setVehicleConfirmed(isConfirmed);
-}, [assignedDay, ambulances]);
-
-
-
+    const isConfirmed =
+      localStorage.getItem(confirmedAmbulanceKey(assignedDay.assignmentId)) === "true";
+    setVehicleConfirmed(isConfirmed);
+  }, [assignedDay, ambulances]);
 
   useEffect(() => {
-  if (assignedDay && ambulanceId && ambulanceNumber && initialAmbulanceKm) {
-    saveAmbulanceData(
-      assignedDay.assignmentId,
-      ambulanceId,
-      ambulanceNumber,
-      initialAmbulanceKm
-    );
-  }
-}, [ambulanceId, ambulanceNumber, initialAmbulanceKm, assignedDay]);
-
+    if (assignedDay && ambulanceId && ambulanceNumber && initialAmbulanceKm) {
+      saveAmbulanceData(assignedDay.assignmentId, ambulanceId, ambulanceNumber, initialAmbulanceKm);
+    }
+  }, [ambulanceId, ambulanceNumber, initialAmbulanceKm, assignedDay]);
 
   useEffect(() => {
     const result = checkTripLogic(
@@ -350,7 +271,6 @@ useEffect(() => {
       },
       wasCancelled
     );
-
     setDraftError(result.error || "");
     setBadField(result.badField);
   }, [tripFormData, wasCancelled]);
@@ -359,19 +279,14 @@ useEffect(() => {
     const fetchAmbulances = async () => {
       try {
         if (!token) return;
-
         const data = await getAllAmbulances(token);
         setAmbulances(data);
       } catch (err) {
         console.error("❌ Error al cargar ambulancias:", err);
       }
     };
-
     fetchAmbulances();
   }, [token]);
-
-
-
 
   const handleSaveTrip = async () => {
     if (!token) return;
@@ -390,10 +305,6 @@ useEffect(() => {
       kmEnd,
     } = tripFormData;
 
-    console.log("📦 tripFormData:", tripFormData);
-    console.log("🚐 kmStart:", kmStart, "kmEnd:", kmEnd);
-    console.log("📛 wasCancelled:", wasCancelled);
-
     if (!wasCancelled) {
       if (
         !auftragNumber?.trim() ||
@@ -409,7 +320,6 @@ useEffect(() => {
         kmEnd === 0
       ) {
         toast.warn("🚫 Por favor, rellena todos los campos obligatorios");
-
         return;
       }
     }
@@ -434,7 +344,6 @@ useEffect(() => {
         kmStart: Number(kmStart),
         kmEnd: Number(kmEnd),
       });
-
       if (logicError.error) {
         toast.error(logicError.error);
         return;
@@ -469,7 +378,6 @@ useEffect(() => {
       toast.success("✅ Viaje guardado");
       setTrips((prev) => [...prev, createdTrip]);
 
-      // Reset
       setTripFormData({
         ...tripFormData,
         auftragNumber: "",
@@ -496,7 +404,6 @@ useEffect(() => {
 
   const saveAnschlussPatient1 = async (trip: TripData) => {
     if (!token || !assignedDay) return;
-
     try {
       const newTrip: TripData = {
         ...trip,
@@ -504,10 +411,8 @@ useEffect(() => {
         assignmentId: assignedDay.assignmentId,
         driver: assignedDay.driver._id,
         medic: assignedDay.medic._id,
-        timeEnd: "🔗 Anschluss", // ⛑️ Añadimos valor simbólico obligatorio
+        timeEnd: "🔗 Anschluss",
       };
-
-
       const createdTrip = await createTrip(newTrip);
       toast.success("✅ Paciente 1 (Anschluss) guardado");
       setTrips((prev) => [...prev, createdTrip]);
@@ -517,37 +422,18 @@ useEffect(() => {
     }
   };
 
-
-
-
-
-
-  /**
-   * Confirma el CIERRE DEFINITIVO del día.
-   * - Envía resumen al backend
-   * - Limpia estados
-   * - Marca el día como cerrado en localStorage
-   * - Redirige al dashboard
-   */
-  /* ────────────────────────────────────────────────
-     1.  CIERRE DEFINITIVO  (modal FinalReviewModal)
-     ────────────────────────────────────────────────*/
-
   const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number) => {
     if (!token || !assignedDay || !user?._id) return;
 
-    /* ── Validaciones mínimas ── */
     if (!ambulanceNumber || !initialAmbulanceKm) {
       toast.warn("🚐 Introduce nº de ambulancia y KM inicial.");
       return;
     }
-
     if (isNaN(finalKmFromModal)) {
       toast.warn("📏 Introduce los kilómetros finales en el modal.");
       return;
     }
 
-    /* ── Validación de coherencia de KM ── */
     const initialKmNumber = Number(initialAmbulanceKm);
     if (finalKmFromModal < initialKmNumber) {
       toast.error("❌ Los KM finales no pueden ser menores que los KM iniciales");
@@ -555,11 +441,8 @@ useEffect(() => {
     }
 
     try {
-      // 👉 Guarda en state el km final (para reabrir modal si es necesario)
       setFinalAmbulanceKm(String(finalKmFromModal));
-
       const totalDienstKm = finalKmFromModal - initialKmNumber;
-
 
       const summaryData: FinalSummaryPayload = {
         date: today,
@@ -567,9 +450,10 @@ useEffect(() => {
         driver: assignedDay.driver._id,
         medic: assignedDay.medic._id,
         ambulanceNumber,
-        ambulanceId: typeof assignedDay.ambulanceId === "string"
-          ? assignedDay.ambulanceId
-          : assignedDay.ambulanceId?._id ?? "",
+        ambulanceId:
+          typeof assignedDay.ambulanceId === "string"
+            ? assignedDay.ambulanceId
+            : assignedDay.ambulanceId?._id ?? "",
         initialKm: initialKmNumber,
         finalKm: finalKmFromModal,
         totalDienstKm,
@@ -581,43 +465,24 @@ useEffect(() => {
         endTime: assignedDay.endTime,
       };
 
-
-
-
-
-
-
-
-
-
       await sendFinalClosure(summaryData, token);
 
       toast.success("✅ Día cerrado y datos enviados al admin.");
 
-      // ✅ Marcar día cerrado para ambos (conductor y sanitario)
       localStorage.setItem(getClosedDayKey(today, assignedDay.driver._id), "true");
       localStorage.setItem(getClosedDayKey(today, assignedDay.medic._id), "true");
 
-
-      // ✅ Limpieza y redirección
       setTrips([]);
       setIsClosingDay(true);
       setShowReviewModal(false);
       clearAmbulanceData(assignedDay.assignmentId);
       navigate("/worker");
-
     } catch (err) {
       console.error("❌ Error al cerrar el día:", err);
       toast.error("❌ No se pudo cerrar el día.");
     }
   };
 
-
-
-
-  /* ────────────────────────────────────────────────
-     2.  CIERRE PARCIAL  (modal PartialReviewModal)
-     ────────────────────────────────────────────────*/
   const handleSendPartialClosure = async (reason: string, finalKmValue: number) => {
     if (!token || !assignedDay) return;
 
@@ -625,26 +490,23 @@ useEffect(() => {
       toast.warn("📏 Introduce los kilómetros finales en el modal.");
       return;
     }
-
     if (Number(finalKmValue) < Number(initialAmbulanceKm)) {
       toast.warn("📏 Los KM finales no pueden ser menores que los KM iniciales.");
       return;
     }
 
     try {
-
       const totalDienstKm = Number(finalKmValue) - Number(initialAmbulanceKm);
-
-
 
       const payload: PartialSummaryPayload & { issueData?: any } = {
         date: today,
         assignmentId: assignedDay.assignmentId,
         driver: assignedDay.driver._id,
         medic: assignedDay.medic._id,
-        ambulanceId: typeof assignedDay.ambulanceId === "string"
-          ? assignedDay.ambulanceId
-          : assignedDay.ambulanceId?._id ?? "",
+        ambulanceId:
+          typeof assignedDay.ambulanceId === "string"
+            ? assignedDay.ambulanceId
+            : assignedDay.ambulanceId?._id ?? "",
         ambulanceNumber,
         initialKm: Number(initialAmbulanceKm),
         finalKm: finalKmValue,
@@ -658,20 +520,13 @@ useEffect(() => {
         ...(issueData ? { issueData } : {}),
       };
 
-
-
-
-
       await sendPartialClosure(payload, token);
 
       toast.success("✅ Cierre parcial enviado al admin." + (issueData ? " Incluye reporte de avería." : ""));
 
-
-      // ✅ Borrar datos locales de ambulancia para forzar nuevo inicio
       clearAmbulanceData(assignedDay.assignmentId);
       localStorage.removeItem(confirmedAmbulanceKey(assignedDay.assignmentId));
 
-      // 🧹 Limpieza del formulario
       setTrips([]);
       setWasCancelled(false);
       setCountsTrip(1);
@@ -679,49 +534,33 @@ useEffect(() => {
       setAmbulanceNumber("");
       setInitialAmbulanceKm("");
       setFinalAmbulanceKm("");
-
-      // ✅ Asegura que se vuelva a mostrar la pantalla de confirmación
       setVehicleConfirmed(false);
 
-      // 🔁 Redirige al dashboard
       navigate("/worker");
-
     } catch (err) {
       console.error("❌ Error al enviar cierre parcial:", err);
       toast.error("❌ No se pudo enviar el cierre parcial.");
     }
   };
 
-
-  // 🟦 Función para activar Anschluss 
+  // Activar Anschluss
   const handleAddAnschluss = () => {
-    if (!assignedDay) {
-      console.warn("❗ No hay Dienst asignado para crear Anschluss.");
-      return;
-    }
+    if (!assignedDay) return;
+    if (!tripFormData.toAddress) return;
 
-    if (!tripFormData.toAddress) {
-      console.warn("❗ No se puede añadir Anschluss sin dirección destino del primer viaje.");
-      return;
-    }
-
-    // 🟠 Guarda el paciente 1
     setPreviousTripFormData(tripFormData);
-
-    // 🔒 Activa protección para que se guarde solo una vez
     anschlussGuardRef.current = true;
 
-    // 🟦 Crea nuevo paciente 2, reseteando los campos
     setTripFormData({
       date: today,
-      assignmentId: assignedDay.dienstId,
+      assignmentId: assignedDay.assignmentId, // <— FIX: antes usaba dienstId
       driver: assignedDay.driver._id,
       medic: assignedDay.medic._id,
-      auftragNumber: "", // reseteado
-      patientName: "",   // reseteado
-      fromAddress: tripFormData.toAddress, // <-- esta es la recogida nueva
-      toAddress: "",     // reseteado
-      timeWarning: getCurrentTimeString(), // ⏰ se rellena al hacer click en Anschluss
+      auftragNumber: "",
+      patientName: "",
+      fromAddress: tripFormData.toAddress,
+      toAddress: "",
+      timeWarning: getCurrentTimeString(),
       timeAtHome: "",
       timePickup: "",
       timeArrival: "",
@@ -738,61 +577,53 @@ useEffect(() => {
     setAnschlussActive(true);
   };
 
-
-  // 🟥 Función para cancelar Anschluss
+  // Cancelar Anschluss
   const handleCancelAnschluss = () => {
     setAnschlussActive(false);
-    anschlussGuardRef.current = false; // 🔓 Desactivamos la protección
-
+    anschlussGuardRef.current = false;
     if (previousTripFormData) {
-      setTripFormData(previousTripFormData); // 🔁 Restauramos el paciente 1
+      setTripFormData(previousTripFormData);
       setPreviousTripFormData(null);
     }
   };
 
-
-
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">📋 Mi jornada de hoy: {todayFormatted}</h2>
+      <h2 className="text-2xl font-bold mb-4">
+        {t("pages.workday.title", { date: todayFormatted })}
+      </h2>
 
       {isClosingDay ? (
         <div className="bg-red-100 text-red-800 p-4 rounded shadow mb-6">
-          ✅ Día cerrado. No hay Dienst activo para hoy.
+          {t("pages.workday.closedDay")}
         </div>
       ) : !assignedDay ? (
         <div className="bg-yellow-100 text-yellow-800 p-4 rounded shadow mb-6">
-          🚫 Hoy no tienes un Dienst asignado.
+          {t("pages.workday.noAssignment")}
         </div>
       ) : !canStartWork ? (
         <div className="bg-blue-100 text-blue-800 p-4 rounded shadow mb-6">
-          ⏳ Podrás registrar viajes a partir de 30 minutos antes de tu Dienst. Hora de inicio: <strong>{assignedDay.startTime}</strong>
+          {t("pages.workday.cantStart", { start: assignedDay.startTime })}
         </div>
       ) : (
         <>
           <div className="bg-white p-4 rounded shadow mb-6 space-y-3">
-            {/* 👥 Equipo asignado y ambulancia por defecto */}
             <div className="bg-gray-100 p-4 rounded shadow mb-6 flex justify-between items-start">
-
-              {/* 👥 Equipo asignado a la izquierda */}
               {assignedDay && (
                 <div>
                   <p className="text-sm text-gray-600 mb-1">
-                    ⏰ Dienst: <strong>{assignedDay.startTime}</strong> – <strong>{assignedDay.endTime}</strong>
+                    {t("pages.workday.dienstTimeLabel")} <strong>{assignedDay.startTime}</strong> – <strong>{assignedDay.endTime}</strong>
                   </p>
-                  <p className="font-semibold text-lg mb-1">Team:</p>
+                  <p className="font-semibold text-lg mb-1">{t("pages.workday.teamLabel")}</p>
                   <p>🚗 {assignedDay.driver?.lastName}, {assignedDay.driver?.name}</p>
                   <p>🧑‍⚕️ {assignedDay.medic?.lastName}, {assignedDay.medic?.name}</p>
                 </div>
               )}
 
-              {/* 🚐 Ambulancia y KM a la derecha, agrupados y alineados */}
               <div className="text-right w-full max-w-xs space-y-4">
-
-                {/* Nº de ambulancia */}
                 <div>
                   <label htmlFor="ambulanceId" className="block text-sm font-medium text-gray-700">
-                    🚐 Selecciona ambulancia
+                    {t("pages.workday.selectAmbulance.label")}
                   </label>
                   <select
                     id="ambulanceId"
@@ -801,7 +632,7 @@ useEffect(() => {
                     disabled={vehicleConfirmed}
                     className="w-full border border-gray-300 rounded px-3 py-2 text-right bg-white"
                   >
-                    <option value="">-- Selecciona una ambulancia --</option>
+                    <option value="">{t("pages.workday.selectAmbulance.placeholder")}</option>
                     {ambulances.map((amb) => (
                       <option key={amb._id} value={amb._id}>
                         {amb.ambulanceNumber}
@@ -810,20 +641,17 @@ useEffect(() => {
                   </select>
                 </div>
 
-
-
-                {/* KM inicial */}
                 <div>
                   <label
                     htmlFor="initialAmbulanceKm"
                     className="block text-sm font-medium text-gray-700"
                   >
-                    🔢 KM inicial
+                    {t("pages.workday.initialKm")}
                   </label>
                   <input
                     id="initialAmbulanceKm"
                     type="number"
-                    placeholder="Ej. 123456"
+                    placeholder="123456"
                     title="Kilometraje de la ambulancia al comenzar el día"
                     value={initialAmbulanceKm}
                     onChange={(e) => setInitialAmbulanceKm(e.target.value)}
@@ -832,74 +660,58 @@ useEffect(() => {
                   />
                 </div>
 
-                {/* Botón confirmar (solo si aún no se confirmó) */}
                 {!vehicleConfirmed && (
                   <button
                     type="button"
                     onClick={handleConfirmAmbulanceData}
                     className="mt-2 bg-green-600 text-white px-3 py-1 rounded w-full hover:bg-green-700"
                   >
-                    ✅ Confirmar datos iniciales
+                    {t("pages.workday.confirmInitialData")}
                   </button>
                 )}
               </div>
-
             </div>
-
 
             {vehicleConfirmed && (
               <>
-                {/* 👉  FORMULARIO DE VIAJE  */}
-                {/* ─────────────────────────────── */}
-                {/* 1️⃣  Auftrag + Paciente (2 col) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Nº Auftrag */}
                   <div>
                     <label htmlFor="auftragNumber" className="block text-sm">
-                      Número de Auftrag
+                      {t("pages.workday.auftragNumber")}
                     </label>
                     <input
                       disabled={formBlocked}
                       id="auftragNumber"
-                      placeholder="Ej: Krankentransport 123"
+                      placeholder="Krankentransport 123"
                       value={tripFormData.auftragNumber}
                       onChange={(e) =>
-                        setTripFormData((prev) => ({
-                          ...prev,
-                          auftragNumber: e.target.value,
-                        }))
+                        setTripFormData((prev) => ({ ...prev, auftragNumber: e.target.value }))
                       }
                       className="w-full border rounded p-1"
                     />
                   </div>
 
-                  {/* Nombre paciente */}
                   <div>
                     <label htmlFor="patientName" className="block text-sm">
-                      Nombre del paciente
+                      {t("pages.workday.patientName")}
                     </label>
                     <input
                       disabled={formBlocked}
                       id="patientName"
-                      placeholder="Ej: Juan Pérez"
+                      placeholder="Juan Pérez"
                       value={tripFormData.patientName}
                       onChange={(e) =>
-                        setTripFormData((prev) => ({
-                          ...prev,
-                          patientName: e.target.value,
-                        }))
+                        setTripFormData((prev) => ({ ...prev, patientName: e.target.value }))
                       }
                       className="w-full border rounded p-1"
                     />
                   </div>
                 </div>
 
-                {/* 2️⃣  Direcciones (2 col) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  {/* Origen */}
                   <div>
                     <label htmlFor="fromAddress" className="block text-sm">
-                      Dirección de recogida
+                      {t("pages.workday.fromAddress")}
                     </label>
                     <input
                       disabled={formBlocked}
@@ -907,19 +719,15 @@ useEffect(() => {
                       placeholder="Calle Ejemplo 123"
                       value={tripFormData.fromAddress}
                       onChange={(e) =>
-                        setTripFormData((prev) => ({
-                          ...prev,
-                          fromAddress: e.target.value,
-                        }))
+                        setTripFormData((prev) => ({ ...prev, fromAddress: e.target.value }))
                       }
                       className="w-full border rounded p-1"
                     />
                   </div>
 
-                  {/* Destino */}
                   <div>
                     <label htmlFor="toAddress" className="block text-sm">
-                      Dirección de dejada
+                      {t("pages.workday.toAddress")}
                     </label>
                     <input
                       disabled={formBlocked}
@@ -927,50 +735,34 @@ useEffect(() => {
                       placeholder="Hospital Central, Berlín"
                       value={tripFormData.toAddress}
                       onChange={(e) =>
-                        setTripFormData((prev) => ({
-                          ...prev,
-                          toAddress: e.target.value,
-                        }))
+                        setTripFormData((prev) => ({ ...prev, toAddress: e.target.value }))
                       }
                       className="w-full border rounded p-1"
                     />
                   </div>
                 </div>
 
-
-                {/* 3️⃣–5️⃣ Todos los campos de hora/KM en una sola fila */}
                 <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mt-4">
-                  {/* Hora aviso */}
                   <div>
-                    <label htmlFor="timeWarning" className="block text-sm">Aviso</label>
+                    <label htmlFor="timeWarning" className="block text-sm">{t("pages.workday.time.warning")}</label>
                     <input
                       ref={timeWarningRef}
                       disabled={formBlocked}
                       id="timeWarning"
                       type="time"
                       value={tripFormData.timeWarning}
-                      onChange={(e) =>
-                        setTripFormData((prev) => ({
-                          ...prev,
-                          timeWarning: e.target.value,
-                        }))
+                      onChange={(e) => setTripFormData((prev) => ({ ...prev, timeWarning: e.target.value }))}
+                      onDoubleClick={() =>
+                        setTripFormData((prev) => ({ ...prev, timeWarning: getCurrentTimeString() }))
                       }
-                      onDoubleClick={() => {
-                        const currentTime = getCurrentTimeString();
-                        setTripFormData((prev) => ({
-                          ...prev,
-                          timeWarning: currentTime,
-                        }));
-                      }}
-                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeWarning" ? "border-red-500" : "border-gray-300"
-                        }`}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${
+                        badField === "timeWarning" ? "border-red-500" : "border-gray-300"
+                      }`}
                     />
                   </div>
 
-
-                  {/* Hora domicilio */}
                   <div>
-                    <label htmlFor="timeAtHome" className="block text-sm">Domicilio</label>
+                    <label htmlFor="timeAtHome" className="block text-sm">{t("pages.workday.time.atHome")}</label>
                     <input
                       ref={timeAtHomeRef}
                       disabled={formBlocked}
@@ -979,35 +771,22 @@ useEffect(() => {
                       value={tripFormData.timeAtHome}
                       onChange={(e) => {
                         const value = e.target.value;
-
-                        setTripFormData((prev) => ({
-                          ...prev,
-                          timeAtHome: value,
-                        }));
-
+                        setTripFormData((prev) => ({ ...prev, timeAtHome: value }));
                         if (anschlussActive) {
-                          setPreviousTripFormData((prev) =>
-                            prev ? { ...prev, timeArrival: value } : null
-                          );
+                          setPreviousTripFormData((prev) => (prev ? { ...prev, timeArrival: value } : null));
                         }
                       }}
-
-                      onDoubleClick={() => {
-                        const currentTime = getCurrentTimeString();
-                        setTripFormData((prev) => ({
-                          ...prev,
-                          timeAtHome: currentTime,
-                        }));
-                      }}
-                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeAtHome" ? "border-red-500" : "border-gray-300"
-                        }`}
+                      onDoubleClick={() =>
+                        setTripFormData((prev) => ({ ...prev, timeAtHome: getCurrentTimeString() }))
+                      }
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${
+                        badField === "timeAtHome" ? "border-red-500" : "border-gray-300"
+                      }`}
                     />
                   </div>
 
-
-                  {/* KM domicilio */}
                   <div>
-                    <label htmlFor="kmStart" className="block text-sm">KM dom.</label>
+                    <label htmlFor="kmStart" className="block text-sm">{t("pages.workday.km.start")}</label>
                     <input
                       ref={kmStartRef}
                       disabled={formBlocked}
@@ -1016,28 +795,19 @@ useEffect(() => {
                       value={tripFormData.kmStart === 0 ? "" : tripFormData.kmStart}
                       onChange={(e) => {
                         const value = Number(e.target.value);
-
-                        setTripFormData((prev) => ({
-                          ...prev,
-                          kmStart: value,
-                        }));
-
+                        setTripFormData((prev) => ({ ...prev, kmStart: value }));
                         if (anschlussActive) {
-                          setPreviousTripFormData((prev) =>
-                            prev ? { ...prev, kmEnd: value } : null
-                          );
+                          setPreviousTripFormData((prev) => (prev ? { ...prev, kmEnd: value } : null));
                         }
                       }}
-                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "kmStart" ? "border-red-500" : "border-gray-300"
-                        }`}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${
+                        badField === "kmStart" ? "border-red-500" : "border-gray-300"
+                      }`}
                     />
                   </div>
 
-
-
-                  {/* Hora carga */}
                   <div>
-                    <label htmlFor="timePickup" className="block text-sm">Carga</label>
+                    <label htmlFor="timePickup" className="block text-sm">{t("pages.workday.time.pickup")}</label>
                     <input
                       ref={timePickupRef}
                       disabled={formBlocked}
@@ -1046,181 +816,138 @@ useEffect(() => {
                       value={tripFormData.timePickup}
                       onChange={async (e) => {
                         const newTime = e.target.value;
-
                         setTripFormData((prev) => {
                           const updated = { ...prev, timePickup: newTime };
-
-                          // ✅ 2. Si Anschluss está activo y no se ha guardado aún
                           if (anschlussActive && previousTripFormData && anschlussGuardRef.current) {
-                            anschlussGuardRef.current = false; // 🛡️ Desactivamos el guardia inmediatamente
-
+                            anschlussGuardRef.current = false;
                             const updatedTrip: TripData = {
                               ...previousTripFormData,
                               timeArrival: newTime,
                               kmEnd: updated.kmStart ?? 0,
                               timeEnd: "🔗 Anschluss",
                             };
-
                             saveAnschlussPatient1(updatedTrip);
                             setPreviousTripFormData(null);
                             setAnschlussActive(false);
                           }
-
                           return updated;
                         });
                       }}
-
-                      onDoubleClick={() => {
-                        const currentTime = getCurrentTimeString();
-
+                      onDoubleClick={() =>
                         setTripFormData((prev) => {
+                          const currentTime = getCurrentTimeString();
                           const updated = { ...prev, timePickup: currentTime };
-
                           if (anschlussActive && previousTripFormData && anschlussGuardRef.current) {
                             anschlussGuardRef.current = false;
-
                             const updatedTrip: TripData = {
                               ...previousTripFormData,
                               timeArrival: currentTime,
                               kmEnd: updated.kmStart ?? 0,
                               timeEnd: "🔗 Anschluss",
                             };
-
                             saveAnschlussPatient1(updatedTrip);
                             setPreviousTripFormData(null);
                             setAnschlussActive(false);
                           }
-
                           return updated;
-                        });
-                      }}
-
-
-                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timePickup" ? "border-red-500" : "border-gray-300"
-                        }`}
+                        })
+                      }
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${
+                        badField === "timePickup" ? "border-red-500" : "border-gray-300"
+                      }`}
                     />
                   </div>
 
-
-
-
-                  {/* Hora destino */}
                   <div>
-                    <label htmlFor="timeArrival" className="block text-sm">Destino</label>
+                    <label htmlFor="timeArrival" className="block text-sm">{t("pages.workday.time.arrival")}</label>
                     <input
                       ref={timeArrivalRef}
                       disabled={formBlocked}
                       id="timeArrival"
                       type="time"
                       value={tripFormData.timeArrival}
-                      onChange={(e) =>
-                        setTripFormData((prev) => ({
-                          ...prev,
-                          timeArrival: e.target.value,
-                        }))
+                      onChange={(e) => setTripFormData((prev) => ({ ...prev, timeArrival: e.target.value }))}
+                      onDoubleClick={() =>
+                        setTripFormData((prev) => ({ ...prev, timeArrival: getCurrentTimeString() }))
                       }
-                      onDoubleClick={() => {
-                        const currentTime = getCurrentTimeString();
-                        setTripFormData((prev) => ({
-                          ...prev,
-                          timeArrival: currentTime,
-                        }));
-                      }}
-                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeArrival" ? "border-red-500" : "border-gray-300"}`}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${
+                        badField === "timeArrival" ? "border-red-500" : "border-gray-300"
+                      }`}
                     />
                   </div>
 
-                  {/* KM destino */}
                   <div>
-                    <label htmlFor="kmEnd" className="block text-sm">KM dest.</label>
+                    <label htmlFor="kmEnd" className="block text-sm">{t("pages.workday.km.end")}</label>
                     <input
                       ref={kmEndRef}
                       disabled={formBlocked}
                       id="kmEnd"
                       type="number"
                       value={tripFormData.kmEnd === 0 ? "" : tripFormData.kmEnd}
-                      onChange={(e) =>
-                        setTripFormData((prev) => ({
-                          ...prev,
-                          kmEnd: Number(e.target.value),
-                        }))
-                      }
-
-                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "kmEnd" ? "border-red-500" : "border-gray-300"}`}
+                      onChange={(e) => setTripFormData((prev) => ({ ...prev, kmEnd: Number(e.target.value) }))}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${
+                        badField === "kmEnd" ? "border-red-500" : "border-gray-300"
+                      }`}
                     />
                   </div>
 
-                  {/* Hora libre */}
                   <div>
-                    <label htmlFor="timeEnd" className="block text-sm">Libre</label>
+                    <label htmlFor="timeEnd" className="block text-sm">{t("pages.workday.time.end")}</label>
                     <input
                       ref={timeEndRef}
                       disabled={formBlocked}
                       id="timeEnd"
                       type="time"
                       value={tripFormData.timeEnd}
-                      onChange={(e) =>
-                        setTripFormData((prev) => ({
-                          ...prev,
-                          timeEnd: e.target.value,
-                        }))
+                      onChange={(e) => setTripFormData((prev) => ({ ...prev, timeEnd: e.target.value }))}
+                      onDoubleClick={() =>
+                        setTripFormData((prev) => ({ ...prev, timeEnd: getCurrentTimeString() }))
                       }
-                      onDoubleClick={() => {
-                        const currentTime = getCurrentTimeString();
-                        setTripFormData((prev) => ({
-                          ...prev,
-                          timeEnd: currentTime,
-                        }));
-                      }}
-                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${badField === "timeEnd" ? "border-red-500" : "border-gray-300"}`}
+                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring ${
+                        badField === "timeEnd" ? "border-red-500" : "border-gray-300"
+                      }`}
                     />
                   </div>
                 </div>
 
-
-                {/* 🔄 Botón Anschluss: solo aparece si ya hay hora de carga */}
                 {(tripFormData.timePickup || anschlussActive) && (
                   <div className="flex items-center mb-2 space-x-2">
                     <button
                       type="button"
                       onClick={anschlussActive ? handleCancelAnschluss : handleAddAnschluss}
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold transition 
-                        ${anschlussActive ? 'bg-red-500 hover:bg-red-600' : 'bg-orange-500 hover:bg-orange-600'}`}
-                      title={anschlussActive ? "Cancelar Anschluss" : "Añadir Anschluss"}
+                        ${anschlussActive ? "bg-red-500 hover:bg-red-600" : "bg-orange-500 hover:bg-orange-600"}`}
+                      title={anschlussActive ? t("pages.workday.anschluss.cancelTitle") : t("pages.workday.anschluss.addTitle")}
                     >
-                      {anschlussActive ? '✖' : '+'}
+                      {anschlussActive ? "✖" : "+"}
                     </button>
                     <span className="text-sm text-gray-700">
-                      {anschlussActive ? "Cancelar Anschluss" : "Anschluss"}
+                      {anschlussActive ? t("pages.workday.anschluss.cancelLabel") : t("pages.workday.anschluss.addLabel")}
                     </span>
                   </div>
                 )}
 
-
-
-
-                {/* ❌ Storno (viaje cancelado) */}
                 <div className="space-y-2">
                   <div className="flex items-center mb-2 space-x-2">
                     <button
                       type="button"
                       onClick={() => {
                         setWasCancelled(!wasCancelled);
-                        if (wasCancelled) setCountsTrip(1); // Resetear si se desmarca
+                        if (wasCancelled) setCountsTrip(1);
                       }}
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold transition 
-                        ${wasCancelled ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-300 hover:bg-gray-400'}`}
+                        ${wasCancelled ? "bg-red-600 hover:bg-red-700" : "bg-gray-300 hover:bg-gray-400"}`}
                       title="Marcar viaje como cancelado"
                     >
-                      {wasCancelled ? '✖' : '🅂'}
+                      {wasCancelled ? "✖" : "🅂"}
                     </button>
-                    <span className="text-sm text-gray-700">Storno</span>
+                    <span className="text-sm text-gray-700">{t("pages.workday.storno.label")}</span>
                   </div>
 
                   {wasCancelled && (
                     <div className="ml-6">
                       <label htmlFor="countsTrip" className="block text-sm font-medium mb-1">
-                        ¿Cuenta el viaje?
+                        {t("pages.workday.storno.countsQuestion")}
                       </label>
                       <select
                         id="countsTrip"
@@ -1228,22 +955,20 @@ useEffect(() => {
                         onChange={(e) => setCountsTrip(Number(e.target.value))}
                         className="border rounded px-2 py-1 w-full"
                       >
-                        <option value={1}>✅ Sí, cuenta (1)</option>
-                        <option value={0}>❌ No, no cuenta (0)</option>
+                        <option value={1}>{t("pages.workday.storno.counts.yes")}</option>
+                        <option value={0}>{t("pages.workday.storno.counts.no")}</option>
                       </select>
                     </div>
                   )}
                 </div>
 
-
-
                 <div>
-                  <label htmlFor="reports" className="block text-sm">Observaciones / reportes</label>
+                  <label htmlFor="reports" className="block text-sm">{t("pages.workday.reports.label")}</label>
                   <textarea
                     disabled={formBlocked}
                     id="reports"
-                    placeholder="Observaciones sobre el traslado"
-                    title="Escribe aquí cualquier observación"
+                    placeholder={t("pages.workday.reports.placeholder")}
+                    title={t("pages.workday.reports.title")}
                     value={reports}
                     onChange={(e) => setReports(e.target.value)}
                     className="w-full border p-1 rounded"
@@ -1251,69 +976,43 @@ useEffect(() => {
                   />
                 </div>
 
-                {/* ── Mensaje de validación en caliente ─────────── */}
                 {draftError && (
                   <div className="bg-red-100 text-red-700 p-2 rounded">
                     {draftError}
                   </div>
                 )}
 
-
                 <button
                   onClick={handleSaveTrip}
-                  disabled={Boolean(draftError)}          // ⬅️  si hay error, se desactiva
-                  className={`w-full py-2 px-4 rounded text-white
-                ${draftError
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700"}`}
+                  disabled={Boolean(draftError)}
+                  className={`w-full py-2 px-4 rounded text-white ${
+                    draftError ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                  }`}
                 >
-                  Guardar viaje
+                  {t("pages.workday.saveTrip")}
                 </button>
 
-                <h3 className="text-xl font-semibold mb-2">🧾 Resumen de viajes</h3>
+                <h3 className="text-xl font-semibold mb-2">{t("pages.workday.tripSummary")}</h3>
                 <ul className="space-y-2">
-                  {/* ---------- LISTA DE TRIPS ---------- */}
                   {trips.map((trip: Trip, idx: number) => {
                     const totalKm = trip.wasCancelled ? 0 : (typeof trip.totalKm === "number" ? trip.totalKm : trip.kmEnd - trip.kmStart);
 
-
-
-                    /** Decide el multiplicador del viaje
-                     *  1. Si countsTrip === 0  →   0 x   (viaje cancelado que NO cuenta).
-                     *  2. Si countsTrip === 1  →   aplica reglas normales.
-                     *     a) ≥ 20 km                      → 2 x
-                     *     b) ≥ 15 km                      → 1.5 x
-                     *     c) Dienst sábado/domingo que empieza entre 14 y 17 h → 1.5 x
-                     *     d) resto                        → 1 x
-                     *  3. Si countsTrip es undefined (viaje no cancelado) → usa sólo reglas a-d.
-                     */
                     const getMultiplier = () => {
-                      /* helper local: ¿turno fin-de-semana tarde? */
                       const isWeekendAfternoonShift = () => {
                         if (!assignedDay) return false;
-                        const day = new Date(assignedDay.date).getDay();      // 0 = dom, 6 = sáb
+                        const day = new Date(assignedDay.date).getDay();
                         if (day !== 0 && day !== 6) return false;
                         const [h] = assignedDay.startTime.split(":").map(Number);
                         return h >= 14 && h <= 17;
                       };
-
-                      /* --- 0) viaje cancelado que NO cuenta --- */
                       if (trip.countsTrip === 0) return 0;
-
-                      /* --- 1) reglas para viajes que SÍ cuentan --- */
-                      // 20 km o más
                       if (totalKm >= 20) return 2;
-                      // 15-19 km
                       if (totalKm >= 15) return 1.5;
-                      // sábado/domingo 14-17 h
                       if (isWeekendAfternoonShift()) return 1.5;
-
-                      // por defecto
                       return 1;
                     };
 
                     const multiplier = getMultiplier();
-
 
                     return (
                       <li
@@ -1326,12 +1025,10 @@ useEffect(() => {
                             {trip.auftragNumber}
                             {trip.wasCancelled && (
                               <span className="ml-2 text-red-600 font-medium">
-                                (cancelado)
+                                {t("pages.workday.tripCancelledTag")}
                               </span>
                             )}
                           </span>
-
-                          {/* 👉 Km totales + multiplicador (0 / 1 / 1.5 / 2) */}
                           <span>
                             {totalKm} km
                             <span className="ml-3 text-green-700 font-bold text-xl">
@@ -1342,7 +1039,6 @@ useEffect(() => {
                       </li>
                     );
                   })}
-
                 </ul>
 
                 {vehicleConfirmed && !isClosingDay && (
@@ -1350,74 +1046,62 @@ useEffect(() => {
                     onClick={() => setShowCloseQuestion(true)}
                     className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
                   >
-                    ✅ Cerrar día y enviar resumen
+                    {t("pages.workday.closeAndSend")}
                   </button>
                 )}
-
               </>
             )}
 
             {!vehicleConfirmed && (
               <div className="bg-orange-100 text-orange-800 p-4 rounded">
-                🚑 Introduce el <strong>nº de ambulancia</strong> y los
-                <strong> KM iniciales</strong> y pulsa
-                <em> “Confirmar datos iniciales” </em> para poder crear viajes.
+                {t("pages.workday.needVehicleData")}
               </div>
             )}
-
           </div>
 
-
-          {/* --------------------------------------------------------------
-    // PREGUNTA CLAVE: ¿es el final del día?
-  ---------------------------------------------------------------- */}
           {showCloseQuestion && (
             <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
               <div className="bg-white p-6 rounded shadow-lg w-full max-w-sm space-y-4">
-                <h4 className="text-lg font-semibold text-center">¿Es el final del día?</h4>
+                <h4 className="text-lg font-semibold text-center">{t("pages.workday.closeQuestion.title")}</h4>
 
                 <div className="space-y-2">
                   <button
                     onClick={() => {
                       setIsFinalClosure(true);
                       setShowCloseQuestion(false);
-                      setShowReviewModal(true); // Modal de REPASO total (fase 2)
+                      setShowReviewModal(true);
                     }}
                     className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded"
                   >
-                    ✅ Sí, cierre completo
+                    {t("pages.workday.closeQuestion.yes")}
                   </button>
 
                   <button
                     onClick={() => {
                       setIsFinalClosure(false);
                       setShowCloseQuestion(false);
-                      setShowReviewModal(true); // Modal de REPASO parcial (fase 2)
+                      setShowReviewModal(true);
                     }}
                     className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded"
                   >
-                    ⚠️ No, enviar cierre parcial
+                    {t("pages.workday.closeQuestion.partial")}
                   </button>
 
                   <button
                     onClick={() => setShowCloseQuestion(false)}
                     className="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 rounded"
                   >
-                    Cancelar
+                    {t("pages.workday.closeQuestion.cancel")}
                   </button>
                 </div>
               </div>
             </div>
           )}
-
         </>
       )}
 
-      {selectedTrip && (
-        <TripModal trip={selectedTrip} onClose={handleCloseTripModal} />
-      )}
+      {selectedTrip && <TripModal trip={selectedTrip} onClose={handleCloseTripModal} />}
 
-      {/* ───────── Modal de CIERRE PARCIAL ───────── */}
       {showReviewModal && !isFinalClosure && assignedDay && (
         <PartialReviewModal
           trips={trips}
@@ -1434,8 +1118,6 @@ useEffect(() => {
         />
       )}
 
-
-      {/* ───────── Modal de REVISIÓN FINAL ───────── */}
       {showReviewModal && isFinalClosure === true && assignedDay && (
         <FinalReviewModal
           isOpen={true}
@@ -1449,11 +1131,8 @@ useEffect(() => {
           onConfirm={handleConfirmFinalClosure}
         />
       )}
-
-
     </div>
   );
 };
-
 
 export default MyWorkday;
