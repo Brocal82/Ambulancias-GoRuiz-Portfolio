@@ -65,6 +65,11 @@ const AdminDashboard = () => {
           <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.clothes.title')}</h2>
           <p className="text-sm text-gray-600">{t('pages.adminDashboard.clothes.desc')}</p>
         </div>
+
+        <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
+          <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.formation.title')}</h2>
+          <p className="text-sm text-gray-600">{t('pages.adminDashboard.formation.desc')}</p>
+        </div>
       </div>
     </div>
   );

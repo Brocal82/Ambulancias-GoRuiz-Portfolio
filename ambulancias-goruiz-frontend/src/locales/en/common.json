@@ -73,6 +73,10 @@
       "clothes": {
         "title": "🛠 Clothing",
         "desc": "Coming soon"
+      },
+      "formation": {
+        "title": "🛠 Game/Training",
+        "desc": "Próximamente"
       }
     },
     "workerDashboard": {
