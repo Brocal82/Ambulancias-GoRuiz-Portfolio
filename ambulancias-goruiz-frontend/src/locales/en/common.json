@@ -1,11 +1,11 @@
 {
   "layout": {
-    "appName": "Ambulances GORRUIZ",
+    "appName": "GORRUIZ Ambulances",
     "logout": "Logout"
   },
   "pages": {
     "welcome": {
-      "title": "Welcome to Ambulances GORRUIZ",
+      "title": "GORRUIZ Ambulances",
       "login": "Login",
       "register": "Register"
     },
@@ -56,7 +56,7 @@
       },
       "vacations": {
         "title": "🌴 Vacations",
-        "desc": "Manage team requests"
+        "desc": "Manage Holidays requests"
       },
       "appointments": {
         "title": "🗓️ Appointments",
@@ -67,7 +67,7 @@
         "desc": "Send important announcements"
       },
       "payrollDocs": {
-        "title": "🛠 Payroll/Docs/Signature",
+        "title": "🛠 Payroll/Docs/Digital Signature",
         "desc": "Coming soon"
       },
       "clothes": {

@@ -5,7 +5,7 @@
   },
   "pages": {
     "welcome": {
-      "title": "Willkommen bei Krankentransport GORRUIZ",
+      "title": "Krankentransport GORRUIZ",
       "login": "Anmelden",
       "register": "Registrieren"
     },
@@ -56,7 +56,7 @@
       },
       "vacations": {
         "title": "🌴 Urlaub",
-        "desc": "Team-Anträge verwalten"
+        "desc": "Urlaubsanträge verwalten"
       },
       "appointments": {
         "title": "🗓️ Termine",
@@ -67,7 +67,7 @@
         "desc": "Wichtige Mitteilungen senden"
       },
       "payrollDocs": {
-        "title": "🛠 Löhne/Dokumente/Signatur",
+        "title": "🛠 Löhne/Dokumente/Digitale Signatur",
         "desc": "Demnächst"
       },
       "clothes": {

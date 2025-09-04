@@ -5,7 +5,7 @@
   },
   "pages": {
     "welcome": {
-      "title": "Bienvenido a Ambulancias GORRUIZ",
+      "title": "Ambulancias GORRUIZ",
       "login": "Iniciar Sesión",
       "register": "Registrarse"
     },
@@ -56,7 +56,7 @@
       },
       "vacations": {
         "title": "🌴 Vacaciones",
-        "desc": "Gestiona solicitudes del equipo"
+        "desc": "Gestiona solicitudes vacaciones"
       },
       "appointments": {
         "title": "🗓️ Citas",
@@ -67,7 +67,7 @@
         "desc": "Envía comunicados importantes"
       },
       "payrollDocs": {
-        "title": "🛠 Nóminas/Docs/Firma",
+        "title": "🛠 Nóminas/Docs/Firma Digital",
         "desc": "Próximamente"
       },
       "clothes": {
