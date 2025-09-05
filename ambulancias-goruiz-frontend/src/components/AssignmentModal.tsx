@@ -4,7 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { updateDienstPartial, removeAssignment } from "../api/diensts";
 import { getAvailableUsersForDate } from "../api/users";
 import { getPscheinStatus } from "../utils/pscheinUtils";
-import { toast } from "react-toastify";
+import { toastT } from "../utils/toast";
 import "react-toastify/dist/ReactToastify.css";
 import type { UserRef, DienstAssignment } from "../types/dienst";
 import { mergeWithAssigned } from "../utils/mergeWithAssigned";
@@ -78,7 +78,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         setAvailableMedics(mergeWithAssigned(medics, assignment, "medic"));
       } catch (error) {
         console.error("Error al cargar usuarios disponibles:", error);
-        toast.error(t("pages.assignmentModal.toasts.loadUsersError"));
+        toastT.error(["toasts.assignments.loadUsersError"]);
       }
     };
 
@@ -96,7 +96,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         setAmbulances(data);
       } catch (error) {
         console.error("❌ Error al cargar ambulancias:", error);
-        toast.error(t("pages.assignmentModal.toasts.loadAmbulancesError"));
+        toastT.error(["toasts.assignments.loadAmbulancesError"]);
       }
     };
 
@@ -109,17 +109,17 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     if (!token) return;
 
     if (!dienstId) {
-      toast.error(t("pages.assignmentModal.toasts.dienstIdMissing"));
+      toastT.error(["toasts.assignments.missingDienstId"]);
       return;
     }
 
     if (!startTime || !endTime || !ambulanceId) {
-      toast.warn(t("pages.assignmentModal.toasts.requiredFields"));
+      toastT.warn(["toasts.assignments.missingFields"]);
       return;
     }
 
     if (selectedDriverId && selectedMedicId && selectedDriverId === selectedMedicId) {
-      toast.warn(t("pages.assignmentModal.toasts.samePerson"));
+      toastT.warn(["toasts.assignments.samePerson"]);
       return;
     }
 
@@ -135,12 +135,12 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       };
 
       await updateDienstPartial(dienstId, { assignments: [updatedAssignment] }, token);
-      toast.success(t("pages.assignmentModal.toasts.saved"));
+      toastT.success(["toasts.assignments.saveSuccess"]);
       onClose();
       onUpdate();
     } catch (error) {
       console.error("Error al guardar cambios:", error);
-      toast.error(t("pages.assignmentModal.toasts.saveError"));
+      toastT.error(["toasts.assignments.saveError"]);
     }
   };
 
@@ -152,12 +152,12 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     setIsLoading(true);
     try {
       await removeAssignment(dienstId, assignment.date, token);
-      toast.success(t("pages.assignmentModal.toasts.deleted"));
+      toastT.success(["toasts.assignments.deleteSuccess"]);
       onClose();
       onUpdate();
     } catch (error) {
       console.error("Error al eliminar assignment:", error);
-      toast.error(t("pages.assignmentModal.toasts.deleteError"));
+      toastT.error(["toasts.assignments.deleteError"]);
     } finally {
       setIsLoading(false);
     }
