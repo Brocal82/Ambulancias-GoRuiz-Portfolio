@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Hospital } from '../../types/hospital';
 import { updateHospital } from '../../api/hospitals';
 import { useAuth } from '../../hooks/useAuth';
-import { toast } from 'react-toastify';
+import { toastT } from "../../utils/toast";
 import { useTranslation } from 'react-i18next';
 
 interface Props {
@@ -51,11 +51,11 @@ const HospitalEditModal = ({ hospital, allSpecialties, onClose, onUpdated }: Pro
     try {
       const updated = await updateHospital(hospital._id, { ...form, specialties }, token);
       onUpdated(updated);
-      toast.success(t('pages.hospitals.editModal.toasts.updated'));
+      toastT.success(["toasts.hospitals.updateSuccess"]);
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error(t('pages.hospitals.editModal.toasts.updateError'));
+      toastT.error(["toasts.hospitals.updateError"]);
     }
   };
 

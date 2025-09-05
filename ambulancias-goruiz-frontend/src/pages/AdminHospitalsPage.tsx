@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getAllHospitals, updateHospital, createHospital, deleteHospital } from '../api/hospitals';
 import type { Hospital } from '../types/hospital';
 import { useAuth } from '../hooks/useAuth';
-import { toast } from 'react-toastify';
+import { toastT } from "../utils/toast";
 import Select from 'react-select';
 import { normalizeText } from '../utils/textUtils';
 import HospitalEditModal from '../components/hospitals/HospitalEditModal';
@@ -34,7 +34,7 @@ const AdminHospitalsPage = () => {
         setHospitals(data);
       } catch (error) {
         console.error(error);
-        toast.error(t('pages.hospitals.adminPage.toasts.loadError'));
+        toastT.error(["toasts.hospitals.loadError"]);
       }
     };
 
@@ -52,10 +52,10 @@ const AdminHospitalsPage = () => {
       setHospitals((prev) =>
         prev.map((h) => (h._id === updated._id ? updated : h))
       );
-      toast.success(t('pages.hospitals.adminPage.toasts.stateUpdated'));
+      toastT.success(["toasts.hospitals.stateUpdated"]);
     } catch (error) {
       console.error(error);
-      toast.error(t('pages.hospitals.adminPage.toasts.stateUpdateError'));
+      toastT.error(["toasts.hospitals.stateUpdateError"]);
     }
   };
 
@@ -75,12 +75,12 @@ const AdminHospitalsPage = () => {
         token
       );
       setHospitals((prev) => [...prev, newHospital]);
-      toast.success(t('pages.hospitals.adminPage.toasts.created'));
+      toastT.success(["toasts.hospitals.addSuccess"]);
       setForm({ name: '', address: '', phone: '', specialties: '' });
       setShowForm(false);
     } catch (error) {
       console.error(error);
-      toast.error(t('pages.hospitals.adminPage.toasts.createError'));
+      toastT.error(["toasts.hospitals.addError"]);
     }
   };
 
@@ -91,10 +91,10 @@ const AdminHospitalsPage = () => {
     try {
       await deleteHospital(id, token);
       setHospitals((prev) => prev.filter((h) => h._id !== id));
-      toast.success(t('pages.hospitals.adminPage.toasts.deleted'));
+      toastT.success(["toasts.hospitals.deleteSuccess"]);
     } catch (error) {
       console.error(error);
-      toast.error(t('pages.hospitals.adminPage.toasts.deleteError'));
+      toastT.error(["toasts.hospitals.deleteError"]);
     }
   };
 

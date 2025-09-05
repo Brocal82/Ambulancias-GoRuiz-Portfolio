@@ -984,5 +984,68 @@
   }
 }
 
+
+
+},
+"toasts": {
+  "mechanics": {
+    "loadError": "❌ Failed to load reports or ambulances.",
+    "reportSent": "🔧 Issue reported successfully.",
+    "reportError": "❌ Could not report the issue.",
+    "invalidAmbulance": "🚑 Please select a valid ambulance.",
+    "missingDescription": "📝 Please describe the issue before sending.",
+    "invalidFinalKm": "📏 Enter a valid final KM number."
+  },
+  "hospitals": {
+    "loadError": "❌ Failed to load hospitals.",
+    "addSuccess": "🏥 Hospital added successfully.",
+    "addError": "❌ Failed to add hospital.",
+    "updateSuccess": "✅ Hospital updated successfully.",
+    "updateError": "❌ Failed to update hospital.",
+    "deleteSuccess": "🗑️ Hospital deleted.",
+    "deleteError": "❌ Failed to delete hospital.",
+    "stateUpdated": "✅ Hospital status updated",
+    "stateUpdateError": "❌ Error updating status"
+  },
+  "assignments": {
+    "missingFields": "🚫 Fill start time, end time and ambulance.",
+    "samePerson": "🚫 You cannot assign the same person as driver and medic.",
+    "saveSuccess": "✅ Changes saved",
+    "saveError": "❌ Failed to save changes",
+    "deleteSuccess": "✅ Day removed",
+    "deleteError": "❌ Failed to remove the assignment.",
+    "missingDienstId": "🚫 Dienst ID is not defined.",
+    "loadUsersError": "❌ Error loading users.",
+    "loadAmbulancesError": "❌ Error loading ambulances"
+  },
+  "profile": {
+    "saveSuccess": "✅ Profile saved successfully",
+    "saveError": "❌ Failed to save profile",
+    "docDeleted": "✅ Document deleted",
+    "docDeleteError": "❌ Could not delete the document",
+    "imageDeleted": "✅ Profile image removed",
+    "imageDeleteError": "❌ Failed to remove the image",
+    "uploadError": "❌ Failed to upload files"
+  },
+  "vacations": {
+    "requestSent": "✅ Request submitted successfully.",
+    "requestError": "❌ Error submitting the request.",
+    "deleted": "🗑️ Request deleted",
+    "deleteError": "❌ Error deleting the request"
+  },
+  "messages": {
+    "fillRequired": "✏️ Please fill in both subject and message body",
+    "sent": "✅ Message sent successfully",
+    "error": "❌ There was an error sending the message"
+  },
+  "workday": {
+    "partial": {
+      "reportRequired": "✏️ Please enter a reason for the partial closure.",
+      "finalKmRequired": "📏 Enter the final kilometers."
+    },
+    "final": {
+      "finalKmRequired": "📏 Enter the final kilometers."
+    }
+  }
 }
 }

@@ -983,6 +983,69 @@
     "cancelledAtPickup": "am Abholpunkt"
   }
 }
+},
+"toasts": {
+  "mechanics": {
+    "loadError": "❌ Fehler beim Laden der Meldungen oder Krankenwagen.",
+    "reportSent": "🔧 Störung erfolgreich gemeldet.",
+    "reportError": "❌ Störung konnte nicht gemeldet werden.",
+    "invalidAmbulance": "🚑 Bitte ein gültiges Fahrzeug auswählen.",
+    "missingDescription": "📝 Bitte die Störung beschreiben.",
+    "invalidFinalKm": "📏 Bitte eine gültige End-KM Zahl eingeben."
+  },
+  "hospitals": {
+    "loadError": "❌ Krankenhäuser konnten nicht geladen werden.",
+    "addSuccess": "🏥 Krankenhaus erfolgreich hinzugefügt.",
+    "addError": "❌ Krankenhaus konnte nicht hinzugefügt werden.",
+    "updateSuccess": "✅ Krankenhaus erfolgreich aktualisiert.",
+    "updateError": "❌ Krankenhaus konnte nicht aktualisiert werden.",
+    "deleteSuccess": "🗑️ Krankenhaus gelöscht.",
+    "deleteError": "❌ Krankenhaus konnte nicht gelöscht werden.",
+    "stateUpdated": "✅ Krankenhausstatus aktualisiert",
+    "stateUpdateError": "❌ Fehler beim Aktualisieren des Status"
+  },
+  "assignments": {
+    "missingFields": "🚫 Startzeit, Endzeit und Fahrzeug ausfüllen.",
+    "samePerson": "🚫 Dieselbe Person kann nicht Fahrer und Sanitäter sein.",
+    "saveSuccess": "✅ Änderungen gespeichert",
+    "saveError": "❌ Änderungen konnten nicht gespeichert werden",
+    "deleteSuccess": "✅ Tag gelöscht",
+    "deleteError": "❌ Zuweisung konnte nicht gelöscht werden.",
+    "missingDienstId": "🚫 Dienst-ID ist nicht definiert.",
+    "loadUsersError": "❌ Fehler beim Laden der Benutzer.",
+    "loadAmbulancesError": "❌ Fehler beim Laden der Rettungswagen"
+  },
+  "profile": {
+    "saveSuccess": "✅ Profil erfolgreich gespeichert",
+    "saveError": "❌ Profil konnte nicht gespeichert werden",
+    "docDeleted": "✅ Dokument gelöscht",
+    "docDeleteError": "❌ Dokument konnte nicht gelöscht werden",
+    "imageDeleted": "✅ Profilbild entfernt",
+    "imageDeleteError": "❌ Profilbild konnte nicht entfernt werden",
+    "uploadError": "❌ Dateien konnten nicht hochgeladen werden"
+  },
+  "vacations": {
+    "requestSent": "✅ Antrag erfolgreich gesendet.",
+    "requestError": "❌ Fehler beim Senden des Antrags.",
+    "deleted": "🗑️ Antrag gelöscht",
+    "deleteError": "❌ Fehler beim Löschen des Antrags"
+  },
+  "messages": {
+    "fillRequired": "✏️ Bitte Betreff und Nachrichtentext ausfüllen",
+    "sent": "✅ Nachricht erfolgreich gesendet",
+    "error": "❌ Fehler beim Senden der Nachricht"
+  },
+  "workday": {
+    "partial": {
+      "reportRequired": "✏️ Bitte gib einen Grund für den Teilabschluss an.",
+      "finalKmRequired": "📏 Bitte gib die End-Kilometer ein."
+    },
+    "final": {
+      "finalKmRequired": "📏 Bitte gib die End-Kilometer ein."
+    }
+  }
+
+
 
 }
 }

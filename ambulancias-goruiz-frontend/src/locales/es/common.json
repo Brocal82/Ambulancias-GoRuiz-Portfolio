@@ -987,6 +987,69 @@
     "cancelledAtPickup": "en punto de recogida"
   }
 }
+},
+"toasts": {
+  "mechanics": {
+    "loadError": "❌ Error al cargar reportes o ambulancias.",
+    "reportSent": "🔧 Avería reportada correctamente.",
+    "reportError": "❌ No se pudo reportar la avería.",
+    "invalidAmbulance": "🚑 Selecciona una ambulancia válida.",
+    "missingDescription": "📝 Describe la avería antes de enviar.",
+    "invalidFinalKm": "📏 Introduce un número válido de KM finales."
+  },
+  "hospitals": {
+    "loadError": "❌ Error al cargar hospitales.",
+    "addSuccess": "🏥 Hospital añadido correctamente.",
+    "addError": "❌ Error al añadir hospital.",
+    "updateSuccess": "✅ Hospital actualizado correctamente.",
+    "updateError": "❌ Error al actualizar hospital.",
+    "deleteSuccess": "🗑️ Hospital eliminado.",
+    "deleteError": "❌ Error al eliminar hospital.",
+    "stateUpdated": "✅ Estado del hospital actualizado",
+    "stateUpdateError": "❌ Error al actualizar estado"
+  },
+  "assignments": {
+    "missingFields": "🚫 Rellena hora de inicio, fin y ambulancia.",
+    "samePerson": "🚫 No puedes asignar a la misma persona como conductor y sanitario.",
+    "saveSuccess": "✅ Cambios guardados",
+    "saveError": "❌ Error al guardar cambios",
+    "deleteSuccess": "✅ Día eliminado",
+    "deleteError": "❌ Error al eliminar el assignment.",
+    "missingDienstId": "🚫 ID del Dienst no definido.",
+    "loadUsersError": "❌ Error al cargar usuarios.",
+    "loadAmbulancesError": "❌ Error al cargar ambulancias"
+  },
+  "profile": {
+    "saveSuccess": "✅ Cambios guardados correctamente",
+    "saveError": "❌ Error al guardar el perfil",
+    "docDeleted": "✅ Documento eliminado",
+    "docDeleteError": "❌ No se pudo eliminar el documento",
+    "imageDeleted": "✅ Imagen de perfil eliminada",
+    "imageDeleteError": "❌ Error al eliminar la imagen",
+    "uploadError": "❌ Error al subir archivos"
+  },
+  "vacations": {
+    "requestSent": "✅ Solicitud enviada correctamente.",
+    "requestError": "❌ Error al enviar la solicitud.",
+    "deleted": "🗑️ Solicitud eliminada",
+    "deleteError": "❌ Error al eliminar la solicitud"
+  },
+  "messages": {
+    "fillRequired": "✏️ Por favor, completa asunto y mensaje",
+    "sent": "✅ Mensaje enviado correctamente",
+    "error": "❌ Error al enviar el mensaje"
+  },
+  "workday": {
+    "partial": {
+      "reportRequired": "✏️ Escribe un motivo del cierre parcial.",
+      "finalKmRequired": "📏 Introduce los kilómetros finales."
+    },
+    "final": {
+      "finalKmRequired": "📏 Introduce los kilómetros finales."
+    }
+  }
+
+
 
   }
 }
