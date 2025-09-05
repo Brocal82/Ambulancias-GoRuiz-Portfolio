@@ -1028,12 +1028,35 @@
     "imageDeleteError": "❌ Error al eliminar la imagen",
     "uploadError": "❌ Error al subir archivos"
   },
-  "vacations": {
-    "requestSent": "✅ Solicitud enviada correctamente.",
-    "requestError": "❌ Error al enviar la solicitud.",
-    "deleted": "🗑️ Solicitud eliminada",
-    "deleteError": "❌ Error al eliminar la solicitud"
-  },
+   "vacations": {
+      "requestSent": "✅ Solicitud enviada correctamente.",
+      "requestError": "❌ Error al enviar la solicitud.",
+      "deleted": "🗑️ Solicitud eliminada",
+      "deleteError": "❌ Error al eliminar la solicitud",
+      "editPending": "Funcionalidad de editar la solicitud {{id}} pendiente de implementar.",
+
+      "worker": {
+        "loadError": "❌ Error al cargar tus solicitudes.",
+        "error": "❌ Ocurrió un error.",
+        "respondPending": "📨 Enviando respuesta...",
+        "respondSuccess": "✅ Respuesta enviada",
+        "formSuccess": "✅ Solicitud enviada"
+      },
+
+      "admin": {
+        "loadError": "❌ Error al cargar solicitudes.",
+        "error": "❌ Ocurrió un error.",
+        "updating": "🔄 Actualizando...",
+        "accepted": "✅ Solicitud aceptada",
+        "cancelled": "🛑 Solicitud cancelada",
+        "updated": "✅ Estado actualizado",
+        "sendingAlt": "📤 Enviando alternativa...",
+        "altSent": "✅ Opción alternativa enviada",
+        "cancelling": "🛑 Cancelando...",
+        "deleting": "🗑️ Eliminando...",
+        "deleted": "🗑️ Solicitud eliminada"
+      }
+    },
   "messages": {
     "fillRequired": "✏️ Por favor, completa asunto y mensaje",
     "sent": "✅ Mensaje enviado correctamente",

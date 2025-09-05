@@ -1025,11 +1025,35 @@
     "uploadError": "❌ Dateien konnten nicht hochgeladen werden"
   },
   "vacations": {
-    "requestSent": "✅ Antrag erfolgreich gesendet.",
-    "requestError": "❌ Fehler beim Senden des Antrags.",
-    "deleted": "🗑️ Antrag gelöscht",
-    "deleteError": "❌ Fehler beim Löschen des Antrags"
+  "requestSent": "✅ Antrag erfolgreich eingereicht.",
+  "requestError": "❌ Fehler beim Einreichen des Antrags.",
+  "deleted": "🗑️ Antrag gelöscht",
+  "deleteError": "❌ Fehler beim Löschen des Antrags",
+  "editPending": "Die Bearbeitungsfunktion für Antrag {{id}} ist noch nicht implementiert.",
+
+  "worker": {
+    "loadError": "❌ Fehler beim Laden deiner Anträge.",
+    "error": "❌ Ein Fehler ist aufgetreten.",
+    "respondPending": "📨 Antwort wird gesendet...",
+    "respondSuccess": "✅ Antwort gesendet",
+    "formSuccess": "✅ Antrag eingereicht"
   },
+
+  "admin": {
+    "loadError": "❌ Fehler beim Laden der Anträge.",
+    "error": "❌ Ein Fehler ist aufgetreten.",
+    "updating": "🔄 Aktualisiere...",
+    "accepted": "✅ Antrag akzeptiert",
+    "cancelled": "🛑 Antrag abgelehnt",
+    "updated": "✅ Status aktualisiert",
+    "sendingAlt": "📤 Alternative wird gesendet...",
+    "altSent": "✅ Alternative Option gesendet",
+    "cancelling": "🛑 Storniere...",
+    "deleting": "🗑️ Lösche...",
+    "deleted": "🗑️ Antrag gelöscht"
+  }
+},
+
   "messages": {
     "fillRequired": "✏️ Bitte Betreff und Nachrichtentext ausfüllen",
     "sent": "✅ Nachricht erfolgreich gesendet",

@@ -1,3 +1,4 @@
+//src/pages/WorkerVacationsPage.tsx
 import { useEffect, useState } from 'react';
 import type { IVacationRequest } from '../types/vacationRequest';
 import { getUserVacationRequests, respondToAlternativeDate } from '../api/vacation';
@@ -6,6 +7,7 @@ import AlternativeDateModal from '../components/vacation/AlternativeDateModal';
 import VacationRequestForm from '../components/vacation/VacationRequestForm';
 import UserVacationList from '../components/vacation/UserVacationList';
 import { useTranslation } from 'react-i18next';
+import { toastT } from '../utils/toast';
 
 const WorkerVacationsPage = () => {
   const { token } = useAuth();
@@ -36,7 +38,9 @@ const WorkerVacationsPage = () => {
         setShowForm(false);
       }
     } catch {
-      setError(t('pages.vacations.workerPage.error'));
+      const msgKey = 'toasts.vacations.worker.loadError';
+      setError(t(msgKey));
+      toastT.error([msgKey]);
     } finally {
       setLoading(false);
     }
@@ -50,17 +54,26 @@ const WorkerVacationsPage = () => {
   const handleRespondAlternative = async (id: string, accept: boolean) => {
     if (!token) return;
     try {
-      await respondToAlternativeDate(token, id, { accept });
+      await toastT.promise(
+        respondToAlternativeDate(token, id, { accept }),
+        {
+          pending: ['toasts.vacations.worker.respondPending'],
+          success: ['toasts.vacations.worker.respondSuccess'],
+          error: ['toasts.vacations.worker.error'],
+        }
+      );
       fetchRequests();
     } catch {
-      alert(t('pages.vacations.workerPage.error'));
+      // el error ya se muestra por toast
     }
   };
 
   const handleFormSuccess = () => {
     setShowForm(false);
+    toastT.success(['toasts.vacations.worker.formSuccess']);
     fetchRequests();
-    setFormMessage(t('pages.vacations.workerPage.formSuccess'));
+    // Mantengo formMessage para no romper UI existente (puedes quitarlo cuando quieras)
+    setFormMessage(t('toasts.vacations.worker.formSuccess'));
   };
 
   if (loading) return <p>{t('pages.vacations.workerPage.loading')}</p>;
@@ -111,3 +124,4 @@ const WorkerVacationsPage = () => {
 };
 
 export default WorkerVacationsPage;
+

@@ -4,7 +4,7 @@ import type { IVacationRequest } from '../types/vacationRequest';
 import { getVacationRequests, deleteVacationRequest } from '../api/vacation';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'react-toastify';
+import { toastT } from "../utils/toast";
 import { formatISOToDDMMYYYY } from '../utils/timeUtils';
 
 interface Props {
@@ -50,15 +50,14 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
     try {
       await deleteVacationRequest(token, id);
       setVacations(prev => prev.filter(v => v._id !== id));
-      toast.success(t('pages.vacations.adminUserTab.toasts.deleted'));
+      toastT.success(["toasts.vacations.deleted"]);
     } catch {
-      toast.error(t('pages.vacations.adminUserTab.toasts.deleteError'));
+      toastT.error(["toasts.vacations.deleteError"]);
     }
   };
 
   const handleEditVacation = (id: string) => {
-    // Placeholder hasta implementar edición (modal)
-    toast.info(t('pages.vacations.adminUserTab.editPending', { id }));
+    toastT.info(["toasts.vacations.editPending", { id }]);
   };
 
   if (loading) return <p>{t('pages.vacations.adminUserTab.loading')}</p>;

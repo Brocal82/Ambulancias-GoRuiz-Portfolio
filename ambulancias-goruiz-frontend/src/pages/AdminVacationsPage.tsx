@@ -6,6 +6,7 @@ import AdminVacationMonthGrid from '../components/vacation/AdminVacationMonthGri
 import AdminVacationMonthModal from '../components/vacation/AdminVacationMonthModal';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
+import { toastT } from '../utils/toast';
 
 const AdminVacationRequests = () => {
   const { token } = useAuth();
@@ -34,7 +35,9 @@ const AdminVacationRequests = () => {
       setRequests(data);
       setError('');
     } catch {
-      setError(t('pages.vacations.adminPage.error'));
+      const msgKey = 'toasts.vacations.admin.loadError';
+      setError(t(msgKey));
+      toastT.error([msgKey]);
     } finally {
       setLoading(false);
     }
@@ -45,15 +48,30 @@ const AdminVacationRequests = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  type VacationStatus = "pending" | "accepted" | "cancelled" | "option_sent";
+  type VacationStatus = 'pending' | 'accepted' | 'cancelled' | 'option_sent';
 
   const handleUpdateStatus = async (id: string, status: VacationStatus) => {
     if (!token) return;
+
+    const successMsg =
+      status === 'accepted'
+        ? (['toasts.vacations.admin.accepted'] as const)
+        : status === 'cancelled'
+        ? (['toasts.vacations.admin.cancelled'] as const)
+        : (['toasts.vacations.admin.updated'] as const);
+
     try {
-      await updateVacationRequest(token, id, { status });
+      await toastT.promise(
+        updateVacationRequest(token, id, { status }),
+        {
+          pending: ['toasts.vacations.admin.updating'],
+          success: successMsg,
+          error: ['toasts.vacations.admin.error'],
+        }
+      );
       fetchRequests();
     } catch {
-      alert(t('pages.vacations.adminPage.error'));
+      // el error ya se muestra por toast
     }
   };
 
@@ -65,15 +83,22 @@ const AdminVacationRequests = () => {
   ) => {
     if (!token) return;
     try {
-      await updateVacationRequest(token, id, {
-        status: 'option_sent',
-        adminOptionStartDate,
-        adminOptionEndDate,
-        adminNote,
-      });
+      await toastT.promise(
+        updateVacationRequest(token, id, {
+          status: 'option_sent',
+          adminOptionStartDate,
+          adminOptionEndDate,
+          adminNote,
+        }),
+        {
+          pending: ['toasts.vacations.admin.sendingAlt'],
+          success: ['toasts.vacations.admin.altSent'],
+          error: ['toasts.vacations.admin.error'],
+        }
+      );
       fetchRequests();
     } catch {
-      alert(t('pages.vacations.adminPage.error'));
+      // el error ya se muestra por toast
     }
   };
 
@@ -81,15 +106,22 @@ const AdminVacationRequests = () => {
     if (!token) return;
     setIsSendingCancel(true);
     try {
-      await updateVacationRequest(token, id, {
-        status: 'cancelled',
-        adminNote: cancelMessage,
-      });
+      await toastT.promise(
+        updateVacationRequest(token, id, {
+          status: 'cancelled',
+          adminNote: cancelMessage,
+        }),
+        {
+          pending: ['toasts.vacations.admin.cancelling'],
+          success: ['toasts.vacations.admin.cancelled'],
+          error: ['toasts.vacations.admin.error'],
+        }
+      );
       setCancelingRequestId(null);
       setCancelMessage('');
       fetchRequests();
-    } catch (error) {
-      alert(t('pages.vacations.adminPage.error'));
+    } catch {
+      // el error ya se muestra por toast
     } finally {
       setIsSendingCancel(false);
     }
@@ -100,10 +132,17 @@ const AdminVacationRequests = () => {
     if (!window.confirm(t('pages.vacations.adminPage.actions.confirmDelete'))) return;
 
     try {
-      await deleteVacationRequest(token, id);
+      await toastT.promise(
+        deleteVacationRequest(token, id),
+        {
+          pending: ['toasts.vacations.admin.deleting'],
+          success: ['toasts.vacations.admin.deleted'],
+          error: ['toasts.vacations.admin.error'],
+        }
+      );
       fetchRequests();
     } catch {
-      alert(t('pages.vacations.adminPage.error'));
+      // el error ya se muestra por toast
     }
   };
 
