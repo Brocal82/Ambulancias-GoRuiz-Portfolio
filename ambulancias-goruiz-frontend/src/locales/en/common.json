@@ -1046,6 +1046,26 @@
     "final": {
       "finalKmRequired": "📏 Enter the final kilometers."
     }
-  }
+  },
+  "appointments": {
+  "loadError": "❌ Failed to load appointments.",
+  "reloadPendingError": "❌ Failed to reload pending appointments.",
+  "reloadConfirmedError": "❌ Failed to reload confirmed appointments.",
+  "cancelSuccess": "✅ Appointment cancelled.",
+  "cancelError": "❌ Failed to cancel appointment.",
+  "invalidDateTime": "🚫 Invalid date/time.",
+  "pastDateError": "🚫 Cannot schedule in the past.",
+  "rescheduleSuccess": "✅ Appointment rescheduled.",
+  "rescheduleError": "❌ Failed to reschedule appointment.",
+  "proposeSuccess": "✅ Options proposed.",
+  "proposeError": "❌ Failed to propose options.",
+  "chooseRequired": "⚠️ Please select an option.",
+  "confirmSuccess": "✅ Appointment confirmed.",
+  "confirmError": "❌ Failed to confirm appointment.",
+  "requestFill": "✏️ Please complete reason and details.",
+  "requestSuccess": "✅ Request sent.",
+  "requestError": "❌ Failed to create request."
+}
+
 }
 }

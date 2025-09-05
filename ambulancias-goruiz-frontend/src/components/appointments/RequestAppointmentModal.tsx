@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { requestAppointment } from '../../api/appointments';
 import { useAuth } from '../../hooks/useAuth';
-import { toast } from 'react-toastify';
+import { toastT } from "../../utils/toast";
 import { useTranslation } from 'react-i18next';
 
 interface Props {
@@ -25,17 +25,17 @@ export default function RequestAppointmentModal({ isOpen, onClose, onSuccess }: 
   const handleSubmit = async () => {
     if (!canSubmit) {
       // toasts quedan para la fase de toasts
-      toast.warn('Completa motivo (≥3) y detalles (≥5).');
+      toastT.warn(["toasts.appointments.requestFill"]);
       return;
     }
     try {
       setLoading(true);
       await requestAppointment({ reason: reason.trim(), details: details.trim() }, token!);
-      toast.success('Solicitud enviada.');
+      toastT.success(["toasts.appointments.requestSuccess"]);
       onClose();
       onSuccess?.();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Error al crear la solicitud.');
+      toastT.error(e?.response?.data?.message ?? ["toasts.appointments.requestError"]);
     } finally {
       setLoading(false);
     }

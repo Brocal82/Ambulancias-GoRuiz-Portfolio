@@ -1047,7 +1047,26 @@
     "final": {
       "finalKmRequired": "📏 Introduce los kilómetros finales."
     }
-  }
+  },
+  "appointments": {
+  "loadError": "❌ Error al cargar citas.",
+  "reloadPendingError": "❌ Error al recargar pendientes.",
+  "reloadConfirmedError": "❌ Error al recargar confirmadas.",
+  "cancelSuccess": "✅ Cita cancelada.",
+  "cancelError": "❌ Error al cancelar la cita.",
+  "invalidDateTime": "🚫 Fecha u hora inválida.",
+  "pastDateError": "🚫 No se puede programar en el pasado.",
+  "rescheduleSuccess": "✅ Cita reprogramada.",
+  "rescheduleError": "❌ Error al reprogramar la cita.",
+  "proposeSuccess": "✅ Opciones propuestas.",
+  "proposeError": "❌ Error al proponer opciones.",
+  "chooseRequired": "⚠️ Selecciona una opción.",
+  "confirmSuccess": "✅ Cita confirmada.",
+  "confirmError": "❌ Error al confirmar la cita.",
+  "requestFill": "✏️ Completa motivo y detalles.",
+  "requestSuccess": "✅ Solicitud enviada.",
+  "requestError": "❌ Error al crear la solicitud."
+}
 
 
 

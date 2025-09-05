@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { Appointment } from '../../types/appointment';
 import { useAuth } from '../../hooks/useAuth';
 import { cancelAppointment, updateAppointment } from '../../api/appointments';
-import { toast } from 'react-toastify';
+import { toastT } from "../../utils/toast";
 import { APP_TZ } from '../../config/app';
 import { partsFromISO, localDateTimeToUtcISO } from '../../utils/tz';
 import { useTranslation } from 'react-i18next';
@@ -71,11 +71,11 @@ const AdminAppointmentDetail: React.FC<Props> = ({ isOpen, onClose, item, onChan
       setLoading(true);
       await cancelAppointment(item._id, token!);
       // toasts: fase aparte
-      toast.success('Cita cancelada.');
+      toastT.success(["toasts.appointments.cancelSuccess"]);
       onClose();
       onChanged?.();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Error al cancelar la cita.');
+      toastT.error(e?.response?.data?.message ?? ["toasts.appointments.cancelError"]);
     } finally {
       setLoading(false);
     }
@@ -87,11 +87,11 @@ const AdminAppointmentDetail: React.FC<Props> = ({ isOpen, onClose, item, onChan
     // Reprogramación usando duración por defecto
     const conv = localDateTimeToUtcISO(APP_TZ, reDate, reTime, DEFAULT_DURATION_MIN);
     if (!conv) {
-      toast.warn('Fecha/hora inválidas.');
+      toastT.warn(["toasts.appointments.invalidDateTime"]);
       return;
     }
     if (conv.start.getTime() <= Date.now()) {
-      toast.warn('No se puede programar en el pasado.');
+      toastT.warn(["toasts.appointments.pastDateError"]);
       return;
     }
 
@@ -102,12 +102,12 @@ const AdminAppointmentDetail: React.FC<Props> = ({ isOpen, onClose, item, onChan
         { selectedSlot: { start: conv.startISO, end: conv.endISO } },
         token!
       );
-      toast.success('Cita reprogramada.');
+       toastT.success(["toasts.appointments.rescheduleSuccess"]);
       setEditMode(false);
       onClose();
       onChanged?.();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Error al reprogramar la cita.');
+       toastT.error(e?.response?.data?.message ?? ["toasts.appointments.rescheduleError"]);
     } finally {
       setLoading(false);
     }

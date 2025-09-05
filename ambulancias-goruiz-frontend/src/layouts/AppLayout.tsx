@@ -22,7 +22,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
     if (isWorker) navigate("/worker");
     if (isAdmin) navigate("/admin");
   };
-console.log("👤 Usuario en AppLayout:", user);
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900">

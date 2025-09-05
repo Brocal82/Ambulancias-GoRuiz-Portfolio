@@ -5,7 +5,7 @@ import {
   getCalendarAppointments,
 } from '../api/appointments';
 import type { Appointment } from '../types/appointment';
-import { toast } from 'react-toastify';
+import { toastT } from "../utils/toast";
 import { useTranslation } from 'react-i18next';
 
 // Componentes ya creados en pasos anteriores
@@ -63,8 +63,7 @@ export default function AdminAppointmentsPage() {
           setConfirmedYear(c);
         }
       } catch (e: any) {
-        // Dejamos toasts para la fase final (no internacionalizar aquí)
-        toast.error(e?.response?.data?.message ?? 'Error al cargar citas');
+        toastT.error(e?.response?.data?.message ?? ["toasts.appointments.loadError"]);
       } finally {
         if (mounted) {
           setLoadingPending(false);
@@ -82,7 +81,7 @@ export default function AdminAppointmentsPage() {
       const p = await getPendingAppointments(token!);
       setPending(p);
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Error al recargar pendientes');
+      toastT.error(e?.response?.data?.message ?? ["toasts.appointments.reloadPendingError"]);
     } finally {
       setLoadingPending(false);
     }
@@ -94,7 +93,7 @@ export default function AdminAppointmentsPage() {
       const c = await getCalendarAppointments(fromISO, toISO, token!);
       setConfirmedYear(c);
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Error al recargar confirmadas');
+      toastT.error(e?.response?.data?.message ?? ["toasts.appointments.reloadConfirmedError"]);
     } finally {
       setLoadingConfirmed(false);
     }

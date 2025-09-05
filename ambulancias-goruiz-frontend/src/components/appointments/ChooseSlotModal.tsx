@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { selectSlot } from '../../api/appointments';
 import type { TimeSlot } from '../../types/appointment';
-import { toast } from 'react-toastify';
+import { toastT } from "../../utils/toast";
 import { useTranslation } from 'react-i18next';
 
 interface Props {
@@ -38,18 +38,18 @@ export default function ChooseSlotModal({
   const handleConfirm = async () => {
     if (selectedIndex === null) {
       // toasts: fase aparte; dejamos el texto como está
-      toast.warn('Selecciona una opción.');
+       toastT.warn(["toasts.appointments.chooseRequired"]);
       return;
     }
     try {
       setLoading(true);
       const sel = proposedSlots[selectedIndex];
       await selectSlot(appointmentId, { selectedSlot: sel }, token!);
-      toast.success('Cita confirmada.');
+      toastT.success(["toasts.appointments.confirmSuccess"]);
       onClose();
       onSuccess?.();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Error al confirmar la cita.');
+      toastT.error(e?.response?.data?.message ?? ["toasts.appointments.confirmError"]);
     } finally {
       setLoading(false);
     }

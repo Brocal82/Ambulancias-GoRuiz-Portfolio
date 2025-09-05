@@ -4,7 +4,7 @@ import { getMyAppointments } from '../api/appointments';
 import type { Appointment } from '../types/appointment';
 import RequestAppointmentModal from '../components/appointments/RequestAppointmentModal';
 import ChooseSlotModal from '../components/appointments/ChooseSlotModal';
-import { toast } from 'react-toastify';
+import { toastT } from "../utils/toast";
 import { APP_TZ } from '../config/app';
 import { useTranslation } from 'react-i18next';
 
@@ -51,7 +51,7 @@ export default function WorkerAppointmentsPage() {
       setItems(data);
     } catch (e: any) {
       // Dejamos toasts para la fase final (no internacionalizar aquí)
-      toast.error(e?.response?.data?.message ?? 'Error al recargar citas');
+      toastT.error(e?.response?.data?.message ?? ["toasts.appointments.loadError"]);
     }
   };
 
@@ -62,7 +62,7 @@ export default function WorkerAppointmentsPage() {
         const data = await getMyAppointments(token!);
         if (mounted) setItems(data);
       } catch (e: any) {
-        toast.error(e?.response?.data?.message ?? 'Error al cargar tus citas');
+        toastT.error(e?.response?.data?.message ?? ["toasts.appointments.loadError"]);
       } finally {
         if (mounted) setLoading(false);
       }

@@ -1043,7 +1043,27 @@
     "final": {
       "finalKmRequired": "📏 Bitte gib die End-Kilometer ein."
     }
-  }
+  },
+  "appointments": {
+  "loadError": "❌ Fehler beim Laden der Termine.",
+  "reloadPendingError": "❌ Fehler beim Aktualisieren der ausstehenden Termine.",
+  "reloadConfirmedError": "❌ Fehler beim Aktualisieren der bestätigten Termine.",
+  "cancelSuccess": "✅ Termin abgesagt.",
+  "cancelError": "❌ Fehler beim Absagen des Termins.",
+  "invalidDateTime": "🚫 Ungültiges Datum/Uhrzeit.",
+  "pastDateError": "🚫 Termin kann nicht in der Vergangenheit liegen.",
+  "rescheduleSuccess": "✅ Termin verschoben.",
+  "rescheduleError": "❌ Fehler beim Verschieben des Termins.",
+  "proposeSuccess": "✅ Optionen vorgeschlagen.",
+  "proposeError": "❌ Fehler beim Vorschlagen der Optionen.",
+  "chooseRequired": "⚠️ Bitte eine Option auswählen.",
+  "confirmSuccess": "✅ Termin bestätigt.",
+  "confirmError": "❌ Fehler beim Bestätigen des Termins.",
+  "requestFill": "✏️ Bitte Grund und Details ausfüllen.",
+  "requestSuccess": "✅ Anfrage gesendet.",
+  "requestError": "❌ Fehler beim Erstellen der Anfrage."
+}
+
 
 
 
