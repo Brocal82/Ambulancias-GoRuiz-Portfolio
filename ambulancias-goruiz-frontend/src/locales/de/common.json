@@ -962,6 +962,27 @@
           "partial": "🕗 Teilabschluss"
         }
       }
-    }
+    },
+    "components": {
+  "tripModal": {
+    "close": "Schließen",
+    "title": "Fahrtdetails",
+    "auftrag": "Auftrag",
+    "patient": "Patient",
+    "noName": "Kein Name",
+    "from": "Von",
+    "noAddress": "Keine Adresse",
+    "to": "Bis",
+    "noDestination": "Kein Ziel",
+    "time": "Zeiten",
+    "km": "KM",
+    "total": "Gesamt",
+    "reports": "Bemerkungen",
+    "noReports": "Keine Bemerkungen",
+    "cancelled": "Diese Fahrt wurde storniert",
+    "cancelledAtPickup": "am Abholpunkt"
+  }
+}
+
 }
 }

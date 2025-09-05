@@ -966,6 +966,27 @@
           "partial": "🕗 Parcial"
         }
       }
-    }
+    },
+    "components": {
+  "tripModal": {
+    "close": "Cerrar",
+    "title": "Detalles del viaje",
+    "auftrag": "Auftrag",
+    "patient": "Paciente",
+    "noName": "Sin nombre",
+    "from": "Desde",
+    "noAddress": "Sin dirección",
+    "to": "Hasta",
+    "noDestination": "Sin destino",
+    "time": "Horas",
+    "km": "KM",
+    "total": "Total",
+    "reports": "Observaciones",
+    "noReports": "Sin observaciones",
+    "cancelled": "Este viaje fue cancelado",
+    "cancelledAtPickup": "en punto de recogida"
+  }
+}
+
   }
 }

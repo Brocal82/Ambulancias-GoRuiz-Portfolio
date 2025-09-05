@@ -962,6 +962,27 @@
           "partial": "🕗 Partial"
         }
       }
-    }
+    },
+    "components": {
+  "tripModal": {
+    "close": "Close",
+    "title": "Trip details",
+    "auftrag": "Assignment",
+    "patient": "Patient",
+    "noName": "No name",
+    "from": "From",
+    "noAddress": "No address",
+    "to": "To",
+    "noDestination": "No destination",
+    "time": "Time",
+    "km": "KM",
+    "total": "Total",
+    "reports": "Notes",
+    "noReports": "No notes",
+    "cancelled": "This trip was cancelled",
+    "cancelledAtPickup": "at pickup point"
+  }
+}
+
 }
 }
