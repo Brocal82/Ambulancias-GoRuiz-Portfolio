@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { getMyMessages, deleteMessageForUser } from '../api/messages';
 import type { Message } from '../types/message';
 import { useAuth } from '../hooks/useAuth';
-import { toast } from 'react-toastify';
+import { toastT } from "../utils/toast";
 import { useTranslation } from 'react-i18next';
 
 const WorkerMessagesPage = () => {
@@ -35,7 +35,7 @@ const WorkerMessagesPage = () => {
       setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
     } catch (error) {
       console.error('❌ Error al borrar mensaje:', error);
-      toast.error('Error al borrar el mensaje');
+      toastT.error(["toasts.messages.deleteError"]);
     }
   };
 

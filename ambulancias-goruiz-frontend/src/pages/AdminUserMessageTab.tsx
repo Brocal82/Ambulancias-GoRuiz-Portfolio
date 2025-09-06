@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { sendMessage } from '../api/messages';
-import { toast } from 'react-toastify';
+import { toastT } from "../utils/toast";
 import { useTranslation } from 'react-i18next';
 
 interface Props {
@@ -18,7 +18,7 @@ const AdminUserMessageTab = ({ userId }: Props) => {
 
   const handleSend = async () => {
     if (!subject || !body) {
-      toast.warn(t('pages.messages.userTab.toasts.fillRequired'));
+      toastT.warn(["toasts.messages.fillRequired"]);
       return;
     }
 
@@ -32,12 +32,12 @@ const AdminUserMessageTab = ({ userId }: Props) => {
         recipients: [userId],
       });
 
-      toast.success(t('pages.messages.userTab.toasts.sent'));
+      toastT.success(["toasts.messages.sent"]);
       setSubject('');
       setBody('');
     } catch (error) {
       console.error('❌ Error al enviar mensaje:', error);
-      toast.error(t('pages.messages.userTab.toasts.error'));
+      toastT.error(["toasts.messages.error"]);
     } finally {
       setLoading(false);
     }

@@ -1057,11 +1057,14 @@
         "deleted": "🗑️ Solicitud eliminada"
       }
     },
-  "messages": {
-    "fillRequired": "✏️ Por favor, completa asunto y mensaje",
-    "sent": "✅ Mensaje enviado correctamente",
-    "error": "❌ Error al enviar el mensaje"
-  },
+"messages": {
+  "fillRequired": "✏️ Por favor, completa asunto y mensaje",
+  "fillRequiredRecipients": "✏️ Completa asunto y mensaje, y selecciona al menos un receptor",
+  "sent": "✅ Mensaje enviado correctamente",
+  "error": "❌ Error al enviar el mensaje",
+  "deleteError": "❌ Error al borrar el mensaje"
+},
+
   "workday": {
   "needInitialData": "🚐 Selecciona una ambulancia y KM iniciales.",
   "initialDataConfirmed": "✅ Datos confirmados. Ya puedes registrar viajes.",

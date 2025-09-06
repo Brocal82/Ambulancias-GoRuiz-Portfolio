@@ -4,7 +4,7 @@ import { getAllUsers } from '../api/users';
 import { sendMessage } from '../api/messages';
 import type { User } from '../types/user';
 import { useAuth } from '../hooks/useAuth';
-import { toast } from 'react-toastify';
+import { toastT } from "../utils/toast";
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -37,7 +37,7 @@ const AdminMessagesPage = () => {
     const recipients = sendToAll ? users.map((u) => u._id) : selectedIds;
 
     if (!subject || !body || recipients.length === 0) {
-      toast.warning('Completa todos los campos y selecciona al menos un receptor');
+      toastT.warn(["toasts.messages.fillRequiredRecipients"]);
       return;
     }
 
@@ -48,14 +48,14 @@ const AdminMessagesPage = () => {
         recipients,
         toAllWorkers: sendToAll,
       });
-      toast.success('Mensaje enviado correctamente');
+      toastT.success(["toasts.messages.sent"]);
       setSubject('');
       setBody('');
       setSelectedIds([]);
       setSendToAll(false);
     } catch (error) {
       console.error('❌ Error al enviar mensaje:', error);
-      toast.error('Error al enviar el mensaje');
+      toastT.error(["toasts.messages.error"]);
     }
   };
 

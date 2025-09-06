@@ -1057,11 +1057,14 @@
   }
 },
 
-  "messages": {
-    "fillRequired": "✏️ Please fill in both subject and message body",
-    "sent": "✅ Message sent successfully",
-    "error": "❌ There was an error sending the message"
-  },
+"messages": {
+  "fillRequired": "✏️ Please fill subject and message",
+  "fillRequiredRecipients": "✏️ Please fill subject and message, and select at least one recipient",
+  "sent": "✅ Message sent successfully",
+  "error": "❌ Failed to send the message",
+  "deleteError": "❌ Failed to delete the message"
+},
+
   "workday": {
   "needInitialData": "🚐 Select an ambulance and initial KM.",
   "initialDataConfirmed": "✅ Data confirmed. You can now record trips.",

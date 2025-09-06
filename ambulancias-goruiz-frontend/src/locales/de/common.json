@@ -1054,11 +1054,14 @@
   }
 },
 
-  "messages": {
-    "fillRequired": "✏️ Bitte Betreff und Nachrichtentext ausfüllen",
-    "sent": "✅ Nachricht erfolgreich gesendet",
-    "error": "❌ Fehler beim Senden der Nachricht"
-  },
+"messages": {
+  "fillRequired": "✏️ Bitte Betreff und Nachricht ausfüllen",
+  "fillRequiredRecipients": "✏️ Bitte Betreff und Nachricht ausfüllen und mindestens einen Empfänger auswählen",
+  "sent": "✅ Nachricht erfolgreich gesendet",
+  "error": "❌ Nachricht konnte nicht gesendet werden",
+  "deleteError": "❌ Nachricht konnte nicht gelöscht werden"
+},
+
   "workday": {
   "needInitialData": "🚐 Krankenwagen und Start-KM auswählen.",
   "initialDataConfirmed": "✅ Daten bestätigt. Du kannst jetzt Fahrten erfassen.",
