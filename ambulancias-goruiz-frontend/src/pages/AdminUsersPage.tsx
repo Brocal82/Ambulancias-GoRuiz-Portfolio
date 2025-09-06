@@ -3,7 +3,8 @@ import { getAllUsers, updateUserProfile, deleteUser } from '../api/users';
 import { useAuth } from '../hooks/useAuth';
 import UserEditModal from '../components/users/UserEditModal';
 import type { User } from '../types/user';
-import { toast } from 'react-toastify';
+import { toastT } from "../utils/toast";
+
 import { getPscheinStatus } from '../utils/pscheinUtils';
 import { useNavigate } from 'react-router-dom';
 
@@ -30,7 +31,7 @@ const AdminUsersPage = () => {
       setUsers(sortedUsers);
     } catch (error) {
       console.error(error);
-      toast.error('Error al cargar usuarios');
+       toastT.error(["toasts.users.loadError"]);
     }
   }, [token]);
 
@@ -52,12 +53,13 @@ const handleEdit = (user: User) => {
     if (!token) return;
     try {
       await updateUserProfile(updatedUser._id, updatedUser, token);
-      toast.success('Usuario actualizado correctamente');
+      toastT.success(["toasts.users.updateSuccess"]);
+
       await fetchUsers();
       handleCloseModal();
     } catch (error) {
       console.error(error);
-      toast.error('Error al actualizar usuario');
+      toastT.error(["toasts.users.updateError"]);
     }
   };
 
@@ -65,12 +67,12 @@ const handleEdit = (user: User) => {
     if (!token) return;
     try {
       await deleteUser(userId, token);
-      toast.success('Usuario eliminado correctamente');
+      toastT.error(["toasts.users.updateError"]);
       await fetchUsers();
       handleCloseModal();
     } catch (error) {
       console.error(error);
-      toast.error('Error al eliminar usuario');
+       toastT.error(["toasts.users.deleteError"]);
     }
   };
 

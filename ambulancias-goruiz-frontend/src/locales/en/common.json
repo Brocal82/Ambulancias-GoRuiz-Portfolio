@@ -1113,7 +1113,15 @@
   "requestFill": "✏️ Please complete reason and details.",
   "requestSuccess": "✅ Request sent.",
   "requestError": "❌ Failed to create request."
+},
+"users": {
+  "loadError": "❌ Failed to load users.",
+  "updateSuccess": "✅ User updated successfully.",
+  "updateError": "❌ Failed to update user.",
+  "deleteSuccess": "🗑️ User deleted successfully.",
+  "deleteError": "❌ Failed to delete user."
 }
+
 
 }
 }

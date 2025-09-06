@@ -1110,7 +1110,15 @@
   "requestFill": "✏️ Bitte Grund und Details ausfüllen.",
   "requestSuccess": "✅ Anfrage gesendet.",
   "requestError": "❌ Fehler beim Erstellen der Anfrage."
+},
+"users": {
+  "loadError": "❌ Fehler beim Laden der Benutzer.",
+  "updateSuccess": "✅ Benutzer erfolgreich aktualisiert.",
+  "updateError": "❌ Fehler beim Aktualisieren des Benutzers.",
+  "deleteSuccess": "🗑️ Benutzer erfolgreich gelöscht.",
+  "deleteError": "❌ Fehler beim Löschen des Benutzers."
 }
+
 
 
 
