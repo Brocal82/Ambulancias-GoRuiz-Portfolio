@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createTrip, getTripsByDate } from "../api/trips";
 import { getAssignedDaysForUser } from "../api/diensts";
 import { useAuth } from "../hooks/useAuth";
-import { toast } from "react-toastify";
+import { toastT } from "../utils/toast";
 import type { Trip, TripData } from "../types/trip";
 import type { AssignedDayFull } from "../types/dienst";
 import TripModal from "../components/trips/TripModal";
@@ -129,7 +129,7 @@ const MyWorkday = () => {
 
   const handleConfirmAmbulanceData = () => {
     if (!ambulanceId || !initialAmbulanceKm) {
-      toast.error("❌ Selecciona una ambulancia y KM iniciales.");
+      toastT.error(["toasts.workday.needInitialData"]);
       return;
     }
     if (!assignedDay) return;
@@ -140,7 +140,7 @@ const MyWorkday = () => {
     setAmbulanceNumber(ambulanceNum);
 
     setVehicleConfirmed(true);
-    toast.success("✅ Datos confirmados. Ya puedes registrar viajes.");
+    toastT.success(["toasts.workday.initialDataConfirmed"]);
 
     saveAmbulanceData(
       assignedDay.assignmentId,
@@ -172,7 +172,7 @@ const MyWorkday = () => {
       setTrips(mine);
     } catch (err) {
       console.error(err);
-      toast.error("❌ Error al cargar los viajes del día");
+      toastT.error(["toasts.workday.loadTripsError"]);
     }
   }, [token, today, user?._id]);
 
@@ -205,7 +205,7 @@ const MyWorkday = () => {
       }
     } catch (err) {
       console.error(err);
-      toast.error("❌ Error al cargar el día asignado");
+      toastT.error(["toasts.workday.loadAssignmentError"]);
     }
   }, [token, user?._id, today]);
 
@@ -319,18 +319,18 @@ const MyWorkday = () => {
         kmStart === 0 ||
         kmEnd === 0
       ) {
-        toast.warn("🚫 Por favor, rellena todos los campos obligatorios");
+        toastT.warn(["toasts.workday.mandatoryFields"]);
         return;
       }
     }
 
     if (!assignedDay) {
-      toast.error("❌ No tienes asignación de dienst para hoy");
+      toastT.error(["toasts.workday.noAssignmentToday"]);
       return;
     }
 
     if (!canStartTripNow(assignedDay.startTime, assignedDay.date)) {
-      toast.error("❌ Solo puedes crear viajes 30 minutos antes del inicio del Dienst");
+      toastT.error(["toasts.workday.tooEarly"])
       return;
     }
 
@@ -345,7 +345,7 @@ const MyWorkday = () => {
         kmEnd: Number(kmEnd),
       });
       if (logicError.error) {
-        toast.error(logicError.error);
+         toastT.error(logicError.error);
         return;
       }
     }
@@ -375,7 +375,7 @@ const MyWorkday = () => {
       };
 
       const createdTrip = await createTrip(newTrip);
-      toast.success("✅ Viaje guardado");
+      toastT.success(["toasts.workday.tripSaved"]);
       setTrips((prev) => [...prev, createdTrip]);
 
       setTripFormData({
@@ -398,7 +398,8 @@ const MyWorkday = () => {
       setReports("");
     } catch (err) {
       console.error("❌ Error al crear trip:", err);
-      toast.error("❌ Error al guardar el viaje");
+      toastT.error(["toasts.workday.tripSaveError"]);
+
     }
   };
 
@@ -414,11 +415,11 @@ const MyWorkday = () => {
         timeEnd: "🔗 Anschluss",
       };
       const createdTrip = await createTrip(newTrip);
-      toast.success("✅ Paciente 1 (Anschluss) guardado");
+       toastT.success(["toasts.workday.anschlussSaved"]);
       setTrips((prev) => [...prev, createdTrip]);
     } catch (err) {
       console.error("❌ Error al guardar paciente 1:", err);
-      toast.error("❌ Error al guardar el paciente 1");
+      toastT.error(["toasts.workday.anschlussSaveError"]);
     }
   };
 
@@ -426,17 +427,17 @@ const MyWorkday = () => {
     if (!token || !assignedDay || !user?._id) return;
 
     if (!ambulanceNumber || !initialAmbulanceKm) {
-      toast.warn("🚐 Introduce nº de ambulancia y KM inicial.");
+      toastT.warn(["toasts.workday.enterAmbulanceAndKm"]);
       return;
     }
     if (isNaN(finalKmFromModal)) {
-      toast.warn("📏 Introduce los kilómetros finales en el modal.");
+      toastT.warn(["toasts.workday.enterFinalKmInModal"]);
       return;
     }
 
     const initialKmNumber = Number(initialAmbulanceKm);
     if (finalKmFromModal < initialKmNumber) {
-      toast.error("❌ Los KM finales no pueden ser menores que los KM iniciales");
+      toastT.error(["toasts.workday.finalKmLessThanInitial"]);
       return;
     }
 
@@ -467,7 +468,7 @@ const MyWorkday = () => {
 
       await sendFinalClosure(summaryData, token);
 
-      toast.success("✅ Día cerrado y datos enviados al admin.");
+      toastT.success(["toasts.workday.dayClosedSuccess"]);
 
       localStorage.setItem(getClosedDayKey(today, assignedDay.driver._id), "true");
       localStorage.setItem(getClosedDayKey(today, assignedDay.medic._id), "true");
@@ -479,7 +480,7 @@ const MyWorkday = () => {
       navigate("/worker");
     } catch (err) {
       console.error("❌ Error al cerrar el día:", err);
-      toast.error("❌ No se pudo cerrar el día.");
+      toastT.error(["toasts.workday.dayCloseError"]);
     }
   };
 
@@ -487,11 +488,11 @@ const MyWorkday = () => {
     if (!token || !assignedDay) return;
 
     if (isNaN(finalKmValue)) {
-      toast.warn("📏 Introduce los kilómetros finales en el modal.");
+      toastT.warn(["toasts.workday.enterFinalKmInModal"]);
       return;
     }
     if (Number(finalKmValue) < Number(initialAmbulanceKm)) {
-      toast.warn("📏 Los KM finales no pueden ser menores que los KM iniciales.");
+      toastT.warn(["toasts.workday.finalKmLessThanInitial"]);
       return;
     }
 
@@ -522,7 +523,7 @@ const MyWorkday = () => {
 
       await sendPartialClosure(payload, token);
 
-      toast.success("✅ Cierre parcial enviado al admin." + (issueData ? " Incluye reporte de avería." : ""));
+      toastT.success(issueData ? ["toasts.workday.partialSentWithIssue"] : ["toasts.workday.partialSent"]);
 
       clearAmbulanceData(assignedDay.assignmentId);
       localStorage.removeItem(confirmedAmbulanceKey(assignedDay.assignmentId));
@@ -539,7 +540,7 @@ const MyWorkday = () => {
       navigate("/worker");
     } catch (err) {
       console.error("❌ Error al enviar cierre parcial:", err);
-      toast.error("❌ No se pudo enviar el cierre parcial.");
+      toastT.error(["toasts.workday.partialSendError"]);
     }
   };
 

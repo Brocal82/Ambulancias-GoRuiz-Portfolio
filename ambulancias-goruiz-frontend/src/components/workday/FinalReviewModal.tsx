@@ -1,6 +1,6 @@
 //src/components/workday/FinalReviewModal.tsx
 import React, { useState } from "react";
-import { toast } from "react-toastify";
+import { toastT } from "../../utils/toast";
 import ReviewSummary from "./ReviewSummary";
 import type { Trip } from "../../types/trip";
 import type { AssignedDayFull } from "../../types/dienst";
@@ -52,7 +52,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
 
   const handleSend = () => {
     if (finalKmLocal === "" || isNaN(Number(finalKmLocal))) {
-      toast.warn(t("pages.workday.final.toasts.finalKmRequired"));
+      toastT.warn(["toasts.workday.final.finalKmRequired"]);
       return;
     }
     onConfirm(note.trim(), parsedFinalKm);

@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import type { Trip } from "../../types/trip";
 import type { AssignedDayFull } from "../../types/dienst";
 import ReviewSummary from "./ReviewSummary";
-import { toast } from "react-toastify";
+import { toastT } from "../../utils/toast";
 import { calculateEffectivePatients } from "../../utils/prämienUtils";
 import IssueReportModal from "./IssueReportModal";
 import { useTranslation } from "react-i18next";
@@ -47,11 +47,11 @@ const PartialReviewModal: React.FC<Props> = ({
 
   const handleSubmit = () => {
     if (!report.trim()) {
-      toast.warn(t("pages.workday.partial.toasts.reportRequired"));
+      toastT.warn(["toasts.workday.partial.reportRequired"]);
       return;
     }
     if (finalKm === "" || isNaN(Number(finalKm))) {
-      toast.warn(t("pages.workday.partial.toasts.finalKmRequired"));
+      toastT.warn(["toasts.workday.partial.finalKmRequired"]);
       return;
     }
 
@@ -127,7 +127,7 @@ const PartialReviewModal: React.FC<Props> = ({
             onSubmit={(data) => {
               setIssueData(data);
               setShowIssueModal(false);
-              toast.info(t("pages.workday.partial.issue.registered"));
+              toastT.info(["toasts.workday.partial.issueRegistered"]);
             }}
           />
         )}

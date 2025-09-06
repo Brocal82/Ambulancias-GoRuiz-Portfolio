@@ -1063,14 +1063,35 @@
     "error": "❌ Error al enviar el mensaje"
   },
   "workday": {
-    "partial": {
-      "reportRequired": "✏️ Escribe un motivo del cierre parcial.",
-      "finalKmRequired": "📏 Introduce los kilómetros finales."
-    },
-    "final": {
-      "finalKmRequired": "📏 Introduce los kilómetros finales."
-    }
+  "needInitialData": "🚐 Selecciona una ambulancia y KM iniciales.",
+  "initialDataConfirmed": "✅ Datos confirmados. Ya puedes registrar viajes.",
+  "loadTripsError": "❌ Error al cargar los viajes del día.",
+  "loadAssignmentError": "❌ Error al cargar el día asignado.",
+  "mandatoryFields": "✏️ Por favor, rellena todos los campos obligatorios.",
+  "noAssignmentToday": "❌ No tienes asignación de dienst para hoy.",
+  "tooEarly": "⏳ Solo puedes crear viajes 30 minutos antes del inicio del Dienst.",
+  "tripSaved": "✅ Viaje guardado.",
+  "tripSaveError": "❌ Error al guardar el viaje.",
+  "anschlussSaved": "✅ Paciente 1 (Anschluss) guardado.",
+  "anschlussSaveError": "❌ Error al guardar el paciente 1.",
+  "enterAmbulanceAndKm": "🚐 Introduce nº de ambulancia y KM inicial.",
+  "enterFinalKmInModal": "📏 Introduce los kilómetros finales en el modal.",
+  "finalKmLessThanInitial": "❌ Los KM finales no pueden ser menores que los KM iniciales.",
+  "dayClosedSuccess": "✅ Día cerrado y datos enviados al admin.",
+  "dayCloseError": "❌ No se pudo cerrar el día.",
+  "partialSent": "✅ Cierre parcial enviado al admin.",
+  "partialSentWithIssue": "✅ Cierre parcial enviado al admin. Incluye reporte de avería.",
+  "partialSendError": "❌ No se pudo enviar el cierre parcial.",
+  "partial": {
+    "reportRequired": "✏️ Escribe un motivo del cierre parcial.",
+    "finalKmRequired": "📏 Introduce los kilómetros finales.",
+    "issueRegistered": "🛠️ Avería registrada. Ahora puedes enviar el cierre parcial."
   },
+  "final": {
+    "finalKmRequired": "📏 Introduce los kilómetros finales."
+  }
+},
+
   "appointments": {
   "loadError": "❌ Error al cargar citas.",
   "reloadPendingError": "❌ Error al recargar pendientes.",

@@ -1060,14 +1060,35 @@
     "error": "❌ Fehler beim Senden der Nachricht"
   },
   "workday": {
-    "partial": {
-      "reportRequired": "✏️ Bitte gib einen Grund für den Teilabschluss an.",
-      "finalKmRequired": "📏 Bitte gib die End-Kilometer ein."
-    },
-    "final": {
-      "finalKmRequired": "📏 Bitte gib die End-Kilometer ein."
-    }
+  "needInitialData": "🚐 Krankenwagen und Start-KM auswählen.",
+  "initialDataConfirmed": "✅ Daten bestätigt. Du kannst jetzt Fahrten erfassen.",
+  "loadTripsError": "❌ Fehler beim Laden der heutigen Fahrten.",
+  "loadAssignmentError": "❌ Fehler beim Laden des heutigen Dienstes.",
+  "mandatoryFields": "✏️ Bitte alle Pflichtfelder ausfüllen.",
+  "noAssignmentToday": "❌ Du hast heute keinen Dienst zugewiesen.",
+  "tooEarly": "⏳ Fahrten können erst 30 Minuten vor Dienstbeginn erstellt werden.",
+  "tripSaved": "✅ Fahrt gespeichert.",
+  "tripSaveError": "❌ Fehler beim Speichern der Fahrt.",
+  "anschlussSaved": "✅ Patient 1 (Anschluss) gespeichert.",
+  "anschlussSaveError": "❌ Fehler beim Speichern von Patient 1.",
+  "enterAmbulanceAndKm": "🚐 Fahrzeugnummer und Start-KM eingeben.",
+  "enterFinalKmInModal": "📏 End-Kilometer im Modal eingeben.",
+  "finalKmLessThanInitial": "❌ End-KM dürfen nicht kleiner als Start-KM sein.",
+  "dayClosedSuccess": "✅ Tag abgeschlossen und Daten an Admin gesendet.",
+  "dayCloseError": "❌ Tag konnte nicht abgeschlossen werden.",
+  "partialSent": "✅ Teilabschluss an Admin gesendet.",
+  "partialSentWithIssue": "✅ Teilabschluss an Admin gesendet. Enthält Störungsmeldung.",
+  "partialSendError": "❌ Teilabschluss konnte nicht gesendet werden.",
+  "partial": {
+    "reportRequired": "✏️ Bitte gib einen Grund für den Teilabschluss an.",
+    "finalKmRequired": "📏 Bitte die End-Kilometer eingeben.",
+    "issueRegistered": "🛠️ Störung erfasst. Du kannst jetzt den Teilabschluss senden."
   },
+  "final": {
+    "finalKmRequired": "📏 Bitte die End-Kilometer eingeben."
+  }
+},
+
   "appointments": {
   "loadError": "❌ Fehler beim Laden der Termine.",
   "reloadPendingError": "❌ Fehler beim Aktualisieren der ausstehenden Termine.",

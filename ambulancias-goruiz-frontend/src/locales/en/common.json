@@ -1063,14 +1063,35 @@
     "error": "❌ There was an error sending the message"
   },
   "workday": {
-    "partial": {
-      "reportRequired": "✏️ Please enter a reason for the partial closure.",
-      "finalKmRequired": "📏 Enter the final kilometers."
-    },
-    "final": {
-      "finalKmRequired": "📏 Enter the final kilometers."
-    }
+  "needInitialData": "🚐 Select an ambulance and initial KM.",
+  "initialDataConfirmed": "✅ Data confirmed. You can now record trips.",
+  "loadTripsError": "❌ Failed to load today's trips.",
+  "loadAssignmentError": "❌ Failed to load today's assignment.",
+  "mandatoryFields": "✏️ Please fill in all required fields.",
+  "noAssignmentToday": "❌ You have no dienst assignment today.",
+  "tooEarly": "⏳ You can only create trips 30 minutes before the Dienst starts.",
+  "tripSaved": "✅ Trip saved.",
+  "tripSaveError": "❌ Failed to save the trip.",
+  "anschlussSaved": "✅ Patient 1 (Anschluss) saved.",
+  "anschlussSaveError": "❌ Failed to save patient 1.",
+  "enterAmbulanceAndKm": "🚐 Enter ambulance number and initial KM.",
+  "enterFinalKmInModal": "📏 Enter the final kilometers in the modal.",
+  "finalKmLessThanInitial": "❌ Final KM cannot be less than initial KM.",
+  "dayClosedSuccess": "✅ Day closed and data sent to admin.",
+  "dayCloseError": "❌ Could not close the day.",
+  "partialSent": "✅ Partial closure sent to admin.",
+  "partialSentWithIssue": "✅ Partial closure sent to admin. Includes issue report.",
+  "partialSendError": "❌ Failed to send partial closure.",
+  "partial": {
+    "reportRequired": "✏️ Please enter a reason for the partial closure.",
+    "finalKmRequired": "📏 Enter the final kilometers.",
+    "issueRegistered": "🛠️ Issue recorded. You can now send the partial closure."
   },
+  "final": {
+    "finalKmRequired": "📏 Enter the final kilometers."
+  }
+},
+
   "appointments": {
   "loadError": "❌ Failed to load appointments.",
   "reloadPendingError": "❌ Failed to reload pending appointments.",

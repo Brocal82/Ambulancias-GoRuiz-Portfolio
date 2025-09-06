@@ -1,6 +1,6 @@
 // src/components/workday/IssueReportModal.tsx
 import React, { useState } from "react";
-import { toast } from "react-toastify";
+import { toastT } from "../../utils/toast";
 import type { AssignedDayFull } from "../../types/dienst";
 import { formatYYYYMMDDToDDMMYYYY } from "../../utils/timeUtils";
 import { useTranslation } from "react-i18next";
@@ -35,17 +35,17 @@ const IssueReportModal: React.FC<Props> = ({
   const handleSend = async () => {
     // Dejamos toasts para más tarde (i18n de toasts al final)
     if (!ambulanceId || ambulanceId.length < 24) {
-      toast.warn("🚑 Selecciona una ambulancia válida.");
+      toastT.warn(["toasts.mechanics.invalidAmbulance"]);
       return;
     }
 
     if (!description.trim()) {
-      toast.warn("📝 Describe la avería antes de enviar.");
+      toastT.warn(["toasts.mechanics.missingDescription"]);
       return;
     }
 
     if (!finalKmInput.trim() || isNaN(Number(finalKmInput))) {
-      toast.warn("📏 Introduce un número válido de KM finales.");
+      toastT.warn(["toasts.mechanics.invalidFinalKm"]);
       return;
     }
 
@@ -74,12 +74,12 @@ const IssueReportModal: React.FC<Props> = ({
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      toast.success("🔧 Avería reportada correctamente.");
+       toastT.success(["toasts.mechanics.reportSent"]);
       onSubmit({ issueText: description.trim() });
       onClose();
     } catch (err) {
       console.error("Error al reportar avería:", err);
-      toast.error("❌ No se pudo reportar la avería.");
+      toastT.error(["toasts.mechanics.reportError"]);
     }
   };
 
