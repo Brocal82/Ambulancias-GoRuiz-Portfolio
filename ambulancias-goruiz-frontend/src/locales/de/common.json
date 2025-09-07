@@ -137,7 +137,11 @@
         "docDeleteError": "❌ Dokument konnte nicht gelöscht werden",
         "removeImageSuccess": "✅ Profilbild entfernt",
         "removeImageError": "❌ Fehler beim Entfernen des Bildes",
-        "missingRequired": "Erforderliche Daten zum Aktualisieren des Profils fehlen."
+        "missingRequired": "Erforderliche Daten zum Aktualisieren des Profils fehlen.",
+        "cannotDeleteSelf": "Du kannst dein eigenes Benutzerkonto nicht löschen.",
+        "confirmDelete": "Bist du sicher, dass du {{name}} löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.",
+        "userDeleted": "✅ Benutzer erfolgreich gelöscht",
+        "userDeleteError": "❌ Fehler beim Löschen des Benutzers"
       },
       "labels": {
         "name": "Vorname",
@@ -182,7 +186,12 @@
       },
       "actions": {
         "save": "Änderungen speichern",
-        "close": "Schließen"
+        "close": "Schließen",
+        "deleteUser": "Benutzer löschen"
+      },
+      "danger": {
+        "title": "Gefahrenzone",
+        "description": "Diese Aktion löscht den Benutzer und alle seine Daten. Dies kann nicht rückgängig gemacht werden."
       }
     },
     "assignmentModal": {
@@ -507,58 +516,58 @@
       }
     },
     "appointments": {
-    "admin": {
-      "title": "Termine (Admin)"
-    },
-    "worker": {
-      "title": "Meine Termine"
-    },
-    "actions": {
-      "refresh": "Aktualisieren",
-      "proposeSlots": "Zeitslots vorschlagen",
-      "request": "Termin anfragen",
-      "requestTitle": "Neuen Termin anfragen",
-      "chooseSlot": "Slot wählen",
-      "chooseSlotTitle": "Einen der vorgeschlagenen Slots wählen"
-    },
-    "status": {
-      "loading": "Wird geladen...",
-      "loadingYear": "Jahreskalender wird geladen...",
-      "loadingMonth": "Monat wird geladen...",
-      "loadingMine": "Termine werden geladen…"
-    },
-    "statusLabel": {
-      "pending": "Ausstehend",
-      "proposed": "Vorgeschlagen",
-      "confirmed": "Bestätigt",
-      "rescheduled": "Verschoben",
-      "cancelled": "Abgesagt"
-    },
-    "pending": {
-      "title": "Ausstehend",
-      "empty": "Keine ausstehenden Anfragen."
-    },
-    "next": {
-      "title": "Nächster Termin"
-    },
-    "requests": {
-      "title": "Meine Anfragen",
-      "waitingOptions": "Du hast vorgeschlagene Zeiten offen (Admin hat noch keine Optionen eingetragen).",
-      "choosePrompt": "Du hast vorgeschlagene Zeiten zur Auswahl."
-    },
-    "history": {
-      "title": "Verlauf & weitere Termine"
-    },
-    "labels": {
-      "when": "Wann:",
-      "reason": "Grund:",
-      "worker": "Mitarbeiter:",
-      "status": "Status:"
-    },
-    "empty": {
-      "worker": "Du hast noch keine Termine. Möchtest du einen Admin kontaktieren?"
-    },
-     "propose": {
+      "admin": {
+        "title": "Termine (Admin)"
+      },
+      "worker": {
+        "title": "Meine Termine"
+      },
+      "actions": {
+        "refresh": "Aktualisieren",
+        "proposeSlots": "Zeitslots vorschlagen",
+        "request": "Termin anfragen",
+        "requestTitle": "Neuen Termin anfragen",
+        "chooseSlot": "Slot wählen",
+        "chooseSlotTitle": "Einen der vorgeschlagenen Slots wählen"
+      },
+      "status": {
+        "loading": "Wird geladen...",
+        "loadingYear": "Jahreskalender wird geladen...",
+        "loadingMonth": "Monat wird geladen...",
+        "loadingMine": "Termine werden geladen…"
+      },
+      "statusLabel": {
+        "pending": "Ausstehend",
+        "proposed": "Vorgeschlagen",
+        "confirmed": "Bestätigt",
+        "rescheduled": "Verschoben",
+        "cancelled": "Abgesagt"
+      },
+      "pending": {
+        "title": "Ausstehend",
+        "empty": "Keine ausstehenden Anfragen."
+      },
+      "next": {
+        "title": "Nächster Termin"
+      },
+      "requests": {
+        "title": "Meine Anfragen",
+        "waitingOptions": "Du hast vorgeschlagene Zeiten offen (Admin hat noch keine Optionen eingetragen).",
+        "choosePrompt": "Du hast vorgeschlagene Zeiten zur Auswahl."
+      },
+      "history": {
+        "title": "Verlauf & weitere Termine"
+      },
+      "labels": {
+        "when": "Wann:",
+        "reason": "Grund:",
+        "worker": "Mitarbeiter:",
+        "status": "Status:"
+      },
+      "empty": {
+        "worker": "Du hast noch keine Termine. Möchtest du einen Admin kontaktieren?"
+      },
+      "propose": {
         "title": "Vorgeschlagene Zeitfenster",
         "optionLegend": "Option {{index}}",
         "dateLabel": "Datum (Option {{index}})",
@@ -623,7 +632,7 @@
         "cancelThisTitle": "Diesen Termin absagen",
         "confirmCancel": "Möchtest du diesen Termin wirklich absagen?"
       },
-       "request": {
+      "request": {
         "title": "Termin anfragen",
         "labels": {
           "reason": "Grund",
@@ -647,7 +656,15 @@
         "ariaOpenMonth": "Monat {{label}} {{year}} öffnen"
       },
       "calendar": {
-        "weekdayLabels": ["M", "D", "M", "D", "F", "S", "S"],
+        "weekdayLabels": [
+          "M",
+          "D",
+          "M",
+          "D",
+          "F",
+          "S",
+          "S"
+        ],
         "workerFallback": "Mitarbeiter",
         "aria": {
           "day": "Tag {{num}}",
@@ -655,8 +672,8 @@
           "appointment": "Termin: {{worker}} um {{time}}"
         }
       }
-  },
-  "messages": {
+    },
+    "messages": {
       "adminPage": {
         "title": "📨 Nachricht senden",
         "labels": {
@@ -807,135 +824,131 @@
       }
     },
     "workday": {
-    "title": "📋 Mein heutiger Arbeitstag: {{date}}",
-    "closedDay": "✅ Tag geschlossen. Heute ist kein Dienst aktiv.",
-    "noAssignment": "🚫 Du hast heute keinen Dienst zugewiesen.",
-    "cantStart": "⏳ Du kannst Fahrten ab 30 Minuten vor Dienstbeginn erfassen. Startzeit: {{start}}",
-    "dienstTimeLabel": "⏰ Dienst:",
-    "teamLabel": "Team:",
-    "selectAmbulance": {
-      "label": "🚐 Krankenwagen auswählen",
-      "placeholder": "-- Krankenwagen auswählen --"
-    },
-    "initialKm": "🔢 Start-KM",
-    "confirmInitialData": "✅ Anfangsdaten bestätigen",
-    "auftragNumber": "Auftrag-Nummer",
-    "patientName": "Patientenname",
-    "fromAddress": "Abholadresse",
-    "toAddress": "Zieladresse",
-    "time": {
-      "warning": "Eingangszeit",
-      "atHome": "Eintreffzeit",
-      "pickup": "Abholzeit",
-      "arrival": "Ankunft",
-      "end": "Frei"
-    },
-    "km": {
-      "start": "KM Start",
-      "end": "KM Ziel"
-    },
-    "anschluss": {
-      "addTitle": "Anschluss hinzufügen",
-      "cancelTitle": "Anschluss abbrechen",
-      "addLabel": "Anschluss",
-      "cancelLabel": "Anschluss abbrechen"
-    },
-    "storno": {
-      "label": "Storno",
-      "countsQuestion": "Zählt die Fahrt?",
-      "counts": {
-        "yes": "✅ Ja, zählt (1)",
-        "no": "❌ Nein, zählt nicht (0)"
+      "title": "📋 Mein heutiger Arbeitstag: {{date}}",
+      "closedDay": "✅ Tag geschlossen. Heute ist kein Dienst aktiv.",
+      "noAssignment": "🚫 Du hast heute keinen Dienst zugewiesen.",
+      "cantStart": "⏳ Du kannst Fahrten ab 30 Minuten vor Dienstbeginn erfassen. Startzeit: {{start}}",
+      "dienstTimeLabel": "⏰ Dienst:",
+      "teamLabel": "Team:",
+      "selectAmbulance": {
+        "label": "🚐 Krankenwagen auswählen",
+        "placeholder": "-- Krankenwagen auswählen --"
+      },
+      "initialKm": "🔢 Start-KM",
+      "confirmInitialData": "✅ Anfangsdaten bestätigen",
+      "auftragNumber": "Auftrag-Nummer",
+      "patientName": "Patientenname",
+      "fromAddress": "Abholadresse",
+      "toAddress": "Zieladresse",
+      "time": {
+        "warning": "Eingangszeit",
+        "atHome": "Eintreffzeit",
+        "pickup": "Abholzeit",
+        "arrival": "Ankunft",
+        "end": "Frei"
+      },
+      "km": {
+        "start": "KM Start",
+        "end": "KM Ziel"
+      },
+      "anschluss": {
+        "addTitle": "Anschluss hinzufügen",
+        "cancelTitle": "Anschluss abbrechen",
+        "addLabel": "Anschluss",
+        "cancelLabel": "Anschluss abbrechen"
+      },
+      "storno": {
+        "label": "Storno",
+        "countsQuestion": "Zählt die Fahrt?",
+        "counts": {
+          "yes": "✅ Ja, zählt (1)",
+          "no": "❌ Nein, zählt nicht (0)"
+        }
+      },
+      "reports": {
+        "label": "Bemerkungen / Bericht",
+        "placeholder": "Bemerkungen zur Fahrt",
+        "title": "Hier beliebige Anmerkung eintragen"
+      },
+      "saveTrip": "Fahrt speichern",
+      "tripSummary": "🧾 Fahrtenübersicht",
+      "tripCancelledTag": "(storniert)",
+      "closeAndSend": "✅ Tag abschließen und Zusammenfassung senden",
+      "needVehicleData": "🚐 Gib die Fahrzeug-Nr. und die Start-KM ein und klicke „Anfangsdaten bestätigen“, um Fahrten anzulegen.",
+      "closeQuestion": {
+        "title": "Ist es das Tagesende?",
+        "yes": "✅ Ja, kompletter Abschluss",
+        "partial": "⚠️ Nein, Teilabschluss senden",
+        "cancel": "Abbrechen"
+      },
+      "partial": {
+        "title": "🟠 Teilprüfung des Tages",
+        "totalPatients": "Gesamtzahl der Patienten (mit Multiplikatoren): {{count}}",
+        "placeholders": {
+          "report": "Grund für den Teilabschluss...",
+          "finalKm": "End-Kilometer des Krankenwagens"
+        },
+        "issue": {
+          "button": "Störung",
+          "registered": "🛠️ Störung erfasst. Du kannst jetzt den Teilabschluss senden."
+        },
+        "actions": {
+          "cancel": "Abbrechen",
+          "sendToAdmin": "An Admin senden"
+        },
+        "toasts": {
+          "reportRequired": "✏️ Bitte gib einen Grund für den Teilabschluss an.",
+          "finalKmRequired": "📏 Bitte gib die End-Kilometer ein."
+        }
+      },
+      "common": {
+        "unknownAmbulance": "Unbekannt"
+      },
+      "final": {
+        "title": "✅ Endprüfung des Tages",
+        "totalPatients": "Gesamtzahl der Patienten (mit Multiplikatoren): {{count}}",
+        "placeholders": {
+          "note": "Grund für den Endabschluss (optional)…",
+          "finalKm": "End-Kilometer des Krankenwagens"
+        },
+        "issue": {
+          "button": "Störung",
+          "autoNote": "⚠️ Störung"
+        },
+        "actions": {
+          "cancel": "Abbrechen",
+          "sendToAdmin": "An Admin senden"
+        },
+        "toasts": {
+          "finalKmRequired": "📏 Bitte gib die End-Kilometer ein."
+        }
+      },
+      "reviewSummary": {
+        "labels": {
+          "team": "👥 Team:",
+          "observations": "📝 Anmerkungen:",
+          "deletedUser": "Benutzer gelöscht",
+          "noName": "Ohne Name",
+          "totalKm": "Summe: {{km}} km"
+        },
+        "table": {
+          "auftrag": "Auftrag",
+          "patient": "Patient",
+          "pickup": "Von",
+          "destination": "Nach",
+          "warning": "Eingangszeit",
+          "homeArrival": "Eintreffzeit",
+          "kmStart": "KM Start",
+          "pickupTime": "Abholzeit",
+          "arrivalTime": "Ankunft",
+          "kmEnd": "KM Ziel",
+          "timeEnd": "Frei",
+          "kmDiff": "KM-Differenz",
+          "praemie": "Prämie"
+        }
       }
     },
-    "reports": {
-      "label": "Bemerkungen / Bericht",
-      "placeholder": "Bemerkungen zur Fahrt",
-      "title": "Hier beliebige Anmerkung eintragen"
-    },
-    "saveTrip": "Fahrt speichern",
-    "tripSummary": "🧾 Fahrtenübersicht",
-    "tripCancelledTag": "(storniert)",
-    "closeAndSend": "✅ Tag abschließen und Zusammenfassung senden",
-    "needVehicleData": "🚐 Gib die Fahrzeug-Nr. und die Start-KM ein und klicke „Anfangsdaten bestätigen“, um Fahrten anzulegen.",
-    "closeQuestion": {
-      "title": "Ist es das Tagesende?",
-      "yes": "✅ Ja, kompletter Abschluss",
-      "partial": "⚠️ Nein, Teilabschluss senden",
-      "cancel": "Abbrechen"
-    },
-
-    "partial": {
-      "title": "🟠 Teilprüfung des Tages",
-      "totalPatients": "Gesamtzahl der Patienten (mit Multiplikatoren): {{count}}",
-      "placeholders": {
-        "report": "Grund für den Teilabschluss...",
-        "finalKm": "End-Kilometer des Krankenwagens"
-      },
-      "issue": {
-        "button": "Störung",
-        "registered": "🛠️ Störung erfasst. Du kannst jetzt den Teilabschluss senden."
-      },
-      "actions": {
-        "cancel": "Abbrechen",
-        "sendToAdmin": "An Admin senden"
-      },
-      "toasts": {
-        "reportRequired": "✏️ Bitte gib einen Grund für den Teilabschluss an.",
-        "finalKmRequired": "📏 Bitte gib die End-Kilometer ein."
-      }
-    },
-
-    "common": {
-      "unknownAmbulance": "Unbekannt"
-    },
-
-    "final": {
-      "title": "✅ Endprüfung des Tages",
-      "totalPatients": "Gesamtzahl der Patienten (mit Multiplikatoren): {{count}}",
-      "placeholders": {
-        "note": "Grund für den Endabschluss (optional)…",
-        "finalKm": "End-Kilometer des Krankenwagens"
-      },
-      "issue": {
-        "button": "Störung",
-        "autoNote": "⚠️ Störung"
-      },
-      "actions": {
-        "cancel": "Abbrechen",
-        "sendToAdmin": "An Admin senden"
-      },
-      "toasts": {
-        "finalKmRequired": "📏 Bitte gib die End-Kilometer ein."
-      }
-    },
-
-    "reviewSummary": {
-      "labels": {
-        "team": "👥 Team:",
-        "observations": "📝 Anmerkungen:",
-        "deletedUser": "Benutzer gelöscht",
-        "noName": "Ohne Name",
-        "totalKm": "Summe: {{km}} km"
-      },
-      "table": {
-  "auftrag": "Auftrag",
-  "patient": "Patient",
-  "pickup": "Von",
-  "destination": "Nach",
-  "warning": "Eingangszeit",
-  "homeArrival": "Eintreffzeit",
-  "kmStart": "KM Start",
-  "pickupTime": "Abholzeit",
-  "arrivalTime": "Ankunft",
-  "kmEnd": "KM Ziel",
-  "timeEnd": "Frei",
-  "kmDiff": "KM-Differenz",
-  "praemie": "Prämie"
-      }
-    }
-  },
-  "summaries": {
+    "summaries": {
       "admin": {
         "title": "Tagesabschlussberichte",
         "loading": "Zusammenfassungen werden geladen...",
@@ -964,164 +977,156 @@
       }
     },
     "components": {
-  "tripModal": {
-    "close": "Schließen",
-    "title": "Fahrtdetails",
-    "auftrag": "Auftrag",
-    "patient": "Patient",
-    "noName": "Kein Name",
-    "from": "Von",
-    "noAddress": "Keine Adresse",
-    "to": "Bis",
-    "noDestination": "Kein Ziel",
-    "time": "Zeiten",
-    "km": "KM",
-    "total": "Gesamt",
-    "reports": "Bemerkungen",
-    "noReports": "Keine Bemerkungen",
-    "cancelled": "Diese Fahrt wurde storniert",
-    "cancelledAtPickup": "am Abholpunkt"
+      "tripModal": {
+        "close": "Schließen",
+        "title": "Fahrtdetails",
+        "auftrag": "Auftrag",
+        "patient": "Patient",
+        "noName": "Kein Name",
+        "from": "Von",
+        "noAddress": "Keine Adresse",
+        "to": "Bis",
+        "noDestination": "Kein Ziel",
+        "time": "Zeiten",
+        "km": "KM",
+        "total": "Gesamt",
+        "reports": "Bemerkungen",
+        "noReports": "Keine Bemerkungen",
+        "cancelled": "Diese Fahrt wurde storniert",
+        "cancelledAtPickup": "am Abholpunkt"
+      }
+    }
+  },
+  "toasts": {
+    "mechanics": {
+      "loadError": "❌ Fehler beim Laden der Meldungen oder Krankenwagen.",
+      "reportSent": "🔧 Störung erfolgreich gemeldet.",
+      "reportError": "❌ Störung konnte nicht gemeldet werden.",
+      "invalidAmbulance": "🚑 Bitte ein gültiges Fahrzeug auswählen.",
+      "missingDescription": "📝 Bitte die Störung beschreiben.",
+      "invalidFinalKm": "📏 Bitte eine gültige End-KM Zahl eingeben."
+    },
+    "hospitals": {
+      "loadError": "❌ Krankenhäuser konnten nicht geladen werden.",
+      "addSuccess": "🏥 Krankenhaus erfolgreich hinzugefügt.",
+      "addError": "❌ Krankenhaus konnte nicht hinzugefügt werden.",
+      "updateSuccess": "✅ Krankenhaus erfolgreich aktualisiert.",
+      "updateError": "❌ Krankenhaus konnte nicht aktualisiert werden.",
+      "deleteSuccess": "🗑️ Krankenhaus gelöscht.",
+      "deleteError": "❌ Krankenhaus konnte nicht gelöscht werden.",
+      "stateUpdated": "✅ Krankenhausstatus aktualisiert",
+      "stateUpdateError": "❌ Fehler beim Aktualisieren des Status"
+    },
+    "assignments": {
+      "missingFields": "🚫 Startzeit, Endzeit und Fahrzeug ausfüllen.",
+      "samePerson": "🚫 Dieselbe Person kann nicht Fahrer und Sanitäter sein.",
+      "saveSuccess": "✅ Änderungen gespeichert",
+      "saveError": "❌ Änderungen konnten nicht gespeichert werden",
+      "deleteSuccess": "✅ Tag gelöscht",
+      "deleteError": "❌ Zuweisung konnte nicht gelöscht werden.",
+      "missingDienstId": "🚫 Dienst-ID ist nicht definiert.",
+      "loadUsersError": "❌ Fehler beim Laden der Benutzer.",
+      "loadAmbulancesError": "❌ Fehler beim Laden der Rettungswagen"
+    },
+    "profile": {
+      "saveSuccess": "✅ Profil erfolgreich gespeichert",
+      "saveError": "❌ Profil konnte nicht gespeichert werden",
+      "docDeleted": "✅ Dokument gelöscht",
+      "docDeleteError": "❌ Dokument konnte nicht gelöscht werden",
+      "imageDeleted": "✅ Profilbild entfernt",
+      "imageDeleteError": "❌ Profilbild konnte nicht entfernt werden",
+      "uploadError": "❌ Dateien konnten nicht hochgeladen werden",
+      "deleteSuccess": "🗑️ Benutzer erfolgreich gelöscht",
+      "deleteError": "❌ Fehler beim Löschen des Benutzers"
+    },
+    "vacations": {
+      "requestSent": "✅ Antrag erfolgreich eingereicht.",
+      "requestError": "❌ Fehler beim Einreichen des Antrags.",
+      "deleted": "🗑️ Antrag gelöscht",
+      "deleteError": "❌ Fehler beim Löschen des Antrags",
+      "editPending": "Die Bearbeitungsfunktion für Antrag {{id}} ist noch nicht implementiert.",
+      "worker": {
+        "loadError": "❌ Fehler beim Laden deiner Anträge.",
+        "error": "❌ Ein Fehler ist aufgetreten.",
+        "respondPending": "📨 Antwort wird gesendet...",
+        "respondSuccess": "✅ Antwort gesendet",
+        "formSuccess": "✅ Antrag eingereicht"
+      },
+      "admin": {
+        "loadError": "❌ Fehler beim Laden der Anträge.",
+        "error": "❌ Ein Fehler ist aufgetreten.",
+        "updating": "🔄 Aktualisiere...",
+        "accepted": "✅ Antrag akzeptiert",
+        "cancelled": "🛑 Antrag abgelehnt",
+        "updated": "✅ Status aktualisiert",
+        "sendingAlt": "📤 Alternative wird gesendet...",
+        "altSent": "✅ Alternative Option gesendet",
+        "cancelling": "🛑 Storniere...",
+        "deleting": "🗑️ Lösche...",
+        "deleted": "🗑️ Antrag gelöscht"
+      }
+    },
+    "messages": {
+      "fillRequired": "✏️ Bitte Betreff und Nachricht ausfüllen",
+      "fillRequiredRecipients": "✏️ Bitte Betreff und Nachricht ausfüllen und mindestens einen Empfänger auswählen",
+      "sent": "✅ Nachricht erfolgreich gesendet",
+      "error": "❌ Nachricht konnte nicht gesendet werden",
+      "deleteError": "❌ Nachricht konnte nicht gelöscht werden"
+    },
+    "workday": {
+      "needInitialData": "🚐 Krankenwagen und Start-KM auswählen.",
+      "initialDataConfirmed": "✅ Daten bestätigt. Du kannst jetzt Fahrten erfassen.",
+      "loadTripsError": "❌ Fehler beim Laden der heutigen Fahrten.",
+      "loadAssignmentError": "❌ Fehler beim Laden des heutigen Dienstes.",
+      "mandatoryFields": "✏️ Bitte alle Pflichtfelder ausfüllen.",
+      "noAssignmentToday": "❌ Du hast heute keinen Dienst zugewiesen.",
+      "tooEarly": "⏳ Fahrten können erst 30 Minuten vor Dienstbeginn erstellt werden.",
+      "tripSaved": "✅ Fahrt gespeichert.",
+      "tripSaveError": "❌ Fehler beim Speichern der Fahrt.",
+      "anschlussSaved": "✅ Patient 1 (Anschluss) gespeichert.",
+      "anschlussSaveError": "❌ Fehler beim Speichern von Patient 1.",
+      "enterAmbulanceAndKm": "🚐 Fahrzeugnummer und Start-KM eingeben.",
+      "enterFinalKmInModal": "📏 End-Kilometer im Modal eingeben.",
+      "finalKmLessThanInitial": "❌ End-KM dürfen nicht kleiner als Start-KM sein.",
+      "dayClosedSuccess": "✅ Tag abgeschlossen und Daten an Admin gesendet.",
+      "dayCloseError": "❌ Tag konnte nicht abgeschlossen werden.",
+      "partialSent": "✅ Teilabschluss an Admin gesendet.",
+      "partialSentWithIssue": "✅ Teilabschluss an Admin gesendet. Enthält Störungsmeldung.",
+      "partialSendError": "❌ Teilabschluss konnte nicht gesendet werden.",
+      "partial": {
+        "reportRequired": "✏️ Bitte gib einen Grund für den Teilabschluss an.",
+        "finalKmRequired": "📏 Bitte die End-Kilometer eingeben.",
+        "issueRegistered": "🛠️ Störung erfasst. Du kannst jetzt den Teilabschluss senden."
+      },
+      "final": {
+        "finalKmRequired": "📏 Bitte die End-Kilometer eingeben."
+      }
+    },
+    "appointments": {
+      "loadError": "❌ Fehler beim Laden der Termine.",
+      "reloadPendingError": "❌ Fehler beim Aktualisieren der ausstehenden Termine.",
+      "reloadConfirmedError": "❌ Fehler beim Aktualisieren der bestätigten Termine.",
+      "cancelSuccess": "✅ Termin abgesagt.",
+      "cancelError": "❌ Fehler beim Absagen des Termins.",
+      "invalidDateTime": "🚫 Ungültiges Datum/Uhrzeit.",
+      "pastDateError": "🚫 Termin kann nicht in der Vergangenheit liegen.",
+      "rescheduleSuccess": "✅ Termin verschoben.",
+      "rescheduleError": "❌ Fehler beim Verschieben des Termins.",
+      "proposeSuccess": "✅ Optionen vorgeschlagen.",
+      "proposeError": "❌ Fehler beim Vorschlagen der Optionen.",
+      "chooseRequired": "⚠️ Bitte eine Option auswählen.",
+      "confirmSuccess": "✅ Termin bestätigt.",
+      "confirmError": "❌ Fehler beim Bestätigen des Termins.",
+      "requestFill": "✏️ Bitte Grund und Details ausfüllen.",
+      "requestSuccess": "✅ Anfrage gesendet.",
+      "requestError": "❌ Fehler beim Erstellen der Anfrage."
+    },
+    "users": {
+      "loadError": "❌ Fehler beim Laden der Benutzer.",
+      "updateSuccess": "✅ Benutzer erfolgreich aktualisiert.",
+      "updateError": "❌ Fehler beim Aktualisieren des Benutzers.",
+      "deleteSuccess": "🗑️ Benutzer erfolgreich gelöscht.",
+      "deleteError": "❌ Fehler beim Löschen des Benutzers."
+    }
   }
-}
-},
-"toasts": {
-  "mechanics": {
-    "loadError": "❌ Fehler beim Laden der Meldungen oder Krankenwagen.",
-    "reportSent": "🔧 Störung erfolgreich gemeldet.",
-    "reportError": "❌ Störung konnte nicht gemeldet werden.",
-    "invalidAmbulance": "🚑 Bitte ein gültiges Fahrzeug auswählen.",
-    "missingDescription": "📝 Bitte die Störung beschreiben.",
-    "invalidFinalKm": "📏 Bitte eine gültige End-KM Zahl eingeben."
-  },
-  "hospitals": {
-    "loadError": "❌ Krankenhäuser konnten nicht geladen werden.",
-    "addSuccess": "🏥 Krankenhaus erfolgreich hinzugefügt.",
-    "addError": "❌ Krankenhaus konnte nicht hinzugefügt werden.",
-    "updateSuccess": "✅ Krankenhaus erfolgreich aktualisiert.",
-    "updateError": "❌ Krankenhaus konnte nicht aktualisiert werden.",
-    "deleteSuccess": "🗑️ Krankenhaus gelöscht.",
-    "deleteError": "❌ Krankenhaus konnte nicht gelöscht werden.",
-    "stateUpdated": "✅ Krankenhausstatus aktualisiert",
-    "stateUpdateError": "❌ Fehler beim Aktualisieren des Status"
-  },
-  "assignments": {
-    "missingFields": "🚫 Startzeit, Endzeit und Fahrzeug ausfüllen.",
-    "samePerson": "🚫 Dieselbe Person kann nicht Fahrer und Sanitäter sein.",
-    "saveSuccess": "✅ Änderungen gespeichert",
-    "saveError": "❌ Änderungen konnten nicht gespeichert werden",
-    "deleteSuccess": "✅ Tag gelöscht",
-    "deleteError": "❌ Zuweisung konnte nicht gelöscht werden.",
-    "missingDienstId": "🚫 Dienst-ID ist nicht definiert.",
-    "loadUsersError": "❌ Fehler beim Laden der Benutzer.",
-    "loadAmbulancesError": "❌ Fehler beim Laden der Rettungswagen"
-  },
-  "profile": {
-    "saveSuccess": "✅ Profil erfolgreich gespeichert",
-    "saveError": "❌ Profil konnte nicht gespeichert werden",
-    "docDeleted": "✅ Dokument gelöscht",
-    "docDeleteError": "❌ Dokument konnte nicht gelöscht werden",
-    "imageDeleted": "✅ Profilbild entfernt",
-    "imageDeleteError": "❌ Profilbild konnte nicht entfernt werden",
-    "uploadError": "❌ Dateien konnten nicht hochgeladen werden"
-  },
-  "vacations": {
-  "requestSent": "✅ Antrag erfolgreich eingereicht.",
-  "requestError": "❌ Fehler beim Einreichen des Antrags.",
-  "deleted": "🗑️ Antrag gelöscht",
-  "deleteError": "❌ Fehler beim Löschen des Antrags",
-  "editPending": "Die Bearbeitungsfunktion für Antrag {{id}} ist noch nicht implementiert.",
-
-  "worker": {
-    "loadError": "❌ Fehler beim Laden deiner Anträge.",
-    "error": "❌ Ein Fehler ist aufgetreten.",
-    "respondPending": "📨 Antwort wird gesendet...",
-    "respondSuccess": "✅ Antwort gesendet",
-    "formSuccess": "✅ Antrag eingereicht"
-  },
-
-  "admin": {
-    "loadError": "❌ Fehler beim Laden der Anträge.",
-    "error": "❌ Ein Fehler ist aufgetreten.",
-    "updating": "🔄 Aktualisiere...",
-    "accepted": "✅ Antrag akzeptiert",
-    "cancelled": "🛑 Antrag abgelehnt",
-    "updated": "✅ Status aktualisiert",
-    "sendingAlt": "📤 Alternative wird gesendet...",
-    "altSent": "✅ Alternative Option gesendet",
-    "cancelling": "🛑 Storniere...",
-    "deleting": "🗑️ Lösche...",
-    "deleted": "🗑️ Antrag gelöscht"
-  }
-},
-
-"messages": {
-  "fillRequired": "✏️ Bitte Betreff und Nachricht ausfüllen",
-  "fillRequiredRecipients": "✏️ Bitte Betreff und Nachricht ausfüllen und mindestens einen Empfänger auswählen",
-  "sent": "✅ Nachricht erfolgreich gesendet",
-  "error": "❌ Nachricht konnte nicht gesendet werden",
-  "deleteError": "❌ Nachricht konnte nicht gelöscht werden"
-},
-
-  "workday": {
-  "needInitialData": "🚐 Krankenwagen und Start-KM auswählen.",
-  "initialDataConfirmed": "✅ Daten bestätigt. Du kannst jetzt Fahrten erfassen.",
-  "loadTripsError": "❌ Fehler beim Laden der heutigen Fahrten.",
-  "loadAssignmentError": "❌ Fehler beim Laden des heutigen Dienstes.",
-  "mandatoryFields": "✏️ Bitte alle Pflichtfelder ausfüllen.",
-  "noAssignmentToday": "❌ Du hast heute keinen Dienst zugewiesen.",
-  "tooEarly": "⏳ Fahrten können erst 30 Minuten vor Dienstbeginn erstellt werden.",
-  "tripSaved": "✅ Fahrt gespeichert.",
-  "tripSaveError": "❌ Fehler beim Speichern der Fahrt.",
-  "anschlussSaved": "✅ Patient 1 (Anschluss) gespeichert.",
-  "anschlussSaveError": "❌ Fehler beim Speichern von Patient 1.",
-  "enterAmbulanceAndKm": "🚐 Fahrzeugnummer und Start-KM eingeben.",
-  "enterFinalKmInModal": "📏 End-Kilometer im Modal eingeben.",
-  "finalKmLessThanInitial": "❌ End-KM dürfen nicht kleiner als Start-KM sein.",
-  "dayClosedSuccess": "✅ Tag abgeschlossen und Daten an Admin gesendet.",
-  "dayCloseError": "❌ Tag konnte nicht abgeschlossen werden.",
-  "partialSent": "✅ Teilabschluss an Admin gesendet.",
-  "partialSentWithIssue": "✅ Teilabschluss an Admin gesendet. Enthält Störungsmeldung.",
-  "partialSendError": "❌ Teilabschluss konnte nicht gesendet werden.",
-  "partial": {
-    "reportRequired": "✏️ Bitte gib einen Grund für den Teilabschluss an.",
-    "finalKmRequired": "📏 Bitte die End-Kilometer eingeben.",
-    "issueRegistered": "🛠️ Störung erfasst. Du kannst jetzt den Teilabschluss senden."
-  },
-  "final": {
-    "finalKmRequired": "📏 Bitte die End-Kilometer eingeben."
-  }
-},
-
-  "appointments": {
-  "loadError": "❌ Fehler beim Laden der Termine.",
-  "reloadPendingError": "❌ Fehler beim Aktualisieren der ausstehenden Termine.",
-  "reloadConfirmedError": "❌ Fehler beim Aktualisieren der bestätigten Termine.",
-  "cancelSuccess": "✅ Termin abgesagt.",
-  "cancelError": "❌ Fehler beim Absagen des Termins.",
-  "invalidDateTime": "🚫 Ungültiges Datum/Uhrzeit.",
-  "pastDateError": "🚫 Termin kann nicht in der Vergangenheit liegen.",
-  "rescheduleSuccess": "✅ Termin verschoben.",
-  "rescheduleError": "❌ Fehler beim Verschieben des Termins.",
-  "proposeSuccess": "✅ Optionen vorgeschlagen.",
-  "proposeError": "❌ Fehler beim Vorschlagen der Optionen.",
-  "chooseRequired": "⚠️ Bitte eine Option auswählen.",
-  "confirmSuccess": "✅ Termin bestätigt.",
-  "confirmError": "❌ Fehler beim Bestätigen des Termins.",
-  "requestFill": "✏️ Bitte Grund und Details ausfüllen.",
-  "requestSuccess": "✅ Anfrage gesendet.",
-  "requestError": "❌ Fehler beim Erstellen der Anfrage."
-},
-"users": {
-  "loadError": "❌ Fehler beim Laden der Benutzer.",
-  "updateSuccess": "✅ Benutzer erfolgreich aktualisiert.",
-  "updateError": "❌ Fehler beim Aktualisieren des Benutzers.",
-  "deleteSuccess": "🗑️ Benutzer erfolgreich gelöscht.",
-  "deleteError": "❌ Fehler beim Löschen des Benutzers."
-}
-
-
-
-
-
-}
 }

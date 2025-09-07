@@ -137,7 +137,11 @@
         "docDeleteError": "❌ Could not delete the document",
         "removeImageSuccess": "✅ Profile image removed",
         "removeImageError": "❌ Error removing the image",
-        "missingRequired": "Missing required data to update the profile."
+        "missingRequired": "Missing required data to update the profile.",
+        "cannotDeleteSelf": "You cannot delete your own account.",
+        "confirmDelete": "Are you sure you want to delete {{name}}? This action cannot be undone.",
+        "userDeleted": "✅ User deleted successfully",
+        "userDeleteError": "❌ Error deleting the user"
       },
       "labels": {
         "name": "First name",
@@ -182,7 +186,12 @@
       },
       "actions": {
         "save": "Save changes",
-        "close": "Close"
+        "close": "Close",
+        "deleteUser": "Delete user"
+      },
+      "danger": {
+        "title": "Danger Zone",
+        "description": "This action will delete the user and all their data. It cannot be undone."
       }
     },
     "assignmentModal": {
@@ -507,58 +516,58 @@
       }
     },
     "appointments": {
-    "admin": {
-      "title": "Appointments (Admin)"
-    },
-    "worker": {
-      "title": "My Appointments"
-    },
-    "actions": {
-      "refresh": "Refresh",
-      "proposeSlots": "Propose time slots",
-      "request": "Request appointment",
-      "requestTitle": "Request a new appointment",
-      "chooseSlot": "Choose slot",
-      "chooseSlotTitle": "Choose one of the proposed slots"
-    },
-    "status": {
-      "loading": "Loading...",
-      "loadingYear": "Loading yearly calendar...",
-      "loadingMonth": "Loading month...",
-      "loadingMine": "Loading appointments…"
-    },
-    "statusLabel": {
-      "pending": "Pending",
-      "proposed": "Proposed",
-      "confirmed": "Confirmed",
-      "rescheduled": "Rescheduled",
-      "cancelled": "Cancelled"
-    },
-    "pending": {
-      "title": "Pending",
-      "empty": "There are no pending requests."
-    },
-    "next": {
-      "title": "Next appointment"
-    },
-    "requests": {
-      "title": "My requests",
-      "waitingOptions": "You have proposed times pending (admin hasn't provided options yet).",
-      "choosePrompt": "You have proposed times waiting for your choice."
-    },
-    "history": {
-      "title": "History & other appointments"
-    },
-    "labels": {
-      "when": "When:",
-      "reason": "Reason:",
-      "worker": "Worker:",
-      "status": "Status:"
-    },
-    "empty": {
-      "worker": "You don't have appointments yet. Need to contact an admin?"
-    },
-     "propose": {
+      "admin": {
+        "title": "Appointments (Admin)"
+      },
+      "worker": {
+        "title": "My Appointments"
+      },
+      "actions": {
+        "refresh": "Refresh",
+        "proposeSlots": "Propose time slots",
+        "request": "Request appointment",
+        "requestTitle": "Request a new appointment",
+        "chooseSlot": "Choose slot",
+        "chooseSlotTitle": "Choose one of the proposed slots"
+      },
+      "status": {
+        "loading": "Loading...",
+        "loadingYear": "Loading yearly calendar...",
+        "loadingMonth": "Loading month...",
+        "loadingMine": "Loading appointments…"
+      },
+      "statusLabel": {
+        "pending": "Pending",
+        "proposed": "Proposed",
+        "confirmed": "Confirmed",
+        "rescheduled": "Rescheduled",
+        "cancelled": "Cancelled"
+      },
+      "pending": {
+        "title": "Pending",
+        "empty": "There are no pending requests."
+      },
+      "next": {
+        "title": "Next appointment"
+      },
+      "requests": {
+        "title": "My requests",
+        "waitingOptions": "You have proposed times pending (admin hasn't provided options yet).",
+        "choosePrompt": "You have proposed times waiting for your choice."
+      },
+      "history": {
+        "title": "History & other appointments"
+      },
+      "labels": {
+        "when": "When:",
+        "reason": "Reason:",
+        "worker": "Worker:",
+        "status": "Status:"
+      },
+      "empty": {
+        "worker": "You don't have appointments yet. Need to contact an admin?"
+      },
+      "propose": {
         "title": "Proposed time slots",
         "optionLegend": "Option {{index}}",
         "dateLabel": "Date (option {{index}})",
@@ -647,7 +656,15 @@
         "ariaOpenMonth": "Open month {{label}} {{year}}"
       },
       "calendar": {
-        "weekdayLabels": ["M", "T", "W", "T", "F", "S", "S"],
+        "weekdayLabels": [
+          "M",
+          "T",
+          "W",
+          "T",
+          "F",
+          "S",
+          "S"
+        ],
         "workerFallback": "Worker",
         "aria": {
           "day": "Day {{num}}",
@@ -655,8 +672,8 @@
           "appointment": "Appointment: {{worker}} at {{time}}"
         }
       }
-  },
-  "messages": {
+    },
+    "messages": {
       "adminPage": {
         "title": "📨 Send Message",
         "labels": {
@@ -758,7 +775,7 @@
         }
       }
     },
-        "diensts": {
+    "diensts": {
       "adminPage": {
         "title": "Duty Roster (Admin)",
         "weekRange": "Week from {{from}} to {{to}}",
@@ -807,135 +824,131 @@
       }
     },
     "workday": {
-    "title": "📋 My Working Day: {{date}}",
-    "closedDay": "✅ Day closed. No active shift today.",
-    "noAssignment": "🚫 You don't have a shift assigned today.",
-    "cantStart": "⏳ You can record trips starting 30 minutes before your shift. Start time: {{start}}",
-    "dienstTimeLabel": "⏰ Shift:",
-    "teamLabel": "Team:",
-    "selectAmbulance": {
-      "label": "🚐 Select ambulance",
-      "placeholder": "-- Select an ambulance --"
-    },
-    "initialKm": "🔢 Initial KM",
-    "confirmInitialData": "✅ Confirm initial data",
-    "auftragNumber": "Auftrag number",
-    "patientName": "Patient name",
-    "fromAddress": "Pickup address",
-    "toAddress": "Drop-off address",
-    "time": {
-      "warning": "Call",
-      "atHome": "Origin",
-      "pickup": "Pickup",
-      "arrival": "Arrival",
-      "end": "Free"
-    },
-    "km": {
-      "start": "KM start",
-      "end": "KM end"
-    },
-    "anschluss": {
-      "addTitle": "Add Anschluss",
-      "cancelTitle": "Cancel Anschluss",
-      "addLabel": "Anschluss",
-      "cancelLabel": "Cancel Anschluss"
-    },
-    "storno": {
-      "label": "Storno",
-      "countsQuestion": "Does this trip count?",
-      "counts": {
-        "yes": "✅ Yes, counts (1)",
-        "no": "❌ No, doesn't count (0)"
-      }
-    },
-    "reports": {
-      "label": "Notes / reports",
-      "placeholder": "Notes about the trip",
-      "title": "Write any note here"
-    },
-    "saveTrip": "Save trip",
-    "tripSummary": "🧾 Trip summary",
-    "tripCancelledTag": "(cancelled)",
-    "closeAndSend": "✅ Close day and send summary",
-    "needVehicleData": "🚐 Enter the ambulance number and initial KM and click \"Confirm initial data\" to create trips.",
-    "closeQuestion": {
-      "title": "Is it the end of the day?",
-      "yes": "✅ Yes, final closure",
-      "partial": "⚠️ No, send partial closure",
-      "cancel": "Cancel"
-    },
-
-    "partial": {
-      "title": "🟠 Partial day review",
-      "totalPatients": "Total patients (with multipliers): {{count}}",
-      "placeholders": {
-        "report": "Reason for partial closure...",
-        "finalKm": "Ambulance final kilometers"
+      "title": "📋 My Working Day: {{date}}",
+      "closedDay": "✅ Day closed. No active shift today.",
+      "noAssignment": "🚫 You don't have a shift assigned today.",
+      "cantStart": "⏳ You can record trips starting 30 minutes before your shift. Start time: {{start}}",
+      "dienstTimeLabel": "⏰ Shift:",
+      "teamLabel": "Team:",
+      "selectAmbulance": {
+        "label": "🚐 Select ambulance",
+        "placeholder": "-- Select an ambulance --"
       },
-      "issue": {
-        "button": "Issue",
-        "registered": "🛠️ Issue recorded. You can now send the partial closure."
+      "initialKm": "🔢 Initial KM",
+      "confirmInitialData": "✅ Confirm initial data",
+      "auftragNumber": "Auftrag number",
+      "patientName": "Patient name",
+      "fromAddress": "Pickup address",
+      "toAddress": "Drop-off address",
+      "time": {
+        "warning": "Call",
+        "atHome": "Origin",
+        "pickup": "Pickup",
+        "arrival": "Arrival",
+        "end": "Free"
       },
-      "actions": {
-        "cancel": "Cancel",
-        "sendToAdmin": "Send to Admin"
+      "km": {
+        "start": "KM start",
+        "end": "KM end"
       },
-      "toasts": {
-        "reportRequired": "✏️ Please enter a reason for the partial closure.",
-        "finalKmRequired": "📏 Enter the final kilometers."
-      }
-    },
-
-    "common": {
-      "unknownAmbulance": "Unknown"
-    },
-
-    "final": {
-      "title": "✅ Final day review",
-      "totalPatients": "Total patients (with multipliers): {{count}}",
-      "placeholders": {
-        "note": "Reason for final closure (optional)…",
-        "finalKm": "Ambulance final kilometers"
+      "anschluss": {
+        "addTitle": "Add Anschluss",
+        "cancelTitle": "Cancel Anschluss",
+        "addLabel": "Anschluss",
+        "cancelLabel": "Cancel Anschluss"
       },
-      "issue": {
-        "button": "Issue",
-        "autoNote": "⚠️ Issue"
+      "storno": {
+        "label": "Storno",
+        "countsQuestion": "Does this trip count?",
+        "counts": {
+          "yes": "✅ Yes, counts (1)",
+          "no": "❌ No, doesn't count (0)"
+        }
       },
-      "actions": {
-        "cancel": "Cancel",
-        "sendToAdmin": "Send to Admin"
+      "reports": {
+        "label": "Notes / reports",
+        "placeholder": "Notes about the trip",
+        "title": "Write any note here"
       },
-      "toasts": {
-        "finalKmRequired": "📏 Enter the final kilometers."
-      }
-    },
-
-    "reviewSummary": {
-      "labels": {
-        "team": "👥 Team:",
-        "observations": "📝 Notes:",
-        "deletedUser": "User deleted",
-        "noName": "No name",
-        "totalKm": "Total: {{km}} km"
+      "saveTrip": "Save trip",
+      "tripSummary": "🧾 Trip summary",
+      "tripCancelledTag": "(cancelled)",
+      "closeAndSend": "✅ Close day and send summary",
+      "needVehicleData": "🚐 Enter the ambulance number and initial KM and click \"Confirm initial data\" to create trips.",
+      "closeQuestion": {
+        "title": "Is it the end of the day?",
+        "yes": "✅ Yes, final closure",
+        "partial": "⚠️ No, send partial closure",
+        "cancel": "Cancel"
       },
+      "partial": {
+        "title": "🟠 Partial day review",
+        "totalPatients": "Total patients (with multipliers): {{count}}",
+        "placeholders": {
+          "report": "Reason for partial closure...",
+          "finalKm": "Ambulance final kilometers"
+        },
+        "issue": {
+          "button": "Issue",
+          "registered": "🛠️ Issue recorded. You can now send the partial closure."
+        },
+        "actions": {
+          "cancel": "Cancel",
+          "sendToAdmin": "Send to Admin"
+        },
+        "toasts": {
+          "reportRequired": "✏️ Please enter a reason for the partial closure.",
+          "finalKmRequired": "📏 Enter the final kilometers."
+        }
+      },
+      "common": {
+        "unknownAmbulance": "Unknown"
+      },
+      "final": {
+        "title": "✅ Final day review",
+        "totalPatients": "Total patients (with multipliers): {{count}}",
+        "placeholders": {
+          "note": "Reason for final closure (optional)…",
+          "finalKm": "Ambulance final kilometers"
+        },
+        "issue": {
+          "button": "Issue",
+          "autoNote": "⚠️ Issue"
+        },
+        "actions": {
+          "cancel": "Cancel",
+          "sendToAdmin": "Send to Admin"
+        },
+        "toasts": {
+          "finalKmRequired": "📏 Enter the final kilometers."
+        }
+      },
+      "reviewSummary": {
+        "labels": {
+          "team": "👥 Team:",
+          "observations": "📝 Notes:",
+          "deletedUser": "User deleted",
+          "noName": "No name",
+          "totalKm": "Total: {{km}} km"
+        },
         "table": {
-    "auftrag": "Auftrag",
-    "patient": "Patient",
-    "pickup": "From",
-    "destination": "To",
-    "warning": "Call",
-    "homeArrival": "Origin",
-    "kmStart": "KM start",
-    "pickupTime": "Pickup",
-    "arrivalTime": "Arrival",
-    "kmEnd": "KM end",
-    "timeEnd": "Free",
-    "kmDiff": "KM diff",
-    "praemie": "Bonus"
+          "auftrag": "Auftrag",
+          "patient": "Patient",
+          "pickup": "From",
+          "destination": "To",
+          "warning": "Call",
+          "homeArrival": "Origin",
+          "kmStart": "KM start",
+          "pickupTime": "Pickup",
+          "arrivalTime": "Arrival",
+          "kmEnd": "KM end",
+          "timeEnd": "Free",
+          "kmDiff": "KM diff",
+          "praemie": "Bonus"
+        }
       }
-    }
-  },
-  "summaries": {
+    },
+    "summaries": {
       "admin": {
         "title": "Shift Reports",
         "loading": "Loading summaries...",
@@ -964,164 +977,156 @@
       }
     },
     "components": {
-  "tripModal": {
-    "close": "Close",
-    "title": "Trip details",
-    "auftrag": "Assignment",
-    "patient": "Patient",
-    "noName": "No name",
-    "from": "From",
-    "noAddress": "No address",
-    "to": "To",
-    "noDestination": "No destination",
-    "time": "Time",
-    "km": "KM",
-    "total": "Total",
-    "reports": "Notes",
-    "noReports": "No notes",
-    "cancelled": "This trip was cancelled",
-    "cancelledAtPickup": "at pickup point"
+      "tripModal": {
+        "close": "Close",
+        "title": "Trip details",
+        "auftrag": "Assignment",
+        "patient": "Patient",
+        "noName": "No name",
+        "from": "From",
+        "noAddress": "No address",
+        "to": "To",
+        "noDestination": "No destination",
+        "time": "Time",
+        "km": "KM",
+        "total": "Total",
+        "reports": "Notes",
+        "noReports": "No notes",
+        "cancelled": "This trip was cancelled",
+        "cancelledAtPickup": "at pickup point"
+      }
+    }
+  },
+  "toasts": {
+    "mechanics": {
+      "loadError": "❌ Failed to load reports or ambulances.",
+      "reportSent": "🔧 Issue reported successfully.",
+      "reportError": "❌ Could not report the issue.",
+      "invalidAmbulance": "🚑 Please select a valid ambulance.",
+      "missingDescription": "📝 Please describe the issue before sending.",
+      "invalidFinalKm": "📏 Enter a valid final KM number."
+    },
+    "hospitals": {
+      "loadError": "❌ Failed to load hospitals.",
+      "addSuccess": "🏥 Hospital added successfully.",
+      "addError": "❌ Failed to add hospital.",
+      "updateSuccess": "✅ Hospital updated successfully.",
+      "updateError": "❌ Failed to update hospital.",
+      "deleteSuccess": "🗑️ Hospital deleted.",
+      "deleteError": "❌ Failed to delete hospital.",
+      "stateUpdated": "✅ Hospital status updated",
+      "stateUpdateError": "❌ Error updating status"
+    },
+    "assignments": {
+      "missingFields": "🚫 Fill start time, end time and ambulance.",
+      "samePerson": "🚫 You cannot assign the same person as driver and medic.",
+      "saveSuccess": "✅ Changes saved",
+      "saveError": "❌ Failed to save changes",
+      "deleteSuccess": "✅ Day removed",
+      "deleteError": "❌ Failed to remove the assignment.",
+      "missingDienstId": "🚫 Dienst ID is not defined.",
+      "loadUsersError": "❌ Error loading users.",
+      "loadAmbulancesError": "❌ Error loading ambulances"
+    },
+    "profile": {
+      "saveSuccess": "✅ Profile saved successfully",
+      "saveError": "❌ Failed to save profile",
+      "docDeleted": "✅ Document deleted",
+      "docDeleteError": "❌ Could not delete the document",
+      "imageDeleted": "✅ Profile image removed",
+      "imageDeleteError": "❌ Failed to remove the image",
+      "uploadError": "❌ Failed to upload files",
+      "deleteSuccess": "🗑️ User deleted successfully",
+      "deleteError": "❌ Failed to delete the user"
+    },
+    "vacations": {
+      "requestSent": "✅ Request submitted successfully.",
+      "requestError": "❌ Error while submitting the request.",
+      "deleted": "🗑️ Request deleted",
+      "deleteError": "❌ Error while deleting the request",
+      "editPending": "Edit functionality for request {{id}} is pending implementation.",
+      "worker": {
+        "loadError": "❌ Error loading your requests.",
+        "error": "❌ An error occurred.",
+        "respondPending": "📨 Sending response...",
+        "respondSuccess": "✅ Response sent",
+        "formSuccess": "✅ Request submitted"
+      },
+      "admin": {
+        "loadError": "❌ Error loading requests.",
+        "error": "❌ An error occurred.",
+        "updating": "🔄 Updating...",
+        "accepted": "✅ Request accepted",
+        "cancelled": "🛑 Request cancelled",
+        "updated": "✅ Status updated",
+        "sendingAlt": "📤 Sending alternative...",
+        "altSent": "✅ Alternative option sent",
+        "cancelling": "🛑 Cancelling...",
+        "deleting": "🗑️ Deleting...",
+        "deleted": "🗑️ Request deleted"
+      }
+    },
+    "messages": {
+      "fillRequired": "✏️ Please fill subject and message",
+      "fillRequiredRecipients": "✏️ Please fill subject and message, and select at least one recipient",
+      "sent": "✅ Message sent successfully",
+      "error": "❌ Failed to send the message",
+      "deleteError": "❌ Failed to delete the message"
+    },
+    "workday": {
+      "needInitialData": "🚐 Select an ambulance and initial KM.",
+      "initialDataConfirmed": "✅ Data confirmed. You can now record trips.",
+      "loadTripsError": "❌ Failed to load today's trips.",
+      "loadAssignmentError": "❌ Failed to load today's assignment.",
+      "mandatoryFields": "✏️ Please fill in all required fields.",
+      "noAssignmentToday": "❌ You have no dienst assignment today.",
+      "tooEarly": "⏳ You can only create trips 30 minutes before the Dienst starts.",
+      "tripSaved": "✅ Trip saved.",
+      "tripSaveError": "❌ Failed to save the trip.",
+      "anschlussSaved": "✅ Patient 1 (Anschluss) saved.",
+      "anschlussSaveError": "❌ Failed to save patient 1.",
+      "enterAmbulanceAndKm": "🚐 Enter ambulance number and initial KM.",
+      "enterFinalKmInModal": "📏 Enter the final kilometers in the modal.",
+      "finalKmLessThanInitial": "❌ Final KM cannot be less than initial KM.",
+      "dayClosedSuccess": "✅ Day closed and data sent to admin.",
+      "dayCloseError": "❌ Could not close the day.",
+      "partialSent": "✅ Partial closure sent to admin.",
+      "partialSentWithIssue": "✅ Partial closure sent to admin. Includes issue report.",
+      "partialSendError": "❌ Failed to send partial closure.",
+      "partial": {
+        "reportRequired": "✏️ Please enter a reason for the partial closure.",
+        "finalKmRequired": "📏 Enter the final kilometers.",
+        "issueRegistered": "🛠️ Issue recorded. You can now send the partial closure."
+      },
+      "final": {
+        "finalKmRequired": "📏 Enter the final kilometers."
+      }
+    },
+    "appointments": {
+      "loadError": "❌ Failed to load appointments.",
+      "reloadPendingError": "❌ Failed to reload pending appointments.",
+      "reloadConfirmedError": "❌ Failed to reload confirmed appointments.",
+      "cancelSuccess": "✅ Appointment cancelled.",
+      "cancelError": "❌ Failed to cancel appointment.",
+      "invalidDateTime": "🚫 Invalid date/time.",
+      "pastDateError": "🚫 Cannot schedule in the past.",
+      "rescheduleSuccess": "✅ Appointment rescheduled.",
+      "rescheduleError": "❌ Failed to reschedule appointment.",
+      "proposeSuccess": "✅ Options proposed.",
+      "proposeError": "❌ Failed to propose options.",
+      "chooseRequired": "⚠️ Please select an option.",
+      "confirmSuccess": "✅ Appointment confirmed.",
+      "confirmError": "❌ Failed to confirm appointment.",
+      "requestFill": "✏️ Please complete reason and details.",
+      "requestSuccess": "✅ Request sent.",
+      "requestError": "❌ Failed to create request."
+    },
+    "users": {
+      "loadError": "❌ Failed to load users.",
+      "updateSuccess": "✅ User updated successfully.",
+      "updateError": "❌ Failed to update user.",
+      "deleteSuccess": "🗑️ User deleted successfully.",
+      "deleteError": "❌ Failed to delete user."
+    }
   }
-}
-
-
-
-},
-"toasts": {
-  "mechanics": {
-    "loadError": "❌ Failed to load reports or ambulances.",
-    "reportSent": "🔧 Issue reported successfully.",
-    "reportError": "❌ Could not report the issue.",
-    "invalidAmbulance": "🚑 Please select a valid ambulance.",
-    "missingDescription": "📝 Please describe the issue before sending.",
-    "invalidFinalKm": "📏 Enter a valid final KM number."
-  },
-  "hospitals": {
-    "loadError": "❌ Failed to load hospitals.",
-    "addSuccess": "🏥 Hospital added successfully.",
-    "addError": "❌ Failed to add hospital.",
-    "updateSuccess": "✅ Hospital updated successfully.",
-    "updateError": "❌ Failed to update hospital.",
-    "deleteSuccess": "🗑️ Hospital deleted.",
-    "deleteError": "❌ Failed to delete hospital.",
-    "stateUpdated": "✅ Hospital status updated",
-    "stateUpdateError": "❌ Error updating status"
-  },
-  "assignments": {
-    "missingFields": "🚫 Fill start time, end time and ambulance.",
-    "samePerson": "🚫 You cannot assign the same person as driver and medic.",
-    "saveSuccess": "✅ Changes saved",
-    "saveError": "❌ Failed to save changes",
-    "deleteSuccess": "✅ Day removed",
-    "deleteError": "❌ Failed to remove the assignment.",
-    "missingDienstId": "🚫 Dienst ID is not defined.",
-    "loadUsersError": "❌ Error loading users.",
-    "loadAmbulancesError": "❌ Error loading ambulances"
-  },
-  "profile": {
-    "saveSuccess": "✅ Profile saved successfully",
-    "saveError": "❌ Failed to save profile",
-    "docDeleted": "✅ Document deleted",
-    "docDeleteError": "❌ Could not delete the document",
-    "imageDeleted": "✅ Profile image removed",
-    "imageDeleteError": "❌ Failed to remove the image",
-    "uploadError": "❌ Failed to upload files"
-  },
-  "vacations": {
-  "requestSent": "✅ Request submitted successfully.",
-  "requestError": "❌ Error while submitting the request.",
-  "deleted": "🗑️ Request deleted",
-  "deleteError": "❌ Error while deleting the request",
-  "editPending": "Edit functionality for request {{id}} is pending implementation.",
-
-  "worker": {
-    "loadError": "❌ Error loading your requests.",
-    "error": "❌ An error occurred.",
-    "respondPending": "📨 Sending response...",
-    "respondSuccess": "✅ Response sent",
-    "formSuccess": "✅ Request submitted"
-  },
-
-  "admin": {
-    "loadError": "❌ Error loading requests.",
-    "error": "❌ An error occurred.",
-    "updating": "🔄 Updating...",
-    "accepted": "✅ Request accepted",
-    "cancelled": "🛑 Request cancelled",
-    "updated": "✅ Status updated",
-    "sendingAlt": "📤 Sending alternative...",
-    "altSent": "✅ Alternative option sent",
-    "cancelling": "🛑 Cancelling...",
-    "deleting": "🗑️ Deleting...",
-    "deleted": "🗑️ Request deleted"
-  }
-},
-
-"messages": {
-  "fillRequired": "✏️ Please fill subject and message",
-  "fillRequiredRecipients": "✏️ Please fill subject and message, and select at least one recipient",
-  "sent": "✅ Message sent successfully",
-  "error": "❌ Failed to send the message",
-  "deleteError": "❌ Failed to delete the message"
-},
-
-  "workday": {
-  "needInitialData": "🚐 Select an ambulance and initial KM.",
-  "initialDataConfirmed": "✅ Data confirmed. You can now record trips.",
-  "loadTripsError": "❌ Failed to load today's trips.",
-  "loadAssignmentError": "❌ Failed to load today's assignment.",
-  "mandatoryFields": "✏️ Please fill in all required fields.",
-  "noAssignmentToday": "❌ You have no dienst assignment today.",
-  "tooEarly": "⏳ You can only create trips 30 minutes before the Dienst starts.",
-  "tripSaved": "✅ Trip saved.",
-  "tripSaveError": "❌ Failed to save the trip.",
-  "anschlussSaved": "✅ Patient 1 (Anschluss) saved.",
-  "anschlussSaveError": "❌ Failed to save patient 1.",
-  "enterAmbulanceAndKm": "🚐 Enter ambulance number and initial KM.",
-  "enterFinalKmInModal": "📏 Enter the final kilometers in the modal.",
-  "finalKmLessThanInitial": "❌ Final KM cannot be less than initial KM.",
-  "dayClosedSuccess": "✅ Day closed and data sent to admin.",
-  "dayCloseError": "❌ Could not close the day.",
-  "partialSent": "✅ Partial closure sent to admin.",
-  "partialSentWithIssue": "✅ Partial closure sent to admin. Includes issue report.",
-  "partialSendError": "❌ Failed to send partial closure.",
-  "partial": {
-    "reportRequired": "✏️ Please enter a reason for the partial closure.",
-    "finalKmRequired": "📏 Enter the final kilometers.",
-    "issueRegistered": "🛠️ Issue recorded. You can now send the partial closure."
-  },
-  "final": {
-    "finalKmRequired": "📏 Enter the final kilometers."
-  }
-},
-
-  "appointments": {
-  "loadError": "❌ Failed to load appointments.",
-  "reloadPendingError": "❌ Failed to reload pending appointments.",
-  "reloadConfirmedError": "❌ Failed to reload confirmed appointments.",
-  "cancelSuccess": "✅ Appointment cancelled.",
-  "cancelError": "❌ Failed to cancel appointment.",
-  "invalidDateTime": "🚫 Invalid date/time.",
-  "pastDateError": "🚫 Cannot schedule in the past.",
-  "rescheduleSuccess": "✅ Appointment rescheduled.",
-  "rescheduleError": "❌ Failed to reschedule appointment.",
-  "proposeSuccess": "✅ Options proposed.",
-  "proposeError": "❌ Failed to propose options.",
-  "chooseRequired": "⚠️ Please select an option.",
-  "confirmSuccess": "✅ Appointment confirmed.",
-  "confirmError": "❌ Failed to confirm appointment.",
-  "requestFill": "✏️ Please complete reason and details.",
-  "requestSuccess": "✅ Request sent.",
-  "requestError": "❌ Failed to create request."
-},
-"users": {
-  "loadError": "❌ Failed to load users.",
-  "updateSuccess": "✅ User updated successfully.",
-  "updateError": "❌ Failed to update user.",
-  "deleteSuccess": "🗑️ User deleted successfully.",
-  "deleteError": "❌ Failed to delete user."
-}
-
-
-}
 }

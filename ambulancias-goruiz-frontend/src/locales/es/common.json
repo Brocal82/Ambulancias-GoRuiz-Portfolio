@@ -137,7 +137,11 @@
         "docDeleteError": "❌ No se pudo eliminar el documento",
         "removeImageSuccess": "✅ Imagen de perfil eliminada",
         "removeImageError": "❌ Error al eliminar la imagen",
-        "missingRequired": "Faltan datos obligatorios para actualizar el perfil."
+        "missingRequired": "Faltan datos obligatorios para actualizar el perfil.",
+        "cannotDeleteSelf": "No puedes eliminar tu propio usuario.",
+        "confirmDelete": "¿Seguro que quieres eliminar a {{name}}? Esta acción no se puede deshacer.",
+        "userDeleted": "✅ Usuario eliminado correctamente",
+        "userDeleteError": "❌ Error al eliminar el usuario"
       },
       "labels": {
         "name": "Nombre",
@@ -182,7 +186,12 @@
       },
       "actions": {
         "save": "Guardar cambios",
-        "close": "Cerrar"
+        "close": "Cerrar",
+        "deleteUser": "Eliminar usuario"
+      },
+      "danger": {
+        "title": "Zona de peligro",
+        "description": "Esta acción eliminará al usuario y sus datos. No se puede deshacer."
       }
     },
     "assignmentModal": {
@@ -939,7 +948,7 @@
         }
       }
     },
-     "summaries": {
+    "summaries": {
       "admin": {
         "title": "Reportes Finales de Jornada",
         "loading": "Cargando resúmenes...",
@@ -968,73 +977,74 @@
       }
     },
     "components": {
-  "tripModal": {
-    "close": "Cerrar",
-    "title": "Detalles del viaje",
-    "auftrag": "Auftrag",
-    "patient": "Paciente",
-    "noName": "Sin nombre",
-    "from": "Desde",
-    "noAddress": "Sin dirección",
-    "to": "Hasta",
-    "noDestination": "Sin destino",
-    "time": "Horas",
-    "km": "KM",
-    "total": "Total",
-    "reports": "Observaciones",
-    "noReports": "Sin observaciones",
-    "cancelled": "Este viaje fue cancelado",
-    "cancelledAtPickup": "en punto de recogida"
-  }
-}
-},
-"toasts": {
-  "mechanics": {
-    "loadError": "❌ Error al cargar reportes o ambulancias.",
-    "reportSent": "🔧 Avería reportada correctamente.",
-    "reportError": "❌ No se pudo reportar la avería.",
-    "invalidAmbulance": "🚑 Selecciona una ambulancia válida.",
-    "missingDescription": "📝 Describe la avería antes de enviar.",
-    "invalidFinalKm": "📏 Introduce un número válido de KM finales."
+      "tripModal": {
+        "close": "Cerrar",
+        "title": "Detalles del viaje",
+        "auftrag": "Auftrag",
+        "patient": "Paciente",
+        "noName": "Sin nombre",
+        "from": "Desde",
+        "noAddress": "Sin dirección",
+        "to": "Hasta",
+        "noDestination": "Sin destino",
+        "time": "Horas",
+        "km": "KM",
+        "total": "Total",
+        "reports": "Observaciones",
+        "noReports": "Sin observaciones",
+        "cancelled": "Este viaje fue cancelado",
+        "cancelledAtPickup": "en punto de recogida"
+      }
+    }
   },
-  "hospitals": {
-    "loadError": "❌ Error al cargar hospitales.",
-    "addSuccess": "🏥 Hospital añadido correctamente.",
-    "addError": "❌ Error al añadir hospital.",
-    "updateSuccess": "✅ Hospital actualizado correctamente.",
-    "updateError": "❌ Error al actualizar hospital.",
-    "deleteSuccess": "🗑️ Hospital eliminado.",
-    "deleteError": "❌ Error al eliminar hospital.",
-    "stateUpdated": "✅ Estado del hospital actualizado",
-    "stateUpdateError": "❌ Error al actualizar estado"
-  },
-  "assignments": {
-    "missingFields": "🚫 Rellena hora de inicio, fin y ambulancia.",
-    "samePerson": "🚫 No puedes asignar a la misma persona como conductor y sanitario.",
-    "saveSuccess": "✅ Cambios guardados",
-    "saveError": "❌ Error al guardar cambios",
-    "deleteSuccess": "✅ Día eliminado",
-    "deleteError": "❌ Error al eliminar el assignment.",
-    "missingDienstId": "🚫 ID del Dienst no definido.",
-    "loadUsersError": "❌ Error al cargar usuarios.",
-    "loadAmbulancesError": "❌ Error al cargar ambulancias"
-  },
-  "profile": {
-    "saveSuccess": "✅ Cambios guardados correctamente",
-    "saveError": "❌ Error al guardar el perfil",
-    "docDeleted": "✅ Documento eliminado",
-    "docDeleteError": "❌ No se pudo eliminar el documento",
-    "imageDeleted": "✅ Imagen de perfil eliminada",
-    "imageDeleteError": "❌ Error al eliminar la imagen",
-    "uploadError": "❌ Error al subir archivos"
-  },
-   "vacations": {
+  "toasts": {
+    "mechanics": {
+      "loadError": "❌ Error al cargar reportes o ambulancias.",
+      "reportSent": "🔧 Avería reportada correctamente.",
+      "reportError": "❌ No se pudo reportar la avería.",
+      "invalidAmbulance": "🚑 Selecciona una ambulancia válida.",
+      "missingDescription": "📝 Describe la avería antes de enviar.",
+      "invalidFinalKm": "📏 Introduce un número válido de KM finales."
+    },
+    "hospitals": {
+      "loadError": "❌ Error al cargar hospitales.",
+      "addSuccess": "🏥 Hospital añadido correctamente.",
+      "addError": "❌ Error al añadir hospital.",
+      "updateSuccess": "✅ Hospital actualizado correctamente.",
+      "updateError": "❌ Error al actualizar hospital.",
+      "deleteSuccess": "🗑️ Hospital eliminado.",
+      "deleteError": "❌ Error al eliminar hospital.",
+      "stateUpdated": "✅ Estado del hospital actualizado",
+      "stateUpdateError": "❌ Error al actualizar estado"
+    },
+    "assignments": {
+      "missingFields": "🚫 Rellena hora de inicio, fin y ambulancia.",
+      "samePerson": "🚫 No puedes asignar a la misma persona como conductor y sanitario.",
+      "saveSuccess": "✅ Cambios guardados",
+      "saveError": "❌ Error al guardar cambios",
+      "deleteSuccess": "✅ Día eliminado",
+      "deleteError": "❌ Error al eliminar el assignment.",
+      "missingDienstId": "🚫 ID del Dienst no definido.",
+      "loadUsersError": "❌ Error al cargar usuarios.",
+      "loadAmbulancesError": "❌ Error al cargar ambulancias"
+    },
+    "profile": {
+      "saveSuccess": "✅ Cambios guardados correctamente",
+      "saveError": "❌ Error al guardar el perfil",
+      "docDeleted": "✅ Documento eliminado",
+      "docDeleteError": "❌ No se pudo eliminar el documento",
+      "imageDeleted": "✅ Imagen de perfil eliminada",
+      "imageDeleteError": "❌ Error al eliminar la imagen",
+      "uploadError": "❌ Error al subir archivos",
+      "deleteSuccess": "🗑️ Usuario eliminado correctamente",
+      "deleteError": "❌ Error al eliminar el usuario"
+    },
+    "vacations": {
       "requestSent": "✅ Solicitud enviada correctamente.",
       "requestError": "❌ Error al enviar la solicitud.",
       "deleted": "🗑️ Solicitud eliminada",
       "deleteError": "❌ Error al eliminar la solicitud",
       "editPending": "Funcionalidad de editar la solicitud {{id}} pendiente de implementar.",
-
       "worker": {
         "loadError": "❌ Error al cargar tus solicitudes.",
         "error": "❌ Ocurrió un error.",
@@ -1042,7 +1052,6 @@
         "respondSuccess": "✅ Respuesta enviada",
         "formSuccess": "✅ Solicitud enviada"
       },
-
       "admin": {
         "loadError": "❌ Error al cargar solicitudes.",
         "error": "❌ Ocurrió un error.",
@@ -1057,73 +1066,67 @@
         "deleted": "🗑️ Solicitud eliminada"
       }
     },
-"messages": {
-  "fillRequired": "✏️ Por favor, completa asunto y mensaje",
-  "fillRequiredRecipients": "✏️ Completa asunto y mensaje, y selecciona al menos un receptor",
-  "sent": "✅ Mensaje enviado correctamente",
-  "error": "❌ Error al enviar el mensaje",
-  "deleteError": "❌ Error al borrar el mensaje"
-},
-
-  "workday": {
-  "needInitialData": "🚐 Selecciona una ambulancia y KM iniciales.",
-  "initialDataConfirmed": "✅ Datos confirmados. Ya puedes registrar viajes.",
-  "loadTripsError": "❌ Error al cargar los viajes del día.",
-  "loadAssignmentError": "❌ Error al cargar el día asignado.",
-  "mandatoryFields": "✏️ Por favor, rellena todos los campos obligatorios.",
-  "noAssignmentToday": "❌ No tienes asignación de dienst para hoy.",
-  "tooEarly": "⏳ Solo puedes crear viajes 30 minutos antes del inicio del Dienst.",
-  "tripSaved": "✅ Viaje guardado.",
-  "tripSaveError": "❌ Error al guardar el viaje.",
-  "anschlussSaved": "✅ Paciente 1 (Anschluss) guardado.",
-  "anschlussSaveError": "❌ Error al guardar el paciente 1.",
-  "enterAmbulanceAndKm": "🚐 Introduce nº de ambulancia y KM inicial.",
-  "enterFinalKmInModal": "📏 Introduce los kilómetros finales en el modal.",
-  "finalKmLessThanInitial": "❌ Los KM finales no pueden ser menores que los KM iniciales.",
-  "dayClosedSuccess": "✅ Día cerrado y datos enviados al admin.",
-  "dayCloseError": "❌ No se pudo cerrar el día.",
-  "partialSent": "✅ Cierre parcial enviado al admin.",
-  "partialSentWithIssue": "✅ Cierre parcial enviado al admin. Incluye reporte de avería.",
-  "partialSendError": "❌ No se pudo enviar el cierre parcial.",
-  "partial": {
-    "reportRequired": "✏️ Escribe un motivo del cierre parcial.",
-    "finalKmRequired": "📏 Introduce los kilómetros finales.",
-    "issueRegistered": "🛠️ Avería registrada. Ahora puedes enviar el cierre parcial."
-  },
-  "final": {
-    "finalKmRequired": "📏 Introduce los kilómetros finales."
-  }
-},
-
-  "appointments": {
-  "loadError": "❌ Error al cargar citas.",
-  "reloadPendingError": "❌ Error al recargar pendientes.",
-  "reloadConfirmedError": "❌ Error al recargar confirmadas.",
-  "cancelSuccess": "✅ Cita cancelada.",
-  "cancelError": "❌ Error al cancelar la cita.",
-  "invalidDateTime": "🚫 Fecha u hora inválida.",
-  "pastDateError": "🚫 No se puede programar en el pasado.",
-  "rescheduleSuccess": "✅ Cita reprogramada.",
-  "rescheduleError": "❌ Error al reprogramar la cita.",
-  "proposeSuccess": "✅ Opciones propuestas.",
-  "proposeError": "❌ Error al proponer opciones.",
-  "chooseRequired": "⚠️ Selecciona una opción.",
-  "confirmSuccess": "✅ Cita confirmada.",
-  "confirmError": "❌ Error al confirmar la cita.",
-  "requestFill": "✏️ Completa motivo y detalles.",
-  "requestSuccess": "✅ Solicitud enviada.",
-  "requestError": "❌ Error al crear la solicitud."
-},
-"users": {
-  "loadError": "❌ Error al cargar usuarios.",
-  "updateSuccess": "✅ Usuario actualizado correctamente.",
-  "updateError": "❌ Error al actualizar usuario.",
-  "deleteSuccess": "🗑️ Usuario eliminado correctamente.",
-  "deleteError": "❌ Error al eliminar usuario."
-}
-
-
-
-
+    "messages": {
+      "fillRequired": "✏️ Por favor, completa asunto y mensaje",
+      "fillRequiredRecipients": "✏️ Completa asunto y mensaje, y selecciona al menos un receptor",
+      "sent": "✅ Mensaje enviado correctamente",
+      "error": "❌ Error al enviar el mensaje",
+      "deleteError": "❌ Error al borrar el mensaje"
+    },
+    "workday": {
+      "needInitialData": "🚐 Selecciona una ambulancia y KM iniciales.",
+      "initialDataConfirmed": "✅ Datos confirmados. Ya puedes registrar viajes.",
+      "loadTripsError": "❌ Error al cargar los viajes del día.",
+      "loadAssignmentError": "❌ Error al cargar el día asignado.",
+      "mandatoryFields": "✏️ Por favor, rellena todos los campos obligatorios.",
+      "noAssignmentToday": "❌ No tienes asignación de dienst para hoy.",
+      "tooEarly": "⏳ Solo puedes crear viajes 30 minutos antes del inicio del Dienst.",
+      "tripSaved": "✅ Viaje guardado.",
+      "tripSaveError": "❌ Error al guardar el viaje.",
+      "anschlussSaved": "✅ Paciente 1 (Anschluss) guardado.",
+      "anschlussSaveError": "❌ Error al guardar el paciente 1.",
+      "enterAmbulanceAndKm": "🚐 Introduce nº de ambulancia y KM inicial.",
+      "enterFinalKmInModal": "📏 Introduce los kilómetros finales en el modal.",
+      "finalKmLessThanInitial": "❌ Los KM finales no pueden ser menores que los KM iniciales.",
+      "dayClosedSuccess": "✅ Día cerrado y datos enviados al admin.",
+      "dayCloseError": "❌ No se pudo cerrar el día.",
+      "partialSent": "✅ Cierre parcial enviado al admin.",
+      "partialSentWithIssue": "✅ Cierre parcial enviado al admin. Incluye reporte de avería.",
+      "partialSendError": "❌ No se pudo enviar el cierre parcial.",
+      "partial": {
+        "reportRequired": "✏️ Escribe un motivo del cierre parcial.",
+        "finalKmRequired": "📏 Introduce los kilómetros finales.",
+        "issueRegistered": "🛠️ Avería registrada. Ahora puedes enviar el cierre parcial."
+      },
+      "final": {
+        "finalKmRequired": "📏 Introduce los kilómetros finales."
+      }
+    },
+    "appointments": {
+      "loadError": "❌ Error al cargar citas.",
+      "reloadPendingError": "❌ Error al recargar pendientes.",
+      "reloadConfirmedError": "❌ Error al recargar confirmadas.",
+      "cancelSuccess": "✅ Cita cancelada.",
+      "cancelError": "❌ Error al cancelar la cita.",
+      "invalidDateTime": "🚫 Fecha u hora inválida.",
+      "pastDateError": "🚫 No se puede programar en el pasado.",
+      "rescheduleSuccess": "✅ Cita reprogramada.",
+      "rescheduleError": "❌ Error al reprogramar la cita.",
+      "proposeSuccess": "✅ Opciones propuestas.",
+      "proposeError": "❌ Error al proponer opciones.",
+      "chooseRequired": "⚠️ Selecciona una opción.",
+      "confirmSuccess": "✅ Cita confirmada.",
+      "confirmError": "❌ Error al confirmar la cita.",
+      "requestFill": "✏️ Completa motivo y detalles.",
+      "requestSuccess": "✅ Solicitud enviada.",
+      "requestError": "❌ Error al crear la solicitud."
+    },
+    "users": {
+      "loadError": "❌ Error al cargar usuarios.",
+      "updateSuccess": "✅ Usuario actualizado correctamente.",
+      "updateError": "❌ Error al actualizar usuario.",
+      "deleteSuccess": "🗑️ Usuario eliminado correctamente.",
+      "deleteError": "❌ Error al eliminar usuario."
+    }
   }
 }

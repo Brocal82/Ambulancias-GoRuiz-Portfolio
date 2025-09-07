@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { toastT } from '../utils/toast';
 import { useAuth } from '../hooks/useAuth';
-import { getUserById, updateUserProfile, deleteUserDocument } from '../api/users';
+import { getUserById, updateUserProfile, deleteUserDocument, deleteUser } from '../api/users';
 import { getPscheinStatus } from '../utils/pscheinUtils';
 import type { User, AmbulanceRole } from '../types/user';
 import { useTranslation } from 'react-i18next';
@@ -96,14 +96,14 @@ const Profile = ({ userId }: ProfileProps) => {
         login(token, idToUpdate, role || 'worker', updatedUser);
       }
 
-      toast.success(t('pages.profile.messages.saved'));
+      toastT.success(['toasts.profile.saveSuccess']);
 
       setTimeout(() => {
         navigate(role === 'admin' ? '/admin' : '/worker');
       }, 100);
     } catch (error) {
       console.error(error);
-      toast.error(t('pages.profile.messages.saveError'));
+      toastT.error(['toasts.profile.saveError']);
     }
   };
 
@@ -112,14 +112,14 @@ const Profile = ({ userId }: ProfileProps) => {
 
     try {
       const result = await deleteUserDocument(filePath, token);
-      toast.success(t('pages.profile.messages.docDeleted'));
+      toastT.success(['toasts.profile.docDeleted']);
       setFormData((prev) => ({
         ...prev,
         documents: result.documents,
       }));
     } catch (error) {
       console.error(error);
-      toast.error(t('pages.profile.messages.docDeleteError'));
+      toastT.error(['toasts.profile.docDeleteError']);
     }
   };
 
@@ -132,7 +132,7 @@ const Profile = ({ userId }: ProfileProps) => {
       !formData.lastName ||
       !formData.email
     ) {
-      toast.error(t('pages.profile.messages.missingRequired'));
+      toastT.error(['toasts.profile.missingRequired']);
       return;
     }
 
@@ -156,14 +156,45 @@ const Profile = ({ userId }: ProfileProps) => {
       setFormData(updatedUser);
       login(token, userIdFromAuthContext, role || 'worker', updatedUser);
 
-      toast.success(t('pages.profile.messages.removeImageSuccess'));
+      toastT.success(['toasts.profile.imageDeleted']);
     } catch (error) {
       console.error('❌ Error al eliminar imagen de perfil:', error);
-      toast.error(t('pages.profile.messages.removeImageError'));
+      toastT.error(['toasts.profile.imageDeleteError']);
     }
   };
 
   if (loading) return <p className="p-4">{t('pages.profile.loading')}</p>;
+  // 🗑️ Eliminar usuario (solo admin; evita auto-eliminarse)
+
+  const handleDeleteUser = async () => {
+    const targetId = userId || userIdFromAuthContext;
+    if (!token || !role || !targetId) return;
+
+    if (targetId === userIdFromAuthContext) {
+      toastT.error(['toasts.profile.cannotDeleteSelf']);
+      return;
+    }
+
+    const fullname =
+      `${formData.lastName ?? ''} ${formData.name ?? ''}`.trim() ||
+      t('pages.profile.labels.user');
+
+    const confirmed = window.confirm(
+      t('pages.profile.messages.confirmDelete', { name: fullname })
+    );
+    if (!confirmed) return;
+
+    try {
+      await deleteUser(targetId, token);
+      toastT.success(['toasts.profile.deleteSuccess']);
+      navigate('/admin'); // ajusta si tu listado está en otra ruta
+    } catch (error) {
+      console.error(error);
+      toastT.error(['toasts.profile.deleteError']);
+    }
+  };
+
+
 
   const pscheinStatus = getPscheinStatus(formData.pscheinExpiry);
   const roles: AmbulanceRole[] = ['medic', 'driver', 'both'];
@@ -285,17 +316,16 @@ const Profile = ({ userId }: ProfileProps) => {
                 key={currentRole}
                 type="button"
                 onClick={() => setFormData({ ...formData, ambulanceRole: currentRole })}
-                className={`flex-1 px-4 py-2 border rounded ${
-                  formData.ambulanceRole === currentRole
-                    ? 'bg-green-500 text-white border-green-600'
-                    : 'bg-white text-gray-800 border-gray-300'
-                }`}
+                className={`flex-1 px-4 py-2 border rounded ${formData.ambulanceRole === currentRole
+                  ? 'bg-green-500 text-white border-green-600'
+                  : 'bg-white text-gray-800 border-gray-300'
+                  }`}
               >
                 {currentRole === 'driver'
                   ? t('pages.profile.roles.driver')
                   : currentRole === 'medic'
-                  ? t('pages.profile.roles.medic')
-                  : t('pages.profile.roles.both')}
+                    ? t('pages.profile.roles.medic')
+                    : t('pages.profile.roles.both')}
               </button>
             ))}
           </div>
@@ -313,13 +343,12 @@ const Profile = ({ userId }: ProfileProps) => {
               name="pscheinExpiry"
               value={formData.pscheinExpiry || ''}
               onChange={handleChange}
-              className={`w-full border rounded p-2 ${
-                pscheinStatus === 'expired'
-                  ? 'border-red-500'
-                  : pscheinStatus === 'warning'
+              className={`w-full border rounded p-2 ${pscheinStatus === 'expired'
+                ? 'border-red-500'
+                : pscheinStatus === 'warning'
                   ? 'border-orange-400'
                   : 'border-gray-300'
-              }`}
+                }`}
             />
             {pscheinStatus === 'expired' && (
               <p className="text-red-600 text-sm mt-1">{t('pages.profile.pschein.expired')}</p>
@@ -382,41 +411,41 @@ const Profile = ({ userId }: ProfileProps) => {
 
         {/* Documentos PDF */}
         <div className="space-y-1 mt-4">
-  <label htmlFor="documentsUpload" className="block text-sm font-medium text-gray-700">
-    {t('pages.profile.labels.documents')}
-  </label>
+          <label htmlFor="documentsUpload" className="block text-sm font-medium text-gray-700">
+            {t('pages.profile.labels.documents')}
+          </label>
 
-  {/* input oculto */}
-  <input
-    type="file"
-    id="documentsUpload"
-    accept="application/pdf"
-    multiple
-    onChange={(e) => setDocumentsFiles(e.target.files)}
-    className="sr-only"
-  />
+          {/* input oculto */}
+          <input
+            type="file"
+            id="documentsUpload"
+            accept="application/pdf"
+            multiple
+            onChange={(e) => setDocumentsFiles(e.target.files)}
+            className="sr-only"
+          />
 
-  {/* botón personalizado */}
-  <label
-    htmlFor="documentsUpload"
-    className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700"
-  >
-    ⬆️ {t('pages.profile.documents.upload')}
-  </label>
+          {/* botón personalizado */}
+          <label
+            htmlFor="documentsUpload"
+            className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700"
+          >
+            ⬆️ {t('pages.profile.documents.upload')}
+          </label>
 
-  {/* muestra selección actual */}
-  {documentsFiles && documentsFiles.length > 0 ? (
-    <ul className="mt-2 list-disc list-inside text-sm text-gray-700">
-      {Array.from(documentsFiles).map((f) => (
-        <li key={f.name}>{f.name}</li>
-      ))}
-    </ul>
-  ) : (
-    <p className="mt-2 text-sm text-gray-500">
-      {t('pages.profile.documents.noneSelected')}
-    </p>
-  )}
-</div>
+          {/* muestra selección actual */}
+          {documentsFiles && documentsFiles.length > 0 ? (
+            <ul className="mt-2 list-disc list-inside text-sm text-gray-700">
+              {Array.from(documentsFiles).map((f) => (
+                <li key={f.name}>{f.name}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-sm text-gray-500">
+              {t('pages.profile.documents.noneSelected')}
+            </p>
+          )}
+        </div>
 
 
 
@@ -459,6 +488,27 @@ const Profile = ({ userId }: ProfileProps) => {
         >
           {t('pages.profile.actions.save')}
         </button>
+
+        {/* --- Danger Zone: Eliminar usuario --- */}
+        {role === 'admin' && userId && userId !== userIdFromAuthContext && (
+          <div className="mt-6 border-t pt-4">
+            <h3 className="text-sm font-semibold text-red-600 mb-2">
+              {t('pages.profile.danger.title')}
+
+            </h3>
+            <p className="text-sm text-gray-600 mb-3">
+              {t('pages.profile.danger.description')}
+            </p>
+            <button
+              type="button"
+              onClick={handleDeleteUser}
+              className="w-full bg-red-600 text-white p-2 rounded hover:bg-red-700"
+            >
+              {t('pages.profile.actions.deleteUser')}
+            </button>
+          </div>
+        )}
+
       </form>
     </div>
   );

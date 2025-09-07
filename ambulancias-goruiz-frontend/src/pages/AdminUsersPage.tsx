@@ -31,7 +31,7 @@ const AdminUsersPage = () => {
       setUsers(sortedUsers);
     } catch (error) {
       console.error(error);
-       toastT.error(["toasts.users.loadError"]);
+      toastT.error(["toasts.users.loadError"]);
     }
   }, [token]);
 
@@ -39,9 +39,9 @@ const AdminUsersPage = () => {
     fetchUsers();
   }, [fetchUsers]);
 
-const handleEdit = (user: User) => {
-  navigate(`/admin/user/${user._id}`);
-};
+  const handleEdit = (user: User) => {
+    navigate(`/admin/user/${user._id}`);
+  };
 
 
   const handleCloseModal = () => {
@@ -72,7 +72,7 @@ const handleEdit = (user: User) => {
       handleCloseModal();
     } catch (error) {
       console.error(error);
-       toastT.error(["toasts.users.deleteError"]);
+      toastT.error(["toasts.users.deleteError"]);
     }
   };
 
@@ -153,8 +153,8 @@ const handleEdit = (user: User) => {
               status === 'expired'
                 ? 'border-l-4 border-red-500'
                 : status === 'warning'
-                ? 'border-l-4 border-orange-400'
-                : '';
+                  ? 'border-l-4 border-orange-400'
+                  : '';
 
             return (
               <tr
