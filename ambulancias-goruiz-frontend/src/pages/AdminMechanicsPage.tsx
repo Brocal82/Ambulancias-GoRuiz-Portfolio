@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getAllIssueReports } from "../api/workdaySummary";
 import type { WorkdayIssue } from "../types/workdayIssue";
 import { useAuth } from "../hooks/useAuth";
-import { toast } from "react-toastify";
+import { toastT } from "../utils/toast";
 import { getAllAmbulances } from "../api/ambulances";
 import type { Ambulance } from "../types/ambulance";
 import { formatYYYYMMDDToDDMMYYYY } from "../utils/timeUtils";
@@ -35,7 +35,7 @@ const AdminMechanicsPage = () => {
       } catch (err) {
         console.error("❌ Error al cargar reportes o ambulancias:", err);
         // Dejamos toasts para más tarde (i18n de toasts al final)
-        toast.error("❌ Error al cargar reportes o ambulancias.");
+        toastT.error(["toasts.mechanics.loadError"]);
       } finally {
         setLoading(false);
       }

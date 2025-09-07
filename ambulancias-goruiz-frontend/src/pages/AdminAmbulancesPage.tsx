@@ -9,6 +9,7 @@ import type { Ambulance } from '../types/ambulance';
 import AmbulanceFormModal from '../components/ambulances/AmbulanceFormModal';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
+import { toastT } from "../utils/toast";
 
 const AdminAmbulancesPage: React.FC = () => {
   const { token } = useAuth();
@@ -52,7 +53,7 @@ const AdminAmbulancesPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!token) {
-      alert(t('pages.ambulances.adminPage.alerts.tokenMissing'));
+      toastT.error(['pages.ambulances.adminPage.alerts.tokenMissing']);
       return;
     }
 
@@ -62,13 +63,13 @@ const AdminAmbulancesPage: React.FC = () => {
       await deleteAmbulance(id, token);
       fetchAmbulances();
     } catch {
-      alert(t('pages.ambulances.adminPage.alerts.deleteError'));
+      toastT.error(['pages.ambulances.adminPage.alerts.deleteError']);
     }
   };
 
   const handleSave = async (ambulanceData: Omit<Ambulance, '_id'>, id?: string) => {
     if (!token) {
-      alert(t('pages.ambulances.adminPage.alerts.tokenMissing'));
+       toastT.error(['pages.ambulances.adminPage.alerts.tokenMissing']);
       return;
     }
 
@@ -81,7 +82,7 @@ const AdminAmbulancesPage: React.FC = () => {
       setModalOpen(false);
       fetchAmbulances();
     } catch {
-      alert(t('pages.ambulances.adminPage.alerts.saveError'));
+      toastT.error(['pages.ambulances.adminPage.alerts.saveError']);
     }
   };
 

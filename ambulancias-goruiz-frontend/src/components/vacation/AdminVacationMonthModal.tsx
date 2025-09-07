@@ -4,6 +4,7 @@ import { filterRequestsByMonth } from '../../utils/vacationMonthUtils';
 import { updateVacationRequest, deleteVacationRequest } from '../../api/vacation';
 import AlternativeDateModal from './AlternativeDateModal';
 import { useAuth } from '../../hooks/useAuth';
+import { toastT } from "../../utils/toast";
 import { useTranslation } from 'react-i18next';
 import { monthLabel as fmtMonth } from '../../utils/intl';
 
@@ -121,7 +122,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       await updateVacationRequest(token, id, { status: 'accepted' });
       onActionDone?.();
     } catch {
-      alert(t('pages.vacations.workerPage.error'));
+      toastT.error(["toasts.vacations.worker.error"]);
     }
   };
 
@@ -145,7 +146,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       setCurrentRequestId(null);
       onActionDone?.();
     } catch {
-      alert(t('pages.vacations.workerPage.error'));
+      toastT.error(["toasts.vacations.worker.loadError"]);
     }
   };
 
@@ -163,7 +164,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       setCancelMessage('');
       onActionDone?.();
     } catch {
-      alert(t('pages.vacations.workerPage.error'));
+      toastT.error(["toasts.vacations.worker.error"]);
     } finally {
       setIsSendingCancel(false);
     }
@@ -176,7 +177,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       await deleteVacationRequest(token, id);
       onActionDone?.();
     } catch {
-      alert(t('pages.vacations.workerPage.error'));
+      toastT.error(["toasts.vacations.worker.error"]);
     }
   };
 

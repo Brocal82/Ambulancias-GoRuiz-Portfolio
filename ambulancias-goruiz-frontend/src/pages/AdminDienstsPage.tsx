@@ -5,6 +5,7 @@ import AssignmentModal from '../components/AssignmentModal';
 import { isPartialAssignment } from '../utils/assignmentUtils';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
+import { toastT } from "../utils/toast";
 
 const AdminPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
@@ -91,11 +92,11 @@ const AdminPage = () => {
 
                     try {
                       await generateDienstsForWeek(mondayISO, token);
-                      alert(t('pages.diensts.adminPage.alerts.createOk'));
+                      toastT.success(['pages.diensts.adminPage.alerts.createOk']);
                       fetchDiensts();
                     } catch (err) {
                       console.error("Error al crear plantillas:", err);
-                      alert(t('pages.diensts.adminPage.alerts.createErr'));
+                      toastT.error(['pages.diensts.adminPage.alerts.createErr']);
                     }
                   }}
                 >
@@ -108,29 +109,29 @@ const AdminPage = () => {
                   return !isNaN(parsedDate.getTime()) &&
                     parsedDate.toISOString().split("T")[0] === weekStart.toISOString().split("T")[0];
                 }) && (
-                  <button
-                    className="text-sm bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
-                    onClick={async () => {
-                      const confirmDelete = confirm(
-                        t('pages.diensts.adminPage.confirmDelete', { date: fmtDate(weekStart) })
-                      );
-                      if (!confirmDelete || !token) return;
+                    <button
+                      className="text-sm bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+                      onClick={async () => {
+                        const confirmDelete = confirm(
+                          t('pages.diensts.adminPage.confirmDelete', { date: fmtDate(weekStart) })
+                        );
+                        if (!confirmDelete || !token) return;
 
-                      const mondayISO = weekStart.toISOString().split("T")[0];
+                        const mondayISO = weekStart.toISOString().split("T")[0];
 
-                      try {
-                        await deleteDienstsForWeek(mondayISO, token);
-                        alert(t('pages.diensts.adminPage.alerts.deleteOk'));
-                        fetchDiensts();
-                      } catch (err) {
-                        console.error("Error al eliminar diensts:", err);
-                        alert(t('pages.diensts.adminPage.alerts.deleteErr'));
-                      }
-                    }}
-                  >
-                    {t('pages.diensts.adminPage.actions.delete')}
-                  </button>
-                )}
+                        try {
+                          await deleteDienstsForWeek(mondayISO, token);
+                          toastT.success(['pages.diensts.adminPage.alerts.deleteOk']);
+                          fetchDiensts();
+                        } catch (err) {
+                          console.error("Error al eliminar diensts:", err);
+                          toastT.error(['pages.diensts.adminPage.alerts.deleteErr']);
+                        }
+                      }}
+                    >
+                      {t('pages.diensts.adminPage.actions.delete')}
+                    </button>
+                  )}
               </div>
             </div>
 
