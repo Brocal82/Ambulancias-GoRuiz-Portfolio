@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { AuthContext } from './AuthContext';
 import type { User } from '../types/user';
 import { getTokenExpiration } from '../utils/jwtUtils';
-import { toast } from 'react-toastify';
+import { toastT } from '../utils/toast';
 
 interface Props {
   children: ReactNode;
@@ -70,10 +70,7 @@ export const AuthProvider = ({ children }: Props) => {
 
     if (timeLeft > warningThreshold) {
       const timer = setTimeout(() => {
-        toast.warn('⚠️ Tu sesión está a punto de expirar.', {
-          position: 'top-right',
-          autoClose: 10000,
-        });
+         toastT.warn(['toasts.auth.sessionExpiring'], { position: 'top-right', autoClose: 10000 });
       }, timeLeft - warningThreshold);
 
       return () => clearTimeout(timer);

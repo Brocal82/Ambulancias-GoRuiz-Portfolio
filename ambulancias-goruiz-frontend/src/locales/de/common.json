@@ -1127,6 +1127,9 @@
       "updateError": "❌ Fehler beim Aktualisieren des Benutzers.",
       "deleteSuccess": "🗑️ Benutzer erfolgreich gelöscht.",
       "deleteError": "❌ Fehler beim Löschen des Benutzers."
+    },
+    "auth": {
+      "sessionExpiring": "⚠️ Deine Sitzung läuft in Kürze ab."
     }
   }
 }

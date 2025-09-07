@@ -1127,6 +1127,9 @@
       "updateError": "❌ Failed to update user.",
       "deleteSuccess": "🗑️ User deleted successfully.",
       "deleteError": "❌ Failed to delete user."
+    },
+    "auth": {
+      "sessionExpiring": "⚠️ Your session is about to expire."
     }
   }
 }
