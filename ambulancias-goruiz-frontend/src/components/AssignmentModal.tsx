@@ -163,17 +163,22 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full">
-        <h3 className="text-lg font-bold mb-4">
-          {t("pages.assignmentModal.title", { date: formatYYYYMMDDToDDMMYYYY(date) })}
-        </h3>
+return (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    {/* Backdrop */}
+    <div className="fixed inset-0 bg-black/50" onClick={onClose} />
 
-        <div className="space-y-2">
-          {isAdmin ? (
-            <>
-              <label htmlFor="startTime" className="block text-sm font-medium">
+    {/* Card */}
+    <div className="relative z-10 w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200">
+      <h3 className="text-lg font-semibold text-slate-900 mb-4">
+        {t("pages.assignmentModal.title", { date: formatYYYYMMDDToDDMMYYYY(date) })}
+      </h3>
+
+      <div className="space-y-3">
+        {isAdmin ? (
+          <>
+            <div className="space-y-1">
+              <label htmlFor="startTime" className="block text-sm font-medium text-slate-700">
                 {t("pages.assignmentModal.labels.startTime")}
               </label>
               <input
@@ -181,10 +186,12 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full border p-1 rounded"
+                className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
               />
+            </div>
 
-              <label htmlFor="endTime" className="block text-sm font-medium">
+            <div className="space-y-1">
+              <label htmlFor="endTime" className="block text-sm font-medium text-slate-700">
                 {t("pages.assignmentModal.labels.endTime")}
               </label>
               <input
@@ -192,17 +199,19 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="w-full border p-1 rounded"
+                className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
               />
+            </div>
 
-              <label htmlFor="ambulanceId" className="block text-sm font-medium">
+            <div className="space-y-1">
+              <label htmlFor="ambulanceId" className="block text-sm font-medium text-slate-700">
                 {t("pages.assignmentModal.labels.ambulance")}
               </label>
               <select
                 id="ambulanceId"
                 value={ambulanceId}
                 onChange={(e) => setAmbulanceId(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 bg-white"
+                className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
               >
                 <option value="">{t("pages.assignmentModal.placeholders.selectAmbulance")}</option>
                 {ambulances.map((amb) => (
@@ -211,8 +220,10 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
 
-              <label htmlFor="driverSelect" className="block text-sm font-medium">
+            <div className="space-y-1">
+              <label htmlFor="driverSelect" className="block text-sm font-medium text-slate-700">
                 {t("pages.assignmentModal.labels.driver")}
               </label>
               <select
@@ -224,7 +235,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   setSelectedDriverId(id);
                   if (id === selectedMedicId) setSelectedMedicId("");
                 }}
-                className="w-full border p-1 rounded"
+                className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
               >
                 <option value="">{t("pages.assignmentModal.placeholders.selectDriver")}</option>
                 {availableDrivers.map((user) => {
@@ -232,14 +243,15 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   const icon = status === "warning" ? " ⚠️" : status === "expired" ? " ❌" : "";
                   return (
                     <option key={user._id} value={user._id} disabled={status === "expired"}>
-                      {user.lastName}, {user.name}
-                      {icon}
+                      {user.lastName}, {user.name}{icon}
                     </option>
                   );
                 })}
               </select>
+            </div>
 
-              <label htmlFor="medicSelect" className="block text-sm font-medium">
+            <div className="space-y-1">
+              <label htmlFor="medicSelect" className="block text-sm font-medium text-slate-700">
                 {t("pages.assignmentModal.labels.medic")}
               </label>
               <select
@@ -251,7 +263,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   setSelectedMedicId(id);
                   if (id === selectedDriverId) setSelectedDriverId("");
                 }}
-                className="w-full border p-1 rounded"
+                className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
               >
                 <option value="">{t("pages.assignmentModal.placeholders.selectMedic")}</option>
                 {availableMedics.map((user) => (
@@ -260,65 +272,66 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
 
+            <button
+              onClick={handleSave}
+              disabled={isLoading}
+              className="mt-3 w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:opacity-50"
+            >
+              {isLoading ? t("pages.assignmentModal.buttons.saving") : t("pages.assignmentModal.buttons.save")}
+            </button>
+
+            {assignment && (
               <button
-                onClick={handleSave}
+                onClick={handleDelete}
                 disabled={isLoading}
-                className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
+                className="w-full rounded-xl bg-rose-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100 disabled:opacity-50"
               >
-                {isLoading ? t("pages.assignmentModal.buttons.saving") : t("pages.assignmentModal.buttons.save")}
+                {isLoading ? t("pages.assignmentModal.buttons.deleting") : t("pages.assignmentModal.buttons.deleteDay")}
               </button>
-
-              {assignment && (
-                <button
-                  onClick={handleDelete}
-                  disabled={isLoading}
-                  className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
-                >
-                  {isLoading ? t("pages.assignmentModal.buttons.deleting") : t("pages.assignmentModal.buttons.deleteDay")}
-                </button>
-              )}
-            </>
-          ) : assignment ? (
-            <>
-              <p>🕒 {startTime} - {endTime}</p>
-              <p>
-                {t("pages.assignmentModal.readOnly.ambulance")}{" "}
-                {typeof assignment?.ambulanceId === "object"
-                  ? assignment.ambulanceId?.ambulanceNumber ?? t("pages.assignmentModal.info.dash")
-                  : assignment?.ambulanceNumber ?? t("pages.assignmentModal.info.dash")}
-              </p>
-
-              <p>
-                {t("pages.assignmentModal.readOnly.driver")}{" "}
-                {typeof assignment.driver === "object"
-                  ? `${assignment.driver.lastName}, ${assignment.driver.name}`
-                  : "(ID)"}
-              </p>
-              <p>
-                {t("pages.assignmentModal.readOnly.medic")}{" "}
-                {typeof assignment.medic === "object"
-                  ? `${assignment.medic.lastName}, ${assignment.medic.name}`
-                  : "(ID)"}
-              </p>
-            </>
-          ) : (
-            <p className="text-green-700 font-semibold text-center text-xl">
-              {t("pages.assignmentModal.info.dayOff")}
+            )}
+          </>
+        ) : assignment ? (
+          <div className="rounded-xl border border-slate-200 p-3 bg-slate-50">
+            <p className="text-sm text-slate-700">🕒 {startTime} - {endTime}</p>
+            <p className="text-sm text-slate-700">
+              {t("pages.assignmentModal.readOnly.ambulance")}{' '}
+              {typeof assignment?.ambulanceId === "object"
+                ? assignment.ambulanceId?.ambulanceNumber ?? t("pages.assignmentModal.info.dash")
+                : assignment?.ambulanceNumber ?? t("pages.assignmentModal.info.dash")}
             </p>
-          )}
-        </div>
-
-        <button
-          onClick={onClose}
-          disabled={isLoading}
-          className="mt-4 w-full bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded"
-        >
-          {t("pages.assignmentModal.buttons.close")}
-        </button>
+            <p className="text-sm text-slate-700">
+              {t("pages.assignmentModal.readOnly.driver")}{' '}
+              {typeof assignment.driver === "object"
+                ? `${assignment.driver.lastName}, ${assignment.driver.name}`
+                : "(ID)"}
+            </p>
+            <p className="text-sm text-slate-700">
+              {t("pages.assignmentModal.readOnly.medic")}{' '}
+              {typeof assignment.medic === "object"
+                ? `${assignment.medic.lastName}, ${assignment.medic.name}`
+                : "(ID)"}
+            </p>
+          </div>
+        ) : (
+          <p className="text-emerald-700 font-semibold text-center text-base">
+            {t("pages.assignmentModal.info.dayOff")}
+          </p>
+        )}
       </div>
+
+      <button
+        onClick={onClose}
+        disabled={isLoading}
+        className="mt-4 w-full rounded-xl bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-300 focus:outline-none focus:ring-4 focus:ring-slate-100 disabled:opacity-50"
+      >
+        {t("pages.assignmentModal.buttons.close")}
+      </button>
     </div>
-  );
+  </div>
+);
+
 };
 
 export default AssignmentModal;
