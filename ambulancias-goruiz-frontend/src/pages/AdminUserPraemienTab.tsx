@@ -37,29 +37,32 @@ const AdminUserPraemienTab = ({ userId }: Props) => {
 
   if (loading) return <p>{t('pages.praemien.page.loading')}</p>;
 
-  return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">
-        {t('pages.praemien.adminUserTab.currentTitle')}
-      </h2>
+return (
+  <div className="bg-white p-4 rounded-2xl shadow-sm ring-1 ring-gray-200">
+    <h2 className="text-lg font-bold text-gray-800 mb-4">
+      {t('pages.praemien.adminUserTab.currentTitle')}
+    </h2>
 
-      {averagePatients != null ? (
-        <p>
-          {t('pages.praemien.adminUserTab.levelPrefix')}{' '}
-          <strong>{levelLabel}</strong>{' '}
+    {averagePatients != null ? (
+      <p className="text-gray-700">
+        {t('pages.praemien.adminUserTab.levelPrefix')}{' '}
+        <span className="font-semibold text-blue-600">{levelLabel}</span>{' '}
+        <span className="text-sm text-gray-500">
           ({t('pages.praemien.adminUserTab.average', { avg: averagePatients.toFixed(2) })})
-        </p>
-      ) : (
-        <p>{t('pages.praemien.adminUserTab.noData')}</p>
-      )}
+        </span>
+      </p>
+    ) : (
+      <p className="text-gray-500">{t('pages.praemien.adminUserTab.noData')}</p>
+    )}
 
-      <h2 className="text-xl font-semibold mt-8 mb-4">
+    <div className="mt-8 border-t pt-6">
+      <h2 className="text-lg font-bold text-gray-800 mb-4">
         {t('pages.praemien.history.title')}
       </h2>
-
       <WorkerPraemienHistory userId={userId} />
     </div>
-  );
+  </div>
+);
 };
 
 export default AdminUserPraemienTab;

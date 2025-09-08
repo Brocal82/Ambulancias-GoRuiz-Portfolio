@@ -1,4 +1,4 @@
-//src/pages/WorkerPraemienPage.tsx
+// src/pages/WorkerPraemienPage.tsx
 import { useEffect, useState } from 'react';
 import { getMonthlyPraemienSummary } from '../api/praemien';
 import type { MonthlyPraemienDay } from '../api/praemien';
@@ -88,101 +88,112 @@ const WorkerPraemienPage = () => {
   };
 
   if (loading) return <p className="p-4 text-center">{t('pages.praemien.page.loading')}</p>;
-  if (error) return <p className="p-4 text-center text-red-500">{error}</p>;
+  if (error) return <p className="p-4 text-center text-red-600">{error}</p>;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-extrabold mb-6 text-center text-blue-700">
-        {t('pages.praemien.page.title')}
-      </h1>
+    <div className="min-h-screen bg-slate-50">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 text-center mb-4">
+          {t('pages.praemien.page.title')}
+        </h1>
 
-      {/* Nivel global alcanzado */}
-      {media > 0 && (
-        <p className="text-center text-lg font-semibold mb-8">
-          {t('pages.praemien.page.globalLevel')}{' '}
-          <span className="text-blue-700">{premieLevel}</span>
-        </p>
-      )}
+        {/* Nivel global alcanzado */}
+        {media > 0 && (
+          <p className="text-center text-sm text-slate-700 mb-6">
+            {t('pages.praemien.page.globalLevel')}{' '}
+            <span className="font-semibold text-blue-600">{premieLevel}</span>
+          </p>
+        )}
 
-      {/* Barras de prämien */}
-      <div className="max-w-3xl mx-auto bg-white rounded-lg shadow p-6 mb-8">
-        {PRAMIEN_LEVELS.map((level) => {
-          const { percentage, averageDiff } = calculatePraemieStats(level);
-          const isPositive = averageDiff >= 0;
+        {/* Barras de prämien */}
+        <div className="mx-auto max-w-3xl rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6 mb-8">
+          {PRAMIEN_LEVELS.map((level) => {
+            const { percentage, averageDiff } = calculatePraemieStats(level);
+            const isPositive = averageDiff >= 0;
 
-          return (
-            <div key={level} className="mb-6">
-              <div className="flex justify-between items-center mb-1">
-                <span className="font-semibold text-lg">
-                  {t('pages.praemien.page.patientsPerDay', { level })}
-                </span>
-                <span
-                  className={`font-mono text-xl ${
-                    isPositive ? 'text-green-600' : 'text-red-600'
-                  }`}
-                >
-                  {isPositive ? '+' : ''}
-                  {averageDiff}
-                </span>
+            return (
+              <div key={level} className="mb-5 last:mb-0">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-slate-800">
+                    {t('pages.praemien.page.patientsPerDay', { level })}
+                  </span>
+                  <span
+                    className={`font-mono ${
+                      isPositive ? 'text-emerald-600' : 'text-red-600'
+                    }`}
+                  >
+                    {isPositive ? '+' : ''}
+                    {averageDiff}
+                  </span>
+                </div>
+
+                {/* Barra de progreso estilizada */}
+                <div className="w-full h-3 rounded-full bg-slate-200 ring-1 ring-slate-300 overflow-hidden">
+                  <div
+                    className={`h-3 rounded-full ${
+                      isPositive ? 'bg-emerald-500' : 'bg-red-500'
+                    } transition-[width]`}
+                    style={{ width: `${percentage}%` }}
+                  />
+                </div>
               </div>
+            );
+          })}
+        </div>
 
-              {/* Barra */}
-              <div className="w-full h-6 rounded bg-gray-300 overflow-hidden">
-                <div
-                  className={`h-6 rounded bg-gradient-to-r ${
-                    isPositive ? 'from-green-400 to-green-600' : 'from-red-400 to-red-600'
-                  }`}
-                  style={{ width: `${percentage}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+        {/* Historial diario */}
+        <div className="mx-auto max-w-3xl rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">
+            {t('pages.praemien.page.dailyHistoryTitle')}
+          </h2>
 
-      {/* Historial diario */}
-      <div className="max-w-3xl mx-auto bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">{t('pages.praemien.page.dailyHistoryTitle')}</h2>
-
-        <div className="overflow-y-auto max-h-96 border rounded">
-          <table className="w-full text-left table-auto border-collapse">
-            <thead className="bg-blue-100 sticky top-0">
-              <tr>
-                <th className="px-4 py-2 border-b border-blue-300">
-                  {t('pages.praemien.page.table.date')}
-                </th>
-                <th className="px-4 py-2 border-b border-blue-300">
-                  {t('pages.praemien.page.table.patients')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {summaries.map(({ date, totalCountedPatients }) => (
-                <tr key={date} className="hover:bg-blue-50 transition-colors cursor-default">
-                  <td className="px-4 py-2 border-b border-gray-200">
-                    {formatDate(date, { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                  </td>
-                  <td className="px-4 py-2 border-b border-gray-200 font-semibold">
-                    {totalCountedPatients}
-                  </td>
-                </tr>
-              ))}
-              {summaries.length === 0 && (
+          <div className="overflow-y-auto max-h-96 rounded-xl ring-1 ring-slate-200">
+            <table className="w-full text-left table-fixed">
+              <colgroup>
+                <col className="w-1/2" />
+                <col className="w-1/2" />
+              </colgroup>
+              <thead className="bg-slate-50">
                 <tr>
-                  <td colSpan={2} className="text-center py-6 text-gray-400">
-                    {t('pages.praemien.page.table.empty')}
-                  </td>
+                  <th className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-900">
+                    {t('pages.praemien.page.table.date')}
+                  </th>
+                  <th className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-900">
+                    {t('pages.praemien.page.table.patients')}
+                  </th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {summaries.map(({ date, totalCountedPatients }) => (
+                  <tr key={date} className="hover:bg-blue-50/50 transition-colors">
+                    <td className="px-4 py-2 text-sm text-slate-800">
+                      {formatDate(date, { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    </td>
+                    <td className="px-4 py-2 text-sm font-semibold text-slate-900">
+                      {totalCountedPatients}
+                    </td>
+                  </tr>
+                ))}
+
+                {summaries.length === 0 && (
+                  <tr>
+                    <td colSpan={2} className="text-center py-6 text-slate-400">
+                      {t('pages.praemien.page.table.empty')}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Historial mensual (componente existente) */}
+        <div className="mx-auto max-w-3xl mt-8">
+          <WorkerPraemienHistory />
         </div>
       </div>
-
-      <WorkerPraemienHistory />
     </div>
   );
 };
 
 export default WorkerPraemienPage;
-
