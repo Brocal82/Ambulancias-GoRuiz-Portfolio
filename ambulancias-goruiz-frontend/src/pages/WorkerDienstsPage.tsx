@@ -45,11 +45,14 @@ const WorkerDienstsPage = () => {
     fetchAssignedDays();
   }, [fetchAssignedDays]);
 
-  if (loading) return <p>{t("pages.diensts.workerPage.loading")}</p>;
+  if (loading) return <p className="text-sm text-slate-600 p-4">{t("pages.diensts.workerPage.loading")}</p>;
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">{t("pages.diensts.workerPage.title")}</h2>
+    <div className="min-h-[400px]">
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold tracking-tight text-slate-900">{t("pages.diensts.workerPage.title")}</h2>
+      </div>
+
       <>
         {(() => {
           const today = new Date();
@@ -60,7 +63,7 @@ const WorkerDienstsPage = () => {
 
           const weeks = [0, 1]; // Dos semanas
           return (
-            <div className="space-y-8">
+            <div className="space-y-6">
               {weeks.map((weekOffset) => {
                 const weekStart = new Date(firstMonday);
                 weekStart.setDate(firstMonday.getDate() + weekOffset * 7);
@@ -75,32 +78,36 @@ const WorkerDienstsPage = () => {
                 weekEnd.setDate(weekStart.getDate() + 6);
 
                 return (
-                  <div key={weekOffset}>
-                    <p className="text-lg font-semibold text-gray-700 mb-2">
+                  <div key={weekOffset} className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
+                    <p className="text-sm font-medium text-slate-700 mb-3">
                       {t("pages.diensts.workerPage.weekRange", {
                         from: fmtDate(weekStart),
                         to: fmtDate(weekEnd),
                       })}
                     </p>
-                    <div className="grid grid-cols-7 gap-2">
+
+                    {/* Grid de 7 días */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                       {weekDates.map((dateStr) => {
                         const assignment = assignedDays.find((a) => a.date === dateStr);
-                        const bgColor = assignment
+
+                        const cls = assignment
                           ? isPartialAssignment(assignment)
-                            ? "bg-yellow-100"
-                            : "bg-blue-100"
-                          : "bg-green-100";
+                            ? 'bg-amber-50 ring-amber-200'
+                            : 'bg-blue-50 ring-blue-200'
+                          : 'bg-emerald-50 ring-emerald-200';
 
                         return (
-                          <div
+                          <button
                             key={dateStr}
-                            className={`border rounded p-2 text-sm cursor-pointer hover:shadow ${bgColor}`}
+                            type="button"
+                            className={`text-left rounded-xl p-3 ring-1 ${cls} hover:shadow-sm hover:-translate-y-0.5 transition`}
                             onClick={() => {
                               if (
                                 !assignment?.startTime ||
                                 !assignment?.endTime ||
-                                !assignment.driver ||
-                                !assignment.medic
+                                !assignment?.driver ||
+                                !assignment?.medic
                               ) {
                                 return;
                               }
@@ -112,36 +119,19 @@ const WorkerDienstsPage = () => {
                               });
                             }}
                           >
-                            <p className="font-semibold">{fmtCellDate(dateStr)}</p>
+                            <p className="text-xs font-semibold text-slate-800 mb-1">{fmtCellDate(dateStr)}</p>
 
                             {assignment ? (
-                              <>
-                                <p className="text-xs">
-                                  🕒 {assignment.startTime} - {assignment.endTime}
-                                </p>
-                                <p className="text-xs">
-                                  🚑{" "}
-                                  {typeof assignment.ambulanceNumber === "string"
-                                    ? assignment.ambulanceNumber
-                                    : "—"}
-                                </p>
-                                <p className="text-xs">
-                                  👨‍✈️{" "}
-                                  {typeof assignment.driver === "object" && assignment.driver
-                                    ? `${assignment.driver.lastName}, ${assignment.driver.name}`
-                                    : ""}
-                                </p>
-                                <p className="text-xs">
-                                  🧑‍⚕️{" "}
-                                  {typeof assignment.medic === "object" && assignment.medic
-                                    ? `${assignment.medic.lastName}, ${assignment.medic.name}`
-                                    : ""}
-                                </p>
-                              </>
+                              <div className="space-y-0.5 text-xs text-slate-700">
+                                <p>🕒 {assignment.startTime} - {assignment.endTime}</p>
+                                <p>🚑 {typeof assignment.ambulanceNumber === 'string' ? assignment.ambulanceNumber : '—'}</p>
+                                <p>👨‍✈️ {typeof assignment.driver === 'object' && assignment.driver ? `${assignment.driver.lastName}, ${assignment.driver.name}` : ''}</p>
+                                <p>🧑‍⚕️ {typeof assignment.medic === 'object' && assignment.medic ? `${assignment.medic.lastName}, ${assignment.medic.name}` : ''}</p>
+                              </div>
                             ) : (
-                              <p className="text-xs text-green-800 mt-2">🌴 {t("pages.diensts.workerPage.freeDay")}</p>
+                              <p className="text-xs text-emerald-800 mt-1">🌴 {t("pages.diensts.workerPage.freeDay")}</p>
                             )}
-                          </div>
+                          </button>
                         );
                       })}
                     </div>

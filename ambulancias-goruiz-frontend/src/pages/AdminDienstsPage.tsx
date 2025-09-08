@@ -21,9 +21,7 @@ const AdminPage = () => {
   const { token } = useAuth();
   const { t, i18n } = useTranslation();
 
-  const fmtDate = (d: Date) =>
-    d.toLocaleDateString(i18n.language);
-
+  const fmtDate = (d: Date) => d.toLocaleDateString(i18n.language);
   const fmtCellDate = (isoDay: string) =>
     new Date(isoDay).toLocaleDateString(i18n.language, {
       weekday: 'short',
@@ -62,26 +60,29 @@ const AdminPage = () => {
   const weekStartDates = getWeekStartDates();
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">{t('pages.diensts.adminPage.title')}</h1>
+    <div className="min-h-[400px]">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{t('pages.diensts.adminPage.title')}</h1>
+      </div>
 
       {weekStartDates.map((weekStart, index) => {
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
 
         return (
-          <div key={index} className="mb-10">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-semibold">
+          <div key={index} className="mb-8 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
+            {/* Header de semana */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+              <h2 className="text-sm font-medium text-slate-700">
                 {t('pages.diensts.adminPage.weekRange', {
                   from: fmtDate(weekStart),
                   to: fmtDate(weekEnd)
                 })}
               </h2>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
-                  className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded"
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
                   onClick={async () => {
                     const confirmCreate = confirm(
                       t('pages.diensts.adminPage.confirmCreate', { date: fmtDate(weekStart) })
@@ -109,32 +110,33 @@ const AdminPage = () => {
                   return !isNaN(parsedDate.getTime()) &&
                     parsedDate.toISOString().split("T")[0] === weekStart.toISOString().split("T")[0];
                 }) && (
-                    <button
-                      className="text-sm bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
-                      onClick={async () => {
-                        const confirmDelete = confirm(
-                          t('pages.diensts.adminPage.confirmDelete', { date: fmtDate(weekStart) })
-                        );
-                        if (!confirmDelete || !token) return;
+                  <button
+                    className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100"
+                    onClick={async () => {
+                      const confirmDelete = confirm(
+                        t('pages.diensts.adminPage.confirmDelete', { date: fmtDate(weekStart) })
+                      );
+                      if (!confirmDelete || !token) return;
 
-                        const mondayISO = weekStart.toISOString().split("T")[0];
+                      const mondayISO = weekStart.toISOString().split("T")[0];
 
-                        try {
-                          await deleteDienstsForWeek(mondayISO, token);
-                          toastT.success(['pages.diensts.adminPage.alerts.deleteOk']);
-                          fetchDiensts();
-                        } catch (err) {
-                          console.error("Error al eliminar diensts:", err);
-                          toastT.error(['pages.diensts.adminPage.alerts.deleteErr']);
-                        }
-                      }}
-                    >
-                      {t('pages.diensts.adminPage.actions.delete')}
-                    </button>
-                  )}
+                      try {
+                        await deleteDienstsForWeek(mondayISO, token);
+                        toastT.success(['pages.diensts.adminPage.alerts.deleteOk']);
+                        fetchDiensts();
+                      } catch (err) {
+                        console.error("Error al eliminar diensts:", err);
+                        toastT.error(['pages.diensts.adminPage.alerts.deleteErr']);
+                      }
+                    }}
+                  >
+                    {t('pages.diensts.adminPage.actions.delete')}
+                  </button>
+                )}
               </div>
             </div>
 
+            {/* Listado de diensts de esa semana */}
             {diensts
               .filter((dienst) => {
                 if (!dienst.weekStartDate) return false;
@@ -151,22 +153,25 @@ const AdminPage = () => {
 
                 return (
                   <div key={`${weekStart.toISOString()}-${dienst.dienstNumber}`} className="mb-6">
-                    <p className="font-semibold text-md mb-1">
+                    <p className="font-medium text-slate-800 mb-2">
                       {t('pages.diensts.adminPage.dienstLabel', { num: dienst.dienstNumber })}
                     </p>
-                    <div className="grid grid-cols-7 gap-2">
+
+                    {/* Grid de 7 días */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                       {weekDates.map((day) => {
                         const assignment = dienst.assignments.find((a) => a.date === day);
-                        const bgColor = assignment
+                        const cls = assignment
                           ? isPartialAssignment(assignment)
-                            ? "bg-yellow-100"
-                            : "bg-blue-100"
-                          : "bg-green-100";
+                            ? 'bg-amber-50 ring-amber-200'
+                            : 'bg-blue-50 ring-blue-200'
+                          : 'bg-emerald-50 ring-emerald-200';
 
                         return (
-                          <div
+                          <button
                             key={day}
-                            className={`border rounded p-2 text-sm cursor-pointer hover:shadow ${bgColor}`}
+                            type="button"
+                            className={`text-left rounded-xl p-3 ring-1 ${cls} hover:shadow-sm hover:-translate-y-0.5 transition`}
                             onClick={() =>
                               setSelectedAssignment({
                                 date: day,
@@ -175,41 +180,41 @@ const AdminPage = () => {
                               })
                             }
                           >
-                            <p className="font-semibold">
+                            <p className="text-xs font-semibold text-slate-800 mb-1">
                               {fmtCellDate(day)}
                             </p>
                             {assignment ? (
-                              <>
-                                <p className="text-xs">🕒 {assignment.startTime} - {assignment.endTime}</p>
-                                <p className="text-xs">
-                                  🚑{" "}
-                                  {typeof assignment.ambulanceId === "object" && "ambulanceNumber" in assignment.ambulanceId
-                                    ? assignment.ambulanceId.ambulanceNumber
-                                    : typeof assignment.ambulanceId === "string" && assignment.ambulanceId.length > 0
+                              <div className="space-y-0.5 text-xs text-slate-700">
+                                <p>🕒 {assignment.startTime} - {assignment.endTime}</p>
+                                <p>
+                                  🚑{' '}
+                                  {typeof assignment.ambulanceId === 'object' && 'ambulanceNumber' in assignment.ambulanceId
+                                    ? (assignment.ambulanceId as any).ambulanceNumber
+                                    : typeof assignment.ambulanceId === 'string' && assignment.ambulanceId.length > 0
                                       ? assignment.ambulanceId
-                                      : "—"}
+                                      : '—'}
                                 </p>
-                                <p className="text-xs">
-                                  👨‍✈️{" "}
-                                  {typeof assignment.driver === "string"
+                                <p>
+                                  👨‍✈️{' '}
+                                  {typeof assignment.driver === 'string'
                                     ? assignment.driver
                                     : assignment.driver
-                                      ? `${assignment.driver.lastName}, ${assignment.driver.name}`
-                                      : "—"}
+                                      ? `${(assignment.driver as any).lastName}, ${(assignment.driver as any).name}`
+                                      : '—'}
                                 </p>
-                                <p className="text-xs">
-                                  🧑‍⚕️{" "}
-                                  {typeof assignment.medic === "string"
+                                <p>
+                                  🧑‍⚕️{' '}
+                                  {typeof assignment.medic === 'string'
                                     ? assignment.medic
                                     : assignment.medic
-                                      ? `${assignment.medic.lastName}, ${assignment.medic.name}`
-                                      : "—"}
+                                      ? `${(assignment.medic as any).lastName}, ${(assignment.medic as any).name}`
+                                      : '—'}
                                 </p>
-                              </>
+                              </div>
                             ) : (
-                              <p className="text-xs text-green-800 mt-2">🌴 {t('pages.diensts.adminPage.freeDay')}</p>
+                              <p className="text-xs text-emerald-800 mt-1">🌴 {t('pages.diensts.adminPage.freeDay')}</p>
                             )}
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
