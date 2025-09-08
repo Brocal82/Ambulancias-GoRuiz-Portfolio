@@ -60,31 +60,35 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
     toastT.info(["toasts.vacations.editPending", { id }]);
   };
 
-  if (loading) return <p>{t('pages.vacations.adminUserTab.loading')}</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
-  if (vacations.length === 0) return <p>{t('pages.vacations.adminUserTab.empty')}</p>;
+  if (loading) return <p className="text-sm text-slate-600">{t('pages.vacations.adminUserTab.loading')}</p>;
+  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (vacations.length === 0) return <p className="text-sm text-slate-600">{t('pages.vacations.adminUserTab.empty')}</p>;
 
   return (
-    <div>
-      <h3 className="text-lg font-semibold mb-4">
+    <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
+      <h3 className="text-lg font-semibold text-slate-900 mb-4">
         {t('pages.vacations.adminUserTab.title')}
       </h3>
 
-      <ul className="list-disc pl-6 space-y-2">
+      <ul className="space-y-3">
         {vacations.map(v => (
-          <li key={v._id} className="flex items-center justify-between">
-            <span>
-              {formatISOToDDMMYYYY(v.startDate)} - {formatISOToDDMMYYYY(v.endDate)}
+          <li
+            key={v._id}
+            className="flex items-center justify-between rounded-xl ring-1 ring-slate-200 px-3 py-2 hover:bg-slate-50 transition"
+          >
+            <span className="text-sm text-slate-800">
+              {formatISOToDDMMYYYY(v.startDate)} — {formatISOToDDMMYYYY(v.endDate)}
             </span>
-            <div className="space-x-2">
+
+            <div className="flex gap-2">
               <button
-                className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                className="inline-flex items-center rounded-xl bg-white px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
                 onClick={() => handleEditVacation(v._id)}
               >
                 {t('pages.vacations.adminUserTab.actions.edit')}
               </button>
               <button
-                className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                className="inline-flex items-center rounded-xl bg-red-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100"
                 onClick={() => handleDeleteVacation(v._id)}
               >
                 {t('pages.vacations.adminUserTab.actions.delete')}

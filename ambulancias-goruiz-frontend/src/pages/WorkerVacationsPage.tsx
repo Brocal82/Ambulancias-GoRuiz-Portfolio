@@ -1,4 +1,4 @@
-//src/pages/WorkerVacationsPage.tsx
+// src/pages/WorkerVacationsPage.tsx
 import { useEffect, useState } from 'react';
 import type { IVacationRequest } from '../types/vacationRequest';
 import { getUserVacationRequests, respondToAlternativeDate } from '../api/vacation';
@@ -76,52 +76,72 @@ const WorkerVacationsPage = () => {
     setFormMessage(t('toasts.vacations.worker.formSuccess'));
   };
 
-  if (loading) return <p>{t('pages.vacations.workerPage.loading')}</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
+  if (loading) return <p className="p-4 text-sm text-slate-600">{t('pages.vacations.workerPage.loading')}</p>;
+  if (error) return <p className="p-4 text-sm text-red-600">{error}</p>;
 
   return (
-    <div className="max-w-4xl mx-auto p-4 bg-white rounded shadow">
-      <h2 className="text-xl font-bold mb-4">{t('pages.vacations.workerPage.title')}</h2>
-
-      <button
-        className="mb-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        onClick={() => setShowForm(!showForm)}
-      >
-        {showForm ? t('pages.vacations.workerPage.toggleCloseForm') : t('pages.vacations.workerPage.toggleOpenForm')}
-      </button>
-
-      {formMessage && (
-        <p className="mb-4 text-green-600">{formMessage}</p>
-      )}
-
-      {showForm && <VacationRequestForm onSuccess={handleFormSuccess} />}
-
-      {requests.length === 0 && !loading && !showForm && (
-        <p>{t('pages.vacations.workerPage.empty')}</p>
-      )}
-
-      {requests.length > 0 && (
-        <div className="mt-4">
-          <UserVacationList
-            requests={requests}
-            onRespondAlternative={handleRespondAlternative}
-          />
+    <div className="min-h-screen bg-slate-50">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header */}
+        <div className="mb-4 text-center">
+          <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+            {t('pages.vacations.workerPage.title')}
+          </h2>
         </div>
-      )}
 
-      {/* Modal secundario si lo necesitas para otra acción */}
-      <AlternativeDateModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        initialStartDate={modalInitialStartDate}
-        initialEndDate={modalInitialEndDate}
-        onSubmit={() => {
-          setIsModalOpen(false);
-        }}
-      />
+        {/* Card principal */}
+        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <button
+              className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
+              onClick={() => setShowForm(!showForm)}
+            >
+              {showForm
+                ? t('pages.vacations.workerPage.toggleCloseForm')
+                : t('pages.vacations.workerPage.toggleOpenForm')}
+            </button>
+
+            {formMessage && (
+              <p className="text-sm text-emerald-700">{formMessage}</p>
+            )}
+          </div>
+
+          {/* Formulario (si corresponde) */}
+          {showForm && (
+            <div className="mb-4 rounded-xl ring-1 ring-slate-200 p-3 bg-slate-50">
+              <VacationRequestForm onSuccess={handleFormSuccess} />
+            </div>
+          )}
+
+          {/* Sin solicitudes */}
+          {requests.length === 0 && !loading && !showForm && (
+            <p className="text-sm text-slate-600">{t('pages.vacations.workerPage.empty')}</p>
+          )}
+
+          {/* Listado de solicitudes */}
+          {requests.length > 0 && (
+            <div className="mt-2">
+              <UserVacationList
+                requests={requests}
+                onRespondAlternative={handleRespondAlternative}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Modal secundario si lo necesitas para otra acción */}
+        <AlternativeDateModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          initialStartDate={modalInitialStartDate}
+          initialEndDate={modalInitialEndDate}
+          onSubmit={() => {
+            setIsModalOpen(false);
+          }}
+        />
+      </div>
     </div>
   );
 };
 
 export default WorkerVacationsPage;
-
