@@ -39,44 +39,67 @@ const WorkerMessagesPage = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-2xl font-bold mb-6 text-center">
+return (
+  <div className="min-h-screen bg-slate-50">
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6">
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-6 text-center">
         {t('pages.messages.workerPage.title')}
       </h1>
 
       {loading ? (
-        <p className="text-center">{t('pages.messages.workerPage.loading')}</p>
+        <p className="text-center text-slate-500">
+          {t('pages.messages.workerPage.loading')}
+        </p>
       ) : messages.length === 0 ? (
-        <p className="text-center text-gray-500">
+        <p className="text-center text-slate-400">
           {t('pages.messages.workerPage.empty')}
         </p>
       ) : (
-        <div className="max-w-3xl mx-auto space-y-4">
+        <div className="space-y-4">
           {messages.map((msg) => (
             <div
               key={msg._id}
-              className="relative bg-white p-4 rounded shadow hover:shadow-md transition"
+              className="relative rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 hover:shadow-md transition"
             >
+              {/* Botón eliminar */}
               <button
                 onClick={() => handleDelete(msg._id)}
-                className="absolute top-2 right-2 text-red-600 hover:text-red-800 text-xl font-bold"
+                className="absolute top-3 right-3 inline-flex h-8 w-8 items-center justify-center rounded-full
+                  bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 transition
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400
+                  focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                 title={t('pages.messages.workerPage.actions.deleteTitle')}
               >
+                <span className="sr-only">
+                  {t('pages.messages.workerPage.actions.deleteTitle')}
+                </span>
                 ×
               </button>
-              <h2 className="text-lg font-semibold">{msg.subject}</h2>
-              <p className="text-sm text-gray-500 mb-2">
-                {t('pages.messages.workerPage.from')} {msg.sender.name} {msg.sender.lastName} ·{' '}
-                {new Date(msg.sentAt).toLocaleString()}
+
+              {/* Asunto */}
+              <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                {msg.subject}
+              </h2>
+
+              {/* Info remitente */}
+              <p className="text-sm text-slate-500 mb-3">
+                {t('pages.messages.workerPage.from')}{' '}
+                <span className="font-medium">
+                  {msg.sender.lastName}, {msg.sender.name}
+                </span>{' '}
+                · {new Date(msg.sentAt).toLocaleString()}
               </p>
-              <p>{msg.body}</p>
+
+              {/* Cuerpo */}
+              <p className="text-slate-700 whitespace-pre-line">{msg.body}</p>
             </div>
           ))}
         </div>
       )}
     </div>
-  );
+  </div>
+);
+
 };
 
 export default WorkerMessagesPage;
