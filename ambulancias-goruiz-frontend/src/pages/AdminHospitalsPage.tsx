@@ -121,13 +121,21 @@ const AdminHospitalsPage = () => {
     return matchesSpecialty && matchesName;
   });
 
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4 text-center">{t('pages.hospitals.adminPage.title')}</h1>
+return (
+  <div className="p-6 max-w-5xl mx-auto">
+    <h1 className="text-2xl font-bold text-center mb-6">
+      {t('pages.hospitals.adminPage.title')}
+    </h1>
 
-      <div className="flex flex-col gap-4 max-w-sm mx-auto mb-6">
+    {/* Filtros */}
+    <div className="rounded-xl bg-white ring-1 ring-slate-200 p-4 md:p-5 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Filtro por nombre */}
         <div>
-          <label htmlFor="hospitalNameSearch" className="block text-sm font-medium mb-1">
+          <label
+            htmlFor="hospitalNameSearch"
+            className="block text-sm font-medium text-slate-700 mb-1"
+          >
             {t('pages.hospitals.adminPage.filters.byName')}
           </label>
           <input
@@ -136,12 +144,16 @@ const AdminHospitalsPage = () => {
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
             placeholder={t('pages.hospitals.adminPage.filters.byNamePlaceholder')}
-            className="border p-2 rounded w-full bg-white shadow-sm"
+            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
           />
         </div>
 
+        {/* Filtro por especialidad */}
         <div>
-          <label htmlFor="specialtyFilter" className="block text-sm font-medium mb-1">
+          <label
+            htmlFor="specialtyFilter"
+            className="block text-sm font-medium text-slate-700 mb-1"
+          >
             {t('pages.hospitals.adminPage.filters.bySpecialty')}
           </label>
           <Select
@@ -158,139 +170,185 @@ const AdminHospitalsPage = () => {
             onChange={(option) => setSelectedSpecialty(option?.value || 'all')}
             className="text-sm"
             classNamePrefix="react-select"
-            placeholder={t('pages.hospitals.adminPage.filters.selectSpecialtyPlaceholder')}
+            placeholder={t('pages.hospitals.adminPage.filters.selectSpecialtyPlaceholder') as string}
             isSearchable
           />
         </div>
+      </div>
 
+      <div className="mt-4">
         <button
+          type="button"
           onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition mt-2"
+          className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {showForm
             ? t('pages.hospitals.adminPage.actions.toggleFormClose')
             : t('pages.hospitals.adminPage.actions.toggleFormOpen')}
         </button>
+      </div>
 
-        {showForm && (
-          <form onSubmit={handleAddHospital} className="bg-white p-4 rounded shadow space-y-3">
+      {/* Formulario nuevo hospital */}
+      {showForm && (
+        <form
+          onSubmit={handleAddHospital}
+          className="mt-5 rounded-xl ring-1 ring-slate-200 p-4 md:p-5 bg-slate-50 space-y-3"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input
               type="text"
-              placeholder={t('pages.hospitals.adminPage.form.name')}
+              placeholder={t('pages.hospitals.adminPage.form.name') as string}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="border p-2 rounded w-full"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               required
             />
             <input
               type="text"
-              placeholder={t('pages.hospitals.adminPage.form.address')}
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-              className="border p-2 rounded w-full"
-              required
-            />
-            <input
-              type="text"
-              placeholder={t('pages.hospitals.adminPage.form.phone')}
+              placeholder={t('pages.hospitals.adminPage.form.phone') as string}
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="border p-2 rounded w-full"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               required
             />
+          </div>
+
+          <input
+            type="text"
+            placeholder={t('pages.hospitals.adminPage.form.address') as string}
+            value={form.address}
+            onChange={(e) => setForm({ ...form, address: e.target.value })}
+            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            required
+          />
+
+          <div>
             <input
               type="text"
-              placeholder={t('pages.hospitals.adminPage.form.specialties')}
+              placeholder={t('pages.hospitals.adminPage.form.specialties') as string}
               list="specialties"
               value={form.specialties}
               onChange={(e) => setForm({ ...form, specialties: e.target.value })}
-              className="border p-2 rounded w-full"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
-
             <datalist id="specialties">
               {specialties.map((spec) => (
                 <option key={spec} value={spec} />
               ))}
             </datalist>
+          </div>
 
+          <div className="pt-1">
             <button
               type="submit"
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+              className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               {t('pages.hospitals.adminPage.actions.saveHospital')}
             </button>
-          </form>
-        )}
-      </div>
-
-      <ul className="space-y-4">
-        {filteredHospitals.map((hospital) => (
-          <li
-            key={hospital._id}
-            className="p-4 border rounded shadow flex justify-between items-center bg-white"
-          >
-            <span
-              className="text-lg font-semibold cursor-pointer hover:underline"
-              onClick={() => setSelectedHospital(hospital)}
-            >
-              {hospital.name}
-            </span>
-
-            <div className="flex items-center gap-3">
-              <label htmlFor={`hospital-status-${hospital._id}`} className="sr-only">
-                {t('pages.hospitals.adminPage.status.label')}
-              </label>
-              <select
-                id={`hospital-status-${hospital._id}`}
-                value={hospital.isOpen ? 'open' : 'closed'}
-                onChange={() => handleToggleOpen(hospital)}
-                className={`border p-1 rounded text-sm ${
-                  hospital.isOpen ? 'bg-green-100' : 'bg-red-100'
-                }`}
-              >
-                <option value="open">{t('pages.hospitals.adminPage.status.open')}</option>
-                <option value="closed">{t('pages.hospitals.adminPage.status.closed')}</option>
-              </select>
-
-              <button
-                onClick={() => setEditingHospital(hospital)}
-                className="text-blue-600 text-sm underline hover:text-blue-800"
-              >
-                {t('pages.hospitals.adminPage.actions.edit')}
-              </button>
-              <button
-                onClick={() => handleDeleteHospital(hospital._id)}
-                className="text-red-600 text-sm underline hover:text-red-800"
-              >
-                {t('pages.hospitals.adminPage.actions.delete')}
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-
-      {editingHospital && (
-        <HospitalEditModal
-          hospital={editingHospital}
-          allSpecialties={specialties}
-          onClose={() => setEditingHospital(null)}
-          onUpdated={(updated) => {
-            setHospitals((prev) =>
-              prev.map((h) => (h._id === updated._id ? updated : h))
-            );
-            setEditingHospital(null);
-          }}
-        />
-      )}
-
-      {selectedHospital && (
-        <HospitalDetailsModal
-          hospital={selectedHospital}
-          onClose={() => setSelectedHospital(null)}
-        />
+          </div>
+        </form>
       )}
     </div>
-  );
+
+    {/* Listado */}
+    <ul className="space-y-3">
+      {filteredHospitals.map((hospital) => (
+        <li
+          key={hospital._id}
+          className="flex items-start justify-between gap-4 rounded-xl bg-white p-4 md:p-5 ring-1 ring-slate-200 shadow-sm"
+        >
+          <button
+            type="button"
+            onClick={() => setSelectedHospital(hospital)}
+            className="text-left"
+            title={t('pages.hospitals.adminPage.actions.viewDetails') as string}
+          >
+            <span className="text-base md:text-lg font-semibold text-slate-900 hover:underline">
+              {hospital.name}
+            </span>
+            <div className="mt-1 text-xs text-slate-600">
+              {hospital.address}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {hospital.specialties.slice(0, 4).map((spec) => (
+                <span
+                  key={spec}
+                  className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-700"
+                >
+                  {spec}
+                </span>
+              ))}
+              {hospital.specialties.length > 4 && (
+                <span className="text-[11px] text-slate-500">
+                  +{hospital.specialties.length - 4}
+                </span>
+              )}
+            </div>
+          </button>
+
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <label
+              htmlFor={`hospital-status-${hospital._id}`}
+              className="sr-only"
+            >
+              {t('pages.hospitals.adminPage.status.label')}
+            </label>
+            <select
+              id={`hospital-status-${hospital._id}`}
+              value={hospital.isOpen ? 'open' : 'closed'}
+              onChange={() => handleToggleOpen(hospital)}
+              className={`rounded-md border px-2 py-1 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${
+                hospital.isOpen ? 'bg-green-50 border-green-200 text-green-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+              }`}
+            >
+              <option value="open">{t('pages.hospitals.adminPage.status.open')}</option>
+              <option value="closed">{t('pages.hospitals.adminPage.status.closed')}</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={() => setEditingHospital(hospital)}
+              className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400"
+            >
+              {t('pages.hospitals.adminPage.actions.edit')}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleDeleteHospital(hospital._id)}
+              className="inline-flex items-center rounded-md border border-rose-300 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-400"
+            >
+              {t('pages.hospitals.adminPage.actions.delete')}
+            </button>
+          </div>
+        </li>
+      ))}
+    </ul>
+
+    {/* Modales */}
+    {editingHospital && (
+      <HospitalEditModal
+        hospital={editingHospital}
+        allSpecialties={specialties}
+        onClose={() => setEditingHospital(null)}
+        onUpdated={(updated) => {
+          setHospitals((prev) =>
+            prev.map((h) => (h._id === updated._id ? updated : h))
+          );
+          setEditingHospital(null);
+        }}
+      />
+    )}
+
+    {selectedHospital && (
+      <HospitalDetailsModal
+        hospital={selectedHospital}
+        onClose={() => setSelectedHospital(null)}
+      />
+    )}
+  </div>
+);
+
 };
 
 export default AdminHospitalsPage;
