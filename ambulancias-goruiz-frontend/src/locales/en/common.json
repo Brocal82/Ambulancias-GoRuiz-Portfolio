@@ -908,7 +908,7 @@
       },
       "partial": {
         "title": "🟠 Partial day review",
-        "totalPatients": "Total patients (with multipliers): {{count}}",
+        "totalPatients": "Total trips for bonus: {{count}}",
         "placeholders": {
           "report": "Reason for partial closure...",
           "finalKm": "Ambulance final kilometers"
@@ -931,7 +931,7 @@
       },
       "final": {
         "title": "✅ Final day review",
-        "totalPatients": "Total patients (with multipliers): {{count}}",
+        "totalPatients": "Total trips for bonus: {{count}}",
         "placeholders": {
           "note": "Reason for final closure (optional)…",
           "finalKm": "Ambulance final kilometers"

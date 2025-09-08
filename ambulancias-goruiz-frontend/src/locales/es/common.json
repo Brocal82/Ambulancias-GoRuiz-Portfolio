@@ -909,7 +909,7 @@
       },
       "partial": {
         "title": "🟠 Revisión parcial del día",
-        "totalPatients": "Total de pacientes (con multiplicadores): {{count}}",
+        "totalPatients": "Total viajes para Prämie: {{count}}",
         "placeholders": {
           "report": "Motivo del cierre parcial...",
           "finalKm": "Kilómetros finales de la ambulancia"
@@ -932,7 +932,7 @@
       },
       "final": {
         "title": "✅ Revisión final del día",
-        "totalPatients": "Total de pacientes (con multiplicadores): {{count}}",
+        "totalPatients": "Total viajes para Prämie: {{count}}",
         "placeholders": {
           "note": "Motivo del cierre final (opcional)…",
           "finalKm": "Kilómetros finales de la ambulancia"

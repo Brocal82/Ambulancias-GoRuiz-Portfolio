@@ -908,7 +908,7 @@
       },
       "partial": {
         "title": "🟠 Teilprüfung des Tages",
-        "totalPatients": "Gesamtzahl der Patienten (mit Multiplikatoren): {{count}}",
+        "totalPatients": "Gesamtfahrten für Prämie: {{count}}",
         "placeholders": {
           "report": "Grund für den Teilabschluss...",
           "finalKm": "End-Kilometer des Krankenwagens"
@@ -931,7 +931,7 @@
       },
       "final": {
         "title": "✅ Endprüfung des Tages",
-        "totalPatients": "Gesamtzahl der Patienten (mit Multiplikatoren): {{count}}",
+        "totalPatients": "Gesamtfahrten für Prämie: {{count}}",
         "placeholders": {
           "note": "Grund für den Endabschluss (optional)…",
           "finalKm": "End-Kilometer des Krankenwagens"
