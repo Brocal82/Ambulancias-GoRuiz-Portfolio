@@ -126,6 +126,32 @@
         "desc": "Próximamente"
       }
     },
+    "adminUsers": {
+  "title": "Usuarios registrados",
+  "search": {
+    "label": "Buscar por nombre:",
+    "placeholder": "Nombre o apellido"
+  },
+  "filters": {
+    "role": {
+      "label": "Filtrar por rol:",
+      "all": "Todos los roles"
+    },
+    "status": {
+      "label": "Filtrar por estado:",
+      "all": "Todos los estados",
+      "onLeave": "De baja médica",
+      "onVacation": "De vacaciones"
+    }
+  },
+  "columns": {
+    "lastName": "Apellido",
+    "name": "Nombre",
+    "email": "Email",
+    "role": "Rol"
+  }
+},
+
     "profile": {
       "title": "Perfil de Usuario",
       "loading": "Cargando...",

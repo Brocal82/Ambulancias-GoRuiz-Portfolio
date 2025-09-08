@@ -126,6 +126,31 @@
         "desc": "Coming soon"
       }
     },
+     "adminUsers": {
+      "title": "Registered Users",
+      "search": {
+        "label": "Search by name:",
+        "placeholder": "First or last name"
+      },
+      "filters": {
+        "role": {
+          "label": "Filter by role:",
+          "all": "All roles"
+        },
+        "status": {
+          "label": "Filter by status:",
+          "all": "All statuses",
+          "onLeave": "On medical leave",
+          "onVacation": "On vacation"
+        }
+      },
+      "columns": {
+        "lastName": "Last name",
+        "name": "First name",
+        "email": "Email",
+        "role": "Role"
+      }
+    },
     "profile": {
       "title": "User Profile",
       "loading": "Loading...",
