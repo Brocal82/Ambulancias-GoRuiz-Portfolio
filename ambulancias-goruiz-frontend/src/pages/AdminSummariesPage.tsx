@@ -217,6 +217,7 @@ const AdminSummariesPage = () => {
                                 trips={[...s.trips].sort((a, b) =>
                                   a.timeWarning.localeCompare(b.timeWarning)
                                 )}
+                                hideHeader
                               />
                             </td>
                           </tr>

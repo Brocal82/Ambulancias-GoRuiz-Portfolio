@@ -54,107 +54,105 @@ const PartialReviewModal: React.FC<Props> = ({
       toastT.warn(["toasts.workday.partial.finalKmRequired"]);
       return;
     }
-
     onSend(report.trim(), parsedFinalKm, totalEffectivePatients, issueData);
   };
 
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl overflow-y-auto max-h-[90vh] space-y-6">
-        <h2 className="text-xl font-bold text-center">
-          {t("pages.workday.partial.title")}
-        </h2>
+return (
+  <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-5xl overflow-y-auto max-h-[90vh] space-y-6">
+      
 
-        <ReviewSummary
-          assignedDay={assignedDay}
-          ambulanceNumber={ambulanceNumber}
-          initialKm={parsedInitialKm}
-          finalKm={parsedFinalKm}
-          trips={trips}
-        />
+      <h2 className="text-xl font-bold text-center">
+        {t("pages.workday.partial.title")}
+      </h2>
 
-        <p className="text-center font-semibold text-green-700">
-          {t("pages.workday.partial.totalPatients", { count: totalEffectivePatients })}
-        </p>
+      <ReviewSummary
+        assignedDay={assignedDay}
+        ambulanceNumber={ambulanceNumber}
+        initialKm={parsedInitialKm}
+        finalKm={parsedFinalKm}
+        trips={trips}
+      />
 
-        <textarea
-          placeholder={t("pages.workday.partial.placeholders.report") as string}
-          value={report}
-          onChange={(e) => setReport(e.target.value)}
-          className="w-full h-24 border rounded p-2"
-        />
+      <p className="text-center font-semibold text-green-700">
+        {t("pages.workday.partial.totalPatients", { count: totalEffectivePatients })}
+      </p>
 
-        <input
-          type="number"
-          placeholder={t("pages.workday.partial.placeholders.finalKm") as string}
-          value={finalKm}
-          onChange={(e) =>
-            setFinalKm(e.target.value === "" ? "" : Number(e.target.value))
-          }
-          className="w-full border rounded p-2"
-        />
+      <textarea
+        placeholder={t("pages.workday.partial.placeholders.report") as string}
+        value={report}
+        onChange={(e) => setReport(e.target.value)}
+        className="w-full h-24 border border-slate-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-200"
+      />
 
-        {/* Botón Avería */}
+      <input
+        type="number"
+        placeholder={t("pages.workday.partial.placeholders.finalKm") as string}
+        value={finalKm}
+        onChange={(e) =>
+          setFinalKm(e.target.value === "" ? "" : Number(e.target.value))
+        }
+        className="w-full border border-slate-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-200"
+      />
+
+      {/* Botón Avería (alineado a la derecha, no full width) */}
+      <div className="pt-1 flex justify-end">
         <button
           type="button"
-          className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border-2 font-medium transition-colors duration-200
-            ${
-              hasIssue
-                ? "border-red-600 bg-red-200 text-red-800 hover:bg-red-500 hover:text-white"
-                : "border-gray-400 bg-white text-gray-700 hover:bg-red-100 hover:border-red-400 hover:text-red-700"
-            }`}
           onClick={() => {
             const checked = !hasIssue;
             setHasIssue(checked);
             if (checked) setShowIssueModal(true);
           }}
+          className={[
+            "inline-flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-1.5 text-sm font-medium transition-colors",
+            hasIssue
+              ? "border-rose-600 bg-rose-100 text-rose-800 hover:bg-rose-200"
+              : "border-slate-300 bg-white text-slate-700 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700",
+          ].join(" ")}
         >
-          ⚠️ <span>{t("pages.workday.partial.issue.button")}</span>
+          ⚠️ {t("pages.workday.partial.issue.button")}
         </button>
+      </div>
 
-        {/* Modal técnico */}
-        {showIssueModal && (
-          <IssueReportModal
-            isOpen={true}
-            onClose={() => {
-              setShowIssueModal(false);
-              setHasIssue(false);
-            }}
-            assignedDay={assignedDay}
-            ambulanceId={ambulanceId}
-            ambulanceNumber={ambulanceNumber}
-            finalKm={parsedFinalKm}
-            onSubmit={(data) => {
-              setIssueData(data);
-              setShowIssueModal(false);
-              toastT.info(["toasts.workday.partial.issueRegistered"]);
-            }}
-          />
-        )}
+      {/* Modal técnico */}
+      {showIssueModal && (
+        <IssueReportModal
+          isOpen={true}
+          onClose={() => {
+            setShowIssueModal(false);
+            setHasIssue(false);
+          }}
+          assignedDay={assignedDay}
+          ambulanceId={ambulanceId}
+          ambulanceNumber={ambulanceNumber}
+          finalKm={parsedFinalKm}
+          onSubmit={(data) => {
+            setIssueData(data);
+            setShowIssueModal(false);
+            toastT.info(["toasts.workday.partial.issueRegistered"]);
+          }}
+        />
+      )}
 
-        <div className="flex justify-end gap-2 pt-4">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded"
-          >
-            {t("pages.workday.partial.actions.cancel")}
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 bg-orange-500 text-white hover:bg-orange-700 rounded"
-          >
-            {t("pages.workday.partial.actions.sendToAdmin")}
-          </button>
-        </div>
+      <div className="flex justify-end gap-2 pt-4">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-slate-700 rounded-lg shadow-sm"
+        >
+          {t("pages.workday.partial.actions.cancel")}
+        </button>
+        <button
+          onClick={handleSubmit}
+          className="px-4 py-2 bg-orange-500 text-white hover:bg-orange-600 rounded-lg shadow-sm"
+        >
+          {t("pages.workday.partial.actions.sendToAdmin")}
+        </button>
       </div>
     </div>
-  );
+  </div>
+);
+
 };
 
 export default PartialReviewModal;
-
-
-
-
-
-

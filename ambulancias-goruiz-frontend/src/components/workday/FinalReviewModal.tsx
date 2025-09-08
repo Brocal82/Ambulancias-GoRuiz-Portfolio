@@ -1,4 +1,4 @@
-//src/components/workday/FinalReviewModal.tsx
+// src/components/workday/FinalReviewModal.tsx
 import React, { useState } from "react";
 import { toastT } from "../../utils/toast";
 import ReviewSummary from "./ReviewSummary";
@@ -11,11 +11,7 @@ import { useTranslation } from "react-i18next";
 interface FinalReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (
-    note: string,
-    finalKm: number,
-    issueData?: any
-  ) => void;
+  onConfirm: (note: string, finalKm: number, issueData?: any) => void;
   trips: Trip[];
   ambulanceId: string;
   ambulanceNumber: string;
@@ -59,8 +55,10 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl overflow-y-auto max-h-[90vh] space-y-6">
+  <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-5xl overflow-y-auto max-h-[90vh] space-y-6">
+      
+
         <h2 className="text-xl font-bold text-center">
           {t("pages.workday.final.title")}
         </h2>
@@ -81,7 +79,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
           placeholder={t("pages.workday.final.placeholders.note") as string}
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          className="w-full h-24 border rounded p-2"
+          className="w-full h-24 border border-slate-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-200"
         />
 
         <input
@@ -91,26 +89,28 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
           onChange={(e) =>
             setFinalKmLocal(e.target.value === "" ? "" : Number(e.target.value))
           }
-          className="w-full border rounded p-2 mt-2"
+          className="w-full border border-slate-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-200"
         />
 
-        {/* Botón Avería */}
-        <button
-          type="button"
-          className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border-2 font-medium transition-colors duration-200
-            ${
+        {/* Botón Avería (alineado a la derecha) */}
+        <div className="pt-1 flex justify-end">
+          <button
+            type="button"
+            onClick={() => {
+              const checked = !hasIssue;
+              setHasIssue(checked);
+              if (checked) setShowIssueModal(true);
+            }}
+            className={[
+              "inline-flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-1.5 text-sm font-medium transition-colors",
               hasIssue
-                ? "border-red-600 bg-red-200 text-red-800 hover:bg-red-500 hover:text-white"
-                : "border-gray-400 bg-white text-gray-700 hover:bg-red-100 hover:border-red-400 hover:text-red-700"
-            }`}
-          onClick={() => {
-            const checked = !hasIssue;
-            setHasIssue(checked);
-            if (checked) setShowIssueModal(true);
-          }}
-        >
-          ⚠️ <span>{t("pages.workday.final.issue.button")}</span>
-        </button>
+                ? "border-rose-600 bg-rose-100 text-rose-800 hover:bg-rose-200"
+                : "border-slate-300 bg-white text-slate-700 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700",
+            ].join(" ")}
+          >
+            ⚠️ {t("pages.workday.final.issue.button")}
+          </button>
+        </div>
 
         {/* Modal técnico */}
         {showIssueModal && (
@@ -136,14 +136,14 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
         <div className="flex justify-end gap-2 pt-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded"
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-slate-700 rounded-lg shadow-sm"
           >
             {t("pages.workday.final.actions.cancel")}
           </button>
 
           <button
             onClick={handleSend}
-            className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded"
+            className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-sm"
           >
             {t("pages.workday.final.actions.sendToAdmin")}
           </button>
@@ -154,5 +154,3 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
 };
 
 export default FinalReviewModal;
-
-
