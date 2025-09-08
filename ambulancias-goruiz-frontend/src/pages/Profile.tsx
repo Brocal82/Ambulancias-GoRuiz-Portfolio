@@ -194,21 +194,23 @@ const Profile = ({ userId }: ProfileProps) => {
     }
   };
 
-
-
   const pscheinStatus = getPscheinStatus(formData.pscheinExpiry);
   const roles: AmbulanceRole[] = ['medic', 'driver', 'both'];
 
   return (
-    <div className="max-w-xl mx-auto p-4 bg-white rounded shadow">
-      <h2 className="text-xl font-bold mb-6 text-center">{t('pages.profile.title')}</h2>
-      {message && <p className="mb-4 text-sm text-blue-600">{message}</p>}
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-6 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <h2 className="text-2xl font-semibold tracking-tight text-slate-900 mb-6 text-center">
+        {t('pages.profile.title')}
+      </h2>
+      {message && (
+        <p className="mb-4 text-sm text-blue-600 text-center">{message}</p>
+      )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* 📸 Imagen + nombre + apellidos */}
-        <div className="flex items-start gap-4 mb-6">
-          {/* Imagen de perfil (1/3) */}
-          <div className="w-1/3 flex flex-col items-center gap-2">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* 🧑‍🦱 Imagen + nombre + apellidos */}
+        <div className="flex flex-col md:flex-row items-start gap-6">
+          {/* Imagen de perfil */}
+          <div className="md:w-1/3 w-full flex flex-col items-center gap-2">
             <label
               htmlFor="profileImageUpload"
               className="cursor-pointer group"
@@ -223,7 +225,7 @@ const Profile = ({ userId }: ProfileProps) => {
                       : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
                 }
                 alt={t('pages.profile.image.alt')}
-                className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border border-gray-300 group-hover:opacity-80 transition"
+                className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover ring-1 ring-slate-200 bg-white shadow-sm group-hover:opacity-90 transition"
               />
             </label>
 
@@ -232,7 +234,7 @@ const Profile = ({ userId }: ProfileProps) => {
               <button
                 type="button"
                 onClick={handleDeleteProfileImage}
-                className="text-red-500 hover:text-red-700 text-xs"
+                className="text-red-600 hover:text-red-700 text-xs"
                 title={t('pages.profile.image.removeButtonTitle')}
               >
                 {t('pages.profile.image.remove')}
@@ -256,10 +258,10 @@ const Profile = ({ userId }: ProfileProps) => {
             />
           </div>
 
-          {/* Nombre y Apellidos (2/3) */}
-          <div className="w-2/3 space-y-2">
+          {/* Nombre y Apellidos */}
+          <div className="md:w-2/3 w-full grid grid-cols-1 gap-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="name" className="block text-sm font-medium text-slate-700">
                 {t('pages.profile.labels.name')}
               </label>
               <input
@@ -268,13 +270,13 @@ const Profile = ({ userId }: ProfileProps) => {
                 name="name"
                 value={formData.name || ''}
                 onChange={handleChange}
-                className="w-full border rounded p-2"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400"
                 placeholder={t('pages.profile.placeholders.name')}
               />
             </div>
 
             <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="lastName" className="block text-sm font-medium text-slate-700">
                 {t('pages.profile.labels.lastName')}
               </label>
               <input
@@ -283,13 +285,13 @@ const Profile = ({ userId }: ProfileProps) => {
                 name="lastName"
                 value={formData.lastName || ''}
                 onChange={handleChange}
-                className="w-full border rounded p-2"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400"
                 placeholder={t('pages.profile.placeholders.lastName')}
               />
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-slate-700">
                 {t('pages.profile.labels.email')}
               </label>
               <input
@@ -298,7 +300,7 @@ const Profile = ({ userId }: ProfileProps) => {
                 name="email"
                 value={formData.email || ''}
                 disabled
-                className="w-full border rounded p-2 bg-gray-100 text-gray-700 cursor-not-allowed"
+                className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-700 cursor-not-allowed"
                 title={t('pages.profile.image.emailLocked')}
               />
             </div>
@@ -306,20 +308,21 @@ const Profile = ({ userId }: ProfileProps) => {
         </div>
 
         {/* Rol en ambulancia */}
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-slate-700">
             {t('pages.profile.labels.ambulanceRole')}
           </label>
-          <div className="flex justify-between gap-2">
+          <div className="flex flex-wrap gap-2">
             {roles.map((currentRole) => (
               <button
                 key={currentRole}
                 type="button"
                 onClick={() => setFormData({ ...formData, ambulanceRole: currentRole })}
-                className={`flex-1 px-4 py-2 border rounded ${formData.ambulanceRole === currentRole
-                  ? 'bg-green-500 text-white border-green-600'
-                  : 'bg-white text-gray-800 border-gray-300'
-                  }`}
+                className={`px-4 py-2 text-sm rounded-xl transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${
+                  formData.ambulanceRole === currentRole
+                    ? 'bg-blue-600 text-white shadow-md -translate-y-0.5'
+                    : 'bg-white text-slate-700 hover:bg-slate-50 ring-1 ring-slate-200 shadow-sm'
+                }`}
               >
                 {currentRole === 'driver'
                   ? t('pages.profile.roles.driver')
@@ -333,8 +336,8 @@ const Profile = ({ userId }: ProfileProps) => {
 
         {/* P-Schein */}
         {(formData.ambulanceRole === 'driver' || formData.ambulanceRole === 'both') && (
-          <>
-            <label htmlFor="pscheinExpiry" className="block text-sm font-medium text-gray-700">
+          <div className="space-y-1">
+            <label htmlFor="pscheinExpiry" className="block text-sm font-medium text-slate-700">
               {t('pages.profile.labels.pscheinExpiry')}
             </label>
             <input
@@ -343,12 +346,13 @@ const Profile = ({ userId }: ProfileProps) => {
               name="pscheinExpiry"
               value={formData.pscheinExpiry || ''}
               onChange={handleChange}
-              className={`w-full border rounded p-2 ${pscheinStatus === 'expired'
-                ? 'border-red-500'
-                : pscheinStatus === 'warning'
-                  ? 'border-orange-400'
-                  : 'border-gray-300'
-                }`}
+              className={`w-full rounded-xl px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 ${
+                pscheinStatus === 'expired'
+                  ? 'border border-red-500 focus:ring-red-100'
+                  : pscheinStatus === 'warning'
+                  ? 'border border-orange-400 focus:ring-orange-100'
+                  : 'border border-slate-300 focus:ring-blue-100 focus:border-blue-400'
+              }`}
             />
             {pscheinStatus === 'expired' && (
               <p className="text-red-600 text-sm mt-1">{t('pages.profile.pschein.expired')}</p>
@@ -356,12 +360,12 @@ const Profile = ({ userId }: ProfileProps) => {
             {pscheinStatus === 'warning' && (
               <p className="text-orange-600 text-sm mt-1">{t('pages.profile.pschein.warning')}</p>
             )}
-          </>
+          </div>
         )}
 
         {/* Dirección */}
         <div className="space-y-1">
-          <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="address" className="block text-sm font-medium text-slate-700">
             {t('pages.profile.labels.address')}
           </label>
           <input
@@ -370,15 +374,15 @@ const Profile = ({ userId }: ProfileProps) => {
             name="address"
             value={formData.address || ''}
             onChange={handleChange}
-            className="w-full border rounded p-2"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400"
             placeholder={t('pages.profile.placeholders.address')}
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          {/* Teléfono */}
+        {/* Teléfono y emergencia */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="phone" className="block text-sm font-medium text-slate-700">
               {t('pages.profile.labels.phone')}
             </label>
             <input
@@ -387,14 +391,13 @@ const Profile = ({ userId }: ProfileProps) => {
               name="phone"
               value={formData.phone || ''}
               onChange={handleChange}
-              className="w-full border rounded p-2"
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400"
               placeholder={t('pages.profile.placeholders.phone')}
             />
           </div>
 
-          {/* Teléfono de emergencia */}
           <div>
-            <label htmlFor="emergencyPhone" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="emergencyPhone" className="block text-sm font-medium text-slate-700">
               {t('pages.profile.labels.emergencyPhone')}
             </label>
             <input
@@ -403,19 +406,18 @@ const Profile = ({ userId }: ProfileProps) => {
               name="emergencyPhone"
               value={formData.emergencyPhone || ''}
               onChange={handleChange}
-              className="w-full border rounded p-2"
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400"
               placeholder={t('pages.profile.placeholders.emergencyPhone')}
             />
           </div>
         </div>
 
         {/* Documentos PDF */}
-        <div className="space-y-1 mt-4">
-          <label htmlFor="documentsUpload" className="block text-sm font-medium text-gray-700">
+        <div className="space-y-2">
+          <label htmlFor="documentsUpload" className="block text-sm font-medium text-slate-700">
             {t('pages.profile.labels.documents')}
           </label>
 
-          {/* input oculto */}
           <input
             type="file"
             id="documentsUpload"
@@ -425,36 +427,32 @@ const Profile = ({ userId }: ProfileProps) => {
             className="sr-only"
           />
 
-          {/* botón personalizado */}
           <label
             htmlFor="documentsUpload"
-            className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700"
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm cursor-pointer hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
           >
             ⬆️ {t('pages.profile.documents.upload')}
           </label>
 
-          {/* muestra selección actual */}
           {documentsFiles && documentsFiles.length > 0 ? (
-            <ul className="mt-2 list-disc list-inside text-sm text-gray-700">
+            <ul className="mt-2 list-disc list-inside text-sm text-slate-700">
               {Array.from(documentsFiles).map((f) => (
                 <li key={f.name}>{f.name}</li>
               ))}
             </ul>
           ) : (
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-slate-500">
               {t('pages.profile.documents.noneSelected')}
             </p>
           )}
         </div>
 
-
-
         {formData.documents && formData.documents.length > 0 && (
-          <div className="mt-4">
-            <p className="text-sm text-gray-600 font-medium mb-1">
+          <div className="mt-2">
+            <p className="text-sm text-slate-600 font-medium mb-1">
               {t('pages.profile.labels.uploadedDocs')}
             </p>
-            <ul className="pl-2 text-sm text-gray-700 space-y-1">
+            <ul className="pl-2 text-sm text-slate-700 space-y-1">
               {formData.documents.map((docUrl, index) => (
                 <li key={index} className="flex items-center justify-between">
                   <div>
@@ -471,7 +469,7 @@ const Profile = ({ userId }: ProfileProps) => {
                   <button
                     type="button"
                     onClick={() => handleDeleteDocument(docUrl)}
-                    className="text-red-500 hover:text-red-700 text-sm ml-2"
+                    className="text-red-600 hover:text-red-700 text-sm ml-2"
                     title={t('pages.profile.documents.deleteTitle')}
                   >
                     ❌
@@ -482,33 +480,32 @@ const Profile = ({ userId }: ProfileProps) => {
           </div>
         )}
 
+        {/* Guardar */}
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 mt-4"
+          className="w-full mt-6 inline-flex justify-center items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
         >
           {t('pages.profile.actions.save')}
         </button>
 
         {/* --- Danger Zone: Eliminar usuario --- */}
         {role === 'admin' && userId && userId !== userIdFromAuthContext && (
-          <div className="mt-6 border-t pt-4">
-            <h3 className="text-sm font-semibold text-red-600 mb-2">
+          <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-4">
+            <h3 className="text-sm font-semibold text-red-700 mb-2">
               {t('pages.profile.danger.title')}
-
             </h3>
-            <p className="text-sm text-gray-600 mb-3">
+            <p className="text-sm text-red-700/90 mb-3">
               {t('pages.profile.danger.description')}
             </p>
             <button
               type="button"
               onClick={handleDeleteUser}
-              className="w-full bg-red-600 text-white p-2 rounded hover:bg-red-700"
+              className="w-full inline-flex justify-center items-center rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100"
             >
               {t('pages.profile.actions.deleteUser')}
             </button>
           </div>
         )}
-
       </form>
     </div>
   );
