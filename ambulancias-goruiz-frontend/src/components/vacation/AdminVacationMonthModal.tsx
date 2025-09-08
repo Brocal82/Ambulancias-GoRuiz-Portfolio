@@ -60,9 +60,9 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 
   // etiqueta del mes
   const monthLabel = useMemo(() => {
-  if (monthIndex === null) return '';
-  return fmtMonth(year, monthIndex);
-}, [monthIndex, year]);
+    if (monthIndex === null) return '';
+    return fmtMonth(year, monthIndex);
+  }, [monthIndex, year]);
 
   // requests del mes
   const monthRequests = useMemo(() => {
@@ -187,66 +187,90 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:items-center">
-        <div className="fixed inset-0 bg-black/40" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/50" onClick={onClose} />
 
         <div
-          className="relative z-10 w-full max-w-3xl rounded-2xl bg-white shadow-lg"
+          className="relative z-10 w-full max-w-3xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200"
           role="dialog"
           aria-modal="true"
           aria-labelledby="vacation-month-modal-title"
         >
           {/* Header */}
-          <div className="flex flex-col gap-2 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 id="vacation-month-modal-title" className="text-lg font-semibold">
-      {monthLabel} · {year}
-    </h3>
-              <p className="mt-0.5 text-sm text-gray-600">
+              <h3 id="vacation-month-modal-title" className="text-lg font-semibold text-slate-900">
+                {monthLabel} · {year}
+              </h3>
+              <p className="mt-0.5 text-sm text-slate-600">
                 {t('pages.vacations.monthModal.countLine', { count: monthCount })}
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setStatusFilter('')}
-                className={`rounded-full border px-3 py-1 text-xs ${statusFilter === '' ? 'bg-gray-900 text-white' : 'hover:bg-gray-50'}`}
+                className={`rounded-full px-3 py-1 text-xs ring-1 ring-slate-300 ${
+                  statusFilter === ''
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-white text-slate-700 hover:bg-slate-50'
+                } focus:outline-none focus:ring-4 focus:ring-blue-100`}
                 aria-label={t('pages.vacations.monthModal.filters.all')}
               >
                 {t('pages.vacations.monthModal.filters.all')}
                 {monthCount > 0 ? ` (${monthCount})` : ''}
               </button>
+
               <button
                 type="button"
                 onClick={() => setStatusFilter('pending')}
-                className={`rounded-full border px-3 py-1 text-xs ${statusFilter === 'pending' ? 'bg-yellow-500 text-white border-yellow-500' : 'hover:bg-yellow-50 border-yellow-300 text-yellow-700'}`}
+                className={`rounded-full px-3 py-1 text-xs ring-1 ${
+                  statusFilter === 'pending'
+                    ? 'bg-amber-500 text-white ring-amber-500'
+                    : 'bg-white text-amber-700 ring-amber-300 hover:bg-amber-50'
+                } focus:outline-none focus:ring-4 focus:ring-amber-100`}
                 aria-label={t('pages.vacations.monthModal.filters.pending')}
               >
                 {t('pages.vacations.monthModal.filters.pending')}
                 {statusCounts.pending ? ` (${statusCounts.pending})` : ''}
               </button>
+
               <button
                 type="button"
                 onClick={() => setStatusFilter('accepted')}
-                className={`rounded-full border px-3 py-1 text-xs ${statusFilter === 'accepted' ? 'bg-green-600 text-white border-green-600' : 'hover:bg-green-50 border-green-300 text-green-700'}`}
+                className={`rounded-full px-3 py-1 text-xs ring-1 ${
+                  statusFilter === 'accepted'
+                    ? 'bg-emerald-600 text-white ring-emerald-600'
+                    : 'bg-white text-emerald-700 ring-emerald-300 hover:bg-emerald-50'
+                } focus:outline-none focus:ring-4 focus:ring-emerald-100`}
                 aria-label={t('pages.vacations.monthModal.filters.accepted')}
               >
                 {t('pages.vacations.monthModal.filters.accepted')}
                 {statusCounts.accepted ? ` (${statusCounts.accepted})` : ''}
               </button>
+
               <button
                 type="button"
                 onClick={() => setStatusFilter('cancelled')}
-                className={`rounded-full border px-3 py-1 text-xs ${statusFilter === 'cancelled' ? 'bg-red-600 text-white border-red-600' : 'hover:bg-red-50 border-red-300 text-red-700'}`}
+                className={`rounded-full px-3 py-1 text-xs ring-1 ${
+                  statusFilter === 'cancelled'
+                    ? 'bg-rose-600 text-white ring-rose-600'
+                    : 'bg-white text-rose-700 ring-rose-300 hover:bg-rose-50'
+                } focus:outline-none focus:ring-4 focus:ring-rose-100`}
                 aria-label={t('pages.vacations.monthModal.filters.cancelled')}
               >
                 {t('pages.vacations.monthModal.filters.cancelled')}
                 {statusCounts.cancelled ? ` (${statusCounts.cancelled})` : ''}
               </button>
+
               <button
                 type="button"
                 onClick={() => setStatusFilter('option_sent')}
-                className={`rounded-full border px-3 py-1 text-xs ${statusFilter === 'option_sent' ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-blue-50 border-blue-300 text-blue-700'}`}
+                className={`rounded-full px-3 py-1 text-xs ring-1 ${
+                  statusFilter === 'option_sent'
+                    ? 'bg-blue-600 text-white ring-blue-600'
+                    : 'bg-white text-blue-700 ring-blue-300 hover:bg-blue-50'
+                } focus:outline-none focus:ring-4 focus:ring-blue-100`}
                 aria-label={t('pages.vacations.monthModal.filters.option_sent')}
               >
                 {t('pages.vacations.monthModal.filters.option_sent')}
@@ -257,7 +281,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                 ref={closeBtnRef}
                 aria-label={t('pages.vacations.monthModal.close')}
                 onClick={onClose}
-                className="ml-auto rounded p-2 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
               >
                 ✕
               </button>
@@ -265,7 +289,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
           </div>
 
           {/* Filtros */}
-          <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex gap-2">
               <div className="flex flex-col">
                 <label htmlFor="vacation-filter-user" className="sr-only">
@@ -278,7 +302,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                   onChange={(e) => setSearchText(e.target.value)}
                   placeholder={t('pages.vacations.monthModal.filters.userPlaceholder')}
                   aria-label={t('pages.vacations.monthModal.filters.userPlaceholder')}
-                  className="w-full rounded-md border px-3 py-2 text-sm sm:w-64"
+                  className="w-full sm:w-64 rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
                 />
               </div>
 
@@ -291,7 +315,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as any)}
                   aria-label={t('pages.vacations.monthModal.filters.statusLabel')}
-                  className="rounded-md border px-3 py-2 text-sm"
+                  className="rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
                 >
                   <option value="">{t('pages.vacations.monthModal.filters.all')}</option>
                   <option value="pending">{t('pages.vacations.monthModal.filters.pending')}</option>
@@ -307,7 +331,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
               aria-label={t('pages.vacations.monthModal.filters.sortToggle', {
                 dir: sortAsc ? t('pages.vacations.monthModal.filters.asc') : t('pages.vacations.monthModal.filters.desc')
               })}
-              className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
+              className="rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
             >
               {t('pages.vacations.monthModal.filters.sortToggle', {
                 dir: sortAsc ? t('pages.vacations.monthModal.filters.asc') : t('pages.vacations.monthModal.filters.desc')
@@ -318,20 +342,20 @@ const AdminVacationMonthModal: React.FC<Props> = ({
           {/* Lista */}
           <div className="max-h-[70vh] overflow-y-auto p-4">
             {filtered.length === 0 ? (
-              <p className="text-center text-sm text-gray-500">{t('pages.vacations.monthModal.empty')}</p>
+              <p className="text-center text-sm text-slate-500">{t('pages.vacations.monthModal.empty')}</p>
             ) : (
               <ul className="space-y-3">
                 {filtered.map((req) => (
-                  <li key={req._id} className="rounded-xl border p-4">
+                  <li key={req._id} className="rounded-xl ring-1 ring-slate-200 p-4 hover:bg-slate-50 transition">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="font-medium">
+                        <div className="font-medium text-slate-900">
                           {req.user ? `${req.user.lastName}, ${req.user.name}` : '—'}
                         </div>
 
                         <div className="mt-0.5 text-sm grid grid-cols-[auto,1fr] gap-x-2">
-                          <span className="font-medium text-gray-700">{t('pages.vacations.adminPage.badges.requested')}</span>
-                          <span className="text-gray-600">
+                          <span className="font-medium text-slate-700">{t('pages.vacations.adminPage.badges.requested')}</span>
+                          <span className="text-slate-700">
                             {fmtDate(req.startDate)} — {fmtDate(req.endDate)}
                           </span>
 
@@ -346,8 +370,9 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                         </div>
 
                         {req.adminNote && (
-                          <p className="mt-2 text-sm text-gray-600">
-                            <span className="font-medium">{t('pages.vacations.adminPage.badges.note')}</span> {req.adminNote}
+                          <p className="mt-2 text-sm text-slate-600">
+                            <span className="font-medium">{t('pages.vacations.adminPage.badges.note')}</span>{' '}
+                            {req.adminNote}
                           </p>
                         )}
                       </div>
@@ -358,9 +383,9 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                     {/* Acciones */}
                     <div className="mt-3 flex w-full items-start gap-2">
                       {cancelingRequestId === req._id ? (
-                        <div className="w-full rounded-lg border p-3">
+                        <div className="w-full rounded-xl ring-1 ring-slate-200 p-3 bg-white">
                           <textarea
-                            className="w-full resize-none rounded border p-2 text-sm"
+                            className="w-full resize-none rounded-xl border border-slate-300 ring-1 ring-slate-200 p-2 text-sm focus:outline-none focus:ring-4 focus:ring-rose-100"
                             placeholder={t('pages.vacations.adminPage.actions.cancelMessagePlaceholder')}
                             rows={3}
                             value={cancelMessage}
@@ -368,14 +393,14 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                           />
                           <div className="mt-2 flex gap-2">
                             <button
-                              className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700 disabled:opacity-50"
+                              className="rounded-xl bg-rose-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100 disabled:opacity-50"
                               disabled={isSendingCancel}
                               onClick={() => handleConfirmCancel(req._id)}
                             >
                               {isSendingCancel ? t('pages.vacations.adminPage.actions.sending') : t('pages.vacations.adminPage.actions.confirmRejection')}
                             </button>
                             <button
-                              className="rounded bg-gray-200 px-3 py-1 hover:bg-gray-300"
+                              className="rounded-xl bg-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-300 focus:outline-none focus:ring-4 focus:ring-slate-100 disabled:opacity-50"
                               disabled={isSendingCancel}
                               onClick={() => {
                                 setCancelingRequestId(null);
@@ -392,19 +417,19 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                             {req.status === 'pending' && (
                               <>
                                 <button
-                                  className="rounded bg-green-600 px-3 py-1 text-white hover:bg-green-700"
+                                  className="rounded-xl bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100"
                                   onClick={() => handleAccept(req._id)}
                                 >
                                   {t('pages.vacations.adminPage.actions.accept')}
                                 </button>
                                 <button
-                                  className="rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
+                                  className="rounded-xl bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
                                   onClick={() => openAlternative(req)}
                                 >
                                   {t('pages.vacations.adminPage.actions.altOption')}
                                 </button>
                                 <button
-                                  className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700"
+                                  className="rounded-xl bg-rose-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100"
                                   onClick={() => handleStartCancelFlow(req._id)}
                                 >
                                   {t('pages.vacations.adminPage.actions.cancel')}
@@ -420,7 +445,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                                 aria-label={t('pages.vacations.adminPage.actions.delete')}
                                 title={t('pages.vacations.adminPage.actions.delete')}
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-full
-                                  bg-gray-100 text-gray-600 hover:bg-rose-50 hover:text-rose-700 active:scale-95 transition
+                                  bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700 active:scale-95 transition
                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400
                                   focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                               >
@@ -453,10 +478,10 @@ const AdminVacationMonthModal: React.FC<Props> = ({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-2 border-t p-4">
+          <div className="flex items-center justify-end gap-2 border-t border-slate-200 p-4">
             <button
               onClick={onClose}
-              className="rounded-md border px-4 py-2 hover:bg-gray-50"
+              className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-200 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
             >
               {t('pages.vacations.monthModal.close')}
             </button>

@@ -25,7 +25,7 @@ const AlternativeDateModal = ({
   const [selectionRange, setSelectionRange] = useState({
     startDate: initialStartDate,
     endDate: initialEndDate,
-    key: 'selection',
+    key: 'selection' as const,
   });
 
   const [adminNote, setAdminNote] = useState('');
@@ -52,28 +52,36 @@ const AlternativeDateModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded p-6 max-w-md w-full shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">{t('pages.vacations.altModal.title')}</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
 
-        <DateRange
-          ranges={[selectionRange]}
-          onChange={handleSelect}
-          moveRangeOnFirstSelection={false}
-          minDate={new Date()}
-        />
+      {/* Card */}
+      <div className="relative z-10 w-full max-w-lg rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 p-6">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">
+          {t('pages.vacations.altModal.title')}
+        </h3>
+
+        <div className="rounded-xl ring-1 ring-slate-200 overflow-hidden">
+          <DateRange
+            ranges={[selectionRange]}
+            onChange={handleSelect}
+            moveRangeOnFirstSelection={false}
+            minDate={new Date()}
+          />
+        </div>
 
         <textarea
           placeholder={t('pages.vacations.altModal.notePlaceholder')}
-          className="w-full border rounded p-2 mt-4 mb-4 resize-none"
+          className="mt-4 w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 p-2 text-sm resize-none focus:outline-none focus:ring-4 focus:ring-blue-100"
           value={adminNote}
-          onChange={e => setAdminNote(e.target.value)}
+          onChange={(e) => setAdminNote(e.target.value)}
           rows={3}
         />
 
-        <div className="flex justify-end space-x-2">
+        <div className="mt-4 flex justify-end gap-2">
           <button
-            className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
+            className="rounded-xl bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-300 focus:outline-none focus:ring-4 focus:ring-slate-100"
             onClick={() => {
               onClose();
               setAdminNote('');
@@ -82,7 +90,7 @@ const AlternativeDateModal = ({
             {t('pages.vacations.altModal.cancel')}
           </button>
           <button
-            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+            className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
             onClick={handleSubmit}
           >
             {t('pages.vacations.altModal.send')}

@@ -21,9 +21,9 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
   const counts = countRequestsByMonth(requests, year);
 
   return (
-    <div className="bg-white rounded-2xl shadow p-4 mb-6">
+    <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">
+        <h3 className="text-lg font-semibold text-slate-900">
           {t('pages.vacations.monthGrid.title', { year })}
         </h3>
       </div>
@@ -38,33 +38,29 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
               key={monthIndex}
               type="button"
               onClick={() => onMonthClick?.(monthIndex)}
-              aria-label={t('pages.vacations.monthGrid.ariaOpenMonth', {
-                label,
-                year
-              })}
+              aria-label={t('pages.vacations.monthGrid.ariaOpenMonth', { label, year })}
               className={[
-                "group relative flex flex-col items-start justify-between rounded-xl border p-4 text-left transition",
-                hasItems
-                  ? "border-gray-200 hover:border-blue-400 hover:shadow"
-                  : "border-gray-200 opacity-60 hover:opacity-80 hover:border-gray-300",
-                "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                'group relative text-left rounded-xl p-4 transition',
+                'ring-1 ring-slate-200 hover:shadow-sm hover:-translate-y-0.5',
+                hasItems ? 'bg-white' : 'bg-slate-50 opacity-90 hover:opacity-100',
+                'focus:outline-none focus:ring-4 focus:ring-blue-100'
               ].join(' ')}
             >
-              <span className="text-base font-medium">{label}</span>
+              <span className="text-sm font-medium text-slate-900">{label}</span>
 
               <span
                 className={[
-                  "mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-sm font-medium",
+                  'mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
                   hasItems
-                    ? "bg-blue-50 text-blue-700 group-hover:bg-blue-100"
-                    : "bg-gray-100 text-gray-600"
+                    ? 'bg-blue-50 text-blue-700 group-hover:bg-blue-100'
+                    : 'bg-slate-100 text-slate-600'
                 ].join(' ')}
               >
                 {t('pages.vacations.monthGrid.count', { count })}
               </span>
 
               {!hasItems && (
-                <span className="absolute right-3 top-3 text-xs text-gray-400">
+                <span className="absolute right-3 top-3 text-[10px] uppercase tracking-wide text-slate-400">
                   {t('pages.vacations.monthGrid.emptyBadge')}
                 </span>
               )}

@@ -19,7 +19,7 @@ const VacationRequestForm = ({ onSuccess }: VacationRequestFormProps) => {
   const [selectionRange, setSelectionRange] = useState({
     startDate: new Date(),
     endDate: addDays(new Date(), 3),
-    key: 'selection',
+    key: 'selection' as const,
   });
 
   const [loading, setLoading] = useState(false);
@@ -27,7 +27,6 @@ const VacationRequestForm = ({ onSuccess }: VacationRequestFormProps) => {
 
   const handleSelect = (ranges: RangeKeyDict) => {
     const { startDate, endDate } = ranges.selection;
-
     setSelectionRange({
       startDate: startDate ?? new Date(),
       endDate: endDate ?? new Date(),
@@ -60,18 +59,28 @@ const VacationRequestForm = ({ onSuccess }: VacationRequestFormProps) => {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white p-4 rounded shadow">
-      <h2 className="text-xl font-semibold mb-4">{t('pages.vacations.requestForm.title')}</h2>
+    <div className="mx-auto max-w-lg rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <h2 className="text-lg font-semibold text-slate-900 mb-4">
+        {t('pages.vacations.requestForm.title')}
+      </h2>
 
-      <DateRange
-        ranges={[selectionRange]}
-        onChange={handleSelect}
-        moveRangeOnFirstSelection={false}
-        minDate={new Date()}
-      />
+      <div className="rounded-xl ring-1 ring-slate-200 overflow-hidden">
+        <DateRange
+          ranges={[selectionRange]}
+          onChange={handleSelect}
+          moveRangeOnFirstSelection={false}
+          minDate={new Date()}
+        />
+      </div>
 
       {message && (
-        <p className={`mt-2 ${message === t('pages.vacations.requestForm.success') ? 'text-green-600' : 'text-red-600'}`}>
+        <p
+          className={`mt-3 text-sm ${
+            message === t('pages.vacations.requestForm.success')
+              ? 'text-emerald-700'
+              : 'text-rose-600'
+          }`}
+        >
           {message}
         </p>
       )}
@@ -79,9 +88,11 @@ const VacationRequestForm = ({ onSuccess }: VacationRequestFormProps) => {
       <button
         disabled={loading}
         onClick={handleSubmit}
-        className="mt-4 w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50"
+        className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50"
       >
-        {loading ? t('pages.vacations.requestForm.sending') : t('pages.vacations.requestForm.send')}
+        {loading
+          ? t('pages.vacations.requestForm.sending')
+          : t('pages.vacations.requestForm.send')}
       </button>
     </div>
   );

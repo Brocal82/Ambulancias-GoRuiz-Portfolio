@@ -41,7 +41,7 @@ const UserVacationListItem: React.FC<Props> = ({
   };
 
   return (
-    <li className="rounded-xl border p-4">
+    <li className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="mt-0.5 text-sm grid grid-cols-[auto,1fr] gap-x-2">
@@ -73,13 +73,13 @@ const UserVacationListItem: React.FC<Props> = ({
       {req.status === 'option_sent' && (
         <div className="mt-3 flex items-center justify-end gap-2">
           <button
-            className="rounded bg-green-600 px-3 py-1 text-white hover:bg-green-700"
+            className="rounded bg-green-600 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
             onClick={() => onAcceptAlternative(req._id)}
           >
             {t('pages.vacations.listItem.accept')}
           </button>
           <button
-            className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700"
+            className="rounded bg-red-600 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
             onClick={() => onRejectAlternative(req._id)}
           >
             {t('pages.vacations.listItem.reject')}
@@ -91,4 +91,3 @@ const UserVacationListItem: React.FC<Props> = ({
 };
 
 export default UserVacationListItem;
-

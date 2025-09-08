@@ -13,14 +13,14 @@ const UserVacationList: React.FC<Props> = ({ requests, onRespondAlternative }) =
 
   if (!requests || requests.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed p-6 text-center text-sm text-gray-600">
+      <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500 shadow-sm">
         {t('pages.vacations.list.empty')}
       </div>
     );
   }
 
   return (
-    <ul className="space-y-3">
+    <ul className="space-y-4">
       {requests.map((req) => (
         <UserVacationListItem
           key={req._id}
