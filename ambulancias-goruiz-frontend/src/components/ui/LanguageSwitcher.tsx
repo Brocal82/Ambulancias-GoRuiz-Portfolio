@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import ReactCountryFlag from "react-country-flag";
 
 type Lang = "es" | "de" | "en";
 
-const LANG_LABEL: Record<Lang, string> = {
-  es: "ES",
-  de: "DE",
-  en: "EN",
+const LANG_FLAG: Record<Lang, { code: string; label: string }> = {
+  es: { code: "ES", label: "Español" },
+  de: { code: "DE", label: "Deutsch" },
+  en: { code: "GB", label: "English" }, // usa "US" si prefieres bandera de EE.UU.
 };
 
 export default function LanguageSwitcher() {
@@ -36,10 +37,11 @@ export default function LanguageSwitcher() {
       {(["es", "de", "en"] as Lang[]).map((code) => {
         const id = `lang-${code}`;
         const checked = lang === code;
+        const { code: countryCode, label } = LANG_FLAG[code];
 
         return (
           <div key={code} className="relative">
-            {/* Radio nativo (accesible). Visualmente oculto pero accesible al teclado/lector. */}
+            {/* Radio accesible (oculto visualmente) */}
             <input
               id={id}
               name="lang"
@@ -49,14 +51,23 @@ export default function LanguageSwitcher() {
               onChange={() => handleChange(code)}
               value={code}
             />
-            {/* Label estilizado como botón */}
+            {/* Botón/label */}
             <label
               htmlFor={id}
-              className={`cursor-pointer select-none px-2 py-1 text-sm rounded-md transition ${
-                checked ? "bg-white text-blue-700" : "text-white hover:bg-white/20"
+              title={label}
+              aria-label={label}
+              className={`cursor-pointer select-none px-2 py-1 rounded-md transition inline-flex items-center gap-1 ${
+                checked
+                  ? "bg-white text-blue-700 shadow"
+                  : "text-white hover:bg-white/20"
               }`}
             >
-              {LANG_LABEL[code]}
+              <ReactCountryFlag
+                countryCode={countryCode}
+                svg
+                style={{ width: "1.25rem", height: "1.25rem", borderRadius: "2px" }}
+                aria-hidden="true"
+              />
             </label>
           </div>
         );
