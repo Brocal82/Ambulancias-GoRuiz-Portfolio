@@ -39,56 +39,91 @@ const Login = () => {
     }
   };
 
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 relative">
-      {/* 🔹 Language Switcher arriba derecha */}
-      <div className="absolute top-4 right-4">
-        <LanguageSwitcher />
-      </div>
+return (
+  <div className="flex items-center justify-center min-h-screen bg-slate-100 relative overflow-hidden">
+    {/* 🔹 Language Switcher arriba derecha */}
+    <div className="absolute top-4 right-4">
+      <LanguageSwitcher />
+    </div>
 
-      <div className="absolute top-4 left-4">
-        <button
-          onClick={() => navigate('/')}
-          className="text-blue-600 hover:underline"
-        >
-          {t('pages.login.back')}
-        </button>
-      </div>
-
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-6 rounded shadow-md w-full max-w-sm"
+    {/* 🔹 Botón volver */}
+    <div className="absolute top-4 left-4">
+      <button
+        onClick={() => navigate('/')}
+        className="text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
       >
-        <h2 className="text-2xl font-bold mb-4">{t('pages.login.title')}</h2>
+        ← {t('pages.login.back')}
+      </button>
+    </div>
 
-        {error && <p className="text-red-500 mb-3">{error}</p>}
+    {/* 🔹 Caja principal */}
+    <form
+      onSubmit={handleSubmit}
+      className="w-full max-w-md bg-slate-700/95 backdrop-blur rounded-2xl shadow-lg border border-slate-600 p-8"
+    >
+      <h2 className="text-2xl font-bold mb-6 text-center text-white">
+        {t('pages.login.title')}
+      </h2>
 
+      {error && (
+        <p className="text-red-400 mb-4 text-center font-medium">{error}</p>
+      )}
+
+      {/* Email */}
+      <div className="mb-4">
+        <label
+          htmlFor="email"
+          className="block text-sm font-medium text-slate-200 mb-1"
+        >
+          {t('pages.login.email')}
+        </label>
         <input
+          id="email"
           type="email"
           placeholder={t('pages.login.email')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-2 mb-3 border border-gray-300 rounded"
+          className="w-full px-3 py-2 rounded-lg border border-slate-300 
+                     bg-slate-100 text-slate-900 placeholder-slate-500
+                     focus:outline-none focus:ring-2 focus:ring-blue-400"
           required
         />
+      </div>
+
+      {/* Password */}
+      <div className="mb-6">
+        <label
+          htmlFor="password"
+          className="block text-sm font-medium text-slate-200 mb-1"
+        >
+          {t('pages.login.password')}
+        </label>
         <input
+          id="password"
           type="password"
           placeholder={t('pages.login.password')}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 mb-4 border border-gray-300 rounded"
+          className="w-full px-3 py-2 rounded-lg border border-slate-300 
+                     bg-slate-100 text-slate-900 placeholder-slate-500
+                     focus:outline-none focus:ring-2 focus:ring-blue-400"
           required
         />
+      </div>
 
-        <button
-          type="submit"
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white p-2 rounded"
-        >
-          {t('pages.login.submit')}
-        </button>
-      </form>
-    </div>
-  );
+      {/* Botón */}
+      <button
+        type="submit"
+        className="w-full rounded-lg bg-blue-500 px-4 py-2 font-semibold text-white shadow-sm
+                   hover:bg-blue-600 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-200
+                   transition-all duration-200 ease-in-out"
+      >
+        {t('pages.login.submit')}
+      </button>
+    </form>
+  </div>
+);
+
 };
 
 export default Login;
