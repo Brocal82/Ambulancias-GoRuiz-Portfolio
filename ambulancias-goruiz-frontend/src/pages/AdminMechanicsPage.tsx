@@ -48,9 +48,10 @@ return (
   <div className="min-h-screen bg-slate-50">
     <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6">
       <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-4">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-4 text-center">
           {t("pages.mechanics.adminPage.title")}
         </h1>
+
 
         {loading ? (
           <p className="text-sm text-slate-600">{t("pages.mechanics.adminPage.loading")}</p>
