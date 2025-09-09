@@ -113,132 +113,150 @@ const AdminAppointmentDetail: React.FC<Props> = ({ isOpen, onClose, item, onChan
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-xl bg-white rounded-2xl shadow-lg" role="dialog" aria-modal="true" aria-labelledby="appt-detail-title">
-        <div className="px-6 py-4 border-b flex items-center justify-between">
-          <h3 id="appt-detail-title" className="text-lg font-semibold">
-            {t('pages.appointments.detail.title')}
-          </h3>
+ return (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div
+      className="w-full max-w-xl rounded-2xl bg-white shadow-sm ring-1 ring-slate-200"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="appt-detail-title"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+        <h3 id="appt-detail-title" className="text-lg font-semibold tracking-tight text-slate-900">
+          {t('pages.appointments.detail.title')}
+        </h3>
 
-          {!isCancelled && !editMode ? (
+        {!isCancelled && !editMode ? (
+          <button
+            onClick={() => setEditMode(true)}
+            className="rounded-xl border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100"
+            title={t('pages.appointments.detail.rebookTitle')}
+          >
+            {t('pages.appointments.detail.rebook')}
+          </button>
+        ) : null}
+
+        {editMode && (
+          <div className="flex gap-2">
             <button
-              onClick={() => setEditMode(true)}
-              className="px-3 py-1 rounded border bg-white hover:bg-gray-50"
-              title={t('pages.appointments.detail.rebookTitle')}
+              onClick={() => setEditMode(false)}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100 disabled:opacity-60"
+              disabled={loading}
             >
-              {t('pages.appointments.detail.rebook')}
+              {t('pages.appointments.detail.actions.cancel')}
             </button>
-          ) : null}
+            <button
+              onClick={handleSave}
+              className="rounded-xl bg-emerald-600 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:opacity-60"
+              disabled={loading || saveDisabled}
+              title={t('pages.appointments.detail.saveNewDatetime')}
+            >
+              {loading
+                ? t('pages.appointments.detail.actions.saving')
+                : t('pages.appointments.detail.actions.save')}
+            </button>
+          </div>
+        )}
+      </div>
 
-          {editMode && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => setEditMode(false)}
-                className="px-3 py-1 rounded border bg-white hover:bg-gray-50"
-                disabled={loading}
-              >
-                {t('pages.appointments.detail.actions.cancel')}
-              </button>
-              <button
-                onClick={handleSave}
-                className="px-3 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
-                disabled={loading || saveDisabled}
-                title={t('pages.appointments.detail.saveNewDatetime')}
-              >
-                {loading ? t('pages.appointments.detail.actions.saving') : t('pages.appointments.detail.actions.save')}
-              </button>
-            </div>
-          )}
+      {/* Body */}
+      <div className="px-6 py-4 space-y-3">
+        {/* Datos fijos */}
+        <div className="text-sm">
+          <span className="text-slate-500">{t('pages.appointments.detail.labels.worker')}</span>{' '}
+          <span className="font-medium text-slate-900">{worker}</span>
+        </div>
+        <div className="text-sm">
+          <span className="text-slate-500">{t('pages.appointments.detail.labels.admin')}</span>{' '}
+          <span className="font-medium text-slate-900">{admin}</span>
+        </div>
+        <div className="text-sm">
+          <span className="text-slate-500">{t('pages.appointments.detail.labels.currentWhen')}</span>{' '}
+          <span className="font-medium text-slate-900">{when}</span>
+        </div>
+        <div className="text-sm">
+          <span className="text-slate-500">{t('pages.appointments.detail.labels.status')}</span>{' '}
+          <span className="font-medium capitalize text-slate-900">{statusLabel}</span>
         </div>
 
-        <div className="px-6 py-4 space-y-3">
-          {/* Datos fijos */}
-          <div>
-            <span className="text-gray-500 text-sm">{t('pages.appointments.detail.labels.worker')}</span>{' '}
-            <span className="font-medium">{worker}</span>
-          </div>
-          <div>
-            <span className="text-gray-500 text-sm">{t('pages.appointments.detail.labels.admin')}</span>{' '}
-            <span className="font-medium">{admin}</span>
-          </div>
-          <div>
-            <span className="text-gray-500 text-sm">{t('pages.appointments.detail.labels.currentWhen')}</span>{' '}
-            <span className="font-medium">{when}</span>
-          </div>
-          <div>
-            <span className="text-gray-500 text-sm">{t('pages.appointments.detail.labels.status')}</span>{' '}
-            <span className="font-medium capitalize">{statusLabel}</span>
-          </div>
+        {/* Motivo / Descripción */}
+        <div className="pt-2">
+          <div className="text-sm text-slate-500">{t('pages.appointments.detail.labels.reason')}</div>
+          <div className="font-medium text-slate-900">{item.reason}</div>
+        </div>
+        <div>
+          <div className="text-sm text-slate-500">{t('pages.appointments.detail.labels.description')}</div>
+          <div className="whitespace-pre-wrap text-slate-800">{item.details}</div>
+        </div>
 
-          {/* Motivo / Descripción (solo lectura) */}
+        {/* Reprogramar */}
+        {!isCancelled && (
           <div className="pt-2">
-            <div className="text-sm text-gray-500">{t('pages.appointments.detail.labels.reason')}</div>
-            <div className="font-medium">{item.reason}</div>
-          </div>
-          <div>
-            <div className="text-sm text-gray-500">{t('pages.appointments.detail.labels.description')}</div>
-            <div className="whitespace-pre-wrap">{item.details}</div>
-          </div>
-
-          {/* Reprogramar (solo si no está cancelada) */}
-          {!isCancelled && (
-            <div className="pt-2">
-              <div className="text-sm text-gray-500 mb-1">{t('pages.appointments.detail.rebook')}</div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="re-date" className="block text-sm font-medium mb-1">
-                    {t('pages.appointments.detail.inputs.newDate')}
-                  </label>
-                  <input
-                    id="re-date"
-                    type="date"
-                    value={reDate}
-                    onChange={(e) => setReDate(e.target.value)}
-                    disabled={!editMode || loading}
-                    className="w-full border rounded px-3 py-2"
-                    placeholder={t('pages.appointments.detail.placeholders.date')}
-                    title={t('pages.appointments.detail.titles.date')}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="re-time" className="block text-sm font-medium mb-1">
-                    {t('pages.appointments.detail.inputs.newTime')}
-                  </label>
-                  <input
-                    id="re-time"
-                    type="time"
-                    value={reTime}
-                    onChange={(e) => setReTime(e.target.value)}
-                    disabled={!editMode || loading}
-                    className="w-full border rounded px-3 py-2"
-                    placeholder={t('pages.appointments.detail.placeholders.time')}
-                    title={t('pages.appointments.detail.titles.time')}
-                  />
-                </div>
+            <div className="mb-1 text-sm text-slate-500">{t('pages.appointments.detail.rebook')}</div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="re-date" className="mb-1 block text-sm font-medium text-slate-700">
+                  {t('pages.appointments.detail.inputs.newDate')}
+                </label>
+                <input
+                  id="re-date"
+                  type="date"
+                  value={reDate}
+                  onChange={(e) => setReDate(e.target.value)}
+                  disabled={!editMode || loading}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-60"
+                  placeholder={t('pages.appointments.detail.placeholders.date')}
+                  title={t('pages.appointments.detail.titles.date')}
+                />
+              </div>
+              <div>
+                <label htmlFor="re-time" className="mb-1 block text-sm font-medium text-slate-700">
+                  {t('pages.appointments.detail.inputs.newTime')}
+                </label>
+                <input
+                  id="re-time"
+                  type="time"
+                  value={reTime}
+                  onChange={(e) => setReTime(e.target.value)}
+                  disabled={!editMode || loading}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-60"
+                  placeholder={t('pages.appointments.detail.placeholders.time')}
+                  title={t('pages.appointments.detail.titles.time')}
+                />
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
 
-        <div className="px-6 py-4 border-t flex justify-between gap-2">
-          <button onClick={onClose} className="px-4 py-2 rounded border hover:bg-gray-50" disabled={loading}>
-            {t('pages.appointments.detail.actions.close')}
+      {/* Footer */}
+      <div className="flex justify-between gap-2 border-t border-slate-200 px-6 py-4">
+        <button
+          onClick={onClose}
+          className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100 disabled:opacity-60"
+          disabled={loading}
+        >
+          {t('pages.appointments.detail.actions.close')}
+        </button>
+
+        {!isCancelled && (
+          <button
+            onClick={handleCancel}
+            className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100 disabled:opacity-60"
+            disabled={loading}
+            title={t('pages.appointments.detail.cancelThisTitle')}
+          >
+            {loading
+              ? t('pages.appointments.detail.actions.cancelling')
+              : t('pages.appointments.detail.actions.cancel')}
           </button>
-          {!isCancelled && (
-            <button
-              onClick={handleCancel}
-              className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
-              disabled={loading}
-              title={t('pages.appointments.detail.cancelThisTitle')}
-            >
-              {loading ? t('pages.appointments.detail.actions.cancelling') : t('pages.appointments.detail.actions.cancel')}
-            </button>
-          )}
-        </div>
+        )}
       </div>
     </div>
-  );
+  </div>
+);
+
 };
 
 export default AdminAppointmentDetail;

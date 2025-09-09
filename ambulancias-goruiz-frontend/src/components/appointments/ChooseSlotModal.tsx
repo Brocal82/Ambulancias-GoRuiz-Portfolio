@@ -55,60 +55,79 @@ export default function ChooseSlotModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg bg-white rounded-xl shadow-lg" role="dialog" aria-modal="true" aria-labelledby="choose-title">
-        <div className="px-6 py-4 border-b">
-          <h2 id="choose-title" className="text-lg font-semibold">
-            {t('pages.appointments.choose.title')}
-          </h2>
-          <p className="text-sm text-gray-600 mt-1">
-            {t('pages.appointments.choose.timezoneNote.prefix')}{' '}
-            <b>Europe/Berlin</b>.
+ return (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div
+      className="w-full max-w-lg rounded-2xl bg-white shadow-sm ring-1 ring-slate-200"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="choose-title"
+    >
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-slate-200">
+        <h2
+          id="choose-title"
+          className="text-lg font-semibold tracking-tight text-slate-900"
+        >
+          {t('pages.appointments.choose.title')}
+        </h2>
+        <p className="mt-1 text-sm text-slate-600">
+          {t('pages.appointments.choose.timezoneNote.prefix')}{' '}
+          <b>Europe/Berlin</b>.
+        </p>
+      </div>
+
+      {/* Opciones */}
+      <div className="px-6 py-4 space-y-3">
+        {slotsBerlin.length === 0 ? (
+          <p className="text-sm text-slate-600">
+            {t('pages.appointments.choose.empty')}
           </p>
-        </div>
+        ) : (
+          <ul className="space-y-2">
+            {slotsBerlin.map((s, idx) => (
+              <li key={idx}>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="slot"
+                    aria-label={t('pages.appointments.choose.optionAria', {
+                      index: idx + 1,
+                      label: s.label,
+                    })}
+                    checked={selectedIndex === idx}
+                    onChange={() => setSelectedIndex(idx)}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                  />
+                  <span className="text-sm text-slate-800">{s.label}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
-        <div className="px-6 py-4 space-y-3">
-          {slotsBerlin.length === 0 ? (
-            <p className="text-sm text-gray-600">
-              {t('pages.appointments.choose.empty')}
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {slotsBerlin.map((s, idx) => (
-                <li key={idx}>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="slot"
-                      aria-label={t('pages.appointments.choose.optionAria', { index: idx + 1, label: s.label })}
-                      checked={selectedIndex === idx}
-                      onChange={() => setSelectedIndex(idx)}
-                      className="h-4 w-4"
-                    />
-                    <span className="text-sm">{s.label}</span>
-                  </label>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="px-6 py-4 border-t flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 rounded border hover:bg-gray-50" disabled={loading}>
-            {t('pages.appointments.choose.actions.cancel')}
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-60"
-            disabled={loading || selectedIndex === null || slotsBerlin.length === 0}
-          >
-            {loading
-              ? t('pages.appointments.choose.actions.confirming')
-              : t('pages.appointments.choose.actions.confirm')}
-          </button>
-        </div>
+      {/* Footer */}
+      <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+        <button
+          onClick={onClose}
+          className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100"
+          disabled={loading}
+        >
+          {t('pages.appointments.choose.actions.cancel')}
+        </button>
+        <button
+          onClick={handleConfirm}
+          className="rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-100 disabled:opacity-60"
+          disabled={loading || selectedIndex === null || slotsBerlin.length === 0}
+        >
+          {loading
+            ? t('pages.appointments.choose.actions.confirming')
+            : t('pages.appointments.choose.actions.confirm')}
+        </button>
       </div>
     </div>
-  );
+  </div>
+);
+
 }
