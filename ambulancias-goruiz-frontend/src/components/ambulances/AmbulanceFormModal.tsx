@@ -98,92 +98,147 @@ const AmbulanceFormModal: React.FC<Props> = ({ isOpen, onClose, onSave, initialD
     !ambulanceNumber.trim();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded p-6 w-full max-w-md shadow-lg"
-      >
-        <h2 className="text-xl font-semibold mb-4">
-          {initialData ? t('pages.ambulances.formModal.titleEdit') : t('pages.ambulances.formModal.titleNew')}
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <form
+      onSubmit={handleSubmit}
+      className="w-full max-w-lg bg-white rounded-2xl shadow-lg ring-1 ring-slate-200"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ambulance-form-title"
+    >
+      {/* Header */}
+      <div className="px-6 py-4 border-b">
+        <h2 id="ambulance-form-title" className="text-lg font-semibold">
+          {initialData
+            ? t('pages.ambulances.formModal.titleEdit')
+            : t('pages.ambulances.formModal.titleNew')}
         </h2>
+      </div>
 
-        <label className="block mb-2">
-          {t('pages.ambulances.formModal.fields.brand')}
+      {/* Body */}
+      <div className="px-6 py-4 space-y-4">
+        {/* Brand */}
+        <div>
+          <label htmlFor="amb-brand" className="block text-sm font-medium mb-1">
+            {t('pages.ambulances.formModal.fields.brand')}
+          </label>
           <input
+            id="amb-brand"
             type="text"
             value={brand}
             onChange={(e) => handleChange('brand', e.target.value)}
-            className={`mt-1 block w-full border rounded px-3 py-2 ${
-              errors.brand ? 'border-red-500' : 'border-gray-300'
+            placeholder={t('pages.ambulances.formModal.placeholders.brand') as string}
+            title={t('pages.ambulances.formModal.titles.brand') as string}
+            aria-describedby={errors.brand ? 'amb-brand-error' : undefined}
+            className={`w-full rounded-lg border px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-100 ${
+              errors.brand ? 'border-red-500' : 'border-slate-300'
             }`}
           />
-          {errors.brand && <p className="text-red-600 text-sm mt-1">{errors.brand}</p>}
-        </label>
+          {errors.brand && (
+            <p id="amb-brand-error" className="text-red-600 text-sm mt-1">
+              {errors.brand}
+            </p>
+          )}
+        </div>
 
-        <label className="block mb-2">
-          {t('pages.ambulances.formModal.fields.model')}
+        {/* Model */}
+        <div>
+          <label htmlFor="amb-model" className="block text-sm font-medium mb-1">
+            {t('pages.ambulances.formModal.fields.model')}
+          </label>
           <input
+            id="amb-model"
             type="text"
             value={modelName}
             onChange={(e) => handleChange('modelName', e.target.value)}
-            className={`mt-1 block w-full border rounded px-3 py-2 ${
-              errors.modelName ? 'border-red-500' : 'border-gray-300'
+            placeholder={t('pages.ambulances.formModal.placeholders.model') as string}
+            title={t('pages.ambulances.formModal.titles.model') as string}
+            aria-describedby={errors.modelName ? 'amb-model-error' : undefined}
+            className={`w-full rounded-lg border px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-100 ${
+              errors.modelName ? 'border-red-500' : 'border-slate-300'
             }`}
           />
-          {errors.modelName && <p className="text-red-600 text-sm mt-1">{errors.modelName}</p>}
-        </label>
+          {errors.modelName && (
+            <p id="amb-model-error" className="text-red-600 text-sm mt-1">
+              {errors.modelName}
+            </p>
+          )}
+        </div>
 
-        <label className="block mb-2">
-          {t('pages.ambulances.formModal.fields.licensePlate')}
+        {/* License Plate */}
+        <div>
+          <label htmlFor="amb-plate" className="block text-sm font-medium mb-1">
+            {t('pages.ambulances.formModal.fields.licensePlate')}
+          </label>
           <input
+            id="amb-plate"
             type="text"
             value={licensePlate}
             onChange={(e) => handleChange('licensePlate', e.target.value)}
-            className={`mt-1 block w-full border rounded px-3 py-2 ${
-              errors.licensePlate ? 'border-red-500' : 'border-gray-300'
+            placeholder={t('pages.ambulances.formModal.placeholders.licensePlate') as string}
+            title={t('pages.ambulances.formModal.titles.licensePlate') as string}
+            aria-describedby={errors.licensePlate ? 'amb-plate-error' : undefined}
+            className={`w-full rounded-lg border px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-100 ${
+              errors.licensePlate ? 'border-red-500' : 'border-slate-300'
             }`}
           />
           {errors.licensePlate && (
-            <p className="text-red-600 text-sm mt-1">{errors.licensePlate}</p>
+            <p id="amb-plate-error" className="text-red-600 text-sm mt-1">
+              {errors.licensePlate}
+            </p>
           )}
-        </label>
+        </div>
 
-        <label className="block mb-4">
-          {t('pages.ambulances.formModal.fields.ambulanceNumber')}
+        {/* Ambulance Number */}
+        <div>
+          <label htmlFor="amb-number" className="block text-sm font-medium mb-1">
+            {t('pages.ambulances.formModal.fields.ambulanceNumber')}
+          </label>
           <input
+            id="amb-number"
             type="text"
             value={ambulanceNumber}
             onChange={(e) => handleChange('ambulanceNumber', e.target.value)}
-            className={`mt-1 block w-full border rounded px-3 py-2 ${
-              errors.ambulanceNumber ? 'border-red-500' : 'border-gray-300'
+            placeholder={t('pages.ambulances.formModal.placeholders.ambulanceNumber') as string}
+            title={t('pages.ambulances.formModal.titles.ambulanceNumber') as string}
+            aria-describedby={errors.ambulanceNumber ? 'amb-number-error' : undefined}
+            className={`w-full rounded-lg border px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-100 ${
+              errors.ambulanceNumber ? 'border-red-500' : 'border-slate-300'
             }`}
           />
           {errors.ambulanceNumber && (
-            <p className="text-red-600 text-sm mt-1">{errors.ambulanceNumber}</p>
+            <p id="amb-number-error" className="text-red-600 text-sm mt-1">
+              {errors.ambulanceNumber}
+            </p>
           )}
-        </label>
-
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100"
-          >
-            {t('pages.ambulances.formModal.actions.cancel')}
-          </button>
-          <button
-            type="submit"
-            disabled={isSaveDisabled}
-            className={`px-4 py-2 rounded text-white ${
-              isSaveDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-          >
-            {t('pages.ambulances.formModal.actions.save')}
-          </button>
         </div>
-      </form>
-    </div>
-  );
+      </div>
+
+      {/* Footer */}
+      <div className="px-6 py-4 border-t flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-lg border px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:ring-2 focus:ring-gray-100"
+        >
+          {t('pages.ambulances.formModal.actions.cancel')}
+        </button>
+        <button
+          type="submit"
+          disabled={isSaveDisabled}
+          className={`rounded-lg px-4 py-2 text-sm font-medium text-white shadow-sm focus:ring-2 focus:ring-blue-100 ${
+            isSaveDisabled
+              ? 'bg-slate-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700'
+          }`}
+        >
+          {t('pages.ambulances.formModal.actions.save')}
+        </button>
+      </div>
+    </form>
+  </div>
+);
+
 };
 
 export default AmbulanceFormModal;
