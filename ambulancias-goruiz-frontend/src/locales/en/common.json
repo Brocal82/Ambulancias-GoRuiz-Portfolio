@@ -611,9 +611,6 @@
       },
       "choose": {
         "title": "Choose a time slot",
-        "timezoneNote": {
-          "prefix": "Times displayed in"
-        },
         "empty": "No options available. Please wait for the administrator to propose times.",
         "optionAria": "Option {{index}}: {{label}}",
         "actions": {

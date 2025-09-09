@@ -71,10 +71,7 @@ export default function ChooseSlotModal({
         >
           {t('pages.appointments.choose.title')}
         </h2>
-        <p className="mt-1 text-sm text-slate-600">
-          {t('pages.appointments.choose.timezoneNote.prefix')}{' '}
-          <b>Europe/Berlin</b>.
-        </p>
+        
       </div>
 
       {/* Opciones */}

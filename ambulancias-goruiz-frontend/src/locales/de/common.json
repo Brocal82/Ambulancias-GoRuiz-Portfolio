@@ -611,9 +611,6 @@
       },
       "choose": {
         "title": "Zeitfenster wählen",
-        "timezoneNote": {
-          "prefix": "Zeiten angezeigt in"
-        },
         "empty": "Keine Optionen verfügbar. Bitte warte, bis der Administrator Zeiten vorschlägt.",
         "optionAria": "Option {{index}}: {{label}}",
         "actions": {

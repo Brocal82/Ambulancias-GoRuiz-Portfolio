@@ -612,9 +612,6 @@
       },
       "choose": {
         "title": "Elige un horario",
-        "timezoneNote": {
-          "prefix": "Horarios mostrados en"
-        },
         "empty": "No hay opciones disponibles. Espera a que el administrador proponga horarios.",
         "optionAria": "Opción {{index}}: {{label}}",
         "actions": {
