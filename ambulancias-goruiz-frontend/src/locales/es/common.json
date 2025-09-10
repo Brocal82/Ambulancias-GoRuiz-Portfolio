@@ -132,6 +132,10 @@
     "label": "Buscar por nombre:",
     "placeholder": "Nombre o apellido"
   },
+  "legend": {
+        "expired": "P-Schein caducado",
+        "warning": "P-Schein a 6 meses"
+      },
   "filters": {
     "role": {
       "label": "Filtrar por rol:",

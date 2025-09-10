@@ -132,6 +132,10 @@
         "label": "Search by name:",
         "placeholder": "First or last name"
       },
+      "legend": {
+        "expired": "P-Schein expired",
+        "warning": "P-Schein within 6 months"
+      },
       "filters": {
         "role": {
           "label": "Filter by role:",

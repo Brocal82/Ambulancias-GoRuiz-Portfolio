@@ -132,6 +132,10 @@
         "label": "Nach Name suchen:",
         "placeholder": "Vor- oder Nachname"
       },
+      "legend": {
+        "expired": "P-Schein abgelaufen",
+        "warning": "P-Schein in 6 Monaten"
+      },
       "filters": {
         "role": {
           "label": "Nach Rolle filtern:",

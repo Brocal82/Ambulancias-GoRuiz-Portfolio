@@ -155,8 +155,12 @@ const AdminUsersPage = () => {
 
           {/* Leyenda */}
           <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-600">
-            <div className="flex items-center gap-2"><span className="text-red-500">❌</span> {t('pages.adminUsers.legend.expired', 'P-Schein caducado')}</div>
-            <div className="flex items-center gap-2"><span className="text-orange-400">⚠️</span> {t('pages.adminUsers.legend.warning', 'P-Schein a 6 meses')}</div>
+            <div className="flex items-center gap-2">
+              <span className="text-red-500">❌</span> {t('pages.adminUsers.legend.expired')}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-orange-400">⚠️</span> {t('pages.adminUsers.legend.warning')}
+            </div>
           </div>
         </div>
 
