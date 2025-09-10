@@ -83,40 +83,50 @@ const IssueReportModal: React.FC<Props> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg w-full max-w-lg space-y-4">
-        <h2 className="text-xl font-bold text-center">
+return (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+    <div className="w-full max-w-xl rounded-2xl bg-white shadow-lg ring-1 ring-slate-200">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-slate-200">
+        <h2 className="text-center text-lg font-semibold text-slate-900">
           {t("pages.mechanics.issueModal.title")}
         </h2>
+      </div>
 
-        <p>
-          <strong>{t("pages.mechanics.issueModal.dienst", { num: assignedDay.dienstNumber })}</strong>
-        </p>
+      {/* Body */}
+      <div className="px-6 py-5 space-y-5">
+        {/* Equipo y fecha/ambulancia en dos columnas */}
+        <div className="rounded-lg bg-slate-50 ring-1 ring-slate-200 p-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-700">
+            {/* Columna izquierda: conductor y sanitario */}
+            <div className="space-y-1">
+              <p>
+                <strong className="text-slate-800">{t("pages.mechanics.issueModal.driver")}</strong>{" "}
+                {assignedDay.driver.lastName}, {assignedDay.driver.name}
+              </p>
+              <p>
+                <strong className="text-slate-800">{t("pages.mechanics.issueModal.medic")}</strong>{" "}
+                {assignedDay.medic.lastName}, {assignedDay.medic.name}
+              </p>
+            </div>
 
-        <p>
-          <strong>{t("pages.mechanics.issueModal.date")}</strong>{" "}
-          {formatYYYYMMDDToDDMMYYYY(assignedDay.date)}
-        </p>
-        <p>
-          <strong>{t("pages.mechanics.issueModal.time")}</strong>{" "}
-          {assignedDay.startTime} – {assignedDay.endTime}
-        </p>
-        <p>
-          <strong>{t("pages.mechanics.issueModal.driver")}</strong>{" "}
-          {assignedDay.driver.lastName}, {assignedDay.driver.name}
-        </p>
-        <p>
-          <strong>{t("pages.mechanics.issueModal.medic")}</strong>{" "}
-          {assignedDay.medic.lastName}, {assignedDay.medic.name}
-        </p>
-        <p>
-          <strong>{t("pages.mechanics.issueModal.ambulance")}</strong>{" "}
-          {ambulanceNumber || t("pages.mechanics.issueModal.unknownAmbulance")}
-        </p>
+            {/* Columna derecha: fecha y ambulancia */}
+            <div className="space-y-1 sm:text-right">
+              <p>
+                <strong className="text-slate-800">{t("pages.mechanics.issueModal.date")}</strong>{" "}
+                {formatYYYYMMDDToDDMMYYYY(assignedDay.date)}
+              </p>
+              <p>
+                <strong className="text-slate-800">{t("pages.mechanics.issueModal.ambulance")}</strong>{" "}
+                {ambulanceNumber || t("pages.mechanics.issueModal.unknownAmbulance")}
+              </p>
+            </div>
+          </div>
+        </div>
 
+        {/* Kilometraje final */}
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label className="block text-sm font-medium text-slate-800 mb-1">
             {t("pages.mechanics.issueModal.finalKmLabel")}
           </label>
           <input
@@ -125,33 +135,40 @@ const IssueReportModal: React.FC<Props> = ({
             value={finalKmInput}
             onChange={(e) => setFinalKmInput(e.target.value.replace(/\D/g, ""))}
             placeholder={t("pages.mechanics.issueModal.finalKmPlaceholder")}
-            className="w-full border rounded p-2"
+            className="w-full rounded-md border border-slate-300 bg-slate-50/50 px-3 py-2 text-sm placeholder-slate-400 outline-none focus:border-slate-400 focus:ring-2 focus:ring-blue-200"
           />
         </div>
 
-        <p>
-          <strong>{t("pages.mechanics.issueModal.timestamp")}</strong>{" "}
-          {new Date().toLocaleString()}
-        </p>
-
+        {/* Descripción */}
         <textarea
           placeholder={t("pages.mechanics.issueModal.descriptionPlaceholder")}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full h-32 border rounded p-2"
+          className="w-full h-32 rounded-md border border-slate-300 bg-slate-50/50 px-3 py-2 text-sm placeholder-slate-400 outline-none focus:border-slate-400 focus:ring-2 focus:ring-blue-200"
         />
+      </div>
 
-        <div className="flex justify-end space-x-2">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-300 rounded">
-            {t("pages.mechanics.issueModal.actions.cancel")}
-          </button>
-          <button onClick={handleSend} className="px-4 py-2 bg-red-600 text-white rounded">
-            {t("pages.mechanics.issueModal.actions.send")}
-          </button>
-        </div>
+      {/* Footer */}
+      <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+        >
+          {t("pages.mechanics.issueModal.actions.cancel")}
+        </button>
+        <button
+          onClick={handleSend}
+          className="px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700"
+        >
+          {t("pages.mechanics.issueModal.actions.send")}
+        </button>
       </div>
     </div>
-  );
+  </div>
+);
+
+
+
 };
 
 export default IssueReportModal;
