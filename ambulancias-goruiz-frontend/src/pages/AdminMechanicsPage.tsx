@@ -7,7 +7,6 @@ import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
 import { getAllAmbulances } from "../api/ambulances";
 import type { Ambulance } from "../types/ambulance";
-import { formatYYYYMMDDToDDMMYYYY } from "../utils/timeUtils";
 import { useTranslation } from "react-i18next";
 
 const AdminMechanicsPage = () => {
