@@ -518,9 +518,11 @@
         "labels": {
           "date": "📅 Datum:",
           "time": "⏱ Uhrzeit:",
-          "team": "👥 Team:",
-          "ambulance": "🚐 Krankenwagen:",
-          "finalKm": "📏 End-KM:",
+          "team": "Team:",
+          "ambulance": "Krankenwagen:",
+          "model": "Modell:",
+          "numberPlate": "Kennzeichen:",
+          "finalKm": "End-KM:",
           "issue": "🛠️ Störung:"
         },
         "ambulanceFallback": "{{number}} (ID: {{id}})"

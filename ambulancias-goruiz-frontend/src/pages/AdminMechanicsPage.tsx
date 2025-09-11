@@ -44,87 +44,117 @@ const AdminMechanicsPage = () => {
     fetchData();
   }, [token]);
 
-return (
-  <div className="min-h-screen bg-slate-50">
-    <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6">
-      <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-4 text-center">
-          {t("pages.mechanics.adminPage.title")}
-        </h1>
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6">
+        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-4 text-center">
+            {t("pages.mechanics.adminPage.title")}
+          </h1>
 
+          {loading ? (
+            <p className="text-sm text-slate-600">{t("pages.mechanics.adminPage.loading")}</p>
+          ) : issues.length === 0 ? (
+            <p className="text-sm text-slate-600">{t("pages.mechanics.adminPage.empty")}</p>
+          ) : (
+            <ul className="space-y-4">
+              {issues.map((issue) => {
+                const amb = ambulances.find((a) => a._id === issue.ambulanceId);
 
-        {loading ? (
-          <p className="text-sm text-slate-600">{t("pages.mechanics.adminPage.loading")}</p>
-        ) : issues.length === 0 ? (
-          <p className="text-sm text-slate-600">{t("pages.mechanics.adminPage.empty")}</p>
-        ) : (
-          <ul className="space-y-4">
-            {issues.map((issue) => (
-              <li
-                key={issue._id}
-                className="rounded-xl ring-1 ring-slate-200 bg-white p-5 hover:shadow-sm hover:ring-slate-300 transition"
-              >
-                {/* Cabecera: fecha y timestamp */}
-                <div className="flex items-center justify-between mb-3">
-                  <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-2.5 py-1 text-xs font-medium ring-1 ring-slate-200">
-                    📅 {formatYYYYMMDDToDDMMYYYY(issue.date)}
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    {new Date(issue.timestamp).toLocaleString()}
-                  </span>
-                </div>
-
-                {/* Info principal */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                  <p className="text-slate-700">
-                    <span className="font-semibold text-slate-800">
-                      {t("pages.mechanics.adminPage.labels.team")}{" "}
-                    </span>
-                    {issue.team}
-                  </p>
-
-                  <div className="text-slate-700">
-                    <p>
-                      <span className="font-semibold text-slate-800">
-                        {t("pages.mechanics.adminPage.labels.ambulance")}{" "}
+                return (
+                  <li
+                    key={issue._id}
+                    className="rounded-xl ring-1 ring-slate-200 bg-white p-5 hover:shadow-sm hover:ring-slate-300 transition"
+                  >
+                    {/* Timestamp */}
+                    <div className="mb-3">
+                      <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-2.5 py-1 text-xs font-medium ring-1 ring-slate-200">
+                        📅 {new Date(issue.timestamp).toLocaleString()}
                       </span>
-                      {(() => {
-                        const amb = ambulances.find((a) => a._id === issue.ambulanceId);
-                        return amb
-                          ? `${amb.ambulanceNumber} — ${amb.brand} ${amb.modelName} (Matrícula: ${amb.licensePlate})`
-                          : t("pages.mechanics.adminPage.ambulanceFallback", {
+                    </div>
+
+                    {/* Dos bloques alineados: izquierda (Ambulancia), derecha (Equipo) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      {/* Bloque IZQUIERDA: Ambulancia */}
+                      <div className="rounded-lg ring-1 ring-slate-200 p-3">
+                        {amb ? (
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                            {/* Fila 1: Ambulancia | KM finales */}
+                            <div className="truncate">
+                              <span className="font-semibold text-slate-800">
+                                {t("pages.mechanics.adminPage.labels.ambulance")}
+                              </span>{" "}
+                              {amb.ambulanceNumber}
+                            </div>
+                            <div className="truncate">
+                              <span className="font-semibold text-slate-800">
+                                {t("pages.mechanics.adminPage.labels.finalKm")}
+                              </span>{" "}
+                              {issue.finalKm}
+                            </div>
+
+                            {/* Fila 2: Modelo | Matrícula */}
+                            <div className="truncate">
+                              <span className="font-semibold text-slate-800">
+                                {t("pages.mechanics.adminPage.labels.model")}
+                              </span>{" "}
+                              {amb.brand} {amb.modelName}
+                            </div>
+                            <div className="truncate">
+                              <span className="font-semibold text-slate-800">
+                                {t("pages.mechanics.adminPage.labels.numberPlate")}
+                              </span>{" "}
+                              {amb.licensePlate}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-slate-700">
+                            {t("pages.mechanics.adminPage.ambulanceFallback", {
                               number: issue.ambulanceNumber,
                               id: issue.ambulanceId,
-                            });
-                      })()}
-                    </p>
-                    <p className="mt-1">
-                      <span className="font-semibold text-slate-800">
-                        {t("pages.mechanics.adminPage.labels.finalKm")}{" "}
-                      </span>
-                      {issue.finalKm}
-                    </p>
-                  </div>
-                </div>
+                            })}
+                            <div className="mt-1">
+                              <span className="font-semibold text-slate-800">
+                                {t("pages.mechanics.adminPage.labels.finalKm")}
+                              </span>{" "}
+                              {issue.finalKm}
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
-                {/* Bloque de avería */}
-                <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3">
-                  <p className="text-rose-800 text-sm whitespace-pre-line">
-                    <span className="font-semibold">
-                      {t("pages.mechanics.adminPage.labels.issue")}{" "}
-                    </span>
-                    {issue.issueText}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+                      {/* Bloque DERECHA: Equipo */}
+                      <div className="rounded-lg ring-1 ring-slate-200 p-3 flex flex-col items-center justify-center text-center">
+                        <span className="font-semibold text-slate-800 mb-1">
+                          {t("pages.mechanics.adminPage.labels.team")}
+                        </span>
+                        <div className="whitespace-pre-line leading-tight text-slate-700">
+                          {issue.team.split("+").map((member, idx) => (
+                            <p key={idx}>{member.trim()}</p>
+                          ))}
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* Bloque de avería */}
+                    <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3">
+                      <p className="text-rose-800 text-sm whitespace-pre-line">
+                        <span className="font-semibold">
+                          {t("pages.mechanics.adminPage.labels.issue")}{" "}
+                        </span>
+                        {issue.issueText}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
-;
+  );
 };
 
 export default AdminMechanicsPage;
