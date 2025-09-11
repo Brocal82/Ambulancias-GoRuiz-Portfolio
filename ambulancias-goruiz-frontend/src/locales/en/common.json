@@ -649,12 +649,15 @@
           "time": "Select a time"
         },
         "actions": {
-          "close": "Close",
-          "cancel": "Cancel",
-          "save": "Save",
-          "saving": "Saving...",
-          "cancelling": "Cancelling..."
-        },
+  "close": "Close",
+  "delete": "Delete",
+  "deleting": "Deleting...",
+  "save": "Save",
+  "saving": "Saving...",
+  "cancelEdit": "Cancel",
+  "cancelling": "Cancelling..."
+}
+,
         "cancelThisTitle": "Cancel this appointment",
         "confirmCancel": "Are you sure you want to cancel this appointment?"
       },

@@ -11,11 +11,10 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   item: Appointment | null;
-  /** Llamar tras cambios (cancelar/reprogramar) para refrescar en el padre */
   onChanged?: () => void;
 };
 
-const DEFAULT_DURATION_MIN = 30; // duración fija por defecto
+const DEFAULT_DURATION_MIN = 30;
 
 const AdminAppointmentDetail: React.FC<Props> = ({ isOpen, onClose, item, onChanged }) => {
   const { token } = useAuth();
@@ -23,8 +22,8 @@ const AdminAppointmentDetail: React.FC<Props> = ({ isOpen, onClose, item, onChan
 
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [reDate, setReDate] = useState(''); // YYYY-MM-DD
-  const [reTime, setReTime] = useState(''); // HH:mm
+  const [reDate, setReDate] = useState('');
+  const [reTime, setReTime] = useState('');
 
   useEffect(() => {
     if (!isOpen || !item) return;
@@ -36,8 +35,7 @@ const AdminAppointmentDetail: React.FC<Props> = ({ isOpen, onClose, item, onChan
 
   const saveDisabled = useMemo(() => {
     if (!editMode) return true;
-    if (!reDate || !reTime) return true;
-    return false;
+    return !reDate || !reTime;
   }, [editMode, reDate, reTime]);
 
   if (!isOpen || !item) return null;
@@ -56,26 +54,24 @@ const AdminAppointmentDetail: React.FC<Props> = ({ isOpen, onClose, item, onChan
       ? String(item.adminId)
       : '—';
 
-  const when =
-    item.selectedSlot?.start
-      ? new Date(item.selectedSlot.start).toLocaleString('de-DE', { timeZone: APP_TZ })
-      : '—';
+  const when = item.selectedSlot?.start
+    ? new Date(item.selectedSlot.start).toLocaleString('de-DE', { timeZone: APP_TZ })
+    : '—';
 
   const statusLabel = t(`pages.appointments.statusLabel.${item.status}`);
 
-  const handleCancel = async () => {
+  const handleCancelAppointment = async () => {
     if (!item?._id) return;
     const ok = window.confirm(t('pages.appointments.detail.confirmCancel'));
     if (!ok) return;
     try {
       setLoading(true);
       await cancelAppointment(item._id, token!);
-      // toasts: fase aparte
-      toastT.success(["toasts.appointments.cancelSuccess"]);
+      toastT.success(['toasts.appointments.cancelSuccess']);
       onClose();
       onChanged?.();
     } catch (e: any) {
-      toastT.error(e?.response?.data?.message ?? ["toasts.appointments.cancelError"]);
+      toastT.error(e?.response?.data?.message ?? ['toasts.appointments.cancelError']);
     } finally {
       setLoading(false);
     }
@@ -83,18 +79,15 @@ const AdminAppointmentDetail: React.FC<Props> = ({ isOpen, onClose, item, onChan
 
   const handleSave = async () => {
     if (!item?._id) return;
-
-    // Reprogramación usando duración por defecto
     const conv = localDateTimeToUtcISO(APP_TZ, reDate, reTime, DEFAULT_DURATION_MIN);
     if (!conv) {
-      toastT.warn(["toasts.appointments.invalidDateTime"]);
+      toastT.warn(['toasts.appointments.invalidDateTime']);
       return;
     }
     if (conv.start.getTime() <= Date.now()) {
-      toastT.warn(["toasts.appointments.pastDateError"]);
+      toastT.warn(['toasts.appointments.pastDateError']);
       return;
     }
-
     try {
       setLoading(true);
       await updateAppointment(
@@ -102,161 +95,180 @@ const AdminAppointmentDetail: React.FC<Props> = ({ isOpen, onClose, item, onChan
         { selectedSlot: { start: conv.startISO, end: conv.endISO } },
         token!
       );
-       toastT.success(["toasts.appointments.rescheduleSuccess"]);
+      toastT.success(['toasts.appointments.rescheduleSuccess']);
       setEditMode(false);
       onClose();
       onChanged?.();
     } catch (e: any) {
-       toastT.error(e?.response?.data?.message ?? ["toasts.appointments.rescheduleError"]);
+      toastT.error(e?.response?.data?.message ?? ['toasts.appointments.rescheduleError']);
     } finally {
       setLoading(false);
     }
   };
 
- return (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-    <div
-      className="w-full max-w-xl rounded-2xl bg-white shadow-sm ring-1 ring-slate-200"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="appt-detail-title"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-        <h3 id="appt-detail-title" className="text-lg font-semibold tracking-tight text-slate-900">
-          {t('pages.appointments.detail.title')}
-        </h3>
-
-        {!isCancelled && !editMode ? (
-          <button
-            onClick={() => setEditMode(true)}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100"
-            title={t('pages.appointments.detail.rebookTitle')}
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div
+        className="w-full max-w-xl rounded-2xl bg-white shadow-sm ring-1 ring-slate-200"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="appt-detail-title"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <h3
+            id="appt-detail-title"
+            className="text-lg font-semibold tracking-tight text-slate-900"
           >
-            {t('pages.appointments.detail.rebook')}
-          </button>
-        ) : null}
+            {t('pages.appointments.detail.title')}
+          </h3>
 
-        {editMode && (
-          <div className="flex gap-2">
+          {!isCancelled && !editMode && (
             <button
-              onClick={() => setEditMode(false)}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100 disabled:opacity-60"
-              disabled={loading}
+              onClick={() => setEditMode(true)}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100"
+              title={t('pages.appointments.detail.rebookTitle')}
             >
-              {t('pages.appointments.detail.actions.cancel')}
+              {t('pages.appointments.detail.rebook')}
             </button>
-            <button
-              onClick={handleSave}
-              className="rounded-xl bg-emerald-600 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:opacity-60"
-              disabled={loading || saveDisabled}
-              title={t('pages.appointments.detail.saveNewDatetime')}
-            >
-              {loading
-                ? t('pages.appointments.detail.actions.saving')
-                : t('pages.appointments.detail.actions.save')}
-            </button>
+          )}
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-4 space-y-3">
+          <div className="text-sm">
+            <span className="text-slate-500">
+              {t('pages.appointments.detail.labels.worker')}
+            </span>{' '}
+            <span className="font-medium text-slate-900">{worker}</span>
           </div>
-        )}
-      </div>
+          <div className="text-sm">
+            <span className="text-slate-500">
+              {t('pages.appointments.detail.labels.admin')}
+            </span>{' '}
+            <span className="font-medium text-slate-900">{admin}</span>
+          </div>
+          <div className="text-sm">
+            <span className="text-slate-500">
+              {t('pages.appointments.detail.labels.currentWhen')}
+            </span>{' '}
+            <span className="font-medium text-slate-900">{when}</span>
+          </div>
+          <div className="text-sm">
+            <span className="text-slate-500">
+              {t('pages.appointments.detail.labels.status')}
+            </span>{' '}
+            <span className="font-medium capitalize text-slate-900">
+              {statusLabel}
+            </span>
+          </div>
 
-      {/* Body */}
-      <div className="px-6 py-4 space-y-3">
-        {/* Datos fijos */}
-        <div className="text-sm">
-          <span className="text-slate-500">{t('pages.appointments.detail.labels.worker')}</span>{' '}
-          <span className="font-medium text-slate-900">{worker}</span>
-        </div>
-        <div className="text-sm">
-          <span className="text-slate-500">{t('pages.appointments.detail.labels.admin')}</span>{' '}
-          <span className="font-medium text-slate-900">{admin}</span>
-        </div>
-        <div className="text-sm">
-          <span className="text-slate-500">{t('pages.appointments.detail.labels.currentWhen')}</span>{' '}
-          <span className="font-medium text-slate-900">{when}</span>
-        </div>
-        <div className="text-sm">
-          <span className="text-slate-500">{t('pages.appointments.detail.labels.status')}</span>{' '}
-          <span className="font-medium capitalize text-slate-900">{statusLabel}</span>
-        </div>
-
-        {/* Motivo / Descripción */}
-        <div className="pt-2">
-          <div className="text-sm text-slate-500">{t('pages.appointments.detail.labels.reason')}</div>
-          <div className="font-medium text-slate-900">{item.reason}</div>
-        </div>
-        <div>
-          <div className="text-sm text-slate-500">{t('pages.appointments.detail.labels.description')}</div>
-          <div className="whitespace-pre-wrap text-slate-800">{item.details}</div>
-        </div>
-
-        {/* Reprogramar */}
-        {!isCancelled && (
           <div className="pt-2">
-            <div className="mb-1 text-sm text-slate-500">{t('pages.appointments.detail.rebook')}</div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <label htmlFor="re-date" className="mb-1 block text-sm font-medium text-slate-700">
-                  {t('pages.appointments.detail.inputs.newDate')}
-                </label>
-                <input
-                  id="re-date"
-                  type="date"
-                  value={reDate}
-                  onChange={(e) => setReDate(e.target.value)}
-                  disabled={!editMode || loading}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-60"
-                  placeholder={t('pages.appointments.detail.placeholders.date')}
-                  title={t('pages.appointments.detail.titles.date')}
-                />
+            <div className="text-sm text-slate-500">
+              {t('pages.appointments.detail.labels.reason')}
+            </div>
+            <div className="font-medium text-slate-900">{item.reason}</div>
+          </div>
+          <div>
+            <div className="text-sm text-slate-500">
+              {t('pages.appointments.detail.labels.description')}
+            </div>
+            <div className="whitespace-pre-wrap text-slate-800">{item.details}</div>
+          </div>
+
+          {!isCancelled && editMode && (
+            <div className="pt-2">
+              <div className="mb-1 text-sm text-slate-500">
+                {t('pages.appointments.detail.rebook')}
               </div>
-              <div>
-                <label htmlFor="re-time" className="mb-1 block text-sm font-medium text-slate-700">
-                  {t('pages.appointments.detail.inputs.newTime')}
-                </label>
-                <input
-                  id="re-time"
-                  type="time"
-                  value={reTime}
-                  onChange={(e) => setReTime(e.target.value)}
-                  disabled={!editMode || loading}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-60"
-                  placeholder={t('pages.appointments.detail.placeholders.time')}
-                  title={t('pages.appointments.detail.titles.time')}
-                />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="re-date"
+                    className="mb-1 block text-sm font-medium text-slate-700"
+                  >
+                    {t('pages.appointments.detail.inputs.newDate')}
+                  </label>
+                  <input
+                    id="re-date"
+                    type="date"
+                    value={reDate}
+                    onChange={(e) => setReDate(e.target.value)}
+                    disabled={loading}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-60"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="re-time"
+                    className="mb-1 block text-sm font-medium text-slate-700"
+                  >
+                    {t('pages.appointments.detail.inputs.newTime')}
+                  </label>
+                  <input
+                    id="re-time"
+                    type="time"
+                    value={reTime}
+                    onChange={(e) => setReTime(e.target.value)}
+                    disabled={loading}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-60"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      {/* Footer */}
-      <div className="flex justify-between gap-2 border-t border-slate-200 px-6 py-4">
+        {/* Footer */}
+<div className="flex justify-between gap-2 border-t border-slate-200 px-6 py-4">
+  {!editMode ? (
+    <>
+      <button
+        onClick={onClose}
+        className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100 disabled:opacity-60"
+        disabled={loading}
+      >
+        {t('pages.appointments.detail.actions.close')}
+      </button>
+
+      {!isCancelled && (
         <button
-          onClick={onClose}
-          className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100 disabled:opacity-60"
+          onClick={handleCancelAppointment}
+          className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100 disabled:opacity-60"
           disabled={loading}
         >
-          {t('pages.appointments.detail.actions.close')}
+          {loading
+            ? t('pages.appointments.detail.actions.deleting')
+            : t('pages.appointments.detail.actions.delete')}
         </button>
+      )}
+    </>
+  ) : (
+    <div className="ml-auto flex gap-2">
+      <button
+        onClick={() => setEditMode(false)}
+        className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100 disabled:opacity-60"
+        disabled={loading}
+      >
+        {t('pages.appointments.detail.actions.cancelEdit')}
+      </button>
 
-        {!isCancelled && (
-          <button
-            onClick={handleCancel}
-            className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100 disabled:opacity-60"
-            disabled={loading}
-            title={t('pages.appointments.detail.cancelThisTitle')}
-          >
-            {loading
-              ? t('pages.appointments.detail.actions.cancelling')
-              : t('pages.appointments.detail.actions.cancel')}
-          </button>
-        )}
+      <button
+        onClick={handleSave}
+        className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:opacity-60"
+        disabled={loading || saveDisabled}
+      >
+        {loading
+          ? t('pages.appointments.detail.actions.saving')
+          : t('pages.appointments.detail.actions.save')}
+      </button>
+    </div>
+  )}
+</div>
+
       </div>
     </div>
-  </div>
-);
-
+  );
 };
 
 export default AdminAppointmentDetail;

@@ -650,12 +650,15 @@
           "time": "Selecciona una hora"
         },
         "actions": {
-          "close": "Cerrar",
-          "cancel": "Cancelar",
-          "save": "Guardar",
-          "saving": "Guardando...",
-          "cancelling": "Cancelando..."
-        },
+  "close": "Cerrar",
+  "delete": "Eliminar",
+  "deleting": "Eliminando...",
+  "save": "Guardar",
+  "saving": "Guardando...",
+  "cancelEdit": "Cancelar",
+  "cancelling": "Cancelando..."
+}
+,
         "cancelThisTitle": "Cancelar esta cita",
         "confirmCancel": "¿Seguro que quieres cancelar esta cita?"
       },

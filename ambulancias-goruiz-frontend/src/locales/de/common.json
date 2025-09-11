@@ -649,12 +649,15 @@
           "time": "Uhrzeit auswählen"
         },
         "actions": {
-          "close": "Schließen",
-          "cancel": "Abbrechen",
-          "save": "Speichern",
-          "saving": "Wird gespeichert...",
-          "cancelling": "Wird abgebrochen..."
-        },
+  "close": "Schließen",
+  "delete": "Löschen",
+  "deleting": "Löschen...",
+  "save": "Speichern",
+  "saving": "Speichern...",
+  "cancelEdit": "Abbrechen",
+  "cancelling": "Wird abgebrochen..."
+}
+,
         "cancelThisTitle": "Diesen Termin absagen",
         "confirmCancel": "Möchtest du diesen Termin wirklich absagen?"
       },
