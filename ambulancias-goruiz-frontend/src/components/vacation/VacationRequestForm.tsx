@@ -51,7 +51,7 @@ const VacationRequestForm = ({ onSuccess }: VacationRequestFormProps) => {
       });
       setMessage(t('pages.vacations.requestForm.success'));
       if (onSuccess) onSuccess();
-    } catch (error) {
+    } catch {
       setMessage(t('pages.vacations.requestForm.error'));
     } finally {
       setLoading(false);
@@ -60,12 +60,29 @@ const VacationRequestForm = ({ onSuccess }: VacationRequestFormProps) => {
 
   return (
     <div className="mx-auto max-w-lg rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      {/* Estilos locales SOLO para este componente */}
+      <style>{`
+        .vacation-range .rdrDateRangeWrapper,
+        .vacation-range .rdrCalendarWrapper,
+        .vacation-range .rdrMonths,
+        .vacation-range .rdrMonth {
+          width: 100%;
+        }
+        .vacation-range .rdrMonths {
+          display: flex;
+        }
+        .vacation-range .rdrMonth {
+          flex: 1;
+        }
+      `}</style>
+
       <h2 className="text-lg font-semibold text-slate-900 mb-4">
         {t('pages.vacations.requestForm.title')}
       </h2>
 
-      <div className="rounded-xl ring-1 ring-slate-200 overflow-hidden">
+      <div className="vacation-range rounded-xl ring-1 ring-slate-200 overflow-hidden w-full">
         <DateRange
+          className="w-full"
           ranges={[selectionRange]}
           onChange={handleSelect}
           moveRangeOnFirstSelection={false}
