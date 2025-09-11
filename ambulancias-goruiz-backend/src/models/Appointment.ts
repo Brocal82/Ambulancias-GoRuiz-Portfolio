@@ -52,13 +52,23 @@ const AppointmentSchema = new Schema<AppointmentDoc>(
 AppointmentSchema.pre('save', function (next) {
   const now = new Date();
 
-  // proposedSlots: válidos, futuros y ordenados
+  // proposedSlots: validar estructura siempre; validar "futuro" solo cuando se modifican o es nuevo y no estamos cancelando
   if (this.proposedSlots && this.proposedSlots.length > 0) {
+    const enforceFuture =
+      (this.isNew || this.isModified('proposedSlots')) && this.status !== 'cancelled';
+
+    // (la longitud máxima ya la valida el schema, pero mantenemos el resto)
     for (const s of this.proposedSlots) {
-      if (!(s.start instanceof Date) || !(s.end instanceof Date) || s.start >= s.end) {
+      if (
+        !(s.start instanceof Date) ||
+        !(s.end instanceof Date) ||
+        Number.isNaN(s.start.getTime()) ||
+        Number.isNaN(s.end.getTime()) ||
+        s.start >= s.end
+      ) {
         return next(new Error('Cada slot debe tener start/end válidos y start < end.'));
       }
-      if (s.start < now) {
+      if (enforceFuture && s.start < now) {
         return next(new Error('No se pueden proponer slots en el pasado.'));
       }
     }
@@ -69,33 +79,34 @@ AppointmentSchema.pre('save', function (next) {
     }
   }
 
-// selectedSlot: reglas según estado
-if (this.selectedSlot) {
-  const sel = this.selectedSlot as TimeSlot;
+  // selectedSlot: reglas según estado
+  if (this.selectedSlot) {
+    const sel = this.selectedSlot as TimeSlot;
 
-  // Si la cita queda CONFIRMADA o REPROGRAMADA, no permitir pasado
-  if ((this.status === 'confirmed' || this.status === 'rescheduled') && sel.start < now) {
-    return next(new Error('No se puede programar un slot en el pasado.'));
-  }
+    // Solo impedimos pasado cuando el estado final es confirmed o rescheduled.
+    // Al cancelar (status='cancelled'), NO bloqueamos aunque el slot sea pasado.
+    if ((this.status === 'confirmed' || this.status === 'rescheduled') && sel.start < now) {
+      return next(new Error('No se puede programar un slot en el pasado.'));
+    }
 
-  // Solo al CONFIRMAR (elección del trabajador) exigimos pertenencia a proposedSlots
-  if (this.status === 'confirmed') {
-    const belongs =
-      (this.proposedSlots ?? []).some(
-        (s: TimeSlot) =>
-          s.start.getTime() === sel.start.getTime() &&
-          s.end.getTime() === sel.end.getTime()
-      );
+    // Solo al CONFIRMAR exigimos que el selectedSlot pertenezca a proposedSlots
+    if (this.status === 'confirmed') {
+      const belongs =
+        (this.proposedSlots ?? []).some(
+          (s: TimeSlot) =>
+            s.start.getTime() === sel.start.getTime() &&
+            s.end.getTime() === sel.end.getTime()
+        );
 
-    if (!belongs) {
-      return next(new Error('selectedSlot debe pertenecer a proposedSlots al confirmar.'));
+      if (!belongs) {
+        return next(new Error('selectedSlot debe pertenecer a proposedSlots al confirmar.'));
+      }
     }
   }
-}
 
-next();
-
+  next();
 });
+
 
 // Índices útiles para calendario y consultas
 AppointmentSchema.index({ 'selectedSlot.start': 1 });

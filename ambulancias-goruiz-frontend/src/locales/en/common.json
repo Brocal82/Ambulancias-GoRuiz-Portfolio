@@ -604,11 +604,9 @@
         "dateLabel": "Date (option {{index}})",
         "datePlaceholder": "YYYY-MM-DD",
         "dateTitle": "Select a date",
-        "dateHint": "Format: YYYY-MM-DD",
         "timeLabel": "Start time (option {{index}})",
         "timePlaceholder": "HH:MM",
         "timeTitle": "Select a start time",
-        "timeHint": "24h format: HH:MM",
         "actions": {
           "cancel": "Cancel",
           "submit": "Propose",

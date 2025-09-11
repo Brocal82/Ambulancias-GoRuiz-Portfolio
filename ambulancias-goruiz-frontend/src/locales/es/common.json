@@ -605,11 +605,9 @@
         "dateLabel": "Fecha (opción {{index}})",
         "datePlaceholder": "AAAA-MM-DD",
         "dateTitle": "Selecciona una fecha",
-        "dateHint": "Formato: AAAA-MM-DD",
         "timeLabel": "Hora inicio (opción {{index}})",
         "timePlaceholder": "HH:MM",
         "timeTitle": "Selecciona una hora de inicio",
-        "timeHint": "Formato de 24h: HH:MM",
         "actions": {
           "cancel": "Cancelar",
           "submit": "Proponer",

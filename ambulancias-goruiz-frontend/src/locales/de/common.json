@@ -604,11 +604,9 @@
         "dateLabel": "Datum (Option {{index}})",
         "datePlaceholder": "JJJJ-MM-TT",
         "dateTitle": "Wähle ein Datum",
-        "dateHint": "Format: JJJJ-MM-TT",
         "timeLabel": "Startzeit (Option {{index}})",
         "timePlaceholder": "HH:MM",
         "timeTitle": "Wähle eine Startzeit",
-        "timeHint": "24h-Format: HH:MM",
         "actions": {
           "cancel": "Abbrechen",
           "submit": "Vorschlagen",
