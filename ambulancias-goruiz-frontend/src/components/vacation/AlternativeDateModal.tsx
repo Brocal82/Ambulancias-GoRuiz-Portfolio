@@ -53,6 +53,22 @@ const AlternativeDateModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Estilos locales SOLO para este modal */}
+      <style>{`
+        .alt-range .rdrDateRangeWrapper,
+        .alt-range .rdrCalendarWrapper,
+        .alt-range .rdrMonths,
+        .alt-range .rdrMonth {
+          width: 100%;
+        }
+        .alt-range .rdrMonths {
+          display: flex;
+        }
+        .alt-range .rdrMonth {
+          flex: 1;
+        }
+      `}</style>
+
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
 
@@ -62,8 +78,9 @@ const AlternativeDateModal = ({
           {t('pages.vacations.altModal.title')}
         </h3>
 
-        <div className="rounded-xl ring-1 ring-slate-200 overflow-hidden">
+        <div className="alt-range rounded-xl ring-1 ring-slate-200 overflow-hidden w-full">
           <DateRange
+            className="w-full"
             ranges={[selectionRange]}
             onChange={handleSelect}
             moveRangeOnFirstSelection={false}
