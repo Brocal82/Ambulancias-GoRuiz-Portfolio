@@ -681,26 +681,26 @@
         "title": "Termine pro Monat · {{year}}",
         "count_one": "{{count}} Termin",
         "count_other": "{{count}} Termine",
-        "emptyBadge": "Leer",
         "ariaOpenMonth": "Monat {{label}} {{year}} öffnen"
       },
       "calendar": {
-        "weekdayLabels": [
-          "M",
-          "D",
-          "M",
-          "D",
-          "F",
-          "S",
-          "S"
-        ],
+        "weekdayLabels": ["M", "D", "M", "D", "F", "S", "S"],
         "workerFallback": "Mitarbeiter",
+        "dayAppointmentsTitle": "Termine des Tages",
+        "noAppointments": "Keine Termine für diesen Tag.",
+        "actions": {
+          "close": "Schließen"
+        },
+        "labels": {
+        "moreWithCount": "+{{count}} mehr"
+      },
         "aria": {
           "day": "Tag {{num}}",
           "emptyCell": "Leere Zelle",
           "appointment": "Termin: {{worker}} um {{time}}"
         }
       }
+
     },
     "messages": {
       "adminPage": {

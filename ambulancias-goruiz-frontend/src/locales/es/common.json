@@ -127,35 +127,34 @@
       }
     },
     "adminUsers": {
-  "title": "Usuarios registrados",
-  "search": {
-    "label": "Buscar por nombre:",
-    "placeholder": "Nombre o apellido"
-  },
-  "legend": {
+      "title": "Usuarios registrados",
+      "search": {
+        "label": "Buscar por nombre:",
+        "placeholder": "Nombre o apellido"
+      },
+      "legend": {
         "expired": "P-Schein caducado",
         "warning": "P-Schein a 6 meses"
       },
-  "filters": {
-    "role": {
-      "label": "Filtrar por rol:",
-      "all": "Todos los roles"
+      "filters": {
+        "role": {
+          "label": "Filtrar por rol:",
+          "all": "Todos los roles"
+        },
+        "status": {
+          "label": "Filtrar por estado:",
+          "all": "Todos los estados",
+          "onLeave": "De baja médica",
+          "onVacation": "De vacaciones"
+        }
+      },
+      "columns": {
+        "lastName": "Apellido",
+        "name": "Nombre",
+        "email": "Email",
+        "role": "Rol"
+      }
     },
-    "status": {
-      "label": "Filtrar por estado:",
-      "all": "Todos los estados",
-      "onLeave": "De baja médica",
-      "onVacation": "De vacaciones"
-    }
-  },
-  "columns": {
-    "lastName": "Apellido",
-    "name": "Nombre",
-    "email": "Email",
-    "role": "Rol"
-  }
-},
-
     "profile": {
       "title": "Perfil de Usuario",
       "loading": "Cargando...",
@@ -650,15 +649,14 @@
           "time": "Selecciona una hora"
         },
         "actions": {
-  "close": "Cerrar",
-  "delete": "Eliminar",
-  "deleting": "Eliminando...",
-  "save": "Guardar",
-  "saving": "Guardando...",
-  "cancelEdit": "Cancelar",
-  "cancelling": "Cancelando..."
-}
-,
+          "close": "Cerrar",
+          "delete": "Eliminar",
+          "deleting": "Eliminando...",
+          "save": "Guardar",
+          "saving": "Guardando...",
+          "cancelEdit": "Cancelar",
+          "cancelling": "Cancelando..."
+        },
         "cancelThisTitle": "Cancelar esta cita",
         "confirmCancel": "¿Seguro que quieres cancelar esta cita?"
       },
@@ -682,26 +680,26 @@
         "title": "Citas por mes · {{year}}",
         "count_one": "{{count}} cita",
         "count_other": "{{count}} citas",
-        "emptyBadge": "Vacío",
         "ariaOpenMonth": "Abrir mes {{label}} {{year}}"
       },
       "calendar": {
-        "weekdayLabels": [
-          "L",
-          "M",
-          "X",
-          "J",
-          "V",
-          "S",
-          "D"
-        ],
+        "weekdayLabels": ["L","M","X","J","V","S","D"],
         "workerFallback": "Trabajador",
+        "dayAppointmentsTitle": "Citas del día",
+        "noAppointments": "No hay citas para este día.",
+        "actions": {
+          "close": "Cerrar"
+        },
+        "labels": {
+        "moreWithCount": "+{{count}} más"
+      },
         "aria": {
           "day": "Día {{num}}",
           "emptyCell": "Celda vacía",
           "appointment": "Cita: {{worker}} a las {{time}}"
         }
       }
+
     },
     "messages": {
       "adminPage": {

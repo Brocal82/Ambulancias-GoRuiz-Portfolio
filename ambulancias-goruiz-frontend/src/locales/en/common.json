@@ -681,26 +681,26 @@
         "title": "Appointments per month · {{year}}",
         "count_one": "{{count}} appointment",
         "count_other": "{{count}} appointments",
-        "emptyBadge": "Empty",
         "ariaOpenMonth": "Open month {{label}} {{year}}"
       },
       "calendar": {
-        "weekdayLabels": [
-          "M",
-          "T",
-          "W",
-          "T",
-          "F",
-          "S",
-          "S"
-        ],
+        "weekdayLabels": ["M", "T", "W", "T", "F", "S", "S"],
         "workerFallback": "Worker",
+        "dayAppointmentsTitle": "Appointments for the day",
+        "noAppointments": "No appointments for this day.",
+        "actions": {
+          "close": "Close"
+        },
+        "labels": {
+        "moreWithCount": "+{{count}} more"
+      },
         "aria": {
           "day": "Day {{num}}",
           "emptyCell": "Empty cell",
           "appointment": "Appointment: {{worker}} at {{time}}"
         }
       }
+
     },
     "messages": {
       "adminPage": {
