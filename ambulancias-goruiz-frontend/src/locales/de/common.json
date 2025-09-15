@@ -550,7 +550,13 @@
         "title": "Termine (Admin)"
       },
       "worker": {
-        "title": "Meine Termine"
+        "title": "Meine Termine",
+        "confirmDelete": "Bist du sicher, dass du diesen Termin aus dem Verlauf löschen möchtest?",
+        "actions": {
+          "delete": "Löschen",
+          "deleteTitle": "Diesen Termin löschen"
+        }
+
       },
       "actions": {
         "refresh": "Aktualisieren",
@@ -1147,7 +1153,10 @@
       "confirmError": "❌ Fehler beim Bestätigen des Termins.",
       "requestFill": "✏️ Bitte Grund und Details ausfüllen.",
       "requestSuccess": "✅ Anfrage gesendet.",
-      "requestError": "❌ Fehler beim Erstellen der Anfrage."
+      "requestError": "❌ Fehler beim Erstellen der Anfrage.",
+      "deleteSuccess": "Termin gelöscht.",
+      "deleteError": "Der Termin konnte nicht gelöscht werden."
+
     },
     "users": {
       "loadError": "❌ Fehler beim Laden der Benutzer.",

@@ -550,7 +550,12 @@
         "title": "Citas (Admin)"
       },
       "worker": {
-        "title": "Mis Citas"
+        "title": "Mis Citas",
+        "confirmDelete": "¿Seguro que quieres eliminar esta cita del historial?",
+        "actions": {
+          "delete": "Eliminar",
+          "deleteTitle": "Eliminar esta cita"
+        }
       },
       "actions": {
         "refresh": "Refrescar",
@@ -1146,7 +1151,9 @@
       "confirmError": "❌ Error al confirmar la cita.",
       "requestFill": "✏️ Completa motivo y detalles.",
       "requestSuccess": "✅ Solicitud enviada.",
-      "requestError": "❌ Error al crear la solicitud."
+      "requestError": "❌ Error al crear la solicitud.",
+      "deleteSuccess": "Cita eliminada.",
+      "deleteError": "No se pudo eliminar la cita."
     },
     "users": {
       "loadError": "❌ Error al cargar usuarios.",

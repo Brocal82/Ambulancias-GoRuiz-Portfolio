@@ -550,7 +550,13 @@
         "title": "Appointments (Admin)"
       },
       "worker": {
-        "title": "My Appointments"
+        "title": "My Appointments",
+        "confirmDelete": "Are you sure you want to delete this appointment from the history?",
+        "actions": {
+          "delete": "Delete",
+          "deleteTitle": "Delete this appointment"
+        }
+
       },
       "actions": {
         "refresh": "Refresh",
@@ -1147,7 +1153,10 @@
       "confirmError": "❌ Failed to confirm appointment.",
       "requestFill": "✏️ Please complete reason and details.",
       "requestSuccess": "✅ Request sent.",
-      "requestError": "❌ Failed to create request."
+      "requestError": "❌ Failed to create request.",
+      "deleteSuccess": "Appointment deleted.",
+      "deleteError": "Could not delete the appointment."
+
     },
     "users": {
       "loadError": "❌ Failed to load users.",

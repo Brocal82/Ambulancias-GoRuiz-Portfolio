@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getMyAppointments } from '../api/appointments';
+import { getMyAppointments, deleteMyAppointment as apiDeleteMyAppointment } from '../api/appointments';
 import type { Appointment } from '../types/appointment';
 import RequestAppointmentModal from '../components/appointments/RequestAppointmentModal';
 import ChooseSlotModal from '../components/appointments/ChooseSlotModal';
@@ -50,7 +50,6 @@ export default function WorkerAppointmentsPage() {
       const data = await getMyAppointments(token!);
       setItems(data);
     } catch (e: any) {
-      // Dejamos toasts para la fase final (no internacionalizar aquí)
       toastT.error(e?.response?.data?.message ?? ["toasts.appointments.loadError"]);
     }
   };
@@ -103,7 +102,11 @@ export default function WorkerAppointmentsPage() {
   const others = useMemo(() => {
     const excludeId = nextConfirmed?._id;
     return items
-      .filter((a) => (a.status === 'confirmed' || a.status === 'rescheduled' || a.status === 'cancelled'))
+      .filter((a) =>
+        a.status === 'confirmed' ||
+        a.status === 'rescheduled' ||
+        a.status === 'cancelled'
+      )
       .filter((a) => a._id !== excludeId)
       .sort((a, b) => {
         const at = a.selectedSlot?.start ? new Date(a.selectedSlot.start).getTime() : 0;
@@ -111,6 +114,28 @@ export default function WorkerAppointmentsPage() {
         return bt - at; // más recientes primero
       });
   }, [items, nextConfirmed]);
+
+  const canDelete = (a: Appointment): boolean => {
+    if (a.status === 'cancelled') return true;
+    const endMs = a.selectedSlot?.end
+      ? new Date(a.selectedSlot.end).getTime()
+      : a.selectedSlot?.start
+      ? new Date(a.selectedSlot.start).getTime()
+      : 0;
+    return endMs > 0 && endMs < Date.now();
+  };
+
+  const handleDelete = async (id: string) => {
+    const ok = window.confirm(t('pages.appointments.worker.confirmDelete'));
+    if (!ok) return;
+    try {
+      await apiDeleteMyAppointment(id, token!);
+      await refresh();
+      toastT.success(['toasts.appointments.deleteSuccess']);
+    } catch (e: any) {
+      toastT.error(e?.response?.data?.message ?? ['toasts.appointments.deleteError']);
+    }
+  };
 
   const emptyState = !loading && items.length === 0;
 
@@ -152,7 +177,7 @@ export default function WorkerAppointmentsPage() {
         </div>
       )}
 
-      {/* Mis solicitudes (pending/proposed) */}
+      {/* Mis solicitudes */}
       {!loading && recent.length > 0 && (
         <div className="mt-6">
           <h3 className="text-base font-semibold mb-3">{t('pages.appointments.requests.title')}</h3>
@@ -203,7 +228,7 @@ export default function WorkerAppointmentsPage() {
         </div>
       )}
 
-      {/* Historial y otras citas (confirmed/rescheduled/cancelled) */}
+      {/* Historial y otras citas */}
       {!loading && others.length > 0 && (
         <div className="mt-6">
           <h3 className="text-base font-semibold mb-3">{t('pages.appointments.history.title')}</h3>
@@ -222,6 +247,16 @@ export default function WorkerAppointmentsPage() {
                       {fmt(a.selectedSlot?.start)}
                     </div>
                   </div>
+
+                  {canDelete(a) && (
+                    <button
+                      onClick={() => handleDelete(a._id)}
+                      className="shrink-0 rounded-full bg-rose-600 px-2.5 py-1.5 text-white hover:bg-rose-700"
+                      title={t('pages.appointments.worker.actions.deleteTitle')}
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
               </li>
             ))}

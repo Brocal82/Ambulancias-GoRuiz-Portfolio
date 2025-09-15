@@ -251,3 +251,40 @@ export const cancelAppointment = async (req: Request, res: Response): Promise<vo
     res.status(500).json({ message: 'Error al cancelar la cita.' });
   }
 };
+
+export const deleteMyAppointment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const workerId = (req as any).userId as string;
+    const { id } = req.params;
+
+    const appointment = await Appointment.findById(id);
+    if (!appointment) {
+      res.status(404).json({ message: 'Cita no encontrada.' });
+      return;
+    }
+
+    if (appointment.workerId.toString() !== workerId) {
+      res.status(403).json({ message: 'No autorizado para eliminar esta cita.' });
+      return;
+    }
+
+    const now = Date.now();
+    const startMs = appointment.selectedSlot?.start ? appointment.selectedSlot.start.getTime() : 0;
+    const endMs   = appointment.selectedSlot?.end   ? appointment.selectedSlot.end.getTime()   : startMs;
+
+    const isPast = endMs > 0 && endMs < now;
+    const isCancelled = appointment.status === 'cancelled';
+
+    if (!isPast && !isCancelled) {
+      res.status(400).json({ message: 'Solo puedes eliminar citas canceladas o ya pasadas.' });
+      return;
+    }
+
+    await appointment.deleteOne();
+    res.status(204).send(); // No Content
+  } catch (err: any) {
+    console.error('deleteMyAppointment error:', err);
+    res.status(500).json({ message: 'Error al eliminar la cita.' });
+  }
+};
+

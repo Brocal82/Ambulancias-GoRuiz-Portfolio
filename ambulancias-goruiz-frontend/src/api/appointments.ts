@@ -48,6 +48,14 @@ export const selectSlot = async (id: string, payload: SelectSlotPayload, token: 
   return data;
 };
 
+//Worker: Borrar Cita
+export const deleteMyAppointment = async (id: string, token: string): Promise<void> => {
+  await axios.delete(`/appointments/${id}/my`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+
 // Admin: calendario confirmadas en rango
 export const getCalendarAppointments = async (
   fromISO: string,

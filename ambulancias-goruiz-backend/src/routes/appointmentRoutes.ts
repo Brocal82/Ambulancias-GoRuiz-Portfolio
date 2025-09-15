@@ -11,6 +11,7 @@ import {
   getCalendarAppointments,
   updateAppointment,
   cancelAppointment,
+  deleteMyAppointment
 } from '../controllers/appointmentController';
 
 const router = Router();
@@ -29,6 +30,9 @@ router.post('/:id/propose', authenticateToken, authorizeRole('admin'), proposeSl
 
 // Worker: elegir slot -> confirmed
 router.post('/:id/select', authenticateToken, authorizeRole('worker'), selectSlot);
+
+// Worker: eliminar su propia cita si está cancelada o ya pasó
+router.delete('/:id/my', authenticateToken, authorizeRole('worker'), deleteMyAppointment);
 
 // Admin: calendario de confirmadas/rescheduled en rango
 router.get('/calendar', authenticateToken, authorizeRole('admin'), getCalendarAppointments);
