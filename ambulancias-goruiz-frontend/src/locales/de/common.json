@@ -426,7 +426,6 @@
       "monthGrid": {
         "title": "Urlaub nach Monaten · {{year}}",
         "count": "{{count}} Anträge",
-        "emptyBadge": "Leer",
         "ariaOpenMonth": "Monat {{label}} {{year}} öffnen"
       },
       "monthModal": {

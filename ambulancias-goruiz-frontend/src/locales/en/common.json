@@ -426,7 +426,6 @@
       "monthGrid": {
         "title": "Vacations by month · {{year}}",
         "count": "{{count}} requests",
-        "emptyBadge": "Empty",
         "ariaOpenMonth": "Open month {{label}} {{year}}"
       },
       "monthModal": {

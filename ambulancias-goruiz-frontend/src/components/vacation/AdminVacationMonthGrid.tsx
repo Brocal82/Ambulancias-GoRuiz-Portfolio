@@ -13,7 +13,7 @@ type Props = {
 const AdminVacationMonthGrid: React.FC<Props> = ({
   requests,
   year = new Date().getFullYear(),
-  onMonthClick
+  onMonthClick,
 }) => {
   const { t, i18n } = useTranslation();
 
@@ -21,9 +21,9 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
   const counts = countRequestsByMonth(requests, year);
 
   return (
-    <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-slate-900">
+    <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6 mb-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-lg font-semibold tracking-tight text-slate-900">
           {t('pages.vacations.monthGrid.title', { year })}
         </h3>
       </div>
@@ -40,30 +40,28 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
               onClick={() => onMonthClick?.(monthIndex)}
               aria-label={t('pages.vacations.monthGrid.ariaOpenMonth', { label, year })}
               className={[
-                'group relative text-left rounded-xl p-4 transition',
+                // === Mismo tamaño/estilo que el grid de citas ===
+                'group relative rounded-xl p-3 transition',
                 'ring-1 ring-slate-200 hover:shadow-sm hover:-translate-y-0.5',
                 hasItems ? 'bg-white' : 'bg-slate-50 opacity-90 hover:opacity-100',
-                'focus:outline-none focus:ring-4 focus:ring-blue-100'
+                'focus:outline-none focus:ring-4 focus:ring-blue-100',
+                'flex flex-col items-center justify-center text-center min-h-[70px]',
               ].join(' ')}
             >
+              {/* Mes centrado */}
               <span className="text-sm font-medium text-slate-900">{label}</span>
 
+              {/* Badge SIEMPRE visible (0 incluido), compacto */}
               <span
                 className={[
-                  'mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
-                  hasItems
-                    ? 'bg-blue-50 text-blue-700 group-hover:bg-blue-100'
-                    : 'bg-slate-100 text-slate-600'
+                  'mt-1 inline-flex items-center justify-center rounded-full px-3 py-0.5 text-xs font-medium',
+                  hasItems ? 'bg-blue-50 text-blue-700 group-hover:bg-blue-100' : 'bg-slate-100 text-slate-600',
                 ].join(' ')}
+                title={t('pages.vacations.monthGrid.count', { count }) as string}
+                aria-label={t('pages.vacations.monthGrid.count', { count }) as string}
               >
                 {t('pages.vacations.monthGrid.count', { count })}
               </span>
-
-              {!hasItems && (
-                <span className="absolute right-3 top-3 text-[10px] uppercase tracking-wide text-slate-400">
-                  {t('pages.vacations.monthGrid.emptyBadge')}
-                </span>
-              )}
             </button>
           );
         })}

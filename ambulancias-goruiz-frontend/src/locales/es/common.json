@@ -426,7 +426,6 @@
       "monthGrid": {
         "title": "Vacaciones por mes · {{year}}",
         "count": "{{count}} solicitudes",
-        "emptyBadge": "Vacío",
         "ariaOpenMonth": "Abrir mes {{label}} {{year}}"
       },
       "monthModal": {
