@@ -42,3 +42,13 @@ export const getAllIssueReports = async (token: string): Promise<WorkdayIssue[]>
   if (!res.ok) throw new Error("Error al obtener reportes técnicos");
   return res.json();
 };
+
+// 🆕 Borrar un reporte de avería por ID (usando axios)
+export const deleteIssueReport = async (token: string, id: string): Promise<void> => {
+  await axios.delete(`/workday-summary/issues/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+

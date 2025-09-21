@@ -524,7 +524,9 @@
           "finalKm": "End-KM:",
           "issue": "🛠️ Störung:"
         },
-        "ambulanceFallback": "{{number}} (ID: {{id}})"
+        "ambulanceFallback": "{{number}} (ID: {{id}})",
+        "delete": "Löschen",
+        "confirmDelete": "Bist du sicher, dass du diesen Bericht löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden."
       },
       "issueModal": {
         "title": "🔧 Technische Störungsmeldung",
@@ -1038,7 +1040,9 @@
       "reportError": "❌ Störung konnte nicht gemeldet werden.",
       "invalidAmbulance": "🚑 Bitte ein gültiges Fahrzeug auswählen.",
       "missingDescription": "📝 Bitte die Störung beschreiben.",
-      "invalidFinalKm": "📏 Bitte eine gültige End-KM Zahl eingeben."
+      "invalidFinalKm": "📏 Bitte eine gültige End-KM Zahl eingeben.",
+      "deleteSuccess": "Bericht erfolgreich gelöscht.",
+      "deleteError": "Fehler beim Löschen des Berichts."
     },
     "hospitals": {
       "loadError": "❌ Krankenhäuser konnten nicht geladen werden.",

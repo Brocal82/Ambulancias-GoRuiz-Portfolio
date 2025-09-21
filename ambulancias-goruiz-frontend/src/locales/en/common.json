@@ -524,7 +524,9 @@
           "finalKm": "Final KM:",
           "issue": "🛠️ Issue:"
         },
-        "ambulanceFallback": "{{number}} (ID: {{id}})"
+        "ambulanceFallback": "{{number}} (ID: {{id}})",
+        "delete": "Delete",
+        "confirmDelete": "Are you sure you want to delete this report? This action cannot be undone."
       },
       "issueModal": {
         "title": "🔧 Technical breakdown report",
@@ -1038,7 +1040,9 @@
       "reportError": "❌ Could not report the issue.",
       "invalidAmbulance": "🚑 Please select a valid ambulance.",
       "missingDescription": "📝 Please describe the issue before sending.",
-      "invalidFinalKm": "📏 Enter a valid final KM number."
+      "invalidFinalKm": "📏 Enter a valid final KM number.",
+      "deleteSuccess": "Report deleted successfully.",
+      "deleteError": "Failed to delete the report."
     },
     "hospitals": {
       "loadError": "❌ Failed to load hospitals.",

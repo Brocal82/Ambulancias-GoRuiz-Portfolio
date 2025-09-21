@@ -10,7 +10,7 @@ import { calculateEffectivePatients } from "../utils/prämienUtils";
 /* ─────────────────────────────
  * CIERRE COMPLETO DEL DÍA
  * ───────────────────────────── */
-export const createWorkdaySummary = async (req: Request, res: Response) => {
+export const createWorkdaySummary = async (req: Request, res: Response): Promise<void> => {
   try {
     const {
       date,
@@ -24,24 +24,28 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
     } = req.body;
 
     if (!date || !assignmentId || !ambulanceId || initialKm === undefined || finalKm === undefined) {
-      return res.status(400).json({ message: "Faltan campos obligatorios" });
+      res.status(400).json({ message: "Faltan campos obligatorios" });
+      return;
     }
 
     if (!Array.isArray(trips)) {
-      return res.status(400).json({ message: "El campo trips debe ser un array" });
+      res.status(400).json({ message: "El campo trips debe ser un array" });
+      return;
     }
 
     const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
     const dienst = await Dienst.findOne({ "assignments._id": assignmentObjectId });
 
     if (!dienst) {
-      return res.status(404).json({ message: "Dienst no encontrado con ese assignmentId" });
+      res.status(404).json({ message: "Dienst no encontrado con ese assignmentId" });
+      return;
     }
 
     const assignment = dienst.assignments.find(a => a._id?.toString() === assignmentObjectId.toString());
 
     if (!assignment) {
-      return res.status(404).json({ message: "Asignación no encontrada" });
+      res.status(404).json({ message: "Asignación no encontrada" });
+      return;
     }
 
     const dienstNumber = dienst?.dienstNumber ?? null;
@@ -57,7 +61,7 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
 
     const totalEffectivePatients = calculateEffectivePatients(sanitizedTrips, date);
     const totalDienstKm = finalKm - initialKm;
-    const totalRealTrips = sanitizedTrips.filter(t => !t.wasCancelled || t.cancelledAtPickup).length;
+    const totalRealTrips = sanitizedTrips.filter((t: any) => !t.wasCancelled || t.cancelledAtPickup).length;
 
     const newSummary = await WorkdaySummary.create({
       date,
@@ -97,7 +101,7 @@ export const createWorkdaySummary = async (req: Request, res: Response) => {
 /* ─────────────────────────────
  * CIERRE PARCIAL DEL DÍA
  * ───────────────────────────── */
-export const submitPartialClosure = async (req: Request, res: Response) => {
+export const submitPartialClosure = async (req: Request, res: Response): Promise<void> => {
   try {
     const {
       date,
@@ -117,7 +121,8 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
       !ambulanceId || initialKm === undefined || finalKm === undefined ||
       !Array.isArray(trips) || !partialClosureReason
     ) {
-      return res.status(400).json({ message: "Faltan datos para el cierre parcial." });
+      res.status(400).json({ message: "Faltan datos para el cierre parcial." });
+      return;
     }
 
     const dienst = await Dienst.findOne({ "assignments._id": assignmentId });
@@ -135,7 +140,7 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
 
     const totalEffectivePatients = calculateEffectivePatients(sanitizedTrips, date);
     const totalDienstKm = finalKm - initialKm;
-    const totalRealTrips = sanitizedTrips.filter(t => !t.wasCancelled || t.cancelledAtPickup).length;
+    const totalRealTrips = sanitizedTrips.filter((t: any) => !t.wasCancelled || t.cancelledAtPickup).length;
 
     const summary = new WorkdaySummary({
       date,
@@ -174,10 +179,11 @@ export const submitPartialClosure = async (req: Request, res: Response) => {
 };
 
 
+
 /* ─────────────────────────────
  * GET TODOS LOS RESÚMENES
  * ───────────────────────────── */
-export const getAllWorkdaySummaries = async (req: Request, res: Response) => {
+export const getAllWorkdaySummaries = async (req: Request, res: Response): Promise<void> => {
   try {
     const summaries = await WorkdaySummary.find()
       .sort({ date: -1 })
@@ -275,7 +281,7 @@ export const reportIssue = async (req: Request, res: Response): Promise<void> =>
 };
 
 
-export const getAllIssueReports = async (req: Request, res: Response) => {
+export const getAllIssueReports = async (req: Request, res: Response): Promise<void> => {
   try {
     const issues = await WorkdayIssue.find().sort({ timestamp: -1 });
     res.status(200).json(issues);
@@ -284,3 +290,29 @@ export const getAllIssueReports = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error al obtener reportes técnicos" });
   }
 };
+
+/* ─────────────────────────────
+ * AVERÍAS: BORRAR REPORTE
+ * ───────────────────────────── */
+export const deleteIssueReport = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      res.status(400).json({ message: "ID inválido" });
+      return;
+    }
+
+    const deleted = await WorkdayIssue.findByIdAndDelete(id);
+    if (!deleted) {
+      res.status(404).json({ message: "Reporte no encontrado" });
+      return;
+    }
+
+    res.status(200).json({ message: "Reporte eliminado correctamente" });
+  } catch (err) {
+    console.error("❌ Error al eliminar reporte técnico:", err);
+    res.status(500).json({ message: "Error al eliminar el reporte técnico" });
+  }
+};
+

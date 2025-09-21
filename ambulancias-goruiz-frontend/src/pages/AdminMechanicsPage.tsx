@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminMechanicsPage.tsx
 
 import { useEffect, useState } from "react";
-import { getAllIssueReports } from "../api/workdaySummary";
+import { getAllIssueReports, deleteIssueReport } from "../api/workdaySummary";
 import type { WorkdayIssue } from "../types/workdayIssue";
 import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
@@ -43,6 +43,30 @@ const AdminMechanicsPage = () => {
     fetchData();
   }, [token]);
 
+  const handleDelete = async (id: string) => {
+    if (!token) return;
+
+    const confirmed = window.confirm(
+      (t("pages.mechanics.adminPage.confirmDelete") as string) ||
+      "¿Seguro que quieres eliminar este reporte? Esta acción no se puede deshacer."
+    );
+    if (!confirmed) return;
+
+    // UI optimista con rollback
+    const prev = issues;
+    setIssues((cur) => cur.filter((x) => x._id !== id));
+
+    try {
+      await deleteIssueReport(token, id);
+      toastT.success(["toasts.mechanics.deleteSuccess"]);
+    } catch (err) {
+      console.error("❌ Error al borrar reporte:", err);
+      setIssues(prev); // rollback
+      toastT.error(["toasts.mechanics.deleteError"]);
+    }
+  };
+
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6">
@@ -63,8 +87,17 @@ const AdminMechanicsPage = () => {
                 return (
                   <li
                     key={issue._id}
-                    className="rounded-xl ring-1 ring-slate-200 bg-white p-5 hover:shadow-sm hover:ring-slate-300 transition"
+                    className="relative rounded-xl ring-1 ring-slate-200 bg-white p-5 hover:shadow-sm hover:ring-slate-300 transition"
                   >
+                    <button
+                      onClick={() => handleDelete(issue._id)}
+                      className="absolute top-3 right-3 inline-flex items-center justify-center w-8 h-8 rounded-full text-rose-600 hover:text-rose-800 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-300 transition"
+                      title={t("pages.mechanics.adminPage.delete") as string}
+                      aria-label={t("pages.mechanics.adminPage.delete") as string}
+                    >
+                      ✖
+                    </button>
+
                     {/* Timestamp */}
                     <div className="mb-3">
                       <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-2.5 py-1 text-xs font-medium ring-1 ring-slate-200">

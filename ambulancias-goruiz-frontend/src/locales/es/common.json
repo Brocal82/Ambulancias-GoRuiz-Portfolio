@@ -524,7 +524,9 @@
           "finalKm": "KM finales:",
           "issue": "🛠️ Avería:"
         },
-        "ambulanceFallback": "{{number}} (ID: {{id}})"
+        "ambulanceFallback": "{{number}} (ID: {{id}})",
+        "delete": "Eliminar",
+        "confirmDelete": "¿Seguro que quieres eliminar este reporte? Esta acción no se puede deshacer."
       },
       "issueModal": {
         "title": "🔧 Reporte técnico de avería",
@@ -1036,7 +1038,9 @@
       "reportError": "❌ No se pudo reportar la avería.",
       "invalidAmbulance": "🚑 Selecciona una ambulancia válida.",
       "missingDescription": "📝 Describe la avería antes de enviar.",
-      "invalidFinalKm": "📏 Introduce un número válido de KM finales."
+      "invalidFinalKm": "📏 Introduce un número válido de KM finales.",
+      "deleteSuccess": "Reporte eliminado correctamente.",
+      "deleteError": "Error al eliminar el reporte."
     },
     "hospitals": {
       "loadError": "❌ Error al cargar hospitales.",
