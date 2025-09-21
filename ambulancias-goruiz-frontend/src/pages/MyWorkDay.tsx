@@ -690,7 +690,7 @@ return (
                   <input
                     disabled={formBlocked}
                     id="auftragNumber"
-                    placeholder="Krankentransport 123"
+                    placeholder="0000"
                     value={tripFormData.auftragNumber}
                     onChange={(e) => setTripFormData((prev) => ({ ...prev, auftragNumber: e.target.value }))}
                     className="w-full rounded-lg bg-white px-3 py-2
@@ -706,7 +706,7 @@ return (
                   <input
                     disabled={formBlocked}
                     id="patientName"
-                    placeholder="Juan Pérez"
+                    placeholder="Antonio Ruiz"
                     value={tripFormData.patientName}
                     onChange={(e) => setTripFormData((prev) => ({ ...prev, patientName: e.target.value }))}
                     className="w-full rounded-lg bg-white px-3 py-2
@@ -724,7 +724,7 @@ return (
                   <input
                     disabled={formBlocked}
                     id="fromAddress"
-                    placeholder="Calle Ejemplo 123"
+                    placeholder="...Straße"
                     value={tripFormData.fromAddress}
                     onChange={(e) => setTripFormData((prev) => ({ ...prev, fromAddress: e.target.value }))}
                     className="w-full rounded-lg bg-white px-3 py-2
@@ -740,7 +740,7 @@ return (
                   <input
                     disabled={formBlocked}
                     id="toAddress"
-                    placeholder="Hospital Central, Berlín"
+                    placeholder="...Straße"
                     value={tripFormData.toAddress}
                     onChange={(e) => setTripFormData((prev) => ({ ...prev, toAddress: e.target.value }))}
                     className="w-full rounded-lg bg-white px-3 py-2
