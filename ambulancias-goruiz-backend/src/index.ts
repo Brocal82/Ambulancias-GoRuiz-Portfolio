@@ -1,3 +1,5 @@
+//src/index.ts
+
 // Cargamos las variables de entorno definidas en .env
 import dotenv from 'dotenv';
 dotenv.config();
@@ -6,7 +8,9 @@ dotenv.config();
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import path from 'path'; 
+import path from 'path';
+
+// Rutas
 import userRoutes from './routes/userRoutes';
 import dienstRoutes from './routes/dienstRoutes';
 import hospitalRoutes from './routes/hospitalRoutes';
@@ -15,18 +19,21 @@ import workdaySummaryRoutes from './routes/workdaySummaryRoutes';
 import praemienRoutes from './routes/praemienRoutes';
 import vacationRoutes from './routes/vacationRoutes';
 import ambulanceRoutes from './routes/ambulanceRoutes';
-import messageRoutes from './routes/messageRoutes'; 
-import appointmentRoutes from './routes/appointmentRoutes'
+import messageRoutes from './routes/messageRoutes';
+import appointmentRoutes from './routes/appointmentRoutes';
 
-// ✅ Importamos el limpiador de Diensts antiguos
+// Cron
+import cron from 'node-cron';
+
+// 🧹 Limpiador de Diensts antiguos (NO se ejecuta al arrancar)
 import cleanupOldDiensts from './utils/cleanupOldDiensts';
 
-// Inicializamos Express
 const app = express();
 
-// Puerto de la aplicación
+// Puerto y DB
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
+const TZ = 'Europe/Berlin';
 
 // Verificamos la URI
 if (!MONGODB_URI) {
@@ -37,7 +44,7 @@ if (!MONGODB_URI) {
 // Middlewares
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: 'http://localhost:5173',
     credentials: true,
   })
 );
@@ -55,22 +62,41 @@ app.use('/api/workday-summary', workdaySummaryRoutes);
 app.use('/api/praemien', praemienRoutes);
 app.use('/api/vacations', vacationRoutes);
 app.use('/api/ambulances', ambulanceRoutes);
-app.use('/api/messages', messageRoutes); // ✅ NUEVO
+app.use('/api/messages', messageRoutes);
 app.use('/api/appointments', appointmentRoutes);
 
-
 // Conexión y arranque del servidor
-mongoose.connect(MONGODB_URI)
+mongoose
+  .connect(MONGODB_URI)
   .then(async () => {
     console.log('🟢 Conectado a MongoDB');
 
-    // ✅ Ejecutamos limpieza de Diensts antiguos automáticamente
-    await cleanupOldDiensts();
+    // ❗️ No limpiar en el arranque (esto te borraba antes de tiempo)
+    // await cleanupOldDiensts();
+
+    // 🕒 Programar limpieza: LUNES 00:00 (Europe/Berlin)
+    // min hora díaMes mes díaSemana -> 0 0 * * 1
+    cron.schedule(
+      '0 0 * * 1',
+      async () => {
+        const fired = new Date();
+        console.log(`[CRON] cleanupOldDiensts START @ ${fired.toISOString()} (server time)`);
+        try {
+          await cleanupOldDiensts();
+          console.log('[CRON] cleanupOldDiensts DONE');
+        } catch (err) {
+          console.error('[CRON] cleanupOldDiensts ERROR:', err);
+        }
+      },
+      { timezone: TZ }
+    );
 
     app.listen(PORT, () => {
       console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+      console.log(`🕒 Cron activo: lunes 00:00 (${TZ})`);
     });
   })
-  .catch(err => {
+  .catch((err) => {
     console.error('🔴 Error de conexión a MongoDB:', err);
   });
+
