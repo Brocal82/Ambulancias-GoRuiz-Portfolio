@@ -731,10 +731,14 @@
         "title": "📨 Messages sent to all",
         "sentOn": "Sent on",
         "empty": "No general messages have been sent yet.",
+        "confirmDelete": "Are you sure you want to delete this message?",
+        "deleted": "Message deleted",
+        "deleteError": "Error deleting the message",
         "actions": {
           "back": "← Back",
           "view": "View",
-          "hide": "Hide"
+          "hide": "Hide",
+          "delete": "Delete"
         }
       },
       "workerPage": {

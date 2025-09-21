@@ -98,4 +98,32 @@ export const deleteMessageForUser = async (req: Request, res: Response): Promise
   }
 };
 
+// 🗑️ Borrar un mensaje (solo admin y solo si es el remitente)
+export const deleteMessageByAdmin = async (req: Request, res: Response): Promise<void> => {
+  const adminId = (req as any).userId as string;
+  const { id } = req.params;
+
+  try {
+    const message = await Message.findById(id);
+
+    if (!message) {
+      res.status(404).json({ message: 'Mensaje no encontrado' });
+      return;
+    }
+
+    // Solo puede borrar mensajes que él mismo envió
+    if (message.sender.toString() !== adminId.toString()) {
+      res.status(403).json({ message: 'No tienes permiso para borrar este mensaje' });
+      return;
+    }
+
+    await Message.deleteOne({ _id: id });
+    res.status(200).json({ message: 'Mensaje eliminado correctamente' });
+  } catch (error) {
+    console.error('❌ Error al borrar mensaje:', error);
+    res.status(500).json({ message: 'Error al borrar el mensaje' });
+  }
+};
+
+
 

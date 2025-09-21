@@ -42,3 +42,12 @@ export const deleteMessageForUser = async (token: string, messageId: string): Pr
 };
 
 
+export const deleteMessage = async (id: string, token: string) => {
+  const res = await axios.delete(`/messages/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
+
+

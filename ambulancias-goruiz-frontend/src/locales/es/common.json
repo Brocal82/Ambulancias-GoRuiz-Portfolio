@@ -729,10 +729,14 @@
         "title": "📨 Mensajes enviados a todos",
         "sentOn": "Enviado el",
         "empty": "No se han enviado mensajes generales aún.",
+        "confirmDelete": "¿Seguro que quieres borrar este mensaje?",
+        "deleted": "Mensaje eliminado",
+        "deleteError": "Error al borrar el mensaje",
         "actions": {
           "back": "← Volver",
           "view": "Ver",
-          "hide": "Ocultar"
+          "hide": "Ocultar",
+          "delete": "Borrar"
         }
       },
       "workerPage": {

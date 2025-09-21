@@ -1,6 +1,6 @@
 // backend/src/routes/messageRoutes.ts
 import { Router } from 'express';
-import { createMessage, getMyMessages, getSentMessages, deleteMessageForUser } from '../controllers/messageController';
+import { createMessage, getMyMessages, getSentMessages, deleteMessageForUser, deleteMessageByAdmin } from '../controllers/messageController';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { authorizeRole } from '../middlewares/roleMiddleware';
 
@@ -17,6 +17,9 @@ router.get('/sent', authenticateToken, authorizeRole('admin'), getSentMessages);
 
 // ✅ El trabajador puede marcar un mensaje como eliminado (solo para sí mismo)
 router.patch('/:id/remove', authenticateToken, authorizeRole('worker'), deleteMessageForUser);
+
+// ✅ El admin puede borrar un mensaje que él envió
+router.delete('/:id', authenticateToken, authorizeRole('admin'), deleteMessageByAdmin);
 
 
 export default router;

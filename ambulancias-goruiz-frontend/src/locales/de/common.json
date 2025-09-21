@@ -731,10 +731,14 @@
         "title": "📨 An alle gesendete Nachrichten",
         "sentOn": "Gesendet am",
         "empty": "Es wurden noch keine allgemeinen Nachrichten gesendet.",
+        "confirmDelete": "Sind Sie sicher, dass Sie diese Nachricht löschen möchten?",
+        "deleted": "Nachricht gelöscht",
+        "deleteError": "Fehler beim Löschen der Nachricht",
         "actions": {
           "back": "← Zurück",
           "view": "Anzeigen",
-          "hide": "Ausblenden"
+          "hide": "Ausblenden",
+          "delete": "Löschen"
         }
       },
       "workerPage": {
