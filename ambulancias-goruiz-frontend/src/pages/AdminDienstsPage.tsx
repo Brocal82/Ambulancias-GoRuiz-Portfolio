@@ -7,6 +7,20 @@ import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { toastT } from "../utils/toast";
 
+// Helpers de render seguro
+const displayAmbulance = (a: unknown) =>
+  a && typeof a === 'object'
+    ? (a as any).ambulanceNumber ?? '—'
+    : (typeof a === 'string' && a ? a : '—');
+
+const displayPerson = (p: unknown) =>
+  typeof p === 'string'
+    ? p
+    : p && typeof p === 'object'
+      ? `${(p as any).lastName ?? ''}${(p as any).lastName ? ', ' : ''}${(p as any).name ?? ''}` || '—'
+      : '—';
+
+
 const AdminPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
   const [selectedAssignment, setSelectedAssignment] = useState<{
@@ -110,29 +124,29 @@ const AdminPage = () => {
                   return !isNaN(parsedDate.getTime()) &&
                     parsedDate.toISOString().split("T")[0] === weekStart.toISOString().split("T")[0];
                 }) && (
-                  <button
-                    className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100"
-                    onClick={async () => {
-                      const confirmDelete = confirm(
-                        t('pages.diensts.adminPage.confirmDelete', { date: fmtDate(weekStart) })
-                      );
-                      if (!confirmDelete || !token) return;
+                    <button
+                      className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100"
+                      onClick={async () => {
+                        const confirmDelete = confirm(
+                          t('pages.diensts.adminPage.confirmDelete', { date: fmtDate(weekStart) })
+                        );
+                        if (!confirmDelete || !token) return;
 
-                      const mondayISO = weekStart.toISOString().split("T")[0];
+                        const mondayISO = weekStart.toISOString().split("T")[0];
 
-                      try {
-                        await deleteDienstsForWeek(mondayISO, token);
-                        toastT.success(['pages.diensts.adminPage.alerts.deleteOk']);
-                        fetchDiensts();
-                      } catch (err) {
-                        console.error("Error al eliminar diensts:", err);
-                        toastT.error(['pages.diensts.adminPage.alerts.deleteErr']);
-                      }
-                    }}
-                  >
-                    {t('pages.diensts.adminPage.actions.delete')}
-                  </button>
-                )}
+                        try {
+                          await deleteDienstsForWeek(mondayISO, token);
+                          toastT.success(['pages.diensts.adminPage.alerts.deleteOk']);
+                          fetchDiensts();
+                        } catch (err) {
+                          console.error("Error al eliminar diensts:", err);
+                          toastT.error(['pages.diensts.adminPage.alerts.deleteErr']);
+                        }
+                      }}
+                    >
+                      {t('pages.diensts.adminPage.actions.delete')}
+                    </button>
+                  )}
               </div>
             </div>
 
@@ -186,31 +200,11 @@ const AdminPage = () => {
                             {assignment ? (
                               <div className="space-y-0.5 text-xs text-slate-700">
                                 <p>🕒 {assignment.startTime} - {assignment.endTime}</p>
-                                <p>
-                                  🚑{' '}
-                                  {typeof assignment.ambulanceId === 'object' && 'ambulanceNumber' in assignment.ambulanceId
-                                    ? (assignment.ambulanceId as any).ambulanceNumber
-                                    : typeof assignment.ambulanceId === 'string' && assignment.ambulanceId.length > 0
-                                      ? assignment.ambulanceId
-                                      : '—'}
-                                </p>
-                                <p>
-                                  👨‍✈️{' '}
-                                  {typeof assignment.driver === 'string'
-                                    ? assignment.driver
-                                    : assignment.driver
-                                      ? `${(assignment.driver as any).lastName}, ${(assignment.driver as any).name}`
-                                      : '—'}
-                                </p>
-                                <p>
-                                  🧑‍⚕️{' '}
-                                  {typeof assignment.medic === 'string'
-                                    ? assignment.medic
-                                    : assignment.medic
-                                      ? `${(assignment.medic as any).lastName}, ${(assignment.medic as any).name}`
-                                      : '—'}
-                                </p>
+                                <p>🚑 {displayAmbulance(assignment?.ambulanceId)}</p>
+                                <p>👨‍✈️ {displayPerson(assignment?.driver)}</p>
+                                <p>🧑‍⚕️ {displayPerson(assignment?.medic)}</p>
                               </div>
+
                             ) : (
                               <p className="text-xs text-emerald-800 mt-1">🌴 {t('pages.diensts.adminPage.freeDay')}</p>
                             )}

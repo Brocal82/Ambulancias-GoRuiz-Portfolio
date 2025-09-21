@@ -226,54 +226,57 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
     })
       .populate("assignments.driver", "name lastName pscheinExpiry")
       .populate("assignments.medic", "name lastName pscheinExpiry")
-      .populate("assignments.ambulanceId", "ambulanceNumber") // 👈 importante
+      .populate("assignments.ambulanceId", "ambulanceNumber") // puede venir null
       .lean();
 
     const assignedDays: AssignedDay[] = [];
 
     diensts.forEach((dienst) => {
       dienst.assignments.forEach((assignment: any) => {
-        // Si el assignment no corresponde al usuario, lo saltamos (por si hay más de un assignment por día)
-        if (
-          assignment.driver?._id?.toString() !== userId &&
-          assignment.medic?._id?.toString() !== userId
-        ) {
-          return;
-        }
+        // saltar si este assignment no corresponde al usuario
+        const isDriver = assignment?.driver?._id?.toString() === userId;
+        const isMedic  = assignment?.medic?._id?.toString() === userId;
+        if (!isDriver && !isMedic) return;
 
-        const ambulanceData = assignment.ambulanceId;
+        const ambulanceData = assignment?.ambulanceId ?? null;
+
+        const ambulanceId =
+          ambulanceData && typeof ambulanceData === "object"
+            ? ambulanceData._id?.toString()
+            : typeof ambulanceData === "string"
+            ? ambulanceData
+            : undefined;
+
+        const ambulanceNumber =
+          ambulanceData && typeof ambulanceData === "object"
+            ? ambulanceData.ambulanceNumber
+            : undefined;
 
         assignedDays.push({
           dienstId: dienst._id.toString(),
           dienstNumber: dienst.dienstNumber,
-          assignmentId: assignment._id?.toString(),
-          date: assignment.date,
-          startTime: assignment.startTime,
-          endTime: assignment.endTime,
-          ambulanceId:
-            typeof ambulanceData === "object"
-              ? ambulanceData._id?.toString()
-              : ambulanceData?.toString(),
-          ambulanceNumber:
-            typeof ambulanceData === "object"
-              ? ambulanceData.ambulanceNumber
-              : undefined,
-          driver: assignment.driver?._id
+          assignmentId: assignment?._id?.toString(),
+          date: assignment?.date,
+          startTime: assignment?.startTime,
+          endTime: assignment?.endTime,
+          ambulanceId,
+          ambulanceNumber,
+          driver: assignment?.driver?._id
             ? {
                 _id: assignment.driver._id.toString(),
                 name: assignment.driver.name,
                 lastName: assignment.driver.lastName,
                 pscheinExpiry: assignment.driver.pscheinExpiry,
               }
-            : assignment.driver || null,
-          medic: assignment.medic?._id
+            : assignment?.driver || null,
+          medic: assignment?.medic?._id
             ? {
                 _id: assignment.medic._id.toString(),
                 name: assignment.medic.name,
                 lastName: assignment.medic.lastName,
                 pscheinExpiry: assignment.medic.pscheinExpiry,
               }
-            : assignment.medic || null,
+            : assignment?.medic || null,
         });
       });
     });
@@ -284,6 +287,7 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
     res.status(500).json({ message: "Error al obtener días asignados" });
   }
 };
+
 
 
 export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) => {
