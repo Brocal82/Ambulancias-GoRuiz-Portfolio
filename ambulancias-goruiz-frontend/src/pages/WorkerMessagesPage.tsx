@@ -77,11 +77,6 @@ const WorkerMessagesPage = () => {
                   ×
                 </button>
 
-                {/* Asunto */}
-                <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                  {msg.subject}
-                </h2>
-
                 {/* Info remitente */}
                 <p className="text-sm text-slate-500 mb-3">
                   {t('pages.messages.workerPage.from')}{' '}
@@ -90,6 +85,12 @@ const WorkerMessagesPage = () => {
                   </span>{' '}
                   · {new Date(msg.sentAt).toLocaleString()}
                 </p>
+                
+                {/* Asunto */}
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                  {msg.subject}
+                </h2>
+
 
                 {/* Cuerpo */}
                 <p className="text-slate-700 whitespace-pre-line">{msg.body}</p>
@@ -104,7 +105,7 @@ const WorkerMessagesPage = () => {
                       {msg.attachments.map((att) => (
                         <li key={att.filename} className="flex items-center gap-2">
                           <a
-                            href={getPublicUrl(att.url)}
+                            href={`${getPublicUrl(att.url)}?v=${encodeURIComponent(att.filename)}-${encodeURIComponent(msg.sentAt)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             download
@@ -130,3 +131,4 @@ const WorkerMessagesPage = () => {
 };
 
 export default WorkerMessagesPage;
+

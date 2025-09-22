@@ -105,11 +105,11 @@ const AdminSentMessages = () => {
 
                 {/* Contenido del mensaje */}
                 <div>
-                  <h2 className="font-semibold text-slate-800 pr-6">{msg.subject}</h2>
                   <p className="text-sm text-slate-500 mt-0.5">
                     {t('pages.messages.sentPage.sentOn')}{' '}
                     {format(new Date(msg.sentAt), 'dd/MM/yyyy HH:mm')}
                   </p>
+                  <h2 className="font-semibold text-slate-800 pr-6">{msg.subject}</h2>
 
                   {expandedMessageId === msg._id && (
                     <>
@@ -127,7 +127,7 @@ const AdminSentMessages = () => {
                             {msg.attachments.map((att) => (
                               <li key={att.filename} className="flex items-center gap-2">
                                 <a
-                                  href={getPublicUrl(att.url)}
+                                  href={`${getPublicUrl(att.url)}?v=${encodeURIComponent(att.filename)}-${encodeURIComponent(msg.sentAt)}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   download
