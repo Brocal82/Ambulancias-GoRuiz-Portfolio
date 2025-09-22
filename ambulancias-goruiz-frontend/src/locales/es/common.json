@@ -713,8 +713,7 @@
         "labels": {
           "subject": "Asunto",
           "body": "Mensaje",
-          "recipients": "Receptores",
-          "attachment": "Adjunto"
+          "recipients": "Receptores"
         },
         "attachmentHelp": "PDF, JPG o PNG. Máx 5MB",
         "placeholders": {
@@ -724,7 +723,9 @@
         "sendToAll": "Enviar a todos los trabajadores",
         "actions": {
           "send": "Enviar mensaje",
-          "viewSent": "📨 Ver mensajes enviados"
+          "viewSent": "📨 Ver mensajes enviados",
+          "attach": "Adjuntar",
+          "removeAttachment": "Quitar adjunto"
         }
       },
       "sentPage": {

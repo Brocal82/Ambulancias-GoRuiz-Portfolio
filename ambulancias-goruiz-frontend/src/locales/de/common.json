@@ -715,8 +715,7 @@
         "labels": {
           "subject": "Betreff",
           "body": "Nachricht",
-          "recipients": "Empfänger",
-          "attachment": "Anhang"
+          "recipients": "Empfänger"
         },
         "attachmentHelp": "PDF, JPG oder PNG. Max. 5MB",
         "placeholders": {
@@ -726,7 +725,9 @@
         "sendToAll": "An alle Mitarbeiter senden",
         "actions": {
           "send": "Nachricht senden",
-          "viewSent": "📨 Gesendete Nachrichten ansehen"
+          "viewSent": "📨 Gesendete Nachrichten ansehen",
+          "attach": "Anhängen",
+          "removeAttachment": "Anhang entfernen"
         }
       },
       "sentPage": {
