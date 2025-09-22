@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { toastT } from '../utils/toast';
 import { useTranslation } from 'react-i18next';
-
+import { getPublicUrl } from '../utils/url';
 
 const AdminSentMessages = () => {
   const { token } = useAuth();
@@ -34,37 +34,36 @@ const AdminSentMessages = () => {
     setExpandedMessageId(prev => (prev === id ? null : id));
   };
 
-const handleDelete = async (id: string) => {
-  if (!token) return;
+  const handleDelete = async (id: string) => {
+    if (!token) return;
 
-  if (
-    !window.confirm(
-      t('pages.messages.sentPage.confirmDelete') ||
-        'Are you sure you want to delete this message?'
-    )
-  ) {
-    return;
-  }
+    if (
+      !window.confirm(
+        t('pages.messages.sentPage.confirmDelete') ||
+          'Are you sure you want to delete this message?'
+      )
+    ) {
+      return;
+    }
 
-  try {
-    await deleteMessage(id, token);
-    setMessages(prev => prev.filter(m => m._id !== id));
+    try {
+      await deleteMessage(id, token);
+      setMessages(prev => prev.filter(m => m._id !== id));
 
-    // ✅ Toast de éxito
-    toastT.success(
-      t('pages.messages.sentPage.deleted') || 'Message deleted'
-    );
-  } catch (error) {
-    console.error('❌ Error deleting message:', error);
+      // ✅ Toast de éxito
+      toastT.success(
+        t('pages.messages.sentPage.deleted') || 'Message deleted'
+      );
+    } catch (error) {
+      console.error('❌ Error deleting message:', error);
 
-    // ❌ Toast de error
-    toastT.error(
-      t('pages.messages.sentPage.deleteError') ||
-        'Error deleting the message'
-    );
-  }
-};
-
+      // ❌ Toast de error
+      toastT.error(
+        t('pages.messages.sentPage.deleteError') ||
+          'Error deleting the message'
+      );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -91,47 +90,75 @@ const handleDelete = async (id: string) => {
           <ul className="space-y-4">
             {messages.map((msg) => (
               <li
-  key={msg._id}
-  className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition relative"
->
-  {/* Botón de borrar en la esquina superior derecha */}
-  <button
-    onClick={() => handleDelete(msg._id)}
-    className="absolute top-2 right-2 text-red-500 hover:text-red-700 font-bold text-lg leading-none"
-    title={t('pages.messages.sentPage.actions.delete') || 'Borrar mensaje'}
-    aria-label={t('pages.messages.sentPage.actions.delete') || 'Borrar mensaje'}
-  >
-    ×
-  </button>
+                key={msg._id}
+                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition relative"
+              >
+                {/* Botón de borrar en la esquina superior derecha */}
+                <button
+                  onClick={() => handleDelete(msg._id)}
+                  className="absolute top-2 right-2 text-red-500 hover:text-red-700 font-bold text-lg leading-none"
+                  title={t('pages.messages.sentPage.actions.delete') || 'Borrar mensaje'}
+                  aria-label={t('pages.messages.sentPage.actions.delete') || 'Borrar mensaje'}
+                >
+                  ×
+                </button>
 
-  {/* Contenido del mensaje */}
-  <div>
-    <h2 className="font-semibold text-slate-800 pr-6">{msg.subject}</h2>
-    <p className="text-sm text-slate-500 mt-0.5">
-      {t('pages.messages.sentPage.sentOn')}{' '}
-      {format(new Date(msg.sentAt), 'dd/MM/yyyy HH:mm')}
-    </p>
+                {/* Contenido del mensaje */}
+                <div>
+                  <h2 className="font-semibold text-slate-800 pr-6">{msg.subject}</h2>
+                  <p className="text-sm text-slate-500 mt-0.5">
+                    {t('pages.messages.sentPage.sentOn')}{' '}
+                    {format(new Date(msg.sentAt), 'dd/MM/yyyy HH:mm')}
+                  </p>
 
-    {expandedMessageId === msg._id && (
-      <p className="mt-3 text-slate-700 text-sm whitespace-pre-line">
-        {msg.body}
-      </p>
-    )}
-  </div>
+                  {expandedMessageId === msg._id && (
+                    <>
+                      <p className="mt-3 text-slate-700 text-sm whitespace-pre-line">
+                        {msg.body}
+                      </p>
 
-  {/* Botón Ver/Ocultar abajo a la izquierda */}
-  <div className="mt-4">
-    <button
-      onClick={() => toggleMessage(msg._id)}
-      className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition"
-    >
-      {expandedMessageId === msg._id
-        ? t('pages.messages.sentPage.actions.hide')
-        : t('pages.messages.sentPage.actions.view')}
-    </button>
-  </div>
-</li>
+                      {/* Adjuntos */}
+                      {msg.attachments?.length ? (
+                        <div className="mt-3">
+                          <h3 className="text-sm font-medium text-slate-700">
+                            {t('pages.messages.sentPage.attachments') || 'Attachments'}
+                          </h3>
+                          <ul className="mt-1 space-y-1">
+                            {msg.attachments.map((att) => (
+                              <li key={att.filename} className="flex items-center gap-2">
+                                <a
+                                  href={getPublicUrl(att.url)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  download
+                                  className="text-sm text-blue-600 hover:text-blue-800 underline"
+                                >
+                                  {att.originalName}
+                                </a>
+                                <span className="text-xs text-slate-500">
+                                  {att.mimetype} · {(att.size / 1024).toFixed(1)} KB
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                    </>
+                  )}
+                </div>
 
+                {/* Botón Ver/Ocultar abajo a la izquierda */}
+                <div className="mt-4">
+                  <button
+                    onClick={() => toggleMessage(msg._id)}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition"
+                  >
+                    {expandedMessageId === msg._id
+                      ? t('pages.messages.sentPage.actions.hide')
+                      : t('pages.messages.sentPage.actions.view')}
+                  </button>
+                </div>
+              </li>
             ))}
           </ul>
         )}
