@@ -713,8 +713,10 @@
         "labels": {
           "subject": "Asunto",
           "body": "Mensaje",
-          "recipients": "Receptores"
+          "recipients": "Receptores",
+          "attachment": "Adjunto"
         },
+        "attachmentHelp": "PDF, JPG o PNG. Máx 5MB",
         "placeholders": {
           "subject": "Asunto del mensaje",
           "body": "Escribe el contenido del mensaje"
@@ -737,7 +739,8 @@
           "view": "Ver",
           "hide": "Ocultar",
           "delete": "Borrar"
-        }
+        },
+        "attachments": "Adjuntos"
       },
       "workerPage": {
         "title": "📨 Tus Mensajes",
@@ -746,7 +749,8 @@
         "from": "De:",
         "actions": {
           "deleteTitle": "Borrar mensaje"
-        }
+        },
+        "attachments": "Adjuntos"
       },
       "userTab": {
         "title": "📩 Enviar mensaje al trabajador",
@@ -1111,7 +1115,9 @@
       "fillRequiredRecipients": "✏️ Completa asunto y mensaje, y selecciona al menos un receptor",
       "sent": "✅ Mensaje enviado correctamente",
       "error": "❌ Error al enviar el mensaje",
-      "deleteError": "❌ Error al borrar el mensaje"
+      "deleteError": "❌ Error al borrar el mensaje",
+      "invalidFileType": "Tipo de archivo no permitido (solo PDF, JPG o PNG)",
+      "fileTooLarge": "El archivo excede el límite de 5MB"
     },
     "workday": {
       "needInitialData": "🚐 Selecciona una ambulancia y KM iniciales.",

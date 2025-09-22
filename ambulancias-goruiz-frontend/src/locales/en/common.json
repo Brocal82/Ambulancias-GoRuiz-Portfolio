@@ -715,8 +715,10 @@
         "labels": {
           "subject": "Subject",
           "body": "Message",
-          "recipients": "Recipients"
+          "recipients": "Recipients",
+          "attachment": "Attachment"
         },
+        "attachmentHelp": "PDF, JPG or PNG. Max 5MB",
         "placeholders": {
           "subject": "Message subject",
           "body": "Write the message content"
@@ -739,7 +741,8 @@
           "view": "View",
           "hide": "Hide",
           "delete": "Delete"
-        }
+        },
+        "attachments": "Attachments"
       },
       "workerPage": {
         "title": "📨 Your Messages",
@@ -748,7 +751,8 @@
         "from": "From:",
         "actions": {
           "deleteTitle": "Delete message"
-        }
+        },
+        "attachments": "Attachments"
       },
       "userTab": {
         "title": "📩 Send message to worker",
@@ -1113,7 +1117,9 @@
       "fillRequiredRecipients": "✏️ Please fill subject and message, and select at least one recipient",
       "sent": "✅ Message sent successfully",
       "error": "❌ Failed to send the message",
-      "deleteError": "❌ Failed to delete the message"
+      "deleteError": "❌ Failed to delete the message",
+      "invalidFileType": "Invalid file type (only PDF, JPG or PNG)",
+      "fileTooLarge": "The file exceeds the 5MB limit"
     },
     "workday": {
       "needInitialData": "🚐 Select an ambulance and initial KM.",

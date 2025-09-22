@@ -1,4 +1,13 @@
 // frontend/src/types/message.ts
+
+export interface MessageAttachment {
+  originalName: string;
+  filename: string;
+  mimetype: string;
+  size: number;
+  url: string; // e.g. /uploads/attachment-123.jpg
+}
+
 export interface Message {
   _id: string;
   subject: string;
@@ -12,4 +21,5 @@ export interface Message {
   sentAt: string;
   readBy: string[];
   toAllWorkers?: boolean;
+  attachments?: MessageAttachment[]; // 👈 nuevo, opcional
 }

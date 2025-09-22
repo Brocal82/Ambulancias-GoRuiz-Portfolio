@@ -715,8 +715,10 @@
         "labels": {
           "subject": "Betreff",
           "body": "Nachricht",
-          "recipients": "Empfänger"
+          "recipients": "Empfänger",
+          "attachment": "Anhang"
         },
+        "attachmentHelp": "PDF, JPG oder PNG. Max. 5MB",
         "placeholders": {
           "subject": "Betreff der Nachricht",
           "body": "Schreibe den Inhalt der Nachricht"
@@ -739,7 +741,8 @@
           "view": "Anzeigen",
           "hide": "Ausblenden",
           "delete": "Löschen"
-        }
+        },
+        "attachments": "Anhänge"
       },
       "workerPage": {
         "title": "📨 Deine Nachrichten",
@@ -748,7 +751,8 @@
         "from": "Von:",
         "actions": {
           "deleteTitle": "Nachricht löschen"
-        }
+        },
+        "attachments": "Anhänge"
       },
       "userTab": {
         "title": "📩 Nachricht an Mitarbeiter senden",
@@ -1113,7 +1117,9 @@
       "fillRequiredRecipients": "✏️ Bitte Betreff und Nachricht ausfüllen und mindestens einen Empfänger auswählen",
       "sent": "✅ Nachricht erfolgreich gesendet",
       "error": "❌ Nachricht konnte nicht gesendet werden",
-      "deleteError": "❌ Nachricht konnte nicht gelöscht werden"
+      "deleteError": "❌ Nachricht konnte nicht gelöscht werden",
+      "invalidFileType": "Ungültiger Dateityp (nur PDF, JPG oder PNG)",
+      "fileTooLarge": "Die Datei überschreitet das Limit von 5 MB"
     },
     "workday": {
       "needInitialData": "🚐 Krankenwagen und Start-KM auswählen.",
