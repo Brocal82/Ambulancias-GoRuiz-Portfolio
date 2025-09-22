@@ -4,23 +4,60 @@ import Message from '../models/Message';
 import User from '../models/User';
 import mongoose from 'mongoose';
 
-// 📨 Crear un nuevo mensaje
+// 📨 Crear un nuevo mensaje (soporta 1 adjunto opcional en campo "attachment")
 export const createMessage = async (req: Request, res: Response): Promise<void> => {
-  const { subject, body, recipients, toAllWorkers } = req.body;
+  const { subject, body, toAllWorkers } = req.body;
   const senderId = (req as any).userId;
 
-  if (!subject || !body || !recipients || !Array.isArray(recipients)) {
+  // recipients puede venir como array (JSON) o como string (multipart/form-data)
+  const rawRecipients = (req.body as any).recipients;
+
+  // Parser robusto de recipients: acepta array nativo, JSON string o CSV simple
+  let recipients: string[] | undefined;
+  if (Array.isArray(rawRecipients)) {
+    recipients = rawRecipients;
+  } else if (typeof rawRecipients === 'string') {
+    try {
+      // Intento 1: JSON válido (e.g. '["id1","id2"]')
+      const parsed = JSON.parse(rawRecipients);
+      recipients = Array.isArray(parsed) ? parsed : undefined;
+    } catch {
+      // Intento 2: CSV simple (e.g. 'id1,id2')
+      recipients = rawRecipients
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
+  }
+
+  if (!subject || !body || !recipients || !Array.isArray(recipients) || recipients.length === 0) {
     res.status(400).json({ message: 'Faltan datos obligatorios o receptores inválidos' });
     return;
   }
 
   try {
+    // Adjuntos (single) si usas upload.single('attachment') en la ruta
+    const file = (req as any).file as Express.Multer.File | undefined;
+    const attachments = file
+      ? [
+          {
+            originalName: file.originalname,
+            filename: file.filename,
+            mimetype: file.mimetype,
+            size: file.size,
+            // Servido en index.ts: app.use('/uploads', express.static(...))
+            url: `/uploads/${file.filename}`,
+          },
+        ]
+      : [];
+
     const newMessage = await Message.create({
       subject,
       body,
       sender: senderId,
       recipients,
-      toAllWorkers: Boolean(toAllWorkers), // ✅ Guardamos el flag si existe
+      toAllWorkers: Boolean(toAllWorkers),
+      attachments, // 👈 nuevo campo; [] si no hay archivo
     });
 
     res.status(201).json(newMessage);
@@ -29,6 +66,7 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ message: 'Error al enviar el mensaje' });
   }
 };
+
 
 
 // 📬 Obtener todos los mensajes recibidos por el usuario autenticado
@@ -51,8 +89,6 @@ export const getMyMessages = async (req: Request, res: Response): Promise<void> 
 };
 
 
-
-
 // 📤 Obtener mensajes enviados por el admin a todos los trabajadores
 export const getSentMessages = async (req: Request, res: Response): Promise<void> => {
   const adminId = (req as any).userId;
@@ -63,7 +99,7 @@ export const getSentMessages = async (req: Request, res: Response): Promise<void
       toAllWorkers: true,
     })
       .sort({ sentAt: -1 })
-      .select('subject body sentAt'); // devolvemos solo campos necesarios
+      .select('subject body sentAt attachments'); // 👈 incluye adjuntos
 
     res.status(200).json(messages);
   } catch (error) {
@@ -71,6 +107,7 @@ export const getSentMessages = async (req: Request, res: Response): Promise<void
     res.status(500).json({ message: 'Error al obtener mensajes enviados' });
   }
 };
+
 
 // 🗑️ Marcar mensaje como leído/borrado por el usuario
 export const deleteMessageForUser = async (req: Request, res: Response): Promise<void> => {

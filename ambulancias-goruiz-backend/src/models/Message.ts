@@ -9,7 +9,27 @@ export interface IMessage extends Document {
   sentAt: Date;
   readBy: mongoose.Types.ObjectId[];
   toAllWorkers?: boolean;
+  // 👇 Nuevo (opcional): metadatos de adjuntos
+  attachments?: {
+    originalName: string;
+    filename: string;
+    mimetype: string;
+    size: number;
+    url: string;
+  }[];
 }
+
+// 👇 Subesquema para adjuntos (sin _id)
+const attachmentSchema = new Schema(
+  {
+    originalName: { type: String, required: true },
+    filename:     { type: String, required: true },
+    mimetype:     { type: String, required: true },
+    size:         { type: Number, required: true },
+    url:          { type: String, required: true }, // p.ej. /uploads/<filename>
+  },
+  { _id: false }
+);
 
 const messageSchema = new Schema<IMessage>({
   subject: {
@@ -47,8 +67,12 @@ const messageSchema = new Schema<IMessage>({
     type: Boolean,
     default: false,
   },
+  // 👇 Nuevo: lista de adjuntos (vacía por defecto)
+  attachments: {
+    type: [attachmentSchema],
+    default: [],
+  },
 });
 
 const Message = mongoose.model<IMessage>('Message', messageSchema);
 export default Message;
-
