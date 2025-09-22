@@ -21,6 +21,7 @@ import vacationRoutes from './routes/vacationRoutes';
 import ambulanceRoutes from './routes/ambulanceRoutes';
 import messageRoutes from './routes/messageRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 
 // Cron
 import cron from 'node-cron';
@@ -64,6 +65,7 @@ app.use('/api/vacations', vacationRoutes);
 app.use('/api/ambulances', ambulanceRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api', notificationRoutes);
 
 // Conexión y arranque del servidor
 mongoose
