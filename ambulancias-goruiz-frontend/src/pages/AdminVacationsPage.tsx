@@ -8,6 +8,11 @@ import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { toastT } from '../utils/toast';
 
+// Nombre del evento global para refrescar el badge del Dashboard
+const ADMIN_VACATIONS_CHANGED_EVENT = 'admin-vacations-changed';
+const notifyVacationsChanged = () => window.dispatchEvent(new Event(ADMIN_VACATIONS_CHANGED_EVENT));
+
+
 const AdminVacationRequests = () => {
   const { token } = useAuth();
   const { t, i18n } = useTranslation();
@@ -69,6 +74,10 @@ const AdminVacationRequests = () => {
           error: ['toasts.vacations.admin.error'],
         }
       );
+
+      // 🔔 Notificar al Dashboard para refrescar el contador
+      notifyVacationsChanged();
+
       fetchRequests();
     } catch {
       // el error ya se muestra por toast
@@ -96,6 +105,10 @@ const AdminVacationRequests = () => {
           error: ['toasts.vacations.admin.error'],
         }
       );
+
+      // 🔔 Notificar al Dashboard
+      notifyVacationsChanged();
+
       fetchRequests();
     } catch {
       // el error ya se muestra por toast
@@ -119,6 +132,10 @@ const AdminVacationRequests = () => {
       );
       setCancelingRequestId(null);
       setCancelMessage('');
+
+      // 🔔 Notificar al Dashboard
+      notifyVacationsChanged();
+
       fetchRequests();
     } catch {
       // el error ya se muestra por toast
@@ -140,6 +157,10 @@ const AdminVacationRequests = () => {
           error: ['toasts.vacations.admin.error'],
         }
       );
+
+      // 🔔 Notificar al Dashboard
+      notifyVacationsChanged();
+
       fetchRequests();
     } catch {
       // el error ya se muestra por toast
