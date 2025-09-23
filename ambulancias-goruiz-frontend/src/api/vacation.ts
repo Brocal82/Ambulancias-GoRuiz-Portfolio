@@ -1,4 +1,6 @@
+//frontend/src/api/vacation.ts
 import axiosInstance from './axios';
+import type { IVacationRequest } from '../types/vacationRequest';
 
 interface VacationRequestPayload {
   startDate: string;
@@ -62,5 +64,38 @@ export const deleteVacationRequest = async (token: string, id: string) => {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
+};
+
+/* =========================
+   NUEVO: contador pendientes
+   ========================= */
+
+type VacationStatusCount = IVacationRequest['status']; // reutiliza los literales del tipo
+
+interface VacationCountResponse {
+  count: number;
+}
+
+/**
+ * Devuelve el número de solicitudes de vacaciones con el estado indicado (por defecto: 'pending').
+ * Usa GET /vacations/count?status=<status> y devuelve un number.
+ */
+export const getVacationPendingCount = async (
+  token: string,
+  status: VacationStatusCount = 'pending'
+): Promise<number> => {
+  try {
+    const response = await axiosInstance.get<VacationCountResponse>('/vacations/count', {
+      params: { status },
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return typeof response.data?.count === 'number' ? response.data.count : 0;
+  } catch (error: any) {
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      'Error al obtener el contador de solicitudes de vacaciones';
+    throw new Error(message);
+  }
 };
 
