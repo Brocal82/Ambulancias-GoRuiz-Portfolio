@@ -1,4 +1,4 @@
-//frontend/src/pages/AdminDashboard.tsx
+// frontend/src/pages/AdminDashboard.tsx
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useRef } from 'react';
@@ -7,15 +7,22 @@ import NotificationBadge from '../components/notifications/NotificationBadge';
 import NotificationMenu from '../components/notifications/NotificationMenu';
 import { useNotifications } from '../hooks/useNotifications';
 
+// ✅ Nuevo: hook para contador de pendientes de Vacaciones
+import useAdminVacationsPendingCount from '../hooks/useAdminVacationsPendingCount';
+
 const AdminDashboard = () => {
   const { t } = useTranslation();
 
-  // Contador global de no leídos para admin
+  // Contador global de no leídos para admin (ya existente)
   const { unreadCount } = useNotifications({
     role: 'admin',
     limit: 5,
-    pollMs: 30000, // ajusta si quieres otro intervalo
+    pollMs: 30000,
   });
+
+  // ✅ Nuevo: contador de solicitudes de vacaciones pendientes
+  const { count: vacationsPendingCount, isLoading: vacationsLoading } = useAdminVacationsPendingCount();
+  const vacationsHasPending = !vacationsLoading && vacationsPendingCount > 0;
 
   // Control del menú
   const [openMenu, setOpenMenu] = useState(false);
@@ -72,60 +79,100 @@ const AdminDashboard = () => {
               className="absolute right-0 mt-2"
               tabIndex={-1}
             >
-              <NotificationMenu
-                role="admin"
-                limit={10}
-                pollMs={30000}
-              />
+              <NotificationMenu role="admin" limit={10} pollMs={30000} />
             </div>
           )}
         </div>
-
       </div>
 
-      {/* Grid de tarjetas tal cual lo tenías */}
+      {/* Grid de tarjetas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-        <Link to="/admin/users" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+        <Link
+          to="/admin/users"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
           <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.users.title')}</h2>
           <p className="text-sm text-gray-600">{t('pages.adminDashboard.users.desc')}</p>
         </Link>
 
-        <Link to="/admin/diensts" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+        <Link
+          to="/admin/diensts"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
           <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.diensts.title')}</h2>
           <p className="text-sm text-gray-600">{t('pages.adminDashboard.diensts.desc')}</p>
         </Link>
 
-        <Link to="/admin/summaries" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+        <Link
+          to="/admin/summaries"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
           <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.summaries.title')}</h2>
           <p className="text-sm text-gray-600">{t('pages.adminDashboard.summaries.desc')}</p>
         </Link>
 
-        <Link to="/admin/hospitals" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+        <Link
+          to="/admin/hospitals"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
           <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.hospitals.title')}</h2>
           <p className="text-sm text-gray-600">{t('pages.adminDashboard.hospitals.desc')}</p>
         </Link>
 
-        <Link to="/admin/ambulances" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+        <Link
+          to="/admin/ambulances"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
           <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.ambulances.title')}</h2>
           <p className="text-sm text-gray-600">{t('pages.adminDashboard.ambulances.desc')}</p>
         </Link>
 
-        <Link to="/admin/mechanics" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+        <Link
+          to="/admin/mechanics"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
           <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.mechanics.title')}</h2>
           <p className="text-sm text-gray-600">{t('pages.adminDashboard.mechanics.desc')}</p>
         </Link>
 
-        <Link to="/admin/vacations" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+        {/* ✅ Vacations con badge + ring azul si hay pendientes */}
+        <Link
+          to="/admin/vacations"
+          className={`relative bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition ${
+            vacationsHasPending ? 'ring-2 ring-blue-500' : ''
+          }`}
+          aria-label={
+            vacationsHasPending
+              ? t('pages.adminDashboard.vacations.title') + ` (${vacationsPendingCount})`
+              : t('pages.adminDashboard.vacations.title')
+          }
+        >
+          {/* Badge numérico (solo si no está cargando y hay pendientes) */}
+          {!vacationsLoading && vacationsPendingCount > 0 && (
+            <span
+              className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-blue-600 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
+              aria-label={`${vacationsPendingCount} ${t('pages.adminDashboard.vacations.pending') ?? 'pendientes'}`}
+            >
+              {vacationsPendingCount}
+            </span>
+          )}
+
           <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.vacations.title')}</h2>
           <p className="text-sm text-gray-600">{t('pages.adminDashboard.vacations.desc')}</p>
         </Link>
 
-        <Link to="/admin/appointments" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+        <Link
+          to="/admin/appointments"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
           <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.appointments.title')}</h2>
           <p className="text-sm text-gray-600">{t('pages.adminDashboard.appointments.desc')}</p>
         </Link>
 
-        <Link to="/admin/messages" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+        <Link
+          to="/admin/messages"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
           <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.messages.title')}</h2>
           <p className="text-sm text-gray-600">{t('pages.adminDashboard.messages.desc')}</p>
         </Link>
@@ -150,4 +197,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
