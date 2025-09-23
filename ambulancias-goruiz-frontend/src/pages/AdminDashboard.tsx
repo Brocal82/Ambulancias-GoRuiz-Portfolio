@@ -122,7 +122,7 @@ const AdminDashboard = () => {
           {/* Badge numérico (solo si no está cargando y hay pendientes) */}
           {!summariesLoading && summariesPendingCount > 0 && (
             <span
-              className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-orange-500 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
+              className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-orange-400 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
               aria-label={`${summariesPendingCount} ${t('pages.adminDashboard.summaries.pending') ?? 'pendientes'}`}
             >
               {summariesPendingCount}
