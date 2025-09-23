@@ -52,3 +52,34 @@ export const deleteIssueReport = async (token: string, id: string): Promise<void
   });
 };
 
+/* =========================
+   NUEVO: contador pendientes (Summaries)
+   ========================= */
+
+interface SummariesCountResponse {
+  count: number;
+}
+
+/**
+ * Devuelve el número de summaries con el estado indicado (por defecto: 'pending').
+ * Llama a GET /workday-summary/count?status=<status> y retorna un number.
+ * Nota: el backend acepta 'pending' y puede mapear a reviewStatus/isReviewed.
+ */
+export const getSummariesPendingCount = async (
+  token: string,
+  status: string = "pending"
+): Promise<number> => {
+  try {
+    const res = await axios.get<SummariesCountResponse>("/workday-summary/count", {
+      params: { status },
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return typeof res.data?.count === "number" ? res.data.count : 0;
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message ||
+      err?.message ||
+      "Error al obtener el contador de summaries pendientes";
+    throw new Error(msg);
+  }
+};
