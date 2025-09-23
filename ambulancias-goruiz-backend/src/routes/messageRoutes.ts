@@ -7,6 +7,7 @@ import {
   getSentMessages,
   deleteMessageForUser,
   deleteMessageByAdmin,
+  markMessageAsRead
 } from '../controllers/messageController';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { authorizeRole } from '../middlewares/roleMiddleware';
@@ -30,11 +31,16 @@ router.get('/', authenticateToken, authorizeRole('worker'), getMyMessages);
 // ✅ Obtener mensajes enviados por el admin (a todos los trabajadores)
 router.get('/sent', authenticateToken, authorizeRole('admin'), getSentMessages);
 
+// ✅ Marcar como leído (no ocultar)
+router.patch('/:id/read', authenticateToken, authorizeRole('worker'), markMessageAsRead);
+
+
 // ✅ Marcar un mensaje como leído/borrado para el worker (solo afecta a ese usuario)
 router.patch('/:id/remove', authenticateToken, authorizeRole('worker'), deleteMessageForUser);
 
 // ✅ Borrar un mensaje globalmente (solo el admin remitente del mensaje)
 router.delete('/:id', authenticateToken, authorizeRole('admin'), deleteMessageByAdmin);
+
 
 // (Opcional) Manejo elegante de errores de subida (multer)
 const multerErrorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
