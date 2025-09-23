@@ -83,3 +83,30 @@ export const getSummariesPendingCount = async (
     throw new Error(msg);
   }
 };
+
+/* =========================
+   NUEVO: marcar summary como revisado
+   ========================= */
+
+/**
+ * Marca un resumen como revisado (isReviewed=true) y devuelve el documento actualizado.
+ * PATCH /workday-summary/:id/review
+ */
+export const markSummaryReviewed = async (
+  token: string,
+  id: string
+): Promise<WorkdaySummary> => {
+  try {
+    const res = await axios.patch(`/workday-summary/${id}/review`, null, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data as WorkdaySummary;
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message ||
+      err?.message ||
+      "Error al marcar el resumen como revisado";
+    throw new Error(msg);
+  }
+};
+
