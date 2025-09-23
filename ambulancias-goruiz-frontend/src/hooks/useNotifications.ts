@@ -3,7 +3,7 @@ import { getNotifications, markNotificationAsRead } from '../api/notifications';
 import type { NotificationListResponse, NotificationRole } from '../types/notification';
 
 type UseNotificationsOptions = {
-  role: NotificationRole;      // 'admin' | 'worker'
+  role?: NotificationRole;      // 'admin' | 'worker'
   userId?: string;             // cuando quieras filtrar por usuario
   unreadOnly?: boolean;        // p.ej. true para solo no leídos
   type?: string;               // 'message' | 'report' | 'summary' | ...
@@ -33,7 +33,14 @@ export function useNotifications(opts: UseNotificationsOptions) {
     try {
       setLoading(true);
       setError(null);
-      const res = await getNotifications({ role, userId, unreadOnly, type, page, limit });
+      const res = await getNotifications({
+        ...(role ? { role } : {}),
+        userId,
+        unreadOnly,
+        type,
+        page,
+        limit,
+      });
       setData(res);
     } catch (e: any) {
       setError(e?.message ?? 'Error cargando notificaciones');
