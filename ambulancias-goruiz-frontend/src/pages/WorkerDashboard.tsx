@@ -1,92 +1,18 @@
-//frontend/src/pages/WorkerDashboard.tsx
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect, useRef } from 'react';
 
-import NotificationBadge from '../components/notifications/NotificationBadge';
-import NotificationMenu from '../components/notifications/NotificationMenu';
-import { useNotifications } from '../hooks/useNotifications';
-import { useAuth } from '../hooks/useAuth';
+import { useUnreadMessagesCount } from '../hooks/useUnreadMessagesCount';
 
 const WorkerDashboard = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
-
-  // Contador global de no leídos para el trabajador actual
-  const { unreadCount } = useNotifications({
-    role: 'worker',
-    userId: user?._id,
-    limit: 5,
-    pollMs: 30000, // ajusta si quieres otro intervalo
-  });
-
-  // Control del menú
-  const [openMenu, setOpenMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  // id único para el menú (usado en aria-controls)
-  const buttonId = 'worker-notifications-button';
-  const menuId = 'worker-notifications-menu';
-
-  // Cerrar menú al click fuera o al pulsar Escape
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpenMenu(false);
-      }
-    }
-    function onEsc(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpenMenu(false);
-    }
-    document.addEventListener('mousedown', onClickOutside);
-    document.addEventListener('keydown', onEsc);
-    return () => {
-      document.removeEventListener('mousedown', onClickOutside);
-      document.removeEventListener('keydown', onEsc);
-    };
-  }, []);
+  const { count: unreadMessages } = useUnreadMessagesCount({ pollMs: 30000 });
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      {/* Header con título y notificaciones */}
-      <div className="mx-auto mb-6 flex max-w-4xl items-center justify-between">
-        <h1 className="text-2xl font-bold text-center sm:text-left">
-          {t('pages.workerDashboard.title')}
-        </h1>
+      <h1 className="text-2xl font-bold mb-6 text-center">
+        {t('pages.workerDashboard.title')}
+      </h1>
 
-        <div className="relative" ref={menuRef}>
-          <button
-            id={buttonId}
-            type="button"
-            onClick={() => setOpenMenu((o) => !o)}
-            aria-haspopup="menu"
-            aria-label="Abrir notificaciones"
-            title="Notificaciones"
-          >
-            <NotificationBadge count={unreadCount} tone="info" />
-          </button>
-
-          {openMenu && (
-            <div
-              id={menuId}
-              role="menu"
-              aria-labelledby={buttonId}
-              aria-label="Lista de notificaciones"
-              className="absolute right-0 mt-2"
-              tabIndex={-1}
-            >
-              <NotificationMenu
-                role="worker"
-                userId={user?._id}
-                limit={10}
-                pollMs={30000}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Grid de tarjetas tal cual lo tenías */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
         <Link to="/profile" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
           <h2 className="text-lg font-semibold mb-2">{t('pages.workerDashboard.profile.title')}</h2>
@@ -113,7 +39,28 @@ const WorkerDashboard = () => {
           <p className="text-sm text-gray-600">{t('pages.workerDashboard.hospitals.desc')}</p>
         </Link>
 
-        <Link to="/worker/messages" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
+        {/* MENSAJES con borde + contador (sin campana) */}
+        <Link
+          to="/worker/messages"
+          className={[
+            'relative bg-white p-6 rounded shadow hover:shadow-md transition',
+            unreadMessages > 0 ? 'ring-2 ring-blue-500 hover:bg-blue-50' : 'hover:bg-blue-50',
+          ].join(' ')}
+          aria-label={
+            unreadMessages > 0
+              ? `${t('pages.workerDashboard.messages.title')} (${unreadMessages} sin leer)`
+              : t('pages.workerDashboard.messages.title')
+          }
+        >
+          {/* contador en la esquina, solo si hay no leídos */}
+          {unreadMessages > 0 && (
+            <span
+              className="absolute right-3 top-3 inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-blue-600 px-1.5 text-xs font-semibold text-white shadow-lg"
+              aria-hidden="true"
+            >
+              {unreadMessages}
+            </span>
+          )}
           <h2 className="text-lg font-semibold mb-2">{t('pages.workerDashboard.messages.title')}</h2>
           <p className="text-sm text-gray-600">{t('pages.workerDashboard.messages.desc')}</p>
         </Link>
@@ -148,7 +95,3 @@ const WorkerDashboard = () => {
 };
 
 export default WorkerDashboard;
-
-
-
-
