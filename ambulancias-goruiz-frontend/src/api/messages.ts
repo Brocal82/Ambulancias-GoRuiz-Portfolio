@@ -2,13 +2,21 @@
 import axios from './axios';
 import type { Message } from '../types/message';
 
-// ✅ Obtener todos los mensajes del trabajador autenticado
-export const getMyMessages = async (token: string): Promise<Message[]> => {
-  const response = await axios.get('/messages', {
+// ✅ Obtener mensajes del trabajador autenticado
+//    - unreadOnly: true (por defecto) → solo no leídos
+//    - unreadOnly: false → TODOS (leídos + no leídos)
+export const getMyMessages = async (
+  token: string,
+  opts?: { unreadOnly?: boolean }
+): Promise<Message[]> => {
+  const unreadOnly = opts?.unreadOnly ?? true;
+  const response = await axios.get<Message[]>('/messages', {
     headers: { Authorization: `Bearer ${token}` },
+    params: { unreadOnly: String(unreadOnly) },
   });
   return response.data;
 };
+
 
 // ✅ Enviar un mensaje (solo admin)
 export const sendMessage = async (
@@ -58,6 +66,13 @@ export const deleteMessage = async (id: string, token: string) => {
   });
   return res.data;
 };
+
+export const markMessageAsRead = async (token: string, messageId: string): Promise<void> => {
+  await axios.patch(`/messages/${messageId}/read`, null, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
 
 
 
