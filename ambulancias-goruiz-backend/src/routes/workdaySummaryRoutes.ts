@@ -6,25 +6,26 @@ import {
   reportIssue,
   getAllIssueReports,
   deleteIssueReport,
-  getSummariesCountByStatus, // 👈 NUEVO
+  getSummariesCountByStatus,
+  markSummaryReviewed, // 👈 NUEVO
 } from "../controllers/workdaySummaryController";
 import { authenticateToken } from "../middlewares/authMiddleware";
-import { authorizeRole } from "../middlewares/roleMiddleware"; // 👈 importa tu middleware
+import { authorizeRole } from "../middlewares/roleMiddleware";
 
 const router = express.Router();
 
 router.post("/", authenticateToken, createWorkdaySummary);
 router.post("/partial", authenticateToken, submitPartialClosure);
 
-// 👇 NUEVO: contador derivado para dashboard admin
-// GET /summaries/count?status=pending -> { count: number }
+// 🔵 Nuevo: contador derivado (ya añadido en pasos previos)
 router.get("/count", authenticateToken, authorizeRole("admin"), getSummariesCountByStatus);
+
+// 🔵 NUEVO: marcar como revisado
+router.patch("/:id/review", authenticateToken, authorizeRole("admin"), markSummaryReviewed);
 
 router.get("/", authenticateToken, getAllWorkdaySummaries);
 router.post("/report-issue", reportIssue);
 router.get("/issues", getAllIssueReports);
-
-// 👇 SOLO admin puede borrar
 router.delete("/issues/:id", authenticateToken, authorizeRole("admin"), deleteIssueReport);
 
 export default router;

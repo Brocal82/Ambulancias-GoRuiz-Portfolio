@@ -316,30 +316,38 @@ export const deleteIssueReport = async (req: Request, res: Response): Promise<vo
   }
 };
 
-/**
- * GET /summaries/count?status=pending
- * Responde: { count: number }
- * - Conteo derivado del propio módulo, sin duplicar notificaciones.
- * - Flexible con el modelo: soporta status, reviewStatus o isReviewed (boolean).
- */
 export const getSummariesCountByStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const rawStatus = typeof req.query.status === 'string' ? req.query.status : 'pending';
     const status = rawStatus.toLowerCase();
 
-    // Construimos filtros compatibles con distintos esquemas
-    const orFilters: any[] = [
-      { status },          // si tuvieras WorkdaySummary.status = 'pending' | 'approved' | ...
-      { reviewStatus: status }, // o si usas reviewStatus
-    ];
+    let count = 0;
 
-    // Si interpretas "pendiente" como "no revisado"
     if (status === 'pending') {
-      orFilters.push({ isReviewed: false });
+      // Definición amplia de "pendiente":
+      // - status === 'pending'
+      // - reviewStatus === 'pending'
+      // - isReviewed === false
+      // - O NO existen reviewStatus ni isReviewed (lo tratamos como no revisado)
+      count = await WorkdaySummary.countDocuments({
+        $or: [
+          { status: 'pending' },
+          { reviewStatus: 'pending' },
+          { isReviewed: false },
+          {
+            $and: [
+              { reviewStatus: { $exists: false } },
+              { isReviewed: { $exists: false } },
+            ],
+          },
+        ],
+      });
+    } else {
+      // Para otros estados concretos, buscamos por status o reviewStatus
+      count = await WorkdaySummary.countDocuments({
+        $or: [{ status }, { reviewStatus: status }],
+      });
     }
-
-    // NOTA: en la mayoría de casos solo uno de estos campos existirá, así que no habrá doble conteo.
-    const count = await WorkdaySummary.countDocuments({ $or: orFilters });
 
     res.status(200).json({ count });
   } catch (error) {
@@ -347,5 +355,38 @@ export const getSummariesCountByStatus = async (req: Request, res: Response): Pr
     res.status(500).json({ message: 'Error al contar resúmenes' });
   }
 };
+
+/**
+ * PATCH /workday-summary/:id/review
+ * Marca el resumen como revisado (isReviewed=true) y setea reviewedAt=now.
+ * Responde el documento actualizado.
+ */
+export const markSummaryReviewed = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      res.status(400).json({ message: 'ID inválido' });
+      return;
+    }
+
+    const updated = await WorkdaySummary.findByIdAndUpdate(
+      id,
+      { $set: { isReviewed: true, reviewedAt: new Date() } },
+      { new: true }
+    );
+
+    if (!updated) {
+      res.status(404).json({ message: 'Resumen no encontrado' });
+      return;
+    }
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error('❌ Error al marcar resumen como revisado:', error);
+    res.status(500).json({ message: 'Error al marcar resumen como revisado' });
+  }
+};
+
 
 
