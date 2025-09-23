@@ -35,7 +35,7 @@ const tripSchema = new Schema<TripEntry>({
   kmEnd:               { type: Number },
   wasCancelled:        { type: Boolean, required: true },
   cancelledAtPickup:   { type: Boolean, default: false },
-  countsTrip:          { type: Number, enum: [0, 1], default: 1, required: true }, // ✅ AÑADIDO
+  countsTrip:          { type: Number, enum: [0, 1], default: 1, required: true },
   reports:             { type: String, default: "" },
 });
 
@@ -61,6 +61,10 @@ export interface IWorkdaySummary extends Document {
   extraNote?: string;
   totalEffectivePatients: number;
   totalRealTrips: number;
+
+  /** 👇 NUEVO: estado de revisión para el dashboard */
+  isReviewed: boolean;
+  reviewedAt?: Date;
 }
 
 /* ─────────────────────────────────────────────
@@ -85,14 +89,20 @@ const workdaySummarySchema = new Schema<IWorkdaySummary>({
   extraNote:           { type: String, default: "" },
   totalEffectivePatients: { type: Number, required: true },
   totalRealTrips:        { type: Number, required: true },
+
+  /** 👇 NUEVO: revisión */
+  isReviewed:          { type: Boolean, default: false },
+  reviewedAt:          { type: Date },
 });
+
+// (Opcional, rendimiento): índice simple por isReviewed
+// workdaySummarySchema.index({ isReviewed: 1 });
 
 /* ─────────────────────────────────────────────
  * 4. Export del modelo
  * ───────────────────────────────────────────── */
-const WorkdaySummary = mongoose.models.WorkdaySummary || mongoose.model<IWorkdaySummary>(
-  "WorkdaySummary",
-  workdaySummarySchema
-);
+const WorkdaySummary =
+  mongoose.models.WorkdaySummary ||
+  mongoose.model<IWorkdaySummary>("WorkdaySummary", workdaySummarySchema);
 
 export default WorkdaySummary;
