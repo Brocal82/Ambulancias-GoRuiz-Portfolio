@@ -316,3 +316,36 @@ export const deleteIssueReport = async (req: Request, res: Response): Promise<vo
   }
 };
 
+/**
+ * GET /summaries/count?status=pending
+ * Responde: { count: number }
+ * - Conteo derivado del propio módulo, sin duplicar notificaciones.
+ * - Flexible con el modelo: soporta status, reviewStatus o isReviewed (boolean).
+ */
+export const getSummariesCountByStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const rawStatus = typeof req.query.status === 'string' ? req.query.status : 'pending';
+    const status = rawStatus.toLowerCase();
+
+    // Construimos filtros compatibles con distintos esquemas
+    const orFilters: any[] = [
+      { status },          // si tuvieras WorkdaySummary.status = 'pending' | 'approved' | ...
+      { reviewStatus: status }, // o si usas reviewStatus
+    ];
+
+    // Si interpretas "pendiente" como "no revisado"
+    if (status === 'pending') {
+      orFilters.push({ isReviewed: false });
+    }
+
+    // NOTA: en la mayoría de casos solo uno de estos campos existirá, así que no habrá doble conteo.
+    const count = await WorkdaySummary.countDocuments({ $or: orFilters });
+
+    res.status(200).json({ count });
+  } catch (error) {
+    console.error('❌ Error al contar summaries por estado:', error);
+    res.status(500).json({ message: 'Error al contar resúmenes' });
+  }
+};
+
+
