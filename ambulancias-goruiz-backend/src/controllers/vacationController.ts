@@ -1,8 +1,8 @@
+//backend/src/controllers/vacationController.ts
 import { Request, Response } from 'express';
 import type { IVacationRequestModel } from '../models/vacationRequest';
 import VacationRequest from '../models/vacationRequest';
 import mongoose from 'mongoose';
-
 
 // Obtener todas las solicitudes (solo admin)
 export const getVacationRequests = async (req: Request, res: Response): Promise<void> => {
@@ -138,6 +138,25 @@ export const deleteVacationRequest = async (req: Request, res: Response): Promis
     res.status(200).json({ message: 'Solicitud eliminada correctamente' });
   } catch (error) {
     console.error('Error al eliminar solicitud de vacaciones:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+/**
+ * GET /vacations/count?status=pending
+ * Devuelve { count: number }
+ * - status por query (opcional), por defecto 'pending'
+ * - se usa conteo derivado del propio módulo (sin duplicar notificaciones)
+ */
+export const getVacationPendingCount = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const rawStatus = typeof req.query.status === 'string' ? req.query.status : 'pending';
+    const status = rawStatus.toLowerCase();
+
+    const count = await VacationRequest.countDocuments({ status });
+    res.status(200).json({ count });
+  } catch (error) {
+    console.error('Error al contar solicitudes de vacaciones:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 };

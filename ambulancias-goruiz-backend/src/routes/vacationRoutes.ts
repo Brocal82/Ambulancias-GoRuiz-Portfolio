@@ -1,5 +1,13 @@
 import { Router } from 'express';
-import { getUserVacationRequests, getVacationRequests, createVacationRequest, updateVacationRequest, respondToAlternativeDate, deleteVacationRequest } from '../controllers/vacationController';
+import {
+  getUserVacationRequests,
+  getVacationRequests,
+  createVacationRequest,
+  updateVacationRequest,
+  respondToAlternativeDate,
+  deleteVacationRequest,
+  getVacationPendingCount,
+} from '../controllers/vacationController';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { authorizeRole } from '../middlewares/roleMiddleware';
 
@@ -10,6 +18,10 @@ router.post('/', authenticateToken, createVacationRequest);
 
 // El admin puede obtener todas las solicitudes
 router.get('/', authenticateToken, authorizeRole('admin'), getVacationRequests);
+
+// --- NUEVO: Count pendiente (derivado, solo admin) ---
+// GET /vacations/count?status=pending -> { count: number }
+router.get('/count', authenticateToken, authorizeRole('admin'), getVacationPendingCount);
 
 // El admin puede actualizar estado y enviar fechas alternativas
 router.patch('/:id', authenticateToken, authorizeRole('admin'), updateVacationRequest);
@@ -22,6 +34,5 @@ router.get('/user', authenticateToken, getUserVacationRequests);
 
 // DELETE solicitud de vacaciones (solo admin)
 router.delete('/:id', authenticateToken, authorizeRole('admin'), deleteVacationRequest);
-
 
 export default router;
