@@ -1,6 +1,6 @@
 // frontend/src/pages/AdminSummariesPage.tsx
 import { useEffect, useState, Fragment, useCallback } from "react";
-import { getAllSummaries, markSummaryReviewed } from "../api/workdaySummary"; // ✅ import nuevo
+import { getAllSummaries, markSummaryReviewed } from "../api/workdaySummary";
 import type { WorkdaySummary } from "../types/workdaySummary";
 import ReviewSummary from "../components/workday/ReviewSummary";
 import { useAuth } from "../hooks/useAuth";
@@ -10,6 +10,10 @@ import { useTranslation } from "react-i18next";
 const ADMIN_SUMMARIES_CHANGED_EVENT = "admin-summaries-changed";
 const notifySummariesChanged = () =>
   window.dispatchEvent(new Event(ADMIN_SUMMARIES_CHANGED_EVENT));
+
+// 🎨 Ajusta aquí el color del borde “no leído”
+const UNREAD_BORDER_COLOR = "border-amber-600"; // alternativas: 'border-slate-400' | 'border-amber-400'
+const UNREAD_BORDER_THICKNESS = "border-l-4"; // o 'border-l' si lo quieres más fino
 
 const AdminSummariesPage = () => {
   const [summaries, setSummaries] = useState<WorkdaySummary[]>([]);
@@ -56,7 +60,7 @@ const AdminSummariesPage = () => {
     };
   }, [fetchSummaries]);
 
-  // 👇 Nuevo: manejar clic en fila para expandir y marcar como revisado si procede
+  // 👇 Manejar clic en fila para expandir y marcar como revisado si procede
   const onRowClick = async (s: WorkdaySummary & { _id?: string; isReviewed?: boolean }, rowKey: string) => {
     const isExpanded = expandedKey === rowKey;
     setExpandedKey(isExpanded ? null : rowKey);
@@ -75,7 +79,9 @@ const AdminSummariesPage = () => {
       // ✅ Marca localmente como revisado para feedback inmediato
       setSummaries((prev) =>
         prev.map((item) =>
-          (item as any)._id === id ? ({ ...(item as any), isReviewed: true, reviewedAt: new Date().toISOString() } as any) : item
+          (item as any)._id === id
+            ? ({ ...(item as any), isReviewed: true, reviewedAt: new Date().toISOString() } as any)
+            : item
         )
       );
     } catch (e) {
@@ -104,7 +110,7 @@ const AdminSummariesPage = () => {
       </h1>
 
       {Object.entries(groupedByDate).map(([date, summariesForDate]) => (
-        <section key={date} className="mb-8">
+        <section key={date} className="mb-10">
           <div className="mb-3">
             <h2 className="text-lg font-semibold text-blue-700">
               {t("pages.summaries.admin.dateHeader", {
@@ -113,19 +119,19 @@ const AdminSummariesPage = () => {
             </h2>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl ring-1 ring-slate-200 bg-white w-full">
+          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white w-full shadow-sm">
             <table className="min-w-full table-fixed text-sm">
               <thead className="bg-gray-100 text-xs uppercase text-gray-600">
                 <tr className="text-center">
-                  <th className="p-2">{t("pages.summaries.admin.table.headers.dienstTime")}</th>
-                  <th className="p-2">{t("pages.summaries.admin.table.headers.ambulance")}</th>
-                  <th className="p-2">{t("pages.summaries.admin.table.headers.team")}</th>
-                  <th className="p-2">{t("pages.summaries.admin.table.headers.kmRange")}</th>
-                  <th className="p-2">{t("pages.summaries.admin.table.headers.kmTotal")}</th>
-                  <th className="p-2">{t("pages.summaries.admin.table.headers.trips")}</th>
-                  <th className="p-2">{t("pages.summaries.admin.table.headers.premie")}</th>
-                  <th className="p-2">{t("pages.summaries.admin.table.headers.noteReason")}</th>
-                  <th className="p-2">{t("pages.summaries.admin.table.headers.closure")}</th>
+                  <th className="px-3 py-2 whitespace-nowrap w-40">{t("pages.summaries.admin.table.headers.dienstTime")}</th>
+                  <th className="px-3 py-2 whitespace-nowrap w-24">{t("pages.summaries.admin.table.headers.ambulance")}</th>
+                  <th className="px-3 py-2 whitespace-nowrap w-44">{t("pages.summaries.admin.table.headers.team")}</th>
+                  <th className="px-3 py-2 whitespace-nowrap w-36">{t("pages.summaries.admin.table.headers.kmRange")}</th>
+                  <th className="px-3 py-2 whitespace-nowrap w-24">{t("pages.summaries.admin.table.headers.kmTotal")}</th>
+                  <th className="px-3 py-2 whitespace-nowrap w-20">{t("pages.summaries.admin.table.headers.trips")}</th>
+                  <th className="px-3 py-2 whitespace-nowrap w-24">{t("pages.summaries.admin.table.headers.premie")}</th>
+                  <th className="px-3 py-2 whitespace-nowrap w-52">{t("pages.summaries.admin.table.headers.noteReason")}</th>
+                  <th className="px-3 py-2 whitespace-nowrap w-28">{t("pages.summaries.admin.table.headers.closure")}</th>
                 </tr>
               </thead>
 
@@ -142,6 +148,8 @@ const AdminSummariesPage = () => {
                   .map((s, i) => {
                     const key = `${s.assignmentId}-${i}`;
                     const isExpanded = expandedKey === key;
+                    const isUnread =
+                      (s as any).isReviewed === false || typeof (s as any).isReviewed === "undefined";
 
                     return (
                       <Fragment key={key}>
@@ -149,10 +157,14 @@ const AdminSummariesPage = () => {
                           className={`border-t hover:bg-blue-50 cursor-pointer ${
                             isExpanded ? "bg-blue-100" : !s.isFinalClosure ? "bg-orange-50" : ""
                           }`}
-                          onClick={() => onRowClick(s as any, key)} // 👈 aquí enganchamos la acción
+                          onClick={() => onRowClick(s as any, key)}
                         >
                           {/* Dienst / Horario */}
-                          <td className="p-2 font-semibold">
+                          <td
+                            className={`p-2 font-semibold ${
+                              isUnread ? `${UNREAD_BORDER_THICKNESS} ${UNREAD_BORDER_COLOR}` : ""
+                            }`}
+                          >
                             {t("pages.summaries.admin.row.dienstNumber", { num: (s as any).dienstNumber ?? "-" })}
                             <div className="text-xs text-gray-500">
                               {s.startTime && s.endTime

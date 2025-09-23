@@ -111,7 +111,7 @@ const AdminDashboard = () => {
 
         <Link
           to="/admin/summaries"
-          className={`relative bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition ${summariesHasPending ? 'ring-2 ring-blue-500' : ''
+          className={`relative bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition ${summariesHasPending ? 'ring-2 ring-orange-300' : ''
             }`}
           aria-label={
             summariesHasPending
@@ -122,7 +122,7 @@ const AdminDashboard = () => {
           {/* Badge numérico (solo si no está cargando y hay pendientes) */}
           {!summariesLoading && summariesPendingCount > 0 && (
             <span
-              className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-blue-600 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
+              className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-orange-500 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
               aria-label={`${summariesPendingCount} ${t('pages.adminDashboard.summaries.pending') ?? 'pendientes'}`}
             >
               {summariesPendingCount}
@@ -161,7 +161,7 @@ const AdminDashboard = () => {
         {/* ✅ Vacations con badge + ring azul si hay pendientes */}
         <Link
           to="/admin/vacations"
-          className={`relative bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition ${vacationsHasPending ? 'ring-2 ring-blue-500' : ''
+          className={`relative bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition ${vacationsHasPending ? 'ring-2 ring-orange-300' : ''
             }`}
           aria-label={
             vacationsHasPending
@@ -172,7 +172,7 @@ const AdminDashboard = () => {
           {/* Badge numérico (solo si no está cargando y hay pendientes) */}
           {!vacationsLoading && vacationsPendingCount > 0 && (
             <span
-              className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-blue-600 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
+              className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-orange-500 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
               aria-label={`${vacationsPendingCount} ${t('pages.adminDashboard.vacations.pending') ?? 'pendientes'}`}
             >
               {vacationsPendingCount}
