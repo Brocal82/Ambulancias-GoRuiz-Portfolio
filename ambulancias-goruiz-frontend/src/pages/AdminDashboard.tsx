@@ -9,6 +9,7 @@ import { useNotifications } from '../hooks/useNotifications';
 
 // ✅ Nuevo: hook para contador de pendientes de Vacaciones
 import useAdminVacationsPendingCount from '../hooks/useAdminVacationsPendingCount';
+import useAdminSummariesPendingCount from '../hooks/useAdminSummariesPendingCount';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -23,6 +24,11 @@ const AdminDashboard = () => {
   // ✅ Nuevo: contador de solicitudes de vacaciones pendientes
   const { count: vacationsPendingCount, isLoading: vacationsLoading } = useAdminVacationsPendingCount();
   const vacationsHasPending = !vacationsLoading && vacationsPendingCount > 0;
+
+  // ✅ Nuevo: contador de solicitudes de Summarios pendientes
+  const { count: summariesPendingCount, isLoading: summariesLoading } = useAdminSummariesPendingCount();
+  const summariesHasPending = !summariesLoading && summariesPendingCount > 0;
+
 
   // Control del menú
   const [openMenu, setOpenMenu] = useState(false);
@@ -105,11 +111,28 @@ const AdminDashboard = () => {
 
         <Link
           to="/admin/summaries"
-          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+          className={`relative bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition ${summariesHasPending ? 'ring-2 ring-blue-500' : ''
+            }`}
+          aria-label={
+            summariesHasPending
+              ? t('pages.adminDashboard.summaries.title') + ` (${summariesPendingCount})`
+              : t('pages.adminDashboard.summaries.title')
+          }
         >
+          {/* Badge numérico (solo si no está cargando y hay pendientes) */}
+          {!summariesLoading && summariesPendingCount > 0 && (
+            <span
+              className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-blue-600 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
+              aria-label={`${summariesPendingCount} ${t('pages.adminDashboard.summaries.pending') ?? 'pendientes'}`}
+            >
+              {summariesPendingCount}
+            </span>
+          )}
+
           <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.summaries.title')}</h2>
           <p className="text-sm text-gray-600">{t('pages.adminDashboard.summaries.desc')}</p>
         </Link>
+
 
         <Link
           to="/admin/hospitals"
@@ -138,9 +161,8 @@ const AdminDashboard = () => {
         {/* ✅ Vacations con badge + ring azul si hay pendientes */}
         <Link
           to="/admin/vacations"
-          className={`relative bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition ${
-            vacationsHasPending ? 'ring-2 ring-blue-500' : ''
-          }`}
+          className={`relative bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition ${vacationsHasPending ? 'ring-2 ring-blue-500' : ''
+            }`}
           aria-label={
             vacationsHasPending
               ? t('pages.adminDashboard.vacations.title') + ` (${vacationsPendingCount})`
