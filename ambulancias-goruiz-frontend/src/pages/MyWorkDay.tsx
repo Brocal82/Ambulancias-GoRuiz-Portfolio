@@ -424,125 +424,174 @@ const MyWorkday = () => {
   };
 
   const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number) => {
-    if (!token || !assignedDay || !user?._id) return;
+  if (!token || !assignedDay || !user?._id) return;
 
-    if (!ambulanceNumber || !initialAmbulanceKm) {
-      toastT.warn(["toasts.workday.enterAmbulanceAndKm"]);
-      return;
-    }
-    if (isNaN(finalKmFromModal)) {
-      toastT.warn(["toasts.workday.enterFinalKmInModal"]);
-      return;
-    }
+  // ✅ exige datos confirmados de vehículo
+  if (!vehicleConfirmed || !ambulanceId || !ambulanceNumber || !initialAmbulanceKm) {
+    toastT.warn(["toasts.workday.enterAmbulanceAndKm"]);
+    return;
+  }
+  if (isNaN(finalKmFromModal)) {
+    toastT.warn(["toasts.workday.enterFinalKmInModal"]);
+    return;
+  }
 
-    const initialKmNumber = Number(initialAmbulanceKm);
-    if (finalKmFromModal < initialKmNumber) {
-      toastT.error(["toasts.workday.finalKmLessThanInitial"]);
-      return;
-    }
+  const initialKmNumber = Number(initialAmbulanceKm);
+  if (finalKmFromModal < initialKmNumber) {
+    toastT.error(["toasts.workday.finalKmLessThanInitial"]);
+    return;
+  }
 
-    try {
-      setFinalAmbulanceKm(String(finalKmFromModal));
-      const totalDienstKm = finalKmFromModal - initialKmNumber;
+  try {
+    setFinalAmbulanceKm(String(finalKmFromModal));
+    const totalDienstKm = finalKmFromModal - initialKmNumber;
 
-      const summaryData: FinalSummaryPayload = {
-        date: today,
-        assignmentId: assignedDay.assignmentId,
-        driver: assignedDay.driver._id,
-        medic: assignedDay.medic._id,
-        ambulanceNumber,
-        ambulanceId:
-          typeof assignedDay.ambulanceId === "string"
-            ? assignedDay.ambulanceId
-            : assignedDay.ambulanceId?._id ?? "",
-        initialKm: initialKmNumber,
-        finalKm: finalKmFromModal,
-        totalDienstKm,
-        trips,
-        extraNote: note,
-        isFinalClosure: true,
-        dienstNumber: assignedDay.dienstNumber,
-        startTime: assignedDay.startTime,
-        endTime: assignedDay.endTime,
-      };
+    // 🔧 normaliza trips (por si acaso)
+    const sanitizedTrips = trips.map((t) => ({
+      ...t,
+      wasCancelled: !!t.wasCancelled,
+      cancelledAtPickup: !!t.cancelledAtPickup,
+      countsTrip: typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
+    }));
 
-      await sendFinalClosure(summaryData, token);
+    const summaryData: FinalSummaryPayload = {
+  date: today,
+  assignmentId: assignedDay.assignmentId,
 
-      toastT.success(["toasts.workday.dayClosedSuccess"]);
+  // ✅ usa el estado confirmado (no assignedDay.ambulanceId)
+  ambulanceId: ambulanceId,
+  ambulanceNumber,
 
-      localStorage.setItem(getClosedDayKey(today, assignedDay.driver._id), "true");
-      localStorage.setItem(getClosedDayKey(today, assignedDay.medic._id), "true");
+  // ✅ el tipo los exige
+  driver: assignedDay.driver._id,
+  medic: assignedDay.medic._id,
 
-      setTrips([]);
-      setIsClosingDay(true);
-      setShowReviewModal(false);
-      clearAmbulanceData(assignedDay.assignmentId);
-      navigate("/worker");
-    } catch (err) {
-      console.error("❌ Error al cerrar el día:", err);
-      toastT.error(["toasts.workday.dayCloseError"]);
-    }
-  };
+  initialKm: initialKmNumber,
+  finalKm: finalKmFromModal,
+  totalDienstKm,
+
+  // si estás usando sanitizedTrips, ponlo aquí
+  trips: sanitizedTrips,
+
+  extraNote: note,
+  isFinalClosure: true,
+  dienstNumber: assignedDay.dienstNumber,
+  startTime: assignedDay.startTime,
+  endTime: assignedDay.endTime,
+};
+
+
+    // Opcional: log para depurar si volviese a fallar
+    // console.log("[final-closure] payload:", summaryData);
+
+    await sendFinalClosure(summaryData, token);
+
+    toastT.success(["toasts.workday.dayClosedSuccess"]);
+
+    localStorage.setItem(getClosedDayKey(today, assignedDay.driver._id), "true");
+    localStorage.setItem(getClosedDayKey(today, assignedDay.medic._id), "true");
+
+    setTrips([]);
+    setIsClosingDay(true);
+    setShowReviewModal(false);
+    clearAmbulanceData(assignedDay.assignmentId);
+    navigate("/worker");
+  } catch (err: any) {
+    console.error("❌ Error al cerrar el día:", {
+      status: err?.response?.status,
+      message: err?.response?.data?.message,
+      data: err?.response?.data,
+    });
+    toastT.error([err?.response?.data?.message || "toasts.workday.dayCloseError"]);
+  }
+};
+
 
   const handleSendPartialClosure = async (reason: string, finalKmValue: number) => {
-    if (!token || !assignedDay) return;
+  if (!token || !assignedDay) return;
 
-    if (isNaN(finalKmValue)) {
-      toastT.warn(["toasts.workday.enterFinalKmInModal"]);
-      return;
-    }
-    if (Number(finalKmValue) < Number(initialAmbulanceKm)) {
-      toastT.warn(["toasts.workday.finalKmLessThanInitial"]);
-      return;
-    }
+  const reasonTrimmed = (reason ?? "").trim();
+  if (!reasonTrimmed) {
+    toastT.warn(["toasts.workday.partialReasonRequired"]);
+    return;
+  }
 
-    try {
-      const totalDienstKm = Number(finalKmValue) - Number(initialAmbulanceKm);
+  if (isNaN(finalKmValue)) {
+    toastT.warn(["toasts.workday.enterFinalKmInModal"]);
+    return;
+  }
+  if (Number(finalKmValue) < Number(initialAmbulanceKm)) {
+    toastT.warn(["toasts.workday.finalKmLessThanInitial"]);
+    return;
+  }
 
-      const payload: PartialSummaryPayload & { issueData?: any } = {
-        date: today,
-        assignmentId: assignedDay.assignmentId,
-        driver: assignedDay.driver._id,
-        medic: assignedDay.medic._id,
-        ambulanceId:
-          typeof assignedDay.ambulanceId === "string"
-            ? assignedDay.ambulanceId
-            : assignedDay.ambulanceId?._id ?? "",
-        ambulanceNumber,
-        initialKm: Number(initialAmbulanceKm),
-        finalKm: finalKmValue,
-        trips,
-        totalDienstKm,
-        partialClosureReason: reason,
-        isFinalClosure: false,
-        dienstNumber: assignedDay.dienstNumber,
-        startTime: assignedDay.startTime,
-        endTime: assignedDay.endTime,
-        ...(issueData ? { issueData } : {}),
-      };
+  // ✅ NUEVO: exige ambulancia confirmada e ID presente
+  if (!vehicleConfirmed || !ambulanceId) {
+    toastT.warn(["toasts.workday.needInitialData"]); // o crea un texto: "Confirma vehículo y km iniciales"
+    return;
+  }
+  if (!ambulanceNumber) {
+    toastT.warn(["toasts.workday.enterAmbulanceAndKm"]);
+    return;
+  }
 
-      await sendPartialClosure(payload, token);
+  try {
+    const totalDienstKm = Number(finalKmValue) - Number(initialAmbulanceKm);
 
-      toastT.success(issueData ? ["toasts.workday.partialSentWithIssue"] : ["toasts.workday.partialSent"]);
+    const sanitizedTrips = trips.map((t) => ({
+      ...t,
+      wasCancelled: !!t.wasCancelled,
+      cancelledAtPickup: !!t.cancelledAtPickup,
+      countsTrip: typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
+    }));
 
-      clearAmbulanceData(assignedDay.assignmentId);
-      localStorage.removeItem(confirmedAmbulanceKey(assignedDay.assignmentId));
+    const payload: PartialSummaryPayload & { issueData?: any } = {
+      date: today,
+      assignmentId: assignedDay.assignmentId,
+      driver: assignedDay.driver._id,
+      medic: assignedDay.medic._id,
+      // ⬇️⬇️ USAR EL ESTADO, NO assignedDay
+      ambulanceId: ambulanceId, 
+      ambulanceNumber,
+      initialKm: Number(initialAmbulanceKm),
+      finalKm: Number(finalKmValue),
+      trips: sanitizedTrips,
+      totalDienstKm,
+      partialClosureReason: reasonTrimmed,
+      isFinalClosure: false,
+      dienstNumber: assignedDay.dienstNumber,
+      startTime: assignedDay.startTime,
+      endTime: assignedDay.endTime,
+      ...(issueData ? { issueData } : {}),
+    };
 
-      setTrips([]);
-      setWasCancelled(false);
-      setCountsTrip(1);
-      setShowReviewModal(false);
-      setAmbulanceNumber("");
-      setInitialAmbulanceKm("");
-      setFinalAmbulanceKm("");
-      setVehicleConfirmed(false);
+    await sendPartialClosure(payload, token);
 
-      navigate("/worker");
-    } catch (err) {
-      console.error("❌ Error al enviar cierre parcial:", err);
-      toastT.error(["toasts.workday.partialSendError"]);
-    }
-  };
+    toastT.success(issueData ? ["toasts.workday.partialSentWithIssue"] : ["toasts.workday.partialSent"]);
+
+    clearAmbulanceData(assignedDay.assignmentId);
+    localStorage.removeItem(confirmedAmbulanceKey(assignedDay.assignmentId));
+
+    setTrips([]);
+    setWasCancelled(false);
+    setCountsTrip(1);
+    setShowReviewModal(false);
+    setAmbulanceNumber("");
+    setInitialAmbulanceKm("");
+    setFinalAmbulanceKm("");
+    setVehicleConfirmed(false);
+
+    navigate("/worker");
+  } catch (err: any) {
+    console.error("❌ Error al enviar cierre parcial:", {
+      status: err?.response?.status,
+      message: err?.response?.data?.message,
+      data: err?.response?.data,
+    });
+    toastT.error([err?.response?.data?.message || "toasts.workday.partialSendError"]);
+  }
+};
+
 
   // Activar Anschluss
   const handleAddAnschluss = () => {

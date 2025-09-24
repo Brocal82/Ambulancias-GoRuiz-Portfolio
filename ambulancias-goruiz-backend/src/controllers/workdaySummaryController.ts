@@ -23,16 +23,32 @@ export const createWorkdaySummary = async (req: Request, res: Response): Promise
       extraNote,
     } = req.body;
 
-    if (!date || !assignmentId || !ambulanceId || initialKm === undefined || finalKm === undefined) {
-      res.status(400).json({ message: "Faltan campos obligatorios" });
+    // ✅ Validación con detalle
+    const missing: string[] = [];
+    if (!date) missing.push("date");
+    if (!assignmentId) missing.push("assignmentId");
+    if (!ambulanceId) missing.push("ambulanceId");
+    if (initialKm === undefined) missing.push("initialKm");
+    if (finalKm === undefined) missing.push("finalKm");
+    if (!Array.isArray(trips)) missing.push("trips (debe ser array)");
+
+    if (missing.length) {
+      res.status(400).json({ message: `Faltan campos obligatorios: ${missing.join(", ")}` });
       return;
     }
 
-    if (!Array.isArray(trips)) {
-      res.status(400).json({ message: "El campo trips debe ser un array" });
-      return;
-    }
+    // ✅ Normalizaciones defensivas
+    const nInitialKm = typeof initialKm === "string" ? Number(initialKm) : initialKm;
+    const nFinalKm = typeof finalKm === "string" ? Number(finalKm) : finalKm;
 
+    const sanitizedTrips = (trips as any[]).map((t) => ({
+      ...t,
+      wasCancelled: !!t.wasCancelled,
+      cancelledAtPickup: !!t.cancelledAtPickup,
+      countsTrip: typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
+    }));
+
+    // 🔎 Busca Dienst/horarios como antes (ObjectId)
     const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
     const dienst = await Dienst.findOne({ "assignments._id": assignmentObjectId });
 
@@ -42,7 +58,6 @@ export const createWorkdaySummary = async (req: Request, res: Response): Promise
     }
 
     const assignment = dienst.assignments.find(a => a._id?.toString() === assignmentObjectId.toString());
-
     if (!assignment) {
       res.status(404).json({ message: "Asignación no encontrada" });
       return;
@@ -53,14 +68,9 @@ export const createWorkdaySummary = async (req: Request, res: Response): Promise
     const endTime = assignment?.endTime ?? null;
     const { driver, medic } = assignment;
 
-    // ✅ Asegura que countsTrip sea 0 o 1 (por defecto 1 si viene undefined)
-    const sanitizedTrips = trips.map((t: any) => ({
-      ...t,
-      countsTrip: typeof t.countsTrip === "number" ? t.countsTrip : 1,
-    }));
-
+    // 🧮 Cálculos
     const totalEffectivePatients = calculateEffectivePatients(sanitizedTrips, date);
-    const totalDienstKm = finalKm - initialKm;
+    const totalDienstKm = nFinalKm - nInitialKm;
     const totalRealTrips = sanitizedTrips.filter((t: any) => !t.wasCancelled || t.cancelledAtPickup).length;
 
     const newSummary = await WorkdaySummary.create({
@@ -70,8 +80,8 @@ export const createWorkdaySummary = async (req: Request, res: Response): Promise
       ambulanceNumber,
       driver,
       medic,
-      initialKm,
-      finalKm,
+      initialKm: nInitialKm,
+      finalKm: nFinalKm,
       totalDienstKm,
       trips: sanitizedTrips,
       extraNote,
@@ -83,11 +93,11 @@ export const createWorkdaySummary = async (req: Request, res: Response): Promise
       endTime,
     });
 
-    if (trips.length > 0) {
-      await Trip.updateMany(
-        { _id: { $in: trips.map((t: any) => t._id) } },
-        { $set: { sentInSummary: true } }
-      );
+    if (sanitizedTrips.length > 0) {
+      const ids = sanitizedTrips.map((t: any) => t._id).filter(Boolean);
+      if (ids.length > 0) {
+        await Trip.updateMany({ _id: { $in: ids } }, { $set: { sentInSummary: true } });
+      }
     }
 
     res.status(201).json(newSummary);
@@ -98,9 +108,11 @@ export const createWorkdaySummary = async (req: Request, res: Response): Promise
 };
 
 
+
 /* ─────────────────────────────
  * CIERRE PARCIAL DEL DÍA
  * ───────────────────────────── */
+// backend/src/controllers/workdaySummaryController.ts
 export const submitPartialClosure = async (req: Request, res: Response): Promise<void> => {
   try {
     const {
@@ -116,30 +128,54 @@ export const submitPartialClosure = async (req: Request, res: Response): Promise
       partialClosureReason,
     } = req.body;
 
-    if (
-      !date || !assignmentId || !driver || !medic ||
-      !ambulanceId || initialKm === undefined || finalKm === undefined ||
-      !Array.isArray(trips) || !partialClosureReason
-    ) {
-      res.status(400).json({ message: "Faltan datos para el cierre parcial." });
+    // ✅ Validación detallada
+    const missing: string[] = [];
+    if (!date) missing.push("date");
+    if (!assignmentId) missing.push("assignmentId");
+    if (!driver) missing.push("driver");
+    if (!medic) missing.push("medic");
+    if (!ambulanceId) missing.push("ambulanceId");
+    if (initialKm === undefined) missing.push("initialKm");
+    if (finalKm === undefined) missing.push("finalKm");
+    if (!Array.isArray(trips)) missing.push("trips (debe ser array)");
+    if (!partialClosureReason || (typeof partialClosureReason === "string" && partialClosureReason.trim() === "")) {
+      missing.push("partialClosureReason");
+    }
+    if (missing.length) {
+      res.status(400).json({ message: `Faltan campos: ${missing.join(", ")}` });
       return;
     }
 
-    const dienst = await Dienst.findOne({ "assignments._id": assignmentId });
-    const assignment = dienst?.assignments.find(a => a._id?.toString() === assignmentId);
+    // ✅ Normalizaciones defensivas
+    const nInitialKm = typeof initialKm === "string" ? Number(initialKm) : initialKm;
+    const nFinalKm = typeof finalKm === "string" ? Number(finalKm) : finalKm;
 
-    const dienstNumber = dienst?.dienstNumber ?? null;
-    const startTime = assignment?.startTime ?? null;
-    const endTime = assignment?.endTime ?? null;
-
-    // ✅ Igual que arriba
-    const sanitizedTrips = trips.map((t: any) => ({
+    const sanitizedTrips = (trips as any[]).map((t) => ({
       ...t,
-      countsTrip: typeof t.countsTrip === "number" ? t.countsTrip : 1,
+      wasCancelled: !!t.wasCancelled,
+      cancelledAtPickup: !!t.cancelledAtPickup,
+      countsTrip: typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
     }));
 
+    // 🔎 Enriquecer con horario/dienstNumber si es posible
+    let dienstNumber: number | null = null;
+    let startTime: string | null = null;
+    let endTime: string | null = null;
+
+    try {
+      const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
+      const dienst = await Dienst.findOne({ "assignments._id": assignmentObjectId });
+      const assignment = dienst?.assignments.find(a => a._id?.toString() === assignmentObjectId.toString());
+      dienstNumber = dienst?.dienstNumber ?? null;
+      startTime = assignment?.startTime ?? null;
+      endTime = assignment?.endTime ?? null;
+    } catch {
+      // si no es ObjectId válido, seguimos sin bloquear
+    }
+
+    // 🧮 Cálculos
     const totalEffectivePatients = calculateEffectivePatients(sanitizedTrips, date);
-    const totalDienstKm = finalKm - initialKm;
+    const totalDienstKm = nFinalKm - nInitialKm;
     const totalRealTrips = sanitizedTrips.filter((t: any) => !t.wasCancelled || t.cancelledAtPickup).length;
 
     const summary = new WorkdaySummary({
@@ -149,11 +185,11 @@ export const submitPartialClosure = async (req: Request, res: Response): Promise
       medic,
       ambulanceId,
       ambulanceNumber,
-      initialKm,
-      finalKm,
+      initialKm: nInitialKm,
+      finalKm: nFinalKm,
       totalDienstKm,
       trips: sanitizedTrips,
-      partialClosureReason,
+      partialClosureReason: typeof partialClosureReason === "string" ? partialClosureReason.trim() : partialClosureReason,
       isFinalClosure: false,
       totalEffectivePatients,
       totalRealTrips,
@@ -164,11 +200,11 @@ export const submitPartialClosure = async (req: Request, res: Response): Promise
 
     await summary.save();
 
-    if (trips.length > 0) {
-      await Trip.updateMany(
-        { _id: { $in: trips.map((t: any) => t._id) } },
-        { $set: { sentInSummary: true } }
-      );
+    if (sanitizedTrips.length > 0) {
+      const ids = sanitizedTrips.map((t: any) => t._id).filter(Boolean);
+      if (ids.length > 0) {
+        await Trip.updateMany({ _id: { $in: ids } }, { $set: { sentInSummary: true } });
+      }
     }
 
     res.status(201).json({ message: "Cierre parcial guardado correctamente." });
@@ -177,6 +213,7 @@ export const submitPartialClosure = async (req: Request, res: Response): Promise
     res.status(500).json({ message: "Error al guardar el cierre parcial." });
   }
 };
+
 
 
 
