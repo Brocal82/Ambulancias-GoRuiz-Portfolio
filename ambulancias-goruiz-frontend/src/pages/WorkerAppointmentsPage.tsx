@@ -120,8 +120,8 @@ export default function WorkerAppointmentsPage() {
     const endMs = a.selectedSlot?.end
       ? new Date(a.selectedSlot.end).getTime()
       : a.selectedSlot?.start
-      ? new Date(a.selectedSlot.start).getTime()
-      : 0;
+        ? new Date(a.selectedSlot.start).getTime()
+        : 0;
     return endMs > 0 && endMs < Date.now();
   };
 
@@ -250,13 +250,16 @@ export default function WorkerAppointmentsPage() {
 
                   {canDelete(a) && (
                     <button
-                      onClick={() => handleDelete(a._id)}
-                      className="shrink-0 rounded-full bg-rose-600 px-2.5 py-1.5 text-white hover:bg-rose-700"
+                      onClick={(e) => { e.currentTarget.blur(); handleDelete(a._id); }}
+                      className="shrink-0 bg-transparent p-0 text-rose-600 hover:text-rose-700 font-bold text-lg leading-none
+               focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40 rounded transition"
                       title={t('pages.appointments.worker.actions.deleteTitle')}
+                      aria-label={t('pages.appointments.worker.actions.deleteTitle')}
                     >
-                      ✕
+                      ×
                     </button>
                   )}
+
                 </div>
               </li>
             ))}
