@@ -99,43 +99,44 @@ return (
           className="flex items-center justify-between gap-4 rounded-xl bg-white p-4 md:p-5 ring-1 ring-slate-200 shadow-sm"
         >
           <button
-            type="button"
-            onClick={() => setSelectedHospital(hospital)}
-            className="text-left"
-            title={t('pages.hospitals.workerPage.actions.viewDetails') as string}
-          >
-            <span className="text-base md:text-lg font-semibold text-slate-900 hover:underline">
-              {hospital.name}
-            </span>
-            <div className="mt-1 text-xs text-slate-600">{hospital.address}</div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {hospital.specialties.slice(0, 4).map((spec) => (
-                <span
-                  key={spec}
-                  className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-700"
-                >
-                  {spec}
-                </span>
-              ))}
-              {hospital.specialties.length > 4 && (
-                <span className="text-[11px] text-slate-500">
-                  +{hospital.specialties.length - 4}
-                </span>
-              )}
-            </div>
-          </button>
+  type="button"
+  onClick={() => setSelectedHospital(hospital)}
+  className="text-left"
+  title={t('pages.hospitals.workerPage.actions.viewDetails') as string}
+>
+  <span className="text-base md:text-lg font-semibold text-slate-900 hover:underline">
+    {hospital.name}
+  </span>
+  {/* Dirección y especialidades ocultas en el listado; se ven en el modal */}
+</button>
 
-          <div
-            className={`shrink-0 text-sm px-3 py-1 rounded font-medium ${
-              hospital.isOpen
-                ? 'bg-green-50 border border-green-200 text-green-700'
-                : 'bg-rose-50 border border-rose-200 text-rose-700'
-            }`}
-          >
-            {hospital.isOpen
-              ? t('pages.hospitals.workerPage.status.open')
-              : t('pages.hospitals.workerPage.status.closed')}
-          </div>
+
+          <div className="flex items-center gap-2" role="group" aria-label={t('pages.hospitals.workerPage.status.label') as string}>
+  <span className="sr-only">
+    {hospital.isOpen
+      ? t('pages.hospitals.workerPage.status.open')
+      : t('pages.hospitals.workerPage.status.closed')}
+  </span>
+
+  {/* Indicador verde (abierto) */}
+  <div
+    title={t('pages.hospitals.workerPage.status.open') as string}
+    aria-hidden="true"
+    className={`w-4 h-4 rounded-full border-2 ${
+      hospital.isOpen ? 'bg-green-500 border-green-600' : 'bg-white border-slate-300'
+    }`}
+  />
+
+  {/* Indicador rojo (cerrado) */}
+  <div
+    title={t('pages.hospitals.workerPage.status.closed') as string}
+    aria-hidden="true"
+    className={`w-4 h-4 rounded-full border-2 ${
+      !hospital.isOpen ? 'bg-rose-500 border-rose-600' : 'bg-white border-slate-300'
+    }`}
+  />
+</div>
+
         </li>
       ))}
     </ul>
