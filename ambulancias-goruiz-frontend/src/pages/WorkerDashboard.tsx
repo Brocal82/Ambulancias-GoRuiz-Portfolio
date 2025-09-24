@@ -44,7 +44,7 @@ const WorkerDashboard = () => {
           to="/worker/messages"
           className={[
             'relative bg-white p-6 rounded shadow hover:shadow-md transition',
-            unreadMessages > 0 ? 'ring-2 ring-blue-500 hover:bg-blue-50' : 'hover:bg-blue-50',
+            unreadMessages > 0 ? 'ring-2 ring-orange-300 hover:bg-blue-50' : 'hover:bg-blue-50',
           ].join(' ')}
           aria-label={
             unreadMessages > 0
@@ -55,7 +55,7 @@ const WorkerDashboard = () => {
           {/* contador en la esquina, solo si hay no leídos */}
           {unreadMessages > 0 && (
             <span
-              className="absolute right-3 top-3 inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-blue-600 px-1.5 text-xs font-semibold text-white shadow-lg"
+              className="absolute right-3 top-3 inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full  bg-orange-400 px-1.5 text-xs font-semibold text-white shadow-lg"
               aria-hidden="true"
             >
               {unreadMessages}

@@ -125,7 +125,7 @@ const WorkerMessagesPage = () => {
                   className={[
                     'relative rounded-xl border p-4 shadow-sm transition bg-white',
                     unread
-                      ? 'border-slate-200 ring-1 ring-blue-300/60 bg-blue-50 pl-4 border-l-4 border-l-blue-500'
+                      ? 'border-slate-200 ring-1 ring-blue-300/60 bg-blue-50 pl-4 border-l-4 border-l-orange-400'
                       : 'border-slate-200 hover:shadow-md'
                     ,
                   ].join(' ')}
