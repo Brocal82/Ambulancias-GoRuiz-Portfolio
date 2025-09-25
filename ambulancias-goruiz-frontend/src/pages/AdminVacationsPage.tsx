@@ -7,6 +7,7 @@ import AdminVacationMonthModal from '../components/vacation/AdminVacationMonthMo
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { toastT } from '../utils/toast';
+import StatusBadge from '../components/common/StatusBadge';
 
 // Nombre del evento global para refrescar el badge del Dashboard
 const ADMIN_VACATIONS_CHANGED_EVENT = 'admin-vacations-changed';
@@ -214,125 +215,127 @@ return (
         )}
 
         {/* Tabla */}
-        {!loading && !error && requests.length > 0 && (
-          <table className="w-full table-auto border-collapse text-sm shadow-sm ring-1 ring-slate-200 rounded-xl overflow-hidden mt-4">
-            <thead className="bg-slate-100">
-              <tr>
-                <th className="px-4 py-2 text-left font-semibold text-slate-900">
-                  {t('pages.vacations.adminPage.table.user')}
-                </th>
-                <th className="px-4 py-2 text-left font-semibold text-slate-900">
-                  {t('pages.vacations.adminPage.table.startDate')}
-                </th>
-                <th className="px-4 py-2 text-left font-semibold text-slate-900">
-                  {t('pages.vacations.adminPage.table.endDate')}
-                </th>
-                <th className="px-4 py-2 text-left font-semibold text-slate-900">
-                  {t('pages.vacations.adminPage.table.status')}
-                </th>
-                <th className="px-4 py-2 text-left font-semibold text-slate-900">
-                  {t('pages.vacations.adminPage.table.actions')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {requests.map((req) => (
-                <tr key={req._id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-2 border-t border-slate-200">
-                    {req.user ? (
-                      `${req.user.name} ${req.user.lastName}`
-                    ) : (
-                      <span className="text-red-500">Usuario no disponible</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2 border-t border-slate-200">
-                    {new Date(req.startDate).toLocaleDateString(locale, { timeZone: 'Europe/Berlin' })}
-                  </td>
-                  <td className="px-4 py-2 border-t border-slate-200">
-                    {new Date(req.endDate).toLocaleDateString(locale, { timeZone: 'Europe/Berlin' })}
-                  </td>
-                  <td
-                    className={`px-4 py-2 border-t border-slate-200 capitalize font-semibold ${
-                      req.status === 'accepted'
-                        ? 'text-green-600'
-                        : req.status === 'cancelled'
-                        ? 'text-red-600'
-                        : 'text-yellow-600'
-                    }`}
+{!loading && !error && requests.length > 0 && (
+  <table className="w-full table-auto border-collapse text-sm shadow-sm ring-1 ring-slate-200 rounded-xl overflow-hidden mt-4 text-center">
+    <thead className="bg-slate-100">
+      <tr>
+        <th className="px-4 py-2 text-center font-semibold text-slate-900">
+          {t('pages.vacations.adminPage.table.user')}
+        </th>
+        <th className="px-4 py-2 text-center font-semibold text-slate-900">
+          {t('pages.vacations.adminPage.table.startDate')}
+        </th>
+        <th className="px-4 py-2 text-center font-semibold text-slate-900">
+          {t('pages.vacations.adminPage.table.endDate')}
+        </th>
+        <th className="px-4 py-2 text-center font-semibold text-slate-900">
+          {t('pages.vacations.adminPage.table.status')}
+        </th>
+        <th className="px-4 py-2 text-center font-semibold text-slate-900">
+          {t('pages.vacations.adminPage.table.actions')}
+        </th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {requests.map((req) => (
+        <tr key={req._id} className="hover:bg-slate-50 transition-colors">
+          <td className="px-4 py-2 border-t border-slate-200 text-center">
+            {req.user ? (
+              `${req.user.name} ${req.user.lastName}`
+            ) : (
+              <span className="text-red-500">Usuario no disponible</span>
+            )}
+          </td>
+
+          <td className="px-4 py-2 border-t border-slate-200 text-center">
+            {new Date(req.startDate).toLocaleDateString(locale, { timeZone: 'Europe/Berlin' })}
+          </td>
+
+          <td className="px-4 py-2 border-t border-slate-200 text-center">
+            {new Date(req.endDate).toLocaleDateString(locale, { timeZone: 'Europe/Berlin' })}
+          </td>
+
+          <td className="px-4 py-2 border-t border-slate-200 text-center">
+            <StatusBadge
+              context="vacation"
+              status={req.status}
+              label={t(`pages.vacations.adminPage.status.${req.status}`)}
+            />
+          </td>
+
+          <td className="px-4 py-2 border-t border-slate-200 text-center">
+            {cancelingRequestId === req._id ? (
+              <div className="flex flex-col items-center space-y-2">
+                <textarea
+                  className="border rounded-xl p-2 w-64 ring-1 ring-slate-200"
+                  placeholder={t('pages.vacations.adminPage.actions.cancelMessagePlaceholder')}
+                  value={cancelMessage}
+                  onChange={(e) => setCancelMessage(e.target.value)}
+                />
+                <div className="flex space-x-2">
+                  <button
+                    className="rounded-xl bg-red-600 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:ring-4 focus:ring-red-100"
+                    disabled={isSendingCancel}
+                    onClick={() => handleConfirmCancel(req._id)}
                   >
-                    {t(`pages.vacations.adminPage.status.${req.status}`)}
-                  </td>
-                  <td className="px-4 py-2 border-t border-slate-200">
-                    {cancelingRequestId === req._id ? (
-                      <div className="flex flex-col items-center space-y-2">
-                        <textarea
-                          className="border rounded-xl p-2 w-64 ring-1 ring-slate-200"
-                          placeholder={t('pages.vacations.adminPage.actions.cancelMessagePlaceholder')}
-                          value={cancelMessage}
-                          onChange={(e) => setCancelMessage(e.target.value)}
-                        />
-                        <div className="flex space-x-2">
-                          <button
-                            className="rounded-xl bg-red-600 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:ring-4 focus:ring-red-100"
-                            disabled={isSendingCancel}
-                            onClick={() => handleConfirmCancel(req._id)}
-                          >
-                            {isSendingCancel ? t('pages.vacations.adminPage.actions.sending') : t('pages.vacations.adminPage.actions.confirm')}
-                          </button>
-                          <button
-                            className="rounded-xl bg-gray-200 px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-gray-300 focus:ring-4 focus:ring-gray-100"
-                            disabled={isSendingCancel}
-                            onClick={() => {
-                              setCancelingRequestId(null);
-                              setCancelMessage('');
-                            }}
-                          >
-                            {t('pages.vacations.adminPage.actions.cancel')}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex space-x-2 justify-center">
-                        {req.status === 'pending' && (
-                          <>
-                            <button
-                              className="rounded-xl bg-green-600 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:ring-4 focus:ring-green-100"
-                              onClick={() => handleUpdateStatus(req._id, 'accepted')}
-                            >
-                              {t('pages.vacations.adminPage.actions.accept')}
-                            </button>
-                            <button
-                              className="rounded-xl bg-yellow-500 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-yellow-600 focus:ring-4 focus:ring-yellow-100"
-                              onClick={() =>
-                                openAlternativeModal(req._id, req.startDate, req.endDate)
-                              }
-                            >
-                              {t('pages.vacations.adminPage.actions.altOption')}
-                            </button>
-                            <button
-                              className="rounded-xl bg-red-500 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-red-600 focus:ring-4 focus:ring-red-100"
-                              onClick={() => setCancelingRequestId(req._id)}
-                            >
-                              {t('pages.vacations.adminPage.actions.cancel')}
-                            </button>
-                          </>
-                        )}
-                        {(req.status === 'accepted' || req.status === 'cancelled') && (
-                          <button
-                            className="rounded-xl bg-red-700 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-red-800 focus:ring-4 focus:ring-red-100"
-                            onClick={() => handleDeleteRequest(req._id)}
-                          >
-                            {t('pages.vacations.adminPage.actions.delete')}
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+                    {isSendingCancel ? t('pages.vacations.adminPage.actions.sending') : t('pages.vacations.adminPage.actions.confirm')}
+                  </button>
+                  <button
+                    className="rounded-xl bg-gray-200 px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-gray-300 focus:ring-4 focus:ring-gray-100"
+                    disabled={isSendingCancel}
+                    onClick={() => {
+                      setCancelingRequestId(null);
+                      setCancelMessage('');
+                    }}
+                  >
+                    {t('pages.vacations.adminPage.actions.cancel')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex space-x-2 justify-center">
+                {req.status === 'pending' && (
+                  <>
+                    <button
+                      className="rounded-xl bg-emerald-600 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:ring-4 focus:ring-emerald-100"
+                      onClick={() => handleUpdateStatus(req._id, 'accepted')}
+                    >
+                      {t('pages.vacations.adminPage.actions.accept')}
+                    </button>
+                    <button
+                      className="rounded-xl bg-indigo-500 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-indigo-600 focus:ring-4 focus:ring-indigo-100"
+                      onClick={() =>
+                        openAlternativeModal(req._id, req.startDate, req.endDate)
+                      }
+                    >
+                      {t('pages.vacations.adminPage.actions.altOption')}
+                    </button>
+                    <button
+                      className="rounded-xl bg-rose-500 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-rose-600 focus:ring-4 focus:ring-rose-100"
+                      onClick={() => setCancelingRequestId(req._id)}
+                    >
+                      {t('pages.vacations.adminPage.actions.cancel')}
+                    </button>
+                  </>
+                )}
+                {(req.status === 'accepted' || req.status === 'cancelled') && (
+                  <button
+                    className="rounded-xl bg-rose-700 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-rose-800 focus:ring-4 focus:ring-rose-100"
+                    onClick={() => handleDeleteRequest(req._id)}
+                  >
+                    {t('pages.vacations.adminPage.actions.delete')}
+                  </button>
+                )}
+              </div>
+            )}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+)}
+
 
         {/* AlternativeDateModal */}
         <AlternativeDateModal

@@ -360,7 +360,7 @@
         "error": "Error loading requests.",
         "empty": "No vacation requests.",
         "table": {
-          "user": "User",
+          "user": "Worker",
           "startDate": "Start Date",
           "endDate": "End Date",
           "status": "Status",

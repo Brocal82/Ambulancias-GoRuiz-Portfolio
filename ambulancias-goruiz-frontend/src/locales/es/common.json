@@ -360,7 +360,7 @@
         "error": "Error al cargar las solicitudes.",
         "empty": "No hay solicitudes de vacaciones.",
         "table": {
-          "user": "Usuario",
+          "user": "Trabajador",
           "startDate": "Fecha Inicio",
           "endDate": "Fecha Fin",
           "status": "Estado",

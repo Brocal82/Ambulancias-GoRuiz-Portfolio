@@ -360,7 +360,7 @@
         "error": "Fehler beim Laden der Anträge.",
         "empty": "Keine Urlaubsanträge.",
         "table": {
-          "user": "Benutzer",
+          "user": "Mitarbeiter",
           "startDate": "Beginn",
           "endDate": "Ende",
           "status": "Status",
