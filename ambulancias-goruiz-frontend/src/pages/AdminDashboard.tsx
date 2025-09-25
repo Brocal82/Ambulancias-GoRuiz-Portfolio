@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 // ✅ Hook para contador de pendientes de Vacaciones
 import useAdminVacationsPendingCount from '../hooks/useAdminVacationsPendingCount';
 import useAdminSummariesPendingCount from '../hooks/useAdminSummariesPendingCount';
+import { useAdminAppointmentsPendingCount } from '../hooks/useAdminAppointmentsPendingCount';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -16,6 +17,11 @@ const AdminDashboard = () => {
   // ✅ Contador de resúmenes pendientes
   const { count: summariesPendingCount, isLoading: summariesLoading } = useAdminSummariesPendingCount();
   const summariesHasPending = !summariesLoading && summariesPendingCount > 0;
+
+  const { count: apptPending, isLoading: apptLoading } = useAdminAppointmentsPendingCount();
+  const apptHasPending = !apptLoading && apptPending > 0;
+
+
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -114,13 +120,28 @@ const AdminDashboard = () => {
           <p className="text-sm text-gray-600">{t('pages.adminDashboard.vacations.desc')}</p>
         </Link>
 
-        <Link
-          to="/admin/appointments"
-          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
-        >
-          <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.appointments.title')}</h2>
-          <p className="text-sm text-gray-600">{t('pages.adminDashboard.appointments.desc')}</p>
-        </Link>
+<Link
+  to="/admin/appointments"
+  className={[
+    "relative bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition",
+    apptHasPending ? "ring-2 ring-orange-300" : "",
+  ].join(" ")}
+>
+  {!apptLoading && apptHasPending && (
+    <span className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 px-2 rounded-full bg-orange-500 text-white text-xs font-semibold flex items-center justify-center shadow">
+      {apptPending}
+    </span>
+  )}
+
+  <h2 className="text-lg font-semibold mb-2">
+    {t('pages.adminDashboard.appointments.title')}
+  </h2>
+  <p className="text-sm text-gray-600">
+    {t('pages.adminDashboard.appointments.desc')}
+  </p>
+</Link>
+
+
 
         <Link
           to="/admin/messages"

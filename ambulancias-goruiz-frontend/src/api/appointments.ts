@@ -1,4 +1,4 @@
-// frontend/src/api/appointments.ts
+// frontend/src/api/appointments.ts 
 import axios from './axios';
 import type {
   Appointment,
@@ -32,6 +32,24 @@ export const getPendingAppointments = async (token: string): Promise<Appointment
   return data;
 };
 
+// ✅ Admin: contador de pendientes (derivado del módulo)
+export const getAppointmentsPendingCount = async (token: string): Promise<number> => {
+  const { data } = await axios.get<{ count: number }>('/appointments/count', {
+    headers: { Authorization: `Bearer ${token}` },
+    params: { status: 'pending' },
+  });
+  return data?.count ?? 0;
+};
+
+// (Opcional) Admin: contador genérico por estado
+export const getAppointmentsCountByStatus = async (token: string, status: string): Promise<number> => {
+  const { data } = await axios.get<{ count: number }>('/appointments/count', {
+    headers: { Authorization: `Bearer ${token}` },
+    params: { status },
+  });
+  return data?.count ?? 0;
+};
+
 // Admin: proponer slots
 export const proposeSlots = async (id: string, payload: ProposeSlotsPayload, token: string): Promise<Appointment> => {
   const { data } = await axios.post<Appointment>(`/appointments/${id}/propose`, payload, {
@@ -54,7 +72,6 @@ export const deleteMyAppointment = async (id: string, token: string): Promise<vo
     headers: { Authorization: `Bearer ${token}` },
   });
 };
-
 
 // Admin: calendario confirmadas en rango
 export const getCalendarAppointments = async (

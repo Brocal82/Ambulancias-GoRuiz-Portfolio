@@ -288,3 +288,26 @@ export const deleteMyAppointment = async (req: Request, res: Response): Promise<
   }
 };
 
+
+/**
+ * GET /appointments/count?status=pending
+ * Devuelve { count } con el número de citas que cumplen el estado.
+ * Por defecto, status='pending'.
+ * Solo para admin.
+ */
+export const getAppointmentsCount = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const rawStatus = typeof req.query.status === 'string' ? req.query.status : 'pending';
+    const status = rawStatus.toLowerCase();
+
+    // Ajusta el campo si en tu modelo no se llama 'status'
+    const count = await Appointment.countDocuments({ status });
+
+    res.status(200).json({ count });
+  } catch (error) {
+    console.error('Error al contar citas por estado:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+
