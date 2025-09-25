@@ -13,17 +13,24 @@ type Props = {
   year?: number;
   /** Callback cuando se hace clic en un mes (0..11). */
   onMonthClick?: (monthIndex: number) => void;
+  /** 🔽 Nuevo: resaltar mes actual con borde */
+  highlightCurrentMonth?: boolean;
+  /** 🔽 Nuevo: índice del mes actual (0–11) */
+  currentMonthIndex?: number;
 };
 
 const AdminAppointmentMonthGrid: React.FC<Props> = ({
   items,
   year = new Date().getFullYear(),
   onMonthClick,
+  highlightCurrentMonth = false,
+  currentMonthIndex,
 }) => {
   const { t, i18n } = useTranslation();
   const months = getYearMonths(year, i18n.language);
-
   const counts = countAppointmentsByMonth(items, year);
+
+  const effectiveCurrentMonth = currentMonthIndex ?? new Date().getMonth();
 
   return (
     <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6 mb-6">
@@ -37,40 +44,46 @@ const AdminAppointmentMonthGrid: React.FC<Props> = ({
         {months.map(({ monthIndex, label }) => {
           const count = counts[monthIndex] ?? 0;
           const hasItems = count > 0;
+          const isCurrent =
+            highlightCurrentMonth && monthIndex === effectiveCurrentMonth;
 
           return (
             <button
-  key={monthIndex}
-  type="button"
-  onClick={() => onMonthClick?.(monthIndex)}
-  aria-label={t('pages.appointments.monthGrid.ariaOpenMonth', {
-    label,
-    year,
-  })}
-  className={[
-    'group relative rounded-xl p-3 transition',
-    'ring-1 ring-slate-200 hover:shadow-sm hover:-translate-y-0.5',
-    hasItems ? 'bg-white' : 'bg-slate-50 opacity-90 hover:opacity-100',
-    'focus:outline-none focus:ring-4 focus:ring-blue-100',
-    'flex flex-col items-center justify-center text-center min-h-[70px]',
-  ].join(' ')}
->
-  {/* Mes */}
-  <span className="text-sm font-medium text-slate-900">{label}</span>
+              key={monthIndex}
+              type="button"
+              onClick={() => onMonthClick?.(monthIndex)}
+              aria-label={t('pages.appointments.monthGrid.ariaOpenMonth', {
+                label,
+                year,
+              })}
+              className={[
+                'group relative rounded-xl p-3 transition',
+                'ring-1 ring-slate-200 hover:shadow-sm hover:-translate-y-0.5',
+                hasItems
+                  ? 'bg-white'
+                  : 'bg-slate-50 opacity-90 hover:opacity-100',
+                'focus:outline-none focus:ring-4 focus:ring-blue-100',
+                'flex flex-col items-center justify-center text-center min-h-[70px]',
+                isCurrent
+                  ? 'border border-slate-300/60 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.03)]'
+                  : '',
+              ].join(' ')}
+            >
+              {/* Mes */}
+              <span className="text-sm font-medium text-slate-900">{label}</span>
 
-  {/* Badge con el número de citas */}
-  <span
-    className={[
-      'mt-1 inline-flex items-center justify-center rounded-full px-3 py-0.5 text-xs font-medium',
-      hasItems
-        ? 'bg-blue-50 text-blue-700 group-hover:bg-blue-100'
-        : 'bg-slate-100 text-slate-600',
-    ].join(' ')}
-  >
-    {t('pages.appointments.monthGrid.count', { count })}
-  </span>
-</button>
-
+              {/* Badge con el número de citas */}
+              <span
+                className={[
+                  'mt-1 inline-flex items-center justify-center rounded-full px-3 py-0.5 text-xs font-medium',
+                  hasItems
+                    ? 'bg-blue-50 text-blue-700 group-hover:bg-blue-100'
+                    : 'bg-slate-100 text-slate-600',
+                ].join(' ')}
+              >
+                {t('pages.appointments.monthGrid.count', { count })}
+              </span>
+            </button>
           );
         })}
       </div>

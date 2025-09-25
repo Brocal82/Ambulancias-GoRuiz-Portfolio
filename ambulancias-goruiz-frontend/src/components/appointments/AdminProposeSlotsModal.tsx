@@ -5,12 +5,14 @@ import { toastT } from "../../utils/toast";
 import { APP_TZ } from '../../config/app';
 import { localDateTimeToUtcISO } from '../../utils/tz';
 import { useTranslation } from 'react-i18next';
+import type { Appointment } from '../../types/appointment';
 
 interface Props {
   appointmentId: string;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void; // recargar pendientes
+  /** Ahora devuelve la cita actualizada para poder mantenerla visible como 'proposed' */
+  onSuccess?: (updated: Appointment) => void;
   defaultDurationMinutes?: number; // p. ej. 30
 }
 
@@ -44,8 +46,12 @@ export default function AdminProposeSlotsModal({
   const computed = useMemo(() => {
     const slots = rows
       .filter((r) => r.date && r.time)
-      .map((r) => localDateTimeToUtcISO(APP_TZ, r.date, r.time, defaultDurationMinutes))
-      .filter((x): x is NonNullable<ReturnType<typeof localDateTimeToUtcISO>> => !!x);
+      .map((r) =>
+        localDateTimeToUtcISO(APP_TZ, r.date, r.time, defaultDurationMinutes)
+      )
+      .filter(
+        (x): x is NonNullable<ReturnType<typeof localDateTimeToUtcISO>> => !!x
+      );
     return slots;
   }, [rows, defaultDurationMinutes]);
 
@@ -53,11 +59,12 @@ export default function AdminProposeSlotsModal({
 
   const validate = () => {
     if (!canSubmit) {
-      // Dejamos toasts y errores para la fase de toasts, no internacionalizamos mensajes de error aquí.
       throw new Error('Debes completar al menos 1 opción con fecha y hora.');
     }
     const now = Date.now();
-    const sorted = [...computed].sort((a, b) => a.start.getTime() - b.start.getTime());
+    const sorted = [...computed].sort(
+      (a, b) => a.start.getTime() - b.start.getTime()
+    );
     for (let i = 0; i < sorted.length; i++) {
       const s = sorted[i];
       if (s.start.getTime() <= now) {
@@ -80,18 +87,24 @@ export default function AdminProposeSlotsModal({
     try {
       setLoading(true);
       const sorted = validate();
-      await proposeSlots(
-        appointmentId,
-        {
-          proposedSlots: sorted.map((s) => ({ start: s.startISO, end: s.endISO })),
-        },
-        token!
-      );
+
+      const payload = {
+        proposedSlots: sorted.map((s) => ({ start: s.startISO, end: s.endISO })),
+      };
+
+      // Esperamos que la API devuelva la cita actualizada.
+      // Si devuelve { appointment: ... } o directamente la cita, soportamos ambos.
+      const resp = await proposeSlots(appointmentId, payload, token!);
+      const updated: Appointment =
+        (resp && (resp as any).appointment) ? (resp as any).appointment : (resp as Appointment);
+
       toastT.success(["toasts.appointments.proposeSuccess"]);
       onClose();
-      onSuccess?.();
+      onSuccess?.(updated);
     } catch (e: any) {
-      toastT.error(e?.response?.data?.message ?? e?.message ?? ["toasts.appointments.proposeError"]);
+      toastT.error(
+        e?.response?.data?.message ?? e?.message ?? ["toasts.appointments.proposeError"]
+      );
     } finally {
       setLoading(false);
     }
@@ -211,5 +224,4 @@ export default function AdminProposeSlotsModal({
       </div>
     </div>
   );
-
 }
