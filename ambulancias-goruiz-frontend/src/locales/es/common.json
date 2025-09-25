@@ -589,8 +589,7 @@
       },
       "requests": {
         "title": "Mis solicitudes",
-        "waitingOptions": "Tienes horarios propuestos pendientes (el admin aún no cargó opciones).",
-        "choosePrompt": "Tienes horarios propuestos pendientes de elegir."
+        "waitingOptions": "Tienes horarios propuestos pendientes (el admin aún no cargó opciones)."
       },
       "history": {
         "title": "Historial y otras citas"

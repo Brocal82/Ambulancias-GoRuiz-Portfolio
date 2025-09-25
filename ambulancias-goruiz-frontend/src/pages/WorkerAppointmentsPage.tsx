@@ -7,27 +7,12 @@ import ChooseSlotModal from '../components/appointments/ChooseSlotModal';
 import { toastT } from "../utils/toast";
 import { APP_TZ } from '../config/app';
 import { useTranslation } from 'react-i18next';
+import StatusBadge from '../components/common/StatusBadge';
 
 /** Util: formato corto fecha/hora en la TZ de la app */
 function fmt(dtIso?: string): string {
   if (!dtIso) return '—';
   return new Date(dtIso).toLocaleString('de-DE', { timeZone: APP_TZ });
-}
-
-/** Badge de estado (texto traducido) */
-function StatusBadge({ status, label }: { status: Appointment['status']; label: string }) {
-  const map: Record<Appointment['status'], string> = {
-    pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-    proposed: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    confirmed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    rescheduled: 'bg-amber-50 text-amber-700 border-amber-200',
-    cancelled: 'bg-red-50 text-red-700 border-red-200',
-  };
-  return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${map[status]}`}>
-      {label}
-    </span>
-  );
 }
 
 export default function WorkerAppointmentsPage() {
@@ -185,12 +170,12 @@ export default function WorkerAppointmentsPage() {
             {recent.map((a) => {
               const showChoose = a.status === 'proposed' && (a.proposedSlots?.length ?? 0) > 0;
               return (
-                <li key={a._id} className="rounded-xl border p-4 hover:border-blue-300">
+                <li key={a._id} className="rounded-xl border p-4 hover:bg-slate-50 transition-colors">
                   <div className="flex items-start justify-between gap-3">
+                    {/* Columna izquierda con motivo y detalles */}
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-medium truncate">{a.reason}</span>
-                        <StatusBadge status={a.status} label={statusLabel(a.status)} />
                       </div>
                       <p className="text-sm text-gray-600 mt-1">{a.details}</p>
 
@@ -199,30 +184,31 @@ export default function WorkerAppointmentsPage() {
                           {t('pages.appointments.requests.waitingOptions')}
                         </p>
                       )}
-
-                      {a.status === 'proposed' && (a.proposedSlots?.length ?? 0) > 0 && (
-                        <p className="mt-2 text-sm text-indigo-700">
-                          {t('pages.appointments.requests.choosePrompt')}
-                        </p>
-                      )}
                     </div>
 
-                    {showChoose && (
-                      <button
-                        className="shrink-0 rounded bg-indigo-600 px-3 py-1.5 text-white hover:bg-indigo-700"
-                        onClick={() => {
-                          setChooseId(a._id);
-                          setChooseSlots(a.proposedSlots);
-                          setOpenChoose(true);
-                        }}
-                        title={t('pages.appointments.actions.chooseSlotTitle')}
-                      >
-                        {t('pages.appointments.actions.chooseSlot')}
-                      </button>
-                    )}
+
+                    {/* Columna derecha: botón y status */}
+                    <div className="shrink-0 flex flex-row items-center gap-2">
+                      {showChoose && (
+                        <button
+                          className="shrink-0 rounded bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-700 whitespace-nowrap"
+                          onClick={() => {
+                            setChooseId(a._id);
+                            setChooseSlots(a.proposedSlots);
+                            setOpenChoose(true);
+                          }}
+                          title={t('pages.appointments.actions.chooseSlotTitle')}
+                        >
+                          {t('pages.appointments.actions.chooseSlot')}
+                        </button>
+
+                      )}
+                      <StatusBadge status={a.status} label={statusLabel(a.status)} />
+                    </div>
                   </div>
                 </li>
               );
+
             })}
           </ul>
         </div>

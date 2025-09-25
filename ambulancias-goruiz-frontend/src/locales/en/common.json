@@ -590,8 +590,7 @@
       },
       "requests": {
         "title": "My requests",
-        "waitingOptions": "You have proposed times pending (admin hasn't provided options yet).",
-        "choosePrompt": "You have proposed times waiting for your choice."
+        "waitingOptions": "You have proposed times pending (admin hasn't provided options yet)."
       },
       "history": {
         "title": "History & other appointments"

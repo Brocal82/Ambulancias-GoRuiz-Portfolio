@@ -590,8 +590,7 @@
       },
       "requests": {
         "title": "Meine Anfragen",
-        "waitingOptions": "Du hast vorgeschlagene Zeiten offen (Admin hat noch keine Optionen eingetragen).",
-        "choosePrompt": "Du hast vorgeschlagene Zeiten zur Auswahl."
+        "waitingOptions": "Du hast vorgeschlagene Zeiten offen (Admin hat noch keine Optionen eingetragen)."
       },
       "history": {
         "title": "Verlauf & weitere Termine"

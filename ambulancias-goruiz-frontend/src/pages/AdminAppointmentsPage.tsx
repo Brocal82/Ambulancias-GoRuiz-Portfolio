@@ -13,6 +13,7 @@ import AdminProposeSlotsModal from '../components/appointments/AdminProposeSlots
 import AdminAppointmentMonthGrid from '../components/appointments/AdminAppointmentMonthGrid';
 import AdminMonthCalendar from '../components/appointments/AdminMonthCalendar';
 import AdminAppointmentDetail from '../components/appointments/AdminAppointmentDetail';
+import StatusBadge from '../components/common/StatusBadge';
 
 // Utils locales
 const formatRange = (startISO?: string, endISO?: string) => {
@@ -34,23 +35,6 @@ export default function AdminAppointmentsPage() {
   const statusLabel = (s: Appointment['status']) =>
     t(`pages.appointments.statusLabel.${s}`);
 
-  // Badge de estado con colores suaves
-  const statusBadgeClasses = (s: Appointment['status']) => {
-    switch (s) {
-      case 'pending':
-        return "bg-amber-50 text-amber-700 ring-1 ring-amber-200";
-      case 'proposed':
-        return "bg-blue-50 text-blue-700 ring-1 ring-blue-200";
-      case 'confirmed':
-        return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
-      case 'rescheduled':
-        return "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200";
-      case 'cancelled':
-        return "bg-rose-50 text-rose-700 ring-1 ring-rose-200";
-      default:
-        return "bg-slate-50 text-slate-700 ring-1 ring-slate-200";
-    }
-  };
 
   // --- Estado de pendientes ---
   const [pending, setPending] = useState<Appointment[]>([]);
@@ -243,44 +227,33 @@ export default function AdminAppointmentsPage() {
                     >
                       <div className="flex flex-col gap-3">
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                          {/* 👇 Nombre del trabajador */}
                           <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-slate-900 font-medium line-clamp-2">
-                                {a.reason}
-                              </span>
-                              {/* Badge de estado con colores suaves */}
-                              <span
-                                className={`px-2 py-1 text-xs rounded-md ${statusBadgeClasses(
-                                  a.status
-                                )}`}
-                              >
-                                {statusLabel(a.status)}
-                              </span>
-                            </div>
-
-                            <div className="mt-1 text-sm text-slate-600">
-                              {t('pages.appointments.labels.worker')}{' '}
+                            <div className="text-slate-900 font-medium">
                               {worker
                                 ? `${worker.lastName}, ${worker.name}`
                                 : `ID: ${typeof a.workerId === 'string' ? a.workerId : ''}`}
                             </div>
                           </div>
 
-                          {/* Botón de proponer solo si está pendiente */}
-                          {a.status === 'pending' && (
-                            <div className="shrink-0 flex items-center gap-2">
+                          {/* 👉 Botón de proponer + status a la derecha */}
+                          <div className="shrink-0 flex flex-row items-center gap-2">
+                            {a.status === 'pending' && (
                               <button
-                                className="rounded-xl bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-100"
+                                className="shrink-0 rounded bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-700 whitespace-nowrap"
                                 onClick={(e) => {
-                                  e.stopPropagation(); // 👈 evita que se dispare también el detalle
+                                  e.stopPropagation(); // evita abrir detalle al mismo tiempo
                                   setSelectedId(a._id);
                                   setOpenPropose(true);
                                 }}
+                                title={t('pages.appointments.actions.proposeSlots')}
                               >
                                 {t('pages.appointments.actions.proposeSlots')}
                               </button>
-                            </div>
-                          )}
+
+                            )}
+                            <StatusBadge status={a.status} label={statusLabel(a.status)} />
+                          </div>
                         </div>
 
                         {/* Listar horarios propuestos (visibles hasta confirmación) */}
@@ -304,6 +277,8 @@ export default function AdminAppointmentsPage() {
                       </div>
                     </li>
                   );
+
+
 
                 })}
               </ul>
