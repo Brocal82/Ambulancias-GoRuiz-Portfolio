@@ -802,7 +802,7 @@ return (
               {/* Tiempos y KMs */}
               <div className="grid grid-cols-1 md:grid-cols-7 gap-3 mt-4">
                 <div>
-                  <label htmlFor="timeWarning" className="block text-sm font-medium text-slate-700">
+                  <label htmlFor="timeWarning" className="block text-sm font-medium text-slate-700 text-center">
                     {t("pages.workday.time.warning")}
                   </label>
                   <input
@@ -820,7 +820,7 @@ return (
                 </div>
 
                 <div>
-                  <label htmlFor="timeAtHome" className="block text-sm font-medium text-slate-700">
+                  <label htmlFor="timeAtHome" className="block text-sm font-medium text-slate-700 text-center">
                     {t("pages.workday.time.atHome")}
                   </label>
                   <input
@@ -844,7 +844,7 @@ return (
                 </div>
 
                 <div>
-                  <label htmlFor="kmStart" className="block text-sm font-medium text-slate-700">
+                  <label htmlFor="kmStart" className="block text-sm font-medium text-slate-700 text-center">
                     {t("pages.workday.km.start")}
                   </label>
                   <input
@@ -867,7 +867,7 @@ return (
                 </div>
 
                 <div>
-                  <label htmlFor="timePickup" className="block text-sm font-medium text-slate-700">
+                  <label htmlFor="timePickup" className="block text-sm font-medium text-slate-700 text-center">
                     {t("pages.workday.time.pickup")}
                   </label>
                   <input
@@ -921,7 +921,7 @@ return (
                 </div>
 
                 <div>
-                  <label htmlFor="timeArrival" className="block text-sm font-medium text-slate-700">
+                  <label htmlFor="timeArrival" className="block text-sm font-medium text-slate-700 text-center">
                     {t("pages.workday.time.arrival")}
                   </label>
                   <input
@@ -939,7 +939,7 @@ return (
                 </div>
 
                 <div>
-                  <label htmlFor="kmEnd" className="block text-sm font-medium text-slate-700">
+                  <label htmlFor="kmEnd" className="block text-sm font-medium text-slate-700 text-center">
                     {t("pages.workday.km.end")}
                   </label>
                   <input
@@ -956,7 +956,7 @@ return (
                 </div>
 
                 <div>
-                  <label htmlFor="timeEnd" className="block text-sm font-medium text-slate-700">
+                  <label htmlFor="timeEnd" className="block text-sm font-medium text-slate-700 text-center">
                     {t("pages.workday.time.end")}
                   </label>
                   <input
@@ -973,6 +973,7 @@ return (
                   />
                 </div>
               </div>
+
 
               {/* Botones auxiliares */}
               {(tripFormData.timePickup || anschlussActive) && (

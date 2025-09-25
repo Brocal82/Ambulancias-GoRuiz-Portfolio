@@ -1003,7 +1003,7 @@
             "team": "👥 Equipo",
             "kmRange": "Km (inicio → fin)",
             "kmTotal": "Km Totales",
-            "trips": "🧾 Viajes",
+            "trips": "Viajes",
             "premie": "💰 Prämie",
             "noteReason": "Nota / Motivo",
             "closure": "Cierre"
@@ -1015,7 +1015,7 @@
           "start": "Inicio:",
           "end": "Final:",
           "final": "✅ Final",
-          "partial": "🕗 Parcial"
+          "partial": "Parcial"
         }
       }
     },
