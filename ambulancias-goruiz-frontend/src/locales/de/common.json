@@ -599,7 +599,8 @@
         "when": "Wann:",
         "reason": "Grund:",
         "worker": "Mitarbeiter:",
-        "status": "Status:"
+        "status": "Status:",
+        "proposedSlots": "Vorgeschlagene Zeitfenster"
       },
       "empty": {
         "worker": "Du hast noch keine Termine. Möchtest du einen Admin kontaktieren?"

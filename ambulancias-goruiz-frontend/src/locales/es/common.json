@@ -598,7 +598,8 @@
         "when": "Cuándo:",
         "reason": "Motivo:",
         "worker": "Trabajador:",
-        "status": "Estado:"
+        "status": "Estado:",
+        "proposedSlots": "Horarios propuestos"
       },
       "empty": {
         "worker": "Aún no tienes citas. ¿Necesitas hablar con un admin?"

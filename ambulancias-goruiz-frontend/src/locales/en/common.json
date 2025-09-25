@@ -599,7 +599,8 @@
         "when": "When:",
         "reason": "Reason:",
         "worker": "Worker:",
-        "status": "Status:"
+        "status": "Status:",
+        "proposedSlots": "Proposed time slots"
       },
       "empty": {
         "worker": "You don't have appointments yet. Need to contact an admin?"

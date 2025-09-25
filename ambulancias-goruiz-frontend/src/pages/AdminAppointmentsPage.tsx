@@ -143,7 +143,6 @@ export default function AdminAppointmentsPage() {
   };
 
 
-
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6">
@@ -269,17 +268,12 @@ export default function AdminAppointmentsPage() {
                                 </li>
                               ))}
                             </ul>
-                            <p className="mt-1 text-xs text-slate-500">
-                              {t('pages.appointments.hints.visibleUntilConfirmation')}
-                            </p>
                           </div>
                         )}
+
                       </div>
                     </li>
                   );
-
-
-
                 })}
               </ul>
             )}
@@ -318,3 +312,6 @@ export default function AdminAppointmentsPage() {
     </div>
   );
 }
+
+
+
