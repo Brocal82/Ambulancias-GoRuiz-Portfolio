@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import useAdminVacationsPendingCount from '../hooks/useAdminVacationsPendingCount';
 import useAdminSummariesPendingCount from '../hooks/useAdminSummariesPendingCount';
 import { useAdminAppointmentsPendingCount } from '../hooks/useAdminAppointmentsPendingCount';
+import { useAdminIssuesOpenCount } from '../hooks/useAdminIssuesOpenCount';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -20,6 +21,10 @@ const AdminDashboard = () => {
 
   const { count: apptPending, isLoading: apptLoading } = useAdminAppointmentsPendingCount();
   const apptHasPending = !apptLoading && apptPending > 0;
+
+  const { count: issuesOpenCount, isLoading: issuesLoading } = useAdminIssuesOpenCount();
+  const issuesHasOpen = !issuesLoading && issuesOpenCount > 0;
+
 
 
 
@@ -91,11 +96,26 @@ const AdminDashboard = () => {
 
         <Link
           to="/admin/mechanics"
-          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+          className={[
+            "relative bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition",
+            issuesHasOpen ? "ring-2 ring-red-300" : "",
+          ].join(" ")}
         >
-          <h2 className="text-lg font-semibold mb-2">{t('pages.adminDashboard.mechanics.title')}</h2>
-          <p className="text-sm text-gray-600">{t('pages.adminDashboard.mechanics.desc')}</p>
+          {/* Badge rojo (solo cuando hay abiertas y no está cargando) */}
+          {!issuesLoading && issuesHasOpen && (
+            <span className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 px-2 rounded-full bg-red-500 text-white text-xs font-semibold flex items-center justify-center shadow">
+              {issuesOpenCount}
+            </span>
+          )}
+
+          <h2 className="text-lg font-semibold mb-2">
+            {t('pages.adminDashboard.mechanics.title')}
+          </h2>
+          <p className="text-sm text-gray-600">
+            {t('pages.adminDashboard.mechanics.desc')}
+          </p>
         </Link>
+
 
         {/* Vacations con badge */}
         <Link

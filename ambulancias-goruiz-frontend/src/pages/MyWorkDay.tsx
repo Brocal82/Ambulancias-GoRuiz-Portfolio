@@ -19,6 +19,9 @@ import { saveAmbulanceData, loadAmbulanceData, clearAmbulanceData, confirmedAmbu
 import { getAllAmbulances } from "../api/ambulances";
 import type { Ambulance } from "../types/ambulance";
 import { useTranslation } from "react-i18next";
+import { notifyAdminIssuesChanged } from "../hooks/useAdminIssuesOpenCount";
+import { notifyAdminSummariesChanged } from "../hooks/useAdminSummariesPendingCount";
+
 
 /** Devuelve true si AHORA ya se pueden registrar viajes. */
 const canStartTripNow = (startTime: string, dienstDate: string): boolean => {
@@ -486,6 +489,9 @@ const MyWorkday = () => {
 
     await sendFinalClosure(summaryData, token);
 
+    notifyAdminSummariesChanged();
+
+
     toastT.success(["toasts.workday.dayClosedSuccess"]);
 
     localStorage.setItem(getClosedDayKey(today, assignedDay.driver._id), "true");
@@ -566,6 +572,15 @@ const MyWorkday = () => {
     };
 
     await sendPartialClosure(payload, token);
+
+    notifyAdminSummariesChanged();
+
+
+    // Si vino una avería en el parcial, notifica para refrescar el badge
+    if (issueData) {
+      notifyAdminIssuesChanged();
+    }
+
 
     toastT.success(issueData ? ["toasts.workday.partialSentWithIssue"] : ["toasts.workday.partialSent"]);
 

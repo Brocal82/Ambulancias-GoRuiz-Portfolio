@@ -7,7 +7,8 @@ import {
   getAllIssueReports,
   deleteIssueReport,
   getSummariesCountByStatus,
-  markSummaryReviewed, // 👈 NUEVO
+  markSummaryReviewed,
+  getIssuesCount, // 👈 NUEVO import
 } from "../controllers/workdaySummaryController";
 import { authenticateToken } from "../middlewares/authMiddleware";
 import { authorizeRole } from "../middlewares/roleMiddleware";
@@ -17,10 +18,13 @@ const router = express.Router();
 router.post("/", authenticateToken, createWorkdaySummary);
 router.post("/partial", authenticateToken, submitPartialClosure);
 
-// 🔵 Nuevo: contador derivado (ya añadido en pasos previos)
+// 🔵 Contador derivado de resúmenes pendientes
 router.get("/count", authenticateToken, authorizeRole("admin"), getSummariesCountByStatus);
 
-// 🔵 NUEVO: marcar como revisado
+// 🟠 Contador derivado de averías (por defecto status=open)
+router.get("/issues/count", authenticateToken, authorizeRole("admin"), getIssuesCount); // 👈 NUEVA ruta
+
+// 🔵 Marcar resumen como revisado
 router.patch("/:id/review", authenticateToken, authorizeRole("admin"), markSummaryReviewed);
 
 router.get("/", authenticateToken, getAllWorkdaySummaries);

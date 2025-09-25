@@ -353,6 +353,67 @@ export const deleteIssueReport = async (req: Request, res: Response): Promise<vo
   }
 };
 
+/**
+ * GET /workday-summary/issues/count?status=open
+ * Devuelve { count } con el número de averías según estado (por defecto: 'open').
+ * No duplica notificaciones; cuenta derivada del propio módulo de averías.
+ */
+export const getIssuesCount = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const rawStatus = typeof req.query.status === "string" ? req.query.status : "open";
+    const status = rawStatus.toLowerCase();
+
+    // Detecta campos disponibles en el schema
+    const hasStatusField = !!(WorkdayIssue.schema as any).path("status");
+    const hasIsResolvedField = !!(WorkdayIssue.schema as any).path("isResolved");
+    const hasResolvedAtField = !!(WorkdayIssue.schema as any).path("resolvedAt");
+
+    let filter: any = {};
+
+    if (hasStatusField) {
+      if (status === "open") {
+        // Ajusta este conjunto si tu app usa valores distintos
+        filter = { status: { $in: ["open", "pending", "reported"] } };
+      } else {
+        filter = { status };
+      }
+    } else if (hasIsResolvedField) {
+      if (status === "open") {
+        filter = { isResolved: false };
+      } else if (status === "closed" || status === "resolved") {
+        filter = { isResolved: true };
+      } else {
+        // estado desconocido → 0
+        filter = { _id: { $in: [] } };
+      }
+    } else if (hasResolvedAtField) {
+      if (status === "open") {
+        filter = { $or: [{ resolvedAt: { $exists: false } }, { resolvedAt: null }] };
+      } else if (status === "closed" || status === "resolved") {
+        filter = { resolvedAt: { $ne: null } };
+      } else {
+        filter = { _id: { $in: [] } };
+      }
+    } else {
+      // Fallback: si no hay ningún campo de estado, consideramos "open" = todas.
+      if (status === "open") {
+        filter = {};
+        // eslint-disable-next-line no-console
+        console.warn("[getIssuesCount] No status/isResolved/resolvedAt fields found; counting all as 'open'.");
+      } else {
+        filter = { _id: { $in: [] } };
+      }
+    }
+
+    const count = await WorkdayIssue.countDocuments(filter);
+    res.status(200).json({ count });
+  } catch (err) {
+    console.error("❌ Error al contar averías:", err);
+    res.status(500).json({ message: "Error al contar averías" });
+  }
+};
+
+
 export const getSummariesCountByStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const rawStatus = typeof req.query.status === 'string' ? req.query.status : 'pending';

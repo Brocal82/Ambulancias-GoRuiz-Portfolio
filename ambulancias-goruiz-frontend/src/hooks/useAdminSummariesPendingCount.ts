@@ -15,7 +15,8 @@ type State = {
   error?: string;
 };
 
-const ADMIN_SUMMARIES_CHANGED_EVENT = 'admin-summaries-changed';
+// 🔔 Exporta el nombre del evento para poder reutilizarlo donde quieras
+export const ADMIN_SUMMARIES_CHANGED_EVENT = 'admin-summaries-changed';
 
 export default function useAdminSummariesPendingCount(options: Options = {}) {
   const { pollMs = 0 } = options;
@@ -113,4 +114,9 @@ export default function useAdminSummariesPendingCount(options: Options = {}) {
     ...state, // count, isLoading, isError, error
     refresh,
   };
+}
+
+/** Helper para emitir el evento global desde cualquier sitio (páginas, modales, etc.) */
+export function notifyAdminSummariesChanged() {
+  window.dispatchEvent(new Event(ADMIN_SUMMARIES_CHANGED_EVENT));
 }

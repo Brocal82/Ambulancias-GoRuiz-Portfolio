@@ -110,3 +110,53 @@ export const markSummaryReviewed = async (
   }
 };
 
+/* =========================
+   NUEVO: contador de averías abiertas (Issues)
+   ========================= */
+
+interface IssuesCountResponse {
+  count: number;
+}
+
+/**
+ * Devuelve el número de averías abiertas.
+ * GET /workday-summary/issues/count?status=open
+ */
+export const getIssuesOpenCount = async (token: string): Promise<number> => {
+  try {
+    const res = await axios.get<IssuesCountResponse>("/workday-summary/issues/count", {
+      params: { status: "open" },
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return typeof res.data?.count === "number" ? res.data.count : 0;
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message ||
+      err?.message ||
+      "Error al obtener el contador de averías abiertas";
+    throw new Error(msg);
+  }
+};
+
+/**
+ * (Opcional) Devuelve el número de averías por estado (p.ej. 'resolved', 'closed').
+ * GET /workday-summary/issues/count?status=<status>
+ */
+export const getIssuesCountByStatus = async (
+  token: string,
+  status: string
+): Promise<number> => {
+  try {
+    const res = await axios.get<IssuesCountResponse>("/workday-summary/issues/count", {
+      params: { status },
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return typeof res.data?.count === "number" ? res.data.count : 0;
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message ||
+      err?.message ||
+      "Error al obtener el contador de averías";
+    throw new Error(msg);
+  }
+};
