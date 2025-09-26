@@ -1,4 +1,3 @@
-//src/controllers/workdaySummaryController.ts
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Dienst from "../models/Dienst";
@@ -112,7 +111,6 @@ export const createWorkdaySummary = async (req: Request, res: Response): Promise
 /* ─────────────────────────────
  * CIERRE PARCIAL DEL DÍA
  * ───────────────────────────── */
-// backend/src/controllers/workdaySummaryController.ts
 export const submitPartialClosure = async (req: Request, res: Response): Promise<void> => {
   try {
     const {
@@ -216,7 +214,6 @@ export const submitPartialClosure = async (req: Request, res: Response): Promise
 
 
 
-
 /* ─────────────────────────────
  * GET TODOS LOS RESÚMENES
  * ───────────────────────────── */
@@ -258,6 +255,8 @@ export const getAllWorkdaySummaries = async (req: Request, res: Response): Promi
     res.status(500).json({ message: "Error al obtener los resúmenes." });
   }
 };
+
+
 
 /* ─────────────────────────────
  * AVERÍAS
@@ -328,6 +327,8 @@ export const getAllIssueReports = async (req: Request, res: Response): Promise<v
   }
 };
 
+
+
 /* ─────────────────────────────
  * AVERÍAS: BORRAR REPORTE
  * ───────────────────────────── */
@@ -353,56 +354,57 @@ export const deleteIssueReport = async (req: Request, res: Response): Promise<vo
   }
 };
 
-/**
- * GET /workday-summary/issues/count?status=open
- * Devuelve { count } con el número de averías según estado (por defecto: 'open').
- * No duplica notificaciones; cuenta derivada del propio módulo de averías.
- */
+
+
+/* ─────────────────────────────
+ * AVERÍAS: MARCAR COMO VISTAS
+ * ───────────────────────────── */
+export const markIssueSeen = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      res.status(400).json({ message: "ID inválido" });
+      return;
+    }
+
+    const updated = await WorkdayIssue.findByIdAndUpdate(
+      id,
+      { $set: { isSeen: true, seenAt: new Date() } },
+      { new: true }
+    );
+
+    if (!updated) {
+      res.status(404).json({ message: "Avería no encontrada" });
+      return;
+    }
+
+    res.status(200).json(updated);
+  } catch (err) {
+    console.error("❌ Error al marcar avería como vista:", err);
+    res.status(500).json({ message: "Error al marcar la avería como vista" });
+  }
+};
+
+
+
+/* ─────────────────────────────
+ * AVERÍAS: CONTADOR (redefinido con isSeen)
+ * ───────────────────────────── */
 export const getIssuesCount = async (req: Request, res: Response): Promise<void> => {
   try {
     const rawStatus = typeof req.query.status === "string" ? req.query.status : "open";
     const status = rawStatus.toLowerCase();
 
-    // Detecta campos disponibles en el schema
-    const hasStatusField = !!(WorkdayIssue.schema as any).path("status");
-    const hasIsResolvedField = !!(WorkdayIssue.schema as any).path("isResolved");
-    const hasResolvedAtField = !!(WorkdayIssue.schema as any).path("resolvedAt");
-
     let filter: any = {};
 
-    if (hasStatusField) {
-      if (status === "open") {
-        // Ajusta este conjunto si tu app usa valores distintos
-        filter = { status: { $in: ["open", "pending", "reported"] } };
-      } else {
-        filter = { status };
-      }
-    } else if (hasIsResolvedField) {
-      if (status === "open") {
-        filter = { isResolved: false };
-      } else if (status === "closed" || status === "resolved") {
-        filter = { isResolved: true };
-      } else {
-        // estado desconocido → 0
-        filter = { _id: { $in: [] } };
-      }
-    } else if (hasResolvedAtField) {
-      if (status === "open") {
-        filter = { $or: [{ resolvedAt: { $exists: false } }, { resolvedAt: null }] };
-      } else if (status === "closed" || status === "resolved") {
-        filter = { resolvedAt: { $ne: null } };
-      } else {
-        filter = { _id: { $in: [] } };
-      }
+    if (status === "open") {
+      // solo las NO vistas
+      filter = { isSeen: { $ne: true } };
+    } else if (status === "seen" || status === "closed") {
+      filter = { isSeen: true };
     } else {
-      // Fallback: si no hay ningún campo de estado, consideramos "open" = todas.
-      if (status === "open") {
-        filter = {};
-        // eslint-disable-next-line no-console
-        console.warn("[getIssuesCount] No status/isResolved/resolvedAt fields found; counting all as 'open'.");
-      } else {
-        filter = { _id: { $in: [] } };
-      }
+      filter = {};
     }
 
     const count = await WorkdayIssue.countDocuments(filter);
@@ -414,6 +416,10 @@ export const getIssuesCount = async (req: Request, res: Response): Promise<void>
 };
 
 
+
+/* ─────────────────────────────
+ * SUMMARIES: CONTADOR POR ESTADO (se mantiene igual)
+ * ───────────────────────────── */
 export const getSummariesCountByStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const rawStatus = typeof req.query.status === 'string' ? req.query.status : 'pending';
@@ -454,6 +460,8 @@ export const getSummariesCountByStatus = async (req: Request, res: Response): Pr
   }
 };
 
+
+
 /**
  * PATCH /workday-summary/:id/review
  * Marca el resumen como revisado (isReviewed=true) y setea reviewedAt=now.
@@ -485,6 +493,3 @@ export const markSummaryReviewed = async (req: Request, res: Response): Promise<
     res.status(500).json({ message: 'Error al marcar resumen como revisado' });
   }
 };
-
-
-
