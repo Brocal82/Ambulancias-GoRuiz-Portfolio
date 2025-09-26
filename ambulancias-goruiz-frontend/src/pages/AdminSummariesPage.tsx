@@ -12,20 +12,29 @@ const ADMIN_SUMMARIES_CHANGED_EVENT = "admin-summaries-changed";
 const notifySummariesChanged = () =>
   window.dispatchEvent(new Event(ADMIN_SUMMARIES_CHANGED_EVENT));
 
-// 🎨 Ajusta aquí el color del borde “no leído”
-const UNREAD_BORDER_COLOR = "border-amber-400"; // alternativas: 'border-slate-400' | 'border-amber-400'
-const UNREAD_BORDER_THICKNESS = "border-l-4"; // o 'border-l' si lo quieres más fino
+// 🎨 Borde “no leído”
+const UNREAD_BORDER_COLOR = "border-amber-400";
+const UNREAD_BORDER_THICKNESS = "border-l-4";
+
+// Helper ISO yyyy-mm-dd
+const toISODate = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 const AdminSummariesPage = () => {
+  const { token } = useAuth();
+  const { t, i18n } = useTranslation();
+
+  // ⬇️ por defecto: SIN día seleccionado → solo calendario
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  // mes visible en el grid: mes actual
+  const today = new Date();
+  const [viewDate, setViewDate] = useState<Date>(new Date(today.getFullYear(), today.getMonth(), 1));
+
   const [summaries, setSummaries] = useState<WorkdaySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [viewDate, setViewDate] = useState<Date>(new Date()); // mes mostrado en el grid
 
-
-  const { token } = useAuth();
-  const { t, i18n } = useTranslation();
   const tableRef = useRef<HTMLDivElement | null>(null);
 
   const fetchSummaries = useCallback(async () => {
@@ -69,7 +78,7 @@ const AdminSummariesPage = () => {
   const summariesByDate = useMemo(() => {
     const map: Record<string, { total: number; unread: number }> = {};
     for (const s of summaries) {
-      const key = s.date; // ya viene 'YYYY-MM-DD'
+      const key = s.date;
       if (!map[key]) map[key] = { total: 0, unread: 0 };
       map[key].total += 1;
       const isUnread = (s as any).isReviewed === false || typeof (s as any).isReviewed === "undefined";
@@ -81,39 +90,22 @@ const AdminSummariesPage = () => {
   // 🌍 locale para el grid
   const locale = i18n.language === "de" ? "de-DE" : i18n.language === "en" ? "en-US" : "es-ES";
 
-  // 📌 Selección inicial: hoy si tiene resúmenes, si no el primer día con resúmenes
-  useEffect(() => {
-    if (!loading && summaries.length > 0 && !selectedDate) {
-      const today = new Date();
-      const isoToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
-        today.getDate()
-      ).padStart(2, "0")}`;
-      if (summariesByDate[isoToday]) {
-        setSelectedDate(isoToday);
-      } else {
-        const first = Object.keys(summariesByDate).sort()[0];
-        setSelectedDate(first ?? null);
-      }
-    }
-  }, [loading, summaries.length, selectedDate, summariesByDate]);
-
-  // 👇 Manejar clic en fila para expandir y marcar como revisado si procede
-  const onRowClick = async (s: WorkdaySummary & { _id?: string; isReviewed?: boolean }, rowKey: string) => {
+  // 👇 Click en fila: expandir y marcar como revisado si procede
+  const onRowClick = async (
+    s: WorkdaySummary & { _id?: string; isReviewed?: boolean },
+    rowKey: string
+  ) => {
     const isExpanded = expandedKey === rowKey;
     setExpandedKey(isExpanded ? null : rowKey);
 
-    // Si ya estaba expandido o ya está revisado, no hacemos nada más
     if (isExpanded || s.isReviewed) return;
 
-    // Necesitamos el _id para marcar como revisado
     const id = s._id as string | undefined;
     if (!token || !id) return;
 
     try {
       await markSummaryReviewed(token, id);
-      // 🔔 Notificar al Dashboard para refrescar el badge
       notifySummariesChanged();
-      // ✅ Marca localmente como revisado para feedback inmediato
       setSummaries((prev) =>
         prev.map((item) =>
           (item as any)._id === id
@@ -122,31 +114,26 @@ const AdminSummariesPage = () => {
         )
       );
     } catch (e) {
-      // No rompemos la UI si falla; log suave
       // eslint-disable-next-line no-console
       console.warn("No se pudo marcar como revisado:", e);
     }
   };
 
+  // 📆 Navegación mes
   const handlePrevMonth = () => {
-  setViewDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
-  // Opcional: auto-seleccionar el primer día con resúmenes en el mes nuevo:
-  // setTimeout(() => {
-  //   const y = viewDate.getFullYear();
-  //   const m = viewDate.getMonth() - 1; // ojo: usamos el d actualizado si lo manejas con function updater
-  // }, 0);
-};
-
-const handleNextMonth = () => {
-  setViewDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
-};
-
-const handleToday = () => {
-  const today = new Date();
-  setViewDate(new Date(today.getFullYear(), today.getMonth(), 1));
-  // También podrías hacer: setSelectedDate(toISODate(today)) si quieres saltar a hoy.
-};
-
+    setViewDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+  };
+  const handleNextMonth = () => {
+    setViewDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+  };
+  const handleToday = () => {
+    const now = new Date();
+    const nowISO = toISODate(now);
+    setViewDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    setSelectedDate(nowISO); // ← selecciona hoy y muestra tabla
+    setExpandedKey(null);
+    setTimeout(() => tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+  };
 
   // 📅 Filtrar resúmenes del día seleccionado
   const daySummaries = useMemo(
@@ -169,28 +156,32 @@ const handleToday = () => {
         {t("pages.summaries.admin.title")}
       </h1>
 
-      {/* 🔷 Grid del mes actual */}
+      {/* 🔷 Grid del mes */}
       <div className="mb-6">
-  <AdminSummariesMonthGrid
-    summariesByDate={summariesByDate}
-    selectedDate={selectedDate ?? undefined}
-    locale={locale}
-    viewDate={viewDate}
-    onPrevMonth={handlePrevMonth}
-    onNextMonth={handleNextMonth}
-    onToday={handleToday}
-    onSelectDate={(iso) => {
-      setSelectedDate(iso);
-      setExpandedKey(null);
-      setTimeout(() => tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
-    }}
-  />
-</div>
+        <AdminSummariesMonthGrid
+          summariesByDate={summariesByDate}
+          selectedDate={selectedDate ?? undefined}
+          locale={locale}
+          viewDate={viewDate}
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
+          onToday={handleToday}
+          onSelectDate={(iso) => {
+            // toggle: si clicas el mismo día, se oculta la tabla
+            setSelectedDate((prev) => (prev === iso ? null : iso));
+            setExpandedKey(null);
+            // si se selecciona (no null), hacemos scroll
+            setTimeout(() => {
+              const willShow = selectedDate !== iso; // si era distinto, ahora se mostrará
+              if (willShow) tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 0);
+          }}
+        />
+      </div>
 
-
-      {/* 🔶 Tabla del día seleccionado (mantiene tu estilo actual) */}
-      <div ref={tableRef}>
-        {selectedDate ? (
+      {/* 🔶 Tabla del día seleccionado: SOLO si hay selección */}
+      {selectedDate && (
+        <div ref={tableRef}>
           <section className="mb-10">
             <div className="mb-3">
               <h2 className="text-lg font-semibold text-blue-700">
@@ -339,12 +330,8 @@ const handleToday = () => {
               </table>
             </div>
           </section>
-        ) : (
-          <p className="text-center text-sm text-slate-500">
-            {t("pages.summaries.admin.noDateSelected") ?? "Selecciona un día para ver sus resúmenes."}
-          </p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
