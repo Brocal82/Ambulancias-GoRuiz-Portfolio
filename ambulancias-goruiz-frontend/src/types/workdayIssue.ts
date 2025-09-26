@@ -12,4 +12,9 @@ export interface WorkdayIssue {
   issueText: string;
   driver: string;
   medic: string;
+
+  /** NUEVO: marcado como visto en AdminMechanicsPage al expandir por primera vez */
+  isSeen?: boolean;
+  /** NUEVO: fecha/hora de visto (ISO string) */
+  seenAt?: string | null;
 }
