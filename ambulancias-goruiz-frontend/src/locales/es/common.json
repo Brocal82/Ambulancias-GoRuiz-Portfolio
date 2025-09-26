@@ -473,8 +473,8 @@
       "page": {
         "loading": "Cargando resumen de premios...",
         "error": "Error al cargar los datos de premios.",
-        "title": "🎖 Resumen mensual de Prämien",
-        "globalLevel": "Nivel global alcanzado:",
+        "title": "🎖 Resumen mensual Prämien",
+        "globalLevel": "Nivel alcanzado:",
         "patientsPerDay": "{{level}} pacientes / día",
         "dailyHistoryTitle": "Historial diario",
         "table": {
@@ -999,14 +999,14 @@
         "dateHeader": "📅 {{date}}",
         "table": {
           "headers": {
-            "dienstTime": "Dienst / Horario",
+            "dienstTime": "Dienst",
             "ambulance": "Ambulancia",
             "team": "👥 Equipo",
-            "kmRange": "Km (inicio → fin)",
+            "kmRange": "Km",
             "kmTotal": "Km Totales",
             "trips": "Viajes",
-            "premie": "💰 Prämie",
-            "noteReason": "Nota / Motivo",
+            "premie": "Prämie",
+            "noteReason": "Motivo",
             "closure": "Cierre"
           }
         },

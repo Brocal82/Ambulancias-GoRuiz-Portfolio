@@ -474,7 +474,7 @@
         "loading": "Loading bonus summary...",
         "error": "Failed to load bonus data.",
         "title": "🎖 Monthly Prämien Summary",
-        "globalLevel": "Global level achieved:",
+        "globalLevel": "level achieved:",
         "patientsPerDay": "{{level}} patients / day",
         "dailyHistoryTitle": "Daily history",
         "table": {
@@ -1001,14 +1001,14 @@
         "dateHeader": "📅 {{date}}",
         "table": {
           "headers": {
-            "dienstTime": "Dienst / Schedule",
+            "dienstTime": "Dienst",
             "ambulance": "Ambulance",
             "team": "👥 Team",
-            "kmRange": "Km (start → end)",
+            "kmRange": "Km",
             "kmTotal": "Total Km",
             "trips": "Trips",
-            "premie": "💰 Bonus",
-            "noteReason": "Note / Reason",
+            "premie": "Bonus",
+            "noteReason": "Reason",
             "closure": "Closure"
           }
         },

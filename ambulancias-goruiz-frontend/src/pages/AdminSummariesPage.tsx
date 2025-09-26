@@ -249,15 +249,36 @@ const AdminSummariesPage = () => {
                             <td className="p-2">{(s as any).ambulanceNumber ?? "—"}</td>
 
                             {/* Team */}
-                            <td className="p-2 whitespace-pre-line leading-tight">
-                              {typeof (s as any).driver === "object" && (s as any).driver !== null
-                                ? `${(s as any).driver.lastName}, ${(s as any).driver.name}`
-                                : "-"}
-                              {"\n"}
-                              {typeof (s as any).medic === "object" && (s as any).medic !== null
-                                ? `${(s as any).medic.lastName}, ${(s as any).medic.name}`
-                                : "-"}
+                            <td className="p-2 text-sm leading-tight">
+                              {/* DRIVER */}
+                              <div
+                                className="whitespace-nowrap overflow-hidden text-ellipsis"
+                                title={
+                                  typeof (s as any).driver === "object" && (s as any).driver !== null
+                                    ? `${(s as any).driver.lastName}, ${(s as any).driver.name}`
+                                    : "-"
+                                }
+                              >
+                                {typeof (s as any).driver === "object" && (s as any).driver !== null
+                                  ? `${(s as any).driver.lastName}, ${(s as any).driver.name}`
+                                  : "-"}
+                              </div>
+
+                              {/* MEDIC */}
+                              <div
+                                className="whitespace-nowrap overflow-hidden text-ellipsis"
+                                title={
+                                  typeof (s as any).medic === "object" && (s as any).medic !== null
+                                    ? `${(s as any).medic.lastName}, ${(s as any).medic.name}`
+                                    : "-"
+                                }
+                              >
+                                {typeof (s as any).medic === "object" && (s as any).medic !== null
+                                  ? `${(s as any).medic.lastName}, ${(s as any).medic.name}`
+                                  : "-"}
+                              </div>
                             </td>
+
 
                             {/* Km inicio / fin */}
                             <td className="p-2 text-sm whitespace-pre-line leading-tight">

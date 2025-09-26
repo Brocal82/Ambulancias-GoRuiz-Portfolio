@@ -474,7 +474,7 @@
         "loading": "Prämienübersicht wird geladen...",
         "error": "Fehler beim Laden der Prämien-Daten.",
         "title": "🎖 Monatliche Prämien-Übersicht",
-        "globalLevel": "Erreichter Gesamtlevel:",
+        "globalLevel": "Erreichter Level:",
         "patientsPerDay": "{{level}} Patienten / Tag",
         "dailyHistoryTitle": "Tagesverlauf",
         "table": {
@@ -1001,14 +1001,14 @@
         "dateHeader": "📅 {{date}}",
         "table": {
           "headers": {
-            "dienstTime": "Dienst / Zeitplan",
+            "dienstTime": "Dienst",
             "ambulance": "Krankenwagen",
             "team": "👥 Team",
-            "kmRange": "Km (Start → Ende)",
+            "kmRange": "Km",
             "kmTotal": "Gesamt-Km",
             "trips": "Fahrten",
-            "premie": "💰 Prämie",
-            "noteReason": "Notiz / Grund",
+            "premie": "Prämie",
+            "noteReason": "Grund",
             "closure": "Abschluss"
           }
         },
