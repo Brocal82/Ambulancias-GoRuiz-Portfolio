@@ -522,7 +522,8 @@
           "model": "Modelo:",
           "numberPlate": "Matrícula:",
           "finalKm": "KM finales:",
-          "issue": "🛠️ Avería:"
+          "issue": "🛠️ Avería:",
+          "seenAt": "Visto en"
         },
         "ambulanceFallback": "{{number}} (ID: {{id}})",
         "delete": "Eliminar",

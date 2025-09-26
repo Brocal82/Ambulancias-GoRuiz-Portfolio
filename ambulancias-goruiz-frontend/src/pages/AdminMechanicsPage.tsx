@@ -184,17 +184,18 @@ return (
                     className="px-5 pb-5 pt-1 border-t border-slate-100"
                   >
                     {/* Acciones (borrar) */}
-                    <div className="flex items-center justify-end mb-3">
+                    <div className="flex items-center justify-end mb-3"> 
                       <button
                         onClick={() => handleDelete(issue._id)}
-                        className="inline-flex items-center justify-center w-8 h-8 rounded-full text-rose-600 hover:text-rose-800 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-300 transition"
+                        className="text-rose-600 hover:text-rose-700 font-bold text-lg leading-none transition"
                         title={t("pages.mechanics.adminPage.delete") as string}
                         aria-label={t("pages.mechanics.adminPage.delete") as string}
                         type="button"
                       >
-                        ✖
+                        ×
                       </button>
                     </div>
+
 
                     {/* Meta */}
                     <div className="mb-3">
@@ -203,7 +204,7 @@ return (
                       </span>
                       {issue.seenAt && (
                         <span className="ml-2 inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 px-2.5 py-1 text-xs font-medium ring-1 ring-emerald-200">
-                          👁️ {t("pages.mechanics.adminPage.labels.seenAt")}:{" "}
+                          {t("pages.mechanics.adminPage.labels.seenAt")}:{" "}
                           {new Date(issue.seenAt).toLocaleString()}
                         </span>
                       )}

@@ -522,7 +522,8 @@
           "model": "Model:",
           "numberPlate": "Number plate:",
           "finalKm": "Final KM:",
-          "issue": "🛠️ Issue:"
+          "issue": "🛠️ Issue:",
+          "seenAt": "Seen at"
         },
         "ambulanceFallback": "{{number}} (ID: {{id}})",
         "delete": "Delete",

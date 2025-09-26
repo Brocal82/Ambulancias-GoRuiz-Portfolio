@@ -522,7 +522,8 @@
           "model": "Modell:",
           "numberPlate": "Kennzeichen:",
           "finalKm": "End-KM:",
-          "issue": "🛠️ Störung:"
+          "issue": "🛠️ Störung:",
+          "seenAt": "Gesehen am"
         },
         "ambulanceFallback": "{{number}} (ID: {{id}})",
         "delete": "Löschen",
