@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { getIssuesOpenCount } from "../api/workdaySummary";
 
-/** Evento global para forzar refresco tras cambios en averías (crear, cerrar, borrar, etc.) */
+/** Evento global para forzar refresco tras cambios en averías (crear, cerrar, borrar, marcar vistas, etc.) */
 export const ADMIN_ISSUES_CHANGED_EVENT = "admin-issues-changed";
 
 type Options = {
@@ -85,13 +85,13 @@ export function useAdminIssuesOpenCount({ pollMs = 0 }: Options = {}) {
   return {
     count,
     loading,
-    isLoading: loading, // alias para consistencia con otros hooks
+    isLoading: loading, // alias
     error,
     refresh: fetchCount,
   };
 }
 
-/** Helper para emitir el evento global tras acciones que cambien el conteo (crear/cerrar/borrar) */
+/** Helper para emitir el evento global tras acciones que cambien el conteo (crear/cerrar/borrar/marcar visto) */
 export function notifyAdminIssuesChanged() {
   window.dispatchEvent(new Event(ADMIN_ISSUES_CHANGED_EVENT));
 }

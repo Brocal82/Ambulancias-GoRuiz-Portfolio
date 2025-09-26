@@ -1,4 +1,3 @@
-// frontend/src/pages/AdminDashboard.tsx
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -24,9 +23,6 @@ const AdminDashboard = () => {
 
   const { count: issuesOpenCount, isLoading: issuesLoading } = useAdminIssuesOpenCount();
   const issuesHasOpen = !issuesLoading && issuesOpenCount > 0;
-
-
-
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -64,7 +60,6 @@ const AdminDashboard = () => {
               : t('pages.adminDashboard.summaries.title')
           }
         >
-          {/* Badge numérico */}
           {!summariesLoading && summariesPendingCount > 0 && (
             <span
               className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-orange-400 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
@@ -101,7 +96,6 @@ const AdminDashboard = () => {
             issuesHasOpen ? "ring-2 ring-red-300" : "",
           ].join(" ")}
         >
-          {/* Badge rojo (solo cuando hay abiertas y no está cargando) */}
           {!issuesLoading && issuesHasOpen && (
             <span className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 px-2 rounded-full bg-red-500 text-white text-xs font-semibold flex items-center justify-center shadow">
               {issuesOpenCount}
@@ -116,8 +110,6 @@ const AdminDashboard = () => {
           </p>
         </Link>
 
-
-        {/* Vacations con badge */}
         <Link
           to="/admin/vacations"
           className={`relative bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition ${vacationsHasPending ? 'ring-2 ring-orange-300' : ''}`}
@@ -140,28 +132,26 @@ const AdminDashboard = () => {
           <p className="text-sm text-gray-600">{t('pages.adminDashboard.vacations.desc')}</p>
         </Link>
 
-<Link
-  to="/admin/appointments"
-  className={[
-    "relative bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition",
-    apptHasPending ? "ring-2 ring-orange-300" : "",
-  ].join(" ")}
->
-  {!apptLoading && apptHasPending && (
-    <span className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 px-2 rounded-full bg-orange-500 text-white text-xs font-semibold flex items-center justify-center shadow">
-      {apptPending}
-    </span>
-  )}
+        <Link
+          to="/admin/appointments"
+          className={[
+            "relative bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition",
+            apptHasPending ? "ring-2 ring-orange-300" : "",
+          ].join(" ")}
+        >
+          {!apptLoading && apptHasPending && (
+            <span className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 px-2 rounded-full bg-orange-500 text-white text-xs font-semibold flex items-center justify-center shadow">
+              {apptPending}
+            </span>
+          )}
 
-  <h2 className="text-lg font-semibold mb-2">
-    {t('pages.adminDashboard.appointments.title')}
-  </h2>
-  <p className="text-sm text-gray-600">
-    {t('pages.adminDashboard.appointments.desc')}
-  </p>
-</Link>
-
-
+          <h2 className="text-lg font-semibold mb-2">
+            {t('pages.adminDashboard.appointments.title')}
+          </h2>
+          <p className="text-sm text-gray-600">
+            {t('pages.adminDashboard.appointments.desc')}
+          </p>
+        </Link>
 
         <Link
           to="/admin/messages"

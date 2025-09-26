@@ -1,9 +1,11 @@
-// frontend/src/api/workdaySummary.ts
 import axios from "./axios";
-import type { PartialSummaryPayload, FinalSummaryPayload, WorkdaySummary } from "../types/workdaySummary"; // añade FinalSummaryPayload si no lo tienes
+import type { PartialSummaryPayload, FinalSummaryPayload, WorkdaySummary } from "../types/workdaySummary";
 import type { WorkdayIssue } from "../types/workdayIssue";
 
-// Ya existente
+/* =========================
+   EXISTENTES
+   ========================= */
+
 export const sendPartialClosure = async (
   data: PartialSummaryPayload,
   token: string
@@ -14,7 +16,6 @@ export const sendPartialClosure = async (
   return res.data;
 };
 
-// 🆕 Nuevo: cierre final
 export const sendFinalClosure = async (
   data: FinalSummaryPayload,
   token: string
@@ -33,6 +34,7 @@ export const getAllSummaries = async (token: string): Promise<WorkdaySummary[]> 
 };
 
 export const getAllIssueReports = async (token: string): Promise<WorkdayIssue[]> => {
+  // Mantengo fetch como lo tienes para no romper nada
   const res = await fetch("/api/workday-summary/issues", {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -43,28 +45,36 @@ export const getAllIssueReports = async (token: string): Promise<WorkdayIssue[]>
   return res.json();
 };
 
-// 🆕 Borrar un reporte de avería por ID (usando axios)
+// Borrar reporte
 export const deleteIssueReport = async (token: string, id: string): Promise<void> => {
   await axios.delete(`/workday-summary/issues/${id}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { Authorization: `Bearer ${token}` },
   });
 };
 
 /* =========================
-   NUEVO: contador pendientes (Summaries)
+   NUEVO: marcar AVERÍA como vista
+   ========================= */
+
+/**
+ * Marca una avería como vista (isSeen=true, seenAt=now).
+ * PATCH /workday-summary/issues/:id/seen
+ */
+export const markIssueSeen = async (token: string, id: string): Promise<WorkdayIssue> => {
+  const res = await axios.patch(`/workday-summary/issues/${id}/seen`, null, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data as WorkdayIssue;
+};
+
+/* =========================
+   Contadores
    ========================= */
 
 interface SummariesCountResponse {
   count: number;
 }
 
-/**
- * Devuelve el número de summaries con el estado indicado (por defecto: 'pending').
- * Llama a GET /workday-summary/count?status=<status> y retorna un number.
- * Nota: el backend acepta 'pending' y puede mapear a reviewStatus/isReviewed.
- */
 export const getSummariesPendingCount = async (
   token: string,
   status: string = "pending"
@@ -84,14 +94,6 @@ export const getSummariesPendingCount = async (
   }
 };
 
-/* =========================
-   NUEVO: marcar summary como revisado
-   ========================= */
-
-/**
- * Marca un resumen como revisado (isReviewed=true) y devuelve el documento actualizado.
- * PATCH /workday-summary/:id/review
- */
 export const markSummaryReviewed = async (
   token: string,
   id: string
@@ -110,18 +112,10 @@ export const markSummaryReviewed = async (
   }
 };
 
-/* =========================
-   NUEVO: contador de averías abiertas (Issues)
-   ========================= */
-
 interface IssuesCountResponse {
   count: number;
 }
 
-/**
- * Devuelve el número de averías abiertas.
- * GET /workday-summary/issues/count?status=open
- */
 export const getIssuesOpenCount = async (token: string): Promise<number> => {
   try {
     const res = await axios.get<IssuesCountResponse>("/workday-summary/issues/count", {
@@ -138,10 +132,6 @@ export const getIssuesOpenCount = async (token: string): Promise<number> => {
   }
 };
 
-/**
- * (Opcional) Devuelve el número de averías por estado (p.ej. 'resolved', 'closed').
- * GET /workday-summary/issues/count?status=<status>
- */
 export const getIssuesCountByStatus = async (
   token: string,
   status: string
