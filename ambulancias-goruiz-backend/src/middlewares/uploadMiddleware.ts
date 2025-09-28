@@ -5,9 +5,9 @@ import fs from 'fs';
 // 📁 Directorio donde se guardarán los archivos: backend/uploads
 const uploadDir = path.join(__dirname, '../../uploads');
 
-// Crea la carpeta si no existe
+// Crear la carpeta si no existe
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 // 🎯 Configuración del almacenamiento con nombre único
@@ -16,19 +16,26 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (_req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+    const ext = path.extname(file.originalname).toLowerCase();
+    const base = path.basename(file.originalname, ext).replace(/\s+/g, '_');
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `${base}-${uniqueSuffix}${ext}`);
   },
 });
 
-// ✅ Solo aceptamos imágenes JPG/PNG y PDF
+// ✅ Tipos de archivo permitidos (imágenes + PDF)
+const allowedTypes = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/pdf',
+];
+
 const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('❌ Tipo de archivo no permitido. Solo JPG, PNG o PDF.'));
+    cb(new Error('❌ Tipo de archivo no permitido. Solo JPG, PNG, WEBP o PDF.'));
   }
 };
 
@@ -37,6 +44,6 @@ export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5 MB máximo
+    fileSize: 10 * 1024 * 1024, // 10 MB máximo
   },
 });
