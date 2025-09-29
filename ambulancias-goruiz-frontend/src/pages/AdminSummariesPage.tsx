@@ -140,8 +140,8 @@ const AdminSummariesPage = () => {
     () =>
       selectedDate
         ? summaries
-            .filter((s) => s.date === selectedDate)
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          .filter((s) => s.date === selectedDate)
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         : [],
     [summaries, selectedDate]
   );
@@ -226,16 +226,14 @@ const AdminSummariesPage = () => {
                       return (
                         <Fragment key={key}>
                           <tr
-                            className={`border-t hover:bg-blue-50 cursor-pointer ${
-                              isExpanded ? "bg-blue-100" : !s.isFinalClosure ? "bg-orange-50" : ""
-                            }`}
+                            className={`border-t hover:bg-blue-50 cursor-pointer ${isExpanded ? "bg-blue-100" : !s.isFinalClosure ? "bg-orange-50" : ""
+                              }`}
                             onClick={() => onRowClick(s as any, key)}
                           >
                             {/* Dienst / Horario */}
                             <td
-                              className={`p-2 font-semibold ${
-                                isUnread ? `${UNREAD_BORDER_THICKNESS} ${UNREAD_BORDER_COLOR}` : ""
-                              }`}
+                              className={`p-2 font-semibold ${isUnread ? `${UNREAD_BORDER_THICKNESS} ${UNREAD_BORDER_COLOR}` : ""
+                                }`}
                             >
                               {t("pages.summaries.admin.row.dienstNumber", { num: (s as any).dienstNumber ?? "-" })}
                               <div className="text-xs text-gray-500">
@@ -339,8 +337,10 @@ const AdminSummariesPage = () => {
                                   initialKm={s.initialKm}
                                   finalKm={s.finalKm!}
                                   trips={[...s.trips].sort((a, b) => a.timeWarning.localeCompare(b.timeWarning))}
+                                  dense
                                   hideHeader
                                 />
+
                               </td>
                             </tr>
                           )}

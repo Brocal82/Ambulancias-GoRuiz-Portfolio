@@ -72,13 +72,16 @@ const PartialReviewModal: React.FC<Props> = ({
           {t("pages.workday.partial.title")}
         </h2>
 
-        <ReviewSummary
-          assignedDay={assignedDay}
-          ambulanceNumber={ambulanceNumber}
-          initialKm={parsedInitialKm}
-          finalKm={parsedFinalKm}
-          trips={trips}
-        />
+<ReviewSummary
+  assignedDay={assignedDay}
+  ambulanceNumber={ambulanceNumber}
+  initialKm={parsedInitialKm}
+  finalKm={parsedFinalKm}
+  trips={trips}
+  dense
+/>
+
+
 
         <p className="text-center font-semibold text-green-700">
           {t("pages.workday.partial.totalPatients", { count: totalEffectivePatients })}

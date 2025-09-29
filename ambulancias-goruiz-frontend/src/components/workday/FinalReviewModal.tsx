@@ -71,15 +71,16 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
           {t("pages.workday.final.title")}
         </h2>
 
-        <ReviewSummary
-          assignedDay={assignedDay}
-          ambulanceNumber={
-            ambulanceNumber ?? t("pages.workday.common.unknownAmbulance")
-          }
-          initialKm={parsedInitialKm}
-          finalKm={parsedFinalKm}
-          trips={trips}
-        />
+<ReviewSummary
+  assignedDay={assignedDay}
+  ambulanceNumber={ambulanceNumber ?? t("pages.workday.common.unknownAmbulance")}
+  initialKm={parsedInitialKm}
+  finalKm={parsedFinalKm}
+  trips={trips}
+  dense
+/>
+
+
 
         <p className="text-center font-semibold text-green-700">
           {t("pages.workday.final.totalPatients", { count: totalEffectivePatients })}
