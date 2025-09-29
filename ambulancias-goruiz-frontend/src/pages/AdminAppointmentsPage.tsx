@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import {
-  getPendingAppointments,
+  getOpenAppointments,   // 👈 usamos la nueva función
   getCalendarAppointments,
 } from '../api/appointments';
 import type { Appointment } from '../types/appointment';
@@ -35,8 +35,7 @@ export default function AdminAppointmentsPage() {
   const statusLabel = (s: Appointment['status']) =>
     t(`pages.appointments.statusLabel.${s}`);
 
-
-  // --- Estado de pendientes ---
+  // --- Estado de pendientes (pending + proposed) ---
   const [pending, setPending] = useState<Appointment[]>([]);
   const [loadingPending, setLoadingPending] = useState(true);
 
@@ -48,14 +47,13 @@ export default function AdminAppointmentsPage() {
   const [openPropose, setOpenPropose] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // --- Modal de detalle (también para ver motivo desde pendientes) ---
+  // --- Modal de detalle ---
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<Appointment | null>(null);
 
   // --- Año actual y mes seleccionado ---
   const year = useMemo(() => new Date().getFullYear(), []);
   const currentMonthIndex = useMemo(() => new Date().getMonth(), []);
-  // CAMBIO #2: no renderizar calendario por defecto
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
   // --- Rango de TODO el año ---
@@ -71,7 +69,7 @@ export default function AdminAppointmentsPage() {
     (async () => {
       try {
         const [p, c] = await Promise.all([
-          getPendingAppointments(token!),
+          getOpenAppointments(token!),   // 👈 ahora usamos la nueva función
           getCalendarAppointments(fromISO, toISO, token!),
         ]);
         if (mounted) {
@@ -94,7 +92,7 @@ export default function AdminAppointmentsPage() {
   const refreshPending = async () => {
     setLoadingPending(true);
     try {
-      const p = await getPendingAppointments(token!);
+      const p = await getOpenAppointments(token!); // 👈 también aquí
       setPending(p);
     } catch (e: any) {
       toastT.error(e?.response?.data?.message ?? ["toasts.appointments.reloadPendingError"]);
@@ -124,7 +122,6 @@ export default function AdminAppointmentsPage() {
     setPending((prev) => {
       const idx = prev.findIndex((p) => p._id === next._id);
 
-      // si ya teníamos la cita en la lista y con worker populado, lo preservamos
       if (idx !== -1) {
         const old = prev[idx];
         const merged: Appointment = {
@@ -137,11 +134,9 @@ export default function AdminAppointmentsPage() {
         return copy;
       }
 
-      // si no estaba, lo añadimos tal cual
       return [next, ...prev];
     });
   };
-
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -174,11 +169,10 @@ export default function AdminAppointmentsPage() {
                 highlightCurrentMonth
                 currentMonthIndex={currentMonthIndex}
               />
-
             )}
           </section>
 
-          {/* 2) Calendario del mes seleccionado (solo tras click) */}
+          {/* 2) Calendario del mes seleccionado */}
           <section className="mb-8">
             {loadingConfirmed ? (
               <p className="text-sm text-gray-600">
@@ -197,8 +191,7 @@ export default function AdminAppointmentsPage() {
             )}
           </section>
 
-
-          {/* 3) Bloque de Pendientes (proponer horarios) */}
+          {/* 3) Bloque de Pendientes (pending + proposed) */}
           <section className="mt-8 pt-6 border-t border-slate-200">
             <h2 className="text-lg font-semibold text-slate-900 mb-3">
               {t('pages.appointments.pending.title')}
@@ -212,8 +205,8 @@ export default function AdminAppointmentsPage() {
               <ul className="space-y-3">
                 {pending.map((a) => {
                   const worker = typeof a.workerId === 'object' ? a.workerId : null;
-                  // intentamos leer posibles slots propuestos si existen
-                  const proposedSlots = (a as any)?.proposedSlots as Array<{ id?: string; start?: string; end?: string; }> | undefined;
+                  const proposedSlots = a.proposedSlots;
+
 
                   return (
                     <li
@@ -226,7 +219,7 @@ export default function AdminAppointmentsPage() {
                     >
                       <div className="flex flex-col gap-3">
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                          {/* 👇 Nombre del trabajador */}
+                          {/* Nombre del trabajador */}
                           <div className="min-w-0">
                             <div className="text-slate-900 font-medium">
                               {worker
@@ -235,13 +228,13 @@ export default function AdminAppointmentsPage() {
                             </div>
                           </div>
 
-                          {/* 👉 Botón de proponer + status a la derecha */}
+                          {/* Botón de proponer + status */}
                           <div className="shrink-0 flex flex-row items-center gap-2">
                             {a.status === 'pending' && (
                               <button
                                 className="shrink-0 rounded bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-700 whitespace-nowrap"
                                 onClick={(e) => {
-                                  e.stopPropagation(); // evita abrir detalle al mismo tiempo
+                                  e.stopPropagation();
                                   setSelectedId(a._id);
                                   setOpenPropose(true);
                                 }}
@@ -249,13 +242,12 @@ export default function AdminAppointmentsPage() {
                               >
                                 {t('pages.appointments.actions.proposeSlots')}
                               </button>
-
                             )}
                             <StatusBadge status={a.status} label={statusLabel(a.status)} />
                           </div>
                         </div>
 
-                        {/* Listar horarios propuestos (visibles hasta confirmación) */}
+                        {/* Horarios propuestos */}
                         {!!proposedSlots?.length && (
                           <div className="mt-1">
                             <div className="text-xs uppercase text-slate-500">
@@ -263,14 +255,13 @@ export default function AdminAppointmentsPage() {
                             </div>
                             <ul className="mt-1 space-y-1">
                               {proposedSlots.map((s, idx) => (
-                                <li key={s.id ?? idx} className="text-sm text-slate-700">
+                                <li key={idx} className="text-sm text-slate-700">
                                   {formatRange(s.start, s.end)}
                                 </li>
                               ))}
                             </ul>
                           </div>
                         )}
-
                       </div>
                     </li>
                   );
@@ -279,7 +270,7 @@ export default function AdminAppointmentsPage() {
             )}
           </section>
 
-          {/* Modal: Proponer 1–3 horarios */}
+          {/* Modal: Proponer horarios */}
           <AdminProposeSlotsModal
             isOpen={openPropose}
             appointmentId={selectedId || ''}
@@ -288,15 +279,11 @@ export default function AdminAppointmentsPage() {
               setSelectedId(null);
             }}
             onSuccess={async (updated) => {
-              // 👇 mantenemos la cita en la lista local de pendientes con estado 'proposed'
               upsertPending(updated);
-
-              // 👇 refrescamos solo confirmadas (el calendario)
-              await refreshConfirmed();
+              await Promise.all([refreshPending(), refreshConfirmed()]);
             }}
             defaultDurationMinutes={30}
           />
-
 
           {/* Modal: Detalle de cita */}
           <AdminAppointmentDetail
@@ -312,6 +299,3 @@ export default function AdminAppointmentsPage() {
     </div>
   );
 }
-
-
-

@@ -81,6 +81,28 @@ export const getPendingAppointments = async (_req: Request, res: Response): Prom
   }
 };
 
+/**
+ * GET /appointments/admin/open
+ * Devuelve citas con estado "pending" o "proposed"
+ * con worker poblado y proposedSlots visibles.
+ */
+export const getOpenAppointments = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const items = await Appointment.find({
+      status: { $in: ['pending', 'proposed'] },
+    })
+      .populate('workerId', 'name lastName email')
+      .sort({ createdAt: -1 })
+      .select('+proposedSlots'); // asegúrate de incluir slots si el schema los oculta
+
+    res.status(200).json(items);
+  } catch (err: any) {
+    console.error('getOpenAppointments error:', err);
+    res.status(500).json({ message: 'Error al listar pendientes/propuestas.' });
+  }
+};
+
+
 export const proposeSlots = async (req: Request, res: Response): Promise<void> => {
   try {
     const adminId = (req as any).userId as string;

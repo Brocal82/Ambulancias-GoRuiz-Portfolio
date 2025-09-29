@@ -32,6 +32,15 @@ export const getPendingAppointments = async (token: string): Promise<Appointment
   return data;
 };
 
+// Admin: pendientes + propuestas
+export const getOpenAppointments = async (token: string): Promise<Appointment[]> => {
+  const { data } = await axios.get<Appointment[]>('/appointments/open', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return data;
+};
+
+
 // ✅ Admin: contador de pendientes (derivado del módulo)
 export const getAppointmentsPendingCount = async (token: string): Promise<number> => {
   const { data } = await axios.get<{ count: number }>('/appointments/count', {

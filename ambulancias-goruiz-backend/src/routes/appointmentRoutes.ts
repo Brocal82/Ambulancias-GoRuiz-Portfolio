@@ -13,6 +13,7 @@ import {
   cancelAppointment,
   deleteMyAppointment,
   getAppointmentsCount,
+  getOpenAppointments
 } from '../controllers/appointmentController';
 
 const router = Router();
@@ -25,6 +26,9 @@ router.get('/my', authenticateToken, authorizeRole('worker'), getMyAppointments)
 
 // Admin: listar pendientes
 router.get('/pending', authenticateToken, authorizeRole('admin'), getPendingAppointments);
+
+// Admin: listar pendientes + propuestas
+router.get('/open', authenticateToken, authorizeRole('admin'), getOpenAppointments);
 
 // ✅ Admin: contar por estado (derivado). Por defecto status=pending
 router.get('/count', authenticateToken, authorizeRole('admin'), getAppointmentsCount);
