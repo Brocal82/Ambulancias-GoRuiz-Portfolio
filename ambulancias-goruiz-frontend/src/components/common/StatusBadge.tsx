@@ -20,7 +20,7 @@ const appointmentMap: Record<AppointmentStatus, string> = {
   pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
   proposed: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   confirmed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  rescheduled: 'bg-amber-50 text-amber-700 border-amber-200',
+  rescheduled: 'bg-emerald-50 text-emerald-700 border-emerald-200', // ✅ ahora verde igual que confirmed
   cancelled: 'bg-red-50 text-red-700 border-red-200',
 };
 
@@ -49,3 +49,4 @@ const StatusBadge: React.FC<Props> = ({ status, label, context = 'appointment', 
 };
 
 export default StatusBadge;
+

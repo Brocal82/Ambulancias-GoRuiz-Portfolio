@@ -1,3 +1,4 @@
+// frontend/src/pages/WorkerAppointmentsPage.tsx
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getMyAppointments, deleteMyAppointment as apiDeleteMyAppointment } from '../api/appointments';
@@ -13,6 +14,24 @@ import StatusBadge from '../components/common/StatusBadge';
 function fmt(dtIso?: string): string {
   if (!dtIso) return '—';
   return new Date(dtIso).toLocaleString('de-DE', { timeZone: APP_TZ });
+}
+
+/** Helpers de ordenación */
+function earliestProposedStart(a: Appointment): number | null {
+  if (!a.proposedSlots || a.proposedSlots.length === 0) return null;
+  const mins = a.proposedSlots
+    .map((s) => new Date(s.start).getTime())
+    .filter((t) => !Number.isNaN(t));
+  if (mins.length === 0) return null;
+  return Math.min(...mins);
+}
+function createdAtMs(a: Appointment): number {
+  const t = new Date(a.createdAt).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}
+function selectedStartMs(a: Appointment): number {
+  const t = a.selectedSlot?.start ? new Date(a.selectedSlot.start).getTime() : 0;
+  return Number.isNaN(t) ? 0 : t;
 }
 
 export default function WorkerAppointmentsPage() {
@@ -77,13 +96,31 @@ export default function WorkerAppointmentsPage() {
       )[0];
   }, [items]);
 
-  // Solicitudes (pending/proposed)
-  const recent = useMemo(
-    () => items.filter((a) => a.status === 'pending' || a.status === 'proposed'),
-    [items]
-  );
+  // Solicitudes (pending/proposed) — ORDENADAS:
+  // - Si tiene opciones: por la hora propuesta más temprana (ASC)
+  // - Si no tiene opciones: por fecha de creación (DESC)
+  const recent = useMemo(() => {
+    const arr = items.filter((a) => a.status === 'pending' || a.status === 'proposed');
+
+    return arr.slice().sort((a, b) => {
+      const ea = earliestProposedStart(a);
+      const eb = earliestProposedStart(b);
+
+      // Ambos con opciones: más próximo primero
+      if (ea !== null && eb !== null) return ea - eb;
+
+      // Solo A con opciones -> A antes
+      if (ea !== null && eb === null) return -1;
+      // Solo B con opciones -> B antes
+      if (ea === null && eb !== null) return 1;
+
+      // Ninguno con opciones -> por createdAt (DESC, lo más reciente primero)
+      return createdAtMs(b) - createdAtMs(a);
+    });
+  }, [items]);
 
   // Otras citas: confirmed/rescheduled/cancelled (excluye la mostrada como "próxima")
+  // ORDENADAS por selectedSlot.start ASC (más antiguas arriba, más nuevas abajo)
   const others = useMemo(() => {
     const excludeId = nextConfirmed?._id;
     return items
@@ -93,12 +130,9 @@ export default function WorkerAppointmentsPage() {
         a.status === 'cancelled'
       )
       .filter((a) => a._id !== excludeId)
-      .sort((a, b) => {
-        const at = a.selectedSlot?.start ? new Date(a.selectedSlot.start).getTime() : 0;
-        const bt = b.selectedSlot?.start ? new Date(b.selectedSlot.start).getTime() : 0;
-        return bt - at; // más recientes primero
-      });
+      .sort((a, b) => selectedStartMs(a) - selectedStartMs(b)); // 👈 ASC
   }, [items, nextConfirmed]);
+
 
   const canDelete = (a: Appointment): boolean => {
     if (a.status === 'cancelled') return true;
@@ -186,7 +220,6 @@ export default function WorkerAppointmentsPage() {
                       )}
                     </div>
 
-
                     {/* Columna derecha: botón y status */}
                     <div className="shrink-0 flex flex-row items-center gap-2">
                       {showChoose && (
@@ -201,14 +234,12 @@ export default function WorkerAppointmentsPage() {
                         >
                           {t('pages.appointments.actions.chooseSlot')}
                         </button>
-
                       )}
                       <StatusBadge status={a.status} label={statusLabel(a.status)} />
                     </div>
                   </div>
                 </li>
               );
-
             })}
           </ul>
         </div>
@@ -242,7 +273,7 @@ export default function WorkerAppointmentsPage() {
                 )}
 
                 {/* Contenido izquierda */}
-                <div className="pr-10"> {/* deja sitio a la X */}
+                <div className="pr-10">
                   <div className="font-medium truncate">{a.reason}</div>
                   <p className="text-sm text-gray-600 mt-1">{a.details}</p>
                   <div className="text-sm text-gray-700 mt-2">
@@ -256,8 +287,6 @@ export default function WorkerAppointmentsPage() {
                   <StatusBadge status={a.status} label={statusLabel(a.status)} />
                 </div>
               </li>
-
-
             ))}
           </ul>
         </div>
