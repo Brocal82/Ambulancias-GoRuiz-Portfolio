@@ -479,7 +479,7 @@
         "dailyHistoryTitle": "Tagesverlauf",
         "table": {
           "date": "Datum",
-          "patients": "Patienten",
+          "patients": "Fahrten",
           "empty": "Keine Daten verfügbar"
         }
       },

@@ -479,7 +479,7 @@
         "dailyHistoryTitle": "Daily history",
         "table": {
           "date": "Date",
-          "patients": "Patients",
+          "patients": "Trips",
           "empty": "No data available"
         }
       },
