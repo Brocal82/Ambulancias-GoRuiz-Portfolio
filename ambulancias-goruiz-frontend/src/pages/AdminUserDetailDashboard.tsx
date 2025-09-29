@@ -56,8 +56,8 @@ const AdminUserDetailDashboard = () => {
                   key={key}
                   onClick={() => setActiveTab(key)}
                   className={`px-4 py-2 text-sm rounded-xl transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${isActive
-                      ? 'bg-blue-600 text-white shadow-md -translate-y-0.5'
-                      : 'bg-white text-slate-700 hover:bg-slate-50 ring-1 ring-slate-200 shadow-sm'
+                    ? 'bg-blue-600 text-white shadow-md -translate-y-0.5'
+                    : 'bg-white text-slate-700 hover:bg-slate-50 ring-1 ring-slate-200 shadow-sm'
                     }`}
 
                 >

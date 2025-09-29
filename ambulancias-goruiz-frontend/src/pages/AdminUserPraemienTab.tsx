@@ -29,40 +29,40 @@ const AdminUserPraemienTab = ({ userId }: Props) => {
   const levelLabel = useMemo(() => {
     if (averagePatients == null) return '';
     if (averagePatients >= 10) return t('pages.praemien.levels.10');
-    if (averagePatients >= 9)  return t('pages.praemien.levels.9');
-    if (averagePatients >= 8)  return t('pages.praemien.levels.8');
-    if (averagePatients >= 7)  return t('pages.praemien.levels.7');
+    if (averagePatients >= 9) return t('pages.praemien.levels.9');
+    if (averagePatients >= 8) return t('pages.praemien.levels.8');
+    if (averagePatients >= 7) return t('pages.praemien.levels.7');
     return t('pages.praemien.levels.none');
   }, [averagePatients, t]);
 
   if (loading) return <p>{t('pages.praemien.page.loading')}</p>;
 
-return (
-  <div className="bg-white p-4 rounded-2xl shadow-sm ring-1 ring-gray-200">
-    <h2 className="text-lg font-bold text-gray-800 mb-4">
-      {t('pages.praemien.adminUserTab.currentTitle')}
-    </h2>
-
-    {averagePatients != null ? (
-      <p className="text-gray-700">
-        {t('pages.praemien.adminUserTab.levelPrefix')}{' '}
-        <span className="font-semibold text-blue-600">{levelLabel}</span>{' '}
-        <span className="text-sm text-gray-500">
-          ({t('pages.praemien.adminUserTab.average', { avg: averagePatients.toFixed(2) })})
-        </span>
-      </p>
-    ) : (
-      <p className="text-gray-500">{t('pages.praemien.adminUserTab.noData')}</p>
-    )}
-
-    <div className="mt-8 border-t pt-6">
+  return (
+    <div className="bg-white p-4 rounded-2xl shadow-sm ring-1 ring-gray-200">
       <h2 className="text-lg font-bold text-gray-800 mb-4">
-        {t('pages.praemien.history.title')}
+        {t('pages.praemien.adminUserTab.currentTitle')}
       </h2>
-      <WorkerPraemienHistory userId={userId} />
+
+      {averagePatients != null ? (
+        <p className="text-gray-700">
+          {t('pages.praemien.adminUserTab.levelPrefix')}{' '}
+          <span className="font-semibold text-blue-600">{levelLabel}</span>{' '}
+          <span className="text-sm text-gray-500">
+            ({t('pages.praemien.adminUserTab.average', { avg: averagePatients.toFixed(2) })})
+          </span>
+        </p>
+      ) : (
+        <p className="text-gray-500">{t('pages.praemien.adminUserTab.noData')}</p>
+      )}
+
+      <div className="mt-8 border-t pt-6">
+        <h2 className="text-lg font-bold text-gray-800 mb-4">
+          {t('pages.praemien.history.title')}
+        </h2>
+        <WorkerPraemienHistory userId={userId} />
+      </div>
     </div>
-  </div>
-);
+  );
 };
 
 export default AdminUserPraemienTab;

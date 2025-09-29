@@ -56,8 +56,8 @@ const AdminUserMessageTab = ({ userId }: Props) => {
       console.error('❌ Error al enviar mensaje:', error);
       toastT.error(
         (error as any)?.response?.data?.message ||
-          (t('toasts.messages.error') as string) ||
-          'Error sending the message'
+        (t('toasts.messages.error') as string) ||
+        'Error sending the message'
       );
     } finally {
       setLoading(false);

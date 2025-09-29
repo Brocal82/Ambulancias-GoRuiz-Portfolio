@@ -189,8 +189,8 @@ const AdminUsersPage = () => {
                     status === 'expired'
                       ? 'border-l-4 border-red-500'
                       : status === 'warning'
-                      ? 'border-l-4 border-orange-400'
-                      : '';
+                        ? 'border-l-4 border-orange-400'
+                        : '';
 
                   const roleKey = (user.ambulanceRole ?? 'unknown') as NonNullable<User['ambulanceRole']> | 'unknown';
 

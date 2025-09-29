@@ -94,11 +94,11 @@ const WorkerMessagesPage = () => {
             prev.map(m =>
               m._id === id
                 ? {
-                    ...m,
-                    readBy: Array.from(
-                      new Set([...(m.readBy as unknown as string[] | undefined || []), meId])
-                    ) as unknown as Message['readBy'],
-                  }
+                  ...m,
+                  readBy: Array.from(
+                    new Set([...(m.readBy as unknown as string[] | undefined || []), meId])
+                  ) as unknown as Message['readBy'],
+                }
                 : m
             )
           );

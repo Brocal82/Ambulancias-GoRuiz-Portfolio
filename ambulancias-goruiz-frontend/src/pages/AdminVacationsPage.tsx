@@ -67,8 +67,8 @@ const AdminVacationRequests = () => {
       status === 'accepted'
         ? (['toasts.vacations.admin.accepted'] as const)
         : status === 'cancelled'
-        ? (['toasts.vacations.admin.cancelled'] as const)
-        : (['toasts.vacations.admin.updated'] as const);
+          ? (['toasts.vacations.admin.cancelled'] as const)
+          : (['toasts.vacations.admin.updated'] as const);
 
     try {
       await toastT.promise(

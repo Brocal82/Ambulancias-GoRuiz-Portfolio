@@ -277,26 +277,24 @@ const AdminHospitalsPage = () => {
                 {t('pages.hospitals.adminPage.status.label')}
               </label>
               <div className="flex items-center gap-2">
-  {/* Botón verde (abierto) */}
-  <button
-    type="button"
-    onClick={() => !hospital.isOpen && handleToggleOpen(hospital)}
-    className={`w-5 h-5 rounded-full border-2 ${
-      hospital.isOpen ? 'bg-green-500 border-green-600' : 'bg-white border-slate-300'
-    }`}
-    title={t('pages.hospitals.adminPage.status.open') as string}
-  />
+                {/* Botón verde (abierto) */}
+                <button
+                  type="button"
+                  onClick={() => !hospital.isOpen && handleToggleOpen(hospital)}
+                  className={`w-5 h-5 rounded-full border-2 ${hospital.isOpen ? 'bg-green-500 border-green-600' : 'bg-white border-slate-300'
+                    }`}
+                  title={t('pages.hospitals.adminPage.status.open') as string}
+                />
 
-  {/* Botón rojo (cerrado) */}
-  <button
-    type="button"
-    onClick={() => hospital.isOpen && handleToggleOpen(hospital)}
-    className={`w-5 h-5 rounded-full border-2 ${
-      !hospital.isOpen ? 'bg-rose-500 border-rose-600' : 'bg-white border-slate-300'
-    }`}
-    title={t('pages.hospitals.adminPage.status.closed') as string}
-  />
-</div>
+                {/* Botón rojo (cerrado) */}
+                <button
+                  type="button"
+                  onClick={() => hospital.isOpen && handleToggleOpen(hospital)}
+                  className={`w-5 h-5 rounded-full border-2 ${!hospital.isOpen ? 'bg-rose-500 border-rose-600' : 'bg-white border-slate-300'
+                    }`}
+                  title={t('pages.hospitals.adminPage.status.closed') as string}
+                />
+              </div>
 
 
               <button

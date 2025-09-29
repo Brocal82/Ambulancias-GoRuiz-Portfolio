@@ -118,9 +118,8 @@ const WorkerPraemienPage = () => {
                     {t('pages.praemien.page.patientsPerDay', { level })}
                   </span>
                   <span
-                    className={`font-mono ${
-                      isPositive ? 'text-emerald-600' : 'text-red-600'
-                    }`}
+                    className={`font-mono ${isPositive ? 'text-emerald-600' : 'text-red-600'
+                      }`}
                   >
                     {isPositive ? '+' : ''}
                     {averageDiff}
@@ -130,9 +129,8 @@ const WorkerPraemienPage = () => {
                 {/* Barra de progreso estilizada */}
                 <div className="w-full h-3 rounded-full bg-slate-200 ring-1 ring-slate-300 overflow-hidden">
                   <div
-                    className={`h-3 rounded-full ${
-                      isPositive ? 'bg-emerald-500' : 'bg-red-500'
-                    } transition-[width]`}
+                    className={`h-3 rounded-full ${isPositive ? 'bg-emerald-500' : 'bg-red-500'
+                      } transition-[width]`}
                     style={{ width: `${percentage}%` }}
                   />
                 </div>

@@ -53,7 +53,7 @@ const AdminSentMessages = () => {
     if (
       !window.confirm(
         t('pages.messages.sentPage.confirmDelete') ||
-          'Are you sure you want to delete this message?'
+        'Are you sure you want to delete this message?'
       )
     ) {
       return;
