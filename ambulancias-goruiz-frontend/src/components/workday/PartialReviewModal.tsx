@@ -50,7 +50,7 @@ const PartialReviewModal: React.FC<Props> = ({
       return false;
     }
     if (Number(finalKm) < parsedInitialKm) {
-      toastT.warn(["toasts.workday.partial.finalKmLessThanInitial"]);
+      toastT.warn(["toasts.workday.finalKmLessThanInitial"]);
       return false;
     }
     return true;
@@ -107,9 +107,13 @@ const PartialReviewModal: React.FC<Props> = ({
             type="button"
             onClick={() => {
               if (!ensureValidFinalKm()) return;
-              const checked = !hasIssue;
-              setHasIssue(checked);
-              if (checked) setShowIssueModal(true);
+              const next = !hasIssue;
+              setHasIssue(next);
+              if (!next) {
+                setIssueData(null);
+                return;
+              }
+              setShowIssueModal(true);
             }}
             className={[
               "inline-flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-1.5 text-sm font-medium transition-colors",
@@ -129,6 +133,7 @@ const PartialReviewModal: React.FC<Props> = ({
             onClose={() => {
               setShowIssueModal(false);
               setHasIssue(false);
+              setIssueData(null);
             }}
             assignedDay={assignedDay}
             ambulanceId={ambulanceId}

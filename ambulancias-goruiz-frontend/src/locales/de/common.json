@@ -1149,7 +1149,8 @@
         "issueRegistered": "🛠️ Störung erfasst. Du kannst jetzt den Teilabschluss senden."
       },
       "final": {
-        "finalKmRequired": "📏 Bitte die End-Kilometer eingeben."
+        "finalKmRequired": "📏 Bitte die End-Kilometer eingeben.",
+        "issueRegistered": "🛠️ Störung erfasst. Du kannst jetzt den kompletter Abschluss senden."
       }
     },
     "appointments": {

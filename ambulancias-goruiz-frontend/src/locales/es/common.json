@@ -1147,7 +1147,8 @@
         "issueRegistered": "🛠️ Avería registrada. Ahora puedes enviar el cierre parcial."
       },
       "final": {
-        "finalKmRequired": "📏 Introduce los kilómetros finales."
+        "finalKmRequired": "📏 Introduce los kilómetros finales.",
+        "issueRegistered": "🛠️ Avería registrada. Ahora puedes enviar el cierre final."
       }
     },
     "appointments": {

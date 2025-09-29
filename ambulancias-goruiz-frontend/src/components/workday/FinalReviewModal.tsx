@@ -38,7 +38,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
   );
   const [hasIssue, setHasIssue] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
-  const [issueData, setIssueData] = useState<any | null>(null); // ✅ nuevo: guardar avería sin auto-enviar
+  const [issueData, setIssueData] = useState<any | null>(null); // guardamos la avería sin auto-enviar
 
   const parsedInitialKm = Number(initialKm);
   const parsedFinalKm = finalKmLocal === "" ? 0 : Number(finalKmLocal);
@@ -46,20 +46,19 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
 
   if (!isOpen) return null;
 
-  // ✅ Validación unificada
+  // Validación usando tus toasts existentes
   const ensureValidFinalKm = (): boolean => {
     if (finalKmLocal === "" || isNaN(Number(finalKmLocal))) {
       toastT.warn(["toasts.workday.final.finalKmRequired"]);
       return false;
     }
     if (Number(finalKmLocal) < parsedInitialKm) {
-      toastT.warn(["toasts.workday.final.finalKmLessThanInitial"]);
+      toastT.warn(["toasts.workday.finalKmLessThanInitial"]);
       return false;
     }
     return true;
   };
 
-  // ✅ Enviar sumario (independiente del reporte técnico)
   const handleSend = () => {
     if (!ensureValidFinalKm()) return;
     onConfirm(note.trim(), parsedFinalKm, issueData || undefined);
@@ -108,19 +107,17 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
           <button
             type="button"
             onClick={() => {
-              // No permitimos abrir si los KM no son válidos
               if (!ensureValidFinalKm()) return;
 
               const next = !hasIssue;
               setHasIssue(next);
 
-              // Si el usuario desmarca la avería, limpiamos los datos guardados
               if (!next) {
+                // si desmarca, limpiamos datos de avería
                 setIssueData(null);
                 return;
               }
 
-              // Si la marca, abrimos el modal técnico
               setShowIssueModal(true);
             }}
             className={[
@@ -140,7 +137,6 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
             isOpen={true}
             onClose={() => {
               setShowIssueModal(false);
-              // Si cierra sin enviar, desmarcamos avería
               setHasIssue(false);
               setIssueData(null);
             }}
@@ -149,10 +145,9 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
             ambulanceNumber={ambulanceNumber}
             finalKm={parsedFinalKm}
             onSubmit={(data: { issueText: string }) => {
-              // ✅ Guardamos la avería y cerramos. NO se envía el sumario aquí.
               setIssueData(data);
               setShowIssueModal(false);
-              toastT.info(["toasts.workday.final.issueRegistered"]);
+              toastT.info(["toasts.workday.final.issueRegistered"]); // reusamos toast existente
             }}
           />
         )}

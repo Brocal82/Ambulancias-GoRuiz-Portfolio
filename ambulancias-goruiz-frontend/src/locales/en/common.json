@@ -1149,7 +1149,8 @@
         "issueRegistered": "🛠️ Issue recorded. You can now send the partial closure."
       },
       "final": {
-        "finalKmRequired": "📏 Enter the final kilometers."
+        "finalKmRequired": "📏 Enter the final kilometers.",
+        "issueRegistered": "🛠️ Issue recorded. You can now send the Final closure."
       }
     },
     "appointments": {
