@@ -221,41 +221,41 @@ export default function WorkerAppointmentsPage() {
           <ul className="space-y-3">
             {others.map((a) => (
               <li
-  key={a._id}
-  className="relative rounded-xl border p-4 hover:bg-slate-50 transition-colors"
->
-  {/* Botón cerrar absolutamente en la esquina superior derecha */}
-  {canDelete(a) && (
-    <button
-      onClick={(e) => {
-        e.currentTarget.blur();
-        handleDelete(a._id);
-      }}
-      className="absolute top-2 right-2 bg-transparent p-0 text-rose-600 hover:text-rose-700
+                key={a._id}
+                className="relative rounded-xl border p-4 hover:bg-slate-50 transition-colors"
+              >
+                {/* Botón cerrar absolutamente en la esquina superior derecha */}
+                {canDelete(a) && (
+                  <button
+                    onClick={(e) => {
+                      e.currentTarget.blur();
+                      handleDelete(a._id);
+                    }}
+                    className="absolute top-2 right-2 bg-transparent p-0 text-rose-600 hover:text-rose-700
                  font-bold text-lg leading-none focus:outline-none
                  focus-visible:ring-2 focus-visible:ring-rose-500/40 rounded"
-      title={t('pages.appointments.worker.actions.deleteTitle')}
-      aria-label={t('pages.appointments.worker.actions.deleteTitle')}
-    >
-      ×
-    </button>
-  )}
+                    title={t('pages.appointments.worker.actions.deleteTitle')}
+                    aria-label={t('pages.appointments.worker.actions.deleteTitle')}
+                  >
+                    ×
+                  </button>
+                )}
 
-  {/* Contenido izquierda */}
-  <div className="pr-10"> {/* deja sitio a la X */}
-    <div className="font-medium truncate">{a.reason}</div>
-    <p className="text-sm text-gray-600 mt-1">{a.details}</p>
-    <div className="text-sm text-gray-700 mt-2">
-      <span className="font-medium">{t('pages.appointments.labels.when')}</span>{' '}
-      {fmt(a.selectedSlot?.start)}
-    </div>
-  </div>
+                {/* Contenido izquierda */}
+                <div className="pr-10"> {/* deja sitio a la X */}
+                  <div className="font-medium truncate">{a.reason}</div>
+                  <p className="text-sm text-gray-600 mt-1">{a.details}</p>
+                  <div className="text-sm text-gray-700 mt-2">
+                    <span className="font-medium">{t('pages.appointments.labels.when')}</span>{' '}
+                    {fmt(a.selectedSlot?.start)}
+                  </div>
+                </div>
 
-  {/* Status fijo en la esquina inferior derecha */}
-  <div className="absolute bottom-2 right-2">
-    <StatusBadge status={a.status} label={statusLabel(a.status)} />
-  </div>
-</li>
+                {/* Status fijo en la esquina inferior derecha */}
+                <div className="absolute bottom-2 right-2">
+                  <StatusBadge status={a.status} label={statusLabel(a.status)} />
+                </div>
+              </li>
 
 
             ))}
