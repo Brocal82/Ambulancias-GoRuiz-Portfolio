@@ -1,4 +1,3 @@
-// src/components/workday/FinalReviewModal.tsx
 import React, { useState } from "react";
 import { toastT } from "../../utils/toast";
 import ReviewSummary from "./ReviewSummary";
@@ -39,6 +38,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
   );
   const [hasIssue, setHasIssue] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
+  const [issueData, setIssueData] = useState<any | null>(null); // ✅ nuevo: guardar avería sin auto-enviar
 
   const parsedInitialKm = Number(initialKm);
   const parsedFinalKm = finalKmLocal === "" ? 0 : Number(finalKmLocal);
@@ -46,26 +46,37 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSend = () => {
+  // ✅ Validación unificada
+  const ensureValidFinalKm = (): boolean => {
     if (finalKmLocal === "" || isNaN(Number(finalKmLocal))) {
       toastT.warn(["toasts.workday.final.finalKmRequired"]);
-      return;
+      return false;
     }
-    onConfirm(note.trim(), parsedFinalKm);
+    if (Number(finalKmLocal) < parsedInitialKm) {
+      toastT.warn(["toasts.workday.final.finalKmLessThanInitial"]);
+      return false;
+    }
+    return true;
+  };
+
+  // ✅ Enviar sumario (independiente del reporte técnico)
+  const handleSend = () => {
+    if (!ensureValidFinalKm()) return;
+    onConfirm(note.trim(), parsedFinalKm, issueData || undefined);
   };
 
   return (
-  <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-5xl overflow-y-auto max-h-[90vh] space-y-6">
-      
-
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-5xl overflow-y-auto max-h-[90vh] space-y-6">
         <h2 className="text-xl font-bold text-center">
           {t("pages.workday.final.title")}
         </h2>
 
         <ReviewSummary
           assignedDay={assignedDay}
-          ambulanceNumber={ambulanceNumber ?? t("pages.workday.common.unknownAmbulance")}
+          ambulanceNumber={
+            ambulanceNumber ?? t("pages.workday.common.unknownAmbulance")
+          }
           initialKm={parsedInitialKm}
           finalKm={parsedFinalKm}
           trips={trips}
@@ -92,14 +103,25 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
           className="w-full border border-slate-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-200"
         />
 
-        {/* Botón Avería (alineado a la derecha) */}
+        {/* Botón Avería */}
         <div className="pt-1 flex justify-end">
           <button
             type="button"
             onClick={() => {
-              const checked = !hasIssue;
-              setHasIssue(checked);
-              if (checked) setShowIssueModal(true);
+              // No permitimos abrir si los KM no son válidos
+              if (!ensureValidFinalKm()) return;
+
+              const next = !hasIssue;
+              setHasIssue(next);
+
+              // Si el usuario desmarca la avería, limpiamos los datos guardados
+              if (!next) {
+                setIssueData(null);
+                return;
+              }
+
+              // Si la marca, abrimos el modal técnico
+              setShowIssueModal(true);
             }}
             className={[
               "inline-flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-1.5 text-sm font-medium transition-colors",
@@ -112,23 +134,25 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
           </button>
         </div>
 
-        {/* Modal técnico */}
+        {/* Modal técnico (independiente del envío del sumario) */}
         {showIssueModal && (
           <IssueReportModal
             isOpen={true}
             onClose={() => {
               setShowIssueModal(false);
+              // Si cierra sin enviar, desmarcamos avería
               setHasIssue(false);
+              setIssueData(null);
             }}
             assignedDay={assignedDay}
             ambulanceId={ambulanceId}
             ambulanceNumber={ambulanceNumber}
             finalKm={parsedFinalKm}
-            onSubmit={(issueData: { issueText: string }) => {
-              setHasIssue(true);
+            onSubmit={(data: { issueText: string }) => {
+              // ✅ Guardamos la avería y cerramos. NO se envía el sumario aquí.
+              setIssueData(data);
               setShowIssueModal(false);
-              // Se envía inmediatamente con una nota por defecto de "Avería"
-              onConfirm(t("pages.workday.final.issue.autoNote"), parsedFinalKm, issueData);
+              toastT.info(["toasts.workday.final.issueRegistered"]);
             }}
           />
         )}
