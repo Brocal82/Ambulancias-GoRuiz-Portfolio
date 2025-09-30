@@ -60,7 +60,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
           {/* Derecha: usuario + logout */}
           <nav className="flex items-center gap-3 sm:gap-4" aria-label={t('layout.nav.actions') as string}>
             {user && (
-              <div className="hidden sm:flex items-center gap-3">
+              <div className="flex items-center gap-3">
+
                 <span className="text-sm font-medium text-slate-100">
                   {user.lastName}, {user.name}
                 </span>
