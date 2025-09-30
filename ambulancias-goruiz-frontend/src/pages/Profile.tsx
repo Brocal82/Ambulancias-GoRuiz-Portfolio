@@ -7,6 +7,9 @@ import { getPscheinStatus } from '../utils/pscheinUtils';
 import type { User, AmbulanceRole } from '../types/user';
 import { useTranslation } from 'react-i18next';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_ORIGIN = API_BASE.replace(/\/api\/?$/, '');
+
 interface ProfileProps {
   userId?: string;
 }
@@ -67,7 +70,7 @@ const Profile = ({ userId }: ProfileProps) => {
         }
 
         // Subimos archivos
-        const uploadRes = await fetch('http://localhost:5000/api/users/me/upload', {
+        const uploadRes = await fetch(`${API_ORIGIN}/api/users/me/upload`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: form,
@@ -223,9 +226,9 @@ const Profile = ({ userId }: ProfileProps) => {
                   previewImage
                     ? previewImage
                     : formData.profileImage?.startsWith('/uploads/')
-                      ? `http://localhost:5000${formData.profileImage}`
+                      ? `${API_ORIGIN}${formData.profileImage}`
                       : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
-                }
+                                    }
                 alt={t('pages.profile.image.alt')}
                 className="w-20 h-20 rounded-full object-cover ring-1 ring-slate-200 bg-white shadow-sm group-hover:opacity-90 transition"
               />
@@ -456,7 +459,7 @@ const Profile = ({ userId }: ProfileProps) => {
                   <div className="truncate">
                     {docUrl.split('/').pop()}
                     <a
-                      href={`http://localhost:5000${docUrl}`}
+                      href={`${API_ORIGIN}${docUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 underline ml-2"
