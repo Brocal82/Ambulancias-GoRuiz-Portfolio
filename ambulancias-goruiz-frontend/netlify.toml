@@ -1,0 +1,4 @@
+[build]
+  base = "ambulancias-goruiz-frontend"
+  publish = "dist"
+  command = "npm ci && npm run build"
