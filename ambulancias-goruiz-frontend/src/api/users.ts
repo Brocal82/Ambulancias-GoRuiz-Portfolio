@@ -1,16 +1,16 @@
-//frontend/src/api/users.ts
-import axios from './axios';
+// frontend/src/api/users.ts
+import api from './axios';
 import type { User } from '../types/user';
 
 // ✅ Obtener todos los usuarios completos (para Admin)
 export const getAllUsers = async (token: string): Promise<User[]> => {
   try {
-    const response = await axios.get<User[]>('/users', {
+    const response = await api.get<User[]>('/users', {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   } catch (error) {
-    console.error("Error al obtener usuarios:", error);
+    console.error('Error al obtener usuarios:', error);
     throw error;
   }
 };
@@ -21,70 +21,58 @@ export const getAvailableUsersForDate = async (
   desiredRole: 'driver' | 'medic' | 'both',
   token: string
 ): Promise<User[]> => {
-  const response = await axios.get(`/users/available?date=${date}&desiredRole=${desiredRole}`, {
+  const response = await api.get(`/users/available`, {
     headers: { Authorization: `Bearer ${token}` },
+    params: { date, desiredRole },
   });
   return response.data;
 };
 
+// ✅ Obtener usuario por id
 export const getUserById = async (token: string, userId: string): Promise<User> => {
   try {
-    const response = await axios.get<User>(`/users/${userId}`, {
+    const response = await api.get<User>(`/users/${userId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   } catch (error) {
-    console.error("Error al obtener el perfil:", error);
+    console.error('Error al obtener el perfil:', error);
     throw error;
   }
 };
 
-
-// ✅ Actualizar perfil de usuario sin sobreescribir profileImage
+// ✅ Actualizar perfil de usuario (sin sobreescribir profileImage si no viene)
 export const updateUserProfile = async (
   userId: string,
   updatedData: Partial<User>,
   token: string
 ): Promise<User> => {
   try {
-    const response = await axios.patch<User>(`/users/${userId}`, updatedData, {
+    const response = await api.patch<User>(`/users/${userId}`, updatedData, {
       headers: { Authorization: `Bearer ${token}` },
     });
-
     return response.data;
   } catch (error) {
-    console.error("Error al actualizar el perfil:", error);
+    console.error('Error al actualizar el perfil:', error);
     throw error;
   }
 };
 
-
-
 // ✅ Eliminar usuario
 export const deleteUser = async (userId: string, token: string): Promise<void> => {
-  await axios.delete(`/users/${userId}`, {
+  await api.delete(`/users/${userId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 };
 
+// ✅ Eliminar documento del usuario (DELETE con body)
 export const deleteUserDocument = async (
   filePath: string,
   token: string
 ): Promise<{ documents: string[] }> => {
-  const response = await fetch('http://localhost:5000/api/users/me/document', {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ filePath }),
+  const response = await api.delete('/users/me/document', {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { filePath },
   });
-
-  if (!response.ok) {
-    throw new Error('Error al eliminar el documento');
-  }
-
-  return response.json();
+  return response.data;
 };
-
-

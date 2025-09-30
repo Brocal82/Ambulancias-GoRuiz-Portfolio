@@ -37,12 +37,11 @@ export const createTrip = async (tripData: TripData): Promise<Trip> => {
   }
 };
 
-// ✅ Obtener viajes por fecha
+// ✅ Obtener viajes por fecha (usa axiosInstance con baseURL = VITE_API_URL)
 export const getTripsByDate = async (date: string, token: string): Promise<Trip[]> => {
-  const response = await axios.get(`http://localhost:5000/api/trips/date/${date}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+  const response = await axiosInstance.get(`/trips/date/${date}`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
+

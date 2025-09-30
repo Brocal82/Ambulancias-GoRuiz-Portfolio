@@ -72,13 +72,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <img
               src={
                 user.profileImage
-                  ? `http://localhost:5000${user.profileImage}`
+                  ? `${import.meta.env.VITE_API_URL}${user.profileImage}`
                   : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
               }
               alt={t('layout.avatarAlt', { name: `${user.name} ${user.lastName}` }) as string}
               className="w-9 h-9 rounded-full ring-1 ring-slate-500 object-cover transition-transform hover:scale-105"
             />
           </Link>
+
         </div>
       )}
 
