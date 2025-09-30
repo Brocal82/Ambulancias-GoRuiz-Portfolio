@@ -1,229 +1,400 @@
-import { useState } from 'react';
-import type { Hospital } from '../../types/hospital';
-import { updateHospital } from '../../api/hospitals';
-import { useAuth } from '../../hooks/useAuth';
-import { toastT } from "../../utils/toast";
-import { useTranslation } from 'react-i18next';
+import type { Hospital } from "../../types/hospital";
+import { useEffect, useMemo, useRef, useState, useId } from "react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   hospital: Hospital;
-  allSpecialties: string[];
   onClose: () => void;
-  onUpdated: (updated: Hospital) => void;
+  onUpdated?: (updated: Hospital) => void;
+  onSave?: (updated: Hospital) => void;
+  allSpecialties?: string[];
 }
 
-const HospitalEditModal = ({ hospital, allSpecialties, onClose, onUpdated }: Props) => {
-  const { token } = useAuth();
+type StatusUnion = "open" | "closed";
+
+const toLocalStatus = (h: any): boolean | undefined => {
+  if (typeof h?.isOpen === "boolean") return h.isOpen;
+  if (typeof h?.status === "string") {
+    const v = h.status.toLowerCase();
+    if (v === "open") return true;
+    if (v === "closed") return false;
+  }
+  return undefined;
+};
+
+const fromLocalStatus = (
+  base: any,
+  isOpenBool: boolean | undefined
+): { isOpen?: boolean; status?: StatusUnion } => {
+  if (typeof base?.isOpen === "boolean") {
+    return typeof isOpenBool === "boolean" ? { isOpen: isOpenBool } : {};
+  }
+  if (typeof base?.status === "string") {
+    return typeof isOpenBool === "boolean"
+      ? { status: (isOpenBool ? "open" : "closed") as StatusUnion }
+      : {};
+  }
+  return typeof isOpenBool === "boolean" ? { isOpen: isOpenBool } : {};
+};
+
+const arraysEqualUnordered = (a: string[] = [], b: string[] = []) => {
+  if (a.length !== b.length) return false;
+  const setB = new Set(b);
+  for (const x of a) if (!setB.has(x)) return false;
+  return true;
+};
+
+const HospitalEditModal = ({
+  hospital,
+  onClose,
+  onUpdated,
+  onSave,
+  allSpecialties,
+}: Props) => {
   const { t } = useTranslation();
+  const dialogRef = useRef<HTMLDivElement>(null);
 
-  const [form, setForm] = useState({
-    name: hospital.name,
-    address: hospital.address,
-    phone: hospital.phone,
-    isOpen: hospital.isOpen,
-  });
+  const formUid = useId();
+  const nameId = `${formUid}-name`;
+  const addressId = `${formUid}-address`;
+  const phoneId = `${formUid}-phone`;
+  const specInputId = `${formUid}-spec-input`;
+  const statusGroupId = `${formUid}-status`;
 
-  const [specialties, setSpecialties] = useState([...hospital.specialties]);
-  const [newSpecialty, setNewSpecialty] = useState('');
+  const [name, setName] = useState(hospital.name ?? "");
+  const [address, setAddress] = useState(hospital.address ?? "");
+  const [phone, setPhone] = useState(hospital.phone ?? "");
+  const [specialties, setSpecialties] = useState<string[]>(
+    Array.isArray(hospital.specialties) ? hospital.specialties : []
+  );
+  const [specInput, setSpecInput] = useState("");
+  const [isOpenState, setIsOpenState] = useState<boolean | undefined>(
+    toLocalStatus(hospital)
+  );
+  const [touched, setTouched] = useState({ name: false, address: false });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleToggleStatus = () => {
-    setForm({ ...form, isOpen: !form.isOpen });
-  };
-
-  const handleAddSpecialty = () => {
-    const trimmed = newSpecialty.trim();
-    if (trimmed && !specialties.includes(trimmed)) {
-      setSpecialties((prev) => [...prev, trimmed]);
-      setNewSpecialty('');
+  const prevIdRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (hospital?._id && hospital._id !== prevIdRef.current) {
+      setName(hospital.name ?? "");
+      setAddress(hospital.address ?? "");
+      setPhone(hospital.phone ?? "");
+      setSpecialties(Array.isArray(hospital.specialties) ? hospital.specialties : []);
+      setIsOpenState(toLocalStatus(hospital));
+      setSpecInput("");
+      setTouched({ name: false, address: false });
+      prevIdRef.current = hospital._id;
     }
+  }, [hospital?._id, hospital]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") handleSave();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onClose, name, address, phone, specialties, isOpenState]);
+
+  const onBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onClose();
   };
 
-  const handleRemoveSpecialty = (spec: string) => {
-    setSpecialties((prev) => prev.filter((s) => s !== spec));
+  // Especialidades (arriba a la derecha)
+  const addSpec = () => {
+    const v = specInput.trim();
+    if (!v) return;
+    if (!specialties.includes(v)) setSpecialties((prev) => [...prev, v]);
+    setSpecInput("");
+  };
+  const removeSpec = (s: string) => {
+    setSpecialties((prev) => prev.filter((x) => x !== s));
   };
 
-  const handleSubmit = async () => {
-    if (!token) return;
-    try {
-      const updated = await updateHospital(hospital._id, { ...form, specialties }, token);
-      onUpdated(updated);
-      toastT.success(["toasts.hospitals.updateSuccess"]);
-      onClose();
-    } catch (err) {
-      console.error(err);
-      toastT.error(["toasts.hospitals.updateError"]);
-    }
+  const canSave = useMemo(() => {
+    if (!name.trim() || !address.trim()) return false;
+    const baseEqual =
+      name === (hospital.name ?? "") &&
+      address === (hospital.address ?? "") &&
+      (phone ?? "") === (hospital.phone ?? "");
+    const specsEqual = arraysEqualUnordered(specialties, hospital.specialties ?? []);
+    const statusEqual = toLocalStatus(hospital) === isOpenState;
+    return !(baseEqual && specsEqual && statusEqual);
+  }, [name, address, phone, specialties, hospital, isOpenState]);
+
+  const handleSave = () => {
+    if (!canSave) return;
+    const statusPatch = fromLocalStatus(hospital, isOpenState);
+    const updated: Hospital = {
+      ...hospital,
+      name: name.trim(),
+      address: address.trim(),
+      phone: phone.trim(),
+      specialties,
+      ...statusPatch,
+    };
+    if (onUpdated) onUpdated(updated);
+    else if (onSave) onSave(updated);
   };
+
+  const footerBadge =
+    typeof isOpenState === "boolean" ? (
+      <span
+        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
+          isOpenState
+            ? "bg-green-50 text-green-700 ring-1 ring-green-200"
+            : "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
+        }`}
+      >
+        {isOpenState
+          ? t("pages.hospitals.status.open", "Abierto")
+          : t("pages.hospitals.status.closed", "Cerrado")}
+      </span>
+    ) : null;
 
   return (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-    <div className="relative w-full max-w-lg rounded-2xl bg-white p-5 md:p-6 ring-1 ring-slate-200 shadow-xl">
-      {/* Cerrar */}
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label={t('pages.hospitals.editModal.buttons.cancel') as string}
-        className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onMouseDown={onBackdropClick}
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${formUid}-title`}
+        className="w-full max-w-2xl rounded-2xl bg-white shadow-lg ring-1 ring-slate-200 animate-[fadeIn_120ms_ease-out] outline-none"
       >
-        ×
-      </button>
-
-      {/* Título */}
-      <h2 className="text-xl font-bold mb-4 pr-10">
-        {t('pages.hospitals.editModal.title')}
-      </h2>
-
-      {/* Campos principales */}
-      <div className="space-y-3">
-        <div>
-          <label htmlFor="hospital-name" className="block text-sm font-medium text-slate-700 mb-1">
-            {t('pages.hospitals.editModal.inputs.name')}
-          </label>
-          <input
-            id="hospital-name"
-            type="text"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            placeholder={t('pages.hospitals.editModal.inputs.name') as string}
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="hospital-address" className="block text-sm font-medium text-slate-700 mb-1">
-            {t('pages.hospitals.editModal.inputs.address')}
-          </label>
-          <input
-            id="hospital-address"
-            type="text"
-            name="address"
-            value={form.address}
-            onChange={handleChange}
-            placeholder={t('pages.hospitals.editModal.inputs.address') as string}
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="hospital-phone" className="block text-sm font-medium text-slate-700 mb-1">
-            {t('pages.hospitals.editModal.inputs.phone')}
-          </label>
-          <input
-            id="hospital-phone"
-            type="text"
-            name="phone"
-            value={form.phone}
-            onChange={handleChange}
-            placeholder={t('pages.hospitals.editModal.inputs.phone') as string}
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-          />
-        </div>
-      </div>
-
-      {/* Especialidades */}
-      <div className="mt-5">
-        <h3 className="text-sm font-medium text-slate-800 mb-2">
-          {t('pages.hospitals.editModal.specialties.title')}
-        </h3>
-
-        {/* Chips actuales */}
-        <div className="mb-3 flex flex-wrap gap-2">
-          {specialties.length === 0 ? (
-            <span className="text-xs text-slate-500">
-              {t('pages.hospitals.editModal.specialties.empty')}
-            </span>
-          ) : (
-            specialties.map((spec) => (
-              <span
-                key={spec}
-                className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
-              >
-                {spec}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveSpecialty(spec)}
-                  className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-500 hover:bg-slate-200 hover:text-rose-600 focus:outline-none"
-                  title={t('pages.hospitals.editModal.specialties.remove') as string}
-                >
-                  ✕
-                </button>
-              </span>
-            ))
-          )}
-        </div>
-
-        {/* Añadir especialidad */}
-        <div className="flex items-stretch gap-2">
-          <div className="flex-1">
-            <label htmlFor="new-specialty" className="sr-only">
-              {t('pages.hospitals.editModal.specialties.newPlaceholder')}
-            </label>
-            <input
-              id="new-specialty"
-              list="specialty-options"
-              type="text"
-              value={newSpecialty}
-              onChange={(e) => setNewSpecialty(e.target.value)}
-              placeholder={t('pages.hospitals.editModal.specialties.newPlaceholder') as string}
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            />
-            <datalist id="specialty-options">
-              {allSpecialties.map((spec) => (
-                <option key={spec} value={spec} />
-              ))}
-            </datalist>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 ring-1 ring-blue-100">
+              <span aria-hidden>🏥</span>
+            </div>
+            <h2 id={`${formUid}-title`} className="text-lg md:text-xl font-bold text-slate-900">
+              {t("pages.hospitals.editModal.title", "Editar hospital")}
+            </h2>
           </div>
-
           <button
-            type="button"
-            onClick={handleAddSpecialty}
-            className="rounded-md bg-blue-600 px-4 py-2 text-white font-medium shadow-sm hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            title={t('pages.hospitals.editModal.specialties.add') as string}
+            onClick={onClose}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label={t("common.close", "Cerrar")}
           >
-            ➕
+            ✕
           </button>
         </div>
-      </div>
 
-      {/* Estado abierto/cerrado */}
-      <div className="mt-5">
-        <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={form.isOpen}
-            onChange={handleToggleStatus}
-            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-200"
-          />
-          {t('pages.hospitals.editModal.status.openCheckbox')}
-        </label>
-      </div>
+        {/* Body (grid). Especialidades ARRIBA a la derecha */}
+        <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSave();
+            }}
+            aria-describedby={`${formUid}-help`}
+            className="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm text-slate-700"
+          >
+            {/* Columna izquierda: nombre, dirección, teléfono */}
+            <div className="space-y-4">
+              <div>
+                <label htmlFor={nameId} className="block text-slate-600 text-xs uppercase tracking-wide mb-1">
+                  {t("pages.hospitals.form.name", "Nombre")}
+                </label>
+                <input
+                  id={nameId}
+                  name="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onBlur={() => setTouched((p) => ({ ...p, name: true }))}
+                  placeholder={t("pages.hospitals.form.namePh", "Hospital Universitario") as string}
+                  aria-invalid={Boolean(touched.name && !name.trim())}
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  required
+                />
+              </div>
 
-      {/* Acciones */}
-      <div className="mt-6 flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-md border px-4 py-2 text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
-        >
-          {t('pages.hospitals.editModal.buttons.cancel')}
-        </button>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          className="rounded-md bg-green-600 px-4 py-2 text-white font-semibold shadow-sm hover:bg-green-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-        >
-          {t('pages.hospitals.editModal.buttons.save')}
-        </button>
+              <div>
+                <label htmlFor={addressId} className="block text-slate-600 text-xs uppercase tracking-wide mb-1">
+                  {t("pages.hospitals.detailsModal.address", "Dirección")}
+                </label>
+                <input
+                  id={addressId}
+                  name="address"
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  onBlur={() => setTouched((p) => ({ ...p, address: true }))}
+                  placeholder={t("pages.hospitals.form.addressPh", "Ej: Friedrichstr. 123, Berlin") as string}
+                  aria-invalid={Boolean(touched.address && !address.trim())}
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor={phoneId} className="block text-slate-600 text-xs uppercase tracking-wide mb-1">
+                  {t("pages.hospitals.detailsModal.phone", "Teléfono")}
+                </label>
+                <input
+                  id={phoneId}
+                  name="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder={t("pages.hospitals.form.phonePh", "+49 ...") as string}
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  inputMode="tel"
+                />
+              </div>
+            </div>
+
+            {/* Columna derecha: ESPECIALIDADES (arriba) */}
+            <div className="space-y-4">
+              <div>
+                <label htmlFor={specInputId} className="block text-slate-600 text-xs uppercase tracking-wide mb-1">
+                  {t("pages.hospitals.detailsModal.specialties", "Especialidades")}
+                </label>
+
+                {allSpecialties && allSpecialties.length > 0 && (
+                  <datalist id={`${formUid}-specs-list`}>
+                    {allSpecialties.map((s) => (
+                      <option key={s} value={s} />
+                    ))}
+                  </datalist>
+                )}
+
+                <div className="flex gap-2">
+                  <input
+                    id={specInputId}
+                    name="specialty"
+                    type="text"
+                    value={specInput}
+                    onChange={(e) => setSpecInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addSpec();
+                      }
+                      if (e.key === "Backspace" && !specInput && specialties.length > 0) {
+                        removeSpec(specialties[specialties.length - 1]);
+                      }
+                    }}
+                    list={allSpecialties && allSpecialties.length > 0 ? `${formUid}-specs-list` : undefined}
+                    placeholder={t("pages.hospitals.editModal.addSpecialty", "Añadir especialidad y Enter") as string}
+                    className="flex-1 rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={addSpec}
+                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm hover:bg-slate-50"
+                    aria-label={t("pages.hospitals.editModal.addSpecialtyBtn", "Añadir especialidad")}
+                    title={t("pages.hospitals.editModal.addSpecialtyBtn", "Añadir especialidad") as string}
+                  >
+                    {t("common.add", "Añadir")}
+                  </button>
+                </div>
+
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {specialties.map((spec) => (
+                    <span
+                      key={spec}
+                      className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200"
+                    >
+                      {spec}
+                      <button
+                        type="button"
+                        onClick={() => removeSpec(spec)}
+                        className="rounded-full px-1 text-slate-500 hover:bg-slate-200"
+                        aria-label={t("common.remove", "Quitar")}
+                        title={t("common.remove", "Quitar") as string}
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                  {specialties.length === 0 && (
+                    <span className="text-xs text-slate-500">
+                      {t("pages.hospitals.editModal.noSpecialties", "Sin especialidades")}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* (Hemos movido los ticks de estado al FOOTER) */}
+            </div>
+
+            {/* Acciones (siguen dentro del form, arriba del footer) */}
+            <div id={`${formUid}-help`} className="sr-only">
+              {t("pages.hospitals.editModal.help", "Pulsa Guardar para aplicar cambios. Ctrl/Cmd+Enter también guarda.")}
+            </div>
+            <div className="md:col-span-2 flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 shadow-sm hover:bg-slate-50"
+              >
+                {t("common.cancel", "Cancelar")}
+              </button>
+              <button
+                type="submit"
+                disabled={!canSave}
+                className={`inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-white shadow ${
+                  canSave
+                    ? "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    : "bg-slate-300 cursor-not-allowed"
+                }`}
+              >
+                {t("common.save", "Guardar")}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Footer: ticks a la IZQUIERDA, badge a la DERECHA */}
+        <div className="px-6 py-3 border-t border-slate-200 flex items-center justify-between">
+          {/* Ticks (Abierto/Cerrado) abajo-izquierda */}
+          <fieldset aria-labelledby={`${statusGroupId}-legend`}>
+            <legend
+              id={`${statusGroupId}-legend`}
+              className="sr-only"
+            >
+              {t("pages.hospitals.status.label", "Estado")}
+            </legend>
+            <div className="flex items-center gap-3">
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="status"
+                  value="open"
+                  checked={isOpenState === true}
+                  onChange={() => setIsOpenState(true)}
+                />
+                <span className="text-xs font-medium">
+                  {t("pages.hospitals.status.open", "Abierto")}
+                </span>
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="status"
+                  value="closed"
+                  checked={isOpenState === false}
+                  onChange={() => setIsOpenState(false)}
+                />
+                <span className="text-xs font-medium">
+                  {t("pages.hospitals.status.closed", "Cerrado")}
+                </span>
+              </label>
+            </div>
+          </fieldset>
+
+          {/* Badge abajo-derecha (igual que antes) */}
+          {footerBadge}
+        </div>
       </div>
     </div>
-  </div>
-);
-
+  );
 };
 
 export default HospitalEditModal;
