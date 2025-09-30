@@ -17,9 +17,12 @@ const WorkerVacationsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
-  const [modalInitialStartDate, setModalInitialStartDate] = useState<Date>(new Date());
-  const [modalInitialEndDate, setModalInitialEndDate] = useState<Date>(new Date());
+
+  // ⚠️ Solo mantenemos el estado que realmente se usa para el modal.
+  // Quitamos currentRequestId (no se utilizaba) y los setters no usados.
+  const [modalInitialStartDate] = useState<Date>(new Date());
+  const [modalInitialEndDate] = useState<Date>(new Date());
+
   const [showForm, setShowForm] = useState(false);
   const [formMessage, setFormMessage] = useState<string | null>(null);
 
@@ -32,11 +35,7 @@ const WorkerVacationsPage = () => {
       setError('');
 
       // Mostrar formulario si no hay solicitudes
-      if (data.length === 0) {
-        setShowForm(true);
-      } else {
-        setShowForm(false);
-      }
+      setShowForm(data.length === 0);
     } catch {
       const msgKey = 'toasts.vacations.worker.loadError';
       setError(t(msgKey));
@@ -54,14 +53,11 @@ const WorkerVacationsPage = () => {
   const handleRespondAlternative = async (id: string, accept: boolean) => {
     if (!token) return;
     try {
-      await toastT.promise(
-        respondToAlternativeDate(token, id, { accept }),
-        {
-          pending: ['toasts.vacations.worker.respondPending'],
-          success: ['toasts.vacations.worker.respondSuccess'],
-          error: ['toasts.vacations.worker.error'],
-        }
-      );
+      await toastT.promise(respondToAlternativeDate(token, id, { accept }), {
+        pending: ['toasts.vacations.worker.respondPending'],
+        success: ['toasts.vacations.worker.respondSuccess'],
+        error: ['toasts.vacations.worker.error'],
+      });
       fetchRequests();
     } catch {
       // el error ya se muestra por toast
