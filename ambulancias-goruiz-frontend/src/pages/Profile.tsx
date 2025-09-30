@@ -6,6 +6,7 @@ import { getUserById, updateUserProfile, deleteUserDocument, deleteUser } from '
 import { getPscheinStatus } from '../utils/pscheinUtils';
 import type { User, AmbulanceRole } from '../types/user';
 import { useTranslation } from 'react-i18next';
+import { buildImageUrl } from '../utils/apiOrigins';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const API_ORIGIN = API_BASE.replace(/\/api\/?$/, '');
@@ -225,9 +226,10 @@ const Profile = ({ userId }: ProfileProps) => {
                 src={
                   previewImage
                     ? previewImage
-                    : formData.profileImage?.startsWith('/uploads/')
-                      ? `${API_ORIGIN}${formData.profileImage}`
-                      : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
+                    : formData.profileImage
+  ? buildImageUrl(formData.profileImage)
+  : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
+
                                     }
                 alt={t('pages.profile.image.alt')}
                 className="w-20 h-20 rounded-full object-cover ring-1 ring-slate-200 bg-white shadow-sm group-hover:opacity-90 transition"
@@ -459,7 +461,7 @@ const Profile = ({ userId }: ProfileProps) => {
                   <div className="truncate">
                     {docUrl.split('/').pop()}
                     <a
-                      href={`${API_ORIGIN}${docUrl}`}
+                      href={buildImageUrl(docUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 underline ml-2"
