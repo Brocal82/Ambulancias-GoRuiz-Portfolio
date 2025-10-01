@@ -24,60 +24,92 @@ const WorkerPraemienHistory = ({ userId }: Props) => {
       .finally(() => setLoading(false));
   }, [token, userId]);
 
-  if (loading) return <p className="p-4 text-center">{t('pages.praemien.history.loading')}</p>;
-  if (history.length === 0)
+  if (loading) {
     return (
-      <p className="p-4 text-center text-gray-500">
-        {t('pages.praemien.history.empty')}
+      <p className="p-3 text-center text-sm text-slate-600">
+        {t("pages.praemien.history.loading")}
       </p>
     );
+  }
+
+  if (history.length === 0) {
+    return (
+      <p className="p-3 text-center text-sm text-slate-500">
+        {t("pages.praemien.history.empty")}
+      </p>
+    );
+  }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 bg-white rounded shadow mt-6">
-      <h2 className="text-xl font-semibold mb-4">
-        {t('pages.praemien.history.title')}
+    <div className="max-w-4xl mx-auto mt-6 rounded-lg bg-white ring-1 ring-slate-200 p-3 md:p-4 shadow-sm">
+      <h2 className="text-base md:text-lg font-bold text-slate-900 mb-3">
+        {t("pages.praemien.history.title")}
       </h2>
-      <table className="table-auto border-collapse border border-gray-300 w-full text-center">
-        <thead className="bg-blue-100 sticky top-0">
-          <tr>
-            <th className="border border-gray-300 px-4 py-2">
-              {t('pages.praemien.history.table.year')}
-            </th>
-            <th className="border border-gray-300 px-4 py-2">
-              {t('pages.praemien.history.table.month')}
-            </th>
-            <th className="border border-gray-300 px-4 py-2">
-              {t('pages.praemien.history.table.avgPatients')}
-            </th>
-            <th className="border border-gray-300 px-4 py-2">
-              {t('pages.praemien.history.table.level')}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {history.map(({ year, month, averagePatients }) => {
-            // month es 1..12 -> para Date es 0..11
-            const monthName = monthLabel(year, month - 1);
 
-            let premieLevel = t('pages.praemien.levels.none');
-            if (averagePatients >= 10) premieLevel = t('pages.praemien.levels.10');
-            else if (averagePatients >= 9) premieLevel = t('pages.praemien.levels.9');
-            else if (averagePatients >= 8) premieLevel = t('pages.praemien.levels.8');
-            else if (averagePatients >= 7) premieLevel = t('pages.praemien.levels.7');
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm text-center">
+          <thead>
+            <tr className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-600">
+              <th className="px-3 py-2 border-b border-slate-200">
+                {t("pages.praemien.history.table.year")}
+              </th>
+              <th className="px-3 py-2 border-b border-slate-200">
+                {t("pages.praemien.history.table.month")}
+              </th>
+              <th className="px-3 py-2 border-b border-slate-200">
+                {t("pages.praemien.history.table.avgPatients")}
+              </th>
+              <th className="px-3 py-2 border-b border-slate-200">
+                {t("pages.praemien.history.table.level")}
+              </th>
+            </tr>
+          </thead>
 
-            const avgRounded = (Math.round(averagePatients * 2) / 2).toFixed(1);
+          <tbody className="divide-y divide-slate-100">
+            {history.map(({ year, month, averagePatients }) => {
+              // month es 1..12 -> Date usa 0..11
+              const monthName = monthLabel(year, month - 1);
 
-            return (
-              <tr key={`${year}-${month}`} className="hover:bg-blue-50">
-                <td className="border border-gray-300 px-4 py-2">{year}</td>
-                <td className="border border-gray-300 px-4 py-2">{monthName}</td>
-                <td className="border border-gray-300 px-4 py-2 font-semibold">{avgRounded}</td>
-                <td className="border border-gray-300 px-4 py-2">{premieLevel}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+              let premieLevel = t("pages.praemien.levels.none");
+              let levelClass =
+                "bg-slate-50 text-slate-700 ring-1 ring-slate-200";
+              if (averagePatients >= 10) {
+                premieLevel = t("pages.praemien.levels.10");
+                levelClass = "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
+              } else if (averagePatients >= 9) {
+                premieLevel = t("pages.praemien.levels.9");
+                levelClass = "bg-violet-50 text-violet-700 ring-1 ring-violet-200";
+              } else if (averagePatients >= 8) {
+                premieLevel = t("pages.praemien.levels.8");
+                levelClass = "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200";
+              } else if (averagePatients >= 7) {
+                premieLevel = t("pages.praemien.levels.7");
+                levelClass = "bg-blue-50 text-blue-700 ring-1 ring-blue-200";
+              }
+
+              const avgRounded = (Math.round(averagePatients * 2) / 2).toFixed(1);
+
+              return (
+                <tr
+                  key={`${year}-${month}`}
+                  className="hover:bg-slate-50 transition-colors"
+                >
+                  <td className="px-3 py-2">{year}</td>
+                  <td className="px-3 py-2">{monthName}</td>
+                  <td className="px-3 py-2 font-semibold text-slate-900">
+                    {avgRounded}
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ${levelClass}`}>
+                      {premieLevel}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
