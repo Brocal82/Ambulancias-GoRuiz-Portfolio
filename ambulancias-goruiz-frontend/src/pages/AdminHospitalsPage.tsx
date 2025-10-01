@@ -477,18 +477,43 @@ return (
 
     {/* Modales */}
     {editingHospital && (
-      <HospitalEditModal
-        hospital={editingHospital}
-        allSpecialties={specialties}
-        onClose={() => setEditingHospital(null)}
-        onUpdated={(updated) => {
-          setHospitals((prev) =>
-            prev.map((h) => (h._id === updated._id ? updated : h))
-          );
-          setEditingHospital(null);
-        }}
-      />
-    )}
+  <HospitalEditModal
+    hospital={editingHospital}
+    allSpecialties={specialties}
+    onClose={() => setEditingHospital(null)}
+    onUpdated={async (updated) => {
+      if (!token) return;
+
+      try {
+        // Construimos un payload seguro (solo campos editables)
+        const payload: Partial<Hospital> = {
+          name: updated.name?.trim(),
+          address: updated.address?.trim(),
+          phone: (updated.phone ?? "").trim(),
+          specialties: Array.isArray(updated.specialties) ? updated.specialties : [],
+          // si tu modelo usa isOpen (boolean), lo pasamos cuando venga
+          ...(typeof (updated as any).isOpen === 'boolean' ? { isOpen: (updated as any).isOpen } : {}),
+          // si tu modelo usa status ("open"/"closed"), lo pasamos cuando venga
+          ...(typeof (updated as any).status === 'string' ? { status: (updated as any).status } : {}),
+        };
+
+        // Llamada real al backend
+        const saved = await updateHospital(updated._id, payload, token);
+
+        // Actualiza estado con lo que devuelve el backend
+        setHospitals((prev) => prev.map((h) => (h._id === saved._id ? saved : h)));
+
+        // Cierra modal y avisa
+        setEditingHospital(null);
+        toastT.success(['toasts.hospitals.updateOk']);
+      } catch (error) {
+        console.error('❌ Error al actualizar hospital:', error);
+        toastT.error(['toasts.hospitals.updateErr']);
+      }
+    }}
+  />
+)}
+
 
     {selectedHospital && (
       <HospitalDetailsModal
