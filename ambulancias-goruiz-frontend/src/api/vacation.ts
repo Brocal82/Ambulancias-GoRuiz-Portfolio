@@ -1,6 +1,7 @@
 //frontend/src/api/vacation.ts
 import axiosInstance from './axios';
 import type { IVacationRequest } from '../types/vacationRequest';
+import api from './axios';
 
 interface VacationRequestPayload {
   startDate: string;
@@ -98,4 +99,60 @@ export const getVacationPendingCount = async (
     throw new Error(message);
   }
 };
+
+// Respuesta del endpoint de disponibilidad mensual
+export interface VacationAvailabilityDay {
+  day: number;
+  approvedCount: number;
+  pendingCount: number;
+  remaining: number;
+  state: 'green' | 'yellow' | 'red';
+}
+export interface VacationAvailabilityResponse {
+  year: number;
+  month: number; // 1..12
+  maxPerDay: number;
+  days: VacationAvailabilityDay[];
+}
+
+// Config mensual (admin): capacidad y bloqueos (blackouts)
+export interface VacationMonthConfig {
+  monthKey: string; // "YYYY-MM"
+  maxPerDay: number;
+  blackouts: { startDate: string; endDate: string }[];
+}
+
+/**
+ * Obtiene disponibilidad mensual (colores + contadores por día)
+ * GET /vacations/availability?year=YYYY&month=MM
+ */
+export async function getVacationAvailability(params: {
+  year: number;
+  month: number; // 1..12
+}) {
+  const { data } = await api.get<VacationAvailabilityResponse>('/vacations/availability', {
+    params,
+  });
+  return data;
+}
+
+/**
+ * (ADMIN) Obtiene la configuración mensual (capacidad + blackouts)
+ * GET /vacations/month-config?monthKey=YYYY-MM
+ */
+export async function getVacationMonthConfig(monthKey: string) {
+  const { data } = await api.get<VacationMonthConfig>('/vacations/month-config', {
+    params: { monthKey },
+  });
+  return data;
+}
+
+/**
+ * (ADMIN) Crea/actualiza la configuración mensual
+ * POST /vacations/month-config
+ */
+export async function upsertVacationMonthConfig(payload: VacationMonthConfig) {
+  const { data } = await api.post<VacationMonthConfig>('/vacations/month-config', payload);
+  return data;
+}
 
