@@ -30,7 +30,6 @@ type MonthAvailabilitySummary = {
 const AdminVacationMonthGrid: React.FC<Props> = ({
   requests,
   year = new Date().getFullYear(),
-  onMonthClick,
   onYearChange,
   onMonthOpen,
 }) => {
