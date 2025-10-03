@@ -244,9 +244,9 @@ export const getAvailability = async (req: Request, res: Response): Promise<void
     const maxPerDay = cfg?.maxPerDay ?? DEFAULT_MAX_PER_DAY;
     const blackouts = cfg?.blackouts ?? [];
 
-    // Solicitudes que SOLAPAN el mes: startDate <= finMes AND endDate >= iniMes
+    // Trae solicitudes que solapan el mes y que afectan a la disponibilidad visual
     const requests = await VacationRequest.find({
-      status: { $in: ['pending', 'accepted'] },
+      status: { $in: ['pending', 'accepted'] }, // 'option_sent' la puedes añadir si la consideras "pendiente"
       startDate: { $lte: monthEnd },
       endDate: { $gte: monthStart },
     })
@@ -258,7 +258,7 @@ export const getAvailability = async (req: Request, res: Response): Promise<void
       day: number;
       approvedCount: number;
       pendingCount: number;
-      remaining: number;
+      remaining: number; // restante en base a ACEPTADAS (nuevo significado)
       state: 'green' | 'yellow' | 'red';
     }[] = [];
 
@@ -270,7 +270,7 @@ export const getAvailability = async (req: Request, res: Response): Promise<void
       if (isBlackout) {
         days.push({
           day: d,
-          approvedCount: maxPerDay, // enmascaramos lleno
+          approvedCount: maxPerDay,
           pendingCount: 0,
           remaining: 0,
           state: 'red',
@@ -278,7 +278,7 @@ export const getAvailability = async (req: Request, res: Response): Promise<void
         continue;
       }
 
-      // Conteo real por día
+      // Conteos por día
       let approvedCount = 0;
       let pendingCount = 0;
 
@@ -289,13 +289,14 @@ export const getAvailability = async (req: Request, res: Response): Promise<void
         }
       }
 
-      const used = approvedCount + pendingCount;
-      const remaining = Math.max(0, maxPerDay - used);
+      // 🔴 NUEVO: remaining basado SOLO en aceptadas
+      const remaining = Math.max(0, maxPerDay - approvedCount);
 
-      let state: 'green' | 'yellow' | 'red';
-      if (remaining === 0) state = 'red';
-      else if (pendingCount > 0) state = 'yellow';
-      else state = 'green';
+      // 🔴 NUEVAS reglas de color
+      const state: 'green' | 'yellow' | 'red' =
+        approvedCount >= maxPerDay ? 'red' :
+        pendingCount > 0           ? 'yellow' :
+                                     'green';
 
       days.push({ day: d, approvedCount, pendingCount, remaining, state });
     }
@@ -306,6 +307,7 @@ export const getAvailability = async (req: Request, res: Response): Promise<void
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
+
 
 // ======================================================
 // NUEVO: Config mensual (admin)
