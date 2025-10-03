@@ -20,6 +20,15 @@ const AdminVacationRequests = () => {
   const [requests, setRequests] = useState<IVacationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // ====== Estado del grid de meses (con año navegable) ======
+  const [gridYear, setGridYear] = useState<number>(new Date().getFullYear());
+
+  // ====== Estado del modal del mes (abrir con mes + año correctos) ======
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null); // 0..11
+  const [selectedYear, setSelectedYear] = useState<number>(gridYear);
+
+  // ====== Estado para AlternativeDateModal existente ======
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
   const [modalInitialStartDate, setModalInitialStartDate] = useState<Date>(new Date());
@@ -27,7 +36,6 @@ const AdminVacationRequests = () => {
   const [cancelingRequestId, setCancelingRequestId] = useState<string | null>(null);
   const [cancelMessage, setCancelMessage] = useState('');
   const [isSendingCancel, setIsSendingCancel] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
   const locale =
     i18n.language === 'de' ? 'de-DE' : i18n.language === 'en' ? 'en-US' : 'es-ES';
@@ -55,7 +63,7 @@ const AdminVacationRequests = () => {
 
   type VacationStatus = 'pending' | 'accepted' | 'cancelled' | 'option_sent';
 
-  // Mostrar solo las solicitudes que requieren acción (pendientes o esperando confirmación del trabajador)
+  // Mostrar solo las solicitudes que requieren acción (pendientes u opción enviada)
   const actionableRequests = requests.filter(
     (r) => r.status === 'pending' || r.status === 'option_sent'
   );
@@ -164,18 +172,23 @@ const AdminVacationRequests = () => {
             {t('pages.vacations.adminPage.title')}
           </h2>
 
-          {/* Grid de meses */}
+          {/* Grid de meses con navegación de año */}
           <AdminVacationMonthGrid
             requests={requests}
-            onMonthClick={(m) => setSelectedMonth(m)}
+            year={gridYear}
+            onYearChange={(y) => setGridYear(y)}
+            onMonthOpen={(monthIdx, y) => {
+              setSelectedMonth(monthIdx);
+              setSelectedYear(y);           // <-- año del grid seleccionado
+            }}
           />
 
-          {/* Modal del mes */}
+          {/* Modal del mes (abre con mes + AÑO correctos) */}
           <AdminVacationMonthModal
             isOpen={selectedMonth !== null}
             monthIndex={selectedMonth}
             requests={requests}
-            year={new Date().getFullYear()}
+            year={selectedYear}             // <-- ¡clave!
             onClose={() => setSelectedMonth(null)}
             onActionDone={fetchRequests}
           />
@@ -195,7 +208,7 @@ const AdminVacationRequests = () => {
             </p>
           )}
 
-          {/* Tabla */}
+          {/* Tabla de solicitudes accionables */}
           {!loading && !error && actionableRequests.length > 0 && (
             <table className="w-full table-auto border-collapse text-sm shadow-sm ring-1 ring-slate-200 rounded-xl overflow-hidden mt-4 text-center">
               <thead className="bg-slate-100">
