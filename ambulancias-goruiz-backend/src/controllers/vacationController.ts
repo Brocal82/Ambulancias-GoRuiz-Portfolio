@@ -1,8 +1,66 @@
-//backend/src/controllers/vacationController.ts
 import { Request, Response } from 'express';
 import type { IVacationRequestModel } from '../models/vacationRequest';
 import VacationRequest from '../models/vacationRequest';
 import mongoose from 'mongoose';
+
+// ======================================================
+// Config mensual embebida (NO se crea archivo nuevo)
+// ======================================================
+import {
+  Schema as MongooseSchema,
+  model as mongooseModel,
+  models as mongooseModels,
+} from 'mongoose';
+
+interface IVacationMonthConfig {
+  monthKey: string; // "YYYY-MM"
+  maxPerDay: number; // capacidad del mes
+  blackouts: { startDate: Date; endDate: Date }[]; // rangos bloqueados por admin
+}
+
+// Evitar recompilar el modelo en hot-reload
+const VacationMonthConfig =
+  (mongooseModels.VacationMonthConfig as mongoose.Model<IVacationMonthConfig>) ||
+  mongooseModel<IVacationMonthConfig>(
+    'VacationMonthConfig',
+    new MongooseSchema<IVacationMonthConfig>(
+      {
+        monthKey: { type: String, required: true, unique: true, index: true },
+        maxPerDay: { type: Number, required: true, default: 2 },
+        blackouts: [
+          {
+            startDate: { type: Date, required: true },
+            endDate: { type: Date, required: true },
+          },
+        ],
+      },
+      { timestamps: true }
+    )
+  );
+
+const DEFAULT_MAX_PER_DAY = Number(process.env.MAX_VACATIONS_PER_DAY ?? 2);
+
+function toMonthKey(year: number, month1to12: number) {
+  return `${year}-${String(month1to12).padStart(2, '0')}`;
+}
+function dayStart(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+function dayEnd(d: Date) {
+  const x = new Date(d);
+  x.setHours(23, 59, 59, 999);
+  return x;
+}
+function isInRange(d: Date, start: Date, end: Date) {
+  const t = d.getTime();
+  return t >= dayStart(start).getTime() && t <= dayEnd(end).getTime();
+}
+
+// ======================================================
+// Controladores existentes
+// ======================================================
 
 // Obtener todas las solicitudes (solo admin)
 export const getVacationRequests = async (req: Request, res: Response): Promise<void> => {
@@ -161,4 +219,152 @@ export const getVacationPendingCount = async (req: Request, res: Response): Prom
   }
 };
 
+// ======================================================
+// NUEVO: Disponibilidad mensual (enmascara blackouts como capacidad)
+// ======================================================
 
+// GET /vacations/availability?year=YYYY&month=MM
+// Respuesta: { year, month, maxPerDay, days:[{ day, approvedCount, pendingCount, remaining, state }] }
+// state: "green" | "yellow" | "red"
+export const getAvailability = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const year = Number(req.query.year);
+    const month = Number(req.query.month); // 1..12
+
+    if (!year || !month || month < 1 || month > 12) {
+      res.status(400).json({ message: 'Parámetros inválidos: year y month (1..12) son requeridos' });
+      return;
+    }
+
+    const monthKey = toMonthKey(year, month);
+    const monthStart = dayStart(new Date(year, month - 1, 1));
+    const monthEnd = dayEnd(new Date(year, month, 0));
+    const cfg = await VacationMonthConfig.findOne({ monthKey }).lean();
+
+    const maxPerDay = cfg?.maxPerDay ?? DEFAULT_MAX_PER_DAY;
+    const blackouts = cfg?.blackouts ?? [];
+
+    // Solicitudes que SOLAPAN el mes: startDate <= finMes AND endDate >= iniMes
+    const requests = await VacationRequest.find({
+      status: { $in: ['pending', 'accepted'] },
+      startDate: { $lte: monthEnd },
+      endDate: { $gte: monthStart },
+    })
+      .select('startDate endDate status user')
+      .lean();
+
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const days: {
+      day: number;
+      approvedCount: number;
+      pendingCount: number;
+      remaining: number;
+      state: 'green' | 'yellow' | 'red';
+    }[] = [];
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const current = new Date(year, month - 1, d);
+
+      // Blackout → enmascarar como capacidad llena
+      const isBlackout = blackouts.some((r) => isInRange(current, r.startDate, r.endDate));
+      if (isBlackout) {
+        days.push({
+          day: d,
+          approvedCount: maxPerDay, // enmascaramos lleno
+          pendingCount: 0,
+          remaining: 0,
+          state: 'red',
+        });
+        continue;
+      }
+
+      // Conteo real por día
+      let approvedCount = 0;
+      let pendingCount = 0;
+
+      for (const r of requests) {
+        if (isInRange(current, r.startDate as Date, r.endDate as Date)) {
+          if (r.status === 'accepted') approvedCount += 1;
+          else if (r.status === 'pending') pendingCount += 1;
+        }
+      }
+
+      const used = approvedCount + pendingCount;
+      const remaining = Math.max(0, maxPerDay - used);
+
+      let state: 'green' | 'yellow' | 'red';
+      if (remaining === 0) state = 'red';
+      else if (pendingCount > 0) state = 'yellow';
+      else state = 'green';
+
+      days.push({ day: d, approvedCount, pendingCount, remaining, state });
+    }
+
+    res.status(200).json({ year, month, maxPerDay, days });
+  } catch (error) {
+    console.error('Error al calcular disponibilidad:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+// ======================================================
+// NUEVO: Config mensual (admin)
+// ======================================================
+
+// GET /vacations/month-config?monthKey=YYYY-MM
+export const getMonthConfig = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const monthKey = String(req.query.monthKey || '');
+    if (!monthKey || !/^\d{4}-\d{2}$/.test(monthKey)) {
+      res.status(400).json({ message: 'monthKey inválido. Formato "YYYY-MM".' });
+      return;
+    }
+    const cfg = await VacationMonthConfig.findOne({ monthKey }).lean();
+    res.status(200).json(
+      cfg ?? {
+        monthKey,
+        maxPerDay: DEFAULT_MAX_PER_DAY,
+        blackouts: [],
+      }
+    );
+  } catch (error) {
+    console.error('Error al obtener config mensual:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+// POST /vacations/month-config  { monthKey, maxPerDay, blackouts:[{startDate,endDate}] }
+export const upsertMonthConfig = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { monthKey, maxPerDay, blackouts } = req.body as {
+      monthKey: string;
+      maxPerDay?: number;
+      blackouts?: { startDate: string | Date; endDate: string | Date }[];
+    };
+
+    if (!monthKey || !/^\d{4}-\d{2}$/.test(monthKey)) {
+      res.status(400).json({ message: 'monthKey inválido. Formato "YYYY-MM".' });
+      return;
+    }
+
+    const payload: Partial<IVacationMonthConfig> = { monthKey };
+    if (typeof maxPerDay === 'number' && maxPerDay >= 0) payload.maxPerDay = maxPerDay;
+    if (Array.isArray(blackouts)) {
+      payload.blackouts = blackouts.map((r) => ({
+        startDate: new Date(r.startDate),
+        endDate: new Date(r.endDate),
+      }));
+    }
+
+    const updated = await VacationMonthConfig.findOneAndUpdate(
+      { monthKey },
+      payload,
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error('Error al guardar config mensual:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};

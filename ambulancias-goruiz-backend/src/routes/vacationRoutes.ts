@@ -7,11 +7,22 @@ import {
   respondToAlternativeDate,
   deleteVacationRequest,
   getVacationPendingCount,
+  // NUEVO
+  getAvailability,
+  getMonthConfig,
+  upsertMonthConfig,
 } from '../controllers/vacationController';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { authorizeRole } from '../middlewares/roleMiddleware';
 
 const router = Router();
+
+// --- NUEVO: Disponibilidad mensual (worker/admin) ---
+router.get('/availability', authenticateToken, getAvailability);
+
+// --- NUEVO: Config mensual (admin) ---
+router.get('/month-config', authenticateToken, authorizeRole('admin'), getMonthConfig);
+router.post('/month-config', authenticateToken, authorizeRole('admin'), upsertMonthConfig);
 
 // El trabajador crea una solicitud
 router.post('/', authenticateToken, createVacationRequest);
