@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { toastT } from "../../utils/toast";
 import { useTranslation } from 'react-i18next';
 import { monthLabel as fmtMonth } from '../../utils/intl';
+import { getVacationAvailability, type VacationAvailabilityResponse } from '../../api/vacation';
 
 type VacationStatus = 'pending' | 'accepted' | 'cancelled' | 'option_sent';
 
@@ -32,23 +33,74 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   const locale =
     i18n.language === 'de' ? 'de-DE' : i18n.language === 'en' ? 'en-US' : 'es-ES';
 
-  // filtros/orden
+  // ===== Disponibilidad (mini calendario) =====
+  type DayState = 'green' | 'yellow' | 'red';
+  const [availability, setAvailability] = useState<VacationAvailabilityResponse | null>(null);
+  const [availLoading, setAvailLoading] = useState(false);
+  const [availError, setAvailError] = useState<string | null>(null);
+
+  const weekdayHeaders = useMemo(() => {
+    const baseMonday = new Date(Date.UTC(2023, 0, 2)); // lunes
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(baseMonday);
+      d.setUTCDate(baseMonday.getUTCDate() + i);
+      return d.toLocaleDateString(locale, { weekday: 'short' });
+    });
+  }, [locale]);
+
+  const calendarCells = useMemo(() => {
+    if (monthIndex === null) return Array(42).fill(null);
+    const y = year;
+    const m0 = monthIndex;
+    const first = new Date(y, m0, 1);
+    const daysInMonth = new Date(y, m0 + 1, 0).getDate();
+    const jsFirstDow = first.getDay(); // 0 dom … 6 sab
+    const mondayBased = (jsFirstDow + 6) % 7; // lunes=0 … domingo=6
+
+    const leading = Array.from({ length: mondayBased }, () => null);
+    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+    const base = [...leading, ...days];
+    // rellenamos a 42 celdas siempre (6 semanas)
+    return base.concat(Array.from({ length: Math.max(0, 42 - base.length) }, () => null));
+  }, [monthIndex, year]);
+
+  useEffect(() => {
+    if (!isOpen || monthIndex === null) return;
+    const load = async () => {
+      try {
+        setAvailLoading(true);
+        setAvailError(null);
+        const data = await getVacationAvailability({ year, month: monthIndex + 1 });
+        setAvailability(data);
+      } catch {
+        setAvailError('load_error');
+      } finally {
+        setAvailLoading(false);
+      }
+    };
+    load();
+  }, [isOpen, monthIndex, year]);
+
+  const getDayState = (day: number | null): DayState | null => {
+    if (!availability || day === null) return null;
+    const rec = availability.days.find(d => d.day === day);
+    return rec ? rec.state : 'green';
+  };
+
+  // ========= Estado existente (compactado) =========
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<'' | VacationStatus>('');
   const [sortAsc, setSortAsc] = useState(true);
 
-  // cancelar con motivo
   const [cancelingRequestId, setCancelingRequestId] = useState<string | null>(null);
   const [cancelMessage, setCancelMessage] = useState('');
   const [isSendingCancel, setIsSendingCancel] = useState(false);
 
-  // opción alternativa
   const [isAltOpen, setIsAltOpen] = useState(false);
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
   const [altInitialStart, setAltInitialStart] = useState<Date>(new Date());
   const [altInitialEnd, setAltInitialEnd] = useState<Date>(new Date());
 
-  // a11y
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
     if (!isOpen) return;
@@ -58,13 +110,11 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isOpen, onClose]);
 
-  // etiqueta del mes
   const monthLabel = useMemo(() => {
     if (monthIndex === null) return '';
     return fmtMonth(year, monthIndex);
   }, [monthIndex, year]);
 
-  // requests del mes
   const monthRequests = useMemo(() => {
     if (monthIndex === null) return [];
     return filterRequestsByMonth(requests, monthIndex, year);
@@ -78,7 +128,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     return acc;
   }, [monthRequests]);
 
-  // aplicar filtros/orden
+  // aplicar filtros/orden (restaurado)
   const filtered = useMemo(() => {
     let items = monthRequests;
     if (searchText.trim()) {
@@ -97,12 +147,11 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     return items;
   }, [monthRequests, searchText, statusFilter, sortAsc]);
 
-  // helpers
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString(locale, { timeZone: 'Europe/Berlin' });
 
   const statusBadge = (status: VacationStatus) => {
-    const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium';
+    const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium';
     switch (status) {
       case 'accepted':
         return <span className={`${base} bg-green-100 text-green-700`}>{t('pages.vacations.monthModal.filters.accepted')}</span>;
@@ -115,7 +164,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     }
   };
 
-  // acciones
   const handleAccept = async (id: string) => {
     if (!token) return;
     try {
@@ -181,115 +229,178 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     }
   };
 
-  // devolver null tras hooks
   if (!isOpen || monthIndex === null) return null;
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:items-center">
+      <div className="fixed inset-0 z-50 flex items-start justify-center p-2 sm:p-4">
         <div className="fixed inset-0 bg-black/50" onClick={onClose} />
 
+        {/* Panel compacto con layout de columnas y scroll interno */}
         <div
-          className="relative z-10 w-full max-w-3xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200"
+          className="relative z-10 w-full max-w-2xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 flex flex-col max-h-[90vh]"
           role="dialog"
           aria-modal="true"
           aria-labelledby="vacation-month-modal-title"
         >
-          {/* Header */}
-          <div className="flex flex-col gap-2 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 id="vacation-month-modal-title" className="text-lg font-semibold text-slate-900">
-                {monthLabel} · {year}
-              </h3>
-              <p className="mt-0.5 text-sm text-slate-600">
-                {t('pages.vacations.monthModal.countLine', { count: monthCount })}
-              </p>
-            </div>
+          {/* Header compacto y sticky */}
+          <div className="sticky top-0 z-10 bg-white border-b border-slate-200 p-3">
+            <div className="flex items-start gap-2">
+              <div className="min-w-0">
+                <h3 id="vacation-month-modal-title" className="text-base font-semibold text-slate-900">
+                  {monthLabel} · {year}
+                </h3>
+                <p className="mt-0.5 text-xs text-slate-600">
+                  {t('pages.vacations.monthModal.countLine', { count: monthCount })}
+                </p>
+              </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setStatusFilter('')}
-                className={`rounded-full px-3 py-1 text-xs ring-1 ring-slate-300 ${statusFilter === ''
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-white text-slate-700 hover:bg-slate-50'
-                  } focus:outline-none focus:ring-4 focus:ring-blue-100`}
-                aria-label={t('pages.vacations.monthModal.filters.all')}
-              >
-                {t('pages.vacations.monthModal.filters.all')}
-                {monthCount > 0 ? ` (${monthCount})` : ''}
-              </button>
+              <div className="ml-auto flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('')}
+                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ring-slate-300 ${
+                    statusFilter === '' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-100`}
+                >
+                  {t('pages.vacations.monthModal.filters.all')}
+                  {monthCount > 0 ? ` (${monthCount})` : ''}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('pending')}
+                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${
+                    statusFilter === 'pending'
+                      ? 'bg-amber-500 text-white ring-amber-500'
+                      : 'bg-white text-amber-700 ring-amber-300 hover:bg-amber-50'
+                  } focus:outline-none focus:ring-2 focus:ring-amber-100`}
+                >
+                  {t('pages.vacations.monthModal.filters.pending')}
+                  {statusCounts.pending ? ` (${statusCounts.pending})` : ''}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('accepted')}
+                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${
+                    statusFilter === 'accepted'
+                      ? 'bg-emerald-600 text-white ring-emerald-600'
+                      : 'bg-white text-emerald-700 ring-emerald-300 hover:bg-emerald-50'
+                  } focus:outline-none focus:ring-2 focus:ring-emerald-100`}
+                >
+                  {t('pages.vacations.monthModal.filters.accepted')}
+                  {statusCounts.accepted ? ` (${statusCounts.accepted})` : ''}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('cancelled')}
+                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${
+                    statusFilter === 'cancelled'
+                      ? 'bg-rose-600 text-white ring-rose-600'
+                      : 'bg-white text-rose-700 ring-rose-300 hover:bg-rose-50'
+                  } focus:outline-none focus:ring-2 focus:ring-rose-100`}
+                >
+                  {t('pages.vacations.monthModal.filters.cancelled')}
+                  {statusCounts.cancelled ? ` (${statusCounts.cancelled})` : ''}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('option_sent')}
+                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${
+                    statusFilter === 'option_sent'
+                      ? 'bg-blue-600 text-white ring-blue-600'
+                      : 'bg-white text-blue-700 ring-blue-300 hover:bg-blue-50'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-100`}
+                >
+                  {t('pages.vacations.monthModal.filters.option_sent')}
+                  {statusCounts.option_sent ? ` (${statusCounts.option_sent})` : ''}
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setStatusFilter('pending')}
-                className={`rounded-full px-3 py-1 text-xs ring-1 ${statusFilter === 'pending'
-                    ? 'bg-amber-500 text-white ring-amber-500'
-                    : 'bg-white text-amber-700 ring-amber-300 hover:bg-amber-50'
-                  } focus:outline-none focus:ring-4 focus:ring-amber-100`}
-                aria-label={t('pages.vacations.monthModal.filters.pending')}
-              >
-                {t('pages.vacations.monthModal.filters.pending')}
-                {statusCounts.pending ? ` (${statusCounts.pending})` : ''}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStatusFilter('accepted')}
-                className={`rounded-full px-3 py-1 text-xs ring-1 ${statusFilter === 'accepted'
-                    ? 'bg-emerald-600 text-white ring-emerald-600'
-                    : 'bg-white text-emerald-700 ring-emerald-300 hover:bg-emerald-50'
-                  } focus:outline-none focus:ring-4 focus:ring-emerald-100`}
-                aria-label={t('pages.vacations.monthModal.filters.accepted')}
-              >
-                {t('pages.vacations.monthModal.filters.accepted')}
-                {statusCounts.accepted ? ` (${statusCounts.accepted})` : ''}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStatusFilter('cancelled')}
-                className={`rounded-full px-3 py-1 text-xs ring-1 ${statusFilter === 'cancelled'
-                    ? 'bg-rose-600 text-white ring-rose-600'
-                    : 'bg-white text-rose-700 ring-rose-300 hover:bg-rose-50'
-                  } focus:outline-none focus:ring-4 focus:ring-rose-100`}
-                aria-label={t('pages.vacations.monthModal.filters.cancelled')}
-              >
-                {t('pages.vacations.monthModal.filters.cancelled')}
-                {statusCounts.cancelled ? ` (${statusCounts.cancelled})` : ''}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStatusFilter('option_sent')}
-                className={`rounded-full px-3 py-1 text-xs ring-1 ${statusFilter === 'option_sent'
-                    ? 'bg-blue-600 text-white ring-blue-600'
-                    : 'bg-white text-blue-700 ring-blue-300 hover:bg-blue-50'
-                  } focus:outline-none focus:ring-4 focus:ring-blue-100`}
-                aria-label={t('pages.vacations.monthModal.filters.option_sent')}
-              >
-                {t('pages.vacations.monthModal.filters.option_sent')}
-                {statusCounts.option_sent ? ` (${statusCounts.option_sent})` : ''}
-              </button>
-
-              <button
-                ref={closeBtnRef}
-                aria-label={t('pages.vacations.monthModal.close')}
-                onClick={onClose}
-                className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-              >
-                ✕
-              </button>
+                <button
+                  ref={closeBtnRef}
+                  aria-label={t('pages.vacations.monthModal.close')}
+                  onClick={onClose}
+                  className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Filtros */}
-          <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex gap-2">
-              <div className="flex flex-col">
-                <label htmlFor="vacation-filter-user" className="sr-only">
-                  {t('pages.vacations.monthModal.filters.userPlaceholder')}
-                </label>
+          {/* Contenido scrollable y compacto */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-3">
+            {/* Calendario mini */}
+            <div className="rounded-xl ring-1 ring-slate-200 p-2">
+              <div className="mb-1 flex items-center gap-2 text-[10px]">
+                <span className="inline-flex items-center gap-1">
+                  <span className="inline-block h-2 w-2 rounded bg-green-500" />
+                  {t('common.available', 'Disponible')}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="inline-block h-2 w-2 rounded bg-yellow-400" />
+                  {t('common.requested', 'Solicitado')}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="inline-block h-2 w-2 rounded bg-red-500" />
+                  {t('common.full', 'Completo')}
+                </span>
+                {availability && (
+                  <span className="ml-auto text-slate-500">
+                    {t('pages.vacations.adminPage.capacity', { count: availability.maxPerDay })}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-7 text-center text-[10px] uppercase tracking-wide text-slate-500 mb-0.5">
+                {weekdayHeaders.map((w, i) => (
+                  <div key={i} className="py-0.5">{w}</div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-0.5">
+                {availLoading &&
+                  Array.from({ length: 42 }).map((_, i) => (
+                    <div key={`sk-${i}`} className="h-6 sm:h-7 md:h-8 rounded bg-slate-100 animate-pulse" />
+                  ))}
+
+                {!availLoading &&
+                  calendarCells.map((cell, idx) => {
+                    if (cell === null) {
+                      return <div key={`empty-${idx}`} className="h-6 sm:h-7 md:h-8 rounded bg-transparent" />;
+                    }
+                    const state = getDayState(cell);
+                    const color =
+                      state === 'red'
+                        ? 'bg-red-500 text-white'
+                        : state === 'yellow'
+                        ? 'bg-yellow-400 text-slate-900'
+                        : 'bg-green-500 text-white';
+                    return (
+                      <div
+                        key={`d-${cell}-${idx}`}
+                        className={[
+                          'h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none',
+                          color,
+                        ].join(' ')}
+                        title={`${cell}`}
+                        aria-label={`${cell}`}
+                      >
+                        {cell}
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {availError && (
+                <p className="mt-1 text-[10px] text-rose-600">
+                  {t('common.loadError', 'No se pudo cargar la disponibilidad.')}
+                </p>
+              )}
+            </div>
+
+            {/* Filtros compactos */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex gap-2">
                 <input
                   id="vacation-filter-user"
                   type="text"
@@ -297,20 +408,14 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                   onChange={(e) => setSearchText(e.target.value)}
                   placeholder={t('pages.vacations.monthModal.filters.userPlaceholder')}
                   aria-label={t('pages.vacations.monthModal.filters.userPlaceholder')}
-                  className="w-full sm:w-64 rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                  className="w-full sm:w-56 rounded-lg border border-slate-300 ring-1 ring-slate-200 px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-100"
                 />
-              </div>
-
-              <div className="flex flex-col">
-                <label htmlFor="vacation-filter-status" className="sr-only">
-                  {t('pages.vacations.monthModal.filters.statusLabel')}
-                </label>
                 <select
                   id="vacation-filter-status"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as any)}
                   aria-label={t('pages.vacations.monthModal.filters.statusLabel')}
-                  className="rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                  className="rounded-lg border border-slate-300 ring-1 ring-slate-200 px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">{t('pages.vacations.monthModal.filters.all')}</option>
                   <option value="pending">{t('pages.vacations.monthModal.filters.pending')}</option>
@@ -319,172 +424,167 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                   <option value="option_sent">{t('pages.vacations.monthModal.filters.option_sent')}</option>
                 </select>
               </div>
+
+              <button
+                onClick={() => setSortAsc((v) => !v)}
+                aria-label={t('pages.vacations.monthModal.filters.sortToggle', {
+                  dir: sortAsc ? t('pages.vacations.monthModal.filters.asc') : t('pages.vacations.monthModal.filters.desc')
+                })}
+                className="rounded-lg border border-slate-300 ring-1 ring-slate-200 px-2 py-1.5 text-xs hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              >
+                {t('pages.vacations.monthModal.filters.sortToggle', {
+                  dir: sortAsc ? t('pages.vacations.monthModal.filters.asc') : t('pages.vacations.monthModal.filters.desc')
+                })}
+              </button>
             </div>
 
-            <button
-              onClick={() => setSortAsc((v) => !v)}
-              aria-label={t('pages.vacations.monthModal.filters.sortToggle', {
-                dir: sortAsc ? t('pages.vacations.monthModal.filters.asc') : t('pages.vacations.monthModal.filters.desc')
-              })}
-              className="rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
-            >
-              {t('pages.vacations.monthModal.filters.sortToggle', {
-                dir: sortAsc ? t('pages.vacations.monthModal.filters.asc') : t('pages.vacations.monthModal.filters.desc')
-              })}
-            </button>
-          </div>
+            {/* Lista compacta */}
+            <div>
+              {filtered.length === 0 ? (
+                <p className="text-center text-xs text-slate-500">{t('pages.vacations.monthModal.empty')}</p>
+              ) : (
+                <ul className="space-y-2">
+                  {filtered.map((req) => (
+                    <li key={req._id} className="rounded-lg ring-1 ring-slate-200 p-2 hover:bg-slate-50 transition">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-medium text-slate-900 text-xs leading-snug">
+                            {req.user ? `${req.user.lastName}, ${req.user.name}` : '—'}
+                          </div>
 
-          {/* Lista */}
-          <div className="max-h-[70vh] overflow-y-auto p-4">
-            {filtered.length === 0 ? (
-              <p className="text-center text-sm text-slate-500">{t('pages.vacations.monthModal.empty')}</p>
-            ) : (
-              <ul className="space-y-3">
-                {filtered.map((req) => (
-                  <li key={req._id} className="rounded-lg ring-1 ring-slate-200 p-2 hover:bg-slate-50 transition">
-                    {/* Fila superior */}
-                    <div className="flex items-start justify-between gap-2">
-                      {/* Info trabajador + fechas */}
-                      <div className="min-w-0">
-                        <div className="font-medium text-slate-900 text-sm leading-snug">
-                          {req.user ? `${req.user.lastName}, ${req.user.name}` : '—'}
-                        </div>
+                          <div className="mt-0.5 text-[11px] leading-snug grid grid-cols-[auto,1fr] gap-x-2">
+                            <span className="font-medium text-slate-700">
+                              {t('pages.vacations.adminPage.badges.requested')}
+                            </span>
+                            <span className="text-slate-700">
+                              {fmtDate(req.startDate)} — {fmtDate(req.endDate)}
+                            </span>
 
-                        <div className="mt-0.5 text-xs leading-snug grid grid-cols-[auto,1fr] gap-x-2">
-                          <span className="font-medium text-slate-700">
-                            {t('pages.vacations.adminPage.badges.requested')}
-                          </span>
-                          <span className="text-slate-700">
-                            {fmtDate(req.startDate)} — {fmtDate(req.endDate)}
-                          </span>
+                            {req.adminOptionStartDate && req.adminOptionEndDate && (
+                              <>
+                                <span className="font-medium text-blue-700">
+                                  {t('pages.vacations.adminPage.badges.proposal')}
+                                </span>
+                                <span className="text-blue-700">
+                                  {fmtDate(req.adminOptionStartDate)} — {fmtDate(req.adminOptionEndDate)}
+                                </span>
+                              </>
+                            )}
+                          </div>
 
-                          {req.adminOptionStartDate && req.adminOptionEndDate && (
-                            <>
-                              <span className="font-medium text-blue-700">
-                                {t('pages.vacations.adminPage.badges.proposal')}
-                              </span>
-                              <span className="text-blue-700">
-                                {fmtDate(req.adminOptionStartDate)} — {fmtDate(req.adminOptionEndDate)}
-                              </span>
-                            </>
+                          {req.adminNote && (
+                            <p className="mt-1 text-[11px] leading-snug text-slate-600">
+                              <span className="font-medium">{t('pages.vacations.adminPage.badges.note')}</span>{' '}
+                              {req.adminNote}
+                            </p>
                           )}
                         </div>
 
-                        {req.adminNote && (
-                          <p className="mt-1 text-xs leading-snug text-slate-600">
-                            <span className="font-medium">{t('pages.vacations.adminPage.badges.note')}</span>{' '}
-                            {req.adminNote}
-                          </p>
-                        )}
+                        <div className="shrink-0">{statusBadge(req.status)}</div>
                       </div>
 
-                      {/* Status en la esquina superior derecha */}
-                      <div className="shrink-0">{statusBadge(req.status)}</div>
-                    </div>
-
-                    {/* Acciones + papelera abajo */}
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      {cancelingRequestId === req._id ? (
-                        <div className="w-full rounded-lg ring-1 ring-slate-200 p-2 bg-white">
-                          <textarea
-                            className="w-full resize-none rounded-lg border border-slate-300 ring-1 ring-slate-200 p-2 text-xs leading-snug focus:outline-none focus:ring-4 focus:ring-rose-100"
-                            placeholder={t('pages.vacations.adminPage.actions.cancelMessagePlaceholder')}
-                            rows={3}
-                            value={cancelMessage}
-                            onChange={(e) => setCancelMessage(e.target.value)}
-                          />
-                          <div className="mt-1.5 flex gap-1.5">
-                            <button
-                              className="rounded-lg bg-rose-600 px-2.5 py-1 text-xs font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100 disabled:opacity-50"
-                              disabled={isSendingCancel}
-                              onClick={() => handleConfirmCancel(req._id)}
-                            >
-                              {isSendingCancel
-                                ? t('pages.vacations.adminPage.actions.sending')
-                                : t('pages.vacations.adminPage.actions.confirmRejection')}
-                            </button>
-                            <button
-                              className="rounded-lg bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-300 focus:outline-none focus:ring-4 focus:ring-slate-100 disabled:opacity-50"
-                              disabled={isSendingCancel}
-                              onClick={() => {
-                                setCancelingRequestId(null);
-                                setCancelMessage('');
-                              }}
-                            >
-                              {t('pages.vacations.adminPage.actions.cancel')}
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          {req.status === 'pending' && (
-                            <>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        {cancelingRequestId === req._id ? (
+                          <div className="w-full rounded-lg ring-1 ring-slate-200 p-2 bg-white">
+                            <textarea
+                              className="w-full resize-none rounded-lg border border-slate-300 ring-1 ring-slate-200 p-2 text-[11px] leading-snug focus:outline-none focus:ring-2 focus:ring-rose-100"
+                              placeholder={t('pages.vacations.adminPage.actions.cancelMessagePlaceholder')}
+                              rows={3}
+                              value={cancelMessage}
+                              onChange={(e) => setCancelMessage(e.target.value)}
+                            />
+                            <div className="mt-1.5 flex gap-1.5">
                               <button
-                                className="rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100"
-                                onClick={() => handleAccept(req._id)}
+                                className="rounded-lg bg-rose-600 px-2.5 py-1 text-[11px] font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-100 disabled:opacity-50"
+                                disabled={isSendingCancel}
+                                onClick={() => handleConfirmCancel(req._id)}
                               >
-                                {t('pages.vacations.adminPage.actions.accept')}
+                                {isSendingCancel
+                                  ? t('pages.vacations.adminPage.actions.sending')
+                                  : t('pages.vacations.adminPage.actions.confirmRejection')}
                               </button>
                               <button
-                                className="rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
-                                onClick={() => openAlternative(req)}
-                              >
-                                {t('pages.vacations.adminPage.actions.altOption')}
-                              </button>
-                              <button
-                                className="rounded-lg bg-rose-600 px-2.5 py-1 text-xs font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100"
-                                onClick={() => handleStartCancelFlow(req._id)}
+                                className="rounded-lg bg-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-100 disabled:opacity-50"
+                                disabled={isSendingCancel}
+                                onClick={() => {
+                                  setCancelingRequestId(null);
+                                  setCancelMessage('');
+                                }}
                               >
                                 {t('pages.vacations.adminPage.actions.cancel')}
                               </button>
-                            </>
-                          )}
-
-                          {(req.status === 'accepted' || req.status === 'cancelled') && (
-                            <div className="ml-auto">
-                              <button
-                                onClick={() => handleDelete(req._id)}
-                                aria-label={t('pages.vacations.adminPage.actions.delete')}
-                                title={t('pages.vacations.adminPage.actions.delete')}
-                                className="inline-flex h-7 w-7 items-center justify-center rounded-full
-                                  bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700 active:scale-95 transition
-                                  focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400
-                                  focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 24 24"
-                                  className="h-4 w-4"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="1.75"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  aria-hidden="true"
-                                >
-                                  <path d="M4 7h16" />
-                                  <path d="M10 11v6M14 11v6" />
-                                  <path d="M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12" />
-                                  <path d="M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
-                                </svg>
-                              </button>
                             </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </li>
+                          </div>
+                        ) : (
+                          <>
+                            {req.status === 'pending' && (
+                              <>
+                                <button
+                                  className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                                  onClick={() => handleAccept(req._id)}
+                                >
+                                  {t('pages.vacations.adminPage.actions.accept')}
+                                </button>
+                                <button
+                                  className="rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                                  onClick={() => openAlternative(req)}
+                                >
+                                  {t('pages.vacations.adminPage.actions.altOption')}
+                                </button>
+                                <button
+                                  className="rounded-lg bg-rose-600 px-2.5 py-1 text-[11px] font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                                  onClick={() => handleStartCancelFlow(req._id)}
+                                >
+                                  {t('pages.vacations.adminPage.actions.cancel')}
+                                </button>
+                              </>
+                            )}
 
-                ))}
-              </ul>
-            )}
+                            {(req.status === 'accepted' || req.status === 'cancelled') && (
+                              <div className="ml-auto">
+                                <button
+                                  onClick={() => handleDelete(req._id)}
+                                  aria-label={t('pages.vacations.adminPage.actions.delete')}
+                                  title={t('pages.vacations.adminPage.actions.delete')}
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-full
+                                    bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700 active:scale-95 transition
+                                    focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400
+                                    focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.75"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    aria-hidden="true"
+                                  >
+                                    <path d="M4 7h16" />
+                                    <path d="M10 11v6M14 11v6" />
+                                    <path d="M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12" />
+                                    <path d="M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
+                                  </svg>
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-2 border-t border-slate-200 p-4">
+          {/* Footer compacto y sticky */}
+          <div className="sticky bottom-0 bg-white border-t border-slate-200 p-3 flex items-center justify-end">
             <button
               onClick={onClose}
-              className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-200 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
+              className="rounded-xl bg-white px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-100"
             >
               {t('pages.vacations.monthModal.close')}
             </button>
@@ -492,7 +592,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Modal de fechas alternativas */}
       <AlternativeDateModal
         isOpen={isAltOpen}
         onClose={() => setIsAltOpen(false)}
@@ -505,4 +604,3 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 };
 
 export default AdminVacationMonthModal;
-
