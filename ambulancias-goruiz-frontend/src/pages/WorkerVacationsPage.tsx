@@ -293,11 +293,16 @@ const WorkerVacationsPage = () => {
             {formMessage && <p className="text-sm text-emerald-700">{formMessage}</p>}
           </div>
 
-          {showForm && (
-            <div className="mb-4 rounded-xl ring-1 ring-slate-200 p-3 bg-slate-50">
-              <VacationRequestForm onSuccess={handleFormSuccess} />
-            </div>
-          )}
+          <div
+            className={[
+              "mb-4 rounded-xl ring-1 ring-slate-200 p-3 bg-slate-50 transition-all",
+              showForm ? "block" : "hidden",
+            ].join(" ")}
+          >
+            {/* Muy importante: NO uses key dinámico aquí */}
+            <VacationRequestForm onSuccess={handleFormSuccess} />
+          </div>
+
 
           {requests.length === 0 && !loading && !showForm && (
             <p className="text-sm text-slate-600">{t('pages.vacations.workerPage.empty')}</p>
