@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+// frontend/src/components/vacation/AdminVacationMonthGrid.tsx
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { IVacationRequest } from '../../types/vacationRequest';
 import { getYearMonths, countRequestsByMonth } from '../../utils/vacationMonthUtils';
 import { useTranslation } from 'react-i18next';
@@ -66,6 +67,58 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
     []
   );
 
+  // ===== Helpers internos =====
+  const buildSummary = (data: VacationAvailabilityResponse): MonthAvailabilitySummary => {
+    const summaryCounts = data.days.reduce(
+      (acc, d) => {
+        if (d.state === 'green') acc.green += 1;
+        else if (d.state === 'yellow') acc.yellow += 1;
+        else acc.red += 1;
+        return acc;
+      },
+      { green: 0, yellow: 0, red: 0 }
+    );
+    return { ...summaryCounts, maxPerDay: data.maxPerDay, loaded: true };
+  };
+
+  const refreshTimerRef = useRef<Record<number, number>>({}); // por mes (m0) → timeoutId
+
+  const refreshMonth = async (y: number, m0: number, force = false) => {
+    // Solo refrescar si el evento es del año visible
+    if (y !== localYear) return;
+
+    const m1 = m0 + 1;
+    try {
+      const data = await getVacationAvailability({ year: y, month: m1 }, { force });
+      setAvailabilityByMonth(prev => ({
+        ...prev,
+        [m0]: buildSummary(data),
+      }));
+    } catch {
+      setAvailabilityByMonth(prev => ({
+        ...prev,
+        [m0]: { ...initialSummary, loaded: true, error: 'load_error' },
+      }));
+    }
+  };
+
+  const scheduleRefreshMonth = (y: number, m1: number) => {
+    if (y !== localYear) return;
+    const m0 = m1 - 1;
+
+    // micro-retardo para evitar carrera con el commit del backend (200ms)
+    const existing = refreshTimerRef.current[m0];
+    if (existing) {
+      window.clearTimeout(existing);
+    }
+    refreshTimerRef.current[m0] = window.setTimeout(() => {
+      refreshMonth(y, m0, true);
+      // limpiar referencia
+      delete refreshTimerRef.current[m0];
+    }, 200);
+  };
+
+  // Carga inicial de TODOS los meses del año visible
   useEffect(() => {
     let cancelled = false;
 
@@ -77,18 +130,7 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
             year: localYear,
             month: month1to12,
           });
-
-          const summary = data.days.reduce(
-            (acc, d) => {
-              if (d.state === 'green') acc.green += 1;
-              else if (d.state === 'yellow') acc.yellow += 1;
-              else acc.red += 1;
-              return acc;
-            },
-            { green: 0, yellow: 0, red: 0 }
-          );
-
-          return { monthIndex, summary: { ...summary, maxPerDay: data.maxPerDay, loaded: true } };
+          return { monthIndex, summary: buildSummary(data) };
         });
 
         const results = await Promise.allSettled(promises);
@@ -120,11 +162,66 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
 
     setAvailabilityByMonth({}); // limpia al cambiar de año
     loadAll();
+
     return () => {
       cancelled = true;
+      // limpiar timeouts pendientes
+      Object.values(refreshTimerRef.current).forEach(id => window.clearTimeout(id));
+      refreshTimerRef.current = {};
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localYear, i18n.language]);
+
+  // ===== Live update: escucha invalidaciones (misma pestaña + entre pestañas) =====
+  useEffect(() => {
+    const customHandler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { year: number; month: number }; // month 1..12
+      if (detail?.year && detail?.month) {
+        scheduleRefreshMonth(detail.year, detail.month);
+      }
+    };
+    window.addEventListener('vacation-availability-invalidated', customHandler as EventListener);
+
+    // BroadcastChannel entre pestañas
+    let bc: BroadcastChannel | null = null;
+    try {
+      const BC = (window as any).BroadcastChannel as
+        | (new (name: string) => BroadcastChannel)
+        | undefined;
+      if (typeof BC === 'function') {
+        bc = new BC('vacations');
+        bc.onmessage = (msg: MessageEvent) => {
+          const data = msg.data || {};
+          if (data?.type === 'availability-invalidated' && data.year && data.month) {
+            scheduleRefreshMonth(data.year, data.month);
+          }
+        };
+      }
+    } catch {
+      // noop
+    }
+
+    // Fallback: evento storage
+    const storageHandler = (ev: StorageEvent) => {
+      if (ev.key !== '__vac_av_inval__' || !ev.newValue) return;
+      try {
+        const payload = JSON.parse(ev.newValue);
+        if (payload?.year && payload?.month) {
+          scheduleRefreshMonth(payload.year, payload.month);
+        }
+      } catch {
+        // noop
+      }
+    };
+    window.addEventListener('storage', storageHandler);
+
+    return () => {
+      window.removeEventListener('vacation-availability-invalidated', customHandler as EventListener);
+      window.removeEventListener('storage', storageHandler);
+      try { bc?.close?.(); } catch { /* noop */ }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localYear]);
 
   return (
     <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6 mb-6">
@@ -191,10 +288,11 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
           const loaded = avail.loaded;
           const disabledStyle = !loaded ? 'opacity-80' : '';
 
-          // Busca esta función y déjala así:
+          // Mantén solo esta llamada:
           const openMonth = () => {
             onMonthOpen?.(monthIndex, localYear); // <-- SOLO este
-            // ❌ Quita/evita: onMonthClick?.(monthIndex)
+            // (Compat) si tienes onMonthClick legacy, déjalo sin usar para evitar doble apertura:
+            // onMonthClick?.(monthIndex)
           };
 
           return (
@@ -226,7 +324,7 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
                 </span>
               </div>
 
-              {/* Resumen barras apiladas (SVG, sin inline style) */}
+              {/* Resumen barras apiladas */}
               <div className="mt-3">
                 {loaded ? (
                   (() => {

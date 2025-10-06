@@ -1,7 +1,13 @@
+// frontend/src/components/vacation/AdminVacationMonthModal.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { IVacationRequest } from '../../types/vacationRequest';
 import { filterRequestsByMonth } from '../../utils/vacationMonthUtils';
-import { updateVacationRequest, deleteVacationRequest } from '../../api/vacation';
+import {
+  updateVacationRequest,
+  deleteVacationRequest,
+  invalidateThisAndNextMonth,
+  invalidateAvailabilityByRange, // 👈 NUEVO
+} from '../../api/vacation';
 import AlternativeDateModal from './AlternativeDateModal';
 import { useAuth } from '../../hooks/useAuth';
 import { toastT } from "../../utils/toast";
@@ -39,6 +45,9 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   const [availLoading, setAvailLoading] = useState(false);
   const [availError, setAvailError] = useState<string | null>(null);
 
+  const inFlightKeyRef = useRef<string | null>(null);
+  const refreshTimerRef = useRef<number | null>(null);
+
   const weekdayHeaders = useMemo(() => {
     const baseMonday = new Date(Date.UTC(2023, 0, 2)); // lunes
     return Array.from({ length: 7 }, (_, i) => {
@@ -60,25 +69,94 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     const leading = Array.from({ length: mondayBased }, () => null);
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
     const base = [...leading, ...days];
-    // rellenamos a 42 celdas siempre (6 semanas)
     return base.concat(Array.from({ length: Math.max(0, 42 - base.length) }, () => null));
   }, [monthIndex, year]);
 
+  const loadAvailability = async (y: number, m1: number, force = false) => {
+    const key = `${y}-${String(m1).padStart(2, '0')}`;
+    inFlightKeyRef.current = key;
+    try {
+      setAvailLoading(true);
+      setAvailError(null);
+      const data = await getVacationAvailability({ year: y, month: m1 }, { force });
+      if (inFlightKeyRef.current !== key) return;
+      setAvailability(data);
+    } catch {
+      if (inFlightKeyRef.current !== key) return;
+      setAvailError('load_error');
+    } finally {
+      if (inFlightKeyRef.current === key) setAvailLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isOpen || monthIndex === null) return;
-    const load = async () => {
-      try {
-        setAvailLoading(true);
-        setAvailError(null);
-        const data = await getVacationAvailability({ year, month: monthIndex + 1 });
-        setAvailability(data);
-      } catch {
-        setAvailError('load_error');
-      } finally {
-        setAvailLoading(false);
+    const m1 = monthIndex + 1;
+    loadAvailability(year, m1, false);
+    return () => {
+      if (refreshTimerRef.current) {
+        window.clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
       }
     };
-    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, monthIndex, year]);
+
+  // Live update: escucha invalidaciones para refrescar mini-calendario
+  useEffect(() => {
+    if (!isOpen || monthIndex === null) return;
+    const myMonth = monthIndex + 1;
+
+    const scheduleRefresh = (y: number, m1: number) => {
+      if (y !== year || m1 !== myMonth) return;
+      if (refreshTimerRef.current) window.clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = window.setTimeout(() => {
+        loadAvailability(year, myMonth, true);
+      }, 200);
+    };
+
+    const customHandler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { year: number; month: number };
+      if (detail?.year && detail?.month) scheduleRefresh(detail.year, detail.month);
+    };
+    window.addEventListener('vacation-availability-invalidated', customHandler as EventListener);
+
+    // BroadcastChannel entre pestañas
+    let bc: BroadcastChannel | null = null;
+    try {
+      const BC = (window as any).BroadcastChannel as
+        | (new (name: string) => BroadcastChannel)
+        | undefined;
+      if (typeof BC === 'function') {
+        bc = new BC('vacations');
+        bc.onmessage = (msg: MessageEvent) => {
+          const data = msg.data || {};
+          if (data?.type === 'availability-invalidated' && data.year && data.month) {
+            scheduleRefresh(data.year, data.month);
+          }
+        };
+      }
+    } catch {}
+
+    // Fallback: storage
+    const storageHandler = (ev: StorageEvent) => {
+      if (ev.key !== '__vac_av_inval__' || !ev.newValue) return;
+      try {
+        const payload = JSON.parse(ev.newValue);
+        if (payload?.year && payload?.month) scheduleRefresh(payload.year, payload.month);
+      } catch {}
+    };
+    window.addEventListener('storage', storageHandler);
+
+    return () => {
+      window.removeEventListener('vacation-availability-invalidated', customHandler as EventListener);
+      window.removeEventListener('storage', storageHandler);
+      try { bc?.close?.(); } catch {}
+      if (refreshTimerRef.current) {
+        window.clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+    };
   }, [isOpen, monthIndex, year]);
 
   const getDayState = (day: number | null): DayState | null => {
@@ -128,7 +206,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     return acc;
   }, [monthRequests]);
 
-  // aplicar filtros/orden (restaurado)
+  // aplicar filtros/orden
   const filtered = useMemo(() => {
     let items = monthRequests;
     if (searchText.trim()) {
@@ -146,6 +224,12 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     });
     return items;
   }, [monthRequests, searchText, statusFilter, sortAsc]);
+
+  // Invalida el mes visible en el modal (y el siguiente) para refresco en vivo
+  const invalidateVisibleMonth = () => {
+    if (monthIndex === null) return;
+    invalidateThisAndNextMonth(year, monthIndex + 1);
+  };
 
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString(locale, { timeZone: 'Europe/Berlin' });
@@ -165,9 +249,13 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   };
 
   const handleAccept = async (id: string) => {
-    if (!token) return;
+    if (!token || monthIndex === null) return;
     try {
       await updateVacationRequest(token, id, { status: 'accepted' });
+      // Invalidar y refrescar mini-calendario visible
+      invalidateVisibleMonth();
+      const m1 = monthIndex + 1;
+      window.setTimeout(() => loadAvailability(year, m1, true), 200);
       onActionDone?.();
     } catch {
       toastT.error(["toasts.vacations.worker.error"]);
@@ -182,7 +270,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   };
 
   const handleAlternativeSubmit = async (altStartISO: string, altEndISO: string, note: string) => {
-    if (!token || !currentRequestId) return;
+    if (!token || !currentRequestId || monthIndex === null) return;
     try {
       await updateVacationRequest(token, currentRequestId, {
         status: 'option_sent',
@@ -192,6 +280,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       });
       setIsAltOpen(false);
       setCurrentRequestId(null);
+      // option_sent no cambia capacidad
       onActionDone?.();
     } catch {
       toastT.error(["toasts.vacations.worker.loadError"]);
@@ -204,10 +293,13 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   };
 
   const handleConfirmCancel = async (id: string) => {
-    if (!token) return;
+    if (!token || monthIndex === null) return;
     setIsSendingCancel(true);
     try {
       await updateVacationRequest(token, id, { status: 'cancelled', adminNote: cancelMessage });
+      invalidateVisibleMonth();
+      const m1 = monthIndex + 1;
+      window.setTimeout(() => loadAvailability(year, m1, true), 200);
       setCancelingRequestId(null);
       setCancelMessage('');
       onActionDone?.();
@@ -219,10 +311,27 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   };
 
   const handleDelete = async (id: string) => {
-    if (!token) return;
+    if (!token || monthIndex === null) return;
     if (!window.confirm(t('pages.vacations.monthModal.confirmDelete'))) return;
     try {
+      // ⚠️ Guardar el rango ANTES de borrar
+      const req = requests.find(r => r._id === id);
+      const startISO = req?.startDate;
+      const endISO = req?.endDate;
+
       await deleteVacationRequest(token, id);
+
+      // 🟢 Si el borrado libera capacidad (p.ej. era 'accepted'), invalidar por rango
+      if (startISO && endISO) {
+        try {
+          invalidateAvailabilityByRange(startISO, endISO);
+        } catch {}
+      }
+
+      // Refrescar mini-calendario del mes visible (forzado) tras breve retardo
+      const m1 = monthIndex + 1;
+      window.setTimeout(() => loadAvailability(year, m1, true), 200);
+
       onActionDone?.();
     } catch {
       toastT.error(["toasts.vacations.worker.error"]);
@@ -319,7 +428,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                   ref={closeBtnRef}
                   aria-label={t('pages.vacations.monthModal.close')}
                   onClick={onClose}
-                  className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                  className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400
+                    focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                 >
                   ✕
                 </button>
