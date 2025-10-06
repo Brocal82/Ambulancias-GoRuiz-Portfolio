@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+// frontend/src/pages/WorkerVacationsPage.tsx
+import { useEffect, useState, useCallback, useRef } from 'react';
 import type { IVacationRequest } from '../types/vacationRequest';
 import { getUserVacationRequests, respondToAlternativeDate } from '../api/vacation';
 import { useAuth } from '../hooks/useAuth';
@@ -9,12 +10,14 @@ import { useTranslation } from 'react-i18next';
 import { toastT } from '../utils/toast';
 
 import AdminVacationMonthGrid from '../components/vacation/AdminVacationMonthGrid';
-import { getVacationAvailability, type VacationAvailabilityResponse } from '../api/vacation';
-import { monthLabel as fmtMonth } from '../utils/intl';
+import WorkerAvailabilityMonthModal from '../components/vacation/WorkerAvailabilityMonthModal';
+
+// Prefetch/caché compartida
+import { getVacationAvailability } from '../api/vacation';
 
 const WorkerVacationsPage = () => {
   const { token } = useAuth();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   const [requests, setRequests] = useState<IVacationRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +34,6 @@ const WorkerVacationsPage = () => {
   const [gridYear, setGridYear] = useState<number>(new Date().getFullYear());
 
   // ===== Modal de disponibilidad mensual (solo lectura) =====
-  type DayState = 'green' | 'yellow' | 'red';
   const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null); // 0..11
   const [selectedYear, setSelectedYear] = useState<number>(gridYear);
@@ -67,7 +69,9 @@ const WorkerVacationsPage = () => {
         error: ['toasts.vacations.worker.error'],
       });
       fetchRequests();
-    } catch {}
+    } catch {
+      // errores ya se muestran por toast
+    }
   };
 
   const handleFormSuccess = () => {
@@ -77,180 +81,69 @@ const WorkerVacationsPage = () => {
     setFormMessage(t('toasts.vacations.worker.formSuccess'));
   };
 
-  // ---- Modal mensual (definido inline, solo visual) ----
-  const WorkerAvailabilityMonthModal: React.FC<{
-    isOpen: boolean;
-    monthIndex: number | null; // 0..11
-    year: number;
-    onClose: () => void;
-  }> = ({ isOpen, monthIndex, year, onClose }) => {
-    const locale =
-      i18n.language === 'de' ? 'de-DE' : i18n.language === 'en' ? 'en-US' : 'es-ES';
+  /* =========================================================
+     PREFETCH: evitar “clic para refrescar” en el date-range
+     ========================================================= */
 
-    const [availability, setAvailability] = useState<VacationAvailabilityResponse | null>(null);
-    const [availLoading, setAvailLoading] = useState(false);
-    const [availError, setAvailError] = useState<string | null>(null);
+  // Prefetch de un mes 1..12
+  const prefetchMonth = useCallback(async (y: number, m1: number) => {
+    try {
+      await getVacationAvailability({ year: y, month: m1 });
+    } catch {
+      // silencioso
+    }
+  }, []);
 
-    const weekdayHeaders = useMemo(() => {
-      const baseMonday = new Date(Date.UTC(2023, 0, 2));
-      return Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(baseMonday);
-        d.setUTCDate(baseMonday.getUTCDate() + i);
-        return d.toLocaleDateString(locale, { weekday: 'short' });
-      });
-    }, [locale]);
+  // Prefetch de todo un año (12 meses). Evitamos repetir con un Set.
+  const prefetchedYearsRef = useRef<Set<number>>(new Set());
+  const prefetchYear = useCallback(async (y: number) => {
+    if (prefetchedYearsRef.current.has(y)) return;
+    prefetchedYearsRef.current.add(y);
+    const tasks: Promise<any>[] = [];
+    for (let m1 = 1; m1 <= 12; m1++) {
+      tasks.push(prefetchMonth(y, m1));
+    }
+    try {
+      await Promise.allSettled(tasks);
+    } catch {
+      // silencioso
+    }
+  }, [prefetchMonth]);
 
-    const calendarCells = useMemo(() => {
-      if (monthIndex === null) return Array(42).fill(null);
-      const y = year;
-      const m0 = monthIndex;
-      const first = new Date(y, m0, 1);
-      const daysInMonth = new Date(y, m0 + 1, 0).getDate();
-      const jsFirstDow = first.getDay();
-      const mondayBased = (jsFirstDow + 6) % 7;
+  // Prefetch de año actual y siguiente cuando se abre el formulario
+  useEffect(() => {
+    if (!showForm) return;
+    // año del grid visible y el siguiente → cubre casos 2026, etc.
+    prefetchYear(gridYear);
+    prefetchYear(gridYear + 1);
+  }, [showForm, gridYear, prefetchYear]);
 
-      const leading = Array.from({ length: mondayBased }, () => null);
-      const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-      const base = [...leading, ...days];
-      return base.concat(Array.from({ length: Math.max(0, 42 - base.length) }, () => null));
-    }, [monthIndex, year]);
+  // Si cambias el año en el grid mientras el formulario está abierto, precarga ese año
+  useEffect(() => {
+    if (!showForm) return;
+    prefetchYear(gridYear);
+  }, [gridYear, showForm, prefetchYear]);
 
-    useEffect(() => {
-      if (!isOpen || monthIndex === null) return;
-      const load = async () => {
-        try {
-          setAvailLoading(true);
-          setAvailError(null);
-          const data = await getVacationAvailability({ year, month: monthIndex + 1 });
-          setAvailability(data);
-        } catch {
-          setAvailError('load_error');
-        } finally {
-          setAvailLoading(false);
-        }
-      };
-      load();
-    }, [isOpen, monthIndex, year]);
+  // Prefetch ligero al montar: mes actual + siguiente (para modal/UX)
+  useEffect(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m1 = now.getMonth() + 1;
+    prefetchMonth(y, m1);
+    prefetchMonth(m1 === 12 ? y + 1 : y, m1 === 12 ? 1 : m1 + 1);
+  }, [prefetchMonth]);
 
-    const getDayState = (day: number | null): DayState | null => {
-      if (!availability || day === null) return null;
-      const rec = availability.days.find(d => d.day === day);
-      return rec ? rec.state : 'green';
-    };
+  // Al abrir un mes desde el grid: precarga ese mes y el siguiente (para el modal)
+  const handleOpenMonth = useCallback(async (monthIdx: number, y: number) => {
+    const m1 = monthIdx + 1;
+    await prefetchMonth(y, m1);
+    await prefetchMonth(m1 === 12 ? y + 1 : y, m1 === 12 ? 1 : m1 + 1);
+    setSelectedMonthIndex(monthIdx);
+    setSelectedYear(y);
+    setIsMonthModalOpen(true);
+  }, [prefetchMonth]);
 
-    const monthTitle =
-      typeof fmtMonth === 'function' && monthIndex !== null
-        ? fmtMonth(year, monthIndex)
-        : monthIndex !== null
-        ? new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date(year, monthIndex, 1))
-        : '';
-
-    if (!isOpen || monthIndex === null) return null;
-
-    return (
-      <div className="fixed inset-0 z-50 flex items-start justify-center p-2 sm:p-4">
-        <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-        <div
-          className="relative z-10 w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 flex flex-col max-h-[90vh]"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="worker-availability-month-title"
-        >
-          <div className="sticky top-0 z-10 bg-white border-b border-slate-200 p-3">
-            <div className="flex items-center gap-2">
-              <h3 id="worker-availability-month-title" className="text-base font-semibold text-slate-900 truncate">
-                {monthTitle} · {year}
-              </h3>
-              <button
-                aria-label={t('pages.vacations.monthModal.close')}
-                onClick={onClose}
-                className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-3 space-y-3">
-            <div className="flex items-center gap-2 text-[11px]">
-              <span className="inline-flex items-center gap-1">
-                <span className="inline-block h-2 w-2 rounded bg-green-500" />
-                {t('common.available', 'Disponible')}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="inline-block h-2 w-2 rounded bg-yellow-400" />
-                {t('common.requested', 'Solicitado')}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="inline-block h-2 w-2 rounded bg-red-500" />
-                {t('common.full', 'Completo')}
-              </span>
-              {availability && (
-                <span className="ml-auto text-slate-500">
-                  {t('pages.vacations.adminPage.capacity', { count: availability.maxPerDay })}
-                </span>
-              )}
-            </div>
-
-            <div className="grid grid-cols-7 text-center text-[10px] uppercase tracking-wide text-slate-500 mb-0.5">
-              {weekdayHeaders.map((w, i) => (
-                <div key={i} className="py-0.5">{w}</div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-7 gap-0.5">
-              {availLoading &&
-                Array.from({ length: 42 }).map((_, i) => (
-                  <div key={`sk-${i}`} className="h-6 sm:h-7 md:h-8 rounded bg-slate-100 animate-pulse" />
-                ))}
-
-              {!availLoading &&
-                calendarCells.map((cell, idx) => {
-                  if (cell === null) {
-                    return <div key={`empty-${idx}`} className="h-6 sm:h-7 md:h-8 rounded bg-transparent" />;
-                  }
-                  const state = getDayState(cell);
-                  const color =
-                    state === 'red'
-                      ? 'bg-red-500 text-white'
-                      : state === 'yellow'
-                      ? 'bg-yellow-400 text-slate-900'
-                      : 'bg-green-500 text-white';
-                  return (
-                    <div
-                      key={`d-${cell}-${idx}`}
-                      className={[
-                        'h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none',
-                        color,
-                      ].join(' ')}
-                      title={`${cell}`}
-                      aria-label={`${cell}`}
-                    >
-                      {cell}
-                    </div>
-                  );
-                })}
-            </div>
-
-            {availError && (
-              <p className="mt-1 text-[11px] text-rose-600">
-                {t('common.loadError', 'No se pudo cargar la disponibilidad.')}
-              </p>
-            )}
-          </div>
-
-          <div className="sticky bottom-0 bg-white border-t border-slate-200 p-3 flex items-center justify-end">
-            <button
-              onClick={onClose}
-              className="rounded-xl bg-white px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-100"
-            >
-              {t('pages.vacations.monthModal.close')}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  /* ========================================================= */
 
   // ===== Render principal =====
   if (loading) return <p className="p-4 text-sm text-slate-600">{t('pages.vacations.workerPage.loading')}</p>;
@@ -271,12 +164,7 @@ const WorkerVacationsPage = () => {
             requests={requests}
             year={gridYear}
             onYearChange={(y) => setGridYear(y)}
-            onMonthOpen={(monthIdx, y) => {
-              setSelectedMonthIndex(monthIdx);
-              setSelectedYear(y);
-              setIsMonthModalOpen(true);
-            }}
-            // onMonthClick también funciona (compat), pero usamos onMonthOpen para capturar el año
+            onMonthOpen={handleOpenMonth}
           />
         </div>
 
@@ -295,14 +183,13 @@ const WorkerVacationsPage = () => {
 
           <div
             className={[
-              "mb-4 rounded-xl ring-1 ring-slate-200 p-3 bg-slate-50 transition-all",
-              showForm ? "block" : "hidden",
-            ].join(" ")}
+              'mb-4 rounded-xl ring-1 ring-slate-200 p-3 bg-slate-50 transition-all',
+              showForm ? 'block' : 'hidden',
+            ].join(' ')}
           >
-            {/* Muy importante: NO uses key dinámico aquí */}
+            {/* Importante: NO uses key dinámico aquí */}
             <VacationRequestForm onSuccess={handleFormSuccess} />
           </div>
-
 
           {requests.length === 0 && !loading && !showForm && (
             <p className="text-sm text-slate-600">{t('pages.vacations.workerPage.empty')}</p>
@@ -310,7 +197,10 @@ const WorkerVacationsPage = () => {
 
           {requests.length > 0 && (
             <div className="mt-2">
-              <UserVacationList requests={requests} onRespondAlternative={handleRespondAlternative} />
+              <UserVacationList
+                requests={requests}
+                onRespondAlternative={handleRespondAlternative}
+              />
             </div>
           )}
         </div>
@@ -324,6 +214,7 @@ const WorkerVacationsPage = () => {
         />
       </div>
 
+      {/* Modal de disponibilidad mensual (separado en componente) */}
       <WorkerAvailabilityMonthModal
         isOpen={isMonthModalOpen}
         monthIndex={selectedMonthIndex}

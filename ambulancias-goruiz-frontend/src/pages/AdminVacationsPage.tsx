@@ -1,6 +1,7 @@
+// frontend/src/pages/AdminVacationsPage.tsx
 import { useEffect, useState } from 'react';
 import type { IVacationRequest } from '../types/vacationRequest';
-import { getVacationRequests, updateVacationRequest } from '../api/vacation';
+import { getVacationRequests, updateVacationRequest, invalidateAvailabilityByRange } from '../api/vacation';
 import AlternativeDateModal from '../components/vacation/AlternativeDateModal';
 import AdminVacationMonthGrid from '../components/vacation/AdminVacationMonthGrid';
 import AdminVacationMonthModal from '../components/vacation/AdminVacationMonthModal';
@@ -61,6 +62,44 @@ const AdminVacationRequests = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  // 🔔 NUEVO: escuchar “request creada/actualizada” desde cualquier pestaña y refrescar lista
+  useEffect(() => {
+    const onCustom = () => fetchRequests();
+    window.addEventListener('vacation-requests-updated', onCustom as EventListener);
+
+    // BroadcastChannel
+    let bc: BroadcastChannel | null = null;
+    try {
+      const BC = (window as any).BroadcastChannel as
+        | (new (name: string) => BroadcastChannel)
+        | undefined;
+      if (typeof BC === 'function') {
+        bc = new BC('vacations');
+        bc.onmessage = (msg: MessageEvent) => {
+          const data = msg.data || {};
+          if (data?.type === 'requests-updated') {
+            fetchRequests();
+          }
+        };
+      }
+    } catch {}
+
+    // Fallback: storage
+    const onStorage = (ev: StorageEvent) => {
+      if (ev.key === '__vac_req_upd__' && ev.newValue) {
+        fetchRequests();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+
+    return () => {
+      window.removeEventListener('vacation-requests-updated', onCustom as EventListener);
+      window.removeEventListener('storage', onStorage);
+      try { bc?.close?.(); } catch {}
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   type VacationStatus = 'pending' | 'accepted' | 'cancelled' | 'option_sent';
 
   // Mostrar solo las solicitudes que requieren acción (pendientes u opción enviada)
@@ -88,9 +127,18 @@ const AdminVacationRequests = () => {
         }
       );
 
+      // 🟢 Invalidar disponibilidad en vivo SI cambia la capacidad
+      if (status === 'accepted' || status === 'cancelled') {
+        const req = requests.find(r => r._id === id);
+        if (req) {
+          invalidateAvailabilityByRange(req.startDate, req.endDate);
+        }
+      }
+
       // 🔔 Notificar al Dashboard para refrescar el contador
       notifyVacationsChanged();
 
+      // Refrescar listado
       fetchRequests();
     } catch {
       // el error ya se muestra por toast
@@ -119,6 +167,8 @@ const AdminVacationRequests = () => {
         }
       );
 
+      // ⚠️ option_sent no cambia capacidad
+
       // 🔔 Notificar al Dashboard
       notifyVacationsChanged();
 
@@ -143,6 +193,13 @@ const AdminVacationRequests = () => {
           error: ['toasts.vacations.admin.error'],
         }
       );
+
+      // 🟢 Invalidar disponibilidad en vivo tras cancelar (libera cupo)
+      const req = requests.find(r => r._id === id);
+      if (req) {
+        invalidateAvailabilityByRange(req.startDate, req.endDate);
+      }
+
       setCancelingRequestId(null);
       setCancelMessage('');
 
@@ -179,7 +236,7 @@ const AdminVacationRequests = () => {
             onYearChange={(y) => setGridYear(y)}
             onMonthOpen={(monthIdx, y) => {
               setSelectedMonth(monthIdx);
-              setSelectedYear(y);           // <-- año del grid seleccionado
+              setSelectedYear(y);
             }}
           />
 
@@ -188,7 +245,7 @@ const AdminVacationRequests = () => {
             isOpen={selectedMonth !== null}
             monthIndex={selectedMonth}
             requests={requests}
-            year={selectedYear}             // <-- ¡clave!
+            year={selectedYear}
             onClose={() => setSelectedMonth(null)}
             onActionDone={fetchRequests}
           />
@@ -332,6 +389,7 @@ const AdminVacationRequests = () => {
             initialEndDate={modalInitialEndDate}
             onSubmit={(altStart, altEnd, note) => {
               if (currentRequestId) {
+                // option_sent no cambia capacidad
                 handleSendAlternativeOption(currentRequestId, altStart, altEnd, note);
               }
               setIsModalOpen(false);
