@@ -1,9 +1,12 @@
+// src/components/vacation/AlternativeDateModal.tsx
 import { useState } from 'react';
 import { DateRange } from 'react-date-range';
 import type { RangeKeyDict } from 'react-date-range';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import { useTranslation } from 'react-i18next';
+// 👇 locales de date-fns para que la semana empiece en lunes
+import { es as dfEs, de as dfDe, enGB as dfEnGB } from 'date-fns/locale';
 
 interface AlternativeDateModalProps {
   isOpen: boolean;
@@ -20,7 +23,13 @@ const AlternativeDateModal = ({
   initialStartDate,
   initialEndDate
 }: AlternativeDateModalProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  // 👇 Semana LUN-DOM (ES/DE), o EN-GB que también empieza en lunes
+  const pickerLocale =
+    i18n.language.startsWith('de') ? dfDe :
+    i18n.language.startsWith('es') ? dfEs :
+    dfEnGB;
 
   const [selectionRange, setSelectionRange] = useState({
     startDate: initialStartDate,
@@ -85,6 +94,10 @@ const AlternativeDateModal = ({
             onChange={handleSelect}
             moveRangeOnFirstSelection={false}
             minDate={new Date()}
+            locale={pickerLocale}   
+            preventSnapRefocus             /* estabilidad visual */
+            calendarFocus="forwards"
+            fixedHeight
           />
         </div>
 
