@@ -359,6 +359,7 @@
         "loading": "Cargando solicitudes...",
         "error": "Error al cargar las solicitudes.",
         "empty": "No hay solicitudes de vacaciones.",
+        "capacity": "Capacidad diaria: máx. {{count}}",
         "table": {
           "user": "Trabajador",
           "startDate": "Fecha Inicio",
@@ -426,7 +427,12 @@
       "monthGrid": {
         "title": "Vacaciones por mes · {{year}}",
         "count": "{{count}} solicitudes",
-        "ariaOpenMonth": "Abrir mes {{label}} {{year}}"
+        "ariaOpenMonth": "Abrir mes {{label}} {{year}}",
+        "legend": {
+          "available": "Disponible",
+          "requested": "Solicitado",
+          "full": "Completo"
+        }
       },
       "monthModal": {
         "countLine": "{{count}} solicitudes en este mes",

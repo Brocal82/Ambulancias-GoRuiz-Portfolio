@@ -33,22 +33,22 @@ function emitVacationSync(payload: { id: string; status: 'accepted' | 'cancelled
   // Misma pestaña
   try {
     window.dispatchEvent(new CustomEvent('vacation-requests-updated', { detail }));
-  } catch {}
+  } catch { }
 
   // Otras pestañas/ventanas (canal dedicado)
   try {
     const bc = new BroadcastChannel('vacations');
     bc.postMessage({ type: 'requests-updated', ...detail });
     bc.close?.();
-  } catch {}
+  } catch { }
 
   // 🔁 Fallback universal: dispara evento 'storage' en otras pestañas
   try {
     localStorage.setItem('__vac_req_upd__', JSON.stringify(detail));
     setTimeout(() => {
-      try { localStorage.removeItem('__vac_req_upd__'); } catch {}
+      try { localStorage.removeItem('__vac_req_upd__'); } catch { }
     }, 500);
-  } catch {}
+  } catch { }
 }
 
 
@@ -162,7 +162,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
           }
         };
       }
-    } catch {}
+    } catch { }
 
     // Fallback: storage
     const storageHandler = (ev: StorageEvent) => {
@@ -170,14 +170,14 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       try {
         const payload = JSON.parse(ev.newValue);
         if (payload?.year && payload?.month) scheduleRefresh(payload.year, payload.month);
-      } catch {}
+      } catch { }
     };
     window.addEventListener('storage', storageHandler);
 
     return () => {
       window.removeEventListener('vacation-availability-invalidated', customHandler as EventListener);
       window.removeEventListener('storage', storageHandler);
-      try { bc?.close?.(); } catch {}
+      try { bc?.close?.(); } catch { }
       if (refreshTimerRef.current) {
         window.clearTimeout(refreshTimerRef.current);
         refreshTimerRef.current = null;
@@ -361,7 +361,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       if (startISO && endISO) {
         try {
           invalidateAvailabilityByRange(startISO, endISO);
-        } catch {}
+        } catch { }
       }
 
       // Refrescar mini-calendario del mes visible (forzado) tras breve retardo
@@ -404,9 +404,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => setStatusFilter('')}
-                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ring-slate-300 ${
-                    statusFilter === '' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-100`}
+                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ring-slate-300 ${statusFilter === '' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'
+                    } focus:outline-none focus:ring-2 focus:ring-blue-100`}
                 >
                   {t('pages.vacations.monthModal.filters.all')}
                   {monthCount > 0 ? ` (${monthCount})` : ''}
@@ -414,11 +413,10 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => setStatusFilter('pending')}
-                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${
-                    statusFilter === 'pending'
+                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === 'pending'
                       ? 'bg-amber-500 text-white ring-amber-500'
                       : 'bg-white text-amber-700 ring-amber-300 hover:bg-amber-50'
-                  } focus:outline-none focus:ring-2 focus:ring-amber-100`}
+                    } focus:outline-none focus:ring-2 focus:ring-amber-100`}
                 >
                   {t('pages.vacations.monthModal.filters.pending')}
                   {statusCounts.pending ? ` (${statusCounts.pending})` : ''}
@@ -426,11 +424,10 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => setStatusFilter('accepted')}
-                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${
-                    statusFilter === 'accepted'
+                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === 'accepted'
                       ? 'bg-emerald-600 text-white ring-emerald-600'
                       : 'bg-white text-emerald-700 ring-emerald-300 hover:bg-emerald-50'
-                  } focus:outline-none focus:ring-2 focus:ring-emerald-100`}
+                    } focus:outline-none focus:ring-2 focus:ring-emerald-100`}
                 >
                   {t('pages.vacations.monthModal.filters.accepted')}
                   {statusCounts.accepted ? ` (${statusCounts.accepted})` : ''}
@@ -438,11 +435,10 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => setStatusFilter('cancelled')}
-                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${
-                    statusFilter === 'cancelled'
+                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === 'cancelled'
                       ? 'bg-rose-600 text-white ring-rose-600'
                       : 'bg-white text-rose-700 ring-rose-300 hover:bg-rose-50'
-                  } focus:outline-none focus:ring-2 focus:ring-rose-100`}
+                    } focus:outline-none focus:ring-2 focus:ring-rose-100`}
                 >
                   {t('pages.vacations.monthModal.filters.cancelled')}
                   {statusCounts.cancelled ? ` (${statusCounts.cancelled})` : ''}
@@ -450,11 +446,10 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => setStatusFilter('option_sent')}
-                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${
-                    statusFilter === 'option_sent'
+                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === 'option_sent'
                       ? 'bg-blue-600 text-white ring-blue-600'
                       : 'bg-white text-blue-700 ring-blue-300 hover:bg-blue-50'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-100`}
+                    } focus:outline-none focus:ring-2 focus:ring-blue-100`}
                 >
                   {t('pages.vacations.monthModal.filters.option_sent')}
                   {statusCounts.option_sent ? ` (${statusCounts.option_sent})` : ''}
@@ -480,16 +475,17 @@ const AdminVacationMonthModal: React.FC<Props> = ({
               <div className="mb-1 flex items-center gap-2 text-[10px]">
                 <span className="inline-flex items-center gap-1">
                   <span className="inline-block h-2 w-2 rounded bg-green-500" />
-                  {t('common.available', 'Disponible')}
+                  {t('pages.vacations.monthGrid.legend.available')}
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <span className="inline-block h-2 w-2 rounded bg-yellow-400" />
-                  {t('common.requested', 'Solicitado')}
+                  {t('pages.vacations.monthGrid.legend.requested')}
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <span className="inline-block h-2 w-2 rounded bg-red-500" />
-                  {t('common.full', 'Completo')}
+                  {t('pages.vacations.monthGrid.legend.full')}
                 </span>
+
                 {availability && (
                   <span className="ml-auto text-slate-500">
                     {t('pages.vacations.adminPage.capacity', { count: availability.maxPerDay })}
@@ -519,8 +515,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                       state === 'red'
                         ? 'bg-red-500 text-white'
                         : state === 'yellow'
-                        ? 'bg-yellow-400 text-slate-900'
-                        : 'bg-green-500 text-white';
+                          ? 'bg-yellow-400 text-slate-900'
+                          : 'bg-green-500 text-white';
                     return (
                       <div
                         key={`d-${cell}-${idx}`}

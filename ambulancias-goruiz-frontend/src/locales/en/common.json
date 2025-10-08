@@ -359,6 +359,7 @@
         "loading": "Loading requests...",
         "error": "Error loading requests.",
         "empty": "No vacation requests.",
+        "capacity": "Daily capacity: max {{count}}",
         "table": {
           "user": "Worker",
           "startDate": "Start Date",
@@ -426,7 +427,12 @@
       "monthGrid": {
         "title": "Vacations by month · {{year}}",
         "count": "{{count}} requests",
-        "ariaOpenMonth": "Open month {{label}} {{year}}"
+        "ariaOpenMonth": "Open month {{label}} {{year}}",
+        "legend": {
+          "available": "Available",
+          "requested": "Requested",
+          "full": "Full"
+        }
       },
       "monthModal": {
         "countLine": "{{count}} requests in this month",

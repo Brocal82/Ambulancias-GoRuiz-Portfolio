@@ -359,6 +359,7 @@
         "loading": "Anträge werden geladen...",
         "error": "Fehler beim Laden der Anträge.",
         "empty": "Keine Urlaubsanträge.",
+         "capacity": "Tageskapazität: max. {{count}}",
         "table": {
           "user": "Mitarbeiter",
           "startDate": "Beginn",
@@ -426,7 +427,12 @@
       "monthGrid": {
         "title": "Urlaub nach Monaten · {{year}}",
         "count": "{{count}} Anträge",
-        "ariaOpenMonth": "Monat {{label}} {{year}} öffnen"
+        "ariaOpenMonth": "Monat {{label}} {{year}} öffnen",
+        "legend": {
+          "available": "Verfügbar",
+          "requested": "Angefragt",
+          "full": "Ausgebucht"
+        }
       },
       "monthModal": {
         "countLine": "{{count}} Anträge in diesem Monat",

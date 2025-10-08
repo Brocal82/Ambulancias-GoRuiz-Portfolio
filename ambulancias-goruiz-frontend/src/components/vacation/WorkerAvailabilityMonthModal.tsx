@@ -154,8 +154,8 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({ isOpen, monthIndex, yea
     typeof fmtMonth === 'function' && monthIndex !== null
       ? fmtMonth(year, monthIndex)
       : monthIndex !== null
-      ? new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date(year, monthIndex, 1))
-      : '';
+        ? new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date(year, monthIndex, 1))
+        : '';
 
   if (!isOpen || monthIndex === null) return null;
 
@@ -189,22 +189,24 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({ isOpen, monthIndex, yea
           <div className="flex items-center gap-2 text-[11px]">
             <span className="inline-flex items-center gap-1">
               <span className="inline-block h-2 w-2 rounded bg-green-500" />
-              {t('common.available', 'Disponible')}
+              {t('pages.vacations.monthGrid.legend.available')}
             </span>
             <span className="inline-flex items-center gap-1">
               <span className="inline-block h-2 w-2 rounded bg-yellow-400" />
-              {t('common.requested', 'Solicitado')}
+              {t('pages.vacations.monthGrid.legend.requested')}
             </span>
             <span className="inline-flex items-center gap-1">
               <span className="inline-block h-2 w-2 rounded bg-red-500" />
-              {t('common.full', 'Completo')}
+              {t('pages.vacations.monthGrid.legend.full')}
             </span>
+
             {availability && (
               <span className="ml-auto text-slate-500">
                 {t('pages.vacations.adminPage.capacity', { count: availability.maxPerDay })}
               </span>
             )}
           </div>
+
 
           {/* Week headers L–D */}
           <div className="grid grid-cols-7 text-center text-[10px] uppercase tracking-wide text-slate-500 mb-0.5">
@@ -230,8 +232,8 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({ isOpen, monthIndex, yea
                   state === 'red'
                     ? 'bg-red-500 text-white'
                     : state === 'yellow'
-                    ? 'bg-yellow-400 text-slate-900'
-                    : 'bg-green-500 text-white';
+                      ? 'bg-yellow-400 text-slate-900'
+                      : 'bg-green-500 text-white';
                 return (
                   <div
                     key={`d-${cell}-${idx}`}

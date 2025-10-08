@@ -263,20 +263,21 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
         </div>
 
         {/* Leyenda compacta */}
-        <div className="hidden sm:flex items-center gap-3 text-xs">
-          <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-3 w-3 rounded bg-green-500" />
-            {t('common.available', 'Disponible')}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-3 w-3 rounded bg-yellow-400" />
-            {t('common.requested', 'Solicitado')}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-3 w-3 rounded bg-red-500" />
-            {t('common.full', 'Completo')}
-          </span>
-        </div>
+<div className="hidden sm:flex items-center gap-3 text-xs">
+  <span className="inline-flex items-center gap-1">
+    <span className="inline-block h-3 w-3 rounded bg-green-500" />
+    {t('pages.vacations.monthGrid.legend.available')}
+  </span>
+  <span className="inline-flex items-center gap-1">
+    <span className="inline-block h-3 w-3 rounded bg-yellow-400" />
+    {t('pages.vacations.monthGrid.legend.requested')}
+  </span>
+  <span className="inline-flex items-center gap-1">
+    <span className="inline-block h-3 w-3 rounded bg-red-500" />
+    {t('pages.vacations.monthGrid.legend.full')}
+  </span>
+</div>
+
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
