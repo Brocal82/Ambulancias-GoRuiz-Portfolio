@@ -89,3 +89,11 @@ export function filterRequestsByMonth(
     rangesOverlap(new Date(req.startDate), new Date(req.endDate), start, end)
   );
 }
+
+/** Devuelve los pares de { y, m1 } (1..2 meses) que abarca un rango */
+export function monthsForRange(start: Date, end: Date) {
+  const s = { y: start.getFullYear(), m1: start.getMonth() + 1 };
+  const e = { y: end.getFullYear(), m1: end.getMonth() + 1 };
+  return (s.y === e.y && s.m1 === e.m1) ? [s] : [s, e];
+}
+
