@@ -78,9 +78,7 @@ const AdminVacationRequests = () => {
   const [cancelingRequestId, setCancelingRequestId] = useState<string | null>(null);
   const [cancelMessage, setCancelMessage] = useState('');
   const [isSendingCancel, setIsSendingCancel] = useState(false);
-  // ⛔ Días no seleccionables (capacidad completa) para el modal de la TABLA
-  const [modalIsDateDisabled, setModalIsDateDisabled] =
-    useState<((d: Date) => boolean) | undefined>(undefined);
+
 
 
   const locale =
@@ -347,12 +345,9 @@ const AdminVacationRequests = () => {
     setModalInitialStartDate(s);
     setModalInitialEndDate(e);
 
-    // Meses que abarca el rango (1 o 2)
-    const pairs = monthsForRange(s, e);
+  
 
-    // Precarga disponibilidad de esos meses y construye la función “apagadora” de días rojos
-    const byMonth = await preloadAvailabilityMonths(pairs);
-    setModalIsDateDisabled(() => buildIsDateDisabled(byMonth));
+   
 
     setIsModalOpen(true);
   };
@@ -522,18 +517,18 @@ const AdminVacationRequests = () => {
 
           {/* AlternativeDateModal */}
           <AlternativeDateModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            initialStartDate={modalInitialStartDate}
-            initialEndDate={modalInitialEndDate}
-            onSubmit={(altStart, altEnd, note) => {
-              if (currentRequestId) {
-                handleSendAlternativeOption(currentRequestId, altStart, altEnd, note);
-              }
-              setIsModalOpen(false);
-            }}
-            isDateDisabled={modalIsDateDisabled}  // ✅ días con capacidad completa apagados
-          />
+  isOpen={isModalOpen}
+  onClose={() => setIsModalOpen(false)}
+  initialStartDate={modalInitialStartDate}
+  initialEndDate={modalInitialEndDate}
+  onSubmit={(altStart, altEnd, note) => {
+    if (currentRequestId) {
+      handleSendAlternativeOption(currentRequestId, altStart, altEnd, note);
+    }
+    setIsModalOpen(false);
+  }}
+/>
+
 
         </div>
       </div>

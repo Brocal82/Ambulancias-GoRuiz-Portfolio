@@ -118,8 +118,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     }
   };
 
-  const [altIsDateDisabled, setAltIsDateDisabled] =
-  useState<((d: Date) => boolean) | undefined>(undefined);
+  
 
 
   useEffect(() => {
@@ -306,9 +305,9 @@ const openAlternative = async (req: IVacationRequest) => {
   setAltInitialStart(start);
   setAltInitialEnd(end);
 
-  const pairs = monthsForRange(start, end);               // ✅ tu util
-  const byMonth = await preloadAvailabilityMonths(pairs); // ✅ carga availability
-  setAltIsDateDisabled(() => buildIsDateDisabled(byMonth)); // ✅ disabler
+  
+  
+  
 
   setIsAltOpen(true);
 };
@@ -751,13 +750,13 @@ const openAlternative = async (req: IVacationRequest) => {
       </div>
 
       <AlternativeDateModal
-        isOpen={isAltOpen}
-        onClose={() => setIsAltOpen(false)}
-        initialStartDate={altInitialStart}
-        initialEndDate={altInitialEnd}
-        onSubmit={handleAlternativeSubmit}
-        isDateDisabled={altIsDateDisabled} 
-      />
+  isOpen={isAltOpen}
+  onClose={() => setIsAltOpen(false)}
+  initialStartDate={altInitialStart}
+  initialEndDate={altInitialEnd}
+  onSubmit={handleAlternativeSubmit}
+/>
+
     </>
   );
 };
