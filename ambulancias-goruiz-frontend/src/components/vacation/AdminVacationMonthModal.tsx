@@ -14,8 +14,7 @@ import { toastT } from "../../utils/toast";
 import { useTranslation } from 'react-i18next';
 import { monthLabel as fmtMonth } from '../../utils/intl';
 import { getVacationAvailability, type VacationAvailabilityResponse } from '../../api/vacation';
-import { monthsForRange } from '../../utils/vacationMonthUtils';
-import { preloadAvailabilityMonths, buildIsDateDisabled } from '../../utils/availabilityDisabler';
+
 
 
 type VacationStatus = 'pending' | 'accepted' | 'cancelled' | 'option_sent';

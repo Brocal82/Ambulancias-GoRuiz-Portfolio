@@ -9,8 +9,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { toastT } from '../utils/toast';
 import StatusBadge from '../components/common/StatusBadge';
-import { monthsForRange } from '../utils/vacationMonthUtils';
-import { preloadAvailabilityMonths, buildIsDateDisabled } from '../utils/availabilityDisabler';
+
 
 
 // Nombre del evento global para refrescar el badge del Dashboard
