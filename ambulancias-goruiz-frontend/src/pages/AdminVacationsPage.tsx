@@ -9,6 +9,9 @@ import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { toastT } from '../utils/toast';
 import StatusBadge from '../components/common/StatusBadge';
+import { monthsForRange } from '../utils/vacationMonthUtils';
+import { preloadAvailabilityMonths, buildIsDateDisabled } from '../utils/availabilityDisabler';
+
 
 // Nombre del evento global para refrescar el badge del Dashboard
 const ADMIN_VACATIONS_CHANGED_EVENT = 'admin-vacations-changed';
@@ -21,22 +24,22 @@ function emitVacationSync(payload: { id: string; status: 'accepted' | 'cancelled
   // Misma pestaña
   try {
     window.dispatchEvent(new CustomEvent('vacation-requests-updated', { detail }));
-  } catch {}
+  } catch { }
 
   // Otras pestañas/ventanas (canal dedicado)
   try {
     const bc = new BroadcastChannel('vacations');
     bc.postMessage({ type: 'requests-updated', ...detail });
     bc.close?.();
-  } catch {}
+  } catch { }
 
   // 🔁 Fallback universal: dispara evento 'storage' en otras pestañas
   try {
     localStorage.setItem('__vac_req_upd__', JSON.stringify(detail));
     setTimeout(() => {
-      try { localStorage.removeItem('__vac_req_upd__'); } catch {}
+      try { localStorage.removeItem('__vac_req_upd__'); } catch { }
     }, 500);
-  } catch {}
+  } catch { }
 }
 
 
@@ -56,15 +59,15 @@ const AdminVacationRequests = () => {
   const [selectedYear, setSelectedYear] = useState<number>(gridYear);
 
   // 🔄 Forzar refresco del grid cuando cambie la disponibilidad sin recargar
-const [gridRefreshTick, setGridRefreshTick] = useState(0);
+  const [gridRefreshTick, setGridRefreshTick] = useState(0);
 
-// Refresca caché del mes concreto y fuerza rerender del grid
-const forceRefreshMonth = useCallback(async (y: number, m1: number) => {
-  try {
-    await getVacationAvailability({ year: y, month: m1 }, { force: true });
-  } catch {}
-  setGridRefreshTick((n) => n + 1);
-}, []);
+  // Refresca caché del mes concreto y fuerza rerender del grid
+  const forceRefreshMonth = useCallback(async (y: number, m1: number) => {
+    try {
+      await getVacationAvailability({ year: y, month: m1 }, { force: true });
+    } catch { }
+    setGridRefreshTick((n) => n + 1);
+  }, []);
 
 
   // ====== Estado para AlternativeDateModal existente ======
@@ -75,6 +78,10 @@ const forceRefreshMonth = useCallback(async (y: number, m1: number) => {
   const [cancelingRequestId, setCancelingRequestId] = useState<string | null>(null);
   const [cancelMessage, setCancelMessage] = useState('');
   const [isSendingCancel, setIsSendingCancel] = useState(false);
+  // ⛔ Días no seleccionables (capacidad completa) para el modal de la TABLA
+  const [modalIsDateDisabled, setModalIsDateDisabled] =
+    useState<((d: Date) => boolean) | undefined>(undefined);
+
 
   const locale =
     i18n.language === 'de' ? 'de-DE' : i18n.language === 'en' ? 'en-US' : 'es-ES';
@@ -120,7 +127,7 @@ const forceRefreshMonth = useCallback(async (y: number, m1: number) => {
           }
         };
       }
-    } catch {}
+    } catch { }
 
     // Fallback: storage
     const onStorage = (ev: StorageEvent) => {
@@ -133,60 +140,60 @@ const forceRefreshMonth = useCallback(async (y: number, m1: number) => {
     return () => {
       window.removeEventListener('vacation-requests-updated', onCustom as EventListener);
       window.removeEventListener('storage', onStorage);
-      try { bc?.close?.(); } catch {}
+      try { bc?.close?.(); } catch { }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Live update del GRID (colores) — escucha invalidaciones de disponibilidad
-useEffect(() => {
-  const schedule = (y: number, m1: number) => {
-    // Refresca la caché del mes invalidado y fuerza rerender del grid
-    forceRefreshMonth(y, m1);
-  };
+  useEffect(() => {
+    const schedule = (y: number, m1: number) => {
+      // Refresca la caché del mes invalidado y fuerza rerender del grid
+      forceRefreshMonth(y, m1);
+    };
 
-  // Misma pestaña (CustomEvent)
-  const onCustom = (e: Event) => {
-    const detail = (e as CustomEvent).detail as { year?: number; month?: number };
-    if (detail?.year && detail?.month) schedule(detail.year, detail.month);
-  };
-  window.addEventListener('vacation-availability-invalidated', onCustom as EventListener);
+    // Misma pestaña (CustomEvent)
+    const onCustom = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { year?: number; month?: number };
+      if (detail?.year && detail?.month) schedule(detail.year, detail.month);
+    };
+    window.addEventListener('vacation-availability-invalidated', onCustom as EventListener);
 
-  // BroadcastChannel entre pestañas/ventanas
-  let bc: BroadcastChannel | null = null;
-  try {
-    const BC = (window as any).BroadcastChannel as
-      | (new (name: string) => BroadcastChannel)
-      | undefined;
-    if (typeof BC === 'function') {
-      bc = new BC('vacations');
-      bc.onmessage = (msg: MessageEvent) => {
-        const data = msg.data || {};
-        if (data?.type === 'availability-invalidated' && data.year && data.month) {
-          schedule(data.year, data.month);
-        }
-      };
-    }
-  } catch {}
-
-  // Fallback universal: evento 'storage'
-  const onStorage = (ev: StorageEvent) => {
-    if (ev.key !== '__vac_av_inval__' || !ev.newValue) return;
+    // BroadcastChannel entre pestañas/ventanas
+    let bc: BroadcastChannel | null = null;
     try {
-      const payload = JSON.parse(ev.newValue);
-      if (payload?.year && payload?.month) schedule(payload.year, payload.month);
-    } catch {}
-  };
-  window.addEventListener('storage', onStorage);
+      const BC = (window as any).BroadcastChannel as
+        | (new (name: string) => BroadcastChannel)
+        | undefined;
+      if (typeof BC === 'function') {
+        bc = new BC('vacations');
+        bc.onmessage = (msg: MessageEvent) => {
+          const data = msg.data || {};
+          if (data?.type === 'availability-invalidated' && data.year && data.month) {
+            schedule(data.year, data.month);
+          }
+        };
+      }
+    } catch { }
 
-  return () => {
-    window.removeEventListener('vacation-availability-invalidated', onCustom as EventListener);
-    window.removeEventListener('storage', onStorage);
-    try { bc?.close?.(); } catch {}
-  };
-}, [forceRefreshMonth]);
+    // Fallback universal: evento 'storage'
+    const onStorage = (ev: StorageEvent) => {
+      if (ev.key !== '__vac_av_inval__' || !ev.newValue) return;
+      try {
+        const payload = JSON.parse(ev.newValue);
+        if (payload?.year && payload?.month) schedule(payload.year, payload.month);
+      } catch { }
+    };
+    window.addEventListener('storage', onStorage);
 
-  
+    return () => {
+      window.removeEventListener('vacation-availability-invalidated', onCustom as EventListener);
+      window.removeEventListener('storage', onStorage);
+      try { bc?.close?.(); } catch { }
+    };
+  }, [forceRefreshMonth]);
+
+
 
   type VacationStatus = 'pending' | 'accepted' | 'cancelled' | 'option_sent';
 
@@ -195,69 +202,69 @@ useEffect(() => {
     (r) => r.status === 'pending' || r.status === 'option_sent'
   );
 
-const handleUpdateStatus = async (id: string, status: VacationStatus) => {
-  if (!token) return;
+  const handleUpdateStatus = async (id: string, status: VacationStatus) => {
+    if (!token) return;
 
-  // Para 'accepted' hacemos manejo manual para interceptar 409 (capacidad)
-  if (status === 'accepted') {
+    // Para 'accepted' hacemos manejo manual para interceptar 409 (capacidad)
+    if (status === 'accepted') {
+      try {
+        await updateVacationRequest(token, id, { status });
+
+        // 🟢 Invalidar disponibilidad en vivo (cambia capacidad)
+        const req = requests.find(r => r._id === id);
+        if (req) {
+          invalidateAvailabilityByRange(req.startDate, req.endDate);
+        }
+
+        // 🔔 Sync Worker y Dashboard
+        emitVacationSync({ id, status: 'accepted' });
+        notifyVacationsChanged();
+
+        // ✅ Toast de éxito + refresco
+        toastT.success(['toasts.vacations.admin.accepted']);
+        fetchRequests();
+      } catch (e: any) {
+        // Capacidad excedida (bloquear tercer aceptado)
+        if (e?.status === 409 && e?.body?.code === 'capacity_exceeded') {
+          toastT.error(['toasts.vacations.admin.capacityExceeded']);
+          return;
+        }
+        // Otros errores
+        toastT.error(['toasts.vacations.admin.error']);
+      }
+      return;
+    }
+
+    // Para 'cancelled' y otros estados mantenemos toastT.promise
+    const successMsg =
+      status === 'cancelled'
+        ? (['toasts.vacations.admin.cancelled'] as const)
+        : (['toasts.vacations.admin.updated'] as const);
+
     try {
-      await updateVacationRequest(token, id, { status });
+      await toastT.promise(
+        updateVacationRequest(token, id, { status }),
+        {
+          pending: ['toasts.vacations.admin.updating'],
+          success: successMsg,
+          error: ['toasts.vacations.admin.error'],
+        }
+      );
 
-      // 🟢 Invalidar disponibilidad en vivo (cambia capacidad)
-      const req = requests.find(r => r._id === id);
-      if (req) {
-        invalidateAvailabilityByRange(req.startDate, req.endDate);
+      if (status === 'cancelled') {
+        const req = requests.find(r => r._id === id);
+        if (req) {
+          invalidateAvailabilityByRange(req.startDate, req.endDate);
+        }
+        emitVacationSync({ id, status: 'cancelled' });
       }
 
-      // 🔔 Sync Worker y Dashboard
-      emitVacationSync({ id, status: 'accepted' });
       notifyVacationsChanged();
-
-      // ✅ Toast de éxito + refresco
-      toastT.success(['toasts.vacations.admin.accepted']);
       fetchRequests();
-    } catch (e: any) {
-      // Capacidad excedida (bloquear tercer aceptado)
-      if (e?.status === 409 && e?.body?.code === 'capacity_exceeded') {
-        toastT.error(['toasts.vacations.admin.capacityExceeded']);
-        return;
-      }
-      // Otros errores
-      toastT.error(['toasts.vacations.admin.error']);
+    } catch {
+      // el error ya se muestra por toast
     }
-    return;
-  }
-
-  // Para 'cancelled' y otros estados mantenemos toastT.promise
-  const successMsg =
-    status === 'cancelled'
-      ? (['toasts.vacations.admin.cancelled'] as const)
-      : (['toasts.vacations.admin.updated'] as const);
-
-  try {
-    await toastT.promise(
-      updateVacationRequest(token, id, { status }),
-      {
-        pending: ['toasts.vacations.admin.updating'],
-        success: successMsg,
-        error: ['toasts.vacations.admin.error'],
-      }
-    );
-
-    if (status === 'cancelled') {
-      const req = requests.find(r => r._id === id);
-      if (req) {
-        invalidateAvailabilityByRange(req.startDate, req.endDate);
-      }
-      emitVacationSync({ id, status: 'cancelled' });
-    }
-
-    notifyVacationsChanged();
-    fetchRequests();
-  } catch {
-    // el error ya se muestra por toast
-  }
-};
+  };
 
 
   const handleSendAlternativeOption = async (
@@ -332,12 +339,24 @@ const handleUpdateStatus = async (id: string, status: VacationStatus) => {
     }
   };
 
-  const openAlternativeModal = (reqId: string, startDate: string, endDate: string) => {
+  const openAlternativeModal = async (reqId: string, startDate: string, endDate: string) => {
     setCurrentRequestId(reqId);
-    setModalInitialStartDate(new Date(startDate));
-    setModalInitialEndDate(new Date(endDate));
+
+    const s = new Date(startDate);
+    const e = new Date(endDate);
+    setModalInitialStartDate(s);
+    setModalInitialEndDate(e);
+
+    // Meses que abarca el rango (1 o 2)
+    const pairs = monthsForRange(s, e);
+
+    // Precarga disponibilidad de esos meses y construye la función “apagadora” de días rojos
+    const byMonth = await preloadAvailabilityMonths(pairs);
+    setModalIsDateDisabled(() => buildIsDateDisabled(byMonth));
+
     setIsModalOpen(true);
   };
+
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -348,16 +367,16 @@ const handleUpdateStatus = async (id: string, status: VacationStatus) => {
           </h2>
 
           {/* Grid de meses con navegación de año */}
-<AdminVacationMonthGrid
-  key={`${gridYear}-${gridRefreshTick}`} // ✅ fuerza rerender cuando cambie la disponibilidad
-  requests={requests}
-  year={gridYear}
-  onYearChange={(y) => setGridYear(y)}
-  onMonthOpen={(monthIdx, y) => {
-    setSelectedMonth(monthIdx);
-    setSelectedYear(y);
-  }}
-/>
+          <AdminVacationMonthGrid
+            key={`${gridYear}-${gridRefreshTick}`} // ✅ fuerza rerender cuando cambie la disponibilidad
+            requests={requests}
+            year={gridYear}
+            onYearChange={(y) => setGridYear(y)}
+            onMonthOpen={(monthIdx, y) => {
+              setSelectedMonth(monthIdx);
+              setSelectedYear(y);
+            }}
+          />
 
 
           {/* Modal del mes (abre con mes + AÑO correctos) */}
@@ -509,12 +528,13 @@ const handleUpdateStatus = async (id: string, status: VacationStatus) => {
             initialEndDate={modalInitialEndDate}
             onSubmit={(altStart, altEnd, note) => {
               if (currentRequestId) {
-                // option_sent no cambia capacidad
                 handleSendAlternativeOption(currentRequestId, altStart, altEnd, note);
               }
               setIsModalOpen(false);
             }}
+            isDateDisabled={modalIsDateDisabled}  // ✅ días con capacidad completa apagados
           />
+
         </div>
       </div>
     </div>
