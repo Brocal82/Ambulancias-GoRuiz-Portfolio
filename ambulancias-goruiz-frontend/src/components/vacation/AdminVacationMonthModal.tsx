@@ -14,6 +14,9 @@ import { toastT } from "../../utils/toast";
 import { useTranslation } from 'react-i18next';
 import { monthLabel as fmtMonth } from '../../utils/intl';
 import { getVacationAvailability, type VacationAvailabilityResponse } from '../../api/vacation';
+import { monthsForRange } from '../../utils/vacationMonthUtils';
+import { preloadAvailabilityMonths, buildIsDateDisabled } from '../../utils/availabilityDisabler';
+
 
 type VacationStatus = 'pending' | 'accepted' | 'cancelled' | 'option_sent';
 
@@ -114,6 +117,10 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       if (inFlightKeyRef.current === key) setAvailLoading(false);
     }
   };
+
+  const [altIsDateDisabled, setAltIsDateDisabled] =
+  useState<((d: Date) => boolean) | undefined>(undefined);
+
 
   useEffect(() => {
     if (!isOpen || monthIndex === null) return;
@@ -291,12 +298,21 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     }
   };
 
-  const openAlternative = (req: IVacationRequest) => {
-    setCurrentRequestId(req._id);
-    setAltInitialStart(new Date(req.startDate));
-    setAltInitialEnd(new Date(req.endDate));
-    setIsAltOpen(true);
-  };
+const openAlternative = async (req: IVacationRequest) => {
+  setCurrentRequestId(req._id);
+
+  const start = new Date(req.startDate);
+  const end = new Date(req.endDate);
+  setAltInitialStart(start);
+  setAltInitialEnd(end);
+
+  const pairs = monthsForRange(start, end);               // ✅ tu util
+  const byMonth = await preloadAvailabilityMonths(pairs); // ✅ carga availability
+  setAltIsDateDisabled(() => buildIsDateDisabled(byMonth)); // ✅ disabler
+
+  setIsAltOpen(true);
+};
+
 
   const handleAlternativeSubmit = async (altStartISO: string, altEndISO: string, note: string) => {
     if (!token || !currentRequestId || monthIndex === null) return;
@@ -740,6 +756,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
         initialStartDate={altInitialStart}
         initialEndDate={altInitialEnd}
         onSubmit={handleAlternativeSubmit}
+        isDateDisabled={altIsDateDisabled} 
       />
     </>
   );
