@@ -1093,32 +1093,35 @@
       "deleteSuccess": "🗑️ Benutzer erfolgreich gelöscht",
       "deleteError": "❌ Fehler beim Löschen des Benutzers"
     },
-    "vacations": {
-      "requestSent": "✅ Antrag erfolgreich eingereicht.",
-      "requestError": "❌ Fehler beim Einreichen des Antrags.",
-      "deleted": "🗑️ Antrag gelöscht",
-      "deleteError": "❌ Fehler beim Löschen des Antrags",
-      "editPending": "Die Bearbeitungsfunktion für Antrag {{id}} ist noch nicht implementiert.",
-      "worker": {
-        "loadError": "❌ Fehler beim Laden deiner Anträge.",
-        "error": "❌ Ein Fehler ist aufgetreten.",
-        "respondPending": "📨 Antwort wird gesendet...",
-        "respondSuccess": "✅ Antwort gesendet",
-        "formSuccess": "✅ Antrag eingereicht"
-      },
-      "admin": {
-        "loadError": "❌ Fehler beim Laden der Anträge.",
-        "error": "❌ Ein Fehler ist aufgetreten.",
-        "updating": "🔄 Aktualisiere...",
-        "accepted": "✅ Antrag akzeptiert",
-        "cancelled": "🛑 Antrag abgelehnt",
-        "updated": "✅ Status aktualisiert",
-        "sendingAlt": "📤 Alternative wird gesendet...",
-        "altSent": "✅ Alternative Option gesendet",
-        "cancelling": "🛑 Storniere...",
-        "deleting": "🗑️ Lösche...",
-        "deleted": "🗑️ Antrag gelöscht"
-      }
+"vacations": {
+  "requestSent": "✅ Antrag erfolgreich gesendet.",
+  "requestError": "❌ Fehler beim Senden des Antrags.",
+  "deleted": "🗑️ Antrag gelöscht",
+  "deleteError": "❌ Fehler beim Löschen des Antrags.",
+  "editPending": "Bearbeitungsfunktion für Antrag {{id}} noch nicht implementiert.",
+
+  "worker": {
+    "loadError": "❌ Fehler beim Laden deiner Anträge.",
+    "error": "❌ Ein Fehler ist aufgetreten.",
+    "respondPending": "📨 Antwort wird gesendet...",
+    "respondSuccess": "✅ Antwort erfolgreich gesendet.",
+    "formSuccess": "✅ Antrag erfolgreich gesendet."
+  },
+
+  "admin": {
+    "loadError": "❌ Fehler beim Laden der Urlaubsanträge.",
+    "error": "❌ Beim Verarbeiten des Antrags ist ein Fehler aufgetreten.",
+    "updating": "🔄 Wird aktualisiert...",
+    "accepted": "✅ Urlaubsantrag genehmigt.",
+    "cancelled": "🛑 Urlaubsantrag storniert.",
+    "updated": "✅ Urlaubsstatus aktualisiert.",
+    "capacityExceeded": "⚠️ Tägliche Urlaubskapazität erreicht. Für diese Tage können keine weiteren Anträge akzeptiert werden.",
+    "sendingAlt": "📤 Alternative wird gesendet...",
+    "altSent": "✅ Alternative Option gesendet.",
+    "cancelling": "🛑 Wird storniert...",
+    "deleting": "🗑️ Wird gelöscht...",
+    "deleted": "🗑️ Antrag gelöscht."
+  }
     },
     "messages": {
       "fillRequired": "✏️ Bitte Betreff und Nachricht ausfüllen",

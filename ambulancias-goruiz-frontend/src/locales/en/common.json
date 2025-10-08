@@ -1093,32 +1093,35 @@
       "deleteSuccess": "🗑️ User deleted successfully",
       "deleteError": "❌ Failed to delete the user"
     },
-    "vacations": {
-      "requestSent": "✅ Request submitted successfully.",
-      "requestError": "❌ Error while submitting the request.",
-      "deleted": "🗑️ Request deleted",
-      "deleteError": "❌ Error while deleting the request",
-      "editPending": "Edit functionality for request {{id}} is pending implementation.",
-      "worker": {
-        "loadError": "❌ Error loading your requests.",
-        "error": "❌ An error occurred.",
-        "respondPending": "📨 Sending response...",
-        "respondSuccess": "✅ Response sent",
-        "formSuccess": "✅ Request submitted"
-      },
-      "admin": {
-        "loadError": "❌ Error loading requests.",
-        "error": "❌ An error occurred.",
-        "updating": "🔄 Updating...",
-        "accepted": "✅ Request accepted",
-        "cancelled": "🛑 Request cancelled",
-        "updated": "✅ Status updated",
-        "sendingAlt": "📤 Sending alternative...",
-        "altSent": "✅ Alternative option sent",
-        "cancelling": "🛑 Cancelling...",
-        "deleting": "🗑️ Deleting...",
-        "deleted": "🗑️ Request deleted"
-      }
+"vacations": {
+  "requestSent": "✅ Request sent successfully.",
+  "requestError": "❌ Error sending request.",
+  "deleted": "🗑️ Request deleted",
+  "deleteError": "❌ Error deleting request.",
+  "editPending": "Edit request {{id}} feature not yet implemented.",
+
+  "worker": {
+    "loadError": "❌ Error loading your requests.",
+    "error": "❌ An error occurred.",
+    "respondPending": "📨 Sending response...",
+    "respondSuccess": "✅ Response sent successfully.",
+    "formSuccess": "✅ Request sent successfully."
+  },
+
+  "admin": {
+    "loadError": "❌ Error loading vacation requests.",
+    "error": "❌ An error occurred while processing the request.",
+    "updating": "🔄 Updating...",
+    "accepted": "✅ Vacation request accepted.",
+    "cancelled": "🛑 Vacation request cancelled.",
+    "updated": "✅ Vacation status updated.",
+    "capacityExceeded": "⚠️ Daily vacation capacity reached. No more requests can be accepted for these days.",
+    "sendingAlt": "📤 Sending alternative...",
+    "altSent": "✅ Alternative option sent.",
+    "cancelling": "🛑 Cancelling...",
+    "deleting": "🗑️ Deleting...",
+    "deleted": "🗑️ Request deleted."
+  }
     },
     "messages": {
       "fillRequired": "✏️ Please fill subject and message",

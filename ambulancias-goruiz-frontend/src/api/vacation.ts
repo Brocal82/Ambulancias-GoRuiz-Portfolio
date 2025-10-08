@@ -61,12 +61,30 @@ interface UpdateVacationPayload {
 }
 
 // Actualizar una solicitud (solo admin)
-export const updateVacationRequest = async (token: string, id: string, data: UpdateVacationPayload) => {
-  const response = await axiosInstance.patch(`/vacations/${id}`, data, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
+export const updateVacationRequest = async (
+  token: string,
+  id: string,
+  data: UpdateVacationPayload
+) => {
+  try {
+    const response = await axiosInstance.patch(`/vacations/${id}`, data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (e: any) {
+    // Normalizar el error para que los callers puedan hacer e.status / e.body
+    const status = e?.response?.status;
+    const respData = e?.response?.data;
+    const err: any = new Error(
+      (typeof respData?.message === 'string' && respData.message) ||
+      `Request failed with ${status ?? 'unknown status'}`
+    );
+    err.status = status;     // ⬅️ MUY IMPORTANTE (p.ej., 409)
+    err.body = respData;     // ⬅️ Aquí llega { code: 'capacity_exceeded', days: [...] }
+    throw err;
+  }
 };
+
 
 // Obtener solicitudes del trabajador logueado
 export const getUserVacationRequests = async (token: string) => {

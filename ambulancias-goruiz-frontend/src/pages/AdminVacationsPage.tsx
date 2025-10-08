@@ -195,45 +195,70 @@ useEffect(() => {
     (r) => r.status === 'pending' || r.status === 'option_sent'
   );
 
-  const handleUpdateStatus = async (id: string, status: VacationStatus) => {
-    if (!token) return;
+const handleUpdateStatus = async (id: string, status: VacationStatus) => {
+  if (!token) return;
 
-    const successMsg =
-      status === 'accepted'
-        ? (['toasts.vacations.admin.accepted'] as const)
-        : status === 'cancelled'
-          ? (['toasts.vacations.admin.cancelled'] as const)
-          : (['toasts.vacations.admin.updated'] as const);
-
+  // Para 'accepted' hacemos manejo manual para interceptar 409 (capacidad)
+  if (status === 'accepted') {
     try {
-      await toastT.promise(
-        updateVacationRequest(token, id, { status }),
-        {
-          pending: ['toasts.vacations.admin.updating'],
-          success: successMsg,
-          error: ['toasts.vacations.admin.error'],
-        }
-      );
+      await updateVacationRequest(token, id, { status });
 
-      // 🟢 Invalidar disponibilidad en vivo SI cambia la capacidad
-      if (status === 'accepted' || status === 'cancelled') {
-        const req = requests.find(r => r._id === id);
-        if (req) {
-          invalidateAvailabilityByRange(req.startDate, req.endDate);
-        }
-        // 🔔 Emitir sincronización a Worker SOLO cuando cambia su estado final
-        emitVacationSync({ id, status });
+      // 🟢 Invalidar disponibilidad en vivo (cambia capacidad)
+      const req = requests.find(r => r._id === id);
+      if (req) {
+        invalidateAvailabilityByRange(req.startDate, req.endDate);
       }
 
-      // 🔔 Notificar al Dashboard para refrescar el contador
+      // 🔔 Sync Worker y Dashboard
+      emitVacationSync({ id, status: 'accepted' });
       notifyVacationsChanged();
 
-      // Refrescar listado
+      // ✅ Toast de éxito + refresco
+      toastT.success(['toasts.vacations.admin.accepted']);
       fetchRequests();
-    } catch {
-      // el error ya se muestra por toast
+    } catch (e: any) {
+      // Capacidad excedida (bloquear tercer aceptado)
+      if (e?.status === 409 && e?.body?.code === 'capacity_exceeded') {
+        toastT.error(['toasts.vacations.admin.capacityExceeded']);
+        return;
+      }
+      // Otros errores
+      toastT.error(['toasts.vacations.admin.error']);
     }
-  };
+    return;
+  }
+
+  // Para 'cancelled' y otros estados mantenemos toastT.promise
+  const successMsg =
+    status === 'cancelled'
+      ? (['toasts.vacations.admin.cancelled'] as const)
+      : (['toasts.vacations.admin.updated'] as const);
+
+  try {
+    await toastT.promise(
+      updateVacationRequest(token, id, { status }),
+      {
+        pending: ['toasts.vacations.admin.updating'],
+        success: successMsg,
+        error: ['toasts.vacations.admin.error'],
+      }
+    );
+
+    if (status === 'cancelled') {
+      const req = requests.find(r => r._id === id);
+      if (req) {
+        invalidateAvailabilityByRange(req.startDate, req.endDate);
+      }
+      emitVacationSync({ id, status: 'cancelled' });
+    }
+
+    notifyVacationsChanged();
+    fetchRequests();
+  } catch {
+    // el error ya se muestra por toast
+  }
+};
+
 
   const handleSendAlternativeOption = async (
     id: string,

@@ -1092,31 +1092,34 @@
       "deleteError": "❌ Error al eliminar el usuario"
     },
     "vacations": {
-      "requestSent": "✅ Solicitud enviada correctamente.",
-      "requestError": "❌ Error al enviar la solicitud.",
-      "deleted": "🗑️ Solicitud eliminada",
-      "deleteError": "❌ Error al eliminar la solicitud",
-      "editPending": "Funcionalidad de editar la solicitud {{id}} pendiente de implementar.",
-      "worker": {
-        "loadError": "❌ Error al cargar tus solicitudes.",
-        "error": "❌ Ocurrió un error.",
-        "respondPending": "📨 Enviando respuesta...",
-        "respondSuccess": "✅ Respuesta enviada",
-        "formSuccess": "✅ Solicitud enviada"
-      },
-      "admin": {
-        "loadError": "❌ Error al cargar solicitudes.",
-        "error": "❌ Ocurrió un error.",
-        "updating": "🔄 Actualizando...",
-        "accepted": "✅ Solicitud aceptada",
-        "cancelled": "🛑 Solicitud cancelada",
-        "updated": "✅ Estado actualizado",
-        "sendingAlt": "📤 Enviando alternativa...",
-        "altSent": "✅ Opción alternativa enviada",
-        "cancelling": "🛑 Cancelando...",
-        "deleting": "🗑️ Eliminando...",
-        "deleted": "🗑️ Solicitud eliminada"
-      }
+  "requestSent": "✅ Solicitud enviada correctamente.",
+  "requestError": "❌ Error al enviar la solicitud.",
+  "deleted": "🗑️ Solicitud eliminada",
+  "deleteError": "❌ Error al eliminar la solicitud",
+  "editPending": "Funcionalidad de editar la solicitud {{id}} pendiente de implementar.",
+
+  "worker": {
+    "loadError": "❌ Error al cargar tus solicitudes.",
+    "error": "❌ Ocurrió un error.",
+    "respondPending": "📨 Enviando respuesta...",
+    "respondSuccess": "✅ Respuesta enviada",
+    "formSuccess": "✅ Solicitud enviada"
+  },
+
+  "admin": {
+    "loadError": "❌ Error al cargar solicitudes.",
+    "error": "❌ Ocurrió un error al procesar la solicitud.",
+    "updating": "🔄 Actualizando...",
+    "accepted": "✅ Solicitud de vacaciones aceptada.",
+    "cancelled": "🛑 Solicitud de vacaciones cancelada.",
+    "updated": "✅ Estado de solicitud actualizado.",
+    "capacityExceeded": "⚠️ Capacidad diaria alcanzada. No se pueden aceptar más solicitudes para esos días.",
+    "sendingAlt": "📤 Enviando alternativa...",
+    "altSent": "✅ Opción alternativa enviada.",
+    "cancelling": "🛑 Cancelando...",
+    "deleting": "🗑️ Eliminando...",
+    "deleted": "🗑️ Solicitud eliminada."
+  }
     },
     "messages": {
       "fillRequired": "✏️ Por favor, completa asunto y mensaje",

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import type { IVacationRequestModel } from '../models/vacationRequest';
 import VacationRequest from '../models/vacationRequest';
+import { findOverCapacityDays } from '../utils/vacationCapacity';
 import mongoose from 'mongoose';
 
 // ======================================================
@@ -11,6 +12,12 @@ import {
   model as mongooseModel,
   models as mongooseModels,
 } from 'mongoose';
+
+// ✅ Añade aquí el tipo y el type guard (justo debajo de los imports de mongoose)
+type VacationStatus = 'pending' | 'accepted' | 'cancelled' | 'option_sent';
+function isVacationStatus(x: unknown): x is VacationStatus {
+  return x === 'pending' || x === 'accepted' || x === 'cancelled' || x === 'option_sent';
+}
 
 interface IVacationMonthConfig {
   monthKey: string; // "YYYY-MM"
@@ -58,6 +65,16 @@ function isInRange(d: Date, start: Date, end: Date) {
   return t >= dayStart(start).getTime() && t <= dayEnd(end).getTime();
 }
 
+// Lee la capacidad para el mes de una fecha dada (si no hay config, usa DEFAULT_MAX_PER_DAY)
+async function getMaxPerDayForDate(date: Date): Promise<number> {
+  const y = date.getFullYear();
+  const m1 = date.getMonth() + 1;
+  const key = toMonthKey(y, m1);
+  const cfg = await VacationMonthConfig.findOne({ monthKey: key }).lean();
+  return cfg?.maxPerDay ?? DEFAULT_MAX_PER_DAY;
+}
+
+
 // ======================================================
 // Controladores existentes
 // ======================================================
@@ -103,29 +120,78 @@ export const createVacationRequest = async (req: Request, res: Response): Promis
 
 // Actualizar solicitud (admin): estado, alternativa, nota
 export const updateVacationRequest = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const { status, adminOptionStartDate, adminOptionEndDate, adminNote } = req.body;
+  const { id } = req.params;
+  const { status, adminOptionStartDate, adminOptionEndDate, adminNote } = req.body;
 
-    const request = await VacationRequest.findById(id) as IVacationRequestModel | null;
-    if (!request) {
-      res.status(404).json({ message: 'Solicitud no encontrada' });
+  const session = await mongoose.startSession();
+
+  try {
+    await session.withTransaction(async () => {
+      // 1) Cargar la solicitud dentro de la transacción
+      const request = await VacationRequest.findById(id).session(session);
+      if (!request) {
+        res.status(404).json({ message: 'Solicitud no encontrada' });
+        // lanzamos para abortar la tx sin duplicar respuestas
+        throw new Error('__ABORT__');
+      }
+
+      // 2) Validación de capacidad SOLO si se va a aceptar
+      if (status === 'accepted') {
+        const maxPerDay = await getMaxPerDayForDate(new Date(request.startDate));
+        const overDays = await findOverCapacityDays(
+          VacationRequest,
+          request.startDate,
+          request.endDate,
+          maxPerDay,
+          request._id.toString()
+        );
+
+        if (overDays.length > 0) {
+          res.status(409).json({
+            code: 'capacity_exceeded',
+            message: 'Capacidad diaria alcanzada para uno o más días del rango.',
+            days: overDays, // ISO (00:00) de los días bloqueados
+          });
+          // abortar transacción sin guardar cambios
+          throw new Error('__ABORT__');
+        }
+      }
+
+      // 3) Actualizar campos permitidos (con type guard para evitar warning de TS)
+      if (typeof status !== 'undefined') {
+        if (isVacationStatus(status)) {
+          request.status = status;
+        } else {
+          res.status(400).json({ message: 'Estado inválido' });
+          throw new Error('__ABORT__');
+        }
+      }
+
+      if (adminOptionStartDate) request.adminOptionStartDate = new Date(adminOptionStartDate);
+      if (adminOptionEndDate) request.adminOptionEndDate = new Date(adminOptionEndDate);
+      if (typeof adminNote === 'string') request.adminNote = adminNote;
+
+
+      // 4) Guardar dentro de la transacción
+      await request.save({ session });
+
+      // 5) Responder OK con el doc actualizado
+      res.status(200).json(request);
+    });
+  } catch (err: any) {
+    if (err?.message === '__ABORT__') {
+      // ya respondimos dentro de la tx (404 o 409)
       return;
     }
-
-    if (status) request.status = status;
-    if (adminOptionStartDate) request.adminOptionStartDate = new Date(adminOptionStartDate);
-    if (adminOptionEndDate) request.adminOptionEndDate = new Date(adminOptionEndDate);
-    if (adminNote) request.adminNote = adminNote;
-
-    await request.save();
-
-    res.status(200).json(request);
-  } catch (error) {
-    console.error('Error al actualizar solicitud de vacaciones:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('❌ Error al actualizar solicitud de vacaciones:', err);
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Error interno del servidor' });
+    }
+  } finally {
+    session.endSession();
   }
 };
+
 
 // Responder a fecha alternativa (trabajador)
 export const respondToAlternativeDate = async (req: Request, res: Response): Promise<void> => {
@@ -295,8 +361,8 @@ export const getAvailability = async (req: Request, res: Response): Promise<void
       // 🔴 NUEVAS reglas de color
       const state: 'green' | 'yellow' | 'red' =
         approvedCount >= maxPerDay ? 'red' :
-        pendingCount > 0           ? 'yellow' :
-                                     'green';
+          pendingCount > 0 ? 'yellow' :
+            'green';
 
       days.push({ day: d, approvedCount, pendingCount, remaining, state });
     }
