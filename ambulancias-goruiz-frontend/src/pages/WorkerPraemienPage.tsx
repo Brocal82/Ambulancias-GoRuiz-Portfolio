@@ -129,11 +129,18 @@ const WorkerPraemienPage = () => {
                 {/* Barra de progreso estilizada */}
                 <div className="w-full h-3 rounded-full bg-slate-200 ring-1 ring-slate-300 overflow-hidden">
                   <div
-                    className={`h-3 rounded-full ${isPositive ? 'bg-emerald-500' : 'bg-red-500'
-                      } transition-[width]`}
-                    style={{ width: `${percentage}%` }}
+                    className={[
+                      "h-3 rounded-full",
+                      isPositive ? "bg-emerald-500" : "bg-red-500",
+                      "transition-[width]",
+                      // define la variable --p con tu porcentaje…
+                      `[--p:${percentage}%]`,
+                      // …y úsala para el width sin inline style
+                      "w-[var(--p)]",
+                    ].join(" ")}
                   />
                 </div>
+
               </div>
             );
           })}
