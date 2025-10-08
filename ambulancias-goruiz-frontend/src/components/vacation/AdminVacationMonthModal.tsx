@@ -26,6 +26,32 @@ interface Props {
   onActionDone?: () => void;
 }
 
+// ✅ Helper mínimo para sincronizar Worker sin recargar (incluye fallback por storage)
+function emitVacationSync(payload: { id: string; status: 'accepted' | 'cancelled' | 'deleted'; ts?: number }) {
+  const detail = { ts: Date.now(), ...payload };
+
+  // Misma pestaña
+  try {
+    window.dispatchEvent(new CustomEvent('vacation-requests-updated', { detail }));
+  } catch {}
+
+  // Otras pestañas/ventanas (canal dedicado)
+  try {
+    const bc = new BroadcastChannel('vacations');
+    bc.postMessage({ type: 'requests-updated', ...detail });
+    bc.close?.();
+  } catch {}
+
+  // 🔁 Fallback universal: dispara evento 'storage' en otras pestañas
+  try {
+    localStorage.setItem('__vac_req_upd__', JSON.stringify(detail));
+    setTimeout(() => {
+      try { localStorage.removeItem('__vac_req_upd__'); } catch {}
+    }, 500);
+  } catch {}
+}
+
+
 const AdminVacationMonthModal: React.FC<Props> = ({
   isOpen,
   monthIndex,
@@ -252,6 +278,9 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     if (!token || monthIndex === null) return;
     try {
       await updateVacationRequest(token, id, { status: 'accepted' });
+      // 🔔 Emitir sincronización a Worker (después del await)
+      emitVacationSync({ id, status: 'accepted' });
+
       // Invalidar y refrescar mini-calendario visible
       invalidateVisibleMonth();
       const m1 = monthIndex + 1;
@@ -280,7 +309,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       });
       setIsAltOpen(false);
       setCurrentRequestId(null);
-      // option_sent no cambia capacidad
+      // ⚠️ option_sent no cambia estado final del worker → no emitimos
       onActionDone?.();
     } catch {
       toastT.error(["toasts.vacations.worker.loadError"]);
@@ -297,6 +326,10 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     setIsSendingCancel(true);
     try {
       await updateVacationRequest(token, id, { status: 'cancelled', adminNote: cancelMessage });
+
+      // 🔔 Emitir sincronización a Worker
+      emitVacationSync({ id, status: 'cancelled' });
+
       invalidateVisibleMonth();
       const m1 = monthIndex + 1;
       window.setTimeout(() => loadAvailability(year, m1, true), 200);
@@ -320,6 +353,9 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       const endISO = req?.endDate;
 
       await deleteVacationRequest(token, id);
+
+      // 🔔 Emitir sincronización (borrado) — el Worker refrescará su lista
+      emitVacationSync({ id, status: 'deleted' });
 
       // 🟢 Si el borrado libera capacidad (p.ej. era 'accepted'), invalidar por rango
       if (startISO && endISO) {

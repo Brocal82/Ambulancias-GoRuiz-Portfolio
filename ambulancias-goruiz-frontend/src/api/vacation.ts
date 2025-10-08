@@ -283,23 +283,55 @@ function getBerlinYearMonth(iso: string): { y: number; m1: number } | null {
   return { y, m1 };
 }
 
-/** Emite invalidaciones para todos los meses entre startISO y endISO (inclusive) */
-export function invalidateAvailabilityByRange(startISO: string, endISO: string) {
-  const startYM = getBerlinYearMonth(startISO);
-  const endYM = getBerlinYearMonth(endISO);
-  if (!startYM || !endYM) return;
+// ✅ Versión limpia y compatible (sin warnings)
+export function invalidateAvailabilityByRange(startDate: string, _endDate?: string) {
 
-  let { y, m1 } = startYM;
-  const endY = endYM.y;
-  const endM1 = endYM.m1;
+  try {
+    // 🗓️ Si existe helper getBerlinYearMonth, úsalo:
+    let year: number, month: number;
 
-  while (y < endY || (y === endY && m1 <= endM1)) {
-    emitAvailabilityInvalidation(y, m1);
-    if (m1 === 12) {
-      y += 1;
-      m1 = 1;
+    if (typeof getBerlinYearMonth === 'function') {
+      const startInfo = getBerlinYearMonth(startDate);
+      if (!startInfo) return;
+      year = startInfo.y;
+      month = startInfo.m1;
     } else {
-      m1 += 1;
+      const start = new Date(startDate);
+      year = start.getFullYear();
+      month = start.getMonth() + 1;
     }
+
+    // 1️⃣ CustomEvent (misma pestaña)
+    window.dispatchEvent(
+      new CustomEvent('vacation-availability-invalidated', {
+        detail: { year, month },
+      })
+    );
+
+    // 2️⃣ BroadcastChannel (otras pestañas/ventanas)
+    try {
+      const bc = new BroadcastChannel('vacations');
+      bc.postMessage({ type: 'availability-invalidated', year, month });
+      bc.close?.();
+    } catch {}
+
+    // 3️⃣ localStorage (fallback universal)
+    try {
+      localStorage.setItem(
+        '__vac_av_inval__',
+        JSON.stringify({ year, month, ts: Date.now() })
+      );
+    } catch {}
+
+    // 🧹 limpiar almacenamiento para evitar eventos acumulados
+    setTimeout(() => {
+      try {
+        localStorage.removeItem('__vac_av_inval__');
+      } catch {}
+    }, 2000);
+  } catch (err) {
+    console.warn('Error invalidando disponibilidad:', err);
   }
 }
+
+

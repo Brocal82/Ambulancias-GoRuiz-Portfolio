@@ -38,7 +38,20 @@ const WorkerVacationsPage = () => {
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null); // 0..11
   const [selectedYear, setSelectedYear] = useState<number>(gridYear);
 
-  const fetchRequests = async () => {
+  // 🔄 Forzar refresco del grid cuando cambie la disponibilidad sin recargar
+const [gridRefreshTick, setGridRefreshTick] = useState(0);
+
+// Refresca caché del mes concreto y fuerza rerender del grid
+const forceRefreshMonth = useCallback(async (y: number, m1: number) => {
+  try {
+    await getVacationAvailability({ year: y, month: m1 }, { force: true });
+  } catch {}
+  setGridRefreshTick((n) => n + 1);
+}, []);
+
+
+  // ✅ fetchRequests como useCallback para usar deps estables (token, t)
+  const fetchRequests = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
@@ -53,12 +66,111 @@ const WorkerVacationsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, t]);
 
+  // 🔁 Debouncer para evitar refetch duplicado
+  const refetchTimer = useRef<number | null>(null);
+  const safeRefetch = useCallback(() => {
+    if (refetchTimer.current) return;
+    refetchTimer.current = window.setTimeout(() => {
+      refetchTimer.current = null;
+      fetchRequests();
+    }, 100);
+  }, [fetchRequests]);
+
+  // Carga inicial y cuando cambie fetchRequests
   useEffect(() => {
     fetchRequests();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [fetchRequests]);
+
+  // Escuchar CustomEvent (misma pestaña)
+  useEffect(() => {
+    const handler = () => safeRefetch();
+    window.addEventListener('vacation-requests-updated', handler as EventListener);
+    return () => window.removeEventListener('vacation-requests-updated', handler as EventListener);
+  }, [safeRefetch]);
+
+  // Live update del GRID (colores) — escucha invalidaciones de disponibilidad
+useEffect(() => {
+  const schedule = (y: number, m1: number) => {
+    // Refuerza caché de ese mes y remonta el grid
+    forceRefreshMonth(y, m1);
+  };
+
+  // Misma pestaña
+  const onCustom = (e: Event) => {
+    const detail = (e as CustomEvent).detail as { year?: number; month?: number };
+    if (detail?.year && detail?.month) schedule(detail.year, detail.month);
+  };
+  window.addEventListener('vacation-availability-invalidated', onCustom as EventListener);
+
+  // BroadcastChannel entre pestañas
+  let bc: BroadcastChannel | null = null;
+  try {
+    const BC = (window as any).BroadcastChannel as
+      | (new (name: string) => BroadcastChannel)
+      | undefined;
+    if (typeof BC === 'function') {
+      bc = new BC('vacations');
+      bc.onmessage = (msg: MessageEvent) => {
+        const data = msg.data || {};
+        if (data?.type === 'availability-invalidated' && data.year && data.month) {
+          schedule(data.year, data.month);
+        }
+      };
+    }
+  } catch {}
+
+  // Fallback: storage
+  const onStorage = (ev: StorageEvent) => {
+    if (ev.key !== '__vac_av_inval__' || !ev.newValue) return;
+    try {
+      const payload = JSON.parse(ev.newValue);
+      if (payload?.year && payload?.month) schedule(payload.year, payload.month);
+    } catch {}
+  };
+  window.addEventListener('storage', onStorage);
+
+  return () => {
+    window.removeEventListener('vacation-availability-invalidated', onCustom as EventListener);
+    window.removeEventListener('storage', onStorage);
+    try { bc?.close?.(); } catch {}
+  };
+}, [forceRefreshMonth]);
+
+
+  // Escuchar BroadcastChannel (otras pestañas/ventanas)
+  useEffect(() => {
+    let bc: BroadcastChannel | null = null;
+    try {
+      const BC = (window as any).BroadcastChannel as
+        | (new (name: string) => BroadcastChannel)
+        | undefined;
+      if (typeof BC === 'function') {
+        bc = new BC('vacations');
+        bc.onmessage = (msg: MessageEvent) => {
+          const data = msg.data || {};
+          if (data?.type === 'requests-updated') {
+            safeRefetch();
+          }
+        };
+      }
+    } catch {}
+    return () => {
+      try { bc?.close?.(); } catch {}
+    };
+  }, [safeRefetch]);
+
+  // 🔁 Fallback entre pestañas/ventanas: escucha evento 'storage' cuando Admin escribe __vac_req_upd__
+  useEffect(() => {
+    const onStorage = (ev: StorageEvent) => {
+      if (ev.key === '__vac_req_upd__' && ev.newValue) {
+        safeRefetch();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [safeRefetch]);
 
   const handleRespondAlternative = async (id: string, accept: boolean) => {
     if (!token) return;
@@ -113,7 +225,6 @@ const WorkerVacationsPage = () => {
   // Prefetch de año actual y siguiente cuando se abre el formulario
   useEffect(() => {
     if (!showForm) return;
-    // año del grid visible y el siguiente → cubre casos 2026, etc.
     prefetchYear(gridYear);
     prefetchYear(gridYear + 1);
   }, [showForm, gridYear, prefetchYear]);
@@ -161,11 +272,13 @@ const WorkerVacationsPage = () => {
         {/* Grid de 12 meses con navegación de año integrada */}
         <div className="mb-4">
           <AdminVacationMonthGrid
-            requests={requests}
-            year={gridYear}
-            onYearChange={(y) => setGridYear(y)}
-            onMonthOpen={handleOpenMonth}
-          />
+  key={`${gridYear}-${gridRefreshTick}`}
+  requests={requests}
+  year={gridYear}
+  onYearChange={(y) => setGridYear(y)}
+  onMonthOpen={handleOpenMonth}
+/>
+
         </div>
 
         <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
@@ -187,7 +300,6 @@ const WorkerVacationsPage = () => {
               showForm ? 'block' : 'hidden',
             ].join(' ')}
           >
-            {/* Importante: NO uses key dinámico aquí */}
             <VacationRequestForm onSuccess={handleFormSuccess} />
           </div>
 

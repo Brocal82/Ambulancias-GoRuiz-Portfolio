@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminVacationsPage.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import type { IVacationRequest } from '../types/vacationRequest';
-import { getVacationRequests, updateVacationRequest, invalidateAvailabilityByRange } from '../api/vacation';
+import { getVacationRequests, updateVacationRequest, invalidateAvailabilityByRange, getVacationAvailability } from '../api/vacation';
 import AlternativeDateModal from '../components/vacation/AlternativeDateModal';
 import AdminVacationMonthGrid from '../components/vacation/AdminVacationMonthGrid';
 import AdminVacationMonthModal from '../components/vacation/AdminVacationMonthModal';
@@ -13,6 +13,32 @@ import StatusBadge from '../components/common/StatusBadge';
 // Nombre del evento global para refrescar el badge del Dashboard
 const ADMIN_VACATIONS_CHANGED_EVENT = 'admin-vacations-changed';
 const notifyVacationsChanged = () => window.dispatchEvent(new Event(ADMIN_VACATIONS_CHANGED_EVENT));
+
+// ✅ Helper mínimo para sincronizar Worker sin recargar (incluye fallback por storage)
+function emitVacationSync(payload: { id: string; status: 'accepted' | 'cancelled' | 'deleted'; ts?: number }) {
+  const detail = { ts: Date.now(), ...payload };
+
+  // Misma pestaña
+  try {
+    window.dispatchEvent(new CustomEvent('vacation-requests-updated', { detail }));
+  } catch {}
+
+  // Otras pestañas/ventanas (canal dedicado)
+  try {
+    const bc = new BroadcastChannel('vacations');
+    bc.postMessage({ type: 'requests-updated', ...detail });
+    bc.close?.();
+  } catch {}
+
+  // 🔁 Fallback universal: dispara evento 'storage' en otras pestañas
+  try {
+    localStorage.setItem('__vac_req_upd__', JSON.stringify(detail));
+    setTimeout(() => {
+      try { localStorage.removeItem('__vac_req_upd__'); } catch {}
+    }, 500);
+  } catch {}
+}
+
 
 const AdminVacationRequests = () => {
   const { token } = useAuth();
@@ -28,6 +54,18 @@ const AdminVacationRequests = () => {
   // ====== Estado del modal del mes (abrir con mes + año correctos) ======
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null); // 0..11
   const [selectedYear, setSelectedYear] = useState<number>(gridYear);
+
+  // 🔄 Forzar refresco del grid cuando cambie la disponibilidad sin recargar
+const [gridRefreshTick, setGridRefreshTick] = useState(0);
+
+// Refresca caché del mes concreto y fuerza rerender del grid
+const forceRefreshMonth = useCallback(async (y: number, m1: number) => {
+  try {
+    await getVacationAvailability({ year: y, month: m1 }, { force: true });
+  } catch {}
+  setGridRefreshTick((n) => n + 1);
+}, []);
+
 
   // ====== Estado para AlternativeDateModal existente ======
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -100,6 +138,56 @@ const AdminVacationRequests = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Live update del GRID (colores) — escucha invalidaciones de disponibilidad
+useEffect(() => {
+  const schedule = (y: number, m1: number) => {
+    // Refresca la caché del mes invalidado y fuerza rerender del grid
+    forceRefreshMonth(y, m1);
+  };
+
+  // Misma pestaña (CustomEvent)
+  const onCustom = (e: Event) => {
+    const detail = (e as CustomEvent).detail as { year?: number; month?: number };
+    if (detail?.year && detail?.month) schedule(detail.year, detail.month);
+  };
+  window.addEventListener('vacation-availability-invalidated', onCustom as EventListener);
+
+  // BroadcastChannel entre pestañas/ventanas
+  let bc: BroadcastChannel | null = null;
+  try {
+    const BC = (window as any).BroadcastChannel as
+      | (new (name: string) => BroadcastChannel)
+      | undefined;
+    if (typeof BC === 'function') {
+      bc = new BC('vacations');
+      bc.onmessage = (msg: MessageEvent) => {
+        const data = msg.data || {};
+        if (data?.type === 'availability-invalidated' && data.year && data.month) {
+          schedule(data.year, data.month);
+        }
+      };
+    }
+  } catch {}
+
+  // Fallback universal: evento 'storage'
+  const onStorage = (ev: StorageEvent) => {
+    if (ev.key !== '__vac_av_inval__' || !ev.newValue) return;
+    try {
+      const payload = JSON.parse(ev.newValue);
+      if (payload?.year && payload?.month) schedule(payload.year, payload.month);
+    } catch {}
+  };
+  window.addEventListener('storage', onStorage);
+
+  return () => {
+    window.removeEventListener('vacation-availability-invalidated', onCustom as EventListener);
+    window.removeEventListener('storage', onStorage);
+    try { bc?.close?.(); } catch {}
+  };
+}, [forceRefreshMonth]);
+
+  
+
   type VacationStatus = 'pending' | 'accepted' | 'cancelled' | 'option_sent';
 
   // Mostrar solo las solicitudes que requieren acción (pendientes u opción enviada)
@@ -133,6 +221,8 @@ const AdminVacationRequests = () => {
         if (req) {
           invalidateAvailabilityByRange(req.startDate, req.endDate);
         }
+        // 🔔 Emitir sincronización a Worker SOLO cuando cambia su estado final
+        emitVacationSync({ id, status });
       }
 
       // 🔔 Notificar al Dashboard para refrescar el contador
@@ -167,7 +257,7 @@ const AdminVacationRequests = () => {
         }
       );
 
-      // ⚠️ option_sent no cambia capacidad
+      // ⚠️ option_sent no cambia capacidad ni estado final del worker → NO emitir
 
       // 🔔 Notificar al Dashboard
       notifyVacationsChanged();
@@ -200,6 +290,9 @@ const AdminVacationRequests = () => {
         invalidateAvailabilityByRange(req.startDate, req.endDate);
       }
 
+      // 🔔 Emitir sincronización a Worker
+      emitVacationSync({ id, status: 'cancelled' });
+
       setCancelingRequestId(null);
       setCancelMessage('');
 
@@ -230,15 +323,17 @@ const AdminVacationRequests = () => {
           </h2>
 
           {/* Grid de meses con navegación de año */}
-          <AdminVacationMonthGrid
-            requests={requests}
-            year={gridYear}
-            onYearChange={(y) => setGridYear(y)}
-            onMonthOpen={(monthIdx, y) => {
-              setSelectedMonth(monthIdx);
-              setSelectedYear(y);
-            }}
-          />
+<AdminVacationMonthGrid
+  key={`${gridYear}-${gridRefreshTick}`} // ✅ fuerza rerender cuando cambie la disponibilidad
+  requests={requests}
+  year={gridYear}
+  onYearChange={(y) => setGridYear(y)}
+  onMonthOpen={(monthIdx, y) => {
+    setSelectedMonth(monthIdx);
+    setSelectedYear(y);
+  }}
+/>
+
 
           {/* Modal del mes (abre con mes + AÑO correctos) */}
           <AdminVacationMonthModal
