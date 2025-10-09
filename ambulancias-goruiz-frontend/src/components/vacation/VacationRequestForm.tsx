@@ -2,7 +2,7 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DateRange } from 'react-date-range';
 import type { RangeKeyDict } from 'react-date-range';
-import { addDays, startOfDay } from 'date-fns';
+import { startOfDay } from 'date-fns';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import { useAuth } from '../../hooks/useAuth';
@@ -41,12 +41,11 @@ const VacationRequestForm: React.FC<VacationRequestFormProps> = ({ onSuccess }) 
     [i18n.language]
   );
 
-  // Rango seleccionado (controlado)
-  const [selectionRange, setSelectionRange] = useState({
-    startDate: new Date(),
-    endDate: addDays(new Date(), 3),
-    key: 'selection' as const,
-  });
+const [selectionRange, setSelectionRange] = useState({
+  startDate: startOfDay(new Date()),
+  endDate: startOfDay(new Date()),
+  key: 'selection' as const,
+});
 
   // UI
   const [loading, setLoading] = useState(false);
