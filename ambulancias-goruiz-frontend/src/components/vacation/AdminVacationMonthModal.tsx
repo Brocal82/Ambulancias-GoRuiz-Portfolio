@@ -552,7 +552,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 
                     // ✅ ÚNICO borde: si el día está dentro del rango de la petición seleccionada
                     const inRange = isInHighlightedRange(cell);
-                    const rangeRing = inRange ? 'ring-2 ring-orange-400 ring-offset-1 ring-offset-white' : '';
+                    const rangeRing = inRange ? 'ring-2 ring-violet-400 ring-offset-1 ring-offset-white' : '';
 
                     return (
                       <div

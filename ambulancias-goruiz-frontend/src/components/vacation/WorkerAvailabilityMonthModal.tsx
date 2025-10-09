@@ -1,4 +1,3 @@
-// frontend/src/components/vacation/WorkerAvailabilityMonthModal.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getVacationAvailability, type VacationAvailabilityResponse } from '../../api/vacation';
@@ -11,9 +10,17 @@ type Props = {
   monthIndex: number | null; // 0..11
   year: number;
   onClose: () => void;
+  /** ✅ NUEVO: rangos aceptados del trabajador (ISO strings) para dibujar borde violeta */
+  acceptedRanges?: Array<{ startISO: string; endISO: string }>;
 };
 
-const WorkerAvailabilityMonthModal: React.FC<Props> = ({ isOpen, monthIndex, year, onClose }) => {
+const WorkerAvailabilityMonthModal: React.FC<Props> = ({
+  isOpen,
+  monthIndex,
+  year,
+  onClose,
+  acceptedRanges = [],
+}) => {
   const { t, i18n } = useTranslation();
   const locale =
     i18n.language === 'de' ? 'de-DE' : i18n.language === 'en' ? 'en-US' : 'es-ES';
@@ -150,6 +157,24 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({ isOpen, monthIndex, yea
     return rec ? rec.state : 'green';
   };
 
+  // ✅ NUEVO: ¿el día pertenece a algún rango aceptado del trabajador?
+  const isAcceptedDay = (day: number | null): boolean => {
+    if (day === null || !acceptedRanges || acceptedRanges.length === 0 || monthIndex === null) return false;
+    const date = new Date(year, monthIndex, day, 0, 0, 0, 0);
+    const t = date.getTime();
+
+    // Comparación inclusiva por día
+    const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime();
+    const endOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).getTime();
+
+    for (const r of acceptedRanges) {
+      const s = new Date(r.startISO);
+      const e = new Date(r.endISO);
+      if (t >= startOf(s) && t <= endOf(e)) return true;
+    }
+    return false;
+  };
+
   const monthTitle =
     typeof fmtMonth === 'function' && monthIndex !== null
       ? fmtMonth(year, monthIndex)
@@ -207,7 +232,6 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({ isOpen, monthIndex, yea
             )}
           </div>
 
-
           {/* Week headers L–D */}
           <div className="grid grid-cols-7 text-center text-[10px] uppercase tracking-wide text-slate-500 mb-0.5">
             {weekdayHeaders.map((w, i) => (
@@ -234,15 +258,21 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({ isOpen, monthIndex, yea
                     : state === 'yellow'
                       ? 'bg-yellow-400 text-slate-900'
                       : 'bg-green-500 text-white';
+
+                // ✅ Borde fijo en días aceptados por este trabajador
+                const accepted = isAcceptedDay(cell);
+                const ring = accepted ? 'ring-2 ring-violet-400 ring-offset-1 ring-offset-white' : '';
+
                 return (
                   <div
                     key={`d-${cell}-${idx}`}
                     className={[
                       'h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none',
                       color,
+                      ring,
                     ].join(' ')}
                     title={`${cell}`}
-                    aria-label={`${cell}`}
+                    aria-label={`${cell}${accepted ? ' · accepted' : ''}`}
                   >
                     {cell}
                   </div>
