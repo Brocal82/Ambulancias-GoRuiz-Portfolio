@@ -1,3 +1,4 @@
+// frontend/src/components/vacation/WorkerAvailabilityMonthModal.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getVacationAvailability, type VacationAvailabilityResponse } from '../../api/vacation';
@@ -5,13 +6,15 @@ import { monthLabel as fmtMonth } from '../../utils/intl';
 
 type DayState = 'green' | 'yellow' | 'red';
 
+type AcceptedRange = { startISO: string; endISO: string };
+
 type Props = {
   isOpen: boolean;
   monthIndex: number | null; // 0..11
   year: number;
   onClose: () => void;
-  /** ✅ NUEVO: rangos aceptados del trabajador (ISO strings) para dibujar borde violeta */
-  acceptedRanges?: Array<{ startISO: string; endISO: string }>;
+  /** ✅ RANGOS ACEPTADOS del propio trabajador */
+  acceptedRanges?: AcceptedRange[];
 };
 
 const WorkerAvailabilityMonthModal: React.FC<Props> = ({
@@ -29,11 +32,11 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
   const [availLoading, setAvailLoading] = useState(false);
   const [availError, setAvailError] = useState<string | null>(null);
 
-  // Control de carreras + cancelación de respuestas tardías
+  // Control de carreras
   const inFlightKeyRef = useRef<string | null>(null);
   const refreshTimerRef = useRef<number | null>(null);
 
-  // Cabeceras LUN-DOM (lunes primero)
+  // Cabeceras LUN-DOM
   const weekdayHeaders = useMemo(() => {
     const baseMonday = new Date(Date.UTC(2023, 0, 2));
     return Array.from({ length: 7 }, (_, i) => {
@@ -43,12 +46,12 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
     });
   }, [locale]);
 
-  // Celdas del mes (42)
+  // Celdas (42)
   const calendarCells = useMemo(() => {
     if (monthIndex === null) return Array(42).fill(null);
     const first = new Date(year, monthIndex, 1);
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-    const jsFirstDow = first.getDay(); // 0-dom..6-sab
+    const jsFirstDow = first.getDay(); // 0-dom..6-sáb
     const mondayBased = (jsFirstDow + 6) % 7; // 0-lun
     const leading = Array.from({ length: mondayBased }, () => null);
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -63,7 +66,7 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
       setAvailLoading(true);
       setAvailError(null);
       const data = await getVacationAvailability({ year: y, month: m1 }, { force });
-      if (inFlightKeyRef.current !== key) return; // respuesta vieja
+      if (inFlightKeyRef.current !== key) return;
       setAvailability(data);
     } catch {
       if (inFlightKeyRef.current !== key) return;
@@ -87,7 +90,7 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, monthIndex, year]);
 
-  // Live update: misma pestaña + entre pestañas (BroadcastChannel + storage)
+  // Live update: misma pestaña + entre pestañas
   useEffect(() => {
     if (!isOpen || monthIndex === null) return;
 
@@ -95,21 +98,20 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
 
     const scheduleRefresh = (y: number, m1: number) => {
       if (y !== year || m1 !== myMonth) return;
-      // micro-retardo para evitar carrera con la actualización del backend
       if (refreshTimerRef.current) window.clearTimeout(refreshTimerRef.current);
       refreshTimerRef.current = window.setTimeout(() => {
         loadAvailability(year, myMonth, true);
       }, 200);
     };
 
-    // 1) CustomEvent misma pestaña
+    // 1) CustomEvent
     const customHandler = (e: Event) => {
       const detail = (e as CustomEvent).detail as { year: number; month: number };
       if (detail?.year && detail?.month) scheduleRefresh(detail.year, detail.month);
     };
     window.addEventListener('vacation-availability-invalidated', customHandler as EventListener);
 
-    // 2) BroadcastChannel entre pestañas
+    // 2) BroadcastChannel
     let bc: BroadcastChannel | null = null;
     try {
       const BC = (window as any).BroadcastChannel as
@@ -124,19 +126,15 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
           }
         };
       }
-    } catch {
-      // noop
-    }
+    } catch { /* noop */ }
 
-    // 3) Fallback: storage
+    // 3) storage fallback
     const storageHandler = (ev: StorageEvent) => {
       if (ev.key !== '__vac_av_inval__' || !ev.newValue) return;
       try {
         const payload = JSON.parse(ev.newValue);
         if (payload?.year && payload?.month) scheduleRefresh(payload.year, payload.month);
-      } catch {
-        // noop
-      }
+      } catch { /* noop */ }
     };
     window.addEventListener('storage', storageHandler);
 
@@ -157,30 +155,95 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
     return rec ? rec.state : 'green';
   };
 
-  // ✅ NUEVO: ¿el día pertenece a algún rango aceptado del trabajador?
-  const isAcceptedDay = (day: number | null): boolean => {
-    if (day === null || !acceptedRanges || acceptedRanges.length === 0 || monthIndex === null) return false;
-    const date = new Date(year, monthIndex, day, 0, 0, 0, 0);
-    const t = date.getTime();
 
-    // Comparación inclusiva por día
-    const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime();
-    const endOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).getTime();
+  // =============== BORDES CONTINUOS (solo rangos aceptados recibidos por props) ===============
 
+  /** Construye un mapa día->clases de borde para un rango recortado al mes actual */
+  const buildBorderMapFromRange = (start: Date, end: Date): Record<number, string> => {
+    if (monthIndex === null) return {};
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const classes: Record<number, string> = {};
+
+    // Límites del mes actual
+    const monthStart = new Date(year, monthIndex, 1);
+    const monthEnd = new Date(year, monthIndex, daysInMonth, 23, 59, 59, 999);
+
+    const s = start < monthStart ? monthStart : start;
+    const e = end > monthEnd ? monthEnd : end;
+    if (e.getTime() < s.getTime()) return {};
+
+    const startDay = s.getDate();
+    const endDay = e.getDate();
+
+    // helper: columna 1..7 (lun..dom)
+    const colOf = (day: number) => {
+      const d = new Date(year, monthIndex!, day);
+      const js = d.getDay(); // 0-dom..6-sáb
+      return ((js + 6) % 7) + 1;
+    };
+
+    let cur = startDay;
+    while (cur <= endDay) {
+      const colStart = colOf(cur);
+      const lastDayOfWeek = Math.min(endDay, cur + (7 - colStart));
+
+      // bordes horizontales para primera y última fila del rango
+      if (cur === startDay) {
+        for (let d = cur; d <= lastDayOfWeek; d++) {
+          classes[d] = (classes[d] ?? '') + ' border-t-2 border-violet-500';
+        }
+      }
+      if (lastDayOfWeek === endDay) {
+        for (let d = cur; d <= lastDayOfWeek; d++) {
+          classes[d] = (classes[d] ?? '') + ' border-b-2 border-violet-500';
+        }
+      }
+
+      // laterales
+      classes[cur] = (classes[cur] ?? '') + ' border-l-2 border-violet-500';
+      classes[lastDayOfWeek] = (classes[lastDayOfWeek] ?? '') + ' border-r-2 border-violet-500';
+
+      cur = lastDayOfWeek + 1;
+    }
+
+    // redondeo de puntas visibles en este mes
+    classes[startDay] = (classes[startDay] ?? '') + ' rounded-l-full';
+    classes[endDay] = (classes[endDay] ?? '') + ' rounded-r-full';
+
+    return classes;
+  };
+
+  /** Fusiona varios mapas día->clases */
+  const mergeBorderMaps = (maps: Record<number, string>[]) => {
+    const out: Record<number, string> = {};
+    for (const m of maps) {
+      for (const [k, v] of Object.entries(m)) {
+        const d = Number(k);
+        out[d] = out[d] ? `${out[d]} ${v}` : v;
+      }
+    }
+    return out;
+  };
+
+  /** Un único mapa con TODOS los rangos aceptados recibidos por props (recortados al mes) */
+  const borderMap = useMemo(() => {
+    if (monthIndex === null || acceptedRanges.length === 0) return {};
+    const maps: Record<number, string>[] = [];
     for (const r of acceptedRanges) {
       const s = new Date(r.startISO);
       const e = new Date(r.endISO);
-      if (t >= startOf(s) && t <= endOf(e)) return true;
-    }
-    return false;
-  };
 
-  const monthTitle =
-    typeof fmtMonth === 'function' && monthIndex !== null
-      ? fmtMonth(year, monthIndex)
-      : monthIndex !== null
-        ? new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date(year, monthIndex, 1))
-        : '';
+      // ¿toca este mes?
+      const firstOfMonth = new Date(year, monthIndex, 1);
+      const lastOfMonth = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
+      const overlaps = s <= lastOfMonth && e >= firstOfMonth;
+      if (!overlaps) continue;
+
+      maps.push(buildBorderMapFromRange(s, e));
+    }
+    return mergeBorderMaps(maps);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [acceptedRanges, monthIndex, year]);
 
   if (!isOpen || monthIndex === null) return null;
 
@@ -197,7 +260,7 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
         <div className="sticky top-0 z-10 bg-white border-b border-slate-200 p-3">
           <div className="flex items-center gap-2">
             <h3 id="worker-availability-month-title" className="text-base font-semibold text-slate-900 truncate">
-              {monthTitle} · {year}
+              {monthIndex !== null ? `${fmtMonth(year, monthIndex)} · ${year}` : ''}
             </h3>
             <button
               aria-label={t('pages.vacations.monthModal.close')}
@@ -239,7 +302,7 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
             ))}
           </div>
 
-          {/* Calendar grid */}
+          {/* Calendar grid (aplicamos borderMap en cada día) */}
           <div className="grid grid-cols-7 gap-0.5">
             {availLoading &&
               Array.from({ length: 42 }).map((_, i) => (
@@ -259,9 +322,7 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
                       ? 'bg-yellow-400 text-slate-900'
                       : 'bg-green-500 text-white';
 
-                // ✅ Borde fijo en días aceptados por este trabajador
-                const accepted = isAcceptedDay(cell);
-                const ring = accepted ? 'ring-2 ring-violet-400 ring-offset-1 ring-offset-white' : '';
+                const borderCls = borderMap[cell] ?? '';
 
                 return (
                   <div
@@ -269,10 +330,10 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
                     className={[
                       'h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none',
                       color,
-                      ring,
+                      borderCls, // 👈 borde(s) del/los rangos aceptados del usuario
                     ].join(' ')}
                     title={`${cell}`}
-                    aria-label={`${cell}${accepted ? ' · accepted' : ''}`}
+                    aria-label={`${cell}`}
                   >
                     {cell}
                   </div>
