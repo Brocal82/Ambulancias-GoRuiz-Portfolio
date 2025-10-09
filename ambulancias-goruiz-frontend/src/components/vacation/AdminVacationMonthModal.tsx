@@ -15,8 +15,6 @@ import { useTranslation } from 'react-i18next';
 import { monthLabel as fmtMonth } from '../../utils/intl';
 import { getVacationAvailability, type VacationAvailabilityResponse } from '../../api/vacation';
 
-
-
 type VacationStatus = 'pending' | 'accepted' | 'cancelled' | 'option_sent';
 
 interface Props {
@@ -52,7 +50,6 @@ function emitVacationSync(payload: { id: string; status: 'accepted' | 'cancelled
     }, 500);
   } catch { }
 }
-
 
 const AdminVacationMonthModal: React.FC<Props> = ({
   isOpen,
@@ -117,8 +114,9 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     }
   };
 
-  
-
+  // ==== Resaltado en el mini-calendario por solicitud seleccionada ====
+  const [highlightRequestId, setHighlightRequestId] = useState<string | null>(null);
+  const [highlightRange, setHighlightRange] = useState<{ start: Date; end: Date } | null>(null);
 
   useEffect(() => {
     if (!isOpen || monthIndex === null) return;
@@ -194,6 +192,16 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     if (!availability || day === null) return null;
     const rec = availability.days.find(d => d.day === day);
     return rec ? rec.state : 'green';
+  };
+
+
+  /** ¿Este día cae dentro del rango resaltado? (si hay petición seleccionada) */
+  const isInHighlightedRange = (day: number | null): boolean => {
+    if (day === null || !highlightRange || monthIndex === null) return false;
+    const d = new Date(year, monthIndex, day);
+    const t = d.getTime();
+    return t >= new Date(highlightRange.start.getFullYear(), highlightRange.start.getMonth(), highlightRange.start.getDate()).getTime()
+      && t <= new Date(highlightRange.end.getFullYear(), highlightRange.end.getMonth(), highlightRange.end.getDate()).getTime();
   };
 
   // ========= Estado existente (compactado) =========
@@ -296,21 +304,16 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     }
   };
 
-const openAlternative = async (req: IVacationRequest) => {
-  setCurrentRequestId(req._id);
+  const openAlternative = async (req: IVacationRequest) => {
+    setCurrentRequestId(req._id);
 
-  const start = new Date(req.startDate);
-  const end = new Date(req.endDate);
-  setAltInitialStart(start);
-  setAltInitialEnd(end);
+    const start = new Date(req.startDate);
+    const end = new Date(req.endDate);
+    setAltInitialStart(start);
+    setAltInitialEnd(end);
 
-  
-  
-  
-
-  setIsAltOpen(true);
-};
-
+    setIsAltOpen(true);
+  };
 
   const handleAlternativeSubmit = async (altStartISO: string, altEndISO: string, note: string) => {
     if (!token || !currentRequestId || monthIndex === null) return;
@@ -388,6 +391,20 @@ const openAlternative = async (req: IVacationRequest) => {
     }
   };
 
+  // 👉 Toggle de resaltado al hacer click en toda la tarjeta
+  const toggleHighlightFor = (req: IVacationRequest) => {
+    if (highlightRequestId === req._id) {
+      setHighlightRequestId(null);
+      setHighlightRange(null);
+    } else {
+      setHighlightRequestId(req._id);
+      setHighlightRange({
+        start: new Date(req.startDate),
+        end: new Date(req.endDate),
+      });
+    }
+  };
+
   if (!isOpen || monthIndex === null) return null;
 
   return (
@@ -428,8 +445,8 @@ const openAlternative = async (req: IVacationRequest) => {
                   type="button"
                   onClick={() => setStatusFilter('pending')}
                   className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === 'pending'
-                      ? 'bg-amber-500 text-white ring-amber-500'
-                      : 'bg-white text-amber-700 ring-amber-300 hover:bg-amber-50'
+                    ? 'bg-amber-500 text-white ring-amber-500'
+                    : 'bg-white text-amber-700 ring-amber-300 hover:bg-amber-50'
                     } focus:outline-none focus:ring-2 focus:ring-amber-100`}
                 >
                   {t('pages.vacations.monthModal.filters.pending')}
@@ -439,8 +456,8 @@ const openAlternative = async (req: IVacationRequest) => {
                   type="button"
                   onClick={() => setStatusFilter('accepted')}
                   className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === 'accepted'
-                      ? 'bg-emerald-600 text-white ring-emerald-600'
-                      : 'bg-white text-emerald-700 ring-emerald-300 hover:bg-emerald-50'
+                    ? 'bg-emerald-600 text-white ring-emerald-600'
+                    : 'bg-white text-emerald-700 ring-emerald-300 hover:bg-emerald-50'
                     } focus:outline-none focus:ring-2 focus:ring-emerald-100`}
                 >
                   {t('pages.vacations.monthModal.filters.accepted')}
@@ -450,8 +467,8 @@ const openAlternative = async (req: IVacationRequest) => {
                   type="button"
                   onClick={() => setStatusFilter('cancelled')}
                   className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === 'cancelled'
-                      ? 'bg-rose-600 text-white ring-rose-600'
-                      : 'bg-white text-rose-700 ring-rose-300 hover:bg-rose-50'
+                    ? 'bg-rose-600 text-white ring-rose-600'
+                    : 'bg-white text-rose-700 ring-rose-300 hover:bg-rose-50'
                     } focus:outline-none focus:ring-2 focus:ring-rose-100`}
                 >
                   {t('pages.vacations.monthModal.filters.cancelled')}
@@ -461,8 +478,8 @@ const openAlternative = async (req: IVacationRequest) => {
                   type="button"
                   onClick={() => setStatusFilter('option_sent')}
                   className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === 'option_sent'
-                      ? 'bg-blue-600 text-white ring-blue-600'
-                      : 'bg-white text-blue-700 ring-blue-300 hover:bg-blue-50'
+                    ? 'bg-blue-600 text-white ring-blue-600'
+                    : 'bg-white text-blue-700 ring-blue-300 hover:bg-blue-50'
                     } focus:outline-none focus:ring-2 focus:ring-blue-100`}
                 >
                   {t('pages.vacations.monthModal.filters.option_sent')}
@@ -524,6 +541,7 @@ const openAlternative = async (req: IVacationRequest) => {
                     if (cell === null) {
                       return <div key={`empty-${idx}`} className="h-6 sm:h-7 md:h-8 rounded bg-transparent" />;
                     }
+
                     const state = getDayState(cell);
                     const color =
                       state === 'red'
@@ -531,20 +549,31 @@ const openAlternative = async (req: IVacationRequest) => {
                         : state === 'yellow'
                           ? 'bg-yellow-400 text-slate-900'
                           : 'bg-green-500 text-white';
+
+                    // ✅ ÚNICO borde: si el día está dentro del rango de la petición seleccionada
+                    const inRange = isInHighlightedRange(cell);
+                    const rangeRing = inRange ? 'ring-2 ring-orange-400 ring-offset-1 ring-offset-white' : '';
+
                     return (
                       <div
                         key={`d-${cell}-${idx}`}
                         className={[
                           'h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none',
                           color,
+                          rangeRing, // 👈 solo este ring
                         ].join(' ')}
-                        title={`${cell}`}
-                        aria-label={`${cell}`}
+                        title={
+                          availability
+                            ? `${cell} · ${availability.days.find(d => d.day === cell)?.approvedCount ?? 0} ${t('pages.vacations.adminPage.badges.accepted', 'aceptadas')}`
+                            : `${cell}`
+                        }
+                        aria-label={`${cell}${inRange ? ' · highlighted' : ''}`}
                       >
                         {cell}
                       </div>
                     );
                   })}
+
               </div>
 
               {availError && (
@@ -600,138 +629,179 @@ const openAlternative = async (req: IVacationRequest) => {
                 <p className="text-center text-xs text-slate-500">{t('pages.vacations.monthModal.empty')}</p>
               ) : (
                 <ul className="space-y-2">
-                  {filtered.map((req) => (
-                    <li key={req._id} className="rounded-lg ring-1 ring-slate-200 p-2 hover:bg-slate-50 transition">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="font-medium text-slate-900 text-xs leading-snug">
-                            {req.user ? `${req.user.lastName}, ${req.user.name}` : '—'}
-                          </div>
+                  {filtered.map((req) => {
+                    const isActive = highlightRequestId === req._id;
 
-                          <div className="mt-0.5 text-[11px] leading-snug grid grid-cols-[auto,1fr] gap-x-2">
-                            <span className="font-medium text-slate-700">
-                              {t('pages.vacations.adminPage.badges.requested')}
-                            </span>
-                            <span className="text-slate-700">
-                              {fmtDate(req.startDate)} — {fmtDate(req.endDate)}
-                            </span>
+                    return (
+                      <li
+                        key={req._id}
+                        onClick={(e) => {
+                          // Evita que los botones internos disparen el click del li
+                          const target = e.target as HTMLElement;
+                          if (target.closest('button, textarea')) return;
+                          toggleHighlightFor(req);
+                        }}
+                        className={[
+                          'rounded-lg p-2 transition cursor-pointer',
+                          isActive
+                            ? 'ring-2 ring-violet-400 bg-violet-50'
+                            : 'ring-1 ring-slate-200 hover:bg-slate-50',
+                        ].join(' ')}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="font-medium text-slate-900 text-xs leading-snug">
+                              {req.user ? `${req.user.lastName}, ${req.user.name}` : '—'}
+                            </div>
 
-                            {req.adminOptionStartDate && req.adminOptionEndDate && (
-                              <>
-                                <span className="font-medium text-blue-700">
-                                  {t('pages.vacations.adminPage.badges.proposal')}
-                                </span>
-                                <span className="text-blue-700">
-                                  {fmtDate(req.adminOptionStartDate)} — {fmtDate(req.adminOptionEndDate)}
-                                </span>
-                              </>
+                            <div className="mt-0.5 text-[11px] leading-snug grid grid-cols-[auto,1fr] gap-x-2">
+                              <span className="font-medium text-slate-700">
+                                {t('pages.vacations.adminPage.badges.requested')}
+                              </span>
+                              <span className="text-slate-700">
+                                {fmtDate(req.startDate)} — {fmtDate(req.endDate)}
+                              </span>
+
+                              {req.adminOptionStartDate && req.adminOptionEndDate && (
+                                <>
+                                  <span className="font-medium text-blue-700">
+                                    {t('pages.vacations.adminPage.badges.proposal')}
+                                  </span>
+                                  <span className="text-blue-700">
+                                    {fmtDate(req.adminOptionStartDate)} — {fmtDate(req.adminOptionEndDate)}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+
+                            {req.adminNote && (
+                              <p className="mt-1 text-[11px] leading-snug text-slate-600">
+                                <span className="font-medium">{t('pages.vacations.adminPage.badges.note')}</span>{' '}
+                                {req.adminNote}
+                              </p>
                             )}
                           </div>
 
-                          {req.adminNote && (
-                            <p className="mt-1 text-[11px] leading-snug text-slate-600">
-                              <span className="font-medium">{t('pages.vacations.adminPage.badges.note')}</span>{' '}
-                              {req.adminNote}
-                            </p>
-                          )}
+                          <div className="shrink-0">{statusBadge(req.status)}</div>
                         </div>
 
-                        <div className="shrink-0">{statusBadge(req.status)}</div>
-                      </div>
-
-                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        {cancelingRequestId === req._id ? (
-                          <div className="w-full rounded-lg ring-1 ring-slate-200 p-2 bg-white">
-                            <textarea
-                              className="w-full resize-none rounded-lg border border-slate-300 ring-1 ring-slate-200 p-2 text-[11px] leading-snug focus:outline-none focus:ring-2 focus:ring-rose-100"
-                              placeholder={t('pages.vacations.adminPage.actions.cancelMessagePlaceholder')}
-                              rows={3}
-                              value={cancelMessage}
-                              onChange={(e) => setCancelMessage(e.target.value)}
-                            />
-                            <div className="mt-1.5 flex gap-1.5">
-                              <button
-                                className="rounded-lg bg-rose-600 px-2.5 py-1 text-[11px] font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-100 disabled:opacity-50"
-                                disabled={isSendingCancel}
-                                onClick={() => handleConfirmCancel(req._id)}
-                              >
-                                {isSendingCancel
-                                  ? t('pages.vacations.adminPage.actions.sending')
-                                  : t('pages.vacations.adminPage.actions.confirmRejection')}
-                              </button>
-                              <button
-                                className="rounded-lg bg-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-100 disabled:opacity-50"
-                                disabled={isSendingCancel}
-                                onClick={() => {
-                                  setCancelingRequestId(null);
-                                  setCancelMessage('');
-                                }}
-                              >
-                                {t('pages.vacations.adminPage.actions.cancel')}
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            {req.status === 'pending' && (
-                              <>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          {cancelingRequestId === req._id ? (
+                            <div
+                              className="w-full rounded-lg ring-1 ring-slate-200 p-2 bg-white"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <textarea
+                                className="w-full resize-none rounded-lg border border-slate-300 ring-1 ring-slate-200 p-2 text-[11px] leading-snug focus:outline-none focus:ring-2 focus:ring-rose-100"
+                                placeholder={t('pages.vacations.adminPage.actions.cancelMessagePlaceholder')}
+                                rows={3}
+                                value={cancelMessage}
+                                onChange={(e) => setCancelMessage(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <div className="mt-1.5 flex gap-1.5">
                                 <button
-                                  className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                                  onClick={() => handleAccept(req._id)}
+                                  className="rounded-lg bg-rose-600 px-2.5 py-1 text-[11px] font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-100 disabled:opacity-50"
+                                  disabled={isSendingCancel}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleConfirmCancel(req._id);
+                                  }}
                                 >
-                                  {t('pages.vacations.adminPage.actions.accept')}
+                                  {isSendingCancel
+                                    ? t('pages.vacations.adminPage.actions.sending')
+                                    : t('pages.vacations.adminPage.actions.confirmRejection')}
                                 </button>
                                 <button
-                                  className="rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                                  onClick={() => openAlternative(req)}
-                                >
-                                  {t('pages.vacations.adminPage.actions.altOption')}
-                                </button>
-                                <button
-                                  className="rounded-lg bg-rose-600 px-2.5 py-1 text-[11px] font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-100"
-                                  onClick={() => handleStartCancelFlow(req._id)}
+                                  className="rounded-lg bg-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-100 disabled:opacity-50"
+                                  disabled={isSendingCancel}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setCancelingRequestId(null);
+                                    setCancelMessage('');
+                                  }}
                                 >
                                   {t('pages.vacations.adminPage.actions.cancel')}
                                 </button>
-                              </>
-                            )}
-
-                            {(req.status === 'accepted' || req.status === 'cancelled') && (
-                              <div className="ml-auto">
-                                <button
-                                  onClick={() => handleDelete(req._id)}
-                                  aria-label={t('pages.vacations.adminPage.actions.delete')}
-                                  title={t('pages.vacations.adminPage.actions.delete')}
-                                  className="inline-flex h-7 w-7 items-center justify-center rounded-full
-                                    bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700 active:scale-95 transition
-                                    focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400
-                                    focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="1.75"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    aria-hidden="true"
-                                  >
-                                    <path d="M4 7h16" />
-                                    <path d="M10 11v6M14 11v6" />
-                                    <path d="M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12" />
-                                    <path d="M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
-                                  </svg>
-                                </button>
                               </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </li>
-                  ))}
+                            </div>
+                          ) : (
+                            <>
+                              {req.status === 'pending' && (
+                                <>
+                                  <button
+                                    className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAccept(req._id);
+                                    }}
+                                  >
+                                    {t('pages.vacations.adminPage.actions.accept')}
+                                  </button>
+                                  <button
+                                    className="rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openAlternative(req);
+                                    }}
+                                  >
+                                    {t('pages.vacations.adminPage.actions.altOption')}
+                                  </button>
+                                  <button
+                                    className="rounded-lg bg-rose-600 px-2.5 py-1 text-[11px] font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleStartCancelFlow(req._id);
+                                    }}
+                                  >
+                                    {t('pages.vacations.adminPage.actions.cancel')}
+                                  </button>
+                                </>
+                              )}
+
+                              {(req.status === 'accepted' || req.status === 'cancelled') && (
+                                <div className="ml-auto">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDelete(req._id);
+                                    }}
+                                    aria-label={t('pages.vacations.adminPage.actions.delete')}
+                                    title={t('pages.vacations.adminPage.actions.delete')}
+                                    className="inline-flex h-7 w-7 items-center justify-center rounded-full
+                      bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700 active:scale-95 transition
+                      focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400
+                      focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="1.75"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      aria-hidden="true"
+                                    >
+                                      <path d="M4 7h16" />
+                                      <path d="M10 11v6M14 11v6" />
+                                      <path d="M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12" />
+                                      <path d="M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
+
+
+
               )}
             </div>
           </div>
@@ -749,13 +819,12 @@ const openAlternative = async (req: IVacationRequest) => {
       </div>
 
       <AlternativeDateModal
-  isOpen={isAltOpen}
-  onClose={() => setIsAltOpen(false)}
-  initialStartDate={altInitialStart}
-  initialEndDate={altInitialEnd}
-  onSubmit={handleAlternativeSubmit}
-/>
-
+        isOpen={isAltOpen}
+        onClose={() => setIsAltOpen(false)}
+        initialStartDate={altInitialStart}
+        initialEndDate={altInitialEnd}
+        onSubmit={handleAlternativeSubmit}
+      />
     </>
   );
 };
