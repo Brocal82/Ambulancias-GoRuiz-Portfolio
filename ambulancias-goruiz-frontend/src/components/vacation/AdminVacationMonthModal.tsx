@@ -33,22 +33,22 @@ function emitVacationSync(payload: { id: string; status: 'accepted' | 'cancelled
   // Misma pestaña
   try {
     window.dispatchEvent(new CustomEvent('vacation-requests-updated', { detail }));
-  } catch { }
+  } catch {}
 
   // Otras pestañas/ventanas (canal dedicado)
   try {
     const bc = new BroadcastChannel('vacations');
     bc.postMessage({ type: 'requests-updated', ...detail });
     bc.close?.();
-  } catch { }
+  } catch {}
 
   // 🔁 Fallback universal: dispara evento 'storage' en otras pestañas
   try {
     localStorage.setItem('__vac_req_upd__', JSON.stringify(detail));
     setTimeout(() => {
-      try { localStorage.removeItem('__vac_req_upd__'); } catch { }
+      try { localStorage.removeItem('__vac_req_upd__'); } catch {}
     }, 500);
-  } catch { }
+  } catch {}
 }
 
 const AdminVacationMonthModal: React.FC<Props> = ({
@@ -82,6 +82,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     });
   }, [locale]);
 
+  // Celdas del mes (42: leading vacías + 1..N + trailing vacías)
   const calendarCells = useMemo(() => {
     if (monthIndex === null) return Array(42).fill(null);
     const y = year;
@@ -114,9 +115,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     }
   };
 
-  // ==== Resaltado en el mini-calendario por solicitud seleccionada ====
+  // ==== Resaltado (petición seleccionada) para la lista ====
   const [highlightRequestId, setHighlightRequestId] = useState<string | null>(null);
-  const [highlightRange, setHighlightRange] = useState<{ start: Date; end: Date } | null>(null);
 
   useEffect(() => {
     if (!isOpen || monthIndex === null) return;
@@ -165,7 +165,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
           }
         };
       }
-    } catch { }
+    } catch {}
 
     // Fallback: storage
     const storageHandler = (ev: StorageEvent) => {
@@ -173,14 +173,14 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       try {
         const payload = JSON.parse(ev.newValue);
         if (payload?.year && payload?.month) scheduleRefresh(payload.year, payload.month);
-      } catch { }
+      } catch {}
     };
     window.addEventListener('storage', storageHandler);
 
     return () => {
       window.removeEventListener('vacation-availability-invalidated', customHandler as EventListener);
       window.removeEventListener('storage', storageHandler);
-      try { bc?.close?.(); } catch { }
+      try { bc?.close?.(); } catch {}
       if (refreshTimerRef.current) {
         window.clearTimeout(refreshTimerRef.current);
         refreshTimerRef.current = null;
@@ -192,16 +192,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     if (!availability || day === null) return null;
     const rec = availability.days.find(d => d.day === day);
     return rec ? rec.state : 'green';
-  };
-
-
-  /** ¿Este día cae dentro del rango resaltado? (si hay petición seleccionada) */
-  const isInHighlightedRange = (day: number | null): boolean => {
-    if (day === null || !highlightRange || monthIndex === null) return false;
-    const d = new Date(year, monthIndex, day);
-    const t = d.getTime();
-    return t >= new Date(highlightRange.start.getFullYear(), highlightRange.start.getMonth(), highlightRange.start.getDate()).getTime()
-      && t <= new Date(highlightRange.end.getFullYear(), highlightRange.end.getMonth(), highlightRange.end.getDate()).getTime();
   };
 
   // ========= Estado existente (compactado) =========
@@ -378,7 +368,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       if (startISO && endISO) {
         try {
           invalidateAvailabilityByRange(startISO, endISO);
-        } catch { }
+        } catch {}
       }
 
       // Refrescar mini-calendario del mes visible (forzado) tras breve retardo
@@ -391,19 +381,90 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     }
   };
 
-  // 👉 Toggle de resaltado al hacer click en toda la tarjeta
+  // 👉 Toggle de resaltado al hacer click en toda la tarjeta (solo UI de lista)
   const toggleHighlightFor = (req: IVacationRequest) => {
     if (highlightRequestId === req._id) {
       setHighlightRequestId(null);
-      setHighlightRange(null);
     } else {
       setHighlightRequestId(req._id);
-      setHighlightRange({
-        start: new Date(req.startDate),
-        end: new Date(req.endDate),
-      });
     }
   };
+
+  // =========================
+  // 🔳 BORDES CONTIGUOS (contorno continuo) para TODAS las aceptadas del mes visible
+  // =========================
+
+  /** Construye las clases de borde por día para un rango (ajustado al mes visible) */
+  const buildBorderMapFromRange = (start: Date, end: Date): Record<number, string> => {
+    if (monthIndex === null) return {};
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const classes: Record<number, string> = {};
+
+    // Limitar rango al mes visible
+    const monthStart = new Date(year, monthIndex, 1);
+    const monthEnd = new Date(year, monthIndex, daysInMonth, 23, 59, 59, 999);
+    const s = start < monthStart ? monthStart : start;
+    const e = end > monthEnd ? monthEnd : end;
+    if (e.getTime() < s.getTime()) return {};
+
+    const startDay = s.getDate();
+    const endDay = e.getDate();
+
+    // Columna (1..7) tomando lunes como primer día
+    const colOf = (day: number) => {
+      const d = new Date(year, monthIndex!, day);
+      const js = d.getDay(); // 0-dom..6-sab
+      return ((js + 6) % 7) + 1; // 1-lun..7-dom
+    };
+
+    // Recorremos por semanas, uniendo con líneas superior/inferior y laterales
+    let cur = startDay;
+    while (cur <= endDay) {
+      const colStart = colOf(cur);
+      const lastDayOfWeek = Math.min(endDay, cur + (7 - colStart));
+
+      // línea superior solo en la primera semana del rango
+      if (cur === startDay) {
+        for (let d = cur; d <= lastDayOfWeek; d++) {
+          classes[d] = (classes[d] ?? '') + ' border-t-2 border-violet-500';
+        }
+      }
+      // línea inferior solo en la última semana del rango
+      if (lastDayOfWeek === endDay) {
+        for (let d = cur; d <= lastDayOfWeek; d++) {
+          classes[d] = (classes[d] ?? '') + ' border-b-2 border-violet-500';
+        }
+      }
+
+      // laterales
+      classes[cur] = (classes[cur] ?? '') + ' border-l-2 border-violet-500';
+      classes[lastDayOfWeek] = (classes[lastDayOfWeek] ?? '') + ' border-r-2 border-violet-500';
+
+      cur = lastDayOfWeek + 1;
+    }
+
+    // Puntas redondeadas
+    classes[startDay] = (classes[startDay] ?? '') + ' rounded-l-full';
+    classes[endDay] = (classes[endDay] ?? '') + ' rounded-r-full';
+
+    return classes;
+  };
+
+
+/** Borde SOLO para la solicitud seleccionada que solape el mes visible */
+const borderMap = useMemo(() => {
+  if (monthIndex === null || !highlightRequestId) return {};
+
+  // Busca la petición seleccionada
+  const sel = requests.find(r => r._id === highlightRequestId);
+  if (!sel) return {};
+
+  // Construye el contorno del rango (se recorta al mes en el helper)
+  const s = new Date(sel.startDate);
+  const e = new Date(sel.endDate);
+  return buildBorderMapFromRange(s, e);
+}, [highlightRequestId, requests, monthIndex, year]);
+
 
   if (!isOpen || monthIndex === null) return null;
 
@@ -445,8 +506,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                   type="button"
                   onClick={() => setStatusFilter('pending')}
                   className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === 'pending'
-                    ? 'bg-amber-500 text-white ring-amber-500'
-                    : 'bg-white text-amber-700 ring-amber-300 hover:bg-amber-50'
+                      ? 'bg-amber-500 text-white ring-amber-500'
+                      : 'bg-white text-amber-700 ring-amber-300 hover:bg-amber-50'
                     } focus:outline-none focus:ring-2 focus:ring-amber-100`}
                 >
                   {t('pages.vacations.monthModal.filters.pending')}
@@ -456,8 +517,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                   type="button"
                   onClick={() => setStatusFilter('accepted')}
                   className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === 'accepted'
-                    ? 'bg-emerald-600 text-white ring-emerald-600'
-                    : 'bg-white text-emerald-700 ring-emerald-300 hover:bg-emerald-50'
+                      ? 'bg-emerald-600 text-white ring-emerald-600'
+                      : 'bg-white text-emerald-700 ring-emerald-300 hover:bg-emerald-50'
                     } focus:outline-none focus:ring-2 focus:ring-emerald-100`}
                 >
                   {t('pages.vacations.monthModal.filters.accepted')}
@@ -467,8 +528,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                   type="button"
                   onClick={() => setStatusFilter('cancelled')}
                   className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === 'cancelled'
-                    ? 'bg-rose-600 text-white ring-rose-600'
-                    : 'bg-white text-rose-700 ring-rose-300 hover:bg-rose-50'
+                      ? 'bg-rose-600 text-white ring-rose-600'
+                      : 'bg-white text-rose-700 ring-rose-300 hover:bg-rose-50'
                     } focus:outline-none focus:ring-2 focus:ring-rose-100`}
                 >
                   {t('pages.vacations.monthModal.filters.cancelled')}
@@ -478,8 +539,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                   type="button"
                   onClick={() => setStatusFilter('option_sent')}
                   className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === 'option_sent'
-                    ? 'bg-blue-600 text-white ring-blue-600'
-                    : 'bg-white text-blue-700 ring-blue-300 hover:bg-blue-50'
+                      ? 'bg-blue-600 text-white ring-blue-600'
+                      : 'bg-white text-blue-700 ring-blue-300 hover:bg-blue-50'
                     } focus:outline-none focus:ring-2 focus:ring-blue-100`}
                 >
                   {t('pages.vacations.monthModal.filters.option_sent')}
@@ -550,9 +611,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                           ? 'bg-yellow-400 text-slate-900'
                           : 'bg-green-500 text-white';
 
-                    // ✅ ÚNICO borde: si el día está dentro del rango de la petición seleccionada
-                    const inRange = isInHighlightedRange(cell);
-                    const rangeRing = inRange ? 'ring-2 ring-violet-400 ring-offset-1 ring-offset-white' : '';
+                    // 🟣 Bordes exteriores para formar contorno continuo del rango (todas las aceptadas)
+                    const borderCls = borderMap[cell] ?? '';
 
                     return (
                       <div
@@ -560,20 +620,19 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                         className={[
                           'h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none',
                           color,
-                          rangeRing, // 👈 solo este ring
+                          borderCls, // 👈 bordes solo donde toca (top/bottom/left/right)
                         ].join(' ')}
                         title={
                           availability
                             ? `${cell} · ${availability.days.find(d => d.day === cell)?.approvedCount ?? 0} ${t('pages.vacations.adminPage.badges.accepted', 'aceptadas')}`
                             : `${cell}`
                         }
-                        aria-label={`${cell}${inRange ? ' · highlighted' : ''}`}
+                        aria-label={`${cell}${borderCls ? ' · highlighted' : ''}`}
                       >
                         {cell}
                       </div>
                     );
                   })}
-
               </div>
 
               {availError && (
@@ -799,9 +858,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                     );
                   })}
                 </ul>
-
-
-
               )}
             </div>
           </div>
