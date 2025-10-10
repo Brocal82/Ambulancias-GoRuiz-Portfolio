@@ -1,3 +1,4 @@
+//src/schemas/dienstQuerySchema.ts
 import { z } from 'zod';
 
 export const dienstQuerySchema = z.object({

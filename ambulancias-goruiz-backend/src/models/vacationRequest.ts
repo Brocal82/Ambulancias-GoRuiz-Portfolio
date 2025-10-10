@@ -1,3 +1,4 @@
+//src/models/vacationRequest.ts
 import { Schema, model, Document } from 'mongoose';
 import type { IVacationRequest } from '../types/vacationRequest';
 

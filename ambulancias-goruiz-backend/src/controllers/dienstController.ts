@@ -1,3 +1,4 @@
+//src/controllers/dienstController.ts
 import { Request, Response } from 'express';
 import Dienst from '../models/Dienst';
 import Ambulance from '../models/Ambulance'; // ✅ Nuevo import

@@ -1,3 +1,5 @@
+//src/types/vacationRequest.ts
+
 import mongoose from 'mongoose';
 
 export interface IVacationRequest {

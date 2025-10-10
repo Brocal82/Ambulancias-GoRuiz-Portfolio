@@ -6,7 +6,7 @@ export interface UserRef {
   pscheinExpiry?: string;
 }
 
-// backend/src/types/Dienst.ts
+
 export interface AssignedDay {
   dienstId: string;
   dienstNumber: number;
