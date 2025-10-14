@@ -12,7 +12,8 @@ import {
   removeAssignment,
   getAssignedDaysForUser,
   generateDienstTemplatesForWeek,
-  deleteDienstsForWeek
+  deleteDienstsForWeek,
+  assignTeamToWeek
 } from '../controllers/dienstController';
 
 import { authenticateToken } from '../middlewares/authMiddleware';
@@ -42,6 +43,14 @@ router.patch('/:id/remove-assignment', authenticateToken, authorizeRole('admin')
 
 router.patch('/:id', authenticateToken, authorizeRole('admin'), updateDienstPartial);
 router.delete('/:id', authenticateToken, authorizeRole('admin'), deleteDienst);
+
+// Asignar un Team completo a todos los días de una semana (solo admin)
+router.post(
+  '/assign-team-to-week',
+  authenticateToken,
+  authorizeRole('admin'),
+  assignTeamToWeek
+);
 
 export default router;
 

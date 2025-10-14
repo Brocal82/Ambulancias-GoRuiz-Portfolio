@@ -8,6 +8,7 @@ import { ZodError, z } from 'zod';
 import mongoose from 'mongoose';
 import { RequestHandler } from 'express';
 import { AssignedDay } from '../types/Dienst';
+import Team from '../models/Team';
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
   message: 'ID no válido',
@@ -236,7 +237,7 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
       dienst.assignments.forEach((assignment: any) => {
         // saltar si este assignment no corresponde al usuario
         const isDriver = assignment?.driver?._id?.toString() === userId;
-        const isMedic  = assignment?.medic?._id?.toString() === userId;
+        const isMedic = assignment?.medic?._id?.toString() === userId;
         if (!isDriver && !isMedic) return;
 
         const ambulanceData = assignment?.ambulanceId ?? null;
@@ -245,8 +246,8 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
           ambulanceData && typeof ambulanceData === "object"
             ? ambulanceData._id?.toString()
             : typeof ambulanceData === "string"
-            ? ambulanceData
-            : undefined;
+              ? ambulanceData
+              : undefined;
 
         const ambulanceNumber =
           ambulanceData && typeof ambulanceData === "object"
@@ -264,19 +265,19 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
           ambulanceNumber,
           driver: assignment?.driver?._id
             ? {
-                _id: assignment.driver._id.toString(),
-                name: assignment.driver.name,
-                lastName: assignment.driver.lastName,
-                pscheinExpiry: assignment.driver.pscheinExpiry,
-              }
+              _id: assignment.driver._id.toString(),
+              name: assignment.driver.name,
+              lastName: assignment.driver.lastName,
+              pscheinExpiry: assignment.driver.pscheinExpiry,
+            }
             : assignment?.driver || null,
           medic: assignment?.medic?._id
             ? {
-                _id: assignment.medic._id.toString(),
-                name: assignment.medic.name,
-                lastName: assignment.medic.lastName,
-                pscheinExpiry: assignment.medic.pscheinExpiry,
-              }
+              _id: assignment.medic._id.toString(),
+              name: assignment.medic.name,
+              lastName: assignment.medic.lastName,
+              pscheinExpiry: assignment.medic.pscheinExpiry,
+            }
             : assignment?.medic || null,
         });
       });
@@ -402,6 +403,78 @@ export const removeAssignment = async (req: Request, res: Response) => {
     res.status(200).json(updatedDienst);
   } catch (error) {
     res.status(500).json({ message: "Error al eliminar el assignment", error });
+  }
+};
+
+export const assignTeamToWeek = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { dienstNumber, weekStartDate, teamId } = req.body as {
+      dienstNumber?: number;
+      weekStartDate?: string; // 'YYYY-MM-DD'
+      teamId?: string;
+    };
+
+    if (!dienstNumber || !weekStartDate || !teamId) {
+      res.status(400).json({ message: 'Faltan parámetros: dienstNumber, weekStartDate, teamId' });
+      return;
+    }
+    if (!mongoose.Types.ObjectId.isValid(teamId)) {
+      res.status(400).json({ message: 'teamId inválido' });
+      return;
+    }
+
+    const team = await Team.findById(teamId).lean();
+    if (!team) {
+      res.status(404).json({ message: 'Team no encontrado' });
+      return;
+    }
+
+    // La semana de tus Diensts se guarda en weekStartDate (Date) y weekEndDate (Date)
+    const start = new Date(weekStartDate);
+    if (isNaN(start.getTime())) {
+      res.status(400).json({ message: 'weekStartDate inválida' });
+      return;
+    }
+
+    // buscar el documento de Dienst de esa semana y número
+    const dienst = await Dienst.findOne({
+      dienstNumber,
+      weekStartDate: { $gte: start, $lt: new Date(start.getTime() + 1 * 24 * 60 * 60 * 1000) }, // mismo día
+    });
+
+    if (!dienst) {
+      res.status(404).json({ message: 'No existe Dienst para esa semana y número' });
+      return;
+    }
+
+    // Aplicar driver/medic del team a TODOS los assignments existentes de ese Dienst
+    // (no tocamos horas ni ambulancia)
+    let updatedCount = 0;
+    dienst.assignments = dienst.assignments.map((a) => {
+      // solo tocamos assignments válidos (tienen fecha/hora)
+      if (a?.date && a?.startTime && a?.endTime) {
+        updatedCount += 1;
+        return {
+          ...a,
+          driver: team.driver,
+          medic: team.medic,
+        };
+      }
+      return a;
+    });
+
+    await dienst.save();
+
+    res.status(200).json({
+      message: `Team asignado a ${updatedCount} días del Dienst #${dienstNumber} (${weekStartDate}).`,
+      updatedCount,
+      dienstId: dienst.id,
+      weekStartDate,
+    });
+
+  } catch (error) {
+    console.error('❌ Error en assignTeamToWeek:', error);
+    res.status(500).json({ message: 'Error al asignar el Team a la semana' });
   }
 };
 

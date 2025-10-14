@@ -34,6 +34,7 @@ import AdminUserDetailDashboard from './pages/AdminUserDetailDashboard';
 import AdminMessagesPage from './pages/AdminMessagesPage';
 import AdminSentMessages from './pages/AdminSentMessages'; 
 import AdminAppointmentsPage from './pages/AdminAppointmentsPage';
+import AdminTeamsPage from './pages/AdminTeamsPage';
 
 export default function App() {
   return (
@@ -71,6 +72,8 @@ export default function App() {
             <Route path="/admin/user/:userId" element={<AppLayout><AdminUserDetailDashboard /></AppLayout>} />
             <Route path="/admin/mechanics" element={<AppLayout><AdminMechanicsPage /></AppLayout>} />
             <Route path="/admin/appointments" element={<AppLayout><AdminAppointmentsPage /></AppLayout>} />
+            <Route path="/admin/teams" element={<AppLayout><AdminTeamsPage /></AppLayout>} />
+
           </Route>
         </Routes>
         <ToastContainer position="top-right" autoClose={3000} />

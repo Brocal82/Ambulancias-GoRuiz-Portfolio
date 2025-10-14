@@ -114,3 +114,15 @@ export const deleteDienstsForWeek = async (
     { headers: { Authorization: `Bearer ${token}` } }
   );
 };
+
+// Asignar Team a la semana de un Dienst
+export const assignTeamToWeek = async (
+  payload: { dienstNumber: number; weekStartDate: string; teamId: string },
+  token: string
+): Promise<{ message: string; updatedCount: number; dienstId: string; weekStartDate: string }> => {
+  const res = await axios.post('/diensts/assign-team-to-week', payload, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+

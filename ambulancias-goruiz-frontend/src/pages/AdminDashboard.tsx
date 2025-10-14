@@ -44,6 +44,19 @@ const AdminDashboard = () => {
         </Link>
 
         <Link
+          to="/admin/teams"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
+          <h2 className="text-lg font-semibold mb-2">
+            {t('pages.adminDashboard.teams.title', 'Equipos')}
+          </h2>
+          <p className="text-sm text-gray-600">
+            {t('pages.adminDashboard.teams.desc', 'Gestiona parejas fijas (conductor + sanitario)')}
+          </p>
+        </Link>
+
+
+        <Link
           to="/admin/diensts"
           className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
         >
