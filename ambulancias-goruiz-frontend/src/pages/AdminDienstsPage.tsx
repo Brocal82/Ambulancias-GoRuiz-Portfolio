@@ -1,8 +1,8 @@
-//src/pages/AdminDienstsPage.tsx
 import { useCallback, useEffect, useState } from 'react';
 import type { Dienst, UserRef } from '../types/dienst';
-import { getAllDiensts, generateDienstsForWeek, deleteDienstsForWeek } from '../api/diensts';
+import { getAllDiensts, generateDienstsForWeek, deleteDienstsForWeek, assignTeamToWeek } from '../api/diensts';
 import AssignmentModal from '../components/AssignmentModal';
+import TeamAssignModal from '../components/diensts/TeamAssignModal'; // ⬅️ IMPORTA TU MODAL
 import { isPartialAssignment } from '../utils/assignmentUtils';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
@@ -21,7 +21,6 @@ const displayPerson = (p: unknown) =>
       ? `${(p as any).lastName ?? ''}${(p as any).lastName ? ', ' : ''}${(p as any).name ?? ''}` || '—'
       : '—';
 
-
 const AdminPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
   const [selectedAssignment, setSelectedAssignment] = useState<{
@@ -31,6 +30,13 @@ const AdminPage = () => {
       medic: string | UserRef;
     };
     dienstId: string;
+  } | null>(null);
+
+  // ⬇️ estado local para el modal de asignar Team a la semana
+  const [weekTeamModal, setWeekTeamModal] = useState<{
+    open: boolean;
+    dienstNumber: number;
+    weekStartISO: string;
   } | null>(null);
 
   const { token } = useAuth();
@@ -83,6 +89,7 @@ const AdminPage = () => {
       {weekStartDates.map((weekStart, index) => {
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
+        const weekStartISO = weekStart.toISOString().split("T")[0];
 
         return (
           <div key={index} className="mb-8 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
@@ -104,10 +111,8 @@ const AdminPage = () => {
                     );
                     if (!confirmCreate || !token) return;
 
-                    const mondayISO = weekStart.toISOString().split("T")[0];
-
                     try {
-                      await generateDienstsForWeek(mondayISO, token);
+                      await generateDienstsForWeek(weekStartISO, token);
                       toastT.success(['pages.diensts.adminPage.alerts.createOk']);
                       fetchDiensts();
                     } catch (err) {
@@ -123,31 +128,29 @@ const AdminPage = () => {
                   if (!d.weekStartDate) return false;
                   const parsedDate = new Date(d.weekStartDate);
                   return !isNaN(parsedDate.getTime()) &&
-                    parsedDate.toISOString().split("T")[0] === weekStart.toISOString().split("T")[0];
+                    parsedDate.toISOString().split("T")[0] === weekStartISO;
                 }) && (
-                    <button
-                      className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100"
-                      onClick={async () => {
-                        const confirmDelete = confirm(
-                          t('pages.diensts.adminPage.confirmDelete', { date: fmtDate(weekStart) })
-                        );
-                        if (!confirmDelete || !token) return;
+                  <button
+                    className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100"
+                    onClick={async () => {
+                      const confirmDelete = confirm(
+                        t('pages.diensts.adminPage.confirmDelete', { date: fmtDate(weekStart) })
+                      );
+                      if (!confirmDelete || !token) return;
 
-                        const mondayISO = weekStart.toISOString().split("T")[0];
-
-                        try {
-                          await deleteDienstsForWeek(mondayISO, token);
-                          toastT.success(['pages.diensts.adminPage.alerts.deleteOk']);
-                          fetchDiensts();
-                        } catch (err) {
-                          console.error("Error al eliminar diensts:", err);
-                          toastT.error(['pages.diensts.adminPage.alerts.deleteErr']);
-                        }
-                      }}
-                    >
-                      {t('pages.diensts.adminPage.actions.delete')}
-                    </button>
-                  )}
+                      try {
+                        await deleteDienstsForWeek(weekStartISO, token);
+                        toastT.success(['pages.diensts.adminPage.alerts.deleteOk']);
+                        fetchDiensts();
+                      } catch (err) {
+                        console.error("Error al eliminar diensts:", err);
+                        toastT.error(['pages.diensts.adminPage.alerts.deleteErr']);
+                      }
+                    }}
+                  >
+                    {t('pages.diensts.adminPage.actions.delete')}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -157,7 +160,7 @@ const AdminPage = () => {
                 if (!dienst.weekStartDate) return false;
                 const parsedDate = new Date(dienst.weekStartDate);
                 return !isNaN(parsedDate.getTime()) &&
-                  parsedDate.toISOString().split("T")[0] === weekStart.toISOString().split("T")[0];
+                  parsedDate.toISOString().split("T")[0] === weekStartISO;
               })
               .map((dienst) => {
                 const weekDates = Array.from({ length: 7 }, (_, i) => {
@@ -168,9 +171,25 @@ const AdminPage = () => {
 
                 return (
                   <div key={`${weekStart.toISOString()}-${dienst.dienstNumber}`} className="mb-6">
-                    <p className="font-medium text-slate-800 mb-2">
-                      {t('pages.diensts.adminPage.dienstLabel', { num: dienst.dienstNumber })}
-                    </p>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="font-medium text-slate-800">
+                        {t('pages.diensts.adminPage.dienstLabel', { num: dienst.dienstNumber })}
+                      </p>
+
+                      {/* ⬇️ Botón para abrir el modal de asignación de Team a TODA la semana */}
+                      <button
+                        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-100"
+                        onClick={() =>
+                          setWeekTeamModal({
+                            open: true,
+                            dienstNumber: dienst.dienstNumber,
+                            weekStartISO,
+                          })
+                        }
+                      >
+                        {t('pages.diensts.adminPage.assignTeamToWeek', 'Asignar Team a la semana')}
+                      </button>
+                    </div>
 
                     {/* Grid de 7 días */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -228,6 +247,33 @@ const AdminPage = () => {
           dienstId={selectedAssignment.dienstId}
           onClose={() => setSelectedAssignment(null)}
           onUpdate={fetchDiensts}
+        />
+      )}
+
+      {/* ⬇️ Modal de asignación de Team a la semana (usa estado local para saber semana y #) */}
+      {weekTeamModal?.open && (
+        <TeamAssignModal
+          isOpen={true}
+          onClose={() => setWeekTeamModal(null)}
+          onConfirm={async (teamId: string) => {
+            if (!token || !weekTeamModal) return;
+            try {
+              await assignTeamToWeek(
+                {
+                  dienstNumber: weekTeamModal.dienstNumber,
+                  weekStartDate: weekTeamModal.weekStartISO, // el backend espera weekStartDate
+                  teamId,
+                },
+                token
+              );
+              toastT.success(['pages.diensts.adminPage.assignWeekOk', {}]);
+              setWeekTeamModal(null);
+              fetchDiensts();
+            } catch (err) {
+              console.error(err);
+              toastT.error(['pages.diensts.adminPage.assignWeekErr', {}]);
+            }
+          }}
         />
       )}
     </div>
