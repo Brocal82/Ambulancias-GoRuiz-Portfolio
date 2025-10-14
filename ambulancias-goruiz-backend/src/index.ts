@@ -20,6 +20,7 @@ import ambulanceRoutes from './routes/ambulanceRoutes';
 import messageRoutes from './routes/messageRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import teamRoutes from './routes/teamRoutes'
 
 // Utils
 import cleanupOldDiensts from './utils/cleanupOldDiensts';
@@ -99,6 +100,7 @@ app.use('/api/ambulances', ambulanceRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api', notificationRoutes);
+app.use('/api/teams', teamRoutes);
 
 // ----------------------------------------------------------------------------
 // Conexión a DB y arranque
