@@ -48,13 +48,12 @@ const AdminDashboard = () => {
           className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
         >
           <h2 className="text-lg font-semibold mb-2">
-            {t('pages.adminDashboard.teams.title', 'Equipos')}
+            {t('pages.adminDashboard.teams.title')}
           </h2>
           <p className="text-sm text-gray-600">
-            {t('pages.adminDashboard.teams.desc', 'Gestiona parejas fijas (conductor + sanitario)')}
+            {t('pages.adminDashboard.teams.desc')}
           </p>
         </Link>
-
 
         <Link
           to="/admin/diensts"

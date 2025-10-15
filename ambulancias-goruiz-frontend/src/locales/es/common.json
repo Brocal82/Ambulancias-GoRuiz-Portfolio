@@ -34,6 +34,10 @@
         "title": "👤 Trabajadores",
         "desc": "Gestiona los perfiles de usuario"
       },
+      "teams": {
+        "title": "👥 Equipos",
+        "desc": "Gestiona parejas fijas (conductor + sanitario)"
+      },
       "diensts": {
         "title": "📅 Dienstplan",
         "desc": "Edita los servicios semanales"
@@ -153,6 +157,24 @@
         "name": "Nombre",
         "email": "Email",
         "role": "Rol"
+      }
+    },
+    "adminTeams": {
+      "title": "Equipos (driver + medic)",
+      "subtitle": "Crea y gestiona parejas fijas.",
+      "createBtn": "Nuevo equipo",
+      "loadError": "No se pudieron cargar los equipos",
+      "empty": "Todavía no hay equipos creados.",
+      "team": "Equipo",
+      "confirmDelete": "¿Eliminar este equipo?",
+      "created": "Equipo creado",
+      "createError": "No se pudo crear el equipo",
+      "deleted": "Equipo eliminado",
+      "deleteError": "No se pudo eliminar el equipo",
+      "modal": {
+        "title": "Crear equipo",
+        "driver": "Conductor",
+        "medic": "Sanitario"
       }
     },
     "profile": {
@@ -696,7 +718,15 @@
         "ariaOpenMonth": "Abrir mes {{label}} {{year}}"
       },
       "calendar": {
-        "weekdayLabels": ["L","M","X","J","V","S","D"],
+        "weekdayLabels": [
+          "L",
+          "M",
+          "X",
+          "J",
+          "V",
+          "S",
+          "D"
+        ],
         "workerFallback": "Trabajador",
         "dayAppointmentsTitle": "Citas del día",
         "noAppointments": "No hay citas para este día.",
@@ -704,15 +734,14 @@
           "close": "Cerrar"
         },
         "labels": {
-        "moreWithCount": "+{{count}} más"
-      },
+          "moreWithCount": "+{{count}} más"
+        },
         "aria": {
           "day": "Día {{num}}",
           "emptyCell": "Celda vacía",
           "appointment": "Cita: {{worker}} a las {{time}}"
         }
       }
-
     },
     "messages": {
       "adminPage": {
@@ -835,12 +864,14 @@
         },
         "confirmCreate": "¿Crear plantillas para la semana del {{date}}?",
         "confirmDelete": "¿Borrar todos los Diensts de la semana del {{date}}?",
+        "assignTeamToWeek": "Asignar Team",
         "alerts": {
           "createOk": "✅ Plantillas creadas correctamente",
           "createErr": "❌ No se pudieron crear las plantillas. Quizás ya existen.",
           "deleteOk": "🗑️ Diensts eliminados correctamente",
           "deleteErr": "❌ No se pudieron eliminar los Diensts."
         },
+        
         "dienstLabel": "Dienst #{{num}}",
         "freeDay": "Libre"
       },
@@ -859,7 +890,12 @@
       "adminUserTab": {
         "title": "Diensts asignados",
         "loading": "Cargando días asignados..."
-      }
+      },
+      "assignTeamModal": {
+      "title": "Asignar Team a la semana",
+      "select": "Selecciona una pareja",
+      "confirm": "Asignar"
+    }
     },
     "adminUserDetail": {
       "title": "Detalle del Trabajador",
@@ -873,6 +909,7 @@
         "messages": "Mensajes"
       }
     },
+    
     "workday": {
       "title": "📋 Mi jornada de hoy: {{date}}",
       "closedDay": "✅ Día cerrado. No hay Dienst activo para hoy.",
@@ -1047,6 +1084,14 @@
       }
     }
   },
+  "common": {
+    "loading": "Cargando...",
+    "select": "Selecciona",
+    "saving": "Guardando...",
+    "create": "Crear",
+    "cancel": "Cancelar",
+    "delete": "Eliminar"
+  },
   "toasts": {
     "mechanics": {
       "loadError": "❌ Error al cargar reportes o ambulancias.",
@@ -1057,6 +1102,9 @@
       "invalidFinalKm": "📏 Introduce un número válido de KM finales.",
       "deleteSuccess": "Reporte eliminado correctamente.",
       "deleteError": "Error al eliminar el reporte."
+    },
+    "teams": {
+      "loadError": "No se pudieron cargar los equipos"
     },
     "hospitals": {
       "loadError": "❌ Error al cargar hospitales.",
@@ -1092,34 +1140,32 @@
       "deleteError": "❌ Error al eliminar el usuario"
     },
     "vacations": {
-  "requestSent": "✅ Solicitud enviada correctamente.",
-  "requestError": "❌ Error al enviar la solicitud.",
-  "deleted": "🗑️ Solicitud eliminada",
-  "deleteError": "❌ Error al eliminar la solicitud",
-  "editPending": "Funcionalidad de editar la solicitud {{id}} pendiente de implementar.",
-
-  "worker": {
-    "loadError": "❌ Error al cargar tus solicitudes.",
-    "error": "❌ Ocurrió un error.",
-    "respondPending": "📨 Enviando respuesta...",
-    "respondSuccess": "✅ Respuesta enviada",
-    "formSuccess": "✅ Solicitud enviada"
-  },
-
-  "admin": {
-    "loadError": "❌ Error al cargar solicitudes.",
-    "error": "❌ Ocurrió un error al procesar la solicitud.",
-    "updating": "🔄 Actualizando...",
-    "accepted": "✅ Solicitud de vacaciones aceptada.",
-    "cancelled": "🛑 Solicitud de vacaciones cancelada.",
-    "updated": "✅ Estado de solicitud actualizado.",
-    "capacityExceeded": "⚠️ Capacidad diaria alcanzada. No se pueden aceptar más solicitudes para esos días.",
-    "sendingAlt": "📤 Enviando alternativa...",
-    "altSent": "✅ Opción alternativa enviada.",
-    "cancelling": "🛑 Cancelando...",
-    "deleting": "🗑️ Eliminando...",
-    "deleted": "🗑️ Solicitud eliminada."
-  }
+      "requestSent": "✅ Solicitud enviada correctamente.",
+      "requestError": "❌ Error al enviar la solicitud.",
+      "deleted": "🗑️ Solicitud eliminada",
+      "deleteError": "❌ Error al eliminar la solicitud",
+      "editPending": "Funcionalidad de editar la solicitud {{id}} pendiente de implementar.",
+      "worker": {
+        "loadError": "❌ Error al cargar tus solicitudes.",
+        "error": "❌ Ocurrió un error.",
+        "respondPending": "📨 Enviando respuesta...",
+        "respondSuccess": "✅ Respuesta enviada",
+        "formSuccess": "✅ Solicitud enviada"
+      },
+      "admin": {
+        "loadError": "❌ Error al cargar solicitudes.",
+        "error": "❌ Ocurrió un error al procesar la solicitud.",
+        "updating": "🔄 Actualizando...",
+        "accepted": "✅ Solicitud de vacaciones aceptada.",
+        "cancelled": "🛑 Solicitud de vacaciones cancelada.",
+        "updated": "✅ Estado de solicitud actualizado.",
+        "capacityExceeded": "⚠️ Capacidad diaria alcanzada. No se pueden aceptar más solicitudes para esos días.",
+        "sendingAlt": "📤 Enviando alternativa...",
+        "altSent": "✅ Opción alternativa enviada.",
+        "cancelling": "🛑 Cancelando...",
+        "deleting": "🗑️ Eliminando...",
+        "deleted": "🗑️ Solicitud eliminada."
+      }
     },
     "messages": {
       "fillRequired": "✏️ Por favor, completa asunto y mensaje",

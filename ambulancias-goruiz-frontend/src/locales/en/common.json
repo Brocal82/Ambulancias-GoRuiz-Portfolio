@@ -34,6 +34,10 @@
         "title": "👤 Workers",
         "desc": "Manage user profiles"
       },
+      "teams": {
+        "title": "👥 Teams",
+        "desc": "Manage fixed pairs (driver + medic)"
+      },
       "diensts": {
         "title": "📅 Duty roster",
         "desc": "Edit weekly services"
@@ -126,7 +130,7 @@
         "desc": "Coming soon"
       }
     },
-     "adminUsers": {
+    "adminUsers": {
       "title": "Registered Users",
       "search": {
         "label": "Search by name:",
@@ -153,6 +157,24 @@
         "name": "First name",
         "email": "Email",
         "role": "Role"
+      }
+    },
+    "adminTeams": {
+      "title": "Teams (driver + medic)",
+      "subtitle": "Create and manage fixed pairs.",
+      "createBtn": "New team",
+      "loadError": "Failed to load teams",
+      "empty": "No teams created yet.",
+      "team": "Team",
+      "confirmDelete": "Delete this team?",
+      "created": "Team created",
+      "createError": "Could not create the team",
+      "deleted": "Team deleted",
+      "deleteError": "Could not delete the team",
+      "modal": {
+        "title": "Create team",
+        "driver": "Driver",
+        "medic": "Medic"
       }
     },
     "profile": {
@@ -565,7 +587,6 @@
           "delete": "Delete",
           "deleteTitle": "Delete this appointment"
         }
-
       },
       "actions": {
         "refresh": "Refresh",
@@ -663,15 +684,14 @@
           "time": "Select a time"
         },
         "actions": {
-  "close": "Close",
-  "delete": "Delete",
-  "deleting": "Deleting...",
-  "save": "Save",
-  "saving": "Saving...",
-  "cancelEdit": "Cancel",
-  "cancelling": "Cancelling..."
-}
-,
+          "close": "Close",
+          "delete": "Delete",
+          "deleting": "Deleting...",
+          "save": "Save",
+          "saving": "Saving...",
+          "cancelEdit": "Cancel",
+          "cancelling": "Cancelling..."
+        },
         "cancelThisTitle": "Cancel this appointment",
         "confirmCancel": "Are you sure you want to cancel this appointment?"
       },
@@ -698,7 +718,15 @@
         "ariaOpenMonth": "Open month {{label}} {{year}}"
       },
       "calendar": {
-        "weekdayLabels": ["M", "T", "W", "T", "F", "S", "S"],
+        "weekdayLabels": [
+          "M",
+          "T",
+          "W",
+          "T",
+          "F",
+          "S",
+          "S"
+        ],
         "workerFallback": "Worker",
         "dayAppointmentsTitle": "Appointments for the day",
         "noAppointments": "No appointments for this day.",
@@ -706,15 +734,14 @@
           "close": "Close"
         },
         "labels": {
-        "moreWithCount": "+{{count}} more"
-      },
+          "moreWithCount": "+{{count}} more"
+        },
         "aria": {
           "day": "Day {{num}}",
           "emptyCell": "Empty cell",
           "appointment": "Appointment: {{worker}} at {{time}}"
         }
       }
-
     },
     "messages": {
       "adminPage": {
@@ -837,6 +864,8 @@
         },
         "confirmCreate": "Create templates for the week of {{date}}?",
         "confirmDelete": "Delete all Diensts for the week of {{date}}?",
+        "assignTeamToWeek": "Assign Team",
+
         "alerts": {
           "createOk": "✅ Templates created successfully",
           "createErr": "❌ Could not create templates. They may already exist.",
@@ -861,7 +890,12 @@
       "adminUserTab": {
         "title": "Assigned Diensts",
         "loading": "Loading assigned days..."
-      }
+      },
+      "assignTeamModal": {
+      "title": "Assign team to the week",
+      "select": "Select a pair",
+      "confirm": "Assign"
+    }
     },
     "adminUserDetail": {
       "title": "Worker Details",
@@ -875,6 +909,7 @@
         "messages": "Messages"
       }
     },
+    
     "workday": {
       "title": "📋 My Working Day: {{date}}",
       "closedDay": "✅ Day closed. No active shift today.",
@@ -1049,6 +1084,14 @@
       }
     }
   },
+  "common": {
+    "loading": "Loading...",
+    "select": "Select",
+    "saving": "Saving...",
+    "create": "Create",
+    "cancel": "Cancel",
+    "delete": "Delete"
+  },
   "toasts": {
     "mechanics": {
       "loadError": "❌ Failed to load reports or ambulances.",
@@ -1059,6 +1102,9 @@
       "invalidFinalKm": "📏 Enter a valid final KM number.",
       "deleteSuccess": "Report deleted successfully.",
       "deleteError": "Failed to delete the report."
+    },
+    "teams": {
+      "loadError": "Failed to load teams"
     },
     "hospitals": {
       "loadError": "❌ Failed to load hospitals.",
@@ -1093,35 +1139,33 @@
       "deleteSuccess": "🗑️ User deleted successfully",
       "deleteError": "❌ Failed to delete the user"
     },
-"vacations": {
-  "requestSent": "✅ Request sent successfully.",
-  "requestError": "❌ Error sending request.",
-  "deleted": "🗑️ Request deleted",
-  "deleteError": "❌ Error deleting request.",
-  "editPending": "Edit request {{id}} feature not yet implemented.",
-
-  "worker": {
-    "loadError": "❌ Error loading your requests.",
-    "error": "❌ An error occurred.",
-    "respondPending": "📨 Sending response...",
-    "respondSuccess": "✅ Response sent successfully.",
-    "formSuccess": "✅ Request sent successfully."
-  },
-
-  "admin": {
-    "loadError": "❌ Error loading vacation requests.",
-    "error": "❌ An error occurred while processing the request.",
-    "updating": "🔄 Updating...",
-    "accepted": "✅ Vacation request accepted.",
-    "cancelled": "🛑 Vacation request cancelled.",
-    "updated": "✅ Vacation status updated.",
-    "capacityExceeded": "⚠️ Daily vacation capacity reached. No more requests can be accepted for these days.",
-    "sendingAlt": "📤 Sending alternative...",
-    "altSent": "✅ Alternative option sent.",
-    "cancelling": "🛑 Cancelling...",
-    "deleting": "🗑️ Deleting...",
-    "deleted": "🗑️ Request deleted."
-  }
+    "vacations": {
+      "requestSent": "✅ Request sent successfully.",
+      "requestError": "❌ Error sending request.",
+      "deleted": "🗑️ Request deleted",
+      "deleteError": "❌ Error deleting request.",
+      "editPending": "Edit request {{id}} feature not yet implemented.",
+      "worker": {
+        "loadError": "❌ Error loading your requests.",
+        "error": "❌ An error occurred.",
+        "respondPending": "📨 Sending response...",
+        "respondSuccess": "✅ Response sent successfully.",
+        "formSuccess": "✅ Request sent successfully."
+      },
+      "admin": {
+        "loadError": "❌ Error loading vacation requests.",
+        "error": "❌ An error occurred while processing the request.",
+        "updating": "🔄 Updating...",
+        "accepted": "✅ Vacation request accepted.",
+        "cancelled": "🛑 Vacation request cancelled.",
+        "updated": "✅ Vacation status updated.",
+        "capacityExceeded": "⚠️ Daily vacation capacity reached. No more requests can be accepted for these days.",
+        "sendingAlt": "📤 Sending alternative...",
+        "altSent": "✅ Alternative option sent.",
+        "cancelling": "🛑 Cancelling...",
+        "deleting": "🗑️ Deleting...",
+        "deleted": "🗑️ Request deleted."
+      }
     },
     "messages": {
       "fillRequired": "✏️ Please fill subject and message",
@@ -1182,7 +1226,6 @@
       "requestError": "❌ Failed to create request.",
       "deleteSuccess": "Appointment deleted.",
       "deleteError": "Could not delete the appointment."
-
     },
     "users": {
       "loadError": "❌ Failed to load users.",

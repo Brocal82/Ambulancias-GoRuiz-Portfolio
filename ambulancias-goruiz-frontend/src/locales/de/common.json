@@ -34,6 +34,10 @@
         "title": "👤 Mitarbeitende",
         "desc": "Verwalte Benutzerprofile"
       },
+      "teams": {
+        "title": "👥 Teams",
+        "desc": "Verwalte feste Paare (Fahrer + Sanitäter)"
+      },
       "diensts": {
         "title": "📅 Dienstplan",
         "desc": "Wöchentliche Dienste bearbeiten"
@@ -153,6 +157,24 @@
         "name": "Vorname",
         "email": "E-Mail",
         "role": "Rolle"
+      }
+    },
+    "adminTeams": {
+      "title": "Teams (Fahrer + Sanitäter)",
+      "subtitle": "Feste Paare erstellen und verwalten.",
+      "createBtn": "Neues Team",
+      "loadError": "Teams konnten nicht geladen werden",
+      "empty": "Noch keine Teams vorhanden.",
+      "team": "Team",
+      "confirmDelete": "Dieses Team löschen?",
+      "created": "Team erstellt",
+      "createError": "Team konnte nicht erstellt werden",
+      "deleted": "Team gelöscht",
+      "deleteError": "Team konnte nicht gelöscht werden",
+      "modal": {
+        "title": "Team erstellen",
+        "driver": "Fahrer",
+        "medic": "Sanitäter"
       }
     },
     "profile": {
@@ -837,6 +859,7 @@
         },
         "confirmCreate": "Vorlagen für die Woche ab dem {{date}} erstellen?",
         "confirmDelete": "Alle Diensts für die Woche ab dem {{date}} löschen?",
+        "assignTeamToWeek": "Team zuweisen",
         "alerts": {
           "createOk": "✅ Vorlagen erfolgreich erstellt",
           "createErr": "❌ Vorlagen konnten nicht erstellt werden. Evtl. existieren sie bereits.",
@@ -861,6 +884,11 @@
       "adminUserTab": {
         "title": "Zugewiesene Dienste",
         "loading": "Zugewiesene Tage werden geladen..."
+      },
+      "assignTeamModal": {
+        "title": "Team für die Woche zuweisen",
+        "select": "Ein Paar auswählen",
+        "confirm": "Zuweisen"
       }
     },
     "adminUserDetail": {
@@ -1049,6 +1077,14 @@
       }
     }
   },
+  "common": {
+    "loading": "Wird geladen...",
+    "select": "Auswählen",
+    "saving": "Wird gespeichert...",
+    "create": "Erstellen",
+    "cancel": "Abbrechen",
+    "delete": "Löschen"
+  },
   "toasts": {
     "mechanics": {
       "loadError": "❌ Fehler beim Laden der Meldungen oder Krankenwagen.",
@@ -1059,6 +1095,9 @@
       "invalidFinalKm": "📏 Bitte eine gültige End-KM Zahl eingeben.",
       "deleteSuccess": "Bericht erfolgreich gelöscht.",
       "deleteError": "Fehler beim Löschen des Berichts."
+    },
+     "teams": {
+      "loadError": "Teams konnten nicht geladen werden"
     },
     "hospitals": {
       "loadError": "❌ Krankenhäuser konnten nicht geladen werden.",

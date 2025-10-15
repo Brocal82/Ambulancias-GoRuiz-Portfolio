@@ -42,7 +42,7 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm }: Props) {
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200">
         <h3 className="text-lg font-semibold text-slate-900 mb-3">
-          {t('pages.diensts.assignTeamModal.title', 'Asignar Team a la semana')}
+          {t('pages.diensts.assignTeamModal.title')}
         </h3>
 
         <div className="space-y-2">
@@ -50,7 +50,7 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm }: Props) {
             htmlFor={selectId}
             className="block text-sm font-medium text-slate-700"
           >
-            {t('pages.diensts.assignTeamModal.select', 'Selecciona una pareja')}
+            {t('pages.diensts.assignTeamModal.select')}
           </label>
           <select
             id={selectId}
@@ -61,7 +61,7 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm }: Props) {
             disabled={loading}
           >
             <option value="">
-              {loading ? t('common.loading', 'Cargando...') : t('common.select', 'Selecciona')}
+              {loading ? t('common.loading') : t('common.select')}
             </option>
             {teams.map((tItem) => (
               <option key={tItem._id} value={tItem._id}>
@@ -82,13 +82,13 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm }: Props) {
               await onConfirm(selectedId);
             }}
           >
-            {t('pages.diensts.assignTeamModal.confirm', 'Asignar')}
+            {t('pages.diensts.assignTeamModal.confirm')}
           </button>
           <button
             className="w-full rounded-xl bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-300 focus:outline-none focus:ring-4 focus:ring-slate-100"
             onClick={onClose}
           >
-            {t('common.cancel', 'Cancelar')}
+            {t('common.cancel')}
           </button>
         </div>
       </div>

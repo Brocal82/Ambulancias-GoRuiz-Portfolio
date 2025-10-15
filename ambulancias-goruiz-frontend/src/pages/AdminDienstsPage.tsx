@@ -187,7 +187,7 @@ const AdminPage = () => {
                           })
                         }
                       >
-                        {t('pages.diensts.adminPage.assignTeamToWeek', 'Asignar Team a la semana')}
+                        {t('pages.diensts.adminPage.assignTeamToWeek')}
                       </button>
                     </div>
 

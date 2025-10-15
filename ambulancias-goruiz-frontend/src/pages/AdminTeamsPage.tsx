@@ -84,7 +84,7 @@ const handleDelete = async (teamId: string) => {
           onClick={() => setShowCreate(true)}
           className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
         >
-          ➕ {t('pages.adminTeams.newTeam', 'Nuevo equipo')}
+          ➕ {t('pages.adminTeams.createBtn', 'Nuevo equipo')}
         </button>
       </div>
 
