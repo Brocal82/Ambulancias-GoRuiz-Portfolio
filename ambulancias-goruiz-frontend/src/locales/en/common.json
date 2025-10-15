@@ -160,7 +160,7 @@
       }
     },
     "adminTeams": {
-      "title": "Teams (driver + medic)",
+      "title": "Teams",
       "subtitle": "Create and manage fixed pairs.",
       "createBtn": "New team",
       "loadError": "Failed to load teams",
@@ -856,24 +856,25 @@
     },
     "diensts": {
       "adminPage": {
-        "title": "Duty Roster (Admin)",
+        "title": "Dienst Plan (Admin)",
         "weekRange": "Week from {{from}} to {{to}}",
         "actions": {
           "create": "Create",
           "delete": "Delete"
         },
-        "confirmCreate": "Create templates for the week of {{date}}?",
-        "confirmDelete": "Delete all Diensts for the week of {{date}}?",
+        "confirmCreate": "Create templates for the week starting {{date}}?",
+        "confirmDelete": "Delete all Diensts for the week starting {{date}}?",
         "assignTeamToWeek": "Assign Team",
-
         "alerts": {
           "createOk": "✅ Templates created successfully",
-          "createErr": "❌ Could not create templates. They may already exist.",
+          "createErr": "❌ Could not create templates. They might already exist.",
           "deleteOk": "🗑️ Diensts deleted successfully",
-          "deleteErr": "❌ Could not delete the Diensts."
+          "deleteErr": "❌ Could not delete Diensts."
         },
         "dienstLabel": "Dienst #{{num}}",
-        "freeDay": "Off"
+        "freeDay": "Free day",
+        "assignWeekOk": "✅ Team successfully assigned to the whole week",
+        "assignWeekErr": "❌ Could not assign team to the week"
       },
       "workerPage": {
         "title": "Your assigned days",
@@ -892,10 +893,10 @@
         "loading": "Loading assigned days..."
       },
       "assignTeamModal": {
-      "title": "Assign team to the week",
-      "select": "Select a pair",
-      "confirm": "Assign"
-    }
+        "title": "Assign team to the week",
+        "select": "Select a pair",
+        "confirm": "Assign"
+      }
     },
     "adminUserDetail": {
       "title": "Worker Details",
@@ -909,7 +910,6 @@
         "messages": "Messages"
       }
     },
-    
     "workday": {
       "title": "📋 My Working Day: {{date}}",
       "closedDay": "✅ Day closed. No active shift today.",

@@ -160,7 +160,7 @@
       }
     },
     "adminTeams": {
-      "title": "Equipos (driver + medic)",
+      "title": "Equipos",
       "subtitle": "Crea y gestiona parejas fijas.",
       "createBtn": "Nuevo equipo",
       "loadError": "No se pudieron cargar los equipos",
@@ -871,9 +871,10 @@
           "deleteOk": "🗑️ Diensts eliminados correctamente",
           "deleteErr": "❌ No se pudieron eliminar los Diensts."
         },
-        
         "dienstLabel": "Dienst #{{num}}",
-        "freeDay": "Libre"
+        "freeDay": "Libre",
+        "assignWeekOk": "✅ Equipo asignado correctamente a toda la semana",
+        "assignWeekErr": "❌ No se pudo asignar el equipo a la semana"
       },
       "workerPage": {
         "title": "Tus días asignados",
@@ -892,10 +893,10 @@
         "loading": "Cargando días asignados..."
       },
       "assignTeamModal": {
-      "title": "Asignar Team a la semana",
-      "select": "Selecciona una pareja",
-      "confirm": "Asignar"
-    }
+        "title": "Asignar Team a la semana",
+        "select": "Selecciona una pareja",
+        "confirm": "Asignar"
+      }
     },
     "adminUserDetail": {
       "title": "Detalle del Trabajador",
@@ -909,7 +910,6 @@
         "messages": "Mensajes"
       }
     },
-    
     "workday": {
       "title": "📋 Mi jornada de hoy: {{date}}",
       "closedDay": "✅ Día cerrado. No hay Dienst activo para hoy.",

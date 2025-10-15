@@ -160,7 +160,7 @@
       }
     },
     "adminTeams": {
-      "title": "Teams (Fahrer + Sanitäter)",
+      "title": "Teams",
       "subtitle": "Feste Paare erstellen und verwalten.",
       "createBtn": "Neues Team",
       "loadError": "Teams konnten nicht geladen werden",
@@ -381,7 +381,7 @@
         "loading": "Anträge werden geladen...",
         "error": "Fehler beim Laden der Anträge.",
         "empty": "Keine Urlaubsanträge.",
-         "capacity": "Tageskapazität: max. {{count}}",
+        "capacity": "Tageskapazität: max. {{count}}",
         "table": {
           "user": "Mitarbeiter",
           "startDate": "Beginn",
@@ -587,7 +587,6 @@
           "delete": "Löschen",
           "deleteTitle": "Diesen Termin löschen"
         }
-
       },
       "actions": {
         "refresh": "Aktualisieren",
@@ -685,15 +684,14 @@
           "time": "Uhrzeit auswählen"
         },
         "actions": {
-  "close": "Schließen",
-  "delete": "Löschen",
-  "deleting": "Löschen...",
-  "save": "Speichern",
-  "saving": "Speichern...",
-  "cancelEdit": "Abbrechen",
-  "cancelling": "Wird abgebrochen..."
-}
-,
+          "close": "Schließen",
+          "delete": "Löschen",
+          "deleting": "Löschen...",
+          "save": "Speichern",
+          "saving": "Speichern...",
+          "cancelEdit": "Abbrechen",
+          "cancelling": "Wird abgebrochen..."
+        },
         "cancelThisTitle": "Diesen Termin absagen",
         "confirmCancel": "Möchtest du diesen Termin wirklich absagen?"
       },
@@ -720,7 +718,15 @@
         "ariaOpenMonth": "Monat {{label}} {{year}} öffnen"
       },
       "calendar": {
-        "weekdayLabels": ["M", "D", "M", "D", "F", "S", "S"],
+        "weekdayLabels": [
+          "M",
+          "D",
+          "M",
+          "D",
+          "F",
+          "S",
+          "S"
+        ],
         "workerFallback": "Mitarbeiter",
         "dayAppointmentsTitle": "Termine des Tages",
         "noAppointments": "Keine Termine für diesen Tag.",
@@ -728,15 +734,14 @@
           "close": "Schließen"
         },
         "labels": {
-        "moreWithCount": "+{{count}} mehr"
-      },
+          "moreWithCount": "+{{count}} mehr"
+        },
         "aria": {
           "day": "Tag {{num}}",
           "emptyCell": "Leere Zelle",
           "appointment": "Termin: {{worker}} um {{time}}"
         }
       }
-
     },
     "messages": {
       "adminPage": {
@@ -852,7 +857,7 @@
     "diensts": {
       "adminPage": {
         "title": "Dienstplan (Admin)",
-        "weekRange": "Woche von {{from}} bis {{to}}",
+        "weekRange": "Woche vom {{from}} bis {{to}}",
         "actions": {
           "create": "Erstellen",
           "delete": "Löschen"
@@ -862,12 +867,14 @@
         "assignTeamToWeek": "Team zuweisen",
         "alerts": {
           "createOk": "✅ Vorlagen erfolgreich erstellt",
-          "createErr": "❌ Vorlagen konnten nicht erstellt werden. Evtl. existieren sie bereits.",
+          "createErr": "❌ Vorlagen konnten nicht erstellt werden. Möglicherweise existieren sie bereits.",
           "deleteOk": "🗑️ Diensts erfolgreich gelöscht",
           "deleteErr": "❌ Diensts konnten nicht gelöscht werden."
         },
         "dienstLabel": "Dienst #{{num}}",
-        "freeDay": "Frei"
+        "freeDay": "Frei",
+        "assignWeekOk": "✅ Team wurde der gesamten Woche erfolgreich zugewiesen",
+        "assignWeekErr": "❌ Team konnte der Woche nicht zugewiesen werden"
       },
       "workerPage": {
         "title": "Deine zugewiesenen Tage",
@@ -1096,7 +1103,7 @@
       "deleteSuccess": "Bericht erfolgreich gelöscht.",
       "deleteError": "Fehler beim Löschen des Berichts."
     },
-     "teams": {
+    "teams": {
       "loadError": "Teams konnten nicht geladen werden"
     },
     "hospitals": {
@@ -1132,35 +1139,33 @@
       "deleteSuccess": "🗑️ Benutzer erfolgreich gelöscht",
       "deleteError": "❌ Fehler beim Löschen des Benutzers"
     },
-"vacations": {
-  "requestSent": "✅ Antrag erfolgreich gesendet.",
-  "requestError": "❌ Fehler beim Senden des Antrags.",
-  "deleted": "🗑️ Antrag gelöscht",
-  "deleteError": "❌ Fehler beim Löschen des Antrags.",
-  "editPending": "Bearbeitungsfunktion für Antrag {{id}} noch nicht implementiert.",
-
-  "worker": {
-    "loadError": "❌ Fehler beim Laden deiner Anträge.",
-    "error": "❌ Ein Fehler ist aufgetreten.",
-    "respondPending": "📨 Antwort wird gesendet...",
-    "respondSuccess": "✅ Antwort erfolgreich gesendet.",
-    "formSuccess": "✅ Antrag erfolgreich gesendet."
-  },
-
-  "admin": {
-    "loadError": "❌ Fehler beim Laden der Urlaubsanträge.",
-    "error": "❌ Beim Verarbeiten des Antrags ist ein Fehler aufgetreten.",
-    "updating": "🔄 Wird aktualisiert...",
-    "accepted": "✅ Urlaubsantrag genehmigt.",
-    "cancelled": "🛑 Urlaubsantrag storniert.",
-    "updated": "✅ Urlaubsstatus aktualisiert.",
-    "capacityExceeded": "⚠️ Tägliche Urlaubskapazität erreicht. Für diese Tage können keine weiteren Anträge akzeptiert werden.",
-    "sendingAlt": "📤 Alternative wird gesendet...",
-    "altSent": "✅ Alternative Option gesendet.",
-    "cancelling": "🛑 Wird storniert...",
-    "deleting": "🗑️ Wird gelöscht...",
-    "deleted": "🗑️ Antrag gelöscht."
-  }
+    "vacations": {
+      "requestSent": "✅ Antrag erfolgreich gesendet.",
+      "requestError": "❌ Fehler beim Senden des Antrags.",
+      "deleted": "🗑️ Antrag gelöscht",
+      "deleteError": "❌ Fehler beim Löschen des Antrags.",
+      "editPending": "Bearbeitungsfunktion für Antrag {{id}} noch nicht implementiert.",
+      "worker": {
+        "loadError": "❌ Fehler beim Laden deiner Anträge.",
+        "error": "❌ Ein Fehler ist aufgetreten.",
+        "respondPending": "📨 Antwort wird gesendet...",
+        "respondSuccess": "✅ Antwort erfolgreich gesendet.",
+        "formSuccess": "✅ Antrag erfolgreich gesendet."
+      },
+      "admin": {
+        "loadError": "❌ Fehler beim Laden der Urlaubsanträge.",
+        "error": "❌ Beim Verarbeiten des Antrags ist ein Fehler aufgetreten.",
+        "updating": "🔄 Wird aktualisiert...",
+        "accepted": "✅ Urlaubsantrag genehmigt.",
+        "cancelled": "🛑 Urlaubsantrag storniert.",
+        "updated": "✅ Urlaubsstatus aktualisiert.",
+        "capacityExceeded": "⚠️ Tägliche Urlaubskapazität erreicht. Für diese Tage können keine weiteren Anträge akzeptiert werden.",
+        "sendingAlt": "📤 Alternative wird gesendet...",
+        "altSent": "✅ Alternative Option gesendet.",
+        "cancelling": "🛑 Wird storniert...",
+        "deleting": "🗑️ Wird gelöscht...",
+        "deleted": "🗑️ Antrag gelöscht."
+      }
     },
     "messages": {
       "fillRequired": "✏️ Bitte Betreff und Nachricht ausfüllen",
@@ -1221,7 +1226,6 @@
       "requestError": "❌ Fehler beim Erstellen der Anfrage.",
       "deleteSuccess": "Termin gelöscht.",
       "deleteError": "Der Termin konnte nicht gelöscht werden."
-
     },
     "users": {
       "loadError": "❌ Fehler beim Laden der Benutzer.",

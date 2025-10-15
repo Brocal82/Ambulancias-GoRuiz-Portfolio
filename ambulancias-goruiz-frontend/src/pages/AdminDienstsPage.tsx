@@ -103,55 +103,69 @@ const AdminPage = () => {
               </h2>
 
               <div className="flex flex-wrap gap-2">
-                <button
-                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
-                  onClick={async () => {
-                    const confirmCreate = confirm(
-                      t('pages.diensts.adminPage.confirmCreate', { date: fmtDate(weekStart) })
-                    );
-                    if (!confirmCreate || !token) return;
+  {/* Mostrar botón Crear solo si NO existen Diensts esa semana */}
+  {!diensts.some(d => {
+    if (!d.weekStartDate) return false;
+    const parsedDate = new Date(d.weekStartDate);
+    return (
+      !isNaN(parsedDate.getTime()) &&
+      parsedDate.toISOString().split("T")[0] === weekStartISO
+    );
+  }) && (
+    <button
+      className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-colors"
+      onClick={async () => {
+        const confirmCreate = confirm(
+          t('pages.diensts.adminPage.confirmCreate', { date: fmtDate(weekStart) })
+        );
+        if (!confirmCreate || !token) return;
 
-                    try {
-                      await generateDienstsForWeek(weekStartISO, token);
-                      toastT.success(['pages.diensts.adminPage.alerts.createOk']);
-                      fetchDiensts();
-                    } catch (err) {
-                      console.error("Error al crear plantillas:", err);
-                      toastT.error(['pages.diensts.adminPage.alerts.createErr']);
-                    }
-                  }}
-                >
-                  {t('pages.diensts.adminPage.actions.create')}
-                </button>
+        try {
+          await generateDienstsForWeek(weekStartISO, token);
+          toastT.success(['pages.diensts.adminPage.alerts.createOk']);
+          fetchDiensts();
+        } catch (err) {
+          console.error("Error al crear plantillas:", err);
+          toastT.error(['pages.diensts.adminPage.alerts.createErr']);
+        }
+      }}
+    >
+      {t('pages.diensts.adminPage.actions.create')}
+    </button>
+  )}
 
-                {diensts.some(d => {
-                  if (!d.weekStartDate) return false;
-                  const parsedDate = new Date(d.weekStartDate);
-                  return !isNaN(parsedDate.getTime()) &&
-                    parsedDate.toISOString().split("T")[0] === weekStartISO;
-                }) && (
-                  <button
-                    className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100"
-                    onClick={async () => {
-                      const confirmDelete = confirm(
-                        t('pages.diensts.adminPage.confirmDelete', { date: fmtDate(weekStart) })
-                      );
-                      if (!confirmDelete || !token) return;
+  {/* Mostrar botón Borrar solo si EXISTEN Diensts esa semana */}
+  {diensts.some(d => {
+    if (!d.weekStartDate) return false;
+    const parsedDate = new Date(d.weekStartDate);
+    return (
+      !isNaN(parsedDate.getTime()) &&
+      parsedDate.toISOString().split("T")[0] === weekStartISO
+    );
+  }) && (
+    <button
+      className="inline-flex items-center gap-2 rounded-lg bg-rose-500/90 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-colors"
+      onClick={async () => {
+        const confirmDelete = confirm(
+          t('pages.diensts.adminPage.confirmDelete', { date: fmtDate(weekStart) })
+        );
+        if (!confirmDelete || !token) return;
 
-                      try {
-                        await deleteDienstsForWeek(weekStartISO, token);
-                        toastT.success(['pages.diensts.adminPage.alerts.deleteOk']);
-                        fetchDiensts();
-                      } catch (err) {
-                        console.error("Error al eliminar diensts:", err);
-                        toastT.error(['pages.diensts.adminPage.alerts.deleteErr']);
-                      }
-                    }}
-                  >
-                    {t('pages.diensts.adminPage.actions.delete')}
-                  </button>
-                )}
-              </div>
+        try {
+          await deleteDienstsForWeek(weekStartISO, token);
+          toastT.success(['pages.diensts.adminPage.alerts.deleteOk']);
+          fetchDiensts();
+        } catch (err) {
+          console.error("Error al eliminar diensts:", err);
+          toastT.error(['pages.diensts.adminPage.alerts.deleteErr']);
+        }
+      }}
+    >
+      {t('pages.diensts.adminPage.actions.delete')}
+    </button>
+  )}
+</div>
+
             </div>
 
             {/* Listado de diensts de esa semana */}
@@ -176,9 +190,10 @@ const AdminPage = () => {
                         {t('pages.diensts.adminPage.dienstLabel', { num: dienst.dienstNumber })}
                       </p>
 
-                      {/* ⬇️ Botón para abrir el modal de asignación de Team a TODA la semana */}
+                      {/* Botón de asignar equipo a la semana */}
                       <button
-                        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-100"
+                        title={t('pages.diensts.adminPage.assignTeamToWeek')}
+                        className="inline-flex items-center justify-center text-slate-600 hover:text-emerald-600 hover:scale-110 transition-transform duration-150"
                         onClick={() =>
                           setWeekTeamModal({
                             open: true,
@@ -187,8 +202,9 @@ const AdminPage = () => {
                           })
                         }
                       >
-                        {t('pages.diensts.adminPage.assignTeamToWeek')}
+                        <span role="img" aria-label="assign team" className="text-lg">👥</span>
                       </button>
+
                     </div>
 
                     {/* Grid de 7 días */}
