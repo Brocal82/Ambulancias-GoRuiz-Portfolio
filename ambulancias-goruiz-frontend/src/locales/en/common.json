@@ -31,7 +31,7 @@
     "adminDashboard": {
       "title": "Admin Dashboard",
       "users": {
-        "title": "👥 Workers",
+        "title": "👤 Workers",
         "desc": "Manage user profiles"
       },
       "diensts": {

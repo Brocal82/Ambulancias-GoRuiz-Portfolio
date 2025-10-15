@@ -31,7 +31,7 @@
     "adminDashboard": {
       "title": "Administrator-Panel",
       "users": {
-        "title": "👥 Mitarbeitende",
+        "title": "👤 Mitarbeitende",
         "desc": "Verwalte Benutzerprofile"
       },
       "diensts": {
