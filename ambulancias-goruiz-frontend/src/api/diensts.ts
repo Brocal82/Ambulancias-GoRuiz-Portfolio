@@ -126,3 +126,15 @@ export const assignTeamToWeek = async (
   return res.data;
 };
 
+// ✅ Asignar UN usuario (driver/medic) a la semana de un Dienst
+export const assignUserToWeek = async (
+  payload: { dienstNumber: number; weekStartDate: string; userId: string; role: 'driver' | 'medic' },
+  token: string
+): Promise<{ message: string; updatedCount: number; dienstId: string; weekStartDate: string; role: 'driver'|'medic'; userId: string }> => {
+  const res = await axios.post('/diensts/assign-user-to-week', payload, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
+

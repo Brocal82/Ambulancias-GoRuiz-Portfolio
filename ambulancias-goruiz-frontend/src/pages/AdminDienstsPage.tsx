@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Dienst, UserRef } from '../types/dienst';
-import { getAllDiensts, generateDienstsForWeek, deleteDienstsForWeek, assignTeamToWeek } from '../api/diensts';
+import { getAllDiensts, generateDienstsForWeek, deleteDienstsForWeek, assignTeamToWeek, assignUserToWeek } from '../api/diensts';
 import AssignmentModal from '../components/AssignmentModal';
 import TeamAssignModal from '../components/diensts/TeamAssignModal'; // ⬅️ IMPORTA TU MODAL
+import UserAssignModal from '../components/diensts/UserAssignModal';
 import { isPartialAssignment } from '../utils/assignmentUtils';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
@@ -38,6 +39,13 @@ const AdminPage = () => {
     dienstNumber: number;
     weekStartISO: string;
   } | null>(null);
+
+  const [weekUserModal, setWeekUserModal] = useState<{
+    open: boolean;
+    weekStartISO: string;
+    dienstNumber: number;
+  } | null>(null);
+
 
   const { token } = useAuth();
   const { t, i18n } = useTranslation();
@@ -103,68 +111,68 @@ const AdminPage = () => {
               </h2>
 
               <div className="flex flex-wrap gap-2">
-  {/* Mostrar botón Crear solo si NO existen Diensts esa semana */}
-  {!diensts.some(d => {
-    if (!d.weekStartDate) return false;
-    const parsedDate = new Date(d.weekStartDate);
-    return (
-      !isNaN(parsedDate.getTime()) &&
-      parsedDate.toISOString().split("T")[0] === weekStartISO
-    );
-  }) && (
-    <button
-      className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-colors"
-      onClick={async () => {
-        const confirmCreate = confirm(
-          t('pages.diensts.adminPage.confirmCreate', { date: fmtDate(weekStart) })
-        );
-        if (!confirmCreate || !token) return;
+                {/* Mostrar botón Crear solo si NO existen Diensts esa semana */}
+                {!diensts.some(d => {
+                  if (!d.weekStartDate) return false;
+                  const parsedDate = new Date(d.weekStartDate);
+                  return (
+                    !isNaN(parsedDate.getTime()) &&
+                    parsedDate.toISOString().split("T")[0] === weekStartISO
+                  );
+                }) && (
+                    <button
+                      className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-colors"
+                      onClick={async () => {
+                        const confirmCreate = confirm(
+                          t('pages.diensts.adminPage.confirmCreate', { date: fmtDate(weekStart) })
+                        );
+                        if (!confirmCreate || !token) return;
 
-        try {
-          await generateDienstsForWeek(weekStartISO, token);
-          toastT.success(['pages.diensts.adminPage.alerts.createOk']);
-          fetchDiensts();
-        } catch (err) {
-          console.error("Error al crear plantillas:", err);
-          toastT.error(['pages.diensts.adminPage.alerts.createErr']);
-        }
-      }}
-    >
-      {t('pages.diensts.adminPage.actions.create')}
-    </button>
-  )}
+                        try {
+                          await generateDienstsForWeek(weekStartISO, token);
+                          toastT.success(['pages.diensts.adminPage.alerts.createOk']);
+                          fetchDiensts();
+                        } catch (err) {
+                          console.error("Error al crear plantillas:", err);
+                          toastT.error(['pages.diensts.adminPage.alerts.createErr']);
+                        }
+                      }}
+                    >
+                      {t('pages.diensts.adminPage.actions.create')}
+                    </button>
+                  )}
 
-  {/* Mostrar botón Borrar solo si EXISTEN Diensts esa semana */}
-  {diensts.some(d => {
-    if (!d.weekStartDate) return false;
-    const parsedDate = new Date(d.weekStartDate);
-    return (
-      !isNaN(parsedDate.getTime()) &&
-      parsedDate.toISOString().split("T")[0] === weekStartISO
-    );
-  }) && (
-    <button
-      className="inline-flex items-center gap-2 rounded-lg bg-rose-500/90 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-colors"
-      onClick={async () => {
-        const confirmDelete = confirm(
-          t('pages.diensts.adminPage.confirmDelete', { date: fmtDate(weekStart) })
-        );
-        if (!confirmDelete || !token) return;
+                {/* Mostrar botón Borrar solo si EXISTEN Diensts esa semana */}
+                {diensts.some(d => {
+                  if (!d.weekStartDate) return false;
+                  const parsedDate = new Date(d.weekStartDate);
+                  return (
+                    !isNaN(parsedDate.getTime()) &&
+                    parsedDate.toISOString().split("T")[0] === weekStartISO
+                  );
+                }) && (
+                    <button
+                      className="inline-flex items-center gap-2 rounded-lg bg-rose-500/90 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-colors"
+                      onClick={async () => {
+                        const confirmDelete = confirm(
+                          t('pages.diensts.adminPage.confirmDelete', { date: fmtDate(weekStart) })
+                        );
+                        if (!confirmDelete || !token) return;
 
-        try {
-          await deleteDienstsForWeek(weekStartISO, token);
-          toastT.success(['pages.diensts.adminPage.alerts.deleteOk']);
-          fetchDiensts();
-        } catch (err) {
-          console.error("Error al eliminar diensts:", err);
-          toastT.error(['pages.diensts.adminPage.alerts.deleteErr']);
-        }
-      }}
-    >
-      {t('pages.diensts.adminPage.actions.delete')}
-    </button>
-  )}
-</div>
+                        try {
+                          await deleteDienstsForWeek(weekStartISO, token);
+                          toastT.success(['pages.diensts.adminPage.alerts.deleteOk']);
+                          fetchDiensts();
+                        } catch (err) {
+                          console.error("Error al eliminar diensts:", err);
+                          toastT.error(['pages.diensts.adminPage.alerts.deleteErr']);
+                        }
+                      }}
+                    >
+                      {t('pages.diensts.adminPage.actions.delete')}
+                    </button>
+                  )}
+              </div>
 
             </div>
 
@@ -190,22 +198,42 @@ const AdminPage = () => {
                         {t('pages.diensts.adminPage.dienstLabel', { num: dienst.dienstNumber })}
                       </p>
 
-                      {/* Botón de asignar equipo a la semana */}
-                      <button
-                        title={t('pages.diensts.adminPage.assignTeamToWeek')}
-                        className="inline-flex items-center justify-center text-slate-600 hover:text-emerald-600 hover:scale-110 transition-transform duration-150"
-                        onClick={() =>
-                          setWeekTeamModal({
-                            open: true,
-                            dienstNumber: dienst.dienstNumber,
-                            weekStartISO,
-                          })
-                        }
-                      >
-                        <span role="img" aria-label="assign team" className="text-lg">👥</span>
-                      </button>
+                      <div className="flex items-center gap-3">
+                        {/* 👤 Asignar un trabajador */}
+                        <button
+                          className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
+                          title={t('pages.diensts.adminPage.assignUserToWeek')}
+                          onClick={() =>
+                            setWeekUserModal({
+                              open: true,
+                              dienstNumber: dienst.dienstNumber,
+                              weekStartISO,
+                            })
+                          }
+                        >
+                          <span aria-hidden className="block text-[16px] leading-none translate-y-[1px] scale-[0.95]">👤</span>
+                          <span className="sr-only">{t('pages.diensts.adminPage.assignUserToWeek')}</span>
+                        </button>
+
+                        {/* 👥 Asignar pareja */}
+                        <button
+                          className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
+                          title={t('pages.diensts.adminPage.assignTeamToWeek')}
+                          onClick={() =>
+                            setWeekTeamModal({
+                              open: true,
+                              dienstNumber: dienst.dienstNumber,
+                              weekStartISO,
+                            })
+                          }
+                        >
+                          <span aria-hidden className="block text-[18px] leading-none -translate-y-[1px] scale-[1.12]">👥</span>
+                          <span className="sr-only">{t('pages.diensts.adminPage.assignTeamToWeek')}</span>
+                        </button>
+                      </div>
 
                     </div>
+
 
                     {/* Grid de 7 días */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -282,12 +310,40 @@ const AdminPage = () => {
                 },
                 token
               );
-              toastT.success(['pages.diensts.adminPage.assignWeekOk', {}]);
+              toastT.success(['pages.diensts.adminPage.assignWeekOk']);
               setWeekTeamModal(null);
               fetchDiensts();
             } catch (err) {
               console.error(err);
-              toastT.error(['pages.diensts.adminPage.assignWeekErr', {}]);
+              toastT.error(['pages.diensts.adminPage.assignWeekErr']);
+            }
+          }}
+        />
+      )}
+
+      {/* ⬇️ Modal de asignación de UN usuario (driver/medic) a toda la semana */}
+      {weekUserModal?.open && (
+        <UserAssignModal
+          isOpen={true}
+          onClose={() => setWeekUserModal(null)}
+          onConfirm={async ({ role, userId }) => {
+            if (!token || !weekUserModal) return;
+            try {
+              await assignUserToWeek(
+                {
+                  dienstNumber: weekUserModal.dienstNumber,
+                  weekStartDate: weekUserModal.weekStartISO,
+                  role,
+                  userId,
+                },
+                token
+              );
+              toastT.success(['pages.diensts.adminPage.assignUserWeekOk']);
+              setWeekUserModal(null);
+              fetchDiensts();
+            } catch (err) {
+              console.error(err);
+              toastT.error(['pages.diensts.adminPage.assignUserWeekErr']);
             }
           }}
         />
@@ -297,3 +353,4 @@ const AdminPage = () => {
 };
 
 export default AdminPage;
+

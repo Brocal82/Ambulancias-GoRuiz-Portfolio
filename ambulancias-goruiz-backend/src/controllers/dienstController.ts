@@ -478,3 +478,80 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
   }
 };
 
+// ✅ Asignar UN USUARIO (driver o medic) a TODA la semana de un Dienst
+export const assignUserToWeek = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { dienstNumber, weekStartDate, userId, role } = req.body as {
+      dienstNumber?: number;
+      weekStartDate?: string; // 'YYYY-MM-DD'
+      userId?: string;
+      role?: 'driver' | 'medic';
+    };
+
+    if (!dienstNumber || !weekStartDate || !userId || !role) {
+      res.status(400).json({ message: 'Faltan parámetros: dienstNumber, weekStartDate, userId, role' });
+      return;
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      res.status(400).json({ message: 'userId inválido' });
+      return;
+    }
+    if (role !== 'driver' && role !== 'medic') {
+      res.status(400).json({ message: 'Rol inválido. Debe ser "driver" o "medic"' });
+      return;
+    }
+
+    // Validar usuario existe
+    const user = await mongoose.model('User').findById(userId).lean();
+    if (!user) {
+      res.status(404).json({ message: 'Usuario no encontrado' });
+      return;
+    }
+
+    const start = new Date(weekStartDate);
+    if (isNaN(start.getTime())) {
+      res.status(400).json({ message: 'weekStartDate inválida' });
+      return;
+    }
+
+    // Encontrar Dienst de esa semana + número
+    const dienst = await Dienst.findOne({
+      dienstNumber,
+      weekStartDate: { $gte: start, $lt: new Date(start.getTime() + 24 * 60 * 60 * 1000) },
+    });
+
+    if (!dienst) {
+      res.status(404).json({ message: 'No existe Dienst para esa semana y número' });
+      return;
+    }
+
+    // Actualizar TODAS las asignaciones válidas
+    let updatedCount = 0;
+
+    dienst.assignments = dienst.assignments.map((a) => {
+      if (a?.date && a?.startTime && a?.endTime) {
+        updatedCount += 1;
+        return {
+          ...a,
+          [role]: new mongoose.Types.ObjectId(userId),
+        };
+      }
+      return a;
+    });
+
+    await dienst.save();
+
+    res.status(200).json({
+      message: `Usuario asignado como ${role} a ${updatedCount} días del Dienst #${dienstNumber} (${weekStartDate}).`,
+      updatedCount,
+      dienstId: dienst.id,
+      weekStartDate,
+      role,
+      userId,
+    });
+  } catch (error) {
+    console.error('❌ Error en assignUserToWeek:', error);
+    res.status(500).json({ message: 'Error al asignar el usuario a la semana' });
+  }
+};
