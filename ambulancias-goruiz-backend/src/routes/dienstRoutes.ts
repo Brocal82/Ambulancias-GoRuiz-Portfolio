@@ -14,7 +14,8 @@ import {
   generateDienstTemplatesForWeek,
   deleteDienstsForWeek,
   assignTeamToWeek,
-  assignUserToWeek
+  assignUserToWeek,
+  clearPeopleForWeek
 } from '../controllers/dienstController';
 
 import { authenticateToken } from '../middlewares/authMiddleware';
@@ -50,6 +51,8 @@ router.post('/assign-team-to-week', authenticateToken, authorizeRole('admin'), a
 
 // Asignar UN usuario (driver/medic) a toda la semana de un Dienst
 router.post('/assign-user-to-week', authenticateToken, authorizeRole('admin'), assignUserToWeek);
+
+router.post('/clear-week-people', authenticateToken, authorizeRole('admin'), clearPeopleForWeek);
 
 
 export default router;

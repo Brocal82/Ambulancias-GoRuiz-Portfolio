@@ -884,7 +884,12 @@
           "pscheinExpired": "❌ Zuweisung nicht möglich: Der P-Schein des Fahrers ist abgelaufen.",
           "weeklyConflict": "⚠️ Zuweisung nicht möglich: Ein Mitglied ist bereits einem anderen Dienst in dieser Woche zugewiesen.",
           "weeklyConflictWithDates": "⚠️ Zuweisung nicht möglich: Es bestehen bereits Zuweisungen in dieser Woche. Fahrer: {{driverDates}}. Sanitäter: {{medicDates}}."
-        }
+        },
+        "clearWeekPeople": "Wochen-Zuweisungen leeren",
+        "confirmClear": "Fahrer- und Sanitäter-Zuweisungen für die gesamte Woche von Dienst #{{num}} ({{date}}) entfernen?",
+        "clearOk": "🧽 Wochenzuweisungen erfolgreich gelöscht",
+        "clearErr": "❌ Die Wochenzuweisungen konnten nicht gelöscht werden",
+        "assignOneAria": "Eine einzelne Person für die ganze Woche zuweisen"
       },
       "assignTeamModal": {
         "title": "Team der Woche zuweisen",

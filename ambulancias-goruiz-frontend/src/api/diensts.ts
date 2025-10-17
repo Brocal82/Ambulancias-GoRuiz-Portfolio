@@ -137,4 +137,15 @@ export const assignUserToWeek = async (
   return res.data;
 };
 
+// 🧽 Limpiar driver/medic de toda la semana de un Dienst
+export const clearPeopleForWeek = async (
+  payload: { dienstNumber: number; weekStartDate: string },
+  token: string
+): Promise<{ message: string; clearedCount: number; dienstId: string; weekStartDate: string }> => {
+  const res = await axios.post('/diensts/clear-week-people', payload, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
 

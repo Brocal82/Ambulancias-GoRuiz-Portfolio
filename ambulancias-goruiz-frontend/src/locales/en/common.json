@@ -884,7 +884,12 @@
           "pscheinExpired": "❌ Cannot assign: the driver's P-Schein is expired.",
           "weeklyConflict": "⚠️ Cannot assign: a member is already assigned to another duty this week.",
           "weeklyConflictWithDates": "⚠️ Cannot assign: there are existing assignments this week. Driver: {{driverDates}}. Medic: {{medicDates}}."
-        }
+        },
+        "clearWeekPeople": "Clear week assignments",
+        "confirmClear": "Remove (driver & medic) assignments for the whole week of Dienst #{{num}} ({{date}})?",
+        "clearOk": "🧽 Week assignments cleared successfully",
+        "clearErr": "❌ Could not clear the week assignments",
+        "assignOneAria": "Assign a single user to the whole week"
       },
       "assignTeamModal": {
         "title": "Assign Team to Week",

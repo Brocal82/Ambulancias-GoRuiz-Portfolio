@@ -884,7 +884,12 @@
           "pscheinExpired": "❌ No se puede asignar: el P-Schein del conductor está caducado.",
           "weeklyConflict": "⚠️ No se puede asignar: algún miembro ya está asignado en otro Dienst esta semana.",
           "weeklyConflictWithDates": "⚠️ No se puede asignar: ya existen asignaciones esta semana. Conductor: {{driverDates}}. Sanitario: {{medicDates}}."
-        }
+        },
+        "clearWeekPeople": "Limpiar asignaciones de la semana",
+        "confirmClear": "¿Quitar las asignaciones (conductor y sanitario) de toda la semana del Dienst #{{num}} ({{date}})?",
+        "clearOk": "🧽 Asignaciones borradas para la semana",
+        "clearErr": "❌ No se pudieron borrar las asignaciones de la semana",
+        "assignOneAria": "Asignar un usuario a toda la semana"
       },
       "assignTeamModal": {
         "title": "Asignar Team a la semana",

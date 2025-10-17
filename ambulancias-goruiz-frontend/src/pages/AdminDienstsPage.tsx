@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Dienst, UserRef } from '../types/dienst';
-import { getAllDiensts, generateDienstsForWeek, deleteDienstsForWeek, assignTeamToWeek, assignUserToWeek } from '../api/diensts';
+import { getAllDiensts, generateDienstsForWeek, deleteDienstsForWeek, assignTeamToWeek, assignUserToWeek, clearPeopleForWeek } from '../api/diensts';
 import AssignmentModal from '../components/AssignmentModal';
 import TeamAssignModal from '../components/diensts/TeamAssignModal'; // ⬅️ IMPORTA TU MODAL
 import UserAssignModal from '../components/diensts/UserAssignModal';
@@ -8,6 +8,7 @@ import { isPartialAssignment } from '../utils/assignmentUtils';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { toastT } from "../utils/toast";
+
 
 // Helpers de render seguro
 const displayAmbulance = (a: unknown) =>
@@ -199,38 +200,91 @@ const AdminPage = () => {
                       </p>
 
                       <div className="flex items-center gap-3">
-                        {/* 👤 Asignar un trabajador */}
-                        <button
-                          className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
-                          title={t('pages.diensts.adminPage.assignUserToWeek')}
-                          onClick={() =>
-                            setWeekUserModal({
-                              open: true,
-                              dienstNumber: dienst.dienstNumber,
-                              weekStartISO,
-                            })
-                          }
-                        >
-                          <span aria-hidden className="block text-[16px] leading-none translate-y-[1px] scale-[0.95]">👤</span>
-                          <span className="sr-only">{t('pages.diensts.adminPage.assignUserToWeek')}</span>
-                        </button>
+  {/* 👤 Asignar un trabajador */}
+  <button
+    className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
+    title={t('pages.diensts.adminPage.assignUserToWeek')}
+    onClick={() =>
+      setWeekUserModal({
+        open: true,
+        dienstNumber: dienst.dienstNumber,
+        weekStartISO,
+      })
+    }
+  >
+    <span
+      aria-hidden
+      className="block text-[16px] leading-none translate-y-[1px] scale-[0.95]"
+    >
+      👤
+    </span>
+    <span className="sr-only">
+      {t('pages.diensts.adminPage.assignUserToWeek')}
+    </span>
+  </button>
 
-                        {/* 👥 Asignar pareja */}
-                        <button
-                          className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
-                          title={t('pages.diensts.adminPage.assignTeamToWeek')}
-                          onClick={() =>
-                            setWeekTeamModal({
-                              open: true,
-                              dienstNumber: dienst.dienstNumber,
-                              weekStartISO,
-                            })
-                          }
-                        >
-                          <span aria-hidden className="block text-[18px] leading-none -translate-y-[1px] scale-[1.12]">👥</span>
-                          <span className="sr-only">{t('pages.diensts.adminPage.assignTeamToWeek')}</span>
-                        </button>
-                      </div>
+  {/* 👥 Asignar pareja */}
+  <button
+    className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
+    title={t('pages.diensts.adminPage.assignTeamToWeek')}
+    onClick={() =>
+      setWeekTeamModal({
+        open: true,
+        dienstNumber: dienst.dienstNumber,
+        weekStartISO,
+      })
+    }
+  >
+    <span
+      aria-hidden
+      className="block text-[18px] leading-none -translate-y-[1px] scale-[1.12]"
+    >
+      👥
+    </span>
+    <span className="sr-only">
+      {t('pages.diensts.adminPage.assignTeamToWeek')}
+    </span>
+  </button>
+
+  {/* 🧽 Limpiar conductor/sanitario de toda la semana */}
+  <button
+    className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-rose-700 transition-transform transform hover:scale-110 focus:outline-none"
+    title={t('pages.diensts.adminPage.clearWeekPeople')}
+    onClick={async () => {
+      if (!token) return;
+      const ok = confirm(
+        t('pages.diensts.adminPage.confirmClear', {
+          num: dienst.dienstNumber,
+          date: fmtDate(weekStart),
+        }) as string
+      );
+      if (!ok) return;
+
+      try {
+        await clearPeopleForWeek(
+          { dienstNumber: dienst.dienstNumber, weekStartDate: weekStartISO },
+          token
+        );
+        toastT.success(['pages.diensts.adminPage.clearOk']);
+        fetchDiensts();
+      } catch (err) {
+        console.error(err);
+        toastT.error(['pages.diensts.adminPage.clearErr']);
+      }
+    }}
+  >
+    <span
+      aria-hidden
+      className="block text-[17px] leading-none translate-y-[0.5px]"
+    >
+      ♻️
+    </span>
+    <span className="sr-only">
+      {t('pages.diensts.adminPage.clearWeekPeople')}
+    </span>
+  </button>
+</div>
+
 
                     </div>
 
