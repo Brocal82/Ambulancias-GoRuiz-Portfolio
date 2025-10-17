@@ -1,0 +1,113 @@
+// backend/src/utils/dienstValidation.ts
+import mongoose from 'mongoose';
+import Dienst from '../models/Dienst';
+import VacationRequest from '../models/vacationRequest';
+import { buildWeekDateStrings } from './time';
+import { getPscheinStatus } from './pscheinUtils'; // ⚠️ Ya existe en backend/utils
+
+/**
+ * Devuelve true si el usuario (driver o medic) ya está asignado
+ * en algún Dienst esa semana (cualquier número), para cualquiera
+ * de los 7 días.
+ */
+export async function isUserAssignedThatWeek(params: {
+  userId: string;
+  weekStartISO: string;
+}): Promise<boolean> {
+  const { userId, weekStartISO } = params;
+  if (!mongoose.Types.ObjectId.isValid(userId)) return false;
+
+  const weekDays = buildWeekDateStrings(weekStartISO);
+
+  const dienste = await Dienst.find({
+    'assignments.date': { $in: weekDays },
+    $or: [{ 'assignments.driver': userId }, { 'assignments.medic': userId }],
+  })
+    .select('_id assignments.date assignments.driver assignments.medic')
+    .lean();
+
+  return dienste.some((d) =>
+    (d.assignments || []).some(
+      (a: any) =>
+        weekDays.includes(a?.date) &&
+        (a?.driver?.toString?.() === userId || a?.medic?.toString?.() === userId)
+    )
+  );
+}
+
+/**
+ * Vacaciones aceptadas en un día concreto.
+ * (Puedes ampliar para considerar 'pending' como warning si quieres).
+ */
+export async function isOnVacationDay(params: {
+  userId: string;
+  dateISO: string; // 'YYYY-MM-DD'
+}): Promise<boolean> {
+  const { userId, dateISO } = params;
+  if (!mongoose.Types.ObjectId.isValid(userId) || !dateISO) return false;
+
+  const dayStart = new Date(dateISO + 'T00:00:00.000Z');
+  const dayEnd = new Date(dateISO + 'T23:59:59.999Z');
+
+  const count = await VacationRequest.countDocuments({
+    user: userId,
+    status: 'accepted',
+    startDate: { $lte: dayEnd },
+    endDate: { $gte: dayStart },
+  });
+
+  return count > 0;
+}
+
+/**
+ * Normaliza el estado del P-Schein de un conductor.
+ * - 'expired' → no asignable
+ * - 'warning' → asignable pero conviene avisar (lo usarás en UI si quieres)
+ * - 'valid' | 'no-date' → asignable (según tu política)
+ */
+export function getDriverPscheinState(pscheinExpiry?: string): 'expired' | 'warning' | 'valid' | 'no-date' {
+  const st = getPscheinStatus(pscheinExpiry); // reutiliza tu backend/utils/pscheinUtils
+  if (st === 'expired') return 'expired';
+  if (st === 'warning') return 'warning';
+  if (st === 'valid') return 'valid';
+  return 'no-date';
+}
+
+
+// 🔎 Busca asignaciones de ese usuario en cualquier Dienst de la misma semana
+export async function findWeeklyConflicts(
+  userId: mongoose.Types.ObjectId,
+  weekStart: Date,
+  currentDienstNumber?: number
+): Promise<Array<{ dienstId: string; dienstNumber: number; date: string; role: 'driver' | 'medic' }>> {
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+
+  const dienste = await Dienst.find({
+    weekStartDate: { $gte: weekStart, $lte: weekEnd },
+  })
+    .select('dienstNumber assignments.date assignments.driver assignments.medic')
+    .lean();
+
+  const out: Array<{ dienstId: string; dienstNumber: number; date: string; role: 'driver' | 'medic' }> = [];
+
+  for (const d of dienste) {
+    if (typeof currentDienstNumber === 'number' && d.dienstNumber === currentDienstNumber) {
+      continue;
+    }
+
+    for (const a of d.assignments ?? []) {
+      const drv = a?.driver?.toString?.();
+      const med = a?.medic?.toString?.();
+      const uid = userId.toString();
+
+      if (drv && drv === uid) {
+        out.push({ dienstId: String((d as any)._id), dienstNumber: d.dienstNumber, date: a.date, role: 'driver' });
+      }
+      if (med && med === uid) {
+        out.push({ dienstId: String((d as any)._id), dienstNumber: d.dienstNumber, date: a.date, role: 'medic' });
+      }
+    }
+  }
+  return out;
+}
