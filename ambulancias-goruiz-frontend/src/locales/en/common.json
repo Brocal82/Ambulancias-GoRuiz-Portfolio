@@ -856,25 +856,40 @@
     },
     "diensts": {
       "adminPage": {
-        "title": "Dienst Plan (Admin)",
+        "title": "Duty Schedule (Admin)",
         "weekRange": "Week from {{from}} to {{to}}",
         "actions": {
           "create": "Create",
           "delete": "Delete"
         },
-        "confirmCreate": "Create templates for the week starting {{date}}?",
-        "confirmDelete": "Delete all Diensts for the week starting {{date}}?",
+        "confirmCreate": "Create templates for the week of {{date}}?",
+        "confirmDelete": "Delete all duty schedules for the week of {{date}}?",
         "assignTeamToWeek": "Assign Team",
         "alerts": {
           "createOk": "✅ Templates created successfully",
-          "createErr": "❌ Could not create templates. They might already exist.",
-          "deleteOk": "🗑️ Diensts deleted successfully",
-          "deleteErr": "❌ Could not delete Diensts."
+          "createErr": "❌ Could not create templates. They may already exist.",
+          "deleteOk": "🗑️ Duty schedules deleted successfully",
+          "deleteErr": "❌ Could not delete duty schedules."
         },
-        "dienstLabel": "Dienst #{{num}}",
-        "freeDay": "Free day",
-        "assignWeekOk": "✅ Team successfully assigned to the whole week",
-        "assignWeekErr": "❌ Could not assign team to the week"
+        "dienstLabel": "Duty #{{num}}",
+        "freeDay": "Day off",
+        "assignWeekOk": "✅ Team successfully assigned to the entire week",
+        "assignWeekErr": "❌ Could not assign the team to the week",
+        "assignUserWeekOk": "✅ User successfully assigned to the entire week.",
+        "assignUserWeekErr": "❌ Error assigning the user to the week. Please try again.",
+        "assignUserWeekConflict": "⚠️ The user is already assigned to another duty this week.",
+        "assignUserWeekPscheinExpired": "❌ Cannot assign: the driver's P-Schein is expired.",
+        "assignUserNoAssignableDays": "⚠️ No days could be assigned. The user is on vacation or unavailable.",
+        "errors": {
+          "pscheinExpired": "❌ Cannot assign: the driver's P-Schein is expired.",
+          "weeklyConflict": "⚠️ Cannot assign: a member is already assigned to another duty this week.",
+          "weeklyConflictWithDates": "⚠️ Cannot assign: there are existing assignments this week. Driver: {{driverDates}}. Medic: {{medicDates}}."
+        }
+      },
+      "assignTeamModal": {
+        "title": "Assign Team to Week",
+        "select": "Select a pair",
+        "confirm": "Assign"
       },
       "workerPage": {
         "title": "Your assigned days",
@@ -891,11 +906,6 @@
       "adminUserTab": {
         "title": "Assigned Diensts",
         "loading": "Loading assigned days..."
-      },
-      "assignTeamModal": {
-        "title": "Assign team to the week",
-        "select": "Select a pair",
-        "confirm": "Assign"
       }
     },
     "adminUserDetail": {

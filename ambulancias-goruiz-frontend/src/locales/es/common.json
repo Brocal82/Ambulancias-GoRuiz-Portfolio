@@ -874,7 +874,22 @@
         "dienstLabel": "Dienst #{{num}}",
         "freeDay": "Libre",
         "assignWeekOk": "✅ Equipo asignado correctamente a toda la semana",
-        "assignWeekErr": "❌ No se pudo asignar el equipo a la semana"
+        "assignWeekErr": "❌ No se pudo asignar el equipo a la semana",
+        "assignUserWeekOk": "✅ Usuario asignado correctamente a toda la semana.",
+        "assignUserWeekErr": "❌ Error al asignar el usuario a la semana. Por favor, inténtalo de nuevo.",
+        "assignUserWeekConflict": "⚠️ El usuario ya está asignado a otro Dienst esta semana.",
+        "assignUserWeekPscheinExpired": "❌ No se puede asignar: el P-Schein del conductor está caducado.",
+        "assignUserNoAssignableDays": "⚠️ No se pudo asignar ningún día. El usuario tiene vacaciones o días no disponibles.",
+        "errors": {
+          "pscheinExpired": "❌ No se puede asignar: el P-Schein del conductor está caducado.",
+          "weeklyConflict": "⚠️ No se puede asignar: algún miembro ya está asignado en otro Dienst esta semana.",
+          "weeklyConflictWithDates": "⚠️ No se puede asignar: ya existen asignaciones esta semana. Conductor: {{driverDates}}. Sanitario: {{medicDates}}."
+        }
+      },
+      "assignTeamModal": {
+        "title": "Asignar Team a la semana",
+        "select": "Selecciona una pareja",
+        "confirm": "Asignar"
       },
       "workerPage": {
         "title": "Tus días asignados",
@@ -891,11 +906,6 @@
       "adminUserTab": {
         "title": "Diensts asignados",
         "loading": "Cargando días asignados..."
-      },
-      "assignTeamModal": {
-        "title": "Asignar Team a la semana",
-        "select": "Selecciona una pareja",
-        "confirm": "Asignar"
       }
     },
     "adminUserDetail": {
