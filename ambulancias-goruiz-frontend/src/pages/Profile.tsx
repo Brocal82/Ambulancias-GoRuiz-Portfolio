@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toastT } from '../utils/toast';
 import { useAuth } from '../hooks/useAuth';
 import { getUserById, updateUserProfile, deleteUserDocument, deleteUser } from '../api/users';
-import { getPscheinStatus } from '../utils/pscheinUtils';
+import { getPscheinInfo } from '../utils/pscheinUtils';
 import type { User, AmbulanceRole } from '../types/user';
 import { useTranslation } from 'react-i18next';
 import { buildImageUrl } from '../utils/apiOrigins';
@@ -198,7 +198,8 @@ const Profile = ({ userId }: ProfileProps) => {
     }
   };
 
-  const pscheinStatus = getPscheinStatus(formData.pscheinExpiry);
+  const pschein = getPscheinInfo(formData.pscheinExpiry);
+
   const roles: AmbulanceRole[] = ['medic', 'driver', 'both'];
 
   return (
@@ -338,33 +339,59 @@ const Profile = ({ userId }: ProfileProps) => {
           </div>
         </div>
 
-        {/* P-Schein compacto */}
-        {(formData.ambulanceRole === 'driver' || formData.ambulanceRole === 'both') && (
-          <div className="space-y-1">
-            <label htmlFor="pscheinExpiry" className="block text-xs font-medium text-slate-700">
-              {t('pages.profile.labels.pscheinExpiry')}
-            </label>
-            <input
-              type="date"
-              id="pscheinExpiry"
-              name="pscheinExpiry"
-              value={formData.pscheinExpiry || ''}
-              onChange={handleChange}
-              className={`w-full rounded-lg px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 ${pscheinStatus === 'expired'
-                  ? 'border border-red-500 focus:ring-red-100'
-                  : pscheinStatus === 'warning'
-                    ? 'border border-orange-400 focus:ring-orange-100'
-                    : 'border border-slate-300 focus:ring-blue-100 focus:border-blue-400'
-                }`}
-            />
-            {pscheinStatus === 'expired' && (
-              <p className="text-red-600 text-xs mt-0.5">{t('pages.profile.pschein.expired')}</p>
-            )}
-            {pscheinStatus === 'warning' && (
-              <p className="text-orange-600 text-xs mt-0.5">{t('pages.profile.pschein.warning')}</p>
-            )}
-          </div>
+{/* P-Schein compacto */}
+{(formData.ambulanceRole === 'driver' || formData.ambulanceRole === 'both') && (
+  <div className="space-y-1">
+    <label htmlFor="pscheinExpiry" className="block text-xs font-medium text-slate-700">
+      {t('pages.profile.labels.pscheinExpiry')}
+    </label>
+    <input
+      type="date"
+      id="pscheinExpiry"
+      name="pscheinExpiry"
+      value={formData.pscheinExpiry || ''}
+      onChange={handleChange}
+      className={`w-full rounded-lg px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 ${
+        pschein.status === 'expired'
+          ? 'border border-red-500 focus:ring-red-100'
+          : pschein.status === 'warning'
+            ? 'border border-orange-400 focus:ring-orange-100'
+            : 'border border-slate-300 focus:ring-blue-100 focus:border-blue-400'
+      }`}
+    />
+
+    {pschein.status === 'expired' && (
+      <p className="text-red-600 text-xs mt-0.5">
+        {t(
+          'pages.profile.pschein.expiredDynamic',
+          '❌ P-Schein caducado hace {{months}} meses',
+          { months: Math.abs(pschein.monthsLeft ?? 0) }
         )}
+      </p>
+    )}
+
+    {pschein.status === 'warning' && (
+      <p className="text-orange-600 text-xs mt-0.5">
+        {t(
+          'pages.profile.pschein.warningDynamic',
+          '⚠️ Expira en {{months}} meses ({{days}} días)',
+          { months: pschein.monthsLeft ?? 0, days: pschein.daysLeft ?? 0 }
+        )}
+      </p>
+    )}
+
+    {pschein.status === 'valid' && (
+      <p className="text-emerald-600 text-xs mt-0.5">
+        {t(
+          'pages.profile.pschein.validDynamic',
+          '✅ Válido ({{months}} meses restantes)',
+          { months: pschein.monthsLeft ?? 0 }
+        )}
+      </p>
+    )}
+  </div>
+)}
+
 
         {/* Dirección */}
         <div className="space-y-1">

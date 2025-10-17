@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import UserEditModal from '../components/users/UserEditModal';
 import type { User } from '../types/user';
 import { toastT } from "../utils/toast";
-import { getPscheinStatus } from '../utils/pscheinUtils';
+import { getPscheinInfo } from '../utils/pscheinUtils';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -183,37 +183,54 @@ const AdminUsersPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
-                {filteredUsers.map((user, index) => {
-                  const status = getPscheinStatus(user.pscheinExpiry);
-                  const firstCellBorder =
-                    status === 'expired'
-                      ? 'border-l-4 border-red-500'
-                      : status === 'warning'
-                        ? 'border-l-4 border-orange-400'
-                        : '';
+  {filteredUsers.map((user, index) => {
+    const pschein = getPscheinInfo(user.pscheinExpiry);
+    const firstCellBorder =
+      pschein.status === 'expired'
+        ? 'border-l-4 border-red-500'
+        : pschein.status === 'warning'
+        ? 'border-l-4 border-orange-400'
+        : '';
 
-                  const roleKey = (user.ambulanceRole ?? 'unknown') as NonNullable<User['ambulanceRole']> | 'unknown';
+    const roleKey = (user.ambulanceRole ?? 'unknown') as NonNullable<User['ambulanceRole']> | 'unknown';
 
-                  return (
-                    <tr
-                      key={user._id}
-                      className={`${index % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} group cursor-pointer hover:bg-blue-50/50 transition-colors`}
-                      onClick={() => handleEdit(user)}
-                    >
-                      <td className={`whitespace-nowrap py-3 px-4 text-sm text-slate-900 ${firstCellBorder}`}>{user.lastName}</td>
-                      <td className="whitespace-nowrap py-3 px-4 text-sm text-slate-900">{user.name}</td>
-                      <td className="whitespace-nowrap py-3 px-4 text-sm text-slate-700">{user.email}</td>
-                      <td className="whitespace-nowrap py-3 px-4 text-sm">
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${rolePillClass[roleKey]}`}>
-                          {user.ambulanceRole ? t(`pages.profile.roles.${user.ambulanceRole}` as any) : '—'}
-                        </span>
-                        {status === 'expired' && <span className="ml-2 align-middle text-red-500">❌</span>}
-                        {status === 'warning' && <span className="ml-2 align-middle text-orange-400">⚠️</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
+    return (
+      <tr
+        key={user._id}
+        className={`${index % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} group cursor-pointer hover:bg-blue-50/50 transition-colors`}
+        onClick={() => handleEdit(user)}
+      >
+        <td className={`whitespace-nowrap py-3 px-4 text-sm text-slate-900 ${firstCellBorder}`}>{user.lastName}</td>
+        <td className="whitespace-nowrap py-3 px-4 text-sm text-slate-900">{user.name}</td>
+        <td className="whitespace-nowrap py-3 px-4 text-sm text-slate-700">{user.email}</td>
+        <td className="whitespace-nowrap py-3 px-4 text-sm">
+          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${rolePillClass[roleKey]}`}>
+            {user.ambulanceRole ? t(`pages.profile.roles.${user.ambulanceRole}` as any) : '—'}
+          </span>
+
+          {pschein.status === 'expired' && (
+            <span
+              className="ml-2 align-middle text-red-500"
+              title="P-Schein caducado"
+            >
+              ❌
+            </span>
+          )}
+
+          {pschein.status === 'warning' && (
+            <span
+              className="ml-2 align-middle text-orange-400"
+              title={`P-Schein caduca en ${pschein.monthsLeft ?? 0} ${pschein.monthsLeft === 1 ? 'mes' : 'meses'}`}
+            >
+              ⚠️
+            </span>
+          )}
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
+
             </table>
           </div>
         </div>

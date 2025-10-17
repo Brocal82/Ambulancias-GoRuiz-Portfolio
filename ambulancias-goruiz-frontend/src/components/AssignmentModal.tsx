@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { updateDienstPartial, removeAssignment } from "../api/diensts";
 import { getAvailableUsersForDate } from "../api/users";
-import { getPscheinStatus } from "../utils/pscheinUtils";
+import { getPscheinInfo } from "../utils/pscheinUtils";
 import { toastT } from "../utils/toast";
 import "react-toastify/dist/ReactToastify.css";
 import type { UserRef, DienstAssignment } from "../types/dienst";
@@ -237,16 +237,32 @@ return (
                 }}
                 className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
               >
-                <option value="">{t("pages.assignmentModal.placeholders.selectDriver")}</option>
-                {availableDrivers.map((user) => {
-                  const status = getPscheinStatus(user.pscheinExpiry);
-                  const icon = status === "warning" ? " ⚠️" : status === "expired" ? " ❌" : "";
-                  return (
-                    <option key={user._id} value={user._id} disabled={status === "expired"}>
-                      {user.lastName}, {user.name}{icon}
-                    </option>
-                  );
-                })}
+                <option value="">
+  {t("pages.assignmentModal.placeholders.selectDriver")}
+</option>
+{availableDrivers.map((user) => {
+  const pschein = getPscheinInfo(user.pscheinExpiry);
+
+  // Generamos el icono y texto adicional según el estado
+  let icon = "";
+  if (pschein.status === "warning") {
+    const months = pschein.monthsLeft ?? 0;
+    icon = ` ⚠️ (${months} ${months === 1 ? "mes" : "meses"} restantes)`;
+  } else if (pschein.status === "expired") {
+    icon = " ❌ (caducado)";
+  }
+
+  return (
+    <option
+      key={user._id}
+      value={user._id}
+      disabled={pschein.status === "expired"}
+    >
+      {user.lastName}, {user.name}{icon}
+    </option>
+  );
+})}
+
               </select>
             </div>
 

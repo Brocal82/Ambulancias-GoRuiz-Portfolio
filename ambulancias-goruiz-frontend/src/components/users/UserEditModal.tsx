@@ -1,7 +1,7 @@
 // src/components/modals/UserEditModal.tsx
 import { useState, useEffect } from 'react';
 import type { User } from '../../types/user';
-import { getPscheinStatus } from '../../utils/pscheinUtils';
+import { getPscheinInfo } from '../../utils/pscheinUtils';
 
 interface UserEditModalProps {
   user: User;
@@ -68,32 +68,50 @@ export default function UserEditModal({ user, onClose, onSave, onDelete }: UserE
           </div>
 
           <div>
-            <label htmlFor="pscheinExpiry" className="block text-sm font-medium text-gray-700 mt-4">
-              Fecha de caducidad del P-Schein
-            </label>
-            <input
-              type="date"
-              id="pscheinExpiry"
-              name="pscheinExpiry"
-              value={formData.pscheinExpiry || ''}
-              onChange={handleChange}
-              className={`w-full border rounded p-2 ${
-                getPscheinStatus(formData.pscheinExpiry) === 'expired'
-                  ? 'border-red-500'
-                  : getPscheinStatus(formData.pscheinExpiry) === 'warning'
-                  ? 'border-orange-400'
-                  : 'border-gray-300'
-              }`}
-            />
+  <label
+    htmlFor="pscheinExpiry"
+    className="block text-sm font-medium text-gray-700 mt-4"
+  >
+    Fecha de caducidad del P-Schein
+  </label>
 
-            {getPscheinStatus(formData.pscheinExpiry) === 'expired' && (
-              <p className="text-red-600 text-sm mt-1">❌ El P-Schein está caducado</p>
-            )}
+  {(() => {
+    const pschein = getPscheinInfo(formData.pscheinExpiry);
 
-            {getPscheinStatus(formData.pscheinExpiry) === 'warning' && (
-              <p className="text-orange-600 text-sm mt-1">⚠️ El P-Schein caduca en menos de 6 meses</p>
-            )}
-          </div>
+    return (
+      <>
+        <input
+          type="date"
+          id="pscheinExpiry"
+          name="pscheinExpiry"
+          value={formData.pscheinExpiry || ''}
+          onChange={handleChange}
+          className={`w-full border rounded p-2 ${
+            pschein.status === 'expired'
+              ? 'border-red-500'
+              : pschein.status === 'warning'
+              ? 'border-orange-400'
+              : 'border-gray-300'
+          }`}
+        />
+
+        {pschein.status === 'expired' && (
+          <p className="text-red-600 text-sm mt-1">
+            ❌ El P-Schein está caducado
+          </p>
+        )}
+
+        {pschein.status === 'warning' && (
+          <p className="text-orange-600 text-sm mt-1">
+            ⚠️ El P-Schein caduca en {pschein.monthsLeft ?? 0}{' '}
+            {pschein.monthsLeft === 1 ? 'mes' : 'meses'}
+          </p>
+        )}
+      </>
+    );
+  })()}
+</div>
+
 
           <div>
             <label htmlFor="profileImage" className="block text-sm font-medium text-gray-700">Imagen de perfil (URL)</label>
