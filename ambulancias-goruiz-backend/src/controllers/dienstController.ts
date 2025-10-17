@@ -9,6 +9,11 @@ import mongoose from 'mongoose';
 import { RequestHandler } from 'express';
 import { AssignedDay } from '../types/Dienst';
 import Team from '../models/Team';
+import User from '../models/User';
+import { getPscheinStatus } from '../utils/pscheinUtils';
+import { findWeeklyConflicts, getDriverPscheinState, isOnVacationDay } from '../utils/dienstValidation';
+
+
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
   message: 'ID no válido',
@@ -423,23 +428,53 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    const team = await Team.findById(teamId).lean();
+    // Cargamos el team (lean + populate)
+    const team = await Team.findById(teamId)
+      .populate('driver', 'pscheinExpiry')
+      .populate('medic', 'pscheinExpiry')
+      .lean();
+
     if (!team) {
       res.status(404).json({ message: 'Team no encontrado' });
       return;
     }
 
-    // La semana de tus Diensts se guarda en weekStartDate (Date) y weekEndDate (Date)
+    // 🔧 Normalizar a id string
+    const toIdString = (v: any): string | undefined =>
+      typeof v === 'string'
+        ? v
+        : v && typeof v === 'object' && v._id
+        ? String(v._id)
+        : undefined;
+
+    const driverId = toIdString((team as any).driver);
+    const medicId  = toIdString((team as any).medic);
+
+    if (!driverId || !medicId) {
+      res.status(400).json({ message: 'Team inválido: faltan driver o medic' });
+      return;
+    }
+
+    // ✅ Validación P-Schein del driver
+    const driverPschein = getDriverPscheinState((team as any).driver?.pscheinExpiry);
+    if (driverPschein === 'expired') {
+      res.status(409).json({
+        code: 'pschein_expired',
+        message: 'El P-Schein del conductor está caducado. No se puede asignar el equipo.',
+      });
+      return;
+    }
+
+    // Semana / Dienst
     const start = new Date(weekStartDate);
     if (isNaN(start.getTime())) {
       res.status(400).json({ message: 'weekStartDate inválida' });
       return;
     }
 
-    // buscar el documento de Dienst de esa semana y número
     const dienst = await Dienst.findOne({
       dienstNumber,
-      weekStartDate: { $gte: start, $lt: new Date(start.getTime() + 1 * 24 * 60 * 60 * 1000) }, // mismo día
+      weekStartDate: { $gte: start, $lt: new Date(start.getTime() + 24 * 60 * 60 * 1000) },
     });
 
     if (!dienst) {
@@ -447,20 +482,61 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Aplicar driver/medic del team a TODOS los assignments existentes de ese Dienst
-    // (no tocamos horas ni ambulancia)
+    // ✅ Conflictos semanales (en otros Dienst de la misma semana)
+    const [driverConf, medicConf] = await Promise.all([
+      findWeeklyConflicts(new mongoose.Types.ObjectId(driverId), start, dienstNumber),
+      findWeeklyConflicts(new mongoose.Types.ObjectId(medicId),  start, dienstNumber),
+    ]);
+
+    if (driverConf.length || medicConf.length) {
+      res.status(409).json({
+        code: 'weekly_conflict',
+        message: 'Alguno de los miembros ya está asignado a otro Dienst esta semana.',
+        details: { driverConf, medicConf },
+      });
+      return;
+    }
+
+    // Días válidos del Dienst
+    const dates = Array.from(
+      new Set(
+        (dienst.assignments || [])
+          .filter(a => a?.date && a?.startTime && a?.endTime)
+          .map(a => a.date)
+      )
+    );
+
+    // ✅ Vacaciones por día (accepted)
+    const vacationMap: Record<string, { driver: boolean; medic: boolean }> = {};
+    await Promise.all(
+      dates.map(async (dateISO) => {
+        const [drvVac, medVac] = await Promise.all([
+          isOnVacationDay({ userId: driverId, dateISO }),
+          isOnVacationDay({ userId: medicId,  dateISO }),
+        ]);
+        vacationMap[dateISO] = { driver: drvVac, medic: medVac };
+      })
+    );
+
+    // Aplicar asignación solo en días sin vacaciones
     let updatedCount = 0;
+    const skippedByVacation: string[] = [];
+
     dienst.assignments = dienst.assignments.map((a) => {
-      // solo tocamos assignments válidos (tienen fecha/hora)
-      if (a?.date && a?.startTime && a?.endTime) {
-        updatedCount += 1;
-        return {
-          ...a,
-          driver: team.driver,
-          medic: team.medic,
-        };
+      if (!a?.date || !a?.startTime || !a?.endTime) return a;
+
+      const vac = vacationMap[a.date] || { driver: false, medic: false };
+      if (vac.driver || vac.medic) {
+        skippedByVacation.push(a.date);
+        return a; // saltar ese día
       }
-      return a;
+
+      updatedCount += 1;
+      return {
+        ...a,
+        driver: new mongoose.Types.ObjectId(driverId),
+        medic: new mongoose.Types.ObjectId(medicId),
+      };
     });
 
     await dienst.save();
@@ -468,6 +544,7 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
     res.status(200).json({
       message: `Team asignado a ${updatedCount} días del Dienst #${dienstNumber} (${weekStartDate}).`,
       updatedCount,
+      skippedByVacation,
       dienstId: dienst.id,
       weekStartDate,
     });
@@ -477,6 +554,8 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
     res.status(500).json({ message: 'Error al asignar el Team a la semana' });
   }
 };
+
+
 
 // ✅ Asignar UN USUARIO (driver o medic) a TODA la semana de un Dienst
 export const assignUserToWeek = async (req: Request, res: Response): Promise<void> => {
@@ -502,23 +581,46 @@ export const assignUserToWeek = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Validar usuario existe
-    const user = await mongoose.model('User').findById(userId).lean();
-    if (!user) {
-      res.status(404).json({ message: 'Usuario no encontrado' });
-      return;
-    }
-
     const start = new Date(weekStartDate);
     if (isNaN(start.getTime())) {
       res.status(400).json({ message: 'weekStartDate inválida' });
       return;
     }
 
-    // Encontrar Dienst de esa semana + número
+    // Si es driver, validar P-Schein
+    if (role === 'driver') {
+      const User = mongoose.model('User');
+      const u = await User.findById(userId).select('pscheinExpiry').lean();
+      if (!u) {
+        res.status(404).json({ message: 'Usuario no encontrado' });
+        return;
+      }
+      const ps = getDriverPscheinState((u as any)?.pscheinExpiry);
+      if (ps === 'expired') {
+        res.status(409).json({
+          code: 'pschein_expired',
+          message: 'El P-Schein del conductor está caducado. No se puede asignar.',
+        });
+        return;
+      }
+    }
+
+    // Conflictos semanales (cualquier Dienst de esa misma semana)
+    const weeklyConf = await findWeeklyConflicts(new mongoose.Types.ObjectId(userId), start, dienstNumber);
+    if (weeklyConf.length > 0) {
+      res.status(409).json({
+        code: 'weekly_conflict',
+        message: 'Este usuario ya está asignado a otro Dienst esta semana.',
+        details: weeklyConf,
+      });
+      return;
+    }
+
+    // Buscar el Dienst de esa semana y número (mismo día en la columna weekStartDate)
+    const nextDay = new Date(start.getTime() + 24 * 60 * 60 * 1000);
     const dienst = await Dienst.findOne({
       dienstNumber,
-      weekStartDate: { $gte: start, $lt: new Date(start.getTime() + 24 * 60 * 60 * 1000) },
+      weekStartDate: { $gte: start, $lt: nextDay },
     });
 
     if (!dienst) {
@@ -526,25 +628,57 @@ export const assignUserToWeek = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Actualizar TODAS las asignaciones válidas
+    // Días válidos (tienen date/start/end) y filtrar vacaciones
+    const dates = Array.from(
+      new Set(
+        (dienst.assignments || [])
+          .filter(a => a?.date && a?.startTime && a?.endTime)
+          .map(a => a.date)
+      )
+    );
+
+    const vacationMap: Record<string, boolean> = {};
+    await Promise.all(
+      dates.map(async (dateISO) => {
+        const v = await isOnVacationDay({ userId, dateISO });
+        vacationMap[dateISO] = v;
+      })
+    );
+
     let updatedCount = 0;
+    const skippedByVacation: string[] = [];
 
     dienst.assignments = dienst.assignments.map((a) => {
-      if (a?.date && a?.startTime && a?.endTime) {
-        updatedCount += 1;
-        return {
-          ...a,
-          [role]: new mongoose.Types.ObjectId(userId),
-        };
+      if (!a?.date || !a?.startTime || !a?.endTime) return a;
+
+      if (vacationMap[a.date]) {
+        skippedByVacation.push(a.date);
+        return a; // saltar días con vacaciones aceptadas
       }
-      return a;
+
+      updatedCount += 1;
+      return {
+        ...a,
+        [role]: new mongoose.Types.ObjectId(userId),
+      } as any;
     });
+
+    // Si no pudimos asignar ningún día, devolvemos un 409 específico
+    if (updatedCount === 0) {
+      res.status(409).json({
+        code: 'no_assignable_days',
+        message: 'No se pudo asignar ningún día (vacaciones u otros filtros).',
+        skippedByVacation,
+      });
+      return;
+    }
 
     await dienst.save();
 
     res.status(200).json({
       message: `Usuario asignado como ${role} a ${updatedCount} días del Dienst #${dienstNumber} (${weekStartDate}).`,
       updatedCount,
+      skippedByVacation,
       dienstId: dienst.id,
       weekStartDate,
       role,
@@ -555,3 +689,5 @@ export const assignUserToWeek = async (req: Request, res: Response): Promise<voi
     res.status(500).json({ message: 'Error al asignar el usuario a la semana' });
   }
 };
+
+

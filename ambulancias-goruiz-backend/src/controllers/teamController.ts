@@ -20,7 +20,7 @@ export const listTeams = async (_req: Request, res: Response) => {
   }
 };
 
-export const createTeam = async (req: Request, res: Response) => {
+export const createTeam = async (req: Request, res: Response) => { 
   try {
     const { driver, medic } = req.body as { driver?: string; medic?: string };
 
@@ -50,6 +50,29 @@ export const createTeam = async (req: Request, res: Response) => {
       return;
     }
 
+    // 🚫 NUEVO: impedir que cualquiera de los dos ya pertenezca a otro team
+    // (como driver o como medic)
+    const [driverConflict, medicConflict] = await Promise.all([
+      Team.findOne({ $or: [{ driver }, { medic: driver }] }).lean(),
+      Team.findOne({ $or: [{ driver: medic }, { medic }] }).lean(),
+    ]);
+
+    if (driverConflict) {
+      res.status(409).json({
+        message:
+          'El conductor seleccionado ya pertenece a un equipo. Elimínalo de su equipo actual antes de crear otro.',
+      });
+      return;
+    }
+
+    if (medicConflict) {
+      res.status(409).json({
+        message:
+          'El sanitario seleccionado ya pertenece a un equipo. Elimínalo de su equipo actual antes de crear otro.',
+      });
+      return;
+    }
+
     const team = await Team.create({ driver, medic });
     const populated = await Team.findById(team._id)
       .populate('driver', 'name lastName ambulanceRole pscheinExpiry')
@@ -64,6 +87,7 @@ export const createTeam = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al crear team' });
   }
 };
+
 
 export const deleteTeam = async (req: Request, res: Response) => {
   try {
