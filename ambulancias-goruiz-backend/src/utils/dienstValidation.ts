@@ -4,6 +4,9 @@ import Dienst from '../models/Dienst';
 import VacationRequest from '../models/vacationRequest';
 import { buildWeekDateStrings } from './time';
 import { getPscheinStatus } from './pscheinUtils'; // ⚠️ Ya existe en backend/utils
+import { DateTime } from 'luxon';
+
+const ZONE = 'Europe/Berlin';
 
 /**
  * Devuelve true si el usuario (driver o medic) ya está asignado
@@ -36,24 +39,26 @@ export async function isUserAssignedThatWeek(params: {
 }
 
 /**
- * Vacaciones aceptadas en un día concreto.
- * (Puedes ampliar para considerar 'pending' como warning si quieres).
+ * Vacaciones aceptadas en un día concreto (maneja TZ/DST en Europe/Berlin).
  */
 export async function isOnVacationDay(params: {
   userId: string;
   dateISO: string; // 'YYYY-MM-DD'
 }): Promise<boolean> {
   const { userId, dateISO } = params;
-  if (!mongoose.Types.ObjectId.isValid(userId) || !dateISO) return false;
+  if (!mongoose.Types.ObjectId.isValid(userId) || !/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) {
+    return false;
+  }
 
-  const dayStart = new Date(dateISO + 'T00:00:00.000Z');
-  const dayEnd = new Date(dateISO + 'T23:59:59.999Z');
+  // Límites del día en zona Berlin (corrige problemas de DST/off-by-one)
+  const startBER = DateTime.fromISO(dateISO, { zone: ZONE }).startOf('day');
+  const endBER   = DateTime.fromISO(dateISO, { zone: ZONE }).endOf('day');
 
   const count = await VacationRequest.countDocuments({
     user: userId,
     status: 'accepted',
-    startDate: { $lte: dayEnd },
-    endDate: { $gte: dayStart },
+    startDate: { $lte: endBER.toJSDate() },
+    endDate:   { $gte: startBER.toJSDate() },
   });
 
   return count > 0;
