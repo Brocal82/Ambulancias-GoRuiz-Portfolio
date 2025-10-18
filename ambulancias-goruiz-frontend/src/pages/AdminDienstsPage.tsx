@@ -277,7 +277,7 @@ const AdminPage = () => {
       aria-hidden
       className="block text-[17px] leading-none translate-y-[0.5px]"
     >
-      ♻️
+      🧽
     </span>
     <span className="sr-only">
       {t('pages.diensts.adminPage.clearWeekPeople')}
