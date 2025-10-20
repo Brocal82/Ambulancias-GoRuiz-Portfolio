@@ -855,64 +855,89 @@
       }
     },
     "diensts": {
-      "adminPage": {
-        "title": "Duty Schedule (Admin)",
-        "weekRange": "Week from {{from}} to {{to}}",
-        "actions": {
-          "create": "Create",
-          "delete": "Delete"
-        },
-        "confirmCreate": "Create templates for the week of {{date}}?",
-        "confirmDelete": "Delete all duty schedules for the week of {{date}}?",
-        "assignTeamToWeek": "Assign Team",
-        "alerts": {
-          "createOk": "✅ Templates created successfully",
-          "createErr": "❌ Could not create templates. They may already exist.",
-          "deleteOk": "🗑️ Duty schedules deleted successfully",
-          "deleteErr": "❌ Could not delete duty schedules."
-        },
-        "dienstLabel": "Duty #{{num}}",
-        "freeDay": "Day off",
-        "assignWeekOk": "✅ Team successfully assigned to the entire week",
-        "assignWeekErr": "❌ Could not assign the team to the week",
-        "assignUserWeekOk": "✅ User successfully assigned to the entire week.",
-        "assignUserWeekErr": "❌ Error assigning the user to the week. Please try again.",
-        "assignUserWeekConflict": "⚠️ The user is already assigned to another duty this week.",
-        "assignUserWeekPscheinExpired": "❌ Cannot assign: the driver's P-Schein is expired.",
-        "assignUserNoAssignableDays": "⚠️ No days could be assigned. The user is on vacation or unavailable.",
-        "errors": {
-          "pscheinExpired": "❌ Cannot assign: the driver's P-Schein is expired.",
-          "weeklyConflict": "⚠️ Cannot assign: a member is already assigned to another duty this week.",
-          "weeklyConflictWithDates": "⚠️ Cannot assign: there are existing assignments this week. Driver: {{driverDates}}. Medic: {{medicDates}}."
-        },
-        "clearWeekPeople": "Clear week assignments",
-        "confirmClear": "Remove (driver & medic) assignments for the whole week of Dienst #{{num}} ({{date}})?",
-        "clearOk": "🧽 Week assignments cleared successfully",
-        "clearErr": "❌ Could not clear the week assignments",
-        "assignOneAria": "Assign a single user to the whole week"
-      },
-      "assignTeamModal": {
-        "title": "Assign Team to Week",
-        "select": "Select a pair",
-        "confirm": "Assign"
-      },
-      "workerPage": {
-        "title": "Your assigned days",
-        "loading": "Loading assigned days...",
-        "weekRange": "Week from {{from}} to {{to}}",
-        "freeDay": "Off"
-      },
-      "dienstPage": {
-        "title": "Your Diensts",
-        "loading": "Loading diensts...",
-        "range": "From {{from}} to {{to}}",
-        "freeDay": "Off"
-      },
-      "adminUserTab": {
-        "title": "Assigned Diensts",
-        "loading": "Loading assigned days..."
-      }
+  "adminPage": {
+    "title": "Dienst Plan (Admin)",
+    "weekRange": "Week from {{from}} to {{to}}",
+
+    "actions": {
+      "create": "Create",
+      "delete": "Delete"
     },
+
+    "confirmCreate": "Create templates for the week starting {{date}}?",
+    "confirmDelete": "Delete all Diensts for the week starting {{date}}?",
+
+    "assignTeamToWeek": "Assign Team",
+    "assignUserToWeek": "Assign worker to week",
+
+    "alerts": {
+      "createOk": "✅ Templates created successfully",
+      "createErr": "❌ Could not create templates. They may already exist.",
+      "deleteOk": "🗑️ Diensts deleted successfully",
+      "deleteErr": "❌ Could not delete Diensts."
+    },
+
+    "dienstLabel": "Dienst #{{num}}",
+    "freeDay": "Free",
+
+    "assignWeekOk": "✅ Team successfully assigned for the week",
+    "assignWeekErr": "❌ Could not assign team for the week",
+
+    "assignUserWeekOk": "✅ Worker successfully assigned for the week.",
+    "assignUserWeekErr": "❌ Error assigning worker to the week. Please try again.",
+    "assignUserWeekConflict": "⚠️ The worker is already assigned to another Dienst this week.",
+    "assignUserWeekPscheinExpired": "❌ Cannot assign: the driver's P-Schein is expired.",
+    "assignUserNoAssignableDays": "⚠️ No days could be assigned. The worker has vacations or unavailable days.",
+
+    "errors": {
+      "pscheinExpired": "❌ Cannot assign: driver's P-Schein is expired.",
+      "weeklyConflict": "⚠️ Cannot assign: one member is already assigned in another Dienst this week.",
+      "weeklyConflictWithDates": "⚠️ Cannot assign: there are already assignments this week. Driver: {{driverDates}}. Medic: {{medicDates}}."
+    },
+
+    "clearWeekPeople": "Clear assignments for the week",
+    "clearPeopleWeek": "Clear assignments for the week",
+    "confirmClear": "Remove all assignments (driver and medic) for Dienst #{{num}} (week starting {{date}})?",
+    "clearOk": "🧽 Assignments cleared for the week",
+    "clearErr": "❌ Could not clear assignments for the week",
+
+    "swapRolesWeek": "Swap roles for the week",
+    "confirmSwap": "Do you want to swap the roles in Dienst #{{num}} (week starting {{date}})?",
+    "swapWeekOk": "✅ Roles swapped successfully.",
+    "swapWeekErr": "❌ Could not swap roles.",
+    "swapWeekNotPermitted": "❌ Cannot swap: one of the members cannot perform the target role (incompatible role or expired P-Schein).",
+    "considerSwap": "⚠️ The driver’s P-Schein is expired, but they can still work as a medic. Consider swapping roles (⇅).",
+
+
+    "assignOneAria": "Assign a worker for the whole week"
+  },
+
+  "assignTeamModal": {
+    "title": "Assign Team to week",
+    "select": "Select a pair",
+    "confirm": "Assign"
+  },
+
+  "workerPage": {
+    "title": "Your assigned days",
+    "loading": "Loading assigned days...",
+    "weekRange": "Week from {{from}} to {{to}}",
+    "freeDay": "Free"
+  },
+
+  "dienstPage": {
+    "title": "Your Diensts",
+    "loading": "Loading diensts...",
+    "range": "From {{from}} to {{to}}",
+    "freeDay": "Free"
+  },
+
+  "adminUserTab": {
+    "title": "Assigned Diensts",
+    "loading": "Loading assigned days..."
+  }
+},
+
     "adminUserDetail": {
       "title": "Worker Details",
       "loading": "Loading worker data...",
