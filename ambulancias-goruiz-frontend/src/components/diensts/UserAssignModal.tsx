@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { getAllUsers } from '../../api/users';
 import type { AmbulanceRole, User } from '../../types/user';
+import { getPscheinInfo } from '../../utils/pscheinUtils';
 
 interface Props {
   isOpen: boolean;
@@ -35,12 +36,50 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm }: Props) {
     })();
   }, [isOpen, token]);
 
-  const filtered = useMemo(() => {
+  // 1) Filtra por rol de ambulancia como ya hacías (driver|both para driver, medic|both para medic)
+  const filteredByRole = useMemo(() => {
     const need: AmbulanceRole[] = role === 'driver' ? ['driver', 'both'] : ['medic', 'both'];
-    return users
-      .filter(u => u.ambulanceRole && need.includes(u.ambulanceRole))
-      .sort((a, b) => (a.lastName || '').localeCompare(b.lastName || '', 'es'));
+    return users.filter(u => u.ambulanceRole && need.includes(u.ambulanceRole));
   }, [users, role]);
+
+  // 2) Prepara opciones con label e info de P-Schein; deshabilita si driver & expired
+  const options = useMemo(() => {
+    return filteredByRole
+      .map(u => {
+        const baseLabel = `${u.lastName || ''}${u.lastName ? ', ' : ''}${u.name || ''}`;
+        if (role === 'driver') {
+          const info = getPscheinInfo((u as any).pscheinExpiry);
+          if (info.status === 'expired') {
+            return {
+              id: u._id,
+              label: `${baseLabel} — ❌ ${t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado')}`,
+              disabled: true,
+              sortKey: `${u.lastName || ''} ${u.name || ''}`.toLowerCase(),
+            };
+          }
+          if (info.status === 'warning') {
+            const months = info.monthsLeft ?? 0;
+            return {
+              id: u._id,
+              label: `${baseLabel} — ⚠️ (${months} ${months === 1 ? t('common.month', 'mes') : t('common.months', 'meses')} ${t('common.left', 'restantes')})`,
+              disabled: false,
+              sortKey: `${u.lastName || ''} ${u.name || ''}`.toLowerCase(),
+            };
+          }
+        }
+        return {
+          id: u._id,
+          label: baseLabel || '—',
+          disabled: false,
+          sortKey: `${u.lastName || ''} ${u.name || ''}`.toLowerCase(),
+        };
+      })
+      // 3) Ordena: habilitados primero, luego alfabético
+      .sort((a, b) => {
+        if (+a.disabled !== +b.disabled) return +a.disabled - +b.disabled;
+        return a.sortKey.localeCompare(b.sortKey, 'es');
+      });
+  }, [filteredByRole, role, t]);
 
   if (!isOpen) return null;
 
@@ -83,12 +122,20 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm }: Props) {
               disabled={loading}
             >
               <option value="">{loading ? t('common.loading', 'Cargando...') : t('common.select', 'Selecciona')}</option>
-              {filtered.map(u => (
-                <option key={u._id} value={u._id}>
-                  {(u.lastName || '') + ', ' + (u.name || '')}
+              {options.map(opt => (
+                <option key={opt.id} value={opt.id} disabled={opt.disabled}>
+                  {opt.label}
                 </option>
               ))}
             </select>
+
+            {/* Leyenda para el caso driver */}
+            {role === 'driver' && (
+              <p className="mt-1 text-[11px] text-slate-500">
+                ❌ {t('pages.diensts.adminPage.legendExpired', 'P-Schein caducado')} ·
+                {' '}🚫 {t('pages.diensts.adminPage.legendCantDrive', 'No puede conducir')}
+              </p>
+            )}
           </div>
         </div>
 
