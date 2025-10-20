@@ -17,7 +17,8 @@ export default function TeamCreateModal({ isOpen, onClose, onConfirm }: TeamCrea
 
   if (!isOpen) return null;
 
-  const canCreate = value.driver && value.medic && value.driver !== value.medic;
+  const samePerson = !!value.driver && value.driver === value.medic;
+  const canCreate = !!value.driver && !!value.medic && !samePerson;
 
   const handleCreate = async () => {
     if (!canCreate) return;
@@ -39,7 +40,15 @@ export default function TeamCreateModal({ isOpen, onClose, onConfirm }: TeamCrea
           {t('pages.adminTeams.modal.title', 'Crear equipo')}
         </h3>
 
+        {/* Picker con las reglas: ❌ caducado/🚫 no conduce en driver, y bloqueo de mismo usuario */}
         <TeamPicker value={value} onChange={setValue} />
+
+        {/* Mensaje de validación si eligieron a la misma persona */}
+        {samePerson && (
+          <p className="mt-2 text-xs text-rose-600">
+            {t('pages.adminTeams.validation.samePerson', 'El conductor y el sanitario no pueden ser la misma persona')}
+          </p>
+        )}
 
         <div className="mt-5 space-y-2">
           <button

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, useId } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { getAllUsers } from '../../api/users';
+import { getPscheinInfo } from '../../utils/pscheinUtils';
 
 export type TeamPickerValue = { driver: string; medic: string };
 
@@ -11,6 +12,7 @@ type UserLite = {
   name: string;
   lastName: string;
   ambulanceRole?: 'driver' | 'medic' | 'both';
+  pscheinExpiry?: string | null; // ⬅️ añadimos para poder aplicar la lógica
 };
 
 interface TeamPickerProps {
@@ -40,10 +42,10 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
       try {
         setLoading(true);
         const all = await getAllUsers(token);
-        const sorted = [...all].sort((a, b) =>
+        const sorted = [...(all as UserLite[])].sort((a, b) =>
           (a.lastName || '').localeCompare(b.lastName || '', 'es')
         );
-        setUsers(sorted as unknown as UserLite[]);
+        setUsers(sorted);
       } catch (e) {
         console.error('Error cargando usuarios:', e);
       } finally {
@@ -52,14 +54,70 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
     })();
   }, [token]);
 
-  const driverOptions = useMemo(
+  const baseLabel = (u: UserLite) =>
+    `${u.lastName || ''}${u.lastName ? ', ' : ''}${u.name || ''}` || '—';
+
+  // === DRIVER OPTIONS ===
+  // Mostramos solo driver|both (como ya hacías), pero:
+  // - ❌ si P-Schein caducado (disabled)
+  // - ⚠️ si warning (meses restantes)
+  // - disabled si coincide con medic seleccionado
+  const rawDriver = useMemo(
     () => users.filter(u => u.ambulanceRole === 'driver' || u.ambulanceRole === 'both'),
     [users]
   );
-  const medicOptions = useMemo(
-    () => users.filter(u => u.ambulanceRole === 'medic' || u.ambulanceRole === 'both'),
-    [users]
-  );
+
+  const driverOptions = useMemo(() => {
+    const opts = rawDriver.map((u) => {
+      const base = baseLabel(u);
+      const ps = getPscheinInfo(u.pscheinExpiry ?? undefined);
+      let label = base;
+      let isDisabled = false;
+
+      if (ps.status === 'expired') {
+        label = `${base} — ❌ ${t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado')}`;
+        isDisabled = true;
+      } else if (ps.status === 'warning') {
+        const months = ps.monthsLeft ?? 0;
+        label = `${base} — ⚠️ (${months} ${months === 1 ? t('common.month', 'mes') : t('common.months', 'meses')} ${t('common.left', 'restantes')})`;
+      }
+
+      // No permitir elegir el mismo que el medic
+      if (value.medic && value.medic === u._id) {
+        isDisabled = true;
+      }
+
+      return {
+        id: u._id,
+        label,
+        disabled: isDisabled,
+        sortKey: `${u.lastName || ''} ${u.name || ''}`.toLowerCase(),
+      };
+    });
+
+    // Habilitados primero, luego alfabético
+    return opts.sort((a, b) => {
+      if (+a.disabled !== +b.disabled) return +a.disabled - +b.disabled;
+      return a.sortKey.localeCompare(b.sortKey, 'es');
+    });
+  }, [rawDriver, value.medic, t]);
+
+  // === MEDIC OPTIONS ===
+  // Igual que tenías: solo medic|both, y disabled si coincide con driver seleccionado
+  const medicOptions = useMemo(() => {
+    const raw = users.filter(u => u.ambulanceRole === 'medic' || u.ambulanceRole === 'both');
+    const opts = raw.map((u) => ({
+      id: u._id,
+      label: baseLabel(u),
+      disabled: !!value.driver && value.driver === u._id,
+      sortKey: `${u.lastName || ''} ${u.name || ''}`.toLowerCase(),
+    }));
+
+    return opts.sort((a, b) => {
+      if (+a.disabled !== +b.disabled) return +a.disabled - +b.disabled;
+      return a.sortKey.localeCompare(b.sortKey, 'es');
+    });
+  }, [users, value.driver]);
 
   return (
     <div className="space-y-3">
@@ -69,6 +127,7 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
         </div>
       )}
 
+      {/* DRIVER */}
       <div className="space-y-1">
         <label
           htmlFor={driverSelectId}
@@ -85,14 +144,19 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
           onChange={(e) => onChange({ ...value, driver: e.target.value })}
         >
           <option value="">{t('common.select', 'Selecciona')}</option>
-          {driverOptions.map((u) => (
-            <option key={u._id} value={u._id} disabled={u._id === value.medic}>
-              {u.lastName}, {u.name}{u.ambulanceRole === 'both' ? ' (both)' : ''}
+          {driverOptions.map((opt) => (
+            <option key={opt.id} value={opt.id} disabled={opt.disabled}>
+              {opt.label}
             </option>
           ))}
         </select>
+        <p className="mt-1 text-[11px] text-slate-500">
+          ❌ {t('pages.diensts.adminPage.legendExpired', 'P-Schein caducado')} ·{' '}
+          🚫 {t('pages.diensts.adminPage.legendCantDrive', 'No puede conducir')}
+        </p>
       </div>
 
+      {/* MEDIC */}
       <div className="space-y-1">
         <label
           htmlFor={medicSelectId}
@@ -109,9 +173,9 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
           onChange={(e) => onChange({ ...value, medic: e.target.value })}
         >
           <option value="">{t('common.select', 'Selecciona')}</option>
-          {medicOptions.map((u) => (
-            <option key={u._id} value={u._id} disabled={u._id === value.driver}>
-              {u.lastName}, {u.name}{u.ambulanceRole === 'both' ? ' (both)' : ''}
+          {medicOptions.map((opt) => (
+            <option key={opt.id} value={opt.id} disabled={opt.disabled}>
+              {opt.label}
             </option>
           ))}
         </select>
