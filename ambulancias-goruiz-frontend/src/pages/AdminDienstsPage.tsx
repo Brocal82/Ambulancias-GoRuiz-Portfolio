@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Dienst, UserRef } from '../types/dienst';
-import { getAllDiensts, generateDienstsForWeek, deleteDienstsForWeek, assignTeamToWeek, assignUserToWeek, clearPeopleForWeek } from '../api/diensts';
+import { getAllDiensts, generateDienstsForWeek, deleteDienstsForWeek, assignTeamToWeek, assignUserToWeek, clearPeopleForWeek, swapWeekRoles } from '../api/diensts';
 import AssignmentModal from '../components/AssignmentModal';
 import TeamAssignModal from '../components/diensts/TeamAssignModal'; // ⬅️ IMPORTA TU MODAL
 import UserAssignModal from '../components/diensts/UserAssignModal';
@@ -8,7 +8,7 @@ import { isPartialAssignment } from '../utils/assignmentUtils';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { toastT } from "../utils/toast";
-
+import { getPscheinInfo } from '../utils/pscheinUtils';
 
 // Helpers de render seguro
 const displayAmbulance = (a: unknown) =>
@@ -46,7 +46,6 @@ const AdminPage = () => {
     weekStartISO: string;
     dienstNumber: number;
   } | null>(null);
-
 
   const { token } = useAuth();
   const { t, i18n } = useTranslation();
@@ -192,6 +191,13 @@ const AdminPage = () => {
                   return d.toISOString().split("T")[0];
                 });
 
+                // ✅ Mostrar swap/clear solo si hay alguien asignado en la semana
+                const hasAnyPersonAssigned =
+                  Array.isArray(dienst.assignments) &&
+                  dienst.assignments.some(
+                    (a) => a?.date && a?.startTime && a?.endTime && (a.driver || a.medic)
+                  );
+
                 return (
                   <div key={`${weekStart.toISOString()}-${dienst.dienstNumber}`} className="mb-6">
                     <div className="flex items-center justify-between mb-2">
@@ -199,95 +205,149 @@ const AdminPage = () => {
                         {t('pages.diensts.adminPage.dienstLabel', { num: dienst.dienstNumber })}
                       </p>
 
+                      {/* Grupo de iconos de acciones */}
                       <div className="flex items-center gap-3">
-  {/* 👤 Asignar un trabajador */}
-  <button
-    className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
-    title={t('pages.diensts.adminPage.assignUserToWeek')}
-    onClick={() =>
-      setWeekUserModal({
-        open: true,
-        dienstNumber: dienst.dienstNumber,
-        weekStartISO,
-      })
-    }
-  >
-    <span
-      aria-hidden
-      className="block text-[16px] leading-none translate-y-[1px] scale-[0.95]"
-    >
-      👤
-    </span>
-    <span className="sr-only">
-      {t('pages.diensts.adminPage.assignUserToWeek')}
-    </span>
-  </button>
+                        {/* 👤 Asignar un trabajador (siempre visible) */}
+                        <button
+                          className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
+                          title={t('pages.diensts.adminPage.assignUserToWeek')}
+                          onClick={() =>
+                            setWeekUserModal({
+                              open: true,
+                              dienstNumber: dienst.dienstNumber,
+                              weekStartISO,
+                            })
+                          }
+                        >
+                          <span
+                            aria-hidden
+                            className="block text-[16px] leading-none translate-y-[1px] scale-[0.95]"
+                          >
+                            👤
+                          </span>
+                          <span className="sr-only">
+                            {t('pages.diensts.adminPage.assignUserToWeek')}
+                          </span>
+                        </button>
 
-  {/* 👥 Asignar pareja */}
-  <button
-    className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
-    title={t('pages.diensts.adminPage.assignTeamToWeek')}
-    onClick={() =>
-      setWeekTeamModal({
-        open: true,
-        dienstNumber: dienst.dienstNumber,
-        weekStartISO,
-      })
-    }
-  >
-    <span
-      aria-hidden
-      className="block text-[18px] leading-none -translate-y-[1px] scale-[1.12]"
-    >
-      👥
-    </span>
-    <span className="sr-only">
-      {t('pages.diensts.adminPage.assignTeamToWeek')}
-    </span>
-  </button>
+                        {/* 👥 Asignar pareja (siempre visible) */}
+                        <button
+                          className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
+                          title={t('pages.diensts.adminPage.assignTeamToWeek')}
+                          onClick={() =>
+                            setWeekTeamModal({
+                              open: true,
+                              dienstNumber: dienst.dienstNumber,
+                              weekStartISO,
+                            })
+                          }
+                        >
+                          <span
+                            aria-hidden
+                            className="block text-[18px] leading-none -translate-y-[1px] scale-[1.12]"
+                          >
+                            👥
+                          </span>
+                          <span className="sr-only">
+                            {t('pages.diensts.adminPage.assignTeamToWeek')}
+                          </span>
+                        </button>
 
-  {/* 🧽 Limpiar conductor/sanitario de toda la semana */}
-  <button
-    className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-rose-700 transition-transform transform hover:scale-110 focus:outline-none"
-    title={t('pages.diensts.adminPage.clearWeekPeople')}
-    onClick={async () => {
-      if (!token) return;
-      const ok = confirm(
-        t('pages.diensts.adminPage.confirmClear', {
-          num: dienst.dienstNumber,
-          date: fmtDate(weekStart),
-        }) as string
-      );
-      if (!ok) return;
+                        {/* ⇅ Intercambiar roles (solo si hay alguien asignado) */}
+                        {hasAnyPersonAssigned && (
+                          <button
+                            className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
+                            title={t('pages.diensts.adminPage.swapRolesWeek')}
+                            onClick={async () => {
+                              if (!token) return;
+                              const ok = confirm(
+                                t('pages.diensts.adminPage.confirmSwap', {
+                                  num: dienst.dienstNumber,
+                                  date: fmtDate(weekStart),
+                                }) as string
+                              );
+                              if (!ok) return;
 
-      try {
-        await clearPeopleForWeek(
-          { dienstNumber: dienst.dienstNumber, weekStartDate: weekStartISO },
-          token
-        );
-        toastT.success(['pages.diensts.adminPage.clearOk']);
-        fetchDiensts();
-      } catch (err) {
-        console.error(err);
-        toastT.error(['pages.diensts.adminPage.clearErr']);
-      }
-    }}
-  >
-    <span
-      aria-hidden
-      className="block text-[17px] leading-none translate-y-[0.5px]"
-    >
-      🧽
-    </span>
-    <span className="sr-only">
-      {t('pages.diensts.adminPage.clearWeekPeople')}
-    </span>
-  </button>
-</div>
+                              try {
+                                await swapWeekRoles(
+                                  { dienstNumber: dienst.dienstNumber, weekStartDate: weekStartISO },
+                                  token
+                                );
+                                toastT.success(['pages.diensts.adminPage.swapWeekOk']);
+                                fetchDiensts();
+                              } catch (err: any) {
+                                const code = err?.response?.data?.code as string | undefined;
 
+                                if (code === 'swap_not_permitted') {
+                                  // 🚫 Caso específico: roles no compatibles o P-Schein caducado
+                                  toastT.error([
+                                    'pages.diensts.adminPage.swapWeekNotPermitted',
+                                  ]);
+                                  console.warn('⚠️ swap_not_permitted details:', err?.response?.data?.details);
+                                } else {
+                                  // ❌ Error genérico
+                                  console.error('❌ Error en swapWeekRoles:', err);
+                                  toastT.error(['pages.diensts.adminPage.swapWeekErr']);
+                                }
+                              }
+                            }}
+                          >
+                            <span
+                              aria-hidden
+                              className="block text-[16px] leading-none translate-y-[1px]"
+                            >
+                              ⇅
+                            </span>
+                            <span className="sr-only">
+                              {t('pages.diensts.adminPage.swapRolesWeek')}
+                            </span>
+                          </button>
 
+                        )}
+
+                        {/* 🧽/🗘 Limpiar asignaciones (solo si hay alguien asignado) */}
+                        {hasAnyPersonAssigned && (
+                          <button
+                            className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-rose-700 transition-transform transform hover:scale-110 focus:outline-none"
+                            title={t('pages.diensts.adminPage.clearWeekPeople')}
+                            onClick={async () => {
+                              if (!token) return;
+                              const ok = confirm(
+                                t('pages.diensts.adminPage.confirmClear', {
+                                  num: dienst.dienstNumber,
+                                  date: fmtDate(weekStart),
+                                }) as string
+                              );
+                              if (!ok) return;
+
+                              try {
+                                await clearPeopleForWeek(
+                                  { dienstNumber: dienst.dienstNumber, weekStartDate: weekStartISO },
+                                  token
+                                );
+                                // Mantengo tus claves existentes
+                                toastT.success(['pages.diensts.adminPage.clearOk']);
+                                fetchDiensts();
+                              } catch (err) {
+                                console.error(err);
+                                toastT.error(['pages.diensts.adminPage.clearErr']);
+                              }
+                            }}
+                          >
+                            {/* Puedes usar 🧽 o 🗘, dejo 🧽 como tenías */}
+                            <span
+                              aria-hidden
+                              className="block text-[17px] leading-none translate-y-[0.5px]"
+                            >
+                              🧽
+                            </span>
+                            <span className="sr-only">
+                              {t('pages.diensts.adminPage.clearWeekPeople')}
+                            </span>
+                          </button>
+                        )}
+                      </div>
                     </div>
-
 
                     {/* Grid de 7 días */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -319,7 +379,28 @@ const AdminPage = () => {
                               <div className="space-y-0.5 text-xs text-slate-700">
                                 <p>🕒 {assignment.startTime} - {assignment.endTime}</p>
                                 <p>🚑 {displayAmbulance(assignment?.ambulanceId)}</p>
-                                <p>👨‍✈️ {displayPerson(assignment?.driver)}</p>
+
+                                {/* Conductor: rojo si P-Schein caducado (requiere pscheinExpiry en el populate) */}
+                                <p>
+                                  👨‍✈️{' '}
+                                  <span
+                                    className={
+                                      (typeof assignment.driver === 'object' &&
+                                        getPscheinInfo((assignment.driver as any).pscheinExpiry).status === 'expired')
+                                        ? 'text-red-600 font-medium'
+                                        : ''
+                                    }
+                                    title={
+                                      (typeof assignment.driver === 'object' &&
+                                        getPscheinInfo((assignment.driver as any).pscheinExpiry).status === 'expired')
+                                        ? t('pages.diensts.adminPage.driverPscheinExpired')
+                                        : undefined
+                                    }
+                                  >
+                                    {displayPerson(assignment?.driver)}
+                                  </span>
+                                </p>
+
                                 <p>🧑‍⚕️ {displayPerson(assignment?.medic)}</p>
                               </div>
 
@@ -356,7 +437,7 @@ const AdminPage = () => {
           onConfirm={async (teamId: string) => {
             if (!token || !weekTeamModal) return;
             try {
-              await assignTeamToWeek(
+              const resp = await assignTeamToWeek(
                 {
                   dienstNumber: weekTeamModal.dienstNumber,
                   weekStartDate: weekTeamModal.weekStartISO,
@@ -366,6 +447,12 @@ const AdminPage = () => {
               );
 
               toastT.success(['pages.diensts.adminPage.assignWeekOk']);
+
+              // 👇 Si el backend permitió la asignación por la excepción (driver 'both' con P-Schein caducado)
+              if (resp?.hints?.driverExpiredButBoth) {
+                toastT.info(['pages.diensts.adminPage.considerSwap']);
+              }
+
               setWeekTeamModal(null);
               fetchDiensts();
             } catch (err: any) {
@@ -411,8 +498,6 @@ const AdminPage = () => {
             }
           }}
         />
-
-
       )}
 
       {/* ⬇️ Modal de asignación de UN usuario (driver/medic) a toda la semana */}
@@ -453,11 +538,9 @@ const AdminPage = () => {
             }
           }}
         />
-
       )}
     </div>
   );
 };
 
 export default AdminPage;
-
