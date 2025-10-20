@@ -888,6 +888,9 @@
     "assignUserWeekConflict": "⚠️ El usuario ya está asignado a otro Dienst esta semana.",
     "assignUserWeekPscheinExpired": "❌ No se puede asignar: el P-Schein del conductor está caducado.",
     "assignUserNoAssignableDays": "⚠️ No se pudo asignar ningún día. El usuario tiene vacaciones o días no disponibles.",
+    "driverPscheinExpired": "❌ P-Schein del conductor caducado",
+    "driverPscheinExpiredLabel": "❌ P-Schein caducado",
+    "driverPscheinWarning": "⚠️ {{months}} {{months, plural, one {mes restante} other {meses restantes}}}",
 
     "errors": {
       "pscheinExpired": "❌ No se puede asignar: el P-Schein del conductor está caducado.",
@@ -1124,14 +1127,18 @@
       }
     }
   },
-  "common": {
-    "loading": "Cargando...",
-    "select": "Selecciona",
-    "saving": "Guardando...",
-    "create": "Crear",
-    "cancel": "Cancelar",
-    "delete": "Eliminar"
-  },
+"common": {
+  "loading": "Cargando...",
+  "select": "Selecciona",
+  "saving": "Guardando...",
+  "create": "Crear",
+  "cancel": "Cancelar",
+  "delete": "Eliminar",
+  "month": "mes",
+  "months": "meses",
+  "left": "restantes"
+},
+
   "toasts": {
     "mechanics": {
       "loadError": "❌ Error al cargar reportes o ambulancias.",

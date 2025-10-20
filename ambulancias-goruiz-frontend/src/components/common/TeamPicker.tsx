@@ -58,10 +58,6 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
     `${u.lastName || ''}${u.lastName ? ', ' : ''}${u.name || ''}` || '—';
 
   // === DRIVER OPTIONS ===
-  // Mostramos solo driver|both (como ya hacías), pero:
-  // - ❌ si P-Schein caducado (disabled)
-  // - ⚠️ si warning (meses restantes)
-  // - disabled si coincide con medic seleccionado
   const rawDriver = useMemo(
     () => users.filter(u => u.ambulanceRole === 'driver' || u.ambulanceRole === 'both'),
     [users]
@@ -75,11 +71,15 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
       let isDisabled = false;
 
       if (ps.status === 'expired') {
-        label = `${base} — ❌ ${t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado')}`;
+        label = `${base} — ${t('pages.diensts.adminPage.driverPscheinExpiredLabel', 'P-Schein caducado')}`;
         isDisabled = true;
       } else if (ps.status === 'warning') {
+        // ⚠️ Texto desde i18n con months
         const months = ps.monthsLeft ?? 0;
-        label = `${base} — ⚠️ (${months} ${months === 1 ? t('common.month', 'mes') : t('common.months', 'meses')} ${t('common.left', 'restantes')})`;
+        const warningText = t('pages.diensts.adminPage.driverPscheinWarning', {
+          months,
+        }) as string;
+        label = `${base} — ${warningText}`;
       }
 
       // No permitir elegir el mismo que el medic
@@ -103,7 +103,6 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
   }, [rawDriver, value.medic, t]);
 
   // === MEDIC OPTIONS ===
-  // Igual que tenías: solo medic|both, y disabled si coincide con driver seleccionado
   const medicOptions = useMemo(() => {
     const raw = users.filter(u => u.ambulanceRole === 'medic' || u.ambulanceRole === 'both');
     const opts = raw.map((u) => ({

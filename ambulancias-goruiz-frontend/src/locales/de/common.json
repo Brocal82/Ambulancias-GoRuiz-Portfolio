@@ -888,6 +888,10 @@
     "assignUserWeekConflict": "⚠️ Der Mitarbeiter ist bereits einem anderen Dienst dieser Woche zugewiesen.",
     "assignUserWeekPscheinExpired": "❌ Zuweisung nicht möglich: Der P-Schein des Fahrers ist abgelaufen.",
     "assignUserNoAssignableDays": "⚠️ Keine Tage konnten zugewiesen werden. Der Mitarbeiter hat Urlaub oder ist nicht verfügbar.",
+    "driverPscheinExpired": "❌ P-Schein des Fahrers abgelaufen",
+    "driverPscheinExpiredLabel": "❌ P-Schein abgelaufen",
+    "driverPscheinWarning": "⚠️ {{months}} {{months, plural, one {Monat übrig} other {Monate übrig}}}",
+
 
     "errors": {
       "pscheinExpired": "❌ Zuweisung nicht möglich: Der P-Schein des Fahrers ist abgelaufen.",
@@ -1124,14 +1128,18 @@
       }
     }
   },
-  "common": {
-    "loading": "Wird geladen...",
-    "select": "Auswählen",
-    "saving": "Wird gespeichert...",
-    "create": "Erstellen",
-    "cancel": "Abbrechen",
-    "delete": "Löschen"
-  },
+"common": {
+  "loading": "Wird geladen...",
+  "select": "Auswählen",
+  "saving": "Wird gespeichert...",
+  "create": "Erstellen",
+  "cancel": "Abbrechen",
+  "delete": "Löschen",
+  "month": "Monat",
+  "months": "Monate",
+  "left": "verbleibend"
+},
+
   "toasts": {
     "mechanics": {
       "loadError": "❌ Fehler beim Laden der Meldungen oder Krankenwagen.",

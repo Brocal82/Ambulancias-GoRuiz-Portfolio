@@ -888,7 +888,10 @@
     "assignUserWeekConflict": "⚠️ The worker is already assigned to another Dienst this week.",
     "assignUserWeekPscheinExpired": "❌ Cannot assign: the driver's P-Schein is expired.",
     "assignUserNoAssignableDays": "⚠️ No days could be assigned. The worker has vacations or unavailable days.",
-
+    "driverPscheinExpired": "❌ Driver’s P-Schein expired",
+    "driverPscheinExpiredLabel": "❌ P-Schein expired",
+    "driverPscheinWarning": "⚠️ {{months}} {{months, plural, one {month left} other {months left}}}",
+    
     "errors": {
       "pscheinExpired": "❌ Cannot assign: driver's P-Schein is expired.",
       "weeklyConflict": "⚠️ Cannot assign: one member is already assigned in another Dienst this week.",
@@ -1124,14 +1127,18 @@
       }
     }
   },
-  "common": {
-    "loading": "Loading...",
-    "select": "Select",
-    "saving": "Saving...",
-    "create": "Create",
-    "cancel": "Cancel",
-    "delete": "Delete"
-  },
+"common": {
+  "loading": "Loading...",
+  "select": "Select",
+  "saving": "Saving...",
+  "create": "Create",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "month": "month",
+  "months": "months",
+  "left": "left"
+},
+
   "toasts": {
     "mechanics": {
       "loadError": "❌ Failed to load reports or ambulances.",

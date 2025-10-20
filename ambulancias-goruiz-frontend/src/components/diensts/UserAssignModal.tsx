@@ -52,7 +52,7 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm }: Props) {
           if (info.status === 'expired') {
             return {
               id: u._id,
-              label: `${baseLabel} — ❌ ${t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado')}`,
+              label: `${baseLabel} — ${t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado')}`,
               disabled: true,
               sortKey: `${u.lastName || ''} ${u.name || ''}`.toLowerCase(),
             };
