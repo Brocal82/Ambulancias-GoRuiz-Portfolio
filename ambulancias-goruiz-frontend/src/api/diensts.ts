@@ -119,18 +119,27 @@ export const deleteDienstsForWeek = async (
 export const assignTeamToWeek = async (
   payload: { dienstNumber: number; weekStartDate: string; teamId: string },
   token: string
-): Promise<{ message: string; updatedCount: number; dienstId: string; weekStartDate: string }> => {
+): Promise<{
+  message: string;
+  updatedCount: number;
+  dienstId: string;
+  weekStartDate: string;
+  skippedByVacation?: Array<{ date: string; role: 'driver'|'medic' }>;
+  skippedByConflict?: Array<{ date: string; role: 'driver'|'medic' }>;
+  hints?: { driverExpiredButBoth?: boolean }; // 👈 añade esto
+}> => {
   const res = await axios.post('/diensts/assign-team-to-week', payload, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;
 };
 
+
 // ✅ Asignar UN usuario (driver/medic) a la semana de un Dienst
 export const assignUserToWeek = async (
   payload: { dienstNumber: number; weekStartDate: string; userId: string; role: 'driver' | 'medic' },
   token: string
-): Promise<{ message: string; updatedCount: number; dienstId: string; weekStartDate: string; role: 'driver'|'medic'; userId: string }> => {
+): Promise<{ message: string; updatedCount: number; dienstId: string; weekStartDate: string; role: 'driver' | 'medic'; userId: string }> => {
   const res = await axios.post('/diensts/assign-user-to-week', payload, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -147,5 +156,18 @@ export const clearPeopleForWeek = async (
   });
   return res.data;
 };
+
+// Intercambiar roles driver/medic en TODA la semana de un Dienst
+export const swapWeekRoles = async (
+  payload: { dienstNumber: number; weekStartDate: string },
+  token: string
+): Promise<{ message: string; swappedCount: number; dienstId: string; weekStartDate: string }> => {
+  const res = await axios.post('/diensts/swap-week-roles', payload, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
+
 
 
