@@ -37,15 +37,17 @@ export const createDienst = async (req: Request, res: Response) => {
 export const getAllDiensts: RequestHandler = async (req, res) => {
   try {
     const diensts = await Dienst.find()
-      .populate('assignments.driver', 'name lastName')
-      .populate('assignments.medic', 'name lastName')
-      .populate('assignments.ambulanceId');
+      .populate('assignments.driver', 'name lastName pscheinExpiry ambulanceRole')
+      .populate('assignments.medic',  'name lastName pscheinExpiry ambulanceRole')
+      .populate('assignments.ambulanceId', 'ambulanceNumber brand modelName licensePlate')
+      .lean(); // 👈 opcional pero recomendable para front
     res.status(200).json(diensts);
   } catch (error) {
     console.error("Error al obtener los Diensts:", error);
     res.status(500).json({ message: "Error al obtener los Diensts" });
   }
 };
+
 
 export const getDienstById = async (req: Request, res: Response) => {
   try {
@@ -429,10 +431,10 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Cargar team + pschein para validación
+    // Cargar team + pschein + role (NECESARIO para la excepción)
     const team = await Team.findById(teamId)
-      .populate('driver', 'pscheinExpiry')
-      .populate('medic', 'pscheinExpiry')
+      .populate('driver', 'pscheinExpiry ambulanceRole')
+      .populate('medic',  'pscheinExpiry ambulanceRole')
       .lean();
 
     if (!team) {
@@ -456,15 +458,38 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // P-Schein del driver -> si está caducado, bloquear toda la operación
-    const driverPschein = getDriverPscheinState((team as any).driver?.pscheinExpiry);
+    // ======= VALIDACIÓN P-SCHEIN con EXCEPCIÓN =======
+    // Si el P-Schein del driver está caducado, solo permitimos continuar si:
+    //  - el driver tiene ambulanceRole 'both', y
+    //  - el compañero puede conducir (role driver|both y P-Schein válido o en warning).
+    const driverDoc = (team as any).driver;
+    const medicDoc  = (team as any).medic;
+
+    const driverRole = driverDoc?.ambulanceRole as ('driver'|'medic'|'both'|undefined);
+    const medicRole  = medicDoc?.ambulanceRole  as ('driver'|'medic'|'both'|undefined);
+
+    const driverPschein = getDriverPscheinState(driverDoc?.pscheinExpiry);
+    const medicPschein  = getDriverPscheinState(medicDoc?.pscheinExpiry); // reutilizamos para validar conducción
+
+    const medicCanDrive = (medicRole === 'driver' || medicRole === 'both')
+      && (medicPschein === 'valid' || medicPschein === 'warning');
+    const driverIsBoth  = driverRole === 'both';
+
+    let driverExpiredButBothHint = false;
+
     if (driverPschein === 'expired') {
-      res.status(409).json({
-        code: 'pschein_expired',
-        message: 'El P-Schein del conductor está caducado. No se puede asignar el equipo.',
-      });
-      return;
+      if (driverIsBoth && medicCanDrive) {
+        // Permitimos continuar; el front podrá sugerir swap.
+        driverExpiredButBothHint = true;
+      } else {
+        res.status(409).json({
+          code: 'pschein_expired',
+          message: 'El P-Schein del conductor está caducado. No se puede asignar el equipo.',
+        });
+        return;
+      }
     }
+    // ===== FIN VALIDACIÓN P-SCHEIN =====
 
     // Ubicar Dienst de la semana/número
     const start = new Date(weekStartDate);
@@ -574,6 +599,10 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
       skippedByConflict,
       dienstId: dienst.id,
       weekStartDate,
+      // Hint para el front: driver caducado pero permitido por excepción
+      hints: {
+        driverExpiredButBoth: !!driverExpiredButBothHint,
+      },
     });
 
   } catch (error) {
@@ -581,9 +610,6 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
     res.status(500).json({ message: 'Error al asignar el Team a la semana' });
   }
 };
-
-
-
 
 
 // ✅ Asignar UN USUARIO (driver o medic) a TODA la semana de un Dienst
@@ -776,6 +802,154 @@ export const clearPeopleForWeek = async (req: Request, res: Response): Promise<v
     res.status(500).json({ message: 'Error al limpiar asignaciones de la semana' });
   }
 };
+
+export const swapWeekRoles = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { dienstNumber, weekStartDate } = req.body as {
+      dienstNumber?: number;
+      weekStartDate?: string; // YYYY-MM-DD
+    };
+
+    if (!dienstNumber || !weekStartDate) {
+      res.status(400).json({ message: 'Faltan parámetros: dienstNumber, weekStartDate' });
+      return;
+    }
+
+    const start = new Date(weekStartDate);
+    if (isNaN(start.getTime())) {
+      res.status(400).json({ message: 'weekStartDate inválida' });
+      return;
+    }
+
+    const dienst = await Dienst.findOne({
+      dienstNumber,
+      weekStartDate: { $gte: start, $lt: new Date(start.getTime() + 24 * 60 * 60 * 1000) },
+    });
+
+    if (!dienst) {
+      res.status(404).json({ message: 'No existe Dienst para esa semana y número' });
+      return;
+    }
+
+    // Reunimos los userIds presentes en cualquier día
+    const userIds = new Set<string>();
+    for (const a of dienst.assignments ?? []) {
+      const drv = a?.driver?.toString?.();
+      const med = a?.medic?.toString?.();
+      if (drv) userIds.add(drv);
+      if (med) userIds.add(med);
+    }
+
+    // Traemos roles y pschein de esos usuarios
+    const users = await User.find(
+      { _id: { $in: Array.from(userIds).map(id => new mongoose.Types.ObjectId(id)) } },
+      { ambulanceRole: 1, pscheinExpiry: 1 }
+    ).lean();
+
+    const userMap = new Map<string, { ambulanceRole?: 'driver'|'medic'|'both'; pscheinExpiry?: string }>();
+    for (const u of users) {
+      userMap.set(String(u._id), {
+        ambulanceRole: u.ambulanceRole as any,
+        pscheinExpiry: u.pscheinExpiry,
+      });
+    }
+
+    // Helper: ¿puede user desempeñar 'driver' o 'medic'?
+    const canPerformRole = (userId: string, role: 'driver' | 'medic'): { ok: boolean; reason?: string } => {
+      const u = userMap.get(userId);
+      if (!u) return { ok: false, reason: 'usuario_no_encontrado' };
+
+      const r = u.ambulanceRole;
+      if (role === 'driver') {
+        // debe poder conducir por rol
+        if (!(r === 'driver' || r === 'both')) {
+          return { ok: false, reason: 'rol_no_permite_driver' };
+        }
+        // y P-Schein no caducado
+        const ps = getPscheinStatus(u.pscheinExpiry);
+        if (ps === 'expired') {
+          return { ok: false, reason: 'pschein_expired' };
+        }
+        return { ok: true };
+      } else {
+        // medic
+        if (!(r === 'medic' || r === 'both')) {
+          return { ok: false, reason: 'rol_no_permite_medic' };
+        }
+        return { ok: true };
+      }
+    };
+
+    // Validación previa global: si algún día no es swappeable, bloqueamos todo
+    const blocked: Array<{ date: string; reason: string; driverId?: string; medicId?: string }> = [];
+
+    for (const a of dienst.assignments ?? []) {
+      if (!a?.date) continue;
+
+      const driverId = a?.driver?.toString?.();
+      const medicId  = a?.medic?.toString?.();
+
+      // Sólo nos importa validar días con ambos roles asignados
+      if (!driverId || !medicId) continue;
+
+      // El medic pasará a ser driver, y el driver pasará a ser medic
+      const medicToDriver = canPerformRole(medicId, 'driver');
+      const driverToMedic = canPerformRole(driverId, 'medic');
+
+      if (!medicToDriver.ok || !driverToMedic.ok) {
+        const reason =
+          (!medicToDriver.ok && medicToDriver.reason === 'pschein_expired')
+            ? 'medic_no_puede_ser_driver_pschein_expired'
+            : (!medicToDriver.ok && medicToDriver.reason === 'rol_no_permite_driver')
+              ? 'medic_no_puede_ser_driver_rol'
+              : (!driverToMedic.ok && driverToMedic.reason === 'rol_no_permite_medic')
+                ? 'driver_no_puede_ser_medic_rol'
+                : 'condiciones_no_cumplidas';
+        blocked.push({ date: a.date, reason, driverId, medicId });
+      }
+    }
+
+    if (blocked.length > 0) {
+      res.status(409).json({
+        code: 'swap_not_permitted',
+        message: 'No se puede intercambiar roles: hay días que no cumplen las condiciones.',
+        details: blocked,
+      });
+      return;
+    }
+
+    // Aplicamos swap sólo en días con ambos roles
+    let swapped = 0;
+    dienst.assignments = (dienst.assignments || []).map((a) => {
+      if (!a?.date || !a?.startTime || !a?.endTime) return a;
+
+      const driverId = a?.driver?.toString?.();
+      const medicId  = a?.medic?.toString?.();
+
+      if (!driverId || !medicId) return a;
+
+      // Intercambiar driver y medic
+      const newDriver = new mongoose.Types.ObjectId(medicId);
+      const newMedic  = new mongoose.Types.ObjectId(driverId);
+
+      swapped += 1;
+      return { ...a, driver: newDriver as any, medic: newMedic as any };
+    });
+
+    await dienst.save();
+
+    res.status(200).json({
+      message: `Roles intercambiados en ${swapped} días del Dienst #${dienstNumber} (${weekStartDate}).`,
+      swappedCount: swapped,
+      dienstId: dienst.id,
+      weekStartDate,
+    });
+  } catch (err) {
+    console.error('❌ Error en swapWeekRoles:', err);
+    res.status(500).json({ message: 'Error al intercambiar roles de la semana' });
+  }
+};
+
 
 
 
