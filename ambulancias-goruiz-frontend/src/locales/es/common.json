@@ -868,7 +868,8 @@
     "confirmDelete": "¿Borrar todos los Diensts de la semana del {{date}}?",
 
     "assignTeamToWeek": "Asignar Team",
-    "assignUserToWeek": "Asignar trabajador a la semana",             
+    "assignUserToWeek": "Asignar trabajador a la semana", 
+               
 
     "alerts": {
       "createOk": "✅ Plantillas creadas correctamente",
@@ -891,6 +892,8 @@
     "driverPscheinExpired": "❌ P-Schein del conductor caducado",
     "driverPscheinExpiredLabel": "❌ P-Schein caducado",
     "driverPscheinWarning": "⚠️ {{months}} {{months, plural, one {mes restante} other {meses restantes}}}",
+    "teamWeeklyConflict": "⚠️ Este equipo ya está asignado a otro Dienst esta semana.",
+    "teamWeeklyConflictWithDates": "⚠️ Este equipo ya tiene asignaciones esta semana.", 
 
     "errors": {
       "pscheinExpired": "❌ No se puede asignar: el P-Schein del conductor está caducado.",

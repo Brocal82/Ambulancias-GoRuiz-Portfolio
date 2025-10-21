@@ -381,32 +381,32 @@ const AdminPage = () => {
                                 <p>🚑 {displayAmbulance(assignment?.ambulanceId)}</p>
 
                                 {/* Conductor: rojo si P-Schein caducado; naranja si warning */}
-<p>
-  👨‍✈️{' '}
-  {(() => {
-    let drvClass = '';
-    let drvTitle: string | undefined = undefined;
+                                <p>
+                                  👨‍✈️{' '}
+                                  {(() => {
+                                    let drvClass = '';
+                                    let drvTitle: string | undefined = undefined;
 
-    if (typeof assignment.driver === 'object' && assignment.driver) {
-      const info = getPscheinInfo((assignment.driver as any).pscheinExpiry);
-      if (info.status === 'expired') {
-        drvClass = 'text-red-600 font-medium';
-        drvTitle = t('pages.diensts.adminPage.driverPscheinExpired');
-      } else if (info.status === 'warning') {
-        drvClass = 'text-amber-600 font-medium'; // o 'text-orange-600'
-        drvTitle = t('pages.diensts.adminPage.driverPscheinWarning', {
-          months: info.monthsLeft ?? 0,
-        });
-      }
-    }
+                                    if (typeof assignment.driver === 'object' && assignment.driver) {
+                                      const info = getPscheinInfo((assignment.driver as any).pscheinExpiry);
+                                      if (info.status === 'expired') {
+                                        drvClass = 'text-red-600 font-medium';
+                                        drvTitle = t('pages.diensts.adminPage.driverPscheinExpired');
+                                      } else if (info.status === 'warning') {
+                                        drvClass = 'text-amber-600 font-medium'; // o 'text-orange-600'
+                                        drvTitle = t('pages.diensts.adminPage.driverPscheinWarning', {
+                                          months: info.monthsLeft ?? 0,
+                                        });
+                                      }
+                                    }
 
-    return (
-      <span className={drvClass} title={drvTitle}>
-        {displayPerson(assignment?.driver)}
-      </span>
-    );
-  })()}
-</p>
+                                    return (
+                                      <span className={drvClass} title={drvTitle}>
+                                        {displayPerson(assignment?.driver)}
+                                      </span>
+                                    );
+                                  })()}
+                                </p>
 
 
                                 <p>🧑‍⚕️ {displayPerson(assignment?.medic)}</p>
@@ -464,46 +464,55 @@ const AdminPage = () => {
               setWeekTeamModal(null);
               fetchDiensts();
             } catch (err: any) {
-              const code = err?.response?.data?.code as string | undefined;
-              const details = err?.response?.data?.details;
+  const code = err?.response?.data?.code as string | undefined;
+  const details = err?.response?.data?.details;
 
-              if (code === 'pschein_expired') {
-                // 🚫 P-Schein del conductor caducado
-                toastT.error(['pages.diensts.adminPage.errors.pscheinExpired']);
-              } else if (code === 'weekly_conflict') {
-                // ⚠️ Conflicto: ya tiene asignaciones esa semana
-                let driverDates = '';
-                let medicDates = '';
+  if (code === 'pschein_expired') {
+    // 🚫 P-Schein del conductor caducado
+    toastT.error(['pages.diensts.adminPage.errors.pscheinExpired']);
+  } else if (code === 'weekly_conflict') {
+    // ⚠️ Conflicto: alguno de los miembros ya tiene asignaciones esa semana
+    let driverDates = '';
+    let medicDates = '';
 
-                if (Array.isArray(details)) {
-                  driverDates = details
-                    .filter((d: any) => d?.role === 'driver')
-                    .map((d: any) => d?.date)
-                    .filter(Boolean)
-                    .join(', ');
-                  medicDates = details
-                    .filter((d: any) => d?.role === 'medic')
-                    .map((d: any) => d?.date)
-                    .filter(Boolean)
-                    .join(', ');
-                }
+    // tu backend a veces envia "details" como array [{date, role}] y otras como { driverConf, medicConf }
+    if (Array.isArray(details)) {
+      driverDates = details
+        .filter((d: any) => d?.role === 'driver')
+        .map((d: any) => d?.date)
+        .filter(Boolean)
+        .join(', ');
+      medicDates = details
+        .filter((d: any) => d?.role === 'medic')
+        .map((d: any) => d?.date)
+        .filter(Boolean)
+        .join(', ');
+    } else if (details && typeof details === 'object') {
+      const drv = Array.isArray(details.driverConf) ? details.driverConf : [];
+      const med = Array.isArray(details.medicConf) ? details.medicConf : [];
+      driverDates = drv.map((d: any) => d?.date).filter(Boolean).join(', ');
+      medicDates  = med.map((d: any) => d?.date).filter(Boolean).join(', ');
+    }
 
-                if (driverDates || medicDates) {
-                  toastT.error([
-                    'pages.diensts.adminPage.errors.weeklyConflictWithDates',
-                    { driverDates, medicDates },
-                  ]);
-                } else {
-                  toastT.error(['pages.diensts.adminPage.errors.weeklyConflict']);
-                }
-              } else {
-                // ❌ Error genérico
-                toastT.error(['pages.diensts.adminPage.assignWeekErr']);
-              }
+    if (driverDates || medicDates) {
+      // 💬 Mensaje específico para TEAM (con fechas)
+      toastT.error([
+        'pages.diensts.adminPage.teamWeeklyConflictWithDates',
+        { driverDates, medicDates },
+      ]);
+    } else {
+      // 💬 Mensaje específico para TEAM (sin fechas)
+      toastT.error(['pages.diensts.adminPage.teamWeeklyConflict']);
+    }
+  } else {
+    // ❌ Error genérico
+    toastT.error(['pages.diensts.adminPage.assignWeekErr']);
+  }
 
-              // Log técnico para depuración
-              console.error('assignTeamToWeek error:', err?.response?.data || err);
-            }
+  // Log técnico para depuración
+  console.error('assignTeamToWeek error:', err?.response?.data || err);
+}
+
           }}
         />
       )}
