@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { getTeams, type Team } from '../../api/teams';
 import { toastT } from '../../utils/toast';
 import { useTranslation } from 'react-i18next';
+import { getPscheinInfo } from '../../utils/pscheinUtils';
 
 interface Props {
   isOpen: boolean;
@@ -16,7 +17,8 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm }: Props) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedId, setSelectedId] = useState('');
-  const selectId = useId(); // Asegura un ID único para accesibilidad
+  const [openList, setOpenList] = useState(false);
+  const selectId = useId();
 
   useEffect(() => {
     const load = async () => {
@@ -37,6 +39,16 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm }: Props) {
 
   if (!isOpen) return null;
 
+  const selectedTeam = teams.find(t => t._id === selectedId) || null;
+
+  const driverClass = (pschein?: string | null) => {
+    if (!pschein) return '';
+    const info = getPscheinInfo(pschein);
+    if (info.status === 'expired') return 'text-red-600 font-medium';
+    if (info.status === 'warning') return 'text-yellow-600 font-medium';
+    return '';
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
@@ -46,31 +58,88 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm }: Props) {
         </h3>
 
         <div className="space-y-2">
-          <label
-            htmlFor={selectId}
-            className="block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor={selectId} className="block text-sm font-medium text-slate-700">
             {t('pages.diensts.assignTeamModal.select')}
           </label>
-          <select
-            id={selectId}
-            name="team"
-            value={selectedId}
-            onChange={(e) => setSelectedId(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-            disabled={loading}
-          >
-            <option value="">
-              {loading ? t('common.loading') : t('common.select')}
-            </option>
-            {teams.map((tItem) => (
-              <option key={tItem._id} value={tItem._id}>
-                {(tItem.driver?.lastName || '') + ', ' + (tItem.driver?.name || '')}
-                {' / '}
-                {(tItem.medic?.lastName || '') + ', ' + (tItem.medic?.name || '')}
-              </option>
-            ))}
-          </select>
+
+          {/* Dropdown personalizado para poder colorear solo el nombre del conductor */}
+          <div className="relative">
+            <button
+              id={selectId}
+              type="button"
+              className="w-full flex items-center justify-between rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+              onClick={() => setOpenList(v => !v)}
+              aria-haspopup="listbox"
+              aria-expanded={openList}
+            >
+              <span className="truncate">
+                {loading
+                  ? t('common.loading')
+                  : selectedTeam
+                    ? (
+                        <>
+                          <span className={driverClass((selectedTeam.driver as any)?.pscheinExpiry)}>
+                            {(selectedTeam.driver?.lastName || '') + ', ' + (selectedTeam.driver?.name || '')}
+                          </span>
+                          {' / '}
+                          <span>
+                            {(selectedTeam.medic?.lastName || '') + ', ' + (selectedTeam.medic?.name || '')}
+                          </span>
+                        </>
+                      )
+                    : t('common.select')}
+              </span>
+              <svg
+                className="h-4 w-4 shrink-0 text-slate-500"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+
+            {openList && !loading && (
+              <div
+                role="listbox"
+                tabIndex={-1}
+                className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg ring-1 ring-slate-200"
+              >
+                {teams.length === 0 && (
+                  <div className="px-3 py-2 text-sm text-slate-500">
+                    {t('pages.adminTeams.empty', 'Todavía no hay equipos creados.')}
+                  </div>
+                )}
+
+                {teams.map((tItem) => (
+                  <button
+                    key={tItem._id}
+                    role="option"
+                    aria-selected={selectedId === tItem._id}
+                    onClick={() => {
+                      setSelectedId(tItem._id);
+                      setOpenList(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none ${
+                      selectedId === tItem._id ? 'bg-slate-50' : ''
+                    }`}
+                  >
+                    <span className={driverClass((tItem.driver as any)?.pscheinExpiry)}>
+                      {(tItem.driver?.lastName || '') + ', ' + (tItem.driver?.name || '')}
+                    </span>
+                    <span className="text-slate-500"> / </span>
+                    <span>
+                      {(tItem.medic?.lastName || '') + ', ' + (tItem.medic?.name || '')}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="mt-4 space-y-2">

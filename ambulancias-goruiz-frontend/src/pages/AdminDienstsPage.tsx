@@ -380,26 +380,34 @@ const AdminPage = () => {
                                 <p>🕒 {assignment.startTime} - {assignment.endTime}</p>
                                 <p>🚑 {displayAmbulance(assignment?.ambulanceId)}</p>
 
-                                {/* Conductor: rojo si P-Schein caducado (requiere pscheinExpiry en el populate) */}
-                                <p>
-                                  👨‍✈️{' '}
-                                  <span
-                                    className={
-                                      (typeof assignment.driver === 'object' &&
-                                        getPscheinInfo((assignment.driver as any).pscheinExpiry).status === 'expired')
-                                        ? 'text-red-600 font-medium'
-                                        : ''
-                                    }
-                                    title={
-                                      (typeof assignment.driver === 'object' &&
-                                        getPscheinInfo((assignment.driver as any).pscheinExpiry).status === 'expired')
-                                        ? t('pages.diensts.adminPage.driverPscheinExpired')
-                                        : undefined
-                                    }
-                                  >
-                                    {displayPerson(assignment?.driver)}
-                                  </span>
-                                </p>
+                                {/* Conductor: rojo si P-Schein caducado; naranja si warning */}
+<p>
+  👨‍✈️{' '}
+  {(() => {
+    let drvClass = '';
+    let drvTitle: string | undefined = undefined;
+
+    if (typeof assignment.driver === 'object' && assignment.driver) {
+      const info = getPscheinInfo((assignment.driver as any).pscheinExpiry);
+      if (info.status === 'expired') {
+        drvClass = 'text-red-600 font-medium';
+        drvTitle = t('pages.diensts.adminPage.driverPscheinExpired');
+      } else if (info.status === 'warning') {
+        drvClass = 'text-amber-600 font-medium'; // o 'text-orange-600'
+        drvTitle = t('pages.diensts.adminPage.driverPscheinWarning', {
+          months: info.monthsLeft ?? 0,
+        });
+      }
+    }
+
+    return (
+      <span className={drvClass} title={drvTitle}>
+        {displayPerson(assignment?.driver)}
+      </span>
+    );
+  })()}
+</p>
+
 
                                 <p>🧑‍⚕️ {displayPerson(assignment?.medic)}</p>
                               </div>
