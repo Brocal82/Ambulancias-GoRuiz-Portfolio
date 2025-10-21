@@ -124,8 +124,8 @@ export const assignTeamToWeek = async (
   updatedCount: number;
   dienstId: string;
   weekStartDate: string;
-  skippedByVacation?: Array<{ date: string; role: 'driver'|'medic' }>;
-  skippedByConflict?: Array<{ date: string; role: 'driver'|'medic' }>;
+  skippedByVacation?: Array<{ date: string; role: 'driver' | 'medic' }>;
+  skippedByConflict?: Array<{ date: string; role: 'driver' | 'medic' }>;
   hints?: { driverExpiredButBoth?: boolean }; // 👈 añade esto
 }> => {
   const res = await axios.post('/diensts/assign-team-to-week', payload, {

@@ -101,7 +101,7 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm }: Props) {
             <select
               id={roleId}
               value={role}
-              onChange={(e) => { setRole(e.target.value as 'driver'|'medic'); setUserId(''); }}
+              onChange={(e) => { setRole(e.target.value as 'driver' | 'medic'); setUserId(''); }}
               className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
               disabled={loading}
             >

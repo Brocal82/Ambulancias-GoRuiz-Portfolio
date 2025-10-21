@@ -464,54 +464,54 @@ const AdminPage = () => {
               setWeekTeamModal(null);
               fetchDiensts();
             } catch (err: any) {
-  const code = err?.response?.data?.code as string | undefined;
-  const details = err?.response?.data?.details;
+              const code = err?.response?.data?.code as string | undefined;
+              const details = err?.response?.data?.details;
 
-  if (code === 'pschein_expired') {
-    // 🚫 P-Schein del conductor caducado
-    toastT.error(['pages.diensts.adminPage.errors.pscheinExpired']);
-  } else if (code === 'weekly_conflict') {
-    // ⚠️ Conflicto: alguno de los miembros ya tiene asignaciones esa semana
-    let driverDates = '';
-    let medicDates = '';
+              if (code === 'pschein_expired') {
+                // 🚫 P-Schein del conductor caducado
+                toastT.error(['pages.diensts.adminPage.errors.pscheinExpired']);
+              } else if (code === 'weekly_conflict') {
+                // ⚠️ Conflicto: alguno de los miembros ya tiene asignaciones esa semana
+                let driverDates = '';
+                let medicDates = '';
 
-    // tu backend a veces envia "details" como array [{date, role}] y otras como { driverConf, medicConf }
-    if (Array.isArray(details)) {
-      driverDates = details
-        .filter((d: any) => d?.role === 'driver')
-        .map((d: any) => d?.date)
-        .filter(Boolean)
-        .join(', ');
-      medicDates = details
-        .filter((d: any) => d?.role === 'medic')
-        .map((d: any) => d?.date)
-        .filter(Boolean)
-        .join(', ');
-    } else if (details && typeof details === 'object') {
-      const drv = Array.isArray(details.driverConf) ? details.driverConf : [];
-      const med = Array.isArray(details.medicConf) ? details.medicConf : [];
-      driverDates = drv.map((d: any) => d?.date).filter(Boolean).join(', ');
-      medicDates  = med.map((d: any) => d?.date).filter(Boolean).join(', ');
-    }
+                // tu backend a veces envia "details" como array [{date, role}] y otras como { driverConf, medicConf }
+                if (Array.isArray(details)) {
+                  driverDates = details
+                    .filter((d: any) => d?.role === 'driver')
+                    .map((d: any) => d?.date)
+                    .filter(Boolean)
+                    .join(', ');
+                  medicDates = details
+                    .filter((d: any) => d?.role === 'medic')
+                    .map((d: any) => d?.date)
+                    .filter(Boolean)
+                    .join(', ');
+                } else if (details && typeof details === 'object') {
+                  const drv = Array.isArray(details.driverConf) ? details.driverConf : [];
+                  const med = Array.isArray(details.medicConf) ? details.medicConf : [];
+                  driverDates = drv.map((d: any) => d?.date).filter(Boolean).join(', ');
+                  medicDates = med.map((d: any) => d?.date).filter(Boolean).join(', ');
+                }
 
-    if (driverDates || medicDates) {
-      // 💬 Mensaje específico para TEAM (con fechas)
-      toastT.error([
-        'pages.diensts.adminPage.teamWeeklyConflictWithDates',
-        { driverDates, medicDates },
-      ]);
-    } else {
-      // 💬 Mensaje específico para TEAM (sin fechas)
-      toastT.error(['pages.diensts.adminPage.teamWeeklyConflict']);
-    }
-  } else {
-    // ❌ Error genérico
-    toastT.error(['pages.diensts.adminPage.assignWeekErr']);
-  }
+                if (driverDates || medicDates) {
+                  // 💬 Mensaje específico para TEAM (con fechas)
+                  toastT.error([
+                    'pages.diensts.adminPage.teamWeeklyConflictWithDates',
+                    { driverDates, medicDates },
+                  ]);
+                } else {
+                  // 💬 Mensaje específico para TEAM (sin fechas)
+                  toastT.error(['pages.diensts.adminPage.teamWeeklyConflict']);
+                }
+              } else {
+                // ❌ Error genérico
+                toastT.error(['pages.diensts.adminPage.assignWeekErr']);
+              }
 
-  // Log técnico para depuración
-  console.error('assignTeamToWeek error:', err?.response?.data || err);
-}
+              // Log técnico para depuración
+              console.error('assignTeamToWeek error:', err?.response?.data || err);
+            }
 
           }}
         />

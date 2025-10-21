@@ -38,7 +38,7 @@ export const getAllDiensts: RequestHandler = async (req, res) => {
   try {
     const diensts = await Dienst.find()
       .populate('assignments.driver', 'name lastName pscheinExpiry ambulanceRole')
-      .populate('assignments.medic',  'name lastName pscheinExpiry ambulanceRole')
+      .populate('assignments.medic', 'name lastName pscheinExpiry ambulanceRole')
       .populate('assignments.ambulanceId', 'ambulanceNumber brand modelName licensePlate')
       .lean(); // 👈 opcional pero recomendable para front
     res.status(200).json(diensts);
@@ -436,7 +436,7 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
 
     const team = await Team.findById(teamId)
       .populate('driver', 'pscheinExpiry ambulanceRole')
-      .populate('medic',  'pscheinExpiry ambulanceRole')
+      .populate('medic', 'pscheinExpiry ambulanceRole')
       .lean();
 
     if (!team) {
@@ -448,7 +448,7 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
       typeof v === 'string' ? v : v && typeof v === 'object' && v._id ? String(v._id) : undefined;
 
     const driverId = toIdString((team as any).driver);
-    const medicId  = toIdString((team as any).medic);
+    const medicId = toIdString((team as any).medic);
     if (!driverId || !medicId) {
       res.status(400).json({ message: 'Team inválido: faltan driver o medic' });
       return;
@@ -456,17 +456,17 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
 
     // P-Schein + excepción
     const driverDoc = (team as any).driver;
-    const medicDoc  = (team as any).medic;
+    const medicDoc = (team as any).medic;
 
-    const driverRole = driverDoc?.ambulanceRole as ('driver'|'medic'|'both'|undefined);
-    const medicRole  = medicDoc?.ambulanceRole  as ('driver'|'medic'|'both'|undefined);
+    const driverRole = driverDoc?.ambulanceRole as ('driver' | 'medic' | 'both' | undefined);
+    const medicRole = medicDoc?.ambulanceRole as ('driver' | 'medic' | 'both' | undefined);
 
     const driverPschein = getDriverPscheinState(driverDoc?.pscheinExpiry);
-    const medicPschein  = getDriverPscheinState(medicDoc?.pscheinExpiry);
+    const medicPschein = getDriverPscheinState(medicDoc?.pscheinExpiry);
 
     const medicCanDrive = (medicRole === 'driver' || medicRole === 'both')
       && (medicPschein === 'valid' || medicPschein === 'warning');
-    const driverIsBoth  = driverRole === 'both';
+    const driverIsBoth = driverRole === 'both';
 
     let driverExpiredButBothHint = false;
     if (driverPschein === 'expired') {
@@ -490,7 +490,7 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
 
     const dienst = await Dienst.findOne({
       dienstNumber,
-      weekStartDate: { $gte: start, $lt: new Date(start.getTime() + 24*60*60*1000) },
+      weekStartDate: { $gte: start, $lt: new Date(start.getTime() + 24 * 60 * 60 * 1000) },
     });
     if (!dienst) {
       res.status(404).json({ message: 'No existe Dienst para esa semana y número' });
@@ -500,7 +500,7 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
     // 🔒 CONFLICTOS SEMANALES (BLOQUEAMOS SI HAY CUALQUIERA)
     const [driverConf, medicConf] = await Promise.all([
       findWeeklyConflicts(new mongoose.Types.ObjectId(driverId), start, dienstNumber),
-      findWeeklyConflicts(new mongoose.Types.ObjectId(medicId),  start, dienstNumber),
+      findWeeklyConflicts(new mongoose.Types.ObjectId(medicId), start, dienstNumber),
     ]);
 
     if ((driverConf?.length ?? 0) > 0 || (medicConf?.length ?? 0) > 0) {
@@ -526,14 +526,14 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
       dates.map(async (dateISO) => {
         const [drvVac, medVac] = await Promise.all([
           isOnVacationDay({ userId: driverId, dateISO }),
-          isOnVacationDay({ userId: medicId,  dateISO }),
+          isOnVacationDay({ userId: medicId, dateISO }),
         ]);
         vacationMap[dateISO] = { driver: drvVac, medic: medVac };
       })
     );
 
     let updatedCount = 0;
-    const skippedByVacation: Array<{ date: string; role: 'driver'|'medic' }> = [];
+    const skippedByVacation: Array<{ date: string; role: 'driver' | 'medic' }> = [];
 
     dienst.assignments = (dienst.assignments || []).map((a) => {
       if (!a?.date || !a?.startTime || !a?.endTime) return a;
@@ -822,7 +822,7 @@ export const swapWeekRoles = async (req: Request, res: Response): Promise<void> 
       { ambulanceRole: 1, pscheinExpiry: 1 }
     ).lean();
 
-    const userMap = new Map<string, { ambulanceRole?: 'driver'|'medic'|'both'; pscheinExpiry?: string }>();
+    const userMap = new Map<string, { ambulanceRole?: 'driver' | 'medic' | 'both'; pscheinExpiry?: string }>();
     for (const u of users) {
       userMap.set(String(u._id), {
         ambulanceRole: u.ambulanceRole as any,
@@ -863,7 +863,7 @@ export const swapWeekRoles = async (req: Request, res: Response): Promise<void> 
       if (!a?.date) continue;
 
       const driverId = a?.driver?.toString?.();
-      const medicId  = a?.medic?.toString?.();
+      const medicId = a?.medic?.toString?.();
 
       // Sólo nos importa validar días con ambos roles asignados
       if (!driverId || !medicId) continue;
@@ -900,13 +900,13 @@ export const swapWeekRoles = async (req: Request, res: Response): Promise<void> 
       if (!a?.date || !a?.startTime || !a?.endTime) return a;
 
       const driverId = a?.driver?.toString?.();
-      const medicId  = a?.medic?.toString?.();
+      const medicId = a?.medic?.toString?.();
 
       if (!driverId || !medicId) return a;
 
       // Intercambiar driver y medic
       const newDriver = new mongoose.Types.ObjectId(medicId);
-      const newMedic  = new mongoose.Types.ObjectId(driverId);
+      const newMedic = new mongoose.Types.ObjectId(driverId);
 
       swapped += 1;
       return { ...a, driver: newDriver as any, medic: newMedic as any };

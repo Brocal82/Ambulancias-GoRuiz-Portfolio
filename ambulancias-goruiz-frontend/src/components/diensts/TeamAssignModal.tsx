@@ -77,16 +77,16 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm }: Props) {
                   ? t('common.loading')
                   : selectedTeam
                     ? (
-                        <>
-                          <span className={driverClass((selectedTeam.driver as any)?.pscheinExpiry)}>
-                            {(selectedTeam.driver?.lastName || '') + ', ' + (selectedTeam.driver?.name || '')}
-                          </span>
-                          {' / '}
-                          <span>
-                            {(selectedTeam.medic?.lastName || '') + ', ' + (selectedTeam.medic?.name || '')}
-                          </span>
-                        </>
-                      )
+                      <>
+                        <span className={driverClass((selectedTeam.driver as any)?.pscheinExpiry)}>
+                          {(selectedTeam.driver?.lastName || '') + ', ' + (selectedTeam.driver?.name || '')}
+                        </span>
+                        {' / '}
+                        <span>
+                          {(selectedTeam.medic?.lastName || '') + ', ' + (selectedTeam.medic?.name || '')}
+                        </span>
+                      </>
+                    )
                     : t('common.select')}
               </span>
               <svg
@@ -107,8 +107,10 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm }: Props) {
               <div
                 role="listbox"
                 tabIndex={-1}
+                aria-label="Opciones del selector"
                 className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg ring-1 ring-slate-200"
               >
+
                 {teams.length === 0 && (
                   <div className="px-3 py-2 text-sm text-slate-500">
                     {t('pages.adminTeams.empty', 'Todavía no hay equipos creados.')}
@@ -124,9 +126,8 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm }: Props) {
                       setSelectedId(tItem._id);
                       setOpenList(false);
                     }}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none ${
-                      selectedId === tItem._id ? 'bg-slate-50' : ''
-                    }`}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none ${selectedId === tItem._id ? 'bg-slate-50' : ''
+                      }`}
                   >
                     <span className={driverClass((tItem.driver as any)?.pscheinExpiry)}>
                       {(tItem.driver?.lastName || '') + ', ' + (tItem.driver?.name || '')}
