@@ -248,3 +248,99 @@ export async function acceptSickLeave(req: Request, res: Response) {
   }
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Rechazar una solicitud de baja (no desasigna nada)
+// ────────────────────────────────────────────────────────────────────────────
+export async function rejectSickLeave(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ message: 'ID inválido' });
+      return;
+    }
+
+    const sick = await SickLeave.findById(id);
+    if (!sick) {
+      res.status(404).json({ message: 'Baja no encontrada' });
+      return;
+    }
+
+    if (sick.status === 'rejected') {
+      res.status(409).json({ message: 'La baja ya está rechazada' });
+      return;
+    }
+
+    // Si ya estaba aceptada, por ahora no revertimos desasignaciones
+    sick.status = 'rejected';
+    await sick.save();
+
+    res.status(200).json({
+      message: 'Baja rechazada',
+      sickLeaveId: sick._id,
+      status: sick.status,
+    });
+  } catch (err) {
+    console.error('❌ rejectSickLeave error:', err);
+    res.status(500).json({ message: 'Error al rechazar la baja' });
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+/**
+ * Adjuntar/actualizar Krankschreibung para una baja
+ * - Lo usa el trabajador autenticado
+ * - Recibe { documentUrl: string }
+ * - Marca verificationStatus = 'received' (si antes era 'pending')
+ */
+// ────────────────────────────────────────────────────────────────────────────
+export async function attachSickDocument(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ message: 'ID inválido' });
+      return;
+    }
+
+    const { documentUrl } = (req.body || {}) as { documentUrl?: string };
+    if (!documentUrl || typeof documentUrl !== 'string') {
+      res.status(400).json({ message: 'documentUrl es requerido' });
+      return;
+    }
+
+    const authId = (req as any)?.user?.id || (req as any)?.userId;
+    const sick = await SickLeave.findById(id);
+    if (!sick) {
+      res.status(404).json({ message: 'Baja no encontrada' });
+      return;
+    }
+
+    // Seguridad mínima: si no es admin, debe ser el dueño de la baja
+    const isAdmin = (req as any)?.user?.role === 'admin' || (req as any)?.role === 'admin';
+    if (!isAdmin && authId && String(sick.user) !== String(authId)) {
+      res.status(403).json({ message: 'No autorizado para adjuntar documento a esta baja' });
+      return;
+    }
+
+    sick.documentUrl = documentUrl;
+
+    // Si requería documento y estaba pendiente, lo marcamos recibido
+    if (sick.requiresDocument && sick.verificationStatus === 'pending') {
+      sick.verificationStatus = 'received';
+      // Si en el futuro añadimos 'verified', aquí no lo tocamos.
+    }
+
+    await sick.save();
+
+    res.status(200).json({
+      message: 'Documento adjuntado correctamente',
+      sickLeaveId: sick._id,
+      verificationStatus: sick.verificationStatus,
+      documentUrl: sick.documentUrl,
+    });
+  } catch (err) {
+    console.error('❌ attachSickDocument error:', err);
+    res.status(500).json({ message: 'Error al adjuntar el documento' });
+  }
+}
+
+

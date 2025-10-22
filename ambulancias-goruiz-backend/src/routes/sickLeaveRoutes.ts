@@ -5,7 +5,9 @@ import {
   createSickLeave,
   listSickLeaves,
   listMySickLeaves,
-  acceptSickLeave
+  acceptSickLeave,
+  rejectSickLeave,
+  attachSickDocument
 } from '../controllers/sickLeaveController';
 
 const router = express.Router();
@@ -21,6 +23,13 @@ router.get('/me', authenticateToken, listMySickLeaves);
 
 // Admin: aceptar una solicitud y ejecutar desasignación
 router.post('/:id/accept', authenticateToken, authorizeRole('admin'), acceptSickLeave);
+
+// Admin: rechazar una solicitud (no desasigna)
+router.post('/:id/reject', authenticateToken, authorizeRole('admin'), rejectSickLeave);
+
+// Worker/Admin: adjuntar/actualizar Krankschreibung en una solicitud
+router.post('/:id/attach-document', authenticateToken, attachSickDocument);
+
 
 
 export default router;
