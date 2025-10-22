@@ -1,3 +1,4 @@
+//frontend/src/pages/Profile.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toastT } from '../utils/toast';

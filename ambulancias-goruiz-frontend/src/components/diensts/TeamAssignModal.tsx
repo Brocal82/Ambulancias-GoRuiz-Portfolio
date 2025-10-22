@@ -1,3 +1,4 @@
+//frontend/src/components/diensts/TeamAssignModal.tsx
 import { useEffect, useState, useId } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { getTeams, type Team } from '../../api/teams';

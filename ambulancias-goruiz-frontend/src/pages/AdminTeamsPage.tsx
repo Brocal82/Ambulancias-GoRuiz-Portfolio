@@ -1,3 +1,4 @@
+// frontend/src/pages/AdminTeamsPage.tsx
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';

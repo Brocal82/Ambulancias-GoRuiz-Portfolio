@@ -1,3 +1,4 @@
+// frontend/src/pages/AdminDienstsPage.tsx
 import { useCallback, useEffect, useState } from 'react';
 import type { Dienst, UserRef } from '../types/dienst';
 import { getAllDiensts, generateDienstsForWeek, deleteDienstsForWeek, assignTeamToWeek, assignUserToWeek, clearPeopleForWeek, swapWeekRoles } from '../api/diensts';

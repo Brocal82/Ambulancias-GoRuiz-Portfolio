@@ -1,4 +1,4 @@
-// frontend/src/components/common/TeamPicker.tsx
+//frontend/src/components/common/TeamPicker.tsx
 import { useEffect, useMemo, useState, useId } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
