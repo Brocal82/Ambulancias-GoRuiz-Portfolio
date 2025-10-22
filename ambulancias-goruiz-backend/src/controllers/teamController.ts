@@ -1,11 +1,46 @@
-//src/controllers/teamController.ts
+// src/controllers/teamController.ts
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Team from '../models/Team';
 import User from '../models/User';
+import VacationRequest from '../models/vacationRequest';
+import { DateTime } from 'luxon';
+import { isOnVacationDay } from '../utils/dienstValidation';
+
+const ZONE = 'Europe/Berlin';
 
 const isObjectId = (s: unknown) =>
   typeof s === 'string' && mongoose.Types.ObjectId.isValid(s);
+
+// 👉 Helper: devuelve si está de vacaciones HOY y hasta cuándo
+async function getTodayVacationInfo(userId?: mongoose.Types.ObjectId | string | null) {
+  if (!userId || !mongoose.Types.ObjectId.isValid(String(userId))) {
+    return { isOnVacation: false as const, vacationUntil: undefined as string | undefined };
+  }
+
+  const now = DateTime.now().setZone(ZONE);
+  const startOfToday = now.startOf('day').toJSDate();
+  const endOfToday = now.endOf('day').toJSDate();
+
+  const vac = await VacationRequest
+    .findOne({
+      user: userId,
+      status: 'accepted',
+      startDate: { $lte: endOfToday },
+      endDate:   { $gte: startOfToday },
+    })
+    .select('endDate')
+    .lean();
+
+  if (!vac) {
+    return { isOnVacation: false as const, vacationUntil: undefined };
+  }
+
+  return {
+    isOnVacation: true as const,
+    vacationUntil: new Date(vac.endDate).toISOString(),
+  };
+}
 
 export const listTeams = async (_req: Request, res: Response) => {
   try {
@@ -13,6 +48,38 @@ export const listTeams = async (_req: Request, res: Response) => {
       .populate('driver', 'name lastName ambulanceRole pscheinExpiry')
       .populate('medic',  'name lastName ambulanceRole pscheinExpiry')
       .lean();
+
+    // ⏰ Fecha de hoy (ISO) en zona Berlin (corrige DST/off-by-one)
+    const todayISO = DateTime.now().setZone(ZONE).toISODate()!;
+
+    // Añadimos flags de vacaciones (hoy) y 'vacationUntil' sin romper el shape existente
+    await Promise.all(
+      teams.map(async (t: any) => {
+        if (t?.driver?._id) {
+          // bandera actual (reutiliza tu util)
+          t.driver.isOnVacation = await isOnVacationDay({
+            userId: String(t.driver._id),
+            dateISO: todayISO,
+          });
+          // fecha 'hasta' (solo si está de vacaciones hoy)
+          if (t.driver.isOnVacation) {
+            const info = await getTodayVacationInfo(t.driver._id);
+            t.driver.vacationUntil = info.vacationUntil;
+          }
+        }
+        if (t?.medic?._id) {
+          t.medic.isOnVacation = await isOnVacationDay({
+            userId: String(t.medic._id),
+            dateISO: todayISO,
+          });
+          if (t.medic.isOnVacation) {
+            const info = await getTodayVacationInfo(t.medic._id);
+            t.medic.vacationUntil = info.vacationUntil;
+          }
+        }
+      })
+    );
+
     res.status(200).json(teams);
   } catch (err) {
     console.error('❌ Error listTeams:', err);
@@ -50,8 +117,7 @@ export const createTeam = async (req: Request, res: Response) => {
       return;
     }
 
-    // 🚫 NUEVO: impedir que cualquiera de los dos ya pertenezca a otro team
-    // (como driver o como medic)
+    // 🚫 impedir que cualquiera de los dos ya pertenezca a otro team
     const [driverConflict, medicConflict] = await Promise.all([
       Team.findOne({ $or: [{ driver }, { medic: driver }] }).lean(),
       Team.findOne({ $or: [{ driver: medic }, { medic }] }).lean(),
@@ -87,7 +153,6 @@ export const createTeam = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al crear team' });
   }
 };
-
 
 export const deleteTeam = async (req: Request, res: Response) => {
   try {
