@@ -71,15 +71,28 @@ const WorkerDashboard = () => {
           <p className="text-sm text-gray-600">{t('pages.workerDashboard.vacations.desc')}</p>
         </Link>
 
-        <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
-          <h2 className="text-lg font-semibold mb-2">{t('pages.workerDashboard.payrollDocs.title')}</h2>
-          <p className="text-sm text-gray-600">{t('pages.workerDashboard.payrollDocs.desc')}</p>
-        </div>
+        <Link
+          to="/worker/sick-leaves"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
+          <h2 className="text-lg font-semibold mb-2">
+            {t('pages.workerDashboard.sickLeaves.title', 'Bajas por enfermedad')}
+          </h2>
+          <p className="text-sm text-gray-600">
+            {t('pages.workerDashboard.sickLeaves.desc', 'Solicita baja y consulta el estado')}
+          </p>
+        </Link>
 
         <Link to="/worker/appointments" className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition">
           <h2 className="text-lg font-semibold mb-2">{t('pages.workerDashboard.appointments.title')}</h2>
           <p className="text-sm text-gray-600">{t('pages.workerDashboard.appointments.desc')}</p>
         </Link>
+
+
+        <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
+          <h2 className="text-lg font-semibold mb-2">{t('pages.workerDashboard.payrollDocs.title')}</h2>
+          <p className="text-sm text-gray-600">{t('pages.workerDashboard.payrollDocs.desc')}</p>
+        </div>
 
         <div className="bg-white p-6 rounded shadow opacity-50 cursor-not-allowed">
           <h2 className="text-lg font-semibold mb-2">{t('pages.workerDashboard.game.title')}</h2>

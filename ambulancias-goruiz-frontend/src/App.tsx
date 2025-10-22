@@ -19,6 +19,7 @@ import WorkerPrämienPage from './pages/WorkerPraemienPage';
 import WorkerVacationsPage from './pages/WorkerVacationsPage';
 import WorkerMessagesPage from './pages/WorkerMessagesPage';
 import WorkerAppointmentsPage from './pages/WorkerAppointmentsPage';
+import WorkerSickLeavesPage from './pages/WorkerSickLeavesPage';
 
 import MyWorkday from './pages/MyWorkDay';
 
@@ -55,6 +56,7 @@ export default function App() {
             <Route path="/worker/hospitals" element={<AppLayout><WorkerHospitalsPage /></AppLayout>} />
             <Route path="/worker/praemien" element={<AppLayout><WorkerPrämienPage /></AppLayout>} />
             <Route path="/worker/vacations" element={<AppLayout><WorkerVacationsPage /></AppLayout>} />
+            <Route path="/worker/sick-leaves" element={<AppLayout><WorkerSickLeavesPage /></AppLayout>} />
             <Route path="/worker/messages" element={<AppLayout><WorkerMessagesPage /></AppLayout>} />
             <Route path="/my-workday" element={<AppLayout><MyWorkday /></AppLayout>} />
             <Route path="/worker/appointments" element={<AppLayout><WorkerAppointmentsPage /></AppLayout>} />
