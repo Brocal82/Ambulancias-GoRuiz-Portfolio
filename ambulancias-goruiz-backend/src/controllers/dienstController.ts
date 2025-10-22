@@ -11,7 +11,7 @@ import { AssignedDay } from '../types/Dienst';
 import Team from '../models/Team';
 import User from '../models/User';
 import { getPscheinStatus } from '../utils/pscheinUtils';
-import { findWeeklyConflicts, getDriverPscheinState, isOnVacationDay } from '../utils/dienstValidation';
+import { findWeeklyConflicts, getDriverPscheinState, isOnVacationDay, isOnSickDay } from '../utils/dienstValidation';
 
 
 
@@ -521,53 +521,63 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
       )
     );
 
-    const vacationMap: Record<string, { driver: boolean; medic: boolean }> = {};
-    await Promise.all(
-      dates.map(async (dateISO) => {
-        const [drvVac, medVac] = await Promise.all([
-          isOnVacationDay({ userId: driverId, dateISO }),
-          isOnVacationDay({ userId: medicId, dateISO }),
-        ]);
-        vacationMap[dateISO] = { driver: drvVac, medic: medVac };
-      })
-    );
+// 🩺 Bloqueos por día: vacaciones o baja (sick)
+const dayBlockMap: Record<string, { driver: boolean; medic: boolean }> = {};
+await Promise.all(
+  dates.map(async (dateISO) => {
+    const [drvVac, medVac, drvSick, medSick] = await Promise.all([
+      isOnVacationDay({ userId: driverId, dateISO }),
+      isOnVacationDay({ userId: medicId, dateISO }),
+      isOnSickDay({ userId: driverId, dateISO }),
+      isOnSickDay({ userId: medicId, dateISO }),
+    ]);
 
-    let updatedCount = 0;
-    const skippedByVacation: Array<{ date: string; role: 'driver' | 'medic' }> = [];
+    dayBlockMap[dateISO] = {
+      driver: Boolean(drvVac || drvSick),
+      medic: Boolean(medVac || medSick),
+    };
+  })
+);
 
-    dienst.assignments = (dienst.assignments || []).map((a) => {
-      if (!a?.date || !a?.startTime || !a?.endTime) return a;
+let updatedCount = 0;
+// mantenemos el mismo array por compatibilidad con el front
+const skippedByVacation: Array<{ date: string; role: 'driver' | 'medic' }> = [];
 
-      const dateISO = a.date;
-      const vac = vacationMap[dateISO] || { driver: false, medic: false };
+dienst.assignments = (dienst.assignments || []).map((a) => {
+  if (!a?.date || !a?.startTime || !a?.endTime) return a;
 
-      let next = { ...a } as any;
-      let changed = false;
+  const dateISO = a.date;
+  const block = dayBlockMap[dateISO] || { driver: false, medic: false };
 
-      // Asignamos por rol si NO hay vacaciones
-      if (!vac.driver) {
-        const newId = new mongoose.Types.ObjectId(driverId);
-        if (!next.driver || String(next.driver) !== String(newId)) {
-          next.driver = newId;
-          changed = true;
-        }
-      } else {
-        skippedByVacation.push({ date: dateISO, role: 'driver' });
-      }
+  let next = { ...a } as any;
+  let changed = false;
 
-      if (!vac.medic) {
-        const newId = new mongoose.Types.ObjectId(medicId);
-        if (!next.medic || String(next.medic) !== String(newId)) {
-          next.medic = newId;
-          changed = true;
-        }
-      } else {
-        skippedByVacation.push({ date: dateISO, role: 'medic' });
-      }
+  // 🚗 Asignar conductor si no está bloqueado
+  if (!block.driver) {
+    const newId = new mongoose.Types.ObjectId(driverId);
+    if (!next.driver || String(next.driver) !== String(newId)) {
+      next.driver = newId;
+      changed = true;
+    }
+  } else {
+    skippedByVacation.push({ date: dateISO, role: 'driver' });
+  }
 
-      if (changed) updatedCount += 1;
-      return next;
-    });
+  // 🧑‍⚕️ Asignar sanitario si no está bloqueado
+  if (!block.medic) {
+    const newId = new mongoose.Types.ObjectId(medicId);
+    if (!next.medic || String(next.medic) !== String(newId)) {
+      next.medic = newId;
+      changed = true;
+    }
+  } else {
+    skippedByVacation.push({ date: dateISO, role: 'medic' });
+  }
+
+  if (changed) updatedCount += 1;
+  return next;
+});
+
 
     await dienst.save();
 
@@ -668,13 +678,18 @@ export const assignUserToWeek = async (req: Request, res: Response): Promise<voi
       )
     );
 
-    const vacationMap: Record<string, boolean> = {};
-    await Promise.all(
-      dates.map(async (dateISO) => {
-        const v = await isOnVacationDay({ userId, dateISO });
-        vacationMap[dateISO] = v;
-      })
-    );
+// Bloqueo por día: vacaciones o baja (sick)
+const dayBlockMap: Record<string, boolean> = {};
+await Promise.all(
+  dates.map(async (dateISO) => {
+    const [isVac, isSick] = await Promise.all([
+      isOnVacationDay({ userId, dateISO }),
+      isOnSickDay({ userId, dateISO }),
+    ]);
+    dayBlockMap[dateISO] = Boolean(isVac || isSick);
+  })
+);
+
 
     let updatedCount = 0;
     const skippedByVacation: string[] = [];
@@ -682,10 +697,11 @@ export const assignUserToWeek = async (req: Request, res: Response): Promise<voi
     dienst.assignments = dienst.assignments.map((a) => {
       if (!a?.date || !a?.startTime || !a?.endTime) return a;
 
-      if (vacationMap[a.date]) {
-        skippedByVacation.push(a.date);
-        return a; // saltar días con vacaciones aceptadas
-      }
+      if (dayBlockMap[a.date]) {
+  skippedByVacation.push(a.date); // mantenemos el nombre del array por compatibilidad
+  return a; // saltar días bloqueados por vacaciones o baja
+}
+
 
       updatedCount += 1;
       return {
