@@ -5,7 +5,7 @@ import VacationRequest from '../models/vacationRequest';
 import { buildWeekDateStrings } from './time';
 import { getPscheinStatus } from './pscheinUtils'; // ⚠️ Ya existe en backend/utils
 import { DateTime } from 'luxon';
-export { isOnSickDay } from './sickUtils';
+export { isOnSickDay, findOverlappingSickLeave } from './sickUtils';
 
 const ZONE = 'Europe/Berlin';
 
