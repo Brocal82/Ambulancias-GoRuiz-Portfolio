@@ -1,37 +1,25 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export type SickLeaveStatus = 'pending' | 'accepted' | 'rejected';
-export type SickDocVerification =
-  | 'not_required'
-  | 'pending'
-  | 'received'
-  | 'overdue'
-  // si más adelante quieres verificación explícita del admin, descomenta:
-  // | 'verified'
-  ;
+export type SickVerificationStatus = 'not_required' | 'pending' | 'received' | 'overdue';
 
 export interface ISickLeave extends Document {
   user: Types.ObjectId;
-  startDate: Date;          // límites inclusivos
-  endDate: Date;            // límites inclusivos
-  status: SickLeaveStatus;  // pending | accepted | rejected
-
-  note?: string;
-  documentUrl?: string;
-
-  // Reglas de negocio para Krankschreibung (documento)
-  requiresDocument: boolean;                 // true si la baja dura ≥ 3 días
-  documentDueAt?: Date;                      // createdAt + 3 días
-  verificationStatus: SickDocVerification;   // not_required | pending | received | overdue
-  documentVerifiedAt?: Date;                 // opcional, si más adelante hay verificación explícita
-
+  startDate: Date;                 // Inicio de la baja (zona lógica: Europe/Berlin)
+  endDate: Date;                   // Fin de la baja (inclusive, zona lógica: Europe/Berlin)
+  status: SickLeaveStatus;         // pending | accepted | rejected
+  note?: string;                   // Nota opcional del trabajador
+  documentUrl?: string;            // URL del Krankschreibung (si aportado)
+  requiresDocument: boolean;       // true si la baja >= 3 días naturales (regla de negocio)
+  verificationStatus: SickVerificationStatus; // not_required | pending | received | overdue
+  documentDueAt?: Date;            // Fecha límite para aportar documento (createdAt + 3 días)
   createdAt: Date;
   updatedAt: Date;
 }
 
 const SickLeaveSchema = new Schema<ISickLeave>(
   {
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    user: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
     status: {
@@ -39,29 +27,28 @@ const SickLeaveSchema = new Schema<ISickLeave>(
       enum: ['pending', 'accepted', 'rejected'],
       default: 'pending',
       required: true,
+      index: true,
     },
+    note: { type: String },
+    documentUrl: { type: String },
 
-    note: { type: String, required: false },
-    documentUrl: { type: String, required: false },
-
-    requiresDocument: { type: Boolean, required: true, default: false },
-    documentDueAt: { type: Date, required: false },
+    // Campos de verificación de documento
+    requiresDocument: { type: Boolean, default: false },
     verificationStatus: {
       type: String,
-      enum: ['not_required', 'pending', 'received', 'overdue' /*, 'verified' */],
-      required: true,
+      enum: ['not_required', 'pending', 'received', 'overdue'],
       default: 'not_required',
+      required: true,
+      index: true,
     },
-    documentVerifiedAt: { type: Date, required: false },
+    documentDueAt: { type: Date },
   },
-  {
-    timestamps: true, // createdAt / updatedAt
-  }
+  { timestamps: true }
 );
 
-// Índices útiles
+// Índices útiles para búsquedas por rango y usuario
 SickLeaveSchema.index({ user: 1, startDate: 1, endDate: 1 });
-SickLeaveSchema.index({ status: 1, startDate: 1 });
-SickLeaveSchema.index({ verificationStatus: 1, documentDueAt: 1 });
+SickLeaveSchema.index({ startDate: 1, endDate: 1 });
 
-export default mongoose.model<ISickLeave>('SickLeave', SickLeaveSchema);
+const SickLeave = mongoose.model<ISickLeave>('SickLeave', SickLeaveSchema);
+export default SickLeave;
