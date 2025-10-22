@@ -36,6 +36,7 @@ import AdminMessagesPage from './pages/AdminMessagesPage';
 import AdminSentMessages from './pages/AdminSentMessages'; 
 import AdminAppointmentsPage from './pages/AdminAppointmentsPage';
 import AdminTeamsPage from './pages/AdminTeamsPage';
+import AdminSickLeavesPage from './pages/AdminSickLeavesPage';
 
 export default function App() {
   return (
@@ -75,6 +76,8 @@ export default function App() {
             <Route path="/admin/mechanics" element={<AppLayout><AdminMechanicsPage /></AppLayout>} />
             <Route path="/admin/appointments" element={<AppLayout><AdminAppointmentsPage /></AppLayout>} />
             <Route path="/admin/teams" element={<AppLayout><AdminTeamsPage /></AppLayout>} />
+            <Route path="/admin/sick-leaves" element={<AppLayout><AdminSickLeavesPage /></AppLayout>} />
+
 
           </Route>
         </Routes>

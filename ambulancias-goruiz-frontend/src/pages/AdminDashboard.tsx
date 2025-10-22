@@ -146,6 +146,19 @@ const AdminDashboard = () => {
         </Link>
 
         <Link
+          to="/admin/sick-leaves"
+          className="bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition"
+        >
+          <h2 className="text-lg font-semibold mb-2">
+            {t('pages.adminDashboard.sickLeaves.title', 'Bajas por enfermedad')}
+          </h2>
+          <p className="text-sm text-gray-600">
+            {t('pages.adminDashboard.sickLeaves.desc', 'Revisar, aceptar/rechazar y gestionar documentos')}
+          </p>
+        </Link>
+
+
+        <Link
           to="/admin/appointments"
           className={[
             "relative bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition",
