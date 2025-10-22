@@ -58,3 +58,53 @@ export async function attachSickDocument(
   );
   return data;
 }
+
+// --- ADMIN ONLY ---
+
+/**
+ * Lista todas las bajas (opcionalmente filtra por status y/o userId)
+ * status: 'pending' | 'accepted' | 'rejected'
+ */
+export async function adminListSickLeaves(
+  token: Token,
+  params?: { status?: SickLeaveStatus; userId?: string }
+): Promise<SickLeave[]> {
+  const search = new URLSearchParams();
+  if (params?.status) search.set('status', params.status);
+  if (params?.userId) search.set('user', params.userId);
+
+  const qs = search.toString();
+  const url = qs ? `${API_BASE}/sick-leaves?${qs}` : `${API_BASE}/sick-leaves`;
+
+  const { data } = await axios.get(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return data;
+}
+
+/** Acepta una baja por su ID (dispara la desasignación parcial en backend) */
+export async function adminAcceptSickLeave(
+  sickLeaveId: string,
+  token: Token
+): Promise<SickLeave> {
+  const { data } = await axios.post(
+    `${API_BASE}/sick-leaves/${sickLeaveId}/accept`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return data;
+}
+
+/** Rechaza una baja por su ID */
+export async function adminRejectSickLeave(
+  sickLeaveId: string,
+  token: Token
+): Promise<SickLeave> {
+  const { data } = await axios.post(
+    `${API_BASE}/sick-leaves/${sickLeaveId}/reject`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return data;
+}
+
