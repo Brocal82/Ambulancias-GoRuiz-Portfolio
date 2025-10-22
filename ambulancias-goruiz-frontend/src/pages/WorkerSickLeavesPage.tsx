@@ -37,19 +37,20 @@ export default function WorkerSickLeavesPage() {
     return !Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime()) && e >= s;
   }, [startDate, endDate]);
 
-  const loadList = async () => {
-    if (!token) return;
-    try {
-      setIsLoadingList(true);
-      const data = await listMySickLeaves(token);
-      setItems(data);
-    } catch (err) {
-      console.error(err);
-      toastT.error(['pages.sick.listLoadError']);
-    } finally {
-      setIsLoadingList(false);
-    }
-  };
+const loadList = async () => {
+  if (!token) return; // puedes mantener esta guardia si quieres
+  try {
+    setIsLoadingList(true);
+    const data = await listMySickLeaves(); // ← sin token
+    setItems(data);
+  } catch (err) {
+    console.error(err);
+    toastT.error(['pages.sick.listLoadError']);
+  } finally {
+    setIsLoadingList(false);
+  }
+};
+
 
   useEffect(() => {
     loadList();
@@ -57,51 +58,54 @@ export default function WorkerSickLeavesPage() {
   }, [token]);
 
   const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) return;
+  e.preventDefault();
+  if (!token) return; // opcional, el interceptor ya añade el token
 
-    if (!canSubmit) {
-      toastT.error(['pages.sick.create.invalidDates']);
-      return;
-    }
+  if (!canSubmit) {
+    toastT.error(['pages.sick.create.invalidDates']);
+    return;
+  }
 
-    try {
-      setLoading(true);
-      await createSickLeave(
-        { startDate, endDate, note: note?.trim() || undefined },
-        token
-      );
-      toastT.success(['pages.sick.create.ok']);
-      setStartDate('');
-      setEndDate('');
-      setNote('');
-      loadList();
-    } catch (err: any) {
-      console.error(err);
-      const msg = err?.response?.data?.message || 'pages.sick.create.error';
-      toastT.error([msg]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    await createSickLeave({
+      startDate,
+      endDate,
+      note: note?.trim() || undefined,
+    }); // ← sin token
+    toastT.success(['pages.sick.create.ok']);
+    setStartDate('');
+    setEndDate('');
+    setNote('');
+    loadList();
+  } catch (err: any) {
+    console.error(err);
+    const msg = err?.response?.data?.message || 'pages.sick.create.error';
+    toastT.error([msg]);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const onAttachDoc = async (sickLeaveId: string) => {
-    if (!token) return;
-    const url = window.prompt(
-      t('pages.sick.attachDoc.prompt', 'Pega la URL del documento (PDF/imagen):') as string,
-      ''
-    );
-    if (!url) return;
+  if (!token) return; // opcional
+  const url = window.prompt(
+    t('pages.sick.attachDoc.prompt', 'Pega la URL del documento (PDF/imagen):') as string,
+    ''
+  );
+  if (!url) return;
 
-    try {
-      await attachSickDocument(sickLeaveId, url, token);
-      toastT.success(['pages.sick.attachDoc.ok']);
-      loadList();
-    } catch (err: any) {
-      console.error(err);
-      toastT.error([err?.response?.data?.message || 'pages.sick.attachDoc.error']);
-    }
-  };
+  try {
+    await attachSickDocument(sickLeaveId, url); // ← sin token
+    toastT.success(['pages.sick.attachDoc.ok']);
+    loadList();
+  } catch (err: any) {
+    console.error(err);
+    toastT.error([err?.response?.data?.message || 'pages.sick.attachDoc.error']);
+  }
+};
+
 
   const badge = (status: SickLeave['status']) => {
     const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium';

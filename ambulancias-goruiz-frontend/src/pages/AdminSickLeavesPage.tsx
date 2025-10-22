@@ -37,9 +37,10 @@ export default function AdminSickLeavesPage() {
         if (!token) return;
         try {
             setLoading(true);
-            const data = await adminListSickLeaves(token, {
+            const data = await adminListSickLeaves({
                 status: status || undefined,
             });
+
             setItems(data);
         } catch (err: any) {
             console.error(err);
@@ -62,7 +63,8 @@ export default function AdminSickLeavesPage() {
         );
         if (!ok) return;
         try {
-            await adminAcceptSickLeave(id, token);
+            await adminAcceptSickLeave(id);
+
             toastT.success(['pages.sick.admin.acceptOk']);
             setRefreshKey((k) => k + 1);
         } catch (err: any) {
@@ -78,7 +80,8 @@ export default function AdminSickLeavesPage() {
         );
         if (!ok) return;
         try {
-            await adminRejectSickLeave(id, token);
+            await adminRejectSickLeave(id);
+
             toastT.success(['pages.sick.admin.rejectOk']);
             setRefreshKey((k) => k + 1);
         } catch (err: any) {

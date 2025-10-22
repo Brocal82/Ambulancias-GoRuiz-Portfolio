@@ -1,7 +1,5 @@
 // frontend/src/api/sickLeaves.ts
-import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import axiosInstance from "./axios";
 
 export type SickLeaveStatus = 'pending' | 'accepted' | 'rejected';
 export type SickVerificationStatus = 'not_required' | 'pending' | 'received' | 'overdue';
@@ -27,84 +25,65 @@ export interface SickLeave {
   updatedAt: string;
 }
 
-type Token = string;
+/* ──────────────────────────────────────────────── */
+/* Trabajador                                      */
+/* ──────────────────────────────────────────────── */
 
-export async function createSickLeave(
-  payload: { startDate: string; endDate: string; note?: string; documentUrl?: string },
-  token: Token
-): Promise<SickLeave> {
-  const { data } = await axios.post(`${API_BASE}/sick-leaves`, payload, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export async function createSickLeave(payload: {
+  startDate: string;
+  endDate: string;
+  note?: string;
+  documentUrl?: string;
+}): Promise<SickLeave> {
+  const { data } = await axiosInstance.post('/sick-leaves', payload);
   return data;
 }
 
-export async function listMySickLeaves(token: Token): Promise<SickLeave[]> {
-  const { data } = await axios.get(`${API_BASE}/sick-leaves/mine`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export async function listMySickLeaves(): Promise<SickLeave[]> {
+  const { data } = await axiosInstance.get('/sick-leaves/mine');
   return data;
 }
 
 export async function attachSickDocument(
   sickLeaveId: string,
-  documentUrl: string,
-  token: Token
+  documentUrl: string
 ): Promise<SickLeave> {
-  const { data } = await axios.post(
-    `${API_BASE}/sick-leaves/${sickLeaveId}/attach-document`,
-    { documentUrl },
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+  const { data } = await axiosInstance.patch(`/sick-leaves/${sickLeaveId}/attach-document`, {
+    documentUrl,
+  });
   return data;
 }
 
-// --- ADMIN ONLY ---
+/* ──────────────────────────────────────────────── */
+/* Administrador                                   */
+/* ──────────────────────────────────────────────── */
 
 /**
  * Lista todas las bajas (opcionalmente filtra por status y/o userId)
- * status: 'pending' | 'accepted' | 'rejected'
  */
-export async function adminListSickLeaves(
-  token: Token,
-  params?: { status?: SickLeaveStatus; userId?: string }
-): Promise<SickLeave[]> {
+export async function adminListSickLeaves(params?: {
+  status?: SickLeaveStatus;
+  userId?: string;
+}): Promise<SickLeave[]> {
   const search = new URLSearchParams();
   if (params?.status) search.set('status', params.status);
   if (params?.userId) search.set('user', params.userId);
 
   const qs = search.toString();
-  const url = qs ? `${API_BASE}/sick-leaves?${qs}` : `${API_BASE}/sick-leaves`;
+  const url = qs ? `/sick-leaves?${qs}` : '/sick-leaves';
 
-  const { data } = await axios.get(url, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const { data } = await axiosInstance.get(url);
   return data;
 }
 
 /** Acepta una baja por su ID (dispara la desasignación parcial en backend) */
-export async function adminAcceptSickLeave(
-  sickLeaveId: string,
-  token: Token
-): Promise<SickLeave> {
-  const { data } = await axios.post(
-    `${API_BASE}/sick-leaves/${sickLeaveId}/accept`,
-    {},
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+export async function adminAcceptSickLeave(sickLeaveId: string): Promise<SickLeave> {
+  const { data } = await axiosInstance.post(`/sick-leaves/${sickLeaveId}/accept`);
   return data;
 }
 
 /** Rechaza una baja por su ID */
-export async function adminRejectSickLeave(
-  sickLeaveId: string,
-  token: Token
-): Promise<SickLeave> {
-  const { data } = await axios.post(
-    `${API_BASE}/sick-leaves/${sickLeaveId}/reject`,
-    {},
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+export async function adminRejectSickLeave(sickLeaveId: string): Promise<SickLeave> {
+  const { data } = await axiosInstance.post(`/sick-leaves/${sickLeaveId}/reject`);
   return data;
 }
-
