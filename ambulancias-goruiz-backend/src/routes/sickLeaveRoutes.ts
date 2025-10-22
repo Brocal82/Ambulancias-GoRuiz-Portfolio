@@ -5,6 +5,7 @@ import {
   createSickLeave,
   listSickLeaves,
   listMySickLeaves,
+  acceptSickLeave
 } from '../controllers/sickLeaveController';
 
 const router = express.Router();
@@ -17,5 +18,9 @@ router.get('/', authenticateToken, authorizeRole('admin'), listSickLeaves);
 
 // Worker: lista solo las suyas (?status= optional)
 router.get('/me', authenticateToken, listMySickLeaves);
+
+// Admin: aceptar una solicitud y ejecutar desasignación
+router.post('/:id/accept', authenticateToken, authorizeRole('admin'), acceptSickLeave);
+
 
 export default router;

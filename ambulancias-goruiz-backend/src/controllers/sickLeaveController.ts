@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import { z, ZodError } from 'zod';
 import { DateTime } from 'luxon';
 import SickLeave from '../models/SickLeave';
+import Dienst from '../models/Dienst';
+
 
 const ZONE = 'Europe/Berlin';
 
@@ -119,3 +121,130 @@ export async function listMySickLeaves(req: Request, res: Response) {
     res.status(500).json({ message: 'Error al listar tus bajas' });
   }
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Aceptar una solicitud de baja:
+//  - Marca status=accepted
+//  - Calcula requiresDocument/documentDueAt/verificationStatus
+//  - Desasigna al usuario de driver/medic en los Diensts del rango
+// ────────────────────────────────────────────────────────────────────────────
+export async function acceptSickLeave(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ message: 'ID inválido' });
+      return;
+    }
+
+    // 1) Traer la baja
+    const sick = await SickLeave.findById(id);
+    if (!sick) {
+      res.status(404).json({ message: 'Baja no encontrada' });
+      return;
+    }
+    if (sick.status === 'accepted') {
+      res.status(409).json({ message: 'La baja ya está aceptada' });
+      return;
+    }
+
+    // 2) Calcular reglas del documento (≥ 3 días naturales, inclusivo, en TZ Berlin)
+    const startDt = DateTime.fromJSDate(sick.startDate, { zone: ZONE }).startOf('day');
+    const endDt   = DateTime.fromJSDate(sick.endDate,   { zone: ZONE }).endOf('day');
+
+    if (endDt < startDt) {
+      res.status(400).json({ message: 'El rango de fechas de la baja es inválido' });
+      return;
+    }
+
+    const durationDays = Math.floor(endDt.diff(startDt, 'days').days) + 1; // inclusivo
+    const requiresDocument = durationDays >= 3;
+
+    // Deadline: 3 días desde la creación de la solicitud (inclusive) en TZ Berlin
+    let verificationStatus: 'not_required' | 'pending' | 'received' | 'overdue' = 'not_required';
+    let documentDueAt: Date | undefined = undefined;
+
+    if (requiresDocument) {
+      verificationStatus = 'pending';
+      const created = DateTime.fromJSDate(sick.createdAt, { zone: ZONE });
+      documentDueAt = created.plus({ days: 3 }).endOf('day').toJSDate();
+    }
+
+    // 3) Marcar aceptada + set de campos de documento
+    sick.status = 'accepted';
+    sick.requiresDocument = requiresDocument;
+    sick.verificationStatus = verificationStatus;
+    sick.documentDueAt = documentDueAt;
+    await sick.save();
+
+    // 4) Desasignación parcial: quitar SOLO a ese usuario de driver/medic en el rango
+    //    - No tocamos horas, ambulancia ni al compañero.
+    const userIdStr = String(sick.user);
+    const daysISO: string[] = [];
+    for (let d = startDt; d <= endDt; d = d.plus({ days: 1 })) {
+      daysISO.push(d.toISODate()!); // 'YYYY-MM-DD'
+    }
+
+    // Buscar todos los Diensts que tengan assignments en cualquiera de esos días
+    const dienste = await Dienst.find({
+      'assignments.date': { $in: daysISO },
+    });
+
+    let diensteTouched = 0;
+    let assignmentsTouched = 0;
+
+    for (const d of dienste) {
+      let changedDienst = false;
+
+      d.assignments = (d.assignments || []).map((a: any) => {
+        if (!a?.date || !a?.startTime || !a?.endTime) return a;
+        if (!daysISO.includes(a.date)) return a;
+
+        const drv = a?.driver ? String(a.driver) : undefined;
+        const med = a?.medic ? String(a.medic) : undefined;
+
+        let changed = false;
+        const next: any = { ...a };
+
+        if (drv && drv === userIdStr) {
+          next.driver = undefined;
+          changed = true;
+        }
+        if (med && med === userIdStr) {
+          next.medic = undefined;
+          changed = true;
+        }
+
+        if (changed) {
+          assignmentsTouched += 1;
+          changedDienst = true;
+        }
+        return next;
+      });
+
+      if (changedDienst) {
+        await d.save();
+        diensteTouched += 1;
+      }
+    }
+
+    res.status(200).json({
+      message: 'Baja aceptada y desasignación aplicada',
+      sickLeaveId: sick._id,
+      requiresDocument,
+      verificationStatus,
+      documentDueAt,
+      stats: {
+        diensteTouched,
+        assignmentsTouched,
+        range: {
+          startISO: startDt.toISODate(),
+          endISO: endDt.toISODate(),
+        },
+      },
+    });
+  } catch (err) {
+    console.error('❌ acceptSickLeave error:', err);
+    res.status(500).json({ message: 'Error al aceptar la baja' });
+  }
+}
+
