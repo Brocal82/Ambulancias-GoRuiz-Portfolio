@@ -21,6 +21,7 @@ import messageRoutes from './routes/messageRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import teamRoutes from './routes/teamRoutes'
+import sickLeaveRoutes from './routes/sickLeaveRoutes'
 
 // Utils
 import cleanupOldDiensts from './utils/cleanupOldDiensts';
@@ -101,6 +102,8 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api', notificationRoutes);
 app.use('/api/teams', teamRoutes);
+app.use('/api/sick-leaves', sickLeaveRoutes);
+
 
 // ----------------------------------------------------------------------------
 // Conexión a DB y arranque
