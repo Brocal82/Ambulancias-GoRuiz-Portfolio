@@ -19,7 +19,7 @@ router.post('/', authenticateToken, createSickLeave);
 router.get('/', authenticateToken, authorizeRole('admin'), listSickLeaves);
 
 // Worker: lista solo las suyas (?status= optional)
-router.get('/me', authenticateToken, listMySickLeaves);
+router.get('/mine', authenticateToken, listMySickLeaves);
 
 // Admin: aceptar una solicitud y ejecutar desasignación
 router.post('/:id/accept', authenticateToken, authorizeRole('admin'), acceptSickLeave);
