@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import type { IVacationRequestModel } from '../models/vacationRequest';
 import VacationRequest from '../models/vacationRequest';
 import { findOverCapacityDays } from '../utils/vacationCapacity';
+import { DateTime } from 'luxon';
 import mongoose from 'mongoose';
 
 // ======================================================
@@ -13,6 +14,9 @@ import {
   model as mongooseModel,
   models as mongooseModels,
 } from 'mongoose';
+
+const ZONE = 'Europe/Berlin';
+
 
 // ✅ Añade aquí el tipo y el type guard (justo debajo de los imports de mongoose)
 type VacationStatus = 'pending' | 'accepted' | 'cancelled' | 'option_sent';
@@ -298,6 +302,10 @@ export const getVacationPendingCount = async (req: Request, res: Response): Prom
 // ======================================================
 export const checkVacationsInRange = async (req: Request, res: Response): Promise<void> => {
   try {
+    // Helper local para formatear en formato 'YYYY-MM-DD' respetando Europe/Berlin
+    const fmtYmdBerlin = (d: Date): string =>
+      DateTime.fromJSDate(d).setZone(ZONE).toFormat('yyyy-MM-dd');
+
     const { userIds, fromISO, toISO } = req.body as {
       userIds?: string[];
       fromISO?: string;
@@ -354,8 +362,9 @@ export const checkVacationsInRange = async (req: Request, res: Response): Promis
       if (!prev || !prev.hasVacationInRange) {
         result[uid] = {
           hasVacationInRange: true,
-          vacationStartInRange: overlapStart.toISOString().slice(0, 10),
-          vacationUntilInRange: overlapEnd.toISOString().slice(0, 10),
+          vacationStartInRange: fmtYmdBerlin(overlapStart),
+          vacationUntilInRange: fmtYmdBerlin(overlapEnd),
+
         };
       } else {
         // Unimos rangos: min(start), max(end)
@@ -365,8 +374,9 @@ export const checkVacationsInRange = async (req: Request, res: Response): Promis
         const newEnd = new Date(Math.max(prevEnd.getTime(), overlapEnd.getTime()));
         result[uid] = {
           hasVacationInRange: true,
-          vacationStartInRange: newStart.toISOString().slice(0, 10),
-          vacationUntilInRange: newEnd.toISOString().slice(0, 10),
+          vacationStartInRange: fmtYmdBerlin(newStart),
+          vacationUntilInRange: fmtYmdBerlin(newEnd),
+
         };
       }
     }
