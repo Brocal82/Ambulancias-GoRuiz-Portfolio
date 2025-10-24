@@ -14,6 +14,12 @@ interface Props {
   weekStartISO: string;
 }
 
+type VacFlag = {
+  hasVacationInRange: boolean;
+  vacationStartInRange?: string; // 'YYYY-MM-DD'
+  vacationUntilInRange?: string; // 'YYYY-MM-DD'
+};
+
 export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartISO }: Props) {
   const { token } = useAuth();
   const { t } = useTranslation();
@@ -23,12 +29,11 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
   const [role, setRole] = useState<'driver' | 'medic'>('driver');
   const [userId, setUserId] = useState('');
 
-  // --- NUEVO: flags de vacaciones en la semana y estado de carga ---
-  const [vacationFlags, setVacationFlags] = useState<Record<string, {
-    hasVacationInRange: boolean;
-    vacationStartInRange?: string; // 'YYYY-MM-DD'
-    vacationUntilInRange?: string; // 'YYYY-MM-DD'
-  }>>({});
+  // Dropdown personalizado para usuarios
+  const [openList, setOpenList] = useState(false);
+
+  // Flags de vacaciones en la semana y estado de carga
+  const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
   const [flagsLoading, setFlagsLoading] = useState(false);
 
   // Helpers locales
@@ -47,9 +52,9 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
   const weekEndISO = useMemo(() => addDaysISO(weekStartISO, 6), [weekStartISO]);
 
   const roleId = useId();
-  const userSelectId = useId();
+  const userSelectId = useId(); // lo reutilizamos como id del botón del dropdown
 
-  // Cargar todos los usuarios (como ya hacías)
+  // Cargar todos los usuarios
   useEffect(() => {
     if (!isOpen || !token) return;
     (async () => {
@@ -65,13 +70,13 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
     })();
   }, [isOpen, token]);
 
-  // 1) Filtra por rol de ambulancia (driver|both para driver, medic|both para medic)
+  // Filtrar por rol de ambulancia
   const filteredByRole = useMemo(() => {
     const need: AmbulanceRole[] = role === 'driver' ? ['driver', 'both'] : ['medic', 'both'];
     return users.filter(u => u.ambulanceRole && need.includes(u.ambulanceRole));
   }, [users, role]);
 
-  // 2) Cargar flags de vacaciones en rango para los usuarios visibles por rol
+  // Cargar flags de vacaciones en rango para los usuarios visibles por rol
   useEffect(() => {
     if (!isOpen || !token) return;
     if (filteredByRole.length === 0) {
@@ -102,53 +107,49 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
     return () => { cancelled = true; };
   }, [isOpen, token, filteredByRole, weekStartISO, weekEndISO]);
 
-  // 3) Prepara opciones: P-Schein + 🌴 vacaciones (tooltip desde → hasta)
-  const options = useMemo(() => {
-    return filteredByRole
-      .map(u => {
-        const baseLabel = `${u.lastName || ''}${u.lastName ? ', ' : ''}${u.name || ''}` || '—';
-        const sortKey = `${u.lastName || ''} ${u.name || ''}`.toLowerCase();
+  // P-Schein solo afecta a DRIVER (para colorear/disabled)
+  const driverPscheinClass = (pschein?: string | null) => {
+    if (!pschein) return '';
+    const info = getPscheinInfo(pschein);
+    if (info.status === 'expired') return 'text-red-600 font-medium';
+    if (info.status === 'warning') return 'text-yellow-600 font-medium';
+    return '';
+  };
 
-        // P-Schein (solo afecta a driver)
-        let disabled = false;
-        let label = baseLabel;
-        if (role === 'driver') {
-          const info = getPscheinInfo((u as any).pscheinExpiry);
-          if (info.status === 'expired') {
-            disabled = true;
-            label = `${baseLabel} — ${t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado')}`;
-          } else if (info.status === 'warning') {
-            const months = info.monthsLeft ?? 0;
-            label = `${baseLabel} — ⚠️ (${months} ${months === 1 ? t('common.month', 'mes') : t('common.months', 'meses')} ${t('common.left', 'restantes')})`;
-          }
-        }
+  const isDriverExpired = (u: User) => {
+    if (role !== 'driver') return false;
+    const info = getPscheinInfo((u as any)?.pscheinExpiry);
+    return info.status === 'expired';
+  };
 
-        // 🌴 Vacaciones en la semana objetivo
-        const vf = vacationFlags[u._id];
-        let title: string | undefined;
-        if (vf?.hasVacationInRange) {
-          label = `${label} 🌴`;
-          const from = fmtDDMM(vf.vacationStartInRange);
-          const to = fmtDDMM(vf.vacationUntilInRange);
-          title = from && to
-            ? `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
-            : `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
-        }
+  // Combinar clases sin falsy
+  const mergeClasses = (...classes: (string | false | null | undefined)[]) =>
+    classes.filter(Boolean).join(' ');
 
-        return {
-          id: u._id,
-          label,
-          title,     // se inyecta en <option title="...">
-          disabled,
-          sortKey,
-        };
-      })
-      // Habilitados primero, luego alfabético
-      .sort((a, b) => {
-        if (+a.disabled !== +b.disabled) return +a.disabled - +b.disabled;
-        return a.sortKey.localeCompare(b.sortKey, 'es');
-      });
-  }, [filteredByRole, role, t, vacationFlags]);
+  // Tono apagado para quien está de vacaciones
+  const dimClass = 'text-slate-400';
+
+  // Info de vacaciones por usuario (para tooltip y 🌴)
+  const userVacationInfo = (u: User) => {
+    const vf = vacationFlags[u._id];
+    const has = !!vf?.hasVacationInRange;
+    if (!has) return { has: false, title: undefined as string | undefined };
+
+    const from = fmtDDMM(vf?.vacationStartInRange);
+    const to = fmtDDMM(vf?.vacationUntilInRange);
+    const title =
+      from && to
+        ? `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
+        : `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+
+    return { has: true, title };
+  };
+
+  // Usuario seleccionado (para el rótulo del botón)
+  const selectedUser = useMemo(
+    () => filteredByRole.find(u => u._id === userId) || null,
+    [filteredByRole, userId]
+  );
 
   if (!isOpen) return null;
 
@@ -163,6 +164,7 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
         </h3>
 
         <div className="space-y-3">
+          {/* Selector de rol (nativo, se mantiene) */}
           <div>
             <label htmlFor={roleId} className="block text-sm font-medium text-slate-700">
               {t('pages.diensts.assignUserModal.role', 'Rol')}
@@ -179,26 +181,111 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
             </select>
           </div>
 
+          {/* Selector de usuario (dropdown personalizado, como TeamAssignModal) */}
           <div>
             <label htmlFor={userSelectId} className="block text-sm font-medium text-slate-700">
               {t('pages.diensts.assignUserModal.user', 'Trabajador')}
             </label>
-            <select
-              id={userSelectId}
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-              disabled={loading}
-            >
-              <option value="">
-                {loading ? t('common.loading', 'Cargando...') : t('common.select', 'Selecciona')}
-              </option>
-              {options.map(opt => (
-                <option key={opt.id} value={opt.id} disabled={opt.disabled} title={opt.title}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+
+            <div className="relative">
+              <button
+                id={userSelectId}
+                type="button"
+                className="w-full flex items-center justify-between rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                onClick={() => setOpenList(v => !v)}
+                aria-haspopup="listbox"
+                aria-expanded={openList}
+              >
+                <span className="truncate">
+                  {loading
+                    ? t('common.loading', 'Cargando...')
+                    : selectedUser
+                      ? (() => {
+                          const vac = userVacationInfo(selectedUser);
+                          const driverClass =
+                            role === 'driver' ? driverPscheinClass((selectedUser as any)?.pscheinExpiry) : '';
+                          return (
+                            <span
+                              className={mergeClasses(driverClass, vac.has && dimClass)}
+                              title={vac.title}
+                            >
+                              {(selectedUser.lastName || '') + ', ' + (selectedUser.name || '')}
+                              {vac.has ? ' 🌴' : ''}
+                            </span>
+                          );
+                        })()
+                      : t('common.select', 'Selecciona')
+                  }
+                </span>
+                <svg
+                  className="h-4 w-4 shrink-0 text-slate-500"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+
+              {openList && !loading && (
+                <div
+                  role="listbox"
+                  tabIndex={-1}
+                  aria-label="Opciones del selector"
+                  className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg ring-1 ring-slate-200"
+                >
+                  {filteredByRole.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-slate-500">
+                      {t('common.empty', 'No hay resultados')}
+                    </div>
+                  )}
+
+                  {filteredByRole
+                    .slice() // copia para no mutar
+                    .sort((a, b) => {
+                      // Habilitados (no expirados) primero si role=driver; luego alfabético
+                      const da = isDriverExpired(a) ? 1 : 0;
+                      const db = isDriverExpired(b) ? 1 : 0;
+                      if (da !== db) return da - db;
+                      const ka = `${a.lastName || ''} ${a.name || ''}`.toLowerCase();
+                      const kb = `${b.lastName || ''} ${b.name || ''}`.toLowerCase();
+                      return ka.localeCompare(kb, 'es');
+                    })
+                    .map(u => {
+                      const vac = userVacationInfo(u);
+                      const dClass = role === 'driver' ? driverPscheinClass((u as any)?.pscheinExpiry) : '';
+                      const expired = role === 'driver' ? isDriverExpired(u) : false;
+
+                      return (
+                        <button
+                          key={u._id}
+                          role="option"
+                          aria-selected={userId === u._id}
+                          onClick={() => {
+                            if (expired) return; // no permitir seleccionar expirado
+                            setUserId(u._id);
+                            setOpenList(false);
+                          }}
+                          className={mergeClasses(
+                            'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
+                            userId === u._id && 'bg-slate-50',
+                            expired && 'opacity-50 cursor-not-allowed'
+                          )}
+                          title={vac.title}
+                        >
+                          <span className={mergeClasses(dClass, vac.has && dimClass)}>
+                            {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🌴' : ''}
+                          </span>
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
 
             {/* Leyenda para el caso driver */}
             {role === 'driver' && (
