@@ -10,10 +10,14 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (teamId: string) => Promise<void> | void;
+  weekStartISO: string; // ⬅️ NUEVO
 }
 
-export default function TeamAssignModal({ isOpen, onClose, onConfirm }: Props) {
+
+export default function TeamAssignModal({ isOpen, onClose, onConfirm, weekStartISO }: Props) {
   const { token } = useAuth();
+  void weekStartISO; // se usará en el Paso 5
+
   const { t } = useTranslation();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(false);

@@ -10,11 +10,15 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (params: { role: 'driver' | 'medic'; userId: string }) => Promise<void> | void;
+  weekStartISO: string; // ⬅️ NUEVO
 }
 
-export default function UserAssignModal({ isOpen, onClose, onConfirm }: Props) {
+
+export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartISO }: Props) {
   const { token } = useAuth();
   const { t } = useTranslation();
+  void weekStartISO; // se usará en el Paso 4
+
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<'driver' | 'medic'>('driver');

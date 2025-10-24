@@ -440,123 +440,118 @@ const AdminPage = () => {
 
       {/* ⬇️ Modal de asignación de Team a la semana (usa estado local para saber semana y #) */}
       {weekTeamModal?.open && (
-        <TeamAssignModal
-          isOpen={true}
-          onClose={() => setWeekTeamModal(null)}
-          onConfirm={async (teamId: string) => {
-            if (!token || !weekTeamModal) return;
-            try {
-              const resp = await assignTeamToWeek(
-                {
-                  dienstNumber: weekTeamModal.dienstNumber,
-                  weekStartDate: weekTeamModal.weekStartISO,
-                  teamId,
-                },
-                token
-              );
+  <TeamAssignModal
+    isOpen={true}
+    onClose={() => setWeekTeamModal(null)}
+    onConfirm={async (teamId: string) => {
+      if (!token || !weekTeamModal) return;
+      try {
+        const resp = await assignTeamToWeek(
+          {
+            dienstNumber: weekTeamModal.dienstNumber,
+            weekStartDate: weekTeamModal.weekStartISO,
+            teamId,
+          },
+          token
+        );
 
-              toastT.success(['pages.diensts.adminPage.assignWeekOk']);
+        toastT.success(['pages.diensts.adminPage.assignWeekOk']);
 
-              // 👇 Si el backend permitió la asignación por la excepción (driver 'both' con P-Schein caducado)
-              if (resp?.hints?.driverExpiredButBoth) {
-                toastT.info(['pages.diensts.adminPage.considerSwap']);
-              }
+        if (resp?.hints?.driverExpiredButBoth) {
+          toastT.info(['pages.diensts.adminPage.considerSwap']);
+        }
 
-              setWeekTeamModal(null);
-              fetchDiensts();
-            } catch (err: any) {
-              const code = err?.response?.data?.code as string | undefined;
-              const details = err?.response?.data?.details;
+        setWeekTeamModal(null);
+        fetchDiensts();
+      } catch (err: any) {
+        const code = err?.response?.data?.code as string | undefined;
+        const details = err?.response?.data?.details;
 
-              if (code === 'pschein_expired') {
-                // 🚫 P-Schein del conductor caducado
-                toastT.error(['pages.diensts.adminPage.errors.pscheinExpired']);
-              } else if (code === 'weekly_conflict') {
-                // ⚠️ Conflicto: alguno de los miembros ya tiene asignaciones esa semana
-                let driverDates = '';
-                let medicDates = '';
+        if (code === 'pschein_expired') {
+          toastT.error(['pages.diensts.adminPage.errors.pscheinExpired']);
+        } else if (code === 'weekly_conflict') {
+          let driverDates = '';
+          let medicDates = '';
 
-                // tu backend a veces envia "details" como array [{date, role}] y otras como { driverConf, medicConf }
-                if (Array.isArray(details)) {
-                  driverDates = details
-                    .filter((d: any) => d?.role === 'driver')
-                    .map((d: any) => d?.date)
-                    .filter(Boolean)
-                    .join(', ');
-                  medicDates = details
-                    .filter((d: any) => d?.role === 'medic')
-                    .map((d: any) => d?.date)
-                    .filter(Boolean)
-                    .join(', ');
-                } else if (details && typeof details === 'object') {
-                  const drv = Array.isArray(details.driverConf) ? details.driverConf : [];
-                  const med = Array.isArray(details.medicConf) ? details.medicConf : [];
-                  driverDates = drv.map((d: any) => d?.date).filter(Boolean).join(', ');
-                  medicDates = med.map((d: any) => d?.date).filter(Boolean).join(', ');
-                }
+          if (Array.isArray(details)) {
+            driverDates = details
+              .filter((d: any) => d?.role === 'driver')
+              .map((d: any) => d?.date)
+              .filter(Boolean)
+              .join(', ');
+            medicDates = details
+              .filter((d: any) => d?.role === 'medic')
+              .map((d: any) => d?.date)
+              .filter(Boolean)
+              .join(', ');
+          } else if (details && typeof details === 'object') {
+            const drv = Array.isArray(details.driverConf) ? details.driverConf : [];
+            const med = Array.isArray(details.medicConf) ? details.medicConf : [];
+            driverDates = drv.map((d: any) => d?.date).filter(Boolean).join(', ');
+            medicDates = med.map((d: any) => d?.date).filter(Boolean).join(', ');
+          }
 
-                if (driverDates || medicDates) {
-                  // 💬 Mensaje específico para TEAM (con fechas)
-                  toastT.error([
-                    'pages.diensts.adminPage.teamWeeklyConflictWithDates',
-                    { driverDates, medicDates },
-                  ]);
-                } else {
-                  // 💬 Mensaje específico para TEAM (sin fechas)
-                  toastT.error(['pages.diensts.adminPage.teamWeeklyConflict']);
-                }
-              } else {
-                // ❌ Error genérico
-                toastT.error(['pages.diensts.adminPage.assignWeekErr']);
-              }
+          if (driverDates || medicDates) {
+            toastT.error([
+              'pages.diensts.adminPage.teamWeeklyConflictWithDates',
+              { driverDates, medicDates },
+            ]);
+          } else {
+            toastT.error(['pages.diensts.adminPage.teamWeeklyConflict']);
+          }
+        } else {
+          toastT.error(['pages.diensts.adminPage.assignWeekErr']);
+        }
 
-              // Log técnico para depuración
-              console.error('assignTeamToWeek error:', err?.response?.data || err);
-            }
+        console.error('assignTeamToWeek error:', err?.response?.data || err);
+      }}
+    }
+    weekStartISO={weekTeamModal.weekStartISO} // ⬅️ NUEVO
+  />
+)}
 
-          }}
-        />
-      )}
 
       {/* ⬇️ Modal de asignación de UN usuario (driver/medic) a toda la semana */}
       {weekUserModal?.open && (
-        <UserAssignModal
-          isOpen={true}
-          onClose={() => setWeekUserModal(null)}
-          onConfirm={async ({ role, userId }) => {
-            if (!token || !weekUserModal) return;
+  <UserAssignModal
+    isOpen={true}
+    onClose={() => setWeekUserModal(null)}
+    onConfirm={async ({ role, userId }) => {
+      if (!token || !weekUserModal) return;
 
-            try {
-              await assignUserToWeek(
-                {
-                  dienstNumber: weekUserModal.dienstNumber,
-                  weekStartDate: weekUserModal.weekStartISO,
-                  role,
-                  userId,
-                },
-                token
-              );
+      try {
+        await assignUserToWeek(
+          {
+            dienstNumber: weekUserModal.dienstNumber,
+            weekStartDate: weekUserModal.weekStartISO,
+            role,
+            userId,
+          },
+          token
+        );
 
-              toastT.success(['pages.diensts.adminPage.assignUserWeekOk']);
-              setWeekUserModal(null);
-              fetchDiensts();
+        toastT.success(['pages.diensts.adminPage.assignUserWeekOk']);
+        setWeekUserModal(null);
+        fetchDiensts();
 
-            } catch (err: any) {
-              console.error('❌ Error al asignar usuario a la semana:', err);
+      } catch (err: any) {
+        console.error('❌ Error al asignar usuario a la semana:', err);
 
-              if (err?.response?.data?.code === 'weekly_conflict') {
-                toastT.error(['pages.diensts.adminPage.assignUserWeekConflict']);
-              } else if (err?.response?.data?.code === 'pschein_expired') {
-                toastT.error(['pages.diensts.adminPage.assignUserWeekPscheinExpired']);
-              } else if (err?.response?.data?.code === 'no_assignable_days') {
-                toastT.error(['pages.diensts.adminPage.assignUserNoAssignableDays']);
-              } else {
-                toastT.error(['pages.diensts.adminPage.assignUserWeekErr']);
-              }
-            }
-          }}
-        />
-      )}
+        if (err?.response?.data?.code === 'weekly_conflict') {
+          toastT.error(['pages.diensts.adminPage.assignUserWeekConflict']);
+        } else if (err?.response?.data?.code === 'pschein_expired') {
+          toastT.error(['pages.diensts.adminPage.assignUserWeekPscheinExpired']);
+        } else if (err?.response?.data?.code === 'no_assignable_days') {
+          toastT.error(['pages.diensts.adminPage.assignUserNoAssignableDays']);
+        } else {
+          toastT.error(['pages.diensts.adminPage.assignUserWeekErr']);
+        }
+      }
+    }}
+    weekStartISO={weekUserModal.weekStartISO} // ⬅️ NUEVO
+  />
+)}
+
     </div>
   );
 };

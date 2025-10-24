@@ -1,7 +1,7 @@
 // frontend/src/api/vacation.ts
 import axiosInstance from './axios';
 import type { IVacationRequest } from '../types/vacationRequest';
-import api from './axios';
+
 
 interface VacationRequestPayload {
   startDate: string;
@@ -165,6 +165,18 @@ export interface VacationMonthConfig {
   blackouts: { startDate: string; endDate: string }[];
 }
 
+/* =========================
+   NUEVO: tipos flags en rango
+   ========================= */
+export interface VacationRangeFlag {
+  hasVacationInRange: boolean;
+  vacationStartInRange?: string; // 'YYYY-MM-DD' (acotado al rango)
+  vacationUntilInRange?: string; // 'YYYY-MM-DD' (acotado al rango)
+}
+
+export type VacationRangeFlagsByUser = Record<string, VacationRangeFlag>;
+
+
 /**
  * Obtiene disponibilidad mensual (colores + contadores por día)
  * GET /vacations/availability?year=YYYY&month=MM
@@ -182,7 +194,7 @@ export async function getVacationAvailability(
     if (cached) return cached;
   }
 
-  const { data } = await api.get<VacationAvailabilityResponse>('/vacations/availability', {
+  const { data } = await axiosInstance.get<VacationAvailabilityResponse>('/vacations/availability', {
     params,
   });
 
@@ -195,7 +207,7 @@ export async function getVacationAvailability(
  * GET /vacations/month-config?monthKey=YYYY-MM
  */
 export async function getVacationMonthConfig(monthKey: string) {
-  const { data } = await api.get<VacationMonthConfig>('/vacations/month-config', {
+  const { data } = await axiosInstance.get<VacationMonthConfig>('/vacations/month-config', {
     params: { monthKey },
   });
   return data;
@@ -206,9 +218,46 @@ export async function getVacationMonthConfig(monthKey: string) {
  * POST /vacations/month-config
  */
 export async function upsertVacationMonthConfig(payload: VacationMonthConfig) {
-  const { data } = await api.post<VacationMonthConfig>('/vacations/month-config', payload);
+  const { data } = await axiosInstance.post<VacationMonthConfig>('/vacations/month-config', payload);
   return data;
 }
+
+/* =========================
+   NUEVO: flags en rango (semanal)
+   ========================= */
+/**
+ * Devuelve flags de vacaciones por usuario para un rango.
+ * POST /vacations/check-range
+ *
+ * @param token   JWT del usuario autenticado
+ * @param userIds IDs de usuarios a consultar
+ * @param fromISO ISO 'YYYY-MM-DD' inclusive (inicio de semana)
+ * @param toISO   ISO 'YYYY-MM-DD' inclusive (fin de semana -> start + 6)
+ *
+ * Respuesta: Record<userId, {
+ *   hasVacationInRange: boolean;
+ *   vacationStartInRange?: string; // 'YYYY-MM-DD'
+ *   vacationUntilInRange?: string; // 'YYYY-MM-DD'
+ * }>
+ */
+export async function getVacationFlagsInRange(
+  token: string,
+  params: { userIds: string[]; fromISO: string; toISO: string }
+): Promise<VacationRangeFlagsByUser> {
+  const { data } = await axiosInstance.post<VacationRangeFlagsByUser>(
+    '/vacations/check-range',
+    {
+      userIds: params.userIds,
+      fromISO: params.fromISO,
+      toISO: params.toISO,
+    },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  return data;
+}
+
 
 /* =========================================================
    Caché + invalidación por mes y evento
