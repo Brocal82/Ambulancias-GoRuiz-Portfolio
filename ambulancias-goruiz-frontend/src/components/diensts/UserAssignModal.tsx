@@ -1,31 +1,55 @@
-//frontend/src/components/diensts/UserAssignModal.tsx
+// frontend/src/components/diensts/UserAssignModal.tsx
 import { useEffect, useId, useMemo, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { getAllUsers } from '../../api/users';
 import type { AmbulanceRole, User } from '../../types/user';
 import { getPscheinInfo } from '../../utils/pscheinUtils';
+import { getVacationFlagsInRange } from '../../api/vacation';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (params: { role: 'driver' | 'medic'; userId: string }) => Promise<void> | void;
-  weekStartISO: string; // ⬅️ NUEVO
+  weekStartISO: string;
 }
-
 
 export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartISO }: Props) {
   const { token } = useAuth();
   const { t } = useTranslation();
-  void weekStartISO; // se usará en el Paso 4
 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<'driver' | 'medic'>('driver');
   const [userId, setUserId] = useState('');
+
+  // --- NUEVO: flags de vacaciones en la semana y estado de carga ---
+  const [vacationFlags, setVacationFlags] = useState<Record<string, {
+    hasVacationInRange: boolean;
+    vacationStartInRange?: string; // 'YYYY-MM-DD'
+    vacationUntilInRange?: string; // 'YYYY-MM-DD'
+  }>>({});
+  const [flagsLoading, setFlagsLoading] = useState(false);
+
+  // Helpers locales
+  const addDaysISO = (iso: string, days: number) => {
+    const d = new Date(iso);
+    d.setDate(d.getDate() + days);
+    return d.toISOString().split('T')[0];
+  };
+  const fmtDDMM = (iso?: string) => {
+    if (!iso) return '';
+    const [, m, d] = iso.split('-');
+    return `${d}/${m}`;
+  };
+
+  // Fin de semana = inicio + 6 días
+  const weekEndISO = useMemo(() => addDaysISO(weekStartISO, 6), [weekStartISO]);
+
   const roleId = useId();
   const userSelectId = useId();
 
+  // Cargar todos los usuarios (como ya hacías)
   useEffect(() => {
     if (!isOpen || !token) return;
     (async () => {
@@ -41,50 +65,90 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
     })();
   }, [isOpen, token]);
 
-  // 1) Filtra por rol de ambulancia como ya hacías (driver|both para driver, medic|both para medic)
+  // 1) Filtra por rol de ambulancia (driver|both para driver, medic|both para medic)
   const filteredByRole = useMemo(() => {
     const need: AmbulanceRole[] = role === 'driver' ? ['driver', 'both'] : ['medic', 'both'];
     return users.filter(u => u.ambulanceRole && need.includes(u.ambulanceRole));
   }, [users, role]);
 
-  // 2) Prepara opciones con label e info de P-Schein; deshabilita si driver & expired
+  // 2) Cargar flags de vacaciones en rango para los usuarios visibles por rol
+  useEffect(() => {
+    if (!isOpen || !token) return;
+    if (filteredByRole.length === 0) {
+      setVacationFlags({});
+      return;
+    }
+
+    const ids = filteredByRole.map(u => u._id).filter(Boolean);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setFlagsLoading(true);
+        const flags = await getVacationFlagsInRange(token, {
+          userIds: ids,
+          fromISO: weekStartISO,
+          toISO: weekEndISO,
+        });
+        if (!cancelled) setVacationFlags(flags);
+      } catch (e) {
+        console.error('❌ Error al obtener flags de vacaciones en rango:', e);
+        if (!cancelled) setVacationFlags({});
+      } finally {
+        if (!cancelled) setFlagsLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [isOpen, token, filteredByRole, weekStartISO, weekEndISO]);
+
+  // 3) Prepara opciones: P-Schein + 🌴 vacaciones (tooltip desde → hasta)
   const options = useMemo(() => {
     return filteredByRole
       .map(u => {
-        const baseLabel = `${u.lastName || ''}${u.lastName ? ', ' : ''}${u.name || ''}`;
+        const baseLabel = `${u.lastName || ''}${u.lastName ? ', ' : ''}${u.name || ''}` || '—';
+        const sortKey = `${u.lastName || ''} ${u.name || ''}`.toLowerCase();
+
+        // P-Schein (solo afecta a driver)
+        let disabled = false;
+        let label = baseLabel;
         if (role === 'driver') {
           const info = getPscheinInfo((u as any).pscheinExpiry);
           if (info.status === 'expired') {
-            return {
-              id: u._id,
-              label: `${baseLabel} — ${t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado')}`,
-              disabled: true,
-              sortKey: `${u.lastName || ''} ${u.name || ''}`.toLowerCase(),
-            };
-          }
-          if (info.status === 'warning') {
+            disabled = true;
+            label = `${baseLabel} — ${t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado')}`;
+          } else if (info.status === 'warning') {
             const months = info.monthsLeft ?? 0;
-            return {
-              id: u._id,
-              label: `${baseLabel} — ⚠️ (${months} ${months === 1 ? t('common.month', 'mes') : t('common.months', 'meses')} ${t('common.left', 'restantes')})`,
-              disabled: false,
-              sortKey: `${u.lastName || ''} ${u.name || ''}`.toLowerCase(),
-            };
+            label = `${baseLabel} — ⚠️ (${months} ${months === 1 ? t('common.month', 'mes') : t('common.months', 'meses')} ${t('common.left', 'restantes')})`;
           }
         }
+
+        // 🌴 Vacaciones en la semana objetivo
+        const vf = vacationFlags[u._id];
+        let title: string | undefined;
+        if (vf?.hasVacationInRange) {
+          label = `${label} 🌴`;
+          const from = fmtDDMM(vf.vacationStartInRange);
+          const to = fmtDDMM(vf.vacationUntilInRange);
+          title = from && to
+            ? `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
+            : `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+        }
+
         return {
           id: u._id,
-          label: baseLabel || '—',
-          disabled: false,
-          sortKey: `${u.lastName || ''} ${u.name || ''}`.toLowerCase(),
+          label,
+          title,     // se inyecta en <option title="...">
+          disabled,
+          sortKey,
         };
       })
-      // 3) Ordena: habilitados primero, luego alfabético
+      // Habilitados primero, luego alfabético
       .sort((a, b) => {
         if (+a.disabled !== +b.disabled) return +a.disabled - +b.disabled;
         return a.sortKey.localeCompare(b.sortKey, 'es');
       });
-  }, [filteredByRole, role, t]);
+  }, [filteredByRole, role, t, vacationFlags]);
 
   if (!isOpen) return null;
 
@@ -126,9 +190,11 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
               className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
               disabled={loading}
             >
-              <option value="">{loading ? t('common.loading', 'Cargando...') : t('common.select', 'Selecciona')}</option>
+              <option value="">
+                {loading ? t('common.loading', 'Cargando...') : t('common.select', 'Selecciona')}
+              </option>
               {options.map(opt => (
-                <option key={opt.id} value={opt.id} disabled={opt.disabled}>
+                <option key={opt.id} value={opt.id} disabled={opt.disabled} title={opt.title}>
                   {opt.label}
                 </option>
               ))}
@@ -137,8 +203,19 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
             {/* Leyenda para el caso driver */}
             {role === 'driver' && (
               <p className="mt-1 text-[11px] text-slate-500">
-                ❌ {t('pages.diensts.adminPage.legendExpired', 'P-Schein caducado')} ·
-                {' '}🚫 {t('pages.diensts.adminPage.legendCantDrive', 'No puede conducir')}
+                ❌ {t('pages.diensts.adminPage.legendExpired', 'P-Schein caducado')} ·{' '}
+                🚫 {t('pages.diensts.adminPage.legendCantDrive', 'No puede conducir')}
+              </p>
+            )}
+
+            {/* Hint para tooltip de vacaciones */}
+            {flagsLoading ? (
+              <p className="mt-1 text-[11px] text-slate-500">
+                {t('common.loading', 'Cargando...')}
+              </p>
+            ) : (
+              <p className="mt-1 text-[11px] text-slate-500">
+                🌴 {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón para ver fechas de vacaciones')}
               </p>
             )}
           </div>
