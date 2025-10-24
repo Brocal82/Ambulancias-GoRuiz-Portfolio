@@ -12,6 +12,7 @@ import {
   getAvailability,
   getMonthConfig,
   upsertMonthConfig,
+  checkVacationsInRange
 } from '../controllers/vacationController';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { authorizeRole } from '../middlewares/roleMiddleware';
@@ -20,6 +21,10 @@ const router = Router();
 
 // --- NUEVO: Disponibilidad mensual (worker/admin) ---
 router.get('/availability', authenticateToken, getAvailability);
+
+// --- NUEVO: Chequear vacaciones en un rango (worker/admin) ---
+router.post('/check-range', authenticateToken, checkVacationsInRange);
+
 
 // --- NUEVO: Config mensual (admin) ---
 router.get('/month-config', authenticateToken, authorizeRole('admin'), getMonthConfig);

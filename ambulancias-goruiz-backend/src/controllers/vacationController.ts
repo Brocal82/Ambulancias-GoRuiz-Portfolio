@@ -287,6 +287,99 @@ export const getVacationPendingCount = async (req: Request, res: Response): Prom
 };
 
 // ======================================================
+// NUEVO: Chequear vacaciones en un rango por usuario
+// POST /vacations/check-range
+// Payload: { userIds: string[], fromISO: 'YYYY-MM-DD', toISO: 'YYYY-MM-DD' }
+// Respuesta: Record<userId, {
+//   hasVacationInRange: boolean;
+//   vacationStartInRange?: string; // 'YYYY-MM-DD' (acotado al rango solicitado)
+//   vacationUntilInRange?: string; // 'YYYY-MM-DD' (acotado al rango solicitado)
+// }}
+// ======================================================
+export const checkVacationsInRange = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userIds, fromISO, toISO } = req.body as {
+      userIds?: string[];
+      fromISO?: string;
+      toISO?: string;
+    };
+
+    if (!Array.isArray(userIds) || userIds.length === 0 || !fromISO || !toISO) {
+      res.status(400).json({ message: 'Parámetros inválidos. Se requieren userIds[], fromISO y toISO.' });
+      return;
+    }
+
+    // Normalizamos el rango [00:00..23:59] en UTC (suficiente para la señal visual)
+    const from = new Date(`${fromISO}T00:00:00.000Z`);
+    const to = new Date(`${toISO}T23:59:59.999Z`);
+    if (isNaN(from.getTime()) || isNaN(to.getTime()) || from > to) {
+      res.status(400).json({ message: 'Rango de fechas inválido.' });
+      return;
+    }
+
+    const userObjectIds = userIds.map((id) => new mongoose.Types.ObjectId(id));
+
+    // Solo solicitudes ACCEPTED que SOLAPEN el rango
+    const requests = await VacationRequest.find({
+      status: 'accepted',
+      user: { $in: userObjectIds },
+      startDate: { $lte: to },
+      endDate: { $gte: from },
+    })
+      .select('user startDate endDate')
+      .lean();
+
+    // Inicializamos el resultado para todos los userIds
+    const result: Record<
+      string,
+      {
+        hasVacationInRange: boolean;
+        vacationStartInRange?: string;
+        vacationUntilInRange?: string;
+      }
+    > = {};
+    for (const id of userIds) {
+      result[id] = { hasVacationInRange: false };
+    }
+
+    // Reducimos por usuario: tomamos el tramo solapado [max(start, from) .. min(end, to)]
+    // Si hay múltiples solicitudes, unimos usando el inicio más temprano y el fin más tardío dentro del rango pedido.
+    for (const r of requests) {
+      const uid = String(r.user);
+      const overlapStart = new Date(Math.max(new Date(r.startDate).getTime(), from.getTime()));
+      const overlapEnd = new Date(Math.min(new Date(r.endDate).getTime(), to.getTime()));
+      if (overlapStart > overlapEnd) continue;
+
+      const prev = result[uid];
+      if (!prev || !prev.hasVacationInRange) {
+        result[uid] = {
+          hasVacationInRange: true,
+          vacationStartInRange: overlapStart.toISOString().slice(0, 10),
+          vacationUntilInRange: overlapEnd.toISOString().slice(0, 10),
+        };
+      } else {
+        // Unimos rangos: min(start), max(end)
+        const prevStart = new Date(`${prev.vacationStartInRange}T00:00:00.000Z`);
+        const prevEnd = new Date(`${prev.vacationUntilInRange}T23:59:59.999Z`);
+        const newStart = new Date(Math.min(prevStart.getTime(), overlapStart.getTime()));
+        const newEnd = new Date(Math.max(prevEnd.getTime(), overlapEnd.getTime()));
+        result[uid] = {
+          hasVacationInRange: true,
+          vacationStartInRange: newStart.toISOString().slice(0, 10),
+          vacationUntilInRange: newEnd.toISOString().slice(0, 10),
+        };
+      }
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error en checkVacationsInRange:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+
+// ======================================================
 // NUEVO: Disponibilidad mensual (enmascara blackouts como capacidad)
 // ======================================================
 
