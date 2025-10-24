@@ -125,71 +125,63 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm, weekStartI
     return '';
   };
 
-  // Info de vacaciones para un equipo (driver o medic)
-  const getTeamVacationInfo = (team: Team) => {
-    const dId: string | undefined =
-      typeof team.driver === 'object' && team.driver ? (team.driver as any)._id : (team.driver as any);
-    const mId: string | undefined =
-      typeof team.medic === 'object' && team.medic ? (team.medic as any)._id : (team.medic as any);
+  // Combinar clases sin falsy
+  const mergeClasses = (...classes: (string | false | null | undefined)[]) =>
+    classes.filter(Boolean).join(' ');
 
-    const dFlag = dId ? vacationFlags[dId] : undefined;
-    const mFlag = mId ? vacationFlags[mId] : undefined;
+  // Tono apagado para quien está de vacaciones
+  const dimClass = 'text-slate-400';
 
-    const dHas = !!dFlag?.hasVacationInRange;
-    const mHas = !!mFlag?.hasVacationInRange;
-    const has = dHas || mHas;
+  // Info de vacaciones por usuario (driver o medic)
+  const userVacationInfo = (user: any) => {
+    const uid: string | undefined =
+      typeof user === 'object' && user ? (user as any)._id : (user as any);
+    if (!uid) return { has: false, title: undefined as string | undefined };
 
-    // Si ambos tienen, mostrar rango combinado: min(start) → max(end)
-    let fromISO: string | undefined;
-    let toISO: string | undefined;
+    const vf = vacationFlags[uid];
+    const has = !!vf?.hasVacationInRange;
 
-    if (has) {
-      const starts: string[] = [];
-      const ends: string[] = [];
-      if (dHas) {
-        if (dFlag?.vacationStartInRange) starts.push(dFlag.vacationStartInRange);
-        if (dFlag?.vacationUntilInRange) ends.push(dFlag.vacationUntilInRange);
-      }
-      if (mHas) {
-        if (mFlag?.vacationStartInRange) starts.push(mFlag.vacationStartInRange);
-        if (mFlag?.vacationUntilInRange) ends.push(mFlag.vacationUntilInRange);
-      }
-      if (starts.length > 0) {
-        fromISO = starts.slice().sort()[0]; // min
-      }
-      if (ends.length > 0) {
-        toISO = ends.slice().sort().slice(-1)[0]; // max
-      }
-    }
+    if (!has) return { has: false, title: undefined as string | undefined };
 
-    const from = fmtDDMM(fromISO);
-    const to = fmtDDMM(toISO);
-    const title = has
-      ? (from && to
-          ? `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
-          : `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`)
-      : undefined;
+    const from = fmtDDMM(vf?.vacationStartInRange);
+    const to = fmtDDMM(vf?.vacationUntilInRange);
+    const title =
+      from && to
+        ? `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
+        : `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
 
-    return { has, title };
+    return { has: true, title };
   };
 
-  // Render del rótulo seleccionado (incluye 🌴 si aplica)
+  // Render del rótulo seleccionado (🌴 y “apagado” sólo en quien corresponda)
   const renderSelectedTeamLabel = () => {
     if (loading) return t('common.loading');
     if (!selectedTeam) return t('common.select');
 
-    const { has, title } = getTeamVacationInfo(selectedTeam);
+    const drv: any = selectedTeam.driver;
+    const med: any = selectedTeam.medic;
+
+    const drvVac = userVacationInfo(drv);
+    const medVac = userVacationInfo(med);
 
     return (
-      <span className="truncate" title={title}>
-        <span className={driverClass((selectedTeam.driver as any)?.pscheinExpiry)}>
-          {(selectedTeam.driver?.lastName || '') + ', ' + (selectedTeam.driver?.name || '')}
+      <span className="truncate">
+        <span
+          className={mergeClasses(
+            driverClass(drv?.pscheinExpiry),
+            drvVac.has && dimClass
+          )}
+          title={drvVac.title}
+        >
+          {(drv?.lastName || '') + ', ' + (drv?.name || '')}{drvVac.has ? ' 🌴' : ''}
         </span>
         {' / '}
-        <span>
-          {(selectedTeam.medic?.lastName || '') + ', ' + (selectedTeam.medic?.name || '')}
+        <span
+          className={mergeClasses(medVac.has && dimClass)}
+          title={medVac.title}
+        >
+          {(med?.lastName || '') + ', ' + (med?.name || '')}{medVac.has ? ' 🌴' : ''}
         </span>
-        {has ? ' 🌴' : ''}
       </span>
     );
   };
@@ -207,7 +199,7 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm, weekStartI
             {t('pages.diensts.assignTeamModal.select')}
           </label>
 
-          {/* Dropdown personalizado para poder colorear solo el nombre del conductor y mostrar 🌴 */}
+          {/* Dropdown personalizado para poder colorear solo el nombre del conductor y mostrar 🌴 por miembro */}
           <div className="relative">
             <button
               id={selectId}
@@ -246,27 +238,37 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm, weekStartI
                 )}
 
                 {teams.map((tItem) => {
-                  const { has, title } = getTeamVacationInfo(tItem);
+                  const isSelected = selectedId === tItem._id;
+                  const drv: any = tItem.driver;
+                  const med: any = tItem.medic;
+
+                  const drvVac = userVacationInfo(drv);
+                  const medVac = userVacationInfo(med);
+
                   return (
                     <button
                       key={tItem._id}
                       role="option"
-                      aria-selected={selectedId === tItem._id}
+                      aria-selected={isSelected}
                       onClick={() => {
                         setSelectedId(tItem._id);
                         setOpenList(false);
                       }}
-                      title={title}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none ${selectedId === tItem._id ? 'bg-slate-50' : ''}`}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none ${isSelected ? 'bg-slate-50' : ''}`}
                     >
-                      <span className={driverClass((tItem.driver as any)?.pscheinExpiry)}>
-                        {(tItem.driver?.lastName || '') + ', ' + (tItem.driver?.name || '')}
+                      <span
+                        className={mergeClasses(
+                          driverClass(drv?.pscheinExpiry),
+                          drvVac.has && dimClass
+                        )}
+                        title={drvVac.title}
+                      >
+                        {(drv?.lastName || '') + ', ' + (drv?.name || '')}{drvVac.has ? ' 🌴' : ''}
                       </span>
                       <span className="text-slate-500"> / </span>
-                      <span>
-                        {(tItem.medic?.lastName || '') + ', ' + (tItem.medic?.name || '')}
+                      <span className={mergeClasses(medVac.has && dimClass)} title={medVac.title}>
+                        {(med?.lastName || '') + ', ' + (med?.name || '')}{medVac.has ? ' 🌴' : ''}
                       </span>
-                      {has ? ' 🌴' : ''}
                     </button>
                   );
                 })}
