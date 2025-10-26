@@ -1,3 +1,4 @@
+// frontend/src/pages/AdminUsersPage.tsx
 import { useEffect, useState, useCallback } from 'react';
 import { getAllUsers, updateUserProfile, deleteUser } from '../api/users';
 import { useAuth } from '../hooks/useAuth';
@@ -7,6 +8,7 @@ import { toastT } from "../utils/toast";
 import { getPscheinInfo } from '../utils/pscheinUtils';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { getVacationFlagsInRange } from '../api/vacation';
 
 // Mapeo de estilos de la píldora de rol (no cambia lógica)
 const rolePillClass: Record<NonNullable<User['ambulanceRole']> | 'unknown', string> = {
@@ -14,6 +16,36 @@ const rolePillClass: Record<NonNullable<User['ambulanceRole']> | 'unknown', stri
   medic: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
   both: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200',
   unknown: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200'
+};
+
+// Helpers de fecha (Europe/Berlin) → ISO 'YYYY-MM-DD'
+const getBerlinYMD = (d: Date) => {
+  const y = Number(d.toLocaleString('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric' }));
+  const m = Number(d.toLocaleString('en-CA', { timeZone: 'Europe/Berlin', month: '2-digit' }));
+  const day = Number(d.toLocaleString('en-CA', { timeZone: 'Europe/Berlin', day: '2-digit' }));
+  return { y, m, day };
+};
+const toISO = (y: number, m: number, d: number) => `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+// Dado el "hoy" en Berlin, calcula lunes y domingo de la semana (en Berlin)
+const getBerlinWeekRangeISO = () => {
+  const now = new Date();
+  const { y, m, day } = getBerlinYMD(now);
+  // Construimos una fecha UTC con los componentes "Berlin" para que getUTCDay sea consistente
+  const todayUTC = new Date(Date.UTC(y, m - 1, day));
+  const dow = todayUTC.getUTCDay(); // 0=Dom, 1=Lun, ... 6=Sáb
+  const diffToMonday = dow === 0 ? -6 : 1 - dow; // si Dom -> -6, si Lun -> 0, etc.
+  const mondayUTC = new Date(Date.UTC(y, m - 1, day + diffToMonday));
+  const sundayUTC = new Date(Date.UTC(y, m - 1, day + diffToMonday + 6));
+  const mondayISO = toISO(mondayUTC.getUTCFullYear(), mondayUTC.getUTCMonth() + 1, mondayUTC.getUTCDate());
+  const sundayISO = toISO(sundayUTC.getUTCFullYear(), sundayUTC.getUTCMonth() + 1, sundayUTC.getUTCDate());
+  return { weekStartISO: mondayISO, weekEndISO: sundayISO };
+};
+
+const fmtDDMM = (iso?: string) => {
+  if (!iso) return '';
+  const [, m, d] = iso.split('-');
+  return `${d}/${m}`;
 };
 
 const AdminUsersPage = () => {
@@ -27,6 +59,15 @@ const AdminUsersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'driver' | 'medic' | 'both'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'onLeave' | 'onVacation'>('all');
+
+  // Flags de vacaciones por usuario (para la semana actual en Berlin)
+  type VacFlag = {
+    hasVacationInRange: boolean;
+    vacationStartInRange?: string; // 'YYYY-MM-DD' (dentro de la semana)
+    vacationUntilInRange?: string; // 'YYYY-MM-DD' (dentro de la semana)
+  };
+  const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
+  const [flagsLoading, setFlagsLoading] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -47,6 +88,36 @@ const AdminUsersPage = () => {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  // Cargar flags de vacaciones para la semana actual (Berlin)
+  useEffect(() => {
+    if (!token || users.length === 0) {
+      setVacationFlags({});
+      return;
+    }
+    const userIds = users.map(u => u._id).filter(Boolean);
+    const { weekStartISO, weekEndISO } = getBerlinWeekRangeISO();
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setFlagsLoading(true);
+        const flags = await getVacationFlagsInRange(token, {
+          userIds,
+          fromISO: weekStartISO,
+          toISO: weekEndISO,
+        });
+        if (!cancelled) setVacationFlags(flags);
+      } catch (e) {
+        console.error('❌ Error al cargar flags de vacaciones (semana actual) en AdminUsersPage:', e);
+        if (!cancelled) setVacationFlags({});
+      } finally {
+        if (!cancelled) setFlagsLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [token, users]);
 
   const handleEdit = (user: User) => {
     navigate(`/admin/user/${user._id}`);
@@ -87,10 +158,15 @@ const AdminUsersPage = () => {
     const fullName = `${user.name} ${user.lastName}`.toLowerCase();
     const matchesName = fullName.includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || user.ambulanceRole === roleFilter;
+
+    // onVacation coherente: usa flags de la semana actual además del flag interno
+    const vacFlag = vacationFlags[user._id];
+    const isOnVacationThisWeek = !!vacFlag?.hasVacationInRange;
+
     const matchesStatus =
       statusFilter === 'all' ||
       (statusFilter === 'onLeave' && (user as any).onLeave) ||
-      (statusFilter === 'onVacation' && (user as any).onVacation);
+      (statusFilter === 'onVacation' && ((user as any).onVacation || isOnVacationThisWeek));
 
     return matchesName && matchesRole && matchesStatus;
   });
@@ -156,10 +232,13 @@ const AdminUsersPage = () => {
           {/* Leyenda */}
           <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-600">
             <div className="flex items-center gap-2">
-              <span className="text-red-500">❌</span> {t('pages.adminUsers.legend.expired')}
+              <span className="text-red-500">🚫</span> {t('pages.adminUsers.legend.expired')}
             </div>
             <div className="flex items-center gap-2">
               <span className="text-orange-400">⚠️</span> {t('pages.adminUsers.legend.warning')}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-green-600">🌴</span> {t('pages.adminUsers.legend.vacation', 'Vacaciones (esta semana)')}
             </div>
           </div>
         </div>
@@ -183,53 +262,76 @@ const AdminUsersPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
-  {filteredUsers.map((user, index) => {
-    const pschein = getPscheinInfo(user.pscheinExpiry);
-    const firstCellBorder =
-      pschein.status === 'expired'
-        ? 'border-l-4 border-red-500'
-        : pschein.status === 'warning'
-        ? 'border-l-4 border-orange-400'
-        : '';
+                {filteredUsers.map((user, index) => {
+                  const pschein = getPscheinInfo(user.pscheinExpiry);
+                  const firstCellBorder =
+                    pschein.status === 'expired'
+                      ? 'border-l-4 border-red-500'
+                      : pschein.status === 'warning'
+                        ? 'border-l-4 border-orange-400'
+                        : '';
 
-    const roleKey = (user.ambulanceRole ?? 'unknown') as NonNullable<User['ambulanceRole']> | 'unknown';
+                  const roleKey = (user.ambulanceRole ?? 'unknown') as NonNullable<User['ambulanceRole']> | 'unknown';
 
-    return (
-      <tr
-        key={user._id}
-        className={`${index % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} group cursor-pointer hover:bg-blue-50/50 transition-colors`}
-        onClick={() => handleEdit(user)}
-      >
-        <td className={`whitespace-nowrap py-3 px-4 text-sm text-slate-900 ${firstCellBorder}`}>{user.lastName}</td>
-        <td className="whitespace-nowrap py-3 px-4 text-sm text-slate-900">{user.name}</td>
-        <td className="whitespace-nowrap py-3 px-4 text-sm text-slate-700">{user.email}</td>
-        <td className="whitespace-nowrap py-3 px-4 text-sm">
-          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${rolePillClass[roleKey]}`}>
-            {user.ambulanceRole ? t(`pages.profile.roles.${user.ambulanceRole}` as any) : '—'}
-          </span>
+                  // Vacaciones (semana actual)
+                  const vac = vacationFlags[user._id];
+                  const onVac = !!vac?.hasVacationInRange;
+                  const vacTitle = onVac
+                    ? (() => {
+                        const from = vac?.vacationStartInRange ? fmtDDMM(vac.vacationStartInRange) : '';
+                        const to = vac?.vacationUntilInRange ? fmtDDMM(vac.vacationUntilInRange) : '';
+                        return from && to
+                          ? `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
+                          : `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+                      })()
+                    : undefined;
 
-          {pschein.status === 'expired' && (
-            <span
-              className="ml-2 align-middle text-red-500"
-              title="P-Schein caducado"
-            >
-              ❌
-            </span>
-          )}
+                  return (
+                    <tr
+                      key={user._id}
+                      className={`${index % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} group cursor-pointer hover:bg-blue-50/50 transition-colors`}
+                      onClick={() => handleEdit(user)}
+                    >
+                      <td
+                        className={`whitespace-nowrap py-3 px-4 text-sm ${onVac ? 'text-slate-400' : 'text-slate-900'} ${firstCellBorder}`}
+                        title={vacTitle}
+                      >
+                        {user.lastName}
+                      </td>
+                      <td
+                        className={`whitespace-nowrap py-3 px-4 text-sm ${onVac ? 'text-slate-400' : 'text-slate-900'}`}
+                        title={vacTitle}
+                      >
+                        {user.name}{onVac ? ' 🌴' : ''}
+                      </td>
+                      <td className="whitespace-nowrap py-3 px-4 text-sm text-slate-700">{user.email}</td>
+                      <td className="whitespace-nowrap py-3 px-4 text-sm">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${rolePillClass[roleKey]}`}>
+                          {user.ambulanceRole ? t(`pages.profile.roles.${user.ambulanceRole}` as any) : '—'}
+                        </span>
 
-          {pschein.status === 'warning' && (
-            <span
-              className="ml-2 align-middle text-orange-400"
-              title={`P-Schein caduca en ${pschein.monthsLeft ?? 0} ${pschein.monthsLeft === 1 ? 'mes' : 'meses'}`}
-            >
-              ⚠️
-            </span>
-          )}
-        </td>
-      </tr>
-    );
-  })}
-</tbody>
+                        {pschein.status === 'expired' && (
+                          <span
+                            className="ml-2 align-middle text-red-500"
+                            title="P-Schein caducado"
+                          >
+                            🚫
+                          </span>
+                        )}
+
+                        {pschein.status === 'warning' && (
+                          <span
+                            className="ml-2 align-middle text-orange-400"
+                            title={`P-Schein caduca en ${pschein.monthsLeft ?? 0} ${pschein.monthsLeft === 1 ? 'mes' : 'meses'}`}
+                          >
+                            ⚠️
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
 
             </table>
           </div>
