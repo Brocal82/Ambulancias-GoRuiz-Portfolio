@@ -1,5 +1,5 @@
 // frontend/src/components/AssignmentModal.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useId, useMemo } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { updateDienstPartial, removeAssignment } from "../api/diensts";
 import { getAvailableUsersForDate } from "../api/users";
@@ -11,6 +11,7 @@ import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import type { FlexibleAssignment } from "../types/assignment";
 import { useTranslation } from "react-i18next";
 import { formatYYYYMMDDToDDMMYYYY } from '../utils/timeUtils';
+import { getVacationFlagsInRange } from "../api/vacation";
 
 interface AssignmentModalProps {
   isOpen: boolean;
@@ -20,6 +21,12 @@ interface AssignmentModalProps {
   onClose: () => void;
   onUpdate: () => void;
 }
+
+type VacFlag = {
+  hasVacationInRange: boolean;
+  vacationStartInRange?: string; // 'YYYY-MM-DD'
+  vacationUntilInRange?: string; // 'YYYY-MM-DD'
+};
 
 const AssignmentModal: React.FC<AssignmentModalProps> = ({
   isOpen,
@@ -42,6 +49,18 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [availableDrivers, setAvailableDrivers] = useState<UserRef[]>([]);
   const [availableMedics, setAvailableMedics] = useState<UserRef[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Dropdowns personalizados (como en Team/User modals)
+  const [openDriverList, setOpenDriverList] = useState(false);
+  const [openMedicList, setOpenMedicList] = useState(false);
+
+  // Flags de vacaciones (día objetivo). Un único mapa por id de usuario.
+  const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
+  const [flagsLoading, setFlagsLoading] = useState(false);
+
+  // IDs para accesibilidad
+  const driverBtnId = useId();
+  const medicBtnId = useId();
 
   useEffect(() => {
     if (assignment) {
@@ -85,6 +104,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     fetchAvailableUsers();
   }, [token, isAdmin, date, assignment, t]);
 
+  // Cargar ambulancias (igual que antes)
   useEffect(() => {
     const fetchAmbulances = async () => {
       if (!token) return;
@@ -102,6 +122,44 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
     fetchAmbulances();
   }, [token, t]);
+
+  // Cargar flags de vacaciones para EL DÍA especificado (fromISO=toISO=date)
+  useEffect(() => {
+    if (!isOpen || !token || !date) return;
+
+    // Reunir ids de listas (drivers/medics) y también los ya seleccionados si no están en las listas
+    const ids = new Set<string>();
+    for (const u of availableDrivers) if (u?._id) ids.add(u._id);
+    for (const u of availableMedics) if (u?._id) ids.add(u._id);
+    if (selectedDriverId) ids.add(selectedDriverId);
+    if (selectedMedicId) ids.add(selectedMedicId);
+
+    const userIds = Array.from(ids);
+    if (userIds.length === 0) {
+      setVacationFlags({});
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        setFlagsLoading(true);
+        const flags = await getVacationFlagsInRange(token, {
+          userIds,
+          fromISO: date,
+          toISO: date,
+        });
+        if (!cancelled) setVacationFlags(flags);
+      } catch (e) {
+        console.error("❌ Error al obtener flags de vacaciones (día):", e);
+        if (!cancelled) setVacationFlags({});
+      } finally {
+        if (!cancelled) setFlagsLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [isOpen, token, date, availableDrivers, availableMedics, selectedDriverId, selectedMedicId]);
 
   if (!isOpen) return null;
 
@@ -163,6 +221,60 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
   };
 
+  // ===== Helpers visuales coherentes (igual que en los otros modales) =====
+
+  const driverClass = (pschein?: string | null) => {
+    if (!pschein) return '';
+    const info = getPscheinInfo(pschein);
+    if (info.status === 'expired') return 'text-red-600 font-medium';
+    if (info.status === 'warning') return 'text-yellow-600 font-medium';
+    return '';
+  };
+
+  const driverExpired = (u: UserRef) => {
+    const info = getPscheinInfo((u as any)?.pscheinExpiry);
+    return info.status === 'expired';
+  };
+
+  const mergeClasses = (...classes: (string | false | null | undefined)[]) =>
+    classes.filter(Boolean).join(' ');
+
+  const dimClass = 'text-slate-400';
+
+  const fmtDDMM = (iso?: string) => {
+    if (!iso) return '';
+    const [, m, d] = iso.split('-');
+    return `${d}/${m}`;
+  };
+
+  const userVacationInfo = (u?: UserRef | null) => {
+    if (!u || !u._id) return { has: false, title: undefined as string | undefined };
+    const vf = vacationFlags[u._id];
+    const has = !!vf?.hasVacationInRange;
+    if (!has) return { has: false, title: undefined as string | undefined };
+    const from = fmtDDMM(vf?.vacationStartInRange);
+    const to = fmtDDMM(vf?.vacationUntilInRange);
+    const title =
+      from && to
+        ? `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
+        : `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+    return { has: true, title };
+  };
+
+  // Seleccionados (para pintar rótulo)
+  const selectedDriver = useMemo(
+    () => (availableDrivers.find(u => u._id === selectedDriverId) ||
+           availableDrivers.find(u => (assignment?.driver as any)?._id === u._id) ||
+           null),
+    [availableDrivers, selectedDriverId, assignment]
+  );
+  const selectedMedic = useMemo(
+    () => (availableMedics.find(u => u._id === selectedMedicId) ||
+           availableMedics.find(u => (assignment?.medic as any)?._id === u._id) ||
+           null),
+    [availableMedics, selectedMedicId, assignment]
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -177,6 +289,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         <div className="space-y-3">
           {isAdmin ? (
             <>
+              {/* Horas y ambulancia (igual) */}
               <div className="space-y-1">
                 <label htmlFor="startTime" className="block text-sm font-medium text-slate-700">
                   {t("pages.assignmentModal.labels.startTime")}
@@ -222,72 +335,231 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 </select>
               </div>
 
+              {/* Conductor: dropdown personalizado (coherente con Team/User) */}
               <div className="space-y-1">
-                <label htmlFor="driverSelect" className="block text-sm font-medium text-slate-700">
+                <label htmlFor={driverBtnId} className="block text-sm font-medium text-slate-700">
                   {t("pages.assignmentModal.labels.driver")}
                 </label>
-                <select
-                  id="driverSelect"
-                  title={t("pages.assignmentModal.placeholders.selectDriver")}
-                  value={selectedDriverId}
-                  onChange={(e) => {
-                    const id = e.target.value;
-                    setSelectedDriverId(id);
-                    if (id === selectedMedicId) setSelectedMedicId("");
-                  }}
-                  className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-                >
-                  <option value="">
-                    {t("pages.assignmentModal.placeholders.selectDriver")}
-                  </option>
-                  {availableDrivers.map((user) => {
-                    const pschein = getPscheinInfo(user.pscheinExpiry);
 
-                    // Generamos el icono y texto adicional según el estado
-                    let icon = "";
-                    if (pschein.status === "warning") {
-                      const months = pschein.monthsLeft ?? 0;
-                      icon = ` ⚠️ (${months} ${months === 1 ? "mes" : "meses"} restantes)`;
-                    } else if (pschein.status === "expired") {
-                      icon = " ❌ (caducado)";
-                    }
+                <div className="relative">
+                  <button
+                    id={driverBtnId}
+                    type="button"
+                    className="w-full flex items-center justify-between rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                    onClick={() => setOpenDriverList(v => !v)}
+                    aria-haspopup="listbox"
+                    aria-expanded={openDriverList}
+                  >
+                    <span className="truncate">
+                      {(() => {
+                        const u = selectedDriver || (assignment?.driver as any) || null;
+                        if (!u) return t("pages.assignmentModal.placeholders.selectDriver");
+                        const vac = userVacationInfo(u);
+                        return (
+                          <span
+                            className={mergeClasses(
+                              driverClass((u as any)?.pscheinExpiry),
+                              vac.has && dimClass
+                            )}
+                            title={vac.title}
+                          >
+                            {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🌴' : ''}
+                          </span>
+                        );
+                      })()}
+                    </span>
+                    <svg
+                      className="h-4 w-4 shrink-0 text-slate-500"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
 
-                    return (
-                      <option
-                        key={user._id}
-                        value={user._id}
-                        disabled={pschein.status === "expired"}
-                      >
-                        {user.lastName}, {user.name}{icon}
-                      </option>
-                    );
-                  })}
+                  {openDriverList && (
+                    <div
+                      role="listbox"
+                      tabIndex={-1}
+                      aria-label="Opciones del selector de conductor"
+                      className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg ring-1 ring-slate-200"
+                    >
+                      {availableDrivers.length === 0 && (
+                        <div className="px-3 py-2 text-sm text-slate-500">
+                          {t('common.empty', 'No hay resultados')}
+                        </div>
+                      )}
 
-                </select>
+                      {availableDrivers
+                        .slice()
+                        .sort((a, b) => {
+                          const da = driverExpired(a) ? 1 : 0;
+                          const db = driverExpired(b) ? 1 : 0;
+                          if (da !== db) return da - db;
+                          const ka = `${a.lastName || ''} ${a.name || ''}`.toLowerCase();
+                          const kb = `${b.lastName || ''} ${b.name || ''}`.toLowerCase();
+                          return ka.localeCompare(kb, 'es');
+                        })
+                        .map((u) => {
+                          const vac = userVacationInfo(u);
+                          const expired = driverExpired(u);
+                          return (
+                            <button
+                              key={u._id}
+                              role="option"
+                              aria-selected={selectedDriverId === u._id}
+                              onClick={() => {
+                                if (expired) return;
+                                setSelectedDriverId(u._id || "");
+                                if (u._id === selectedMedicId) setSelectedMedicId("");
+                                setOpenDriverList(false);
+                              }}
+                              className={mergeClasses(
+                                'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
+                                selectedDriverId === u._id && 'bg-slate-50',
+                                expired && 'opacity-50 cursor-not-allowed'
+                              )}
+                              title={vac.title}
+                            >
+                              <span
+                                className={mergeClasses(
+                                  driverClass((u as any)?.pscheinExpiry),
+                                  vac.has && dimClass
+                                )}
+                              >
+                                {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🌴' : ''}
+                              </span>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Leyenda para el caso driver */}
+                <p className="mt-1 text-[11px] text-slate-500">
+                  🚫 {t('pages.diensts.adminPage.legendCantDrive', 'No puede conducir, P-schein caducado')}
+                </p>
+
+                {/* Hint vacaciones */}
+                {flagsLoading ? (
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    {t('common.loading', 'Cargando...')}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    🌴 {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón para ver fechas de vacaciones')}
+                  </p>
+                )}
               </div>
 
+              {/* Sanitario: dropdown personalizado */}
               <div className="space-y-1">
-                <label htmlFor="medicSelect" className="block text-sm font-medium text-slate-700">
+                <label htmlFor={medicBtnId} className="block text-sm font-medium text-slate-700">
                   {t("pages.assignmentModal.labels.medic")}
                 </label>
-                <select
-                  id="medicSelect"
-                  title={t("pages.assignmentModal.placeholders.selectMedic")}
-                  value={selectedMedicId}
-                  onChange={(e) => {
-                    const id = e.target.value;
-                    setSelectedMedicId(id);
-                    if (id === selectedDriverId) setSelectedDriverId("");
-                  }}
-                  className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-                >
-                  <option value="">{t("pages.assignmentModal.placeholders.selectMedic")}</option>
-                  {availableMedics.map((user) => (
-                    <option key={user._id} value={user._id}>
-                      {user.lastName}, {user.name}
-                    </option>
-                  ))}
-                </select>
+
+                <div className="relative">
+                  <button
+                    id={medicBtnId}
+                    type="button"
+                    className="w-full flex items-center justify-between rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                    onClick={() => setOpenMedicList(v => !v)}
+                    aria-haspopup="listbox"
+                    aria-expanded={openMedicList}
+                  >
+                    <span className="truncate">
+                      {(() => {
+                        const u = selectedMedic || (assignment?.medic as any) || null;
+                        if (!u) return t("pages.assignmentModal.placeholders.selectMedic");
+                        const vac = userVacationInfo(u);
+                        return (
+                          <span
+                            className={mergeClasses(vac.has && dimClass)}
+                            title={vac.title}
+                          >
+                            {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🌴' : ''}
+                          </span>
+                        );
+                      })()}
+                    </span>
+                    <svg
+                      className="h-4 w-4 shrink-0 text-slate-500"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+
+                  {openMedicList && (
+                    <div
+                      role="listbox"
+                      tabIndex={-1}
+                      aria-label="Opciones del selector de sanitario"
+                      className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg ring-1 ring-slate-200"
+                    >
+                      {availableMedics.length === 0 && (
+                        <div className="px-3 py-2 text-sm text-slate-500">
+                          {t('common.empty', 'No hay resultados')}
+                        </div>
+                      )}
+
+                      {availableMedics
+                        .slice()
+                        .sort((a, b) => {
+                          const ka = `${a.lastName || ''} ${a.name || ''}`.toLowerCase();
+                          const kb = `${b.lastName || ''} ${b.name || ''}`.toLowerCase();
+                          return ka.localeCompare(kb, 'es');
+                        })
+                        .map((u) => {
+                          const vac = userVacationInfo(u);
+                          return (
+                            <button
+                              key={u._id}
+                              role="option"
+                              aria-selected={selectedMedicId === u._id}
+                              onClick={() => {
+                                if (u._id === selectedDriverId) setSelectedDriverId("");
+                                setSelectedMedicId(u._id || "");
+                                setOpenMedicList(false);
+                              }}
+                              className={mergeClasses(
+                                'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
+                                selectedMedicId === u._id && 'bg-slate-50'
+                              )}
+                              title={vac.title}
+                            >
+                              <span className={mergeClasses(vac.has && dimClass)}>
+                                {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🌴' : ''}
+                              </span>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Hint vacaciones */}
+                {flagsLoading ? (
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    {t('common.loading', 'Cargando...')}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    🌴 {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón para ver fechas de vacaciones')}
+                  </p>
+                )}
               </div>
 
               <button
