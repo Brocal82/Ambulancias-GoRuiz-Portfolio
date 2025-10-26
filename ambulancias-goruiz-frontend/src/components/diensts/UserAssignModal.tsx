@@ -290,8 +290,7 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
             {/* Leyenda para el caso driver */}
             {role === 'driver' && (
               <p className="mt-1 text-[11px] text-slate-500">
-                ❌ {t('pages.diensts.adminPage.legendExpired', 'P-Schein caducado')} ·{' '}
-                🚫 {t('pages.diensts.adminPage.legendCantDrive', 'No puede conducir')}
+                🚫 {t('pages.diensts.adminPage.legendCantDrive', 'No puede conducir, P-Schein caducado')}
               </p>
             )}
 
