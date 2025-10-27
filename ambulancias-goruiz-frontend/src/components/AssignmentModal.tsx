@@ -256,8 +256,8 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     const to = fmtDDMM(vf?.vacationUntilInRange);
     const title =
       from && to
-        ? `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
-        : `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+        ? `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
+        : `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
     return { has: true, title };
   };
 
@@ -363,7 +363,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                             )}
                             title={vac.title}
                           >
-                            {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🌴' : ''}
+                            {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🏖️' : ''}
                           </span>
                         );
                       })()}
@@ -432,7 +432,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                                   vac.has && dimClass
                                 )}
                               >
-                                {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🌴' : ''}
+                                {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🏖️' : ''}
                               </span>
                             </button>
                           );
@@ -453,7 +453,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   </p>
                 ) : (
                   <p className="mt-1 text-[11px] text-slate-500">
-                    🌴 {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón para ver fechas de vacaciones')}
+                    🏖️ {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón para ver fechas de vacaciones')}
                   </p>
                 )}
               </div>
@@ -483,7 +483,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                             className={mergeClasses(vac.has && dimClass)}
                             title={vac.title}
                           >
-                            {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🌴' : ''}
+                            {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🏖️' : ''}
                           </span>
                         );
                       })()}
@@ -541,7 +541,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                               title={vac.title}
                             >
                               <span className={mergeClasses(vac.has && dimClass)}>
-                                {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🌴' : ''}
+                                {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🏖️' : ''}
                               </span>
                             </button>
                           );
@@ -557,7 +557,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   </p>
                 ) : (
                   <p className="mt-1 text-[11px] text-slate-500">
-                    🌴 {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón para ver fechas de vacaciones')}
+                    🏖️ {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón para ver fechas de vacaciones')}
                   </p>
                 )}
               </div>

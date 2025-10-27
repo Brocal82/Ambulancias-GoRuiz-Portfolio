@@ -72,9 +72,9 @@ const AdminUsersPage = () => {
         const [, m, d] = iso.split('-');
         return `${d}/${m}`;
       };
-      title = `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${fmtDDMM(fullFrom)} → ${fmtDDMM(fullTo)}`;
+      title = `🏖️  ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${fmtDDMM(fullFrom)} → ${fmtDDMM(fullTo)}`;
     } else {
-      title = `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+      title = `🏖️  ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
     }
 
     return { has: true, title };
@@ -90,7 +90,7 @@ const AdminUsersPage = () => {
     vacationUntilFull?: string;    // 'YYYY-MM-DD' (rango REAL completo)
   };
   const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
-  
+
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -112,38 +112,38 @@ const AdminUsersPage = () => {
     fetchUsers();
   }, [fetchUsers]);
 
-// Cargar flags de vacaciones para la semana actual (Berlin)
-useEffect(() => {
-  if (!token || users.length === 0) {
-    setVacationFlags({});
-    return;
-  }
-
-  const userIds = users.map(u => u._id).filter(Boolean);
-  if (userIds.length === 0) {
-    setVacationFlags({});
-    return;
-  }
-
-  const { weekStartISO, weekEndISO } = getBerlinWeekRangeISO();
-  let cancelled = false;
-
-  (async () => {
-    try {
-      const flags = await getVacationFlagsInRange(token, {
-        userIds,
-        fromISO: weekStartISO,
-        toISO: weekEndISO,
-      });
-      if (!cancelled) setVacationFlags(flags);
-    } catch (e) {
-      console.error('❌ Error al cargar flags de vacaciones (semana actual) en AdminUsersPage:', e);
-      if (!cancelled) setVacationFlags({});
+  // Cargar flags de vacaciones para la semana actual (Berlin)
+  useEffect(() => {
+    if (!token || users.length === 0) {
+      setVacationFlags({});
+      return;
     }
-  })();
 
-  return () => { cancelled = true; };
-}, [token, users]);
+    const userIds = users.map(u => u._id).filter(Boolean);
+    if (userIds.length === 0) {
+      setVacationFlags({});
+      return;
+    }
+
+    const { weekStartISO, weekEndISO } = getBerlinWeekRangeISO();
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const flags = await getVacationFlagsInRange(token, {
+          userIds,
+          fromISO: weekStartISO,
+          toISO: weekEndISO,
+        });
+        if (!cancelled) setVacationFlags(flags);
+      } catch (e) {
+        console.error('❌ Error al cargar flags de vacaciones (semana actual) en AdminUsersPage:', e);
+        if (!cancelled) setVacationFlags({});
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [token, users]);
 
 
   const handleEdit = (user: User) => {
@@ -265,7 +265,7 @@ useEffect(() => {
               <span className="text-orange-400">⚠️</span> {t('pages.adminUsers.legend.warning')}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-green-600">🌴</span> {t('pages.adminUsers.legend.vacation', 'Vacaciones (esta semana)')}
+              <span className="text-green-600">🏖️ </span> {t('pages.adminUsers.legend.vacation', 'Vacaciones (esta semana)')}
             </div>
           </div>
         </div>
@@ -289,95 +289,94 @@ useEffect(() => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
-  {filteredUsers.map((user, index) => {
-    const pschein = getPscheinInfo(user.pscheinExpiry);
+                {filteredUsers.map((user, index) => {
+                  const pschein = getPscheinInfo(user.pscheinExpiry);
 
-    const firstCellBorder =
-      pschein.status === 'expired'
-        ? 'border-l-4 border-red-500'
-        : pschein.status === 'warning'
-          ? 'border-l-4 border-orange-400'
-          : '';
+                  const firstCellBorder =
+                    pschein.status === 'expired'
+                      ? 'border-l-4 border-red-500'
+                      : pschein.status === 'warning'
+                        ? 'border-l-4 border-orange-400'
+                        : '';
 
-    const roleKey = (user.ambulanceRole ?? 'unknown') as NonNullable<User['ambulanceRole']> | 'unknown';
+                  const roleKey = (user.ambulanceRole ?? 'unknown') as NonNullable<User['ambulanceRole']> | 'unknown';
 
-    // 🌴 Vacaciones (usar helper que da rango FULL y tooltip)
-    const vacUI = getVacationUI(user._id); // { has: boolean, title?: string }
-    const onVac = vacUI.has;
+                  // 🏖️  Vacaciones (usar helper que da rango FULL y tooltip)
+                  const vacUI = getVacationUI(user._id); // { has: boolean, title?: string }
+                  const onVac = vacUI.has;
 
-    return (
-      <tr
-        key={user._id}
-        className={`${index % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} group cursor-pointer hover:bg-blue-50/50 transition-colors`}
-        onClick={() => handleEdit(user)}
-      >
-        {/* Apellido (sin iconos, pero con tono apagado si está de vacaciones) */}
-        <td
-          className={`whitespace-nowrap py-3 px-4 text-sm text-slate-900 ${firstCellBorder}`}
-          title={vacUI.title}
-        >
-          <span className={onVac ? 'text-slate-400' : undefined}>
-            {user.lastName}
-          </span>
-        </td>
+                  return (
+                    <tr
+                      key={user._id}
+                      className={`${index % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} group cursor-pointer hover:bg-blue-50/50 transition-colors`}
+                      onClick={() => handleEdit(user)}
+                    >
+                      {/* Apellido (sin iconos, pero con tono apagado si está de vacaciones) */}
+                      <td
+                        className={`whitespace-nowrap py-3 px-4 text-sm text-slate-900 ${firstCellBorder}`}
+                        title={vacUI.title}
+                      >
+                        <span className={onVac ? 'text-slate-400' : undefined}>
+                          {user.lastName}
+                        </span>
+                      </td>
 
-        {/* Nombre (sin iconos, pero con tono apagado si está de vacaciones) */}
-        <td
-          className={`whitespace-nowrap py-3 px-4 text-sm ${onVac ? 'text-slate-400' : 'text-slate-900'}`}
-          title={vacUI.title}
-        >
-          {user.name}
-        </td>
+                      {/* Nombre (sin iconos, pero con tono apagado si está de vacaciones) */}
+                      <td
+                        className={`whitespace-nowrap py-3 px-4 text-sm ${onVac ? 'text-slate-400' : 'text-slate-900'}`}
+                        title={vacUI.title}
+                      >
+                        {user.name}
+                      </td>
 
-        {/* Email */}
-        <td className="whitespace-nowrap py-3 px-4 text-sm text-slate-700">
-          {user.email}
-        </td>
+                      {/* Email */}
+                      <td className="whitespace-nowrap py-3 px-4 text-sm text-slate-700">
+                        {user.email}
+                      </td>
 
-        {/* Rol + iconos (🚫, ⚠️, 🌴) */}
-        <td className="whitespace-nowrap py-3 px-4 text-sm">
-          <span
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${rolePillClass[roleKey]}`}
-          >
-            {user.ambulanceRole ? t(`pages.profile.roles.${user.ambulanceRole}` as any) : '—'}
-          </span>
+                      {/* Rol + iconos (🚫, ⚠️, 🏖️ ) */}
+                      <td className="whitespace-nowrap py-3 px-4 text-sm">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${rolePillClass[roleKey]}`}
+                        >
+                          {user.ambulanceRole ? t(`pages.profile.roles.${user.ambulanceRole}` as any) : '—'}
+                        </span>
 
-          {/* 🚫 P-Schein caducado */}
-          {pschein.status === 'expired' && (
-            <span
-              className="ml-2 align-middle text-red-500"
-              title={t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado') as string}
-            >
-              🚫
-            </span>
-          )}
+                        {/* 🚫 P-Schein caducado */}
+                        {pschein.status === 'expired' && (
+                          <span
+                            className="ml-2 align-middle text-red-500"
+                            title={t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado') as string}
+                          >
+                            🚫
+                          </span>
+                        )}
 
-          {/* ⚠️ P-Schein por caducar */}
-          {pschein.status === 'warning' && (
-            <span
-              className="ml-2 align-middle text-orange-400"
-              title={t('pages.diensts.adminPage.driverPscheinWarning', { months: pschein.monthsLeft ?? 0 }) as string}
-            >
-              ⚠️
-            </span>
-          )}
-
-          {/* 🌴 Vacaciones (semana actual) — tooltip con rango FULL */}
-          {onVac && (
-            <span
-              className="ml-2 align-middle text-slate-400"
-              title={vacUI.title}
-            >
-              🌴
-            </span>
-          )}
-        </td>
-      </tr>
-    );
-  })}
-</tbody>
+                        {/* ⚠️ P-Schein por caducar */}
+                        {pschein.status === 'warning' && (
+                          <span
+                            className="ml-2 align-middle text-orange-400"
+                            title={t('pages.diensts.adminPage.driverPscheinWarning', { count: pschein.monthsLeft ?? 0 }) as string}
+                          >
+                            ⚠️
+                          </span>
+                        )}
 
 
+                        {/* 🏖️  Vacaciones (semana actual) — tooltip con rango FULL */} 
+                        {onVac && (
+                          <span 
+                            className="ml-2 align-middle text-slate-400" 
+                            title={vacUI.title} 
+                          > 
+                            🏖️  
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
             </table>
           </div>
         </div>
@@ -397,3 +396,7 @@ useEffect(() => {
 };
 
 export default AdminUsersPage;
+
+
+
+

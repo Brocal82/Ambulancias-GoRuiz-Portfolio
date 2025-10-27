@@ -153,17 +153,17 @@ const userVacationInfo = (user: any) => {
   if (fullFrom && fullTo) {
     const from = fmtDDMM(fullFrom);
     const to = fmtDDMM(fullTo);
-    title = `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`;
+    title = `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`;
   } else {
     // Si aún no llegaron los "Full", mostramos palmera sin fechas (evitamos InRange)
-    title = `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+    title = `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
   }
 
   return { has: true, title };
 };
 
 
-  // Render del rótulo seleccionado (🌴 y “apagado” sólo en quien corresponda)
+  // Render del rótulo seleccionado (🏖️ y “apagado” sólo en quien corresponda)
   const renderSelectedTeamLabel = () => {
     if (loading) return t('common.loading');
     if (!selectedTeam) return t('common.select');
@@ -183,14 +183,14 @@ const userVacationInfo = (user: any) => {
           )}
           title={drvVac.title}
         >
-          {(drv?.lastName || '') + ', ' + (drv?.name || '')}{drvVac.has ? ' 🌴' : ''}
+          {(drv?.lastName || '') + ', ' + (drv?.name || '')}{drvVac.has ? ' 🏖️' : ''}
         </span>
         {' / '}
         <span
           className={mergeClasses(medVac.has && dimClass)}
           title={medVac.title}
         >
-          {(med?.lastName || '') + ', ' + (med?.name || '')}{medVac.has ? ' 🌴' : ''}
+          {(med?.lastName || '') + ', ' + (med?.name || '')}{medVac.has ? ' 🏖️' : ''}
         </span>
       </span>
     );
@@ -209,7 +209,7 @@ const userVacationInfo = (user: any) => {
             {t('pages.diensts.assignTeamModal.select')}
           </label>
 
-          {/* Dropdown personalizado para poder colorear solo el nombre del conductor y mostrar 🌴 por miembro */}
+          {/* Dropdown personalizado para poder colorear solo el nombre del conductor y mostrar 🏖️ por miembro */}
           <div className="relative">
             <button
               id={selectId}
@@ -273,11 +273,11 @@ const userVacationInfo = (user: any) => {
                         )}
                         title={drvVac.title}
                       >
-                        {(drv?.lastName || '') + ', ' + (drv?.name || '')}{drvVac.has ? ' 🌴' : ''}
+                        {(drv?.lastName || '') + ', ' + (drv?.name || '')}{drvVac.has ? ' 🏖️' : ''}
                       </span>
                       <span className="text-slate-500"> / </span>
                       <span className={mergeClasses(medVac.has && dimClass)} title={medVac.title}>
-                        {(med?.lastName || '') + ', ' + (med?.name || '')}{medVac.has ? ' 🌴' : ''}
+                        {(med?.lastName || '') + ', ' + (med?.name || '')}{medVac.has ? ' 🏖️' : ''}
                       </span>
                     </button>
                   );
@@ -293,7 +293,7 @@ const userVacationInfo = (user: any) => {
             </p>
           ) : (
             <p className="mt-1 text-[11px] text-slate-500">
-              🌴 {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón para ver fechas de vacaciones')}
+              🏖️ {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón para ver fechas de vacaciones')}
             </p>
           )}
         </div>

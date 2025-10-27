@@ -59,7 +59,7 @@
         "desc": "Fahrzeugmeldungen prüfen"
       },
       "vacations": {
-        "title": "🌴 Urlaub",
+        "title": "🏖️ Urlaub",
         "desc": "Urlaubsanträge verwalten"
       },
       "appointments": {
@@ -110,7 +110,7 @@
         "desc": "Nachrichten des Admin lesen"
       },
       "vacations": {
-        "title": "🌴 Urlaub",
+        "title": "🏖️ Urlaub",
         "desc": "Deine Urlaubsanträge verwalten"
       },
       "appointments": {
@@ -890,10 +890,10 @@
     "assignUserNoAssignableDays": "⚠️ Keine Tage konnten zugewiesen werden. Der Mitarbeiter hat Urlaub oder ist nicht verfügbar.",
     "driverPscheinExpired": "❌ P-Schein des Fahrers abgelaufen",
     "driverPscheinExpiredLabel": "❌ P-Schein abgelaufen",
-    "driverPscheinWarning": " {{months}} {{months, plural, one {Monat übrig} other {Monate übrig}}}",
+    "driverPscheinWarning_one": "⚠️ Der P-Schein läuft in {{count}} Monat ab",
+    "driverPscheinWarning_other": "⚠️ Der P-Schein läuft in {{count}} Monaten ab",
     "teamWeeklyConflict": "⚠️ Dieses Team ist diese Woche bereits einem anderen Dienst zugewiesen.",
     "teamWeeklyConflictWithDates": "⚠️ Dieses Team hat diese Woche bereits Einsätze.",
-
 
     "errors": {
       "pscheinExpired": "❌ Zuweisung nicht möglich: Der P-Schein des Fahrers ist abgelaufen.",

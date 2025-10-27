@@ -18,7 +18,7 @@ export default function AdminTeamsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
-  // 🌴 Flags semanales por usuario
+  // 🏖️  Flags semanales por usuario
   type VacFlag = {
     hasVacationInRange: boolean;
     vacationStartInRange?: string; // 'YYYY-MM-DD' (dentro de la semana)
@@ -82,7 +82,7 @@ export default function AdminTeamsPage() {
     load();
   }, [load]);
 
- // 🌴 Cargar flags semanales para todos los usuarios listados en equipos
+ // 🏖️  Cargar flags semanales para todos los usuarios listados en equipos
 useEffect(() => {
   if (!token || teams.length === 0) {
     setVacationFlags({});
@@ -202,16 +202,16 @@ const getDriverDecor = (team: Team) => {
       const from = fmtDDMM(weekly?.vacationStartInRange);
       const to = fmtDDMM(weekly?.vacationUntilInRange);
       title = from && to
-        ? `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
-        : `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+        ? `🏖️  ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
+        : `🏖️  ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
     } else if (hasToday) {
-      title = `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+      title = `🏖️  ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
     }
 
     return {
       hasVacation: has,
       cls: has ? 'text-slate-400' : '',
-      icon: has ? ' 🌴' : '',
+      icon: has ? ' 🏖️ ' : '',
       title,
     };
   };
@@ -285,7 +285,7 @@ const getDriverDecor = (team: Team) => {
             <span className={`font-medium ${driverPscheinCls} ${driverVac.cls}`}>
               {(team.driver?.lastName || '—') + ', ' + (team.driver?.name || '—')}
 
-              {/* 🌴 vacaciones (icono con tooltip propio) */}
+              {/* 🏖️  vacaciones (icono con tooltip propio) */}
               {driverVac.icon && (
                 <span title={driverVac.title} className="cursor-help">
                   {driverVac.icon}
@@ -321,7 +321,7 @@ const getDriverDecor = (team: Team) => {
             <span className={`font-medium ${medicVac.cls}`}>
               {(team.medic?.lastName || '—') + ', ' + (team.medic?.name || '—')}
 
-              {/* 🌴 vacaciones (icono con tooltip propio) */}
+              {/* 🏖️ vacaciones (icono con tooltip propio) */}
               {medicVac.icon && (
                 <span title={medicVac.title} className="cursor-help">
                   {medicVac.icon}

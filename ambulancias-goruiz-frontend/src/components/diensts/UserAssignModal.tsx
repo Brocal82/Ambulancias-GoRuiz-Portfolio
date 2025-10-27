@@ -145,10 +145,10 @@ const userVacationInfo = (u: User) => {
   if (fullFrom && fullTo) {
     const from = fmtDDMM(fullFrom);
     const to = fmtDDMM(fullTo);
-    title = `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`;
+    title = `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`;
   } else {
     // evitamos usar los *InRange* para que no recorte por semana
-    title = `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+    title = `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
   }
 
   return { has: true, title };
@@ -220,7 +220,7 @@ const userVacationInfo = (u: User) => {
                               title={vac.title}
                             >
                               {(selectedUser.lastName || '') + ', ' + (selectedUser.name || '')}
-                              {vac.has ? ' 🌴' : ''}
+                              {vac.has ? ' 🏖️' : ''}
                             </span>
                           );
                         })()
@@ -288,7 +288,7 @@ const userVacationInfo = (u: User) => {
                           title={vac.title}
                         >
                           <span className={mergeClasses(dClass, vac.has && dimClass)}>
-                            {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🌴' : ''}
+                            {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🏖️' : ''}
                           </span>
                         </button>
                       );
@@ -311,7 +311,7 @@ const userVacationInfo = (u: User) => {
               </p>
             ) : (
               <p className="mt-1 text-[11px] text-slate-500">
-                🌴 {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón para ver fechas de vacaciones')}
+                🏖️ {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón para ver fechas de vacaciones')}
               </p>
             )}
           </div>
