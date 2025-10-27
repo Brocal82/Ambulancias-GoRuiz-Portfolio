@@ -18,6 +18,8 @@ type VacFlag = {
   hasVacationInRange: boolean;
   vacationStartInRange?: string; // 'YYYY-MM-DD'
   vacationUntilInRange?: string; // 'YYYY-MM-DD'
+  vacationStartFull?: string;    // 'YYYY-MM-DD'
+  vacationUntilFull?: string;    // 'YYYY-MM-DD'
 };
 
 export default function TeamAssignModal({ isOpen, onClose, onConfirm, weekStartISO }: Props) {
@@ -132,26 +134,34 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm, weekStartI
   // Tono apagado para quien está de vacaciones
   const dimClass = 'text-slate-400';
 
-  // Info de vacaciones por usuario (driver o medic)
-  const userVacationInfo = (user: any) => {
-    const uid: string | undefined =
-      typeof user === 'object' && user ? (user as any)._id : (user as any);
-    if (!uid) return { has: false, title: undefined as string | undefined };
+// Info de vacaciones por usuario (driver o medic)
+// Tooltip SIEMPRE con el rango REAL completo (no recortado por semana)
+const userVacationInfo = (user: any) => {
+  const uid: string | undefined =
+    typeof user === 'object' && user ? (user as any)._id : (user as any);
+  if (!uid) return { has: false, title: undefined as string | undefined };
 
-    const vf = vacationFlags[uid];
-    const has = !!vf?.hasVacationInRange;
+  const vf = vacationFlags[uid];
+  const has = !!vf?.hasVacationInRange;
+  if (!has) return { has: false, title: undefined as string | undefined };
 
-    if (!has) return { has: false, title: undefined as string | undefined };
+  // Usamos SOLO los campos "Full" para el tooltip global
+  const fullFrom = vf?.vacationStartFull;
+  const fullTo = vf?.vacationUntilFull;
 
-    const from = fmtDDMM(vf?.vacationStartInRange);
-    const to = fmtDDMM(vf?.vacationUntilInRange);
-    const title =
-      from && to
-        ? `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
-        : `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+  let title: string | undefined;
+  if (fullFrom && fullTo) {
+    const from = fmtDDMM(fullFrom);
+    const to = fmtDDMM(fullTo);
+    title = `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`;
+  } else {
+    // Si aún no llegaron los "Full", mostramos palmera sin fechas (evitamos InRange)
+    title = `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+  }
 
-    return { has: true, title };
-  };
+  return { has: true, title };
+};
+
 
   // Render del rótulo seleccionado (🌴 y “apagado” sólo en quien corresponda)
   const renderSelectedTeamLabel = () => {

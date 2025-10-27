@@ -42,11 +42,6 @@ const getBerlinWeekRangeISO = () => {
   return { weekStartISO: mondayISO, weekEndISO: sundayISO };
 };
 
-const fmtDDMM = (iso?: string) => {
-  if (!iso) return '';
-  const [, m, d] = iso.split('-');
-  return `${d}/${m}`;
-};
 
 const AdminUsersPage = () => {
   const { token } = useAuth();
@@ -60,14 +55,42 @@ const AdminUsersPage = () => {
   const [roleFilter, setRoleFilter] = useState<'all' | 'driver' | 'medic' | 'both'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'onLeave' | 'onVacation'>('all');
 
+  // ✅ Helper UI para vacaciones (usa vacationFlags y t del scope)
+  const getVacationUI = (userId: string) => {
+    const vf = vacationFlags[userId];
+    const has = !!vf?.hasVacationInRange;
+
+    if (!has) return { has: false, title: undefined as string | undefined };
+
+    const fullFrom = vf?.vacationStartFull;
+    const fullTo = vf?.vacationUntilFull;
+
+    let title: string | undefined;
+    if (fullFrom && fullTo) {
+      const fmtDDMM = (iso?: string) => {
+        if (!iso) return '';
+        const [, m, d] = iso.split('-');
+        return `${d}/${m}`;
+      };
+      title = `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${fmtDDMM(fullFrom)} → ${fmtDDMM(fullTo)}`;
+    } else {
+      title = `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+    }
+
+    return { has: true, title };
+  };
+
+
   // Flags de vacaciones por usuario (para la semana actual en Berlin)
   type VacFlag = {
     hasVacationInRange: boolean;
     vacationStartInRange?: string; // 'YYYY-MM-DD' (dentro de la semana)
     vacationUntilInRange?: string; // 'YYYY-MM-DD' (dentro de la semana)
+    vacationStartFull?: string;    // 'YYYY-MM-DD' (rango REAL completo)
+    vacationUntilFull?: string;    // 'YYYY-MM-DD' (rango REAL completo)
   };
   const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
-  const [flagsLoading, setFlagsLoading] = useState(false);
+  
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -89,35 +112,39 @@ const AdminUsersPage = () => {
     fetchUsers();
   }, [fetchUsers]);
 
-  // Cargar flags de vacaciones para la semana actual (Berlin)
-  useEffect(() => {
-    if (!token || users.length === 0) {
-      setVacationFlags({});
-      return;
+// Cargar flags de vacaciones para la semana actual (Berlin)
+useEffect(() => {
+  if (!token || users.length === 0) {
+    setVacationFlags({});
+    return;
+  }
+
+  const userIds = users.map(u => u._id).filter(Boolean);
+  if (userIds.length === 0) {
+    setVacationFlags({});
+    return;
+  }
+
+  const { weekStartISO, weekEndISO } = getBerlinWeekRangeISO();
+  let cancelled = false;
+
+  (async () => {
+    try {
+      const flags = await getVacationFlagsInRange(token, {
+        userIds,
+        fromISO: weekStartISO,
+        toISO: weekEndISO,
+      });
+      if (!cancelled) setVacationFlags(flags);
+    } catch (e) {
+      console.error('❌ Error al cargar flags de vacaciones (semana actual) en AdminUsersPage:', e);
+      if (!cancelled) setVacationFlags({});
     }
-    const userIds = users.map(u => u._id).filter(Boolean);
-    const { weekStartISO, weekEndISO } = getBerlinWeekRangeISO();
-    let cancelled = false;
+  })();
 
-    (async () => {
-      try {
-        setFlagsLoading(true);
-        const flags = await getVacationFlagsInRange(token, {
-          userIds,
-          fromISO: weekStartISO,
-          toISO: weekEndISO,
-        });
-        if (!cancelled) setVacationFlags(flags);
-      } catch (e) {
-        console.error('❌ Error al cargar flags de vacaciones (semana actual) en AdminUsersPage:', e);
-        if (!cancelled) setVacationFlags({});
-      } finally {
-        if (!cancelled) setFlagsLoading(false);
-      }
-    })();
+  return () => { cancelled = true; };
+}, [token, users]);
 
-    return () => { cancelled = true; };
-  }, [token, users]);
 
   const handleEdit = (user: User) => {
     navigate(`/admin/user/${user._id}`);
@@ -262,76 +289,94 @@ const AdminUsersPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
-                {filteredUsers.map((user, index) => {
-                  const pschein = getPscheinInfo(user.pscheinExpiry);
-                  const firstCellBorder =
-                    pschein.status === 'expired'
-                      ? 'border-l-4 border-red-500'
-                      : pschein.status === 'warning'
-                        ? 'border-l-4 border-orange-400'
-                        : '';
+  {filteredUsers.map((user, index) => {
+    const pschein = getPscheinInfo(user.pscheinExpiry);
 
-                  const roleKey = (user.ambulanceRole ?? 'unknown') as NonNullable<User['ambulanceRole']> | 'unknown';
+    const firstCellBorder =
+      pschein.status === 'expired'
+        ? 'border-l-4 border-red-500'
+        : pschein.status === 'warning'
+          ? 'border-l-4 border-orange-400'
+          : '';
 
-                  // Vacaciones (semana actual)
-                  const vac = vacationFlags[user._id];
-                  const onVac = !!vac?.hasVacationInRange;
-                  const vacTitle = onVac
-                    ? (() => {
-                        const from = vac?.vacationStartInRange ? fmtDDMM(vac.vacationStartInRange) : '';
-                        const to = vac?.vacationUntilInRange ? fmtDDMM(vac.vacationUntilInRange) : '';
-                        return from && to
-                          ? `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
-                          : `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
-                      })()
-                    : undefined;
+    const roleKey = (user.ambulanceRole ?? 'unknown') as NonNullable<User['ambulanceRole']> | 'unknown';
 
-                  return (
-                    <tr
-                      key={user._id}
-                      className={`${index % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} group cursor-pointer hover:bg-blue-50/50 transition-colors`}
-                      onClick={() => handleEdit(user)}
-                    >
-                      <td
-                        className={`whitespace-nowrap py-3 px-4 text-sm ${onVac ? 'text-slate-400' : 'text-slate-900'} ${firstCellBorder}`}
-                        title={vacTitle}
-                      >
-                        {user.lastName}
-                      </td>
-                      <td
-                        className={`whitespace-nowrap py-3 px-4 text-sm ${onVac ? 'text-slate-400' : 'text-slate-900'}`}
-                        title={vacTitle}
-                      >
-                        {user.name}{onVac ? ' 🌴' : ''}
-                      </td>
-                      <td className="whitespace-nowrap py-3 px-4 text-sm text-slate-700">{user.email}</td>
-                      <td className="whitespace-nowrap py-3 px-4 text-sm">
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${rolePillClass[roleKey]}`}>
-                          {user.ambulanceRole ? t(`pages.profile.roles.${user.ambulanceRole}` as any) : '—'}
-                        </span>
+    // 🌴 Vacaciones (usar helper que da rango FULL y tooltip)
+    const vacUI = getVacationUI(user._id); // { has: boolean, title?: string }
+    const onVac = vacUI.has;
 
-                        {pschein.status === 'expired' && (
-                          <span
-                            className="ml-2 align-middle text-red-500"
-                            title="P-Schein caducado"
-                          >
-                            🚫
-                          </span>
-                        )}
+    return (
+      <tr
+        key={user._id}
+        className={`${index % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} group cursor-pointer hover:bg-blue-50/50 transition-colors`}
+        onClick={() => handleEdit(user)}
+      >
+        {/* Apellido (sin iconos, pero con tono apagado si está de vacaciones) */}
+        <td
+          className={`whitespace-nowrap py-3 px-4 text-sm text-slate-900 ${firstCellBorder}`}
+          title={vacUI.title}
+        >
+          <span className={onVac ? 'text-slate-400' : undefined}>
+            {user.lastName}
+          </span>
+        </td>
 
-                        {pschein.status === 'warning' && (
-                          <span
-                            className="ml-2 align-middle text-orange-400"
-                            title={`P-Schein caduca en ${pschein.monthsLeft ?? 0} ${pschein.monthsLeft === 1 ? 'mes' : 'meses'}`}
-                          >
-                            ⚠️
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
+        {/* Nombre (sin iconos, pero con tono apagado si está de vacaciones) */}
+        <td
+          className={`whitespace-nowrap py-3 px-4 text-sm ${onVac ? 'text-slate-400' : 'text-slate-900'}`}
+          title={vacUI.title}
+        >
+          {user.name}
+        </td>
+
+        {/* Email */}
+        <td className="whitespace-nowrap py-3 px-4 text-sm text-slate-700">
+          {user.email}
+        </td>
+
+        {/* Rol + iconos (🚫, ⚠️, 🌴) */}
+        <td className="whitespace-nowrap py-3 px-4 text-sm">
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${rolePillClass[roleKey]}`}
+          >
+            {user.ambulanceRole ? t(`pages.profile.roles.${user.ambulanceRole}` as any) : '—'}
+          </span>
+
+          {/* 🚫 P-Schein caducado */}
+          {pschein.status === 'expired' && (
+            <span
+              className="ml-2 align-middle text-red-500"
+              title={t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado') as string}
+            >
+              🚫
+            </span>
+          )}
+
+          {/* ⚠️ P-Schein por caducar */}
+          {pschein.status === 'warning' && (
+            <span
+              className="ml-2 align-middle text-orange-400"
+              title={t('pages.diensts.adminPage.driverPscheinWarning', { months: pschein.monthsLeft ?? 0 }) as string}
+            >
+              ⚠️
+            </span>
+          )}
+
+          {/* 🌴 Vacaciones (semana actual) — tooltip con rango FULL */}
+          {onVac && (
+            <span
+              className="ml-2 align-middle text-slate-400"
+              title={vacUI.title}
+            >
+              🌴
+            </span>
+          )}
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
+
 
             </table>
           </div>

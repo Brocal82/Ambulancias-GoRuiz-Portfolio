@@ -18,6 +18,8 @@ type VacFlag = {
   hasVacationInRange: boolean;
   vacationStartInRange?: string; // 'YYYY-MM-DD'
   vacationUntilInRange?: string; // 'YYYY-MM-DD'
+  vacationStartFull?: string;    // 'YYYY-MM-DD' 
+  vacationUntilFull?: string;    // 'YYYY-MM-DD'  
 };
 
 export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartISO }: Props) {
@@ -129,21 +131,29 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
   // Tono apagado para quien está de vacaciones
   const dimClass = 'text-slate-400';
 
-  // Info de vacaciones por usuario (para tooltip y 🌴)
-  const userVacationInfo = (u: User) => {
-    const vf = vacationFlags[u._id];
-    const has = !!vf?.hasVacationInRange;
-    if (!has) return { has: false, title: undefined as string | undefined };
+// Info de vacaciones por usuario (tooltip SIEMPRE con rango completo)
+const userVacationInfo = (u: User) => {
+  const vf = vacationFlags[u._id];
+  const has = !!vf?.hasVacationInRange;
+  if (!has) return { has: false, title: undefined as string | undefined };
 
-    const from = fmtDDMM(vf?.vacationStartInRange);
-    const to = fmtDDMM(vf?.vacationUntilInRange);
-    const title =
-      from && to
-        ? `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
-        : `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+  // Tooltip SOLO con el rango completo; si no llega, mostramos solo la palmera sin fechas
+  const fullFrom = vf?.vacationStartFull;
+  const fullTo = vf?.vacationUntilFull;
 
-    return { has: true, title };
-  };
+  let title: string | undefined;
+  if (fullFrom && fullTo) {
+    const from = fmtDDMM(fullFrom);
+    const to = fmtDDMM(fullTo);
+    title = `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`;
+  } else {
+    // evitamos usar los *InRange* para que no recorte por semana
+    title = `🌴 ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+  }
+
+  return { has: true, title };
+};
+
 
   // Usuario seleccionado (para el rótulo del botón)
   const selectedUser = useMemo(

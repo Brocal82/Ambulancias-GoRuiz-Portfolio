@@ -890,7 +890,7 @@
     "assignUserNoAssignableDays": "⚠️ Keine Tage konnten zugewiesen werden. Der Mitarbeiter hat Urlaub oder ist nicht verfügbar.",
     "driverPscheinExpired": "❌ P-Schein des Fahrers abgelaufen",
     "driverPscheinExpiredLabel": "❌ P-Schein abgelaufen",
-    "driverPscheinWarning": "⚠️ {{months}} {{months, plural, one {Monat übrig} other {Monate übrig}}}",
+    "driverPscheinWarning": " {{months}} {{months, plural, one {Monat übrig} other {Monate übrig}}}",
     "teamWeeklyConflict": "⚠️ Dieses Team ist diese Woche bereits einem anderen Dienst zugewiesen.",
     "teamWeeklyConflictWithDates": "⚠️ Dieses Team hat diese Woche bereits Einsätze.",
 
