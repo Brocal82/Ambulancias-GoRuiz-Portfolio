@@ -855,95 +855,83 @@
       }
     },
     "diensts": {
-  "adminPage": {
-    "title": "Dienstplan (Admin)",
-    "weekRange": "Woche vom {{from}} bis {{to}}",
-
-    "actions": {
-      "create": "Erstellen",
-      "delete": "Löschen"
+      "adminPage": {
+        "title": "Dienstplan (Admin)",
+        "weekRange": "Woche vom {{from}} bis {{to}}",
+        "actions": {
+          "create": "Erstellen",
+          "delete": "Löschen"
+        },
+        "confirmCreate": "Vorlagen für die Woche ab {{date}} erstellen?",
+        "confirmDelete": "Alle Dienste für die Woche ab {{date}} löschen?",
+        "assignTeamToWeek": "Team zuweisen",
+        "assignUserToWeek": "Mitarbeiter der Woche zuweisen",
+        "alerts": {
+          "createOk": "✅ Vorlagen erfolgreich erstellt",
+          "createErr": "❌ Vorlagen konnten nicht erstellt werden. Möglicherweise existieren sie bereits.",
+          "deleteOk": "🗑️ Dienste erfolgreich gelöscht",
+          "deleteErr": "❌ Dienste konnten nicht gelöscht werden."
+        },
+        "dienstLabel": "Dienst #{{num}}",
+        "freeDay": "Frei",
+        "assignWeekOk": "✅ Team erfolgreich der Woche zugewiesen",
+        "assignWeekErr": "❌ Team konnte nicht der Woche zugewiesen werden",
+        "assignUserWeekOk": "✅ Mitarbeiter erfolgreich der Woche zugewiesen.",
+        "assignUserWeekErr": "❌ Fehler beim Zuweisen des Mitarbeiters. Bitte erneut versuchen.",
+        "assignUserWeekConflict": "⚠️ Der Mitarbeiter ist bereits einem anderen Dienst dieser Woche zugewiesen.",
+        "assignUserWeekPscheinExpired": "❌ Zuweisung nicht möglich: Der P-Schein des Fahrers ist abgelaufen.",
+        "assignUserNoAssignableDays": "⚠️ Keine Tage konnten zugewiesen werden. Der Mitarbeiter hat Urlaub oder ist nicht verfügbar.",
+        "driverPscheinExpired": "❌ P-Schein des Fahrers abgelaufen",
+        "driverPscheinExpiredLabel": "❌ P-Schein abgelaufen",
+        "driverPscheinWarning_one": "⚠️ Der P-Schein läuft in {{count}} Monat ab",
+        "driverPscheinWarning_other": "⚠️ Der P-Schein läuft in {{count}} Monaten ab",
+        "teamWeeklyConflict": "⚠️ Dieses Team ist diese Woche bereits einem anderen Dienst zugewiesen.",
+        "teamWeeklyConflictWithDates": "⚠️ Dieses Team hat diese Woche bereits Einsätze.",
+        "errors": {
+          "pscheinExpired": "❌ Zuweisung nicht möglich: Der P-Schein des Fahrers ist abgelaufen.",
+          "weeklyConflict": "⚠️ Zuweisung nicht möglich: Ein Mitglied ist bereits einem anderen Dienst dieser Woche zugewiesen.",
+          "weeklyConflictWithDates": "⚠️ Zuweisung nicht möglich: Es gibt bereits Zuweisungen in dieser Woche. Fahrer: {{driverDates}}. Sanitäter: {{medicDates}}."
+        },
+        "clearWeekPeople": "Zuweisungen der Woche löschen",
+        "clearPeopleWeek": "Zuweisungen der Woche löschen",
+        "confirmClear": "Alle Zuweisungen (Fahrer und Sanitäter) für Dienst #{{num}} (Woche ab {{date}}) löschen?",
+        "clearOk": "🧽 Zuweisungen der Woche gelöscht",
+        "clearErr": "❌ Zuweisungen der Woche konnten nicht gelöscht werden",
+        "swapRolesWeek": "Rollen der Woche tauschen",
+        "confirmSwap": "Möchten Sie die Rollen für Dienst #{{num}} (Woche ab {{date}}) tauschen?",
+        "swapWeekOk": "✅ Rollen erfolgreich getauscht.",
+        "swapWeekErr": "❌ Rollen konnten nicht getauscht werden.",
+        "swapWeekNotPermitted": "❌ Tausch nicht möglich: Ein Mitglied kann die Zielrolle nicht übernehmen (unvereinbare Rolle oder abgelaufener P-Schein).",
+        "considerSwap": "⚠️ Der Fahrer hat einen abgelaufenen P-Schein, kann aber als Sanitäter arbeiten. Rollenwechsel (⇅) empfohlen.",
+        "assignOneAria": "Einen Mitarbeiter für die ganze Woche zuweisen",
+        "legendCantDrive": "Darf nicht fahren, P-Schein abgelaufen"
+      },
+      "assignTeamModal": {
+        "title": "Team der Woche zuweisen",
+        "select": "Ein Team auswählen",
+        "confirm": "Zuweisen"
+      },
+      "weekModals": {
+        "vacations": "Urlaub",
+        "vacationsHint": "Fahre mit der Maus darüber, um die Urlaubsdaten zu sehen"
+      },
+      "workerPage": {
+        "title": "Deine zugewiesenen Tage",
+        "loading": "Zugewiesene Tage werden geladen...",
+        "weekRange": "Woche vom {{from}} bis {{to}}",
+        "freeDay": "Frei"
+      },
+      "dienstPage": {
+        "title": "Deine Dienste",
+        "loading": "Dienste werden geladen...",
+        "range": "Von {{from}} bis {{to}}",
+        "freeDay": "Frei"
+      },
+      "adminUserTab": {
+        "title": "Zugewiesene Dienste",
+        "loading": "Zugewiesene Tage werden geladen..."
+      }
     },
-
-    "confirmCreate": "Vorlagen für die Woche ab {{date}} erstellen?",
-    "confirmDelete": "Alle Dienste für die Woche ab {{date}} löschen?",
-
-    "assignTeamToWeek": "Team zuweisen",
-    "assignUserToWeek": "Mitarbeiter der Woche zuweisen",
-
-    "alerts": {
-      "createOk": "✅ Vorlagen erfolgreich erstellt",
-      "createErr": "❌ Vorlagen konnten nicht erstellt werden. Möglicherweise existieren sie bereits.",
-      "deleteOk": "🗑️ Dienste erfolgreich gelöscht",
-      "deleteErr": "❌ Dienste konnten nicht gelöscht werden."
-    },
-
-    "dienstLabel": "Dienst #{{num}}",
-    "freeDay": "Frei",
-
-    "assignWeekOk": "✅ Team erfolgreich der Woche zugewiesen",
-    "assignWeekErr": "❌ Team konnte nicht der Woche zugewiesen werden",
-
-    "assignUserWeekOk": "✅ Mitarbeiter erfolgreich der Woche zugewiesen.",
-    "assignUserWeekErr": "❌ Fehler beim Zuweisen des Mitarbeiters. Bitte erneut versuchen.",
-    "assignUserWeekConflict": "⚠️ Der Mitarbeiter ist bereits einem anderen Dienst dieser Woche zugewiesen.",
-    "assignUserWeekPscheinExpired": "❌ Zuweisung nicht möglich: Der P-Schein des Fahrers ist abgelaufen.",
-    "assignUserNoAssignableDays": "⚠️ Keine Tage konnten zugewiesen werden. Der Mitarbeiter hat Urlaub oder ist nicht verfügbar.",
-    "driverPscheinExpired": "❌ P-Schein des Fahrers abgelaufen",
-    "driverPscheinExpiredLabel": "❌ P-Schein abgelaufen",
-    "driverPscheinWarning_one": "⚠️ Der P-Schein läuft in {{count}} Monat ab",
-    "driverPscheinWarning_other": "⚠️ Der P-Schein läuft in {{count}} Monaten ab",
-    "teamWeeklyConflict": "⚠️ Dieses Team ist diese Woche bereits einem anderen Dienst zugewiesen.",
-    "teamWeeklyConflictWithDates": "⚠️ Dieses Team hat diese Woche bereits Einsätze.",
-
-    "errors": {
-      "pscheinExpired": "❌ Zuweisung nicht möglich: Der P-Schein des Fahrers ist abgelaufen.",
-      "weeklyConflict": "⚠️ Zuweisung nicht möglich: Ein Mitglied ist bereits einem anderen Dienst dieser Woche zugewiesen.",
-      "weeklyConflictWithDates": "⚠️ Zuweisung nicht möglich: Es gibt bereits Zuweisungen in dieser Woche. Fahrer: {{driverDates}}. Sanitäter: {{medicDates}}."
-    },
-
-    "clearWeekPeople": "Zuweisungen der Woche löschen",
-    "clearPeopleWeek": "Zuweisungen der Woche löschen",
-    "confirmClear": "Alle Zuweisungen (Fahrer und Sanitäter) für Dienst #{{num}} (Woche ab {{date}}) löschen?",
-    "clearOk": "🧽 Zuweisungen der Woche gelöscht",
-    "clearErr": "❌ Zuweisungen der Woche konnten nicht gelöscht werden",
-
-    "swapRolesWeek": "Rollen der Woche tauschen",
-    "confirmSwap": "Möchten Sie die Rollen für Dienst #{{num}} (Woche ab {{date}}) tauschen?",
-    "swapWeekOk": "✅ Rollen erfolgreich getauscht.",
-    "swapWeekErr": "❌ Rollen konnten nicht getauscht werden.",
-    "swapWeekNotPermitted": "❌ Tausch nicht möglich: Ein Mitglied kann die Zielrolle nicht übernehmen (unvereinbare Rolle oder abgelaufener P-Schein).",
-    "considerSwap": "⚠️ Der Fahrer hat einen abgelaufenen P-Schein, kann aber als Sanitäter arbeiten. Rollenwechsel (⇅) empfohlen."
-,
-
-    "assignOneAria": "Einen Mitarbeiter für die ganze Woche zuweisen"
-  },
-
-  "assignTeamModal": {
-    "title": "Team der Woche zuweisen",
-    "select": "Ein Team auswählen",
-    "confirm": "Zuweisen"
-  },
-
-  "workerPage": {
-    "title": "Deine zugewiesenen Tage",
-    "loading": "Zugewiesene Tage werden geladen...",
-    "weekRange": "Woche vom {{from}} bis {{to}}",
-    "freeDay": "Frei"
-  },
-
-  "dienstPage": {
-    "title": "Deine Dienste",
-    "loading": "Dienste werden geladen...",
-    "range": "Von {{from}} bis {{to}}",
-    "freeDay": "Frei"
-  },
-
-  "adminUserTab": {
-    "title": "Zugewiesene Dienste",
-    "loading": "Zugewiesene Tage werden geladen..."
-  }
-},
-
     "adminUserDetail": {
       "title": "Mitarbeiterdetails",
       "loading": "Mitarbeiterdaten werden geladen...",
@@ -1130,18 +1118,17 @@
       }
     }
   },
-"common": {
-  "loading": "Wird geladen...",
-  "select": "Auswählen",
-  "saving": "Wird gespeichert...",
-  "create": "Erstellen",
-  "cancel": "Abbrechen",
-  "delete": "Löschen",
-  "month": "Monat",
-  "months": "Monate",
-  "left": "verbleibend"
-},
-
+  "common": {
+    "loading": "Wird geladen...",
+    "select": "Auswählen",
+    "saving": "Wird gespeichert...",
+    "create": "Erstellen",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "month": "Monat",
+    "months": "Monate",
+    "left": "verbleibend"
+  },
   "toasts": {
     "mechanics": {
       "loadError": "❌ Fehler beim Laden der Meldungen oder Krankenwagen.",

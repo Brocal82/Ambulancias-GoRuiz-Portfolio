@@ -855,96 +855,83 @@
       }
     },
     "diensts": {
-  "adminPage": {
-    "title": "Dienstplan (Admin)",
-    "weekRange": "Semana del {{from}} al {{to}}",
-
-    "actions": {
-      "create": "Crear",
-      "delete": "Borrar"
+      "adminPage": {
+        "title": "Dienstplan (Admin)",
+        "weekRange": "Semana del {{from}} al {{to}}",
+        "actions": {
+          "create": "Crear",
+          "delete": "Borrar"
+        },
+        "confirmCreate": "¿Crear plantillas para la semana del {{date}}?",
+        "confirmDelete": "¿Borrar todos los Diensts de la semana del {{date}}?",
+        "assignTeamToWeek": "Asignar Team",
+        "assignUserToWeek": "Asignar trabajador a la semana",
+        "alerts": {
+          "createOk": "✅ Plantillas creadas correctamente",
+          "createErr": "❌ No se pudieron crear las plantillas. Quizás ya existen.",
+          "deleteOk": "🗑️ Diensts eliminados correctamente",
+          "deleteErr": "❌ No se pudieron eliminar los Diensts."
+        },
+        "dienstLabel": "Dienst #{{num}}",
+        "freeDay": "Libre",
+        "assignWeekOk": "✅ Equipo asignado correctamente a toda la semana",
+        "assignWeekErr": "❌ No se pudo asignar el equipo a la semana",
+        "assignUserWeekOk": "✅ Usuario asignado correctamente a toda la semana.",
+        "assignUserWeekErr": "❌ Error al asignar el usuario a la semana. Por favor, inténtalo de nuevo.",
+        "assignUserWeekConflict": "⚠️ El usuario ya está asignado a otro Dienst esta semana.",
+        "assignUserWeekPscheinExpired": "❌ No se puede asignar: el P-Schein del conductor está caducado.",
+        "assignUserNoAssignableDays": "⚠️ No se pudo asignar ningún día. El usuario tiene vacaciones o días no disponibles.",
+        "driverPscheinExpired": "❌ P-Schein del conductor caducado",
+        "driverPscheinExpiredLabel": "❌ P-Schein caducado",
+        "driverPscheinWarning_one": "⚠️ El P-Schein caduca en {{count}} mes",
+        "driverPscheinWarning_other": "⚠️ El P-Schein caduca en {{count}} meses",
+        "teamWeeklyConflict": "⚠️ Este equipo ya está asignado a otro Dienst esta semana.",
+        "teamWeeklyConflictWithDates": "⚠️ Este equipo ya tiene asignaciones esta semana.",
+        "errors": {
+          "pscheinExpired": "❌ No se puede asignar: el P-Schein del conductor está caducado.",
+          "weeklyConflict": "⚠️ No se puede asignar: algún miembro ya está asignado en otro Dienst esta semana.",
+          "weeklyConflictWithDates": "⚠️ No se puede asignar: ya existen asignaciones esta semana. Conductor: {{driverDates}}. Sanitario: {{medicDates}}."
+        },
+        "clearWeekPeople": "Limpiar asignaciones de la semana",
+        "clearPeopleWeek": "Limpiar asignaciones de la semana",
+        "confirmClear": "¿Quitar las asignaciones (conductor y sanitario) de toda la semana del Dienst #{{num}} ({{date}})?",
+        "clearOk": "🧽 Asignaciones borradas para la semana",
+        "clearErr": "❌ No se pudieron borrar las asignaciones de la semana",
+        "swapRolesWeek": "Intercambiar roles de la semana",
+        "confirmSwap": "¿Deseas intercambiar los roles del Dienst #{{num}} (semana que comienza el {{date}})?",
+        "swapWeekOk": "✅ Roles intercambiados correctamente.",
+        "swapWeekErr": "❌ No se pudieron intercambiar los roles.",
+        "swapWeekNotPermitted": "❌ No se puede intercambiar: uno de los miembros no puede desempeñar el rol destino (rol no compatible o P-Schein caducado).",
+        "considerSwap": "⚠️ El conductor tiene el P-Schein caducado, pero puede trabajar como sanitario. Considere intercambiar roles (⇅).",
+        "assignOneAria": "Asignar un usuario a toda la semana",
+        "legendCantDrive": "No puede conducir, P-Schein caducado"
+      },
+      "assignTeamModal": {
+        "title": "Asignar Team a la semana",
+        "select": "Selecciona una pareja",
+        "confirm": "Asignar"
+      },
+      "weekModals": {
+      "vacations": "Vacaciones",
+      "vacationsHint": "Pasa el ratón para ver las fechas de vacaciones"
+      },
+      "workerPage": {
+        "title": "Tus días asignados",
+        "loading": "Cargando días asignados...",
+        "weekRange": "Semana del {{from}} al {{to}}",
+        "freeDay": "Libre"
+      },
+      "dienstPage": {
+        "title": "Tus Diensts",
+        "loading": "Cargando diensts...",
+        "range": "Desde el {{from}} hasta el {{to}}",
+        "freeDay": "Libre"
+      },
+      "adminUserTab": {
+        "title": "Diensts asignados",
+        "loading": "Cargando días asignados..."
+      }
     },
-
-    "confirmCreate": "¿Crear plantillas para la semana del {{date}}?",
-    "confirmDelete": "¿Borrar todos los Diensts de la semana del {{date}}?",
-
-    "assignTeamToWeek": "Asignar Team",
-    "assignUserToWeek": "Asignar trabajador a la semana", 
-               
-
-    "alerts": {
-      "createOk": "✅ Plantillas creadas correctamente",
-      "createErr": "❌ No se pudieron crear las plantillas. Quizás ya existen.",
-      "deleteOk": "🗑️ Diensts eliminados correctamente",
-      "deleteErr": "❌ No se pudieron eliminar los Diensts."
-    },
-
-    "dienstLabel": "Dienst #{{num}}",
-    "freeDay": "Libre",
-
-    "assignWeekOk": "✅ Equipo asignado correctamente a toda la semana",
-    "assignWeekErr": "❌ No se pudo asignar el equipo a la semana",
-
-    "assignUserWeekOk": "✅ Usuario asignado correctamente a toda la semana.",
-    "assignUserWeekErr": "❌ Error al asignar el usuario a la semana. Por favor, inténtalo de nuevo.",
-    "assignUserWeekConflict": "⚠️ El usuario ya está asignado a otro Dienst esta semana.",
-    "assignUserWeekPscheinExpired": "❌ No se puede asignar: el P-Schein del conductor está caducado.",
-    "assignUserNoAssignableDays": "⚠️ No se pudo asignar ningún día. El usuario tiene vacaciones o días no disponibles.",
-    "driverPscheinExpired": "❌ P-Schein del conductor caducado",
-    "driverPscheinExpiredLabel": "❌ P-Schein caducado",
-    "driverPscheinWarning_one": "⚠️ El P-Schein caduca en {{count}} mes",
-    "driverPscheinWarning_other": "⚠️ El P-Schein caduca en {{count}} meses",
-    "teamWeeklyConflict": "⚠️ Este equipo ya está asignado a otro Dienst esta semana.",
-    "teamWeeklyConflictWithDates": "⚠️ Este equipo ya tiene asignaciones esta semana.", 
-
-    "errors": {
-      "pscheinExpired": "❌ No se puede asignar: el P-Schein del conductor está caducado.",
-      "weeklyConflict": "⚠️ No se puede asignar: algún miembro ya está asignado en otro Dienst esta semana.",
-      "weeklyConflictWithDates": "⚠️ No se puede asignar: ya existen asignaciones esta semana. Conductor: {{driverDates}}. Sanitario: {{medicDates}}."
-    },
-
-    "clearWeekPeople": "Limpiar asignaciones de la semana",
-    "clearPeopleWeek": "Limpiar asignaciones de la semana",         
-    "confirmClear": "¿Quitar las asignaciones (conductor y sanitario) de toda la semana del Dienst #{{num}} ({{date}})?",
-    "clearOk": "🧽 Asignaciones borradas para la semana",
-    "clearErr": "❌ No se pudieron borrar las asignaciones de la semana",
-
-    "swapRolesWeek": "Intercambiar roles de la semana",
-    "confirmSwap": "¿Deseas intercambiar los roles del Dienst #{{num}} (semana que comienza el {{date}})?",
-    "swapWeekOk": "✅ Roles intercambiados correctamente.",
-    "swapWeekErr": "❌ No se pudieron intercambiar los roles.",
-    "swapWeekNotPermitted": "❌ No se puede intercambiar: uno de los miembros no puede desempeñar el rol destino (rol no compatible o P-Schein caducado).",
-    "considerSwap": "⚠️ El conductor tiene el P-Schein caducado, pero puede trabajar como sanitario. Considere intercambiar roles (⇅).",
-
-
-    "assignOneAria": "Asignar un usuario a toda la semana"
-  },
-
-  "assignTeamModal": {
-    "title": "Asignar Team a la semana",
-    "select": "Selecciona una pareja",
-    "confirm": "Asignar"
-  },
-
-  "workerPage": {
-    "title": "Tus días asignados",
-    "loading": "Cargando días asignados...",
-    "weekRange": "Semana del {{from}} al {{to}}",
-    "freeDay": "Libre"
-  },
-
-  "dienstPage": {
-    "title": "Tus Diensts",
-    "loading": "Cargando diensts...",
-    "range": "Desde el {{from}} hasta el {{to}}",
-    "freeDay": "Libre"
-  },
-
-  "adminUserTab": {
-    "title": "Diensts asignados",
-    "loading": "Cargando días asignados..."
-  }
-},
-
     "adminUserDetail": {
       "title": "Detalle del Trabajador",
       "loading": "Cargando datos del trabajador...",
@@ -1131,18 +1118,17 @@
       }
     }
   },
-"common": {
-  "loading": "Cargando...",
-  "select": "Selecciona",
-  "saving": "Guardando...",
-  "create": "Crear",
-  "cancel": "Cancelar",
-  "delete": "Eliminar",
-  "month": "mes",
-  "months": "meses",
-  "left": "restantes"
-},
-
+  "common": {
+    "loading": "Cargando...",
+    "select": "Selecciona",
+    "saving": "Guardando...",
+    "create": "Crear",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "month": "mes",
+    "months": "meses",
+    "left": "restantes"
+  },
   "toasts": {
     "mechanics": {
       "loadError": "❌ Error al cargar reportes o ambulancias.",
