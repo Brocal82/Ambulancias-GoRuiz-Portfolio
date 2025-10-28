@@ -299,19 +299,33 @@ const AdminUsersPage = () => {
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 table-fixed">
               <colgroup>
+                <col className="w-[24%]" />
+                <col className="w-[24%]" />
                 <col className="w-[28%]" />
-                <col className="w-[28%]" />
-                <col className="w-[28%]" />
-                <col className="w-[16%]" />
+                <col className="w-[12%]" /> {/* Rol */}
+                <col className="w-[12%]" /> {/* Status */}
               </colgroup>
               <thead className="bg-slate-100">
                 <tr>
-                  <th scope="col" className="py-3.5 px-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-900">{t('pages.adminUsers.columns.lastName')}</th>
-                  <th scope="col" className="py-3.5 px-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-900">{t('pages.adminUsers.columns.name')}</th>
-                  <th scope="col" className="py-3.5 px-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-900">{t('pages.adminUsers.columns.email')}</th>
-                  <th scope="col" className="py-3.5 px-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-900">{t('pages.adminUsers.columns.role')}</th>
+                  <th scope="col" className="py-3.5 px-4 text-center align-middle text-xs font-semibold uppercase tracking-wide text-slate-900">
+                    {t('pages.adminUsers.columns.lastName')}
+                  </th>
+                  <th scope="col" className="py-3.5 px-4 text-center align-middle text-xs font-semibold uppercase tracking-wide text-slate-900">
+                    {t('pages.adminUsers.columns.name')}
+                  </th>
+                  <th scope="col" className="py-3.5 px-4 text-center align-middle text-xs font-semibold uppercase tracking-wide text-slate-900">
+                    {t('pages.adminUsers.columns.email')}
+                  </th>
+                  <th scope="col" className="py-3.5 px-4 text-center align-middle text-xs font-semibold uppercase tracking-wide text-slate-900">
+                    {t('pages.adminUsers.columns.role')}
+                  </th>
+                  <th scope="col" className="py-3.5 px-4 text-center align-middle text-xs font-semibold uppercase tracking-wide text-slate-900">
+                    {t('pages.adminUsers.columns.status', 'Status')}
+                  </th>
                 </tr>
               </thead>
+
+
               <tbody className="divide-y divide-slate-200 bg-white">
                 {filteredUsers.map((user, index) => {
                   const pschein = getPscheinInfo(user.pscheinExpiry);
@@ -325,22 +339,20 @@ const AdminUsersPage = () => {
 
                   const roleKey = (user.ambulanceRole ?? 'unknown') as NonNullable<User['ambulanceRole']> | 'unknown';
 
-                  // 🏖️ Vacaciones (helper ya existente que devuelve { has, title } con rango FULL)
+                  // Vacaciones (helper) + baja
                   const vacUI = getVacationUI(user._id);
                   const onVac = vacUI.has;
 
-                  // 🤒 Baja médica (usa sickFlags y formatea con fmtDDMM)
                   const sflag = sickFlags[user._id];
                   const isSick = !!sflag?.hasSickInRange;
                   const sickFromISO = sflag?.sickStartFull || sflag?.sickStartInRange;
-                  const sickToISO   = sflag?.sickUntilFull || sflag?.sickUntilInRange;
+                  const sickToISO = sflag?.sickUntilFull || sflag?.sickUntilInRange;
                   const sickTitle = isSick
                     ? (sickFromISO && sickToISO
-                        ? `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}: ${fmtDDMM(sickFromISO)} → ${fmtDDMM(sickToISO)}`
-                        : `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}`)
+                      ? `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}: ${fmtDDMM(sickFromISO)} → ${fmtDDMM(sickToISO)}`
+                      : `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}`)
                     : undefined;
 
-                  // Apagado si está de vacaciones o de baja
                   const dimTextClass = (onVac || isSick) ? 'text-slate-400' : 'text-slate-900';
 
                   return (
@@ -349,73 +361,75 @@ const AdminUsersPage = () => {
                       className={`${index % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} group cursor-pointer hover:bg-blue-50/50 transition-colors`}
                       onClick={() => handleEdit(user)}
                     >
-                      {/* Apellido (sin tooltip de vacaciones/baja aquí) */}
-                      <td className={`whitespace-nowrap py-3 px-4 text-sm ${dimTextClass} ${firstCellBorder}`}>
+                      {/* Apellido */}
+                      <td className={`whitespace-nowrap py-3 px-4 text-sm text-center align-middle ${dimTextClass} ${firstCellBorder}`}>
                         {user.lastName}
                       </td>
 
-                      {/* Nombre (sin tooltip de vacaciones/baja aquí) */}
-                      <td className={`whitespace-nowrap py-3 px-4 text-sm ${dimTextClass}`}>
+                      {/* Nombre */}
+                      <td className={`whitespace-nowrap py-3 px-4 text-sm text-center align-middle ${dimTextClass}`}>
                         {user.name}
                       </td>
 
                       {/* Email */}
-                      <td className="whitespace-nowrap py-3 px-4 text-sm text-slate-700">
-                        {user.email}
+                      <td className="py-3 px-4 text-sm text-center align-middle">
+                        <span className="inline-block max-w-[220px] sm:max-w-[260px] md:max-w-[300px] truncate text-slate-700">
+                          {user.email}
+                        </span>
                       </td>
 
-                      {/* Rol + iconos (🚫 ⚠️ 🏖️ 🤒) — tooltips SOLO en iconos */}
-                      <td className="whitespace-nowrap py-3 px-4 text-sm">
+                      {/* Rol (solo píldora, centrado) */}
+                      <td className="py-3 px-4 text-sm text-center align-middle">
                         <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${rolePillClass[roleKey]}`}
+                          className={`inline-flex items-center justify-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${rolePillClass[roleKey]}`}
                         >
                           {user.ambulanceRole ? t(`pages.profile.roles.${user.ambulanceRole}` as any) : '—'}
                         </span>
+                      </td>
 
-                        {/* 🚫 P-Schein caducado */}
-                        {pschein.status === 'expired' && (
-                          <span
-                            className="ml-2 align-middle text-red-500"
-                            title={getPscheinWarningTitle(user.pscheinExpiry, t)}
-                          >
-                            🚫
-                          </span>
-                        )}
-
-                        {/* ⚠️ P-Schein por caducar */}
-                        {pschein.status === 'warning' && (
-                          <span
-                            className="ml-2 align-middle text-orange-400"
-                            title={getPscheinWarningTitle(user.pscheinExpiry, t)}
-                          >
-                            ⚠️
-                          </span>
-                        )}
-
-                        {/* 🏖️ Vacaciones (tooltip SOLO aquí) */}
-                        {onVac && (
-                          <span
-                            className="ml-2 align-middle text-slate-400"
-                            title={vacUI.title}
-                          >
-                            🏖️
-                          </span>
-                        )}
-
-                        {/* 🤒 Baja médica (tooltip con DD/MM) */}
-                        {isSick && (
-                          <span
-                            className="ml-2 align-middle text-slate-500"
-                            title={sickTitle}
-                          >
-                            🤒
-                          </span>
-                        )}
+                      {/* Status (solo iconos, centrado y estable) */}
+                      <td className="py-3 px-4 text-sm text-center align-middle">
+                        <div className="min-w-[90px] mx-auto flex items-center justify-center gap-2">
+                          {pschein.status === 'expired' && (
+                            <span
+                              className="align-middle text-red-500 text-base leading-none"
+                              title={getPscheinWarningTitle(user.pscheinExpiry, t)}
+                            >
+                              🚫
+                            </span>
+                          )}
+                          {pschein.status === 'warning' && (
+                            <span
+                              className="align-middle text-orange-400 text-base leading-none"
+                              title={getPscheinWarningTitle(user.pscheinExpiry, t)}
+                            >
+                              ⚠️
+                            </span>
+                          )}
+                          {onVac && (
+                            <span
+                              className="align-middle text-slate-400 text-base leading-none"
+                              title={vacUI.title}
+                            >
+                              🏖️
+                            </span>
+                          )}
+                          {isSick && (
+                            <span
+                              className="align-middle text-slate-500 text-base leading-none"
+                              title={sickTitle}
+                            >
+                              🤒
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
+
                   );
                 })}
               </tbody>
+
             </table>
           </div>
         </div>
