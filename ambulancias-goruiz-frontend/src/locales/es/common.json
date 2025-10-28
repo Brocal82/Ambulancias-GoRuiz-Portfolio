@@ -70,6 +70,10 @@
         "title": "✉️ Mensajes",
         "desc": "Envía comunicados importantes"
       },
+      "sickLeaves": {
+      "title": "🤒 Bajas por enfermedad",
+      "desc": "Revisa, acepta o rechaza solicitudes y gestiona documentos"
+      },
       "payrollDocs": {
         "title": "🛠 Nóminas/Docs/Firma Digital",
         "desc": "Próximamente"
@@ -117,6 +121,10 @@
         "title": "🗓️ Citas",
         "desc": "Pide y gestiona tus citas"
       },
+      "sickLeaves": {
+      "title": "🤒 Bajas por enfermedad",
+      "desc": "Solicita tu baja y consulta su estado"
+     },
       "payrollDocs": {
         "title": "🛠 Nóminas/Documentos",
         "desc": "Próximamente"

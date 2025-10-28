@@ -70,6 +70,10 @@
         "title": "✉️ Messages",
         "desc": "Send important announcements"
       },
+      "sickLeaves": {
+      "title": "🤒 Sick Leaves",
+      "desc": "Review, approve or reject requests and manage documents"
+      },
       "payrollDocs": {
         "title": "🛠 Payroll/Docs/Digital Signature",
         "desc": "Coming soon"
@@ -116,6 +120,10 @@
       "appointments": {
         "title": "🗓️ Appointments",
         "desc": "Request and manage appointments"
+      },
+      "sickLeaves": {
+      "title": "🤒 Sick Leaves",
+      "desc": "Request your sick leave and check its status"
       },
       "payrollDocs": {
         "title": "🛠 Payroll/Documents",
