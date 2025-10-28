@@ -1,4 +1,4 @@
-// frontend/src/api/sickLeaves.ts
+//frontend/src/api/sickLeaves.ts
 import axiosInstance from "./axios";
 
 export type SickLeaveStatus = 'pending' | 'accepted' | 'rejected';

@@ -1,3 +1,4 @@
+//backend/src/models/SickLeave.ts
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export type SickLeaveStatus = 'pending' | 'accepted' | 'rejected';

@@ -1,3 +1,4 @@
+//backend/src/routes/sickLeaveRoutes.ts
 import express from 'express';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { authorizeRole } from '../middlewares/roleMiddleware';
