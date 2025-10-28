@@ -48,11 +48,12 @@ export async function attachSickDocument(
   sickLeaveId: string,
   documentUrl: string
 ): Promise<SickLeave> {
-  const { data } = await axiosInstance.patch(`/sick-leaves/${sickLeaveId}/attach-document`, {
+  const { data } = await axiosInstance.post(`/sick-leaves/${sickLeaveId}/attach-document`, {
     documentUrl,
   });
   return data;
 }
+
 
 /* ──────────────────────────────────────────────── */
 /* Administrador                                   */
