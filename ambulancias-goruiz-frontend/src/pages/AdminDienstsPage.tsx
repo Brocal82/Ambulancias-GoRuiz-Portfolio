@@ -9,7 +9,7 @@ import { isPartialAssignment } from '../utils/assignmentUtils';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { toastT } from "../utils/toast";
-import { getPscheinInfo } from '../utils/pscheinUtils';
+import { getPscheinInfo, getPscheinWarningTitle } from '../utils/pscheinUtils';
 
 // Helpers de render seguro
 const displayAmbulance = (a: unknown) =>
@@ -381,7 +381,7 @@ const AdminPage = () => {
                                 <p>🕒 {assignment.startTime} - {assignment.endTime}</p>
                                 <p>🚑 {displayAmbulance(assignment?.ambulanceId)}</p>
 
-                                {/* Conductor: rojo si P-Schein caducado; naranja si warning */}
+                                {/* Conductor: rojo si P-Schein caducado; ámbar si warning. Tooltip en el NOMBRE con meses restantes */}
                                 <p>
                                   👨‍✈️{' '}
                                   {(() => {
@@ -392,13 +392,14 @@ const AdminPage = () => {
                                       const info = getPscheinInfo((assignment.driver as any).pscheinExpiry);
                                       if (info.status === 'expired') {
                                         drvClass = 'text-red-600 font-medium';
-                                        drvTitle = t('pages.diensts.adminPage.driverPscheinExpired');
                                       } else if (info.status === 'warning') {
-                                        drvClass = 'text-amber-600 font-medium'; // o 'text-orange-600'
-                                        drvTitle = t('pages.diensts.adminPage.driverPscheinWarning', {
-                                          months: info.monthsLeft ?? 0,
-                                        });
+                                        drvClass = 'text-amber-600 font-medium';
                                       }
+                                      // Tooltip unificado (warning → meses restantes; expired → texto caducado)
+                                      drvTitle = getPscheinWarningTitle(
+                                        (assignment.driver as any).pscheinExpiry,
+                                        t as any
+                                      ) || undefined;
                                     }
 
                                     return (
@@ -408,6 +409,7 @@ const AdminPage = () => {
                                     );
                                   })()}
                                 </p>
+
 
 
                                 <p>🧑‍⚕️ {displayPerson(assignment?.medic)}</p>
@@ -440,117 +442,118 @@ const AdminPage = () => {
 
       {/* ⬇️ Modal de asignación de Team a la semana (usa estado local para saber semana y #) */}
       {weekTeamModal?.open && (
-  <TeamAssignModal
-    isOpen={true}
-    onClose={() => setWeekTeamModal(null)}
-    onConfirm={async (teamId: string) => {
-      if (!token || !weekTeamModal) return;
-      try {
-        const resp = await assignTeamToWeek(
-          {
-            dienstNumber: weekTeamModal.dienstNumber,
-            weekStartDate: weekTeamModal.weekStartISO,
-            teamId,
-          },
-          token
-        );
+        <TeamAssignModal
+          isOpen={true}
+          onClose={() => setWeekTeamModal(null)}
+          onConfirm={async (teamId: string) => {
+            if (!token || !weekTeamModal) return;
+            try {
+              const resp = await assignTeamToWeek(
+                {
+                  dienstNumber: weekTeamModal.dienstNumber,
+                  weekStartDate: weekTeamModal.weekStartISO,
+                  teamId,
+                },
+                token
+              );
 
-        toastT.success(['pages.diensts.adminPage.assignWeekOk']);
+              toastT.success(['pages.diensts.adminPage.assignWeekOk']);
 
-        if (resp?.hints?.driverExpiredButBoth) {
-          toastT.info(['pages.diensts.adminPage.considerSwap']);
-        }
+              if (resp?.hints?.driverExpiredButBoth) {
+                toastT.info(['pages.diensts.adminPage.considerSwap']);
+              }
 
-        setWeekTeamModal(null);
-        fetchDiensts();
-      } catch (err: any) {
-        const code = err?.response?.data?.code as string | undefined;
-        const details = err?.response?.data?.details;
+              setWeekTeamModal(null);
+              fetchDiensts();
+            } catch (err: any) {
+              const code = err?.response?.data?.code as string | undefined;
+              const details = err?.response?.data?.details;
 
-        if (code === 'pschein_expired') {
-          toastT.error(['pages.diensts.adminPage.errors.pscheinExpired']);
-        } else if (code === 'weekly_conflict') {
-          let driverDates = '';
-          let medicDates = '';
+              if (code === 'pschein_expired') {
+                toastT.error(['pages.diensts.adminPage.errors.pscheinExpired']);
+              } else if (code === 'weekly_conflict') {
+                let driverDates = '';
+                let medicDates = '';
 
-          if (Array.isArray(details)) {
-            driverDates = details
-              .filter((d: any) => d?.role === 'driver')
-              .map((d: any) => d?.date)
-              .filter(Boolean)
-              .join(', ');
-            medicDates = details
-              .filter((d: any) => d?.role === 'medic')
-              .map((d: any) => d?.date)
-              .filter(Boolean)
-              .join(', ');
-          } else if (details && typeof details === 'object') {
-            const drv = Array.isArray(details.driverConf) ? details.driverConf : [];
-            const med = Array.isArray(details.medicConf) ? details.medicConf : [];
-            driverDates = drv.map((d: any) => d?.date).filter(Boolean).join(', ');
-            medicDates = med.map((d: any) => d?.date).filter(Boolean).join(', ');
+                if (Array.isArray(details)) {
+                  driverDates = details
+                    .filter((d: any) => d?.role === 'driver')
+                    .map((d: any) => d?.date)
+                    .filter(Boolean)
+                    .join(', ');
+                  medicDates = details
+                    .filter((d: any) => d?.role === 'medic')
+                    .map((d: any) => d?.date)
+                    .filter(Boolean)
+                    .join(', ');
+                } else if (details && typeof details === 'object') {
+                  const drv = Array.isArray(details.driverConf) ? details.driverConf : [];
+                  const med = Array.isArray(details.medicConf) ? details.medicConf : [];
+                  driverDates = drv.map((d: any) => d?.date).filter(Boolean).join(', ');
+                  medicDates = med.map((d: any) => d?.date).filter(Boolean).join(', ');
+                }
+
+                if (driverDates || medicDates) {
+                  toastT.error([
+                    'pages.diensts.adminPage.teamWeeklyConflictWithDates',
+                    { driverDates, medicDates },
+                  ]);
+                } else {
+                  toastT.error(['pages.diensts.adminPage.teamWeeklyConflict']);
+                }
+              } else {
+                toastT.error(['pages.diensts.adminPage.assignWeekErr']);
+              }
+
+              console.error('assignTeamToWeek error:', err?.response?.data || err);
+            }
           }
-
-          if (driverDates || medicDates) {
-            toastT.error([
-              'pages.diensts.adminPage.teamWeeklyConflictWithDates',
-              { driverDates, medicDates },
-            ]);
-          } else {
-            toastT.error(['pages.diensts.adminPage.teamWeeklyConflict']);
           }
-        } else {
-          toastT.error(['pages.diensts.adminPage.assignWeekErr']);
-        }
-
-        console.error('assignTeamToWeek error:', err?.response?.data || err);
-      }}
-    }
-    weekStartISO={weekTeamModal.weekStartISO} // ⬅️ NUEVO
-  />
-)}
+          weekStartISO={weekTeamModal.weekStartISO} // ⬅️ NUEVO
+        />
+      )}
 
 
       {/* ⬇️ Modal de asignación de UN usuario (driver/medic) a toda la semana */}
       {weekUserModal?.open && (
-  <UserAssignModal
-    isOpen={true}
-    onClose={() => setWeekUserModal(null)}
-    onConfirm={async ({ role, userId }) => {
-      if (!token || !weekUserModal) return;
+        <UserAssignModal
+          isOpen={true}
+          onClose={() => setWeekUserModal(null)}
+          onConfirm={async ({ role, userId }) => {
+            if (!token || !weekUserModal) return;
 
-      try {
-        await assignUserToWeek(
-          {
-            dienstNumber: weekUserModal.dienstNumber,
-            weekStartDate: weekUserModal.weekStartISO,
-            role,
-            userId,
-          },
-          token
-        );
+            try {
+              await assignUserToWeek(
+                {
+                  dienstNumber: weekUserModal.dienstNumber,
+                  weekStartDate: weekUserModal.weekStartISO,
+                  role,
+                  userId,
+                },
+                token
+              );
 
-        toastT.success(['pages.diensts.adminPage.assignUserWeekOk']);
-        setWeekUserModal(null);
-        fetchDiensts();
+              toastT.success(['pages.diensts.adminPage.assignUserWeekOk']);
+              setWeekUserModal(null);
+              fetchDiensts();
 
-      } catch (err: any) {
-        console.error('❌ Error al asignar usuario a la semana:', err);
+            } catch (err: any) {
+              console.error('❌ Error al asignar usuario a la semana:', err);
 
-        if (err?.response?.data?.code === 'weekly_conflict') {
-          toastT.error(['pages.diensts.adminPage.assignUserWeekConflict']);
-        } else if (err?.response?.data?.code === 'pschein_expired') {
-          toastT.error(['pages.diensts.adminPage.assignUserWeekPscheinExpired']);
-        } else if (err?.response?.data?.code === 'no_assignable_days') {
-          toastT.error(['pages.diensts.adminPage.assignUserNoAssignableDays']);
-        } else {
-          toastT.error(['pages.diensts.adminPage.assignUserWeekErr']);
-        }
-      }
-    }}
-    weekStartISO={weekUserModal.weekStartISO} // ⬅️ NUEVO
-  />
-)}
+              if (err?.response?.data?.code === 'weekly_conflict') {
+                toastT.error(['pages.diensts.adminPage.assignUserWeekConflict']);
+              } else if (err?.response?.data?.code === 'pschein_expired') {
+                toastT.error(['pages.diensts.adminPage.assignUserWeekPscheinExpired']);
+              } else if (err?.response?.data?.code === 'no_assignable_days') {
+                toastT.error(['pages.diensts.adminPage.assignUserNoAssignableDays']);
+              } else {
+                toastT.error(['pages.diensts.adminPage.assignUserWeekErr']);
+              }
+            }
+          }}
+          weekStartISO={weekUserModal.weekStartISO} // ⬅️ NUEVO
+        />
+      )}
 
     </div>
   );
