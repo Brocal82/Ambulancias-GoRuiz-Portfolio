@@ -3,7 +3,7 @@ import React, { useState, useEffect, useId, useMemo } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { updateDienstPartial, removeAssignment } from "../api/diensts";
 import { getAvailableUsersForDate } from "../api/users";
-import { getPscheinInfo } from "../utils/pscheinUtils";
+import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { toastT } from "../utils/toast";
 import "react-toastify/dist/ReactToastify.css";
 import type { UserRef, DienstAssignment } from "../types/dienst";
@@ -250,6 +250,17 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     return info.status === 'expired';
   };
 
+  // Tooltip SOLO para el nombre del conductor con P-Schein warning/expired
+  const driverPscheinTitle = (u?: UserRef | null) => {
+    if (!u) return undefined;
+    const expiry = (u as any)?.pscheinExpiry as string | undefined;
+    const info = getPscheinInfo(expiry);
+    if (info.status === 'warning' || info.status === 'expired') {
+      return getPscheinWarningTitle(expiry, t);
+    }
+    return undefined;
+  };
+
   const mergeClasses = (...classes: (string | false | null | undefined)[]) =>
     classes.filter(Boolean).join(' ');
 
@@ -397,6 +408,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                                 driverClass((u as any)?.pscheinExpiry),
                                 (vac.has || sick.has) && dimClass
                               )}
+                              title={driverPscheinTitle(u)}
                             >
                               {(u.lastName || '') + ', ' + (u.name || '')}
                             </span>
@@ -474,6 +486,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                                   driverClass((u as any)?.pscheinExpiry),
                                   (vac.has || sick.has) && dimClass
                                 )}
+                                title={driverPscheinTitle(u)}
                               >
                                 {(u.lastName || '') + ', ' + (u.name || '')}
                               </span>

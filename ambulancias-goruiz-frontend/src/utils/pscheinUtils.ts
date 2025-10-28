@@ -13,21 +13,42 @@ export function getPscheinInfo(date?: string): {
 
   const now = new Date();
 
-  // Diferencias “aprox” por meses y días
   const msDiff = expiry.getTime() - now.getTime();
   const daysLeft = Math.round(msDiff / (1000 * 60 * 60 * 24));
-
-  // Aproximación de meses (30.44 días promedio)
   const monthsLeft = Math.round(daysLeft / 30.44);
 
   if (expiry < now) {
     return { status: 'expired', monthsLeft, daysLeft };
   }
 
-  // Warning si faltan ≤ 6 meses
   if (monthsLeft <= 6) {
     return { status: 'warning', monthsLeft, daysLeft };
   }
 
   return { status: 'valid', monthsLeft, daysLeft };
+}
+
+/**
+ * Devuelve el título del tooltip para P-Schein warning o expirado.
+ * Usa la traducción con conteo de meses.
+ * 
+ * @param pscheinExpiry ISO string (YYYY-MM-DD)
+ * @param t función de traducción i18n
+ */
+export function getPscheinWarningTitle(pscheinExpiry?: string, t?: (key: string, vars?: any) => string): string {
+  const info = getPscheinInfo(pscheinExpiry);
+
+  if (info.status === 'expired') {
+    return t
+      ? t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado')
+      : 'P-Schein caducado';
+  }
+
+  if (info.status === 'warning' && typeof info.monthsLeft === 'number') {
+    return t
+      ? t('pages.diensts.adminPage.driverPscheinWarning', { count: info.monthsLeft })
+      : `P-Schein caduca en ${info.monthsLeft} meses`;
+  }
+
+  return '';
 }

@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import UserEditModal from '../components/users/UserEditModal';
 import type { User } from '../types/user';
 import { toastT } from "../utils/toast";
-import { getPscheinInfo } from '../utils/pscheinUtils';
+import { getPscheinInfo, getPscheinWarningTitle } from '../utils/pscheinUtils';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getVacationFlagsInRange, type VacFlag } from '../api/vacation';
@@ -376,7 +376,7 @@ const AdminUsersPage = () => {
                         {pschein.status === 'expired' && (
                           <span
                             className="ml-2 align-middle text-red-500"
-                            title={t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado') as string}
+                            title={getPscheinWarningTitle(user.pscheinExpiry, t)}
                           >
                             🚫
                           </span>
@@ -386,7 +386,7 @@ const AdminUsersPage = () => {
                         {pschein.status === 'warning' && (
                           <span
                             className="ml-2 align-middle text-orange-400"
-                            title={t('pages.diensts.adminPage.driverPscheinWarning', { count: pschein.monthsLeft ?? 0 }) as string}
+                            title={getPscheinWarningTitle(user.pscheinExpiry, t)}
                           >
                             ⚠️
                           </span>

@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { getAllUsers } from '../../api/users';
 import type { AmbulanceRole, User } from '../../types/user';
-import { getPscheinInfo } from '../../utils/pscheinUtils';
+import { getPscheinInfo, getPscheinWarningTitle } from '../../utils/pscheinUtils';
 import { getVacationFlagsInRange, type VacFlag } from '../../api/vacation';
 import { getSickFlagsInRange, type SickFlag } from '../../api/sickLeaves';
 import { fmtDDMM } from '../../utils/timeUtils';
@@ -130,6 +130,21 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
     return info.status === 'expired';
   };
 
+  // Tooltip SOLO sobre el nombre cuando P-Schein está en warning/expired (rol driver)
+  const driverPscheinTitle = (u?: User | null): string | undefined => {
+    if (!u || role !== 'driver') return undefined;
+    const expiry = (u as any)?.pscheinExpiry as string | undefined;
+    if (!expiry) return undefined;
+    const info = getPscheinInfo(expiry);
+    if (info.status === 'warning' || info.status === 'expired') {
+      // Usa el helper centralizado (meses restantes)
+      return getPscheinWarningTitle
+        ? getPscheinWarningTitle(expiry, t)
+        : t('pages.diensts.adminPage.driverPscheinWarning', { count: info.monthsLeft ?? 0 }) as string;
+    }
+    return undefined;
+    };
+
   // Combinar clases sin falsy
   const mergeClasses = (...classes: (string | false | null | undefined)[]) =>
     classes.filter(Boolean).join(' ');
@@ -234,9 +249,10 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
                           const dClass =
                             role === 'driver' ? driverPscheinClass((selectedUser as any)?.pscheinExpiry) : '';
                           const dim = (vac.has || sick.has) ? dimClass : '';
+                          const title = driverPscheinTitle(selectedUser);
                           return (
                             <>
-                              <span className={mergeClasses(dClass, dim)}>
+                              <span className={mergeClasses(dClass, dim)} title={title}>
                                 {(selectedUser.lastName || '') + ', ' + (selectedUser.name || '')}
                               </span>
                               {/* Iconos con tooltip (solo aquí) */}
@@ -296,6 +312,7 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
                       const dClass = role === 'driver' ? driverPscheinClass((u as any)?.pscheinExpiry) : '';
                       const expired = role === 'driver' ? isDriverExpired(u) : false;
                       const dim = (vac.has || sick.has) ? dimClass : '';
+                      const title = driverPscheinTitle(u);
 
                       return (
                         <button
@@ -313,7 +330,7 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
                             expired && 'opacity-50 cursor-not-allowed'
                           )}
                         >
-                          <span className={mergeClasses(dClass, dim)}>
+                          <span className={mergeClasses(dClass, dim)} title={title}>
                             {(u.lastName || '') + ', ' + (u.name || '')}
                           </span>
                           {/* Iconos con tooltip (solo aquí) */}

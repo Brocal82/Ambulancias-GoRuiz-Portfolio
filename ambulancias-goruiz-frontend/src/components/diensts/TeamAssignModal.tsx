@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { getTeams, type Team } from '../../api/teams';
 import { toastT } from '../../utils/toast';
 import { useTranslation } from 'react-i18next';
-import { getPscheinInfo } from '../../utils/pscheinUtils';
+import { getPscheinInfo, getPscheinWarningTitle } from '../../utils/pscheinUtils';
 import { getVacationFlagsInRange, type VacFlag } from '../../api/vacation';
 import { getSickFlagsInRange, type SickFlag } from '../../api/sickLeaves';
 import { fmtDDMM } from '../../utils/timeUtils';
@@ -147,6 +147,17 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm, weekStartI
   // Tono apagado para quien está de vacaciones o baja
   const dimClass = 'text-slate-400';
 
+  // Tooltip SOLO para el nombre del conductor con P-Schein warning/expired
+  const driverPscheinTitle = (user: any): string | undefined => {
+    const expiry = user?.pscheinExpiry as string | undefined;
+    if (!expiry) return undefined;
+    const info = getPscheinInfo(expiry);
+    if (info.status === 'warning' || info.status === 'expired') {
+      return getPscheinWarningTitle(expiry, t);
+    }
+    return undefined;
+  };
+
   // Info de vacaciones por usuario (driver o medic)
   // Tooltip SOLO en icono; formato DD/MM con rango FULL si existe
   const userVacationInfo = (user: any) => {
@@ -214,6 +225,7 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm, weekStartI
             driverClass(drv?.pscheinExpiry),
             (drvVac.has || drvSick.has) && dimClass
           )}
+          title={driverPscheinTitle(drv)}
         >
           {(drv?.lastName || '') + ', ' + (drv?.name || '')}
         </span>
@@ -294,7 +306,7 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm, weekStartI
                 {teams.map((tItem) => {
                   const isSelected = selectedId === tItem._id;
                   const drv: any = tItem.driver;
-                    const med: any = tItem.medic;
+                  const med: any = tItem.medic;
 
                   const drvVac = userVacationInfo(drv);
                   const medVac = userVacationInfo(med);
@@ -317,6 +329,7 @@ export default function TeamAssignModal({ isOpen, onClose, onConfirm, weekStartI
                           driverClass(drv?.pscheinExpiry),
                           (drvVac.has || drvSick.has) && dimClass
                         )}
+                        title={driverPscheinTitle(drv)}
                       >
                         {(drv?.lastName || '') + ', ' + (drv?.name || '')}
                       </span>
