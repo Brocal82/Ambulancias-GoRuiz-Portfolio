@@ -2,11 +2,58 @@
 import axiosInstance from './axios';
 import type { IVacationRequest } from '../types/vacationRequest';
 
+/* =========================
+   Tipos y payloads básicos
+   ========================= */
 
 interface VacationRequestPayload {
   startDate: string;
   endDate: string;
 }
+
+interface UpdateVacationPayload {
+  status?: 'pending' | 'accepted' | 'cancelled' | 'option_sent';
+  adminOptionStartDate?: string;
+  adminOptionEndDate?: string;
+  adminNote?: string;
+}
+
+interface RespondAlternativePayload {
+  accept: boolean;
+}
+
+type VacationStatusCount = IVacationRequest['status'];
+
+interface VacationCountResponse {
+  count: number;
+}
+
+/* =========================
+   NUEVO: tipos flags en rango
+   ========================= */
+/**
+ * VacFlag: unifica flags acotados al rango consultado y el rango REAL completo.
+ * - hasVacationInRange: indica si existe solape en el rango consultado
+ * - vacationStartInRange / vacationUntilInRange: tramo acotado dentro del rango consultado
+ * - vacationStartFull / vacationUntilFull: tramo real completo (si el backend lo envía)
+ */
+export interface VacFlag {
+  hasVacationInRange: boolean;
+  vacationStartInRange?: string; // 'YYYY-MM-DD' dentro del rango consultado
+  vacationUntilInRange?: string; // 'YYYY-MM-DD' dentro del rango consultado
+  vacationStartFull?: string;    // 'YYYY-MM-DD' rango REAL completo (opcional si backend lo soporta)
+  vacationUntilFull?: string;    // 'YYYY-MM-DD' rango REAL completo (opcional si backend lo soporta)
+}
+
+export type VacationFlagsByUser = Record<string, VacFlag>;
+
+// Compatibilidad con tu código previo
+export type VacationRangeFlag = VacFlag;
+export type VacationRangeFlagsByUser = VacationFlagsByUser;
+
+/* =========================
+   Crear / listar / actualizar
+   ========================= */
 
 // Crear nueva solicitud
 export const createVacationRequest = async (token: string, data: VacationRequestPayload) => {
@@ -28,9 +75,7 @@ export const createVacationRequest = async (token: string, data: VacationRequest
   } catch {}
   try {
     // otras pestañas: BroadcastChannel
-    const BC = (window as any).BroadcastChannel as
-      | (new (name: string) => BroadcastChannel)
-      | undefined;
+    const BC = (window as any).BroadcastChannel as (new (name: string) => BroadcastChannel) | undefined;
     if (typeof BC === 'function') {
       const bc = new BC('vacations');
       bc.postMessage({ type: 'requests-updated', ts: Date.now() });
@@ -52,13 +97,6 @@ export const getVacationRequests = async (token: string) => {
   });
   return response.data;
 };
-
-interface UpdateVacationPayload {
-  status?: 'pending' | 'accepted' | 'cancelled' | 'option_sent';
-  adminOptionStartDate?: string;
-  adminOptionEndDate?: string;
-  adminNote?: string;
-}
 
 // Actualizar una solicitud (solo admin)
 export const updateVacationRequest = async (
@@ -85,7 +123,6 @@ export const updateVacationRequest = async (
   }
 };
 
-
 // Obtener solicitudes del trabajador logueado
 export const getUserVacationRequests = async (token: string) => {
   const response = await axiosInstance.get('/vacations/user', {
@@ -93,10 +130,6 @@ export const getUserVacationRequests = async (token: string) => {
   });
   return response.data;
 };
-
-interface RespondAlternativePayload {
-  accept: boolean;
-}
 
 // Responder a opción alternativa (aceptar o rechazar)
 export const respondToAlternativeDate = async (token: string, id: string, data: RespondAlternativePayload) => {
@@ -115,14 +148,8 @@ export const deleteVacationRequest = async (token: string, id: string) => {
 };
 
 /* =========================
-   NUEVO: contador pendientes
+   Contador pendientes
    ========================= */
-
-type VacationStatusCount = IVacationRequest['status'];
-
-interface VacationCountResponse {
-  count: number;
-}
 
 export const getVacationPendingCount = async (
   token: string,
@@ -143,7 +170,10 @@ export const getVacationPendingCount = async (
   }
 };
 
-// Respuesta del endpoint de disponibilidad mensual
+/* =========================
+   Disponibilidad mensual
+   ========================= */
+
 export interface VacationAvailabilityDay {
   day: number;
   approvedCount: number;
@@ -158,31 +188,12 @@ export interface VacationAvailabilityResponse {
   days: VacationAvailabilityDay[];
 }
 
-// Config mensual (admin): capacidad y bloqueos (blackouts)
 export interface VacationMonthConfig {
   monthKey: string; // "YYYY-MM"
   maxPerDay: number;
   blackouts: { startDate: string; endDate: string }[];
 }
 
-/* =========================
-   NUEVO: tipos flags en rango
-   ========================= */
-export interface VacationRangeFlag {
-  hasVacationInRange: boolean;
-  vacationStartInRange?: string; // 'YYYY-MM-DD' (acotado al rango)
-  vacationUntilInRange?: string; // 'YYYY-MM-DD' (acotado al rango)
-}
-
-export type VacationRangeFlagsByUser = Record<string, VacationRangeFlag>;
-
-
-/**
- * Obtiene disponibilidad mensual (colores + contadores por día)
- * GET /vacations/availability?year=YYYY&month=MM
- *
- * opts.force = true → ignora caché
- */
 export async function getVacationAvailability(
   params: { year: number; month: number }, // month 1..12
   opts?: { force?: boolean }
@@ -202,10 +213,6 @@ export async function getVacationAvailability(
   return data;
 }
 
-/**
- * (ADMIN) Obtiene la configuración mensual (capacidad + blackouts)
- * GET /vacations/month-config?monthKey=YYYY-MM
- */
 export async function getVacationMonthConfig(monthKey: string) {
   const { data } = await axiosInstance.get<VacationMonthConfig>('/vacations/month-config', {
     params: { monthKey },
@@ -213,17 +220,13 @@ export async function getVacationMonthConfig(monthKey: string) {
   return data;
 }
 
-/**
- * (ADMIN) Crea/actualiza la configuración mensual
- * POST /vacations/month-config
- */
 export async function upsertVacationMonthConfig(payload: VacationMonthConfig) {
   const { data } = await axiosInstance.post<VacationMonthConfig>('/vacations/month-config', payload);
   return data;
 }
 
 /* =========================
-   NUEVO: flags en rango (semanal)
+   Flags en rango (semanal)
    ========================= */
 /**
  * Devuelve flags de vacaciones por usuario para un rango.
@@ -233,23 +236,26 @@ export async function upsertVacationMonthConfig(payload: VacationMonthConfig) {
  * @param userIds IDs de usuarios a consultar
  * @param fromISO ISO 'YYYY-MM-DD' inclusive (inicio de semana)
  * @param toISO   ISO 'YYYY-MM-DD' inclusive (fin de semana -> start + 6)
+ * @param includeFullSpan si true, el backend devolverá (si lo soporta) vacationStartFull/vacationUntilFull
  *
- * Respuesta: Record<userId, {
- *   hasVacationInRange: boolean;
- *   vacationStartInRange?: string; // 'YYYY-MM-DD'
- *   vacationUntilInRange?: string; // 'YYYY-MM-DD'
- * }>
+ * Respuesta: Record<userId, VacFlag>
  */
 export async function getVacationFlagsInRange(
   token: string,
-  params: { userIds: string[]; fromISO: string; toISO: string }
-): Promise<VacationRangeFlagsByUser> {
-  const { data } = await axiosInstance.post<VacationRangeFlagsByUser>(
+  params: {
+    userIds: string[];
+    fromISO: string;
+    toISO: string;
+    includeFullSpan?: boolean;
+  }
+): Promise<VacationFlagsByUser> {
+  const { data } = await axiosInstance.post<VacationFlagsByUser>(
     '/vacations/check-range',
     {
       userIds: params.userIds,
       fromISO: params.fromISO,
       toISO: params.toISO,
+      includeFullSpan: params.includeFullSpan, // ⬅️ si el backend lo usa, perfecto; si no, lo ignora
     },
     {
       headers: { Authorization: `Bearer ${token}` },
@@ -257,7 +263,6 @@ export async function getVacationFlagsInRange(
   );
   return data;
 }
-
 
 /* =========================================================
    Caché + invalidación por mes y evento
@@ -300,9 +305,7 @@ export function invalidateAvailability(year: number, month: number) {
   // otras pestañas: BroadcastChannel
   let bc: BroadcastChannel | null = null;
   try {
-    const BC = (window as any).BroadcastChannel as
-      | (new (name: string) => BroadcastChannel)
-      | undefined;
+    const BC = (window as any).BroadcastChannel as (new (name: string) => BroadcastChannel) | undefined;
     if (typeof BC === 'function') {
       bc = new BC('vacations');
       bc.postMessage({ type: 'availability-invalidated', year, month, ts: Date.now() });
@@ -328,7 +331,6 @@ export function invalidateThisAndNextMonth(year: number, month: number) {
   invalidateAvailability(next.y, next.m);
 }
 
-
 /* =========================================================
    Helpers de invalidación por evento y por rango (TZ Berlín)
    ========================================================= */
@@ -352,7 +354,6 @@ function getBerlinYearMonth(iso: string): { y: number; m1: number } | null {
 
 // ✅ Versión limpia y compatible (sin warnings)
 export function invalidateAvailabilityByRange(startDate: string, _endDate?: string) {
-
   try {
     // 🗓️ Si existe helper getBerlinYearMonth, úsalo:
     let year: number, month: number;
@@ -400,5 +401,3 @@ export function invalidateAvailabilityByRange(startDate: string, _endDate?: stri
     console.warn('Error invalidando disponibilidad:', err);
   }
 }
-
-

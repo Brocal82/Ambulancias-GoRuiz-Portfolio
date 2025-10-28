@@ -1,4 +1,4 @@
-//frontend/src/api/sickLeaves.ts
+// frontend/src/api/sickLeaves.ts
 import axiosInstance from "./axios";
 
 export type SickLeaveStatus = 'pending' | 'accepted' | 'rejected';
@@ -24,6 +24,22 @@ export interface SickLeave {
   createdAt: string;
   updatedAt: string;
 }
+
+/**
+ * SickFlag: unifica flags acotados al rango consultado y el rango REAL completo.
+ * - hasSickInRange: indica si existe solape en el rango consultado
+ * - sickStartInRange / sickUntilInRange: tramo acotado dentro del rango consultado
+ * - sickStartFull / sickUntilFull: tramo real completo (si el backend lo envía)
+ */
+export interface SickFlag {
+  hasSickInRange: boolean;
+  sickStartInRange?: string;  // 'YYYY-MM-DD' (tramo solapado con el rango consultado)
+  sickUntilInRange?: string;  // 'YYYY-MM-DD'
+  sickStartFull?: string;     // 'YYYY-MM-DD' (tramo completo real de la baja)
+  sickUntilFull?: string;     // 'YYYY-MM-DD'
+}
+
+export type SickFlagsByUser = Record<string, SickFlag>;
 
 /* ──────────────────────────────────────────────── */
 /* Trabajador                                      */
@@ -53,7 +69,6 @@ export async function attachSickDocument(
   });
   return data;
 }
-
 
 /* ──────────────────────────────────────────────── */
 /* Administrador                                   */
@@ -86,5 +101,19 @@ export async function adminAcceptSickLeave(sickLeaveId: string): Promise<SickLea
 /** Rechaza una baja por su ID */
 export async function adminRejectSickLeave(sickLeaveId: string): Promise<SickLeave> {
   const { data } = await axiosInstance.post(`/sick-leaves/${sickLeaveId}/reject`);
+  return data;
+}
+
+/**
+ * Admin: consulta flags de bajas por rango (con tramo completo opcional para tooltip).
+ * Requiere auth admin (el interceptor añade el token).
+ */
+export async function getSickFlagsInRange(params: {
+  userIds: string[];
+  fromISO: string;            // 'YYYY-MM-DD'
+  toISO: string;              // 'YYYY-MM-DD'
+  includeFullSpan?: boolean;  // true → devuelve sickStartFull/sickUntilFull
+}): Promise<SickFlagsByUser> {
+  const { data } = await axiosInstance.post<SickFlagsByUser>('/sick-leaves/check-range', params);
   return data;
 }

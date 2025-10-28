@@ -8,7 +8,9 @@ import { toastT } from "../utils/toast";
 import { getPscheinInfo } from '../utils/pscheinUtils';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getVacationFlagsInRange } from '../api/vacation';
+import { getVacationFlagsInRange, type VacFlag } from '../api/vacation';
+import { getSickFlagsInRange, type SickFlag } from '../api/sickLeaves';
+import { fmtDDMM } from '../utils/timeUtils';
 
 // Mapeo de estilos de la píldora de rol (no cambia lógica)
 const rolePillClass: Record<NonNullable<User['ambulanceRole']> | 'unknown', string> = {
@@ -42,7 +44,6 @@ const getBerlinWeekRangeISO = () => {
   return { weekStartISO: mondayISO, weekEndISO: sundayISO };
 };
 
-
 const AdminUsersPage = () => {
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -54,8 +55,10 @@ const AdminUsersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'driver' | 'medic' | 'both'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'onLeave' | 'onVacation'>('all');
+  const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
+  const [sickFlags, setSickFlags] = useState<Record<string, SickFlag>>({});
 
-  // ✅ Helper UI para vacaciones (usa vacationFlags y t del scope)
+  // ✅ Helper UI para vacaciones (usa vacationFlags, t y fmtDDMM centralizado)
   const getVacationUI = (userId: string) => {
     const vf = vacationFlags[userId];
     const has = !!vf?.hasVacationInRange;
@@ -67,11 +70,6 @@ const AdminUsersPage = () => {
 
     let title: string | undefined;
     if (fullFrom && fullTo) {
-      const fmtDDMM = (iso?: string) => {
-        if (!iso) return '';
-        const [, m, d] = iso.split('-');
-        return `${d}/${m}`;
-      };
       title = `🏖️  ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${fmtDDMM(fullFrom)} → ${fmtDDMM(fullTo)}`;
     } else {
       title = `🏖️  ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
@@ -79,18 +77,6 @@ const AdminUsersPage = () => {
 
     return { has: true, title };
   };
-
-
-  // Flags de vacaciones por usuario (para la semana actual en Berlin)
-  type VacFlag = {
-    hasVacationInRange: boolean;
-    vacationStartInRange?: string; // 'YYYY-MM-DD' (dentro de la semana)
-    vacationUntilInRange?: string; // 'YYYY-MM-DD' (dentro de la semana)
-    vacationStartFull?: string;    // 'YYYY-MM-DD' (rango REAL completo)
-    vacationUntilFull?: string;    // 'YYYY-MM-DD' (rango REAL completo)
-  };
-  const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
-
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -112,7 +98,7 @@ const AdminUsersPage = () => {
     fetchUsers();
   }, [fetchUsers]);
 
-  // Cargar flags de vacaciones para la semana actual (Berlin)
+  // Cargar flags de vacaciones para la semana actual (Berlin) — con includeFullSpan:true para tooltips FULL
   useEffect(() => {
     if (!token || users.length === 0) {
       setVacationFlags({});
@@ -134,6 +120,7 @@ const AdminUsersPage = () => {
           userIds,
           fromISO: weekStartISO,
           toISO: weekEndISO,
+          includeFullSpan: true, // ⬅️ regla de coherencia para tooltips FULL
         });
         if (!cancelled) setVacationFlags(flags);
       } catch (e) {
@@ -145,6 +132,34 @@ const AdminUsersPage = () => {
     return () => { cancelled = true; };
   }, [token, users]);
 
+  // Bajas por enfermedad: flags para la semana actual (Europe/Berlin), con includeFullSpan=true para tooltips con el tramo completo real.
+  useEffect(() => {
+    if (!token || users.length === 0) {
+      setSickFlags({});
+      return;
+    }
+
+    const userIds = users.map(u => u._id).filter(Boolean);
+    const { weekStartISO, weekEndISO } = getBerlinWeekRangeISO();
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const flags = await getSickFlagsInRange({
+          userIds,
+          fromISO: weekStartISO,
+          toISO: weekEndISO,
+          includeFullSpan: true,
+        });
+        if (!cancelled) setSickFlags(flags);
+      } catch (e) {
+        console.error('❌ Error al cargar flags de bajas (semana actual) en AdminUsersPage:', e);
+        if (!cancelled) setSickFlags({});
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [token, users]);
 
   const handleEdit = (user: User) => {
     navigate(`/admin/user/${user._id}`);
@@ -186,14 +201,20 @@ const AdminUsersPage = () => {
     const matchesName = fullName.includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || user.ambulanceRole === roleFilter;
 
-    // onVacation coherente: usa flags de la semana actual además del flag interno
+    // 🏖️ vacaciones (semana actual) usando flags
     const vacFlag = vacationFlags[user._id];
     const isOnVacationThisWeek = !!vacFlag?.hasVacationInRange;
 
+    // 🤒 enfermedad (semana actual) usando flags
+    const sickFlag = sickFlags[user._id];
+    const isOnSickThisWeek = !!sickFlag?.hasSickInRange;
+
     const matchesStatus =
       statusFilter === 'all' ||
-      (statusFilter === 'onLeave' && (user as any).onLeave) ||
-      (statusFilter === 'onVacation' && ((user as any).onVacation || isOnVacationThisWeek));
+      (statusFilter === 'onLeave' &&
+        (Boolean((user as any).onLeave) || isOnSickThisWeek)) ||
+      (statusFilter === 'onVacation' &&
+        (Boolean((user as any).onVacation) || isOnVacationThisWeek));
 
     return matchesName && matchesRole && matchesStatus;
   });
@@ -267,6 +288,9 @@ const AdminUsersPage = () => {
             <div className="flex items-center gap-2">
               <span className="text-green-600">🏖️ </span> {t('pages.adminUsers.legend.vacation', 'Vacaciones (esta semana)')}
             </div>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-600">🤒</span> {t('pages.adminUsers.legend.sick', 'Baja médica (esta semana)')}
+            </div>
           </div>
         </div>
 
@@ -301,9 +325,23 @@ const AdminUsersPage = () => {
 
                   const roleKey = (user.ambulanceRole ?? 'unknown') as NonNullable<User['ambulanceRole']> | 'unknown';
 
-                  // 🏖️  Vacaciones (usar helper que da rango FULL y tooltip)
-                  const vacUI = getVacationUI(user._id); // { has: boolean, title?: string }
+                  // 🏖️ Vacaciones (helper ya existente que devuelve { has, title } con rango FULL)
+                  const vacUI = getVacationUI(user._id);
                   const onVac = vacUI.has;
+
+                  // 🤒 Baja médica (usa sickFlags y formatea con fmtDDMM)
+                  const sflag = sickFlags[user._id];
+                  const isSick = !!sflag?.hasSickInRange;
+                  const sickFromISO = sflag?.sickStartFull || sflag?.sickStartInRange;
+                  const sickToISO   = sflag?.sickUntilFull || sflag?.sickUntilInRange;
+                  const sickTitle = isSick
+                    ? (sickFromISO && sickToISO
+                        ? `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}: ${fmtDDMM(sickFromISO)} → ${fmtDDMM(sickToISO)}`
+                        : `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}`)
+                    : undefined;
+
+                  // Apagado si está de vacaciones o de baja
+                  const dimTextClass = (onVac || isSick) ? 'text-slate-400' : 'text-slate-900';
 
                   return (
                     <tr
@@ -311,21 +349,13 @@ const AdminUsersPage = () => {
                       className={`${index % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} group cursor-pointer hover:bg-blue-50/50 transition-colors`}
                       onClick={() => handleEdit(user)}
                     >
-                      {/* Apellido (sin iconos, pero con tono apagado si está de vacaciones) */}
-                      <td
-                        className={`whitespace-nowrap py-3 px-4 text-sm text-slate-900 ${firstCellBorder}`}
-                        title={vacUI.title}
-                      >
-                        <span className={onVac ? 'text-slate-400' : undefined}>
-                          {user.lastName}
-                        </span>
+                      {/* Apellido (sin tooltip de vacaciones/baja aquí) */}
+                      <td className={`whitespace-nowrap py-3 px-4 text-sm ${dimTextClass} ${firstCellBorder}`}>
+                        {user.lastName}
                       </td>
 
-                      {/* Nombre (sin iconos, pero con tono apagado si está de vacaciones) */}
-                      <td
-                        className={`whitespace-nowrap py-3 px-4 text-sm ${onVac ? 'text-slate-400' : 'text-slate-900'}`}
-                        title={vacUI.title}
-                      >
+                      {/* Nombre (sin tooltip de vacaciones/baja aquí) */}
+                      <td className={`whitespace-nowrap py-3 px-4 text-sm ${dimTextClass}`}>
                         {user.name}
                       </td>
 
@@ -334,7 +364,7 @@ const AdminUsersPage = () => {
                         {user.email}
                       </td>
 
-                      {/* Rol + iconos (🚫, ⚠️, 🏖️ ) */}
+                      {/* Rol + iconos (🚫 ⚠️ 🏖️ 🤒) — tooltips SOLO en iconos */}
                       <td className="whitespace-nowrap py-3 px-4 text-sm">
                         <span
                           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${rolePillClass[roleKey]}`}
@@ -362,14 +392,23 @@ const AdminUsersPage = () => {
                           </span>
                         )}
 
-
-                        {/* 🏖️  Vacaciones (semana actual) — tooltip con rango FULL */} 
+                        {/* 🏖️ Vacaciones (tooltip SOLO aquí) */}
                         {onVac && (
-                          <span 
-                            className="ml-2 align-middle text-slate-400" 
-                            title={vacUI.title} 
-                          > 
-                            🏖️  
+                          <span
+                            className="ml-2 align-middle text-slate-400"
+                            title={vacUI.title}
+                          >
+                            🏖️
+                          </span>
+                        )}
+
+                        {/* 🤒 Baja médica (tooltip con DD/MM) */}
+                        {isSick && (
+                          <span
+                            className="ml-2 align-middle text-slate-500"
+                            title={sickTitle}
+                          >
+                            🤒
                           </span>
                         )}
                       </td>
@@ -396,7 +435,3 @@ const AdminUsersPage = () => {
 };
 
 export default AdminUsersPage;
-
-
-
-

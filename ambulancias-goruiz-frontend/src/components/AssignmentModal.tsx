@@ -10,23 +10,18 @@ import type { UserRef, DienstAssignment } from "../types/dienst";
 import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import type { FlexibleAssignment } from "../types/assignment";
 import { useTranslation } from "react-i18next";
-import { formatYYYYMMDDToDDMMYYYY } from '../utils/timeUtils';
-import { getVacationFlagsInRange } from "../api/vacation";
+import { formatYYYYMMDDToDDMMYYYY, fmtDDMM } from "../utils/timeUtils";
+import { getVacationFlagsInRange, type VacFlag } from "../api/vacation";
+import { getSickFlagsInRange, type SickFlag } from "../api/sickLeaves";
 
 interface AssignmentModalProps {
   isOpen: boolean;
-  date: string;
+  date: string; // 'YYYY-MM-DD'
   assignment?: FlexibleAssignment;
   dienstId: string;
   onClose: () => void;
   onUpdate: () => void;
 }
-
-type VacFlag = {
-  hasVacationInRange: boolean;
-  vacationStartInRange?: string; // 'YYYY-MM-DD'
-  vacationUntilInRange?: string; // 'YYYY-MM-DD'
-};
 
 const AssignmentModal: React.FC<AssignmentModalProps> = ({
   isOpen,
@@ -50,12 +45,13 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [availableMedics, setAvailableMedics] = useState<UserRef[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Dropdowns personalizados (como en Team/User modals)
+  // Dropdowns personalizados
   const [openDriverList, setOpenDriverList] = useState(false);
   const [openMedicList, setOpenMedicList] = useState(false);
 
-  // Flags de vacaciones (día objetivo). Un único mapa por id de usuario.
+  // Flags (día objetivo): vacaciones + bajas, por id de usuario
   const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
+  const [sickFlags, setSickFlags] = useState<Record<string, SickFlag>>({});
   const [flagsLoading, setFlagsLoading] = useState(false);
 
   // IDs para accesibilidad
@@ -72,7 +68,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       } else if (assignment.ambulanceId && typeof assignment.ambulanceId === "object") {
         setAmbulanceId(assignment.ambulanceId._id);
       } else {
-        setAmbulanceId(""); // fallback
+        setAmbulanceId("");
       }
 
       setSelectedDriverId(
@@ -123,11 +119,11 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     fetchAmbulances();
   }, [token, t]);
 
-  // Cargar flags de vacaciones para EL DÍA especificado (fromISO=toISO=date)
+  // Cargar flags de vacaciones y bajas para EL DÍA especificado (fromISO=toISO=date), con includeFullSpan para tooltips FULL
   useEffect(() => {
     if (!isOpen || !token || !date) return;
 
-    // Reunir ids de listas (drivers/medics) y también los ya seleccionados si no están en las listas
+    // ids presentes en listas + seleccionados (si no están en listas)
     const ids = new Set<string>();
     for (const u of availableDrivers) if (u?._id) ids.add(u._id);
     for (const u of availableMedics) if (u?._id) ids.add(u._id);
@@ -137,6 +133,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     const userIds = Array.from(ids);
     if (userIds.length === 0) {
       setVacationFlags({});
+      setSickFlags({});
       return;
     }
 
@@ -144,21 +141,38 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     (async () => {
       try {
         setFlagsLoading(true);
-        const flags = await getVacationFlagsInRange(token, {
+        const vacPromise = getVacationFlagsInRange(token, {
           userIds,
           fromISO: date,
           toISO: date,
+          includeFullSpan: true,
         });
-        if (!cancelled) setVacationFlags(flags);
+        const sickPromise = getSickFlagsInRange({
+          userIds,
+          fromISO: date,
+          toISO: date,
+          includeFullSpan: true,
+        });
+
+        const [vacFlags, sickFlagsRes] = await Promise.all([vacPromise, sickPromise]);
+        if (!cancelled) {
+          setVacationFlags(vacFlags);
+          setSickFlags(sickFlagsRes);
+        }
       } catch (e) {
-        console.error("❌ Error al obtener flags de vacaciones (día):", e);
-        if (!cancelled) setVacationFlags({});
+        console.error("❌ Error al obtener flags (día):", e);
+        if (!cancelled) {
+          setVacationFlags({});
+          setSickFlags({});
+        }
       } finally {
         if (!cancelled) setFlagsLoading(false);
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, token, date, availableDrivers, availableMedics, selectedDriverId, selectedMedicId]);
 
   if (!isOpen) return null;
@@ -221,7 +235,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
   };
 
-  // ===== Helpers visuales coherentes (igual que en los otros modales) =====
+  // ===== Helpers visuales coherentes =====
 
   const driverClass = (pschein?: string | null) => {
     if (!pschein) return '';
@@ -241,37 +255,57 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
   const dimClass = 'text-slate-400';
 
-  const fmtDDMM = (iso?: string) => {
-    if (!iso) return '';
-    const [, m, d] = iso.split('-');
-    return `${d}/${m}`;
-  };
-
+  // UI info vacaciones (tooltip SOLO icono; DD/MM; usa FULL si está)
   const userVacationInfo = (u?: UserRef | null) => {
     if (!u || !u._id) return { has: false, title: undefined as string | undefined };
     const vf = vacationFlags[u._id];
     const has = !!vf?.hasVacationInRange;
     if (!has) return { has: false, title: undefined as string | undefined };
-    const from = fmtDDMM(vf?.vacationStartInRange);
-    const to = fmtDDMM(vf?.vacationUntilInRange);
-    const title =
-      from && to
-        ? `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
-        : `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+
+    const fromFull = vf?.vacationStartFull;
+    const toFull = vf?.vacationUntilFull;
+
+    let title: string | undefined;
+    if (fromFull && toFull) {
+      title = `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${fmtDDMM(fromFull)} → ${fmtDDMM(toFull)}`;
+    } else {
+      title = `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+    }
+    return { has: true, title };
+  };
+
+  // UI info baja (tooltip SOLO icono; DD/MM; usa FULL si está)
+  const userSickInfo = (u?: UserRef | null) => {
+    if (!u || !u._id) return { has: false, title: undefined as string | undefined };
+    const sf = sickFlags[u._id];
+    const has = !!sf?.hasSickInRange;
+    if (!has) return { has: false, title: undefined as string | undefined };
+
+    const fromFull = sf?.sickStartFull || sf?.sickStartInRange;
+    const toFull   = sf?.sickUntilFull || sf?.sickUntilInRange;
+
+    let title: string | undefined;
+    if (fromFull && toFull) {
+      title = `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}: ${fmtDDMM(fromFull)} → ${fmtDDMM(toFull)}`;
+    } else {
+      title = `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}`;
+    }
     return { has: true, title };
   };
 
   // Seleccionados (para pintar rótulo)
   const selectedDriver = useMemo(
-    () => (availableDrivers.find(u => u._id === selectedDriverId) ||
-           availableDrivers.find(u => (assignment?.driver as any)?._id === u._id) ||
-           null),
+    () =>
+      availableDrivers.find(u => u._id === selectedDriverId) ||
+      availableDrivers.find(u => (assignment?.driver as any)?._id === u._id) ||
+      null,
     [availableDrivers, selectedDriverId, assignment]
   );
   const selectedMedic = useMemo(
-    () => (availableMedics.find(u => u._id === selectedMedicId) ||
-           availableMedics.find(u => (assignment?.medic as any)?._id === u._id) ||
-           null),
+    () =>
+      availableMedics.find(u => u._id === selectedMedicId) ||
+      availableMedics.find(u => (assignment?.medic as any)?._id === u._id) ||
+      null,
     [availableMedics, selectedMedicId, assignment]
   );
 
@@ -289,7 +323,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         <div className="space-y-3">
           {isAdmin ? (
             <>
-              {/* Horas y ambulancia (igual) */}
+              {/* Horas y ambulancia */}
               <div className="space-y-1">
                 <label htmlFor="startTime" className="block text-sm font-medium text-slate-700">
                   {t("pages.assignmentModal.labels.startTime")}
@@ -335,7 +369,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 </select>
               </div>
 
-              {/* Conductor: dropdown personalizado (coherente con Team/User) */}
+              {/* Conductor */}
               <div className="space-y-1">
                 <label htmlFor={driverBtnId} className="block text-sm font-medium text-slate-700">
                   {t("pages.assignmentModal.labels.driver")}
@@ -355,16 +389,25 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                         const u = selectedDriver || (assignment?.driver as any) || null;
                         if (!u) return t("pages.assignmentModal.placeholders.selectDriver");
                         const vac = userVacationInfo(u);
+                        const sick = userSickInfo(u);
                         return (
-                          <span
-                            className={mergeClasses(
-                              driverClass((u as any)?.pscheinExpiry),
-                              vac.has && dimClass
+                          <>
+                            <span
+                              className={mergeClasses(
+                                driverClass((u as any)?.pscheinExpiry),
+                                (vac.has || sick.has) && dimClass
+                              )}
+                            >
+                              {(u.lastName || '') + ', ' + (u.name || '')}
+                            </span>
+                            {/* Iconos con tooltip (solo aquí) */}
+                            {vac.has && (
+                              <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
                             )}
-                            title={vac.title}
-                          >
-                            {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🏖️' : ''}
-                          </span>
+                            {sick.has && (
+                              <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+                            )}
+                          </>
                         );
                       })()}
                     </span>
@@ -407,6 +450,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                         })
                         .map((u) => {
                           const vac = userVacationInfo(u);
+                          const sick = userSickInfo(u);
                           const expired = driverExpired(u);
                           return (
                             <button
@@ -424,16 +468,22 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                                 selectedDriverId === u._id && 'bg-slate-50',
                                 expired && 'opacity-50 cursor-not-allowed'
                               )}
-                              title={vac.title}
                             >
                               <span
                                 className={mergeClasses(
                                   driverClass((u as any)?.pscheinExpiry),
-                                  vac.has && dimClass
+                                  (vac.has || sick.has) && dimClass
                                 )}
                               >
-                                {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🏖️' : ''}
+                                {(u.lastName || '') + ', ' + (u.name || '')}
                               </span>
+                              {/* Iconos con tooltip (solo aquí) */}
+                              {vac.has && (
+                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
+                              )}
+                              {sick.has && (
+                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+                              )}
                             </button>
                           );
                         })}
@@ -441,24 +491,24 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   )}
                 </div>
 
-                {/* Leyenda para el caso driver */}
+                {/* Leyenda driver */}
                 <p className="mt-1 text-[11px] text-slate-500">
-                  🚫 {t('pages.diensts.adminPage.legendCantDrive', 'No puede conducir, P-schein caducado')}
+                  🚫 {t('pages.diensts.adminPage.legendCantDrive', 'No puede conducir, P-Schein caducado')}
                 </p>
 
-                {/* Hint vacaciones */}
+                {/* Hint vacaciones/bajas */}
                 {flagsLoading ? (
                   <p className="mt-1 text-[11px] text-slate-500">
                     {t('common.loading', 'Cargando...')}
                   </p>
                 ) : (
                   <p className="mt-1 text-[11px] text-slate-500">
-                    🏖️ {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón para ver fechas de vacaciones')}
+                    🏖️/🤒 {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón por los iconos para ver fechas')}
                   </p>
                 )}
               </div>
 
-              {/* Sanitario: dropdown personalizado */}
+              {/* Sanitario */}
               <div className="space-y-1">
                 <label htmlFor={medicBtnId} className="block text-sm font-medium text-slate-700">
                   {t("pages.assignmentModal.labels.medic")}
@@ -478,13 +528,20 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                         const u = selectedMedic || (assignment?.medic as any) || null;
                         if (!u) return t("pages.assignmentModal.placeholders.selectMedic");
                         const vac = userVacationInfo(u);
+                        const sick = userSickInfo(u);
                         return (
-                          <span
-                            className={mergeClasses(vac.has && dimClass)}
-                            title={vac.title}
-                          >
-                            {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🏖️' : ''}
-                          </span>
+                          <>
+                            <span className={mergeClasses((vac.has || sick.has) && dimClass)}>
+                              {(u.lastName || '') + ', ' + (u.name || '')}
+                            </span>
+                            {/* Iconos con tooltip (solo aquí) */}
+                            {vac.has && (
+                              <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
+                            )}
+                            {sick.has && (
+                              <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+                            )}
+                          </>
                         );
                       })()}
                     </span>
@@ -524,6 +581,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                         })
                         .map((u) => {
                           const vac = userVacationInfo(u);
+                          const sick = userSickInfo(u);
                           return (
                             <button
                               key={u._id}
@@ -538,11 +596,17 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                                 'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
                                 selectedMedicId === u._id && 'bg-slate-50'
                               )}
-                              title={vac.title}
                             >
-                              <span className={mergeClasses(vac.has && dimClass)}>
-                                {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🏖️' : ''}
+                              <span className={mergeClasses((vac.has || sick.has) && dimClass)}>
+                                {(u.lastName || '') + ', ' + (u.name || '')}
                               </span>
+                              {/* Iconos con tooltip (solo aquí) */}
+                              {vac.has && (
+                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
+                              )}
+                              {sick.has && (
+                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+                              )}
                             </button>
                           );
                         })}
@@ -550,14 +614,14 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   )}
                 </div>
 
-                {/* Hint vacaciones */}
+                {/* Hint vacaciones/bajas */}
                 {flagsLoading ? (
                   <p className="mt-1 text-[11px] text-slate-500">
                     {t('common.loading', 'Cargando...')}
                   </p>
                 ) : (
                   <p className="mt-1 text-[11px] text-slate-500">
-                    🏖️ {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón para ver fechas de vacaciones')}
+                    🏖️/🤒 {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón por los iconos para ver fechas')}
                   </p>
                 )}
               </div>
@@ -619,7 +683,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       </div>
     </div>
   );
-
 };
 
 export default AssignmentModal;

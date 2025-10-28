@@ -8,7 +8,8 @@ import {
   listMySickLeaves,
   acceptSickLeave,
   rejectSickLeave,
-  attachSickDocument
+  attachSickDocument,
+  checkSickInRange
 } from '../controllers/sickLeaveController';
 
 const router = express.Router();
@@ -30,6 +31,10 @@ router.post('/:id/reject', authenticateToken, authorizeRole('admin'), rejectSick
 
 // Worker/Admin: adjuntar/actualizar Krankschreibung en una solicitud
 router.post('/:id/attach-document', authenticateToken, attachSickDocument);
+
+// Admin: flags de bajas por rango (para listados / modales de asignación)
+router.post('/check-range', authenticateToken, authorizeRole('admin'), checkSickInRange);
+
 
 
 

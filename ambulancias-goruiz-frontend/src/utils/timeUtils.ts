@@ -22,5 +22,17 @@ export function formatISOToDDMMYYYY(iso?: string): string {
 export function formatYYYYMMDDToDDMMYYYY(dateStr?: string): string {
   if (!dateStr) return '';
   const [y, m, d] = dateStr.split('-');
-  return `${d}-${m}-${y}`;
+  if (!y || !m || !d) return '';
+  return `${d.padStart(2, '0')}-${m.padStart(2, '0')}-${y}`;
+}
+
+/** 
+ * Convierte 'YYYY-MM-DD' → 'DD/MM' 
+ * ✅ Usar este formato para tooltips de vacaciones y bajas.
+ */
+export function fmtDDMM(dateStr?: string): string {
+  if (!dateStr) return '';
+  const [, m, d] = dateStr.split('-');
+  if (!m || !d) return '';
+  return `${d.padStart(2, '0')}/${m.padStart(2, '0')}`;
 }

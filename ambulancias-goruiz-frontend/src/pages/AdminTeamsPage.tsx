@@ -7,7 +7,9 @@ import type { Team } from '../api/teams';
 import TeamCreateModal from '../components/teams/TeamCreateModal';
 import { toastT } from '../utils/toast';
 import { getPscheinInfo } from '../utils/pscheinUtils';
-import { getVacationFlagsInRange } from '../api/vacation';
+import { getVacationFlagsInRange, type VacFlag } from '../api/vacation';
+import { getSickFlagsInRange, type SickFlag } from '../api/sickLeaves';
+import { fmtDDMM } from '../utils/timeUtils';
 
 export default function AdminTeamsPage() {
   const { token } = useAuth();
@@ -18,14 +20,9 @@ export default function AdminTeamsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
-  // 🏖️  Flags semanales por usuario
-  type VacFlag = {
-    hasVacationInRange: boolean;
-    vacationStartInRange?: string; // 'YYYY-MM-DD' (dentro de la semana)
-    vacationUntilInRange?: string; // 'YYYY-MM-DD' (dentro de la semana)
-  };
+  // 🏖️ / 🤒 Flags semanales por usuario (mapas por userId)
   const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
-  
+  const [sickFlags, setSickFlags] = useState<Record<string, SickFlag>>({});
 
   // =========================
   // Fecha (Europe/Berlin)
@@ -54,12 +51,6 @@ export default function AdminTeamsPage() {
     };
   };
 
-  const fmtDDMM = (iso?: string) => {
-    if (!iso) return '';
-    const [, mm, dd] = iso.split('-');
-    return `${dd}/${mm}`;
-  };
-
   const load = useCallback(async () => {
     if (!token) return;
     try {
@@ -71,7 +62,7 @@ export default function AdminTeamsPage() {
       console.error(e);
       setError(
         e?.response?.data?.message ??
-          t('pages.adminTeams.loadError', 'No se pudieron cargar los equipos')
+        t('pages.adminTeams.loadError', 'No se pudieron cargar los equipos')
       );
     } finally {
       setLoading(false);
@@ -82,49 +73,64 @@ export default function AdminTeamsPage() {
     load();
   }, [load]);
 
- // 🏖️  Cargar flags semanales para todos los usuarios listados en equipos
-useEffect(() => {
-  if (!token || teams.length === 0) {
-    setVacationFlags({});
-    return;
-  }
-
-  const ids = new Set<string>();
-  for (const team of teams) {
-    const dId = (team.driver as any)?._id || (team.driver as any);
-    const mId = (team.medic as any)?._id || (team.medic as any);
-    if (typeof dId === 'string') ids.add(dId);
-    if (typeof mId === 'string') ids.add(mId);
-  }
-
-  const userIds = Array.from(ids);
-  if (userIds.length === 0) {
-    setVacationFlags({});
-    return;
-  }
-
-  const { weekStartISO, weekEndISO } = getBerlinWeekRangeISO();
-  let cancelled = false;
-
-  (async () => {
-    try {
-      const flags = await getVacationFlagsInRange(token, {
-        userIds,
-        fromISO: weekStartISO,
-        toISO: weekEndISO,
-      });
-      if (!cancelled) setVacationFlags(flags);
-    } catch (e) {
-      console.error('❌ Error al cargar flags de vacaciones (semanal) en AdminTeamsPage:', e);
-      if (!cancelled) setVacationFlags({});
+  // 🏖️/🤒 Cargar flags semanales para todos los usuarios listados en equipos (includeFullSpan para tooltips FULL)
+  useEffect(() => {
+    if (!token || teams.length === 0) {
+      setVacationFlags({});
+      setSickFlags({});
+      return;
     }
-  })();
 
-  return () => {
-    cancelled = true;
-  };
-}, [token, teams]);
+    const ids = new Set<string>();
+    for (const team of teams) {
+      const dId = (team.driver as any)?._id || (team.driver as any);
+      const mId = (team.medic as any)?._id || (team.medic as any);
+      if (typeof dId === 'string') ids.add(dId);
+      if (typeof mId === 'string') ids.add(mId);
+    }
+    const userIds = Array.from(ids);
+    if (userIds.length === 0) {
+      setVacationFlags({});
+      setSickFlags({});
+      return;
+    }
 
+    const { weekStartISO, weekEndISO } = getBerlinWeekRangeISO();
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const vacPromise = getVacationFlagsInRange(token, {
+          userIds,
+          fromISO: weekStartISO,
+          toISO: weekEndISO,
+          includeFullSpan: true,
+        });
+        const sickPromise = getSickFlagsInRange({
+          userIds,
+          fromISO: weekStartISO,
+          toISO: weekEndISO,
+          includeFullSpan: true,
+        });
+
+        const [vFlags, sFlags] = await Promise.all([vacPromise, sickPromise]);
+        if (!cancelled) {
+          setVacationFlags(vFlags);
+          setSickFlags(sFlags);
+        }
+      } catch (e) {
+        console.error('❌ Error al cargar flags (vacaciones/bajas) en AdminTeamsPage:', e);
+        if (!cancelled) {
+          setVacationFlags({});
+          setSickFlags({});
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, teams]);
 
   const handleCreate = async (payload: { driver: string; medic: string }) => {
     if (!token) return;
@@ -155,64 +161,70 @@ useEffect(() => {
     }
   };
 
- // ⚙️ Estilo visual + iconos para conductor según P-Schein
-const getDriverDecor = (team: Team) => {
-  const d = team?.driver as any;
-  if (!d || typeof d !== 'object') {
-    return { cls: '', title: undefined as string | undefined, expired: false, warning: false };
-  }
-
-  const info = getPscheinInfo(d.pscheinExpiry ?? undefined);
-
-  if (info.status === 'expired') {
-    return {
-      cls: 'text-red-600 font-medium',
-      title: t('pages.diensts.adminPage.driverPscheinExpired') as string,
-      expired: true,
-      warning: false,
-    };
-  }
-
-  if (info.status === 'warning') {
-    return {
-      cls: 'text-amber-600 font-medium',
-      title: t('pages.diensts.adminPage.driverPscheinWarning', { months: info.monthsLeft ?? 0 }) as string,
-      expired: false,
-      warning: true,
-    };
-  }
-
-  return { cls: '', title: undefined, expired: false, warning: false };
-};
-
-
-  // 🔎 Vacaciones (semanal o “hoy” heredado del backend)
-  const getVacationPersonDecor = (person: any) => {
-    const id: string | undefined = typeof person === 'object' && person ? person._id : person;
-    const weekly = id ? vacationFlags[id] : undefined;
-    const hasWeek = !!weekly?.hasVacationInRange;
-
-    // Compat “hoy” (backend) — no lo quitamos
-    const hasToday = !!person?.isOnVacation;
-
-    const has = hasWeek || hasToday;
-
-    let title: string | undefined;
-    if (hasWeek) {
-      const from = fmtDDMM(weekly?.vacationStartInRange);
-      const to = fmtDDMM(weekly?.vacationUntilInRange);
-      title = from && to
-        ? `🏖️  ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`
-        : `🏖️  ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
-    } else if (hasToday) {
-      title = `🏖️  ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+  // ⚙️ Estilo visual + iconos para conductor según P-Schein
+  const getDriverDecor = (team: Team) => {
+    const d = team?.driver as any;
+    if (!d || typeof d !== 'object') {
+      return { cls: '', title: undefined as string | undefined, expired: false, warning: false };
     }
 
+    const info = getPscheinInfo(d.pscheinExpiry ?? undefined);
+
+    if (info.status === 'expired') {
+      return {
+        cls: 'text-red-600 font-medium',
+        title: t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado, no puede conducir') as string,
+        expired: true,
+        warning: false,
+      };
+    }
+
+    if (info.status === 'warning') {
+      return {
+        cls: 'text-amber-600 font-medium',
+        title: t('pages.diensts.adminPage.driverPscheinWarning', { count: info.monthsLeft ?? 0 }) as string,
+        expired: false,
+        warning: true,
+      };
+    }
+
+    return { cls: '', title: undefined, expired: false, warning: false };
+  };
+
+
+  // 🔎 Decor vacaciones+baja por persona (tooltip SOLO en iconos; fechas DD/MM; FULL si está)
+  const getPersonLeaveDecor = (person: any) => {
+    const id: string | undefined = typeof person === 'object' && person ? person._id : person;
+    const vf = id ? vacationFlags[id] : undefined;
+    const sf = id ? sickFlags[id] : undefined;
+
+    const hasVac = !!vf?.hasVacationInRange;
+    const hasSick = !!sf?.hasSickInRange;
+
+    // Vacaciones tooltip
+    const vacFromFull = vf?.vacationStartFull;
+    const vacToFull = vf?.vacationUntilFull;
+    const vacTitle = hasVac
+      ? (vacFromFull && vacToFull
+        ? `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${fmtDDMM(vacFromFull)} → ${fmtDDMM(vacToFull)}`
+        : `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`)
+      : undefined;
+
+    // Bajas tooltip
+    const sickFromFull = sf?.sickStartFull || sf?.sickStartInRange;
+    const sickToFull = sf?.sickUntilFull || sf?.sickUntilInRange;
+    const sickTitle = hasSick
+      ? (sickFromFull && sickToFull
+        ? `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}: ${fmtDDMM(sickFromFull)} → ${fmtDDMM(sickToFull)}`
+        : `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}`)
+      : undefined;
+
     return {
-      hasVacation: has,
-      cls: has ? 'text-slate-400' : '',
-      icon: has ? ' 🏖️ ' : '',
-      title,
+      dimCls: (hasVac || hasSick) ? 'text-slate-400' : '',
+      vacTitle,
+      sickTitle,
+      showVac: hasVac,
+      showSick: hasSick,
     };
   };
 
@@ -257,92 +269,99 @@ const getDriverDecor = (team: Team) => {
       {!loading && !error && teams.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {teams.map((team) => {
-  // P-Schein conductor
-  const {
-    cls: driverPscheinCls,
-    title: driverPscheinTitle,
-    expired: driverExpired,
-    warning: driverWarning,
-  } = getDriverDecor(team);
+            // P-Schein conductor
+            const {
+              cls: driverPscheinCls,
+              title: driverPscheinTitle,
+              expired: driverExpired,
+              warning: driverWarning,
+            } = getDriverDecor(team);
 
-  // Vacaciones por persona (semana/hoy)
-  const driverVac = getVacationPersonDecor(team.driver);
-  const medicVac = getVacationPersonDecor(team.medic);
+            // Vacaciones / Baja por persona (semana FULL tooltip)
+            const driverLeave = getPersonLeaveDecor(team.driver);
+            const medicLeave = getPersonLeaveDecor(team.medic);
 
-  return (
-    <div
-      key={team._id}
-      className="rounded-2xl bg-white p-4 ring-1 ring-slate-200 shadow-sm hover:shadow-md transition-shadow"
-    >
-      <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-        {t('pages.adminTeams.team', 'Equipo')}
-      </p>
+            return (
+              <div
+                key={team._id}
+                className="rounded-2xl bg-white p-4 ring-1 ring-slate-200 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                  {t('pages.adminTeams.team', 'Equipo')}
+                </p>
 
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-sm leading-snug">
-          {/* 🚗 Conductor */}
-          <p>
-            <span className={`font-medium ${driverPscheinCls} ${driverVac.cls}`}>
-              {(team.driver?.lastName || '—') + ', ' + (team.driver?.name || '—')}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm leading-snug">
+                    {/* 🚗 Conductor */}
+                    <p>
+                      <span className={`font-medium ${driverPscheinCls} ${driverLeave.dimCls}`}>
+                        {(team.driver?.lastName || '—') + ', ' + (team.driver?.name || '—')}
+                        {/* 🏖️ Vacaciones (icono con tooltip propio) */}
+                        {driverLeave.showVac && (
+                          <span title={driverLeave.vacTitle} className="cursor-help ml-1 align-middle text-slate-400">
+                            🏖️
+                          </span>
+                        )}
+                        {/* 🤒 Baja (icono con tooltip propio) */}
+                        {driverLeave.showSick && (
+                          <span title={driverLeave.sickTitle} className="cursor-help ml-1 align-middle text-slate-500">
+                            🤒
+                          </span>
+                        )}
+                        {/* 🚫 P-Schein caducado */}
+                        {driverExpired && (
+                          <span
+                            title={driverPscheinTitle || t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado, no puede conducir')}
+                            className="cursor-help ml-1 align-middle"
+                          >
+                            🚫
+                          </span>
+                        )}
+                        {/* ⚠️ P-Schein por caducar */}
+                        {!driverExpired && driverWarning && (
+                          <span
+                            title={driverPscheinTitle}
+                            className="cursor-help ml-1 align-middle"
+                          >
+                            ⚠️
+                          </span>
+                        )}
 
-              {/* 🏖️  vacaciones (icono con tooltip propio) */}
-              {driverVac.icon && (
-                <span title={driverVac.title} className="cursor-help">
-                  {driverVac.icon}
-                </span>
-              )}
+                      </span>
+                    </p>
 
-              {/* 🚫 P-Schein caducado (icono con tooltip propio) */}
-              {driverExpired && (
-                <span
-                  title={driverPscheinTitle || t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado, no puede conducir')}
-                  className="cursor-help"
-                >
-                  {' 🚫'}
-                </span>
-              )}
+                    <p className="text-slate-400">/</p>
 
-              {/* ⚠️ P-Schein caduca pronto (icono con tooltip propio) */}
-              {!driverExpired && driverWarning && (
-                <span
-                  title={driverPscheinTitle || t('pages.diensts.adminPage.driverPscheinWarning', 'P-Schein caduca pronto')}
-                  className="cursor-help"
-                >
-                  {' ⚠️'}
-                </span>
-              )}
-            </span>
-          </p>
+                    {/* 🧑‍⚕️ Sanitario */}
+                    <p>
+                      <span className={`font-medium ${medicLeave.dimCls}`}>
+                        {(team.medic?.lastName || '—') + ', ' + (team.medic?.name || '—')}
+                        {/* 🏖️ vacaciones */}
+                        {medicLeave.showVac && (
+                          <span title={medicLeave.vacTitle} className="cursor-help ml-1 align-middle text-slate-400">
+                            🏖️
+                          </span>
+                        )}
+                        {/* 🤒 baja */}
+                        {medicLeave.showSick && (
+                          <span title={medicLeave.sickTitle} className="cursor-help ml-1 align-middle text-slate-500">
+                            🤒
+                          </span>
+                        )}
+                      </span>
+                    </p>
+                  </div>
 
-          <p className="text-slate-400">/</p>
-
-          {/* 🧑‍⚕️ Sanitario */}
-          <p>
-            <span className={`font-medium ${medicVac.cls}`}>
-              {(team.medic?.lastName || '—') + ', ' + (team.medic?.name || '—')}
-
-              {/* 🏖️ vacaciones (icono con tooltip propio) */}
-              {medicVac.icon && (
-                <span title={medicVac.title} className="cursor-help">
-                  {medicVac.icon}
-                </span>
-              )}
-            </span>
-          </p>
-        </div>
-
-        <button
-          onClick={() => handleDelete(team._id)}
-          className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100"
-        >
-          {t('common.delete', 'Eliminar')}
-        </button>
-      </div>
-    </div>
-  );
-})}
-
-
+                  <button
+                    onClick={() => handleDelete(team._id)}
+                    className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100"
+                  >
+                    {t('common.delete', 'Eliminar')}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 

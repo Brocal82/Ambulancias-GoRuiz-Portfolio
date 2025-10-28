@@ -15,6 +15,12 @@ function toBerlinDay(dateISO: string, endOfDay = false): Date {
   return (endOfDay ? dt.endOf('day') : dt.startOf('day')).toJSDate();
 }
 
+// Formatea un Date a 'YYYY-MM-DD' en la zona Europe/Berlin
+function fmtYmdBerlin(d: Date): string {
+  return DateTime.fromJSDate(d, { zone: ZONE }).toFormat('yyyy-LL-dd');
+}
+
+
 // ⚠️ Ajusta si tu middleware de auth usa otro campo (req.user.id, req.userId, etc.)
 function getAuthUserId(req: Request): string | undefined {
   return (req as any)?.user?.id || (req as any)?.userId;
@@ -343,5 +349,136 @@ export async function attachSickDocument(req: Request, res: Response) {
     res.status(500).json({ message: 'Error al adjuntar el documento' });
   }
 }
+
+/**
+ * Devuelve flags de bajas (sick leave) por usuario dentro de un rango.
+ * Body:
+ *  - userIds: string[]
+ *  - fromISO: 'YYYY-MM-DD'
+ *  - toISO:   'YYYY-MM-DD'
+ *  - includeFullSpan?: boolean (si true, añade sickStartFull/sickUntilFull con el tramo completo de las bajas solapadas)
+ *
+ * Respuesta:
+ *  {
+ *    [userId]: {
+ *      hasSickInRange: boolean,
+ *      sickStartInRange?: 'YYYY-MM-DD',
+ *      sickUntilInRange?: 'YYYY-MM-DD',
+ *      sickStartFull?: 'YYYY-MM-DD',   // si includeFullSpan
+ *      sickUntilFull?: 'YYYY-MM-DD'    // si includeFullSpan
+ *    }
+ *  }
+ */
+export async function checkSickInRange(req: Request, res: Response): Promise<void> {
+  try {
+    const { userIds, fromISO, toISO, includeFullSpan } = req.body as {
+      userIds?: string[];
+      fromISO?: string;
+      toISO?: string;
+      includeFullSpan?: boolean;
+    };
+
+    if (!Array.isArray(userIds) || userIds.length === 0 || !fromISO || !toISO) {
+      res.status(400).json({ message: 'Parámetros inválidos. Se requieren userIds[], fromISO y toISO.' });
+      return;
+    }
+
+    // Normalizamos el rango en TZ Berlin (inicio/fin de día) y a JS Date
+    const fromStart = DateTime.fromISO(fromISO, { zone: ZONE }).startOf('day');
+    const toEnd     = DateTime.fromISO(toISO,   { zone: ZONE }).endOf('day');
+    if (!fromStart.isValid || !toEnd.isValid || toEnd < fromStart) {
+      res.status(400).json({ message: 'Rango de fechas inválido.' });
+      return;
+    }
+
+    // Solo bajas ACEPTADAS que SOLAPEN con el rango pedido
+    const objectIds = userIds
+      .filter((id) => mongoose.Types.ObjectId.isValid(id))
+      .map((id) => new mongoose.Types.ObjectId(id));
+
+    if (objectIds.length === 0) {
+      res.status(400).json({ message: 'userIds inválidos.' });
+      return;
+    }
+
+    const rows = await SickLeave.find({
+      user: { $in: objectIds },
+      status: 'accepted',
+      startDate: { $lte: toEnd.toJSDate() },
+      endDate: { $gte: fromStart.toJSDate() },
+    })
+      .select('user startDate endDate')
+      .lean();
+
+    // Inicializamos el resultado
+    const result: Record<
+      string,
+      {
+        hasSickInRange: boolean;
+        sickStartInRange?: string;
+        sickUntilInRange?: string;
+        sickStartFull?: string;
+        sickUntilFull?: string;
+      }
+    > = {};
+    for (const id of userIds) {
+      result[id] = { hasSickInRange: false };
+    }
+
+    // Reducimos por usuario
+    const groupByUser = new Map<string, Array<{ startDate: Date; endDate: Date }>>();
+    for (const r of rows) {
+      const uid = String(r.user);
+      if (!groupByUser.has(uid)) groupByUser.set(uid, []);
+      groupByUser.get(uid)!.push({ startDate: r.startDate, endDate: r.endDate });
+    }
+
+    for (const uid of userIds) {
+      const segments = groupByUser.get(uid);
+      if (!segments || segments.length === 0) continue;
+
+      // Para el tramo EN RANGO: tomamos el solapado de cada segmento con [fromStart..toEnd] y unimos (min start, max end)
+      let inRangeMin: Date | null = null;
+      let inRangeMax: Date | null = null;
+
+      // Para el tramo COMPLETO (opcional): min startDate real, max endDate real de las bajas que solapan
+      let fullMin: Date | null = null;
+      let fullMax: Date | null = null;
+
+      for (const s of segments) {
+        // tramo solapado con el rango pedido
+        const overlapStart = new Date(Math.max(s.startDate.getTime(), fromStart.toJSDate().getTime()));
+        const overlapEnd   = new Date(Math.min(s.endDate.getTime(),   toEnd.toJSDate().getTime()));
+        if (overlapStart <= overlapEnd) {
+          // Hay solape
+          if (!inRangeMin || overlapStart < inRangeMin) inRangeMin = overlapStart;
+          if (!inRangeMax || overlapEnd > inRangeMax)   inRangeMax = overlapEnd;
+        }
+
+        if (includeFullSpan) {
+          if (!fullMin || s.startDate < fullMin) fullMin = s.startDate;
+          if (!fullMax || s.endDate   > fullMax) fullMax = s.endDate;
+        }
+      }
+
+      if (inRangeMin && inRangeMax) {
+        result[uid].hasSickInRange = true;
+        result[uid].sickStartInRange = fmtYmdBerlin(inRangeMin);
+        result[uid].sickUntilInRange = fmtYmdBerlin(inRangeMax);
+      }
+
+      if (includeFullSpan && fullMin && fullMax) {
+        result[uid].sickStartFull = fmtYmdBerlin(fullMin);
+        result[uid].sickUntilFull = fmtYmdBerlin(fullMax);
+      }
+    }
+
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('❌ checkSickInRange error:', err);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+}
+
 
 

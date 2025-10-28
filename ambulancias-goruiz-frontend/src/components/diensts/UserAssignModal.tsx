@@ -5,7 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { getAllUsers } from '../../api/users';
 import type { AmbulanceRole, User } from '../../types/user';
 import { getPscheinInfo } from '../../utils/pscheinUtils';
-import { getVacationFlagsInRange } from '../../api/vacation';
+import { getVacationFlagsInRange, type VacFlag } from '../../api/vacation';
+import { getSickFlagsInRange, type SickFlag } from '../../api/sickLeaves';
+import { fmtDDMM } from '../../utils/timeUtils';
 
 interface Props {
   isOpen: boolean;
@@ -13,14 +15,6 @@ interface Props {
   onConfirm: (params: { role: 'driver' | 'medic'; userId: string }) => Promise<void> | void;
   weekStartISO: string;
 }
-
-type VacFlag = {
-  hasVacationInRange: boolean;
-  vacationStartInRange?: string; // 'YYYY-MM-DD'
-  vacationUntilInRange?: string; // 'YYYY-MM-DD'
-  vacationStartFull?: string;    // 'YYYY-MM-DD' 
-  vacationUntilFull?: string;    // 'YYYY-MM-DD'  
-};
 
 export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartISO }: Props) {
   const { token } = useAuth();
@@ -31,11 +25,12 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
   const [role, setRole] = useState<'driver' | 'medic'>('driver');
   const [userId, setUserId] = useState('');
 
-  // Dropdown personalizado para usuarios
+  // Dropdown personalizado
   const [openList, setOpenList] = useState(false);
 
-  // Flags de vacaciones en la semana y estado de carga
+  // Flags en la semana seleccionada + estado de carga
   const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
+  const [sickFlags, setSickFlags] = useState<Record<string, SickFlag>>({});
   const [flagsLoading, setFlagsLoading] = useState(false);
 
   // Helpers locales
@@ -44,17 +39,12 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
     d.setDate(d.getDate() + days);
     return d.toISOString().split('T')[0];
   };
-  const fmtDDMM = (iso?: string) => {
-    if (!iso) return '';
-    const [, m, d] = iso.split('-');
-    return `${d}/${m}`;
-  };
 
   // Fin de semana = inicio + 6 días
   const weekEndISO = useMemo(() => addDaysISO(weekStartISO, 6), [weekStartISO]);
 
   const roleId = useId();
-  const userSelectId = useId(); // lo reutilizamos como id del botón del dropdown
+  const userSelectId = useId(); // id del botón del dropdown
 
   // Cargar todos los usuarios
   useEffect(() => {
@@ -78,11 +68,12 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
     return users.filter(u => u.ambulanceRole && need.includes(u.ambulanceRole));
   }, [users, role]);
 
-  // Cargar flags de vacaciones en rango para los usuarios visibles por rol
+  // Cargar flags de vacaciones + bajas (includeFullSpan:true) para usuarios visibles por rol
   useEffect(() => {
     if (!isOpen || !token) return;
     if (filteredByRole.length === 0) {
       setVacationFlags({});
+      setSickFlags({});
       return;
     }
 
@@ -92,15 +83,30 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
     (async () => {
       try {
         setFlagsLoading(true);
-        const flags = await getVacationFlagsInRange(token, {
+        const vacPromise = getVacationFlagsInRange(token, {
           userIds: ids,
           fromISO: weekStartISO,
           toISO: weekEndISO,
+          includeFullSpan: true, // tooltips con rango completo
         });
-        if (!cancelled) setVacationFlags(flags);
+        const sickPromise = getSickFlagsInRange({
+          userIds: ids,
+          fromISO: weekStartISO,
+          toISO: weekEndISO,
+          includeFullSpan: true, // idem
+        });
+
+        const [vacFlags, sickFlagsRes] = await Promise.all([vacPromise, sickPromise]);
+        if (!cancelled) {
+          setVacationFlags(vacFlags);
+          setSickFlags(sickFlagsRes);
+        }
       } catch (e) {
-        console.error('❌ Error al obtener flags de vacaciones en rango:', e);
-        if (!cancelled) setVacationFlags({});
+        console.error('❌ Error al obtener flags (vacaciones/bajas) en rango:', e);
+        if (!cancelled) {
+          setVacationFlags({});
+          setSickFlags({});
+        }
       } finally {
         if (!cancelled) setFlagsLoading(false);
       }
@@ -109,7 +115,7 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
     return () => { cancelled = true; };
   }, [isOpen, token, filteredByRole, weekStartISO, weekEndISO]);
 
-  // P-Schein solo afecta a DRIVER (para colorear/disabled)
+  // P-Schein solo afecta a DRIVER (colorear/inhabilitar)
   const driverPscheinClass = (pschein?: string | null) => {
     if (!pschein) return '';
     const info = getPscheinInfo(pschein);
@@ -128,34 +134,46 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
   const mergeClasses = (...classes: (string | false | null | undefined)[]) =>
     classes.filter(Boolean).join(' ');
 
-  // Tono apagado para quien está de vacaciones
+  // Tono apagado si vacaciones o baja
   const dimClass = 'text-slate-400';
 
-// Info de vacaciones por usuario (tooltip SIEMPRE con rango completo)
-const userVacationInfo = (u: User) => {
-  const vf = vacationFlags[u._id];
-  const has = !!vf?.hasVacationInRange;
-  if (!has) return { has: false, title: undefined as string | undefined };
+  // Info de vacaciones por usuario (tooltip SOLO con rango FULL en el icono)
+  const userVacationInfo = (u: User) => {
+    const vf = vacationFlags[u._id];
+    const has = !!vf?.hasVacationInRange;
+    if (!has) return { has: false, title: undefined as string | undefined };
 
-  // Tooltip SOLO con el rango completo; si no llega, mostramos solo la palmera sin fechas
-  const fullFrom = vf?.vacationStartFull;
-  const fullTo = vf?.vacationUntilFull;
+    const fullFrom = vf?.vacationStartFull;
+    const fullTo = vf?.vacationUntilFull;
 
-  let title: string | undefined;
-  if (fullFrom && fullTo) {
-    const from = fmtDDMM(fullFrom);
-    const to = fmtDDMM(fullTo);
-    title = `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${from} → ${to}`;
-  } else {
-    // evitamos usar los *InRange* para que no recorte por semana
-    title = `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
-  }
+    let title: string | undefined;
+    if (fullFrom && fullTo) {
+      title = `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${fmtDDMM(fullFrom)} → ${fmtDDMM(fullTo)}`;
+    } else {
+      title = `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+    }
+    return { has: true, title };
+  };
 
-  return { has: true, title };
-};
+  // Info de baja por usuario (tooltip SOLO con rango FULL en el icono)
+  const userSickInfo = (u: User) => {
+    const sf = sickFlags[u._id];
+    const has = !!sf?.hasSickInRange;
+    if (!has) return { has: false, title: undefined as string | undefined };
 
+    const fullFrom = sf?.sickStartFull || sf?.sickStartInRange;
+    const fullTo   = sf?.sickUntilFull || sf?.sickUntilInRange;
 
-  // Usuario seleccionado (para el rótulo del botón)
+    let title: string | undefined;
+    if (fullFrom && fullTo) {
+      title = `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}: ${fmtDDMM(fullFrom)} → ${fmtDDMM(fullTo)}`;
+    } else {
+      title = `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}`;
+    }
+    return { has: true, title };
+  };
+
+  // Usuario seleccionado (rótulo del botón)
   const selectedUser = useMemo(
     () => filteredByRole.find(u => u._id === userId) || null,
     [filteredByRole, userId]
@@ -174,7 +192,7 @@ const userVacationInfo = (u: User) => {
         </h3>
 
         <div className="space-y-3">
-          {/* Selector de rol (nativo, se mantiene) */}
+          {/* Selector de rol */}
           <div>
             <label htmlFor={roleId} className="block text-sm font-medium text-slate-700">
               {t('pages.diensts.assignUserModal.role', 'Rol')}
@@ -191,7 +209,7 @@ const userVacationInfo = (u: User) => {
             </select>
           </div>
 
-          {/* Selector de usuario (dropdown personalizado, como TeamAssignModal) */}
+          {/* Selector de usuario (dropdown personalizado) */}
           <div>
             <label htmlFor={userSelectId} className="block text-sm font-medium text-slate-700">
               {t('pages.diensts.assignUserModal.user', 'Trabajador')}
@@ -212,16 +230,23 @@ const userVacationInfo = (u: User) => {
                     : selectedUser
                       ? (() => {
                           const vac = userVacationInfo(selectedUser);
-                          const driverClass =
+                          const sick = userSickInfo(selectedUser);
+                          const dClass =
                             role === 'driver' ? driverPscheinClass((selectedUser as any)?.pscheinExpiry) : '';
+                          const dim = (vac.has || sick.has) ? dimClass : '';
                           return (
-                            <span
-                              className={mergeClasses(driverClass, vac.has && dimClass)}
-                              title={vac.title}
-                            >
-                              {(selectedUser.lastName || '') + ', ' + (selectedUser.name || '')}
-                              {vac.has ? ' 🏖️' : ''}
-                            </span>
+                            <>
+                              <span className={mergeClasses(dClass, dim)}>
+                                {(selectedUser.lastName || '') + ', ' + (selectedUser.name || '')}
+                              </span>
+                              {/* Iconos con tooltip (solo aquí) */}
+                              {vac.has && (
+                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
+                              )}
+                              {sick.has && (
+                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+                              )}
+                            </>
                           );
                         })()
                       : t('common.select', 'Selecciona')
@@ -255,7 +280,7 @@ const userVacationInfo = (u: User) => {
                   )}
 
                   {filteredByRole
-                    .slice() // copia para no mutar
+                    .slice()
                     .sort((a, b) => {
                       // Habilitados (no expirados) primero si role=driver; luego alfabético
                       const da = isDriverExpired(a) ? 1 : 0;
@@ -267,8 +292,10 @@ const userVacationInfo = (u: User) => {
                     })
                     .map(u => {
                       const vac = userVacationInfo(u);
+                      const sick = userSickInfo(u);
                       const dClass = role === 'driver' ? driverPscheinClass((u as any)?.pscheinExpiry) : '';
                       const expired = role === 'driver' ? isDriverExpired(u) : false;
+                      const dim = (vac.has || sick.has) ? dimClass : '';
 
                       return (
                         <button
@@ -276,7 +303,7 @@ const userVacationInfo = (u: User) => {
                           role="option"
                           aria-selected={userId === u._id}
                           onClick={() => {
-                            if (expired) return; // no permitir seleccionar expirado
+                            if (expired) return; // no permitir seleccionar caducado
                             setUserId(u._id);
                             setOpenList(false);
                           }}
@@ -285,11 +312,17 @@ const userVacationInfo = (u: User) => {
                             userId === u._id && 'bg-slate-50',
                             expired && 'opacity-50 cursor-not-allowed'
                           )}
-                          title={vac.title}
                         >
-                          <span className={mergeClasses(dClass, vac.has && dimClass)}>
-                            {(u.lastName || '') + ', ' + (u.name || '')}{vac.has ? ' 🏖️' : ''}
+                          <span className={mergeClasses(dClass, dim)}>
+                            {(u.lastName || '') + ', ' + (u.name || '')}
                           </span>
+                          {/* Iconos con tooltip (solo aquí) */}
+                          {vac.has && (
+                            <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
+                          )}
+                          {sick.has && (
+                            <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+                          )}
                         </button>
                       );
                     })}
@@ -304,14 +337,14 @@ const userVacationInfo = (u: User) => {
               </p>
             )}
 
-            {/* Hint para tooltip de vacaciones */}
+            {/* Hint para tooltips */}
             {flagsLoading ? (
               <p className="mt-1 text-[11px] text-slate-500">
                 {t('common.loading', 'Cargando...')}
               </p>
             ) : (
               <p className="mt-1 text-[11px] text-slate-500">
-                🏖️ {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón para ver fechas de vacaciones')}
+                🏖️/🤒 {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón por los iconos para ver fechas')}
               </p>
             )}
           </div>
