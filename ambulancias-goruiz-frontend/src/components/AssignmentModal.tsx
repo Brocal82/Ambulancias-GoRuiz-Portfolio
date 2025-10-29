@@ -80,25 +80,29 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
   }, [assignment]);
 
-  useEffect(() => {
-    const fetchAvailableUsers = async () => {
-      if (!token || !isAdmin || !date) return;
-      try {
-        const [drivers, medics] = await Promise.all([
-          getAvailableUsersForDate(date, "driver", token),
-          getAvailableUsersForDate(date, "medic", token),
-        ]);
+useEffect(() => {
+  const fetchAvailableUsers = async () => {
+    if (!token || !isAdmin || !date) return;
+    try {
+      const commonOpts = { startTime, endTime };
 
-        setAvailableDrivers(mergeWithAssigned(drivers, assignment, "driver"));
-        setAvailableMedics(mergeWithAssigned(medics, assignment, "medic"));
-      } catch (error) {
-        console.error("Error al cargar usuarios disponibles:", error);
-        toastT.error(["toasts.assignments.loadUsersError"]);
-      }
-    };
+      const [drivers, medics] = await Promise.all([
+        getAvailableUsersForDate(date, "driver", token, commonOpts),
+        getAvailableUsersForDate(date, "medic", token, commonOpts),
+      ]);
 
-    fetchAvailableUsers();
-  }, [token, isAdmin, date, assignment, t]);
+      setAvailableDrivers(mergeWithAssigned(drivers, assignment, "driver"));
+      setAvailableMedics(mergeWithAssigned(medics, assignment, "medic"));
+    } catch (error) {
+      console.error("Error al cargar usuarios disponibles:", error);
+      toastT.error(["toasts.assignments.loadUsersError"]);
+    }
+  };
+
+  fetchAvailableUsers();
+  // 🔁 Recalcular lista si cambian las horas o el assignment
+}, [token, isAdmin, date, assignment, startTime, endTime, t]);
+
 
   // Cargar ambulancias (igual que antes)
   useEffect(() => {

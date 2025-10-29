@@ -308,44 +308,102 @@ export const getAllUsersDienst = async (_req: Request, res: Response): Promise<v
 
 
 export const getAvailableUsersForDate: RequestHandler = async (req: Request, res: Response) => {
-  const { date, desiredRole } = req.query;
+  const { date, desiredRole, startTime, endTime } = req.query as {
+    date?: string;
+    desiredRole?: 'driver' | 'medic' | 'both';
+    startTime?: string; // "HH:mm" opcional
+    endTime?: string;   // "HH:mm" opcional
+  };
 
   if (!date || typeof date !== 'string') {
-     res.status(400).json({ message: 'Fecha inválida' });
-     return
+    res.status(400).json({ message: 'Fecha inválida' });
+    return;
   }
 
+  // Rol permitido
   const allowedRoles =
     desiredRole === 'driver'
       ? ['driver', 'both']
       : desiredRole === 'medic'
       ? ['medic', 'both']
-      : ['driver', 'medic', 'both']; // fallback
+      : ['driver', 'medic', 'both']; // fallback si no llega desiredRole
+
+  // Helpers de tiempo
+  const toMin = (hhmm?: string) => {
+    if (!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return null;
+    const [h, m] = hhmm.split(':').map(Number);
+    return h * 60 + m;
+  };
+  const sReq = toMin(startTime);
+  const eReq = toMin(endTime);
+
+  const overlap = (
+    aStartMin: number | null,
+    aEndMin: number | null,
+    bStartMin: number | null,
+    bEndMin: number | null
+  ) => {
+    // Si no hay horas dadas por alguna de las partes, consideramos que ocupan el día completo
+    const Astart = aStartMin ?? 0;
+    const Aend   = aEndMin   ?? 24 * 60; // 24:00
+    const Bstart = bStartMin ?? 0;
+    const Bend   = bEndMin   ?? 24 * 60;
+    return Astart < Bend && Bstart < Aend;
+  };
 
   try {
-    const diensts = await Dienst.find({ "assignments.date": date });
+    // 1) Obtener assignments SOLO del día solicitado
+    const diensts = await Dienst.find(
+      { 'assignments.date': date },
+      { assignments: 1 }
+    ).lean();
 
-    const assignedUserIds = new Set<string>();
-    diensts.forEach((dienst) => {
-      dienst.assignments.forEach((a) => {
-        if (a.date === date) {
-          if (a.driver) assignedUserIds.add(a.driver.toString());
-          if (a.medic) assignedUserIds.add(a.medic.toString());
+    // 2) Construir set de usuarios ocupados por solape horario (en ese día)
+    const busyUserIds = new Set<string>();
+
+    for (const d of diensts) {
+      for (const a of d.assignments ?? []) {
+        if (a.date !== date) continue;
+
+        const aStart = toMin(a.startTime);
+        const aEnd   = toMin(a.endTime);
+
+        // Si no llegan horas en la query, tratamos el día como "ocupado completo".
+        // Si llegan horas, marcamos ocupado sólo si hay solape.
+        const shouldBlock = (sReq === null || eReq === null)
+          ? true
+          : overlap(aStart, aEnd, sReq, eReq);
+
+        if (shouldBlock) {
+          if (a.driver) busyUserIds.add(String(a.driver));
+          if (a.medic)  busyUserIds.add(String(a.medic));
         }
-      });
-    });
+      }
+    }
 
-    const users = await User.find({
-      _id: { $nin: Array.from(assignedUserIds) },
+    // 3) Filtro base de usuarios por rol y no ocupados ese día/horario
+    const baseUsers = await User.find({
+      _id: { $nin: Array.from(busyUserIds) },
       ambulanceRole: { $in: allowedRoles },
+    })
+      .sort({ lastName: 1 })
+      .lean();
+
+    // 4) Regla extra: si el rol deseado es "driver", excluimos P-Schein caducado para esa fecha
+    const dateObj = DateTime.fromISO(date, { zone: ZONE }).startOf('day');
+    const available = baseUsers.filter((u: any) => {
+      if (desiredRole !== 'driver') return true;
+      const exp = u.pscheinExpiry ? DateTime.fromISO(u.pscheinExpiry, { zone: ZONE }) : null;
+      return !exp || exp.endOf('day') >= dateObj; // permitido conducir si no está caducado a esa fecha
     });
 
-    res.json(users);
+    res.json(available);
   } catch (error) {
-    console.error("Error al obtener usuarios disponibles:", error);
+    console.error('Error al obtener usuarios disponibles:', error);
     res.status(500).json({ message: 'Error del servidor' });
   }
 };
+
 
 export const uploadUserFiles = async (req: Request, res: Response): Promise<void> => {
   try {

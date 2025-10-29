@@ -15,18 +15,20 @@ export const getAllUsers = async (token: string): Promise<User[]> => {
   }
 };
 
-// ✅ Obtener usuarios disponibles por fecha y rol
+// ✅ Obtener usuarios disponibles por fecha, rol y (opcional) horas para evitar solapes
 export const getAvailableUsersForDate = async (
   date: string,
   desiredRole: 'driver' | 'medic' | 'both',
-  token: string
+  token: string,
+  opts?: { startTime?: string; endTime?: string }
 ): Promise<User[]> => {
   const response = await api.get(`/users/available`, {
     headers: { Authorization: `Bearer ${token}` },
-    params: { date, desiredRole },
+    params: { date, desiredRole, startTime: opts?.startTime, endTime: opts?.endTime },
   });
   return response.data;
 };
+
 
 // ✅ Obtener usuario por id
 export const getUserById = async (token: string, userId: string): Promise<User> => {
