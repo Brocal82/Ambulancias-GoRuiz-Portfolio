@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useId, useMemo } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { updateDienstPartial, removeAssignment } from "../api/diensts";
-import { getAvailableUsersForDate } from "../api/users";
+import { getAvailableUsersForDate, getUserById } from "../api/users";
 import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { toastT } from "../utils/toast";
 import "react-toastify/dist/ReactToastify.css";
@@ -45,19 +45,20 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [availableMedics, setAvailableMedics] = useState<UserRef[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Dropdowns personalizados
+  // Dropdowns
   const [openDriverList, setOpenDriverList] = useState(false);
   const [openMedicList, setOpenMedicList] = useState(false);
 
-  // Flags (día objetivo): vacaciones + bajas, por id de usuario
+  // Flags (día objetivo)
   const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
   const [sickFlags, setSickFlags] = useState<Record<string, SickFlag>>({});
   const [flagsLoading, setFlagsLoading] = useState(false);
 
-  // IDs para accesibilidad
+  // IDs accesibilidad
   const driverBtnId = useId();
   const medicBtnId = useId();
 
+  // Precarga del assignment
   useEffect(() => {
     if (assignment) {
       setStartTime(assignment.startTime);
@@ -80,31 +81,75 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
   }, [assignment]);
 
-useEffect(() => {
-  const fetchAvailableUsers = async () => {
-    if (!token || !isAdmin || !date) return;
+  // Si el seleccionado viene como id y no está en la lista, lo traemos e inyectamos
+  const ensureSelectedPresent = async (
+    list: UserRef[],
+    selectedId: string | undefined,
+    token: string
+  ): Promise<UserRef[]> => {
+    if (!selectedId) return list;
+    if (list.some((u) => u._id === selectedId)) return list;
+
     try {
-      const commonOpts = { startTime, endTime };
-
-      const [drivers, medics] = await Promise.all([
-        getAvailableUsersForDate(date, "driver", token, commonOpts),
-        getAvailableUsersForDate(date, "medic", token, commonOpts),
-      ]);
-
-      setAvailableDrivers(mergeWithAssigned(drivers, assignment, "driver"));
-      setAvailableMedics(mergeWithAssigned(medics, assignment, "medic"));
-    } catch (error) {
-      console.error("Error al cargar usuarios disponibles:", error);
-      toastT.error(["toasts.assignments.loadUsersError"]);
+      const u = await getUserById(token, selectedId);
+      const asRef: UserRef = {
+        _id: u._id,
+        name: u.name,
+        lastName: u.lastName,
+        ambulanceRole: u.ambulanceRole,
+        pscheinExpiry: u.pscheinExpiry,
+      };
+      return [asRef, ...list];
+    } catch {
+      return list;
     }
   };
 
-  fetchAvailableUsers();
-  // 🔁 Recalcular lista si cambian las horas o el assignment
-}, [token, isAdmin, date, assignment, startTime, endTime, t]);
+  // Cargar disponibles (incluyendo conductores con P-Schein caducado) y fusionar con asignado
+  useEffect(() => {
+    const fetchAvailableUsers = async () => {
+      if (!token || !isAdmin || !date) return;
+      try {
+        const commonOpts = { startTime, endTime, includeExpired: true }; // <- clave
 
+        const [drivers, medics] = await Promise.all([
+          getAvailableUsersForDate(date, "driver", token, commonOpts),
+          getAvailableUsersForDate(date, "medic", token, { startTime, endTime }),
+        ]);
 
-  // Cargar ambulancias (igual que antes)
+        let drv = mergeWithAssigned(drivers, assignment, "driver");
+        let med = mergeWithAssigned(medics, assignment, "medic");
+
+        const driverIdFromAssignment =
+          typeof assignment?.driver === "string" ? assignment?.driver : undefined;
+        const medicIdFromAssignment =
+          typeof assignment?.medic === "string" ? assignment?.medic : undefined;
+
+        drv = await ensureSelectedPresent(drv, driverIdFromAssignment ?? selectedDriverId, token);
+        med = await ensureSelectedPresent(med, medicIdFromAssignment ?? selectedMedicId, token);
+
+        setAvailableDrivers(drv);
+        setAvailableMedics(med);
+      } catch (error) {
+        console.error("Error al cargar usuarios disponibles:", error);
+        toastT.error(["toasts.assignments.loadUsersError"]);
+      }
+    };
+
+    fetchAvailableUsers();
+  }, [
+    token,
+    isAdmin,
+    date,
+    assignment,
+    startTime,
+    endTime,
+    selectedDriverId,
+    selectedMedicId,
+    t,
+  ]);
+
+  // Cargar ambulancias
   useEffect(() => {
     const fetchAmbulances = async () => {
       if (!token) return;
@@ -123,11 +168,10 @@ useEffect(() => {
     fetchAmbulances();
   }, [token, t]);
 
-  // Cargar flags de vacaciones y bajas para EL DÍA especificado (fromISO=toISO=date), con includeFullSpan para tooltips FULL
+  // Flags del día (vacaciones/bajas) para tooltips FULL
   useEffect(() => {
     if (!isOpen || !token || !date) return;
 
-    // ids presentes en listas + seleccionados (si no están en listas)
     const ids = new Set<string>();
     for (const u of availableDrivers) if (u?._id) ids.add(u._id);
     for (const u of availableMedics) if (u?._id) ids.add(u._id);
@@ -181,6 +225,7 @@ useEffect(() => {
 
   if (!isOpen) return null;
 
+  // Guardado
   const handleSave = async () => {
     if (!token) return;
 
@@ -188,14 +233,21 @@ useEffect(() => {
       toastT.error(["toasts.assignments.missingDienstId"]);
       return;
     }
-
     if (!startTime || !endTime || !ambulanceId) {
       toastT.warn(["toasts.assignments.missingFields"]);
       return;
     }
-
     if (selectedDriverId && selectedMedicId && selectedDriverId === selectedMedicId) {
       toastT.warn(["toasts.assignments.samePerson"]);
+      return;
+    }
+    // bloqueo por baja
+    if (selectedDriverId && sickFlags[selectedDriverId]?.hasSickInRange) {
+      toastT.warn(["toasts.assignments.userSickDriver"]);
+      return;
+    }
+    if (selectedMedicId && sickFlags[selectedMedicId]?.hasSickInRange) {
+      toastT.warn(["toasts.assignments.userSickMedic"]);
       return;
     }
 
@@ -220,6 +272,7 @@ useEffect(() => {
     }
   };
 
+  // Borrado
   const handleDelete = async () => {
     if (!token || !assignment) return;
     const confirmed = confirm(t("pages.assignmentModal.confirm.delete"));
@@ -239,87 +292,80 @@ useEffect(() => {
     }
   };
 
-  // ===== Helpers visuales coherentes =====
-
+  // ===== Helpers visuales coherentes con UserAssignModal =====
   const driverClass = (pschein?: string | null) => {
-    if (!pschein) return '';
+    if (!pschein) return "";
     const info = getPscheinInfo(pschein);
-    if (info.status === 'expired') return 'text-red-600 font-medium';
-    if (info.status === 'warning') return 'text-yellow-600 font-medium';
-    return '';
+    if (info.status === "expired") return "text-red-600 font-medium";
+    if (info.status === "warning") return "text-yellow-600 font-medium";
+    return "";
   };
-
   const driverExpired = (u: UserRef) => {
     const info = getPscheinInfo((u as any)?.pscheinExpiry);
-    return info.status === 'expired';
+    return info.status === "expired";
   };
-
-  // Tooltip SOLO para el nombre del conductor con P-Schein warning/expired
   const driverPscheinTitle = (u?: UserRef | null) => {
     if (!u) return undefined;
     const expiry = (u as any)?.pscheinExpiry as string | undefined;
     const info = getPscheinInfo(expiry);
-    if (info.status === 'warning' || info.status === 'expired') {
+    if (info.status === "warning" || info.status === "expired") {
       return getPscheinWarningTitle(expiry, t);
     }
     return undefined;
   };
-
   const mergeClasses = (...classes: (string | false | null | undefined)[]) =>
-    classes.filter(Boolean).join(' ');
+    classes.filter(Boolean).join(" ");
+  // "Apagado" para vacaciones/bajas; NO se usa para caducado para no perder el rojo.
+  const dimClass = "text-slate-400";
 
-  const dimClass = 'text-slate-400';
-
-  // UI info vacaciones (tooltip SOLO icono; DD/MM; usa FULL si está)
+  // Tooltips de vacaciones/bajas (día actual)
   const userVacationInfo = (u?: UserRef | null) => {
     if (!u || !u._id) return { has: false, title: undefined as string | undefined };
     const vf = vacationFlags[u._id];
     const has = !!vf?.hasVacationInRange;
     if (!has) return { has: false, title: undefined as string | undefined };
-
     const fromFull = vf?.vacationStartFull;
     const toFull = vf?.vacationUntilFull;
-
     let title: string | undefined;
     if (fromFull && toFull) {
-      title = `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${fmtDDMM(fromFull)} → ${fmtDDMM(toFull)}`;
+      title = `🏖️ ${t("pages.diensts.weekModals.vacations", "Vacaciones")}: ${fmtDDMM(
+        fromFull
+      )} → ${fmtDDMM(toFull)}`;
     } else {
-      title = `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+      title = `🏖️ ${t("pages.diensts.weekModals.vacations", "Vacaciones")}`;
     }
     return { has: true, title };
   };
-
-  // UI info baja (tooltip SOLO icono; DD/MM; usa FULL si está)
   const userSickInfo = (u?: UserRef | null) => {
     if (!u || !u._id) return { has: false, title: undefined as string | undefined };
     const sf = sickFlags[u._id];
     const has = !!sf?.hasSickInRange;
     if (!has) return { has: false, title: undefined as string | undefined };
-
     const fromFull = sf?.sickStartFull || sf?.sickStartInRange;
-    const toFull   = sf?.sickUntilFull || sf?.sickUntilInRange;
-
+    const toFull = sf?.sickUntilFull || sf?.sickUntilInRange;
     let title: string | undefined;
     if (fromFull && toFull) {
-      title = `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}: ${fmtDDMM(fromFull)} → ${fmtDDMM(toFull)}`;
+      title = `🤒 ${t("pages.sick.tooltip.full", "Baja médica")}: ${fmtDDMM(fromFull)} → ${fmtDDMM(
+        toFull
+      )}`;
     } else {
-      title = `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}`;
+      title = `🤒 ${t("pages.sick.tooltip.full", "Baja médica")}`;
     }
     return { has: true, title };
   };
 
-  // Seleccionados (para pintar rótulo)
+  // Seleccionados (para rótulos)
   const selectedDriver = useMemo(
     () =>
-      availableDrivers.find(u => u._id === selectedDriverId) ||
-      availableDrivers.find(u => (assignment?.driver as any)?._id === u._id) ||
+      availableDrivers.find((u) => u._id === selectedDriverId) ||
+      availableDrivers.find((u) => (assignment?.driver as any)?._id === u._id) ||
       null,
     [availableDrivers, selectedDriverId, assignment]
   );
   const selectedMedic = useMemo(
     () =>
-      availableMedics.find(u => u._id === selectedMedicId) ||
-      availableMedics.find(u => (assignment?.medic as any)?._id === u._id) ||
+      availableMedics.find((u) => u._id === selectedMedicId) ||
+      availableMedics.find((u) => (assignment?.medic as any)?._id === u._id) ||
       null,
     [availableMedics, selectedMedicId, assignment]
   );
@@ -395,7 +441,7 @@ useEffect(() => {
                     id={driverBtnId}
                     type="button"
                     className="w-full flex items-center justify-between rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-                    onClick={() => setOpenDriverList(v => !v)}
+                    onClick={() => setOpenDriverList((v) => !v)}
                     aria-haspopup="listbox"
                     aria-expanded={openDriverList}
                   >
@@ -409,19 +455,25 @@ useEffect(() => {
                           <>
                             <span
                               className={mergeClasses(
-                                driverClass((u as any)?.pscheinExpiry),
+                                typeof u === "object" ? driverClass((u as any)?.pscheinExpiry) : "",
+                                // solo vac/sick se ven "apagados" en el nombre; si está caducado mantenemos el rojo visible
                                 (vac.has || sick.has) && dimClass
                               )}
-                              title={driverPscheinTitle(u)}
+                              title={typeof u === "object" ? driverPscheinTitle(u) : undefined}
                             >
-                              {(u.lastName || '') + ', ' + (u.name || '')}
+                              {typeof u === "object"
+                                ? `${u.lastName || ""}, ${u.name || ""}`
+                                : t("pages.assignmentModal.placeholders.selectDriver")}
                             </span>
-                            {/* Iconos con tooltip (solo aquí) */}
                             {vac.has && (
-                              <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
+                              <span className="ml-1 align-middle text-slate-400" title={vac.title}>
+                                🏖️
+                              </span>
                             )}
                             {sick.has && (
-                              <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+                              <span className="ml-1 align-middle text-slate-500" title={sick.title}>
+                                🤒
+                              </span>
                             )}
                           </>
                         );
@@ -450,7 +502,7 @@ useEffect(() => {
                     >
                       {availableDrivers.length === 0 && (
                         <div className="px-3 py-2 text-sm text-slate-500">
-                          {t('common.empty', 'No hay resultados')}
+                          {t("common.empty", "No hay resultados")}
                         </div>
                       )}
 
@@ -460,46 +512,54 @@ useEffect(() => {
                           const da = driverExpired(a) ? 1 : 0;
                           const db = driverExpired(b) ? 1 : 0;
                           if (da !== db) return da - db;
-                          const ka = `${a.lastName || ''} ${a.name || ''}`.toLowerCase();
-                          const kb = `${b.lastName || ''} ${b.name || ''}`.toLowerCase();
-                          return ka.localeCompare(kb, 'es');
+                          const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
+                          const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
+                          return ka.localeCompare(kb, "es");
                         })
                         .map((u) => {
                           const vac = userVacationInfo(u);
                           const sick = userSickInfo(u);
                           const expired = driverExpired(u);
+                          const isSick = sick.has;
+
                           return (
                             <button
                               key={u._id}
                               role="option"
                               aria-selected={selectedDriverId === u._id}
                               onClick={() => {
-                                if (expired) return;
+                                if (expired) return; // no puede conducir con P-Schein caducado
+                                if (isSick) return; // no seleccionable si está de baja ese día
                                 setSelectedDriverId(u._id || "");
                                 if (u._id === selectedMedicId) setSelectedMedicId("");
                                 setOpenDriverList(false);
                               }}
                               className={mergeClasses(
-                                'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
-                                selectedDriverId === u._id && 'bg-slate-50',
-                                expired && 'opacity-50 cursor-not-allowed'
+                                "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
+                                selectedDriverId === u._id && "bg-slate-50",
+                                (expired || isSick) && "opacity-50 cursor-not-allowed"
                               )}
                             >
                               <span
                                 className={mergeClasses(
+                                  // rojo/amarillo según P-Schein
                                   driverClass((u as any)?.pscheinExpiry),
-                                  (vac.has || sick.has) && dimClass
+                                  // solo "apagar" visualmente por vac/sick (no por caducado, para no perder el rojo)
+                                  (vac.has || isSick) && dimClass
                                 )}
                                 title={driverPscheinTitle(u)}
                               >
-                                {(u.lastName || '') + ', ' + (u.name || '')}
+                                {(u.lastName || "") + ", " + (u.name || "")}
                               </span>
-                              {/* Iconos con tooltip (solo aquí) */}
                               {vac.has && (
-                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
+                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>
+                                  🏖️
+                                </span>
                               )}
-                              {sick.has && (
-                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+                              {isSick && (
+                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>
+                                  🤒
+                                </span>
                               )}
                             </button>
                           );
@@ -510,17 +570,15 @@ useEffect(() => {
 
                 {/* Leyenda driver */}
                 <p className="mt-1 text-[11px] text-slate-500">
-                  🚫 {t('pages.diensts.adminPage.legendCantDrive', 'No puede conducir, P-Schein caducado')}
+                  🚫 {t("pages.diensts.adminPage.legendCantDrive", "No puede conducir, P-Schein caducado")}
                 </p>
 
                 {/* Hint vacaciones/bajas */}
                 {flagsLoading ? (
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    {t('common.loading', 'Cargando...')}
-                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">{t("common.loading", "Cargando...")}</p>
                 ) : (
                   <p className="mt-1 text-[11px] text-slate-500">
-                    🏖️/🤒 {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón por los iconos para ver fechas')}
+                    🏖️/🤒 {t("pages.diensts.weekModals.vacationsHint", "Pasa el ratón por los iconos para ver fechas")}
                   </p>
                 )}
               </div>
@@ -536,7 +594,7 @@ useEffect(() => {
                     id={medicBtnId}
                     type="button"
                     className="w-full flex items-center justify-between rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-                    onClick={() => setOpenMedicList(v => !v)}
+                    onClick={() => setOpenMedicList((v) => !v)}
                     aria-haspopup="listbox"
                     aria-expanded={openMedicList}
                   >
@@ -549,14 +607,19 @@ useEffect(() => {
                         return (
                           <>
                             <span className={mergeClasses((vac.has || sick.has) && dimClass)}>
-                              {(u.lastName || '') + ', ' + (u.name || '')}
+                              {typeof u === "object"
+                                ? `${u.lastName || ""}, ${u.name || ""}`
+                                : t("pages.assignmentModal.placeholders.selectMedic")}
                             </span>
-                            {/* Iconos con tooltip (solo aquí) */}
                             {vac.has && (
-                              <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
+                              <span className="ml-1 align-middle text-slate-400" title={vac.title}>
+                                🏖️
+                              </span>
                             )}
                             {sick.has && (
-                              <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+                              <span className="ml-1 align-middle text-slate-500" title={sick.title}>
+                                🤒
+                              </span>
                             )}
                           </>
                         );
@@ -585,16 +648,16 @@ useEffect(() => {
                     >
                       {availableMedics.length === 0 && (
                         <div className="px-3 py-2 text-sm text-slate-500">
-                          {t('common.empty', 'No hay resultados')}
+                          {t("common.empty", "No hay resultados")}
                         </div>
                       )}
 
                       {availableMedics
                         .slice()
                         .sort((a, b) => {
-                          const ka = `${a.lastName || ''} ${a.name || ''}`.toLowerCase();
-                          const kb = `${b.lastName || ''} ${b.name || ''}`.toLowerCase();
-                          return ka.localeCompare(kb, 'es');
+                          const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
+                          const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
+                          return ka.localeCompare(kb, "es");
                         })
                         .map((u) => {
                           const vac = userVacationInfo(u);
@@ -610,19 +673,22 @@ useEffect(() => {
                                 setOpenMedicList(false);
                               }}
                               className={mergeClasses(
-                                'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
-                                selectedMedicId === u._id && 'bg-slate-50'
+                                "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
+                                selectedMedicId === u._id && "bg-slate-50"
                               )}
                             >
                               <span className={mergeClasses((vac.has || sick.has) && dimClass)}>
-                                {(u.lastName || '') + ', ' + (u.name || '')}
+                                {(u.lastName || "") + ", " + (u.name || "")}
                               </span>
-                              {/* Iconos con tooltip (solo aquí) */}
                               {vac.has && (
-                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
+                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>
+                                  🏖️
+                                </span>
                               )}
                               {sick.has && (
-                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>
+                                  🤒
+                                </span>
                               )}
                             </button>
                           );
@@ -633,12 +699,10 @@ useEffect(() => {
 
                 {/* Hint vacaciones/bajas */}
                 {flagsLoading ? (
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    {t('common.loading', 'Cargando...')}
-                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">{t("common.loading", "Cargando...")}</p>
                 ) : (
                   <p className="mt-1 text-[11px] text-slate-500">
-                    🏖️/🤒 {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón por los iconos para ver fechas')}
+                    🏖️/🤒 {t("pages.diensts.weekModals.vacationsHint", "Pasa el ratón por los iconos para ver fechas")}
                   </p>
                 )}
               </div>
@@ -663,21 +727,23 @@ useEffect(() => {
             </>
           ) : assignment ? (
             <div className="rounded-xl border border-slate-200 p-3 bg-slate-50">
-              <p className="text-sm text-slate-700">🕒 {startTime} - {endTime}</p>
               <p className="text-sm text-slate-700">
-                {t("pages.assignmentModal.readOnly.ambulance")}{' '}
+                🕒 {startTime} - {endTime}
+              </p>
+              <p className="text-sm text-slate-700">
+                {t("pages.assignmentModal.readOnly.ambulance")}{" "}
                 {typeof assignment?.ambulanceId === "object"
                   ? assignment.ambulanceId?.ambulanceNumber ?? t("pages.assignmentModal.info.dash")
                   : assignment?.ambulanceNumber ?? t("pages.assignmentModal.info.dash")}
               </p>
               <p className="text-sm text-slate-700">
-                {t("pages.assignmentModal.readOnly.driver")}{' '}
+                {t("pages.assignmentModal.readOnly.driver")}{" "}
                 {typeof assignment.driver === "object"
                   ? `${assignment.driver.lastName}, ${assignment.driver.name}`
                   : "(ID)"}
               </p>
               <p className="text-sm text-slate-700">
-                {t("pages.assignmentModal.readOnly.medic")}{' '}
+                {t("pages.assignmentModal.readOnly.medic")}{" "}
                 {typeof assignment.medic === "object"
                   ? `${assignment.medic.lastName}, ${assignment.medic.name}`
                   : "(ID)"}
