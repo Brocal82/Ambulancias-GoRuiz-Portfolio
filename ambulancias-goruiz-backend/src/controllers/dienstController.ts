@@ -104,36 +104,129 @@ export const updateDienstPartial: RequestHandler = async (req, res) => {
       return;
     }
 
-    for (const updatedAssignment of assignments) {
-      const index = dienst.assignments.findIndex((a) => a.date === updatedAssignment.date);
-      const updatedCopy = { ...updatedAssignment };
+    for (const incoming of assignments) {
+      // Copia mutable
+      const updatedCopy: any = { ...incoming };
 
-      if (updatedCopy._id === "") delete updatedCopy._id;
-      if (updatedCopy.driver === "") updatedCopy.driver = undefined;
-      if (updatedCopy.medic === "") updatedCopy.medic = undefined;
+      // Normalización campos vacíos a undefined
+      if (updatedCopy?._id === "") delete updatedCopy._id;
+      if (updatedCopy?.driver === "") updatedCopy.driver = undefined;
+      if (updatedCopy?.medic === "") updatedCopy.medic = undefined;
+      // 🚦 Importante: NO tocar ambulanceId aquí; se gestiona más abajo según venga o no venga
 
-      if (!updatedCopy.ambulanceId || !updatedCopy.startTime || !updatedCopy.endTime) {
-        console.warn("Assignment incompleto ignorado:", updatedCopy);
-        continue;
-      }
+      // ✅ Validación de obligatorios (ambulancia NO es obligatoria)
+// Reglas: date, startTime, endTime SIEMPRE; y AL MENOS uno de driver o medic.
+const hasDriver = updatedCopy?.driver !== undefined && updatedCopy?.driver !== null && updatedCopy?.driver !== "";
+const hasMedic  = updatedCopy?.medic  !== undefined && updatedCopy?.medic  !== null && updatedCopy?.medic  !== "";
 
-      if (index !== -1) {
-        dienst.assignments[index] = {
-          ...dienst.assignments[index],
-          ...updatedCopy,
-        };
-      } else {
-        dienst.assignments.push(updatedCopy);
-      }
+const missingRequired =
+  !updatedCopy?.date ||
+  !updatedCopy?.startTime ||
+  !updatedCopy?.endTime ||
+  (!hasDriver && !hasMedic);
+
+if (missingRequired) {
+  console.warn("Assignment incompleto ignorado (faltan obligatorios):", {
+    date: updatedCopy?.date,
+    startTime: updatedCopy?.startTime,
+    endTime: updatedCopy?.endTime,
+    driver: hasDriver,
+    medic: hasMedic,
+  });
+  continue;
+}
+
+
+      // Buscar por fecha (tu lógica actual usa la fecha como clave)
+      const idx = dienst.assignments.findIndex((a: any) => a.date === updatedCopy.date);
+
+      // ¿El payload trae explícitamente el campo ambulanceId?
+      const hasAmbulanceField = Object.prototype.hasOwnProperty.call(incoming, 'ambulanceId');
+
+      if (idx !== -1) {
+  // 🔁 Merge seguro sobre un assignment existente
+  const prev = dienst.assignments[idx];
+
+  // Detectar qué campos de rol llegan explícitamente en el payload
+  const hasDriverField = Object.prototype.hasOwnProperty.call(incoming, 'driver');
+  const hasMedicField  = Object.prototype.hasOwnProperty.call(incoming, 'medic');
+
+  // Actualiza SIEMPRE fecha y horas
+  prev.date = updatedCopy.date;
+  prev.startTime = updatedCopy.startTime;
+  prev.endTime = updatedCopy.endTime;
+
+  // Roles: solo tocamos el que llegue en el payload
+  if (hasDriverField) {
+    prev.driver = updatedCopy.driver; // puede ser id válido o undefined (si quisieras limpiar)
+  }
+  if (hasMedicField) {
+    prev.medic = updatedCopy.medic;
+  }
+
+  // Ambulancia:
+  // - si VIENE en el payload:
+  //    * string válida -> asignar
+  //    * "" o null     -> borrar explícitamente (unset)
+  // - si NO viene     -> conservar la previa
+  if (hasAmbulanceField) {
+    const amb = (incoming as any).ambulanceId;
+    if (amb === "" || amb === null) {
+      // borrado explícito
+      // @ts-ignore
+      prev.ambulanceId = undefined;
+    } else if (amb !== undefined) {
+      // asignación/actualización
+      // @ts-ignore
+      prev.ambulanceId = amb;
+    }
+  }
+
+  dienst.assignments[idx] = prev as any;
+} else {
+  // ➕ Nuevo assignment: crear con obligatorios, permitiendo UNO solo de los roles
+  const toInsert: any = {
+    date: updatedCopy.date,
+    startTime: updatedCopy.startTime,
+    endTime: updatedCopy.endTime,
+  };
+
+  // Incluir SOLO los roles que TRAEN valor
+  const hasDriverVal = updatedCopy?.driver !== undefined && updatedCopy?.driver !== null && updatedCopy?.driver !== "";
+  const hasMedicVal  = updatedCopy?.medic  !== undefined && updatedCopy?.medic  !== null && updatedCopy?.medic  !== "";
+
+  if (hasDriverVal) toInsert.driver = updatedCopy.driver;
+  if (hasMedicVal)  toInsert.medic  = updatedCopy.medic;
+
+  // Ambulancia solo si VIENE en el payload y no es ""/null
+  if (hasAmbulanceField) {
+    const amb = (incoming as any).ambulanceId;
+    if (amb && amb !== "" && amb !== null) {
+      toInsert.ambulanceId = amb;
+    }
+    // si llega ""/null => se omite, queda sin ambulancia
+  }
+
+  dienst.assignments.push(toInsert);
+}
+
     }
 
     await dienst.save();
-    res.json(dienst);
+
+    // Popular para respuesta coherente con el front
+    const populated = await Dienst.findById(id)
+      .populate('assignments.driver', 'name lastName pscheinExpiry ambulanceRole')
+      .populate('assignments.medic', 'name lastName pscheinExpiry ambulanceRole')
+      .populate('assignments.ambulanceId', 'ambulanceNumber brand modelName licensePlate');
+
+    res.json(populated ?? dienst);
   } catch (error) {
     console.error("Error al actualizar Dienst:", error);
     res.status(500).json({ message: "Error al actualizar Dienst" });
   }
 };
+
 
 export const deleteDienst = async (req: Request, res: Response) => {
   try {

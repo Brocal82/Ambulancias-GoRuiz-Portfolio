@@ -34,7 +34,7 @@ export interface UpdateAssignment {
   date: string;
   startTime: string;
   endTime: string;
-  ambulanceId: string;
+  ambulanceId?: string | null;
   driver: string;
   medic: string;
 }

@@ -1,6 +1,6 @@
 // frontend/src/api/diensts.ts
 import axios from './axios';
-import type { Dienst, AssignedDayFull } from '../types/dienst';
+import type { Dienst, AssignedDayFull, UpdateAssignment } from '../types/dienst';
 
 // Obtener Diensts del usuario
 export const getDienstByUser = async (userId: string, token: string): Promise<Dienst[]> => {
@@ -35,9 +35,10 @@ export const getAllDiensts = async (token: string): Promise<Dienst[]> => {
 // Actualizar un Dienst parcialmente
 export const updateDienstPartial = async (
   dienstId: string,
-  updateData: Partial<Dienst>,
+  updateData: { assignments: UpdateAssignment[] },
   token: string
 ): Promise<Dienst> => {
+
   try {
     const response = await axios.patch<Dienst>(`/diensts/${dienstId}`, updateData, {
       headers: {

@@ -6,7 +6,7 @@ import { getAvailableUsersForDate, getUserById } from "../api/users";
 import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { toastT } from "../utils/toast";
 import "react-toastify/dist/ReactToastify.css";
-import type { UserRef, DienstAssignment } from "../types/dienst";
+import type { UserRef, UpdateAssignment } from "../types/dienst";
 import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import type { FlexibleAssignment } from "../types/assignment";
 import { useTranslation } from "react-i18next";
@@ -233,7 +233,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       toastT.error(["toasts.assignments.missingDienstId"]);
       return;
     }
-    if (!startTime || !endTime || !ambulanceId) {
+    if (!startTime || !endTime) {
       toastT.warn(["toasts.assignments.missingFields"]);
       return;
     }
@@ -262,15 +262,18 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
 
     try {
-      const updatedAssignment: DienstAssignment = {
-        _id: assignment?._id || "",
-        date,
-        startTime,
-        endTime,
-        ambulanceId,
-        driver: selectedDriverId,
-        medic: selectedMedicId,
-      };
+      const updatedAssignment: UpdateAssignment = {
+  _id: assignment?._id || "",
+  date,
+  startTime,
+  endTime,
+  driver: selectedDriverId,
+  medic: selectedMedicId,
+};
+
+if (ambulanceId && ambulanceId.trim() !== "") {
+  updatedAssignment.ambulanceId = ambulanceId;
+}
 
       await updateDienstPartial(dienstId, { assignments: [updatedAssignment] }, token);
       toastT.success(["toasts.assignments.saveSuccess"]);
