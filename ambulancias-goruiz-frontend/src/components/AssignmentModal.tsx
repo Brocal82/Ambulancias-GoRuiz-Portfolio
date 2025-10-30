@@ -250,6 +250,16 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       toastT.warn(["toasts.assignments.userSickMedic"]);
       return;
     }
+    // ⛔ No permitir guardar si alguno está de VACACIONES ese día (seguridad)
+    if (selectedDriverId && vacationFlags[selectedDriverId]?.hasVacationInRange) {
+      toastT.warn(["toasts.assignments.userOnVacationDriver"]);
+      return;
+    }
+    if (selectedMedicId && vacationFlags[selectedMedicId]?.hasVacationInRange) {
+      toastT.warn(["toasts.assignments.userOnVacationMedic"]);
+      return;
+    }
+
 
     try {
       const updatedAssignment: DienstAssignment = {
@@ -506,64 +516,61 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                         </div>
                       )}
 
-                      {availableDrivers
-                        .slice()
-                        .sort((a, b) => {
-                          const da = driverExpired(a) ? 1 : 0;
-                          const db = driverExpired(b) ? 1 : 0;
-                          if (da !== db) return da - db;
-                          const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
-                          const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
-                          return ka.localeCompare(kb, "es");
-                        })
-                        .map((u) => {
-                          const vac = userVacationInfo(u);
-                          const sick = userSickInfo(u);
-                          const expired = driverExpired(u);
-                          const isSick = sick.has;
+{availableDrivers
+  .slice()
+  .sort((a, b) => {
+    const da = driverExpired(a) ? 1 : 0;
+    const db = driverExpired(b) ? 1 : 0;
+    if (da !== db) return da - db;
+    const ka = `${a.lastName || ''} ${a.name || ''}`.toLowerCase();
+    const kb = `${b.lastName || ''} ${b.name || ''}`.toLowerCase();
+    return ka.localeCompare(kb, 'es');
+  })
+  .map((u) => {
+    const vac = userVacationInfo(u);
+    const sick = userSickInfo(u);
+    const expired = driverExpired(u);
+    const isSick = sick.has;
+    const isVac  = vac.has; // ⛔ vacaciones en ESTA FECHA
 
-                          return (
-                            <button
-                              key={u._id}
-                              role="option"
-                              aria-selected={selectedDriverId === u._id}
-                              onClick={() => {
-                                if (expired) return; // no puede conducir con P-Schein caducado
-                                if (isSick) return; // no seleccionable si está de baja ese día
-                                setSelectedDriverId(u._id || "");
-                                if (u._id === selectedMedicId) setSelectedMedicId("");
-                                setOpenDriverList(false);
-                              }}
-                              className={mergeClasses(
-                                "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
-                                selectedDriverId === u._id && "bg-slate-50",
-                                (expired || isSick) && "opacity-50 cursor-not-allowed"
-                              )}
-                            >
-                              <span
-                                className={mergeClasses(
-                                  // rojo/amarillo según P-Schein
-                                  driverClass((u as any)?.pscheinExpiry),
-                                  // solo "apagar" visualmente por vac/sick (no por caducado, para no perder el rojo)
-                                  (vac.has || isSick) && dimClass
-                                )}
-                                title={driverPscheinTitle(u)}
-                              >
-                                {(u.lastName || "") + ", " + (u.name || "")}
-                              </span>
-                              {vac.has && (
-                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>
-                                  🏖️
-                                </span>
-                              )}
-                              {isSick && (
-                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>
-                                  🤒
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
+    return (
+      <button
+        key={u._id}
+        role="option"
+        aria-selected={selectedDriverId === u._id}
+        onClick={() => {
+          if (expired) return; // no puede conducir con P-Schein caducado
+          if (isSick) return;  // bloqueado si está de baja
+          if (isVac)  return;  // 🆕 bloqueado si está de vacaciones
+          setSelectedDriverId(u._id || "");
+          if (u._id === selectedMedicId) setSelectedMedicId("");
+          setOpenDriverList(false);
+        }}
+        className={mergeClasses(
+          'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
+          selectedDriverId === u._id && 'bg-slate-50',
+          (expired || isSick || isVac) && 'opacity-50 cursor-not-allowed' // 🆕 añade isVac
+        )}
+      >
+        <span
+          className={mergeClasses(
+            driverClass((u as any)?.pscheinExpiry),
+            (isVac || isSick || expired) && 'opacity-50' // atenuado si vac/sick/expired
+          )}
+          title={driverPscheinTitle(u)}
+        >
+          {(u.lastName || '') + ', ' + (u.name || '')}
+        </span>
+        {vac.has && (
+          <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
+        )}
+        {isSick && (
+          <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+        )}
+      </button>
+    );
+  })}
+
                     </div>
                   )}
                 </div>
@@ -653,46 +660,49 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                       )}
 
                       {availableMedics
-                        .slice()
-                        .sort((a, b) => {
-                          const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
-                          const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
-                          return ka.localeCompare(kb, "es");
-                        })
-                        .map((u) => {
-                          const vac = userVacationInfo(u);
-                          const sick = userSickInfo(u);
-                          return (
-                            <button
-                              key={u._id}
-                              role="option"
-                              aria-selected={selectedMedicId === u._id}
-                              onClick={() => {
-                                if (u._id === selectedDriverId) setSelectedDriverId("");
-                                setSelectedMedicId(u._id || "");
-                                setOpenMedicList(false);
-                              }}
-                              className={mergeClasses(
-                                "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
-                                selectedMedicId === u._id && "bg-slate-50"
-                              )}
-                            >
-                              <span className={mergeClasses((vac.has || sick.has) && dimClass)}>
-                                {(u.lastName || "") + ", " + (u.name || "")}
-                              </span>
-                              {vac.has && (
-                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>
-                                  🏖️
-                                </span>
-                              )}
-                              {sick.has && (
-                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>
-                                  🤒
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
+  .slice()
+  .sort((a, b) => {
+    const ka = `${a.lastName || ''} ${a.name || ''}`.toLowerCase();
+    const kb = `${b.lastName || ''} ${b.name || ''}`.toLowerCase();
+    return ka.localeCompare(kb, 'es');
+  })
+  .map((u) => {
+    const vac = userVacationInfo(u);
+    const sick = userSickInfo(u);
+    const isVac  = vac.has;   // 🆕 vacaciones
+    const isSick = sick.has;
+
+    return (
+      <button
+        key={u._id}
+        role="option"
+        aria-selected={selectedMedicId === u._id}
+        onClick={() => {
+          if (isVac)  return;  // 🆕 bloqueado si está de vacaciones
+          if (isSick) return;  // bloqueado si está de baja
+          if (u._id === selectedDriverId) setSelectedDriverId("");
+          setSelectedMedicId(u._id || "");
+          setOpenMedicList(false);
+        }}
+        className={mergeClasses(
+          'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
+          selectedMedicId === u._id && 'bg-slate-50',
+          (isVac || isSick) && 'opacity-50 cursor-not-allowed' // 🆕 añade isVac
+        )}
+      >
+        <span className={mergeClasses((isVac || isSick) && 'opacity-50')}>
+          {(u.lastName || '') + ', ' + (u.name || '')}
+        </span>
+        {vac.has && (
+          <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
+        )}
+        {sick.has && (
+          <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+        )}
+      </button>
+    );
+  })}
+
                     </div>
                   )}
                 </div>
