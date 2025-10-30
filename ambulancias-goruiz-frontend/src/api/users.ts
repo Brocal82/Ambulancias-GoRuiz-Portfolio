@@ -20,14 +20,21 @@ export const getAvailableUsersForDate = async (
   date: string,
   desiredRole: 'driver' | 'medic' | 'both',
   token: string,
-  opts?: { startTime?: string; endTime?: string }
+  opts?: { startTime?: string; endTime?: string; includeExpired?: boolean } // ⬅️ añadimos includeExpired
 ): Promise<User[]> => {
   const response = await api.get(`/users/available`, {
     headers: { Authorization: `Bearer ${token}` },
-    params: { date, desiredRole, startTime: opts?.startTime, endTime: opts?.endTime },
+    params: {
+      date,
+      desiredRole,
+      startTime: opts?.startTime,
+      endTime: opts?.endTime,
+      includeExpired: opts?.includeExpired ? 'true' : undefined, // ⬅️ añadimos el flag solo si está activo
+    },
   });
   return response.data;
 };
+
 
 
 // ✅ Obtener usuario por id
