@@ -308,11 +308,12 @@ export const getAllUsersDienst = async (_req: Request, res: Response): Promise<v
 
 
 export const getAvailableUsersForDate: RequestHandler = async (req: Request, res: Response) => {
-  const { date, desiredRole, startTime, endTime } = req.query as {
+  const { date, desiredRole, startTime, endTime, includeExpired } = req.query as {
     date?: string;
     desiredRole?: 'driver' | 'medic' | 'both';
     startTime?: string; // "HH:mm" opcional
     endTime?: string;   // "HH:mm" opcional
+    includeExpired?: string; // "true" para incluir P-Schein caducados en la respuesta
   };
 
   if (!date || typeof date !== 'string') {
@@ -320,15 +321,15 @@ export const getAvailableUsersForDate: RequestHandler = async (req: Request, res
     return;
   }
 
-  // Rol permitido
+  const includeExpiredBool = String(includeExpired).toLowerCase() === 'true';
+
   const allowedRoles =
     desiredRole === 'driver'
       ? ['driver', 'both']
       : desiredRole === 'medic'
       ? ['medic', 'both']
-      : ['driver', 'medic', 'both']; // fallback si no llega desiredRole
+      : ['driver', 'medic', 'both'];
 
-  // Helpers de tiempo
   const toMin = (hhmm?: string) => {
     if (!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return null;
     const [h, m] = hhmm.split(':').map(Number);
@@ -343,22 +344,19 @@ export const getAvailableUsersForDate: RequestHandler = async (req: Request, res
     bStartMin: number | null,
     bEndMin: number | null
   ) => {
-    // Si no hay horas dadas por alguna de las partes, consideramos que ocupan el día completo
     const Astart = aStartMin ?? 0;
-    const Aend   = aEndMin   ?? 24 * 60; // 24:00
+    const Aend   = aEndMin   ?? 24 * 60;
     const Bstart = bStartMin ?? 0;
     const Bend   = bEndMin   ?? 24 * 60;
     return Astart < Bend && Bstart < Aend;
   };
 
   try {
-    // 1) Obtener assignments SOLO del día solicitado
     const diensts = await Dienst.find(
       { 'assignments.date': date },
       { assignments: 1 }
     ).lean();
 
-    // 2) Construir set de usuarios ocupados por solape horario (en ese día)
     const busyUserIds = new Set<string>();
 
     for (const d of diensts) {
@@ -368,8 +366,6 @@ export const getAvailableUsersForDate: RequestHandler = async (req: Request, res
         const aStart = toMin(a.startTime);
         const aEnd   = toMin(a.endTime);
 
-        // Si no llegan horas en la query, tratamos el día como "ocupado completo".
-        // Si llegan horas, marcamos ocupado sólo si hay solape.
         const shouldBlock = (sReq === null || eReq === null)
           ? true
           : overlap(aStart, aEnd, sReq, eReq);
@@ -381,7 +377,6 @@ export const getAvailableUsersForDate: RequestHandler = async (req: Request, res
       }
     }
 
-    // 3) Filtro base de usuarios por rol y no ocupados ese día/horario
     const baseUsers = await User.find({
       _id: { $nin: Array.from(busyUserIds) },
       ambulanceRole: { $in: allowedRoles },
@@ -389,12 +384,13 @@ export const getAvailableUsersForDate: RequestHandler = async (req: Request, res
       .sort({ lastName: 1 })
       .lean();
 
-    // 4) Regla extra: si el rol deseado es "driver", excluimos P-Schein caducado para esa fecha
     const dateObj = DateTime.fromISO(date, { zone: ZONE }).startOf('day');
+
     const available = baseUsers.filter((u: any) => {
       if (desiredRole !== 'driver') return true;
+      if (includeExpiredBool) return true; // ⬅️ permitir caducados para que la UI los muestre atenuados
       const exp = u.pscheinExpiry ? DateTime.fromISO(u.pscheinExpiry, { zone: ZONE }) : null;
-      return !exp || exp.endOf('day') >= dateObj; // permitido conducir si no está caducado a esa fecha
+      return !exp || exp.endOf('day') >= dateObj;
     });
 
     res.json(available);
@@ -403,6 +399,7 @@ export const getAvailableUsersForDate: RequestHandler = async (req: Request, res
     res.status(500).json({ message: 'Error del servidor' });
   }
 };
+
 
 
 export const uploadUserFiles = async (req: Request, res: Response): Promise<void> => {
