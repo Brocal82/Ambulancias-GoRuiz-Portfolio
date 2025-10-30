@@ -5,7 +5,7 @@ import { getAllDiensts, generateDienstsForWeek, deleteDienstsForWeek, assignTeam
 import AssignmentModal from '../components/AssignmentModal';
 import TeamAssignModal from '../components/diensts/TeamAssignModal'; // ⬅️ IMPORTA TU MODAL
 import UserAssignModal from '../components/diensts/UserAssignModal';
-import { isPartialAssignment } from '../utils/assignmentUtils';
+import { isPartialAssignment, isTeamIncomplete } from '../utils/assignmentUtils';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { toastT } from "../utils/toast";
@@ -359,12 +359,17 @@ const AdminPage = () => {
                             ? 'bg-amber-50 ring-amber-200'
                             : 'bg-blue-50 ring-blue-200'
                           : 'bg-emerald-50 ring-emerald-200';
+                        const incompleteBorderClass = assignment && isTeamIncomplete(assignment)
+                          ? 'border-2 border-red-500'
+                          : 'border border-transparent';
+
 
                         return (
                           <button
                             key={day}
                             type="button"
-                            className={`text-left rounded-xl p-3 ring-1 ${cls} hover:shadow-sm hover:-translate-y-0.5 transition`}
+                            className={`text-left rounded-xl p-3 ring-1 ${cls} ${incompleteBorderClass} hover:shadow-sm hover:-translate-y-0.5 transition`}
+
                             onClick={() =>
                               setSelectedAssignment({
                                 date: day,

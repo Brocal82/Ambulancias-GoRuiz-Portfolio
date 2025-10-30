@@ -28,3 +28,27 @@ export const isPartialAssignment = (assignment: FlexibleAssignment | undefined):
   return false;
 };
 
+export const isTeamIncomplete = (assignment: FlexibleAssignment | undefined): boolean => {
+  if (!assignment) return false;
+
+  const hasStart = !!assignment.startTime;
+  const hasEnd = !!assignment.endTime;
+
+  // Normalizamos driver/medic (pueden ser string u objeto)
+  const hasDriver =
+    assignment.driver !== null &&
+    assignment.driver !== undefined &&
+    assignment.driver !== '';
+  const hasMedic =
+    assignment.medic !== null &&
+    assignment.medic !== undefined &&
+    assignment.medic !== '';
+
+  // Solo nos interesa marcar “incompleto” cuando ES un día trabajado (hay horas)
+  if (!hasStart || !hasEnd) return false;
+
+  // Equipo incompleto = exactamente uno de los dos asignado (XOR)
+  return (hasDriver && !hasMedic) || (!hasDriver && hasMedic);
+};
+
+
