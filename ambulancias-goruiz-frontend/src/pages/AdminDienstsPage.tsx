@@ -3,13 +3,14 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Dienst, UserRef } from '../types/dienst';
 import { getAllDiensts, generateDienstsForWeek, deleteDienstsForWeek, assignTeamToWeek, assignUserToWeek, clearPeopleForWeek, swapWeekRoles } from '../api/diensts';
 import AssignmentModal from '../components/AssignmentModal';
-import TeamAssignModal from '../components/diensts/TeamAssignModal'; // ⬅️ IMPORTA TU MODAL
+import TeamAssignModal from '../components/diensts/TeamAssignModal';
 import UserAssignModal from '../components/diensts/UserAssignModal';
 import { isPartialAssignment, isTeamIncomplete } from '../utils/assignmentUtils';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { toastT } from "../utils/toast";
 import { getPscheinInfo, getPscheinWarningTitle } from '../utils/pscheinUtils';
+import { formatCellDateUnified } from '../utils/timeUtils';
 
 // Helpers de render seguro
 const displayAmbulance = (a: unknown) =>
@@ -52,12 +53,6 @@ const AdminPage = () => {
   const { t, i18n } = useTranslation();
 
   const fmtDate = (d: Date) => d.toLocaleDateString(i18n.language);
-  const fmtCellDate = (isoDay: string) =>
-    new Date(isoDay).toLocaleDateString(i18n.language, {
-      weekday: 'short',
-      day: '2-digit',
-      month: '2-digit',
-    });
 
   const fetchDiensts = useCallback(async () => {
     if (!token) return;
@@ -326,7 +321,6 @@ const AdminPage = () => {
                                   { dienstNumber: dienst.dienstNumber, weekStartDate: weekStartISO },
                                   token
                                 );
-                                // Mantengo tus claves existentes
                                 toastT.success(['pages.diensts.adminPage.clearOk']);
                                 fetchDiensts();
                               } catch (err) {
@@ -335,7 +329,6 @@ const AdminPage = () => {
                               }
                             }}
                           >
-                            {/* Puedes usar 🧽 o 🗘, dejo 🧽 como tenías */}
                             <span
                               aria-hidden
                               className="block text-[17px] leading-none translate-y-[0.5px]"
@@ -363,13 +356,11 @@ const AdminPage = () => {
                           ? 'border-2 border-red-500'
                           : 'border border-transparent';
 
-
                         return (
                           <button
                             key={day}
                             type="button"
                             className={`text-left rounded-xl p-3 ring-1 ${cls} ${incompleteBorderClass} hover:shadow-sm hover:-translate-y-0.5 transition`}
-
                             onClick={() =>
                               setSelectedAssignment({
                                 date: day,
@@ -379,14 +370,14 @@ const AdminPage = () => {
                             }
                           >
                             <p className="text-xs font-semibold text-slate-800 mb-1">
-                              {fmtCellDate(day)}
+                              {formatCellDateUnified(day, i18n.language)}
                             </p>
                             {assignment ? (
                               <div className="space-y-0.5 text-xs text-slate-700">
                                 <p>🕒 {assignment.startTime} - {assignment.endTime}</p>
                                 <p>🚑 {displayAmbulance(assignment?.ambulanceId)}</p>
 
-                                {/* Conductor: rojo si P-Schein caducado; ámbar si warning. Tooltip en el NOMBRE con meses restantes */}
+                                {/* Conductor: rojo si P-Schein caducado; ámbar si warning */}
                                 <p>
                                   👨‍✈️{' '}
                                   {(() => {
@@ -400,7 +391,6 @@ const AdminPage = () => {
                                       } else if (info.status === 'warning') {
                                         drvClass = 'text-amber-600 font-medium';
                                       }
-                                      // Tooltip unificado (warning → meses restantes; expired → texto caducado)
                                       drvTitle = getPscheinWarningTitle(
                                         (assignment.driver as any).pscheinExpiry,
                                         t as any
@@ -414,8 +404,6 @@ const AdminPage = () => {
                                     );
                                   })()}
                                 </p>
-
-
 
                                 <p>🧑‍⚕️ {displayPerson(assignment?.medic)}</p>
                               </div>
@@ -445,7 +433,7 @@ const AdminPage = () => {
         />
       )}
 
-      {/* ⬇️ Modal de asignación de Team a la semana (usa estado local para saber semana y #) */}
+      {/* Modal Team semana */}
       {weekTeamModal?.open && (
         <TeamAssignModal
           isOpen={true}
@@ -514,12 +502,11 @@ const AdminPage = () => {
             }
           }
           }
-          weekStartISO={weekTeamModal.weekStartISO} // ⬅️ NUEVO
+          weekStartISO={weekTeamModal.weekStartISO}
         />
       )}
 
-
-      {/* ⬇️ Modal de asignación de UN usuario (driver/medic) a toda la semana */}
+      {/* Modal Usuario semana */}
       {weekUserModal?.open && (
         <UserAssignModal
           isOpen={true}
@@ -556,7 +543,7 @@ const AdminPage = () => {
               }
             }
           }}
-          weekStartISO={weekUserModal.weekStartISO} // ⬅️ NUEVO
+          weekStartISO={weekUserModal.weekStartISO}
         />
       )}
 

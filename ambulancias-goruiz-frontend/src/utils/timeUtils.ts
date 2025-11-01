@@ -36,3 +36,29 @@ export function fmtDDMM(dateStr?: string): string {
   if (!m || !d) return '';
   return `${d.padStart(2, '0')}/${m.padStart(2, '0')}`;
 }
+
+/**
+ * Formato unificado SOLO para la cuadrícula de días del Admin:
+ * - Muestra el nombre del día en el idioma actual (Dom / So / Sun)
+ * - Siempre usa DD/MM (02/11) como parte numérica, sin importar el idioma
+ * - Ejemplos: "dom, 02/11" | "So, 02/11" | "Sun, 02/11"
+ */
+export function formatCellDateUnified(isoDay: string, lang: string): string {
+  const d = new Date(isoDay);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+
+  // Elegimos locale solo para el nombre del día
+  const locale =
+    lang?.startsWith('de') ? 'de-DE' :
+    lang?.startsWith('en') ? 'en-US' :
+    'es-ES';
+
+  // Nombre del día abreviado según idioma, sin punto final (de pone "So.")
+  const rawWk = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(d).trim();
+  const wk = rawWk.replace(/\.$/, '');
+
+  return `${wk}, ${dd}/${mm}`;
+}
+
+
