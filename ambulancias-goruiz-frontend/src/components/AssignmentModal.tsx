@@ -271,9 +271,25 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   medic: selectedMedicId,
 };
 
+// Detecta si ANTES había ambulancia
+const hadAmbulanceBefore =
+  typeof assignment?.ambulanceId === "string"
+    ? assignment?.ambulanceId?.trim()?.length > 0
+    : assignment?.ambulanceId && typeof assignment.ambulanceId === "object"
+      ? Boolean((assignment.ambulanceId as any)?._id)
+      : false;
+
+// Lógica de ambulancia:
+// - Si el select tiene un valor => enviamos ese ID (asignar/actualizar)
+// - Si el select está vacío PERO antes había ambulancia => enviamos "" para BORRAR explícitamente
+// - Si el select está vacío y antes NO había => no mandamos el campo
 if (ambulanceId && ambulanceId.trim() !== "") {
   updatedAssignment.ambulanceId = ambulanceId;
+} else if (hadAmbulanceBefore) {
+  // borrado explícito
+  updatedAssignment.ambulanceId = "";
 }
+
 
       await updateDienstPartial(dienstId, { assignments: [updatedAssignment] }, token);
       toastT.success(["toasts.assignments.saveSuccess"]);
@@ -519,60 +535,77 @@ if (ambulanceId && ambulanceId.trim() !== "") {
                         </div>
                       )}
 
-{availableDrivers
-  .slice()
-  .sort((a, b) => {
-    const da = driverExpired(a) ? 1 : 0;
-    const db = driverExpired(b) ? 1 : 0;
-    if (da !== db) return da - db;
-    const ka = `${a.lastName || ''} ${a.name || ''}`.toLowerCase();
-    const kb = `${b.lastName || ''} ${b.name || ''}`.toLowerCase();
-    return ka.localeCompare(kb, 'es');
-  })
-  .map((u) => {
-    const vac = userVacationInfo(u);
-    const sick = userSickInfo(u);
-    const expired = driverExpired(u);
-    const isSick = sick.has;
-    const isVac  = vac.has; // ⛔ vacaciones en ESTA FECHA
+                          {/* Opción para limpiar el conductor */}
+                        <button
+                          role="option"
+                          aria-selected={selectedDriverId === ""}
+                          onClick={() => {
+                            setSelectedDriverId("");
+                            setOpenDriverList(false);
+                          }}
+                          className={mergeClasses(
+                            'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
+                            selectedDriverId === '' && 'bg-slate-50'
+                          )}
+                        >
+                          — {t("pages.assignmentModal.placeholders.selectDriver", "Sin asignar")} —
+                        </button>
 
-    return (
-      <button
-        key={u._id}
-        role="option"
-        aria-selected={selectedDriverId === u._id}
-        onClick={() => {
-          if (expired) return; // no puede conducir con P-Schein caducado
-          if (isSick) return;  // bloqueado si está de baja
-          if (isVac)  return;  // 🆕 bloqueado si está de vacaciones
-          setSelectedDriverId(u._id || "");
-          if (u._id === selectedMedicId) setSelectedMedicId("");
-          setOpenDriverList(false);
-        }}
-        className={mergeClasses(
-          'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
-          selectedDriverId === u._id && 'bg-slate-50',
-          (expired || isSick || isVac) && 'opacity-50 cursor-not-allowed' // 🆕 añade isVac
-        )}
-      >
-        <span
-          className={mergeClasses(
-            driverClass((u as any)?.pscheinExpiry),
-            (isVac || isSick || expired) && 'opacity-50' // atenuado si vac/sick/expired
-          )}
-          title={driverPscheinTitle(u)}
-        >
-          {(u.lastName || '') + ', ' + (u.name || '')}
-        </span>
-        {vac.has && (
-          <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
-        )}
-        {isSick && (
-          <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
-        )}
-      </button>
-    );
-  })}
+
+                      {availableDrivers
+                        .slice()
+                        .sort((a, b) => {
+                          const da = driverExpired(a) ? 1 : 0;
+                          const db = driverExpired(b) ? 1 : 0;
+                          if (da !== db) return da - db;
+                          const ka = `${a.lastName || ''} ${a.name || ''}`.toLowerCase();
+                          const kb = `${b.lastName || ''} ${b.name || ''}`.toLowerCase();
+                          return ka.localeCompare(kb, 'es');
+                        })
+                        .map((u) => {
+                          const vac = userVacationInfo(u);
+                          const sick = userSickInfo(u);
+                          const expired = driverExpired(u);
+                          const isSick = sick.has;
+                          const isVac = vac.has; // ⛔ vacaciones en ESTA FECHA
+
+                          return (
+                            <button
+                              key={u._id}
+                              role="option"
+                              aria-selected={selectedDriverId === u._id}
+                              onClick={() => {
+                                if (expired) return; // no puede conducir con P-Schein caducado
+                                if (isSick) return;  // bloqueado si está de baja
+                                if (isVac) return;  // 🆕 bloqueado si está de vacaciones
+                                setSelectedDriverId(u._id || "");
+                                if (u._id === selectedMedicId) setSelectedMedicId("");
+                                setOpenDriverList(false);
+                              }}
+                              className={mergeClasses(
+                                'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
+                                selectedDriverId === u._id && 'bg-slate-50',
+                                (expired || isSick || isVac) && 'opacity-50 cursor-not-allowed' // 🆕 añade isVac
+                              )}
+                            >
+                              <span
+                                className={mergeClasses(
+                                  driverClass((u as any)?.pscheinExpiry),
+                                  (isVac || isSick || expired) && 'opacity-50' // atenuado si vac/sick/expired
+                                )}
+                                title={driverPscheinTitle(u)}
+                              >
+                                {(u.lastName || '') + ', ' + (u.name || '')}
+                              </span>
+                              {vac.has && (
+                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
+                              )}
+                              {isSick && (
+                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+                              )}
+                            </button>
+                          );
+                        })}
 
                     </div>
                   )}
@@ -662,49 +695,66 @@ if (ambulanceId && ambulanceId.trim() !== "") {
                         </div>
                       )}
 
-                      {availableMedics
-  .slice()
-  .sort((a, b) => {
-    const ka = `${a.lastName || ''} ${a.name || ''}`.toLowerCase();
-    const kb = `${b.lastName || ''} ${b.name || ''}`.toLowerCase();
-    return ka.localeCompare(kb, 'es');
-  })
-  .map((u) => {
-    const vac = userVacationInfo(u);
-    const sick = userSickInfo(u);
-    const isVac  = vac.has;   // 🆕 vacaciones
-    const isSick = sick.has;
+                          {/* Opción para limpiar el sanitario */}
+                          <button
+                            role="option"
+                            aria-selected={selectedMedicId === ""}
+                            onClick={() => {
+                              setSelectedMedicId("");
+                              setOpenMedicList(false);
+                            }}
+                            className={mergeClasses(
+                              'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
+                              selectedMedicId === '' && 'bg-slate-50'
+                            )}
+                          >
+                            — {t("pages.assignmentModal.placeholders.selectMedic", "Sin asignar")} —
+                          </button>
 
-    return (
-      <button
-        key={u._id}
-        role="option"
-        aria-selected={selectedMedicId === u._id}
-        onClick={() => {
-          if (isVac)  return;  // 🆕 bloqueado si está de vacaciones
-          if (isSick) return;  // bloqueado si está de baja
-          if (u._id === selectedDriverId) setSelectedDriverId("");
-          setSelectedMedicId(u._id || "");
-          setOpenMedicList(false);
-        }}
-        className={mergeClasses(
-          'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
-          selectedMedicId === u._id && 'bg-slate-50',
-          (isVac || isSick) && 'opacity-50 cursor-not-allowed' // 🆕 añade isVac
-        )}
-      >
-        <span className={mergeClasses((isVac || isSick) && 'opacity-50')}>
-          {(u.lastName || '') + ', ' + (u.name || '')}
-        </span>
-        {vac.has && (
-          <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
-        )}
-        {sick.has && (
-          <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
-        )}
-      </button>
-    );
-  })}
+
+                      {availableMedics
+                        .slice()
+                        .sort((a, b) => {
+                          const ka = `${a.lastName || ''} ${a.name || ''}`.toLowerCase();
+                          const kb = `${b.lastName || ''} ${b.name || ''}`.toLowerCase();
+                          return ka.localeCompare(kb, 'es');
+                        })
+                        .map((u) => {
+                          const vac = userVacationInfo(u);
+                          const sick = userSickInfo(u);
+                          const isVac = vac.has;   // 🆕 vacaciones
+                          const isSick = sick.has;
+
+                          return (
+                            <button
+                              key={u._id}
+                              role="option"
+                              aria-selected={selectedMedicId === u._id}
+                              onClick={() => {
+                                if (isVac) return;  // 🆕 bloqueado si está de vacaciones
+                                if (isSick) return;  // bloqueado si está de baja
+                                if (u._id === selectedDriverId) setSelectedDriverId("");
+                                setSelectedMedicId(u._id || "");
+                                setOpenMedicList(false);
+                              }}
+                              className={mergeClasses(
+                                'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
+                                selectedMedicId === u._id && 'bg-slate-50',
+                                (isVac || isSick) && 'opacity-50 cursor-not-allowed' // 🆕 añade isVac
+                              )}
+                            >
+                              <span className={mergeClasses((isVac || isSick) && 'opacity-50')}>
+                                {(u.lastName || '') + ', ' + (u.name || '')}
+                              </span>
+                              {vac.has && (
+                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
+                              )}
+                              {sick.has && (
+                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+                              )}
+                            </button>
+                          );
+                        })}
 
                     </div>
                   )}

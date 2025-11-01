@@ -164,23 +164,31 @@ if (missingRequired) {
     prev.medic = updatedCopy.medic;
   }
 
-  // Ambulancia:
-  // - si VIENE en el payload:
-  //    * string válida -> asignar
-  //    * "" o null     -> borrar explícitamente (unset)
-  // - si NO viene     -> conservar la previa
-  if (hasAmbulanceField) {
-    const amb = (incoming as any).ambulanceId;
-    if (amb === "" || amb === null) {
-      // borrado explícito
+// Ambulancia:
+// - si VIENE en el payload:
+//    * string válida -> asignar
+//    * "" o null     -> borrar explícitamente (unset real)
+// - si NO viene     -> conservar la previa
+if (hasAmbulanceField) {
+  const amb = (incoming as any).ambulanceId;
+
+  if (amb === "" || amb === null) {
+    // ✅ Borrado robusto: pon null y elimina la clave para asegurar persistencia
+    // @ts-ignore
+    prev.ambulanceId = null;
+    // @ts-ignore
+    if ('ambulanceId' in prev) {
+      // eliminar la clave del subdocumento
       // @ts-ignore
-      prev.ambulanceId = undefined;
-    } else if (amb !== undefined) {
-      // asignación/actualización
-      // @ts-ignore
-      prev.ambulanceId = amb;
+      delete prev.ambulanceId;
     }
+  } else if (amb !== undefined) {
+    // asignación/actualización
+    // @ts-ignore
+    prev.ambulanceId = amb;
   }
+}
+
 
   dienst.assignments[idx] = prev as any;
 } else {
@@ -198,14 +206,15 @@ if (missingRequired) {
   if (hasDriverVal) toInsert.driver = updatedCopy.driver;
   if (hasMedicVal)  toInsert.medic  = updatedCopy.medic;
 
-  // Ambulancia solo si VIENE en el payload y no es ""/null
-  if (hasAmbulanceField) {
-    const amb = (incoming as any).ambulanceId;
-    if (amb && amb !== "" && amb !== null) {
-      toInsert.ambulanceId = amb;
-    }
-    // si llega ""/null => se omite, queda sin ambulancia
+// Ambulancia solo si VIENE en el payload y no es ""/null
+if (hasAmbulanceField) {
+  const amb = (incoming as any).ambulanceId;
+  if (amb && amb !== "" && amb !== null) {
+    toInsert.ambulanceId = amb;
   }
+  // si llega ""/null => se omite, queda sin ambulancia
+}
+
 
   dienst.assignments.push(toInsert);
 }
