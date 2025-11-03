@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { toastT } from '../utils/toast';
+import { buildImageUrl } from '../utils/apiOrigins';
+
 import {
     adminListSickLeaves,
     adminAcceptSickLeave,
@@ -271,21 +273,22 @@ export default function AdminSickLeavesPage() {
                                                 </td>
 
                                                 <td className="px-2 py-2">
-                                                    {it.documentUrl ? (
-                                                        <a
-                                                            href={it.documentUrl}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="text-blue-600 underline"
-                                                        >
-                                                            {t('pages.sick.docs.view', 'Ver documento')}
-                                                        </a>
-                                                    ) : (
-                                                        <span className="text-slate-500">
-                                                            {t('pages.sick.docs.none', 'Sin documento')}
-                                                        </span>
-                                                    )}
-                                                </td>
+  {it.documentUrl ? (
+    <a
+      href={buildImageUrl(it.documentUrl)}   // ⬅️ usar helper aquí
+      target="_blank"
+      rel="noreferrer"
+      className="text-blue-600 underline"
+    >
+      {t('pages.sick.docs.view', 'Ver documento')}
+    </a>
+  ) : (
+    <span className="text-slate-500">
+      {t('pages.sick.docs.none', 'Sin documento')}
+    </span>
+  )}
+</td>
+
 
                                                 <td className="px-2 py-2">
                                                     <div className="flex items-center gap-2">

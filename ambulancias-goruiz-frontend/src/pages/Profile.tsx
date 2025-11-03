@@ -1,4 +1,4 @@
-//frontend/src/pages/Profile.tsx
+// frontend/src/pages/Profile.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toastT } from '../utils/toast';
@@ -8,6 +8,7 @@ import { getPscheinInfo } from '../utils/pscheinUtils';
 import type { User, AmbulanceRole } from '../types/user';
 import { useTranslation } from 'react-i18next';
 import { buildImageUrl } from '../utils/apiOrigins';
+import FileUpload from '../components/common/FileUpload';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const API_ORIGIN = API_BASE.replace(/\/api\/?$/, '');
@@ -201,7 +202,6 @@ const Profile = ({ userId }: ProfileProps) => {
 
   const pschein = getPscheinInfo(formData.pscheinExpiry);
 
-  const roles: AmbulanceRole[] = ['medic', 'driver', 'both'];
 
   return (
 
@@ -229,10 +229,9 @@ const Profile = ({ userId }: ProfileProps) => {
                   previewImage
                     ? previewImage
                     : formData.profileImage
-  ? buildImageUrl(formData.profileImage)
-  : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
-
-                                    }
+                      ? buildImageUrl(formData.profileImage)
+                      : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
+                }
                 alt={t('pages.profile.image.alt')}
                 className="w-20 h-20 rounded-full object-cover ring-1 ring-slate-200 bg-white shadow-sm group-hover:opacity-90 transition"
               />
@@ -320,15 +319,16 @@ const Profile = ({ userId }: ProfileProps) => {
             {t('pages.profile.labels.ambulanceRole')}
           </label>
           <div className="flex flex-wrap gap-2">
-            {roles.map((currentRole) => (
+            {(['medic', 'driver', 'both'] as AmbulanceRole[]).map((currentRole) => (
               <button
                 key={currentRole}
                 type="button"
                 onClick={() => setFormData({ ...formData, ambulanceRole: currentRole })}
-                className={`px-3 py-1.5 text-xs rounded-xl transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${formData.ambulanceRole === currentRole
+                className={`px-3 py-1.5 text-xs rounded-xl transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${
+                  formData.ambulanceRole === currentRole
                     ? 'bg-blue-600 text-white shadow-md -translate-y-0.5'
                     : 'bg-white text-slate-700 hover:bg-slate-50 ring-1 ring-slate-200 shadow-sm'
-                  }`}
+                }`}
               >
                 {currentRole === 'driver'
                   ? t('pages.profile.roles.driver')
@@ -340,59 +340,58 @@ const Profile = ({ userId }: ProfileProps) => {
           </div>
         </div>
 
-{/* P-Schein compacto */}
-{(formData.ambulanceRole === 'driver' || formData.ambulanceRole === 'both') && (
-  <div className="space-y-1">
-    <label htmlFor="pscheinExpiry" className="block text-xs font-medium text-slate-700">
-      {t('pages.profile.labels.pscheinExpiry')}
-    </label>
-    <input
-      type="date"
-      id="pscheinExpiry"
-      name="pscheinExpiry"
-      value={formData.pscheinExpiry || ''}
-      onChange={handleChange}
-      className={`w-full rounded-lg px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 ${
-        pschein.status === 'expired'
-          ? 'border border-red-500 focus:ring-red-100'
-          : pschein.status === 'warning'
-            ? 'border border-orange-400 focus:ring-orange-100'
-            : 'border border-slate-300 focus:ring-blue-100 focus:border-blue-400'
-      }`}
-    />
+        {/* P-Schein compacto */}
+        {(formData.ambulanceRole === 'driver' || formData.ambulanceRole === 'both') && (
+          <div className="space-y-1">
+            <label htmlFor="pscheinExpiry" className="block text-xs font-medium text-slate-700">
+              {t('pages.profile.labels.pscheinExpiry')}
+            </label>
+            <input
+              type="date"
+              id="pscheinExpiry"
+              name="pscheinExpiry"
+              value={formData.pscheinExpiry || ''}
+              onChange={handleChange}
+              className={`w-full rounded-lg px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 ${
+                getPscheinInfo(formData.pscheinExpiry).status === 'expired'
+                  ? 'border border-red-500 focus:ring-red-100'
+                  : getPscheinInfo(formData.pscheinExpiry).status === 'warning'
+                    ? 'border border-orange-400 focus:ring-orange-100'
+                    : 'border border-slate-300 focus:ring-blue-100 focus:border-blue-400'
+              }`}
+            />
 
-    {pschein.status === 'expired' && (
-      <p className="text-red-600 text-xs mt-0.5">
-        {t(
-          'pages.profile.pschein.expiredDynamic',
-          '❌ P-Schein caducado hace {{months}} meses',
-          { months: Math.abs(pschein.monthsLeft ?? 0) }
+            {pschein.status === 'expired' && (
+              <p className="text-red-600 text-xs mt-0.5">
+                {t(
+                  'pages.profile.pschein.expiredDynamic',
+                  '❌ P-Schein caducado hace {{months}} meses',
+                  { months: Math.abs(pschein.monthsLeft ?? 0) }
+                )}
+              </p>
+            )}
+
+            {pschein.status === 'warning' && (
+              <p className="text-orange-600 text-xs mt-0.5">
+                {t(
+                  'pages.profile.pschein.warningDynamic',
+                  '⚠️ Expira en {{months}} meses ({{days}} días)',
+                  { months: pschein.monthsLeft ?? 0, days: pschein.daysLeft ?? 0 }
+                )}
+              </p>
+            )}
+
+            {pschein.status === 'valid' && (
+              <p className="text-emerald-600 text-xs mt-0.5">
+                {t(
+                  'pages.profile.pschein.validDynamic',
+                  '✅ Válido ({{months}} meses restantes)',
+                  { months: pschein.monthsLeft ?? 0 }
+                )}
+              </p>
+            )}
+          </div>
         )}
-      </p>
-    )}
-
-    {pschein.status === 'warning' && (
-      <p className="text-orange-600 text-xs mt-0.5">
-        {t(
-          'pages.profile.pschein.warningDynamic',
-          '⚠️ Expira en {{months}} meses ({{days}} días)',
-          { months: pschein.monthsLeft ?? 0, days: pschein.daysLeft ?? 0 }
-        )}
-      </p>
-    )}
-
-    {pschein.status === 'valid' && (
-      <p className="text-emerald-600 text-xs mt-0.5">
-        {t(
-          'pages.profile.pschein.validDynamic',
-          '✅ Válido ({{months}} meses restantes)',
-          { months: pschein.monthsLeft ?? 0 }
-        )}
-      </p>
-    )}
-  </div>
-)}
-
 
         {/* Dirección */}
         <div className="space-y-1">
@@ -443,39 +442,20 @@ const Profile = ({ userId }: ProfileProps) => {
           </div>
         </div>
 
-        {/* Documentos PDF compactos */}
+        {/* Documentos PDF (con FileUpload reutilizable) */}
         <div className="space-y-1">
-          <label htmlFor="documentsUpload" className="block text-xs font-medium text-slate-700">
+          <label className="block text-xs font-medium text-slate-700">
             {t('pages.profile.labels.documents')}
           </label>
 
-          <input
-            type="file"
+          <FileUpload
             id="documentsUpload"
+            label={t('pages.profile.documents.upload')}
             accept="application/pdf"
             multiple
-            onChange={(e) => setDocumentsFiles(e.target.files)}
-            className="sr-only"
+            onChange={(files) => setDocumentsFiles(files)}
+            hintWhenEmpty={t('pages.profile.documents.noneSelected')}
           />
-
-          <label
-            htmlFor="documentsUpload"
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm cursor-pointer hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
-          >
-            ⬆️ {t('pages.profile.documents.upload')}
-          </label>
-
-          {documentsFiles && documentsFiles.length > 0 ? (
-            <ul className="mt-1 list-disc list-inside text-xs text-slate-700">
-              {Array.from(documentsFiles).map((f) => (
-                <li key={f.name}>{f.name}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-1 text-xs text-slate-500">
-              {t('pages.profile.documents.noneSelected')}
-            </p>
-          )}
         </div>
 
         {formData.documents && formData.documents.length > 0 && (

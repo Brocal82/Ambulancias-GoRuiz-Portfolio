@@ -350,6 +350,92 @@ export async function attachSickDocument(req: Request, res: Response) {
   }
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+/**
+ * Adjuntar/actualizar Krankschreibung desde ARCHIVO (multipart)
+ * - Espera req.file (multer) en el campo 'document'
+ * - Si la baja requería documento y estaba 'pending', la marca 'received'
+ * - Devuelve { message, sickLeaveId, verificationStatus, documentUrl }
+ */
+export async function attachSickDocumentFile(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ message: 'ID inválido' });
+      return;
+    }
+
+    // archivo subido por multer
+    const file = (req as any)?.file as
+      | { location?: string; path?: string; filename?: string }
+      | undefined;
+
+    if (!file) {
+      res.status(400).json({ message: "No se recibió ningún archivo. Usa el campo 'document'." });
+      return;
+    }
+
+    // ✅ Resolver SIEMPRE una URL servible por Express: /uploads/<filename>
+    // - Si vienes de S3/Cloud, file.location ya es una URL absoluta → úsala tal cual.
+    // - Si usas disco (multer.diskStorage), confía en file.filename y sirve /uploads/<filename>.
+    let documentUrl: string | undefined;
+
+    if (file.location && typeof file.location === 'string') {
+      // Caso S3/Cloud
+      documentUrl = file.location;
+    } else if (file.filename && typeof file.filename === 'string') {
+      // Caso disco: servimos estáticos en /uploads (ya configurado en index.ts)
+      documentUrl = `/uploads/${file.filename}`;
+    } else if (file.path && typeof file.path === 'string') {
+      // Fallback defensivo: normaliza y recorta hasta el nombre de archivo
+      const normalized = file.path.replace(/\\/g, '/');
+      const justName = normalized.split('/').pop()!;
+      documentUrl = `/uploads/${justName}`;
+    }
+
+    if (!documentUrl) {
+      res.status(500).json({ message: 'No se pudo resolver la URL del archivo subido' });
+      return;
+    }
+
+    // Seguridad: si no es admin, debe ser el dueño de la baja
+    const authId = (req as any)?.user?.id || (req as any)?.userId;
+    const isAdmin = (req as any)?.user?.role === 'admin' || (req as any)?.role === 'admin';
+
+    const sick = await SickLeave.findById(id);
+    if (!sick) {
+      res.status(404).json({ message: 'Baja no encontrada' });
+      return;
+    }
+
+    if (!isAdmin && authId && String(sick.user) !== String(authId)) {
+      res.status(403).json({ message: 'No autorizado para adjuntar documento a esta baja' });
+      return;
+    }
+
+    // Guardar URL del documento (normalizada)
+    sick.documentUrl = documentUrl.replace(/\\/g, '/');
+
+    // Si requería doc y estaba pendiente -> recibido
+    if (sick.requiresDocument && sick.verificationStatus === 'pending') {
+      sick.verificationStatus = 'received';
+    }
+
+    await sick.save();
+
+    res.status(200).json({
+      message: 'Documento (archivo) adjuntado correctamente',
+      sickLeaveId: sick._id,
+      verificationStatus: sick.verificationStatus,
+      documentUrl: sick.documentUrl,
+    });
+  } catch (err) {
+    console.error('❌ attachSickDocumentFile error:', err);
+    res.status(500).json({ message: 'Error al adjuntar el documento (archivo)' });
+  }
+}
+
+
 /**
  * Devuelve flags de bajas (sick leave) por usuario dentro de un rango.
  * Body:

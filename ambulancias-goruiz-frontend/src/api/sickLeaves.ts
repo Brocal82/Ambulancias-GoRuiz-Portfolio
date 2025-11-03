@@ -70,6 +70,27 @@ export async function attachSickDocument(
   return data;
 }
 
+/**
+ * ✅ NUEVO: Adjuntar documento desde archivo (multipart/form-data)
+ * - No rompe la API existente por URL.
+ * - El backend deberá exponer POST /sick-leaves/:id/attach-document-file
+ * - El nombre de campo del archivo es 'document' (ajusta si tu middleware usa otro).
+ */
+export async function attachSickDocumentFile(
+  sickLeaveId: string,
+  file: File
+): Promise<SickLeave> {
+  const form = new FormData();
+  form.append('document', file); // <-- nombre de campo esperado en backend
+
+  const { data } = await axiosInstance.post(
+    `/sick-leaves/${sickLeaveId}/attach-document-file`,
+    form
+    // No setear Content-Type: axios lo resuelve con boundary al enviar FormData
+  );
+  return data;
+}
+
 /* ──────────────────────────────────────────────── */
 /* Administrador                                   */
 /* ──────────────────────────────────────────────── */

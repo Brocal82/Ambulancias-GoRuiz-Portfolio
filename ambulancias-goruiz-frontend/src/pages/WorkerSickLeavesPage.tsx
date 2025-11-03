@@ -1,3 +1,4 @@
+// frontend/src/pages/WorkerSickLeavesPage.tsx
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
@@ -5,9 +6,13 @@ import { toastT } from '../utils/toast';
 import {
   createSickLeave,
   listMySickLeaves,
-  attachSickDocument,
+  // ⬇️ Nueva función API que añadiremos en api/sickLeaves.ts
+  attachSickDocumentFile,
   type SickLeave
 } from '../api/sickLeaves';
+import FileUpload from '../components/common/FileUpload';
+import { buildImageUrl } from '../utils/apiOrigins';
+
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return '—';
@@ -30,6 +35,10 @@ export default function WorkerSickLeavesPage() {
   const [items, setItems] = useState<SickLeave[]>([]);
   const [isLoadingList, setIsLoadingList] = useState<boolean>(true);
 
+  // gestión de archivos por solicitud (1 archivo por baja)
+  const [pendingFiles, setPendingFiles] = useState<Record<string, File | null>>({});
+  const [uploadingIds, setUploadingIds] = useState<Set<string>>(new Set());
+
   const canSubmit = useMemo(() => {
     if (!startDate || !endDate) return false;
     const s = new Date(startDate);
@@ -37,20 +46,19 @@ export default function WorkerSickLeavesPage() {
     return !Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime()) && e >= s;
   }, [startDate, endDate]);
 
-const loadList = async () => {
-  if (!token) return; // puedes mantener esta guardia si quieres
-  try {
-    setIsLoadingList(true);
-    const data = await listMySickLeaves(); // ← sin token
-    setItems(data);
-  } catch (err) {
-    console.error(err);
-    toastT.error(['pages.sick.listLoadError']);
-  } finally {
-    setIsLoadingList(false);
-  }
-};
-
+  const loadList = async () => {
+    if (!token) return;
+    try {
+      setIsLoadingList(true);
+      const data = await listMySickLeaves();
+      setItems(data);
+    } catch (err) {
+      console.error(err);
+      toastT.error(['pages.sick.listLoadError']);
+    } finally {
+      setIsLoadingList(false);
+    }
+  };
 
   useEffect(() => {
     loadList();
@@ -58,54 +66,61 @@ const loadList = async () => {
   }, [token]);
 
   const onSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!token) return; // opcional, el interceptor ya añade el token
+    e.preventDefault();
+    if (!token) return;
 
-  if (!canSubmit) {
-    toastT.error(['pages.sick.create.invalidDates']);
-    return;
-  }
+    if (!canSubmit) {
+      toastT.error(['pages.sick.create.invalidDates']);
+      return;
+    }
 
-  try {
-    setLoading(true);
-    await createSickLeave({
-      startDate,
-      endDate,
-      note: note?.trim() || undefined,
-    }); // ← sin token
-    toastT.success(['pages.sick.create.ok']);
-    setStartDate('');
-    setEndDate('');
-    setNote('');
-    loadList();
-  } catch (err: any) {
-    console.error(err);
-    const msg = err?.response?.data?.message || 'pages.sick.create.error';
-    toastT.error([msg]);
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      setLoading(true);
+      await createSickLeave({
+        startDate,
+        endDate,
+        note: note?.trim() || undefined,
+      });
+      toastT.success(['pages.sick.create.ok']);
+      setStartDate('');
+      setEndDate('');
+      setNote('');
+      loadList();
+    } catch (err: any) {
+      console.error(err);
+      const msg = err?.response?.data?.message || 'pages.sick.create.error';
+      toastT.error([msg]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // ✅ NUEVO: adjuntar archivo real (multipart) para una baja concreta
+  const onAttachDocFile = async (sickLeaveId: string) => {
+    const file = pendingFiles[sickLeaveId] || null;
+    if (!file) {
+      toastT.error(['pages.sick.docs.noneSelected' as any] /* asegúrate de tener esta key */);
+      return;
+    }
 
-  const onAttachDoc = async (sickLeaveId: string) => {
-  if (!token) return; // opcional
-  const url = window.prompt(
-    t('pages.sick.attachDoc.prompt', 'Pega la URL del documento (PDF/imagen):') as string,
-    ''
-  );
-  if (!url) return;
-
-  try {
-    await attachSickDocument(sickLeaveId, url); // ← sin token
-    toastT.success(['pages.sick.attachDoc.ok']);
-    loadList();
-  } catch (err: any) {
-    console.error(err);
-    toastT.error([err?.response?.data?.message || 'pages.sick.attachDoc.error']);
-  }
-};
-
+    try {
+      setUploadingIds(prev => new Set(prev).add(sickLeaveId));
+      await attachSickDocumentFile(sickLeaveId, file);
+      toastT.success(['pages.sick.attachDoc.ok']);
+      // limpiamos el archivo pendiente de esa baja
+      setPendingFiles(prev => ({ ...prev, [sickLeaveId]: null }));
+      await loadList();
+    } catch (err: any) {
+      console.error(err);
+      toastT.error([err?.response?.data?.message || 'pages.sick.attachDoc.error']);
+    } finally {
+      setUploadingIds(prev => {
+        const next = new Set(prev);
+        next.delete(sickLeaveId);
+        return next;
+      });
+    }
+  };
 
   const badge = (status: SickLeave['status']) => {
     const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium';
@@ -194,39 +209,72 @@ const loadList = async () => {
 
         {!isLoadingList && items.length > 0 && (
           <ul className="divide-y divide-slate-100">
-            {items.map((it) => (
-              <li key={it._id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div className="text-sm">
-                  <p className="font-medium text-slate-800">
-                    {fmtISO(it.startDate, i18n.language)} — {fmtISO(it.endDate, i18n.language)} {badge(it.status)} {verifBadge(it.verificationStatus)}
-                  </p>
-                  {it.requiresDocument && it.documentDueAt && (
-                    <p className="text-[11px] text-slate-500">
-                      {t('pages.sick.docs.due','Documento hasta')}: {fmtISO(it.documentDueAt, i18n.language)}
-                    </p>
-                  )}
-                  {it.note && <p className="text-xs text-slate-600 mt-0.5">{it.note}</p>}
-                  {it.documentUrl && (
-                    <p className="text-xs mt-1">
-                      <a className="text-blue-600 underline" href={it.documentUrl} target="_blank" rel="noreferrer">
-                        {t('pages.sick.docs.view','Ver documento')}
-                      </a>
-                    </p>
-                  )}
-                </div>
+            {items.map((it) => {
+              const selected = pendingFiles[it._id] || null;
+              const isUploading = uploadingIds.has(it._id);
 
-                <div className="flex items-center gap-2">
-                  {!it.documentUrl && (
-                    <button
-                      className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-200"
-                      onClick={() => onAttachDoc(it._id)}
-                    >
-                      {t('pages.sick.docs.attach','Adjuntar documento')}
-                    </button>
-                  )}
-                </div>
-              </li>
-            ))}
+              return (
+                <li key={it._id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div className="text-sm">
+                    <p className="font-medium text-slate-800">
+                      {fmtISO(it.startDate, i18n.language)} — {fmtISO(it.endDate, i18n.language)} {badge(it.status)} {verifBadge(it.verificationStatus)}
+                    </p>
+                    {it.requiresDocument && it.documentDueAt && (
+                      <p className="text-[11px] text-slate-500">
+                        {t('pages.sick.docs.due','Documento hasta')}: {fmtISO(it.documentDueAt, i18n.language)}
+                      </p>
+                    )}
+                    {it.note && <p className="text-xs text-slate-600 mt-0.5">{it.note}</p>}
+                    {it.documentUrl && (
+                      <p className="text-xs mt-1">
+                        <a
+  className="text-blue-600 underline"
+  href={buildImageUrl(it.documentUrl)}
+  target="_blank"
+  rel="noreferrer"
+>
+  {t('pages.sick.docs.view','Ver documento')}
+</a>
+
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                    {!it.documentUrl && (
+                      <>
+                        {/* Selector de archivo (PDF o imagen) */}
+                        <FileUpload
+                          id={`sick-doc-${it._id}`}
+                          label={t('pages.sick.docs.select', 'Seleccionar documento')}
+                          accept="application/pdf,image/*"
+                          multiple={false}
+                          onChange={(files) =>
+                            setPendingFiles((prev) => ({
+                              ...prev,
+                              [it._id]: files?.[0] || null,
+                            }))
+                          }
+                          hintWhenEmpty={t('pages.sick.docs.noneSelected', 'Ningún archivo seleccionado')}
+                          className="min-w-[200px]"
+                        />
+
+                        {/* Botón subir */}
+                        <button
+                          className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:opacity-50"
+                          onClick={() => onAttachDocFile(it._id)}
+                          disabled={!selected || isUploading}
+                        >
+                          {isUploading
+                            ? t('pages.sick.docs.uploading', 'Subiendo...')
+                            : t('pages.sick.docs.attach', 'Adjuntar documento')}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

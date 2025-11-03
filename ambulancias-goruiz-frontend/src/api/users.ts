@@ -20,7 +20,7 @@ export const getAvailableUsersForDate = async (
   date: string,
   desiredRole: 'driver' | 'medic' | 'both',
   token: string,
-  opts?: { startTime?: string; endTime?: string; includeExpired?: boolean } // ⬅️ añadimos includeExpired
+  opts?: { startTime?: string; endTime?: string; includeExpired?: boolean }
 ): Promise<User[]> => {
   const response = await api.get(`/users/available`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -29,13 +29,11 @@ export const getAvailableUsersForDate = async (
       desiredRole,
       startTime: opts?.startTime,
       endTime: opts?.endTime,
-      includeExpired: opts?.includeExpired ? 'true' : undefined, // ⬅️ añadimos el flag solo si está activo
+      includeExpired: opts?.includeExpired ? 'true' : undefined,
     },
   });
   return response.data;
 };
-
-
 
 // ✅ Obtener usuario por id
 export const getUserById = async (token: string, userId: string): Promise<User> => {
@@ -83,5 +81,42 @@ export const deleteUserDocument = async (
     headers: { Authorization: `Bearer ${token}` },
     data: { filePath },
   });
+  return response.data;
+};
+
+/**
+ * ✅ Subir archivos del usuario (perfil: imagen + documentos) con FormData
+ * - Reutilizable desde Profile y desde cualquier otra página (p.ej., Sick Leaves si quisieras)
+ * - NO establezcas manualmente 'Content-Type': axios lo hace al enviar FormData (incluye boundary)
+ */
+export const uploadUserFiles = async (
+  token: string,
+  files: {
+    profileImage?: File | null;
+    documents?: FileList | File[] | null;
+  }
+): Promise<{ profileImage?: string; documents?: string[] }> => {
+  const form = new FormData();
+
+  if (files.profileImage) {
+    form.append('profileImage', files.profileImage);
+  }
+
+  if (files.documents) {
+    const docsArray = Array.isArray(files.documents)
+      ? files.documents
+      : Array.from(files.documents);
+    docsArray.forEach((doc) => form.append('documents', doc));
+  }
+
+  const response = await api.post<{ profileImage?: string; documents?: string[] }>(
+    '/users/me/upload',
+    form,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      // No pongas 'Content-Type': axios lo infiere con boundary al mandar FormData
+    }
+  );
+
   return response.data;
 };

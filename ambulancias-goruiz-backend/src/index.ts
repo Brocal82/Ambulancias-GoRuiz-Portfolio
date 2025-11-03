@@ -20,8 +20,8 @@ import ambulanceRoutes from './routes/ambulanceRoutes';
 import messageRoutes from './routes/messageRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
 import notificationRoutes from './routes/notificationRoutes';
-import teamRoutes from './routes/teamRoutes'
-import sickLeaveRoutes from './routes/sickLeaveRoutes'
+import teamRoutes from './routes/teamRoutes';
+import sickLeaveRoutes from './routes/sickLeaveRoutes';
 
 // Utils
 import cleanupOldDiensts from './utils/cleanupOldDiensts';
@@ -79,8 +79,13 @@ app.use(
 // ----------------------------------------------------------------------------
 app.use(express.json());
 
-// Servir estáticos de /uploads (en runtime: ./uploads al lado de dist/)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// ✅ Servir estáticos de /uploads
+// Nota: el middleware de subida guarda en dist/uploads (por __dirname de middlewares).
+// Para evitar desajustes, servimos tanto ./uploads (dist) como ../uploads (raíz).
+const uploadsDist = path.join(__dirname, './uploads');
+const uploadsRoot = path.join(__dirname, '../uploads');
+app.use('/uploads', express.static(uploadsDist));
+app.use('/uploads', express.static(uploadsRoot));
 
 // Healthcheck simple para Render/monitoreo
 app.get('/health', (_req, res) => {
@@ -103,7 +108,6 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api', notificationRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/sick-leaves', sickLeaveRoutes);
-
 
 // ----------------------------------------------------------------------------
 // Conexión a DB y arranque
@@ -137,6 +141,9 @@ mongoose
       console.log(`🚀 Server listening on http://0.0.0.0:${PORT}`);
       console.log(`🕒 Cron activo: lunes 00:00 (${TZ})`);
       console.log(`🔓 CORS permitido desde: ${Array.from(allowedOrigins).join(', ')}`);
+      console.log(`📂 Sirviendo /uploads desde:`);
+      console.log(`   - ${uploadsDist}`);
+      console.log(`   - ${uploadsRoot}`);
     });
   })
   .catch((err) => {

@@ -1,7 +1,7 @@
-//backend/src/routes/sickLeaveRoutes.ts
 import express from 'express';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { authorizeRole } from '../middlewares/roleMiddleware';
+import { upload } from '../middlewares/uploadMiddleware';
 import {
   createSickLeave,
   listSickLeaves,
@@ -9,7 +9,8 @@ import {
   acceptSickLeave,
   rejectSickLeave,
   attachSickDocument,
-  checkSickInRange
+  checkSickInRange,
+  attachSickDocumentFile,
 } from '../controllers/sickLeaveController';
 
 const router = express.Router();
@@ -29,13 +30,18 @@ router.post('/:id/accept', authenticateToken, authorizeRole('admin'), acceptSick
 // Admin: rechazar una solicitud (no desasigna)
 router.post('/:id/reject', authenticateToken, authorizeRole('admin'), rejectSickLeave);
 
-// Worker/Admin: adjuntar/actualizar Krankschreibung en una solicitud
+// Worker/Admin: adjuntar/actualizar Krankschreibung en una solicitud (por URL)
 router.post('/:id/attach-document', authenticateToken, attachSickDocument);
+
+// Worker/Admin: adjuntar Krankschreibung subiendo ARCHIVO real (multipart)
+router.post(
+  '/:id/attach-document-file',
+  authenticateToken,
+  upload.single('document'), // campo "document" (igual que en frontend)
+  attachSickDocumentFile
+);
 
 // Admin: flags de bajas por rango (para listados / modales de asignación)
 router.post('/check-range', authenticateToken, authorizeRole('admin'), checkSickInRange);
-
-
-
 
 export default router;
