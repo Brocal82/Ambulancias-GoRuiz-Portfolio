@@ -860,7 +860,7 @@ export const assignUserToWeek = async (req: Request, res: Response): Promise<voi
 };
 
 
-// ✅ Limpiar driver/medic de TODA la semana del Dienst (mantiene horas y ambulancia)
+// ✅ Limpiar driver/medic/ambulancia de TODA la semana del Dienst (mantiene horas)
 export const clearPeopleForWeek = async (req: Request, res: Response): Promise<void> => {
   try {
     const { dienstNumber, weekStartDate } = req.body as {
@@ -894,20 +894,21 @@ export const clearPeopleForWeek = async (req: Request, res: Response): Promise<v
 
     dienst.assignments = dienst.assignments.map((a) => {
       if (!a?.date || !a?.startTime || !a?.endTime) return a;
-      const hadSomeone = !!a.driver || !!a.medic;
-      if (hadSomeone) clearedCount += 1;
+      const hadSomething = !!a.driver || !!a.medic || !!a.ambulanceId;
+      if (hadSomething) clearedCount += 1;
 
       return {
         ...a,
         driver: undefined,
         medic: undefined,
+        ambulanceId: undefined, // 👈 ahora también se limpia la ambulancia
       } as any;
     });
 
     await dienst.save();
 
     res.status(200).json({
-      message: `Asignaciones (driver/medic) limpiadas para Dienst #${dienstNumber} (${weekStartDate}).`,
+      message: `Asignaciones (driver/medic/ambulancia) limpiadas para Dienst #${dienstNumber} (${weekStartDate}).`,
       clearedCount,
       dienstId: dienst.id,
       weekStartDate,
@@ -917,6 +918,7 @@ export const clearPeopleForWeek = async (req: Request, res: Response): Promise<v
     res.status(500).json({ message: 'Error al limpiar asignaciones de la semana' });
   }
 };
+
 
 export const swapWeekRoles = async (req: Request, res: Response): Promise<void> => {
   try {
