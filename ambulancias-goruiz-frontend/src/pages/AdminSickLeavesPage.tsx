@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { toastT } from '../utils/toast';
@@ -34,6 +34,8 @@ export default function AdminSickLeavesPage() {
     const [loading, setLoading] = useState<boolean>(true);
     const [status, setStatus] = useState<'' | SickLeaveStatus>('pending'); // por defecto, pendientes
     const [refreshKey, setRefreshKey] = useState(0);
+    const [openDocsId, setOpenDocsId] = useState<string | null>(null);
+
 
     const load = async () => {
         if (!token) return;
@@ -113,50 +115,13 @@ export default function AdminSickLeavesPage() {
         );
     };
 
-    const verifBadge = (v?: string) => {
-        if (!v) return null;
-        const base =
-            'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ml-2';
-        if (v === 'pending')
-            return (
-                <span className={`${base} bg-blue-100 text-blue-800`}>
-                    {t('pages.sick.verification.pending', 'Doc. pendiente')}
-                </span>
-            );
-        if (v === 'received')
-            return (
-                <span className={`${base} bg-emerald-100 text-emerald-800`}>
-                    {t('pages.sick.verification.received', 'Doc. recibido')}
-                </span>
-            );
-        if (v === 'overdue')
-            return (
-                <span className={`${base} bg-rose-100 text-rose-800`}>
-                    {t('pages.sick.verification.overdue', 'Doc. vencido')}
-                </span>
-            );
-        return (
-            <span className={`${base} bg-slate-100 text-slate-700`}>
-                {t('pages.sick.verification.notRequired', 'Doc. no requerido')}
-            </span>
-        );
-    };
-
-    const counts = useMemo(() => {
-        const c = { pending: 0, accepted: 0, rejected: 0 };
-        for (const it of items) {
-            if (it.status === 'pending') c.pending++;
-            else if (it.status === 'accepted') c.accepted++;
-            else c.rejected++;
-        }
-        return c;
-    }, [items]);
 
     return (
         <div className="mx-auto max-w-5xl p-4">
-            <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            {/* Encabezado y filtro */}
+            <div className="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                 <div>
-                    <h1 className="text-xl font-semibold text-slate-900">
+                    <h1 className="text-lg sm:text-xl font-semibold text-slate-900">
                         {t('pages.sick.admin.title', 'Bajas por enfermedad')}
                     </h1>
                     <p className="text-slate-600 text-sm">
@@ -167,16 +132,15 @@ export default function AdminSickLeavesPage() {
                 <div className="flex items-center gap-2">
                     <label
                         htmlFor="sick-status-filter"
-                        className="text-sm text-slate-700"
+                        className="text-xs sm:text-sm text-slate-700"
                     >
                         {t('pages.sick.admin.filter', 'Estado')}:
                     </label>
                     <select
                         id="sick-status-filter"
-                        aria-label={t('pages.sick.admin.filter', 'Estado')}
                         value={status}
                         onChange={(e) => setStatus(e.target.value as '' | SickLeaveStatus)}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                        className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
                     >
                         {statusOptions.map((opt) => (
                             <option key={opt.value || 'all'} value={opt.value}>
@@ -184,155 +148,224 @@ export default function AdminSickLeavesPage() {
                             </option>
                         ))}
                     </select>
-
                 </div>
             </div>
 
-            <div className="rounded-2xl bg-white ring-1 ring-slate-200 shadow p-4">
+            {/* Contenedor principal */}
+            <div className="rounded-2xl bg-white ring-1 ring-slate-200 shadow">
                 {loading && (
-                    <div className="text-sm text-slate-600">
+                    <div className="p-4 text-sm text-slate-600 text-center">
                         {t('common.loading', 'Cargando...')}
                     </div>
                 )}
 
                 {!loading && items.length === 0 && (
-                    <div className="text-sm text-slate-600">
+                    <div className="p-4 text-sm text-slate-600 text-center">
                         {t('pages.sick.admin.empty', 'No hay bajas con este filtro')}
                     </div>
                 )}
 
                 {!loading && items.length > 0 && (
-                    <>
-                        <div className="text-xs text-slate-500 mb-2">
-                            {t(
-                                'pages.sick.admin.counts',
-                                'Pendientes: {{p}} · Aceptadas: {{a}} · Rechazadas: {{r}}',
-                                {
-                                    p: counts.pending,
-                                    a: counts.accepted,
-                                    r: counts.rejected,
-                                }
-                            )}
-                        </div>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full table-fixed text-sm">
+                            <colgroup>
+                                <col className="w-[26%]" />
+                                <col className="w-[20%]" />
+                                <col className="w-[10%]" /> {/* Días */}
+                                <col className="w-[16%]" />
+                                <col className="w-[18%]" />
+                                {/* Acciones solo si hay pendientes */}
+                                {items.some(it => it.status === 'pending') && <col className="w-[10%]" />}
+                            </colgroup>
 
-                        <div className="overflow-x-auto -mx-2 sm:mx-0">
-                            <table className="min-w-full text-sm">
-                                <thead>
-                                    <tr className="text-left text-slate-600 border-b border-slate-200">
-                                        <th className="px-2 py-2">
-                                            {t('pages.sick.admin.th.user', 'Trabajador')}
-                                        </th>
-                                        <th className="px-2 py-2">
-                                            {t('pages.sick.admin.th.dates', 'Fechas')}
-                                        </th>
-                                        <th className="px-2 py-2">
-                                            {t('pages.sick.admin.th.status', 'Estado')}
-                                        </th>
-                                        <th className="px-2 py-2">
-                                            {t('pages.sick.admin.th.doc', 'Documento')}
-                                        </th>
-                                        <th className="px-2 py-2">
+                            <thead className="sticky top-0 bg-slate-50 z-10">
+                                <tr className="text-slate-600 border-b border-slate-200 text-center">
+                                    <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                        {t('pages.sick.admin.th.user', 'Trabajador')}
+                                    </th>
+                                    <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                        {t('pages.sick.admin.th.dates', 'Fechas')}
+                                    </th>
+                                    <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                        {t('pages.sick.admin.th.days', 'Días')}
+                                    </th>
+                                    <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                        {t('pages.sick.admin.th.status', 'Estado')}
+                                    </th>
+                                    <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                        {t('pages.sick.admin.th.doc', 'Documento')}
+                                    </th>
+                                    {items.some(it => it.status === 'pending') && (
+                                        <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
                                             {t('pages.sick.admin.th.actions', 'Acciones')}
                                         </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {items.map((it) => {
-                                        const u = it.user as any;
-                                        const fullname =
-                                            (u?.lastName ? `${u.lastName}, ` : '') + (u?.name ?? '—');
-                                        const canAccept = it.status === 'pending';
-                                        const canReject = it.status === 'pending';
+                                    )}
+                                </tr>
+                            </thead>
 
-                                        return (
-                                            <tr key={it._id} className="border-b border-slate-100">
-                                                <td className="px-2 py-2">
-                                                    <div className="text-slate-800 font-medium">
-                                                        {fullname || '—'}
-                                                    </div>
-                                                    <div className="text-[11px] text-slate-500">
-                                                        {u?.email || '—'}
-                                                    </div>
-                                                </td>
+                            <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
+                                {items.map((it) => {
+                                    const u = it.user as any;
+                                    const fullname =
+                                        (u?.lastName ? `${u.lastName}, ` : '') + (u?.name ?? '—');
 
-                                                <td className="px-2 py-2">
-                                                    <div className="text-slate-800">
-                                                        {fmtISO(it.startDate, i18n.language)} —{' '}
-                                                        {fmtISO(it.endDate, i18n.language)}
-                                                    </div>
-                                                    {it.requiresDocument && it.documentDueAt && (
-                                                        <div className="text-[11px] text-slate-500">
-                                                            {t('pages.sick.docs.due', 'Doc. hasta')}:{' '}
-                                                            {fmtISO(it.documentDueAt, i18n.language)}
+                                    return (
+                                        <tr
+                                            key={it._id}
+                                            className="border-b border-slate-100 hover:bg-slate-50/70 text-center"
+                                        >
+                                            {/* Trabajador */}
+                                            <td className="px-3 py-2 align-top">
+                                                <div className="text-slate-800 font-medium truncate">
+                                                    {fullname || '—'}
+                                                </div>
+                                                <div className="text-[11px] text-slate-500 truncate">
+                                                    {u?.email || '—'}
+                                                </div>
+                                            </td>
+
+                                            {/* Fechas */}
+                                            <td className="px-3 py-2 align-top">
+                                                <div className="text-slate-800 whitespace-nowrap">
+                                                    {fmtISO(it.startDate, i18n.language)} — {fmtISO(it.endDate, i18n.language)}
+                                                </div>
+                                            </td>
+
+                                            {/* Días (cálculo inclusivo) */}
+                                            <td className="px-3 py-2 align-top">
+                                                {(() => {
+                                                    const s = new Date(it.startDate);
+                                                    const e = new Date(it.endDate);
+                                                    s.setHours(0, 0, 0, 0);
+                                                    e.setHours(0, 0, 0, 0);
+                                                    const diff = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
+                                                    const days = isNaN(diff) ? '—' : Math.max(diff, 1);
+                                                    return days;
+                                                })()}
+                                            </td>
+
+                                            {/* Estado */}
+                                            <td className="px-3 py-2 align-top whitespace-nowrap">
+                                                {badge(it.status)}
+                                            </td>
+
+                                            {/* Documentos: con desplegable animado (slide + fade) */}
+                                            <td className="px-3 py-2 align-top text-center">
+                                                {(() => {
+                                                    const hasArray = Array.isArray(it.documents) && it.documents.length > 0;
+                                                    const count = hasArray ? it.documents!.length : it.documentUrl ? 1 : 0;
+                                                    const isOpen = openDocsId === it._id;
+
+                                                    if (count === 0) {
+                                                        return (
+                                                            <span className="text-slate-500">
+                                                                {t('pages.sick.docs.none', 'Sin documento')}
+                                                            </span>
+                                                        );
+                                                    }
+
+                                                    // Un único documento (array o legacy)
+                                                    if (count === 1) {
+                                                        const singleUrl = hasArray ? it.documents![0] : it.documentUrl!;
+                                                        return (
+                                                            <div className="inline-flex items-center gap-1">
+                                                                <span className="text-slate-500" aria-hidden="true">📎</span>
+                                                                <a
+                                                                    href={buildImageUrl(singleUrl)}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                    className="text-blue-600 underline hover:text-blue-800 truncate inline-block max-w-full"
+                                                                >
+                                                                    {t('pages.sick.docs.documentN', 'Documento {{n}}', { n: 1 })}
+                                                                </a>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    // Varios documentos → botón + panel animado
+                                                    return (
+                                                        <div className="inline-block text-left">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setOpenDocsId(isOpen ? null : it._id)}
+                                                                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                                                                aria-expanded={isOpen}
+                                                                aria-controls={`docs-panel-${it._id}`}
+                                                            >
+                                                                <span aria-hidden="true">📎</span>
+                                                                <span className="whitespace-nowrap">
+                                                                    {t('pages.sick.docs.count', '{{n}} documentos', { n: count })}
+                                                                </span>
+                                                                <span
+                                                                    className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                                                                    aria-hidden="true"
+                                                                >
+                                                                    ▾
+                                                                </span>
+                                                            </button>
+
+                                                            <div
+                                                                id={`docs-panel-${it._id}`}
+                                                                className={`overflow-hidden transition-all duration-200 ease-out mt-1 
+    ${isOpen ? 'opacity-100 max-h-56' : 'opacity-0 max-h-0'}`}
+                                                            >
+                                                                <ul className="bg-white rounded-lg ring-1 ring-slate-200 shadow-sm p-2 space-y-1">
+                                                                    {it.documents!.map((docUrl, idx) => (
+                                                                        <li key={docUrl + idx} className="flex items-center gap-1">
+                                                                            <span className="text-slate-500" aria-hidden="true">📎</span>
+                                                                            <a
+                                                                                href={buildImageUrl(docUrl)}
+                                                                                target="_blank"
+                                                                                rel="noreferrer"
+                                                                                className="text-blue-600 underline hover:text-blue-800 truncate inline-block max-w-full"
+                                                                            >
+                                                                                {t('pages.sick.docs.documentN', 'Documento {{n}}', { n: idx + 1 })}
+                                                                            </a>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+
                                                         </div>
-                                                    )}
-                                                </td>
+                                                    );
+                                                })()}
+                                            </td>
 
-                                                <td className="px-2 py-2">
-                                                    {badge(it.status)} {verifBadge(it.verificationStatus)}
-                                                </td>
 
-                                                <td className="px-2 py-2">
-                                                    {Array.isArray(it.documents) && it.documents.length > 0 ? (
-                                                        <ul className="space-y-1">
-                                                            {it.documents.map((docUrl, idx) => (
-                                                                <li key={docUrl + idx}>
-                                                                    <a
-                                                                        href={buildImageUrl(docUrl)}
-                                                                        target="_blank"
-                                                                        rel="noreferrer"
-                                                                        className="text-blue-600 underline"
-                                                                    >
-                                                                        {docUrl.split('/').pop() || t('pages.sick.docs.view', 'Ver documento')} ({idx + 1})
-                                                                    </a>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    ) : it.documentUrl ? (
-                                                        <a
-                                                            href={buildImageUrl(it.documentUrl)}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="text-blue-600 underline"
-                                                        >
-                                                            {t('pages.sick.docs.view', 'Ver documento')}
-                                                        </a>
+                                            {/* Acciones: solo si está pendiente y si existe la columna */}
+                                            {items.some(x => x.status === 'pending') && (
+                                                <td className="px-3 py-2 align-top">
+                                                    {it.status === 'pending' ? (
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <button
+                                                                className="h-8 inline-flex items-center rounded-lg bg-emerald-600 px-3 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100"
+                                                                onClick={() => onAccept(it._id)}
+                                                            >
+                                                                {t('common.accept', 'Aceptar')}
+                                                            </button>
+                                                            <button
+                                                                className="h-8 inline-flex items-center rounded-lg bg-rose-600 px-3 text-xs font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100"
+                                                                onClick={() => onReject(it._id)}
+                                                            >
+                                                                {t('common.reject', 'Rechazar')}
+                                                            </button>
+                                                        </div>
                                                     ) : (
-                                                        <span className="text-slate-500">
-                                                            {t('pages.sick.docs.none', 'Sin documento')}
-                                                        </span>
+                                                        <span className="text-slate-400 text-xs">—</span>
                                                     )}
                                                 </td>
-
-
-
-                                                <td className="px-2 py-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:opacity-50"
-                                                            disabled={!canAccept}
-                                                            onClick={() => onAccept(it._id)}
-                                                        >
-                                                            {t('common.accept', 'Aceptar')}
-                                                        </button>
-                                                        <button
-                                                            className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100 disabled:opacity-50"
-                                                            disabled={!canReject}
-                                                            onClick={() => onReject(it._id)}
-                                                        >
-                                                            {t('common.reject', 'Rechazar')}
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </>
+                                            )}
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
         </div>
     );
+
+
+
 }
