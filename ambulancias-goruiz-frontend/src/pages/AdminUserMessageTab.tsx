@@ -1,9 +1,10 @@
 // frontend/src/pages/AdminUserMessageTab.tsx
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { sendMessage, sendMessageMultipart } from '../api/messages';
 import { toastT } from "../utils/toast";
 import { useTranslation } from 'react-i18next';
+import FileUpload from '../components/common/FileUpload';
 
 interface Props {
   userId: string;
@@ -12,13 +13,14 @@ interface Props {
 const AdminUserMessageTab = ({ userId }: Props) => {
   const { token } = useAuth();
   const { t } = useTranslation();
+
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // 👇 adjunto (opcional)
+  // Adjunto (opcional) y clave para resetear el FileUpload
   const [attachment, setAttachment] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadKey, setUploadKey] = useState(0);
 
   const handleSend = async () => {
     if (!subject || !body) {
@@ -51,7 +53,7 @@ const AdminUserMessageTab = ({ userId }: Props) => {
       setSubject('');
       setBody('');
       setAttachment(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setUploadKey(k => k + 1); // fuerza remount del FileUpload para limpiar UI
     } catch (error) {
       console.error('❌ Error al enviar mensaje:', error);
       toastT.error(
@@ -100,59 +102,18 @@ const AdminUserMessageTab = ({ userId }: Props) => {
         />
       </div>
 
-      {/* Adjunto (clip button) */}
+      {/* Adjunto (reutilizando FileUpload) */}
       <div className="flex flex-col space-y-2">
-        {/* input oculto accesible */}
-        <input
-          id="attachment"
-          ref={fileInputRef}
-          type="file"
+        <FileUpload
+          key={uploadKey} // para resetear tras enviar
+          id="admin-user-msg-attachment"
+          label={t('pages.messages.adminPage.actions.attach') || 'Adjuntar archivo'}
+          hintWhenEmpty={t('pages.messages.adminPage.attachmentHelp') || 'PDF, JPG o PNG. Máx 5MB.'}
           accept=".pdf,image/jpeg,image/png"
-          className="sr-only"
-          title={t('pages.messages.adminPage.actions.attach') || 'Attach file'}
-          aria-label={t('pages.messages.adminPage.actions.attach') || 'Attach file'}
-          aria-describedby="attachment-help-user"
-          onChange={(e) => {
-            const file = e.target.files?.[0] ?? null;
-            if (!file) {
-              setAttachment(null);
-              return;
-            }
-            const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
-            if (!allowed.includes(file.type)) {
-              toastT.warn(['toasts.messages.invalidFileType']);
-              e.currentTarget.value = '';
-              setAttachment(null);
-              return;
-            }
-            const maxBytes = 5 * 1024 * 1024; // 5MB
-            if (file.size > maxBytes) {
-              toastT.warn(['toasts.messages.fileTooLarge']);
-              e.currentTarget.value = '';
-              setAttachment(null);
-              return;
-            }
-            setAttachment(file);
-          }}
+          maxSizeMB={5}
+          onFileSelect={(file) => setAttachment(file)}
+          onError={(msg) => toastT.warn([msg])}
         />
-
-        {/* Botón con icono de clip */}
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-slate-700 hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-200 w-fit"
-        >
-          📎
-          <span className="ml-2 text-sm">
-            {attachment
-              ? attachment.name
-              : t('pages.messages.adminPage.actions.attach') || 'Attach file'}
-          </span>
-        </button>
-
-        <p id="attachment-help-user" className="text-xs text-slate-500">
-          {t('pages.messages.adminPage.attachmentHelp') || 'PDF, JPG or PNG. Max 5MB.'}
-        </p>
       </div>
 
       {/* Acciones */}

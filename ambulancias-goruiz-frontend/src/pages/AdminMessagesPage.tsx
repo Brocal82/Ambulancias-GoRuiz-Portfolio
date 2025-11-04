@@ -1,5 +1,5 @@
 // frontend/src/pages/AdminMessagesPage.tsx
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { getAllUsers } from '../api/users';
 import { sendMessage, sendMessageMultipart } from '../api/messages';
 import type { User } from '../types/user';
@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { toastT } from "../utils/toast";
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import FileUpload from '../components/common/FileUpload';
 
 const AdminMessagesPage = () => {
   const { token } = useAuth();
@@ -18,10 +19,7 @@ const AdminMessagesPage = () => {
   const [body, setBody] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sendToAll, setSendToAll] = useState(false);
-
-  // 👇 Nuevo: estado y ref para el archivo adjunto
   const [attachment, setAttachment] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -72,7 +70,6 @@ const AdminMessagesPage = () => {
       setSelectedIds([]);
       setSendToAll(false);
       setAttachment(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (error: any) {
       console.error('❌ Error al enviar mensaje:', error);
       const msg =
@@ -119,62 +116,26 @@ const AdminMessagesPage = () => {
             />
           </div>
 
-          {/* Adjunto (clip button) */}
+          {/* Adjunto */}
           <div className="space-y-2">
-            {/* input oculto accesible */}
-            <input
-              id="attachment"
-              ref={fileInputRef}
-              type="file"
+            <FileUpload
+              id="admin-message-attachment"
+              label={t('pages.messages.adminPage.actions.attach') || 'Adjuntar archivo'}
+              hintWhenEmpty={t('pages.messages.adminPage.attachmentHelp') || 'PDF, JPG o PNG. Máx 5MB.'}
               accept=".pdf,image/jpeg,image/png"
-              className="sr-only"
-              title={t('pages.messages.adminPage.actions.attach') || 'Attach file'}
-              aria-label={t('pages.messages.adminPage.actions.attach') || 'Attach file'}
-              aria-describedby="attachment-help"
-              onChange={(e) => {
-                const file = e.target.files?.[0] ?? null;
-                if (!file) {
-                  setAttachment(null);
-                  return;
-                }
-                const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
-                if (!allowed.includes(file.type)) {
-                  toastT.warn(['toasts.messages.invalidFileType']);
-                  e.currentTarget.value = '';
-                  setAttachment(null);
-                  return;
-                }
-                const maxBytes = 5 * 1024 * 1024; // 5 MB
-                if (file.size > maxBytes) {
-                  toastT.warn(['toasts.messages.fileTooLarge']);
-                  e.currentTarget.value = '';
-                  setAttachment(null);
-                  return;
-                }
-                setAttachment(file);
-              }}
+              maxSizeMB={5}
+              onFileSelect={(file) => setAttachment(file)}
+              onError={(msg) => toastT.warn([msg])}
             />
 
-            {/* Botón del clip */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-slate-700 hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-200"
-            >
-              📎
-              <span className="ml-2 text-sm">
-                {attachment
-                  ? attachment.name
-                  : t('pages.messages.adminPage.actions.attach') || 'Attach file'}
-              </span>
-            </button>
 
-            <p id="attachment-help" className="text-xs text-slate-500">
-              {t('pages.messages.adminPage.attachmentHelp') || 'PDF, JPG or PNG. Max 5MB.'}
-            </p>
+
+            {attachment && (
+              <p className="text-xs text-slate-600 mt-1">
+                {t('pages.messages.adminPage.selectedFile') || 'Archivo seleccionado'}: {attachment.name}
+              </p>
+            )}
           </div>
-
-
 
           {/* Destinatarios */}
           <div className="space-y-3">
@@ -241,7 +202,6 @@ const AdminMessagesPage = () => {
       </div>
     </div>
   );
-
 };
 
 export default AdminMessagesPage;

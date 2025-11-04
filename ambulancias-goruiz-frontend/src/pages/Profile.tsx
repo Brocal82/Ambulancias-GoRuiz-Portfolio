@@ -449,13 +449,16 @@ const Profile = ({ userId }: ProfileProps) => {
           </label>
 
           <FileUpload
-            id="documentsUpload"
+            id="profile-docs"
             label={t('pages.profile.documents.upload')}
+            hintWhenEmpty={t('pages.profile.documents.noneSelected')}
             accept="application/pdf"
             multiple
+            maxSizeMB={10}
             onChange={(files) => setDocumentsFiles(files)}
-            hintWhenEmpty={t('pages.profile.documents.noneSelected')}
+            onError={(msg) => toastT.warn([msg])}
           />
+
         </div>
 
         {formData.documents && formData.documents.length > 0 && (

@@ -6,13 +6,11 @@ import { toastT } from '../utils/toast';
 import {
   createSickLeave,
   listMySickLeaves,
-  // ⬇️ Nueva función API que añadiremos en api/sickLeaves.ts
-  attachSickDocumentFile,
+  attachSickDocumentFile, // ← asegúrate de tener esta función en api/sickLeaves.ts
   type SickLeave
 } from '../api/sickLeaves';
 import FileUpload from '../components/common/FileUpload';
 import { buildImageUrl } from '../utils/apiOrigins';
-
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return '—';
@@ -95,11 +93,11 @@ export default function WorkerSickLeavesPage() {
     }
   };
 
-  // ✅ NUEVO: adjuntar archivo real (multipart) para una baja concreta
+  // Adjuntar archivo real (multipart) para una baja concreta
   const onAttachDocFile = async (sickLeaveId: string) => {
     const file = pendingFiles[sickLeaveId] || null;
     if (!file) {
-      toastT.error(['pages.sick.docs.noneSelected' as any] /* asegúrate de tener esta key */);
+      toastT.error(['pages.sick.docs.noneSelected' as any]);
       return;
     }
 
@@ -107,7 +105,7 @@ export default function WorkerSickLeavesPage() {
       setUploadingIds(prev => new Set(prev).add(sickLeaveId));
       await attachSickDocumentFile(sickLeaveId, file);
       toastT.success(['pages.sick.attachDoc.ok']);
-      // limpiamos el archivo pendiente de esa baja
+      // limpiar selección local
       setPendingFiles(prev => ({ ...prev, [sickLeaveId]: null }));
       await loadList();
     } catch (err: any) {
@@ -228,14 +226,13 @@ export default function WorkerSickLeavesPage() {
                     {it.documentUrl && (
                       <p className="text-xs mt-1">
                         <a
-  className="text-blue-600 underline"
-  href={buildImageUrl(it.documentUrl)}
-  target="_blank"
-  rel="noreferrer"
->
-  {t('pages.sick.docs.view','Ver documento')}
-</a>
-
+                          className="text-blue-600 underline"
+                          href={buildImageUrl(it.documentUrl)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {t('pages.sick.docs.view','Ver documento')}
+                        </a>
                       </p>
                     )}
                   </div>
@@ -243,20 +240,19 @@ export default function WorkerSickLeavesPage() {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                     {!it.documentUrl && (
                       <>
-                        {/* Selector de archivo (PDF o imagen) */}
+                        {/* Selector de archivo (PDF/JPG/PNG/WEBP) */}
                         <FileUpload
                           id={`sick-doc-${it._id}`}
                           label={t('pages.sick.docs.select', 'Seleccionar documento')}
-                          accept="application/pdf,image/*"
-                          multiple={false}
-                          onChange={(files) =>
-                            setPendingFiles((prev) => ({
-                              ...prev,
-                              [it._id]: files?.[0] || null,
-                            }))
-                          }
                           hintWhenEmpty={t('pages.sick.docs.noneSelected', 'Ningún archivo seleccionado')}
-                          className="min-w-[200px]"
+                          accept=".pdf,image/jpeg,image/png,image/webp"
+                          multiple={false}
+                          maxSizeMB={10}
+                          onFileSelect={(file) =>
+                            setPendingFiles((prev) => ({ ...prev, [it._id]: file || null }))
+                          }
+                          onError={(msg) => toastT.warn([msg])}
+                          className="min-w-[220px]"
                         />
 
                         {/* Botón subir */}

@@ -2,12 +2,17 @@ import React from 'react';
 
 type FileUploadProps = {
   id: string;
-  label?: string;                // texto del botón (ej. "Subir documentos")
-  accept?: string;               // ej. "application/pdf" o "image/*"
-  multiple?: boolean;            // true si quieres varios
-  onChange: (files: FileList | null) => void;
-  hintWhenEmpty?: string;        // texto cuando no hay archivos seleccionados
-  className?: string;            // estilos extra si necesitas
+  label?: string;                 // texto del botón (ej. "Subir documentos")
+  accept?: string;                // ej. ".pdf,image/jpeg,image/png" o "image/*"
+  multiple?: boolean;             // true si quieres varios
+  maxSizeMB?: number;             // ej. 5 => 5 MB
+  onChange?: (files: FileList | null) => void;   // retrocompatible
+  onFileSelect?: (file: File | null) => void;    // flujo 1 archivo
+  onFilesSelect?: (files: File[] | null) => void;// flujo múltiples
+  onError?: (message: string) => void;           // para toasts opcionales
+  hintWhenEmpty?: string;         // texto cuando no hay archivos seleccionados
+  className?: string;             // estilos extra
+  disabled?: boolean;
 };
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -15,16 +20,75 @@ const FileUpload: React.FC<FileUploadProps> = ({
   label = 'Upload',
   accept,
   multiple = false,
+  maxSizeMB,
   onChange,
+  onFileSelect,
+  onFilesSelect,
+  onError,
   hintWhenEmpty = 'No files selected',
   className = '',
+  disabled = false,
 }) => {
   const [files, setFiles] = React.useState<FileList | null>(null);
 
+  const maxBytes = typeof maxSizeMB === 'number' ? maxSizeMB * 1024 * 1024 : undefined;
+
+  const validateFile = (file: File): string | null => {
+    if (maxBytes && file.size > maxBytes) {
+      return `El archivo supera el límite de ${maxSizeMB} MB.`;
+    }
+    if (accept) {
+      // acepta extensiones (.pdf), comodines (image/*) y mimes exactos (image/png)
+      const tokens = accept.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+      const ext = '.' + (file.name.split('.').pop() || '').toLowerCase();
+      const mime = (file.type || '').toLowerCase();
+
+      const ok = tokens.some(tok => {
+        if (tok.startsWith('.')) return tok === ext;              // extensión
+        if (tok.endsWith('/*')) {                                 // ej: image/*
+          const base = tok.slice(0, -2);
+          return mime.startsWith(`${base}/`);
+        }
+        return tok === mime;                                      // mime exacto
+      });
+
+      if (!ok) {
+        return `Tipo de archivo no permitido. Permitidos: ${accept}`;
+      }
+    }
+    return null;
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files;
-    setFiles(selected);
-    onChange(selected);
+    // validación
+    const list = Array.from(selected ?? []);
+    for (const f of list) {
+      const err = validateFile(f);
+      if (err) {
+        onError?.(err);
+        // reset
+        e.currentTarget.value = '';
+        setFiles(null);
+        onChange?.(null);
+        onFileSelect?.(null);
+        onFilesSelect?.(null);
+        return;
+      }
+    }
+
+    setFiles(selected || null);
+
+    // callbacks retrocompatibles
+    onChange?.(selected || null);
+
+    if (multiple) {
+      onFilesSelect?.(list.length ? list : null);
+      // si el padre pasó onFileSelect pero multiple=true, no lo llamamos
+    } else {
+      onFileSelect?.(list[0] || null);
+      // si el padre pasó onFilesSelect pero multiple=false, no lo llamamos
+    }
   };
 
   return (
@@ -36,11 +100,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
         multiple={multiple}
         onChange={handleChange}
         className="sr-only"
+        disabled={disabled}
       />
 
       <label
         htmlFor={id}
-        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm cursor-pointer hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
+        className={`inline-flex items-center gap-2 rounded-lg ${disabled ? 'bg-slate-300 cursor-not-allowed' : 'bg-blue-600 cursor-pointer hover:bg-blue-700'} px-3 py-1.5 text-xs font-medium text-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100`}
       >
         ⬆️ {label}
       </label>
@@ -53,6 +118,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
         </ul>
       ) : (
         <p className="mt-1 text-xs text-slate-500">{hintWhenEmpty}</p>
+      )}
+
+      {typeof maxSizeMB === 'number' && (
+        <p className="text-[11px] text-slate-400">{`Tamaño máx: ${maxSizeMB} MB`}</p>
       )}
     </div>
   );
