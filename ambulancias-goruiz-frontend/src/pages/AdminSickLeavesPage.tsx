@@ -273,21 +273,37 @@ export default function AdminSickLeavesPage() {
                                                 </td>
 
                                                 <td className="px-2 py-2">
-  {it.documentUrl ? (
-    <a
-      href={buildImageUrl(it.documentUrl)}   // ⬅️ usar helper aquí
-      target="_blank"
-      rel="noreferrer"
-      className="text-blue-600 underline"
-    >
-      {t('pages.sick.docs.view', 'Ver documento')}
-    </a>
-  ) : (
-    <span className="text-slate-500">
-      {t('pages.sick.docs.none', 'Sin documento')}
-    </span>
-  )}
-</td>
+                                                    {Array.isArray(it.documents) && it.documents.length > 0 ? (
+                                                        <ul className="space-y-1">
+                                                            {it.documents.map((docUrl, idx) => (
+                                                                <li key={docUrl + idx}>
+                                                                    <a
+                                                                        href={buildImageUrl(docUrl)}
+                                                                        target="_blank"
+                                                                        rel="noreferrer"
+                                                                        className="text-blue-600 underline"
+                                                                    >
+                                                                        {docUrl.split('/').pop() || t('pages.sick.docs.view', 'Ver documento')} ({idx + 1})
+                                                                    </a>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    ) : it.documentUrl ? (
+                                                        <a
+                                                            href={buildImageUrl(it.documentUrl)}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="text-blue-600 underline"
+                                                        >
+                                                            {t('pages.sick.docs.view', 'Ver documento')}
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-slate-500">
+                                                            {t('pages.sick.docs.none', 'Sin documento')}
+                                                        </span>
+                                                    )}
+                                                </td>
+
 
 
                                                 <td className="px-2 py-2">

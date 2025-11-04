@@ -1,4 +1,4 @@
-//backend/src/models/SickLeave.ts
+// backend/src/models/SickLeave.ts
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export type SickLeaveStatus = 'pending' | 'accepted' | 'rejected';
@@ -10,10 +10,18 @@ export interface ISickLeave extends Document {
   endDate: Date;                   // Fin de la baja (inclusive, zona lógica: Europe/Berlin)
   status: SickLeaveStatus;         // pending | accepted | rejected
   note?: string;                   // Nota opcional del trabajador
-  documentUrl?: string;            // URL del Krankschreibung (si aportado)
+
+  /** 👇 Legado: último documento subido (se mantiene por compatibilidad) */
+  documentUrl?: string;
+
+  /** 🆕 Lista de documentos acumulables (URLs relativas o absolutas) */
+  documents: string[];
+
+  // Campos de verificación de documento
   requiresDocument: boolean;       // true si la baja >= 3 días naturales (regla de negocio)
   verificationStatus: SickVerificationStatus; // not_required | pending | received | overdue
   documentDueAt?: Date;            // Fecha límite para aportar documento (createdAt + 3 días)
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,7 +39,12 @@ const SickLeaveSchema = new Schema<ISickLeave>(
       index: true,
     },
     note: { type: String },
+
+    /** 👇 Legado: se mantiene para no romper lecturas antiguas */
     documentUrl: { type: String },
+
+    /** 🆕 Nuevo campo: adjuntos acumulables */
+    documents: { type: [String], default: [] },
 
     // Campos de verificación de documento
     requiresDocument: { type: Boolean, default: false },

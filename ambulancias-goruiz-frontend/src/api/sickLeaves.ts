@@ -17,7 +17,9 @@ export interface SickLeave {
   endDate: string;                // ISO date
   status: SickLeaveStatus;        // pending | accepted | rejected
   note?: string;
+  
   documentUrl?: string;
+  documents?: string[];
   requiresDocument?: boolean;
   verificationStatus?: SickVerificationStatus;
   documentDueAt?: string;         // ISO date

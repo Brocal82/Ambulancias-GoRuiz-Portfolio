@@ -34,7 +34,7 @@ export default function WorkerSickLeavesPage() {
   const [isLoadingList, setIsLoadingList] = useState<boolean>(true);
 
   // gestión de archivos por solicitud (1 archivo por baja)
-  const [pendingFiles, setPendingFiles] = useState<Record<string, File | null>>({});
+  const [pendingFiles, setPendingFiles] = useState<Record<string, File[]>>({});
   const [uploadingIds, setUploadingIds] = useState<Set<string>>(new Set());
 
   const canSubmit = useMemo(() => {
@@ -93,32 +93,38 @@ export default function WorkerSickLeavesPage() {
     }
   };
 
-  // Adjuntar archivo real (multipart) para una baja concreta
-  const onAttachDocFile = async (sickLeaveId: string) => {
-    const file = pendingFiles[sickLeaveId] || null;
-    if (!file) {
-      toastT.error(['pages.sick.docs.noneSelected' as any]);
-      return;
+
+// ✅ Subir TODOS los archivos seleccionados para una baja (uno a uno)
+const onAttachDocFiles = async (sickLeaveId: string) => {
+  const files = pendingFiles[sickLeaveId] || [];
+  if (files.length === 0) {
+    toastT.error(['pages.sick.docs.noneSelected' as any]);
+    return;
+  }
+  try {
+    setUploadingIds(prev => new Set(prev).add(sickLeaveId));
+
+    for (const f of files) {
+      await attachSickDocumentFile(sickLeaveId, f); // ya la tienes en api/sickLeaves.ts
     }
 
-    try {
-      setUploadingIds(prev => new Set(prev).add(sickLeaveId));
-      await attachSickDocumentFile(sickLeaveId, file);
-      toastT.success(['pages.sick.attachDoc.ok']);
-      // limpiar selección local
-      setPendingFiles(prev => ({ ...prev, [sickLeaveId]: null }));
-      await loadList();
-    } catch (err: any) {
-      console.error(err);
-      toastT.error([err?.response?.data?.message || 'pages.sick.attachDoc.error']);
-    } finally {
-      setUploadingIds(prev => {
-        const next = new Set(prev);
-        next.delete(sickLeaveId);
-        return next;
-      });
-    }
-  };
+    toastT.success(['pages.sick.attachDoc.ok']);
+    // limpiar selección local
+    setPendingFiles(prev => ({ ...prev, [sickLeaveId]: [] }));
+    await loadList();
+  } catch (err: any) {
+    console.error(err);
+    toastT.error([err?.response?.data?.message || 'pages.sick.attachDoc.error']);
+  } finally {
+    setUploadingIds(prev => {
+      const next = new Set(prev);
+      next.delete(sickLeaveId);
+      return next;
+    });
+  }
+};
+
+
 
   const badge = (status: SickLeave['status']) => {
     const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium';
@@ -208,69 +214,95 @@ export default function WorkerSickLeavesPage() {
         {!isLoadingList && items.length > 0 && (
           <ul className="divide-y divide-slate-100">
             {items.map((it) => {
-              const selected = pendingFiles[it._id] || null;
-              const isUploading = uploadingIds.has(it._id);
+  const selected = pendingFiles[it._id] || [];
+  const isUploading = uploadingIds.has(it._id);
 
-              return (
-                <li key={it._id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div className="text-sm">
-                    <p className="font-medium text-slate-800">
-                      {fmtISO(it.startDate, i18n.language)} — {fmtISO(it.endDate, i18n.language)} {badge(it.status)} {verifBadge(it.verificationStatus)}
-                    </p>
-                    {it.requiresDocument && it.documentDueAt && (
-                      <p className="text-[11px] text-slate-500">
-                        {t('pages.sick.docs.due','Documento hasta')}: {fmtISO(it.documentDueAt, i18n.language)}
-                      </p>
-                    )}
-                    {it.note && <p className="text-xs text-slate-600 mt-0.5">{it.note}</p>}
-                    {it.documentUrl && (
-                      <p className="text-xs mt-1">
-                        <a
-                          className="text-blue-600 underline"
-                          href={buildImageUrl(it.documentUrl)}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {t('pages.sick.docs.view','Ver documento')}
-                        </a>
-                      </p>
-                    )}
-                  </div>
+  return (
+    <li key={it._id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div className="text-sm">
+        <p className="font-medium text-slate-800">
+          {fmtISO(it.startDate, i18n.language)} — {fmtISO(it.endDate, i18n.language)} {badge(it.status)} {verifBadge(it.verificationStatus)}
+        </p>
 
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                    {!it.documentUrl && (
-                      <>
-                        {/* Selector de archivo (PDF/JPG/PNG/WEBP) */}
-                        <FileUpload
-                          id={`sick-doc-${it._id}`}
-                          label={t('pages.sick.docs.select', 'Seleccionar documento')}
-                          hintWhenEmpty={t('pages.sick.docs.noneSelected', 'Ningún archivo seleccionado')}
-                          accept=".pdf,image/jpeg,image/png,image/webp"
-                          multiple={false}
-                          maxSizeMB={10}
-                          onFileSelect={(file) =>
-                            setPendingFiles((prev) => ({ ...prev, [it._id]: file || null }))
-                          }
-                          onError={(msg) => toastT.warn([msg])}
-                          className="min-w-[220px]"
-                        />
+        {it.requiresDocument && it.documentDueAt && (
+          <p className="text-[11px] text-slate-500">
+            {t('pages.sick.docs.due','Documento hasta')}: {fmtISO(it.documentDueAt, i18n.language)}
+          </p>
+        )}
 
-                        {/* Botón subir */}
-                        <button
-                          className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:opacity-50"
-                          onClick={() => onAttachDocFile(it._id)}
-                          disabled={!selected || isUploading}
-                        >
-                          {isUploading
-                            ? t('pages.sick.docs.uploading', 'Subiendo...')
-                            : t('pages.sick.docs.attach', 'Adjuntar documento')}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
+        {it.note && <p className="text-xs text-slate-600 mt-0.5">{it.note}</p>}
+
+        {/* 👇 Mostrar TODOS los adjuntos si hay */}
+        {(it.documents?.length || it.documentUrl) && (
+          <div className="mt-1 space-y-1">
+            {/* último (legacy) */}
+            {it.documentUrl && (
+              <p className="text-xs">
+                <a
+                  className="text-blue-600 underline"
+                  href={buildImageUrl(it.documentUrl)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t('pages.sick.docs.view','Ver documento')}
+                </a>
+              </p>
+            )}
+
+            {/* lista completa */}
+            {it.documents?.length ? (
+              <ul className="text-xs list-disc pl-4">
+                {it.documents.map((url, idx) => (
+                  <li key={url + idx}>
+                    <a
+                      className="text-blue-600 underline"
+                      href={buildImageUrl(url)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {t('pages.sick.docs.viewN', { n: idx + 1, defaultValue: 'Ver documento {{n}}' })}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+        {/* 👇 Ahora permitimos SUBIR MÁS incluso si ya hay documentos */}
+        <FileUpload
+          id={`sick-doc-${it._id}`}
+          label={t('pages.sick.docs.select', 'Seleccionar documentos')}
+          accept="application/pdf,image/*"
+          multiple
+          maxSizeMB={10}
+          onFilesSelect={(files) =>
+            setPendingFiles((prev) => ({
+              ...prev,
+              [it._id]: files || [],
+            }))
+          }
+          hintWhenEmpty={t('pages.sick.docs.noneSelected', 'Ningún archivo seleccionado')}
+          className="min-w-[220px]"
+          disabled={isUploading}
+        />
+
+        <button
+          className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:opacity-50"
+          onClick={() => onAttachDocFiles(it._id)}
+          disabled={selected.length === 0 || isUploading}
+        >
+          {isUploading
+            ? t('pages.sick.docs.uploading', 'Subiendo...')
+            : t('pages.sick.docs.attach', 'Adjuntar documento')}
+        </button>
+      </div>
+    </li>
+  );
+})}
+
           </ul>
         )}
       </div>

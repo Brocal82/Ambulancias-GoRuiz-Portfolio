@@ -294,10 +294,11 @@ export async function rejectSickLeave(req: Request, res: Response) {
 
 // ────────────────────────────────────────────────────────────────────────────
 /**
- * Adjuntar/actualizar Krankschreibung para una baja
- * - Lo usa el trabajador autenticado
- * - Recibe { documentUrl: string }
- * - Marca verificationStatus = 'received' (si antes era 'pending')
+ * Adjuntar/actualizar Krankschreibung por **URL**
+ * - Lo usa el trabajador autenticado (o admin)
+ * - Body: { documentUrl: string }
+ * - Acumula en documents[] y mantiene documentUrl con el último
+ * - Marca verificationStatus = 'received' si antes era 'pending'
  */
 // ────────────────────────────────────────────────────────────────────────────
 export async function attachSickDocument(req: Request, res: Response) {
@@ -315,34 +316,42 @@ export async function attachSickDocument(req: Request, res: Response) {
     }
 
     const authId = (req as any)?.user?.id || (req as any)?.userId;
+    const isAdmin = (req as any)?.user?.role === 'admin' || (req as any)?.role === 'admin';
+
     const sick = await SickLeave.findById(id);
     if (!sick) {
       res.status(404).json({ message: 'Baja no encontrada' });
       return;
     }
 
-    // Seguridad mínima: si no es admin, debe ser el dueño de la baja
-    const isAdmin = (req as any)?.user?.role === 'admin' || (req as any)?.role === 'admin';
+    // Seguridad: si no es admin, debe ser el dueño de la baja
     if (!isAdmin && authId && String(sick.user) !== String(authId)) {
       res.status(403).json({ message: 'No autorizado para adjuntar documento a esta baja' });
       return;
     }
 
+    // Asegurar array de documentos y acumular URL
+    if (!Array.isArray((sick as any).documents)) {
+      (sick as any).documents = [];
+    }
+    (sick as any).documents.push(documentUrl);
+
+    // Mantener compatibilidad: documentUrl = último
     sick.documentUrl = documentUrl;
 
-    // Si requería documento y estaba pendiente, lo marcamos recibido
+    // Si requería doc y estaba pendiente -> recibido
     if (sick.requiresDocument && sick.verificationStatus === 'pending') {
       sick.verificationStatus = 'received';
-      // Si en el futuro añadimos 'verified', aquí no lo tocamos.
     }
 
     await sick.save();
 
     res.status(200).json({
-      message: 'Documento adjuntado correctamente',
+      message: 'Documento (URL) adjuntado correctamente',
       sickLeaveId: sick._id,
       verificationStatus: sick.verificationStatus,
       documentUrl: sick.documentUrl,
+      documents: (sick as any).documents,
     });
   } catch (err) {
     console.error('❌ attachSickDocument error:', err);
@@ -350,13 +359,17 @@ export async function attachSickDocument(req: Request, res: Response) {
   }
 }
 
+
 // ────────────────────────────────────────────────────────────────────────────
 /**
  * Adjuntar/actualizar Krankschreibung desde ARCHIVO (multipart)
  * - Espera req.file (multer) en el campo 'document'
- * - Si la baja requería documento y estaba 'pending', la marca 'received'
- * - Devuelve { message, sickLeaveId, verificationStatus, documentUrl }
+ * - Normaliza a URL servible por Express: /uploads/<filename> (o file.location en cloud)
+ * - Acumula en documents[] y mantiene documentUrl con el último
+ * - Marca verificationStatus = 'received' si antes era 'pending'
+ * - Devuelve { message, sickLeaveId, verificationStatus, documentUrl, documents }
  */
+// ────────────────────────────────────────────────────────────────────────────
 export async function attachSickDocumentFile(req: Request, res: Response) {
   try {
     const { id } = req.params;
@@ -365,7 +378,6 @@ export async function attachSickDocumentFile(req: Request, res: Response) {
       return;
     }
 
-    // archivo subido por multer
     const file = (req as any)?.file as
       | { location?: string; path?: string; filename?: string }
       | undefined;
@@ -375,19 +387,16 @@ export async function attachSickDocumentFile(req: Request, res: Response) {
       return;
     }
 
-    // ✅ Resolver SIEMPRE una URL servible por Express: /uploads/<filename>
-    // - Si vienes de S3/Cloud, file.location ya es una URL absoluta → úsala tal cual.
-    // - Si usas disco (multer.diskStorage), confía en file.filename y sirve /uploads/<filename>.
+    // Resolver SIEMPRE una URL servible
     let documentUrl: string | undefined;
-
     if (file.location && typeof file.location === 'string') {
-      // Caso S3/Cloud
+      // S3/Cloud
       documentUrl = file.location;
     } else if (file.filename && typeof file.filename === 'string') {
-      // Caso disco: servimos estáticos en /uploads (ya configurado en index.ts)
+      // Disco: servido por /uploads en index.ts
       documentUrl = `/uploads/${file.filename}`;
     } else if (file.path && typeof file.path === 'string') {
-      // Fallback defensivo: normaliza y recorta hasta el nombre de archivo
+      // Fallback defensivo
       const normalized = file.path.replace(/\\/g, '/');
       const justName = normalized.split('/').pop()!;
       documentUrl = `/uploads/${justName}`;
@@ -398,7 +407,6 @@ export async function attachSickDocumentFile(req: Request, res: Response) {
       return;
     }
 
-    // Seguridad: si no es admin, debe ser el dueño de la baja
     const authId = (req as any)?.user?.id || (req as any)?.userId;
     const isAdmin = (req as any)?.user?.role === 'admin' || (req as any)?.role === 'admin';
 
@@ -413,7 +421,13 @@ export async function attachSickDocumentFile(req: Request, res: Response) {
       return;
     }
 
-    // Guardar URL del documento (normalizada)
+    // Asegurar array de documentos
+    if (!Array.isArray((sick as any).documents)) {
+      (sick as any).documents = [];
+    }
+
+    // Acumular y mantener compatibilidad
+    (sick as any).documents.push(documentUrl.replace(/\\/g, '/'));
     sick.documentUrl = documentUrl.replace(/\\/g, '/');
 
     // Si requería doc y estaba pendiente -> recibido
@@ -428,12 +442,14 @@ export async function attachSickDocumentFile(req: Request, res: Response) {
       sickLeaveId: sick._id,
       verificationStatus: sick.verificationStatus,
       documentUrl: sick.documentUrl,
+      documents: (sick as any).documents,
     });
   } catch (err) {
     console.error('❌ attachSickDocumentFile error:', err);
     res.status(500).json({ message: 'Error al adjuntar el documento (archivo)' });
   }
 }
+
 
 
 /**
