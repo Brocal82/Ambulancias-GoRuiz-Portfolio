@@ -197,7 +197,7 @@ export default function AdminSickLeavesPage() {
                                         {t('pages.sick.admin.th.status', 'Estado')}
                                     </th>
                                     <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                                        {t('pages.sick.admin.th.doc', 'Documento')}
+                                        {t('pages.sick.admin.th.doc', 'Documentos')}
                                     </th>
                                     {hasPendings && (
                                         <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
@@ -257,8 +257,20 @@ export default function AdminSickLeavesPage() {
                                             {/* Documentos: con desplegable animado (slide + fade) */}
                                             <td className="px-3 py-2 align-top text-center">
                                                 {(() => {
-                                                    const hasArray = Array.isArray(it.documents) && it.documents.length > 0;
-                                                    const count = hasArray ? it.documents!.length : it.documentUrl ? 1 : 0;
+                                                    // Normaliza y DEDUP por nombre visible
+                                                    const rawDocUrls: string[] = [
+                                                        ...(it.documentUrl ? [it.documentUrl] : []),
+                                                        ...(Array.isArray(it.documents) ? it.documents : []),
+                                                    ];
+                                                    const seen = new Set<string>();
+                                                    const docUrls = rawDocUrls.filter((u) => {
+                                                        const key = displayFileNameFromUrl(u).toLowerCase();
+                                                        if (seen.has(key)) return false;
+                                                        seen.add(key);
+                                                        return true;
+                                                    });
+
+                                                    const count = docUrls.length;
                                                     const isOpen = openDocsId === it._id;
 
                                                     if (count === 0) {
@@ -269,29 +281,8 @@ export default function AdminSickLeavesPage() {
                                                         );
                                                     }
 
-                                                    // Un único documento (array o legacy)
-                                                    if (count === 1) {
-                                                        const singleUrl = hasArray ? it.documents![0] : it.documentUrl!;
-                                                        const label = displayFileNameFromUrl(singleUrl); // ← AÑADIDO
-                                                        return (
-                                                            <div className="inline-flex items-center gap-1">
-                                                                <span className="text-slate-500" aria-hidden="true">📎</span>
-                                                                <a
-                                                                    href={buildImageUrl(singleUrl)}
-                                                                    target="_blank"
-                                                                    rel="noreferrer"
-                                                                    className="text-blue-600 underline hover:text-blue-800 truncate inline-block max-w-full"
-                                                                >
-                                                                    {label} {/* ← USAMOS EL NOMBRE LIMPIO */}
-                                                                </a>
-                                                            </div>
-                                                        );
-                                                    }
-
-
-                                                    // Varios documentos → botón + panel animado
                                                     return (
-                                                        <div className="inline-block text-left">
+                                                        <div className="inline-flex flex-col items-center">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setOpenDocsId(isOpen ? null : it._id)}
@@ -299,48 +290,44 @@ export default function AdminSickLeavesPage() {
                                                                 aria-expanded={isOpen}
                                                                 aria-controls={`docs-panel-${it._id}`}
                                                             >
-                                                                <span aria-hidden="true">📎</span>
                                                                 <span className="whitespace-nowrap">
                                                                     {t('pages.sick.docs.count', '{{n}} documentos', { n: count })}
-                                                                </span>
-                                                                <span
-                                                                    className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                                                                    aria-hidden="true"
-                                                                >
-                                                                    ▾
                                                                 </span>
                                                             </button>
 
                                                             <div
                                                                 id={`docs-panel-${it._id}`}
-                                                                className={`overflow-hidden transition-all duration-200 ease-out mt-1 
-    ${isOpen ? 'opacity-100 max-h-56' : 'opacity-0 max-h-0'}`}
+                                                                className={`overflow-hidden transition-all duration-200 ease-out ${isOpen ? 'opacity-100 max-h-56 mt-2' : 'opacity-0 max-h-0 mt-0'
+                                                                    }`}
                                                             >
-                                                                <ul className="bg-white rounded-lg ring-1 ring-slate-200 shadow-sm p-2 space-y-1">
-                                                                    {it.documents!.map((docUrl, idx) => {
-                                                                        const label = displayFileNameFromUrl(docUrl); // ← AÑADIDO
+                                                                <ul className="flex flex-wrap justify-center gap-2">
+                                                                    {docUrls.map((url, idx) => {
+                                                                        const label = displayFileNameFromUrl(url);
                                                                         return (
-                                                                            <li key={docUrl + idx} className="flex items-center gap-1">
-                                                                                <span className="text-slate-500" aria-hidden="true">📎</span>
+                                                                            <li
+                                                                                key={url + idx}
+                                                                                className="inline-flex items-center max-w-full rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-[11px]"
+                                                                                title={label}
+                                                                            >
+                                                                                <span aria-hidden="true" className="mr-1">📎</span>
                                                                                 <a
-                                                                                    href={buildImageUrl(docUrl)}
+                                                                                    href={buildImageUrl(url)}
                                                                                     target="_blank"
                                                                                     rel="noreferrer"
-                                                                                    className="text-blue-600 underline hover:text-blue-800 truncate inline-block max-w-full"
+                                                                                    className="truncate max-w-[180px] text-slate-700 hover:text-slate-900"
                                                                                 >
-                                                                                    {label} {/* ← USAMOS EL NOMBRE LIMPIO */}
+                                                                                    {label}
                                                                                 </a>
                                                                             </li>
                                                                         );
                                                                     })}
-
                                                                 </ul>
                                                             </div>
-
                                                         </div>
                                                     );
                                                 })()}
                                             </td>
+
 
 
                                             {/* Acciones: solo si está pendiente y si existe la columna */}

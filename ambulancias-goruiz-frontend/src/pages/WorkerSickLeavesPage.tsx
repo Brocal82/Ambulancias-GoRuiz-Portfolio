@@ -349,7 +349,7 @@ export default function WorkerSickLeavesPage() {
                       {t('pages.sick.admin.th.status', 'Estado')}
                     </th>
                     <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                      {t('pages.sick.admin.th.doc', 'Documento')}
+                      {t('pages.sick.admin.th.doc', 'Documentos')}
                     </th>
                     <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
                       {t('pages.sick.worker.actions', 'Acciones')}
@@ -363,27 +363,27 @@ export default function WorkerSickLeavesPage() {
                     const isUploading = uploadingIds.has(it._id);
 
                     // Documentos existentes (legacy + array) + DEDUP
-const rawDocUrls: string[] = [
-  ...(it.documentUrl ? [it.documentUrl] : []),
-  ...(Array.isArray(it.documents) ? it.documents : []),
-];
+                    const rawDocUrls: string[] = [
+                      ...(it.documentUrl ? [it.documentUrl] : []),
+                      ...(Array.isArray(it.documents) ? it.documents : []),
+                    ];
 
-// Normalizamos por "nombre visible" (o por pathname) para evitar duplicados
-const seen = new Set<string>();
-const docUrls = rawDocUrls.filter((u) => {
-  // Opción A (por nombre visible):
-  const key = displayFileNameFromUrl(u).toLowerCase();
+                    // Normalizamos por "nombre visible" (o por pathname) para evitar duplicados
+                    const seen = new Set<string>();
+                    const docUrls = rawDocUrls.filter((u) => {
+                      // Opción A (por nombre visible):
+                      const key = displayFileNameFromUrl(u).toLowerCase();
 
-  // Opción B (por ruta sin querystring), si prefieres:
-  // const key = (u.split('?')[0] || u).toLowerCase();
+                      // Opción B (por ruta sin querystring), si prefieres:
+                      // const key = (u.split('?')[0] || u).toLowerCase();
 
-  if (seen.has(key)) return false;
-  seen.add(key);
-  return true;
-});
+                      if (seen.has(key)) return false;
+                      seen.add(key);
+                      return true;
+                    });
 
-const count = docUrls.length;
-const isOpen = openDocsId === it._id;
+                    const count = docUrls.length;
+                    const isOpen = openDocsId === it._id;
 
 
                     // Cálculo de días (inclusivo)
@@ -429,20 +429,15 @@ const isOpen = openDocsId === it._id;
                               <button
                                 type="button"
                                 onClick={() => setOpenDocsId(isOpen ? null : it._id)}
-                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 underline underline-offset-2"
+                                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
                                 aria-expanded={isOpen}
                                 aria-controls={`docs-panel-${it._id}`}
                               >
-                                <span>
+                                <span className="whitespace-nowrap">
                                   {t('pages.sick.docs.count', '{{n}} documentos', { n: count })}
                                 </span>
-                                <span
-                                  className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                                  aria-hidden="true"
-                                >
-                                  ▾
-                                </span>
                               </button>
+
 
                               <div
                                 id={`docs-panel-${it._id}`}
