@@ -3,7 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { toastT } from '../utils/toast';
 import { buildImageUrl } from '../utils/apiOrigins';
-
+import { displayFileNameFromUrl } from '../utils/fileName';
 import {
     adminListSickLeaves,
     adminAcceptSickLeave,
@@ -94,6 +94,9 @@ export default function AdminSickLeavesPage() {
         }
     };
 
+    const hasPendings = items.some(it => it.status === 'pending');
+
+
     const badge = (st: SickLeaveStatus) => {
         const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium';
         if (st === 'pending')
@@ -175,7 +178,8 @@ export default function AdminSickLeavesPage() {
                                 <col className="w-[16%]" />
                                 <col className="w-[18%]" />
                                 {/* Acciones solo si hay pendientes */}
-                                {items.some(it => it.status === 'pending') && <col className="w-[10%]" />}
+                                {hasPendings && <col className="w-[10%]" />}
+
                             </colgroup>
 
                             <thead className="sticky top-0 bg-slate-50 z-10">
@@ -195,11 +199,12 @@ export default function AdminSickLeavesPage() {
                                     <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
                                         {t('pages.sick.admin.th.doc', 'Documento')}
                                     </th>
-                                    {items.some(it => it.status === 'pending') && (
+                                    {hasPendings && (
                                         <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
                                             {t('pages.sick.admin.th.actions', 'Acciones')}
                                         </th>
                                     )}
+
                                 </tr>
                             </thead>
 
@@ -267,6 +272,7 @@ export default function AdminSickLeavesPage() {
                                                     // Un único documento (array o legacy)
                                                     if (count === 1) {
                                                         const singleUrl = hasArray ? it.documents![0] : it.documentUrl!;
+                                                        const label = displayFileNameFromUrl(singleUrl); // ← AÑADIDO
                                                         return (
                                                             <div className="inline-flex items-center gap-1">
                                                                 <span className="text-slate-500" aria-hidden="true">📎</span>
@@ -276,11 +282,12 @@ export default function AdminSickLeavesPage() {
                                                                     rel="noreferrer"
                                                                     className="text-blue-600 underline hover:text-blue-800 truncate inline-block max-w-full"
                                                                 >
-                                                                    {t('pages.sick.docs.documentN', 'Documento {{n}}', { n: 1 })}
+                                                                    {label} {/* ← USAMOS EL NOMBRE LIMPIO */}
                                                                 </a>
                                                             </div>
                                                         );
                                                     }
+
 
                                                     // Varios documentos → botón + panel animado
                                                     return (
@@ -310,19 +317,23 @@ export default function AdminSickLeavesPage() {
     ${isOpen ? 'opacity-100 max-h-56' : 'opacity-0 max-h-0'}`}
                                                             >
                                                                 <ul className="bg-white rounded-lg ring-1 ring-slate-200 shadow-sm p-2 space-y-1">
-                                                                    {it.documents!.map((docUrl, idx) => (
-                                                                        <li key={docUrl + idx} className="flex items-center gap-1">
-                                                                            <span className="text-slate-500" aria-hidden="true">📎</span>
-                                                                            <a
-                                                                                href={buildImageUrl(docUrl)}
-                                                                                target="_blank"
-                                                                                rel="noreferrer"
-                                                                                className="text-blue-600 underline hover:text-blue-800 truncate inline-block max-w-full"
-                                                                            >
-                                                                                {t('pages.sick.docs.documentN', 'Documento {{n}}', { n: idx + 1 })}
-                                                                            </a>
-                                                                        </li>
-                                                                    ))}
+                                                                    {it.documents!.map((docUrl, idx) => {
+                                                                        const label = displayFileNameFromUrl(docUrl); // ← AÑADIDO
+                                                                        return (
+                                                                            <li key={docUrl + idx} className="flex items-center gap-1">
+                                                                                <span className="text-slate-500" aria-hidden="true">📎</span>
+                                                                                <a
+                                                                                    href={buildImageUrl(docUrl)}
+                                                                                    target="_blank"
+                                                                                    rel="noreferrer"
+                                                                                    className="text-blue-600 underline hover:text-blue-800 truncate inline-block max-w-full"
+                                                                                >
+                                                                                    {label} {/* ← USAMOS EL NOMBRE LIMPIO */}
+                                                                                </a>
+                                                                            </li>
+                                                                        );
+                                                                    })}
+
                                                                 </ul>
                                                             </div>
 
@@ -333,7 +344,7 @@ export default function AdminSickLeavesPage() {
 
 
                                             {/* Acciones: solo si está pendiente y si existe la columna */}
-                                            {items.some(x => x.status === 'pending') && (
+                                            {hasPendings && (
                                                 <td className="px-3 py-2 align-top">
                                                     {it.status === 'pending' ? (
                                                         <div className="flex items-center justify-center gap-2">
@@ -355,6 +366,7 @@ export default function AdminSickLeavesPage() {
                                                     )}
                                                 </td>
                                             )}
+
                                         </tr>
                                     );
                                 })}
