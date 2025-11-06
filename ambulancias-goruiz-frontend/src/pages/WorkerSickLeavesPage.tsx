@@ -13,7 +13,6 @@ import FileUpload from '../components/common/FileUpload';
 import { buildImageUrl } from '../utils/apiOrigins';
 import { displayFileNameFromUrl } from '../utils/fileName';
 
-
 function fmtISO(d?: string, locale?: string) {
   if (!d) return '—';
   const date = new Date(d);
@@ -35,16 +34,14 @@ export default function WorkerSickLeavesPage() {
   const [items, setItems] = useState<SickLeave[]>([]);
   const [isLoadingList, setIsLoadingList] = useState<boolean>(true);
 
-  // gestión de archivos por solicitud (1 archivo por baja)
+  // gestión de archivos por solicitud (para adjuntar tras crear)
   const [pendingFiles, setPendingFiles] = useState<Record<string, File[]>>({});
   const [uploadingIds, setUploadingIds] = useState<Set<string>>(new Set());
   const [openDocsId, setOpenDocsId] = useState<string | null>(null);
 
-  // ➕ NUEVO: adjuntos en el formulario de creación
+  // adjuntos en el formulario de creación
   const [createFiles, setCreateFiles] = useState<File[]>([]);
   const [isCreatingUpload, setIsCreatingUpload] = useState(false);
-
-
 
   const canSubmit = useMemo(() => {
     if (!startDate || !endDate) return false;
@@ -120,24 +117,18 @@ export default function WorkerSickLeavesPage() {
   };
 
 
-
-  // ✅ Subir TODOS los archivos seleccionados para una baja (uno a uno)
-  const onAttachDocFiles = async (sickLeaveId: string) => {
-    const files = pendingFiles[sickLeaveId] || [];
-    if (files.length === 0) {
-      toastT.error(['pages.sick.docs.noneSelected' as any]);
-      return;
-    }
+  // ✅ Nuevo: subir UN solo archivo (flecha junto al chip)
+  const onAttachSingleFile = async (sickLeaveId: string, file: File, indexToRemove: number) => {
     try {
       setUploadingIds(prev => new Set(prev).add(sickLeaveId));
-
-      for (const f of files) {
-        await attachSickDocumentFile(sickLeaveId, f); // ya la tienes en api/sickLeaves.ts
-      }
-
+      await attachSickDocumentFile(sickLeaveId, file);
+      // quitarlo de la cola local
+      setPendingFiles(prev => {
+        const list = [...(prev[sickLeaveId] || [])];
+        list.splice(indexToRemove, 1);
+        return { ...prev, [sickLeaveId]: list };
+      });
       toastT.success(['pages.sick.attachDoc.ok']);
-      // limpiar selección local
-      setPendingFiles(prev => ({ ...prev, [sickLeaveId]: [] }));
       await loadList();
     } catch (err: any) {
       console.error(err);
@@ -151,15 +142,12 @@ export default function WorkerSickLeavesPage() {
     }
   };
 
-
-
   const badge = (status: SickLeave['status']) => {
     const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium';
     if (status === 'pending') return <span className={`${base} bg-amber-100 text-amber-800`}>{t('pages.sick.status.pending', 'Pendiente')}</span>;
     if (status === 'accepted') return <span className={`${base} bg-emerald-100 text-emerald-800`}>{t('pages.sick.status.accepted', 'Aceptada')}</span>;
     return <span className={`${base} bg-rose-100 text-rose-800`}>{t('pages.sick.status.rejected', 'Rechazada')}</span>;
   };
-
 
   return (
     <div className="mx-auto max-w-4xl p-4">
@@ -334,7 +322,7 @@ export default function WorkerSickLeavesPage() {
                   <col className="w-[10%]" /> {/* Días */}
                   <col className="w-[16%]" /> {/* Estado */}
                   <col className="w-[28%]" /> {/* Documentos */}
-                  <col className="w-[20%]" /> {/* Adjuntar / Enviar */}
+                  <col className="w-[20%]" /> {/* Acciones */}
                 </colgroup>
 
                 <thead className="sticky top-0 bg-slate-50 z-10">
@@ -362,21 +350,14 @@ export default function WorkerSickLeavesPage() {
                     const selected = pendingFiles[it._id] || [];
                     const isUploading = uploadingIds.has(it._id);
 
-                    // Documentos existentes (legacy + array) + DEDUP
+                    // Documentos existentes (legacy + array) + DEDUP por nombre visible
                     const rawDocUrls: string[] = [
                       ...(it.documentUrl ? [it.documentUrl] : []),
                       ...(Array.isArray(it.documents) ? it.documents : []),
                     ];
-
-                    // Normalizamos por "nombre visible" (o por pathname) para evitar duplicados
                     const seen = new Set<string>();
                     const docUrls = rawDocUrls.filter((u) => {
-                      // Opción A (por nombre visible):
-                      const key = displayFileNameFromUrl(u).toLowerCase();
-
-                      // Opción B (por ruta sin querystring), si prefieres:
-                      // const key = (u.split('?')[0] || u).toLowerCase();
-
+                      const key = (displayFileNameFromUrl(u) || u).toLowerCase();
                       if (seen.has(key)) return false;
                       seen.add(key);
                       return true;
@@ -384,7 +365,6 @@ export default function WorkerSickLeavesPage() {
 
                     const count = docUrls.length;
                     const isOpen = openDocsId === it._id;
-
 
                     // Cálculo de días (inclusivo)
                     const days = (() => {
@@ -418,7 +398,7 @@ export default function WorkerSickLeavesPage() {
                           {badge(it.status)}
                         </td>
 
-                        {/* Documentos: contador azul (sin 📎) -> chips con nombre real, sin X */}
+                        {/* Documentos: chips con nombre real */}
                         <td className="px-3 py-2 align-top">
                           {count === 0 ? (
                             <span className="text-slate-500">
@@ -429,15 +409,20 @@ export default function WorkerSickLeavesPage() {
                               <button
                                 type="button"
                                 onClick={() => setOpenDocsId(isOpen ? null : it._id)}
-                                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 underline underline-offset-2"
                                 aria-expanded={isOpen}
                                 aria-controls={`docs-panel-${it._id}`}
                               >
-                                <span className="whitespace-nowrap">
+                                <span>
                                   {t('pages.sick.docs.count', '{{n}} documentos', { n: count })}
                                 </span>
+                                <span
+                                  className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                                  aria-hidden="true"
+                                >
+                                  ▾
+                                </span>
                               </button>
-
 
                               <div
                                 id={`docs-panel-${it._id}`}
@@ -466,84 +451,87 @@ export default function WorkerSickLeavesPage() {
                                     );
                                   })}
                                 </ul>
-
                               </div>
                             </div>
                           )}
                         </td>
 
-                        {/* Acciones: Adjuntar (selector) + Subir (flecha) + chips locales con X roja */}
+                        {/* Acciones: Adjuntar selector + chips locales con X roja y flecha por archivo */}
                         <td className="px-3 py-2 align-top">
                           <div className="flex flex-col items-center gap-2">
-                            <div className="flex items-center gap-2">
-                              <FileUpload
-                                id={`sick-doc-${it._id}`}
-                                label={t('pages.sick.docs.select', 'Adjuntar')}
-                                accept="application/pdf,image/*"
-                                multiple
-                                maxSizeMB={10}
-                                showSelectedList={false}
-                                onFilesSelect={(files) =>
-                                  setPendingFiles((prev) => {
-                                    const existing = prev[it._id] || [];
-                                    const incoming = files || [];
-                                    const merged = [...existing];
-                                    for (const f of incoming) {
-                                      const isDup = existing.some(
-                                        (e) =>
-                                          e.name === f.name &&
-                                          e.size === f.size &&
-                                          e.lastModified === f.lastModified
-                                      );
-                                      if (!isDup) merged.push(f);
-                                    }
-                                    return { ...prev, [it._id]: merged };
-                                  })
-                                }
-                                hintWhenEmpty={t('pages.sick.docs.noneSelected', 'Ningún archivo seleccionado')}
-                                className="min-w-[140px]"
-                                disabled={isUploading}
-                              />
+                            {/* Selector */}
+                            <FileUpload
+                              id={`sick-doc-${it._id}`}
+                              label={t('pages.sick.docs.select', 'Adjuntar')}
+                              accept="application/pdf,image/*"
+                              multiple
+                              maxSizeMB={10}
+                              showSelectedList={false}
+                              onFilesSelect={(files) =>
+                                setPendingFiles((prev) => {
+                                  const existing = prev[it._id] || [];
+                                  const incoming = files || [];
+                                  const merged = [...existing];
+                                  for (const f of incoming) {
+                                    const isDup = existing.some(
+                                      (e) =>
+                                        e.name === f.name &&
+                                        e.size === f.size &&
+                                        e.lastModified === f.lastModified
+                                    );
+                                    if (!isDup) merged.push(f);
+                                  }
+                                  return { ...prev, [it._id]: merged };
+                                })
+                              }
+                              hintWhenEmpty={t('pages.sick.docs.noneSelected', 'Ningún archivo seleccionado')}
+                              className="min-w-[140px]"
+                              disabled={isUploading}
+                            />
 
-                              <button
-                                className="inline-flex items-center rounded-md bg-slate-700 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:opacity-50"
-                                onClick={() => onAttachDocFiles(it._id)}
-                                disabled={selected.length === 0 || isUploading}
-                                title={t('pages.sick.docs.attach', 'Subir documentos') as string}
-                              >
-                                {isUploading ? t('pages.sick.docs.uploading', 'Subiendo...') : '⬆️'}
-                              </button>
-                            </div>
-
-                            {/* Chips de selección local (antes de subir) con X roja */}
+                            {/* Chips de selección local (antes de subir) con X roja + FLECHA de subida por archivo (fuera del chip) */}
                             {selected.length > 0 && (
                               <ul className="flex flex-wrap justify-center gap-2">
                                 {selected.map((f, idx) => (
-                                  <li
-                                    key={f.name + f.size + f.lastModified}
-                                    className="group inline-flex items-center max-w-full rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-[11px]"
-                                    title={f.name}
-                                  >
-                                    <span aria-hidden="true" className="mr-1">📎</span>
-                                    <span className="truncate max-w-[150px]">{f.name}</span>
+                                  <li key={f.name + f.size + f.lastModified} className="flex items-center gap-2">
+                                    {/* CHIP con nombre + X roja */}
+                                    <span
+                                      className="inline-flex items-center max-w-full rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-[11px]"
+                                      title={f.name}
+                                    >
+                                      <span aria-hidden="true" className="mr-1">📎</span>
+                                      <span className="truncate max-w-[150px]">{f.name}</span>
+                                      <button
+                                        type="button"
+                                        aria-label={t('common.remove', 'Quitar')}
+                                        className="ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-rose-600 hover:bg-rose-50"
+                                        onClick={() =>
+                                          setPendingFiles((prev) => {
+                                            const copy = [...(prev[it._id] || [])];
+                                            copy.splice(idx, 1);
+                                            return { ...prev, [it._id]: copy };
+                                          })
+                                        }
+                                      >
+                                        ×
+                                      </button>
+                                    </span>
+
+                                    {/* FLECHA de subida (fuera del chip, a la derecha) */}
                                     <button
                                       type="button"
-                                      aria-label={t('common.remove', 'Quitar')}
-                                      className="ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-rose-600 hover:bg-rose-50"
-                                      onClick={() =>
-                                        setPendingFiles((prev) => {
-                                          const copy = [...(prev[it._id] || [])];
-                                          copy.splice(idx, 1);
-                                          return { ...prev, [it._id]: copy };
-                                        })
-                                      }
+                                      title={t('pages.sick.docs.uploadOne', 'Subir este documento') as string}
+                                      className="text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                                      disabled={isUploading}
+                                      onClick={() => onAttachSingleFile(it._id, f, idx)}
                                     >
-                                      ×
+                                      ⬆️
                                     </button>
                                   </li>
                                 ))}
                               </ul>
                             )}
+
                           </div>
                         </td>
                       </tr>
@@ -555,11 +543,6 @@ export default function WorkerSickLeavesPage() {
           )}
         </div>
       </div>
-
-
     </div>
   );
-
-
-
 }
