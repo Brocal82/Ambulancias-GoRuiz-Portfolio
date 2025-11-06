@@ -407,22 +407,17 @@ export default function WorkerSickLeavesPage() {
                           ) : (
                             <div className="inline-block text-center">
                               <button
-                                type="button"
-                                onClick={() => setOpenDocsId(isOpen ? null : it._id)}
-                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 underline underline-offset-2"
-                                aria-expanded={isOpen}
-                                aria-controls={`docs-panel-${it._id}`}
-                              >
-                                <span>
-                                  {t('pages.sick.docs.count', '{{n}} documentos', { n: count })}
-                                </span>
-                                <span
-                                  className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                                  aria-hidden="true"
-                                >
-                                  ▾
-                                </span>
-                              </button>
+  type="button"
+  onClick={() => setOpenDocsId(isOpen ? null : it._id)}
+  className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
+  aria-expanded={isOpen}
+  aria-controls={`docs-panel-month-${it._id}`}
+>
+  <span className="whitespace-nowrap">
+    {t('pages.sick.docs.count', '{{n}} documentos', { n: count })}
+  </span>
+</button>
+
 
                               <div
                                 id={`docs-panel-${it._id}`}
