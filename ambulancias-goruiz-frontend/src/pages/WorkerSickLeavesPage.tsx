@@ -41,7 +41,7 @@ export default function WorkerSickLeavesPage() {
   const [openDocsId, setOpenDocsId] = useState<string | null>(null);
 
   // adjuntos en el formulario de creación
-  const [showCreateForm, setShowCreateForm] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [createFiles, setCreateFiles] = useState<File[]>([]);
   const [isCreatingUpload, setIsCreatingUpload] = useState(false);
 
@@ -71,52 +71,56 @@ export default function WorkerSickLeavesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) return;
+const onSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!token) return;
 
-    if (!canSubmit) {
-      toastT.error(['pages.sick.create.invalidDates']);
-      return;
-    }
+  if (!canSubmit) {
+    toastT.error(['pages.sick.create.invalidDates']);
+    return;
+  }
 
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      // 1) Crear la baja
-      const created = await createSickLeave({
-        startDate,
-        endDate,
-        note: note?.trim() || undefined,
-      });
+    // 1) Crear la baja
+    const created = await createSickLeave({
+      startDate,
+      endDate,
+      note: note?.trim() || undefined,
+    });
 
-      // 2) Si hay archivos seleccionados en el formulario, adjuntarlos ahora
-      if (createFiles.length > 0 && created?._id) {
-        setIsCreatingUpload(true);
-        for (const f of createFiles) {
-          await attachSickDocumentFile(created._id, f);
-        }
+    // 2) Si hay archivos seleccionados en el formulario, adjuntarlos ahora
+    if (createFiles.length > 0 && created?._id) {
+      setIsCreatingUpload(true);
+      for (const f of createFiles) {
+        await attachSickDocumentFile(created._id, f);
       }
-
-      toastT.success(['pages.sick.create.ok']);
-
-      // 3) Reset de formulario y lista
-      setStartDate('');
-      setEndDate('');
-      setNote('');
-      setCreateFiles([]);
-
-      // 4) Refrescar listado
-      await loadList();
-    } catch (err: any) {
-      console.error(err);
-      const msg = err?.response?.data?.message || 'pages.sick.create.error';
-      toastT.error([msg]);
-    } finally {
-      setIsCreatingUpload(false);
-      setLoading(false);
     }
-  };
+
+    toastT.success(['pages.sick.create.ok']);
+
+    // 3) Reset de formulario y lista
+    setStartDate('');
+    setEndDate('');
+    setNote('');
+    setCreateFiles([]);
+
+    // 👇 4) Cerrar el formulario automáticamente tras envío exitoso
+    setShowCreateForm(false);
+
+    // 5) Refrescar listado
+    await loadList();
+  } catch (err: any) {
+    console.error(err);
+    const msg = err?.response?.data?.message || 'pages.sick.create.error';
+    toastT.error([msg]);
+  } finally {
+    setIsCreatingUpload(false);
+    setLoading(false);
+  }
+};
+
 
 
   // ✅ Nuevo: subir UN solo archivo (flecha junto al chip)
