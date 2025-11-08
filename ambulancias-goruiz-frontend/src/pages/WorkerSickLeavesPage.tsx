@@ -100,17 +100,22 @@ const onSubmit = async (e: React.FormEvent) => {
 
     toastT.success(['pages.sick.create.ok']);
 
-    // 3) Reset de formulario y lista
-    setStartDate('');
-    setEndDate('');
-    setNote('');
-    setCreateFiles([]);
+  // 3) Reset de formulario y lista
+  setStartDate('');
+  setEndDate('');
+  setNote('');
+  setCreateFiles([]);
 
-    // 👇 4) Cerrar el formulario automáticamente tras envío exitoso
-    setShowCreateForm(false);
+  // 👇 4) Cerrar el formulario automáticamente tras envío exitoso
+  setShowCreateForm(false);
 
-    // 5) Refrescar listado
-    await loadList();
+  // 👇 4.1) Scroll suave hacia la parte superior del formulario
+  setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 200);
+
+  // 5) Refrescar listado
+  await loadList();
   } catch (err: any) {
     console.error(err);
     const msg = err?.response?.data?.message || 'pages.sick.create.error';
