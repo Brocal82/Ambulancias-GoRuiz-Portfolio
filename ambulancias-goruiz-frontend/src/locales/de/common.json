@@ -71,8 +71,8 @@
         "desc": "Wichtige Mitteilungen senden"
       },
       "sickLeaves": {
-      "title": "🤒 Krankmeldungen",
-      "desc": "Überprüfen, annehmen oder ablehnen und Dokumente verwalten"
+        "title": "🤒 Krankmeldungen",
+        "desc": "Überprüfen, annehmen oder ablehnen und Dokumente verwalten"
       },
       "payrollDocs": {
         "title": "🛠 Löhne/Dokumente/Digitale Signatur",
@@ -122,8 +122,8 @@
         "desc": "Termine anfragen und verwalten"
       },
       "sickLeaves": {
-      "title": "🤒 Krankmeldungen",
-      "desc": "Beantrage deine Krankmeldung und prüfe den Status"
+        "title": "🤒 Krankmeldungen",
+        "desc": "Beantrage deine Krankmeldung und prüfe den Status"
       },
       "payrollDocs": {
         "title": "🛠 Löhne/Dokumente",
@@ -949,7 +949,29 @@
         "diensts": "Dienste",
         "praemien": "Prämien",
         "vacations": "Urlaube",
+        "sick": "Krankmeldungen",
         "messages": "Nachrichten"
+      }
+    },
+    "sick": {
+      "admin": {
+        "empty": "Keine Krankmeldungen für diesen Mitarbeiter",
+        "listError": "Krankmeldungen konnten nicht geladen werden",
+        "th": {
+          "dates": "Zeitraum",
+          "days": "Tage",
+          "status": "Status",
+          "doc": "Dokumente"
+        }
+      },
+      "status": {
+        "pending": "Ausstehend",
+        "accepted": "Genehmigt",
+        "rejected": "Abgelehnt"
+      },
+      "docs": {
+        "none": "Kein Dokument",
+        "count": "{{n}} Dokumente"
       }
     },
     "workday": {

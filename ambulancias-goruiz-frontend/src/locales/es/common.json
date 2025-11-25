@@ -71,8 +71,8 @@
         "desc": "Envía comunicados importantes"
       },
       "sickLeaves": {
-      "title": "🤒 Bajas por enfermedad",
-      "desc": "Revisa, acepta o rechaza solicitudes y gestiona documentos"
+        "title": "🤒 Bajas por enfermedad",
+        "desc": "Revisa, acepta o rechaza solicitudes y gestiona documentos"
       },
       "payrollDocs": {
         "title": "🛠 Nóminas/Docs/Firma Digital",
@@ -122,9 +122,9 @@
         "desc": "Pide y gestiona tus citas"
       },
       "sickLeaves": {
-      "title": "🤒 Bajas por enfermedad",
-      "desc": "Solicita tu baja y consulta su estado"
-     },
+        "title": "🤒 Bajas por enfermedad",
+        "desc": "Solicita tu baja y consulta su estado"
+      },
       "payrollDocs": {
         "title": "🛠 Nóminas/Documentos",
         "desc": "Próximamente"
@@ -920,8 +920,8 @@
         "confirm": "Asignar"
       },
       "weekModals": {
-      "vacations": "Vacaciones",
-      "vacationsHint": "Pasa el ratón para ver las fechas de vacaciones"
+        "vacations": "Vacaciones",
+        "vacationsHint": "Pasa el ratón para ver las fechas de vacaciones"
       },
       "workerPage": {
         "title": "Tus días asignados",
@@ -949,7 +949,29 @@
         "diensts": "Diensts",
         "praemien": "Prämien",
         "vacations": "Vacaciones",
+        "sick": "Bajas médicas",
         "messages": "Mensajes"
+      }
+    },
+    "sick": {
+      "admin": {
+        "empty": "No hay bajas registradas para este trabajador",
+        "listError": "No se pudieron cargar las bajas médicas",
+        "th": {
+          "dates": "Fechas",
+          "days": "Días",
+          "status": "Estado",
+          "doc": "Documentos"
+        }
+      },
+      "status": {
+        "pending": "Pendiente",
+        "accepted": "Aceptada",
+        "rejected": "Rechazada"
+      },
+      "docs": {
+        "none": "Sin documento",
+        "count": "{{n}} documentos"
       }
     },
     "workday": {

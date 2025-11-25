@@ -4,13 +4,15 @@ import Profile from './Profile';
 import AdminUserDienstsTab from './AdminUserDienstsTab';
 import AdminUserPraemienTab from './AdminUserPraemienTab';
 import AdminUserVacationsTab from './AdminUserVacationsTab';
+import AdminUserSickLeavesTab from './AdminUserSickLeavesTab';
 import AdminUserMessageTab from './AdminUserMessageTab';
 import { useAuth } from '../hooks/useAuth';
 import { getUserById } from '../api/users';
 import type { User } from '../types/user';
 import { useTranslation } from 'react-i18next';
 
-const TAB_KEYS = ['profile', 'diensts', 'praemien', 'vacations', 'messages'] as const;
+const TAB_KEYS = ['profile', 'diensts', 'praemien', 'vacations', 'sick', 'messages'] as const;
+
 type TabKey = typeof TAB_KEYS[number];
 
 const AdminUserDetailDashboard = () => {
@@ -74,8 +76,11 @@ const AdminUserDetailDashboard = () => {
           {activeTab === 'diensts' && userId && <AdminUserDienstsTab userId={userId} />}
           {activeTab === 'praemien' && userId && <AdminUserPraemienTab userId={userId} />}
           {activeTab === 'vacations' && userId && <AdminUserVacationsTab userId={userId} />}
+          {activeTab === 'sick' && userId && <AdminUserSickLeavesTab userId={userId} />}
           {activeTab === 'messages' && userId && <AdminUserMessageTab userId={userId} />}
         </section>
+
+
       </div>
     </div>
   );
