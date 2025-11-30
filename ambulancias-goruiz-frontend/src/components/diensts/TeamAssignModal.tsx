@@ -1,6 +1,6 @@
 import { useEffect, useState, useId, useMemo } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { getTeams, type Team } from '../../api/teams';
+import { getTeams, type Team, getUsedTeamsForWeek } from '../../api/teams';
 import { toastT } from '../../utils/toast';
 import { useTranslation } from 'react-i18next';
 import { getPscheinInfo, getPscheinWarningTitle } from '../../utils/pscheinUtils';
@@ -19,21 +19,27 @@ interface Props {
   onConfirm: (teamId: string, resolvedRoles?: { driverId: string; medicId: string }) => Promise<void> | void;
   weekStartISO: string;
 
+  /** Número de Dienst para esa semana (1,2,3,...) */
+  dienstNumber: number;
+
   /** Opcional: si lo pasas, filtramos por disponibilidad real del día/franja */
   date?: string;       // 'YYYY-MM-DD'
   startTime?: string;  // 'HH:mm'
   endTime?: string;    // 'HH:mm'
 }
 
+
 export default function TeamAssignModal({
   isOpen,
   onClose,
   onConfirm,
   weekStartISO,
+  dienstNumber,
   date,
   startTime,
   endTime,
 }: Props) {
+
   const { token } = useAuth();
   const { t } = useTranslation();
 
@@ -42,6 +48,8 @@ export default function TeamAssignModal({
   const [selectedId, setSelectedId] = useState('');
   const [resolvedRoles, setResolvedRoles] = useState<{ driverId: string; medicId: string } | null>(null);
   const [openList, setOpenList] = useState(false);
+
+  const [usedTeamIds, setUsedTeamIds] = useState<string[]>([]);
 
   // disponibilidad por día/franja (si llega date)
   const [availDriverIds, setAvailDriverIds] = useState<Set<string>>(new Set());
@@ -82,6 +90,39 @@ export default function TeamAssignModal({
     };
     load();
   }, [isOpen, token]);
+
+// 🔄 Cargar equipos ya usados en esa semana/dienst (para atenuarlos en el selector)
+useEffect(() => {
+  if (!isOpen || !token || !weekStartISO || !dienstNumber) {
+    setUsedTeamIds([]);
+    return;
+  }
+
+  let cancelled = false;
+
+  (async () => {
+    try {
+      const ids = await getUsedTeamsForWeek(token, {
+        weekStartDate: weekStartISO,
+        dienstNumber,
+      });
+      if (!cancelled) {
+        setUsedTeamIds(ids);
+      }
+    } catch (e) {
+      console.error('❌ Error al cargar equipos usados para la semana:', e);
+      if (!cancelled) {
+        setUsedTeamIds([]);
+      }
+    }
+  })();
+
+  return () => {
+    cancelled = true;
+  };
+}, [isOpen, token, weekStartISO, dienstNumber]);
+
+
 
   // Cargar disponibilidad por día/franja (si llega date)
   useEffect(() => {
@@ -399,7 +440,8 @@ export default function TeamAssignModal({
     );
   };
 
-  const canConfirm = !!selectedId && compat.compatible && !loading && !availabilityLoading;
+  const canConfirm = !!selectedId && compat.compatible && !loading && !availabilityLoading &&
+    !usedTeamIds.includes(selectedId);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -442,8 +484,9 @@ export default function TeamAssignModal({
                   </div>
                 )}
 
-                {teams.map((tItem) => {
+                                {teams.map((tItem) => {
                   const isSelected = selectedId === tItem._id;
+                  const isUsed = usedTeamIds.includes(tItem._id); // 👈 ya asignado en otro Dienst esta semana
                   const drv: any = tItem.driver;
                   const med: any = tItem.medic;
 
@@ -458,10 +501,24 @@ export default function TeamAssignModal({
                       role="option"
                       aria-selected={isSelected}
                       onClick={() => {
+                        if (isUsed) return; // 🚫 no seleccionable si ya está usado
                         setSelectedId(tItem._id);
                         setOpenList(false);
                       }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none ${isSelected ? 'bg-slate-50' : ''}`}
+                      className={mergeClasses(
+                        'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
+                        isSelected && 'bg-slate-50',
+                        isUsed && 'opacity-40 cursor-not-allowed' // 👈 visualmente “apagado”
+                      )}
+                      disabled={isUsed}
+                      title={
+                        isUsed
+                          ? t(
+                              'pages.diensts.assignTeamModal.usedTooltip',
+                              'Este equipo ya está asignado a otro Dienst esta semana'
+                            )
+                          : undefined
+                      }
                     >
                       <span
                         className={mergeClasses(
@@ -472,19 +529,48 @@ export default function TeamAssignModal({
                       >
                         {(drv?.lastName || '') + ', ' + (drv?.name || '')}
                       </span>
-                      {drvVac.has && <span className="ml-1 align-middle text-slate-400" title={drvVac.title}>🏖️</span>}
-                      {drvSick.has && <span className="ml-1 align-middle text-slate-500" title={drvSick.title}>🤒</span>}
+                      {drvVac.has && (
+                        <span
+                          className="ml-1 align-middle text-slate-400"
+                          title={drvVac.title}
+                        >
+                          🏖️
+                        </span>
+                      )}
+                      {drvSick.has && (
+                        <span
+                          className="ml-1 align-middle text-slate-500"
+                          title={drvSick.title}
+                        >
+                          🤒
+                        </span>
+                      )}
 
                       <span className="text-slate-500"> / </span>
 
                       <span className={mergeClasses((medVac.has || medSick.has) && dimClass)}>
                         {(med?.lastName || '') + ', ' + (med?.name || '')}
                       </span>
-                      {medVac.has && <span className="ml-1 align-middle text-slate-400" title={medVac.title}>🏖️</span>}
-                      {medSick.has && <span className="ml-1 align-middle text-slate-500" title={medSick.title}>🤒</span>}
+                      {medVac.has && (
+                        <span
+                          className="ml-1 align-middle text-slate-400"
+                          title={medVac.title}
+                        >
+                          🏖️
+                        </span>
+                      )}
+                      {medSick.has && (
+                        <span
+                          className="ml-1 align-middle text-slate-500"
+                          title={medSick.title}
+                        >
+                          🤒
+                        </span>
+                      )}
                     </button>
                   );
                 })}
+
               </div>
             )}
           </div>
@@ -495,6 +581,16 @@ export default function TeamAssignModal({
           ) : (
             <p className="mt-1 text-[11px] text-slate-500">🏖️/🤒 {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón por los iconos para ver fechas')}</p>
           )}
+
+           {usedTeamIds.length > 0 && (
+            <p className="mt-1 text-[11px] text-slate-500">
+              ♻️ {t(
+                'pages.diensts.assignTeamModal.usedHint',
+                'Los equipos atenuados ya están asignados en otro Dienst esta semana'
+              )}
+            </p>
+          )}
+
 
           {/* Estado de compatibilidad */}
           {availabilityLoading && date && (
