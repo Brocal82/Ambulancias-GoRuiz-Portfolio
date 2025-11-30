@@ -3,9 +3,11 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Team from '../models/Team';
 import User from '../models/User';
+import Dienst from '../models/Dienst';
 import VacationRequest from '../models/vacationRequest';
 import { DateTime } from 'luxon';
 import { isOnVacationDay } from '../utils/dienstValidation';
+import { computeTeamAssignmentsForWeek } from '../utils/teamRotation';
 
 const ZONE = 'Europe/Berlin';
 
@@ -87,10 +89,21 @@ export const listTeams = async (_req: Request, res: Response) => {
   }
 };
 
-export const createTeam = async (req: Request, res: Response) => { 
+export const createTeam = async (req: Request, res: Response) => {
   try {
-    const { driver, medic } = req.body as { driver?: string; medic?: string };
+    const {
+      driver,
+      medic,
+      rotationMode,
+      fixedDienstNumber,
+    } = req.body as {
+      driver?: string;
+      medic?: string;
+      rotationMode?: 'rotating' | 'fixed' | 'none';
+      fixedDienstNumber?: number | string | null;
+    };
 
+    // ✅ Validaciones básicas de IDs
     if (!isObjectId(driver) || !isObjectId(medic)) {
       res.status(400).json({ message: 'driver y medic deben ser ObjectId válidos' });
       return;
@@ -98,6 +111,30 @@ export const createTeam = async (req: Request, res: Response) => {
     if (driver === medic) {
       res.status(400).json({ message: 'driver y medic no pueden ser la misma persona' });
       return;
+    }
+
+    // ✅ Normalizar rotationMode con valor por defecto
+    let normalizedRotation: 'rotating' | 'fixed' | 'none' = 'rotating';
+    if (rotationMode === 'fixed' || rotationMode === 'none' || rotationMode === 'rotating') {
+      normalizedRotation = rotationMode;
+    }
+
+    // ✅ Normalizar fixedDienstNumber (solo tiene sentido si rotationMode === 'fixed')
+    let normalizedFixedDienst: number | null = null;
+    if (normalizedRotation === 'fixed') {
+      const num = typeof fixedDienstNumber === 'string'
+        ? Number(fixedDienstNumber)
+        : fixedDienstNumber;
+
+      if (!Number.isInteger(num) || num == null || num < 1) {
+        // si quieres, aquí podrías limitar a 1–30 según tus plantillas
+        res.status(400).json({
+          message: 'fixedDienstNumber debe ser un número entero ≥ 1 cuando rotationMode es "fixed"',
+        });
+        return;
+      }
+
+      normalizedFixedDienst = num;
     }
 
     // (opcional) verificar que existen y su rol
@@ -139,10 +176,18 @@ export const createTeam = async (req: Request, res: Response) => {
       return;
     }
 
-    const team = await Team.create({ driver, medic });
+    // ✅ Crear team con configuración de rotación incluida
+    const team = await Team.create({
+      driver,
+      medic,
+      rotationMode: normalizedRotation,
+      fixedDienstNumber: normalizedFixedDienst,
+    });
+
     const populated = await Team.findById(team._id)
       .populate('driver', 'name lastName ambulanceRole pscheinExpiry')
       .populate('medic',  'name lastName ambulanceRole pscheinExpiry');
+
     res.status(201).json(populated);
   } catch (err: any) {
     console.error('❌ Error createTeam:', err);
@@ -153,6 +198,165 @@ export const createTeam = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al crear team' });
   }
 };
+
+// ✅ Preview de rotación de equipos para una semana (solo fija de momento)
+export const previewTeamRotationForWeek = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { weekStartDate } = req.query as { weekStartDate?: string };
+
+    if (!weekStartDate) {
+      res.status(400).json({ message: 'Parámetro weekStartDate (YYYY-MM-DD) requerido' });
+      return;
+    }
+
+    const start = new Date(weekStartDate);
+    if (isNaN(start.getTime())) {
+      res.status(400).json({ message: 'weekStartDate inválida' });
+      return;
+    }
+
+    // 🔎 Buscar los Diensts de esa semana y extraer sus números
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+
+    const dienste = await Dienst.find({
+      weekStartDate: {
+        $gte: start,
+        $lte: end,
+      },
+    })
+      .select('dienstNumber')
+      .lean();
+
+    const dienstNumbers = Array.from(
+      new Set(
+        dienste
+          .map(d => d.dienstNumber)
+          .filter((n) => typeof n === 'number')
+      )
+    ).sort((a, b) => a - b);
+
+    if (dienstNumbers.length === 0) {
+      res.status(200).json({
+        message: 'No hay Diensts para esa semana, nada que rotar.',
+        assignments: [],
+      });
+      return;
+    }
+
+    // 🔎 Cargar teams con info de rotación
+    const teams = await Team.find({}, { rotationMode: 1, fixedDienstNumber: 1 })
+      .lean();
+
+    const rotationInput = {
+  dienstNumbers,
+  teams: teams.map((t: any) => ({
+    teamId: t._id as mongoose.Types.ObjectId,   // 👈 casteamos para que cumpla WeekRotationInput
+    rotationMode: (t.rotationMode as 'rotating' | 'fixed' | 'none') ?? 'rotating',
+    fixedDienstNumber:
+      typeof t.fixedDienstNumber === 'number' ? t.fixedDienstNumber : null,
+  })),
+};
+
+
+    const result = computeTeamAssignmentsForWeek(rotationInput);
+
+    res.status(200).json({
+      message: 'Preview de rotación calculado correctamente',
+      dienstNumbers,
+      assignments: result.assignments,
+    });
+  } catch (err) {
+    console.error('❌ Error en previewTeamRotationForWeek:', err);
+    res.status(500).json({ message: 'Error al calcular la rotación de equipos' });
+  }
+};
+
+// 🔍 Devuelve los IDs de equipos que ya están usados en algún Dienst de esa semana
+export const getUsedTeamsForWeek = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { weekStartDate } = req.query as { weekStartDate?: string };
+
+    if (!weekStartDate) {
+      res.status(400).json({ message: 'Parámetro weekStartDate requerido (YYYY-MM-DD)' });
+      return;
+    }
+
+    const startDate = new Date(weekStartDate);
+    if (isNaN(startDate.getTime())) {
+      res.status(400).json({ message: 'weekStartDate inválida' });
+      return;
+    }
+
+    // Fin de la semana (incluyendo 6 días)
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6);
+
+    // 1️⃣ Traer todos los equipos (driver + medic)
+    const teams = await Team.find({}, { driver: 1, medic: 1 }).lean();
+
+    if (!teams || teams.length === 0) {
+      res.status(200).json({ usedTeamIds: [] });
+      return;
+    }
+
+    // Mapa driver+medic -> teamId
+    const pairToTeamId = new Map<string, string>();
+    for (const t of teams) {
+      const dId = (t as any).driver?.toString?.();
+      const mId = (t as any).medic?.toString?.();
+      if (!dId || !mId) continue;
+
+      const key = `${dId}::${mId}`;
+      pairToTeamId.set(key, (t as any)._id.toString());
+    }
+
+    if (pairToTeamId.size === 0) {
+      res.status(200).json({ usedTeamIds: [] });
+      return;
+    }
+
+    // 2️⃣ Buscar Diensts de esa semana
+    const diensts = await Dienst.find(
+      {
+        weekStartDate: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      },
+      { assignments: 1 }
+    ).lean();
+
+    if (!diensts || diensts.length === 0) {
+      res.status(200).json({ usedTeamIds: [] });
+      return;
+    }
+
+    // 3️⃣ Mirar cada assignment: si driver+medic coincide con un Team, lo marcamos como usado
+    const usedTeamIds = new Set<string>();
+
+    for (const d of diensts) {
+      const assignments = (d as any).assignments ?? [];
+      for (const a of assignments) {
+        const drv = a?.driver?.toString?.();
+        const med = a?.medic?.toString?.();
+        if (!drv || !med) continue;
+
+        const key = `${drv}::${med}`;
+        const teamId = pairToTeamId.get(key);
+        if (teamId) {
+          usedTeamIds.add(teamId);
+        }
+      }
+    }
+
+    res.status(200).json({ usedTeamIds: Array.from(usedTeamIds) });
+  } catch (err) {
+    console.error('❌ Error en getUsedTeamsForWeek:', err);
+    res.status(500).json({ message: 'Error al obtener equipos usados en la semana' });
+  }
+};
+
 
 export const deleteTeam = async (req: Request, res: Response) => {
   try {
