@@ -281,6 +281,25 @@ export default function AdminTeamsPage() {
             const driverLeave = getPersonLeaveDecor(team.driver);
             const medicLeave = getPersonLeaveDecor(team.medic);
 
+                        // Rotación del equipo
+            const rotationMode = team.rotationMode ?? 'rotating';
+            const rotationLabel =
+              rotationMode === 'fixed'
+                ? t(
+                    'pages.adminTeams.rotation.fixedShort',
+                    `Dienst fijo nº ${team.fixedDienstNumber ?? '—'}`
+                  )
+                : rotationMode === 'none'
+                ? t(
+                    'pages.adminTeams.rotation.noneShort',
+                    'Sin rotación especial (manual)'
+                  )
+                : t(
+                    'pages.adminTeams.rotation.rotatingShort',
+                    'Rotación normal (sigue la rotación de Dienst)'
+                  );
+
+
             return (
               <div
                 key={team._id}
@@ -350,7 +369,47 @@ export default function AdminTeamsPage() {
                         )}
                       </span>
                     </p>
+
+                    {/* 🔁 Info de rotación del equipo */}
+                    <p className="mt-1 text-xs text-slate-500">
+                      {(() => {
+                        const mode = team.rotationMode || 'rotating';
+
+                        if (mode === 'fixed') {
+                          const num = team.fixedDienstNumber;
+                          return num
+                            ? t(
+                              'pages.adminTeams.rotation.badgeFixedWithNum',
+                              'Rotación: Dienst fijo #{num}'
+                            ).replace('{num}', String(num))
+                            : t(
+                              'pages.adminTeams.rotation.badgeFixed',
+                              'Rotación: Dienst fijo (número sin definir)'
+                            );
+                        }
+
+                        if (mode === 'none') {
+                          return t(
+                            'pages.adminTeams.rotation.badgeNone',
+                            'Rotación: sin rotación especial (manual)'
+                          );
+                        }
+
+                        // 'rotating' o undefined → rotación normal
+                        return t(
+                          'pages.adminTeams.rotation.badgeRotating',
+                          'Rotación: normal (sigue la rotación general de Dienst)'
+                        );
+                      })()}
+                    </p>
+
                   </div>
+
+                                    {/* Rotación del equipo */}
+                  <p className="mt-2 text-[11px] text-slate-500">
+                    🔁 {rotationLabel}
+                  </p>
+
 
                   <button
                     onClick={() => handleDelete(team._id)}

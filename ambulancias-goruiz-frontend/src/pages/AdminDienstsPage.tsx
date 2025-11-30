@@ -434,11 +434,11 @@ const AdminPage = () => {
       )}
 
       {/* Modal Team semana */}
-      {weekTeamModal?.open && (
+            {weekTeamModal?.open && (
         <TeamAssignModal
           isOpen={true}
           onClose={() => setWeekTeamModal(null)}
-          onConfirm={async (teamId: string) => {
+          onConfirm={async (teamId: string, resolvedRoles) => {
             if (!token || !weekTeamModal) return;
             try {
               const resp = await assignTeamToWeek(
@@ -446,6 +446,7 @@ const AdminPage = () => {
                   dienstNumber: weekTeamModal.dienstNumber,
                   weekStartDate: weekTeamModal.weekStartISO,
                   teamId,
+                  resolvedRoles,
                 },
                 token
               );
@@ -500,11 +501,12 @@ const AdminPage = () => {
 
               console.error('assignTeamToWeek error:', err?.response?.data || err);
             }
-          }
-          }
+          }}
           weekStartISO={weekTeamModal.weekStartISO}
+          dienstNumber={weekTeamModal.dienstNumber}
         />
       )}
+
 
       {/* Modal Usuario semana */}
       {weekUserModal?.open && (
