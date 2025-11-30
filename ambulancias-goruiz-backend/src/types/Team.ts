@@ -5,4 +5,6 @@ export interface ITeam {
   medic: string;  // ObjectId<User>
   createdAt?: string;
   updatedAt?: string;
+  rotationMode?: 'rotating' | 'fixed' | 'none';
+  fixedDienstNumber?: number | null;
 }

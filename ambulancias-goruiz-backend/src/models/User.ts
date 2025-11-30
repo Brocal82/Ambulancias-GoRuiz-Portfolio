@@ -14,6 +14,8 @@ export interface IUser extends Document {
   pscheinExpiry?: string; // Formato ISO, ej: '2025-12-31'
   profileImage?: string;  // URL o base64 si usas subida
   documents?: string[];   // Lista de archivos subidos (PDF, etc.)
+  rotationMode?: 'rotating' | 'fixed' | 'none';
+  fixedDienstNumber?: number | null;
 }
 
 const userSchema = new Schema<IUser>({
@@ -56,6 +58,17 @@ const userSchema = new Schema<IUser>({
     type: [String],
     required: false,
   },
+    rotationMode: {
+    type: String,
+    enum: ['rotating', 'fixed', 'none'],
+    default: 'none',
+  },
+  fixedDienstNumber: {
+    type: Number,
+    required: false,
+    default: null,
+  },
+
 });
 
 const User = mongoose.model<IUser>('User', userSchema);
