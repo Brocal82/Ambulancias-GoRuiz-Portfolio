@@ -12,7 +12,7 @@ import Team from '../models/Team';
 import User from '../models/User';
 import { getPscheinStatus } from '../utils/pscheinUtils';
 import { findWeeklyConflicts, getDriverPscheinState, isOnVacationDay, isOnSickDay } from '../utils/dienstValidation';
-
+import { computeTeamAssignmentsForWeek } from '../utils/teamRotation';
 
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
@@ -399,21 +399,40 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
   }
 };
 
+// 🗓️ Calcula un índice de semana estable a partir de una fecha (para rotar equipos entre semanas)
+function getWeekIndexFromDate(date: Date): number {
+  // Normalizamos la fecha a medianoche UTC para evitar líos de zona horaria
+  const utc = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
 
+  // Fecha base arbitraria pero fija (1 enero 2024)
+  const base = Date.UTC(2024, 0, 1);
+
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const diffDays = Math.floor((utc - base) / msPerDay);
+
+  // Índice de semana (puede ser negativo si la fecha es anterior a la base, pero nos sirve igualmente)
+  return Math.floor(diffDays / 7);
+}
 
 export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) => {
   const { weekStartDate } = req.body;
 
   if (!weekStartDate) {
-    res.status(400).json({ message: "Fecha de inicio requerida" });
+    res.status(400).json({ message: 'Fecha de inicio requerida' });
     return;
   }
 
   try {
     const startDate = new Date(weekStartDate);
+    if (isNaN(startDate.getTime())) {
+      res.status(400).json({ message: 'Fecha de inicio inválida' });
+      return;
+    }
+
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + 6);
 
+    // ❌ Si ya hay Diensts en esa semana, no generamos nada
     const existing = await Dienst.find({
       weekStartDate: {
         $gte: startDate,
@@ -422,50 +441,201 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
     });
 
     if (existing.length > 0) {
-      res.status(400).json({ message: "Ya existen Diensts para esa semana" });
+      res.status(400).json({ message: 'Ya existen Diensts para esa semana' });
       return;
     }
 
-    const diensts = Array.from({ length: 2 }, (_, i) => {
-      const dienstNumber = i + 1;
-      const assignments: {
-        date: string;
-        startTime: string;
-        endTime: string;
-      }[] = [];
+    // 🔢 Números de Dienst que vamos a crear
+    const dienstNumbers = [1, 2, 3, 4, 5];
 
-      for (let j = 0; j < 7; j++) {
-        const day = new Date(startDate);
-        day.setDate(day.getDate() + j);
+    // 👥 Traer equipos con su configuración de rotación
+    const teams = await Team.find(
+      {},
+      { driver: 1, medic: 1, rotationMode: 1, fixedDienstNumber: 1, createdAt: 1 }
+    ).lean();
 
-        const isDayOff = [5, 6].includes((dienstNumber + j) % 7);
-        if (isDayOff) continue;
+    // 🗺️ Mapas de ayuda: fijos y rotativos
+    const fixedMap = new Map<number, (typeof teams)[0]>();
+    const rotatingTeams: (typeof teams)[0][] = [];
 
-        const startTime = dienstNumber % 2 === 0 ? "06:00" : "14:00";
-        const endTime = dienstNumber % 2 === 0 ? "14:00" : "22:00";
+    for (const team of teams) {
+      const mode = (team as any).rotationMode ?? 'rotating';
+      const fixedNum = (team as any).fixedDienstNumber as number | null | undefined;
 
-        assignments.push({
-          date: day.toISOString().split("T")[0],
-          startTime,
-          endTime,
-        });
+      if (mode === 'fixed' && fixedNum && dienstNumbers.includes(fixedNum)) {
+        // Solo si ese Dienst aún no tiene equipo fijo asignado
+        if (!fixedMap.has(fixedNum)) {
+          fixedMap.set(fixedNum, team);
+        }
+      } else if (mode === 'rotating') {
+        rotatingTeams.push(team);
       }
+      // mode === 'none' -> se ignora en la asignación automática
+    }
 
-      return {
-        dienstNumber,
-        weekStartDate: startDate,
-        weekEndDate: endDate,
-        assignments,
-      };
+    // Orden estable para rotating (por fecha de creación si existe)
+    rotatingTeams.sort((a: any, b: any) => {
+      const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return da - db;
     });
 
-    await Dienst.insertMany(diensts);
-    res.status(201).json({ message: "Diensts generados correctamente" });
+    // 🧮 Calcular índice de semana para rotar los equipos entre semanas
+    const weekIndex = getWeekIndexFromDate(startDate);
+    const dienstToTeam = new Map<number, (typeof teams)[0]>();
+
+    // 1️⃣ Primero asignamos los equipos fijos
+    for (const num of dienstNumbers) {
+      if (fixedMap.has(num)) {
+        dienstToTeam.set(num, fixedMap.get(num)!);
+      }
+    }
+
+    // 2️⃣ Ahora rellenamos los Diensts sin equipo fijo con equipos rotativos, SIN repetir en la misma semana,
+    //    pero rotando el "offset" según la semana.
+    const freeDienstNumbers = dienstNumbers.filter((num) => !fixedMap.has(num));
+    const R = rotatingTeams.length;
+    const freeCount = freeDienstNumbers.length;
+
+    if (R > 0 && freeCount > 0) {
+      // No podemos colocar más equipos que Dienst libres
+      const teamCount = Math.min(R, freeCount);
+
+      // Para que los equipos "caminen" por los Dienst libres según la semana:
+      // - k = índice del equipo en rotatingTeams
+      // - weekIndex = índice de semana (0,1,2,...)
+      // - slotIndex = (weekIndex + k) % freeCount
+      //   así en cada semana el equipo se desplaza un Dienst hacia adelante
+      const usedSlots = new Set<number>();
+
+      for (let k = 0; k < teamCount; k++) {
+        let slotIndex = (weekIndex + k) % freeCount;
+
+        // Por seguridad, si hubiera alguna colisión extraña,
+        // buscamos el siguiente slot libre (máx. freeCount vueltas)
+        let tries = 0;
+        while (usedSlots.has(slotIndex) && tries < freeCount) {
+          slotIndex = (slotIndex + 1) % freeCount;
+          tries++;
+        }
+        if (usedSlots.has(slotIndex)) {
+          // No hay hueco libre, salimos
+          break;
+        }
+
+        usedSlots.add(slotIndex);
+        const dienstNum = freeDienstNumbers[slotIndex];
+        const team = rotatingTeams[k];
+
+        dienstToTeam.set(dienstNum, team);
+      }
+      // Los Dienst libres que sobren quedan sin equipo (manual), como antes
+    }
+
+
+    // 🧱 Crear los Diensts con días/horarios y aplicar lógica de vacaciones/bajas
+    const dienstsToInsert = await Promise.all(
+      dienstNumbers.map(async (dienstNumber) => {
+        const assignments: {
+          date: string;
+          startTime: string;
+          endTime: string;
+          driver?: mongoose.Types.ObjectId;
+          medic?: mongoose.Types.ObjectId;
+        }[] = [];
+
+        const assignedTeam = dienstToTeam.get(dienstNumber);
+        const driverId = assignedTeam?.driver as mongoose.Types.ObjectId | undefined;
+        const medicId = assignedTeam?.medic as mongoose.Types.ObjectId | undefined;
+
+        // Pre-calculamos por día si driver/medic están bloqueados por vacaciones/baja
+        const dayBlockMap: Record<string, { driver: boolean; medic: boolean }> = {};
+
+        for (let j = 0; j < 7; j++) {
+          const day = new Date(startDate);
+          day.setDate(startDate.getDate() + j);
+          const dateISO = day.toISOString().split('T')[0];
+
+          if (driverId || medicId) {
+            const [drvVac, medVac, drvSick, medSick] = await Promise.all([
+              driverId ? isOnVacationDay({ userId: driverId.toString(), dateISO }) : Promise.resolve(false),
+              medicId ? isOnVacationDay({ userId: medicId.toString(), dateISO }) : Promise.resolve(false),
+              driverId ? isOnSickDay({ userId: driverId.toString(), dateISO }) : Promise.resolve(false),
+              medicId ? isOnSickDay({ userId: medicId.toString(), dateISO }) : Promise.resolve(false),
+            ]);
+
+            dayBlockMap[dateISO] = {
+              driver: Boolean(drvVac || drvSick),
+              medic: Boolean(medVac || medSick),
+            };
+          } else {
+            dayBlockMap[dateISO] = { driver: false, medic: false };
+          }
+        }
+
+        for (let j = 0; j < 7; j++) {
+          const day = new Date(startDate);
+          day.setDate(startDate.getDate() + j);
+
+          // 🏖️ Días libres (como ya tenías)
+          const isDayOff = [5, 6].includes((dienstNumber + j) % 7);
+          if (isDayOff) continue;
+
+          const startTime = dienstNumber % 2 === 0 ? '06:00' : '14:00';
+          const endTime = dienstNumber % 2 === 0 ? '14:00' : '22:00';
+          const dateISO = day.toISOString().split('T')[0];
+
+          const baseAssignment: {
+            date: string;
+            startTime: string;
+            endTime: string;
+            driver?: mongoose.Types.ObjectId;
+            medic?: mongoose.Types.ObjectId;
+          } = {
+            date: dateISO,
+            startTime,
+            endTime,
+          };
+
+          const block = dayBlockMap[dateISO] || { driver: false, medic: false };
+
+          // 🚗 Asignar conductor si hay equipo y no está de vacaciones/baja
+          if (driverId && !block.driver) {
+            baseAssignment.driver = driverId;
+          }
+
+          // 🧑‍⚕️ Asignar sanitario si hay equipo y no está de vacaciones/baja
+          if (medicId && !block.medic) {
+            baseAssignment.medic = medicId;
+          }
+
+          assignments.push(baseAssignment);
+        }
+
+        return {
+          dienstNumber,
+          weekStartDate: startDate,
+          weekEndDate: endDate,
+          assignments,
+        };
+      })
+    );
+
+    await Dienst.insertMany(dienstsToInsert);
+
+    res.status(201).json({
+      message:
+        'Diensts generados correctamente con rotación de equipos aplicada (fijos, rotativos, vacaciones y bajas).',
+      count: dienstsToInsert.length,
+    });
   } catch (error) {
-    console.error("❌ Error al generar Diensts:", error);
-    res.status(500).json({ message: "Error al generar Diensts" });
+    console.error('❌ Error al generar Diensts:', error);
+    res.status(500).json({ message: 'Error al generar Diensts' });
   }
 };
+
+
+
 
 
 export const deleteDienstsForWeek: RequestHandler = async (req, res) => {
@@ -519,12 +689,17 @@ export const removeAssignment = async (req: Request, res: Response) => {
 //    - Si hay CUALQUIER conflicto semanal (driver o medic en otro Dienst): ABORTAR (409).
 //    - Vacaciones: seguir aplicando de forma parcial por día/rol.
 //    - Excepción P-Schein driver caducado si driver=both y el compañero puede conducir.
+//    - Si el front envía resolvedRoles (driverId/medicId), los usamos (por ejemplo, tras un swap seguro).
 export const assignTeamToWeek = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { dienstNumber, weekStartDate, teamId } = req.body as {
+    const { dienstNumber, weekStartDate, teamId, resolvedRoles } = req.body as {
       dienstNumber?: number;
       weekStartDate?: string;
       teamId?: string;
+      resolvedRoles?: {
+        driverId?: string;
+        medicId?: string;
+      };
     };
 
     if (!dienstNumber || !weekStartDate || !teamId) {
@@ -547,18 +722,63 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
     }
 
     const toIdString = (v: any): string | undefined =>
-      typeof v === 'string' ? v : v && typeof v === 'object' && v._id ? String(v._id) : undefined;
+      typeof v === 'string'
+        ? v
+        : v && typeof v === 'object' && v._id
+          ? String(v._id)
+          : undefined;
 
-    const driverId = toIdString((team as any).driver);
-    const medicId = toIdString((team as any).medic);
-    if (!driverId || !medicId) {
+    const teamDriverId = toIdString((team as any).driver);
+    const teamMedicId = toIdString((team as any).medic);
+
+    if (!teamDriverId || !teamMedicId) {
       res.status(400).json({ message: 'Team inválido: faltan driver o medic' });
       return;
     }
 
-    // P-Schein + excepción
-    const driverDoc = (team as any).driver;
-    const medicDoc = (team as any).medic;
+    // 🔀 Aplicar resolvedRoles si vienen del front (ej. swap pre-calculado en el modal)
+    let driverId = teamDriverId;
+    let medicId = teamMedicId;
+
+    if (resolvedRoles && (resolvedRoles.driverId || resolvedRoles.medicId)) {
+      const rDriverId = resolvedRoles.driverId;
+      const rMedicId = resolvedRoles.medicId;
+
+      if (!rDriverId || !rMedicId) {
+        res.status(400).json({
+          message: 'resolvedRoles incompletos: deben incluir driverId y medicId',
+        });
+        return;
+      }
+
+      // Deben ser exactamente los dos miembros del team y no pueden ser el mismo
+      const validIds = new Set([teamDriverId, teamMedicId]);
+      if (!validIds.has(rDriverId) || !validIds.has(rMedicId) || rDriverId === rMedicId) {
+        res.status(400).json({
+          message: 'resolvedRoles inválidos para este team',
+        });
+        return;
+      }
+
+      driverId = rDriverId;
+      medicId = rMedicId;
+    }
+
+    // 🔍 Elegir qué doc es driverDoc y cuál es medicDoc según los IDs finales
+    const rawDriverDoc = (team as any).driver;
+    const rawMedicDoc = (team as any).medic;
+
+    const driverDoc =
+      rawDriverDoc && toIdString(rawDriverDoc) === driverId ? rawDriverDoc : rawMedicDoc;
+    const medicDoc =
+      rawMedicDoc && toIdString(rawMedicDoc) === medicId ? rawMedicDoc : rawDriverDoc;
+
+    if (!driverDoc || !medicDoc) {
+      res.status(400).json({
+        message: 'No se pudieron resolver correctamente driverDoc/medicDoc para el team',
+      });
+      return;
+    }
 
     const driverRole = driverDoc?.ambulanceRole as ('driver' | 'medic' | 'both' | undefined);
     const medicRole = medicDoc?.ambulanceRole as ('driver' | 'medic' | 'both' | undefined);
@@ -566,14 +786,18 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
     const driverPschein = getDriverPscheinState(driverDoc?.pscheinExpiry);
     const medicPschein = getDriverPscheinState(medicDoc?.pscheinExpiry);
 
-    const medicCanDrive = (medicRole === 'driver' || medicRole === 'both')
-      && (medicPschein === 'valid' || medicPschein === 'warning');
+    const medicCanDrive =
+      (medicRole === 'driver' || medicRole === 'both') &&
+      (medicPschein === 'valid' || medicPschein === 'warning');
     const driverIsBoth = driverRole === 'both';
 
     let driverExpiredButBothHint = false;
+
+    // ⛔ Validación P-Schein del CONDUCTOR final
     if (driverPschein === 'expired') {
       if (driverIsBoth && medicCanDrive) {
-        driverExpiredButBothHint = true; // permitimos y sugerimos swap en el front
+        // Permitimos excepción, pero avisamos al front para que considere swap de roles
+        driverExpiredButBothHint = true;
       } else {
         res.status(409).json({
           code: 'pschein_expired',
@@ -623,63 +847,62 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
       )
     );
 
-// 🩺 Bloqueos por día: vacaciones o baja (sick)
-const dayBlockMap: Record<string, { driver: boolean; medic: boolean }> = {};
-await Promise.all(
-  dates.map(async (dateISO) => {
-    const [drvVac, medVac, drvSick, medSick] = await Promise.all([
-      isOnVacationDay({ userId: driverId, dateISO }),
-      isOnVacationDay({ userId: medicId, dateISO }),
-      isOnSickDay({ userId: driverId, dateISO }),
-      isOnSickDay({ userId: medicId, dateISO }),
-    ]);
+    // 🩺 Bloqueos por día: vacaciones o baja (sick)
+    const dayBlockMap: Record<string, { driver: boolean; medic: boolean }> = {};
+    await Promise.all(
+      dates.map(async (dateISO) => {
+        const [drvVac, medVac, drvSick, medSick] = await Promise.all([
+          isOnVacationDay({ userId: driverId, dateISO }),
+          isOnVacationDay({ userId: medicId, dateISO }),
+          isOnSickDay({ userId: driverId, dateISO }),
+          isOnSickDay({ userId: medicId, dateISO }),
+        ]);
 
-    dayBlockMap[dateISO] = {
-      driver: Boolean(drvVac || drvSick),
-      medic: Boolean(medVac || medSick),
-    };
-  })
-);
+        dayBlockMap[dateISO] = {
+          driver: Boolean(drvVac || drvSick),
+          medic: Boolean(medVac || medSick),
+        };
+      })
+    );
 
-let updatedCount = 0;
-// mantenemos el mismo array por compatibilidad con el front
-const skippedByVacation: Array<{ date: string; role: 'driver' | 'medic' }> = [];
+    let updatedCount = 0;
+    // mantenemos el mismo array por compatibilidad con el front
+    const skippedByVacation: Array<{ date: string; role: 'driver' | 'medic' }> = [];
 
-dienst.assignments = (dienst.assignments || []).map((a) => {
-  if (!a?.date || !a?.startTime || !a?.endTime) return a;
+    dienst.assignments = (dienst.assignments || []).map((a) => {
+      if (!a?.date || !a?.startTime || !a?.endTime) return a;
 
-  const dateISO = a.date;
-  const block = dayBlockMap[dateISO] || { driver: false, medic: false };
+      const dateISO = a.date;
+      const block = dayBlockMap[dateISO] || { driver: false, medic: false };
 
-  let next = { ...a } as any;
-  let changed = false;
+      let next = { ...a } as any;
+      let changed = false;
 
-  // 🚗 Asignar conductor si no está bloqueado
-  if (!block.driver) {
-    const newId = new mongoose.Types.ObjectId(driverId);
-    if (!next.driver || String(next.driver) !== String(newId)) {
-      next.driver = newId;
-      changed = true;
-    }
-  } else {
-    skippedByVacation.push({ date: dateISO, role: 'driver' });
-  }
+      // 🚗 Asignar conductor si no está bloqueado
+      if (!block.driver) {
+        const newId = new mongoose.Types.ObjectId(driverId);
+        if (!next.driver || String(next.driver) !== String(newId)) {
+          next.driver = newId;
+          changed = true;
+        }
+      } else {
+        skippedByVacation.push({ date: dateISO, role: 'driver' });
+      }
 
-  // 🧑‍⚕️ Asignar sanitario si no está bloqueado
-  if (!block.medic) {
-    const newId = new mongoose.Types.ObjectId(medicId);
-    if (!next.medic || String(next.medic) !== String(newId)) {
-      next.medic = newId;
-      changed = true;
-    }
-  } else {
-    skippedByVacation.push({ date: dateISO, role: 'medic' });
-  }
+      // 🧑‍⚕️ Asignar sanitario si no está bloqueado
+      if (!block.medic) {
+        const newId = new mongoose.Types.ObjectId(medicId);
+        if (!next.medic || String(next.medic) !== String(newId)) {
+          next.medic = newId;
+          changed = true;
+        }
+      } else {
+        skippedByVacation.push({ date: dateISO, role: 'medic' });
+      }
 
-  if (changed) updatedCount += 1;
-  return next;
-});
-
+      if (changed) updatedCount += 1;
+      return next;
+    });
 
     await dienst.save();
 
@@ -697,7 +920,6 @@ dienst.assignments = (dienst.assignments || []).map((a) => {
     res.status(500).json({ message: 'Error al asignar el Team a la semana' });
   }
 };
-
 
 
 // ✅ Asignar UN USUARIO (driver o medic) a TODA la semana de un Dienst
