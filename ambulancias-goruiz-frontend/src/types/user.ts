@@ -16,8 +16,11 @@ export interface User {
   profileImage?: string;
   documents?: string[];
 
-  // ✅ Nuevas propiedades para filtros futuros
   onLeave?: boolean;
   onVacation?: boolean;
+
+  rotationMode?: 'rotating' | 'fixed' | 'none';
+  fixedDienstNumber?: number | null;
 }
+
 

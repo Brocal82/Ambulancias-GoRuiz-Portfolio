@@ -118,7 +118,17 @@ export const deleteDienstsForWeek = async (
 
 // Asignar Team a la semana de un Dienst
 export const assignTeamToWeek = async (
-  payload: { dienstNumber: number; weekStartDate: string; teamId: string },
+  payload: {
+    dienstNumber: number;
+    weekStartDate: string;
+    teamId: string;
+
+    // 👉 Añadimos esto para que no dé warning en el frontend
+    resolvedRoles?: {
+      driverId: string;
+      medicId: string;
+    };
+  },
   token: string
 ): Promise<{
   message: string;
@@ -127,13 +137,14 @@ export const assignTeamToWeek = async (
   weekStartDate: string;
   skippedByVacation?: Array<{ date: string; role: 'driver' | 'medic' }>;
   skippedByConflict?: Array<{ date: string; role: 'driver' | 'medic' }>;
-  hints?: { driverExpiredButBoth?: boolean }; // 👈 añade esto
+  hints?: { driverExpiredButBoth?: boolean };
 }> => {
   const res = await axios.post('/diensts/assign-team-to-week', payload, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;
 };
+
 
 
 // ✅ Asignar UN usuario (driver/medic) a la semana de un Dienst
