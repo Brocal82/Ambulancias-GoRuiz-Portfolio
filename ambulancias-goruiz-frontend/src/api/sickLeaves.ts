@@ -140,3 +140,31 @@ export async function getSickFlagsInRange(params: {
   const { data } = await axiosInstance.post<SickFlagsByUser>('/sick-leaves/check-range', params);
   return data;
 }
+
+
+/**
+ * Admin: contador de bajas pendientes (o por status).
+ * Pensado para usarse igual que getVacationPendingCount(token, 'pending').
+ * 
+ * El parámetro `token` se mantiene por simetría con el hook de vacaciones,
+ * aunque el auth realmente lo gestiona el interceptor de axiosInstance.
+ */
+export async function getSickLeavesPendingCount(
+  token: string, // se mantiene por simetría con vacaciones
+  status: SickLeaveStatus | 'all' = 'pending'
+): Promise<number> {
+  // Evitamos warning de TS: sabemos que el token no se usa aquí porque
+  // el auth real lo hace el interceptor de axiosInstance
+  void token;
+
+  // Usamos el endpoint que ya existe: adminListSickLeaves
+  if (status === 'all') {
+    const all = await adminListSickLeaves();
+    return all.length;
+  }
+
+  const list = await adminListSickLeaves({ status: status as SickLeaveStatus });
+  return list.length;
+}
+
+
