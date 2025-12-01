@@ -5,6 +5,8 @@ import VacationRequest from '../models/vacationRequest';
 import { findOverCapacityDays } from '../utils/vacationCapacity';
 import { DateTime } from 'luxon';
 import mongoose from 'mongoose';
+import { clearUserFromDienstsInRange } from '../utils/dienstClearUtils';
+
 
 // ======================================================
 // Config mensual embebida (NO se crea archivo nuevo)
@@ -128,6 +130,7 @@ export const updateVacationRequest = async (req: Request, res: Response): Promis
   const { id } = req.params;
   const { status, adminOptionStartDate, adminOptionEndDate, adminNote } = req.body;
 
+  let acceptedRange: { userId: string; startISO: string; endISO: string } | null = null;
   const session = await mongoose.startSession();
 
   try {
@@ -176,13 +179,32 @@ export const updateVacationRequest = async (req: Request, res: Response): Promis
       if (adminOptionEndDate) request.adminOptionEndDate = new Date(adminOptionEndDate);
       if (typeof adminNote === 'string') request.adminNote = adminNote;
 
-
       // 4) Guardar dentro de la transacción
       await request.save({ session });
 
-      // 5) Responder OK con el doc actualizado
+      // 5) Si el estado final es 'accepted', preparamos el rango para limpiar Diensts
+      if (request.status === 'accepted') {
+        const userIdStr = String(request.user);
+        const startISO = DateTime.fromJSDate(request.startDate, { zone: ZONE }).toISODate()!;
+        const endISO   = DateTime.fromJSDate(request.endDate,   { zone: ZONE }).toISODate()!;
+        acceptedRange = { userId: userIdStr, startISO, endISO };
+      }
+
+      // 6) Responder OK con el doc actualizado
       res.status(200).json(request);
     });
+
+    // 7) Fuera de la transacción: aplicar limpieza de Diensts si procede
+    if (acceptedRange) {
+      try {
+        await clearUserFromDienstsInRange(acceptedRange);
+      } catch (clearErr) {
+        console.error(
+          '⚠️ Error al desasignar usuario de Diensts tras aceptar vacaciones:',
+          clearErr
+        );
+      }
+    }
   } catch (err: any) {
     if (err?.message === '__ABORT__') {
       // ya respondimos dentro de la tx (404 o 409)
@@ -196,6 +218,7 @@ export const updateVacationRequest = async (req: Request, res: Response): Promis
     session.endSession();
   }
 };
+
 
 
 // Responder a fecha alternativa (trabajador)
@@ -216,16 +239,28 @@ export const respondToAlternativeDate = async (req: Request, res: Response): Pro
       return;
     }
 
+    let acceptedRange: { userId: string; startISO: string; endISO: string } | null = null;
+
     if (accept) {
-      // Usuario acepta la alternativa: actualizar fechas y estado
+      // Usuario acepta la alternativa → actualizar fechas y estado
       if (request.adminOptionStartDate) request.startDate = request.adminOptionStartDate;
       if (request.adminOptionEndDate) request.endDate = request.adminOptionEndDate;
       request.status = 'accepted';
       request.adminOptionStartDate = undefined;
       request.adminOptionEndDate = undefined;
       request.adminNote = undefined;
+
+      // Preparar rango para limpiar Diensts
+      const startISO = DateTime.fromJSDate(request.startDate, { zone: ZONE }).toISODate()!;
+      const endISO   = DateTime.fromJSDate(request.endDate,   { zone: ZONE }).toISODate()!;
+      acceptedRange = {
+        userId: String(request.user),
+        startISO,
+        endISO,
+      };
+
     } else {
-      // Usuario rechaza la alternativa: reiniciar solicitud (cancelar)
+      // Usuario rechaza → cancelar
       request.status = 'cancelled';
       request.adminOptionStartDate = undefined;
       request.adminOptionEndDate = undefined;
@@ -234,12 +269,24 @@ export const respondToAlternativeDate = async (req: Request, res: Response): Pro
 
     await request.save();
 
+    // Si se aceptó la alternativa → limpiar Diensts afectados
+    if (acceptedRange) {
+      try {
+        const clearResult = await clearUserFromDienstsInRange(acceptedRange);
+        console.log('🧹 Vacaciones (alternativa) limpiadas en Diensts:', clearResult);
+      } catch (err) {
+        console.error('❌ Error limpiando Diensts tras aceptar alternativa:', err);
+      }
+    }
+
     res.status(200).json(request);
+
   } catch (error) {
     console.error('Error al responder a fecha alternativa:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
+
 
 export const getUserVacationRequests = async (req: Request, res: Response): Promise<void> => {
   try {
