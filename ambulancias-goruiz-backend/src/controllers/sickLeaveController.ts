@@ -5,6 +5,7 @@ import { z, ZodError } from 'zod';
 import { DateTime } from 'luxon';
 import SickLeave from '../models/SickLeave';
 import Dienst from '../models/Dienst';
+import { clearUserFromDienstsInRange } from '../utils/dienstClearUtils';
 
 
 const ZONE = 'Europe/Berlin';
@@ -133,7 +134,7 @@ export async function listMySickLeaves(req: Request, res: Response) {
 // Aceptar una solicitud de baja:
 //  - Marca status=accepted
 //  - Calcula requiresDocument/documentDueAt/verificationStatus
-//  - Desasigna al usuario de driver/medic en los Diensts del rango
+//  - Desasigna al usuario de driver/medic en los Diensts del rango (helper compartido)
 // ────────────────────────────────────────────────────────────────────────────
 export async function acceptSickLeave(req: Request, res: Response) {
   try {
@@ -183,57 +184,26 @@ export async function acceptSickLeave(req: Request, res: Response) {
     sick.documentDueAt = documentDueAt;
     await sick.save();
 
-    // 4) Desasignación parcial: quitar SOLO a ese usuario de driver/medic en el rango
-    //    - No tocamos horas, ambulancia ni al compañero.
+    // 4) Limpiar Diensts usando el helper reutilizable
     const userIdStr = String(sick.user);
-    const daysISO: string[] = [];
-    for (let d = startDt; d <= endDt; d = d.plus({ days: 1 })) {
-      daysISO.push(d.toISODate()!); // 'YYYY-MM-DD'
-    }
+    const startISO = startDt.toISODate()!; // 'YYYY-MM-DD'
+    const endISO   = endDt.toISODate()!;   // 'YYYY-MM-DD'
 
-    // Buscar todos los Diensts que tengan assignments en cualquiera de esos días
-    const dienste = await Dienst.find({
-      'assignments.date': { $in: daysISO },
-    });
-
-    let diensteTouched = 0;
-    let assignmentsTouched = 0;
-
-    for (const d of dienste) {
-      let changedDienst = false;
-
-      d.assignments = (d.assignments || []).map((a: any) => {
-        if (!a?.date || !a?.startTime || !a?.endTime) return a;
-        if (!daysISO.includes(a.date)) return a;
-
-        const drv = a?.driver ? String(a.driver) : undefined;
-        const med = a?.medic ? String(a.medic) : undefined;
-
-        let changed = false;
-        const next: any = { ...a };
-
-        if (drv && drv === userIdStr) {
-          next.driver = undefined;
-          changed = true;
-        }
-        if (med && med === userIdStr) {
-          next.medic = undefined;
-          changed = true;
-        }
-
-        if (changed) {
-          assignmentsTouched += 1;
-          changedDienst = true;
-        }
-        return next;
+    try {
+      await clearUserFromDienstsInRange({
+        userId: userIdStr,
+        startISO,
+        endISO,
       });
-
-      if (changedDienst) {
-        await d.save();
-        diensteTouched += 1;
-      }
+    } catch (clearErr) {
+      console.error(
+        '⚠️ Error al desasignar usuario de Diensts tras aceptar baja:',
+        clearErr
+      );
+      // No rompemos la respuesta al usuario aunque falle la limpieza
     }
 
+    // 5) Respuesta
     res.status(200).json({
       message: 'Baja aceptada y desasignación aplicada',
       sickLeaveId: sick._id,
@@ -241,11 +211,9 @@ export async function acceptSickLeave(req: Request, res: Response) {
       verificationStatus,
       documentDueAt,
       stats: {
-        diensteTouched,
-        assignmentsTouched,
         range: {
-          startISO: startDt.toISODate(),
-          endISO: endDt.toISODate(),
+          startISO,
+          endISO,
         },
       },
     });
@@ -254,6 +222,7 @@ export async function acceptSickLeave(req: Request, res: Response) {
     res.status(500).json({ message: 'Error al aceptar la baja' });
   }
 }
+
 
 // ────────────────────────────────────────────────────────────────────────────
 // Rechazar una solicitud de baja (no desasigna nada)
