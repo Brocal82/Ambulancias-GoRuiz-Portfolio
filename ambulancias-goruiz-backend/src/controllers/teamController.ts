@@ -8,6 +8,7 @@ import VacationRequest from '../models/vacationRequest';
 import { DateTime } from 'luxon';
 import { isOnVacationDay } from '../utils/dienstValidation';
 import { computeTeamAssignmentsForWeek } from '../utils/teamRotation';
+import Ambulance from '../models/Ambulance';
 
 const ZONE = 'Europe/Berlin';
 
@@ -49,6 +50,7 @@ export const listTeams = async (_req: Request, res: Response) => {
     const teams = await Team.find()
       .populate('driver', 'name lastName ambulanceRole pscheinExpiry')
       .populate('medic',  'name lastName ambulanceRole pscheinExpiry')
+      .populate('ambulanceId', 'ambulanceNumber brand modelName licensePlate') // 👈 NUEVO
       .lean();
 
     // ⏰ Fecha de hoy (ISO) en zona Berlin (corrige DST/off-by-one)
@@ -89,6 +91,7 @@ export const listTeams = async (_req: Request, res: Response) => {
   }
 };
 
+
 export const createTeam = async (req: Request, res: Response) => {
   try {
     const {
@@ -96,11 +99,13 @@ export const createTeam = async (req: Request, res: Response) => {
       medic,
       rotationMode,
       fixedDienstNumber,
+      ambulanceId,          // 👈 NUEVO
     } = req.body as {
       driver?: string;
       medic?: string;
       rotationMode?: 'rotating' | 'fixed' | 'none';
       fixedDienstNumber?: number | string | null;
+      ambulanceId?: string | null;
     };
 
     // ✅ Validaciones básicas de IDs
@@ -111,6 +116,21 @@ export const createTeam = async (req: Request, res: Response) => {
     if (driver === medic) {
       res.status(400).json({ message: 'driver y medic no pueden ser la misma persona' });
       return;
+    }
+
+    // ✅ Si viene ambulancia, validar ID y existencia
+    let normalizedAmbulanceId: string | null = null;
+    if (ambulanceId) {
+      if (!isObjectId(ambulanceId)) {
+        res.status(400).json({ message: 'ambulanceId debe ser un ObjectId válido' });
+        return;
+      }
+      const amb = await Ambulance.findById(ambulanceId).lean();
+      if (!amb) {
+        res.status(400).json({ message: 'Ambulancia no encontrada' });
+        return;
+      }
+      normalizedAmbulanceId = ambulanceId;
     }
 
     // ✅ Normalizar rotationMode con valor por defecto
@@ -127,7 +147,6 @@ export const createTeam = async (req: Request, res: Response) => {
         : fixedDienstNumber;
 
       if (!Number.isInteger(num) || num == null || num < 1) {
-        // si quieres, aquí podrías limitar a 1–30 según tus plantillas
         res.status(400).json({
           message: 'fixedDienstNumber debe ser un número entero ≥ 1 cuando rotationMode es "fixed"',
         });
@@ -176,17 +195,19 @@ export const createTeam = async (req: Request, res: Response) => {
       return;
     }
 
-    // ✅ Crear team con configuración de rotación incluida
+    // ✅ Crear team con configuración de rotación + ambulancia fija (opcional)
     const team = await Team.create({
       driver,
       medic,
       rotationMode: normalizedRotation,
       fixedDienstNumber: normalizedFixedDienst,
+      ambulanceId: normalizedAmbulanceId,   // 👈 AQUÍ
     });
 
     const populated = await Team.findById(team._id)
       .populate('driver', 'name lastName ambulanceRole pscheinExpiry')
-      .populate('medic',  'name lastName ambulanceRole pscheinExpiry');
+      .populate('medic',  'name lastName ambulanceRole pscheinExpiry')
+      .populate('ambulanceId', 'ambulanceNumber brand modelName licensePlate');
 
     res.status(201).json(populated);
   } catch (err: any) {
@@ -198,6 +219,7 @@ export const createTeam = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al crear team' });
   }
 };
+
 
 // ✅ Preview de rotación de equipos para una semana (solo fija de momento)
 export const previewTeamRotationForWeek = async (req: Request, res: Response): Promise<void> => {

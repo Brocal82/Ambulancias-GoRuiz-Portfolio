@@ -1,5 +1,4 @@
-//src/models/Team.ts
-
+// src/models/Team.ts
 import { Schema, model, Types, Document } from 'mongoose';
 
 export interface ITeamModel extends Document {
@@ -20,10 +19,15 @@ export interface ITeamModel extends Document {
    */
   fixedDienstNumber?: number | null;
 
+  /**
+   * 🚑 Ambulancia fija asociada al equipo (opcional).
+   * Si es null, el equipo no tiene ambulancia fija.
+   */
+  ambulanceId?: Types.ObjectId | null;
+
   createdAt: Date;
   updatedAt: Date;
 }
-
 
 const TeamSchema = new Schema<ITeamModel>(
   {
@@ -34,11 +38,19 @@ const TeamSchema = new Schema<ITeamModel>(
       type: String,
       enum: ['rotating', 'fixed', 'none'],
       required: true,
-      default: 'none', // 👈 por defecto no hacemos rotación automática
+      default: 'none', // por defecto no hacemos rotación automática
     },
 
     fixedDienstNumber: {
       type: Number,
+      required: false,
+      default: null,
+    },
+
+    // 🚑 NUEVO: ambulancia fija del equipo (opcional)
+    ambulanceId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Ambulance',
       required: false,
       default: null,
     },

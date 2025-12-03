@@ -12,6 +12,15 @@ export interface Team {
   // ⚙️ Configuración de rotación del equipo
   rotationMode?: 'rotating' | 'fixed' | 'none';
   fixedDienstNumber?: number | null;
+
+  // 🚑 Ambulancia fija populada desde backend (opcional)
+  ambulanceId?: {
+    _id: string;
+    ambulanceNumber: string;
+    brand?: string;
+    modelName?: string;
+    licensePlate?: string;
+  } | null;
 }
 
 export interface CreateTeamPayload {
@@ -26,10 +35,16 @@ export interface CreateTeamPayload {
    * Ejemplo: 7 → equipo siempre en el Dienst 7.
    */
   fixedDienstNumber?: number | null;
+
+  /**
+   * 🚑 Ambulancia fija opcional.
+   * Si no se envía o es null, el equipo no tiene ambulancia fija.
+   */
+  ambulanceId?: string | null;
 }
 
 /* -----------------------------------------------------------
-   🔎 NUEVO — Equipos ya usados en una semana/dienst
+   🔎 Equipos ya usados en una semana/dienst
 ----------------------------------------------------------- */
 export interface UsedTeamsForWeekResponse {
   usedTeamIds: string[];

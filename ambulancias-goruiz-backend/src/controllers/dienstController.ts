@@ -451,7 +451,7 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
     // 👥 Traer equipos con su configuración de rotación
     const teams = await Team.find(
       {},
-      { driver: 1, medic: 1, rotationMode: 1, fixedDienstNumber: 1, createdAt: 1 }
+      { driver: 1, medic: 1, rotationMode: 1, fixedDienstNumber: 1, createdAt: 1, ambulanceId: 1, }
     ).lean();
 
     // 🗺️ Mapas de ayuda: fijos y rotativos
@@ -534,7 +534,7 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
 
 
     // 🧱 Crear los Diensts con días/horarios y aplicar lógica de vacaciones/bajas
-    const dienstsToInsert = await Promise.all(
+        const dienstsToInsert = await Promise.all(
       dienstNumbers.map(async (dienstNumber) => {
         const assignments: {
           date: string;
@@ -542,11 +542,22 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
           endTime: string;
           driver?: mongoose.Types.ObjectId;
           medic?: mongoose.Types.ObjectId;
+          ambulanceId?: mongoose.Types.ObjectId;
         }[] = [];
 
         const assignedTeam = dienstToTeam.get(dienstNumber);
+
         const driverId = assignedTeam?.driver as mongoose.Types.ObjectId | undefined;
         const medicId = assignedTeam?.medic as mongoose.Types.ObjectId | undefined;
+
+        // 🚑 Ambulancia fija del equipo (si existe)
+        const teamAmbulanceId =
+          assignedTeam && (assignedTeam as any).ambulanceId
+            ? new mongoose.Types.ObjectId(String((assignedTeam as any).ambulanceId))
+            : undefined;
+
+
+
 
         // Pre-calculamos por día si driver/medic están bloqueados por vacaciones/baja
         const dayBlockMap: Record<string, { driver: boolean; medic: boolean }> = {};
@@ -585,12 +596,13 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
           const endTime = dienstNumber % 2 === 0 ? '14:00' : '22:00';
           const dateISO = day.toISOString().split('T')[0];
 
-          const baseAssignment: {
+                    const baseAssignment: {
             date: string;
             startTime: string;
             endTime: string;
             driver?: mongoose.Types.ObjectId;
             medic?: mongoose.Types.ObjectId;
+            ambulanceId?: mongoose.Types.ObjectId;
           } = {
             date: dateISO,
             startTime,
@@ -608,6 +620,12 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
           if (medicId && !block.medic) {
             baseAssignment.medic = medicId;
           }
+
+                   // 🚑 Asignar ambulancia fija del equipo (si tiene)
+          if (teamAmbulanceId) {
+            baseAssignment.ambulanceId = teamAmbulanceId;
+          }
+
 
           assignments.push(baseAssignment);
         }
@@ -735,6 +753,13 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
       res.status(400).json({ message: 'Team inválido: faltan driver o medic' });
       return;
     }
+
+    // 🚑 Ambulancia fija del team (opcional)
+    const teamAmbulanceId: mongoose.Types.ObjectId | null =
+      (team as any).ambulanceId
+        ? new mongoose.Types.ObjectId(String((team as any).ambulanceId))
+        : null;
+
 
     // 🔀 Aplicar resolvedRoles si vienen del front (ej. swap pre-calculado en el modal)
     let driverId = teamDriverId;
@@ -888,6 +913,7 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
       } else {
         skippedByVacation.push({ date: dateISO, role: 'driver' });
       }
+      
 
       // 🧑‍⚕️ Asignar sanitario si no está bloqueado
       if (!block.medic) {
@@ -898,6 +924,12 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
         }
       } else {
         skippedByVacation.push({ date: dateISO, role: 'medic' });
+      }
+
+      // 🚑 Ambulancia fija del team (sin pisar manual)
+      if (teamAmbulanceId && !next.ambulanceId) {
+        next.ambulanceId = teamAmbulanceId;
+        changed = true;
       }
 
       if (changed) updatedCount += 1;

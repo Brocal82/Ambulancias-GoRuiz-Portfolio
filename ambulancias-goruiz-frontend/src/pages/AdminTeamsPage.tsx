@@ -191,7 +191,6 @@ export default function AdminTeamsPage() {
     return { cls: '', title: undefined, expired: false, warning: false };
   };
 
-
   // 🔎 Decor vacaciones+baja por persona (tooltip SOLO en iconos; fechas DD/MM; FULL si está)
   const getPersonLeaveDecor = (person: any) => {
     const id: string | undefined = typeof person === 'object' && person ? person._id : person;
@@ -281,23 +280,36 @@ export default function AdminTeamsPage() {
             const driverLeave = getPersonLeaveDecor(team.driver);
             const medicLeave = getPersonLeaveDecor(team.medic);
 
-                        // Rotación del equipo
+            // Rotación del equipo
             const rotationMode = team.rotationMode ?? 'rotating';
             const rotationLabel =
               rotationMode === 'fixed'
                 ? t(
-                    'pages.adminTeams.rotation.fixedShort',
-                    `Dienst fijo nº ${team.fixedDienstNumber ?? '—'}`
-                  )
+                  'pages.adminTeams.rotation.fixedShort',
+                  `Dienst fijo nº ${team.fixedDienstNumber ?? '—'}`
+                )
                 : rotationMode === 'none'
-                ? t(
+                  ? t(
                     'pages.adminTeams.rotation.noneShort',
                     'Sin rotación especial (manual)'
                   )
-                : t(
+                  : t(
                     'pages.adminTeams.rotation.rotatingShort',
                     'Rotación normal (sigue la rotación de Dienst)'
                   );
+
+            // 🚑 Etiqueta amigable para la ambulancia fija del equipo
+            const teamAmbulanceLabel = team.ambulanceId
+              ? (() => {
+                const num = team.ambulanceId.ambulanceNumber || '—';
+                const plate = team.ambulanceId.licensePlate || '';
+                // Ej: "A-12 (B-AB 1234)" o solo "A-12"
+                return plate ? `${num} (${plate})` : num;
+              })()
+              : t(
+                'pages.adminTeams.noFixedAmbulance',
+                'Ninguna (sin ambulancia fija)'
+              );
 
 
             return (
@@ -353,7 +365,7 @@ export default function AdminTeamsPage() {
 
                     {/* 🧑‍⚕️ Sanitario */}
                     <p>
-                      <span className={`font-medium ${medicLeave.dimCls}`}>
+                      <span className={`font-medium ${getPersonLeaveDecor(team.medic).dimCls}`}>
                         {(team.medic?.lastName || '—') + ', ' + (team.medic?.name || '—')}
                         {/* 🏖️ vacaciones */}
                         {medicLeave.showVac && (
@@ -368,6 +380,14 @@ export default function AdminTeamsPage() {
                           </span>
                         )}
                       </span>
+                    </p>
+
+                    {/* 🚑 Ambulancia fija del equipo */}
+                    <p
+                      className={`mt-1 text-xs ${team.ambulanceId ? 'text-slate-500' : 'text-slate-400 italic'
+                        }`}
+                    >
+                      🚑 {t('pages.adminTeams.teamAmbulance', 'Ambulancia fija')}: {teamAmbulanceLabel}
                     </p>
 
                     {/* 🔁 Info de rotación del equipo */}
@@ -403,13 +423,13 @@ export default function AdminTeamsPage() {
                       })()}
                     </p>
 
+
                   </div>
 
-                                    {/* Rotación del equipo */}
+                  {/* Rotación resumen corta en lateral */}
                   <p className="mt-2 text-[11px] text-slate-500">
                     🔁 {rotationLabel}
                   </p>
-
 
                   <button
                     onClick={() => handleDelete(team._id)}
