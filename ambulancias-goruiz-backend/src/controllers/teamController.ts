@@ -379,6 +379,160 @@ export const getUsedTeamsForWeek = async (req: Request, res: Response): Promise<
   }
 };
 
+export const updateTeam = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!isObjectId(id)) {
+      res.status(400).json({ message: 'ID de team inválido' });
+      return;
+    }
+
+    const {
+      driver,
+      medic,
+      rotationMode,
+      fixedDienstNumber,
+      ambulanceId,
+    } = req.body as {
+      driver?: string;
+      medic?: string;
+      rotationMode?: 'rotating' | 'fixed' | 'none';
+      fixedDienstNumber?: number | string | null;
+      ambulanceId?: string | null;
+    };
+
+    // ✅ Comprobamos que vienen driver y medic (para este flujo de edición)
+    if (!driver || !medic) {
+      res.status(400).json({ message: 'driver y medic son obligatorios' });
+      return;
+    }
+
+    if (!isObjectId(driver) || !isObjectId(medic)) {
+      res.status(400).json({ message: 'driver y medic deben ser ObjectId válidos' });
+      return;
+    }
+
+    if (driver === medic) {
+      res.status(400).json({ message: 'driver y medic no pueden ser la misma persona' });
+      return;
+    }
+
+    // 🔁 Normalizar rotationMode
+    let normalizedRotation: 'rotating' | 'fixed' | 'none' = 'rotating';
+    if (rotationMode === 'fixed' || rotationMode === 'none' || rotationMode === 'rotating') {
+      normalizedRotation = rotationMode;
+    }
+
+    // 🔢 Normalizar fixedDienstNumber solo si rotationMode === 'fixed'
+    let normalizedFixedDienst: number | null = null;
+    if (normalizedRotation === 'fixed') {
+      const num = typeof fixedDienstNumber === 'string'
+        ? Number(fixedDienstNumber)
+        : fixedDienstNumber;
+
+      if (!Number.isInteger(num) || num == null || num < 1) {
+        res.status(400).json({
+          message: 'fixedDienstNumber debe ser un número entero ≥ 1 cuando rotationMode es "fixed"',
+        });
+        return;
+      }
+
+      normalizedFixedDienst = num;
+    }
+
+    // 🔎 Verificar que usuarios existen
+    const [driverUser, medicUser] = await Promise.all([
+      User.findById(driver).lean(),
+      User.findById(medic).lean(),
+    ]);
+
+    if (!driverUser || !medicUser) {
+      res.status(400).json({ message: 'Usuario driver o medic inexistente' });
+      return;
+    }
+
+    // 🚫 Evitar duplicado exacto de pareja en OTRO team
+    const duplicated = await Team.findOne({
+      driver,
+      medic,
+      _id: { $ne: id },
+    }).lean();
+
+    if (duplicated) {
+      res.status(409).json({ message: 'Ya existe otro team con esa pareja driver+medic' });
+      return;
+    }
+
+    // 🚫 Evitar que alguno ya pertenezca a otro team distinto
+    const [driverConflict, medicConflict] = await Promise.all([
+      Team.findOne({
+        _id: { $ne: id },
+        $or: [{ driver }, { medic: driver }],
+      }).lean(),
+      Team.findOne({
+        _id: { $ne: id },
+        $or: [{ driver: medic }, { medic }],
+      }).lean(),
+    ]);
+
+    if (driverConflict) {
+      res.status(409).json({
+        message:
+          'El conductor seleccionado ya pertenece a otro equipo. Elimínalo de su equipo actual antes de asignarlo aquí.',
+      });
+      return;
+    }
+
+    if (medicConflict) {
+      res.status(409).json({
+        message:
+          'El sanitario seleccionado ya pertenece a otro equipo. Elimínalo de su equipo actual antes de asignarlo aquí.',
+      });
+      return;
+    }
+
+    // 🚑 Ambulancia: opcional, puede ser null
+    const normalizedAmbulance =
+      ambulanceId === undefined
+        ? undefined // no tocar
+        : ambulanceId === null || ambulanceId === ''
+          ? null
+          : new mongoose.Types.ObjectId(ambulanceId);
+
+    const updateDoc: any = {
+      driver,
+      medic,
+      rotationMode: normalizedRotation,
+      fixedDienstNumber: normalizedFixedDienst,
+    };
+
+    if (normalizedAmbulance !== undefined) {
+      updateDoc.ambulanceId = normalizedAmbulance;
+    }
+
+    const updated = await Team.findByIdAndUpdate(
+      id,
+      updateDoc,
+      { new: true, runValidators: true }
+    )
+      .populate('driver', 'name lastName ambulanceRole pscheinExpiry')
+      .populate('medic', 'name lastName ambulanceRole pscheinExpiry')
+      .populate('ambulanceId', 'ambulanceNumber licensePlate');
+
+    if (!updated) {
+      res.status(404).json({ message: 'Team no encontrado' });
+      return;
+    }
+
+    res.status(200).json(updated);
+  } catch (err) {
+    console.error('❌ Error updateTeam:', err);
+    res.status(500).json({ message: 'Error al actualizar team' });
+  }
+};
+
+
 
 export const deleteTeam = async (req: Request, res: Response) => {
   try {

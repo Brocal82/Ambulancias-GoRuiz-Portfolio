@@ -2,9 +2,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
-import { getTeams, createTeam, deleteTeam } from '../api/teams';
-import type { Team } from '../api/teams';
+import { getTeams, createTeam, updateTeam, deleteTeam } from '../api/teams';
+import type { Team, UpdateTeamPayload } from '../api/teams';
 import TeamCreateModal from '../components/teams/TeamCreateModal';
+import TeamEditModal from '../components/teams/TeamEditModal';
 import { toastT } from '../utils/toast';
 import { getPscheinInfo } from '../utils/pscheinUtils';
 import { getVacationFlagsInRange, type VacFlag } from '../api/vacation';
@@ -19,6 +20,8 @@ export default function AdminTeamsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+
 
   // 🏖️ / 🤒 Flags semanales por usuario (mapas por userId)
   const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
@@ -145,10 +148,26 @@ export default function AdminTeamsPage() {
   };
 
   const handleEdit = (team: Team) => {
-    // 🔧 Placeholder: más adelante abriremos un modal real de edición
-    console.log('Editar Team:', team);
-    // Ejemplo temporal:
-    // alert(`Editar equipo:\nDriver: ${team.driver.lastName}, ${team.driver.name}\nMedic: ${team.medic.lastName}, ${team.medic.name}`);
+    setEditingTeam(team);
+  };
+
+    const handleUpdateTeam = async (
+    teamId: string,
+    payload: UpdateTeamPayload
+  ) => {
+    if (!token) return;
+
+    try {
+      await updateTeam(teamId, payload, token);
+      toastT.success(['pages.adminTeams.updated']);
+      await load();
+      setEditingTeam(null);
+    } catch (e: any) {
+      console.error(e);
+      toastT.error([
+        e?.response?.data?.message || 'pages.adminTeams.updateError',
+      ]);
+    }
   };
 
 
@@ -450,6 +469,16 @@ export default function AdminTeamsPage() {
           })}
         </div>
       )}
+
+      {editingTeam && (
+        <TeamEditModal
+          isOpen={true}
+          team={editingTeam}
+          onClose={() => setEditingTeam(null)}
+          onConfirm={handleUpdateTeam}
+        />
+      )}
+
 
       {showCreate && (
         <TeamCreateModal

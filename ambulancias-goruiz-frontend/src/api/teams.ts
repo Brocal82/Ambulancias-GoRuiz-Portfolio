@@ -43,6 +43,15 @@ export interface CreateTeamPayload {
   ambulanceId?: string | null;
 }
 
+export interface UpdateTeamPayload {
+  driver: string;
+  medic: string;
+  rotationMode?: 'rotating' | 'fixed' | 'none';
+  fixedDienstNumber?: number | null;
+  ambulanceId?: string | null;
+}
+
+
 /* -----------------------------------------------------------
    🔎 Equipos ya usados en una semana/dienst
 ----------------------------------------------------------- */
@@ -91,6 +100,19 @@ export const createTeam = async (
   });
   return res.data;
 };
+
+// PATCH /api/teams/:id
+export const updateTeam = async (
+  teamId: string,
+  payload: UpdateTeamPayload,
+  token: string
+): Promise<Team> => {
+  const res = await api.patch<Team>(`/teams/${teamId}`, payload, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
 
 // DELETE /api/teams/:id
 export const deleteTeam = async (teamId: string, token: string): Promise<void> => {

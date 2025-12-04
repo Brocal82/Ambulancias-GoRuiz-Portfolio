@@ -6,7 +6,8 @@ import {
   listTeams,
   createTeam,
   deleteTeam,
-  getUsedTeamsForWeek,   // ✅ NUEVO IMPORT
+  getUsedTeamsForWeek,
+  updateTeam
 } from '../controllers/teamController';
 
 const router = Router();
@@ -22,6 +23,9 @@ router.get('/used-for-week', getUsedTeamsForWeek);
 
 // ➕ Crear equipo
 router.post('/', createTeam);
+
+// ✏️ Actualizar equipo
+router.patch('/:id', updateTeam);
 
 // ❌ Eliminar equipo
 router.delete('/:id', deleteTeam);
