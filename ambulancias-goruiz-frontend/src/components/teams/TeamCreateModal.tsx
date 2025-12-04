@@ -24,7 +24,7 @@ export default function TeamCreateModal({ isOpen, onClose, onConfirm }: TeamCrea
   // 👤 Selección de personas (como antes)
   const [value, setValue] = useState<TeamPickerValue>({ driver: '', medic: '' });
 
-  // 🔁 Nueva configuración de rotación
+  // 🔁 Configuración de rotación
   const [rotationMode, setRotationMode] = useState<'rotating' | 'fixed' | 'none'>('rotating');
   const [fixedDienstNumber, setFixedDienstNumber] = useState<number | ''>('');
 
@@ -56,8 +56,8 @@ export default function TeamCreateModal({ isOpen, onClose, onConfirm }: TeamCrea
           setAmbulances(
             Array.isArray(data)
               ? data.sort((a, b) =>
-                  (a.ambulanceNumber || '').localeCompare(b.ambulanceNumber || '', 'es')
-                )
+                (a.ambulanceNumber || '').localeCompare(b.ambulanceNumber || '', 'es')
+              )
               : []
           );
         }
@@ -91,15 +91,15 @@ export default function TeamCreateModal({ isOpen, onClose, onConfirm }: TeamCrea
     try {
       setSubmitting(true);
 
-      // ⚠️ Tipamos como any para poder incluir rotationMode/fixedDienstNumber/ambulanceId
-      // sin romper la firma de onConfirm de momento.
+      // ⚠️ Tipamos como any para incluir rotationMode/fixedDienstNumber/ambulanceId
       const payload: any = {
         driver: value.driver,
         medic: value.medic,
         rotationMode,
-        fixedDienstNumber: isFixed && fixedDienstNumber !== ''
-          ? Number(fixedDienstNumber)
-          : null,
+        fixedDienstNumber:
+          isFixed && fixedDienstNumber !== ''
+            ? Number(fixedDienstNumber)
+            : null,
         // 🚑 Ambulancia fija opcional
         ambulanceId: ambulanceId || null,
       };
@@ -117,38 +117,73 @@ export default function TeamCreateModal({ isOpen, onClose, onConfirm }: TeamCrea
     }
   };
 
+  // Utilidad sencilla para clases
+  const cx = (...classes: (string | false | null | undefined)[]) =>
+    classes.filter(Boolean).join(' ');
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Fondo oscuro */}
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+
+      {/* Tarjeta modal */}
       <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">
-          {t('pages.adminTeams.modal.title', 'Crear equipo')}
-        </h3>
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">
+              {t('pages.adminTeams.modal.title', 'Crear equipo')}
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">
+              {t(
+                'pages.adminTeams.modal.subtitle',
+                'Selecciona conductor, sanitario y su configuración básica.'
+              )}
+            </p>
+          </div>
 
-        {/* 👤 Picker con las reglas: ❌ caducado/🚫 no conduce en driver, y bloqueo de mismo usuario */}
-        <TeamPicker value={value} onChange={setValue} />
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+            aria-label={t('common.close', 'Cerrar')}
+          >
+            ✕
+          </button>
+        </div>
 
-        {/* Mensaje de validación si eligieron a la misma persona */}
-        {samePerson && (
-          <p className="mt-2 text-xs text-rose-600">
-            {t(
-              'pages.adminTeams.validation.samePerson',
-              'El conductor y el sanitario no pueden ser la misma persona'
-            )}
+        {/* 👤 Picker con las reglas */}
+        <section className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            {t('pages.adminTeams.modal.members', 'Miembros del equipo')}
           </p>
-        )}
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-3">
+            <TeamPicker value={value} onChange={setValue} />
+          </div>
+
+          {samePerson && (
+            <p className="mt-1 text-xs text-rose-600">
+              {t(
+                'pages.adminTeams.validation.samePerson',
+                'El conductor y el sanitario no pueden ser la misma persona'
+              )}
+            </p>
+          )}
+        </section>
 
         {/* 🚑 Ambulancia fija opcional */}
-        <div className="mt-4 space-y-1">
+        <section className="mt-4 space-y-2">
           <label
             htmlFor="teamAmbulance"
-            className="block text-sm font-medium text-slate-700"
+            className="text-xs font-medium uppercase tracking-wide text-slate-500"
           >
             {t(
-              'pages.adminTeams.modal.ambulanceOptional',
-              'Ambulancia fija para este equipo (opcional)'
+              'pages.adminTeams.modal.ambulanceSection',
+              'Ambulancia fija (opcional)'
             )}
           </label>
+
           <select
             id="teamAmbulance"
             value={ambulanceId}
@@ -160,9 +195,9 @@ export default function TeamCreateModal({ isOpen, onClose, onConfirm }: TeamCrea
               {loadingAmbulances
                 ? t('common.loading', 'Cargando...')
                 : t(
-                    'pages.adminTeams.modal.ambulancePlaceholder',
-                    'Sin ambulancia fija (opcional)'
-                  )}
+                  'pages.adminTeams.modal.ambulancePlaceholder',
+                  'Sin ambulancia fija'
+                )}
             </option>
             {ambulances.map((amb) => (
               <option key={amb._id} value={amb._id}>
@@ -170,97 +205,133 @@ export default function TeamCreateModal({ isOpen, onClose, onConfirm }: TeamCrea
               </option>
             ))}
           </select>
-          <p className="mt-1 text-[11px] text-slate-500">
+
+          <p className="text-[11px] text-slate-500">
             {t(
               'pages.adminTeams.modal.ambulanceHelp',
               'Si este equipo suele trabajar siempre con la misma ambulancia, puedes seleccionarla aquí.'
             )}
           </p>
-        </div>
+        </section>
+
 
         {/* 🔁 Configuración de rotación del equipo */}
-        <div className="mt-4 space-y-2">
-          <label
-            htmlFor="rotationModeSelect"
-            className="block text-sm font-medium text-slate-700"
-          >
+        <section className="mt-4 space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
             {t(
-              'pages.adminTeams.rotation.label',
-              'Modo de rotación del equipo'
+              'pages.adminTeams.rotation.sectionTitle',
+              'Modo de rotación'
             )}
-          </label>
+          </p>
 
-          <select
-            id="rotationModeSelect"
-            value={rotationMode}
-            onChange={(e) =>
-              setRotationMode(e.target.value as 'rotating' | 'fixed' | 'none')
-            }
-            className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-            disabled={submitting}
-          >
-            <option value="rotating">
-              {t(
-                'pages.adminTeams.rotation.rotating',
-                'Rotación normal (sigue la rotación de Dienst)'
+          {/* Botones de modo compactos */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setRotationMode('rotating')}
+              disabled={submitting}
+              className={cx(
+                'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition',
+                rotationMode === 'rotating'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
               )}
-            </option>
-            <option value="fixed">
-              {t(
-                'pages.adminTeams.rotation.fixed',
-                'Dienst fijo para este equipo'
+            >
+              <span>🔁</span>
+              <span>
+                {t(
+                  'pages.adminTeams.rotation.badgeRotatingShort',
+                  'Rotación'
+                )}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRotationMode('fixed')}
+              disabled={submitting}
+              className={cx(
+                'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition',
+                rotationMode === 'fixed'
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
               )}
-            </option>
-            <option value="none">
-              {t(
-                'pages.adminTeams.rotation.none',
-                'Sin rotación especial (manual)'
+            >
+              <span>📌</span>
+              <span>
+                {t(
+                  'pages.adminTeams.rotation.badgeFixedShort',
+                  'Dienst fijo'
+                )}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRotationMode('none')}
+              disabled={submitting}
+              className={cx(
+                'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition',
+                rotationMode === 'none'
+                  ? 'border-amber-500 bg-amber-50 text-amber-700'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
               )}
-            </option>
-          </select>
+            >
+              <span>✋</span>
+              <span>
+                {t(
+                  'pages.adminTeams.rotation.badgeNoneShort',
+                  'Manual'
+                )}
+              </span>
+            </button>
+          </div>
 
           {/* Número de Dienst fijo solo cuando rotationMode === 'fixed' */}
-          <div className="mt-2">
-            <label className="block text-xs font-medium text-slate-600">
-              {t(
-                'pages.adminTeams.rotation.fixedDienstNumber',
-                'Número de Dienst fijo (si aplica)'
-              )}
-            </label>
-            <input
-              type="number"
-              min={1}
-              value={fixedDienstNumber}
-              onChange={(e) =>
-                setFixedDienstNumber(
-                  e.target.value === '' ? '' : Number(e.target.value)
-                )
-              }
-              disabled={!isFixed || submitting}
-              className="mt-1 w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50"
-              placeholder={t(
-                'pages.adminTeams.rotation.fixedDienstPlaceholder',
-                'Ej: 7'
-              ) as string}
-            />
-            {isFixed && !fixedValid && (
-              <p className="mt-1 text-xs text-rose-600">
+          {rotationMode === 'fixed' && (
+            <div className="mt-2">
+              <label className="block text-xs font-medium text-slate-600">
                 {t(
-                  'pages.adminTeams.rotation.fixedDienstError',
-                  'Indica un número de Dienst válido mayor que 0'
+                  'pages.adminTeams.rotation.fixedDienstNumber',
+                  'Número de Dienst fijo'
                 )}
-              </p>
-            )}
-          </div>
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={fixedDienstNumber}
+                onChange={(e) =>
+                  setFixedDienstNumber(
+                    e.target.value === '' ? '' : Number(e.target.value)
+                  )
+                }
+                disabled={submitting}
+                className="mt-1 w-32 rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-1.5 text-xs bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50"
+                placeholder={t(
+                  'pages.adminTeams.rotation.fixedDienstPlaceholder',
+                  'Ej: 7'
+                ) as string}
+              />
+              {!fixedValid && (
+                <p className="mt-1 text-[11px] text-rose-600">
+                  {t(
+                    'pages.adminTeams.rotation.fixedDienstError',
+                    'Indica un número de Dienst válido mayor que 0'
+                  )}
+                </p>
+              )}
+            </div>
+          )}
 
           <p className="mt-1 text-[11px] text-slate-500">
             {t(
               'pages.adminTeams.rotation.help',
-              'Puedes dejar "rotación normal" si el equipo debe seguir la rotación habitual de Dienst.'
+              'Puedes dejar "Rotación" si el equipo debe seguir la rotación habitual de Dienst.'
             )}
           </p>
-        </div>
+        </section>
 
+        {/* Footer botones */}
         <div className="mt-5 space-y-2">
           <button
             onClick={handleCreate}
@@ -273,6 +344,7 @@ export default function TeamCreateModal({ isOpen, onClose, onConfirm }: TeamCrea
           </button>
           <button
             onClick={onClose}
+            disabled={submitting}
             className="w-full rounded-xl bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-300 focus:outline-none focus:ring-4 focus:ring-slate-100"
           >
             {t('common.cancel', 'Cancelar')}
