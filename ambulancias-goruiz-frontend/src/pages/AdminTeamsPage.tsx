@@ -144,6 +144,14 @@ export default function AdminTeamsPage() {
     }
   };
 
+  const handleEdit = (team: Team) => {
+    // 🔧 Placeholder: más adelante abriremos un modal real de edición
+    console.log('Editar Team:', team);
+    // Ejemplo temporal:
+    // alert(`Editar equipo:\nDriver: ${team.driver.lastName}, ${team.driver.name}\nMedic: ${team.medic.lastName}, ${team.medic.name}`);
+  };
+
+
   const handleDelete = async (teamId: string) => {
     if (!token) return;
     const confirmed = confirm(
@@ -280,166 +288,165 @@ export default function AdminTeamsPage() {
             const driverLeave = getPersonLeaveDecor(team.driver);
             const medicLeave = getPersonLeaveDecor(team.medic);
 
-            // Rotación del equipo
-            const rotationMode = team.rotationMode ?? 'rotating';
-            const rotationLabel =
-              rotationMode === 'fixed'
-                ? t(
-                  'pages.adminTeams.rotation.fixedShort',
-                  `Dienst fijo nº ${team.fixedDienstNumber ?? '—'}`
-                )
-                : rotationMode === 'none'
-                  ? t(
-                    'pages.adminTeams.rotation.noneShort',
-                    'Sin rotación especial (manual)'
-                  )
-                  : t(
-                    'pages.adminTeams.rotation.rotatingShort',
-                    'Rotación normal (sigue la rotación de Dienst)'
-                  );
-
-            // 🚑 Etiqueta amigable para la ambulancia fija del equipo
-            const teamAmbulanceLabel = team.ambulanceId
-              ? (() => {
-                const num = team.ambulanceId.ambulanceNumber || '—';
-                const plate = team.ambulanceId.licensePlate || '';
-                // Ej: "A-12 (B-AB 1234)" o solo "A-12"
-                return plate ? `${num} (${plate})` : num;
-              })()
-              : t(
-                'pages.adminTeams.noFixedAmbulance',
-                'Ninguna (sin ambulancia fija)'
-              );
-
-
             return (
               <div
                 key={team._id}
-                className="rounded-2xl bg-white p-4 ring-1 ring-slate-200 shadow-sm hover:shadow-md transition-shadow"
+                className="relative rounded-2xl bg-white p-4 pr-16 ring-1 ring-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col gap-3"
               >
-                <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-                  {t('pages.adminTeams.team', 'Equipo')}
-                </p>
+                {/* 🔧 Botones editar + eliminar (más pequeños) */}
+                <div className="absolute top-2 right-2 flex gap-1">
+                  <button
+                    onClick={() => handleEdit(team)}
+                    className="rounded-lg bg-slate-200 p-0.5 text-xs text-slate-700 hover:bg-slate-300 transition"
+                    title={t('common.edit', 'Editar')}
+                  >
+                    ✏️
+                  </button>
 
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-sm leading-snug">
-                    {/* 🚗 Conductor */}
-                    <p>
-                      <span className={`font-medium ${driverPscheinCls} ${driverLeave.dimCls}`}>
-                        {(team.driver?.lastName || '—') + ', ' + (team.driver?.name || '—')}
-                        {/* 🏖️ Vacaciones (icono con tooltip propio) */}
-                        {driverLeave.showVac && (
-                          <span title={driverLeave.vacTitle} className="cursor-help ml-1 align-middle text-slate-400">
-                            🏖️
-                          </span>
-                        )}
-                        {/* 🤒 Baja (icono con tooltip propio) */}
-                        {driverLeave.showSick && (
-                          <span title={driverLeave.sickTitle} className="cursor-help ml-1 align-middle text-slate-500">
-                            🤒
-                          </span>
-                        )}
-                        {/* 🚫 P-Schein caducado */}
-                        {driverExpired && (
-                          <span
-                            title={driverPscheinTitle || t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado, no puede conducir')}
-                            className="cursor-help ml-1 align-middle"
-                          >
-                            🚫
-                          </span>
-                        )}
-                        {/* ⚠️ P-Schein por caducar */}
-                        {!driverExpired && driverWarning && (
-                          <span
-                            title={driverPscheinTitle}
-                            className="cursor-help ml-1 align-middle"
-                          >
-                            ⚠️
-                          </span>
-                        )}
+                  <button
+                    onClick={() => handleDelete(team._id)}
+                    className="rounded-lg p-0.5 text-xs text-white hover:bg-rose-500 transition"
+                    title={t('common.delete', 'Eliminar')}
+                  >
+                    🗑️
+                  </button>
+                </div>
 
-                      </span>
-                    </p>
-
-                    <p className="text-slate-400">/</p>
-
-                    {/* 🧑‍⚕️ Sanitario */}
-                    <p>
-                      <span className={`font-medium ${getPersonLeaveDecor(team.medic).dimCls}`}>
-                        {(team.medic?.lastName || '—') + ', ' + (team.medic?.name || '—')}
-                        {/* 🏖️ vacaciones */}
-                        {medicLeave.showVac && (
-                          <span title={medicLeave.vacTitle} className="cursor-help ml-1 align-middle text-slate-400">
-                            🏖️
-                          </span>
-                        )}
-                        {/* 🤒 baja */}
-                        {medicLeave.showSick && (
-                          <span title={medicLeave.sickTitle} className="cursor-help ml-1 align-middle text-slate-500">
-                            🤒
-                          </span>
-                        )}
-                      </span>
-                    </p>
-
-                    {/* 🚑 Ambulancia fija del equipo */}
-                    <p
-                      className={`mt-1 text-xs ${team.ambulanceId ? 'text-slate-500' : 'text-slate-400 italic'
-                        }`}
+                {/* 👥 Miembros del equipo */}
+                <div className="space-y-2 mt-2">
+                  {/* 🚗 Conductor */}
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`flex items-center gap-1 font-semibold text-sm ${driverPscheinCls} ${driverLeave.dimCls}`}
                     >
-                      🚑 {t('pages.adminTeams.teamAmbulance', 'Ambulancia fija')}: {teamAmbulanceLabel}
-                    </p>
+                      <span>🚗</span>
+                      <span>
+                        {(team.driver?.lastName || '—')}, {team.driver?.name || '—'}
+                      </span>
 
-                    {/* 🔁 Info de rotación del equipo */}
-                    <p className="mt-1 text-xs text-slate-500">
+                      {/* Iconos pegados al nombre */}
+                      {driverLeave.showVac && (
+                        <span title={driverLeave.vacTitle} className="align-middle cursor-help">
+                          🏖️
+                        </span>
+                      )}
+                      {driverLeave.showSick && (
+                        <span title={driverLeave.sickTitle} className="align-middle cursor-help">
+                          🤒
+                        </span>
+                      )}
+                      {driverExpired && (
+                        <span
+                          title={
+                            driverPscheinTitle ||
+                            t(
+                              'pages.diensts.adminPage.driverPscheinExpired',
+                              'P-Schein caducado'
+                            )
+                          }
+                          className="align-middle cursor-help"
+                        >
+                          🚫
+                        </span>
+                      )}
+                      {!driverExpired && driverWarning && (
+                        <span title={driverPscheinTitle} className="align-middle cursor-help">
+                          ⚠️
+                        </span>
+                      )}
+                    </span>
+                  </div>
+
+                  {/* 🧑‍⚕️ Sanitario */}
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`flex items-center gap-1 font-semibold text-sm ${medicLeave.dimCls}`}
+                    >
+                      <span>🧑‍⚕️</span>
+                      <span>
+                        {(team.medic?.lastName || '—')}, {team.medic?.name || '—'}
+                      </span>
+
+                      {/* Iconos pegados al nombre */}
+                      {medicLeave.showVac && (
+                        <span title={medicLeave.vacTitle} className="align-middle cursor-help">
+                          🏖️
+                        </span>
+                      )}
+                      {medicLeave.showSick && (
+                        <span title={medicLeave.sickTitle} className="align-middle cursor-help">
+                          🤒
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 🔁 Rotación + 🚑 Ambulancia fija */}
+                <div className="flex flex-wrap gap-2 text-xs mt-1">
+                  {/* Rotación */}
+                  <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-slate-700 ring-1 ring-slate-200">
+                    <span className="ml-1">
                       {(() => {
                         const mode = team.rotationMode || 'rotating';
 
                         if (mode === 'fixed') {
                           const num = team.fixedDienstNumber;
-                          return num
-                            ? t(
-                              'pages.adminTeams.rotation.badgeFixedWithNum',
-                              'Rotación: Dienst fijo #{num}'
-                            ).replace('{num}', String(num))
-                            : t(
-                              'pages.adminTeams.rotation.badgeFixed',
-                              'Rotación: Dienst fijo (número sin definir)'
-                            );
-                        }
-
-                        if (mode === 'none') {
-                          return t(
-                            'pages.adminTeams.rotation.badgeNone',
-                            'Rotación: sin rotación especial (manual)'
+                          return (
+                            <>
+                              📌{' '}
+                              {num
+                                ? t(
+                                  'pages.adminTeams.rotation.badgeFixedWithNum',
+                                  'Dienst #{num}'
+                                ).replace('{num}', String(num))
+                                : t('pages.adminTeams.rotation.badgeFixed', 'Fijo')}
+                            </>
                           );
                         }
 
-                        // 'rotating' o undefined → rotación normal
-                        return t(
-                          'pages.adminTeams.rotation.badgeRotating',
-                          'Rotación: normal (sigue la rotación general de Dienst)'
+                        if (mode === 'none') {
+                          return (
+                            <>
+                              ✋ {t('pages.adminTeams.rotation.badgeNone', 'Manual')}
+                            </>
+                          );
+                        }
+
+                        // rotating
+                        return (
+                          <>
+                            🔁 {t('pages.adminTeams.rotation.badgeRotating', 'Rotación')}
+                          </>
                         );
                       })()}
-                    </p>
+                    </span>
+                  </span>
 
 
-                  </div>
+                  {/* Ambulancia */}
+                  <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-slate-700 ring-1 ring-slate-200">
+                    🚑{' '}
+                    <span className="ml-1">
+                      {(() => {
+                        const amb: any =
+                          team.ambulanceId ||
+                          (team as any).ambulance ||
+                          (team as any).fixedAmbulance ||
+                          null;
 
-                  {/* Rotación resumen corta en lateral */}
-                  <p className="mt-2 text-[11px] text-slate-500">
-                    🔁 {rotationLabel}
-                  </p>
-
-                  <button
-                    onClick={() => handleDelete(team._id)}
-                    className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100"
-                  >
-                    {t('common.delete', 'Eliminar')}
-                  </button>
+                        if (!amb) return '—';
+                        if (typeof amb === 'string') return amb || '—';
+                        if (typeof amb === 'object') return amb.ambulanceNumber || '—';
+                        return '—';
+                      })()}
+                    </span>
+                  </span>
                 </div>
               </div>
             );
+
+
           })}
         </div>
       )}
