@@ -319,7 +319,7 @@ export default function AdminTeamsPage() {
                     <span
                       className={`flex items-center gap-1 font-semibold text-sm ${driverPscheinCls} ${driverLeave.dimCls}`}
                     >
-                      <span>🚗</span>
+                      <span>🧑‍✈️</span>
                       <span>
                         {(team.driver?.lastName || '—')}, {team.driver?.name || '—'}
                       </span>
