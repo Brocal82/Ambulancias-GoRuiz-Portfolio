@@ -26,6 +26,7 @@ import MyWorkday from './pages/MyWorkDay';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminDienstsPage from './pages/AdminDienstsPage';
+import AdminDienstTemplatesPage from './pages/AdminDienstTemplatesPage';
 import AdminHospitalsPage from './pages/AdminHospitalsPage';
 import AdminVacationsPage from './pages/AdminVacationsPage';
 import AdminSummariesPage from './pages/AdminSummariesPage';
@@ -37,6 +38,7 @@ import AdminSentMessages from './pages/AdminSentMessages';
 import AdminAppointmentsPage from './pages/AdminAppointmentsPage';
 import AdminTeamsPage from './pages/AdminTeamsPage';
 import AdminSickLeavesPage from './pages/AdminSickLeavesPage';
+
 
 export default function App() {
   return (
@@ -66,6 +68,7 @@ export default function App() {
             <Route path="/admin" element={<AppLayout><AdminDashboard /></AppLayout>} />
             <Route path="/admin/users" element={<AppLayout><AdminUsersPage /></AppLayout>} />
             <Route path="/admin/diensts" element={<AppLayout><AdminDienstsPage /></AppLayout>} />
+            <Route path="/admin/dienst-templates" element={<AppLayout><AdminDienstTemplatesPage /></AppLayout>} />
             <Route path="/admin/hospitals" element={<AppLayout><AdminHospitalsPage /></AppLayout>} />
             <Route path="/admin/vacations" element={<AppLayout><AdminVacationsPage /></AppLayout>} />
             <Route path="/admin/messages" element={<AppLayout><AdminMessagesPage /></AppLayout>} />

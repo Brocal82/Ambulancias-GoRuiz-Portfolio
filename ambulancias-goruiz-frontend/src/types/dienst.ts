@@ -65,6 +65,17 @@ export interface AssignedDayFull {
   medic: UserRef;
 }
 
+// 📌 Plantilla de Dienst (base para generar Diensts reales por semana)
+export interface DienstTemplate {
+  _id: string;
+  dienstNumber: number;
+  startTime: string; // "HH:mm"
+  endTime: string;   // "HH:mm"
+  daysOff: number[]; // 0=domingo, ..., 6=sábado
+  isActive: boolean;
+}
+
+
 
 
 

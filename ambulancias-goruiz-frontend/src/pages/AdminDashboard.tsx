@@ -65,6 +65,19 @@ return (
         <p className="text-sm text-gray-600">{t('pages.adminDashboard.diensts.desc')}</p>
       </Link>
 
+            <Link to="/admin/dienst-templates" className={centeredCard}>
+        <h2 className="text-lg font-semibold mb-2">
+          {t('pages.adminDashboard.dienstTemplates.title', 'Plantillas de Dienst')}
+        </h2>
+        <p className="text-sm text-gray-600">
+          {t(
+            'pages.adminDashboard.dienstTemplates.desc',
+            'Configura los horarios y días libres base para generar Diensts semanales.'
+          )}
+        </p>
+      </Link>
+
+
       <Link
         to="/admin/summaries"
         className={`${centeredCardRelative} ${summariesHasPending ? 'ring-2 ring-orange-300' : ''}`}
