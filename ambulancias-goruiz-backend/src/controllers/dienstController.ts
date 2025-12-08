@@ -13,7 +13,7 @@ import Team from '../models/Team';
 import User from '../models/User';
 import { getPscheinStatus } from '../utils/pscheinUtils';
 import { findWeeklyConflicts, getDriverPscheinState, isOnVacationDay, isOnSickDay } from '../utils/dienstValidation';
-import { computeTeamAssignmentsForWeek } from '../utils/teamRotation';
+
 
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
