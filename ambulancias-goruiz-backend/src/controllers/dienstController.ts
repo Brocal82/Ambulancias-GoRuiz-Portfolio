@@ -2,6 +2,7 @@
 import { Request, Response } from 'express';
 import Dienst from '../models/Dienst';
 import DienstTemplate from '../models/DienstTemplate';
+import type { DaySchedule } from '../models/DienstTemplate';
 import Ambulance from '../models/Ambulance'; // ✅ Nuevo import
 import { dienstSchema } from '../schemas/dienstSchema';
 import { dienstQuerySchema } from '../schemas/dienstQuerySchema';
@@ -453,7 +454,8 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
 
     if (!templates || templates.length === 0) {
       res.status(400).json({
-        message: 'No hay plantillas de Dienst activas. Crea al menos una antes de generar la semana.',
+        message:
+          'No hay plantillas de Dienst activas. Crea al menos una antes de generar la semana.',
       });
       return;
     }
@@ -533,14 +535,21 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
       // Los Dienst libres que sobren quedan sin equipo (manual), como antes
     }
 
-    // 🧱 Crear los Diensts usando las plantillas (horario + días libres)
+    // 🧱 Crear los Diensts usando las plantillas (horario + días libres / por día)
     const dienstsToInsert = await Promise.all(
-      templates.map(async (tpl) => {
+      templates.map(async (tpl: any) => {
         const dienstNumber = tpl.dienstNumber;
         const templateStartTime = tpl.startTime;
         const templateEndTime = tpl.endTime;
         const daysOff = Array.isArray(tpl.daysOff) ? tpl.daysOff : [];
         const daysOffSet = new Set<number>(daysOff);
+
+        // 👇 Nuevo: horario por día, si existe
+        const perDaySchedule: DaySchedule[] | undefined = Array.isArray(tpl.perDaySchedule)
+          ? (tpl.perDaySchedule as DaySchedule[])
+          : undefined;
+
+        const usePerDaySchedule = !!(perDaySchedule && perDaySchedule.length > 0);
 
         const assignments: {
           date: string;
@@ -591,12 +600,34 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
           const day = new Date(startDate);
           day.setDate(startDate.getDate() + j);
 
-          // 🏖️ Día libre según plantilla (0=domingo,..,6=sábado)
-          const weekDayIndex = day.getDay(); // 0-6
-          if (daysOffSet.has(weekDayIndex)) continue;
+          const weekDayIndex = day.getDay(); // 0=domingo, ..., 6=sábado
 
-          const startTime = templateStartTime;
-          const endTime = templateEndTime;
+          let startTimeForDay: string;
+          let endTimeForDay: string;
+
+          if (usePerDaySchedule) {
+            // 🗓️ Modo nuevo: usar perDaySchedule si está definido
+            const dayCfg = perDaySchedule!.find((d) => d.dayIndex === weekDayIndex);
+
+            if (dayCfg && dayCfg.isOff) {
+              // Día marcado como libre en perDaySchedule → se salta
+              continue;
+            }
+
+            // Si no hay configuración específica para ese día,
+            // o si falta start/end, usamos el horario global como fallback.
+            startTimeForDay = (dayCfg && dayCfg.startTime) || templateStartTime;
+            endTimeForDay = (dayCfg && dayCfg.endTime) || templateEndTime;
+          } else {
+            // 🕒 Modo viejo: usar daysOff + horario global
+            if (daysOffSet.has(weekDayIndex)) {
+              // Día libre según daysOff
+              continue;
+            }
+            startTimeForDay = templateStartTime;
+            endTimeForDay = templateEndTime;
+          }
+
           const dateISO = day.toISOString().split('T')[0];
 
           const baseAssignment: {
@@ -608,8 +639,8 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
             ambulanceId?: mongoose.Types.ObjectId;
           } = {
             date: dateISO,
-            startTime,
-            endTime,
+            startTime: startTimeForDay,
+            endTime: endTimeForDay,
           };
 
           const block = dayBlockMap[dateISO] || { driver: false, medic: false };
@@ -645,7 +676,7 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
 
     res.status(201).json({
       message:
-        'Diensts generados correctamente a partir de plantillas, con rotación de equipos aplicada (fijos, rotativos, vacaciones y bajas).',
+        'Diensts generados correctamente a partir de plantillas, con rotación de equipos aplicada (fijos, rotativos, vacaciones y bajas, respetando horarios por día si existen).',
       count: dienstsToInsert.length,
     });
   } catch (error) {
@@ -653,6 +684,7 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
     res.status(500).json({ message: 'Error al generar Diensts' });
   }
 };
+
 
 
 

@@ -1,10 +1,10 @@
-// frontend/src/components/diensts/EditDienstTemplateModal.tsx
-import React, { useState } from 'react';
+// frontend/src/components/dienstTemplates/EditDienstTemplateModal.tsx
+import React, { useEffect, useState } from 'react';
 import type { DienstTemplate } from '../../types/dienst';
 import { updateDienstTemplate, type DienstTemplateInput } from '../../api/dienstTemplates';
 
 interface Props {
-  isOpen: boolean;                      // 👈 AÑADIDO
+  isOpen: boolean;
   template: DienstTemplate;
   token: string;
   onClose: () => void;
@@ -13,28 +13,102 @@ interface Props {
 
 const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
+interface DayScheduleFormRow {
+  dayIndex: number;
+  isOff: boolean;
+  startTime: string;
+  endTime: string;
+}
+
+const buildInitialPerDaySchedule = (tpl: DienstTemplate): DayScheduleFormRow[] => {
+  const baseStart = tpl.startTime || '06:00';
+  const baseEnd = tpl.endTime || '14:00';
+  const daysOffSet = new Set<number>(tpl.daysOff ?? []);
+
+  if (tpl.perDaySchedule && tpl.perDaySchedule.length > 0) {
+    // Usamos perDaySchedule como fuente principal
+    return dayLabels.map((_, dayIndex) => {
+      const cfg = tpl.perDaySchedule!.find((d) => d.dayIndex === dayIndex);
+
+      if (cfg) {
+        return {
+          dayIndex,
+          isOff: !!cfg.isOff,
+          startTime: cfg.startTime || baseStart,
+          endTime: cfg.endTime || baseEnd,
+        };
+      }
+
+      // Si no hay config para ese día, usamos daysOff + horario global como fallback
+      return {
+        dayIndex,
+        isOff: daysOffSet.has(dayIndex),
+        startTime: baseStart,
+        endTime: baseEnd,
+      };
+    });
+  }
+
+  // Si no hay perDaySchedule, generamos todo desde horario global + daysOff
+  return dayLabels.map((_, dayIndex) => ({
+    dayIndex,
+    isOff: daysOffSet.has(dayIndex),
+    startTime: baseStart,
+    endTime: baseEnd,
+  }));
+};
+
 const EditDienstTemplateModal: React.FC<Props> = ({
-  isOpen,          // 👈 RECIBIMOS isOpen
+  isOpen,
   template,
   token,
   onClose,
   onSaved,
 }) => {
-  // Si quieres, por seguridad:
   if (!isOpen) return null;
 
-  // 👇 estados internos del modal (ejemplo)
   const [editDienstNumber, setEditDienstNumber] = useState<number | ''>(template.dienstNumber);
   const [editStartTime, setEditStartTime] = useState<string>(template.startTime);
   const [editEndTime, setEditEndTime] = useState<string>(template.endTime);
-  const [editDaysOff, setEditDaysOff] = useState<number[]>(template.daysOff ?? []);
   const [editIsActive, setEditIsActive] = useState<boolean>(template.isActive ?? true);
+  const [perDayScheduleRows, setPerDayScheduleRows] = useState<DayScheduleFormRow[]>(
+    () => buildInitialPerDaySchedule(template)
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleToggleEditDayOff = (dayIndex: number) => {
-    setEditDaysOff((prev) =>
-      prev.includes(dayIndex) ? prev.filter((d) => d !== dayIndex) : [...prev, dayIndex]
+  // Si cambian los datos de la plantilla (abrir otra distinta), reseteamos todo
+  useEffect(() => {
+    setEditDienstNumber(template.dienstNumber);
+    setEditStartTime(template.startTime);
+    setEditEndTime(template.endTime);
+    setEditIsActive(template.isActive ?? true);
+    setPerDayScheduleRows(buildInitialPerDaySchedule(template));
+    setError(null);
+    setSaving(false);
+  }, [template]);
+
+  const handleToggleDayOff = (dayIndex: number, checked: boolean) => {
+    setPerDayScheduleRows((prev) =>
+      prev.map((day) =>
+        day.dayIndex === dayIndex ? { ...day, isOff: checked } : day
+      )
+    );
+  };
+
+  const handleChangeDayStartTime = (dayIndex: number, value: string) => {
+    setPerDayScheduleRows((prev) =>
+      prev.map((day) =>
+        day.dayIndex === dayIndex ? { ...day, startTime: value } : day
+      )
+    );
+  };
+
+  const handleChangeDayEndTime = (dayIndex: number, value: string) => {
+    setPerDayScheduleRows((prev) =>
+      prev.map((day) =>
+        day.dayIndex === dayIndex ? { ...day, endTime: value } : day
+      )
     );
   };
 
@@ -47,11 +121,12 @@ const EditDienstTemplateModal: React.FC<Props> = ({
     }
 
     if (!editStartTime || !editEndTime) {
-      setError('Debes indicar un horario de inicio y fin.');
+      setError('Debes indicar un horario global de inicio y fin.');
       return;
     }
 
-    if (editDaysOff.length === 7) {
+    const allDaysOff = perDayScheduleRows.every((d) => d.isOff);
+    if (allDaysOff) {
       setError('No tiene sentido que todos los días sean libres.');
       return;
     }
@@ -60,12 +135,24 @@ const EditDienstTemplateModal: React.FC<Props> = ({
       setSaving(true);
       setError(null);
 
+      const daysOff = perDayScheduleRows
+        .filter((d) => d.isOff)
+        .map((d) => d.dayIndex);
+
+      const perDayScheduleForApi = perDayScheduleRows.map((d) => ({
+        dayIndex: d.dayIndex,
+        isOff: d.isOff,
+        startTime: d.startTime,
+        endTime: d.endTime,
+      }));
+
       const payload: DienstTemplateInput = {
         dienstNumber: Number(editDienstNumber),
         startTime: editStartTime,
         endTime: editEndTime,
-        daysOff: editDaysOff,
+        daysOff,
         isActive: editIsActive,
+        perDaySchedule: perDayScheduleForApi,
       };
 
       const updated = await updateDienstTemplate(template._id, payload, token);
@@ -73,7 +160,8 @@ const EditDienstTemplateModal: React.FC<Props> = ({
       onClose();
     } catch (err: any) {
       console.error('Error al actualizar plantilla de Dienst:', err);
-      const msg = err?.response?.data?.message || 'Error al actualizar la plantilla de Dienst';
+      const msg =
+        err?.response?.data?.message || 'Error al actualizar la plantilla de Dienst';
       setError(msg);
     } finally {
       setSaving(false);
@@ -82,7 +170,7 @@ const EditDienstTemplateModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-lg rounded-lg bg-white p-4 shadow-lg">
+      <div className="max-h-[90vh] w-full max-w-3xl rounded-lg bg-white p-4 shadow-lg flex flex-col">
         <h2 className="mb-3 text-base font-semibold text-gray-800">
           Editar plantilla de Dienst #{template.dienstNumber}
         </h2>
@@ -93,8 +181,12 @@ const EditDienstTemplateModal: React.FC<Props> = ({
           </div>
         )}
 
-        <form onSubmit={handleSave} className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+        <form
+          onSubmit={handleSave}
+          className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1"
+        >
+          {/* Nº Dienst + horario global */}
+          <div className="grid gap-4 md:grid-cols-[1.2fr,1.8fr]">
             <div>
               <label
                 htmlFor="editDienstNumber"
@@ -108,7 +200,9 @@ const EditDienstTemplateModal: React.FC<Props> = ({
                 min={1}
                 value={editDienstNumber}
                 onChange={(e) =>
-                  setEditDienstNumber(e.target.value === '' ? '' : Number(e.target.value))
+                  setEditDienstNumber(
+                    e.target.value === '' ? '' : Number(e.target.value)
+                  )
                 }
                 className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
@@ -120,7 +214,7 @@ const EditDienstTemplateModal: React.FC<Props> = ({
                   htmlFor="editStartTime"
                   className="mb-1 block text-xs font-medium text-gray-700"
                 >
-                  Hora inicio
+                  Hora inicio global
                 </label>
                 <input
                   id="editStartTime"
@@ -135,7 +229,7 @@ const EditDienstTemplateModal: React.FC<Props> = ({
                   htmlFor="editEndTime"
                   className="mb-1 block text-xs font-medium text-gray-700"
                 >
-                  Hora fin
+                  Hora fin global
                 </label>
                 <input
                   id="editEndTime"
@@ -148,28 +242,95 @@ const EditDienstTemplateModal: React.FC<Props> = ({
             </div>
           </div>
 
+          {/* 🗓️ Horario por día en tarjetas */}
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-700">
-              Días libres
+              Horario por día de la semana
             </label>
-            <div className="flex flex-wrap gap-1">
-              {dayLabels.map((label, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => handleToggleEditDayOff(index)}
-                  className={`rounded-full px-2 py-0.5 text-xs ${
-                    editDaysOff.includes(index)
-                      ? 'bg-gray-800 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+
+            <div className="max-h-[50vh] overflow-y-auto rounded-md border border-gray-200 p-2">
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                {perDayScheduleRows.map((day) => (
+                  <div
+                    key={day.dayIndex}
+                    className="flex flex-col gap-2 rounded-md border border-gray-200 p-2 text-xs"
+                  >
+                    {/* Cabecera: día + checkbox libre */}
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-gray-800">
+                        {dayLabels[day.dayIndex]}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <input
+                          id={`edit-isOff-${day.dayIndex}`}
+                          type="checkbox"
+                          checked={day.isOff}
+                          onChange={(e) =>
+                            handleToggleDayOff(day.dayIndex, e.target.checked)
+                          }
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <label
+                          htmlFor={`edit-isOff-${day.dayIndex}`}
+                          className="text-[11px] text-gray-700"
+                        >
+                          Libre
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Horas inicio/fin */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label
+                          htmlFor={`edit-startTime-${day.dayIndex}`}
+                          className="sr-only"
+                        >
+                          {`Hora de inicio (${dayLabels[day.dayIndex]})`}
+                        </label>
+                        <input
+                          id={`edit-startTime-${day.dayIndex}`}
+                          type="time"
+                          value={day.startTime}
+                          onChange={(e) =>
+                            handleChangeDayStartTime(
+                              day.dayIndex,
+                              e.target.value
+                            )
+                          }
+                          disabled={day.isOff}
+                          className="w-full rounded-md border border-gray-300 px-1 py-0.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor={`edit-endTime-${day.dayIndex}`}
+                          className="sr-only"
+                        >
+                          {`Hora de fin (${dayLabels[day.dayIndex]})`}
+                        </label>
+                        <input
+                          id={`edit-endTime-${day.dayIndex}`}
+                          type="time"
+                          value={day.endTime}
+                          onChange={(e) =>
+                            handleChangeDayEndTime(
+                              day.dayIndex,
+                              e.target.value
+                            )
+                          }
+                          disabled={day.isOff}
+                          className="w-full rounded-md border border-gray-300 px-1 py-0.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
+          {/* Activa / inactiva */}
           <div className="flex items-center gap-2">
             <input
               id="editIsActive"
@@ -178,12 +339,16 @@ const EditDienstTemplateModal: React.FC<Props> = ({
               onChange={(e) => setEditIsActive(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <label htmlFor="editIsActive" className="text-xs font-medium text-gray-700">
+            <label
+              htmlFor="editIsActive"
+              className="text-xs font-medium text-gray-700"
+            >
               Plantilla activa
             </label>
           </div>
 
-          <div className="mt-4 flex justify-end gap-2">
+          {/* Botones */}
+          <div className="mt-2 flex justify-end gap-2 border-t border-gray-100 pt-3">
             <button
               type="button"
               onClick={onClose}
@@ -207,3 +372,4 @@ const EditDienstTemplateModal: React.FC<Props> = ({
 };
 
 export default EditDienstTemplateModal;
+

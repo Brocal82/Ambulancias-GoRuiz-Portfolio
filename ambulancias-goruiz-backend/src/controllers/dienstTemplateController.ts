@@ -1,3 +1,4 @@
+// backend/src/controllers/dienstTemplateController.ts
 import { Request, Response } from 'express';
 import DienstTemplate, { IDienstTemplate } from '../models/DienstTemplate';
 
@@ -21,7 +22,14 @@ export const getDienstTemplates = async (req: Request, res: Response): Promise<v
  */
 export const createDienstTemplate = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { dienstNumber, startTime, endTime, daysOff, isActive } = req.body;
+    const {
+      dienstNumber,
+      startTime,
+      endTime,
+      daysOff,
+      isActive,
+      perDaySchedule,
+    } = req.body;
 
     if (dienstNumber == null || !startTime || !endTime || !Array.isArray(daysOff)) {
       res.status(400).json({
@@ -30,12 +38,25 @@ export const createDienstTemplate = async (req: Request, res: Response): Promise
       return;
     }
 
+    // Si viene perDaySchedule, comprobamos que sea un array básico.
+    let perDayScheduleToSave = undefined;
+    if (perDaySchedule !== undefined) {
+      if (!Array.isArray(perDaySchedule)) {
+        res.status(400).json({
+          message: 'perDaySchedule debe ser un array si se envía',
+        });
+        return;
+      }
+      perDayScheduleToSave = perDaySchedule;
+    }
+
     const newTemplate = new DienstTemplate({
       dienstNumber,
       startTime,
       endTime,
       daysOff,
       isActive: isActive !== undefined ? isActive : true,
+      perDaySchedule: perDayScheduleToSave,
     });
 
     const saved = await newTemplate.save();
@@ -55,6 +76,7 @@ export const createDienstTemplate = async (req: Request, res: Response): Promise
   }
 };
 
+
 /**
  * PUT /dienst-templates/:id
  * Actualiza una plantilla de Dienst
@@ -62,7 +84,26 @@ export const createDienstTemplate = async (req: Request, res: Response): Promise
 export const updateDienstTemplate = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { dienstNumber, startTime, endTime, daysOff, isActive } = req.body;
+    const {
+      dienstNumber,
+      startTime,
+      endTime,
+      daysOff,
+      isActive,
+      perDaySchedule,
+    } = req.body;
+
+    // Igual que en create: solo validación básica de perDaySchedule si viene
+    let perDayScheduleToSave = undefined;
+    if (perDaySchedule !== undefined) {
+      if (!Array.isArray(perDaySchedule)) {
+        res.status(400).json({
+          message: 'perDaySchedule debe ser un array si se envía',
+        });
+        return;
+      }
+      perDayScheduleToSave = perDaySchedule;
+    }
 
     const updated = await DienstTemplate.findByIdAndUpdate(
       id,
@@ -72,6 +113,7 @@ export const updateDienstTemplate = async (req: Request, res: Response): Promise
         endTime,
         daysOff,
         isActive,
+        perDaySchedule: perDayScheduleToSave,
       },
       {
         new: true,
@@ -98,6 +140,7 @@ export const updateDienstTemplate = async (req: Request, res: Response): Promise
     res.status(500).json({ message: 'Error al actualizar la plantilla de Dienst' });
   }
 };
+
 
 /**
  * DELETE /dienst-templates/:id

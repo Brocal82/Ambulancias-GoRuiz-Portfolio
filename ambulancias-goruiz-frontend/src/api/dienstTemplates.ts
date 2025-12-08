@@ -1,5 +1,6 @@
+// frontend/src/api/dienstTemplates.ts
 import api from './axios';
-import type { DienstTemplate } from '../types/dienst';
+import type { DienstTemplate, DaySchedule } from '../types/dienst';
 
 // Datos necesarios para crear/editar una plantilla
 export interface DienstTemplateInput {
@@ -8,6 +9,12 @@ export interface DienstTemplateInput {
   endTime: string;   // "HH:mm"
   daysOff: number[]; // 0=domingo, ..., 6=sábado
   isActive?: boolean;
+
+  /**
+   * Horario específico por día de la semana.
+   * Opcional: si no se envía, el backend usará startTime/endTime/daysOff.
+   */
+  perDaySchedule?: DaySchedule[];
 }
 
 /**

@@ -1,5 +1,5 @@
 // frontend/src/types/dienst.ts
-import type { Ambulance } from "./ambulance";
+import type { Ambulance } from './ambulance';
 
 export interface UserRef {
   _id: string;
@@ -19,7 +19,6 @@ export interface DienstAssignment {
   driver: string | UserRef;
   medic: string | UserRef;
 }
-
 
 export interface Dienst {
   _id: string;
@@ -65,19 +64,42 @@ export interface AssignedDayFull {
   medic: UserRef;
 }
 
+// 🗓️ Horario por día de la semana para una plantilla
+export interface DaySchedule {
+  /**
+   * 0 = domingo, 1 = lunes, ... 6 = sábado
+   */
+  dayIndex: number;
+  /**
+   * Hora de inicio "HH:mm".
+   * Opcional para días libres.
+   */
+  startTime?: string;
+  /**
+   * Hora de fin "HH:mm".
+   * Opcional para días libres.
+   */
+  endTime?: string;
+  /**
+   * true = día libre (no se genera assignment para ese día).
+   */
+  isOff: boolean;
+}
+
 // 📌 Plantilla de Dienst (base para generar Diensts reales por semana)
 export interface DienstTemplate {
   _id: string;
   dienstNumber: number;
-  startTime: string; // "HH:mm"
+  startTime: string; // "HH:mm" (horario global por defecto)
   endTime: string;   // "HH:mm"
   daysOff: number[]; // 0=domingo, ..., 6=sábado
   isActive: boolean;
+
+  /**
+   * Horario específico por día.
+   * Si está definido y tiene elementos, el backend lo usará
+   * para generar los Diensts con horarios distintos por día.
+   * Si no existe o está vacío, se usará startTime/endTime/daysOff.
+   */
+  perDaySchedule?: DaySchedule[];
 }
-
-
-
-
-
-
-
