@@ -1,57 +1,62 @@
-// frontend/src/components/diensts/EditDienstTemplateModal.tsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { DienstTemplate } from '../../types/dienst';
-import { updateDienstTemplate, type DienstTemplateInput } from '../../api/dienstTemplates';
-
-interface Props {
-  isOpen: boolean;                      // 👈 AÑADIDO
-  template: DienstTemplate;
-  token: string;
-  onClose: () => void;
-  onSaved: (updated: DienstTemplate) => void;
-}
+import {
+  createDienstTemplate,
+  type DienstTemplateInput,
+} from '../../api/dienstTemplates';
 
 const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-const EditDienstTemplateModal: React.FC<Props> = ({
-  isOpen,          // 👈 RECIBIMOS isOpen
-  template,
-  token,
-  onClose,
-  onSaved,
-}) => {
-  // Si quieres, por seguridad:
-  if (!isOpen) return null;
+interface CreateDienstTemplateModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  token: string;
+  onCreated: (tpl: DienstTemplate) => void;
+}
 
-  // 👇 estados internos del modal (ejemplo)
-  const [editDienstNumber, setEditDienstNumber] = useState<number | ''>(template.dienstNumber);
-  const [editStartTime, setEditStartTime] = useState<string>(template.startTime);
-  const [editEndTime, setEditEndTime] = useState<string>(template.endTime);
-  const [editDaysOff, setEditDaysOff] = useState<number[]>(template.daysOff ?? []);
-  const [editIsActive, setEditIsActive] = useState<boolean>(template.isActive ?? true);
-  const [saving, setSaving] = useState(false);
+const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
+  isOpen,
+  onClose,
+  token,
+  onCreated,
+}) => {
+  const [dienstNumber, setDienstNumber] = useState<number | ''>('');
+  const [startTime, setStartTime] = useState<string>('06:00');
+  const [endTime, setEndTime] = useState<string>('14:00');
+  const [daysOff, setDaysOff] = useState<number[]>([]);
+  const [isActive, setIsActive] = useState<boolean>(true);
+  const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleToggleEditDayOff = (dayIndex: number) => {
-    setEditDaysOff((prev) =>
-      prev.includes(dayIndex) ? prev.filter((d) => d !== dayIndex) : [...prev, dayIndex]
+  if (!isOpen) return null;
+
+  const handleToggleDayOff = (dayIndex: number) => {
+    setDaysOff((prev: number[]) =>
+      prev.includes(dayIndex)
+        ? prev.filter((d) => d !== dayIndex)
+        : [...prev, dayIndex]
     );
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
 
-    if (editDienstNumber === '' || editDienstNumber <= 0) {
+    if (!token) {
+      setError('No hay token de autenticación. Inicia sesión de nuevo.');
+      return;
+    }
+
+    if (dienstNumber === '' || dienstNumber <= 0) {
       setError('Debes indicar un número de Dienst válido.');
       return;
     }
 
-    if (!editStartTime || !editEndTime) {
+    if (!startTime || !endTime) {
       setError('Debes indicar un horario de inicio y fin.');
       return;
     }
 
-    if (editDaysOff.length === 7) {
+    if (daysOff.length === 7) {
       setError('No tiene sentido que todos los días sean libres.');
       return;
     }
@@ -61,19 +66,30 @@ const EditDienstTemplateModal: React.FC<Props> = ({
       setError(null);
 
       const payload: DienstTemplateInput = {
-        dienstNumber: Number(editDienstNumber),
-        startTime: editStartTime,
-        endTime: editEndTime,
-        daysOff: editDaysOff,
-        isActive: editIsActive,
+        dienstNumber: Number(dienstNumber),
+        startTime,
+        endTime,
+        daysOff,
+        isActive,
       };
 
-      const updated = await updateDienstTemplate(template._id, payload, token);
-      onSaved(updated);
+      const created = await createDienstTemplate(payload, token);
+
+      onCreated(created);
+
+      // Reseteamos el formulario
+      setDienstNumber('');
+      setStartTime('06:00');
+      setEndTime('14:00');
+      setDaysOff([]);
+      setIsActive(true);
+
       onClose();
     } catch (err: any) {
-      console.error('Error al actualizar plantilla de Dienst:', err);
-      const msg = err?.response?.data?.message || 'Error al actualizar la plantilla de Dienst';
+      console.error('Error al crear plantilla de Dienst:', err);
+      const msg =
+        err?.response?.data?.message ||
+        'Error al crear la plantilla de Dienst';
       setError(msg);
     } finally {
       setSaving(false);
@@ -84,31 +100,33 @@ const EditDienstTemplateModal: React.FC<Props> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="w-full max-w-lg rounded-lg bg-white p-4 shadow-lg">
         <h2 className="mb-3 text-base font-semibold text-gray-800">
-          Editar plantilla de Dienst #{template.dienstNumber}
+          Crear nueva plantilla de Dienst
         </h2>
 
         {error && (
-          <div className="mb-2 rounded-md bg-red-100 px-3 py-1.5 text-xs text-red-700">
+          <div className="mb-3 rounded-md bg-red-100 px-3 py-2 text-xs text-red-700">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSave} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label
-                htmlFor="editDienstNumber"
+                htmlFor="createDienstNumber"
                 className="mb-1 block text-xs font-medium text-gray-700"
               >
                 Nº Dienst
               </label>
               <input
-                id="editDienstNumber"
+                id="createDienstNumber"
                 type="number"
                 min={1}
-                value={editDienstNumber}
+                value={dienstNumber}
                 onChange={(e) =>
-                  setEditDienstNumber(e.target.value === '' ? '' : Number(e.target.value))
+                  setDienstNumber(
+                    e.target.value === '' ? '' : Number(e.target.value)
+                  )
                 }
                 className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
@@ -117,31 +135,31 @@ const EditDienstTemplateModal: React.FC<Props> = ({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label
-                  htmlFor="editStartTime"
+                  htmlFor="createStartTime"
                   className="mb-1 block text-xs font-medium text-gray-700"
                 >
                   Hora inicio
                 </label>
                 <input
-                  id="editStartTime"
+                  id="createStartTime"
                   type="time"
-                  value={editStartTime}
-                  onChange={(e) => setEditStartTime(e.target.value)}
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
                   className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
               <div>
                 <label
-                  htmlFor="editEndTime"
+                  htmlFor="createEndTime"
                   className="mb-1 block text-xs font-medium text-gray-700"
                 >
                   Hora fin
                 </label>
                 <input
-                  id="editEndTime"
+                  id="createEndTime"
                   type="time"
-                  value={editEndTime}
-                  onChange={(e) => setEditEndTime(e.target.value)}
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
                   className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
@@ -157,9 +175,9 @@ const EditDienstTemplateModal: React.FC<Props> = ({
                 <button
                   key={index}
                   type="button"
-                  onClick={() => handleToggleEditDayOff(index)}
+                  onClick={() => handleToggleDayOff(index)}
                   className={`rounded-full px-2 py-0.5 text-xs ${
-                    editDaysOff.includes(index)
+                    daysOff.includes(index)
                       ? 'bg-gray-800 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
@@ -172,13 +190,16 @@ const EditDienstTemplateModal: React.FC<Props> = ({
 
           <div className="flex items-center gap-2">
             <input
-              id="editIsActive"
+              id="createIsActive"
               type="checkbox"
-              checked={editIsActive}
-              onChange={(e) => setEditIsActive(e.target.checked)}
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <label htmlFor="editIsActive" className="text-xs font-medium text-gray-700">
+            <label
+              htmlFor="createIsActive"
+              className="text-xs font-medium text-gray-700"
+            >
               Plantilla activa
             </label>
           </div>
@@ -187,8 +208,8 @@ const EditDienstTemplateModal: React.FC<Props> = ({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
               disabled={saving}
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
             >
               Cancelar
             </button>
@@ -197,7 +218,7 @@ const EditDienstTemplateModal: React.FC<Props> = ({
               disabled={saving}
               className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
             >
-              {saving ? 'Guardando...' : 'Guardar cambios'}
+              {saving ? 'Creando...' : 'Crear plantilla'}
             </button>
           </div>
         </form>
@@ -206,4 +227,4 @@ const EditDienstTemplateModal: React.FC<Props> = ({
   );
 };
 
-export default EditDienstTemplateModal;
+export default CreateDienstTemplateModal;

@@ -1,42 +1,29 @@
-// frontend/src/pages/AdminDienstTemplatesPage.tsx
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import type { DienstTemplate } from '../types/dienst';
 import {
   getDienstTemplates,
-  createDienstTemplate,
-  updateDienstTemplate,
   deleteDienstTemplate,
-  type DienstTemplateInput,
 } from '../api/dienstTemplates';
 import { useAuth } from '../hooks/useAuth';
 import EditDienstTemplateModal from '../components/dienstTemplates/EditDienstTemplateModal';
+import CreateDienstTemplateModal from '../components/dienstTemplates/CreateDienstTemplateModal';
 
 const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-const AdminDienstTemplatesPage = () => {
+const AdminDienstTemplatesPage: React.FC = () => {
   const { token } = useAuth();
 
   const [templates, setTemplates] = useState<DienstTemplate[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Estado del formulario para crear nueva plantilla
-  const [newDienstNumber, setNewDienstNumber] = useState<number | ''>('');
-  const [newStartTime, setNewStartTime] = useState<string>('06:00');
-  const [newEndTime, setNewEndTime] = useState<string>('14:00');
-  const [newDaysOff, setNewDaysOff] = useState<number[]>([]);
-  const [creating, setCreating] = useState<boolean>(false);
-
-  // Estado para edición de una plantilla existente
+  // Estado para edición
   const [editingTemplate, setEditingTemplate] = useState<DienstTemplate | null>(null);
-  const [editDienstNumber, setEditDienstNumber] = useState<number | ''>('');
-  const [editStartTime, setEditStartTime] = useState<string>('06:00');
-  const [editEndTime, setEditEndTime] = useState<string>('14:00');
-  const [editDaysOff, setEditDaysOff] = useState<number[]>([]);
-  const [editIsActive, setEditIsActive] = useState<boolean>(true);
-  const [editSaving, setEditSaving] = useState<boolean>(false);
+  const [isEditOpen, setIsEditOpen] = useState<boolean>(false);
 
-  // ───────────────────────────────── get templates ───────────────────────────────
+  // Estado para creación
+  const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false);
+
   useEffect(() => {
     const fetchTemplates = async () => {
       if (!token) return;
@@ -57,137 +44,6 @@ const AdminDienstTemplatesPage = () => {
     fetchTemplates();
   }, [token]);
 
-  // ───────────────────────────────── crear plantilla nueva ──────────────────────
-  const handleToggleDayOff = (dayIndex: number) => {
-    setNewDaysOff((prev) =>
-      prev.includes(dayIndex) ? prev.filter((d) => d !== dayIndex) : [...prev, dayIndex]
-    );
-  };
-
-  const handleCreateTemplate = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!token) {
-      setError('No hay token de autenticación. Inicia sesión de nuevo.');
-      return;
-    }
-
-    if (newDienstNumber === '' || newDienstNumber <= 0) {
-      setError('Debes indicar un número de Dienst válido.');
-      return;
-    }
-
-    if (!newStartTime || !newEndTime) {
-      setError('Debes indicar un horario de inicio y fin.');
-      return;
-    }
-
-    if (newDaysOff.length === 7) {
-      setError('No tiene sentido que todos los días sean libres.');
-      return;
-    }
-
-    try {
-      setCreating(true);
-      setError(null);
-
-      const payload: DienstTemplateInput = {
-        dienstNumber: Number(newDienstNumber),
-        startTime: newStartTime,
-        endTime: newEndTime,
-        daysOff: newDaysOff,
-        isActive: true,
-      };
-
-      const created = await createDienstTemplate(payload, token);
-
-      setTemplates((prev) =>
-        [...prev, created].sort((a, b) => a.dienstNumber - b.dienstNumber)
-      );
-
-      // reset
-      setNewDienstNumber('');
-      setNewStartTime('06:00');
-      setNewEndTime('14:00');
-      setNewDaysOff([]);
-    } catch (err: any) {
-      console.error('Error al crear plantilla de Dienst:', err);
-      const msg = err?.response?.data?.message || 'Error al crear la plantilla de Dienst';
-      setError(msg);
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  // ───────────────────────────────── edición ─────────────────────────────────────
-  const startEditTemplate = (tpl: DienstTemplate) => {
-    setEditingTemplate(tpl);
-    setEditDienstNumber(tpl.dienstNumber);
-    setEditStartTime(tpl.startTime);
-    setEditEndTime(tpl.endTime);
-    setEditDaysOff(tpl.daysOff ?? []);
-    setEditIsActive(tpl.isActive ?? true);
-    setError(null);
-  };
-
-  const cancelEdit = () => {
-    setEditingTemplate(null);
-    setEditSaving(false);
-  };
-
-  // ahora SIN parámetro event, porque lo llama el modal con onClick
-  const handleSaveEdit = async () => {
-    if (!token || !editingTemplate) {
-      setError('No hay plantilla seleccionada o falta token.');
-      return;
-    }
-
-    if (editDienstNumber === '' || editDienstNumber <= 0) {
-      setError('Debes indicar un número de Dienst válido.');
-      return;
-    }
-
-    if (!editStartTime || !editEndTime) {
-      setError('Debes indicar un horario de inicio y fin.');
-      return;
-    }
-
-    if (editDaysOff.length === 7) {
-      setError('No tiene sentido que todos los días sean libres.');
-      return;
-    }
-
-    try {
-      setEditSaving(true);
-      setError(null);
-
-      const payload: DienstTemplateInput = {
-        dienstNumber: Number(editDienstNumber),
-        startTime: editStartTime,
-        endTime: editEndTime,
-        daysOff: editDaysOff,
-        isActive: editIsActive,
-      };
-
-      const updated = await updateDienstTemplate(editingTemplate._id, payload, token);
-
-      setTemplates((prev) =>
-        prev
-          .map((tpl) => (tpl._id === updated._id ? updated : tpl))
-          .sort((a, b) => a.dienstNumber - b.dienstNumber)
-      );
-
-      setEditingTemplate(null);
-    } catch (err: any) {
-      console.error('Error al actualizar plantilla de Dienst:', err);
-      const msg =
-        err?.response?.data?.message || 'Error al actualizar la plantilla de Dienst';
-      setError(msg);
-    } finally {
-      setEditSaving(false);
-    }
-  };
-
-  // ───────────────────────────────── helpers ─────────────────────────────────────
   const renderDaysOff = (daysOff: number[]) => {
     if (!daysOff || daysOff.length === 0) return '—';
 
@@ -197,110 +53,39 @@ const AdminDienstTemplatesPage = () => {
       .join(', ');
   };
 
-  // ───────────────────────────────── render ──────────────────────────────────────
+  const handleCreatedTemplate = (created: DienstTemplate) => {
+    setTemplates((prev) =>
+      [...prev, created].sort((a, b) => a.dienstNumber - b.dienstNumber)
+    );
+  };
+
+  const handleUpdatedTemplate = (updated: DienstTemplate) => {
+    setTemplates((prev) =>
+      prev
+        .map((tpl) => (tpl._id === updated._id ? updated : tpl))
+        .sort((a, b) => a.dienstNumber - b.dienstNumber)
+    );
+  };
+
   return (
     <div className="p-4 md:p-6 lg:p-8">
-      <h1 className="mb-4 text-2xl font-bold">Plantillas de Dienst</h1>
-      <p className="mb-6 text-sm text-gray-600">
-        Estas plantillas se usarán como base para generar los Diensts semanales
-        (horarios y días libres). Solo los administradores pueden modificarlas.
-      </p>
-
-      {/* Formulario crear */}
-      <form
-        onSubmit={handleCreateTemplate}
-        className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-      >
-        <h2 className="mb-3 text-base font-semibold text-gray-800">
-          Crear nueva plantilla de Dienst
-        </h2>
-        <div className="grid gap-4 md:grid-cols-4 md:items-end">
-          <div>
-            <label
-              htmlFor="dienstNumber"
-              className="mb-1 block text-xs font-medium text-gray-700"
-            >
-              Nº Dienst
-            </label>
-            <input
-              id="dienstNumber"
-              type="number"
-              min={1}
-              value={newDienstNumber}
-              onChange={(e) =>
-                setNewDienstNumber(
-                  e.target.value === '' ? '' : Number(e.target.value)
-                )
-              }
-              className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="startTime"
-              className="mb-1 block text-xs font-medium text-gray-700"
-            >
-              Hora inicio
-            </label>
-            <input
-              id="startTime"
-              type="time"
-              value={newStartTime}
-              onChange={(e) => setNewStartTime(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="endTime"
-              className="mb-1 block text-xs font-medium text-gray-700"
-            >
-              Hora fin
-            </label>
-            <input
-              id="endTime"
-              type="time"
-              value={newEndTime}
-              onChange={(e) => setNewEndTime(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <span className="mb-1 block text-xs font-medium text-gray-700">
-              Días libres
-            </span>
-            <div className="flex flex-wrap gap-1">
-              {dayLabels.map((label, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => handleToggleDayOff(index)}
-                  className={`rounded-full px-2 py-0.5 text-xs ${
-                    newDaysOff.includes(index)
-                      ? 'bg-gray-800 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Plantillas de Dienst</h1>
+          <p className="text-sm text-gray-600">
+            Estas plantillas se usarán como base para generar los Diensts semanales
+            (horarios y días libres). Solo los administradores pueden modificarlas.
+          </p>
         </div>
 
-        <div className="mt-4 flex justify-end">
-          <button
-            type="submit"
-            disabled={creating}
-            className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-          >
-            {creating ? 'Creando...' : 'Crear plantilla'}
-          </button>
-        </div>
-      </form>
+        <button
+          type="button"
+          onClick={() => setIsCreateOpen(true)}
+          className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          + Nueva plantilla
+        </button>
+      </div>
 
       {loading && (
         <div className="text-sm text-gray-500">Cargando plantillas...</div>
@@ -363,11 +148,14 @@ const AdminDienstTemplatesPage = () => {
                       </span>
                     )}
                   </td>
-                  <td className="space-x-2 px-4 py-2 text-right">
+                  <td className="px-4 py-2 text-right space-x-2">
                     <button
                       type="button"
                       className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100"
-                      onClick={() => startEditTemplate(tpl)}
+                      onClick={() => {
+                        setEditingTemplate(tpl);
+                        setIsEditOpen(true);
+                      }}
                     >
                       Editar
                     </button>
@@ -389,10 +177,7 @@ const AdminDienstTemplatesPage = () => {
                             prev.filter((t) => t._id !== tpl._id)
                           );
                         } catch (err) {
-                          console.error(
-                            '❌ Error al eliminar plantilla de Dienst:',
-                            err
-                          );
+                          console.error('❌ Error al eliminar plantilla de Dienst:', err);
                           setError('Error al eliminar la plantilla de Dienst');
                         }
                       }}
@@ -407,23 +192,27 @@ const AdminDienstTemplatesPage = () => {
         </div>
       )}
 
-      {/* Modal de edición (reutilizable) */}
-      {editingTemplate && (
+      {/* Modal CREAR */}
+      {isCreateOpen && token && (
+        <CreateDienstTemplateModal
+          isOpen={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
+          token={token}
+          onCreated={handleCreatedTemplate}
+        />
+      )}
+
+      {/* Modal EDITAR */}
+      {isEditOpen && editingTemplate && token && (
         <EditDienstTemplateModal
+          isOpen={isEditOpen}
           template={editingTemplate}
-          onClose={cancelEdit}
-          onSave={handleSaveEdit}
-          saving={editSaving}
-          editDienstNumber={editDienstNumber}
-          setEditDienstNumber={setEditDienstNumber}
-          editStartTime={editStartTime}
-          setEditStartTime={setEditStartTime}
-          editEndTime={editEndTime}
-          setEditEndTime={setEditEndTime}
-          editDaysOff={editDaysOff}
-          setEditDaysOff={setEditDaysOff}
-          editIsActive={editIsActive}
-          setEditIsActive={setEditIsActive}
+          token={token}
+          onClose={() => {
+            setIsEditOpen(false);
+            setEditingTemplate(null);
+          }}
+          onSaved={handleUpdatedTemplate}
         />
       )}
     </div>
