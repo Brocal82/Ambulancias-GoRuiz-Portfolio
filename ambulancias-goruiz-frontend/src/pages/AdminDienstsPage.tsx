@@ -76,12 +76,19 @@ const AdminPage = () => {
     if (!token) return;
     try {
       const data = await getAllDiensts(token);
-      const plantillas = data.filter((d) => d.dienstNumber >= 1 && d.dienstNumber <= 10);
-      setDiensts(plantillas);
+
+      // ✅ Nos quedamos con todos los Diensts con número >= 1
+      //    y los ordenamos por número ascendente.
+      const normalized = data
+        .filter((d) => typeof d.dienstNumber === 'number' && d.dienstNumber >= 1)
+        .sort((a, b) => a.dienstNumber - b.dienstNumber);
+
+      setDiensts(normalized);
     } catch (error) {
       console.error("Error al obtener los diensts:", error);
     }
   }, [token]);
+
 
   useEffect(() => {
     fetchDiensts();

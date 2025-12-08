@@ -1,6 +1,7 @@
 //src/controllers/dienstController.ts
 import { Request, Response } from 'express';
 import Dienst from '../models/Dienst';
+import DienstTemplate from '../models/DienstTemplate';
 import Ambulance from '../models/Ambulance'; // ✅ Nuevo import
 import { dienstSchema } from '../schemas/dienstSchema';
 import { dienstQuerySchema } from '../schemas/dienstQuerySchema';
@@ -445,13 +446,25 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
       return;
     }
 
-    // 🔢 Números de Dienst que vamos a crear
-    const dienstNumbers = [1, 2, 3, 4, 5];
+    // 📄 Leer plantillas activas desde BD
+    const templates = await DienstTemplate.find({ isActive: true })
+      .sort({ dienstNumber: 1 })
+      .lean();
+
+    if (!templates || templates.length === 0) {
+      res.status(400).json({
+        message: 'No hay plantillas de Dienst activas. Crea al menos una antes de generar la semana.',
+      });
+      return;
+    }
+
+    // 🔢 Números de Dienst a partir de plantillas
+    const dienstNumbers = templates.map((tpl) => tpl.dienstNumber);
 
     // 👥 Traer equipos con su configuración de rotación
     const teams = await Team.find(
       {},
-      { driver: 1, medic: 1, rotationMode: 1, fixedDienstNumber: 1, createdAt: 1, ambulanceId: 1, }
+      { driver: 1, medic: 1, rotationMode: 1, fixedDienstNumber: 1, createdAt: 1, ambulanceId: 1 }
     ).lean();
 
     // 🗺️ Mapas de ayuda: fijos y rotativos
@@ -463,7 +476,6 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
       const fixedNum = (team as any).fixedDienstNumber as number | null | undefined;
 
       if (mode === 'fixed' && fixedNum && dienstNumbers.includes(fixedNum)) {
-        // Solo si ese Dienst aún no tiene equipo fijo asignado
         if (!fixedMap.has(fixedNum)) {
           fixedMap.set(fixedNum, team);
         }
@@ -491,35 +503,24 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
       }
     }
 
-    // 2️⃣ Ahora rellenamos los Diensts sin equipo fijo con equipos rotativos, SIN repetir en la misma semana,
-    //    pero rotando el "offset" según la semana.
+    // 2️⃣ Rellenar Diensts sin equipo fijo con equipos rotativos
     const freeDienstNumbers = dienstNumbers.filter((num) => !fixedMap.has(num));
     const R = rotatingTeams.length;
     const freeCount = freeDienstNumbers.length;
 
     if (R > 0 && freeCount > 0) {
-      // No podemos colocar más equipos que Dienst libres
       const teamCount = Math.min(R, freeCount);
-
-      // Para que los equipos "caminen" por los Dienst libres según la semana:
-      // - k = índice del equipo en rotatingTeams
-      // - weekIndex = índice de semana (0,1,2,...)
-      // - slotIndex = (weekIndex + k) % freeCount
-      //   así en cada semana el equipo se desplaza un Dienst hacia adelante
       const usedSlots = new Set<number>();
 
       for (let k = 0; k < teamCount; k++) {
         let slotIndex = (weekIndex + k) % freeCount;
 
-        // Por seguridad, si hubiera alguna colisión extraña,
-        // buscamos el siguiente slot libre (máx. freeCount vueltas)
         let tries = 0;
         while (usedSlots.has(slotIndex) && tries < freeCount) {
           slotIndex = (slotIndex + 1) % freeCount;
           tries++;
         }
         if (usedSlots.has(slotIndex)) {
-          // No hay hueco libre, salimos
           break;
         }
 
@@ -532,10 +533,15 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
       // Los Dienst libres que sobren quedan sin equipo (manual), como antes
     }
 
+    // 🧱 Crear los Diensts usando las plantillas (horario + días libres)
+    const dienstsToInsert = await Promise.all(
+      templates.map(async (tpl) => {
+        const dienstNumber = tpl.dienstNumber;
+        const templateStartTime = tpl.startTime;
+        const templateEndTime = tpl.endTime;
+        const daysOff = Array.isArray(tpl.daysOff) ? tpl.daysOff : [];
+        const daysOffSet = new Set<number>(daysOff);
 
-    // 🧱 Crear los Diensts con días/horarios y aplicar lógica de vacaciones/bajas
-        const dienstsToInsert = await Promise.all(
-      dienstNumbers.map(async (dienstNumber) => {
         const assignments: {
           date: string;
           startTime: string;
@@ -555,9 +561,6 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
           assignedTeam && (assignedTeam as any).ambulanceId
             ? new mongoose.Types.ObjectId(String((assignedTeam as any).ambulanceId))
             : undefined;
-
-
-
 
         // Pre-calculamos por día si driver/medic están bloqueados por vacaciones/baja
         const dayBlockMap: Record<string, { driver: boolean; medic: boolean }> = {};
@@ -588,15 +591,15 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
           const day = new Date(startDate);
           day.setDate(startDate.getDate() + j);
 
-          // 🏖️ Días libres (como ya tenías)
-          const isDayOff = [5, 6].includes((dienstNumber + j) % 7);
-          if (isDayOff) continue;
+          // 🏖️ Día libre según plantilla (0=domingo,..,6=sábado)
+          const weekDayIndex = day.getDay(); // 0-6
+          if (daysOffSet.has(weekDayIndex)) continue;
 
-          const startTime = dienstNumber % 2 === 0 ? '06:00' : '14:00';
-          const endTime = dienstNumber % 2 === 0 ? '14:00' : '22:00';
+          const startTime = templateStartTime;
+          const endTime = templateEndTime;
           const dateISO = day.toISOString().split('T')[0];
 
-                    const baseAssignment: {
+          const baseAssignment: {
             date: string;
             startTime: string;
             endTime: string;
@@ -621,11 +624,10 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
             baseAssignment.medic = medicId;
           }
 
-                   // 🚑 Asignar ambulancia fija del equipo (si tiene)
+          // 🚑 Asignar ambulancia fija del equipo (si tiene)
           if (teamAmbulanceId) {
             baseAssignment.ambulanceId = teamAmbulanceId;
           }
-
 
           assignments.push(baseAssignment);
         }
@@ -643,7 +645,7 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
 
     res.status(201).json({
       message:
-        'Diensts generados correctamente con rotación de equipos aplicada (fijos, rotativos, vacaciones y bajas).',
+        'Diensts generados correctamente a partir de plantillas, con rotación de equipos aplicada (fijos, rotativos, vacaciones y bajas).',
       count: dienstsToInsert.length,
     });
   } catch (error) {
@@ -651,6 +653,7 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
     res.status(500).json({ message: 'Error al generar Diensts' });
   }
 };
+
 
 
 
