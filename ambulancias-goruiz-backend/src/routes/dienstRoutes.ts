@@ -19,6 +19,14 @@ import {
   swapWeekRoles
 } from '../controllers/dienstController';
 
+import {
+  getDienstTemplates,
+  createDienstTemplate,
+  updateDienstTemplate,
+  deleteDienstTemplate,
+} from '../controllers/dienstTemplateController';
+
+
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { authorizeRole } from '../middlewares/roleMiddleware';
 
@@ -36,6 +44,36 @@ router.get('/assigned-days/:userId', authenticateToken, getAssignedDaysForUser);
 
 router.post('/generate-week', authenticateToken, authorizeRole('admin'), generateDienstTemplatesForWeek);
 router.post('/delete-week', authenticateToken, authorizeRole('admin'), deleteDienstsForWeek);
+
+// 📌 Rutas para plantillas de Dienst (solo admin)
+router.get(
+  '/templates',
+  authenticateToken,
+  authorizeRole('admin'),
+  getDienstTemplates
+);
+
+router.post(
+  '/templates',
+  authenticateToken,
+  authorizeRole('admin'),
+  createDienstTemplate
+);
+
+router.put(
+  '/templates/:id',
+  authenticateToken,
+  authorizeRole('admin'),
+  updateDienstTemplate
+);
+
+router.delete(
+  '/templates/:id',
+  authenticateToken,
+  authorizeRole('admin'),
+  deleteDienstTemplate
+);
+
 
 // 👇 Acceso según permisos
 router.get('/:id', authenticateToken, getDienstById);
