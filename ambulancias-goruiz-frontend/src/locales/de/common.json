@@ -42,6 +42,10 @@
         "title": "📅 Dienstplan",
         "desc": "Wöchentliche Dienste bearbeiten"
       },
+      "dienstTemplates": {
+        "title": "🗂️ Dienstvorlagen",
+        "desc": "Erstelle, konfiguriere und bearbeite wöchentliche Dienstpläne."
+      },
       "summaries": {
         "title": "📄 Tagesabschlüsse",
         "desc": "Gesendete Tagesabschlüsse ansehen"

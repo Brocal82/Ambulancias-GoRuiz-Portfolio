@@ -42,6 +42,10 @@
         "title": "📅 Dienstplan",
         "desc": "Edita los servicios semanales"
       },
+      "dienstTemplates": {
+        "title": "🗂️ Plantillas de Dienst",
+        "desc": "Crea, configura y edita Diensts semanales."
+      },
       "summaries": {
         "title": "📄 Reportes Finales",
         "desc": "Ver cierres de jornada enviados"

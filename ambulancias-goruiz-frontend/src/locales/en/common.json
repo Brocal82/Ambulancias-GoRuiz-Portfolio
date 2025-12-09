@@ -42,6 +42,10 @@
         "title": "📅 Duty roster",
         "desc": "Edit weekly services"
       },
+      "dienstTemplates": {
+        "title": "🗂️ Dienst Templates",
+        "desc": "Create, configure, and edit weekly Dienst schedules."
+      },
       "summaries": {
         "title": "📄 Final reports",
         "desc": "View submitted day closures"
