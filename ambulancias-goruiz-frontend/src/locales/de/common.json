@@ -39,7 +39,7 @@
         "desc": "Verwalte feste Paare (Fahrer + Sanitäter)"
       },
       "diensts": {
-        "title": "📅 Dienstplan",
+        "title": "🧮 Dienstplan",
         "desc": "Wöchentliche Dienste bearbeiten"
       },
       "dienstTemplates": {
@@ -47,7 +47,7 @@
         "desc": "Erstelle, konfiguriere und bearbeite wöchentliche Dienstpläne."
       },
       "summaries": {
-        "title": "📄 Tagesabschlüsse",
+        "title": "📈 Tagesabschlüsse",
         "desc": "Gesendete Tagesabschlüsse ansehen"
       },
       "hospitals": {
@@ -59,7 +59,7 @@
         "desc": "Rettungswagen hinzufügen und bearbeiten"
       },
       "mechanics": {
-        "title": "🔧 Mechaniker",
+        "title": "🛠️ Mechaniker",
         "desc": "Fahrzeugmeldungen prüfen"
       },
       "vacations": {
@@ -67,11 +67,11 @@
         "desc": "Urlaubsanträge verwalten"
       },
       "appointments": {
-        "title": "🗓️ Termine",
+        "title": "📕 Termine",
         "desc": "Kalender und Anfragen"
       },
       "messages": {
-        "title": "✉️ Nachrichten",
+        "title": "📨 Nachrichten",
         "desc": "Wichtige Mitteilungen senden"
       },
       "sickLeaves": {
@@ -102,7 +102,7 @@
         "desc": "Deine zugewiesenen Tage ansehen"
       },
       "workday": {
-        "title": "📋 Mein heutiger Arbeitstag",
+        "title": "🚨 Mein heutiger Arbeitstag",
         "desc": "Tägliche Fahrten erfassen und verwalten"
       },
       "praemien": {
@@ -114,7 +114,7 @@
         "desc": "Verfügbare Krankenhäuser ansehen"
       },
       "messages": {
-        "title": "📨 Nachrichten",
+        "title": "📩 Nachrichten",
         "desc": "Nachrichten des Admin lesen"
       },
       "vacations": {
@@ -122,7 +122,7 @@
         "desc": "Deine Urlaubsanträge verwalten"
       },
       "appointments": {
-        "title": "🗓️ Termine",
+        "title": "📕 Termine",
         "desc": "Termine anfragen und verwalten"
       },
       "sickLeaves": {

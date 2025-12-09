@@ -39,7 +39,7 @@
         "desc": "Gestiona parejas fijas (conductor + sanitario)"
       },
       "diensts": {
-        "title": "📅 Dienstplan",
+        "title": "🧮 Dienstplan",
         "desc": "Edita los servicios semanales"
       },
       "dienstTemplates": {
@@ -47,7 +47,7 @@
         "desc": "Crea, configura y edita Diensts semanales."
       },
       "summaries": {
-        "title": "📄 Reportes Finales",
+        "title": "📈 Reportes Finales",
         "desc": "Ver cierres de jornada enviados"
       },
       "hospitals": {
@@ -59,7 +59,7 @@
         "desc": "Añade y edita ambulancias"
       },
       "mechanics": {
-        "title": "🔧 Mecánicos",
+        "title": "🛠️ Mecánicos",
         "desc": "Revisa reportes de ambulancias"
       },
       "vacations": {
@@ -67,11 +67,11 @@
         "desc": "Gestiona solicitudes vacaciones"
       },
       "appointments": {
-        "title": "🗓️ Citas",
+        "title": "📕 Citas",
         "desc": "Calendario y solicitudes"
       },
       "messages": {
-        "title": "✉️ Mensajes",
+        "title": "📨 Mensajes",
         "desc": "Envía comunicados importantes"
       },
       "sickLeaves": {
@@ -102,7 +102,7 @@
         "desc": "Consulta tus días asignados"
       },
       "workday": {
-        "title": "📋 Mi jornada de hoy",
+        "title": "🚨 Mi jornada de hoy",
         "desc": "Registra y gestiona tus viajes diarios"
       },
       "praemien": {
@@ -114,7 +114,7 @@
         "desc": "Ver hospitales disponibles"
       },
       "messages": {
-        "title": "📨 Mensajes",
+        "title": "📩 Mensajes",
         "desc": "Lee los mensajes del administrador"
       },
       "vacations": {
@@ -122,7 +122,7 @@
         "desc": "Gestiona tus solicitudes de vacaciones"
       },
       "appointments": {
-        "title": "🗓️ Citas",
+        "title": "📕 Citas",
         "desc": "Pide y gestiona tus citas"
       },
       "sickLeaves": {
