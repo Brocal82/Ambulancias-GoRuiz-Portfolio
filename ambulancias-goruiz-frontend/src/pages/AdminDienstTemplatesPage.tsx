@@ -9,6 +9,8 @@ import EditDienstTemplateModal from '../components/dienstTemplates/EditDienstTem
 import CreateDienstTemplateModal from '../components/dienstTemplates/CreateDienstTemplateModal';
 
 const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+// Orden visual: Lunes (1) → Sábado (6) → Domingo (0)
+const orderedDayIndices = [1, 2, 3, 4, 5, 6, 0];
 
 const AdminDienstTemplatesPage: React.FC = () => {
   const { token } = useAuth();
@@ -32,7 +34,8 @@ const AdminDienstTemplatesPage: React.FC = () => {
         setLoading(true);
         setError(null);
         const data = await getDienstTemplates(token);
-        setTemplates(data);
+        const sorted = [...data].sort((a, b) => a.dienstNumber - b.dienstNumber);
+        setTemplates(sorted);
       } catch (err) {
         console.error('Error al cargar plantillas de Dienst:', err);
         setError('Error al cargar las plantillas de Dienst');
@@ -43,15 +46,6 @@ const AdminDienstTemplatesPage: React.FC = () => {
 
     fetchTemplates();
   }, [token]);
-
-  const renderDaysOff = (daysOff: number[]) => {
-    if (!daysOff || daysOff.length === 0) return '—';
-
-    return daysOff
-      .sort((a, b) => a - b)
-      .map((d) => dayLabels[d] ?? d)
-      .join(', ');
-  };
 
   const handleCreatedTemplate = (created: DienstTemplate) => {
     setTemplates((prev) =>
@@ -67,15 +61,41 @@ const AdminDienstTemplatesPage: React.FC = () => {
     );
   };
 
+  /**
+   * Configuración de un día concreto (libre/horas) para una plantilla.
+   * Usa perDaySchedule si existe; si no, startTime/endTime + daysOff.
+   */
+  const getDayConfig = (
+    tpl: DienstTemplate,
+    dayIndex: number
+  ): { isOff: boolean; startTime: string; endTime: string } => {
+    const baseStart = tpl.startTime;
+    const baseEnd = tpl.endTime;
+    const daysOffSet = new Set<number>(tpl.daysOff ?? []);
+
+    if (tpl.perDaySchedule && tpl.perDaySchedule.length > 0) {
+      const cfg = tpl.perDaySchedule.find((d) => d.dayIndex === dayIndex);
+      if (cfg) {
+        return {
+          isOff: !!cfg.isOff,
+          startTime: cfg.startTime || baseStart,
+          endTime: cfg.endTime || baseEnd,
+        };
+      }
+    }
+
+    return {
+      isOff: daysOffSet.has(dayIndex),
+      startTime: baseStart,
+      endTime: baseEnd,
+    };
+  };
+
   return (
     <div className="p-4 md:p-6 lg:p-8">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Plantillas de Dienst</h1>
-          <p className="text-sm text-gray-600">
-            Estas plantillas se usarán como base para generar los Diensts semanales
-            (horarios y días libres). Solo los administradores pueden modificarlas.
-          </p>
+          <h1 className="text-2xl font-bold">Diensts</h1>
         </div>
 
         <button
@@ -83,7 +103,7 @@ const AdminDienstTemplatesPage: React.FC = () => {
           onClick={() => setIsCreateOpen(true)}
           className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
         >
-          + Nueva plantilla
+         + Crear Dienst
         </button>
       </div>
 
@@ -111,83 +131,137 @@ const AdminDienstTemplatesPage: React.FC = () => {
                 <th className="px-4 py-2 text-left font-medium text-gray-700">
                   Nº Dienst
                 </th>
-                <th className="px-4 py-2 text-left font-medium text-gray-700">
-                  Horario
-                </th>
-                <th className="px-4 py-2 text-left font-medium text-gray-700">
-                  Días libres
-                </th>
-                <th className="px-4 py-2 text-left font-medium text-gray-700">
-                  Activa
-                </th>
+                {orderedDayIndices.map((dayIndex) => (
+                  <th
+                    key={dayIndex}
+                    className="px-2 py-2 text-center font-medium text-gray-700"
+                  >
+                    {dayLabels[dayIndex]}
+                  </th>
+                ))}
                 <th className="px-4 py-2 text-right font-medium text-gray-700">
                   Acciones
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {templates.map((tpl) => (
-                <tr key={tpl._id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 font-semibold text-gray-800">
-                    {tpl.dienstNumber}
-                  </td>
-                  <td className="px-4 py-2 text-gray-700">
-                    {tpl.startTime} – {tpl.endTime}
-                  </td>
-                  <td className="px-4 py-2 text-gray-700">
-                    {renderDaysOff(tpl.daysOff)}
-                  </td>
-                  <td className="px-4 py-2">
-                    {tpl.isActive ? (
-                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                        Activa
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-700">
-                        Inactiva
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2 text-right space-x-2">
-                    <button
-                      type="button"
-                      className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100"
-                      onClick={() => {
-                        setEditingTemplate(tpl);
-                        setIsEditOpen(true);
-                      }}
-                    >
-                      Editar
-                    </button>
+  {templates.map((tpl) => {
+    const isActiveTpl = tpl.isActive;
 
-                    <button
-                      type="button"
-                      className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
-                      onClick={async () => {
-                        if (!token) return;
+    return (
+      <tr
+        key={tpl._id}
+        className={`transition-colors ${
+          isActiveTpl
+            ? 'hover:bg-gray-50/60'
+            : 'bg-rose-50/70 hover:bg-rose-100/80'
+        }`}
+      >
+        {/* Nº Dienst + icono de estado */}
+        <td className="px-4 py-2 align-middle">
+          <div className="flex min-h-[56px] items-center gap-3">
+            {/* Icono de estado */}
+            {isActiveTpl ? (
+              <span
+                className="inline-flex h-3 w-3 rounded-full bg-emerald-500"
+                aria-label="Dienst activo"
+                title="Dienst activo"
+              />
+            ) : (
+              <span
+                className="inline-flex text-lg"
+                aria-label="Dienst inactivo"
+                title="Dienst inactivo"
+              >
+                💀
+              </span>
+            )}
 
-                        const confirmDelete = window.confirm(
-                          `¿Eliminar la plantilla de Dienst #${tpl.dienstNumber}?`
-                        );
-                        if (!confirmDelete) return;
+            <span className="text-sm font-semibold text-gray-900">
+              #{tpl.dienstNumber}
+            </span>
+          </div>
+        </td>
 
-                        try {
-                          await deleteDienstTemplate(tpl._id, token);
-                          setTemplates((prev) =>
-                            prev.filter((t) => t._id !== tpl._id)
-                          );
-                        } catch (err) {
-                          console.error('❌ Error al eliminar plantilla de Dienst:', err);
-                          setError('Error al eliminar la plantilla de Dienst');
-                        }
-                      }}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+        {/* Días: Lun → Dom */}
+        {orderedDayIndices.map((dayIndex) => {
+          const { isOff, startTime, endTime } = getDayConfig(
+            tpl,
+            dayIndex
+          );
+
+          const inactiveCardClass = isActiveTpl ? '' : 'opacity-60';
+
+          if (isOff) {
+            return (
+              <td key={dayIndex} className="px-2 py-2 align-middle">
+                <div
+                  className={`flex min-h-[56px] w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-[14px] ${inactiveCardClass}`}
+                >
+                  🌴
+                </div>
+              </td>
+            );
+          }
+
+          return (
+            <td key={dayIndex} className="px-2 py-2 align-middle">
+              <div
+                className={`flex min-h-[56px] w-full items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-[12px] font-semibold text-blue-900 ${inactiveCardClass}`}
+              >
+                {startTime} – {endTime}
+              </div>
+            </td>
+          );
+        })}
+
+        {/* Acciones */}
+        <td className="px-4 py-2 align-middle">
+          <div className="flex min-h-[56px] items-center justify-end gap-2">
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-base hover:bg-gray-100"
+              title="Editar plantilla"
+              onClick={() => {
+                setEditingTemplate(tpl);
+                setIsEditOpen(true);
+              }}
+            >
+              ✏️
+            </button>
+
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-300 text-base text-red-700 hover:bg-red-50"
+              title="Eliminar plantilla"
+              onClick={async () => {
+                if (!token) return;
+
+                const confirmDelete = window.confirm(
+                  `¿Eliminar la plantilla de Dienst #${tpl.dienstNumber}?`
+                );
+                if (!confirmDelete) return;
+
+                try {
+                  await deleteDienstTemplate(tpl._id, token);
+                  setTemplates((prev) =>
+                    prev.filter((t) => t._id !== tpl._id)
+                  );
+                } catch (err) {
+                  console.error('❌ Error al eliminar plantilla de Dienst:', err);
+                  setError('Error al eliminar la plantilla de Dienst');
+                }
+              }}
+            >
+              🗑️
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
+
           </table>
         </div>
       )}
