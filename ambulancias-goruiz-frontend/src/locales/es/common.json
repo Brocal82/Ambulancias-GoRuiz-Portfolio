@@ -39,7 +39,7 @@
         "desc": "Gestiona parejas fijas (conductor + sanitario)"
       },
       "diensts": {
-        "title": "🧮 Dienstplan",
+        "title": "🗓️ Dienstplan",
         "desc": "Edita los servicios semanales"
       },
       "dienstTemplates": {

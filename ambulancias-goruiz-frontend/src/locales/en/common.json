@@ -39,7 +39,7 @@
         "desc": "Manage fixed pairs (driver + medic)"
       },
       "diensts": {
-        "title": "🧮 Duty roster",
+        "title": "🗓️ Duty roster",
         "desc": "Edit weekly services"
       },
       "dienstTemplates": {

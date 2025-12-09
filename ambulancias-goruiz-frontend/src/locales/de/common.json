@@ -39,7 +39,7 @@
         "desc": "Verwalte feste Paare (Fahrer + Sanitäter)"
       },
       "diensts": {
-        "title": "🧮 Dienstplan",
+        "title": "🗓️ Dienstplan",
         "desc": "Wöchentliche Dienste bearbeiten"
       },
       "dienstTemplates": {
