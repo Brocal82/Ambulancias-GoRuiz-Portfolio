@@ -1,4 +1,3 @@
-// frontend/src/components/dienstTemplates/CreateDienstTemplateModal.tsx
 import { useState } from 'react';
 import type { DienstTemplate } from '../../types/dienst';
 import {
@@ -7,6 +6,8 @@ import {
 } from '../../api/dienstTemplates';
 
 const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+// Orden visual: Lunes (1) → Sábado (6) → Domingo (0)
+const orderedDayIndices = [1, 2, 3, 4, 5, 6, 0];
 
 interface CreateDienstTemplateModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
   onCreated,
 }) => {
   const [dienstNumber, setDienstNumber] = useState<number | ''>('');
+  // Horario global ya no se muestra, pero lo seguimos usando de fallback para el backend
   const [startTime, setStartTime] = useState<string>('06:00');
   const [endTime, setEndTime] = useState<string>('14:00');
   const [isActive, setIsActive] = useState<boolean>(true);
@@ -47,10 +49,10 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleToggleDayOff = (dayIndex: number, checked: boolean) => {
+  const handleToggleDayOff = (dayIndex: number, isOff: boolean) => {
     setPerDaySchedule((prev) =>
       prev.map((day) =>
-        day.dayIndex === dayIndex ? { ...day, isOff: checked } : day
+        day.dayIndex === dayIndex ? { ...day, isOff } : day
       )
     );
   };
@@ -84,11 +86,6 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
       return;
     }
 
-    if (!startTime || !endTime) {
-      setError('Debes indicar un horario global de inicio y fin.');
-      return;
-    }
-
     const allDaysOff = perDaySchedule.every((d) => d.isOff);
     if (allDaysOff) {
       setError('No tiene sentido que todos los días sean libres.');
@@ -99,12 +96,17 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
       setSaving(true);
       setError(null);
 
-      // 🧮 daysOff se calcula a partir de los días con isOff = true
+      // 🧮 daysOff a partir de días libres
       const daysOff = perDaySchedule
         .filter((d) => d.isOff)
         .map((d) => d.dayIndex);
 
-      // 🧱 Construimos perDaySchedule para la API
+      // 🧮 Definir horario global para compatibilidad backend
+      const workingDays = perDaySchedule.filter((d) => !d.isOff);
+      const globalStart = workingDays[0]?.startTime || startTime || '06:00';
+      const globalEnd = workingDays[0]?.endTime || endTime || '14:00';
+
+      // 🧱 perDaySchedule para la API
       const perDayScheduleForApi = perDaySchedule.map((d) => ({
         dayIndex: d.dayIndex,
         isOff: d.isOff,
@@ -114,8 +116,8 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
 
       const payload: DienstTemplateInput = {
         dienstNumber: Number(dienstNumber),
-        startTime,
-        endTime,
+        startTime: globalStart,
+        endTime: globalEnd,
         daysOff,
         isActive,
         perDaySchedule: perDayScheduleForApi,
@@ -153,7 +155,7 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="max-h-[90vh] w-full max-w-3xl rounded-lg bg-white p-4 shadow-lg flex flex-col">
+      <div className="max-h-[90vh] w-full max-w-5xl rounded-xl bg-white p-4 shadow-lg flex flex-col">
         <h2 className="mb-3 text-base font-semibold text-gray-800">
           Crear nueva plantilla de Dienst
         </h2>
@@ -164,171 +166,159 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
           </div>
         )}
 
-        {/* Contenido scrollable */}
         <form
           onSubmit={handleSubmit}
           className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1"
         >
-          {/* Nº Dienst + horario global */}
-          <div className="grid gap-4 md:grid-cols-[1.2fr,1.8fr]">
-            <div>
-              <label
-                htmlFor="createDienstNumber"
-                className="mb-1 block text-xs font-medium text-gray-700"
-              >
-                Nº Dienst
-              </label>
-              <input
-                id="createDienstNumber"
-                type="number"
-                min={1}
-                value={dienstNumber}
-                onChange={(e) =>
-                  setDienstNumber(
-                    e.target.value === '' ? '' : Number(e.target.value)
-                  )
-                }
-                className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+          {/* 🧱 Grid tipo calendario: Nº Dienst + días de la semana */}
+          <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-[11px] text-gray-600">
+                Configura el número de Dienst y el horario por día. Los días libres se muestran en verde con la palmera 🌴.
+              </p>
+              <span className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 sm:inline">
+                Semana de lunes a domingo
+              </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label
-                  htmlFor="createStartTime"
-                  className="mb-1 block text-xs font-medium text-gray-700"
-                >
-                  Hora inicio global
-                </label>
-                <input
-                  id="createStartTime"
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="createEndTime"
-                  className="mb-1 block text-xs font-medium text-gray-700"
-                >
-                  Hora fin global
-                </label>
-                <input
-                  id="createEndTime"
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          </div>
+            <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8">
+              {/* Columna: Nº Dienst */}
+              <div className="flex h-full flex-col rounded-xl border border-gray-200 bg-white p-2 text-xs shadow-sm">
+                <div className="mb-2 flex items-center justify-between gap-1">
+                  <span className="text-[11px] font-semibold text-gray-800">
+                    Nº Dienst
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <label
+                      htmlFor="createDienstNumber"
+                      className="sr-only"
+                    >
+                      Número de Dienst
+                    </label>
+                    <input
+                      id="createDienstNumber"
+                      type="number"
+                      min={1}
+                      value={dienstNumber}
+                      onChange={(e) =>
+                        setDienstNumber(
+                          e.target.value === '' ? '' : Number(e.target.value)
+                        )
+                      }
+                      className="w-full rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
 
-          {/* 🗓️ Horario por día en tarjetas (2 columnas en desktop) */}
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-700">
-              Horario por día de la semana
-            </label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <input
+                      id="createIsActive"
+                      type="checkbox"
+                      checked={isActive}
+                      onChange={(e) => setIsActive(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label
+                      htmlFor="createIsActive"
+                      className="text-[11px] font-medium text-gray-700"
+                    >
+                      Plantilla activa
+                    </label>
+                  </div>
+                </div>
+              </div>
 
-            <div className="max-h-[50vh] overflow-y-auto rounded-md border border-gray-200 p-2">
-              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                {perDaySchedule.map((day) => (
+              {/* Columnas: Lunes → Domingo */}
+              {orderedDayIndices.map((index) => {
+                const day = perDaySchedule.find((d) => d.dayIndex === index);
+                if (!day) return null;
+
+                const isOff = day.isOff;
+
+                return (
                   <div
                     key={day.dayIndex}
-                    className="flex flex-col gap-2 rounded-md border border-gray-200 p-2 text-xs"
+                    className={`flex h-full flex-col rounded-xl border p-2 text-xs shadow-sm transition-colors ${
+                      isOff
+                        ? 'border-emerald-200 bg-emerald-50'
+                        : 'border-gray-200 bg-white'
+                    }`}
                   >
-                    {/* Cabecera: día + checkbox libre */}
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-gray-800">
+                    {/* Cabecera día + icono toggle */}
+                    <div className="mb-2 flex items-center justify-between gap-1">
+                      <span className="text-[11px] font-semibold text-gray-800">
                         {dayLabels[day.dayIndex]}
                       </span>
-                      <div className="flex items-center gap-1">
-                        <input
-                          id={`isOff-${day.dayIndex}`}
-                          type="checkbox"
-                          checked={day.isOff}
-                          onChange={(e) =>
-                            handleToggleDayOff(day.dayIndex, e.target.checked)
-                          }
-                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <label
-                          htmlFor={`isOff-${day.dayIndex}`}
-                          className="text-[11px] text-gray-700"
-                        >
-                          Libre
-                        </label>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleDayOff(day.dayIndex, !isOff)}
+                        className="rounded-full p-1 text-[13px] hover:bg-black/5"
+                        aria-label={
+                          isOff
+                            ? `Editar día ${dayLabels[day.dayIndex]}`
+                            : `Marcar ${dayLabels[day.dayIndex]} como libre`
+                        }
+                      >
+                        {isOff ? '⚙️' : '🌴'}
+                      </button>
                     </div>
 
-                    {/* Horas inicio/fin */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label
-                          htmlFor={`startTime-${day.dayIndex}`}
-                          className="sr-only"
-                        >
-                          {`Hora de inicio (${dayLabels[day.dayIndex]})`}
-                        </label>
-                        <input
-                          id={`startTime-${day.dayIndex}`}
-                          type="time"
-                          value={day.startTime}
-                          onChange={(e) =>
-                            handleChangeDayStartTime(
-                              day.dayIndex,
-                              e.target.value
-                            )
-                          }
-                          disabled={day.isOff}
-                          className="w-full rounded-md border border-gray-300 px-1 py-0.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
-                        />
+                    {/* Contenido: horas o libre */}
+                    {isOff ? (
+                      <div className="flex flex-1 items-center justify-center text-[11px] font-medium text-emerald-800">
+                        <span className="flex items-center gap-1">
+                          🌴 Libre
+                        </span>
                       </div>
-                      <div>
-                        <label
-                          htmlFor={`endTime-${day.dayIndex}`}
-                          className="sr-only"
-                        >
-                          {`Hora de fin (${dayLabels[day.dayIndex]})`}
-                        </label>
-                        <input
-                          id={`endTime-${day.dayIndex}`}
-                          type="time"
-                          value={day.endTime}
-                          onChange={(e) =>
-                            handleChangeDayEndTime(
-                              day.dayIndex,
-                              e.target.value
-                            )
-                          }
-                          disabled={day.isOff}
-                          className="w-full rounded-md border border-gray-300 px-1 py-0.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
-                        />
+                    ) : (
+                      <div className="space-y-1.5">
+                        <div>
+                          <label
+                            htmlFor={`startTime-${day.dayIndex}`}
+                            className="sr-only"
+                          >
+                            {`Hora de inicio (${dayLabels[day.dayIndex]})`}
+                          </label>
+                          <input
+                            id={`startTime-${day.dayIndex}`}
+                            type="time"
+                            value={day.startTime}
+                            onChange={(e) =>
+                              handleChangeDayStartTime(
+                                day.dayIndex,
+                                e.target.value
+                              )
+                            }
+                            className="w-full rounded-md border border-gray-300 px-1 py-0.5 text-[11px] focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor={`endTime-${day.dayIndex}`}
+                            className="sr-only"
+                          >
+                            {`Hora de fin (${dayLabels[day.dayIndex]})`}
+                          </label>
+                          <input
+                            id={`endTime-${day.dayIndex}`}
+                            type="time"
+                            value={day.endTime}
+                            onChange={(e) =>
+                              handleChangeDayEndTime(
+                                day.dayIndex,
+                                e.target.value
+                              )
+                            }
+                            className="w-full rounded-md border border-gray-300 px-1 py-0.5 text-[11px] focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
-          </div>
-
-          {/* Activa / inactiva */}
-          <div className="flex items-center gap-2">
-            <input
-              id="createIsActive"
-              type="checkbox"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <label
-              htmlFor="createIsActive"
-              className="text-xs font-medium text-gray-700"
-            >
-              Plantilla activa
-            </label>
           </div>
 
           {/* Botones */}
@@ -356,4 +346,3 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
 };
 
 export default CreateDienstTemplateModal;
-
