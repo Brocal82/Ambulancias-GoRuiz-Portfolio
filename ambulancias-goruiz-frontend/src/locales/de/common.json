@@ -155,13 +155,13 @@
       "filters": {
         "role": {
           "label": "Nach Rolle filtern:",
-          "all": "Alle Rollen"
+          "all": "⭐"
         },
         "status": {
           "label": "Nach Status filtern:",
-          "all": "Alle Status",
-          "onLeave": "Krankgeschrieben",
-          "onVacation": "Im Urlaub"
+          "all": "⭐",
+          "onLeave": "🤒",
+          "onVacation": "🏖️"
         }
       },
       "columns": {
@@ -239,9 +239,9 @@
         "deleteTitle": "Dokument löschen"
       },
       "roles": {
-        "driver": "🚑 Fahrer",
-        "medic": "🩺 Sanitäter",
-        "both": "🟰 Beide"
+        "driver": "🚑",
+        "medic": "🩺",
+        "both": "🟰"
       },
       "pschein": {
         "expired": "❌ Der P-Schein ist abgelaufen",

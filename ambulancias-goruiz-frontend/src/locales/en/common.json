@@ -155,13 +155,13 @@
       "filters": {
         "role": {
           "label": "Filter by role:",
-          "all": "All roles"
+          "all": "⭐"
         },
         "status": {
           "label": "Filter by status:",
-          "all": "All statuses",
-          "onLeave": "On medical leave",
-          "onVacation": "On vacation"
+          "all": "⭐",
+          "onLeave": "🤒",
+          "onVacation": "🏖️"
         }
       },
       "columns": {
@@ -239,9 +239,9 @@
         "deleteTitle": "Delete document"
       },
       "roles": {
-        "driver": "🚑 Driver",
-        "medic": "🩺 Medic",
-        "both": "🟰 Both"
+        "driver": "🚑",
+        "medic": "🩺",
+        "both": "🟰"
       },
       "pschein": {
         "expired": "❌ The P-Schein is expired",
