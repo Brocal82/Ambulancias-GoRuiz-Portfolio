@@ -802,7 +802,7 @@
         "attachments": "Adjuntos"
       },
       "userTab": {
-        "title": "📩 Enviar mensaje al trabajador",
+        "title": "📤 Enviar mensaje al trabajador",
         "fields": {
           "subject": "Asunto",
           "body": "Mensaje"

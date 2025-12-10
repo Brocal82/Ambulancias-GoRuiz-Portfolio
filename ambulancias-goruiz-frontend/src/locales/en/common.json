@@ -802,7 +802,7 @@
         "attachments": "Attachments"
       },
       "userTab": {
-        "title": "📩 Send message to worker",
+        "title": "📤 Send message to worker",
         "fields": {
           "subject": "Subject",
           "body": "Message"
