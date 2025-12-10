@@ -8,8 +8,16 @@ import { Notification } from '../models/Notifications';
 // 📨 Crear un nuevo mensaje (soporta 1 adjunto opcional en campo "attachment")
 // + Crea notificaciones para cada destinatario (worker)
 export const createMessage = async (req: Request, res: Response): Promise<void> => {
-  const { subject, body, toAllWorkers } = req.body;
+  const { subject, body } = req.body;
   const senderId = (req as any).userId;
+
+  // 🔹 Normalizar toAllWorkers: puede venir como boolean (JSON) o string (multipart)
+  const rawToAll = (req.body as any).toAllWorkers;
+  const toAllWorkers =
+    rawToAll === true ||
+    rawToAll === 'true' ||
+    rawToAll === 1 ||
+    rawToAll === '1';
 
   // recipients puede venir como array (JSON) o como string (multipart/form-data)
   const rawRecipients = (req.body as any).recipients;
@@ -69,7 +77,7 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
       body,
       sender: senderId,
       recipients: finalRecipients,
-      toAllWorkers: Boolean(toAllWorkers),
+      toAllWorkers, // 👈 ahora es un boolean real ya normalizado
       attachments,
     });
 
@@ -98,6 +106,7 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
     return;
   }
 };
+
 
 
 

@@ -49,7 +49,7 @@ const AdminMessagesPage = () => {
         const formData = new FormData();
         formData.append('subject', subject);
         formData.append('body', body);
-        formData.append('toAllWorkers', String(sendToAll));
+        formData.append('toAllWorkers', sendToAll ? 'true' : 'false');
         formData.append('recipients', JSON.stringify(recipients));
         formData.append('attachment', attachment, attachment.name);
 
