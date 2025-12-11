@@ -1,5 +1,5 @@
 // frontend/src/pages/AdminMessagesPage.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { getAllUsers } from '../api/users';
 import { sendMessage, sendMessageMultipart } from '../api/messages';
 import type { User } from '../types/user';
@@ -19,7 +19,8 @@ const AdminMessagesPage = () => {
   const [body, setBody] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sendToAll, setSendToAll] = useState(false);
-  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [search, setSearch] = useState(''); // buscar trabajador
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -35,27 +36,39 @@ const AdminMessagesPage = () => {
     fetchUsers();
   }, [token]);
 
+  const filteredUsers = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return users;
+    return users.filter((u) =>
+      `${u.lastName} ${u.name}`.toLowerCase().includes(term)
+    );
+  }, [users, search]);
+
   const handleSend = async () => {
     const recipients = sendToAll ? users.map((u) => u._id) : selectedIds;
 
     if (!subject || !body || recipients.length === 0) {
-      toastT.warn(["toasts.messages.fillRequiredRecipients"]);
+      toastT.warn(['toasts.messages.fillRequiredRecipients']);
       return;
     }
 
     try {
-      if (attachment) {
-        // Envío con multipart/form-data si hay adjunto
+      if (attachments.length > 0) {
+        // Envío con multipart/form-data si hay uno o varios adjuntos
         const formData = new FormData();
         formData.append('subject', subject);
         formData.append('body', body);
         formData.append('toAllWorkers', sendToAll ? 'true' : 'false');
         formData.append('recipients', JSON.stringify(recipients));
-        formData.append('attachment', attachment, attachment.name);
+
+        // Añadir TODOS los adjuntos con el mismo campo 'attachment'
+        attachments.forEach((file) => {
+          formData.append('attachment', file, file.name);
+        });
 
         await sendMessageMultipart(token!, formData);
       } else {
-        // Flujo original JSON si no hay adjunto
+        // Flujo original JSON si no hay adjuntos
         await sendMessage(token!, {
           subject,
           body,
@@ -64,12 +77,13 @@ const AdminMessagesPage = () => {
         });
       }
 
-      toastT.success(["toasts.messages.sent"]);
+      toastT.success(['toasts.messages.sent']);
       setSubject('');
       setBody('');
       setSelectedIds([]);
       setSendToAll(false);
-      setAttachment(null);
+      setAttachments([]); // limpiar adjuntos
+      setSearch('');
     } catch (error: any) {
       console.error('❌ Error al enviar mensaje:', error);
       const msg =
@@ -79,6 +93,8 @@ const AdminMessagesPage = () => {
       toastT.error(msg);
     }
   };
+
+  const totalSelected = sendToAll ? users.length : selectedIds.length;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -121,82 +137,196 @@ const AdminMessagesPage = () => {
             <FileUpload
               id="admin-message-attachment"
               label={t('pages.messages.adminPage.actions.attach') || 'Adjuntar archivo'}
-              hintWhenEmpty={t('pages.messages.adminPage.attachmentHelp') || 'PDF, JPG o PNG. Máx 5MB.'}
+              hintWhenEmpty={
+                t('pages.messages.adminPage.attachmentHelp') ||
+                'PDF, JPG o PNG. Máx 5MB.'
+              }
               accept=".pdf,image/jpeg,image/png"
+              multiple
               maxSizeMB={5}
-              onFileSelect={(file) => setAttachment(file)}
+              showSelectedList={false}
+              onFilesSelect={(files) => {
+                const incoming = files || [];
+                setAttachments((prev) => {
+                  const merged = [...prev];
+                  for (const f of incoming) {
+                    const dup = merged.some(
+                      (e) =>
+                        e.name === f.name &&
+                        e.size === f.size &&
+                        e.lastModified === f.lastModified
+                    );
+                    if (!dup) merged.push(f);
+                  }
+                  return merged;
+                });
+              }}
               onError={(msg) => toastT.warn([msg])}
             />
 
-
-
-            {attachment && (
-              <p className="text-xs text-slate-600 mt-1">
-                {t('pages.messages.adminPage.selectedFile') || 'Archivo seleccionado'}: {attachment.name}
-              </p>
+            {attachments.length > 0 && (
+              <ul className="mt-2 flex flex-wrap justify-start gap-2">
+                {attachments.map((file, idx) => (
+                  <li
+                    key={file.name + file.size + file.lastModified}
+                    className="group inline-flex items-center max-w-full rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-xs"
+                    title={file.name}
+                  >
+                    <span aria-hidden="true" className="mr-1">📎</span>
+                    <span className="truncate max-w-[220px]">{file.name}</span>
+                    <button
+                      type="button"
+                      aria-label={t('common.remove', 'Quitar')}
+                      className="ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-rose-600 hover:bg-rose-50"
+                      onClick={() =>
+                        setAttachments((prev) => {
+                          const copy = [...prev];
+                          copy.splice(idx, 1);
+                          return copy;
+                        })
+                      }
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
+
+            <p className="mt-1 text-[11px] text-slate-500">
+              {t('pages.messages.adminPage.attachmentHelp') || 'PDF, JPG o PNG. Máx 5MB.'}
+            </p>
           </div>
 
           {/* Destinatarios */}
-          <div className="space-y-3">
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              {t('pages.messages.adminPage.labels.recipients')}
-            </label>
+<div className="space-y-2">
+  {/* Título */}
+  <div className="flex items-center justify-between gap-2">
+    <label className="block text-sm font-medium text-slate-700">
+      {t('pages.messages.adminPage.labels.recipients')}
+    </label>
+  </div>
 
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={sendToAll}
-                onChange={() => setSendToAll(!sendToAll)}
-                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-200"
-              />
-              <span className="text-sm text-slate-700">
-                {t('pages.messages.adminPage.sendToAll')}
-              </span>
-            </label>
+  {/* Toggle enviar a todos + contador de seleccionados */}
+  <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+    <label className="inline-flex items-center gap-2">
+      <input
+        type="checkbox"
+        checked={sendToAll}
+        onChange={() => setSendToAll(!sendToAll)}
+        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-200"
+      />
+      <span className="text-sm text-slate-700">
+        {t('pages.messages.adminPage.sendToAll')}
+      </span>
+    </label>
 
-            {!sendToAll && (
-              <div className="rounded-xl ring-1 ring-slate-200 max-h-56 overflow-y-auto p-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {users.map((user) => (
-                    <label key={user._id} className="flex items-center gap-2 text-sm text-slate-700">
-                      <input
-                        type="checkbox"
-                        value={user._id}
-                        checked={selectedIds.includes(user._id)}
-                        onChange={(e) => {
-                          const id = e.target.value;
-                          setSelectedIds((prev) =>
-                            prev.includes(id) ? prev.filter((uid) => uid !== id) : [...prev, id]
-                          );
-                        }}
-                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-200"
-                      />
-                      <span className="truncate">
-                        {user.lastName}, {user.name}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+    <span className="text-[11px] text-slate-500">
+      {t('pages.messages.adminPage.selectedCount', 'Seleccionados: {{n}}', {
+        n: totalSelected,
+      })}
+    </span>
+  </div>
+
+  {/* Lista de trabajadores (solo si NO es "enviar a todos") */}
+  {!sendToAll && (
+    <div className="space-y-2">
+      {/* Buscador */}
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={
+            t(
+              'pages.messages.adminPage.searchPlaceholder',
+              'Buscar trabajador...'
+            ) as string
+          }
+          className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+        />
+      </div>
+
+      {/* Lista scrollable compacta */}
+      <div className="rounded-xl ring-1 ring-slate-200 max-h-56 overflow-y-auto bg-slate-50/60">
+        {filteredUsers.length === 0 ? (
+          <p className="px-3 py-2 text-[11px] text-slate-500">
+            {t(
+              'pages.messages.adminPage.noWorkersFound',
+              'No se han encontrado trabajadores.'
             )}
-          </div>
+          </p>
+        ) : (
+          <ul className="divide-y divide-slate-200">
+            {filteredUsers.map((user) => (
+              <li key={user._id} className="px-3 py-1.5">
+                <label className="flex items-center gap-2 text-xs text-slate-700">
+                  <input
+                    type="checkbox"
+                    value={user._id}
+                    checked={selectedIds.includes(user._id)}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      setSelectedIds((prev) =>
+                        prev.includes(id)
+                          ? prev.filter((uid) => uid !== id)
+                          : [...prev, id]
+                      );
+                    }}
+                    className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-200"
+                  />
+                  <span className="truncate">
+                    {user.lastName}, {user.name}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  )}
+</div>
+
 
           {/* Acciones */}
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-200">
+            {/* Botón enviar, versión mini con icono flecha */}
             <button
               onClick={handleSend}
-              className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 w-full sm:w-auto"
+              type="button"
+              className="
+                inline-flex items-center gap-2
+                rounded-full border border-blue-300 bg-blue-50
+                px-4 py-1.5
+                text-xs font-medium text-blue-700
+                shadow-sm
+                hover:bg-blue-100 hover:border-blue-400
+                focus:outline-none focus:ring-2 focus:ring-blue-300
+                w-full sm:w-auto justify-center
+              "
             >
-              {t('pages.messages.adminPage.actions.send')}
+              <span className="text-sm">➤</span>
+              <span>{t('pages.messages.adminPage.actions.send')}</span>
             </button>
 
+            {/* Ver mensajes enviados */}
             <button
-              onClick={() => navigate('/admin/messages/sent')}
-              className="text-sm font-medium text-blue-700 hover:text-blue-800 underline underline-offset-2"
-            >
-              {t('pages.messages.adminPage.actions.viewSent')}
-            </button>
+  onClick={() => navigate('/admin/messages/sent')}
+  type="button"
+  className="
+    inline-flex items-center justify-center
+    w-7 h-7 rounded-full
+    text-blue-700 hover:text-blue-900
+    hover:bg-blue-100
+    transition
+    group
+  "
+  title={t('pages.messages.adminPage.actions.viewSent')}
+>
+  📂
+</button>
+
           </div>
         </div>
       </div>

@@ -141,10 +141,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
           <p className="mt-1 text-xs text-slate-500">{hintWhenEmpty}</p>
         )
       ) : null}
-
-      {typeof maxSizeMB === 'number' && (
-        <p className="text-[11px] text-slate-400">{`Tamaño máx: ${maxSizeMB} MB`}</p>
-      )}
     </div>
   );
 };
