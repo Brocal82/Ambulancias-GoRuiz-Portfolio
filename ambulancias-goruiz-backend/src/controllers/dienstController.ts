@@ -463,77 +463,124 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (req, res) =
     // 🔢 Números de Dienst a partir de plantillas
     const dienstNumbers = templates.map((tpl) => tpl.dienstNumber);
 
-    // 👥 Traer equipos con su configuración de rotación
-    const teams = await Team.find(
-      {},
-      { driver: 1, medic: 1, rotationMode: 1, fixedDienstNumber: 1, createdAt: 1, ambulanceId: 1 }
-    ).lean();
+// 👥 Traer equipos con su configuración de rotación
+const teams = await Team.find(
+  {},
+  { driver: 1, medic: 1, rotationMode: 1, fixedDienstNumber: 1, createdAt: 1, ambulanceId: 1 }
+).lean();
 
-    // 🗺️ Mapas de ayuda: fijos y rotativos
-    const fixedMap = new Map<number, (typeof teams)[0]>();
-    const rotatingTeams: (typeof teams)[0][] = [];
+// 🗺️ Mapas de ayuda: fijos y rotativos
+const fixedMap = new Map<number, (typeof teams)[0]>();
+const rotatingTeams: (typeof teams)[0][] = [];
 
-    for (const team of teams) {
-      const mode = (team as any).rotationMode ?? 'rotating';
-      const fixedNum = (team as any).fixedDienstNumber as number | null | undefined;
+for (const team of teams) {
+  const mode = (team as any).rotationMode ?? 'rotating';
+  const fixedNum = (team as any).fixedDienstNumber as number | null | undefined;
 
-      if (mode === 'fixed' && fixedNum && dienstNumbers.includes(fixedNum)) {
-        if (!fixedMap.has(fixedNum)) {
-          fixedMap.set(fixedNum, team);
-        }
-      } else if (mode === 'rotating') {
-        rotatingTeams.push(team);
-      }
-      // mode === 'none' -> se ignora en la asignación automática
-    }
+  if (mode === 'fixed' && fixedNum && dienstNumbers.includes(fixedNum)) {
+    fixedMap.set(fixedNum, team);
+  } else if (mode === 'rotating') {
+    rotatingTeams.push(team);
+  }
+}
 
-    // Orden estable para rotating (por fecha de creación si existe)
-    rotatingTeams.sort((a: any, b: any) => {
-      const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return da - db;
-    });
+// 🔍 Determinar si existe semana anterior
+const prevWeekStart = new Date(startDate);
+prevWeekStart.setDate(startDate.getDate() - 7);
 
-    // 🧮 Calcular índice de semana para rotar los equipos entre semanas
-    const weekIndex = getWeekIndexFromDate(startDate);
-    const dienstToTeam = new Map<number, (typeof teams)[0]>();
+const prevWeekEnd = new Date(prevWeekStart);
+prevWeekEnd.setDate(prevWeekStart.getDate() + 6);
 
-    // 1️⃣ Primero asignamos los equipos fijos
-    for (const num of dienstNumbers) {
-      if (fixedMap.has(num)) {
-        dienstToTeam.set(num, fixedMap.get(num)!);
-      }
-    }
+const prevDiensts = await Dienst.find({
+  weekStartDate: { $gte: prevWeekStart, $lte: prevWeekEnd }
+}).lean();
 
-    // 2️⃣ Rellenar Diensts sin equipo fijo con equipos rotativos
-    const freeDienstNumbers = dienstNumbers.filter((num) => !fixedMap.has(num));
-    const R = rotatingTeams.length;
-    const freeCount = freeDienstNumbers.length;
+const hasPreviousWeek = prevDiensts.length > 0;
 
-    if (R > 0 && freeCount > 0) {
-      const teamCount = Math.min(R, freeCount);
-      const usedSlots = new Set<number>();
+// 🗺️ Resultado final
+const dienstToTeam = new Map<number, (typeof teams)[0]>();
 
-      for (let k = 0; k < teamCount; k++) {
-        let slotIndex = (weekIndex + k) % freeCount;
+// 1️⃣ Asignar equipos FIJOS SIEMPRE
+for (const num of dienstNumbers) {
+  if (fixedMap.has(num)) {
+    dienstToTeam.set(num, fixedMap.get(num)!);
+  }
+}
 
-        let tries = 0;
-        while (usedSlots.has(slotIndex) && tries < freeCount) {
-          slotIndex = (slotIndex + 1) % freeCount;
-          tries++;
-        }
-        if (usedSlots.has(slotIndex)) {
+// 🚫 SI NO HAY SEMANA ANTERIOR → SEMANA BASE
+// Solo se asignan equipos fijos. No se asigna ningún rotativo.
+if (!hasPreviousWeek) {
+  console.log("📌 Semana base: no se auto-asignan equipos rotativos.");
+} else {
+  // 🟢 Sí existe semana anterior → leemos dónde estaba cada rotativo realmente
+
+  const freeDienstNumbers = dienstNumbers
+    .filter((num) => !fixedMap.has(num))
+    .sort((a, b) => a - b);
+
+  const freeCount = freeDienstNumbers.length;
+
+  if (freeCount > 0 && rotatingTeams.length > 0) {
+    // Mapa de semana anterior: dienstNumber → teamRotativo
+    const prevMap = new Map<number, (typeof teams)[0]>();
+    const usedTeams = new Set<string>();
+
+    for (const prev of prevDiensts) {
+      const dn = (prev as any).dienstNumber;
+      if (!freeDienstNumbers.includes(dn)) continue;
+
+      const assignments = prev.assignments || [];
+
+      for (const team of rotatingTeams) {
+        if (usedTeams.has(String(team._id))) continue;
+
+        const tDrv = team.driver ? String(team.driver) : null;
+        const tMed = team.medic ? String(team.medic) : null;
+
+        const match = assignments.some(a =>
+          String(a.driver) === tDrv && String(a.medic) === tMed
+        );
+
+        if (match) {
+          prevMap.set(dn, team);
+          usedTeams.add(String(team._id));
           break;
         }
-
-        usedSlots.add(slotIndex);
-        const dienstNum = freeDienstNumbers[slotIndex];
-        const team = rotatingTeams[k];
-
-        dienstToTeam.set(dienstNum, team);
       }
-      // Los Dienst libres que sobren quedan sin equipo (manual), como antes
     }
+
+    // 🔄 Rotación circular
+    const usedTargets = new Set<number>();
+
+    for (let i = 0; i < freeCount; i++) {
+      const prevDienst = freeDienstNumbers[i];
+      const team = prevMap.get(prevDienst);
+      if (!team) continue;
+
+      let newIndex = (i + 1) % freeCount;
+
+      // evitar colisiones
+      let tries = 0;
+      while (
+        tries < freeCount &&
+        (usedTargets.has(freeDienstNumbers[newIndex]) ||
+          dienstToTeam.has(freeDienstNumbers[newIndex]))
+      ) {
+        newIndex = (newIndex + 1) % freeCount;
+        tries++;
+      }
+      if (tries >= freeCount) continue;
+
+      const targetDienst = freeDienstNumbers[newIndex];
+      dienstToTeam.set(targetDienst, team);
+      usedTargets.add(targetDienst);
+    }
+  }
+}
+
+// 👉 El resto de Diensts libres quedan sin equipo, igual que antes (asignación manual).
+
+    
 
     // 🧱 Crear los Diensts usando las plantillas (horario + días libres / por día)
     const dienstsToInsert = await Promise.all(
