@@ -52,6 +52,18 @@ export const getSentMessages = async (token: string): Promise<Message[]> => {
   return response.data;
 };
 
+// ✅ Obtener mensajes que el admin ha enviado a un worker concreto
+export const getMessagesForUserAsAdmin = async (
+  token: string,
+  userId: string
+): Promise<Message[]> => {
+  const res = await axios.get<Message[]>(`/messages/user/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
+
 // ✅ Marcar mensaje como leído o borrado (solo el usuario)
 export const deleteMessageForUser = async (token: string, messageId: string): Promise<void> => {
   await axios.patch(`/messages/${messageId}/remove`, null, {
