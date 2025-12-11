@@ -77,7 +77,8 @@ const AdminUserDetailDashboard = () => {
           {activeTab === 'praemien' && userId && <AdminUserPraemienTab userId={userId} />}
           {activeTab === 'vacations' && userId && <AdminUserVacationsTab userId={userId} />}
           {activeTab === 'sick' && userId && <AdminUserSickLeavesTab userId={userId} />}
-          {activeTab === 'messages' && userId && <AdminUserMessageTab userId={userId} />}
+          {activeTab === 'messages' && userId && user && (<AdminUserMessageTab userId={userId} userFullName={`${user.lastName}, ${user.name}`} />)}
+
         </section>
 
 
