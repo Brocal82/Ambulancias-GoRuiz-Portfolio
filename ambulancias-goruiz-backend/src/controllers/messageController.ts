@@ -56,20 +56,38 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Adjuntos (single) si usas upload.single('attachment') en la ruta
-    const file = (req as any).file as Express.Multer.File | undefined;
-    const attachments = file
-      ? [
-          {
-            originalName: file.originalname,
-            filename: file.filename,
-            mimetype: file.mimetype,
-            size: file.size,
-            // Servido en index.ts: app.use('/uploads', express.static(...))
-            url: `/uploads/${file.filename}`,
-          },
-        ]
-      : [];
+        // Adjuntos: soportar uno o varios archivos
+    const files = (req as any).files as Express.Multer.File[] | undefined;
+    const singleFile = (req as any).file as Express.Multer.File | undefined;
+
+    let attachments: {
+      originalName: string;
+      filename: string;
+      mimetype: string;
+      size: number;
+      url: string;
+    }[] = [];
+
+    if (Array.isArray(files) && files.length > 0) {
+      attachments = files.map((file) => ({
+        originalName: file.originalname,
+        filename: file.filename,
+        mimetype: file.mimetype,
+        size: file.size,
+        url: `/uploads/${file.filename}`,
+      }));
+    } else if (singleFile) {
+      attachments = [
+        {
+          originalName: singleFile.originalname,
+          filename: singleFile.filename,
+          mimetype: singleFile.mimetype,
+          size: singleFile.size,
+          url: `/uploads/${singleFile.filename}`,
+        },
+      ];
+    }
+
 
     // 1) Crear el mensaje
     const newMessage = await Message.create({
@@ -164,6 +182,28 @@ export const getSentMessages = async (req: Request, res: Response): Promise<void
     res.status(500).json({ message: 'Error al obtener mensajes enviados' });
   }
 };
+
+// 📚 Obtener mensajes enviados por el admin a un worker concreto
+export const getMessagesForUserAsAdmin = async (req: Request, res: Response): Promise<void> => {
+  const adminId = (req as any).userId as string;
+  const { id } = req.params; // 👈 usamos "id" porque la ruta es /user/:id
+
+  try {
+    const messages = await Message.find({
+      sender: adminId,
+      recipients: new mongoose.Types.ObjectId(id),
+    })
+      .sort({ sentAt: -1 })
+      .populate('sender', 'name lastName');
+
+    res.status(200).json(messages);
+  } catch (error) {
+    console.error('❌ Error al obtener mensajes para usuario:', error);
+    res.status(500).json({ message: 'Error al obtener mensajes para este usuario' });
+  }
+};
+
+
 
 
 // 🗑️ Ocultar/marcar como leído para el usuario (no borra globalmente)

@@ -7,7 +7,8 @@ import {
   getSentMessages,
   deleteMessageForUser,
   deleteMessageByAdmin,
-  markMessageAsRead
+  markMessageAsRead,
+  getMessagesForUserAsAdmin
 } from '../controllers/messageController';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { authorizeRole } from '../middlewares/roleMiddleware';
@@ -16,20 +17,24 @@ import type { ErrorRequestHandler } from 'express';
 
 const router = Router();
 
-// ✅ Crear mensaje (admin). Soporta 1 adjunto opcional en el campo "attachment".
+// ✅ Crear mensaje (admin). Soporta varios adjuntos opcionales en el campo "attachment".
 router.post(
   '/',
   authenticateToken,
   authorizeRole('admin'),
-  upload.single('attachment'),
+  upload.array('attachment', 5), // hasta 5 archivos por mensaje
   createMessage
 );
+
 
 // ✅ Obtener mensajes del worker autenticado (no leídos / no borrados por él)
 router.get('/', authenticateToken, authorizeRole('worker'), getMyMessages);
 
 // ✅ Obtener mensajes enviados por el admin (a todos los trabajadores)
 router.get('/sent', authenticateToken, authorizeRole('admin'), getSentMessages);
+
+// ✅ Mensajes enviados por el admin a un worker concreto
+router.get('/user/:id', authenticateToken, authorizeRole('admin'), getMessagesForUserAsAdmin);
 
 // ✅ Marcar como leído (no ocultar)
 router.patch('/:id/read', authenticateToken, authorizeRole('worker'), markMessageAsRead);
