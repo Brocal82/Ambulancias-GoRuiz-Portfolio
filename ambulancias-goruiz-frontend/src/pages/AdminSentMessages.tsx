@@ -16,6 +16,11 @@ const AdminSentMessages = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  // ⭐ Auto-scroll arriba al cargar la página
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   useEffect(() => {
     const fetchMessages = async () => {
       if (!token) return;
@@ -84,12 +89,25 @@ const AdminSentMessages = () => {
           {t('pages.messages.sentPage.title')}
         </h1>
         <button
-          onClick={() => navigate(-1)}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          type="button"
-        >
-          {t('pages.messages.sentPage.actions.back')}
-        </button>
+  type="button"
+  onClick={() => navigate(-1)}
+  className="
+    inline-flex items-center gap-2
+    px-3 py-1.5
+    text-xs font-medium
+    text-blue-700
+    rounded-md border border-blue-200
+    bg-blue-50
+    hover:bg-blue-100 hover:border-blue-300
+    transition-colors duration-150
+    focus:outline-none focus:ring-2 focus:ring-blue-300
+  "
+>
+  <span className="text-blue-500"></span>
+  {t('pages.messages.sentPage.actions.back')}
+</button>
+
+
       </div>
 
       {/* Lista de mensajes */}
@@ -113,23 +131,23 @@ const AdminSentMessages = () => {
                     isOpen ? 'ring-slate-300 shadow-sm' : 'ring-slate-200 hover:ring-slate-300',
                   ].join(' ')}
                 >
-                  {/* Cabecera clickable accesible */}
+                  {/* Cabecera clickable accesible – versión compacta */}
                   <button
                     id={btnId}
                     type="button"
                     onClick={() => toggleMessage(msg._id)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                    className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-slate-50 transition-colors duration-150"
                     aria-expanded={isOpen}
                     aria-controls={panelId}
                   >
                     {/* Fecha */}
-                    <span className="text-sm text-slate-600">
+                    <span className="text-xs text-slate-600">
                       {t('pages.messages.sentPage.sentOn')}{' '}
                       {format(new Date(msg.sentAt), 'dd/MM/yyyy HH:mm')}
                     </span>
                     {/* Asunto */}
                     <span
-                      className="ml-auto truncate font-semibold text-slate-800"
+                      className="ml-auto truncate text-xs font-medium text-slate-800"
                       title={msg.subject}
                     >
                       {msg.subject}
@@ -137,8 +155,8 @@ const AdminSentMessages = () => {
                     {/* Chevron */}
                     <span
                       className={[
-                        'ml-2 inline-flex items-center justify-center w-6 h-6 rounded-full text-base transition-transform',
-                        isOpen ? 'rotate-180' : 'rotate-0',
+                        'ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-sm transition-transform',
+                        isOpen ? 'rotate-180 text-blue-600' : 'rotate-0 text-slate-500',
                       ].join(' ')}
                       aria-hidden="true"
                     >
@@ -152,10 +170,10 @@ const AdminSentMessages = () => {
                     role="region"
                     aria-labelledby={btnId}
                     hidden={!isOpen}
-                    className="px-5 pb-5 pt-1 border-t border-slate-100"
+                    className="px-4 pb-3 pt-1 border-t border-slate-100"
                   >
                     {/* Acción borrar */}
-                    <div className="flex items-center justify-end mb-3">
+                    <div className="flex items-center justify-end mb-2">
                       <button
                         onClick={() => handleDelete(msg._id)}
                         className="text-rose-600 hover:text-rose-700 font-bold text-lg leading-none transition"
@@ -168,31 +186,39 @@ const AdminSentMessages = () => {
                     </div>
 
                     {/* Cuerpo */}
-                    <p className="mt-1 text-slate-700 text-sm whitespace-pre-line">
+                    <p className="mt-1 text-slate-700 text-xs whitespace-pre-line">
                       {msg.body}
                     </p>
 
-                    {/* Adjuntos */}
+                    {/* Adjuntos estilo chips (como WorkerMessages / AdminUserMessageTab) */}
                     {msg.attachments?.length ? (
-                      <div className="mt-3">
-                        <h3 className="text-sm font-medium text-slate-700">
+                      <div className="mt-2">
+                        <h3 className="text-xs font-medium text-slate-700">
                           {t('pages.messages.sentPage.attachments') || 'Attachments'}
                         </h3>
-                        <ul className="mt-1 space-y-1">
+                        <ul className="mt-2 flex flex-wrap justify-start gap-2">
                           {msg.attachments.map((att) => (
-                            <li key={att.filename} className="flex items-center gap-2">
+                            <li
+                              key={att.filename}
+                              className="inline-flex items-center"
+                            >
                               <a
-                                href={`${getPublicUrl(att.url)}?v=${encodeURIComponent(att.filename)}-${encodeURIComponent(msg.sentAt)}`}
+                                href={`${getPublicUrl(att.url)}?v=${encodeURIComponent(
+                                  att.filename
+                                )}-${encodeURIComponent(msg.sentAt)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 download
-                                className="text-sm text-blue-600 hover:text-blue-800 underline"
+                                className="group inline-flex items-center max-w-full rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-[11px] hover:bg-slate-100"
+                                title={att.originalName}
                               >
-                                {att.originalName}
+                                <span aria-hidden="true" className="mr-1">
+                                  📎
+                                </span>
+                                <span className="truncate max-w-[180px]">
+                                  {att.originalName}
+                                </span>
                               </a>
-                              <span className="text-xs text-slate-500">
-                                {att.mimetype} · {(att.size / 1024).toFixed(1)} KB
-                              </span>
                             </li>
                           ))}
                         </ul>
