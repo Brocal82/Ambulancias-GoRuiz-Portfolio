@@ -1,3 +1,4 @@
+// frontend/src/components/workday/AdminSummariesMonthGrid.tsx
 import React from "react";
 
 type DayCell = {
@@ -39,9 +40,12 @@ function buildMonthGrid(ref: Date, weekStartsOn: 0 | 1 = 1): DayCell[] {
 
   // offset para empezar lunes (1) o domingo (0)
   const firstWeekday = first.getDay(); // 0..6 (0 es domingo)
-  const offset = weekStartsOn === 1
-    ? (firstWeekday === 0 ? 6 : firstWeekday - 1)
-    : firstWeekday;
+  const offset =
+    weekStartsOn === 1
+      ? firstWeekday === 0
+        ? 6
+        : firstWeekday - 1
+      : firstWeekday;
 
   const cells: DayCell[] = [];
   for (let i = 0; i < offset; i++) cells.push({ date: null, iso: null });
@@ -87,15 +91,17 @@ const AdminSummariesMonthGrid: React.FC<Props> = ({
     year: "numeric",
   });
 
+  const todayISO = toISODate(new Date());
+
   return (
-    <div className="w-full">
+    <div className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm">
       {/* Encabezado del mes con navegación */}
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onPrevMonth}
-            className="px-2 py-1 rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 text-lg hover:bg-slate-50 active:scale-95 transition"
             aria-label="Mes anterior"
           >
             ‹
@@ -103,23 +109,25 @@ const AdminSummariesMonthGrid: React.FC<Props> = ({
           <button
             type="button"
             onClick={onToday}
-            className="px-2 py-1 rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50"
+            className="px-3 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 active:scale-95 transition"
           >
             Hoy
           </button>
           <button
             type="button"
             onClick={onNextMonth}
-            className="px-2 py-1 rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 text-lg hover:bg-slate-50 active:scale-95 transition"
             aria-label="Mes siguiente"
           >
             ›
           </button>
         </div>
 
-        <h3 className="text-lg font-semibold capitalize">{monthLabel}</h3>
+        <h3 className="text-lg font-semibold capitalize text-slate-800">
+          {monthLabel}
+        </h3>
 
-        <div className="text-xs text-slate-500 select-none">
+        <div className="hidden text-xs text-slate-500 select-none sm:block">
           {new Date().toLocaleDateString(locale)}
         </div>
       </div>
@@ -127,7 +135,12 @@ const AdminSummariesMonthGrid: React.FC<Props> = ({
       {/* Cabecera de días */}
       <div className="grid grid-cols-7 gap-1 text-[11px] text-slate-500 uppercase tracking-wide">
         {weekNames.map((w, idx) => (
-          <div key={idx} className="px-2 py-1 text-center">{w}</div>
+          <div
+            key={idx}
+            className="px-2 py-1 text-center font-semibold text-slate-500/80"
+          >
+            {w}
+          </div>
         ))}
       </div>
 
@@ -135,40 +148,64 @@ const AdminSummariesMonthGrid: React.FC<Props> = ({
       <div className="mt-1 grid grid-cols-7 gap-1">
         {cells.map((cell, idx) => {
           if (!cell.date || !cell.iso) {
-            return <div key={idx} className="h-16 rounded-md bg-transparent" />;
+            return (
+              <div
+                key={`empty-${idx}`}
+                className="h-16 rounded-xl bg-transparent"
+              />
+            );
           }
 
           const iso = cell.iso as string;
           const isSelected = selectedDate === iso;
+          const isToday = iso === todayISO;
           const counts = summariesByDate[iso];
           const total = counts?.total ?? 0;
           const unread = counts?.unread ?? 0;
+
+          const baseClasses =
+            "relative flex h-16 flex-col rounded-xl border bg-white p-2 text-left text-xs transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 hover:shadow-sm";
+
+          const stateClasses = isSelected
+            ? "border-blue-500 ring-2 ring-blue-200 bg-blue-50"
+            : unread > 0
+              ? "border-amber-300 bg-amber-50/60"
+              : "border-slate-200";
 
           return (
             <button
               key={iso}
               type="button"
               onClick={() => onSelectDate?.(iso)}
-              className={[
-                "relative h-16 rounded-md border text-left p-2 transition",
-                isSelected
-                  ? "border-orange-100 ring-2 ring-orange-200 bg-orange-50"
-                  : "border-slate-200 hover:bg-slate-50",
-              ].join(" ")}
+              className={`${baseClasses} ${stateClasses}`}
               aria-current={isSelected ? "date" : undefined}
-              aria-label={`${iso} (${total} resúmenes${unread > 0 ? `, ${unread} sin revisar` : ""})`}
+              aria-label={`${iso} (${total} resúmenes${unread > 0 ? `, ${unread} sin revisar` : ""
+                })`}
             >
-              <div className="text-xs font-medium text-slate-700">
-                {cell.date.getDate()}
+              <div className="flex items-start justify-between">
+                <span className="text-xs font-semibold text-slate-800">
+                  {cell.date.getDate()}
+                </span>
+
+                {isToday && (
+                  <span className="rounded-full bg-blue-100 px-1.5 py-[1px] text-[10px] font-medium text-blue-700">
+                    Hoy
+                  </span>
+                )}
               </div>
 
+              {/* Resúmenes del día */}
               {total > 0 && (
-                <div className="absolute bottom-1 right-1 flex items-center gap-1">
-                  <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 rounded-full bg-orange-500 text-white text-[10px] px-1">
+                <div className="mt-auto flex items-center justify-between text-[10px]">
+                  <span className="inline-flex items-center justify-center min-w-[1.6rem] rounded-full bg-slate-900 text-[10px] font-semibold text-white px-1 py-[2px]">
                     {total}
                   </span>
+
                   {unread > 0 && (
-                    <span className="inline-block h-5 w-5 rounded-full ring-2 ring-orange-400" />
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700">
+                      <span className="h-2 w-2 rounded-full bg-amber-500 shadow-sm" />
+                      {unread}
+                    </span>
                   )}
                 </div>
               )}
@@ -176,6 +213,19 @@ const AdminSummariesMonthGrid: React.FC<Props> = ({
           );
         })}
       </div>
+
+      {/* Pequeña leyenda */}
+      <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
+        <div className="flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded-sm border border-amber-300 bg-amber-50" />
+          <span>Pendientes de revisar</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded-sm border border-blue-500 bg-blue-50" />
+          <span>Día seleccionado</span>
+        </div>
+      </div>
+
     </div>
   );
 };
