@@ -1,6 +1,6 @@
 // frontend/src/pages/AdminSummariesPage.tsx
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { getAllSummaries } from "../api/workdaySummary";
+import { getAllSummaries, markSummaryReviewed } from "../api/workdaySummary";
 import type { WorkdaySummary } from "../types/workdaySummary";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -9,10 +9,14 @@ import DaySummariesModal from "../components/workday/DaySummariesModal";
 import AdminSummaryGroupModal from "../components/workday/AdminSummaryGroupModal";
 
 const ADMIN_SUMMARIES_CHANGED_EVENT = "admin-summaries-changed";
+const notifySummariesChanged = () =>
+  window.dispatchEvent(new Event(ADMIN_SUMMARIES_CHANGED_EVENT));
 
 // Helper ISO yyyy-mm-dd
 const toISODate = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
 
 const AdminSummariesPage = () => {
   const { token } = useAuth();
@@ -23,18 +27,20 @@ const AdminSummariesPage = () => {
 
   // mes visible en el grid: mes actual
   const today = new Date();
-  const [viewDate, setViewDate] = useState<Date>(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [viewDate, setViewDate] = useState<Date>(
+    new Date(today.getFullYear(), today.getMonth(), 1)
+  );
 
   const [summaries, setSummaries] = useState<WorkdaySummary[]>([]);
   const [loading, setLoading] = useState(true);
 
-
   // 🪟 Modal con grid de resúmenes por día
   const [isDayModalOpen, setIsDayModalOpen] = useState(false);
   // 🪟 Modal con detalle de grupo (parciales + final)
-  const [selectedSummaryGroup, setSelectedSummaryGroup] = useState<WorkdaySummary[] | null>(null);
+  const [selectedSummaryGroup, setSelectedSummaryGroup] = useState<
+    WorkdaySummary[] | null
+  >(null);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
-
 
   const fetchSummaries = useCallback(async () => {
     if (!token) return;
@@ -64,12 +70,18 @@ const AdminSummariesPage = () => {
 
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener(ADMIN_SUMMARIES_CHANGED_EVENT as any, onChanged as EventListener);
+    window.addEventListener(
+      ADMIN_SUMMARIES_CHANGED_EVENT as any,
+      onChanged as EventListener
+    );
 
     return () => {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener(ADMIN_SUMMARIES_CHANGED_EVENT as any, onChanged as EventListener);
+      window.removeEventListener(
+        ADMIN_SUMMARIES_CHANGED_EVENT as any,
+        onChanged as EventListener
+      );
     };
   }, [fetchSummaries]);
 
@@ -79,11 +91,7 @@ const AdminSummariesPage = () => {
   const summariesByDate = useMemo(() => {
     const map: Record<string, { total: number; unread: number }> = {};
 
-    // Para contar "dienst únicos" por día:
-    // dayKey -> Set(groupKey)
     const dayGroups = new Map<string, Set<string>>();
-    // Para contar "dienst únicos sin leer" por día:
-    // dayKey -> Set(groupKey)
     const dayUnreadGroups = new Map<string, Set<string>>();
 
     for (const summary of summaries) {
@@ -93,14 +101,14 @@ const AdminSummariesPage = () => {
       const dienstNumber = s.dienstNumber ?? "no-dienst";
       const assignmentId = summary.assignmentId ?? "no-assignment";
 
-      // Este groupKey debe ser el MISMO criterio que usamos para agrupar en DaySummariesModal
       const groupKey = `${dienstNumber}__${assignmentId}`;
 
       if (!dayGroups.has(dayKey)) dayGroups.set(dayKey, new Set());
       dayGroups.get(dayKey)!.add(groupKey);
 
       const isUnread =
-        (s as any).isReviewed === false || typeof (s as any).isReviewed === "undefined";
+        (s as any).isReviewed === false ||
+        typeof (s as any).isReviewed === "undefined";
 
       if (isUnread) {
         if (!dayUnreadGroups.has(dayKey)) dayUnreadGroups.set(dayKey, new Set());
@@ -117,10 +125,13 @@ const AdminSummariesPage = () => {
     return map;
   }, [summaries]);
 
-
   // 🌍 locale para el grid
-  const locale = i18n.language === "de" ? "de-DE" : i18n.language === "en" ? "en-US" : "es-ES";
-
+  const locale =
+    i18n.language === "de"
+      ? "de-DE"
+      : i18n.language === "en"
+        ? "en-US"
+        : "es-ES";
 
   // 📆 Navegación mes
   const handlePrevMonth = () => {
@@ -137,31 +148,70 @@ const AdminSummariesPage = () => {
     setIsDayModalOpen(true);
   };
 
-
   // 📅 Filtrar resúmenes del día seleccionado
   const daySummaries = useMemo(
     () =>
       selectedDate
         ? summaries
           .filter((s) => s.date === selectedDate)
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          .sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+          )
         : [],
     [summaries, selectedDate]
   );
 
+  // ✅ Marcar como revisado TODOS los resúmenes "unread" dentro de un grupo
+  const markGroupAsReviewed = useCallback(
+    async (group: WorkdaySummary[]) => {
+      if (!token) return;
+
+      const unreadIds = group
+        .filter(
+          (s: any) =>
+            (s as any).isReviewed === false ||
+            typeof (s as any).isReviewed === "undefined"
+        )
+        .map((s: any) => s._id as string | undefined)
+        .filter(Boolean) as string[];
+
+      if (unreadIds.length === 0) return;
+
+      try {
+        // 1) backend: marcar todos como leídos
+        await Promise.all(unreadIds.map((id) => markSummaryReviewed(token, id)));
+
+        // 2) refrescar contadores/cambios globales (si lo usas en badges)
+        notifySummariesChanged();
+
+        // 3) actualizar state local para que desaparezca el naranja sin recargar
+        const reviewedAt = new Date().toISOString();
+        setSummaries((prev) =>
+          prev.map((item: any) =>
+            unreadIds.includes(item?._id)
+              ? ({ ...item, isReviewed: true, reviewedAt } as any)
+              : item
+          )
+        );
+      } catch (err) {
+        console.warn("No se pudieron marcar como revisados:", err);
+      }
+    },
+    [token]
+  );
+
   // 👉 Recibimos un GRUPO de resúmenes (mismo Dienst: parciales + final).
-  //    Cerramos el modal de día y abrimos el modal de detalle.
-  const handleSelectDaySummaryGroup = (group: WorkdaySummary[]) => {
+  //    Marcamos como leído y abrimos el modal de detalle.
+  const handleSelectDaySummaryGroup = async (group: WorkdaySummary[]) => {
     // eslint-disable-next-line no-console
     console.log("Grupo de resúmenes seleccionado desde DaySummariesModal:", group);
+
+    await markGroupAsReviewed(group);
 
     setSelectedSummaryGroup(group);
     setIsDayModalOpen(false);
     setIsGroupModalOpen(true);
   };
-
-
-
 
   if (loading) {
     return <p className="text-center mt-8">{t("pages.summaries.admin.loading")}</p>;
@@ -187,18 +237,11 @@ const AdminSummariesPage = () => {
             const isSameDay = selectedDate === iso;
             const willSelect = !isSameDay;
 
-            // Actualizamos el día seleccionado (comportamiento anterior)
             setSelectedDate(isSameDay ? null : iso);
-
-
-            // Abrir/cerrar modal según si hay día seleccionado
             setIsDayModalOpen(willSelect);
-
           }}
         />
       </div>
-
-
 
       {/* 🪟 Modal con grid de resúmenes del día seleccionado */}
       <DaySummariesModal
@@ -215,10 +258,8 @@ const AdminSummariesPage = () => {
         onClose={() => setIsGroupModalOpen(false)}
         summaries={selectedSummaryGroup ?? []}
       />
-
     </div>
   );
 };
 
 export default AdminSummariesPage;
-
