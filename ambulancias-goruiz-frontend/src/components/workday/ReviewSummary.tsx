@@ -71,45 +71,50 @@ const ReviewSummary: React.FC<Props> = ({
   return (
     <div className={dense ? "space-y-3" : "space-y-4"}>
       {/* -------- CABECERA -------- */}
-      {!hideHeader && (
-        <div className={`rounded-xl ring-1 ring-slate-200 ${dense ? "p-3" : "p-4"} bg-white`}>
-          <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 ${dense ? "text-[13px]" : "text-sm"}`}>
-            <div className={dense ? "space-y-0.5" : "space-y-1"}>
-              <p>
-                📅 <strong>{formatYYYYMMDDToDDMMYYYY(assignedDay.date)}</strong>
-              </p>
-              <p>
-                ⏰ {assignedDay.startTime} – {assignedDay.endTime}
-              </p>
-
-              <div className={dense ? "pt-0.5" : "pt-1"}>
-                <p className="font-semibold">
-                  {t("pages.workday.reviewSummary.labels.team")}
-                </p>
-                <div className="ml-1 mt-1 grid grid-cols-1 gap-0.5 text-slate-700">
-                  <p>{formatPerson(assignedDay.driver)}</p>
-                  <p>{formatPerson(assignedDay.medic)}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className={`md:text-right ${dense ? "space-y-0.5" : "space-y-1"}`}>
-              <p>
-                🚑 <strong>{ambulanceNumber}</strong>
-              </p>
-              <p>
-                🔢 {initialKm} → {finalKm}
-              </p>
-              <p className="font-semibold">
-                🧮{" "}
-                {t("pages.workday.reviewSummary.labels.totalKm", {
-                  km: totalKmDiff,
-                })}
-              </p>
-            </div>
-          </div>
+{!hideHeader && (
+  <div
+    className={[
+      "rounded-lg ring-1 ring-slate-200 bg-white",
+      dense ? "p-2" : "p-3",
+    ].join(" ")}
+  >
+    <div
+      className={[
+        "grid grid-cols-1 md:grid-cols-2",
+        dense ? "gap-2 text-[12px]" : "gap-2 text-sm",
+      ].join(" ")}
+    >
+      {/* Izquierda: fecha + horas + equipo compacto */}
+      <div className={dense ? "space-y-0" : "space-y-0.5"}>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-slate-800">
+          <span className="font-semibold">
+            📅 {formatYYYYMMDDToDDMMYYYY(assignedDay.date)}
+          </span>
+          <span className="text-slate-600">
+            ⏰ {assignedDay.startTime} – {assignedDay.endTime}
+          </span>
         </div>
-      )}
+
+        <div className="mt-1 grid grid-cols-1 gap-0 text-slate-700">
+          <div className="truncate">{formatPerson(assignedDay.driver)}</div>
+          <div className="truncate">{formatPerson(assignedDay.medic)}</div>
+        </div>
+      </div>
+
+      {/* Derecha: ambulancia + km en una línea más compacta */}
+      <div className={["md:text-right", dense ? "space-y-0" : "space-y-0.5"].join(" ")}>
+        <div className="flex flex-wrap items-center justify-start gap-x-3 gap-y-0.5 md:justify-end">
+          <span className="font-semibold">🚑 {ambulanceNumber}</span>
+          <span className="text-slate-600">🔢 {initialKm} → {finalKm}</span>
+          <span className="font-semibold">
+            🧮 {t("pages.workday.reviewSummary.labels.totalKm", { km: totalKmDiff })}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* -------- TABLA -------- */}
       <div className={wrapContainer}>

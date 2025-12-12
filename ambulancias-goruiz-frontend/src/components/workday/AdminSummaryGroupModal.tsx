@@ -104,8 +104,8 @@ const AdminSummaryGroupModal: React.FC<AdminSummaryGroupModalProps> = ({
 
 
             const label = summary.isFinalClosure
-              ? t("pages.summaries.admin.detail.badge.final", "Cierre final")
-              : t("pages.summaries.admin.detail.badge.partial", "Reporte parcial");
+              ? t("pages.summaries.admin.detail.badge.final", "Final")
+              : t("pages.summaries.admin.detail.badge.partial", "Parcial");
 
             const note =
               s.extraNote ||
@@ -129,8 +129,8 @@ const AdminSummaryGroupModal: React.FC<AdminSummaryGroupModalProps> = ({
                   <div className="flex items-center gap-2 text-sm">
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${summary.isFinalClosure
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-amber-100 text-amber-800"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-amber-100 text-amber-800"
                         }`}
                     >
                       {label}
@@ -147,15 +147,12 @@ const AdminSummaryGroupModal: React.FC<AdminSummaryGroupModalProps> = ({
                     )}
                   </div>
 
-                  <div className="text-[11px] text-slate-500">
-                    {t(
-                      "pages.summaries.admin.detail.closureTime",
-                      "Cierre registrado"
-                    )}
-                    {reviewedAt
-                      ? ` · ${new Date(reviewedAt).toLocaleString()}`
-                      : ""}
-                  </div>
+                  {reviewedAt && (
+                    <div className="text-[11px] text-slate-500">
+                      {new Date(reviewedAt).toLocaleString()}
+                    </div>
+                  )}
+
 
                 </div>
 

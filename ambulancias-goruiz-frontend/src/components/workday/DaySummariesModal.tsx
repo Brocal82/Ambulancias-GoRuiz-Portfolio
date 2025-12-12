@@ -167,13 +167,13 @@ const DaySummariesModal: React.FC<DaySummariesModalProps> = ({
                     {/* Equipo (tomado del primer resumen del grupo) */}
                     <div className="space-y-0.5 text-[11px] text-slate-700">
                       <div className="truncate">
-                        <span className="font-medium">D: </span>
+                        <span className="font-medium">-</span>
                         {typeof driver === "object" && driver !== null
                           ? `${driver.lastName}, ${driver.name}`
                           : "-"}
                       </div>
                       <div className="truncate">
-                        <span className="font-medium">M: </span>
+                        <span className="font-medium">-</span>
                         {typeof medic === "object" && medic !== null
                           ? `${medic.lastName}, ${medic.name}`
                           : "-"}
