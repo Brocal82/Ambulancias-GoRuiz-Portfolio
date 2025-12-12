@@ -39,6 +39,8 @@ const PartialReviewModal: React.FC<Props> = ({
   const [hasIssue, setHasIssue] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [issueData, setIssueData] = useState<any | null>(null);
+  const [isSending, setIsSending] = useState(false);
+
 
   const parsedInitialKm = Number(initialKm);
   const parsedFinalKm = finalKm === "" ? 0 : Number(finalKm);
@@ -57,13 +59,26 @@ const PartialReviewModal: React.FC<Props> = ({
   };
 
   const handleSubmit = () => {
+    // 🛡️ evita multi-clicks
+    if (isSending) return;
+
     if (!report.trim()) {
       toastT.warn(["toasts.workday.partial.reportRequired"]);
       return;
     }
     if (!ensureValidFinalKm()) return;
-    onSend(report.trim(), parsedFinalKm, totalEffectivePatients, issueData);
+
+    setIsSending(true);
+
+    try {
+      onSend(report.trim(), parsedFinalKm, totalEffectivePatients, issueData);
+    } finally {
+      // Igual que en el modal final: bloqueo anti-spam inmediato.
+      // Lo dejaremos perfecto con async/await cuando veamos MyWorkDay.tsx.
+      setTimeout(() => setIsSending(false), 800);
+    }
   };
+
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
@@ -72,14 +87,14 @@ const PartialReviewModal: React.FC<Props> = ({
           {t("pages.workday.partial.title")}
         </h2>
 
-<ReviewSummary
-  assignedDay={assignedDay}
-  ambulanceNumber={ambulanceNumber}
-  initialKm={parsedInitialKm}
-  finalKm={parsedFinalKm}
-  trips={trips}
-  dense
-/>
+        <ReviewSummary
+          assignedDay={assignedDay}
+          ambulanceNumber={ambulanceNumber}
+          initialKm={parsedInitialKm}
+          finalKm={parsedFinalKm}
+          trips={trips}
+          dense
+        />
 
 
 
@@ -159,10 +174,17 @@ const PartialReviewModal: React.FC<Props> = ({
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 bg-orange-500 text-white hover:bg-orange-600 rounded-lg shadow-sm"
+            disabled={isSending}
+            className={[
+              "px-4 py-2 rounded-lg shadow-sm",
+              isSending
+                ? "bg-orange-300 text-white cursor-not-allowed"
+                : "bg-orange-500 text-white hover:bg-orange-600",
+            ].join(" ")}
           >
-            {t("pages.workday.partial.actions.sendToAdmin")}
+            {isSending ? (t("common.sending", "Enviando...") as string) : t("pages.workday.partial.actions.sendToAdmin")}
           </button>
+
         </div>
       </div>
     </div>

@@ -39,6 +39,8 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
   const [hasIssue, setHasIssue] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [issueData, setIssueData] = useState<any | null>(null); // guardamos la avería sin auto-enviar
+  const [isSending, setIsSending] = useState(false);
+
 
   const parsedInitialKm = Number(initialKm);
   const parsedFinalKm = finalKmLocal === "" ? 0 : Number(finalKmLocal);
@@ -60,9 +62,23 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
   };
 
   const handleSend = () => {
+    // 🛡️ evita multi-clicks
+    if (isSending) return;
+
     if (!ensureValidFinalKm()) return;
-    onConfirm(note.trim(), parsedFinalKm, issueData || undefined);
+
+    setIsSending(true);
+
+    try {
+      onConfirm(note.trim(), parsedFinalKm, issueData || undefined);
+    } finally {
+      // OJO: esto no “espera” a la API porque onConfirm es sync.
+      // Aun así, ya bloquea spam-clicks en el mismo momento.
+      // Si quieres que se desbloquee solo si hay error, lo haremos cuando veamos MyWorkDay.tsx.
+      setTimeout(() => setIsSending(false), 800);
+    }
   };
+
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
@@ -71,14 +87,14 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
           {t("pages.workday.final.title")}
         </h2>
 
-<ReviewSummary
-  assignedDay={assignedDay}
-  ambulanceNumber={ambulanceNumber ?? t("pages.workday.common.unknownAmbulance")}
-  initialKm={parsedInitialKm}
-  finalKm={parsedFinalKm}
-  trips={trips}
-  dense
-/>
+        <ReviewSummary
+          assignedDay={assignedDay}
+          ambulanceNumber={ambulanceNumber ?? t("pages.workday.common.unknownAmbulance")}
+          initialKm={parsedInitialKm}
+          finalKm={parsedFinalKm}
+          trips={trips}
+          dense
+        />
 
 
 
@@ -163,10 +179,17 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
 
           <button
             onClick={handleSend}
-            className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-sm"
+            disabled={isSending}
+            className={[
+              "px-4 py-2 rounded-lg shadow-sm",
+              isSending
+                ? "bg-blue-300 text-white cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700",
+            ].join(" ")}
           >
-            {t("pages.workday.final.actions.sendToAdmin")}
+            {isSending ? (t("common.sending", "Enviando...") as string) : t("pages.workday.final.actions.sendToAdmin")}
           </button>
+
         </div>
       </div>
     </div>
