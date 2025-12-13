@@ -733,11 +733,6 @@ if (!hasPreviousWeek) {
 };
 
 
-
-
-
-
-
 export const deleteDienstsForWeek: RequestHandler = async (req, res) => {
   const { weekStartDate } = req.body;
 
