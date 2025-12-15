@@ -484,18 +484,20 @@ for (const team of teams) {
   }
 }
 
-// 🔍 Determinar si existe semana anterior
+// 🔍 Determinar si existe semana anterior (buscamos por el lunes exacto anterior)
+// Normalizamos para evitar líos de horas/UTC.
 const prevWeekStart = new Date(startDate);
 prevWeekStart.setDate(startDate.getDate() - 7);
+prevWeekStart.setHours(0, 0, 0, 0);
 
-const prevWeekEnd = new Date(prevWeekStart);
-prevWeekEnd.setDate(prevWeekStart.getDate() + 6);
+const prevWeekNextDay = new Date(prevWeekStart.getTime() + 24 * 60 * 60 * 1000);
 
 const prevDiensts = await Dienst.find({
-  weekStartDate: { $gte: prevWeekStart, $lte: prevWeekEnd }
+  weekStartDate: { $gte: prevWeekStart, $lt: prevWeekNextDay }
 }).lean();
 
 const hasPreviousWeek = prevDiensts.length > 0;
+
 
 // 🗺️ Resultado final
 const dienstToTeam = new Map<number, (typeof teams)[0]>();
@@ -512,8 +514,7 @@ for (const num of dienstNumbers) {
 if (!hasPreviousWeek) {
   console.log("📌 Semana base: no se auto-asignan equipos rotativos.");
 } else {
-  // 🟢 Sí existe semana anterior → leemos dónde estaba cada rotativo realmente
-
+  // 🟢 Semana con anterior → rotación basada en el ancla (weekTeamId)
   const freeDienstNumbers = dienstNumbers
     .filter((num) => !fixedMap.has(num))
     .sort((a, b) => a - b);
@@ -521,45 +522,67 @@ if (!hasPreviousWeek) {
   const freeCount = freeDienstNumbers.length;
 
   if (freeCount > 0 && rotatingTeams.length > 0) {
-    // Mapa de semana anterior: dienstNumber → teamRotativo
-    const prevMap = new Map<number, (typeof teams)[0]>();
-    const usedTeams = new Set<string>();
+    // Index por teamId (solo rotativos)
+    const teamById = new Map<string, (typeof teams)[0]>();
+    for (const t of rotatingTeams) teamById.set(String((t as any)._id), t);
 
+    // Mapa de anclas de la semana anterior: dienstNumber -> team
+    const prevAnchorsByDienst = new Map<number, (typeof teams)[0]>();
+
+    // 1) Principal: usar weekTeamId (robusto aunque haya sick/vac)
     for (const prev of prevDiensts) {
       const dn = (prev as any).dienstNumber;
       if (!freeDienstNumbers.includes(dn)) continue;
 
-      const assignments = prev.assignments || [];
+      const weekTeamId = (prev as any).weekTeamId ? String((prev as any).weekTeamId) : null;
+      if (weekTeamId && teamById.has(weekTeamId)) {
+        prevAnchorsByDienst.set(dn, teamById.get(weekTeamId)!);
+      }
+    }
 
-      for (const team of rotatingTeams) {
-        if (usedTeams.has(String(team._id))) continue;
+    // 2) Fallback: para semanas viejas sin weekTeamId, deducimos por assignments (match suave)
+    if (prevAnchorsByDienst.size === 0) {
+      const usedTeams = new Set<string>();
 
-        const tDrv = team.driver ? String(team.driver) : null;
-        const tMed = team.medic ? String(team.medic) : null;
+      for (const prev of prevDiensts) {
+        const dn = (prev as any).dienstNumber;
+        if (!freeDienstNumbers.includes(dn)) continue;
 
-        const match = assignments.some(a =>
-          String(a.driver) === tDrv && String(a.medic) === tMed
-        );
+        const assignments = (prev as any).assignments || [];
 
-        if (match) {
-          prevMap.set(dn, team);
-          usedTeams.add(String(team._id));
-          break;
+        for (const team of rotatingTeams) {
+          const tid = String((team as any)._id);
+          if (usedTeams.has(tid)) continue;
+
+          const tDrv = team.driver ? String(team.driver) : null;
+          const tMed = team.medic ? String(team.medic) : null;
+
+          // ✅ Match suave: cuenta si coincide driver O medic en algún día
+          const match = assignments.some((a: any) =>
+            (tDrv && a?.driver && String(a.driver) === tDrv) ||
+            (tMed && a?.medic && String(a.medic) === tMed)
+          );
+
+          if (match) {
+            prevAnchorsByDienst.set(dn, team);
+            usedTeams.add(tid);
+            break;
+          }
         }
       }
     }
 
-    // 🔄 Rotación circular
+    // 3) Rotación circular SOLO para slots que tenían ancla (no inventamos teams)
     const usedTargets = new Set<number>();
 
     for (let i = 0; i < freeCount; i++) {
-      const prevDienst = freeDienstNumbers[i];
-      const team = prevMap.get(prevDienst);
+      const fromDienst = freeDienstNumbers[i];
+      const team = prevAnchorsByDienst.get(fromDienst);
       if (!team) continue;
 
       let newIndex = (i + 1) % freeCount;
 
-      // evitar colisiones
+      // evitar colisiones con otros rotativos o con algo ya asignado
       let tries = 0;
       while (
         tries < freeCount &&
@@ -569,6 +592,7 @@ if (!hasPreviousWeek) {
         newIndex = (newIndex + 1) % freeCount;
         tries++;
       }
+
       if (tries >= freeCount) continue;
 
       const targetDienst = freeDienstNumbers[newIndex];
@@ -579,6 +603,7 @@ if (!hasPreviousWeek) {
 }
 
 // 👉 El resto de Diensts libres quedan sin equipo, igual que antes (asignación manual).
+
 
     
 
@@ -715,9 +740,14 @@ if (!hasPreviousWeek) {
           weekStartDate: startDate,
           weekEndDate: endDate,
           assignments,
+
+          // ✅ Guardamos el ancla del Team para rotación futura
+          weekTeamId: assignedTeam ? new mongoose.Types.ObjectId(String((assignedTeam as any)._id)) : null,
         };
+
       })
     );
+
 
     await Dienst.insertMany(dienstsToInsert);
 
@@ -1018,6 +1048,10 @@ export const assignTeamToWeek = async (req: Request, res: Response): Promise<voi
       return next;
     });
 
+    // ✅ Guardar ancla semanal del Team para rotación futura (robusto aunque haya sick/vac)
+    (dienst as any).weekTeamId = new mongoose.Types.ObjectId(teamId);
+
+
     await dienst.save();
 
     res.status(200).json({
@@ -1240,6 +1274,10 @@ export const clearPeopleForWeek = async (req: Request, res: Response): Promise<v
         ambulanceId: undefined, // 👈 ahora también se limpia la ambulancia
       } as any;
     });
+
+    // ✅ Al limpiar personas, también limpiamos el ancla semanal
+    (dienst as any).weekTeamId = null;
+
 
     await dienst.save();
 

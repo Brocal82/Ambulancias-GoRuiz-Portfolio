@@ -101,6 +101,7 @@ const AdminPage = () => {
     const diff = day === 0 ? -6 : 1 - day;
     monday.setDate(monday.getDate() + diff);
     return [0, 1, 2].map((i) => {
+
       const copy = new Date(monday);
       copy.setDate(copy.getDate() + i * 7);
       return copy;
@@ -120,7 +121,7 @@ const AdminPage = () => {
       {weekStartDates.map((weekStart, index) => {
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
-        const weekStartISO = weekStart.toISOString().split("T")[0];
+        const weekStartISO = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
         const isCollapsed = collapsedWeeks[weekStartISO] ?? false;
         const hasWeekDiensts = diensts.some(d => {
           if (!d.weekStartDate) return false;
