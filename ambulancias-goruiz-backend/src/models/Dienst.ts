@@ -16,7 +16,11 @@ export interface IDienst extends Document {
   weekStartDate: Date;
   weekEndDate: Date;
   assignments: IDienstAssignment[];
+
+  // ✅ Ancla semanal del Team (para rotación robusta)
+  weekTeamId?: Types.ObjectId | null;
 }
+
 
 const AssignmentSchema = new Schema<IDienstAssignment>(
   {
@@ -36,6 +40,10 @@ const DienstSchema = new Schema<IDienst>({
   weekStartDate: { type: Date, required: false },
   weekEndDate: { type: Date, required: false },
   assignments: [AssignmentSchema],
+
+  // ✅ Ancla semanal del Team (para rotación robusta)
+  weekTeamId: { type: Schema.Types.ObjectId, ref: 'Team', required: false, default: null },
 });
+
 
 export default mongoose.model<IDienst>('Dienst', DienstSchema);
