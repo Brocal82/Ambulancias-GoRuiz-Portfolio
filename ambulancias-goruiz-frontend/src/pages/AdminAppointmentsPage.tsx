@@ -1,26 +1,26 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../hooks/useAuth";
 import {
-  getOpenAppointments,   // 👈 usamos la nueva función
+  getOpenAppointments, // 👈 usamos la nueva función
   getCalendarAppointments,
-} from '../api/appointments';
-import type { Appointment } from '../types/appointment';
+} from "../api/appointments";
+import type { Appointment } from "../types/appointment";
 import { toastT } from "../utils/toast";
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 
 // Componentes ya creados
-import AdminProposeSlotsModal from '../components/appointments/AdminProposeSlotsModal';
-import AdminAppointmentMonthGrid from '../components/appointments/AdminAppointmentMonthGrid';
-import AdminMonthCalendar from '../components/appointments/AdminMonthCalendar';
-import AdminAppointmentDetail from '../components/appointments/AdminAppointmentDetail';
-import StatusBadge from '../components/common/StatusBadge';
+import AdminProposeSlotsModal from "../components/appointments/AdminProposeSlotsModal";
+import AdminAppointmentMonthGrid from "../components/appointments/AdminAppointmentMonthGrid";
+import AdminMonthCalendar from "../components/appointments/AdminMonthCalendar";
+import AdminAppointmentDetail from "../components/appointments/AdminAppointmentDetail";
+import StatusBadge from "../components/common/StatusBadge";
 
 // Utils locales
 const formatRange = (startISO?: string, endISO?: string) => {
-  if (!startISO || !endISO) return '';
+  if (!startISO || !endISO) return "";
   const start = new Date(startISO);
   const end = new Date(endISO);
-  const pad = (n: number) => String(n).padStart(2, '0');
+  const pad = (n: number) => String(n).padStart(2, "0");
   const d = `${pad(start.getDate())}.${pad(start.getMonth() + 1)}.${start.getFullYear()}`;
   const hs = `${pad(start.getHours())}:${pad(start.getMinutes())}`;
   const he = `${pad(end.getHours())}:${pad(end.getMinutes())}`;
@@ -29,10 +29,10 @@ const formatRange = (startISO?: string, endISO?: string) => {
 
 export default function AdminAppointmentsPage() {
   const { token } = useAuth();
-  const { t } = useTranslation('common');
+  const { t } = useTranslation("common");
 
   // --- helpers ---
-  const statusLabel = (s: Appointment['status']) =>
+  const statusLabel = (s: Appointment["status"]) =>
     t(`pages.appointments.statusLabel.${s}`);
 
   // --- Estado de pendientes (pending + proposed) ---
@@ -69,7 +69,7 @@ export default function AdminAppointmentsPage() {
     (async () => {
       try {
         const [p, c] = await Promise.all([
-          getOpenAppointments(token!),   // 👈 ahora usamos la nueva función
+          getOpenAppointments(token!), // 👈 ahora usamos la nueva función
           getCalendarAppointments(fromISO, toISO, token!),
         ]);
         if (mounted) {
@@ -77,7 +77,9 @@ export default function AdminAppointmentsPage() {
           setConfirmedYear(c);
         }
       } catch (e: any) {
-        toastT.error(e?.response?.data?.message ?? ["toasts.appointments.loadError"]);
+        toastT.error(
+          e?.response?.data?.message ?? ["toasts.appointments.loadError"],
+        );
       } finally {
         if (mounted) {
           setLoadingPending(false);
@@ -85,7 +87,9 @@ export default function AdminAppointmentsPage() {
         }
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [token, fromISO, toISO]);
 
   // --- Refrescos ---
@@ -95,7 +99,11 @@ export default function AdminAppointmentsPage() {
       const p = await getOpenAppointments(token!); // 👈 también aquí
       setPending(p);
     } catch (e: any) {
-      toastT.error(e?.response?.data?.message ?? ["toasts.appointments.reloadPendingError"]);
+      toastT.error(
+        e?.response?.data?.message ?? [
+          "toasts.appointments.reloadPendingError",
+        ],
+      );
     } finally {
       setLoadingPending(false);
     }
@@ -107,7 +115,11 @@ export default function AdminAppointmentsPage() {
       const c = await getCalendarAppointments(fromISO, toISO, token!);
       setConfirmedYear(c);
     } catch (e: any) {
-      toastT.error(e?.response?.data?.message ?? ["toasts.appointments.reloadConfirmedError"]);
+      toastT.error(
+        e?.response?.data?.message ?? [
+          "toasts.appointments.reloadConfirmedError",
+        ],
+      );
     } finally {
       setLoadingConfirmed(false);
     }
@@ -127,7 +139,7 @@ export default function AdminAppointmentsPage() {
         const merged: Appointment = {
           ...next,
           workerId:
-            typeof next.workerId === 'string' ? old.workerId : next.workerId,
+            typeof next.workerId === "string" ? old.workerId : next.workerId,
         };
         const copy = [...prev];
         copy[idx] = merged;
@@ -145,20 +157,22 @@ export default function AdminAppointmentsPage() {
           {/* Header */}
           <div className="mb-4 flex items-center justify-between">
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-              {t('pages.appointments.admin.title')}
+              {t("pages.appointments.admin.title")}
             </h1>
             <button
               onClick={refreshAll}
               className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100"
             >
-              {t('pages.appointments.actions.refresh')}
+              {t("pages.appointments.actions.refresh")}
             </button>
           </div>
 
           {/* 1) Grid de 12 meses */}
           <section className="mb-6">
             {loadingConfirmed ? (
-              <p className="text-sm text-gray-600">{t('pages.appointments.status.loadingYear')}</p>
+              <p className="text-sm text-gray-600">
+                {t("pages.appointments.status.loadingYear")}
+              </p>
             ) : (
               <AdminAppointmentMonthGrid
                 items={confirmedYear}
@@ -176,7 +190,7 @@ export default function AdminAppointmentsPage() {
           <section className="mb-8">
             {loadingConfirmed ? (
               <p className="text-sm text-gray-600">
-                {t('pages.appointments.status.loadingMonth')}
+                {t("pages.appointments.status.loadingMonth")}
               </p>
             ) : selectedMonth === null ? null : (
               <AdminMonthCalendar
@@ -194,19 +208,23 @@ export default function AdminAppointmentsPage() {
           {/* 3) Bloque de Pendientes (pending + proposed) */}
           <section className="mt-8 pt-6 border-t border-slate-200">
             <h2 className="text-lg font-semibold text-slate-900 mb-3">
-              {t('pages.appointments.pending.title')}
+              {t("pages.appointments.pending.title")}
             </h2>
 
             {loadingPending ? (
-              <p className="text-sm text-gray-600">{t('pages.appointments.status.loading')}</p>
+              <p className="text-sm text-gray-600">
+                {t("pages.appointments.status.loading")}
+              </p>
             ) : pending.length === 0 ? (
-              <p className="text-sm text-gray-600">{t('pages.appointments.pending.empty')}</p>
+              <p className="text-sm text-gray-600">
+                {t("pages.appointments.pending.empty")}
+              </p>
             ) : (
               <ul className="space-y-3">
                 {pending.map((a) => {
-                  const worker = typeof a.workerId === 'object' ? a.workerId : null;
+                  const worker =
+                    typeof a.workerId === "object" ? a.workerId : null;
                   const proposedSlots = a.proposedSlots;
-
 
                   return (
                     <li
@@ -224,13 +242,13 @@ export default function AdminAppointmentsPage() {
                             <div className="text-slate-900 font-medium">
                               {worker
                                 ? `${worker.lastName}, ${worker.name}`
-                                : `ID: ${typeof a.workerId === 'string' ? a.workerId : ''}`}
+                                : `ID: ${typeof a.workerId === "string" ? a.workerId : ""}`}
                             </div>
                           </div>
 
                           {/* Botón de proponer + status */}
                           <div className="shrink-0 flex flex-row items-center gap-2">
-                            {a.status === 'pending' && (
+                            {a.status === "pending" && (
                               <button
                                 className="shrink-0 rounded bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-700 whitespace-nowrap"
                                 onClick={(e) => {
@@ -238,12 +256,17 @@ export default function AdminAppointmentsPage() {
                                   setSelectedId(a._id);
                                   setOpenPropose(true);
                                 }}
-                                title={t('pages.appointments.actions.proposeSlots')}
+                                title={t(
+                                  "pages.appointments.actions.proposeSlots",
+                                )}
                               >
-                                {t('pages.appointments.actions.proposeSlots')}
+                                {t("pages.appointments.actions.proposeSlots")}
                               </button>
                             )}
-                            <StatusBadge status={a.status} label={statusLabel(a.status)} />
+                            <StatusBadge
+                              status={a.status}
+                              label={statusLabel(a.status)}
+                            />
                           </div>
                         </div>
 
@@ -251,11 +274,14 @@ export default function AdminAppointmentsPage() {
                         {!!proposedSlots?.length && (
                           <div className="mt-1">
                             <div className="text-xs uppercase text-slate-500">
-                              {t('pages.appointments.labels.proposedSlots')}
+                              {t("pages.appointments.labels.proposedSlots")}
                             </div>
                             <ul className="mt-1 space-y-1">
                               {proposedSlots.map((s, idx) => (
-                                <li key={idx} className="text-sm text-slate-700">
+                                <li
+                                  key={idx}
+                                  className="text-sm text-slate-700"
+                                >
                                   {formatRange(s.start, s.end)}
                                 </li>
                               ))}
@@ -273,7 +299,7 @@ export default function AdminAppointmentsPage() {
           {/* Modal: Proponer horarios */}
           <AdminProposeSlotsModal
             isOpen={openPropose}
-            appointmentId={selectedId || ''}
+            appointmentId={selectedId || ""}
             onClose={() => {
               setOpenPropose(false);
               setSelectedId(null);

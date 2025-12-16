@@ -1,10 +1,10 @@
 // backend/src/models/Ambulance.ts
-import mongoose, { Document, Schema, Types } from 'mongoose';
+import mongoose, { Document, Schema, Types } from "mongoose";
 
 export interface IAmbulance extends Document {
   _id: Types.ObjectId;
   brand: string;
-  modelName: string;      // renombrado de model a modelName
+  modelName: string; // renombrado de model a modelName
   licensePlate: string;
   ambulanceNumber: string;
 }
@@ -16,5 +16,5 @@ const ambulanceSchema = new Schema<IAmbulance>({
   ambulanceNumber: { type: String, required: true, unique: true },
 });
 
-const Ambulance = mongoose.model<IAmbulance>('Ambulance', ambulanceSchema);
+const Ambulance = mongoose.model<IAmbulance>("Ambulance", ambulanceSchema);
 export default Ambulance;

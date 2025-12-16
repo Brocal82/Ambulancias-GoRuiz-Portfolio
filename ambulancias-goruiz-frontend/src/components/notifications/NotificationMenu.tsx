@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { useNotifications } from '../../hooks/useNotifications';
-import NotificationItem from './NotificationItem';
-import type { NotificationRole } from '../../types/notification';
+import { useState } from "react";
+import { useNotifications } from "../../hooks/useNotifications";
+import NotificationItem from "./NotificationItem";
+import type { NotificationRole } from "../../types/notification";
 
 type Props = {
-  role: NotificationRole;   // 'admin' | 'worker'
-  userId?: string;          // opcional si filtras por usuario
-  type?: string;            // opcional para menú específico por módulo ('message'|'report'|'summary'|...)
+  role: NotificationRole; // 'admin' | 'worker'
+  userId?: string; // opcional si filtras por usuario
+  type?: string; // opcional para menú específico por módulo ('message'|'report'|'summary'|...)
   initialPage?: number;
   limit?: number;
-  pollMs?: number;          // sobrescribe el intervalo del hook si quieres
+  pollMs?: number; // sobrescribe el intervalo del hook si quieres
 };
 
 export default function NotificationMenu({
@@ -43,16 +43,26 @@ export default function NotificationMenu({
         </button>
       </div>
 
-      {loading && <div className="p-6 text-center text-sm text-gray-500">Cargando…</div>}
-      {error && <div className="p-6 text-center text-sm text-red-600">{error}</div>}
+      {loading && (
+        <div className="p-6 text-center text-sm text-gray-500">Cargando…</div>
+      )}
+      {error && (
+        <div className="p-6 text-center text-sm text-red-600">{error}</div>
+      )}
 
       {!loading && !error && (data?.items.length ?? 0) === 0 && (
-        <div className="p-6 text-center text-sm text-gray-500">No hay notificaciones.</div>
+        <div className="p-6 text-center text-sm text-gray-500">
+          No hay notificaciones.
+        </div>
       )}
 
       <div className="flex flex-col gap-2">
         {data?.items.map((item) => (
-          <NotificationItem key={item._id} item={item} onMarkRead={markAsRead} />
+          <NotificationItem
+            key={item._id}
+            item={item}
+            onMarkRead={markAsRead}
+          />
         ))}
       </div>
 

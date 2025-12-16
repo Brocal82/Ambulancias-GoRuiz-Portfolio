@@ -1,16 +1,22 @@
-export type NotificationRole = 'admin' | 'worker';
-export type NotificationType = 'info' | 'warning' | 'critical' | 'message' | 'report' | 'summary';
+export type NotificationRole = "admin" | "worker";
+export type NotificationType =
+  | "info"
+  | "warning"
+  | "critical"
+  | "message"
+  | "report"
+  | "summary";
 
 export interface NotificationItem {
   _id: string;
   title: string;
   message: string;
-  recipientId?: string;      // si se envía a un usuario concreto
-  role?: NotificationRole;   // si se envía a un rol entero
+  recipientId?: string; // si se envía a un usuario concreto
+  role?: NotificationRole; // si se envía a un rol entero
   isRead: boolean;
   type: NotificationType;
-  createdAt: string;         // ISO
-  updatedAt: string;         // ISO
+  createdAt: string; // ISO
+  updatedAt: string; // ISO
 }
 
 export interface NotificationListResponse {

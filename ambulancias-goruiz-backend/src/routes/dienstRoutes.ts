@@ -1,5 +1,5 @@
 //src/routes/dienstRoutes.ts
-import express from 'express';
+import express from "express";
 import {
   createDienst,
   getAllDiensts,
@@ -16,85 +16,120 @@ import {
   assignTeamToWeek,
   assignUserToWeek,
   clearPeopleForWeek,
-  swapWeekRoles
-} from '../controllers/dienstController';
+  swapWeekRoles,
+} from "../controllers/dienstController";
 
 import {
   getDienstTemplates,
   createDienstTemplate,
   updateDienstTemplate,
   deleteDienstTemplate,
-} from '../controllers/dienstTemplateController';
+} from "../controllers/dienstTemplateController";
 
-
-import { authenticateToken } from '../middlewares/authMiddleware';
-import { authorizeRole } from '../middlewares/roleMiddleware';
-
+import { authenticateToken } from "../middlewares/authMiddleware";
+import { authorizeRole } from "../middlewares/roleMiddleware";
 
 const router = express.Router();
 
 // 👮‍♂️ Rutas protegidas
-router.post('/', authenticateToken, authorizeRole('admin'), createDienst);
-router.get('/', authenticateToken, authorizeRole('admin'), getAllDiensts);
-router.get('/search', authenticateToken, authorizeRole('admin'), searchDienst);
-router.get('/user/:userId', authenticateToken, getDienstsByUser);
+router.post("/", authenticateToken, authorizeRole("admin"), createDienst);
+router.get("/", authenticateToken, authorizeRole("admin"), getAllDiensts);
+router.get("/search", authenticateToken, authorizeRole("admin"), searchDienst);
+router.get("/user/:userId", authenticateToken, getDienstsByUser);
 
 // ✅ NUEVA RUTA - antes de las que usan :id
-router.get('/assigned-days/:userId', authenticateToken, getAssignedDaysForUser);
+router.get("/assigned-days/:userId", authenticateToken, getAssignedDaysForUser);
 
-router.post('/generate-week', authenticateToken, authorizeRole('admin'), generateDienstTemplatesForWeek);
-router.post('/delete-week', authenticateToken, authorizeRole('admin'), deleteDienstsForWeek);
+router.post(
+  "/generate-week",
+  authenticateToken,
+  authorizeRole("admin"),
+  generateDienstTemplatesForWeek,
+);
+router.post(
+  "/delete-week",
+  authenticateToken,
+  authorizeRole("admin"),
+  deleteDienstsForWeek,
+);
 
 // 📌 Rutas para plantillas de Dienst (solo admin)
 router.get(
-  '/templates',
+  "/templates",
   authenticateToken,
-  authorizeRole('admin'),
-  getDienstTemplates
+  authorizeRole("admin"),
+  getDienstTemplates,
 );
 
 router.post(
-  '/templates',
+  "/templates",
   authenticateToken,
-  authorizeRole('admin'),
-  createDienstTemplate
+  authorizeRole("admin"),
+  createDienstTemplate,
 );
 
 router.put(
-  '/templates/:id',
+  "/templates/:id",
   authenticateToken,
-  authorizeRole('admin'),
-  updateDienstTemplate
+  authorizeRole("admin"),
+  updateDienstTemplate,
 );
 
 router.delete(
-  '/templates/:id',
+  "/templates/:id",
   authenticateToken,
-  authorizeRole('admin'),
-  deleteDienstTemplate
+  authorizeRole("admin"),
+  deleteDienstTemplate,
 );
 
-
 // 👇 Acceso según permisos
-router.get('/:id', authenticateToken, getDienstById);
-router.put('/:id', authenticateToken, authorizeRole('admin'), updateDienst);
+router.get("/:id", authenticateToken, getDienstById);
+router.put("/:id", authenticateToken, authorizeRole("admin"), updateDienst);
 
 // ✅ Nueva ruta para eliminar un assignment específico
-router.patch('/:id/remove-assignment', authenticateToken, authorizeRole('admin'), removeAssignment);
+router.patch(
+  "/:id/remove-assignment",
+  authenticateToken,
+  authorizeRole("admin"),
+  removeAssignment,
+);
 
-router.patch('/:id', authenticateToken, authorizeRole('admin'), updateDienstPartial);
-router.delete('/:id', authenticateToken, authorizeRole('admin'), deleteDienst);
+router.patch(
+  "/:id",
+  authenticateToken,
+  authorizeRole("admin"),
+  updateDienstPartial,
+);
+router.delete("/:id", authenticateToken, authorizeRole("admin"), deleteDienst);
 
 // Asignar un Team completo a todos los días de una semana (solo admin)
-router.post('/assign-team-to-week', authenticateToken, authorizeRole('admin'), assignTeamToWeek);
+router.post(
+  "/assign-team-to-week",
+  authenticateToken,
+  authorizeRole("admin"),
+  assignTeamToWeek,
+);
 
-router.post('/swap-week-roles', authenticateToken, authorizeRole('admin'), swapWeekRoles);
+router.post(
+  "/swap-week-roles",
+  authenticateToken,
+  authorizeRole("admin"),
+  swapWeekRoles,
+);
 
 // Asignar UN usuario (driver/medic) a toda la semana de un Dienst
-router.post('/assign-user-to-week', authenticateToken, authorizeRole('admin'), assignUserToWeek);
+router.post(
+  "/assign-user-to-week",
+  authenticateToken,
+  authorizeRole("admin"),
+  assignUserToWeek,
+);
 
-router.post('/clear-week-people', authenticateToken, authorizeRole('admin'), clearPeopleForWeek);
-
+router.post(
+  "/clear-week-people",
+  authenticateToken,
+  authorizeRole("admin"),
+  clearPeopleForWeek,
+);
 
 export default router;
-

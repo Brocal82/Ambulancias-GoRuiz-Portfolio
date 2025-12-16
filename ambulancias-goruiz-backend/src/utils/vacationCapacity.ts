@@ -1,20 +1,20 @@
 // backend/src/utils/vacationCapacity.ts
-import { startOfDay, addDays } from 'date-fns';
-import { Model, Types } from 'mongoose';
+import { startOfDay, addDays } from "date-fns";
+import { Model, Types } from "mongoose";
 
 interface VacationDoc {
   _id: Types.ObjectId;
   startDate: Date | string;
   endDate: Date | string;
-  status: 'pending' | 'accepted' | 'cancelled' | 'option_sent';
+  status: "pending" | "accepted" | "cancelled" | "option_sent";
 }
 
 export async function findOverCapacityDays(
-  VacationModel: Model<any>,               
-  startISO: string | Date,                 
-  endISO: string | Date,                   
+  VacationModel: Model<any>,
+  startISO: string | Date,
+  endISO: string | Date,
   maxPerDay: number,
-  excludingId?: string
+  excludingId?: string,
 ): Promise<string[]> {
   const start = startOfDay(new Date(startISO));
   const end = startOfDay(new Date(endISO));
@@ -26,7 +26,7 @@ export async function findOverCapacityDays(
 
     // Cuenta solicitudes ACEPTADAS que solapen ese día
     const query: any = {
-      status: 'accepted',
+      status: "accepted",
       startDate: { $lt: dayEnd }, // empieza antes del fin del día
       endDate: { $gte: dayStart }, // termina después (o en) el inicio del día
     };

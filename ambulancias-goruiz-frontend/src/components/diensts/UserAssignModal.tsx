@@ -1,44 +1,60 @@
-import { useEffect, useId, useMemo, useState } from 'react';
-import { useAuth } from '../../hooks/useAuth';
-import { useTranslation } from 'react-i18next';
-import { getAllUsers, getAvailableUsersForDate } from '../../api/users';
-import type { AmbulanceRole, User } from '../../types/user';
-import { getPscheinInfo, getPscheinWarningTitle } from '../../utils/pscheinUtils';
-import { getVacationFlagsInRange, type VacFlag } from '../../api/vacation';
-import { getSickFlagsInRange, type SickFlag } from '../../api/sickLeaves';
-import { fmtDDMM } from '../../utils/timeUtils';
+import { useEffect, useId, useMemo, useState } from "react";
+import { useAuth } from "../../hooks/useAuth";
+import { useTranslation } from "react-i18next";
+import { getAllUsers, getAvailableUsersForDate } from "../../api/users";
+import type { AmbulanceRole, User } from "../../types/user";
+import {
+  getPscheinInfo,
+  getPscheinWarningTitle,
+} from "../../utils/pscheinUtils";
+import { getVacationFlagsInRange, type VacFlag } from "../../api/vacation";
+import { getSickFlagsInRange, type SickFlag } from "../../api/sickLeaves";
+import { fmtDDMM } from "../../utils/timeUtils";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (params: { role: 'driver' | 'medic'; userId: string }) => Promise<void> | void;
+  onConfirm: (params: {
+    role: "driver" | "medic";
+    userId: string;
+  }) => Promise<void> | void;
   weekStartISO: string;
 
   /** Opcional: si lo pasas, filtramos por disponibilidad real del día/franja */
-  date?: string;       // 'YYYY-MM-DD'
-  startTime?: string;  // 'HH:mm'
-  endTime?: string;    // 'HH:mm'
+  date?: string; // 'YYYY-MM-DD'
+  startTime?: string; // 'HH:mm'
+  endTime?: string; // 'HH:mm'
 }
 
-export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartISO, date, startTime, endTime }: Props) {
+export default function UserAssignModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  weekStartISO,
+  date,
+  startTime,
+  endTime,
+}: Props) {
   const { token } = useAuth();
   const { t } = useTranslation();
 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState<'driver' | 'medic'>('driver');
-  const [userId, setUserId] = useState('');
+  const [role, setRole] = useState<"driver" | "medic">("driver");
+  const [userId, setUserId] = useState("");
 
   const [openList, setOpenList] = useState(false);
 
-  const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
+  const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>(
+    {},
+  );
   const [sickFlags, setSickFlags] = useState<Record<string, SickFlag>>({});
   const [flagsLoading, setFlagsLoading] = useState(false);
 
   const addDaysISO = (iso: string, days: number) => {
     const d = new Date(iso);
     d.setDate(d.getDate() + days);
-    return d.toISOString().split('T')[0];
+    return d.toISOString().split("T")[0];
   };
   const weekEndISO = useMemo(() => addDaysISO(weekStartISO, 6), [weekStartISO]);
 
@@ -57,10 +73,10 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
             date,
             role, // rol deseado actual
             token,
-            { startTime, endTime }
+            { startTime, endTime },
           );
           setUsers(data);
-          setUserId(''); // reset selección al cambiar role/date/horas
+          setUserId(""); // reset selección al cambiar role/date/horas
         } else {
           const all = await getAllUsers(token);
           setUsers(all);
@@ -77,8 +93,11 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
   // Filtrar por rol de ambulancia solo si NO estamos usando /users/available (porque ese ya viene filtrado por desiredRole)
   const filteredByRole = useMemo(() => {
     if (date) return users; // ya viene filtrado por rol desde el backend
-    const need: AmbulanceRole[] = role === 'driver' ? ['driver', 'both'] : ['medic', 'both'];
-    return users.filter(u => u.ambulanceRole && need.includes(u.ambulanceRole));
+    const need: AmbulanceRole[] =
+      role === "driver" ? ["driver", "both"] : ["medic", "both"];
+    return users.filter(
+      (u) => u.ambulanceRole && need.includes(u.ambulanceRole),
+    );
   }, [users, role, date]);
 
   // Flags para usuarios visibles por rol
@@ -90,7 +109,7 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
       return;
     }
 
-    const ids = filteredByRole.map(u => u._id).filter(Boolean);
+    const ids = filteredByRole.map((u) => u._id).filter(Boolean);
     let cancelled = false;
 
     (async () => {
@@ -109,13 +128,16 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
           includeFullSpan: true,
         });
 
-        const [vacFlags, sickFlagsRes] = await Promise.all([vacPromise, sickPromise]);
+        const [vacFlags, sickFlagsRes] = await Promise.all([
+          vacPromise,
+          sickPromise,
+        ]);
         if (!cancelled) {
           setVacationFlags(vacFlags);
           setSickFlags(sickFlagsRes);
         }
       } catch (e) {
-        console.error('❌ Error al obtener flags (usuarios):', e);
+        console.error("❌ Error al obtener flags (usuarios):", e);
         if (!cancelled) {
           setVacationFlags({});
           setSickFlags({});
@@ -125,42 +147,46 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, token, filteredByRole, weekStartISO, weekEndISO]);
 
   // P-Schein solo afecta a DRIVER (UI: colorear/inhabilitar)
   const driverPscheinClass = (pschein?: string | null) => {
-    if (!pschein) return '';
+    if (!pschein) return "";
     const info = getPscheinInfo(pschein);
-    if (info.status === 'expired') return 'text-red-600 font-medium';
-    if (info.status === 'warning') return 'text-yellow-600 font-medium';
-    return '';
+    if (info.status === "expired") return "text-red-600 font-medium";
+    if (info.status === "warning") return "text-yellow-600 font-medium";
+    return "";
   };
 
   const isDriverExpired = (u: User) => {
-    if (role !== 'driver') return false;
+    if (role !== "driver") return false;
     const info = getPscheinInfo((u as any)?.pscheinExpiry);
-    return info.status === 'expired';
+    return info.status === "expired";
   };
 
   // Tooltip SOLO sobre el nombre cuando P-Schein warning/expired (rol driver)
   const driverPscheinTitle = (u?: User | null): string | undefined => {
-    if (!u || role !== 'driver') return undefined;
+    if (!u || role !== "driver") return undefined;
     const expiry = (u as any)?.pscheinExpiry as string | undefined;
     if (!expiry) return undefined;
     const info = getPscheinInfo(expiry);
-    if (info.status === 'warning' || info.status === 'expired') {
+    if (info.status === "warning" || info.status === "expired") {
       return getPscheinWarningTitle
         ? getPscheinWarningTitle(expiry, t)
-        : t('pages.diensts.adminPage.driverPscheinWarning', { count: info.monthsLeft ?? 0 }) as string;
+        : (t("pages.diensts.adminPage.driverPscheinWarning", {
+            count: info.monthsLeft ?? 0,
+          }) as string);
     }
     return undefined;
   };
 
   const mergeClasses = (...classes: (string | false | null | undefined)[]) =>
-    classes.filter(Boolean).join(' ');
+    classes.filter(Boolean).join(" ");
 
-  const dimClass = 'opacity-50';
+  const dimClass = "opacity-50";
 
   const userVacationInfo = (u: User) => {
     const vf = vacationFlags[u._id];
@@ -172,9 +198,9 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
 
     let title: string | undefined;
     if (fullFrom && fullTo) {
-      title = `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${fmtDDMM(fullFrom)} → ${fmtDDMM(fullTo)}`;
+      title = `🏖️ ${t("pages.diensts.weekModals.vacations", "Vacaciones")}: ${fmtDDMM(fullFrom)} → ${fmtDDMM(fullTo)}`;
     } else {
-      title = `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`;
+      title = `🏖️ ${t("pages.diensts.weekModals.vacations", "Vacaciones")}`;
     }
     return { has: true, title };
   };
@@ -185,20 +211,20 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
     if (!has) return { has: false, title: undefined as string | undefined };
 
     const fullFrom = sf?.sickStartFull || sf?.sickStartInRange;
-    const fullTo   = sf?.sickUntilFull || sf?.sickUntilInRange;
+    const fullTo = sf?.sickUntilFull || sf?.sickUntilInRange;
 
     let title: string | undefined;
     if (fullFrom && fullTo) {
-      title = `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}: ${fmtDDMM(fullFrom)} → ${fmtDDMM(fullTo)}`;
+      title = `🤒 ${t("pages.sick.tooltip.full", "Baja médica")}: ${fmtDDMM(fullFrom)} → ${fmtDDMM(fullTo)}`;
     } else {
-      title = `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}`;
+      title = `🤒 ${t("pages.sick.tooltip.full", "Baja médica")}`;
     }
     return { has: true, title };
   };
 
   const selectedUser = useMemo(
-    () => filteredByRole.find(u => u._id === userId) || null,
-    [filteredByRole, userId]
+    () => filteredByRole.find((u) => u._id === userId) || null,
+    [filteredByRole, userId],
   );
 
   if (!isOpen) return null;
@@ -210,31 +236,47 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200">
         <h3 className="text-lg font-semibold text-slate-900 mb-3">
-          {t('pages.diensts.assignUserModal.title', 'Asignar trabajador a la semana')}
+          {t(
+            "pages.diensts.assignUserModal.title",
+            "Asignar trabajador a la semana",
+          )}
         </h3>
 
         <div className="space-y-3">
           {/* Selector de rol */}
           <div>
-            <label htmlFor={roleId} className="block text-sm font-medium text-slate-700">
-              {t('pages.diensts.assignUserModal.role', 'Rol')}
+            <label
+              htmlFor={roleId}
+              className="block text-sm font-medium text-slate-700"
+            >
+              {t("pages.diensts.assignUserModal.role", "Rol")}
             </label>
             <select
               id={roleId}
               value={role}
-              onChange={(e) => { setRole(e.target.value as 'driver' | 'medic'); setUserId(''); }}
+              onChange={(e) => {
+                setRole(e.target.value as "driver" | "medic");
+                setUserId("");
+              }}
               className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
               disabled={loading}
             >
-              <option value="driver">{t('pages.diensts.assignUserModal.roleDriver', 'Conductor')}</option>
-              <option value="medic">{t('pages.diensts.assignUserModal.roleMedic', 'Sanitario')}</option>
+              <option value="driver">
+                {t("pages.diensts.assignUserModal.roleDriver", "Conductor")}
+              </option>
+              <option value="medic">
+                {t("pages.diensts.assignUserModal.roleMedic", "Sanitario")}
+              </option>
             </select>
           </div>
 
           {/* Selector de usuario */}
           <div>
-            <label htmlFor={userSelectId} className="block text-sm font-medium text-slate-700">
-              {t('pages.diensts.assignUserModal.user', 'Trabajador')}
+            <label
+              htmlFor={userSelectId}
+              className="block text-sm font-medium text-slate-700"
+            >
+              {t("pages.diensts.assignUserModal.user", "Trabajador")}
             </label>
 
             <div className="relative">
@@ -242,36 +284,67 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
                 id={userSelectId}
                 type="button"
                 className="w-full flex items-center justify-between rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-                onClick={() => setOpenList(v => !v)}
+                onClick={() => setOpenList((v) => !v)}
                 aria-haspopup="listbox"
                 aria-expanded={openList}
               >
                 <span className="truncate">
                   {loading
-                    ? t('common.loading', 'Cargando...')
+                    ? t("common.loading", "Cargando...")
                     : selectedUser
                       ? (() => {
                           const vac = userVacationInfo(selectedUser);
                           const sick = userSickInfo(selectedUser);
                           const dClass =
-                            role === 'driver' ? driverPscheinClass((selectedUser as any)?.pscheinExpiry) : '';
-                          const dim = (vac.has || sick.has) ? dimClass : '';
+                            role === "driver"
+                              ? driverPscheinClass(
+                                  (selectedUser as any)?.pscheinExpiry,
+                                )
+                              : "";
+                          const dim = vac.has || sick.has ? dimClass : "";
                           const title = driverPscheinTitle(selectedUser);
                           return (
                             <>
-                              <span className={mergeClasses(dClass, dim)} title={title}>
-                                {(selectedUser.lastName || '') + ', ' + (selectedUser.name || '')}
+                              <span
+                                className={mergeClasses(dClass, dim)}
+                                title={title}
+                              >
+                                {(selectedUser.lastName || "") +
+                                  ", " +
+                                  (selectedUser.name || "")}
                               </span>
-                              {vac.has && <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>}
-                              {sick.has && <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>}
+                              {vac.has && (
+                                <span
+                                  className="ml-1 align-middle text-slate-400"
+                                  title={vac.title}
+                                >
+                                  🏖️
+                                </span>
+                              )}
+                              {sick.has && (
+                                <span
+                                  className="ml-1 align-middle text-slate-500"
+                                  title={sick.title}
+                                >
+                                  🤒
+                                </span>
+                              )}
                             </>
                           );
                         })()
-                      : t('common.select', 'Selecciona')
-                  }
+                      : t("common.select", "Selecciona")}
                 </span>
-                <svg className="h-4 w-4 shrink-0 text-slate-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" />
+                <svg
+                  className="h-4 w-4 shrink-0 text-slate-500"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </button>
 
@@ -284,7 +357,7 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
                 >
                   {filteredByRole.length === 0 && (
                     <div className="px-3 py-2 text-sm text-slate-500">
-                      {t('common.empty', 'No hay resultados')}
+                      {t("common.empty", "No hay resultados")}
                     </div>
                   )}
 
@@ -294,16 +367,22 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
                       const da = isDriverExpired(a) ? 1 : 0;
                       const db = isDriverExpired(b) ? 1 : 0;
                       if (da !== db) return da - db;
-                      const ka = `${a.lastName || ''} ${a.name || ''}`.toLowerCase();
-                      const kb = `${b.lastName || ''} ${b.name || ''}`.toLowerCase();
-                      return ka.localeCompare(kb, 'es');
+                      const ka =
+                        `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
+                      const kb =
+                        `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
+                      return ka.localeCompare(kb, "es");
                     })
-                    .map(u => {
+                    .map((u) => {
                       const vac = userVacationInfo(u);
                       const sick = userSickInfo(u);
-                      const dClass = role === 'driver' ? driverPscheinClass((u as any)?.pscheinExpiry) : '';
-                      const expired = role === 'driver' ? isDriverExpired(u) : false;
-                      const dim = (vac.has || sick.has) ? dimClass : '';
+                      const dClass =
+                        role === "driver"
+                          ? driverPscheinClass((u as any)?.pscheinExpiry)
+                          : "";
+                      const expired =
+                        role === "driver" ? isDriverExpired(u) : false;
+                      const dim = vac.has || sick.has ? dimClass : "";
                       const title = driverPscheinTitle(u);
 
                       return (
@@ -317,16 +396,33 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
                             setOpenList(false);
                           }}
                           className={mergeClasses(
-                            'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
-                            userId === u._id && 'bg-slate-50',
-                            expired && 'opacity-50 cursor-not-allowed'
+                            "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
+                            userId === u._id && "bg-slate-50",
+                            expired && "opacity-50 cursor-not-allowed",
                           )}
                         >
-                          <span className={mergeClasses(dClass, dim)} title={title}>
-                            {(u.lastName || '') + ', ' + (u.name || '')}
+                          <span
+                            className={mergeClasses(dClass, dim)}
+                            title={title}
+                          >
+                            {(u.lastName || "") + ", " + (u.name || "")}
                           </span>
-                          {vac.has && <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>}
-                          {sick.has && <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>}
+                          {vac.has && (
+                            <span
+                              className="ml-1 align-middle text-slate-400"
+                              title={vac.title}
+                            >
+                              🏖️
+                            </span>
+                          )}
+                          {sick.has && (
+                            <span
+                              className="ml-1 align-middle text-slate-500"
+                              title={sick.title}
+                            >
+                              🤒
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -334,16 +430,28 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
               )}
             </div>
 
-            {role === 'driver' && (
+            {role === "driver" && (
               <p className="mt-1 text-[11px] text-slate-500">
-                🚫 {t('pages.diensts.adminPage.legendCantDrive', 'No puede conducir, P-Schein caducado')}
+                🚫{" "}
+                {t(
+                  "pages.diensts.adminPage.legendCantDrive",
+                  "No puede conducir, P-Schein caducado",
+                )}
               </p>
             )}
 
             {flagsLoading ? (
-              <p className="mt-1 text-[11px] text-slate-500">{t('common.loading', 'Cargando...')}</p>
+              <p className="mt-1 text-[11px] text-slate-500">
+                {t("common.loading", "Cargando...")}
+              </p>
             ) : (
-              <p className="mt-1 text-[11px] text-slate-500">🏖️/🤒 {t('pages.diensts.weekModals.vacationsHint', 'Pasa el ratón por los iconos para ver fechas')}</p>
+              <p className="mt-1 text-[11px] text-slate-500">
+                🏖️/🤒{" "}
+                {t(
+                  "pages.diensts.weekModals.vacationsHint",
+                  "Pasa el ratón por los iconos para ver fechas",
+                )}
+              </p>
             )}
           </div>
         </div>
@@ -357,13 +465,13 @@ export default function UserAssignModal({ isOpen, onClose, onConfirm, weekStartI
               await onConfirm({ role, userId });
             }}
           >
-            {t('pages.diensts.assignUserModal.confirm', 'Asignar')}
+            {t("pages.diensts.assignUserModal.confirm", "Asignar")}
           </button>
           <button
             className="w-full rounded-xl bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-300 focus:outline-none focus:ring-4 focus:ring-slate-100"
             onClick={onClose}
           >
-            {t('common.cancel', 'Cancelar')}
+            {t("common.cancel", "Cancelar")}
           </button>
         </div>
       </div>

@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { getAllIssueReports, deleteIssueReport, markIssueSeen } from "../api/workdaySummary";
+import {
+  getAllIssueReports,
+  deleteIssueReport,
+  markIssueSeen,
+} from "../api/workdaySummary";
 import type { WorkdayIssue } from "../types/workdayIssue";
 import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
@@ -19,9 +23,10 @@ const AdminMechanicsPage = () => {
   const sortedIssues = useMemo(
     () =>
       [...issues].sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
       ),
-    [issues]
+    [issues],
   );
 
   useEffect(() => {
@@ -31,7 +36,7 @@ const AdminMechanicsPage = () => {
 
         const issuesData = await getAllIssueReports(token);
         // Asegura defaults si el backend aún devuelve sin campos
-        const normalized = issuesData.map(i => ({
+        const normalized = issuesData.map((i) => ({
           ...i,
           isSeen: i.isSeen ?? false,
           seenAt: i.seenAt ?? null,
@@ -56,7 +61,7 @@ const AdminMechanicsPage = () => {
 
     const confirmed = window.confirm(
       (t("pages.mechanics.adminPage.confirmDelete") as string) ||
-      "¿Seguro que quieres eliminar este reporte? Esta acción no se puede deshacer."
+        "¿Seguro que quieres eliminar este reporte? Esta acción no se puede deshacer.",
     );
     if (!confirmed) return;
 
@@ -76,34 +81,45 @@ const AdminMechanicsPage = () => {
     }
   };
 
-  const toggleExpand = useCallback(async (issue: WorkdayIssue) => {
-    setExpanded(prev => {
-      const next = new Set(prev);
-      if (next.has(issue._id)) {
-        next.delete(issue._id);
-      } else {
-        next.add(issue._id);
-      }
-      return next;
-    });
+  const toggleExpand = useCallback(
+    async (issue: WorkdayIssue) => {
+      setExpanded((prev) => {
+        const next = new Set(prev);
+        if (next.has(issue._id)) {
+          next.delete(issue._id);
+        } else {
+          next.add(issue._id);
+        }
+        return next;
+      });
 
-    // Si se expande por primera vez y estaba no vista → marcar como vista
-    const wasAlreadyExpanded = expanded.has(issue._id);
-    if (!wasAlreadyExpanded && issue.isSeen !== true && token) {
-      try {
-        const updated = await markIssueSeen(token, issue._id);
-        // Actualiza estado local
-        setIssues(cur =>
-          cur.map(it => (it._id === issue._id ? { ...it, isSeen: true, seenAt: updated.seenAt ?? new Date().toISOString() } : it))
-        );
-        // Notificar al Dashboard para refrescar badge
-        notifyAdminIssuesChanged();
-      } catch (err) {
-        console.error("❌ Error al marcar avería como vista:", err);
-        // Sin toast intrusivo; se reintentará al volver a expandir si sigue no vista.
+      // Si se expande por primera vez y estaba no vista → marcar como vista
+      const wasAlreadyExpanded = expanded.has(issue._id);
+      if (!wasAlreadyExpanded && issue.isSeen !== true && token) {
+        try {
+          const updated = await markIssueSeen(token, issue._id);
+          // Actualiza estado local
+          setIssues((cur) =>
+            cur.map((it) =>
+              it._id === issue._id
+                ? {
+                    ...it,
+                    isSeen: true,
+                    seenAt: updated.seenAt ?? new Date().toISOString(),
+                  }
+                : it,
+            ),
+          );
+          // Notificar al Dashboard para refrescar badge
+          notifyAdminIssuesChanged();
+        } catch (err) {
+          console.error("❌ Error al marcar avería como vista:", err);
+          // Sin toast intrusivo; se reintentará al volver a expandir si sigue no vista.
+        }
       }
-    }
-  }, [expanded, token]);
+    },
+    [expanded, token],
+  );
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -114,9 +130,13 @@ const AdminMechanicsPage = () => {
           </h1>
 
           {loading ? (
-            <p className="text-sm text-slate-600">{t("pages.mechanics.adminPage.loading")}</p>
+            <p className="text-sm text-slate-600">
+              {t("pages.mechanics.adminPage.loading")}
+            </p>
           ) : sortedIssues.length === 0 ? (
-            <p className="text-sm text-slate-600">{t("pages.mechanics.adminPage.empty")}</p>
+            <p className="text-sm text-slate-600">
+              {t("pages.mechanics.adminPage.empty")}
+            </p>
           ) : (
             <ul className="space-y-3">
               {sortedIssues.map((issue) => {
@@ -133,7 +153,9 @@ const AdminMechanicsPage = () => {
                     key={issue._id}
                     className={[
                       "relative rounded-xl ring-1 p-0 bg-white transition overflow-hidden",
-                      isOpen ? "ring-slate-300 shadow-sm" : "ring-slate-200 hover:ring-slate-300",
+                      isOpen
+                        ? "ring-slate-300 shadow-sm"
+                        : "ring-slate-200 hover:ring-slate-300",
                     ].join(" ")}
                   >
                     {/* Header clickable (botón de disclosure) */}
@@ -141,8 +163,8 @@ const AdminMechanicsPage = () => {
                       id={btnId}
                       onClick={() => toggleExpand(issue)}
                       className="w-full flex items-center gap-3 px-4 py-3 text-left"
-                      aria-expanded={isOpen}               // ← boolean real  axe-linter-disable-next-line aria-valid-attr-value
-                      aria-controls={panelId}              // ← el panel existe siempre
+                      aria-expanded={isOpen} // ← boolean real  axe-linter-disable-next-line aria-valid-attr-value
+                      aria-controls={panelId} // ← el panel existe siempre
                       type="button"
                     >
                       {/* Dot rojo si NO vista */}
@@ -154,15 +176,20 @@ const AdminMechanicsPage = () => {
                         aria-hidden="true"
                         title={
                           unseen
-                            ? (t("pages.mechanics.adminPage.badges.unseen") as string)
-                            : (t("pages.mechanics.adminPage.badges.seen") as string)
+                            ? (t(
+                                "pages.mechanics.adminPage.badges.unseen",
+                              ) as string)
+                            : (t(
+                                "pages.mechanics.adminPage.badges.seen",
+                              ) as string)
                         }
                       />
                       <span className="text-sm text-slate-600">
                         {new Date(issue.timestamp).toLocaleString()}
                       </span>
                       <span className="ml-auto font-medium text-slate-800">
-                        {t("pages.mechanics.adminPage.labels.ambulance")} {issue.ambulanceNumber}
+                        {t("pages.mechanics.adminPage.labels.ambulance")}{" "}
+                        {issue.ambulanceNumber}
                       </span>
                       <span
                         className={[
@@ -188,14 +215,17 @@ const AdminMechanicsPage = () => {
                         <button
                           onClick={() => handleDelete(issue._id)}
                           className="text-rose-600 hover:text-rose-700 font-bold text-lg leading-none transition"
-                          title={t("pages.mechanics.adminPage.delete") as string}
-                          aria-label={t("pages.mechanics.adminPage.delete") as string}
+                          title={
+                            t("pages.mechanics.adminPage.delete") as string
+                          }
+                          aria-label={
+                            t("pages.mechanics.adminPage.delete") as string
+                          }
                           type="button"
                         >
                           ×
                         </button>
                       </div>
-
 
                       {/* Meta */}
                       <div className="mb-3">
@@ -218,13 +248,17 @@ const AdminMechanicsPage = () => {
                             <div className="grid grid-cols-2 gap-x-6 gap-y-1">
                               <div className="truncate">
                                 <span className="font-semibold text-slate-800">
-                                  {t("pages.mechanics.adminPage.labels.ambulance")}
+                                  {t(
+                                    "pages.mechanics.adminPage.labels.ambulance",
+                                  )}
                                 </span>{" "}
                                 {amb.ambulanceNumber}
                               </div>
                               <div className="truncate">
                                 <span className="font-semibold text-slate-800">
-                                  {t("pages.mechanics.adminPage.labels.finalKm")}
+                                  {t(
+                                    "pages.mechanics.adminPage.labels.finalKm",
+                                  )}
                                 </span>{" "}
                                 {issue.finalKm}
                               </div>
@@ -236,20 +270,27 @@ const AdminMechanicsPage = () => {
                               </div>
                               <div className="truncate">
                                 <span className="font-semibold text-slate-800">
-                                  {t("pages.mechanics.adminPage.labels.numberPlate")}
+                                  {t(
+                                    "pages.mechanics.adminPage.labels.numberPlate",
+                                  )}
                                 </span>{" "}
                                 {amb.licensePlate}
                               </div>
                             </div>
                           ) : (
                             <div className="text-slate-700">
-                              {t("pages.mechanics.adminPage.ambulanceFallback", {
-                                number: issue.ambulanceNumber,
-                                id: issue.ambulanceId,
-                              })}
+                              {t(
+                                "pages.mechanics.adminPage.ambulanceFallback",
+                                {
+                                  number: issue.ambulanceNumber,
+                                  id: issue.ambulanceId,
+                                },
+                              )}
                               <div className="mt-1">
                                 <span className="font-semibold text-slate-800">
-                                  {t("pages.mechanics.adminPage.labels.finalKm")}
+                                  {t(
+                                    "pages.mechanics.adminPage.labels.finalKm",
+                                  )}
                                 </span>{" "}
                                 {issue.finalKm}
                               </div>
@@ -289,8 +330,6 @@ const AdminMechanicsPage = () => {
       </div>
     </div>
   );
-
-
 };
 
 export default AdminMechanicsPage;

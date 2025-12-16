@@ -4,8 +4,8 @@ import type { InternalAxiosRequestConfig } from "axios";
 // Sanea una baseURL: elimina '/api' final y la barra final
 const sanitizeBase = (u?: string) =>
   (u || "")
-    .replace(/\/+$/, "")       // quita barras del final
-    .replace(/\/api$/i, "");   // quita /api final si viene
+    .replace(/\/+$/, "") // quita barras del final
+    .replace(/\/api$/i, ""); // quita /api final si viene
 
 const RAW = import.meta.env.VITE_API_URL;
 
@@ -31,16 +31,16 @@ function ensureApiPrefix(config: InternalAxiosRequestConfig) {
   if (/^https?:\/\//i.test(url)) return config;
 
   // 2) Ya correcto: /api/...
-  if (url.startsWith('/api/')) return config;
+  if (url.startsWith("/api/")) return config;
 
   // 3) "api/..." (sin barra): añade la barra
-  if (url.startsWith('api/')) {
-    config.url = `/${url}`;    // -> /api/...
+  if (url.startsWith("api/")) {
+    config.url = `/${url}`; // -> /api/...
     return config;
   }
 
   // 4) Empieza por "/" -> anteponer /api
-  if (url.startsWith('/')) {
+  if (url.startsWith("/")) {
     config.url = `/api${url}`; // -> /api/...
     return config;
   }
@@ -67,19 +67,24 @@ axiosInstance.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Defensa extra: si volviera HTML
 axiosInstance.interceptors.response.use(
   (res) => {
     const ct = (res.headers?.["content-type"] || "").toLowerCase();
-    if (ct.includes("text/html") || (typeof res.data === "string" && res.data.trim().startsWith("<!doctype"))) {
-      throw new Error("Respuesta HTML recibida. Revisa el prefijo /api o el proxy de Netlify.");
+    if (
+      ct.includes("text/html") ||
+      (typeof res.data === "string" && res.data.trim().startsWith("<!doctype"))
+    ) {
+      throw new Error(
+        "Respuesta HTML recibida. Revisa el prefijo /api o el proxy de Netlify.",
+      );
     }
     return res;
   },
-  (err) => Promise.reject(err)
+  (err) => Promise.reject(err),
 );
 
 export default axiosInstance;

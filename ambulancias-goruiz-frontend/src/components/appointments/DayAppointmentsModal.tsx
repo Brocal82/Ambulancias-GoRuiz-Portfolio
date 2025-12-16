@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
-import type { Appointment } from '../../types/appointment';
-import { useTranslation } from 'react-i18next';
+import React, { useMemo } from "react";
+import type { Appointment } from "../../types/appointment";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   isOpen: boolean;
@@ -20,21 +20,25 @@ const DayAppointmentsModal: React.FC<Props> = ({
   const { t, i18n } = useTranslation();
 
   const titleDate = useMemo(() => {
-    if (!dateISO) return '';
+    if (!dateISO) return "";
     const d = new Date(dateISO);
     return d.toLocaleDateString(i18n.language, {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
     });
   }, [dateISO, i18n.language]);
 
   // Orden por hora ascendente
   const sorted = useMemo(() => {
     return [...appointments].sort((a, b) => {
-      const sa = a.selectedSlot?.start ? new Date(a.selectedSlot.start).getTime() : 0;
-      const sb = b.selectedSlot?.start ? new Date(b.selectedSlot.start).getTime() : 0;
+      const sa = a.selectedSlot?.start
+        ? new Date(a.selectedSlot.start).getTime()
+        : 0;
+      const sb = b.selectedSlot?.start
+        ? new Date(b.selectedSlot.start).getTime()
+        : 0;
       return sa - sb;
     });
   }, [appointments]);
@@ -51,8 +55,12 @@ const DayAppointmentsModal: React.FC<Props> = ({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-          <h4 id="day-appts-title" className="text-lg font-semibold tracking-tight text-slate-900">
-            {t('pages.appointments.calendar.dayAppointmentsTitle') || 'Citas del día'}
+          <h4
+            id="day-appts-title"
+            className="text-lg font-semibold tracking-tight text-slate-900"
+          >
+            {t("pages.appointments.calendar.dayAppointmentsTitle") ||
+              "Citas del día"}
           </h4>
           <div className="text-sm text-slate-500">{titleDate}</div>
         </div>
@@ -61,22 +69,23 @@ const DayAppointmentsModal: React.FC<Props> = ({
         <div className="px-6 py-4">
           {sorted.length === 0 ? (
             <p className="text-sm text-slate-500">
-              {t('pages.appointments.calendar.noAppointments') || 'No hay citas para este día.'}
+              {t("pages.appointments.calendar.noAppointments") ||
+                "No hay citas para este día."}
             </p>
           ) : (
             <ul className="divide-y divide-slate-200">
               {sorted.map((a) => {
                 const when = a.selectedSlot?.start
-                  ? new Date(a.selectedSlot.start).toLocaleTimeString('de-DE', {
-                      timeZone: 'Europe/Berlin',
-                      hour: '2-digit',
-                      minute: '2-digit',
+                  ? new Date(a.selectedSlot.start).toLocaleTimeString("de-DE", {
+                      timeZone: "Europe/Berlin",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })
-                  : '';
+                  : "";
                 const worker =
-                  typeof a.workerId === 'object'
+                  typeof a.workerId === "object"
                     ? `${a.workerId.lastName}, ${a.workerId.name}`
-                    : t('pages.appointments.calendar.workerFallback');
+                    : t("pages.appointments.calendar.workerFallback");
 
                 return (
                   <li key={a._id} className="py-3">
@@ -108,7 +117,7 @@ const DayAppointmentsModal: React.FC<Props> = ({
             onClick={onClose}
             className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100"
           >
-            {t('pages.appointments.calendar.actions.close') || 'Cerrar'}
+            {t("pages.appointments.calendar.actions.close") || "Cerrar"}
           </button>
         </div>
       </div>

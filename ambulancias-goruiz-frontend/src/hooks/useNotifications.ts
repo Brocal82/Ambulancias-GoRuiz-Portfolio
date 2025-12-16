@@ -1,15 +1,18 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getNotifications, markNotificationAsRead } from '../api/notifications';
-import type { NotificationListResponse, NotificationRole } from '../types/notification';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getNotifications, markNotificationAsRead } from "../api/notifications";
+import type {
+  NotificationListResponse,
+  NotificationRole,
+} from "../types/notification";
 
 type UseNotificationsOptions = {
-  role?: NotificationRole;      // 'admin' | 'worker'
-  userId?: string;             // cuando quieras filtrar por usuario
-  unreadOnly?: boolean;        // p.ej. true para solo no leídos
-  type?: string;               // 'message' | 'report' | 'summary' | ...
-  page?: number;               // estado externo si lo prefieres controlar fuera
-  limit?: number;              // size por página
-  pollMs?: number;             // intervalo de refresco; 0 para desactivar (default: 30000)
+  role?: NotificationRole; // 'admin' | 'worker'
+  userId?: string; // cuando quieras filtrar por usuario
+  unreadOnly?: boolean; // p.ej. true para solo no leídos
+  type?: string; // 'message' | 'report' | 'summary' | ...
+  page?: number; // estado externo si lo prefieres controlar fuera
+  limit?: number; // size por página
+  pollMs?: number; // intervalo de refresco; 0 para desactivar (default: 30000)
 };
 
 export function useNotifications(opts: UseNotificationsOptions) {
@@ -43,7 +46,7 @@ export function useNotifications(opts: UseNotificationsOptions) {
       });
       setData(res);
     } catch (e: any) {
-      setError(e?.message ?? 'Error cargando notificaciones');
+      setError(e?.message ?? "Error cargando notificaciones");
     } finally {
       setLoading(false);
     }
@@ -67,8 +70,8 @@ export function useNotifications(opts: UseNotificationsOptions) {
   }, [fetchData, pollMs]);
 
   const unreadCount = useMemo(
-    () => (data?.items ?? []).filter(n => !n.isRead).length,
-    [data]
+    () => (data?.items ?? []).filter((n) => !n.isRead).length,
+    [data],
   );
 
   const refresh = useCallback(() => {
@@ -78,21 +81,23 @@ export function useNotifications(opts: UseNotificationsOptions) {
   const markAsRead = useCallback(async (id: string) => {
     await markNotificationAsRead(id);
     // Actualizamos estado local sin volver a pegar al servidor
-    setData(prev => {
+    setData((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
-        items: prev.items.map(it => (it._id === id ? { ...it, isRead: true } : it)),
+        items: prev.items.map((it) =>
+          it._id === id ? { ...it, isRead: true } : it,
+        ),
       };
     });
   }, []);
 
   return {
-    data,           // { items, page, limit, total, totalPages }
+    data, // { items, page, limit, total, totalPages }
     loading,
     error,
-    unreadCount,    // contador de no leídos
-    refresh,        // refresco manual
-    markAsRead,     // acción
+    unreadCount, // contador de no leídos
+    refresh, // refresco manual
+    markAsRead, // acción
   };
 }

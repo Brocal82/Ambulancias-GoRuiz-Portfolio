@@ -1,11 +1,11 @@
 //src/utils/cleanupOldDiensts.ts
 
-import { DateTime } from 'luxon';
-import mongoose from 'mongoose';
-import Dienst from '../models/Dienst';
+import { DateTime } from "luxon";
+import mongoose from "mongoose";
+import Dienst from "../models/Dienst";
 
 // Zona horaria oficial del servicio
-const ZONE = 'Europe/Berlin';
+const ZONE = "Europe/Berlin";
 
 /**
  * Calcula el "próximo lunes 00:00" en la zona Europe/Berlin,
@@ -14,7 +14,7 @@ const ZONE = 'Europe/Berlin';
 function getNextMondayStart(): DateTime {
   const now = DateTime.now().setZone(ZONE);
   // ISO week en Luxon empieza en LUNES por defecto.
-  const thisMonday = now.startOf('week'); // lunes 00:00 de esta semana
+  const thisMonday = now.startOf("week"); // lunes 00:00 de esta semana
   // Si ya pasamos del domingo, "próximo lunes" es el mismo thisMonday + 1 semana;
   // si estamos antes del lunes 00:00, sigue siendo el thisMonday próximo.
   const nextMonday =
@@ -26,13 +26,27 @@ function getNextMondayStart(): DateTime {
  * Dado un assignment (date=YYYY-MM-DD, start/end HH:mm),
  * devuelve el DateTime de fin REAL en zona Berlin (sumando 1 día si cruza medianoche).
  */
-function getAssignmentEnd(dateISO: string, startHHmm: string, endHHmm: string): DateTime {
-  const base = DateTime.fromISO(dateISO, { zone: ZONE }).startOf('day');
-  const [sh, sm] = startHHmm.split(':').map(Number);
-  const [eh, em] = endHHmm.split(':').map(Number);
+function getAssignmentEnd(
+  dateISO: string,
+  startHHmm: string,
+  endHHmm: string,
+): DateTime {
+  const base = DateTime.fromISO(dateISO, { zone: ZONE }).startOf("day");
+  const [sh, sm] = startHHmm.split(":").map(Number);
+  const [eh, em] = endHHmm.split(":").map(Number);
 
-  const start = base.set({ hour: sh ?? 0, minute: sm ?? 0, second: 0, millisecond: 0 });
-  let end = base.set({ hour: eh ?? 0, minute: em ?? 0, second: 0, millisecond: 0 });
+  const start = base.set({
+    hour: sh ?? 0,
+    minute: sm ?? 0,
+    second: 0,
+    millisecond: 0,
+  });
+  let end = base.set({
+    hour: eh ?? 0,
+    minute: em ?? 0,
+    second: 0,
+    millisecond: 0,
+  });
 
   // Si la hora de fin es <= hora de inicio, asumimos que cruza medianoche (turno nocturno)
   if (end <= start) {
@@ -54,11 +68,11 @@ const cleanupOldDiensts = async () => {
     // 1) Pre-filtrar por weekEndDate en Mongo para no traer toda la colección
     const candidates = await Dienst.find(
       { weekEndDate: { $lt: nextMondayStartUTC.toJSDate() } },
-      { assignments: 1 } // solo necesitamos assignments para el cálculo
+      { assignments: 1 }, // solo necesitamos assignments para el cálculo
     ).lean();
 
     if (!candidates.length) {
-      console.log('🧹 No hay Diensts candidatos para limpiar.');
+      console.log("🧹 No hay Diensts candidatos para limpiar.");
       return;
     }
 
@@ -91,19 +105,19 @@ const cleanupOldDiensts = async () => {
     }
 
     if (!deletableIds.length) {
-      console.log('🧹 No hay Diensts para eliminar tras validar turnos nocturnos.');
+      console.log(
+        "🧹 No hay Diensts para eliminar tras validar turnos nocturnos.",
+      );
       return;
     }
 
     const result = await Dienst.deleteMany({ _id: { $in: deletableIds } });
     console.log(
-      `🧹 Diensts eliminados: ${result.deletedCount} (umbral próximo lunes 00:00 ${nextMondayStart.toISO()} / UTC ${nextMondayStartUTC.toISO()})`
+      `🧹 Diensts eliminados: ${result.deletedCount} (umbral próximo lunes 00:00 ${nextMondayStart.toISO()} / UTC ${nextMondayStartUTC.toISO()})`,
     );
   } catch (error) {
-    console.error('❌ Error al eliminar Diensts antiguos:', error);
+    console.error("❌ Error al eliminar Diensts antiguos:", error);
   }
 };
 
 export default cleanupOldDiensts;
-
-

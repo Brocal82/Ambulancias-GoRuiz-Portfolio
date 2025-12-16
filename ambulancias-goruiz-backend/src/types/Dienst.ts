@@ -6,7 +6,6 @@ export interface UserRef {
   pscheinExpiry?: string;
 }
 
-
 export interface AssignedDay {
   dienstId: string;
   dienstNumber: number;
@@ -19,8 +18,3 @@ export interface AssignedDay {
   driver?: string | UserRef;
   medic?: string | UserRef;
 }
-
-
-
-
-

@@ -1,5 +1,5 @@
 // src/models/Team.ts
-import { Schema, model, Types, Document } from 'mongoose';
+import { Schema, model, Types, Document } from "mongoose";
 
 export interface ITeamModel extends Document {
   driver: Types.ObjectId;
@@ -11,7 +11,7 @@ export interface ITeamModel extends Document {
    * - 'fixed'    → siempre el mismo Dienst (fixedDienstNumber)
    * - 'none'     → sin lógica automática de rotación (asignación manual)
    */
-  rotationMode: 'rotating' | 'fixed' | 'none';
+  rotationMode: "rotating" | "fixed" | "none";
 
   /**
    * Solo tiene sentido cuando rotationMode === 'fixed'.
@@ -31,14 +31,14 @@ export interface ITeamModel extends Document {
 
 const TeamSchema = new Schema<ITeamModel>(
   {
-    driver: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    medic:  { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    driver: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    medic: { type: Schema.Types.ObjectId, ref: "User", required: true },
 
     rotationMode: {
       type: String,
-      enum: ['rotating', 'fixed', 'none'],
+      enum: ["rotating", "fixed", "none"],
       required: true,
-      default: 'none', // por defecto no hacemos rotación automática
+      default: "none", // por defecto no hacemos rotación automática
     },
 
     fixedDienstNumber: {
@@ -50,15 +50,15 @@ const TeamSchema = new Schema<ITeamModel>(
     // 🚑 NUEVO: ambulancia fija del equipo (opcional)
     ambulanceId: {
       type: Schema.Types.ObjectId,
-      ref: 'Ambulance',
+      ref: "Ambulance",
       required: false,
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // ❗ Evitar duplicados exactos de pareja
 TeamSchema.index({ driver: 1, medic: 1 }, { unique: true });
 
-export default model<ITeamModel>('Team', TeamSchema);
+export default model<ITeamModel>("Team", TeamSchema);

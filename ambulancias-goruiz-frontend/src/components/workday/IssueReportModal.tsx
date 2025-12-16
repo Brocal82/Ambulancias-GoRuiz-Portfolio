@@ -27,10 +27,9 @@ const IssueReportModal: React.FC<Props> = ({
   const { t } = useTranslation();
   const [description, setDescription] = useState("");
   const [finalKmInput, setFinalKmInput] = useState<string>(
-    finalKm > 0 ? finalKm.toString() : ""
+    finalKm > 0 ? finalKm.toString() : "",
   );
   const [isSending, setIsSending] = useState(false);
-
 
   if (!isOpen) return null;
 
@@ -93,7 +92,6 @@ const IssueReportModal: React.FC<Props> = ({
     }
   };
 
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
       <div className="w-full max-w-xl rounded-2xl bg-white shadow-lg ring-1 ring-slate-200">
@@ -112,11 +110,15 @@ const IssueReportModal: React.FC<Props> = ({
               {/* Columna izquierda: conductor y sanitario */}
               <div className="space-y-1">
                 <p>
-                  <strong className="text-slate-800">{t("pages.mechanics.issueModal.driver")}</strong>{" "}
+                  <strong className="text-slate-800">
+                    {t("pages.mechanics.issueModal.driver")}
+                  </strong>{" "}
                   {assignedDay.driver.lastName}, {assignedDay.driver.name}
                 </p>
                 <p>
-                  <strong className="text-slate-800">{t("pages.mechanics.issueModal.medic")}</strong>{" "}
+                  <strong className="text-slate-800">
+                    {t("pages.mechanics.issueModal.medic")}
+                  </strong>{" "}
                   {assignedDay.medic.lastName}, {assignedDay.medic.name}
                 </p>
               </div>
@@ -124,12 +126,17 @@ const IssueReportModal: React.FC<Props> = ({
               {/* Columna derecha: fecha y ambulancia */}
               <div className="space-y-1 sm:text-right">
                 <p>
-                  <strong className="text-slate-800">{t("pages.mechanics.issueModal.date")}</strong>{" "}
+                  <strong className="text-slate-800">
+                    {t("pages.mechanics.issueModal.date")}
+                  </strong>{" "}
                   {formatYYYYMMDDToDDMMYYYY(assignedDay.date)}
                 </p>
                 <p>
-                  <strong className="text-slate-800">{t("pages.mechanics.issueModal.ambulance")}</strong>{" "}
-                  {ambulanceNumber || t("pages.mechanics.issueModal.unknownAmbulance")}
+                  <strong className="text-slate-800">
+                    {t("pages.mechanics.issueModal.ambulance")}
+                  </strong>{" "}
+                  {ambulanceNumber ||
+                    t("pages.mechanics.issueModal.unknownAmbulance")}
                 </p>
               </div>
             </div>
@@ -144,7 +151,9 @@ const IssueReportModal: React.FC<Props> = ({
               type="number"
               inputMode="numeric"
               value={finalKmInput}
-              onChange={(e) => setFinalKmInput(e.target.value.replace(/\D/g, ""))}
+              onChange={(e) =>
+                setFinalKmInput(e.target.value.replace(/\D/g, ""))
+              }
               placeholder={t("pages.mechanics.issueModal.finalKmPlaceholder")}
               className="w-full rounded-md border border-slate-300 bg-slate-50/50 px-3 py-2 text-sm placeholder-slate-400 outline-none focus:border-slate-400 focus:ring-2 focus:ring-blue-200"
             />
@@ -187,14 +196,9 @@ const IssueReportModal: React.FC<Props> = ({
               : t("pages.mechanics.issueModal.actions.send")}
           </button>
         </div>
-
       </div>
     </div>
   );
-
-
-
 };
 
 export default IssueReportModal;
-

@@ -60,7 +60,7 @@ const DaySummariesModal: React.FC<DaySummariesModalProps> = ({
         const bIsPartial = !b.isFinalClosure;
         if (aIsPartial === bIsPartial) return 0;
         return aIsPartial ? -1 : 1;
-      })
+      }),
     );
   }, [summaries]);
 
@@ -93,7 +93,7 @@ const DaySummariesModal: React.FC<DaySummariesModalProps> = ({
             <p className="text-sm text-slate-500">
               {t(
                 "pages.summaries.admin.modal.noSummaries",
-                "No hay resúmenes para este día."
+                "No hay resúmenes para este día.",
               )}
             </p>
           ) : (
@@ -104,7 +104,7 @@ const DaySummariesModal: React.FC<DaySummariesModalProps> = ({
                 const hasUnread = group.some(
                   (s) =>
                     (s as any).isReviewed === false ||
-                    typeof (s as any).isReviewed === "undefined"
+                    typeof (s as any).isReviewed === "undefined",
                 );
 
                 const hasPartial = group.some((s) => !s.isFinalClosure);
@@ -113,19 +113,18 @@ const DaySummariesModal: React.FC<DaySummariesModalProps> = ({
                 const driver = first.driver;
                 const medic = first.medic;
 
-                const key =
-                  first._id ??
-                  `${first.assignmentId}-${groupIndex}`;
+                const key = first._id ?? `${first.assignmentId}-${groupIndex}`;
 
                 return (
                   <button
                     key={key}
                     type="button"
                     onClick={() => onSelectSummaryGroup(group)}
-                    className={`flex flex-col rounded-xl border p-3 text-left text-xs transition hover:shadow-sm ${hasUnread
+                    className={`flex flex-col rounded-xl border p-3 text-left text-xs transition hover:shadow-sm ${
+                      hasUnread
                         ? "border-amber-300 bg-amber-50/70"
                         : "border-slate-200 bg-slate-50"
-                      }`}
+                    }`}
                   >
                     {/* Línea superior: número de Dienst + badges de estado */}
                     <div className="mb-1 flex items-center justify-between gap-2">
@@ -140,16 +139,13 @@ const DaySummariesModal: React.FC<DaySummariesModalProps> = ({
                           <span className="rounded-full bg-slate-200 px-2 py-[1px] text-[9px] font-medium text-slate-700">
                             {t(
                               "pages.summaries.admin.badge.partial",
-                              "Parcial"
+                              "Parcial",
                             )}
                           </span>
                         )}
                         {hasFinal && (
                           <span className="rounded-full bg-emerald-100 px-2 py-[1px] text-[9px] font-medium text-emerald-700">
-                            {t(
-                              "pages.summaries.admin.badge.final",
-                              "Final"
-                            )}
+                            {t("pages.summaries.admin.badge.final", "Final")}
                           </span>
                         )}
                         {hasUnread && (
@@ -157,7 +153,7 @@ const DaySummariesModal: React.FC<DaySummariesModalProps> = ({
                             <span className="h-2 w-2 rounded-full bg-amber-500" />
                             {t(
                               "pages.summaries.admin.badge.unread",
-                              "Sin leer"
+                              "Sin leer",
                             )}
                           </span>
                         )}
@@ -186,7 +182,7 @@ const DaySummariesModal: React.FC<DaySummariesModalProps> = ({
                         {t(
                           "pages.summaries.admin.badge.reportsCount",
                           "{{count}} reportes",
-                          { count: group.length }
+                          { count: group.length },
                         )}
                       </span>
                       <span>

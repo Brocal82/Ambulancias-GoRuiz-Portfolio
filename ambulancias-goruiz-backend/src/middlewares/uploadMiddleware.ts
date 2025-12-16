@@ -1,10 +1,10 @@
 //backend/src/middlewares/uploadMiddleware.ts
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 // 📁 Directorio donde se guardarán los archivos: backend/uploads
-const uploadDir = path.join(__dirname, '../../uploads');
+const uploadDir = path.join(__dirname, "../../uploads");
 
 // Crear la carpeta si no existe
 if (!fs.existsSync(uploadDir)) {
@@ -18,7 +18,7 @@ const storage = multer.diskStorage({
   },
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    const base = path.basename(file.originalname, ext).replace(/\s+/g, '_');
+    const base = path.basename(file.originalname, ext).replace(/\s+/g, "_");
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     cb(null, `${base}-${uniqueSuffix}${ext}`);
   },
@@ -26,17 +26,23 @@ const storage = multer.diskStorage({
 
 // ✅ Tipos de archivo permitidos (imágenes + PDF)
 const allowedTypes = [
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'application/pdf',
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
 ];
 
-const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const fileFilter = (
+  _req: any,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback,
+) => {
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('❌ Tipo de archivo no permitido. Solo JPG, PNG, WEBP o PDF.'));
+    cb(
+      new Error("❌ Tipo de archivo no permitido. Solo JPG, PNG, WEBP o PDF."),
+    );
   }
 };
 

@@ -10,31 +10,31 @@ export const getCurrentTimeString = (): string => {
 
 /** Convierte una fecha ISO a 'DD-MM-YYYY' */
 export function formatISOToDDMMYYYY(iso?: string): string {
-  if (!iso) return '';
+  if (!iso) return "";
   const date = new Date(iso);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
   const year = date.getFullYear();
   return `${day}-${month}-${year}`;
 }
 
 /** Convierte una fecha 'YYYY-MM-DD' a 'DD-MM-YYYY' */
 export function formatYYYYMMDDToDDMMYYYY(dateStr?: string): string {
-  if (!dateStr) return '';
-  const [y, m, d] = dateStr.split('-');
-  if (!y || !m || !d) return '';
-  return `${d.padStart(2, '0')}-${m.padStart(2, '0')}-${y}`;
+  if (!dateStr) return "";
+  const [y, m, d] = dateStr.split("-");
+  if (!y || !m || !d) return "";
+  return `${d.padStart(2, "0")}-${m.padStart(2, "0")}-${y}`;
 }
 
-/** 
- * Convierte 'YYYY-MM-DD' → 'DD/MM' 
+/**
+ * Convierte 'YYYY-MM-DD' → 'DD/MM'
  * ✅ Usar este formato para tooltips de vacaciones y bajas.
  */
 export function fmtDDMM(dateStr?: string): string {
-  if (!dateStr) return '';
-  const [, m, d] = dateStr.split('-');
-  if (!m || !d) return '';
-  return `${d.padStart(2, '0')}/${m.padStart(2, '0')}`;
+  if (!dateStr) return "";
+  const [, m, d] = dateStr.split("-");
+  if (!m || !d) return "";
+  return `${d.padStart(2, "0")}/${m.padStart(2, "0")}`;
 }
 
 /**
@@ -45,20 +45,21 @@ export function fmtDDMM(dateStr?: string): string {
  */
 export function formatCellDateUnified(isoDay: string, lang: string): string {
   const d = new Date(isoDay);
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
 
   // Elegimos locale solo para el nombre del día
-  const locale =
-    lang?.startsWith('de') ? 'de-DE' :
-    lang?.startsWith('en') ? 'en-US' :
-    'es-ES';
+  const locale = lang?.startsWith("de")
+    ? "de-DE"
+    : lang?.startsWith("en")
+      ? "en-US"
+      : "es-ES";
 
   // Nombre del día abreviado según idioma, sin punto final (de pone "So.")
-  const rawWk = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(d).trim();
-  const wk = rawWk.replace(/\.$/, '');
+  const rawWk = new Intl.DateTimeFormat(locale, { weekday: "short" })
+    .format(d)
+    .trim();
+  const wk = rawWk.replace(/\.$/, "");
 
   return `${wk}, ${dd}/${mm}`;
 }
-
-

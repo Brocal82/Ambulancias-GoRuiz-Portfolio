@@ -1,9 +1,9 @@
 // backend/src/utils/dienstClearUtils.ts
-import mongoose from 'mongoose';
-import { DateTime } from 'luxon';
-import Dienst from '../models/Dienst';
+import mongoose from "mongoose";
+import { DateTime } from "luxon";
+import Dienst from "../models/Dienst";
 
-const ZONE = 'Europe/Berlin';
+const ZONE = "Europe/Berlin";
 
 /**
  * Desasigna a un usuario (driver/medic) de TODOS los Diensts
@@ -18,7 +18,7 @@ const ZONE = 'Europe/Berlin';
 export async function clearUserFromDienstsInRange(params: {
   userId: string;
   startISO: string; // 'YYYY-MM-DD'
-  endISO: string;   // 'YYYY-MM-DD'
+  endISO: string; // 'YYYY-MM-DD'
 }): Promise<{
   diensteTouched: number;
   assignmentsTouched: number;
@@ -45,8 +45,8 @@ export async function clearUserFromDienstsInRange(params: {
   }
 
   // Normalizamos el rango en TZ Berlin [00:00..23:59]
-  let startDt = DateTime.fromISO(startISO, { zone: ZONE }).startOf('day');
-  let endDt   = DateTime.fromISO(endISO,   { zone: ZONE }).endOf('day');
+  let startDt = DateTime.fromISO(startISO, { zone: ZONE }).startOf("day");
+  let endDt = DateTime.fromISO(endISO, { zone: ZONE }).endOf("day");
 
   if (!startDt.isValid || !endDt.isValid || endDt < startDt) {
     return {
@@ -73,7 +73,7 @@ export async function clearUserFromDienstsInRange(params: {
 
   // Buscar todos los Diensts que tengan assignments en cualquiera de esos días
   const dienste = await Dienst.find({
-    'assignments.date': { $in: daysISO },
+    "assignments.date": { $in: daysISO },
   });
 
   let diensteTouched = 0;

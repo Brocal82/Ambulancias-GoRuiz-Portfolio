@@ -1,10 +1,13 @@
 // frontend/src/components/vacation/WorkerAvailabilityMonthModal.tsx
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { getVacationAvailability, type VacationAvailabilityResponse } from '../../api/vacation';
-import { monthLabel as fmtMonth } from '../../utils/intl';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  getVacationAvailability,
+  type VacationAvailabilityResponse,
+} from "../../api/vacation";
+import { monthLabel as fmtMonth } from "../../utils/intl";
 
-type DayState = 'green' | 'yellow' | 'red';
+type DayState = "green" | "yellow" | "red";
 
 type AcceptedRange = { startISO: string; endISO: string };
 
@@ -26,9 +29,14 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const locale =
-    i18n.language === 'de' ? 'de-DE' : i18n.language === 'en' ? 'en-US' : 'es-ES';
+    i18n.language === "de"
+      ? "de-DE"
+      : i18n.language === "en"
+        ? "en-US"
+        : "es-ES";
 
-  const [availability, setAvailability] = useState<VacationAvailabilityResponse | null>(null);
+  const [availability, setAvailability] =
+    useState<VacationAvailabilityResponse | null>(null);
   const [availLoading, setAvailLoading] = useState(false);
   const [availError, setAvailError] = useState<string | null>(null);
 
@@ -42,7 +50,7 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(baseMonday);
       d.setUTCDate(baseMonday.getUTCDate() + i);
-      return d.toLocaleDateString(locale, { weekday: 'short' });
+      return d.toLocaleDateString(locale, { weekday: "short" });
     });
   }, [locale]);
 
@@ -56,21 +64,26 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
     const leading = Array.from({ length: mondayBased }, () => null);
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
     const base = [...leading, ...days];
-    return base.concat(Array.from({ length: Math.max(0, 42 - base.length) }, () => null));
+    return base.concat(
+      Array.from({ length: Math.max(0, 42 - base.length) }, () => null),
+    );
   }, [monthIndex, year]);
 
   const loadAvailability = async (y: number, m1: number, force = false) => {
-    const key = `${y}-${String(m1).padStart(2, '0')}`;
+    const key = `${y}-${String(m1).padStart(2, "0")}`;
     inFlightKeyRef.current = key;
     try {
       setAvailLoading(true);
       setAvailError(null);
-      const data = await getVacationAvailability({ year: y, month: m1 }, { force });
+      const data = await getVacationAvailability(
+        { year: y, month: m1 },
+        { force },
+      );
       if (inFlightKeyRef.current !== key) return;
       setAvailability(data);
     } catch {
       if (inFlightKeyRef.current !== key) return;
-      setAvailError('load_error');
+      setAvailError("load_error");
     } finally {
       if (inFlightKeyRef.current === key) setAvailLoading(false);
     }
@@ -106,10 +119,17 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
 
     // 1) CustomEvent
     const customHandler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { year: number; month: number };
-      if (detail?.year && detail?.month) scheduleRefresh(detail.year, detail.month);
+      const detail = (e as CustomEvent).detail as {
+        year: number;
+        month: number;
+      };
+      if (detail?.year && detail?.month)
+        scheduleRefresh(detail.year, detail.month);
     };
-    window.addEventListener('vacation-availability-invalidated', customHandler as EventListener);
+    window.addEventListener(
+      "vacation-availability-invalidated",
+      customHandler as EventListener,
+    );
 
     // 2) BroadcastChannel
     let bc: BroadcastChannel | null = null;
@@ -117,11 +137,15 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
       const BC = (window as any).BroadcastChannel as
         | (new (name: string) => BroadcastChannel)
         | undefined;
-      if (typeof BC === 'function') {
-        bc = new BC('vacations');
+      if (typeof BC === "function") {
+        bc = new BC("vacations");
         bc.onmessage = (msg: MessageEvent) => {
           const data = msg.data || {};
-          if (data?.type === 'availability-invalidated' && data.year && data.month) {
+          if (
+            data?.type === "availability-invalidated" &&
+            data.year &&
+            data.month
+          ) {
             scheduleRefresh(data.year, data.month);
           }
         };
@@ -132,19 +156,23 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
 
     // 3) storage fallback
     const storageHandler = (ev: StorageEvent) => {
-      if (ev.key !== '__vac_av_inval__' || !ev.newValue) return;
+      if (ev.key !== "__vac_av_inval__" || !ev.newValue) return;
       try {
         const payload = JSON.parse(ev.newValue);
-        if (payload?.year && payload?.month) scheduleRefresh(payload.year, payload.month);
+        if (payload?.year && payload?.month)
+          scheduleRefresh(payload.year, payload.month);
       } catch {
         /* noop */
       }
     };
-    window.addEventListener('storage', storageHandler);
+    window.addEventListener("storage", storageHandler);
 
     return () => {
-      window.removeEventListener('vacation-availability-invalidated', customHandler as EventListener);
-      window.removeEventListener('storage', storageHandler);
+      window.removeEventListener(
+        "vacation-availability-invalidated",
+        customHandler as EventListener,
+      );
+      window.removeEventListener("storage", storageHandler);
       try {
         bc?.close?.();
       } catch {
@@ -160,13 +188,16 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
   const getDayState = (day: number | null): DayState | null => {
     if (!availability || day === null) return null;
     const rec = availability.days.find((d) => d.day === day);
-    return rec ? rec.state : 'green';
+    return rec ? rec.state : "green";
   };
 
   // =============== BORDES CONTINUOS (solo rangos aceptados recibidos por props) ===============
 
   /** Construye un mapa día->clases de borde para un rango recortado al mes actual */
-  const buildBorderMapFromRange = (start: Date, end: Date): Record<number, string> => {
+  const buildBorderMapFromRange = (
+    start: Date,
+    end: Date,
+  ): Record<number, string> => {
     if (monthIndex === null) return {};
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
     const classes: Record<number, string> = {};
@@ -197,25 +228,26 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
       // bordes horizontales para primera y última fila del rango
       if (cur === startDay) {
         for (let d = cur; d <= lastDayOfWeek; d++) {
-          classes[d] = (classes[d] ?? '') + ' border-t-2 border-violet-500';
+          classes[d] = (classes[d] ?? "") + " border-t-2 border-violet-500";
         }
       }
       if (lastDayOfWeek === endDay) {
         for (let d = cur; d <= lastDayOfWeek; d++) {
-          classes[d] = (classes[d] ?? '') + ' border-b-2 border-violet-500';
+          classes[d] = (classes[d] ?? "") + " border-b-2 border-violet-500";
         }
       }
 
       // laterales
-      classes[cur] = (classes[cur] ?? '') + ' border-l-2 border-violet-500';
-      classes[lastDayOfWeek] = (classes[lastDayOfWeek] ?? '') + ' border-r-2 border-violet-500';
+      classes[cur] = (classes[cur] ?? "") + " border-l-2 border-violet-500";
+      classes[lastDayOfWeek] =
+        (classes[lastDayOfWeek] ?? "") + " border-r-2 border-violet-500";
 
       cur = lastDayOfWeek + 1;
     }
 
     // redondeo de puntas visibles en este mes
-    classes[startDay] = (classes[startDay] ?? '') + ' rounded-l-full';
-    classes[endDay] = (classes[endDay] ?? '') + ' rounded-r-full';
+    classes[startDay] = (classes[startDay] ?? "") + " rounded-l-full";
+    classes[endDay] = (classes[endDay] ?? "") + " rounded-r-full";
 
     return classes;
   };
@@ -271,11 +303,13 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
               id="worker-availability-month-title"
               className="text-base font-semibold text-slate-900 truncate"
             >
-              {monthIndex !== null ? `${fmtMonth(year, monthIndex)} · ${year}` : ''}
+              {monthIndex !== null
+                ? `${fmtMonth(year, monthIndex)} · ${year}`
+                : ""}
             </h3>
 
             <button
-              aria-label={t('pages.vacations.monthModal.close')}
+              aria-label={t("pages.vacations.monthModal.close")}
               onClick={onClose}
               className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
             >
@@ -292,20 +326,22 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
             <div className="mb-2 flex items-center gap-2 text-[11px] text-slate-600">
               <span className="inline-flex items-center gap-2">
                 <span className="h-3 w-3 rounded border-2 border-emerald-300" />
-                {t('pages.vacations.monthGrid.legend.available')}
+                {t("pages.vacations.monthGrid.legend.available")}
               </span>
               <span className="inline-flex items-center gap-2">
                 <span className="h-3 w-3 rounded border-2 border-amber-300" />
-                {t('pages.vacations.monthGrid.legend.requested')}
+                {t("pages.vacations.monthGrid.legend.requested")}
               </span>
               <span className="inline-flex items-center gap-2">
                 <span className="h-3 w-3 rounded border-2 border-rose-300" />
-                {t('pages.vacations.monthGrid.legend.full')}
+                {t("pages.vacations.monthGrid.legend.full")}
               </span>
 
               {availability && (
                 <span className="ml-auto text-slate-500">
-                  {t('pages.vacations.adminPage.capacity', { count: availability.maxPerDay })}
+                  {t("pages.vacations.adminPage.capacity", {
+                    count: availability.maxPerDay,
+                  })}
                 </span>
               )}
             </div>
@@ -341,23 +377,22 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
                   }
                   const state = getDayState(cell);
                   const color =
-                  state === 'red'
-                    ? 'bg-rose-50 text-slate-800 border-2 border-rose-300'
-                    : state === 'yellow'
-                      ? 'bg-amber-50 text-slate-800 border-2 border-amber-300'
-                      : 'bg-emerald-50 text-slate-800 border-2 border-emerald-300';
+                    state === "red"
+                      ? "bg-rose-50 text-slate-800 border-2 border-rose-300"
+                      : state === "yellow"
+                        ? "bg-amber-50 text-slate-800 border-2 border-amber-300"
+                        : "bg-emerald-50 text-slate-800 border-2 border-emerald-300";
 
-
-                  const borderCls = borderMap[cell] ?? '';
+                  const borderCls = borderMap[cell] ?? "";
 
                   return (
                     <div
                       key={`d-${cell}-${idx}`}
                       className={[
-                        'h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none',
+                        "h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none",
                         color,
                         borderCls,
-                      ].join(' ')}
+                      ].join(" ")}
                       title={`${cell}`}
                       aria-label={`${cell}`}
                     >
@@ -369,7 +404,7 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
 
             {availError && (
               <p className="mt-2 text-[11px] text-rose-600">
-                {t('common.loadError', 'No se pudo cargar la disponibilidad.')}
+                {t("common.loadError", "No se pudo cargar la disponibilidad.")}
               </p>
             )}
           </div>
@@ -381,7 +416,7 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
             onClick={onClose}
             className="rounded-xl bg-white px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-100"
           >
-            {t('pages.vacations.monthModal.close')}
+            {t("pages.vacations.monthModal.close")}
           </button>
         </div>
       </div>

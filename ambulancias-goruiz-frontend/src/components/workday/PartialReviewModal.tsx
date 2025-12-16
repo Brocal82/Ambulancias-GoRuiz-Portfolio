@@ -19,7 +19,7 @@ interface Props {
     report: string,
     finalKm: number,
     totalEffectivePatients: number,
-    issueData?: any
+    issueData?: any,
   ) => void;
 }
 
@@ -41,10 +41,12 @@ const PartialReviewModal: React.FC<Props> = ({
   const [issueData, setIssueData] = useState<any | null>(null);
   const [isSending, setIsSending] = useState(false);
 
-
   const parsedInitialKm = Number(initialKm);
   const parsedFinalKm = finalKm === "" ? 0 : Number(finalKm);
-  const totalEffectivePatients = calculateEffectivePatients(trips, assignedDay.date);
+  const totalEffectivePatients = calculateEffectivePatients(
+    trips,
+    assignedDay.date,
+  );
 
   const ensureValidFinalKm = (): boolean => {
     if (finalKm === "" || isNaN(Number(finalKm))) {
@@ -79,7 +81,6 @@ const PartialReviewModal: React.FC<Props> = ({
     }
   };
 
-
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-5xl overflow-y-auto max-h-[90vh] space-y-6">
@@ -96,10 +97,10 @@ const PartialReviewModal: React.FC<Props> = ({
           dense
         />
 
-
-
         <p className="text-center font-semibold text-green-700">
-          {t("pages.workday.partial.totalPatients", { count: totalEffectivePatients })}
+          {t("pages.workday.partial.totalPatients", {
+            count: totalEffectivePatients,
+          })}
         </p>
 
         <textarea
@@ -111,7 +112,9 @@ const PartialReviewModal: React.FC<Props> = ({
 
         <input
           type="number"
-          placeholder={t("pages.workday.partial.placeholders.finalKm") as string}
+          placeholder={
+            t("pages.workday.partial.placeholders.finalKm") as string
+          }
           value={finalKm}
           onChange={(e) =>
             setFinalKm(e.target.value === "" ? "" : Number(e.target.value))
@@ -182,9 +185,10 @@ const PartialReviewModal: React.FC<Props> = ({
                 : "bg-orange-500 text-white hover:bg-orange-600",
             ].join(" ")}
           >
-            {isSending ? (t("common.sending", "Enviando...") as string) : t("pages.workday.partial.actions.sendToAdmin")}
+            {isSending
+              ? (t("common.sending", "Enviando...") as string)
+              : t("pages.workday.partial.actions.sendToAdmin")}
           </button>
-
         </div>
       </div>
     </div>

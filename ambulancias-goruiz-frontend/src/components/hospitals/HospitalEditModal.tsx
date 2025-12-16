@@ -24,7 +24,7 @@ const toLocalStatus = (h: any): boolean | undefined => {
 
 const fromLocalStatus = (
   base: any,
-  isOpenBool: boolean | undefined
+  isOpenBool: boolean | undefined,
 ): { isOpen?: boolean; status?: StatusUnion } => {
   if (typeof base?.isOpen === "boolean") {
     return typeof isOpenBool === "boolean" ? { isOpen: isOpenBool } : {};
@@ -65,11 +65,11 @@ const HospitalEditModal = ({
   const [address, setAddress] = useState(hospital.address ?? "");
   const [phone, setPhone] = useState(hospital.phone ?? "");
   const [specialties, setSpecialties] = useState<string[]>(
-    Array.isArray(hospital.specialties) ? hospital.specialties : []
+    Array.isArray(hospital.specialties) ? hospital.specialties : [],
   );
   const [specInput, setSpecInput] = useState("");
   const [isOpenState, setIsOpenState] = useState<boolean | undefined>(
-    toLocalStatus(hospital)
+    toLocalStatus(hospital),
   );
   const [touched, setTouched] = useState({ name: false, address: false });
 
@@ -79,7 +79,9 @@ const HospitalEditModal = ({
       setName(hospital.name ?? "");
       setAddress(hospital.address ?? "");
       setPhone(hospital.phone ?? "");
-      setSpecialties(Array.isArray(hospital.specialties) ? hospital.specialties : []);
+      setSpecialties(
+        Array.isArray(hospital.specialties) ? hospital.specialties : [],
+      );
       setIsOpenState(toLocalStatus(hospital));
       setSpecInput("");
       setTouched({ name: false, address: false });
@@ -118,7 +120,10 @@ const HospitalEditModal = ({
       name === (hospital.name ?? "") &&
       address === (hospital.address ?? "") &&
       (phone ?? "") === (hospital.phone ?? "");
-    const specsEqual = arraysEqualUnordered(specialties, hospital.specialties ?? []);
+    const specsEqual = arraysEqualUnordered(
+      specialties,
+      hospital.specialties ?? [],
+    );
     const statusEqual = toLocalStatus(hospital) === isOpenState;
     return !(baseEqual && specsEqual && statusEqual);
   }, [name, address, phone, specialties, hospital, isOpenState]);
@@ -171,7 +176,10 @@ const HospitalEditModal = ({
             <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 ring-1 ring-blue-100">
               <span aria-hidden>🏥</span>
             </div>
-            <h2 id={`${formUid}-title`} className="text-lg md:text-xl font-bold text-slate-900">
+            <h2
+              id={`${formUid}-title`}
+              className="text-lg md:text-xl font-bold text-slate-900"
+            >
               {t("pages.hospitals.editModal.title", "Editar hospital")}
             </h2>
           </div>
@@ -197,7 +205,10 @@ const HospitalEditModal = ({
             {/* Columna izquierda: nombre, dirección, teléfono */}
             <div className="space-y-4">
               <div>
-                <label htmlFor={nameId} className="block text-slate-600 text-xs uppercase tracking-wide mb-1">
+                <label
+                  htmlFor={nameId}
+                  className="block text-slate-600 text-xs uppercase tracking-wide mb-1"
+                >
                   {t("pages.hospitals.form.name", "Nombre")}
                 </label>
                 <input
@@ -207,7 +218,12 @@ const HospitalEditModal = ({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   onBlur={() => setTouched((p) => ({ ...p, name: true }))}
-                  placeholder={t("pages.hospitals.form.namePh", "Hospital Universitario") as string}
+                  placeholder={
+                    t(
+                      "pages.hospitals.form.namePh",
+                      "Hospital Universitario",
+                    ) as string
+                  }
                   aria-invalid={Boolean(touched.name && !name.trim())}
                   className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   required
@@ -215,7 +231,10 @@ const HospitalEditModal = ({
               </div>
 
               <div>
-                <label htmlFor={addressId} className="block text-slate-600 text-xs uppercase tracking-wide mb-1">
+                <label
+                  htmlFor={addressId}
+                  className="block text-slate-600 text-xs uppercase tracking-wide mb-1"
+                >
                   {t("pages.hospitals.detailsModal.address", "Dirección")}
                 </label>
                 <input
@@ -225,7 +244,12 @@ const HospitalEditModal = ({
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   onBlur={() => setTouched((p) => ({ ...p, address: true }))}
-                  placeholder={t("pages.hospitals.form.addressPh", "Ej: Friedrichstr. 123, Berlin") as string}
+                  placeholder={
+                    t(
+                      "pages.hospitals.form.addressPh",
+                      "Ej: Friedrichstr. 123, Berlin",
+                    ) as string
+                  }
                   aria-invalid={Boolean(touched.address && !address.trim())}
                   className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   required
@@ -233,7 +257,10 @@ const HospitalEditModal = ({
               </div>
 
               <div>
-                <label htmlFor={phoneId} className="block text-slate-600 text-xs uppercase tracking-wide mb-1">
+                <label
+                  htmlFor={phoneId}
+                  className="block text-slate-600 text-xs uppercase tracking-wide mb-1"
+                >
                   {t("pages.hospitals.detailsModal.phone", "Teléfono")}
                 </label>
                 <input
@@ -242,7 +269,9 @@ const HospitalEditModal = ({
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder={t("pages.hospitals.form.phonePh", "+49 ...") as string}
+                  placeholder={
+                    t("pages.hospitals.form.phonePh", "+49 ...") as string
+                  }
                   className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   inputMode="tel"
                 />
@@ -252,8 +281,14 @@ const HospitalEditModal = ({
             {/* Columna derecha: ESPECIALIDADES (arriba) */}
             <div className="space-y-4">
               <div>
-                <label htmlFor={specInputId} className="block text-slate-600 text-xs uppercase tracking-wide mb-1">
-                  {t("pages.hospitals.detailsModal.specialties", "Especialidades")}
+                <label
+                  htmlFor={specInputId}
+                  className="block text-slate-600 text-xs uppercase tracking-wide mb-1"
+                >
+                  {t(
+                    "pages.hospitals.detailsModal.specialties",
+                    "Especialidades",
+                  )}
                 </label>
 
                 {allSpecialties && allSpecialties.length > 0 && (
@@ -276,20 +311,41 @@ const HospitalEditModal = ({
                         e.preventDefault();
                         addSpec();
                       }
-                      if (e.key === "Backspace" && !specInput && specialties.length > 0) {
+                      if (
+                        e.key === "Backspace" &&
+                        !specInput &&
+                        specialties.length > 0
+                      ) {
                         removeSpec(specialties[specialties.length - 1]);
                       }
                     }}
-                    list={allSpecialties && allSpecialties.length > 0 ? `${formUid}-specs-list` : undefined}
-                    placeholder={t("pages.hospitals.editModal.addSpecialty", "Añadir especialidad y Enter") as string}
+                    list={
+                      allSpecialties && allSpecialties.length > 0
+                        ? `${formUid}-specs-list`
+                        : undefined
+                    }
+                    placeholder={
+                      t(
+                        "pages.hospitals.editModal.addSpecialty",
+                        "Añadir especialidad y Enter",
+                      ) as string
+                    }
                     className="flex-1 rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   />
                   <button
                     type="button"
                     onClick={addSpec}
                     className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm hover:bg-slate-50"
-                    aria-label={t("pages.hospitals.editModal.addSpecialtyBtn", "Añadir especialidad")}
-                    title={t("pages.hospitals.editModal.addSpecialtyBtn", "Añadir especialidad") as string}
+                    aria-label={t(
+                      "pages.hospitals.editModal.addSpecialtyBtn",
+                      "Añadir especialidad",
+                    )}
+                    title={
+                      t(
+                        "pages.hospitals.editModal.addSpecialtyBtn",
+                        "Añadir especialidad",
+                      ) as string
+                    }
                   >
                     {t("common.add", "Añadir")}
                   </button>
@@ -315,7 +371,10 @@ const HospitalEditModal = ({
                   ))}
                   {specialties.length === 0 && (
                     <span className="text-xs text-slate-500">
-                      {t("pages.hospitals.editModal.noSpecialties", "Sin especialidades")}
+                      {t(
+                        "pages.hospitals.editModal.noSpecialties",
+                        "Sin especialidades",
+                      )}
                     </span>
                   )}
                 </div>
@@ -326,7 +385,10 @@ const HospitalEditModal = ({
 
             {/* Acciones (siguen dentro del form, arriba del footer) */}
             <div id={`${formUid}-help`} className="sr-only">
-              {t("pages.hospitals.editModal.help", "Pulsa Guardar para aplicar cambios. Ctrl/Cmd+Enter también guarda.")}
+              {t(
+                "pages.hospitals.editModal.help",
+                "Pulsa Guardar para aplicar cambios. Ctrl/Cmd+Enter también guarda.",
+              )}
             </div>
             <div className="md:col-span-2 flex items-center justify-end gap-2 pt-2">
               <button
@@ -355,10 +417,7 @@ const HospitalEditModal = ({
         <div className="px-6 py-3 border-t border-slate-200 flex items-center justify-between">
           {/* Ticks (Abierto/Cerrado) abajo-izquierda */}
           <fieldset aria-labelledby={`${statusGroupId}-legend`}>
-            <legend
-              id={`${statusGroupId}-legend`}
-              className="sr-only"
-            >
+            <legend id={`${statusGroupId}-legend`} className="sr-only">
               {t("pages.hospitals.status.label", "Estado")}
             </legend>
             <div className="flex items-center gap-3">

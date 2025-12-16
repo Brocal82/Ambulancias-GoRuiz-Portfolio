@@ -1,14 +1,17 @@
 // frontend/src/components/vacation/AdminVacationMonthGrid.tsx
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { IVacationRequest } from '../../types/vacationRequest';
-import { getYearMonths, countRequestsByMonth } from '../../utils/vacationMonthUtils';
-import { useTranslation } from 'react-i18next';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import type { IVacationRequest } from "../../types/vacationRequest";
+import {
+  getYearMonths,
+  countRequestsByMonth,
+} from "../../utils/vacationMonthUtils";
+import { useTranslation } from "react-i18next";
 
 // API disponibilidad
 import {
   getVacationAvailability,
   type VacationAvailabilityResponse,
-} from '../../api/vacation';
+} from "../../api/vacation";
 
 type Props = {
   requests: IVacationRequest[];
@@ -59,19 +62,21 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
 
   const initialSummary: MonthAvailabilitySummary = useMemo(
     () => ({ green: 0, yellow: 0, red: 0, maxPerDay: 0, loaded: false }),
-    []
+    [],
   );
 
   // ===== Helpers internos =====
-  const buildSummary = (data: VacationAvailabilityResponse): MonthAvailabilitySummary => {
+  const buildSummary = (
+    data: VacationAvailabilityResponse,
+  ): MonthAvailabilitySummary => {
     const summaryCounts = data.days.reduce(
       (acc, d) => {
-        if (d.state === 'green') acc.green += 1;
-        else if (d.state === 'yellow') acc.yellow += 1;
+        if (d.state === "green") acc.green += 1;
+        else if (d.state === "yellow") acc.yellow += 1;
         else acc.red += 1;
         return acc;
       },
-      { green: 0, yellow: 0, red: 0 }
+      { green: 0, yellow: 0, red: 0 },
     );
     return { ...summaryCounts, maxPerDay: data.maxPerDay, loaded: true };
   };
@@ -84,7 +89,10 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
 
     const m1 = m0 + 1;
     try {
-      const data = await getVacationAvailability({ year: y, month: m1 }, { force });
+      const data = await getVacationAvailability(
+        { year: y, month: m1 },
+        { force },
+      );
       setAvailabilityByMonth((prev) => ({
         ...prev,
         [m0]: buildSummary(data),
@@ -92,7 +100,7 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
     } catch {
       setAvailabilityByMonth((prev) => ({
         ...prev,
-        [m0]: { ...initialSummary, loaded: true, error: 'load_error' },
+        [m0]: { ...initialSummary, loaded: true, error: "load_error" },
       }));
     }
   };
@@ -121,10 +129,11 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
       try {
         const promises = months.map(async ({ monthIndex }) => {
           const month1to12 = monthIndex + 1;
-          const data: VacationAvailabilityResponse = await getVacationAvailability({
-            year: localYear,
-            month: month1to12,
-          });
+          const data: VacationAvailabilityResponse =
+            await getVacationAvailability({
+              year: localYear,
+              month: month1to12,
+            });
           return { monthIndex, summary: buildSummary(data) };
         });
 
@@ -133,14 +142,18 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
 
         const next: Record<number, MonthAvailabilitySummary> = {};
         for (const r of results) {
-          if (r.status === 'fulfilled') {
+          if (r.status === "fulfilled") {
             next[r.value.monthIndex] = r.value.summary;
           }
         }
 
         months.forEach(({ monthIndex }) => {
           if (!next[monthIndex]) {
-            next[monthIndex] = { ...initialSummary, loaded: true, error: 'load_error' };
+            next[monthIndex] = {
+              ...initialSummary,
+              loaded: true,
+              error: "load_error",
+            };
           }
         });
 
@@ -149,7 +162,11 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
         if (!cancelled) {
           const fallback: Record<number, MonthAvailabilitySummary> = {};
           months.forEach(({ monthIndex }) => {
-            fallback[monthIndex] = { ...initialSummary, loaded: true, error: 'load_error' };
+            fallback[monthIndex] = {
+              ...initialSummary,
+              loaded: true,
+              error: "load_error",
+            };
           });
           setAvailabilityByMonth(fallback);
         }
@@ -162,7 +179,9 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
     return () => {
       cancelled = true;
       // limpiar timeouts pendientes
-      Object.values(refreshTimerRef.current).forEach((id) => window.clearTimeout(id));
+      Object.values(refreshTimerRef.current).forEach((id) =>
+        window.clearTimeout(id),
+      );
       refreshTimerRef.current = {};
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -171,12 +190,18 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
   // ===== Live update: escucha invalidaciones (misma pestaña + entre pestañas) =====
   useEffect(() => {
     const customHandler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { year: number; month: number }; // month 1..12
+      const detail = (e as CustomEvent).detail as {
+        year: number;
+        month: number;
+      }; // month 1..12
       if (detail?.year && detail?.month) {
         scheduleRefreshMonth(detail.year, detail.month);
       }
     };
-    window.addEventListener('vacation-availability-invalidated', customHandler as EventListener);
+    window.addEventListener(
+      "vacation-availability-invalidated",
+      customHandler as EventListener,
+    );
 
     // BroadcastChannel entre pestañas
     let bc: BroadcastChannel | null = null;
@@ -184,11 +209,15 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
       const BC = (window as any).BroadcastChannel as
         | (new (name: string) => BroadcastChannel)
         | undefined;
-      if (typeof BC === 'function') {
-        bc = new BC('vacations');
+      if (typeof BC === "function") {
+        bc = new BC("vacations");
         bc.onmessage = (msg: MessageEvent) => {
           const data = msg.data || {};
-          if (data?.type === 'availability-invalidated' && data.year && data.month) {
+          if (
+            data?.type === "availability-invalidated" &&
+            data.year &&
+            data.month
+          ) {
             scheduleRefreshMonth(data.year, data.month);
           }
         };
@@ -199,7 +228,7 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
 
     // Fallback: evento storage
     const storageHandler = (ev: StorageEvent) => {
-      if (ev.key !== '__vac_av_inval__' || !ev.newValue) return;
+      if (ev.key !== "__vac_av_inval__" || !ev.newValue) return;
       try {
         const payload = JSON.parse(ev.newValue);
         if (payload?.year && payload?.month) {
@@ -209,11 +238,14 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
         // noop
       }
     };
-    window.addEventListener('storage', storageHandler);
+    window.addEventListener("storage", storageHandler);
 
     return () => {
-      window.removeEventListener('vacation-availability-invalidated', customHandler as EventListener);
-      window.removeEventListener('storage', storageHandler);
+      window.removeEventListener(
+        "vacation-availability-invalidated",
+        customHandler as EventListener,
+      );
+      window.removeEventListener("storage", storageHandler);
       try {
         bc?.close?.();
       } catch {
@@ -240,24 +272,25 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
         // overlap simple
         if (rs > end || re < start) continue;
 
-        if (r.status === 'pending' || r.status === 'option_sent') hasPending = true;
-        else if (r.status === 'accepted') hasAccepted = true;
-        else if (r.status === 'cancelled') hasCancelled = true;
+        if (r.status === "pending" || r.status === "option_sent")
+          hasPending = true;
+        else if (r.status === "accepted") hasAccepted = true;
+        else if (r.status === "cancelled") hasCancelled = true;
       }
 
-      if (hasPending) return 'pending' as const;
-      if (hasAccepted) return 'accepted' as const;
-      if (hasCancelled) return 'cancelled' as const;
-      return 'none' as const;
+      if (hasPending) return "pending" as const;
+      if (hasAccepted) return "accepted" as const;
+      if (hasCancelled) return "cancelled" as const;
+      return "none" as const;
     });
   }, [months, requests]);
 
   const monthBorderClass = (monthIndex: number) => {
     const p = monthBorderPriority[monthIndex];
-    if (p === 'pending') return 'border-amber-300 ring-2 ring-amber-100';
-    if (p === 'accepted') return 'border-emerald-300 ring-2 ring-emerald-100';
-    if (p === 'cancelled') return 'border-rose-300 ring-2 ring-rose-100';
-    return 'border-slate-200';
+    if (p === "pending") return "border-amber-300 ring-2 ring-amber-100";
+    if (p === "accepted") return "border-emerald-300 ring-2 ring-emerald-100";
+    if (p === "cancelled") return "border-rose-300 ring-2 ring-rose-100";
+    return "border-slate-200";
   };
 
   return (
@@ -267,7 +300,7 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
         {/* IZQUIERDA: selector de año (estilo Sick) */}
         <div className="flex items-center gap-2">
           <span className="text-xs sm:text-sm text-slate-700">
-            {t('common.year', 'Año')}:
+            {t("common.year", "Año")}:
           </span>
 
           <div className="inline-flex items-center rounded-full ring-1 ring-slate-200 bg-white shadow-sm overflow-hidden">
@@ -275,8 +308,8 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
               type="button"
               onClick={() => handleYearDelta(-1)}
               className="px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100"
-              aria-label={t('common.prev', 'Anterior') as string}
-              title={t('common.prev', 'Anterior') as string}
+              aria-label={t("common.prev", "Anterior") as string}
+              title={t("common.prev", "Anterior") as string}
             >
               ◀
             </button>
@@ -289,8 +322,8 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
               type="button"
               onClick={() => handleYearDelta(1)}
               className="px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100"
-              aria-label={t('common.next', 'Siguiente') as string}
-              title={t('common.next', 'Siguiente') as string}
+              aria-label={t("common.next", "Siguiente") as string}
+              title={t("common.next", "Siguiente") as string}
             >
               ▶
             </button>
@@ -301,20 +334,19 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
         <div className="hidden sm:flex items-center gap-3 text-xs text-slate-600">
           <span className="inline-flex items-center gap-2">
             <span className="h-3 w-3 rounded border-2 border-amber-300" />
-            {t('pages.vacations.legend.pending', 'Pendientes')}
+            {t("pages.vacations.legend.pending", "Pendientes")}
           </span>
 
           <span className="inline-flex items-center gap-2">
             <span className="h-3 w-3 rounded border-2 border-emerald-300" />
-            {t('pages.vacations.legend.accepted', 'Aceptadas')}
+            {t("pages.vacations.legend.accepted", "Aceptadas")}
           </span>
 
           <span className="inline-flex items-center gap-2">
             <span className="h-3 w-3 rounded border-2 border-rose-300" />
-            {t('pages.vacations.legend.cancelled', 'Canceladas')}
+            {t("pages.vacations.legend.cancelled", "Canceladas")}
           </span>
         </div>
-
       </div>
 
       {/* Grid */}
@@ -325,7 +357,7 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
 
           const avail = availabilityByMonth[monthIndex] ?? initialSummary;
           const loaded = avail.loaded;
-          const disabledStyle = !loaded ? 'opacity-80' : '';
+          const disabledStyle = !loaded ? "opacity-80" : "";
 
           const openMonth = () => {
             // Nuevo: apertura con mes + año (modal correcto)
@@ -340,64 +372,74 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
               key={monthIndex}
               type="button"
               onClick={openMonth}
-              aria-label={t('pages.vacations.monthGrid.ariaOpenMonth', { label, year: localYear })}
+              aria-label={t("pages.vacations.monthGrid.ariaOpenMonth", {
+                label,
+                year: localYear,
+              })}
               className={[
-                'group relative rounded-xl p-3 transition',
+                "group relative rounded-xl p-3 transition",
                 // ✅ mismo estilo, solo cambia el color del borde según el estado
                 `border bg-white hover:shadow-sm hover:-translate-y-0.5 ${monthBorderClass(monthIndex)}`,
-                'focus:outline-none focus:ring-4 focus:ring-blue-100',
-                'flex flex-col items-stretch justify-between min-h-[90px]',
+                "focus:outline-none focus:ring-4 focus:ring-blue-100",
+                "flex flex-col items-stretch justify-between min-h-[90px]",
                 disabledStyle,
-              ].join(' ')}
+              ].join(" ")}
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-900">{label}</span>
+                <span className="text-sm font-medium text-slate-900">
+                  {label}
+                </span>
 
                 <span
                   className={[
-                    'ml-2 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium border',
+                    "ml-2 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium border",
                     hasItems
-                      ? 'bg-blue-50 text-blue-700 border-blue-100 group-hover:bg-blue-100'
-                      : 'bg-slate-100 text-slate-600 border-slate-200',
-                  ].join(' ')}
-                  title={t('pages.vacations.monthGrid.count', { count }) as string}
-                  aria-label={t('pages.vacations.monthGrid.count', { count }) as string}
+                      ? "bg-blue-50 text-blue-700 border-blue-100 group-hover:bg-blue-100"
+                      : "bg-slate-100 text-slate-600 border-slate-200",
+                  ].join(" ")}
+                  title={
+                    t("pages.vacations.monthGrid.count", { count }) as string
+                  }
+                  aria-label={
+                    t("pages.vacations.monthGrid.count", { count }) as string
+                  }
                 >
-                  {t('pages.vacations.monthGrid.count', { count })}
+                  {t("pages.vacations.monthGrid.count", { count })}
                 </span>
               </div>
 
               {/* Resumen (solo contadores, sin amarillo) */}
-<div className="mt-3">
-  {loaded ? (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-[11px] text-slate-600">
-        <span className="inline-flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded bg-green-500" />
-          {avail.green}
-        </span>
+              <div className="mt-3">
+                {loaded ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-[11px] text-slate-600">
+                      <span className="inline-flex items-center gap-1">
+                        <span className="inline-block h-2 w-2 rounded bg-green-500" />
+                        {avail.green}
+                      </span>
 
-        <span className="inline-flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded bg-red-500" />
-          {avail.red}
-        </span>
-      </div>
-    </div>
-  ) : (
-    <div className="space-y-2 animate-pulse">
-      <div className="flex items-center justify-between text-[11px] text-slate-400">
-        <span className="inline-flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded bg-slate-200" /> —
-        </span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="inline-block h-2 w-2 rounded bg-red-500" />
+                        {avail.red}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 animate-pulse">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400">
+                      <span className="inline-flex items-center gap-1">
+                        <span className="inline-block h-2 w-2 rounded bg-slate-200" />{" "}
+                        —
+                      </span>
 
-        <span className="inline-flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded bg-slate-200" /> —
-        </span>
-      </div>
-    </div>
-  )}
-</div>
-
+                      <span className="inline-flex items-center gap-1">
+                        <span className="inline-block h-2 w-2 rounded bg-slate-200" />{" "}
+                        —
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </button>
           );
         })}

@@ -20,20 +20,45 @@ router.post("/", authenticateToken, createWorkdaySummary);
 router.post("/partial", authenticateToken, submitPartialClosure);
 
 // 🔵 Contador derivado de resúmenes pendientes
-router.get("/count", authenticateToken, authorizeRole("admin"), getSummariesCountByStatus);
+router.get(
+  "/count",
+  authenticateToken,
+  authorizeRole("admin"),
+  getSummariesCountByStatus,
+);
 
 // 🟠 Contador derivado de averías (por defecto status=open → no vistas)
-router.get("/issues/count", authenticateToken, authorizeRole("admin"), getIssuesCount);
+router.get(
+  "/issues/count",
+  authenticateToken,
+  authorizeRole("admin"),
+  getIssuesCount,
+);
 
 // 🟠 Marcar avería como vista
-router.patch("/issues/:id/seen", authenticateToken, authorizeRole("admin"), markIssueSeen);
+router.patch(
+  "/issues/:id/seen",
+  authenticateToken,
+  authorizeRole("admin"),
+  markIssueSeen,
+);
 
 // 🔵 Marcar resumen como revisado
-router.patch("/:id/review", authenticateToken, authorizeRole("admin"), markSummaryReviewed);
+router.patch(
+  "/:id/review",
+  authenticateToken,
+  authorizeRole("admin"),
+  markSummaryReviewed,
+);
 
 router.get("/", authenticateToken, getAllWorkdaySummaries);
 router.post("/report-issue", reportIssue);
 router.get("/issues", getAllIssueReports);
-router.delete("/issues/:id", authenticateToken, authorizeRole("admin"), deleteIssueReport);
+router.delete(
+  "/issues/:id",
+  authenticateToken,
+  authorizeRole("admin"),
+  deleteIssueReport,
+);
 
 export default router;

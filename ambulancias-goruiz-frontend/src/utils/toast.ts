@@ -4,7 +4,10 @@ import { toast as rawToast } from "react-toastify";
 import type { ToastOptions } from "react-toastify";
 
 // Tupla i18n: admite readonly para poder usar `as const`
-export type I18nTuple = readonly [key: string, params?: Record<string, unknown>];
+export type I18nTuple = readonly [
+  key: string,
+  params?: Record<string, unknown>,
+];
 export type Msg = string | I18nTuple;
 
 // Helper para crear tuplas i18n de forma cómoda
@@ -35,7 +38,10 @@ const withDefaults = (opts?: ToastOptions): ToastOptions => ({
 });
 
 // Normaliza errores desconocidos a un string presentable
-function normalizeErrorMessage(err: unknown, fallback: Msg = k("toasts.common.error")): string {
+function normalizeErrorMessage(
+  err: unknown,
+  fallback: Msg = k("toasts.common.error"),
+): string {
   if (typeof err === "string") return err;
   if (err && typeof err === "object") {
     const anyErr = err as { message?: unknown; error?: unknown };
@@ -66,7 +72,7 @@ export const toastT = {
       success: Msg;
       error: Msg;
     },
-    opts?: ToastOptions
+    opts?: ToastOptions,
   ) =>
     rawToast.promise(
       p,
@@ -75,7 +81,7 @@ export const toastT = {
         success: resolveMessage(messages.success),
         error: resolveMessage(messages.error),
       },
-      withDefaults(opts)
+      withDefaults(opts),
     ),
 
   // Facilita toastear errores desconocidos (try/catch)

@@ -8,15 +8,23 @@ type FlexibleAssignment =
   | AssignedDay
   | AssignedDayFull; // añadimos AssignedDayFull
 
-export const isPartialAssignment = (assignment: FlexibleAssignment | undefined): boolean => {
+export const isPartialAssignment = (
+  assignment: FlexibleAssignment | undefined,
+): boolean => {
   if (!assignment) return false;
 
   const hasStart = !!assignment.startTime;
   const hasEnd = !!assignment.endTime;
 
   // driver y medic pueden ser string o objeto, chequeamos que no estén vacíos o nulos
-  const hasDriver = assignment.driver !== null && assignment.driver !== undefined && assignment.driver !== '';
-  const hasMedic = assignment.medic !== null && assignment.medic !== undefined && assignment.medic !== '';
+  const hasDriver =
+    assignment.driver !== null &&
+    assignment.driver !== undefined &&
+    assignment.driver !== "";
+  const hasMedic =
+    assignment.medic !== null &&
+    assignment.medic !== undefined &&
+    assignment.medic !== "";
 
   // Día libre (verde): sin horas
   if (!hasStart && !hasEnd) return false;
@@ -28,7 +36,9 @@ export const isPartialAssignment = (assignment: FlexibleAssignment | undefined):
   return false;
 };
 
-export const isTeamIncomplete = (assignment: FlexibleAssignment | undefined): boolean => {
+export const isTeamIncomplete = (
+  assignment: FlexibleAssignment | undefined,
+): boolean => {
   if (!assignment) return false;
 
   const hasStart = !!assignment.startTime;
@@ -38,11 +48,11 @@ export const isTeamIncomplete = (assignment: FlexibleAssignment | undefined): bo
   const hasDriver =
     assignment.driver !== null &&
     assignment.driver !== undefined &&
-    assignment.driver !== '';
+    assignment.driver !== "";
   const hasMedic =
     assignment.medic !== null &&
     assignment.medic !== undefined &&
-    assignment.medic !== '';
+    assignment.medic !== "";
 
   // Solo nos interesa marcar “incompleto” cuando ES un día trabajado (hay horas)
   if (!hasStart || !hasEnd) return false;
@@ -50,5 +60,3 @@ export const isTeamIncomplete = (assignment: FlexibleAssignment | undefined): bo
   // Equipo incompleto = exactamente uno de los dos asignado (XOR)
   return (hasDriver && !hasMedic) || (!hasDriver && hasMedic);
 };
-
-

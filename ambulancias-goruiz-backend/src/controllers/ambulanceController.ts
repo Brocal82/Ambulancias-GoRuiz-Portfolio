@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import Ambulance from '../models/Ambulance';
+import { Request, Response } from "express";
+import Ambulance from "../models/Ambulance";
 
 // Obtener todas las ambulancias
 export const getAllAmbulances = async (req: Request, res: Response) => {
@@ -7,8 +7,8 @@ export const getAllAmbulances = async (req: Request, res: Response) => {
     const ambulances = await Ambulance.find();
     res.status(200).json(ambulances);
   } catch (error) {
-    console.error('Error fetching ambulances:', error);
-    res.status(500).json({ message: 'Error fetching ambulances' });
+    console.error("Error fetching ambulances:", error);
+    res.status(500).json({ message: "Error fetching ambulances" });
   }
 };
 
@@ -17,13 +17,13 @@ export const getAmbulanceById = async (req: Request, res: Response) => {
   try {
     const ambulance = await Ambulance.findById(req.params.id);
     if (!ambulance) {
-      res.status(404).json({ message: 'Ambulance not found' });
+      res.status(404).json({ message: "Ambulance not found" });
       return;
     }
     res.status(200).json(ambulance);
   } catch (error) {
-    console.error('Error fetching ambulance:', error);
-    res.status(500).json({ message: 'Error fetching ambulance' });
+    console.error("Error fetching ambulance:", error);
+    res.status(500).json({ message: "Error fetching ambulance" });
   }
 };
 
@@ -34,23 +34,25 @@ export const createAmbulance = async (req: Request, res: Response) => {
     await newAmbulance.save();
     res.status(201).json(newAmbulance);
   } catch (error) {
-    console.error('Error creating ambulance:', error);
-    res.status(500).json({ message: 'Error creating ambulance' });
+    console.error("Error creating ambulance:", error);
+    res.status(500).json({ message: "Error creating ambulance" });
   }
 };
 
 // Actualizar una ambulancia existente
 export const updateAmbulance = async (req: Request, res: Response) => {
   try {
-    const updated = await Ambulance.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updated = await Ambulance.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
     if (!updated) {
-      res.status(404).json({ message: 'Ambulance not found' });
+      res.status(404).json({ message: "Ambulance not found" });
       return;
     }
     res.status(200).json(updated);
   } catch (error) {
-    console.error('Error updating ambulance:', error);
-    res.status(500).json({ message: 'Error updating ambulance' });
+    console.error("Error updating ambulance:", error);
+    res.status(500).json({ message: "Error updating ambulance" });
   }
 };
 
@@ -59,12 +61,12 @@ export const deleteAmbulance = async (req: Request, res: Response) => {
   try {
     const deleted = await Ambulance.findByIdAndDelete(req.params.id);
     if (!deleted) {
-      res.status(404).json({ message: 'Ambulance not found' });
+      res.status(404).json({ message: "Ambulance not found" });
       return;
     }
-    res.status(200).json({ message: 'Ambulance deleted' });
+    res.status(200).json({ message: "Ambulance deleted" });
   } catch (error) {
-    console.error('Error deleting ambulance:', error);
-    res.status(500).json({ message: 'Error deleting ambulance' });
+    console.error("Error deleting ambulance:", error);
+    res.status(500).json({ message: "Error deleting ambulance" });
   }
 };

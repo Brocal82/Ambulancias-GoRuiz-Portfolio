@@ -1,24 +1,24 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { useTranslation } from 'react-i18next';
-import { toastT } from '../utils/toast';
-import { buildImageUrl } from '../utils/apiOrigins';
-import { displayFileNameFromUrl } from '../utils/fileName';
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { useTranslation } from "react-i18next";
+import { toastT } from "../utils/toast";
+import { buildImageUrl } from "../utils/apiOrigins";
+import { displayFileNameFromUrl } from "../utils/fileName";
 import {
   adminListSickLeaves,
   adminAcceptSickLeave,
   adminRejectSickLeave,
   type SickLeave,
   type SickLeaveStatus,
-} from '../api/sickLeaves';
-import { getYearMonths, rangesOverlap } from '../utils/vacationMonthUtils';
-import AdminSickMonthGrid from '../components/sick/AdminSickMonthGrid';
+} from "../api/sickLeaves";
+import { getYearMonths, rangesOverlap } from "../utils/vacationMonthUtils";
+import AdminSickMonthGrid from "../components/sick/AdminSickMonthGrid";
 
 function fmtISO(d?: string, locale?: string) {
-  if (!d) return '—';
+  if (!d) return "—";
   const date = new Date(d);
-  if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString(locale || 'es');
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString(locale || "es");
 }
 
 export default function AdminSickLeavesPage() {
@@ -39,7 +39,9 @@ export default function AdminSickLeavesPage() {
   const minYear = yearOptions[0];
   const maxYear = yearOptions[yearOptions.length - 1];
 
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null);
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(
+    null,
+  );
 
   const decYear = () => {
     setSelectedMonthIndex(null); // UX: al cambiar año, vuelves al grid
@@ -51,8 +53,8 @@ export default function AdminSickLeavesPage() {
   };
 
   const months = useMemo(
-    () => getYearMonths(selectedYear, i18n.language || 'es', 'Europe/Berlin'),
-    [selectedYear, i18n.language]
+    () => getYearMonths(selectedYear, i18n.language || "es", "Europe/Berlin"),
+    [selectedYear, i18n.language],
   );
 
   // Carga todas (para bordes y detalle del mes)
@@ -77,7 +79,8 @@ export default function AdminSickLeavesPage() {
 
   // === Conteos por mes (para chip "n bajas") ===
   const monthlyCounts = useMemo(() => {
-    if (!allItemsForCounts || allItemsForCounts.length === 0) return Array(12).fill(0);
+    if (!allItemsForCounts || allItemsForCounts.length === 0)
+      return Array(12).fill(0);
     return months.map(({ start, end }) => {
       return allItemsForCounts.filter((sl) => {
         const s = new Date(sl.startDate);
@@ -99,15 +102,15 @@ export default function AdminSickLeavesPage() {
         const e = new Date(sl.endDate || sl.startDate);
         if (!rangesOverlap(s, e, start, end)) continue;
 
-        if (sl.status === 'pending') hasPending = true;
-        else if (sl.status === 'accepted') hasAccepted = true;
-        else if (sl.status === 'rejected') hasRejected = true;
+        if (sl.status === "pending") hasPending = true;
+        else if (sl.status === "accepted") hasAccepted = true;
+        else if (sl.status === "rejected") hasRejected = true;
       }
 
-      if (hasPending) return 'pending' as const;
-      if (hasAccepted) return 'accepted' as const;
-      if (hasRejected) return 'rejected' as const;
-      return 'none' as const;
+      if (hasPending) return "pending" as const;
+      if (hasAccepted) return "accepted" as const;
+      if (hasRejected) return "rejected" as const;
+      return "none" as const;
     });
   }, [allItemsForCounts, months]);
 
@@ -126,67 +129,75 @@ export default function AdminSickLeavesPage() {
     if (!token) return;
     const ok = window.confirm(
       t(
-        'pages.sick.admin.confirmAccept',
-        '¿Aceptar esta baja y desasignar al trabajador en el rango?'
-      ) as string
+        "pages.sick.admin.confirmAccept",
+        "¿Aceptar esta baja y desasignar al trabajador en el rango?",
+      ) as string,
     );
     if (!ok) return;
     try {
       await adminAcceptSickLeave(id);
-      toastT.success(['pages.sick.admin.acceptOk']);
+      toastT.success(["pages.sick.admin.acceptOk"]);
       setRefreshKey((k) => k + 1);
     } catch (err: any) {
       console.error(err);
-      toastT.error([err?.response?.data?.message || 'pages.sick.admin.acceptErr']);
+      toastT.error([
+        err?.response?.data?.message || "pages.sick.admin.acceptErr",
+      ]);
     }
   };
 
   const onReject = async (id: string) => {
     if (!token) return;
-    const ok = window.confirm(t('pages.sick.admin.confirmReject', '¿Rechazar esta baja?') as string);
+    const ok = window.confirm(
+      t("pages.sick.admin.confirmReject", "¿Rechazar esta baja?") as string,
+    );
     if (!ok) return;
     try {
       await adminRejectSickLeave(id);
-      toastT.success(['pages.sick.admin.rejectOk']);
+      toastT.success(["pages.sick.admin.rejectOk"]);
       setRefreshKey((k) => k + 1);
     } catch (err: any) {
       console.error(err);
-      toastT.error([err?.response?.data?.message || 'pages.sick.admin.rejectErr']);
+      toastT.error([
+        err?.response?.data?.message || "pages.sick.admin.rejectErr",
+      ]);
     }
   };
 
   const badge = (st: SickLeaveStatus) => {
-    const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium';
-    if (st === 'pending')
+    const base =
+      "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium";
+    if (st === "pending")
       return (
         <span className={`${base} bg-amber-100 text-amber-800`}>
-          {t('pages.sick.status.pending', 'Pendiente')}
+          {t("pages.sick.status.pending", "Pendiente")}
         </span>
       );
-    if (st === 'accepted')
+    if (st === "accepted")
       return (
         <span className={`${base} bg-emerald-100 text-emerald-800`}>
-          {t('pages.sick.status.accepted', 'Aceptada')}
+          {t("pages.sick.status.accepted", "Aceptada")}
         </span>
       );
     return (
       <span className={`${base} bg-rose-100 text-rose-800`}>
-        {t('pages.sick.status.rejected', 'Rechazada')}
+        {t("pages.sick.status.rejected", "Rechazada")}
       </span>
     );
   };
 
   // ✅ Estilos tabla estilo AdminVacations
   const tableClass =
-    'min-w-full table-fixed text-sm shadow-sm ring-1 ring-slate-200 rounded-xl overflow-hidden text-center';
-  const thClass = 'px-3 py-2 text-xs font-medium uppercase tracking-wide';
-  const trClass = 'border-t border-slate-200 hover:bg-slate-50/70 transition-colors';
+    "min-w-full table-fixed text-sm shadow-sm ring-1 ring-slate-200 rounded-xl overflow-hidden text-center";
+  const thClass = "px-3 py-2 text-xs font-medium uppercase tracking-wide";
+  const trClass =
+    "border-t border-slate-200 hover:bg-slate-50/70 transition-colors";
 
   // ✅ Botones estilo AdminVacations (emoji, redondos, hover con tint)
   const btnAcceptClass =
-    'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-sm shadow-sm hover:bg-emerald-100 focus:outline-none focus:ring-4 focus:ring-emerald-100 text-white';
+    "inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-sm shadow-sm hover:bg-emerald-100 focus:outline-none focus:ring-4 focus:ring-emerald-100 text-white";
   const btnRejectClass =
-    'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-sm shadow-sm hover:bg-rose-100 focus:outline-none focus:ring-4 focus:ring-rose-100 text-white';
+    "inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-sm shadow-sm hover:bg-rose-100 focus:outline-none focus:ring-4 focus:ring-rose-100 text-white";
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -194,10 +205,13 @@ export default function AdminSickLeavesPage() {
         {/* ✅ H1 fuera del “borde” */}
         <div className="mb-4">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            {t('pages.sick.admin.title', 'Bajas por enfermedad')}
+            {t("pages.sick.admin.title", "Bajas por enfermedad")}
           </h1>
           <p className="text-slate-600 text-sm">
-            {t('pages.sick.admin.subtitle', 'Gestiona solicitudes y documentos')}
+            {t(
+              "pages.sick.admin.subtitle",
+              "Gestiona solicitudes y documentos",
+            )}
           </p>
         </div>
 
@@ -208,7 +222,7 @@ export default function AdminSickLeavesPage() {
             {/* IZQUIERDA: selector de año */}
             <div className="flex items-center gap-2">
               <span className="text-xs sm:text-sm text-slate-700">
-                {t('pages.sick.admin.year', 'Año')}:
+                {t("pages.sick.admin.year", "Año")}:
               </span>
 
               <div className="inline-flex items-center rounded-full ring-1 ring-slate-200 bg-white shadow-sm overflow-hidden">
@@ -217,8 +231,8 @@ export default function AdminSickLeavesPage() {
                   onClick={decYear}
                   disabled={selectedYear <= minYear}
                   className="px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-slate-100"
-                  aria-label={t('common.prev', 'Anterior') as string}
-                  title={t('common.prev', 'Anterior') as string}
+                  aria-label={t("common.prev", "Anterior") as string}
+                  title={t("common.prev", "Anterior") as string}
                 >
                   ◀
                 </button>
@@ -232,8 +246,8 @@ export default function AdminSickLeavesPage() {
                   onClick={incYear}
                   disabled={selectedYear >= maxYear}
                   className="px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-slate-100"
-                  aria-label={t('common.next', 'Siguiente') as string}
-                  title={t('common.next', 'Siguiente') as string}
+                  aria-label={t("common.next", "Siguiente") as string}
+                  title={t("common.next", "Siguiente") as string}
                 >
                   ▶
                 </button>
@@ -241,7 +255,7 @@ export default function AdminSickLeavesPage() {
 
               {loadingCounts && (
                 <span className="text-xs text-slate-500 ml-2">
-                  {t('common.loading', 'Cargando...')}
+                  {t("common.loading", "Cargando...")}
                 </span>
               )}
             </div>
@@ -250,15 +264,15 @@ export default function AdminSickLeavesPage() {
             <div className="flex flex-wrap items-center justify-end gap-3 text-xs text-slate-600">
               <span className="inline-flex items-center gap-2">
                 <span className="h-3 w-3 rounded border-2 border-amber-300" />
-                {t('pages.sick.admin.legend.pending', 'Pendientes')}
+                {t("pages.sick.admin.legend.pending", "Pendientes")}
               </span>
               <span className="inline-flex items-center gap-2">
                 <span className="h-3 w-3 rounded border-2 border-emerald-300" />
-                {t('pages.sick.admin.legend.accepted', 'Aceptadas')}
+                {t("pages.sick.admin.legend.accepted", "Aceptadas")}
               </span>
               <span className="inline-flex items-center gap-2">
                 <span className="h-3 w-3 rounded border-2 border-rose-300" />
-                {t('pages.sick.admin.legend.rejected', 'Rechazadas')}
+                {t("pages.sick.admin.legend.rejected", "Rechazadas")}
               </span>
             </div>
           </div>
@@ -271,15 +285,22 @@ export default function AdminSickLeavesPage() {
               monthlyCounts={monthlyCounts}
               selectedMonthIndex={selectedMonthIndex}
               onSelect={(idx) => setSelectedMonthIndex(idx)}
-              locale={i18n.language || 'es'}
-              countLabel={(n) => t('pages.sick.admin.grid.count', '{{n}} baja(s)', { n }) as string}
+              locale={i18n.language || "es"}
+              countLabel={(n) =>
+                t("pages.sick.admin.grid.count", "{{n}} baja(s)", {
+                  n,
+                }) as string
+              }
               compact
               monthBorderClass={(idx) => {
                 const p = monthBorderPriority[idx];
-                if (p === 'pending') return 'border-amber-300 ring-2 ring-amber-200';
-                if (p === 'accepted') return 'border-emerald-300 ring-2 ring-emerald-100';
-                if (p === 'rejected') return 'border-rose-300 ring-2 ring-rose-100';
-                return '';
+                if (p === "pending")
+                  return "border-amber-300 ring-2 ring-amber-200";
+                if (p === "accepted")
+                  return "border-emerald-300 ring-2 ring-emerald-100";
+                if (p === "rejected")
+                  return "border-rose-300 ring-2 ring-rose-100";
+                return "";
               }}
             />
           </div>
@@ -291,12 +312,18 @@ export default function AdminSickLeavesPage() {
                 <div className="text-sm font-medium text-slate-800 flex items-center gap-2">
                   <span aria-hidden>🗓</span>
                   <span className="capitalize">
-                    {t('pages.sick.admin.month.header', 'Bajas {{month}} {{year}}', {
-                      month: months[selectedMonthIndex].label,
-                      year: selectedYear,
-                    })}
+                    {t(
+                      "pages.sick.admin.month.header",
+                      "Bajas {{month}} {{year}}",
+                      {
+                        month: months[selectedMonthIndex].label,
+                        year: selectedYear,
+                      },
+                    )}
                   </span>
-                  <span className="text-slate-500">({monthDetailToShow.length})</span>
+                  <span className="text-slate-500">
+                    ({monthDetailToShow.length})
+                  </span>
                 </div>
 
                 <button
@@ -304,13 +331,16 @@ export default function AdminSickLeavesPage() {
                   onClick={() => setSelectedMonthIndex(null)}
                   className="text-xs font-medium text-slate-600 hover:text-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-100 rounded-full px-3 py-1.5"
                 >
-                  {t('pages.sick.admin.month.back', 'Volver al grid')}
+                  {t("pages.sick.admin.month.back", "Volver al grid")}
                 </button>
               </div>
 
               {monthDetailToShow.length === 0 ? (
                 <div className="p-4 text-sm text-slate-600 text-center">
-                  {t('pages.sick.admin.month.empty', 'No hay bajas en este mes')}
+                  {t(
+                    "pages.sick.admin.month.empty",
+                    "No hay bajas en este mes",
+                  )}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -326,12 +356,24 @@ export default function AdminSickLeavesPage() {
 
                     <thead className="sticky top-0 bg-slate-50 z-10">
                       <tr className="text-slate-600 border-b border-slate-200">
-                        <th className={thClass}>{t('pages.sick.admin.th.user', 'Trabajador')}</th>
-                        <th className={thClass}>{t('pages.sick.admin.th.dates', 'Fechas')}</th>
-                        <th className={thClass}>{t('pages.sick.admin.th.days', 'Días')}</th>
-                        <th className={thClass}>{t('pages.sick.admin.th.status', 'Estado')}</th>
-                        <th className={thClass}>{t('pages.sick.admin.th.doc', 'Documentos')}</th>
-                        <th className={thClass}>{t('pages.sick.admin.th.actions', 'Acciones')}</th>
+                        <th className={thClass}>
+                          {t("pages.sick.admin.th.user", "Trabajador")}
+                        </th>
+                        <th className={thClass}>
+                          {t("pages.sick.admin.th.dates", "Fechas")}
+                        </th>
+                        <th className={thClass}>
+                          {t("pages.sick.admin.th.days", "Días")}
+                        </th>
+                        <th className={thClass}>
+                          {t("pages.sick.admin.th.status", "Estado")}
+                        </th>
+                        <th className={thClass}>
+                          {t("pages.sick.admin.th.doc", "Documentos")}
+                        </th>
+                        <th className={thClass}>
+                          {t("pages.sick.admin.th.actions", "Acciones")}
+                        </th>
                       </tr>
                     </thead>
 
@@ -339,19 +381,23 @@ export default function AdminSickLeavesPage() {
                       {monthDetailToShow.map((it) => {
                         const u = (it.user as any) || {};
                         const fullname =
-                          (u?.lastName ? `${u.lastName}, ` : '') + (u?.name ?? '—');
+                          (u?.lastName ? `${u.lastName}, ` : "") +
+                          (u?.name ?? "—");
 
                         return (
                           <tr key={`month-${it._id}`} className={trClass}>
                             {/* Trabajador */}
                             <td className="px-3 py-2 align-top">
-                              <div className="text-slate-800 font-medium truncate">{fullname || '—'}</div>
+                              <div className="text-slate-800 font-medium truncate">
+                                {fullname || "—"}
+                              </div>
                             </td>
 
                             {/* Fechas */}
                             <td className="px-3 py-2 align-top">
                               <div className="text-slate-800 whitespace-nowrap">
-                                {fmtISO(it.startDate, i18n.language)} — {fmtISO(it.endDate, i18n.language)}
+                                {fmtISO(it.startDate, i18n.language)} —{" "}
+                                {fmtISO(it.endDate, i18n.language)}
                               </div>
                             </td>
 
@@ -362,25 +408,35 @@ export default function AdminSickLeavesPage() {
                                 const e = new Date(it.endDate);
                                 s.setHours(0, 0, 0, 0);
                                 e.setHours(0, 0, 0, 0);
-                                const diff = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
-                                const days = isNaN(diff) ? '—' : Math.max(diff, 1);
+                                const diff =
+                                  Math.round(
+                                    (e.getTime() - s.getTime()) / 86400000,
+                                  ) + 1;
+                                const days = isNaN(diff)
+                                  ? "—"
+                                  : Math.max(diff, 1);
                                 return days;
                               })()}
                             </td>
 
                             {/* Estado */}
-                            <td className="px-3 py-2 align-top whitespace-nowrap">{badge(it.status)}</td>
+                            <td className="px-3 py-2 align-top whitespace-nowrap">
+                              {badge(it.status)}
+                            </td>
 
                             {/* Documentos */}
                             <td className="px-3 py-2 align-top text-center">
                               {(() => {
                                 const rawDocUrls: string[] = [
                                   ...(it.documentUrl ? [it.documentUrl] : []),
-                                  ...(Array.isArray(it.documents) ? it.documents : []),
+                                  ...(Array.isArray(it.documents)
+                                    ? it.documents
+                                    : []),
                                 ];
                                 const seen = new Set<string>();
                                 const docUrls = rawDocUrls.filter((u2) => {
-                                  const key = displayFileNameFromUrl(u2).toLowerCase();
+                                  const key =
+                                    displayFileNameFromUrl(u2).toLowerCase();
                                   if (seen.has(key)) return false;
                                   seen.add(key);
                                   return true;
@@ -392,7 +448,10 @@ export default function AdminSickLeavesPage() {
                                 if (count === 0) {
                                   return (
                                     <span className="text-slate-500">
-                                      {t('pages.sick.docs.none', 'Sin documento')}
+                                      {t(
+                                        "pages.sick.docs.none",
+                                        "Sin documento",
+                                      )}
                                     </span>
                                   );
                                 }
@@ -401,32 +460,44 @@ export default function AdminSickLeavesPage() {
                                   <div className="inline-flex flex-col items-center">
                                     <button
                                       type="button"
-                                      onClick={() => setOpenDocsId(isOpen ? null : it._id)}
+                                      onClick={() =>
+                                        setOpenDocsId(isOpen ? null : it._id)
+                                      }
                                       className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
                                       aria-expanded={isOpen}
                                       aria-controls={`docs-panel-month-${it._id}`}
                                     >
                                       <span className="whitespace-nowrap">
-                                        {t('pages.sick.docs.count', '{{n}} documentos', { n: count })}
+                                        {t(
+                                          "pages.sick.docs.count",
+                                          "{{n}} documentos",
+                                          { n: count },
+                                        )}
                                       </span>
                                     </button>
 
                                     <div
                                       id={`docs-panel-month-${it._id}`}
                                       className={`overflow-hidden transition-all duration-200 ease-out ${
-                                        isOpen ? 'opacity-100 max-h-56 mt-2' : 'opacity-0 max-h-0 mt-0'
+                                        isOpen
+                                          ? "opacity-100 max-h-56 mt-2"
+                                          : "opacity-0 max-h-0 mt-0"
                                       }`}
                                     >
                                       <ul className="flex flex-wrap justify-center gap-2">
                                         {docUrls.map((url, idx) => {
-                                          const label = displayFileNameFromUrl(url);
+                                          const label =
+                                            displayFileNameFromUrl(url);
                                           return (
                                             <li
                                               key={url + idx}
                                               className="inline-flex items-center max-w-full rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-[11px]"
                                               title={label}
                                             >
-                                              <span aria-hidden="true" className="mr-1">
+                                              <span
+                                                aria-hidden="true"
+                                                className="mr-1"
+                                              >
                                                 📎
                                               </span>
                                               <a
@@ -449,14 +520,18 @@ export default function AdminSickLeavesPage() {
 
                             {/* Acciones: solo si está pendiente */}
                             <td className="px-3 py-2 align-top">
-                              {it.status === 'pending' ? (
+                              {it.status === "pending" ? (
                                 <div className="flex justify-center gap-2">
                                   <button
                                     type="button"
                                     onClick={() => onAccept(it._id)}
                                     className={btnAcceptClass}
-                                    title={t('common.accept', 'Aceptar') as string}
-                                    aria-label={t('common.accept', 'Aceptar') as string}
+                                    title={
+                                      t("common.accept", "Aceptar") as string
+                                    }
+                                    aria-label={
+                                      t("common.accept", "Aceptar") as string
+                                    }
                                   >
                                     ✅
                                   </button>
@@ -464,14 +539,20 @@ export default function AdminSickLeavesPage() {
                                     type="button"
                                     onClick={() => onReject(it._id)}
                                     className={btnRejectClass}
-                                    title={t('common.reject', 'Rechazar') as string}
-                                    aria-label={t('common.reject', 'Rechazar') as string}
+                                    title={
+                                      t("common.reject", "Rechazar") as string
+                                    }
+                                    aria-label={
+                                      t("common.reject", "Rechazar") as string
+                                    }
                                   >
                                     ❌
                                   </button>
                                 </div>
                               ) : (
-                                <span className="text-slate-400 text-xs">—</span>
+                                <span className="text-slate-400 text-xs">
+                                  —
+                                </span>
                               )}
                             </td>
                           </tr>
@@ -487,7 +568,10 @@ export default function AdminSickLeavesPage() {
           {/* Estado cuando NO hay mes seleccionado */}
           {selectedMonthIndex === null && (
             <div className="mt-4 text-center text-sm text-slate-600">
-              {t('pages.sick.admin.pickMonth', 'Haz click en un mes para ver las bajas de ese mes.')}
+              {t(
+                "pages.sick.admin.pickMonth",
+                "Haz click en un mes para ver las bajas de ese mes.",
+              )}
             </div>
           )}
         </div>

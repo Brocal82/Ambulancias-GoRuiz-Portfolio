@@ -1,12 +1,12 @@
 // frontend/src/api/dienstTemplates.ts
-import api from './axios';
-import type { DienstTemplate, DaySchedule } from '../types/dienst';
+import api from "./axios";
+import type { DienstTemplate, DaySchedule } from "../types/dienst";
 
 // Datos necesarios para crear/editar una plantilla
 export interface DienstTemplateInput {
   dienstNumber: number;
   startTime: string; // "HH:mm"
-  endTime: string;   // "HH:mm"
+  endTime: string; // "HH:mm"
   daysOff: number[]; // 0=domingo, ..., 6=sábado
   isActive?: boolean;
 
@@ -21,8 +21,10 @@ export interface DienstTemplateInput {
  * GET /diensts/templates
  * Lista todas las plantillas de Dienst
  */
-export const getDienstTemplates = async (token: string): Promise<DienstTemplate[]> => {
-  const response = await api.get<DienstTemplate[]>('/diensts/templates', {
+export const getDienstTemplates = async (
+  token: string,
+): Promise<DienstTemplate[]> => {
+  const response = await api.get<DienstTemplate[]>("/diensts/templates", {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -36,9 +38,9 @@ export const getDienstTemplates = async (token: string): Promise<DienstTemplate[
  */
 export const createDienstTemplate = async (
   data: DienstTemplateInput,
-  token: string
+  token: string,
 ): Promise<DienstTemplate> => {
-  const response = await api.post<DienstTemplate>('/diensts/templates', data, {
+  const response = await api.post<DienstTemplate>("/diensts/templates", data, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -53,13 +55,17 @@ export const createDienstTemplate = async (
 export const updateDienstTemplate = async (
   id: string,
   data: DienstTemplateInput,
-  token: string
+  token: string,
 ): Promise<DienstTemplate> => {
-  const response = await api.put<DienstTemplate>(`/diensts/templates/${id}`, data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
+  const response = await api.put<DienstTemplate>(
+    `/diensts/templates/${id}`,
+    data,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     },
-  });
+  );
   return response.data;
 };
 
@@ -67,7 +73,10 @@ export const updateDienstTemplate = async (
  * DELETE /diensts/templates/:id
  * Elimina una plantilla de Dienst
  */
-export const deleteDienstTemplate = async (id: string, token: string): Promise<void> => {
+export const deleteDienstTemplate = async (
+  id: string,
+  token: string,
+): Promise<void> => {
   await api.delete(`/diensts/templates/${id}`, {
     headers: {
       Authorization: `Bearer ${token}`,

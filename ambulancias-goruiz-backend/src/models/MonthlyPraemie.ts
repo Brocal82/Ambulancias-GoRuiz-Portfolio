@@ -22,5 +22,5 @@ monthlyPraemieSchema.index({ userId: 1, year: 1, month: 1 }, { unique: true });
 
 export default mongoose.model<IMonthlyPraemie>(
   "MonthlyPraemie",
-  monthlyPraemieSchema
+  monthlyPraemieSchema,
 );

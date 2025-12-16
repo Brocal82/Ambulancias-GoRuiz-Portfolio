@@ -1,58 +1,75 @@
-// frontend/src/api/appointments.ts 
-import axios from './axios';
+// frontend/src/api/appointments.ts
+import axios from "./axios";
 import type {
   Appointment,
   RequestAppointmentPayload,
   ProposeSlotsPayload,
   SelectSlotPayload,
   UpdateAppointmentPayload,
-} from '../types/appointment';
+} from "../types/appointment";
 
 // Worker: crear solicitud
-export const requestAppointment = async (payload: RequestAppointmentPayload, token: string): Promise<Appointment> => {
-  const { data } = await axios.post<Appointment>('/appointments/requests', payload, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export const requestAppointment = async (
+  payload: RequestAppointmentPayload,
+  token: string,
+): Promise<Appointment> => {
+  const { data } = await axios.post<Appointment>(
+    "/appointments/requests",
+    payload,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
   return data;
 };
 
 // Worker: mis citas
-export const getMyAppointments = async (token: string): Promise<Appointment[]> => {
-  const { data } = await axios.get<Appointment[]>('/appointments/my', {
+export const getMyAppointments = async (
+  token: string,
+): Promise<Appointment[]> => {
+  const { data } = await axios.get<Appointment[]>("/appointments/my", {
     headers: { Authorization: `Bearer ${token}` },
   });
   return data;
 };
 
 // Admin: pendientes
-export const getPendingAppointments = async (token: string): Promise<Appointment[]> => {
-  const { data } = await axios.get<Appointment[]>('/appointments/pending', {
+export const getPendingAppointments = async (
+  token: string,
+): Promise<Appointment[]> => {
+  const { data } = await axios.get<Appointment[]>("/appointments/pending", {
     headers: { Authorization: `Bearer ${token}` },
   });
   return data;
 };
 
 // Admin: pendientes + propuestas
-export const getOpenAppointments = async (token: string): Promise<Appointment[]> => {
-  const { data } = await axios.get<Appointment[]>('/appointments/open', {
+export const getOpenAppointments = async (
+  token: string,
+): Promise<Appointment[]> => {
+  const { data } = await axios.get<Appointment[]>("/appointments/open", {
     headers: { Authorization: `Bearer ${token}` },
   });
   return data;
 };
 
-
 // ✅ Admin: contador de pendientes (derivado del módulo)
-export const getAppointmentsPendingCount = async (token: string): Promise<number> => {
-  const { data } = await axios.get<{ count: number }>('/appointments/count', {
+export const getAppointmentsPendingCount = async (
+  token: string,
+): Promise<number> => {
+  const { data } = await axios.get<{ count: number }>("/appointments/count", {
     headers: { Authorization: `Bearer ${token}` },
-    params: { status: 'pending' },
+    params: { status: "pending" },
   });
   return data?.count ?? 0;
 };
 
 // (Opcional) Admin: contador genérico por estado
-export const getAppointmentsCountByStatus = async (token: string, status: string): Promise<number> => {
-  const { data } = await axios.get<{ count: number }>('/appointments/count', {
+export const getAppointmentsCountByStatus = async (
+  token: string,
+  status: string,
+): Promise<number> => {
+  const { data } = await axios.get<{ count: number }>("/appointments/count", {
     headers: { Authorization: `Bearer ${token}` },
     params: { status },
   });
@@ -60,23 +77,42 @@ export const getAppointmentsCountByStatus = async (token: string, status: string
 };
 
 // Admin: proponer slots
-export const proposeSlots = async (id: string, payload: ProposeSlotsPayload, token: string): Promise<Appointment> => {
-  const { data } = await axios.post<Appointment>(`/appointments/${id}/propose`, payload, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export const proposeSlots = async (
+  id: string,
+  payload: ProposeSlotsPayload,
+  token: string,
+): Promise<Appointment> => {
+  const { data } = await axios.post<Appointment>(
+    `/appointments/${id}/propose`,
+    payload,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
   return data;
 };
 
 // Worker: elegir slot
-export const selectSlot = async (id: string, payload: SelectSlotPayload, token: string): Promise<Appointment> => {
-  const { data } = await axios.post<Appointment>(`/appointments/${id}/select`, payload, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export const selectSlot = async (
+  id: string,
+  payload: SelectSlotPayload,
+  token: string,
+): Promise<Appointment> => {
+  const { data } = await axios.post<Appointment>(
+    `/appointments/${id}/select`,
+    payload,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
   return data;
 };
 
 //Worker: Borrar Cita
-export const deleteMyAppointment = async (id: string, token: string): Promise<void> => {
+export const deleteMyAppointment = async (
+  id: string,
+  token: string,
+): Promise<void> => {
   await axios.delete(`/appointments/${id}/my`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -86,11 +122,11 @@ export const deleteMyAppointment = async (id: string, token: string): Promise<vo
 export const getCalendarAppointments = async (
   fromISO: string,
   toISO: string,
-  token: string
+  token: string,
 ): Promise<Appointment[]> => {
   const { data } = await axios.get<Appointment[]>(
     `/appointments/calendar?from=${encodeURIComponent(fromISO)}&to=${encodeURIComponent(toISO)}`,
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}` } },
   );
   return data;
 };
@@ -99,16 +135,23 @@ export const getCalendarAppointments = async (
 export const updateAppointment = async (
   id: string,
   payload: UpdateAppointmentPayload,
-  token: string
+  token: string,
 ): Promise<Appointment> => {
-  const { data } = await axios.patch<Appointment>(`/appointments/${id}`, payload, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const { data } = await axios.patch<Appointment>(
+    `/appointments/${id}`,
+    payload,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
   return data;
 };
 
 // Admin: cancelar
-export const cancelAppointment = async (id: string, token: string): Promise<Appointment> => {
+export const cancelAppointment = async (
+  id: string,
+  token: string,
+): Promise<Appointment> => {
   const { data } = await axios.delete<Appointment>(`/appointments/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });

@@ -1,42 +1,45 @@
 /** Devuelve 'YYYY-MM-DD' y 'HH:mm' de un ISO, en la TZ dada */
-export function partsFromISO(iso?: string, timeZone: string = 'UTC'): { date: string; time: string } {
-  if (!iso) return { date: '', time: '' };
+export function partsFromISO(
+  iso?: string,
+  timeZone: string = "UTC",
+): { date: string; time: string } {
+  if (!iso) return { date: "", time: "" };
   const d = new Date(iso);
 
-  const dateParts = new Intl.DateTimeFormat('en-GB', {
+  const dateParts = new Intl.DateTimeFormat("en-GB", {
     timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   }).formatToParts(d);
 
-  const timeParts = new Intl.DateTimeFormat('en-GB', {
+  const timeParts = new Intl.DateTimeFormat("en-GB", {
     timeZone,
-    hour: '2-digit',
-    minute: '2-digit',
+    hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
   }).formatToParts(d);
 
-  const get = (parts: Intl.DateTimeFormatPart[], type: string, def = '00') =>
-    parts.find(p => p.type === type)?.value ?? def;
+  const get = (parts: Intl.DateTimeFormatPart[], type: string, def = "00") =>
+    parts.find((p) => p.type === type)?.value ?? def;
 
   return {
-    date: `${get(dateParts, 'year', '0000')}-${get(dateParts, 'month', '01')}-${get(dateParts, 'day', '01')}`,
-    time: `${get(timeParts, 'hour')}:${get(timeParts, 'minute')}`,
+    date: `${get(dateParts, "year", "0000")}-${get(dateParts, "month", "01")}-${get(dateParts, "day", "01")}`,
+    time: `${get(timeParts, "hour")}:${get(timeParts, "minute")}`,
   };
 }
 
 /** Calcula el offset (minutos) de una zona IANA en un instante dado */
 export function getTimeZoneOffsetMinutes(timeZone: string, date: Date): number {
-  const dtf = new Intl.DateTimeFormat('en-US', {
+  const dtf = new Intl.DateTimeFormat("en-US", {
     timeZone,
     hour12: false,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
   });
   const parts = dtf.formatToParts(date);
   const v: Record<string, string> = {};
@@ -63,8 +66,8 @@ export function localDateTimeToUtcISO(
 ): { startISO: string; endISO: string; start: Date; end: Date } | null {
   if (!dateStr || !timeStr || !minutes) return null;
 
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const [H, M] = timeStr.split(':').map(Number);
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const [H, M] = timeStr.split(":").map(Number);
 
   // Base UTC a partir de componentes (no aplica offset aún)
   const baseUTC = new Date(Date.UTC(y, m - 1, d, H, M, 0, 0));
@@ -76,5 +79,10 @@ export function localDateTimeToUtcISO(
   const start = new Date(baseUTC.getTime() - offsetMin * 60 * 1000);
   const end = new Date(start.getTime() + minutes * 60 * 1000);
 
-  return { startISO: start.toISOString(), endISO: end.toISOString(), start, end };
+  return {
+    startISO: start.toISOString(),
+    endISO: end.toISOString(),
+    start,
+    end,
+  };
 }

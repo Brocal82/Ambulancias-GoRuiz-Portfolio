@@ -1,6 +1,6 @@
 //src/components/RequireAuth.tsx
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 export default function RequireAuth() {
   const { token } = useAuth();

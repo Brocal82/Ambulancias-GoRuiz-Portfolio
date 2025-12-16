@@ -1,13 +1,13 @@
 // backend/src/utils/dienstValidation.ts
-import mongoose from 'mongoose';
-import Dienst from '../models/Dienst';
-import VacationRequest from '../models/vacationRequest';
-import { buildWeekDateStrings } from './time';
-import { getPscheinStatus } from './pscheinUtils'; // ⚠️ Ya existe en backend/utils
-import { DateTime } from 'luxon';
-export { isOnSickDay, findOverlappingSickLeave } from './sickUtils';
+import mongoose from "mongoose";
+import Dienst from "../models/Dienst";
+import VacationRequest from "../models/vacationRequest";
+import { buildWeekDateStrings } from "./time";
+import { getPscheinStatus } from "./pscheinUtils"; // ⚠️ Ya existe en backend/utils
+import { DateTime } from "luxon";
+export { isOnSickDay, findOverlappingSickLeave } from "./sickUtils";
 
-const ZONE = 'Europe/Berlin';
+const ZONE = "Europe/Berlin";
 
 /**
  * Devuelve true si el usuario (driver o medic) ya está asignado
@@ -24,18 +24,19 @@ export async function isUserAssignedThatWeek(params: {
   const weekDays = buildWeekDateStrings(weekStartISO);
 
   const dienste = await Dienst.find({
-    'assignments.date': { $in: weekDays },
-    $or: [{ 'assignments.driver': userId }, { 'assignments.medic': userId }],
+    "assignments.date": { $in: weekDays },
+    $or: [{ "assignments.driver": userId }, { "assignments.medic": userId }],
   })
-    .select('_id assignments.date assignments.driver assignments.medic')
+    .select("_id assignments.date assignments.driver assignments.medic")
     .lean();
 
   return dienste.some((d) =>
     (d.assignments || []).some(
       (a: any) =>
         weekDays.includes(a?.date) &&
-        (a?.driver?.toString?.() === userId || a?.medic?.toString?.() === userId)
-    )
+        (a?.driver?.toString?.() === userId ||
+          a?.medic?.toString?.() === userId),
+    ),
   );
 }
 
@@ -47,19 +48,22 @@ export async function isOnVacationDay(params: {
   dateISO: string; // 'YYYY-MM-DD'
 }): Promise<boolean> {
   const { userId, dateISO } = params;
-  if (!mongoose.Types.ObjectId.isValid(userId) || !/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) {
+  if (
+    !mongoose.Types.ObjectId.isValid(userId) ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(dateISO)
+  ) {
     return false;
   }
 
   // Límites del día en zona Berlin (corrige problemas de DST/off-by-one)
-  const startBER = DateTime.fromISO(dateISO, { zone: ZONE }).startOf('day');
-  const endBER   = DateTime.fromISO(dateISO, { zone: ZONE }).endOf('day');
+  const startBER = DateTime.fromISO(dateISO, { zone: ZONE }).startOf("day");
+  const endBER = DateTime.fromISO(dateISO, { zone: ZONE }).endOf("day");
 
   const count = await VacationRequest.countDocuments({
     user: userId,
-    status: 'accepted',
+    status: "accepted",
     startDate: { $lte: endBER.toJSDate() },
-    endDate:   { $gte: startBER.toJSDate() },
+    endDate: { $gte: startBER.toJSDate() },
   });
 
   return count > 0;
@@ -71,34 +75,52 @@ export async function isOnVacationDay(params: {
  * - 'warning' → asignable pero conviene avisar (lo usarás en UI si quieres)
  * - 'valid' | 'no-date' → asignable (según tu política)
  */
-export function getDriverPscheinState(pscheinExpiry?: string): 'expired' | 'warning' | 'valid' | 'no-date' {
+export function getDriverPscheinState(
+  pscheinExpiry?: string,
+): "expired" | "warning" | "valid" | "no-date" {
   const st = getPscheinStatus(pscheinExpiry); // reutiliza tu backend/utils/pscheinUtils
-  if (st === 'expired') return 'expired';
-  if (st === 'warning') return 'warning';
-  if (st === 'valid') return 'valid';
-  return 'no-date';
+  if (st === "expired") return "expired";
+  if (st === "warning") return "warning";
+  if (st === "valid") return "valid";
+  return "no-date";
 }
-
 
 // 🔎 Busca asignaciones de ese usuario en cualquier Dienst de la misma semana
 export async function findWeeklyConflicts(
   userId: mongoose.Types.ObjectId,
   weekStart: Date,
-  currentDienstNumber?: number
-): Promise<Array<{ dienstId: string; dienstNumber: number; date: string; role: 'driver' | 'medic' }>> {
+  currentDienstNumber?: number,
+): Promise<
+  Array<{
+    dienstId: string;
+    dienstNumber: number;
+    date: string;
+    role: "driver" | "medic";
+  }>
+> {
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
 
   const dienste = await Dienst.find({
     weekStartDate: { $gte: weekStart, $lte: weekEnd },
   })
-    .select('dienstNumber assignments.date assignments.driver assignments.medic')
+    .select(
+      "dienstNumber assignments.date assignments.driver assignments.medic",
+    )
     .lean();
 
-  const out: Array<{ dienstId: string; dienstNumber: number; date: string; role: 'driver' | 'medic' }> = [];
+  const out: Array<{
+    dienstId: string;
+    dienstNumber: number;
+    date: string;
+    role: "driver" | "medic";
+  }> = [];
 
   for (const d of dienste) {
-    if (typeof currentDienstNumber === 'number' && d.dienstNumber === currentDienstNumber) {
+    if (
+      typeof currentDienstNumber === "number" &&
+      d.dienstNumber === currentDienstNumber
+    ) {
       continue;
     }
 
@@ -108,10 +130,20 @@ export async function findWeeklyConflicts(
       const uid = userId.toString();
 
       if (drv && drv === uid) {
-        out.push({ dienstId: String((d as any)._id), dienstNumber: d.dienstNumber, date: a.date, role: 'driver' });
+        out.push({
+          dienstId: String((d as any)._id),
+          dienstNumber: d.dienstNumber,
+          date: a.date,
+          role: "driver",
+        });
       }
       if (med && med === uid) {
-        out.push({ dienstId: String((d as any)._id), dienstNumber: d.dienstNumber, date: a.date, role: 'medic' });
+        out.push({
+          dienstId: String((d as any)._id),
+          dienstNumber: d.dienstNumber,
+          date: a.date,
+          role: "medic",
+        });
       }
     }
   }

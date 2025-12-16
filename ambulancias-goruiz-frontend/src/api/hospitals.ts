@@ -1,7 +1,7 @@
-import axios from './axios';
-import type { Hospital } from '../types/hospital';
+import axios from "./axios";
+import type { Hospital } from "../types/hospital";
 
-const BASE_URL = '/hospitals';
+const BASE_URL = "/hospitals";
 
 // Obtener todos los hospitales
 export const getAllHospitals = async (token: string): Promise<Hospital[]> => {
@@ -12,7 +12,10 @@ export const getAllHospitals = async (token: string): Promise<Hospital[]> => {
 };
 
 // Crear un hospital
-export const createHospital = async (hospital: Partial<Hospital>, token: string): Promise<Hospital> => {
+export const createHospital = async (
+  hospital: Partial<Hospital>,
+  token: string,
+): Promise<Hospital> => {
   const res = await axios.post(BASE_URL, hospital, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -20,7 +23,11 @@ export const createHospital = async (hospital: Partial<Hospital>, token: string)
 };
 
 // Actualizar un hospital
-export const updateHospital = async (id: string, updatedHospital: Partial<Hospital>, token: string): Promise<Hospital> => {
+export const updateHospital = async (
+  id: string,
+  updatedHospital: Partial<Hospital>,
+  token: string,
+): Promise<Hospital> => {
   const res = await axios.patch(`${BASE_URL}/${id}`, updatedHospital, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -28,7 +35,10 @@ export const updateHospital = async (id: string, updatedHospital: Partial<Hospit
 };
 
 // Eliminar un hospital
-export const deleteHospital = async (id: string, token: string): Promise<void> => {
+export const deleteHospital = async (
+  id: string,
+  token: string,
+): Promise<void> => {
   await axios.delete(`${BASE_URL}/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });

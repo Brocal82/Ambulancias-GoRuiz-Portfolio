@@ -1,10 +1,10 @@
 // src/context/AuthProvider.tsx
-import { useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
-import { AuthContext } from './AuthContext';
-import type { User } from '../types/user';
-import { getTokenExpiration } from '../utils/jwtUtils';
-import { toastT } from '../utils/toast';
+import { useState, useEffect } from "react";
+import type { ReactNode } from "react";
+import { AuthContext } from "./AuthContext";
+import type { User } from "../types/user";
+import { getTokenExpiration } from "../utils/jwtUtils";
+import { toastT } from "../utils/toast";
 
 interface Props {
   children: ReactNode;
@@ -19,9 +19,9 @@ export const AuthProvider = ({ children }: Props) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const storedToken = sessionStorage.getItem('token');
-      const storedUserId = sessionStorage.getItem('userId');
-      const storedRole = sessionStorage.getItem('role');
+      const storedToken = sessionStorage.getItem("token");
+      const storedUserId = sessionStorage.getItem("userId");
+      const storedRole = sessionStorage.getItem("role");
 
       if (storedToken && storedUserId && storedRole) {
         setToken(storedToken);
@@ -33,13 +33,13 @@ export const AuthProvider = ({ children }: Props) => {
             headers: { Authorization: `Bearer ${storedToken}` },
           });
 
-          if (!res.ok) throw new Error('No se pudo obtener el usuario');
+          if (!res.ok) throw new Error("No se pudo obtener el usuario");
 
           const freshUser: User = await res.json();
           setUser(freshUser);
-          sessionStorage.setItem('user', JSON.stringify(freshUser));
+          sessionStorage.setItem("user", JSON.stringify(freshUser));
         } catch (error) {
-          console.error('❌ Error al refrescar usuario:', error);
+          console.error("❌ Error al refrescar usuario:", error);
 
           // 🔒 Cierre de sesión manual para evitar dependencia de logout
           setToken(null);
@@ -47,9 +47,8 @@ export const AuthProvider = ({ children }: Props) => {
           setRole(null);
           setUser(null);
           sessionStorage.clear();
-          window.location.href = '/';
+          window.location.href = "/";
         }
-
       }
 
       setLoading(false);
@@ -70,23 +69,31 @@ export const AuthProvider = ({ children }: Props) => {
 
     if (timeLeft > warningThreshold) {
       const timer = setTimeout(() => {
-         toastT.warn(['toasts.auth.sessionExpiring'], { position: 'top-right', autoClose: 10000 });
+        toastT.warn(["toasts.auth.sessionExpiring"], {
+          position: "top-right",
+          autoClose: 10000,
+        });
       }, timeLeft - warningThreshold);
 
       return () => clearTimeout(timer);
     }
   }, [token]);
 
-  const login = (newToken: string, newUserId: string, newRole: string, newUser: User) => {
+  const login = (
+    newToken: string,
+    newUserId: string,
+    newRole: string,
+    newUser: User,
+  ) => {
     setToken(newToken);
     setUserId(newUserId);
     setRole(newRole);
     setUser(newUser);
 
-    sessionStorage.setItem('token', newToken);
-    sessionStorage.setItem('userId', newUserId);
-    sessionStorage.setItem('role', newRole);
-    sessionStorage.setItem('user', JSON.stringify(newUser));
+    sessionStorage.setItem("token", newToken);
+    sessionStorage.setItem("userId", newUserId);
+    sessionStorage.setItem("role", newRole);
+    sessionStorage.setItem("user", JSON.stringify(newUser));
   };
 
   /** Cierre de sesión */
@@ -101,10 +108,8 @@ export const AuthProvider = ({ children }: Props) => {
     setUser(null);
 
     sessionStorage.clear();
-    window.location.href = '/';   // redirección a la pantalla de login / inicio
+    window.location.href = "/"; // redirección a la pantalla de login / inicio
   };
-
-
 
   if (loading) return <p className="p-4">Cargando sesión...</p>;
 

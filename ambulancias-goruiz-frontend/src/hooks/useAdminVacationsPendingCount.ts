@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { getVacationPendingCount } from '../api/vacation';
-import { useAuth } from '../hooks/useAuth'; // named export
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getVacationPendingCount } from "../api/vacation";
+import { useAuth } from "../hooks/useAuth"; // named export
 
 type Options = {
   /** Intervalo de refresco en ms. 0 = sin polling (por defecto). */
@@ -14,7 +14,7 @@ type State = {
   error?: string;
 };
 
-const ADMIN_VACATIONS_CHANGED_EVENT = 'admin-vacations-changed';
+const ADMIN_VACATIONS_CHANGED_EVENT = "admin-vacations-changed";
 
 export default function useAdminVacationsPendingCount(options: Options = {}) {
   const { pollMs = 0 } = options;
@@ -35,14 +35,19 @@ export default function useAdminVacationsPendingCount(options: Options = {}) {
   const fetchCount = useCallback(async () => {
     if (!token) {
       // Sin token: no pedimos nada; mantenemos 0 y sin error visible
-      setState((s) => ({ ...s, isLoading: false, isError: false, error: undefined }));
+      setState((s) => ({
+        ...s,
+        isLoading: false,
+        isError: false,
+        error: undefined,
+      }));
       return;
     }
 
     // Loading discreto: solo spinner si aún no tenemos dato (count===0)
     setState((s) => ({ ...s, isLoading: s.count === 0 }));
     try {
-      const count = await getVacationPendingCount(token, 'pending');
+      const count = await getVacationPendingCount(token, "pending");
       if (!mountedRef.current) return;
       setState({ count, isLoading: false, isError: false, error: undefined });
     } catch (err: any) {
@@ -51,11 +56,13 @@ export default function useAdminVacationsPendingCount(options: Options = {}) {
         ...s,
         isLoading: false,
         isError: true,
-        error: err?.message ?? 'Error al obtener el contador de vacaciones pendientes',
+        error:
+          err?.message ??
+          "Error al obtener el contador de vacaciones pendientes",
       }));
       // No intrusivo: dejamos el último valor en pantalla
       // eslint-disable-next-line no-console
-      console.warn('[useAdminVacationsPendingCount]', err);
+      console.warn("[useAdminVacationsPendingCount]", err);
     }
   }, [token]);
 
@@ -75,26 +82,32 @@ export default function useAdminVacationsPendingCount(options: Options = {}) {
   // Refresco al volver a foco
   useEffect(() => {
     const onFocus = () => refresh();
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, [refresh]);
 
   // Refresco al recuperar visibilidad
   useEffect(() => {
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') refresh();
+      if (document.visibilityState === "visible") refresh();
     };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [refresh]);
 
   // Refresco por evento global: window.dispatchEvent(new Event('admin-vacations-changed'))
   useEffect(() => {
     const onChanged = () => refresh();
     // Cast a any para evitar que TS se queje por tipo de evento custom
-    window.addEventListener(ADMIN_VACATIONS_CHANGED_EVENT as any, onChanged as EventListener);
+    window.addEventListener(
+      ADMIN_VACATIONS_CHANGED_EVENT as any,
+      onChanged as EventListener,
+    );
     return () =>
-      window.removeEventListener(ADMIN_VACATIONS_CHANGED_EVENT as any, onChanged as EventListener);
+      window.removeEventListener(
+        ADMIN_VACATIONS_CHANGED_EVENT as any,
+        onChanged as EventListener,
+      );
   }, [refresh]);
 
   // Polling opcional

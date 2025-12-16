@@ -1,6 +1,6 @@
 // frontend/src/api/vacation.ts
-import axiosInstance from './axios';
-import type { IVacationRequest } from '../types/vacationRequest';
+import axiosInstance from "./axios";
+import type { IVacationRequest } from "../types/vacationRequest";
 
 /* =========================
    Tipos y payloads básicos
@@ -12,7 +12,7 @@ interface VacationRequestPayload {
 }
 
 interface UpdateVacationPayload {
-  status?: 'pending' | 'accepted' | 'cancelled' | 'option_sent';
+  status?: "pending" | "accepted" | "cancelled" | "option_sent";
   adminOptionStartDate?: string;
   adminOptionEndDate?: string;
   adminNote?: string;
@@ -22,7 +22,7 @@ interface RespondAlternativePayload {
   accept: boolean;
 }
 
-type VacationStatusCount = IVacationRequest['status'];
+type VacationStatusCount = IVacationRequest["status"];
 
 interface VacationCountResponse {
   count: number;
@@ -41,8 +41,8 @@ export interface VacFlag {
   hasVacationInRange: boolean;
   vacationStartInRange?: string; // 'YYYY-MM-DD' dentro del rango consultado
   vacationUntilInRange?: string; // 'YYYY-MM-DD' dentro del rango consultado
-  vacationStartFull?: string;    // 'YYYY-MM-DD' rango REAL completo (opcional si backend lo soporta)
-  vacationUntilFull?: string;    // 'YYYY-MM-DD' rango REAL completo (opcional si backend lo soporta)
+  vacationStartFull?: string; // 'YYYY-MM-DD' rango REAL completo (opcional si backend lo soporta)
+  vacationUntilFull?: string; // 'YYYY-MM-DD' rango REAL completo (opcional si backend lo soporta)
 }
 
 export type VacationFlagsByUser = Record<string, VacFlag>;
@@ -56,8 +56,11 @@ export type VacationRangeFlagsByUser = VacationFlagsByUser;
    ========================= */
 
 // Crear nueva solicitud
-export const createVacationRequest = async (token: string, data: VacationRequestPayload) => {
-  const response = await axiosInstance.post('/vacations', data, {
+export const createVacationRequest = async (
+  token: string,
+  data: VacationRequestPayload,
+) => {
+  const response = await axiosInstance.post("/vacations", data, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -71,20 +74,26 @@ export const createVacationRequest = async (token: string, data: VacationRequest
   // 🔔 NUEVO: difundir que el listado de solicitudes cambió (para que Admin recargue sin refresh)
   try {
     // misma pestaña
-    window.dispatchEvent(new CustomEvent('vacation-requests-updated', { detail: { ts: Date.now() } }));
+    window.dispatchEvent(
+      new CustomEvent("vacation-requests-updated", {
+        detail: { ts: Date.now() },
+      }),
+    );
   } catch {}
   try {
     // otras pestañas: BroadcastChannel
-    const BC = (window as any).BroadcastChannel as (new (name: string) => BroadcastChannel) | undefined;
-    if (typeof BC === 'function') {
-      const bc = new BC('vacations');
-      bc.postMessage({ type: 'requests-updated', ts: Date.now() });
+    const BC = (window as any).BroadcastChannel as
+      | (new (name: string) => BroadcastChannel)
+      | undefined;
+    if (typeof BC === "function") {
+      const bc = new BC("vacations");
+      bc.postMessage({ type: "requests-updated", ts: Date.now() });
       bc.close?.();
     }
   } catch {}
   try {
     // fallback: localStorage
-    localStorage.setItem('__vac_req_upd__', JSON.stringify({ ts: Date.now() }));
+    localStorage.setItem("__vac_req_upd__", JSON.stringify({ ts: Date.now() }));
   } catch {}
 
   return response.data;
@@ -92,7 +101,7 @@ export const createVacationRequest = async (token: string, data: VacationRequest
 
 // Obtener todas las solicitudes (solo admin)
 export const getVacationRequests = async (token: string) => {
-  const response = await axiosInstance.get('/vacations', {
+  const response = await axiosInstance.get("/vacations", {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
@@ -102,7 +111,7 @@ export const getVacationRequests = async (token: string) => {
 export const updateVacationRequest = async (
   token: string,
   id: string,
-  data: UpdateVacationPayload
+  data: UpdateVacationPayload,
 ) => {
   try {
     const response = await axiosInstance.patch(`/vacations/${id}`, data, {
@@ -114,25 +123,29 @@ export const updateVacationRequest = async (
     const status = e?.response?.status;
     const respData = e?.response?.data;
     const err: any = new Error(
-      (typeof respData?.message === 'string' && respData.message) ||
-      `Request failed with ${status ?? 'unknown status'}`
+      (typeof respData?.message === "string" && respData.message) ||
+        `Request failed with ${status ?? "unknown status"}`,
     );
-    err.status = status;     // ⬅️ MUY IMPORTANTE (p.ej., 409)
-    err.body = respData;     // ⬅️ Aquí llega { code: 'capacity_exceeded', days: [...] }
+    err.status = status; // ⬅️ MUY IMPORTANTE (p.ej., 409)
+    err.body = respData; // ⬅️ Aquí llega { code: 'capacity_exceeded', days: [...] }
     throw err;
   }
 };
 
 // Obtener solicitudes del trabajador logueado
 export const getUserVacationRequests = async (token: string) => {
-  const response = await axiosInstance.get('/vacations/user', {
+  const response = await axiosInstance.get("/vacations/user", {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
 // Responder a opción alternativa (aceptar o rechazar)
-export const respondToAlternativeDate = async (token: string, id: string, data: RespondAlternativePayload) => {
+export const respondToAlternativeDate = async (
+  token: string,
+  id: string,
+  data: RespondAlternativePayload,
+) => {
   const response = await axiosInstance.post(`/vacations/${id}/respond`, data, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -153,19 +166,22 @@ export const deleteVacationRequest = async (token: string, id: string) => {
 
 export const getVacationPendingCount = async (
   token: string,
-  status: VacationStatusCount = 'pending'
+  status: VacationStatusCount = "pending",
 ): Promise<number> => {
   try {
-    const response = await axiosInstance.get<VacationCountResponse>('/vacations/count', {
-      params: { status },
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return typeof response.data?.count === 'number' ? response.data.count : 0;
+    const response = await axiosInstance.get<VacationCountResponse>(
+      "/vacations/count",
+      {
+        params: { status },
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    return typeof response.data?.count === "number" ? response.data.count : 0;
   } catch (error: any) {
     const message =
       error?.response?.data?.message ||
       error?.message ||
-      'Error al obtener el contador de solicitudes de vacaciones';
+      "Error al obtener el contador de solicitudes de vacaciones";
     throw new Error(message);
   }
 };
@@ -179,7 +195,7 @@ export interface VacationAvailabilityDay {
   approvedCount: number;
   pendingCount: number;
   remaining: number;
-  state: 'green' | 'yellow' | 'red';
+  state: "green" | "yellow" | "red";
 }
 export interface VacationAvailabilityResponse {
   year: number;
@@ -196,7 +212,7 @@ export interface VacationMonthConfig {
 
 export async function getVacationAvailability(
   params: { year: number; month: number }, // month 1..12
-  opts?: { force?: boolean }
+  opts?: { force?: boolean },
 ) {
   const { year, month } = params;
 
@@ -205,23 +221,32 @@ export async function getVacationAvailability(
     if (cached) return cached;
   }
 
-  const { data } = await axiosInstance.get<VacationAvailabilityResponse>('/vacations/availability', {
-    params,
-  });
+  const { data } = await axiosInstance.get<VacationAvailabilityResponse>(
+    "/vacations/availability",
+    {
+      params,
+    },
+  );
 
   setCachedAvailability(year, month, data);
   return data;
 }
 
 export async function getVacationMonthConfig(monthKey: string) {
-  const { data } = await axiosInstance.get<VacationMonthConfig>('/vacations/month-config', {
-    params: { monthKey },
-  });
+  const { data } = await axiosInstance.get<VacationMonthConfig>(
+    "/vacations/month-config",
+    {
+      params: { monthKey },
+    },
+  );
   return data;
 }
 
 export async function upsertVacationMonthConfig(payload: VacationMonthConfig) {
-  const { data } = await axiosInstance.post<VacationMonthConfig>('/vacations/month-config', payload);
+  const { data } = await axiosInstance.post<VacationMonthConfig>(
+    "/vacations/month-config",
+    payload,
+  );
   return data;
 }
 
@@ -247,10 +272,10 @@ export async function getVacationFlagsInRange(
     fromISO: string;
     toISO: string;
     includeFullSpan?: boolean;
-  }
+  },
 ): Promise<VacationFlagsByUser> {
   const { data } = await axiosInstance.post<VacationFlagsByUser>(
-    '/vacations/check-range',
+    "/vacations/check-range",
     {
       userIds: params.userIds,
       fromISO: params.fromISO,
@@ -259,7 +284,7 @@ export async function getVacationFlagsInRange(
     },
     {
       headers: { Authorization: `Bearer ${token}` },
-    }
+    },
   );
   return data;
 }
@@ -269,7 +294,8 @@ export async function getVacationFlagsInRange(
    ========================================================= */
 
 type MonthKey = string;
-const toMonthKey = (y: number, m1: number) => `${y}-${String(m1).padStart(2, '0')}`;
+const toMonthKey = (y: number, m1: number) =>
+  `${y}-${String(m1).padStart(2, "0")}`;
 
 const availabilityCache = new Map<MonthKey, VacationAvailabilityResponse>();
 
@@ -277,7 +303,11 @@ export function getCachedAvailability(year: number, month: number) {
   return availabilityCache.get(toMonthKey(year, month));
 }
 
-export function setCachedAvailability(year: number, month: number, data: VacationAvailabilityResponse) {
+export function setCachedAvailability(
+  year: number,
+  month: number,
+  data: VacationAvailabilityResponse,
+) {
   availabilityCache.set(toMonthKey(year, month), data);
 }
 
@@ -296,19 +326,26 @@ export function invalidateAvailability(year: number, month: number) {
   // misma pestaña
   try {
     window.dispatchEvent(
-      new CustomEvent('vacation-availability-invalidated', {
+      new CustomEvent("vacation-availability-invalidated", {
         detail: { year, month },
-      })
+      }),
     );
   } catch {}
 
   // otras pestañas: BroadcastChannel
   let bc: BroadcastChannel | null = null;
   try {
-    const BC = (window as any).BroadcastChannel as (new (name: string) => BroadcastChannel) | undefined;
-    if (typeof BC === 'function') {
-      bc = new BC('vacations');
-      bc.postMessage({ type: 'availability-invalidated', year, month, ts: Date.now() });
+    const BC = (window as any).BroadcastChannel as
+      | (new (name: string) => BroadcastChannel)
+      | undefined;
+    if (typeof BC === "function") {
+      bc = new BC("vacations");
+      bc.postMessage({
+        type: "availability-invalidated",
+        year,
+        month,
+        ts: Date.now(),
+      });
       bc.close?.();
     }
   } catch {}
@@ -316,8 +353,8 @@ export function invalidateAvailability(year: number, month: number) {
   // otras pestañas: fallback localStorage
   try {
     localStorage.setItem(
-      '__vac_av_inval__',
-      JSON.stringify({ year, month, ts: Date.now() })
+      "__vac_av_inval__",
+      JSON.stringify({ year, month, ts: Date.now() }),
     );
   } catch {}
 }
@@ -343,22 +380,25 @@ function getBerlinYearMonth(iso: string): { y: number; m1: number } | null {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return null;
   const y = Number(
-    d.toLocaleString('en-CA', { year: 'numeric', timeZone: 'Europe/Berlin' })
+    d.toLocaleString("en-CA", { year: "numeric", timeZone: "Europe/Berlin" }),
   );
   const m1 = Number(
-    d.toLocaleString('en-CA', { month: '2-digit', timeZone: 'Europe/Berlin' })
+    d.toLocaleString("en-CA", { month: "2-digit", timeZone: "Europe/Berlin" }),
   );
   if (!y || !m1) return null;
   return { y, m1 };
 }
 
 // ✅ Versión limpia y compatible (sin warnings)
-export function invalidateAvailabilityByRange(startDate: string, _endDate?: string) {
+export function invalidateAvailabilityByRange(
+  startDate: string,
+  _endDate?: string,
+) {
   try {
     // 🗓️ Si existe helper getBerlinYearMonth, úsalo:
     let year: number, month: number;
 
-    if (typeof getBerlinYearMonth === 'function') {
+    if (typeof getBerlinYearMonth === "function") {
       const startInfo = getBerlinYearMonth(startDate);
       if (!startInfo) return;
       year = startInfo.y;
@@ -371,33 +411,33 @@ export function invalidateAvailabilityByRange(startDate: string, _endDate?: stri
 
     // 1️⃣ CustomEvent (misma pestaña)
     window.dispatchEvent(
-      new CustomEvent('vacation-availability-invalidated', {
+      new CustomEvent("vacation-availability-invalidated", {
         detail: { year, month },
-      })
+      }),
     );
 
     // 2️⃣ BroadcastChannel (otras pestañas/ventanas)
     try {
-      const bc = new BroadcastChannel('vacations');
-      bc.postMessage({ type: 'availability-invalidated', year, month });
+      const bc = new BroadcastChannel("vacations");
+      bc.postMessage({ type: "availability-invalidated", year, month });
       bc.close?.();
     } catch {}
 
     // 3️⃣ localStorage (fallback universal)
     try {
       localStorage.setItem(
-        '__vac_av_inval__',
-        JSON.stringify({ year, month, ts: Date.now() })
+        "__vac_av_inval__",
+        JSON.stringify({ year, month, ts: Date.now() }),
       );
     } catch {}
 
     // 🧹 limpiar almacenamiento para evitar eventos acumulados
     setTimeout(() => {
       try {
-        localStorage.removeItem('__vac_av_inval__');
+        localStorage.removeItem("__vac_av_inval__");
       } catch {}
     }, 2000);
   } catch (err) {
-    console.warn('Error invalidando disponibilidad:', err);
+    console.warn("Error invalidando disponibilidad:", err);
   }
 }

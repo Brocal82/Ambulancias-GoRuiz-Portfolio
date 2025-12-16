@@ -1,13 +1,16 @@
 // backend/src/controllers/messageController.ts
-import { Request, Response } from 'express';
-import Message from '../models/Message';
-import User from '../models/User';
-import mongoose from 'mongoose';
-import { Notification } from '../models/Notifications';
+import { Request, Response } from "express";
+import Message from "../models/Message";
+import User from "../models/User";
+import mongoose from "mongoose";
+import { Notification } from "../models/Notifications";
 
 // 📨 Crear un nuevo mensaje (soporta 1 adjunto opcional en campo "attachment")
 // + Crea notificaciones para cada destinatario (worker)
-export const createMessage = async (req: Request, res: Response): Promise<void> => {
+export const createMessage = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   const { subject, body } = req.body;
   const senderId = (req as any).userId;
 
@@ -15,9 +18,9 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
   const rawToAll = (req.body as any).toAllWorkers;
   const toAllWorkers =
     rawToAll === true ||
-    rawToAll === 'true' ||
+    rawToAll === "true" ||
     rawToAll === 1 ||
-    rawToAll === '1';
+    rawToAll === "1";
 
   // recipients puede venir como array (JSON) o como string (multipart/form-data)
   const rawRecipients = (req.body as any).recipients;
@@ -26,7 +29,7 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
   let recipients: string[] | undefined;
   if (Array.isArray(rawRecipients)) {
     recipients = rawRecipients;
-  } else if (typeof rawRecipients === 'string') {
+  } else if (typeof rawRecipients === "string") {
     try {
       // Intento 1: JSON válido (e.g. '["id1","id2"]')
       const parsed = JSON.parse(rawRecipients);
@@ -34,8 +37,8 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
     } catch {
       // Intento 2: CSV simple (e.g. 'id1,id2')
       recipients = rawRecipients
-        .split(',')
-        .map(s => s.trim())
+        .split(",")
+        .map((s) => s.trim())
         .filter(Boolean);
     }
   }
@@ -44,19 +47,26 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
     // Si se marca toAllWorkers, expandir destinatarios a TODOS los workers
     let finalRecipients: string[] = recipients ?? [];
     if (toAllWorkers) {
-      const workers = await User.find({ role: 'worker' }).select('_id').lean();
-      const allWorkerIds = workers.map(w => w._id.toString());
+      const workers = await User.find({ role: "worker" }).select("_id").lean();
+      const allWorkerIds = workers.map((w) => w._id.toString());
       // Unir sin duplicados
       const set = new Set<string>([...finalRecipients, ...allWorkerIds]);
       finalRecipients = Array.from(set);
     }
 
-    if (!subject || !body || !Array.isArray(finalRecipients) || finalRecipients.length === 0) {
-      res.status(400).json({ message: 'Faltan datos obligatorios o receptores inválidos' });
+    if (
+      !subject ||
+      !body ||
+      !Array.isArray(finalRecipients) ||
+      finalRecipients.length === 0
+    ) {
+      res
+        .status(400)
+        .json({ message: "Faltan datos obligatorios o receptores inválidos" });
       return;
     }
 
-        // Adjuntos: soportar uno o varios archivos
+    // Adjuntos: soportar uno o varios archivos
     const files = (req as any).files as Express.Multer.File[] | undefined;
     const singleFile = (req as any).file as Express.Multer.File | undefined;
 
@@ -88,7 +98,6 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
       ];
     }
 
-
     // 1) Crear el mensaje
     const newMessage = await Message.create({
       subject,
@@ -102,40 +111,44 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
     // 2) Crear notificaciones para cada destinatario (worker)
     try {
       const docs = finalRecipients.map((uid: string) => ({
-        title: subject || 'Nuevo mensaje',
-        message: body?.slice(0, 200) || 'Tienes un nuevo mensaje.',
+        title: subject || "Nuevo mensaje",
+        message: body?.slice(0, 200) || "Tienes un nuevo mensaje.",
         recipientId: new mongoose.Types.ObjectId(uid),
-        role: 'worker' as const,
-        type: 'message' as const,
+        role: "worker" as const,
+        type: "message" as const,
       }));
       if (docs.length > 0) {
         await Notification.insertMany(docs);
       }
     } catch (nerr) {
       // No romper el envío del mensaje si fallan las notificaciones
-      console.error('⚠️ No se pudieron crear notificaciones para el mensaje:', nerr);
+      console.error(
+        "⚠️ No se pudieron crear notificaciones para el mensaje:",
+        nerr,
+      );
     }
 
     res.status(201).json(newMessage);
     return;
   } catch (error) {
-    console.error('❌ Error al crear mensaje:', error);
-    res.status(500).json({ message: 'Error al enviar el mensaje' });
+    console.error("❌ Error al crear mensaje:", error);
+    res.status(500).json({ message: "Error al enviar el mensaje" });
     return;
   }
 };
 
-
-
-
-
 // 📬 Obtener mensajes del usuario autenticado
 // Soporta query ?unreadOnly=false para incluir leídos
-export const getMyMessages = async (req: Request, res: Response): Promise<void> => {
+export const getMyMessages = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   const userId = new mongoose.Types.ObjectId((req as any).userId as string);
   // default: true → solo no leídos (comportamiento previo)
   const unreadOnly =
-    (req.query.unreadOnly as string | undefined)?.toLowerCase() === 'false' ? false : true;
+    (req.query.unreadOnly as string | undefined)?.toLowerCase() === "false"
+      ? false
+      : true;
 
   try {
     const filter: any = {
@@ -150,22 +163,22 @@ export const getMyMessages = async (req: Request, res: Response): Promise<void> 
 
     const messages = await Message.find(filter)
       .sort({ sentAt: -1 })
-      .populate('sender', 'name lastName');
+      .populate("sender", "name lastName");
 
     res.status(200).json(messages);
     return;
   } catch (error) {
-    console.error('❌ Error al obtener mensajes:', error);
-    res.status(500).json({ message: 'Error al obtener mensajes' });
+    console.error("❌ Error al obtener mensajes:", error);
+    res.status(500).json({ message: "Error al obtener mensajes" });
     return;
   }
 };
 
-
-
-
 // 📤 Obtener mensajes enviados por el admin a todos los trabajadores
-export const getSentMessages = async (req: Request, res: Response): Promise<void> => {
+export const getSentMessages = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   const adminId = (req as any).userId;
 
   try {
@@ -174,17 +187,20 @@ export const getSentMessages = async (req: Request, res: Response): Promise<void
       toAllWorkers: true,
     })
       .sort({ sentAt: -1 })
-      .select('subject body sentAt attachments'); // 👈 incluye adjuntos
+      .select("subject body sentAt attachments"); // 👈 incluye adjuntos
 
     res.status(200).json(messages);
   } catch (error) {
-    console.error('❌ Error al obtener mensajes enviados:', error);
-    res.status(500).json({ message: 'Error al obtener mensajes enviados' });
+    console.error("❌ Error al obtener mensajes enviados:", error);
+    res.status(500).json({ message: "Error al obtener mensajes enviados" });
   }
 };
 
 // 📚 Obtener mensajes enviados por el admin a un worker concreto
-export const getMessagesForUserAsAdmin = async (req: Request, res: Response): Promise<void> => {
+export const getMessagesForUserAsAdmin = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   const adminId = (req as any).userId as string;
   const { id } = req.params; // 👈 usamos "id" porque la ruta es /user/:id
 
@@ -194,20 +210,22 @@ export const getMessagesForUserAsAdmin = async (req: Request, res: Response): Pr
       recipients: new mongoose.Types.ObjectId(id),
     })
       .sort({ sentAt: -1 })
-      .populate('sender', 'name lastName');
+      .populate("sender", "name lastName");
 
     res.status(200).json(messages);
   } catch (error) {
-    console.error('❌ Error al obtener mensajes para usuario:', error);
-    res.status(500).json({ message: 'Error al obtener mensajes para este usuario' });
+    console.error("❌ Error al obtener mensajes para usuario:", error);
+    res
+      .status(500)
+      .json({ message: "Error al obtener mensajes para este usuario" });
   }
 };
 
-
-
-
 // 🗑️ Ocultar/marcar como leído para el usuario (no borra globalmente)
-export const deleteMessageForUser = async (req: Request, res: Response): Promise<void> => {
+export const deleteMessageForUser = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   const userId = new mongoose.Types.ObjectId((req as any).userId as string);
   const messageId = req.params.id;
 
@@ -215,32 +233,36 @@ export const deleteMessageForUser = async (req: Request, res: Response): Promise
     const message = await Message.findById(messageId);
 
     if (!message) {
-      res.status(404).json({ message: 'Mensaje no encontrado' });
+      res.status(404).json({ message: "Mensaje no encontrado" });
       return;
     }
 
     // marcar como leído si no estaba
-    if (!message.readBy.some(u => u.toString() === userId.toString())) {
+    if (!message.readBy.some((u) => u.toString() === userId.toString())) {
       message.readBy.push(userId);
     }
     // ocultar para este usuario si no estaba
-    if (!message.removedBy?.some(u => u.toString() === userId.toString())) {
-      (message.removedBy as mongoose.Types.ObjectId[] | undefined)?.push(userId);
+    if (!message.removedBy?.some((u) => u.toString() === userId.toString())) {
+      (message.removedBy as mongoose.Types.ObjectId[] | undefined)?.push(
+        userId,
+      );
     }
 
     await message.save();
-    res.status(200).json({ message: 'Mensaje marcado como leído/borrado' });
+    res.status(200).json({ message: "Mensaje marcado como leído/borrado" });
     return;
   } catch (error) {
-    console.error('❌ Error al borrar mensaje:', error);
-    res.status(500).json({ message: 'Error al borrar el mensaje' });
+    console.error("❌ Error al borrar mensaje:", error);
+    res.status(500).json({ message: "Error al borrar el mensaje" });
     return;
   }
 };
 
-
 // 🗑️ Borrar un mensaje (solo admin y solo si es el remitente)
-export const deleteMessageByAdmin = async (req: Request, res: Response): Promise<void> => {
+export const deleteMessageByAdmin = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   const adminId = (req as any).userId as string;
   const { id } = req.params;
 
@@ -248,38 +270,43 @@ export const deleteMessageByAdmin = async (req: Request, res: Response): Promise
     const message = await Message.findById(id);
 
     if (!message) {
-      res.status(404).json({ message: 'Mensaje no encontrado' });
+      res.status(404).json({ message: "Mensaje no encontrado" });
       return;
     }
 
     // Solo puede borrar mensajes que él mismo envió
     if (message.sender.toString() !== adminId.toString()) {
-      res.status(403).json({ message: 'No tienes permiso para borrar este mensaje' });
+      res
+        .status(403)
+        .json({ message: "No tienes permiso para borrar este mensaje" });
       return;
     }
 
     await Message.deleteOne({ _id: id });
-    res.status(200).json({ message: 'Mensaje eliminado correctamente' });
+    res.status(200).json({ message: "Mensaje eliminado correctamente" });
   } catch (error) {
-    console.error('❌ Error al borrar mensaje:', error);
-    res.status(500).json({ message: 'Error al borrar el mensaje' });
+    console.error("❌ Error al borrar mensaje:", error);
+    res.status(500).json({ message: "Error al borrar el mensaje" });
   }
 };
 
 // ✅ Marcar un mensaje como leído (NO lo oculta)
-export const markMessageAsRead = async (req: Request, res: Response): Promise<void> => {
+export const markMessageAsRead = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   const userId = new mongoose.Types.ObjectId((req as any).userId as string);
   const { id } = req.params;
 
   try {
     const message = await Message.findById(id);
     if (!message) {
-      res.status(404).json({ message: 'Mensaje no encontrado' });
+      res.status(404).json({ message: "Mensaje no encontrado" });
       return;
     }
 
     // Añadir a readBy si no estaba
-    if (!message.readBy.some(u => u.toString() === userId.toString())) {
+    if (!message.readBy.some((u) => u.toString() === userId.toString())) {
       message.readBy.push(userId);
       await message.save();
     }
@@ -287,12 +314,8 @@ export const markMessageAsRead = async (req: Request, res: Response): Promise<vo
     res.status(200).json({ ok: true });
     return;
   } catch (error) {
-    console.error('❌ Error al marcar como leído:', error);
-    res.status(500).json({ message: 'Error al marcar como leído' });
+    console.error("❌ Error al marcar como leído:", error);
+    res.status(500).json({ message: "Error al marcar como leído" });
     return;
   }
 };
-
-
-
-

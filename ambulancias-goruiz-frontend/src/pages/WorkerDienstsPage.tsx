@@ -45,12 +45,19 @@ const WorkerDienstsPage = () => {
     fetchAssignedDays();
   }, [fetchAssignedDays]);
 
-  if (loading) return <p className="text-sm text-slate-600 p-4">{t("pages.diensts.workerPage.loading")}</p>;
+  if (loading)
+    return (
+      <p className="text-sm text-slate-600 p-4">
+        {t("pages.diensts.workerPage.loading")}
+      </p>
+    );
 
   return (
     <div className="min-h-[400px]">
       <div className="mb-4">
-        <h2 className="text-xl font-semibold tracking-tight text-slate-900">{t("pages.diensts.workerPage.title")}</h2>
+        <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+          {t("pages.diensts.workerPage.title")}
+        </h2>
       </div>
 
       <>
@@ -78,7 +85,10 @@ const WorkerDienstsPage = () => {
                 weekEnd.setDate(weekStart.getDate() + 6);
 
                 return (
-                  <div key={weekOffset} className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
+                  <div
+                    key={weekOffset}
+                    className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4"
+                  >
                     <p className="text-sm font-medium text-slate-700 mb-3">
                       {t("pages.diensts.workerPage.weekRange", {
                         from: fmtDate(weekStart),
@@ -89,13 +99,15 @@ const WorkerDienstsPage = () => {
                     {/* Grid de 7 días */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                       {weekDates.map((dateStr) => {
-                        const assignment = assignedDays.find((a) => a.date === dateStr);
+                        const assignment = assignedDays.find(
+                          (a) => a.date === dateStr,
+                        );
 
                         const cls = assignment
                           ? isPartialAssignment(assignment)
-                            ? 'bg-amber-50 ring-amber-200'
-                            : 'bg-blue-50 ring-blue-200'
-                          : 'bg-emerald-50 ring-emerald-200';
+                            ? "bg-amber-50 ring-amber-200"
+                            : "bg-blue-50 ring-blue-200"
+                          : "bg-emerald-50 ring-emerald-200";
 
                         return (
                           <button
@@ -119,17 +131,42 @@ const WorkerDienstsPage = () => {
                               });
                             }}
                           >
-                            <p className="text-xs font-semibold text-slate-800 mb-1">{fmtCellDate(dateStr)}</p>
+                            <p className="text-xs font-semibold text-slate-800 mb-1">
+                              {fmtCellDate(dateStr)}
+                            </p>
 
                             {assignment ? (
                               <div className="space-y-0.5 text-xs text-slate-700">
-                                <p>🕒 {assignment.startTime} - {assignment.endTime}</p>
-                                <p>🚑 {typeof assignment.ambulanceNumber === 'string' ? assignment.ambulanceNumber : '—'}</p>
-                                <p>👨‍✈️ {typeof assignment.driver === 'object' && assignment.driver ? `${assignment.driver.lastName}, ${assignment.driver.name}` : ''}</p>
-                                <p>🧑‍⚕️ {typeof assignment.medic === 'object' && assignment.medic ? `${assignment.medic.lastName}, ${assignment.medic.name}` : ''}</p>
+                                <p>
+                                  🕒 {assignment.startTime} -{" "}
+                                  {assignment.endTime}
+                                </p>
+                                <p>
+                                  🚑{" "}
+                                  {typeof assignment.ambulanceNumber ===
+                                  "string"
+                                    ? assignment.ambulanceNumber
+                                    : "—"}
+                                </p>
+                                <p>
+                                  👨‍✈️{" "}
+                                  {typeof assignment.driver === "object" &&
+                                  assignment.driver
+                                    ? `${assignment.driver.lastName}, ${assignment.driver.name}`
+                                    : ""}
+                                </p>
+                                <p>
+                                  🧑‍⚕️{" "}
+                                  {typeof assignment.medic === "object" &&
+                                  assignment.medic
+                                    ? `${assignment.medic.lastName}, ${assignment.medic.name}`
+                                    : ""}
+                                </p>
                               </div>
                             ) : (
-                              <p className="text-xs text-emerald-800 mt-1">🌴 {t("pages.diensts.workerPage.freeDay")}</p>
+                              <p className="text-xs text-emerald-800 mt-1">
+                                🌴 {t("pages.diensts.workerPage.freeDay")}
+                              </p>
                             )}
                           </button>
                         );

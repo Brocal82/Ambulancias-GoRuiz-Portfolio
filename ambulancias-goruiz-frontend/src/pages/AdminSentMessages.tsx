@@ -1,13 +1,13 @@
 // frontend/src/pages/AdminSentMessages.tsx
-import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { getSentMessages, deleteMessage } from '../api/messages';
-import type { Message } from '../types/message';
-import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
-import { toastT } from '../utils/toast';
-import { useTranslation } from 'react-i18next';
-import { getPublicUrl } from '../utils/url';
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { getSentMessages, deleteMessage } from "../api/messages";
+import type { Message } from "../types/message";
+import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
+import { toastT } from "../utils/toast";
+import { useTranslation } from "react-i18next";
+import { getPublicUrl } from "../utils/url";
 
 const AdminSentMessages = () => {
   const { token } = useAuth();
@@ -18,7 +18,7 @@ const AdminSentMessages = () => {
 
   // ⭐ Auto-scroll arriba al cargar la página
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   useEffect(() => {
@@ -28,7 +28,7 @@ const AdminSentMessages = () => {
         const sentMessages = await getSentMessages(token);
         setMessages(sentMessages);
       } catch (error) {
-        console.error('❌ Error al cargar mensajes enviados:', error);
+        console.error("❌ Error al cargar mensajes enviados:", error);
       }
     };
     fetchMessages();
@@ -38,13 +38,13 @@ const AdminSentMessages = () => {
   const sorted = useMemo(
     () =>
       [...messages].sort(
-        (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
+        (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime(),
       ),
-    [messages]
+    [messages],
   );
 
   const toggleMessage = useCallback((id: string) => {
-    setExpanded(prev => {
+    setExpanded((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -57,8 +57,8 @@ const AdminSentMessages = () => {
 
     if (
       !window.confirm(
-        t('pages.messages.sentPage.confirmDelete') ||
-        'Are you sure you want to delete this message?'
+        t("pages.messages.sentPage.confirmDelete") ||
+          "Are you sure you want to delete this message?",
       )
     ) {
       return;
@@ -66,17 +66,18 @@ const AdminSentMessages = () => {
 
     try {
       await deleteMessage(id, token);
-      setMessages(prev => prev.filter(m => m._id !== id));
-      setExpanded(prev => {
+      setMessages((prev) => prev.filter((m) => m._id !== id));
+      setExpanded((prev) => {
         const next = new Set(prev);
         next.delete(id);
         return next;
       });
-      toastT.success(t('pages.messages.sentPage.deleted') || 'Message deleted');
+      toastT.success(t("pages.messages.sentPage.deleted") || "Message deleted");
     } catch (error) {
-      console.error('❌ Error deleting message:', error);
+      console.error("❌ Error deleting message:", error);
       toastT.error(
-        t('pages.messages.sentPage.deleteError') || 'Error deleting the message'
+        t("pages.messages.sentPage.deleteError") ||
+          "Error deleting the message",
       );
     }
   };
@@ -86,12 +87,12 @@ const AdminSentMessages = () => {
       {/* Header */}
       <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl font-bold text-slate-800">
-          {t('pages.messages.sentPage.title')}
+          {t("pages.messages.sentPage.title")}
         </h1>
         <button
-  type="button"
-  onClick={() => navigate(-1)}
-  className="
+          type="button"
+          onClick={() => navigate(-1)}
+          className="
     inline-flex items-center gap-2
     px-3 py-1.5
     text-xs font-medium
@@ -102,19 +103,17 @@ const AdminSentMessages = () => {
     transition-colors duration-150
     focus:outline-none focus:ring-2 focus:ring-blue-300
   "
->
-  <span className="text-blue-500"></span>
-  {t('pages.messages.sentPage.actions.back')}
-</button>
-
-
+        >
+          <span className="text-blue-500"></span>
+          {t("pages.messages.sentPage.actions.back")}
+        </button>
       </div>
 
       {/* Lista de mensajes */}
       <div className="max-w-4xl mx-auto">
         {sorted.length === 0 ? (
           <p className="text-center text-slate-500 text-sm">
-            {t('pages.messages.sentPage.empty')}
+            {t("pages.messages.sentPage.empty")}
           </p>
         ) : (
           <ul className="space-y-3">
@@ -127,9 +126,11 @@ const AdminSentMessages = () => {
                 <li
                   key={msg._id}
                   className={[
-                    'relative rounded-xl ring-1 transition overflow-hidden bg-white',
-                    isOpen ? 'ring-slate-300 shadow-sm' : 'ring-slate-200 hover:ring-slate-300',
-                  ].join(' ')}
+                    "relative rounded-xl ring-1 transition overflow-hidden bg-white",
+                    isOpen
+                      ? "ring-slate-300 shadow-sm"
+                      : "ring-slate-200 hover:ring-slate-300",
+                  ].join(" ")}
                 >
                   {/* Cabecera clickable accesible – versión compacta */}
                   <button
@@ -142,8 +143,8 @@ const AdminSentMessages = () => {
                   >
                     {/* Fecha */}
                     <span className="text-xs text-slate-600">
-                      {t('pages.messages.sentPage.sentOn')}{' '}
-                      {format(new Date(msg.sentAt), 'dd/MM/yyyy HH:mm')}
+                      {t("pages.messages.sentPage.sentOn")}{" "}
+                      {format(new Date(msg.sentAt), "dd/MM/yyyy HH:mm")}
                     </span>
                     {/* Asunto */}
                     <span
@@ -155,9 +156,11 @@ const AdminSentMessages = () => {
                     {/* Chevron */}
                     <span
                       className={[
-                        'ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-sm transition-transform',
-                        isOpen ? 'rotate-180 text-blue-600' : 'rotate-0 text-slate-500',
-                      ].join(' ')}
+                        "ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-sm transition-transform",
+                        isOpen
+                          ? "rotate-180 text-blue-600"
+                          : "rotate-0 text-slate-500",
+                      ].join(" ")}
                       aria-hidden="true"
                     >
                       ▾
@@ -177,8 +180,14 @@ const AdminSentMessages = () => {
                       <button
                         onClick={() => handleDelete(msg._id)}
                         className="text-rose-600 hover:text-rose-700 font-bold text-lg leading-none transition"
-                        title={t('pages.messages.sentPage.actions.delete') || 'Delete message'}
-                        aria-label={t('pages.messages.sentPage.actions.delete') || 'Delete message'}
+                        title={
+                          t("pages.messages.sentPage.actions.delete") ||
+                          "Delete message"
+                        }
+                        aria-label={
+                          t("pages.messages.sentPage.actions.delete") ||
+                          "Delete message"
+                        }
                         type="button"
                       >
                         ×
@@ -194,7 +203,8 @@ const AdminSentMessages = () => {
                     {msg.attachments?.length ? (
                       <div className="mt-2">
                         <h3 className="text-xs font-medium text-slate-700">
-                          {t('pages.messages.sentPage.attachments') || 'Attachments'}
+                          {t("pages.messages.sentPage.attachments") ||
+                            "Attachments"}
                         </h3>
                         <ul className="mt-2 flex flex-wrap justify-start gap-2">
                           {msg.attachments.map((att) => (
@@ -204,7 +214,7 @@ const AdminSentMessages = () => {
                             >
                               <a
                                 href={`${getPublicUrl(att.url)}?v=${encodeURIComponent(
-                                  att.filename
+                                  att.filename,
                                 )}-${encodeURIComponent(msg.sentAt)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"

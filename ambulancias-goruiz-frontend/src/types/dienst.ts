@@ -1,11 +1,11 @@
 // frontend/src/types/dienst.ts
-import type { Ambulance } from './ambulance';
+import type { Ambulance } from "./ambulance";
 
 export interface UserRef {
   _id: string;
   name: string;
   lastName: string;
-  ambulanceRole?: 'driver' | 'medic' | 'both';
+  ambulanceRole?: "driver" | "medic" | "both";
   pscheinExpiry?: string;
 }
 
@@ -91,7 +91,7 @@ export interface DienstTemplate {
   _id: string;
   dienstNumber: number;
   startTime: string; // "HH:mm" (horario global por defecto)
-  endTime: string;   // "HH:mm"
+  endTime: string; // "HH:mm"
   daysOff: number[]; // 0=domingo, ..., 6=sábado
   isActive: boolean;
 

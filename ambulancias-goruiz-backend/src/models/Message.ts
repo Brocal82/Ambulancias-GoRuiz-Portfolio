@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface IMessage extends Document {
   subject: string;
@@ -22,12 +22,12 @@ export interface IMessage extends Document {
 const attachmentSchema = new Schema(
   {
     originalName: { type: String, required: true },
-    filename:     { type: String, required: true },
-    mimetype:     { type: String, required: true },
-    size:         { type: Number, required: true },
-    url:          { type: String, required: true }, // p.ej. /uploads/<filename>
+    filename: { type: String, required: true },
+    mimetype: { type: String, required: true },
+    size: { type: Number, required: true },
+    url: { type: String, required: true }, // p.ej. /uploads/<filename>
   },
-  { _id: false }
+  { _id: false },
 );
 
 const messageSchema = new Schema<IMessage>({
@@ -42,13 +42,13 @@ const messageSchema = new Schema<IMessage>({
   },
   sender: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     required: true,
   },
   recipients: [
     {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
   ],
@@ -59,13 +59,14 @@ const messageSchema = new Schema<IMessage>({
   readBy: [
     {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
     },
   ],
-  removedBy: [ // 👈 NUEVO: quién lo ha “eliminado” de su vista
+  removedBy: [
+    // 👈 NUEVO: quién lo ha “eliminado” de su vista
     {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       default: undefined,
     },
   ],
@@ -82,8 +83,8 @@ const messageSchema = new Schema<IMessage>({
 
 // Índices útiles
 messageSchema.index({ recipients: 1, sentAt: -1 }); // ✅ array + escalar (OK)
-messageSchema.index({ readBy: 1 });                 // ✅ un solo array (OK)
-messageSchema.index({ removedBy: 1 });              // ✅ un solo array (OK)
+messageSchema.index({ readBy: 1 }); // ✅ un solo array (OK)
+messageSchema.index({ removedBy: 1 }); // ✅ un solo array (OK)
 
-const Message = mongoose.model<IMessage>('Message', messageSchema);
+const Message = mongoose.model<IMessage>("Message", messageSchema);
 export default Message;

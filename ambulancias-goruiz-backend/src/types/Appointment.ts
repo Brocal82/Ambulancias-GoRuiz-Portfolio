@@ -1,12 +1,12 @@
 // backend/src/types/Appointment.ts
-import { Types } from 'mongoose';
+import { Types } from "mongoose";
 
 export type AppointmentStatus =
-  | 'pending'
-  | 'proposed'
-  | 'confirmed'
-  | 'cancelled'
-  | 'rescheduled';
+  | "pending"
+  | "proposed"
+  | "confirmed"
+  | "cancelled"
+  | "rescheduled";
 
 export interface TimeSlot {
   // Guardamos UTC; el cliente recibirá ISO.
@@ -18,10 +18,10 @@ export interface IAppointment {
   _id?: Types.ObjectId;
   workerId: Types.ObjectId;
   adminId?: Types.ObjectId; // quién gestiona/propone
-  reason: string;           // motivo corto
-  details: string;          // descripción larga
+  reason: string; // motivo corto
+  details: string; // descripción larga
   status: AppointmentStatus;
-  proposedSlots: TimeSlot[];      // máx 3, ordenados asc por start
+  proposedSlots: TimeSlot[]; // máx 3, ordenados asc por start
   selectedSlot?: TimeSlot | null; // debe pertenecer a proposedSlots al confirmar
   createdAt?: Date;
   updatedAt?: Date;

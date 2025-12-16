@@ -730,15 +730,7 @@
         "ariaOpenMonth": "Monat {{label}} {{year}} öffnen"
       },
       "calendar": {
-        "weekdayLabels": [
-          "M",
-          "D",
-          "M",
-          "D",
-          "F",
-          "S",
-          "S"
-        ],
+        "weekdayLabels": ["M", "D", "M", "D", "F", "S", "S"],
         "workerFallback": "Mitarbeiter",
         "dayAppointmentsTitle": "Termine des Tages",
         "noAppointments": "Keine Termine für diesen Tag.",

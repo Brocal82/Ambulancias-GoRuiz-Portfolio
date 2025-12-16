@@ -1,46 +1,57 @@
 // frontend/src/pages/AdminVacationsPage.tsx
-import { useEffect, useState, useCallback } from 'react';
-import type { IVacationRequest } from '../types/vacationRequest';
-import { getVacationRequests, updateVacationRequest, invalidateAvailabilityByRange, getVacationAvailability } from '../api/vacation';
-import AlternativeDateModal from '../components/vacation/AlternativeDateModal';
-import AdminVacationMonthGrid from '../components/vacation/AdminVacationMonthGrid';
-import AdminVacationMonthModal from '../components/vacation/AdminVacationMonthModal';
-import { useAuth } from '../hooks/useAuth';
-import { useTranslation } from 'react-i18next';
-import { toastT } from '../utils/toast';
-import StatusBadge from '../components/common/StatusBadge';
-
-
+import { useEffect, useState, useCallback } from "react";
+import type { IVacationRequest } from "../types/vacationRequest";
+import {
+  getVacationRequests,
+  updateVacationRequest,
+  invalidateAvailabilityByRange,
+  getVacationAvailability,
+} from "../api/vacation";
+import AlternativeDateModal from "../components/vacation/AlternativeDateModal";
+import AdminVacationMonthGrid from "../components/vacation/AdminVacationMonthGrid";
+import AdminVacationMonthModal from "../components/vacation/AdminVacationMonthModal";
+import { useAuth } from "../hooks/useAuth";
+import { useTranslation } from "react-i18next";
+import { toastT } from "../utils/toast";
+import StatusBadge from "../components/common/StatusBadge";
 
 // Nombre del evento global para refrescar el badge del Dashboard
-const ADMIN_VACATIONS_CHANGED_EVENT = 'admin-vacations-changed';
-const notifyVacationsChanged = () => window.dispatchEvent(new Event(ADMIN_VACATIONS_CHANGED_EVENT));
+const ADMIN_VACATIONS_CHANGED_EVENT = "admin-vacations-changed";
+const notifyVacationsChanged = () =>
+  window.dispatchEvent(new Event(ADMIN_VACATIONS_CHANGED_EVENT));
 
 // ✅ Helper mínimo para sincronizar Worker sin recargar (incluye fallback por storage)
-function emitVacationSync(payload: { id: string; status: 'accepted' | 'cancelled' | 'deleted'; ts?: number }) {
+function emitVacationSync(payload: {
+  id: string;
+  status: "accepted" | "cancelled" | "deleted";
+  ts?: number;
+}) {
   const detail = { ts: Date.now(), ...payload };
 
   // Misma pestaña
   try {
-    window.dispatchEvent(new CustomEvent('vacation-requests-updated', { detail }));
-  } catch { }
+    window.dispatchEvent(
+      new CustomEvent("vacation-requests-updated", { detail }),
+    );
+  } catch {}
 
   // Otras pestañas/ventanas (canal dedicado)
   try {
-    const bc = new BroadcastChannel('vacations');
-    bc.postMessage({ type: 'requests-updated', ...detail });
+    const bc = new BroadcastChannel("vacations");
+    bc.postMessage({ type: "requests-updated", ...detail });
     bc.close?.();
-  } catch { }
+  } catch {}
 
   // 🔁 Fallback universal: dispara evento 'storage' en otras pestañas
   try {
-    localStorage.setItem('__vac_req_upd__', JSON.stringify(detail));
+    localStorage.setItem("__vac_req_upd__", JSON.stringify(detail));
     setTimeout(() => {
-      try { localStorage.removeItem('__vac_req_upd__'); } catch { }
+      try {
+        localStorage.removeItem("__vac_req_upd__");
+      } catch {}
     }, 500);
-  } catch { }
+  } catch {}
 }
-
 
 const AdminVacationRequests = () => {
   const { token } = useAuth();
@@ -48,7 +59,7 @@ const AdminVacationRequests = () => {
 
   const [requests, setRequests] = useState<IVacationRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // ====== Estado del grid de meses (con año navegable) ======
   const [gridYear, setGridYear] = useState<number>(new Date().getFullYear());
@@ -64,24 +75,31 @@ const AdminVacationRequests = () => {
   const forceRefreshMonth = useCallback(async (y: number, m1: number) => {
     try {
       await getVacationAvailability({ year: y, month: m1 }, { force: true });
-    } catch { }
+    } catch {}
     setGridRefreshTick((n) => n + 1);
   }, []);
-
 
   // ====== Estado para AlternativeDateModal existente ======
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
-  const [modalInitialStartDate, setModalInitialStartDate] = useState<Date>(new Date());
-  const [modalInitialEndDate, setModalInitialEndDate] = useState<Date>(new Date());
-  const [cancelingRequestId, setCancelingRequestId] = useState<string | null>(null);
-  const [cancelMessage, setCancelMessage] = useState('');
+  const [modalInitialStartDate, setModalInitialStartDate] = useState<Date>(
+    new Date(),
+  );
+  const [modalInitialEndDate, setModalInitialEndDate] = useState<Date>(
+    new Date(),
+  );
+  const [cancelingRequestId, setCancelingRequestId] = useState<string | null>(
+    null,
+  );
+  const [cancelMessage, setCancelMessage] = useState("");
   const [isSendingCancel, setIsSendingCancel] = useState(false);
 
-
-
   const locale =
-    i18n.language === 'de' ? 'de-DE' : i18n.language === 'en' ? 'en-US' : 'es-ES';
+    i18n.language === "de"
+      ? "de-DE"
+      : i18n.language === "en"
+        ? "en-US"
+        : "es-ES";
 
   const fetchRequests = async () => {
     if (!token) return;
@@ -89,9 +107,9 @@ const AdminVacationRequests = () => {
     try {
       const data = await getVacationRequests(token);
       setRequests(data);
-      setError('');
+      setError("");
     } catch {
-      const msgKey = 'toasts.vacations.admin.loadError';
+      const msgKey = "toasts.vacations.admin.loadError";
       setError(t(msgKey));
       toastT.error([msgKey]);
     } finally {
@@ -107,7 +125,10 @@ const AdminVacationRequests = () => {
   // 🔔 NUEVO: escuchar “request creada/actualizada” desde cualquier pestaña y refrescar lista
   useEffect(() => {
     const onCustom = () => fetchRequests();
-    window.addEventListener('vacation-requests-updated', onCustom as EventListener);
+    window.addEventListener(
+      "vacation-requests-updated",
+      onCustom as EventListener,
+    );
 
     // BroadcastChannel
     let bc: BroadcastChannel | null = null;
@@ -115,29 +136,34 @@ const AdminVacationRequests = () => {
       const BC = (window as any).BroadcastChannel as
         | (new (name: string) => BroadcastChannel)
         | undefined;
-      if (typeof BC === 'function') {
-        bc = new BC('vacations');
+      if (typeof BC === "function") {
+        bc = new BC("vacations");
         bc.onmessage = (msg: MessageEvent) => {
           const data = msg.data || {};
-          if (data?.type === 'requests-updated') {
+          if (data?.type === "requests-updated") {
             fetchRequests();
           }
         };
       }
-    } catch { }
+    } catch {}
 
     // Fallback: storage
     const onStorage = (ev: StorageEvent) => {
-      if (ev.key === '__vac_req_upd__' && ev.newValue) {
+      if (ev.key === "__vac_req_upd__" && ev.newValue) {
         fetchRequests();
       }
     };
-    window.addEventListener('storage', onStorage);
+    window.addEventListener("storage", onStorage);
 
     return () => {
-      window.removeEventListener('vacation-requests-updated', onCustom as EventListener);
-      window.removeEventListener('storage', onStorage);
-      try { bc?.close?.(); } catch { }
+      window.removeEventListener(
+        "vacation-requests-updated",
+        onCustom as EventListener,
+      );
+      window.removeEventListener("storage", onStorage);
+      try {
+        bc?.close?.();
+      } catch {}
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -151,10 +177,16 @@ const AdminVacationRequests = () => {
 
     // Misma pestaña (CustomEvent)
     const onCustom = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { year?: number; month?: number };
+      const detail = (e as CustomEvent).detail as {
+        year?: number;
+        month?: number;
+      };
       if (detail?.year && detail?.month) schedule(detail.year, detail.month);
     };
-    window.addEventListener('vacation-availability-invalidated', onCustom as EventListener);
+    window.addEventListener(
+      "vacation-availability-invalidated",
+      onCustom as EventListener,
+    );
 
     // BroadcastChannel entre pestañas/ventanas
     let bc: BroadcastChannel | null = null;
@@ -162,31 +194,41 @@ const AdminVacationRequests = () => {
       const BC = (window as any).BroadcastChannel as
         | (new (name: string) => BroadcastChannel)
         | undefined;
-      if (typeof BC === 'function') {
-        bc = new BC('vacations');
+      if (typeof BC === "function") {
+        bc = new BC("vacations");
         bc.onmessage = (msg: MessageEvent) => {
           const data = msg.data || {};
-          if (data?.type === 'availability-invalidated' && data.year && data.month) {
+          if (
+            data?.type === "availability-invalidated" &&
+            data.year &&
+            data.month
+          ) {
             schedule(data.year, data.month);
           }
         };
       }
-    } catch { }
+    } catch {}
 
     // Fallback universal: evento 'storage'
     const onStorage = (ev: StorageEvent) => {
-      if (ev.key !== '__vac_av_inval__' || !ev.newValue) return;
+      if (ev.key !== "__vac_av_inval__" || !ev.newValue) return;
       try {
         const payload = JSON.parse(ev.newValue);
-        if (payload?.year && payload?.month) schedule(payload.year, payload.month);
-      } catch { }
+        if (payload?.year && payload?.month)
+          schedule(payload.year, payload.month);
+      } catch {}
     };
-    window.addEventListener('storage', onStorage);
+    window.addEventListener("storage", onStorage);
 
     return () => {
-      window.removeEventListener('vacation-availability-invalidated', onCustom as EventListener);
-      window.removeEventListener('storage', onStorage);
-      try { bc?.close?.(); } catch { }
+      window.removeEventListener(
+        "vacation-availability-invalidated",
+        onCustom as EventListener,
+      );
+      window.removeEventListener("storage", onStorage);
+      try {
+        bc?.close?.();
+      } catch {}
     };
   }, [forceRefreshMonth]);
 
@@ -196,72 +238,68 @@ const AdminVacationRequests = () => {
     s.setHours(0, 0, 0, 0);
     e.setHours(0, 0, 0, 0);
     const diff = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
-    return Number.isNaN(diff) ? '—' : Math.max(diff, 1);
+    return Number.isNaN(diff) ? "—" : Math.max(diff, 1);
   };
 
-
-  type VacationStatus = 'pending' | 'accepted' | 'cancelled' | 'option_sent';
+  type VacationStatus = "pending" | "accepted" | "cancelled" | "option_sent";
 
   // Mostrar solo las solicitudes que requieren acción (pendientes u opción enviada)
   const actionableRequests = requests.filter(
-    (r) => r.status === 'pending' || r.status === 'option_sent'
+    (r) => r.status === "pending" || r.status === "option_sent",
   );
 
   const handleUpdateStatus = async (id: string, status: VacationStatus) => {
     if (!token) return;
 
     // Para 'accepted' hacemos manejo manual para interceptar 409 (capacidad)
-    if (status === 'accepted') {
+    if (status === "accepted") {
       try {
         await updateVacationRequest(token, id, { status });
 
         // 🟢 Invalidar disponibilidad en vivo (cambia capacidad)
-        const req = requests.find(r => r._id === id);
+        const req = requests.find((r) => r._id === id);
         if (req) {
           invalidateAvailabilityByRange(req.startDate, req.endDate);
         }
 
         // 🔔 Sync Worker y Dashboard
-        emitVacationSync({ id, status: 'accepted' });
+        emitVacationSync({ id, status: "accepted" });
         notifyVacationsChanged();
 
         // ✅ Toast de éxito + refresco
-        toastT.success(['toasts.vacations.admin.accepted']);
+        toastT.success(["toasts.vacations.admin.accepted"]);
         fetchRequests();
       } catch (e: any) {
         // Capacidad excedida (bloquear tercer aceptado)
-        if (e?.status === 409 && e?.body?.code === 'capacity_exceeded') {
-          toastT.error(['toasts.vacations.admin.capacityExceeded']);
+        if (e?.status === 409 && e?.body?.code === "capacity_exceeded") {
+          toastT.error(["toasts.vacations.admin.capacityExceeded"]);
           return;
         }
         // Otros errores
-        toastT.error(['toasts.vacations.admin.error']);
+        toastT.error(["toasts.vacations.admin.error"]);
       }
       return;
     }
 
     // Para 'cancelled' y otros estados mantenemos toastT.promise
     const successMsg =
-      status === 'cancelled'
-        ? (['toasts.vacations.admin.cancelled'] as const)
-        : (['toasts.vacations.admin.updated'] as const);
+      status === "cancelled"
+        ? (["toasts.vacations.admin.cancelled"] as const)
+        : (["toasts.vacations.admin.updated"] as const);
 
     try {
-      await toastT.promise(
-        updateVacationRequest(token, id, { status }),
-        {
-          pending: ['toasts.vacations.admin.updating'],
-          success: successMsg,
-          error: ['toasts.vacations.admin.error'],
-        }
-      );
+      await toastT.promise(updateVacationRequest(token, id, { status }), {
+        pending: ["toasts.vacations.admin.updating"],
+        success: successMsg,
+        error: ["toasts.vacations.admin.error"],
+      });
 
-      if (status === 'cancelled') {
-        const req = requests.find(r => r._id === id);
+      if (status === "cancelled") {
+        const req = requests.find((r) => r._id === id);
         if (req) {
           invalidateAvailabilityByRange(req.startDate, req.endDate);
         }
-        emitVacationSync({ id, status: 'cancelled' });
+        emitVacationSync({ id, status: "cancelled" });
       }
 
       notifyVacationsChanged();
@@ -271,27 +309,26 @@ const AdminVacationRequests = () => {
     }
   };
 
-
   const handleSendAlternativeOption = async (
     id: string,
     adminOptionStartDate: string,
     adminOptionEndDate: string,
-    adminNote: string
+    adminNote: string,
   ) => {
     if (!token) return;
     try {
       await toastT.promise(
         updateVacationRequest(token, id, {
-          status: 'option_sent',
+          status: "option_sent",
           adminOptionStartDate,
           adminOptionEndDate,
           adminNote,
         }),
         {
-          pending: ['toasts.vacations.admin.sendingAlt'],
-          success: ['toasts.vacations.admin.altSent'],
-          error: ['toasts.vacations.admin.error'],
-        }
+          pending: ["toasts.vacations.admin.sendingAlt"],
+          success: ["toasts.vacations.admin.altSent"],
+          error: ["toasts.vacations.admin.error"],
+        },
       );
 
       // ⚠️ option_sent no cambia capacidad ni estado final del worker → NO emitir
@@ -311,27 +348,27 @@ const AdminVacationRequests = () => {
     try {
       await toastT.promise(
         updateVacationRequest(token, id, {
-          status: 'cancelled',
+          status: "cancelled",
           adminNote: cancelMessage,
         }),
         {
-          pending: ['toasts.vacations.admin.cancelling'],
-          success: ['toasts.vacations.admin.cancelled'],
-          error: ['toasts.vacations.admin.error'],
-        }
+          pending: ["toasts.vacations.admin.cancelling"],
+          success: ["toasts.vacations.admin.cancelled"],
+          error: ["toasts.vacations.admin.error"],
+        },
       );
 
       // 🟢 Invalidar disponibilidad en vivo tras cancelar (libera cupo)
-      const req = requests.find(r => r._id === id);
+      const req = requests.find((r) => r._id === id);
       if (req) {
         invalidateAvailabilityByRange(req.startDate, req.endDate);
       }
 
       // 🔔 Emitir sincronización a Worker
-      emitVacationSync({ id, status: 'cancelled' });
+      emitVacationSync({ id, status: "cancelled" });
 
       setCancelingRequestId(null);
-      setCancelMessage('');
+      setCancelMessage("");
 
       // 🔔 Notificar al Dashboard
       notifyVacationsChanged();
@@ -344,7 +381,11 @@ const AdminVacationRequests = () => {
     }
   };
 
-  const openAlternativeModal = async (reqId: string, startDate: string, endDate: string) => {
+  const openAlternativeModal = async (
+    reqId: string,
+    startDate: string,
+    endDate: string,
+  ) => {
     setCurrentRequestId(reqId);
 
     const s = new Date(startDate);
@@ -352,20 +393,15 @@ const AdminVacationRequests = () => {
     setModalInitialStartDate(s);
     setModalInitialEndDate(e);
 
-
-
-
-
     setIsModalOpen(true);
   };
-
 
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6">
         <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900 mb-4">
-            {t('pages.vacations.adminPage.title')}
+            {t("pages.vacations.adminPage.title")}
           </h2>
 
           {/* Bloque con borde (selector año + leyenda + grid) — h2 queda fuera */}
@@ -382,7 +418,6 @@ const AdminVacationRequests = () => {
             />
           </div>
 
-
           {/* Modal del mes (abre con mes + AÑO correctos) */}
           <AdminVacationMonthModal
             isOpen={selectedMonth !== null}
@@ -395,7 +430,9 @@ const AdminVacationRequests = () => {
 
           {/* Estados */}
           {loading && (
-            <p className="mt-2 text-sm text-gray-500">{t('pages.vacations.adminPage.loading')}</p>
+            <p className="mt-2 text-sm text-gray-500">
+              {t("pages.vacations.adminPage.loading")}
+            </p>
           )}
 
           {!loading && error && (
@@ -404,7 +441,7 @@ const AdminVacationRequests = () => {
 
           {!loading && !error && actionableRequests.length === 0 && (
             <p className="mt-2 text-sm text-gray-600">
-              {t('pages.vacations.adminPage.empty')}
+              {t("pages.vacations.adminPage.empty")}
             </p>
           )}
 
@@ -423,19 +460,19 @@ const AdminVacationRequests = () => {
                 <thead className="sticky top-0 bg-slate-50 z-10">
                   <tr className="text-slate-600 border-b border-slate-200">
                     <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                      {t('pages.vacations.adminPage.table.user')}
+                      {t("pages.vacations.adminPage.table.user")}
                     </th>
                     <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                      {t('pages.vacations.adminPage.table.dates', 'Fechas')}
+                      {t("pages.vacations.adminPage.table.dates", "Fechas")}
                     </th>
                     <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                      {t('pages.vacations.adminPage.table.days', 'Días')}
+                      {t("pages.vacations.adminPage.table.days", "Días")}
                     </th>
                     <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                      {t('pages.vacations.adminPage.table.status')}
+                      {t("pages.vacations.adminPage.table.status")}
                     </th>
                     <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                      {t('pages.vacations.adminPage.table.actions')}
+                      {t("pages.vacations.adminPage.table.actions")}
                     </th>
                   </tr>
                 </thead>
@@ -457,7 +494,10 @@ const AdminVacationRequests = () => {
                             </div>
                           ) : (
                             <span className="text-xs text-red-500">
-                              {t('pages.vacations.adminPage.userMissing', 'Usuario no disponible')}
+                              {t(
+                                "pages.vacations.adminPage.userMissing",
+                                "Usuario no disponible",
+                              )}
                             </span>
                           )}
                         </td>
@@ -465,9 +505,14 @@ const AdminVacationRequests = () => {
                         {/* Fechas */}
                         <td className="px-3 py-2 align-top">
                           <div className="text-slate-800 whitespace-nowrap">
-                            {new Date(req.startDate).toLocaleDateString(locale, { timeZone: 'Europe/Berlin' })}
-                            {' — '}
-                            {new Date(req.endDate).toLocaleDateString(locale, { timeZone: 'Europe/Berlin' })}
+                            {new Date(req.startDate).toLocaleDateString(
+                              locale,
+                              { timeZone: "Europe/Berlin" },
+                            )}
+                            {" — "}
+                            {new Date(req.endDate).toLocaleDateString(locale, {
+                              timeZone: "Europe/Berlin",
+                            })}
                           </div>
                         </td>
 
@@ -481,7 +526,9 @@ const AdminVacationRequests = () => {
                           <StatusBadge
                             context="vacation"
                             status={req.status}
-                            label={t(`pages.vacations.adminPage.status.${req.status}`)}
+                            label={t(
+                              `pages.vacations.adminPage.status.${req.status}`,
+                            )}
                           />
                         </td>
 
@@ -491,9 +538,13 @@ const AdminVacationRequests = () => {
                             <div className="flex flex-col items-center space-y-2">
                               <textarea
                                 className="border rounded-xl p-2 w-64 ring-1 ring-slate-200 text-sm"
-                                placeholder={t('pages.vacations.adminPage.actions.cancelMessagePlaceholder')}
+                                placeholder={t(
+                                  "pages.vacations.adminPage.actions.cancelMessagePlaceholder",
+                                )}
                                 value={cancelMessage}
-                                onChange={(e) => setCancelMessage(e.target.value)}
+                                onChange={(e) =>
+                                  setCancelMessage(e.target.value)
+                                }
                               />
                               <div className="flex space-x-2">
                                 <button
@@ -502,31 +553,41 @@ const AdminVacationRequests = () => {
                                   onClick={() => handleConfirmCancel(req._id)}
                                 >
                                   {isSendingCancel
-                                    ? t('pages.vacations.adminPage.actions.sending')
-                                    : t('pages.vacations.adminPage.actions.confirm')}
+                                    ? t(
+                                        "pages.vacations.adminPage.actions.sending",
+                                      )
+                                    : t(
+                                        "pages.vacations.adminPage.actions.confirm",
+                                      )}
                                 </button>
                                 <button
                                   className="inline-flex items-center justify-center rounded-full bg-gray-200 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-gray-300 focus:ring-4 focus:ring-gray-100"
                                   disabled={isSendingCancel}
                                   onClick={() => {
                                     setCancelingRequestId(null);
-                                    setCancelMessage('');
+                                    setCancelMessage("");
                                   }}
                                 >
-                                  {t('pages.vacations.adminPage.actions.cancel')}
+                                  {t(
+                                    "pages.vacations.adminPage.actions.cancel",
+                                  )}
                                 </button>
                               </div>
                             </div>
                           ) : (
                             <div className="flex flex-wrap justify-center gap-2">
-                              {req.status === 'pending' && (
+                              {req.status === "pending" && (
                                 <>
                                   {/* ✅ ACEPTAR */}
                                   <button
                                     type="button"
-                                    onClick={() => handleUpdateStatus(req._id, 'accepted')}
+                                    onClick={() =>
+                                      handleUpdateStatus(req._id, "accepted")
+                                    }
                                     className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-sm shadow-sm hover:bg-emerald-100 focus:outline-none focus:ring-4 focus:ring-emerald-100 text-white"
-                                    title={t('pages.vacations.adminPage.actions.accept')}
+                                    title={t(
+                                      "pages.vacations.adminPage.actions.accept",
+                                    )}
                                   >
                                     ✅
                                   </button>
@@ -534,9 +595,17 @@ const AdminVacationRequests = () => {
                                   {/* 🔄 OPCIÓN ALTERNATIVA */}
                                   <button
                                     type="button"
-                                    onClick={() => openAlternativeModal(req._id, req.startDate, req.endDate)}
+                                    onClick={() =>
+                                      openAlternativeModal(
+                                        req._id,
+                                        req.startDate,
+                                        req.endDate,
+                                      )
+                                    }
                                     className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-sm shadow-sm hover:bg-indigo-100 focus:outline-none focus:ring-4 focus:ring-indigo-100 text-white"
-                                    title={t('pages.vacations.adminPage.actions.altOption')}
+                                    title={t(
+                                      "pages.vacations.adminPage.actions.altOption",
+                                    )}
                                   >
                                     🔄
                                   </button>
@@ -544,9 +613,13 @@ const AdminVacationRequests = () => {
                                   {/* ❌ CANCELAR (abre textarea) */}
                                   <button
                                     type="button"
-                                    onClick={() => setCancelingRequestId(req._id)}
+                                    onClick={() =>
+                                      setCancelingRequestId(req._id)
+                                    }
                                     className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-sm shadow-sm hover:bg-rose-100 focus:outline-none focus:ring-4 focus:ring-rose-100 text-white"
-                                    title={t('pages.vacations.adminPage.actions.cancel')}
+                                    title={t(
+                                      "pages.vacations.adminPage.actions.cancel",
+                                    )}
                                   >
                                     ❌
                                   </button>
@@ -554,11 +627,10 @@ const AdminVacationRequests = () => {
                               )}
 
                               {/* Para option_sent no mostramos acciones: está esperando respuesta del trabajador */}
-                              {req.status === 'option_sent' && null}
+                              {req.status === "option_sent" && null}
                             </div>
                           )}
                         </td>
-
                       </tr>
                     );
                   })}
@@ -566,7 +638,6 @@ const AdminVacationRequests = () => {
               </table>
             </div>
           )}
-
 
           {/* AlternativeDateModal */}
           <AlternativeDateModal
@@ -576,13 +647,16 @@ const AdminVacationRequests = () => {
             initialEndDate={modalInitialEndDate}
             onSubmit={(altStart, altEnd, note) => {
               if (currentRequestId) {
-                handleSendAlternativeOption(currentRequestId, altStart, altEnd, note);
+                handleSendAlternativeOption(
+                  currentRequestId,
+                  altStart,
+                  altEnd,
+                  note,
+                );
               }
               setIsModalOpen(false);
             }}
           />
-
-
         </div>
       </div>
     </div>

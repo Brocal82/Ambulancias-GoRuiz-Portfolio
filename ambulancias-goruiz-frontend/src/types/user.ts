@@ -1,6 +1,6 @@
 // frontend/src/types/user.ts
-export type AmbulanceRole = 'driver' | 'medic' | 'both';
-export type AppRole = 'admin' | 'worker';
+export type AmbulanceRole = "driver" | "medic" | "both";
+export type AppRole = "admin" | "worker";
 
 export interface User {
   _id: string;
@@ -19,8 +19,6 @@ export interface User {
   onLeave?: boolean;
   onVacation?: boolean;
 
-  rotationMode?: 'rotating' | 'fixed' | 'none';
+  rotationMode?: "rotating" | "fixed" | "none";
   fixedDienstNumber?: number | null;
 }
-
-

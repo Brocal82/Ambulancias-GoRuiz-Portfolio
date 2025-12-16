@@ -1,9 +1,9 @@
 //frontend/src/components/common/TeamPicker.tsx
-import { useEffect, useMemo, useState, useId } from 'react';
-import { useAuth } from '../../hooks/useAuth';
-import { useTranslation } from 'react-i18next';
-import { getAllUsers } from '../../api/users';
-import { getPscheinInfo } from '../../utils/pscheinUtils';
+import { useEffect, useMemo, useState, useId } from "react";
+import { useAuth } from "../../hooks/useAuth";
+import { useTranslation } from "react-i18next";
+import { getAllUsers } from "../../api/users";
+import { getPscheinInfo } from "../../utils/pscheinUtils";
 
 export type TeamPickerValue = { driver: string; medic: string };
 
@@ -11,7 +11,7 @@ type UserLite = {
   _id: string;
   name: string;
   lastName: string;
-  ambulanceRole?: 'driver' | 'medic' | 'both';
+  ambulanceRole?: "driver" | "medic" | "both";
   pscheinExpiry?: string | null; // ⬅️ añadimos para poder aplicar la lógica
 };
 
@@ -25,7 +25,11 @@ interface TeamPickerProps {
    */
 }
 
-export default function TeamPicker({ value, onChange, disabled }: TeamPickerProps) {
+export default function TeamPicker({
+  value,
+  onChange,
+  disabled,
+}: TeamPickerProps) {
   const { token } = useAuth();
   const { t } = useTranslation();
 
@@ -43,11 +47,11 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
         setLoading(true);
         const all = await getAllUsers(token);
         const sorted = [...(all as UserLite[])].sort((a, b) =>
-          (a.lastName || '').localeCompare(b.lastName || '', 'es')
+          (a.lastName || "").localeCompare(b.lastName || "", "es"),
         );
         setUsers(sorted);
       } catch (e) {
-        console.error('Error cargando usuarios:', e);
+        console.error("Error cargando usuarios:", e);
       } finally {
         setLoading(false);
       }
@@ -55,12 +59,15 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
   }, [token]);
 
   const baseLabel = (u: UserLite) =>
-    `${u.lastName || ''}${u.lastName ? ', ' : ''}${u.name || ''}` || '—';
+    `${u.lastName || ""}${u.lastName ? ", " : ""}${u.name || ""}` || "—";
 
   // === DRIVER OPTIONS ===
   const rawDriver = useMemo(
-    () => users.filter(u => u.ambulanceRole === 'driver' || u.ambulanceRole === 'both'),
-    [users]
+    () =>
+      users.filter(
+        (u) => u.ambulanceRole === "driver" || u.ambulanceRole === "both",
+      ),
+    [users],
   );
 
   const driverOptions = useMemo(() => {
@@ -70,13 +77,13 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
       let label = base;
       let isDisabled = false;
 
-      if (ps.status === 'expired') {
-        label = `${base} — ${t('pages.diensts.adminPage.driverPscheinExpiredLabel', 'P-Schein caducado')}`;
+      if (ps.status === "expired") {
+        label = `${base} — ${t("pages.diensts.adminPage.driverPscheinExpiredLabel", "P-Schein caducado")}`;
         isDisabled = true;
-      } else if (ps.status === 'warning') {
+      } else if (ps.status === "warning") {
         // ⚠️ Texto desde i18n con months
         const months = ps.monthsLeft ?? 0;
-        const warningText = t('pages.diensts.adminPage.driverPscheinWarning', {
+        const warningText = t("pages.diensts.adminPage.driverPscheinWarning", {
           months,
         }) as string;
         label = `${base} — ${warningText}`;
@@ -91,30 +98,32 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
         id: u._id,
         label,
         disabled: isDisabled,
-        sortKey: `${u.lastName || ''} ${u.name || ''}`.toLowerCase(),
+        sortKey: `${u.lastName || ""} ${u.name || ""}`.toLowerCase(),
       };
     });
 
     // Habilitados primero, luego alfabético
     return opts.sort((a, b) => {
       if (+a.disabled !== +b.disabled) return +a.disabled - +b.disabled;
-      return a.sortKey.localeCompare(b.sortKey, 'es');
+      return a.sortKey.localeCompare(b.sortKey, "es");
     });
   }, [rawDriver, value.medic, t]);
 
   // === MEDIC OPTIONS ===
   const medicOptions = useMemo(() => {
-    const raw = users.filter(u => u.ambulanceRole === 'medic' || u.ambulanceRole === 'both');
+    const raw = users.filter(
+      (u) => u.ambulanceRole === "medic" || u.ambulanceRole === "both",
+    );
     const opts = raw.map((u) => ({
       id: u._id,
       label: baseLabel(u),
       disabled: !!value.driver && value.driver === u._id,
-      sortKey: `${u.lastName || ''} ${u.name || ''}`.toLowerCase(),
+      sortKey: `${u.lastName || ""} ${u.name || ""}`.toLowerCase(),
     }));
 
     return opts.sort((a, b) => {
       if (+a.disabled !== +b.disabled) return +a.disabled - +b.disabled;
-      return a.sortKey.localeCompare(b.sortKey, 'es');
+      return a.sortKey.localeCompare(b.sortKey, "es");
     });
   }, [users, value.driver]);
 
@@ -122,7 +131,7 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
     <div className="space-y-3">
       {loading && (
         <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200">
-          {t('common.loading', 'Cargando...')}
+          {t("common.loading", "Cargando...")}
         </div>
       )}
 
@@ -132,7 +141,7 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
           htmlFor={driverSelectId}
           className="block text-sm font-medium text-slate-700"
         >
-          {t('pages.adminTeams.modal.driver', 'Conductor')}
+          {t("pages.adminTeams.modal.driver", "Conductor")}
         </label>
         <select
           id={driverSelectId}
@@ -142,7 +151,7 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
           value={value.driver}
           onChange={(e) => onChange({ ...value, driver: e.target.value })}
         >
-          <option value="">{t('common.select', 'Selecciona')}</option>
+          <option value="">{t("common.select", "Selecciona")}</option>
           {driverOptions.map((opt) => (
             <option key={opt.id} value={opt.id} disabled={opt.disabled}>
               {opt.label}
@@ -150,8 +159,8 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
           ))}
         </select>
         <p className="mt-1 text-[11px] text-slate-500">
-          ❌ {t('pages.diensts.adminPage.legendExpired', 'P-Schein caducado')} ·{' '}
-          🚫 {t('pages.diensts.adminPage.legendCantDrive', 'No puede conducir')}
+          ❌ {t("pages.diensts.adminPage.legendExpired", "P-Schein caducado")} ·{" "}
+          🚫 {t("pages.diensts.adminPage.legendCantDrive", "No puede conducir")}
         </p>
       </div>
 
@@ -161,7 +170,7 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
           htmlFor={medicSelectId}
           className="block text-sm font-medium text-slate-700"
         >
-          {t('pages.adminTeams.modal.medic', 'Sanitario')}
+          {t("pages.adminTeams.modal.medic", "Sanitario")}
         </label>
         <select
           id={medicSelectId}
@@ -171,7 +180,7 @@ export default function TeamPicker({ value, onChange, disabled }: TeamPickerProp
           value={value.medic}
           onChange={(e) => onChange({ ...value, medic: e.target.value })}
         >
-          <option value="">{t('common.select', 'Selecciona')}</option>
+          <option value="">{t("common.select", "Selecciona")}</option>
           {medicOptions.map((opt) => (
             <option key={opt.id} value={opt.id} disabled={opt.disabled}>
               {opt.label}

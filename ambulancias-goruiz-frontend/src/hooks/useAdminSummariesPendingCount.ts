@@ -1,7 +1,7 @@
 // frontend/src/hooks/useAdminSummariesPendingCount.ts
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { getSummariesPendingCount } from '../api/workdaySummary';
-import { useAuth } from '../hooks/useAuth'; // named export
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getSummariesPendingCount } from "../api/workdaySummary";
+import { useAuth } from "../hooks/useAuth"; // named export
 
 type Options = {
   /** Intervalo de refresco en ms. 0 = sin polling (por defecto). */
@@ -16,7 +16,7 @@ type State = {
 };
 
 // 🔔 Exporta el nombre del evento para poder reutilizarlo donde quieras
-export const ADMIN_SUMMARIES_CHANGED_EVENT = 'admin-summaries-changed';
+export const ADMIN_SUMMARIES_CHANGED_EVENT = "admin-summaries-changed";
 
 export default function useAdminSummariesPendingCount(options: Options = {}) {
   const { pollMs = 0 } = options;
@@ -36,13 +36,18 @@ export default function useAdminSummariesPendingCount(options: Options = {}) {
 
   const fetchCount = useCallback(async () => {
     if (!token) {
-      setState((s) => ({ ...s, isLoading: false, isError: false, error: undefined }));
+      setState((s) => ({
+        ...s,
+        isLoading: false,
+        isError: false,
+        error: undefined,
+      }));
       return;
     }
     // Loading discreto: sólo mostramos loading si aún no tenemos dato
     setState((s) => ({ ...s, isLoading: s.count === 0 }));
     try {
-      const count = await getSummariesPendingCount(token, 'pending');
+      const count = await getSummariesPendingCount(token, "pending");
       if (!mountedRef.current) return;
       setState({ count, isLoading: false, isError: false, error: undefined });
     } catch (err: any) {
@@ -51,10 +56,12 @@ export default function useAdminSummariesPendingCount(options: Options = {}) {
         ...s,
         isLoading: false,
         isError: true,
-        error: err?.message ?? 'Error al obtener el contador de resúmenes pendientes',
+        error:
+          err?.message ??
+          "Error al obtener el contador de resúmenes pendientes",
       }));
       // eslint-disable-next-line no-console
-      console.warn('[useAdminSummariesPendingCount]', err);
+      console.warn("[useAdminSummariesPendingCount]", err);
     }
   }, [token]);
 
@@ -74,25 +81,31 @@ export default function useAdminSummariesPendingCount(options: Options = {}) {
   // Refresco al volver a foco
   useEffect(() => {
     const onFocus = () => refresh();
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, [refresh]);
 
   // Refresco al recuperar visibilidad
   useEffect(() => {
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') refresh();
+      if (document.visibilityState === "visible") refresh();
     };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [refresh]);
 
   // Refresco por evento global: window.dispatchEvent(new Event('admin-summaries-changed'))
   useEffect(() => {
     const onChanged = () => refresh();
-    window.addEventListener(ADMIN_SUMMARIES_CHANGED_EVENT as any, onChanged as EventListener);
+    window.addEventListener(
+      ADMIN_SUMMARIES_CHANGED_EVENT as any,
+      onChanged as EventListener,
+    );
     return () =>
-      window.removeEventListener(ADMIN_SUMMARIES_CHANGED_EVENT as any, onChanged as EventListener);
+      window.removeEventListener(
+        ADMIN_SUMMARIES_CHANGED_EVENT as any,
+        onChanged as EventListener,
+      );
   }, [refresh]);
 
   // Polling opcional

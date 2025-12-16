@@ -1,18 +1,25 @@
 // src/components/vacation/VacationRequestForm.tsx
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DateRange } from 'react-date-range';
-import type { RangeKeyDict } from 'react-date-range';
-import { startOfDay } from 'date-fns';
-import 'react-date-range/dist/styles.css';
-import 'react-date-range/dist/theme/default.css';
-import { useAuth } from '../../hooks/useAuth';
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { DateRange } from "react-date-range";
+import type { RangeKeyDict } from "react-date-range";
+import { startOfDay } from "date-fns";
+import "react-date-range/dist/styles.css";
+import "react-date-range/dist/theme/default.css";
+import { useAuth } from "../../hooks/useAuth";
 import {
   createVacationRequest,
   getVacationAvailability,
   type VacationAvailabilityResponse,
-} from '../../api/vacation';
-import { useTranslation } from 'react-i18next';
-import { es as dfEs, de as dfDe, enGB as dfEnGB } from 'date-fns/locale';
+} from "../../api/vacation";
+import { useTranslation } from "react-i18next";
+import { es as dfEs, de as dfDe, enGB as dfEnGB } from "date-fns/locale";
 
 interface VacationRequestFormProps {
   onSuccess?: () => void;
@@ -27,25 +34,33 @@ const sameNumArray = (a: number[] | undefined, b: number[]) => {
 };
 const sameDateArray = (a: Date[], b: Date[]) => {
   if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) if (a[i].getTime() !== b[i].getTime()) return false;
+  for (let i = 0; i < a.length; i++)
+    if (a[i].getTime() !== b[i].getTime()) return false;
   return true;
 };
 
-const VacationRequestForm: React.FC<VacationRequestFormProps> = ({ onSuccess }) => {
+const VacationRequestForm: React.FC<VacationRequestFormProps> = ({
+  onSuccess,
+}) => {
   const { token } = useAuth();
   const { t, i18n } = useTranslation();
 
   // Locale: semana empieza en LUNES
   const pickerLocale = useMemo(
-    () => (i18n.language.startsWith('de') ? dfDe : i18n.language.startsWith('es') ? dfEs : dfEnGB),
-    [i18n.language]
+    () =>
+      i18n.language.startsWith("de")
+        ? dfDe
+        : i18n.language.startsWith("es")
+          ? dfEs
+          : dfEnGB,
+    [i18n.language],
   );
 
-const [selectionRange, setSelectionRange] = useState({
-  startDate: startOfDay(new Date()),
-  endDate: startOfDay(new Date()),
-  key: 'selection' as const,
-});
+  const [selectionRange, setSelectionRange] = useState({
+    startDate: startOfDay(new Date()),
+    endDate: startOfDay(new Date()),
+    key: "selection" as const,
+  });
 
   // UI
   const [loading, setLoading] = useState(false);
@@ -54,11 +69,14 @@ const [selectionRange, setSelectionRange] = useState({
   // Días bloqueados (rojos) y caché por mes
   const [disabledDates, setDisabledDates] = useState<Date[]>([]);
   const [loadedMonths, setLoadedMonths] = useState<Record<string, boolean>>({});
-  const [redDaysByMonth, setRedDaysByMonth] = useState<Record<string, number[]>>({});
+  const [redDaysByMonth, setRedDaysByMonth] = useState<
+    Record<string, number[]>
+  >({});
 
   // Evitar peticiones duplicadas
   const inflightRef = useRef<Record<string, Promise<void> | undefined>>({});
-  const monthKey = (y: number, m1: number) => `${y}-${String(m1).padStart(2, '0')}`;
+  const monthKey = (y: number, m1: number) =>
+    `${y}-${String(m1).padStart(2, "0")}`;
 
   // Cargar disponibilidad de un mes (sin duplicados ni carreras)
   const ensureMonthLoaded = useCallback(
@@ -68,32 +86,37 @@ const [selectionRange, setSelectionRange] = useState({
 
       inflightRef.current[key] = (async () => {
         try {
-          const data: VacationAvailabilityResponse = await getVacationAvailability({ year: y, month: m1 });
+          const data: VacationAvailabilityResponse =
+            await getVacationAvailability({ year: y, month: m1 });
           const redDays = data.days
-            .filter(d => d.state === 'red')
-            .map(d => d.day)
+            .filter((d) => d.state === "red")
+            .map((d) => d.day)
             .sort((a, b) => a - b);
 
-          setRedDaysByMonth(prev =>
-            sameNumArray(prev[key], redDays) ? prev : { ...prev, [key]: redDays }
+          setRedDaysByMonth((prev) =>
+            sameNumArray(prev[key], redDays)
+              ? prev
+              : { ...prev, [key]: redDays },
           );
-          setLoadedMonths(prev => (prev[key] ? prev : { ...prev, [key]: true }));
+          setLoadedMonths((prev) =>
+            prev[key] ? prev : { ...prev, [key]: true },
+          );
         } finally {
           inflightRef.current[key] = undefined;
         }
       })();
     },
-    [loadedMonths] // eslint-disable-line react-hooks/exhaustive-deps
+    [loadedMonths], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // Construir disabledDates cuando cambia el mapa de días rojos
   useEffect(() => {
     const dates: Date[] = [];
     Object.entries(redDaysByMonth).forEach(([k, dayNums]) => {
-      const [y, m] = k.split('-').map(Number);
+      const [y, m] = k.split("-").map(Number);
       for (const d of dayNums) dates.push(new Date(y, m - 1, d, 0, 0, 0, 0));
     });
-    setDisabledDates(prev => (sameDateArray(prev, dates) ? prev : dates));
+    setDisabledDates((prev) => (sameDateArray(prev, dates) ? prev : dates));
   }, [redDaysByMonth]);
 
   // Carga inicial: mes actual + siguiente
@@ -101,7 +124,8 @@ const [selectionRange, setSelectionRange] = useState({
     const base = selectionRange.startDate ?? new Date();
     const y = base.getFullYear();
     const m1 = base.getMonth() + 1;
-    const next = m1 === 12 ? { year: y + 1, month: 1 } : { year: y, month: m1 + 1 };
+    const next =
+      m1 === 12 ? { year: y + 1, month: 1 } : { year: y, month: m1 + 1 };
     ensureMonthLoaded(y, m1);
     ensureMonthLoaded(next.year, next.month);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -117,36 +141,50 @@ const [selectionRange, setSelectionRange] = useState({
       // Navegación interna sin fechas: no tocar rango
       if (!hasStart && !hasEnd) return;
 
-      setSelectionRange(prev => ({
+      setSelectionRange((prev) => ({
         ...prev,
         startDate: hasStart ? (next.startDate as Date) : prev.startDate,
         endDate: hasEnd ? (next.endDate as Date) : prev.endDate,
-        key: 'selection',
+        key: "selection",
       }));
 
       // Precarga meses implicados (sin re-anclar el calendario)
       if (hasStart) {
         const sy = (next.startDate as Date).getFullYear();
         const sm1 = (next.startDate as Date).getMonth() + 1;
-        const nm = sm1 === 12 ? { year: sy + 1, month: 1 } : { year: sy, month: sm1 + 1 };
+        const nm =
+          sm1 === 12
+            ? { year: sy + 1, month: 1 }
+            : { year: sy, month: sm1 + 1 };
         ensureMonthLoaded(sy, sm1);
         ensureMonthLoaded(nm.year, nm.month);
       }
       if (hasEnd) {
         const ey = (next.endDate as Date).getFullYear();
         const em1 = (next.endDate as Date).getMonth() + 1;
-        const nm = em1 === 12 ? { year: ey + 1, month: 1 } : { year: ey, month: em1 + 1 };
+        const nm =
+          em1 === 12
+            ? { year: ey + 1, month: 1 }
+            : { year: ey, month: em1 + 1 };
         ensureMonthLoaded(ey, em1);
         ensureMonthLoaded(nm.year, nm.month);
       }
     },
-    [ensureMonthLoaded]
+    [ensureMonthLoaded],
   );
 
   // Validación extra: ¿el rango contiene algún día bloqueado?
   const rangeContainsDisabled = (start: Date, end: Date) => {
-    const s = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
-    const e = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime();
+    const s = new Date(
+      start.getFullYear(),
+      start.getMonth(),
+      start.getDate(),
+    ).getTime();
+    const e = new Date(
+      end.getFullYear(),
+      end.getMonth(),
+      end.getDate(),
+    ).getTime();
     for (const d of disabledDates) {
       const t = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
       if (t >= s && t <= e) return true;
@@ -179,7 +217,7 @@ const [selectionRange, setSelectionRange] = useState({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) {
-      setMessage(t('pages.vacations.requestForm.mustLogin'));
+      setMessage(t("pages.vacations.requestForm.mustLogin"));
       return;
     }
 
@@ -187,11 +225,21 @@ const [selectionRange, setSelectionRange] = useState({
     setMessage(null);
     try {
       // 👇 Asegura que todos los meses entre start y end estén cargados
-      await ensureAllMonthsInRangeLoaded(selectionRange.startDate, selectionRange.endDate);
+      await ensureAllMonthsInRangeLoaded(
+        selectionRange.startDate,
+        selectionRange.endDate,
+      );
 
       // Validar con todos los días rojos ya en memoria
-      if (rangeContainsDisabled(selectionRange.startDate, selectionRange.endDate)) {
-        setMessage(t('pages.vacations.requestForm.rangeBlocked', 'El rango contiene días sin disponibilidad.'));
+      if (
+        rangeContainsDisabled(selectionRange.startDate, selectionRange.endDate)
+      ) {
+        setMessage(
+          t(
+            "pages.vacations.requestForm.rangeBlocked",
+            "El rango contiene días sin disponibilidad.",
+          ),
+        );
         return;
       }
 
@@ -199,10 +247,10 @@ const [selectionRange, setSelectionRange] = useState({
         startDate: selectionRange.startDate.toISOString(),
         endDate: selectionRange.endDate.toISOString(),
       });
-      setMessage(t('pages.vacations.requestForm.success'));
+      setMessage(t("pages.vacations.requestForm.success"));
       onSuccess?.();
     } catch {
-      setMessage(t('pages.vacations.requestForm.error'));
+      setMessage(t("pages.vacations.requestForm.error"));
     } finally {
       setLoading(false);
     }
@@ -219,7 +267,7 @@ const [selectionRange, setSelectionRange] = useState({
       `}</style>
 
       <h2 className="text-lg font-semibold text-slate-900 mb-3">
-        {t('pages.vacations.requestForm.title')}
+        {t("pages.vacations.requestForm.title")}
       </h2>
 
       <div className="vacation-range rounded-xl ring-1 ring-slate-200 overflow-hidden w-full">
@@ -243,7 +291,9 @@ const [selectionRange, setSelectionRange] = useState({
       {message && (
         <p
           className={`mt-3 text-sm ${
-            message === t('pages.vacations.requestForm.success') ? 'text-emerald-700' : 'text-rose-600'
+            message === t("pages.vacations.requestForm.success")
+              ? "text-emerald-700"
+              : "text-rose-600"
           }`}
         >
           {message}
@@ -255,7 +305,9 @@ const [selectionRange, setSelectionRange] = useState({
         onClick={handleSubmit}
         className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50"
       >
-        {loading ? t('pages.vacations.requestForm.sending') : t('pages.vacations.requestForm.send')}
+        {loading
+          ? t("pages.vacations.requestForm.sending")
+          : t("pages.vacations.requestForm.send")}
       </button>
     </div>
   );

@@ -730,15 +730,7 @@
         "ariaOpenMonth": "Abrir mes {{label}} {{year}}"
       },
       "calendar": {
-        "weekdayLabels": [
-          "L",
-          "M",
-          "X",
-          "J",
-          "V",
-          "S",
-          "D"
-        ],
+        "weekdayLabels": ["L", "M", "X", "J", "V", "S", "D"],
         "workerFallback": "Trabajador",
         "dayAppointmentsTitle": "Citas del día",
         "noAppointments": "No hay citas para este día.",

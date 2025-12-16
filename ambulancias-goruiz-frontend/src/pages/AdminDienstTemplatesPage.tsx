@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react';
-import type { DienstTemplate } from '../types/dienst';
+import { useEffect, useState } from "react";
+import type { DienstTemplate } from "../types/dienst";
 import {
   getDienstTemplates,
   deleteDienstTemplate,
-} from '../api/dienstTemplates';
-import { useAuth } from '../hooks/useAuth';
-import EditDienstTemplateModal from '../components/dienstTemplates/EditDienstTemplateModal';
-import CreateDienstTemplateModal from '../components/dienstTemplates/CreateDienstTemplateModal';
+} from "../api/dienstTemplates";
+import { useAuth } from "../hooks/useAuth";
+import EditDienstTemplateModal from "../components/dienstTemplates/EditDienstTemplateModal";
+import CreateDienstTemplateModal from "../components/dienstTemplates/CreateDienstTemplateModal";
 
-const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const dayLabels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 // Orden visual: Lunes (1) → Sábado (6) → Domingo (0)
 const orderedDayIndices = [1, 2, 3, 4, 5, 6, 0];
 
@@ -20,7 +20,9 @@ const AdminDienstTemplatesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Estado para edición
-  const [editingTemplate, setEditingTemplate] = useState<DienstTemplate | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<DienstTemplate | null>(
+    null,
+  );
   const [isEditOpen, setIsEditOpen] = useState<boolean>(false);
 
   // Estado para creación
@@ -34,11 +36,13 @@ const AdminDienstTemplatesPage: React.FC = () => {
         setLoading(true);
         setError(null);
         const data = await getDienstTemplates(token);
-        const sorted = [...data].sort((a, b) => a.dienstNumber - b.dienstNumber);
+        const sorted = [...data].sort(
+          (a, b) => a.dienstNumber - b.dienstNumber,
+        );
         setTemplates(sorted);
       } catch (err) {
-        console.error('Error al cargar plantillas de Dienst:', err);
-        setError('Error al cargar las plantillas de Dienst');
+        console.error("Error al cargar plantillas de Dienst:", err);
+        setError("Error al cargar las plantillas de Dienst");
       } finally {
         setLoading(false);
       }
@@ -49,7 +53,7 @@ const AdminDienstTemplatesPage: React.FC = () => {
 
   const handleCreatedTemplate = (created: DienstTemplate) => {
     setTemplates((prev) =>
-      [...prev, created].sort((a, b) => a.dienstNumber - b.dienstNumber)
+      [...prev, created].sort((a, b) => a.dienstNumber - b.dienstNumber),
     );
   };
 
@@ -57,7 +61,7 @@ const AdminDienstTemplatesPage: React.FC = () => {
     setTemplates((prev) =>
       prev
         .map((tpl) => (tpl._id === updated._id ? updated : tpl))
-        .sort((a, b) => a.dienstNumber - b.dienstNumber)
+        .sort((a, b) => a.dienstNumber - b.dienstNumber),
     );
   };
 
@@ -67,7 +71,7 @@ const AdminDienstTemplatesPage: React.FC = () => {
    */
   const getDayConfig = (
     tpl: DienstTemplate,
-    dayIndex: number
+    dayIndex: number,
   ): { isOff: boolean; startTime: string; endTime: string } => {
     const baseStart = tpl.startTime;
     const baseEnd = tpl.endTime;
@@ -103,7 +107,7 @@ const AdminDienstTemplatesPage: React.FC = () => {
           onClick={() => setIsCreateOpen(true)}
           className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
         >
-         + Crear Dienst
+          + Crear Dienst
         </button>
       </div>
 
@@ -145,123 +149,127 @@ const AdminDienstTemplatesPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-  {templates.map((tpl) => {
-    const isActiveTpl = tpl.isActive;
+              {templates.map((tpl) => {
+                const isActiveTpl = tpl.isActive;
 
-    return (
-      <tr
-        key={tpl._id}
-        className={`transition-colors ${
-          isActiveTpl
-            ? 'hover:bg-gray-50/60'
-            : 'bg-rose-50/70 hover:bg-rose-100/80'
-        }`}
-      >
-        {/* Nº Dienst + icono de estado */}
-        <td className="px-4 py-2 align-middle">
-          <div className="flex min-h-[56px] items-center gap-3">
-            {/* Icono de estado */}
-            {isActiveTpl ? (
-              <span
-                className="inline-flex h-3 w-3 rounded-full bg-emerald-500"
-                aria-label="Dienst activo"
-                title="Dienst activo"
-              />
-            ) : (
-              <span
-                className="inline-flex text-lg"
-                aria-label="Dienst inactivo"
-                title="Dienst inactivo"
-              >
-                💀
-              </span>
-            )}
+                return (
+                  <tr
+                    key={tpl._id}
+                    className={`transition-colors ${
+                      isActiveTpl
+                        ? "hover:bg-gray-50/60"
+                        : "bg-rose-50/70 hover:bg-rose-100/80"
+                    }`}
+                  >
+                    {/* Nº Dienst + icono de estado */}
+                    <td className="px-4 py-2 align-middle">
+                      <div className="flex min-h-[56px] items-center gap-3">
+                        {/* Icono de estado */}
+                        {isActiveTpl ? (
+                          <span
+                            className="inline-flex h-3 w-3 rounded-full bg-emerald-500"
+                            aria-label="Dienst activo"
+                            title="Dienst activo"
+                          />
+                        ) : (
+                          <span
+                            className="inline-flex text-lg"
+                            aria-label="Dienst inactivo"
+                            title="Dienst inactivo"
+                          >
+                            💀
+                          </span>
+                        )}
 
-            <span className="text-sm font-semibold text-gray-900">
-              #{tpl.dienstNumber}
-            </span>
-          </div>
-        </td>
+                        <span className="text-sm font-semibold text-gray-900">
+                          #{tpl.dienstNumber}
+                        </span>
+                      </div>
+                    </td>
 
-        {/* Días: Lun → Dom */}
-        {orderedDayIndices.map((dayIndex) => {
-          const { isOff, startTime, endTime } = getDayConfig(
-            tpl,
-            dayIndex
-          );
+                    {/* Días: Lun → Dom */}
+                    {orderedDayIndices.map((dayIndex) => {
+                      const { isOff, startTime, endTime } = getDayConfig(
+                        tpl,
+                        dayIndex,
+                      );
 
-          const inactiveCardClass = isActiveTpl ? '' : 'opacity-60';
+                      const inactiveCardClass = isActiveTpl ? "" : "opacity-60";
 
-          if (isOff) {
-            return (
-              <td key={dayIndex} className="px-2 py-2 align-middle">
-                <div
-                  className={`flex min-h-[56px] w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-[14px] ${inactiveCardClass}`}
-                >
-                  🌴
-                </div>
-              </td>
-            );
-          }
+                      if (isOff) {
+                        return (
+                          <td key={dayIndex} className="px-2 py-2 align-middle">
+                            <div
+                              className={`flex min-h-[56px] w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-[14px] ${inactiveCardClass}`}
+                            >
+                              🌴
+                            </div>
+                          </td>
+                        );
+                      }
 
-          return (
-            <td key={dayIndex} className="px-2 py-2 align-middle">
-              <div
-                className={`flex min-h-[56px] w-full items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-[12px] font-semibold text-blue-900 ${inactiveCardClass}`}
-              >
-                {startTime} – {endTime}
-              </div>
-            </td>
-          );
-        })}
+                      return (
+                        <td key={dayIndex} className="px-2 py-2 align-middle">
+                          <div
+                            className={`flex min-h-[56px] w-full items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-[12px] font-semibold text-blue-900 ${inactiveCardClass}`}
+                          >
+                            {startTime} – {endTime}
+                          </div>
+                        </td>
+                      );
+                    })}
 
-        {/* Acciones */}
-        <td className="px-4 py-2 align-middle">
-          <div className="flex min-h-[56px] items-center justify-end gap-2">
-            <button
-              type="button"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-base hover:bg-gray-100"
-              title="Editar plantilla"
-              onClick={() => {
-                setEditingTemplate(tpl);
-                setIsEditOpen(true);
-              }}
-            >
-              ✏️
-            </button>
+                    {/* Acciones */}
+                    <td className="px-4 py-2 align-middle">
+                      <div className="flex min-h-[56px] items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-base hover:bg-gray-100"
+                          title="Editar plantilla"
+                          onClick={() => {
+                            setEditingTemplate(tpl);
+                            setIsEditOpen(true);
+                          }}
+                        >
+                          ✏️
+                        </button>
 
-            <button
-              type="button"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-300 text-base text-red-700 hover:bg-red-50"
-              title="Eliminar plantilla"
-              onClick={async () => {
-                if (!token) return;
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-300 text-base text-red-700 hover:bg-red-50"
+                          title="Eliminar plantilla"
+                          onClick={async () => {
+                            if (!token) return;
 
-                const confirmDelete = window.confirm(
-                  `¿Eliminar la plantilla de Dienst #${tpl.dienstNumber}?`
+                            const confirmDelete = window.confirm(
+                              `¿Eliminar la plantilla de Dienst #${tpl.dienstNumber}?`,
+                            );
+                            if (!confirmDelete) return;
+
+                            try {
+                              await deleteDienstTemplate(tpl._id, token);
+                              setTemplates((prev) =>
+                                prev.filter((t) => t._id !== tpl._id),
+                              );
+                            } catch (err) {
+                              console.error(
+                                "❌ Error al eliminar plantilla de Dienst:",
+                                err,
+                              );
+                              setError(
+                                "Error al eliminar la plantilla de Dienst",
+                              );
+                            }
+                          }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 );
-                if (!confirmDelete) return;
-
-                try {
-                  await deleteDienstTemplate(tpl._id, token);
-                  setTemplates((prev) =>
-                    prev.filter((t) => t._id !== tpl._id)
-                  );
-                } catch (err) {
-                  console.error('❌ Error al eliminar plantilla de Dienst:', err);
-                  setError('Error al eliminar la plantilla de Dienst');
-                }
-              }}
-            >
-              🗑️
-            </button>
-          </div>
-        </td>
-      </tr>
-    );
-  })}
-</tbody>
-
+              })}
+            </tbody>
           </table>
         </div>
       )}

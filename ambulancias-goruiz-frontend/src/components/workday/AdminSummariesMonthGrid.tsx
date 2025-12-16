@@ -2,8 +2,8 @@
 import React from "react";
 
 type DayCell = {
-  date: Date | null;        // null para celdas vacías al inicio
-  iso: string | null;       // 'YYYY-MM-DD' si hay fecha
+  date: Date | null; // null para celdas vacías al inicio
+  iso: string | null; // 'YYYY-MM-DD' si hay fecha
 };
 
 type SummariesByDate = Record<string, { total: number; unread: number }>;
@@ -179,8 +179,9 @@ const AdminSummariesMonthGrid: React.FC<Props> = ({
               onClick={() => onSelectDate?.(iso)}
               className={`${baseClasses} ${stateClasses}`}
               aria-current={isSelected ? "date" : undefined}
-              aria-label={`${iso} (${total} resúmenes${unread > 0 ? `, ${unread} sin revisar` : ""
-                })`}
+              aria-label={`${iso} (${total} resúmenes${
+                unread > 0 ? `, ${unread} sin revisar` : ""
+              })`}
             >
               <div className="flex items-start justify-between">
                 <span className="text-xs font-semibold text-slate-800">
@@ -225,7 +226,6 @@ const AdminSummariesMonthGrid: React.FC<Props> = ({
           <span>Día seleccionado</span>
         </div>
       </div>
-
     </div>
   );
 };

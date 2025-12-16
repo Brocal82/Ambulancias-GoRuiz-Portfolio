@@ -2,17 +2,17 @@
 
 // Extrae el último segmento de la URL (nombre de archivo) y lo decodifica
 export const fileNameFromUrl = (url: string) =>
-  decodeURIComponent(url.split('/').pop() || url);
+  decodeURIComponent(url.split("/").pop() || url);
 
 // Limpia sufijos típicos añadidos por el servidor (timestamps/hashes) antes de la extensión
 export const prettyFileName = (name: string) => {
-  const dot = name.lastIndexOf('.');
+  const dot = name.lastIndexOf(".");
   if (dot === -1) return name;
 
   const base = name.slice(0, dot);
   const ext = name.slice(dot);
 
-  const parts = base.split('-');
+  const parts = base.split("-");
   if (parts.length <= 1) return name;
 
   const isNoise = (seg: string) =>
@@ -22,7 +22,7 @@ export const prettyFileName = (name: string) => {
   while (parts.length > 1 && isNoise(parts[parts.length - 1])) {
     parts.pop();
   }
-  return parts.join('-') + ext;
+  return parts.join("-") + ext;
 };
 
 // Composición lista para usar directamente desde una URL

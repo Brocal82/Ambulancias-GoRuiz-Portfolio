@@ -59,5 +59,3 @@ const TripSchema = new Schema<ITrip>({
 });
 
 export default mongoose.model<ITrip>("Trip", TripSchema);
-
-

@@ -1,18 +1,21 @@
-import { Request, Response } from 'express';
-import mongoose from 'mongoose';
-import { Notification } from '../models/Notifications';
+import { Request, Response } from "express";
+import mongoose from "mongoose";
+import { Notification } from "../models/Notifications";
 
-type Role = 'admin' | 'worker';
+type Role = "admin" | "worker";
 
 function toBool(v: any, defaultValue = false) {
   if (v === undefined) return defaultValue;
-  if (typeof v === 'boolean') return v;
-  if (typeof v === 'string') return v.toLowerCase() === 'true';
+  if (typeof v === "boolean") return v;
+  if (typeof v === "string") return v.toLowerCase() === "true";
   return !!v;
 }
 
 // ✔️ Importante: Promise<void> y nunca devolver Response
-export const getNotifications = async (req: Request, res: Response): Promise<void> => {
+export const getNotifications = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     // Tu middleware guarda en req.userId y req.userRole
     const authUserId = (req as any).userId as string | undefined;
@@ -23,8 +26,11 @@ export const getNotifications = async (req: Request, res: Response): Promise<voi
     const unreadOnly = toBool(req.query.unreadOnly, false);
     const type = (req.query.type as string | undefined) || undefined;
 
-    const page = Math.max(parseInt((req.query.page as string) || '1', 10), 1);
-    const limit = Math.max(parseInt((req.query.limit as string) || '10', 10), 1);
+    const page = Math.max(parseInt((req.query.page as string) || "1", 10), 1);
+    const limit = Math.max(
+      parseInt((req.query.limit as string) || "10", 10),
+      1,
+    );
     const skip = (page - 1) * limit;
 
     const filter: any = {};
@@ -44,7 +50,11 @@ export const getNotifications = async (req: Request, res: Response): Promise<voi
     if (type) filter.type = type;
 
     const [items, total] = await Promise.all([
-      Notification.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      Notification.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
       Notification.countDocuments(filter),
     ]);
 
@@ -57,14 +67,17 @@ export const getNotifications = async (req: Request, res: Response): Promise<voi
     });
     return;
   } catch (err) {
-    console.error('getNotifications error', err);
-    res.status(500).json({ message: 'Error obteniendo notificaciones' });
+    console.error("getNotifications error", err);
+    res.status(500).json({ message: "Error obteniendo notificaciones" });
     return;
   }
 };
 
 // ✔️ Promise<void>, validar IDs y no devolver Response
-export const postNotification = async (req: Request, res: Response): Promise<void> => {
+export const postNotification = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { title, message, recipientId, role, type } = req.body as {
       title?: string;
@@ -75,22 +88,24 @@ export const postNotification = async (req: Request, res: Response): Promise<voi
     };
 
     if (!title || !message) {
-      res.status(400).json({ message: 'title y message son obligatorios' });
+      res.status(400).json({ message: "title y message son obligatorios" });
       return;
     }
     if (!recipientId && !role) {
-      res.status(400).json({ message: 'Debes especificar recipientId o role' });
+      res.status(400).json({ message: "Debes especificar recipientId o role" });
       return;
     }
     if (recipientId && !mongoose.Types.ObjectId.isValid(recipientId)) {
-      res.status(400).json({ message: 'recipientId inválido' });
+      res.status(400).json({ message: "recipientId inválido" });
       return;
     }
 
     const created = await Notification.create({
       title,
       message,
-      recipientId: recipientId ? new mongoose.Types.ObjectId(recipientId) : undefined,
+      recipientId: recipientId
+        ? new mongoose.Types.ObjectId(recipientId)
+        : undefined,
       role,
       type,
     });
@@ -98,18 +113,21 @@ export const postNotification = async (req: Request, res: Response): Promise<voi
     res.status(201).json(created.toObject());
     return;
   } catch (err) {
-    console.error('postNotification error', err);
-    res.status(500).json({ message: 'Error creando notificación' });
+    console.error("postNotification error", err);
+    res.status(500).json({ message: "Error creando notificación" });
     return;
   }
 };
 
 // ✔️ Promise<void>, filtrar por pertenencia, no devolver Response
-export const patchNotificationRead = async (req: Request, res: Response): Promise<void> => {
+export const patchNotificationRead = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const id = req.params.id;
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      res.status(400).json({ message: 'ID inválido' });
+      res.status(400).json({ message: "ID inválido" });
       return;
     }
 
@@ -129,19 +147,21 @@ export const patchNotificationRead = async (req: Request, res: Response): Promis
     const updated = await Notification.findOneAndUpdate(
       filter,
       { isRead: true },
-      { new: true }
+      { new: true },
     ).lean();
 
     if (!updated) {
-      res.status(404).json({ message: 'Notificación no encontrada o no autorizada' });
+      res
+        .status(404)
+        .json({ message: "Notificación no encontrada o no autorizada" });
       return;
     }
 
     res.json(updated);
     return;
   } catch (err) {
-    console.error('patchNotificationRead error', err);
-    res.status(500).json({ message: 'Error marcando como leída' });
+    console.error("patchNotificationRead error", err);
+    res.status(500).json({ message: "Error marcando como leída" });
     return;
   }
 };

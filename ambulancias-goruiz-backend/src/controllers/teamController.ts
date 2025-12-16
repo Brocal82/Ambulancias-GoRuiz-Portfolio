@@ -1,38 +1,42 @@
 // src/controllers/teamController.ts
-import { Request, Response } from 'express';
-import mongoose from 'mongoose';
-import Team from '../models/Team';
-import User from '../models/User';
-import Dienst from '../models/Dienst';
-import VacationRequest from '../models/vacationRequest';
-import { DateTime } from 'luxon';
-import { isOnVacationDay } from '../utils/dienstValidation';
-import { computeTeamAssignmentsForWeek } from '../utils/teamRotation';
-import Ambulance from '../models/Ambulance';
+import { Request, Response } from "express";
+import mongoose from "mongoose";
+import Team from "../models/Team";
+import User from "../models/User";
+import Dienst from "../models/Dienst";
+import VacationRequest from "../models/vacationRequest";
+import { DateTime } from "luxon";
+import { isOnVacationDay } from "../utils/dienstValidation";
+import { computeTeamAssignmentsForWeek } from "../utils/teamRotation";
+import Ambulance from "../models/Ambulance";
 
-const ZONE = 'Europe/Berlin';
+const ZONE = "Europe/Berlin";
 
 const isObjectId = (s: unknown) =>
-  typeof s === 'string' && mongoose.Types.ObjectId.isValid(s);
+  typeof s === "string" && mongoose.Types.ObjectId.isValid(s);
 
 // 👉 Helper: devuelve si está de vacaciones HOY y hasta cuándo
-async function getTodayVacationInfo(userId?: mongoose.Types.ObjectId | string | null) {
+async function getTodayVacationInfo(
+  userId?: mongoose.Types.ObjectId | string | null,
+) {
   if (!userId || !mongoose.Types.ObjectId.isValid(String(userId))) {
-    return { isOnVacation: false as const, vacationUntil: undefined as string | undefined };
+    return {
+      isOnVacation: false as const,
+      vacationUntil: undefined as string | undefined,
+    };
   }
 
   const now = DateTime.now().setZone(ZONE);
-  const startOfToday = now.startOf('day').toJSDate();
-  const endOfToday = now.endOf('day').toJSDate();
+  const startOfToday = now.startOf("day").toJSDate();
+  const endOfToday = now.endOf("day").toJSDate();
 
-  const vac = await VacationRequest
-    .findOne({
-      user: userId,
-      status: 'accepted',
-      startDate: { $lte: endOfToday },
-      endDate:   { $gte: startOfToday },
-    })
-    .select('endDate')
+  const vac = await VacationRequest.findOne({
+    user: userId,
+    status: "accepted",
+    startDate: { $lte: endOfToday },
+    endDate: { $gte: startOfToday },
+  })
+    .select("endDate")
     .lean();
 
   if (!vac) {
@@ -48,9 +52,9 @@ async function getTodayVacationInfo(userId?: mongoose.Types.ObjectId | string | 
 export const listTeams = async (_req: Request, res: Response) => {
   try {
     const teams = await Team.find()
-      .populate('driver', 'name lastName ambulanceRole pscheinExpiry')
-      .populate('medic',  'name lastName ambulanceRole pscheinExpiry')
-      .populate('ambulanceId', 'ambulanceNumber brand modelName licensePlate') // 👈 NUEVO
+      .populate("driver", "name lastName ambulanceRole pscheinExpiry")
+      .populate("medic", "name lastName ambulanceRole pscheinExpiry")
+      .populate("ambulanceId", "ambulanceNumber brand modelName licensePlate") // 👈 NUEVO
       .lean();
 
     // ⏰ Fecha de hoy (ISO) en zona Berlin (corrige DST/off-by-one)
@@ -81,16 +85,15 @@ export const listTeams = async (_req: Request, res: Response) => {
             t.medic.vacationUntil = info.vacationUntil;
           }
         }
-      })
+      }),
     );
 
     res.status(200).json(teams);
   } catch (err) {
-    console.error('❌ Error listTeams:', err);
-    res.status(500).json({ message: 'Error al listar teams' });
+    console.error("❌ Error listTeams:", err);
+    res.status(500).json({ message: "Error al listar teams" });
   }
 };
-
 
 export const createTeam = async (req: Request, res: Response) => {
   try {
@@ -99,22 +102,26 @@ export const createTeam = async (req: Request, res: Response) => {
       medic,
       rotationMode,
       fixedDienstNumber,
-      ambulanceId,          // 👈 NUEVO
+      ambulanceId, // 👈 NUEVO
     } = req.body as {
       driver?: string;
       medic?: string;
-      rotationMode?: 'rotating' | 'fixed' | 'none';
+      rotationMode?: "rotating" | "fixed" | "none";
       fixedDienstNumber?: number | string | null;
       ambulanceId?: string | null;
     };
 
     // ✅ Validaciones básicas de IDs
     if (!isObjectId(driver) || !isObjectId(medic)) {
-      res.status(400).json({ message: 'driver y medic deben ser ObjectId válidos' });
+      res
+        .status(400)
+        .json({ message: "driver y medic deben ser ObjectId válidos" });
       return;
     }
     if (driver === medic) {
-      res.status(400).json({ message: 'driver y medic no pueden ser la misma persona' });
+      res
+        .status(400)
+        .json({ message: "driver y medic no pueden ser la misma persona" });
       return;
     }
 
@@ -122,33 +129,41 @@ export const createTeam = async (req: Request, res: Response) => {
     let normalizedAmbulanceId: string | null = null;
     if (ambulanceId) {
       if (!isObjectId(ambulanceId)) {
-        res.status(400).json({ message: 'ambulanceId debe ser un ObjectId válido' });
+        res
+          .status(400)
+          .json({ message: "ambulanceId debe ser un ObjectId válido" });
         return;
       }
       const amb = await Ambulance.findById(ambulanceId).lean();
       if (!amb) {
-        res.status(400).json({ message: 'Ambulancia no encontrada' });
+        res.status(400).json({ message: "Ambulancia no encontrada" });
         return;
       }
       normalizedAmbulanceId = ambulanceId;
     }
 
     // ✅ Normalizar rotationMode con valor por defecto
-    let normalizedRotation: 'rotating' | 'fixed' | 'none' = 'rotating';
-    if (rotationMode === 'fixed' || rotationMode === 'none' || rotationMode === 'rotating') {
+    let normalizedRotation: "rotating" | "fixed" | "none" = "rotating";
+    if (
+      rotationMode === "fixed" ||
+      rotationMode === "none" ||
+      rotationMode === "rotating"
+    ) {
       normalizedRotation = rotationMode;
     }
 
     // ✅ Normalizar fixedDienstNumber (solo tiene sentido si rotationMode === 'fixed')
     let normalizedFixedDienst: number | null = null;
-    if (normalizedRotation === 'fixed') {
-      const num = typeof fixedDienstNumber === 'string'
-        ? Number(fixedDienstNumber)
-        : fixedDienstNumber;
+    if (normalizedRotation === "fixed") {
+      const num =
+        typeof fixedDienstNumber === "string"
+          ? Number(fixedDienstNumber)
+          : fixedDienstNumber;
 
       if (!Number.isInteger(num) || num == null || num < 1) {
         res.status(400).json({
-          message: 'fixedDienstNumber debe ser un número entero ≥ 1 cuando rotationMode es "fixed"',
+          message:
+            'fixedDienstNumber debe ser un número entero ≥ 1 cuando rotationMode es "fixed"',
         });
         return;
       }
@@ -162,14 +177,14 @@ export const createTeam = async (req: Request, res: Response) => {
       User.findById(medic).lean(),
     ]);
     if (!driverUser || !medicUser) {
-      res.status(400).json({ message: 'Usuario driver o medic inexistente' });
+      res.status(400).json({ message: "Usuario driver o medic inexistente" });
       return;
     }
 
     // evitar duplicado exacto (además del índice único)
     const exists = await Team.findOne({ driver, medic }).lean();
     if (exists) {
-      res.status(409).json({ message: 'Ya existe un team con esa pareja' });
+      res.status(409).json({ message: "Ya existe un team con esa pareja" });
       return;
     }
 
@@ -182,7 +197,7 @@ export const createTeam = async (req: Request, res: Response) => {
     if (driverConflict) {
       res.status(409).json({
         message:
-          'El conductor seleccionado ya pertenece a un equipo. Elimínalo de su equipo actual antes de crear otro.',
+          "El conductor seleccionado ya pertenece a un equipo. Elimínalo de su equipo actual antes de crear otro.",
       });
       return;
     }
@@ -190,7 +205,7 @@ export const createTeam = async (req: Request, res: Response) => {
     if (medicConflict) {
       res.status(409).json({
         message:
-          'El sanitario seleccionado ya pertenece a un equipo. Elimínalo de su equipo actual antes de crear otro.',
+          "El sanitario seleccionado ya pertenece a un equipo. Elimínalo de su equipo actual antes de crear otro.",
       });
       return;
     }
@@ -201,39 +216,45 @@ export const createTeam = async (req: Request, res: Response) => {
       medic,
       rotationMode: normalizedRotation,
       fixedDienstNumber: normalizedFixedDienst,
-      ambulanceId: normalizedAmbulanceId,   // 👈 AQUÍ
+      ambulanceId: normalizedAmbulanceId, // 👈 AQUÍ
     });
 
     const populated = await Team.findById(team._id)
-      .populate('driver', 'name lastName ambulanceRole pscheinExpiry')
-      .populate('medic',  'name lastName ambulanceRole pscheinExpiry')
-      .populate('ambulanceId', 'ambulanceNumber brand modelName licensePlate');
+      .populate("driver", "name lastName ambulanceRole pscheinExpiry")
+      .populate("medic", "name lastName ambulanceRole pscheinExpiry")
+      .populate("ambulanceId", "ambulanceNumber brand modelName licensePlate");
 
     res.status(201).json(populated);
   } catch (err: any) {
-    console.error('❌ Error createTeam:', err);
+    console.error("❌ Error createTeam:", err);
     if (err?.code === 11000) {
-      res.status(409).json({ message: 'Team duplicado (driver+medic ya existe)' });
+      res
+        .status(409)
+        .json({ message: "Team duplicado (driver+medic ya existe)" });
       return;
     }
-    res.status(500).json({ message: 'Error al crear team' });
+    res.status(500).json({ message: "Error al crear team" });
   }
 };
 
-
 // ✅ Preview de rotación de equipos para una semana (solo fija de momento)
-export const previewTeamRotationForWeek = async (req: Request, res: Response): Promise<void> => {
+export const previewTeamRotationForWeek = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { weekStartDate } = req.query as { weekStartDate?: string };
 
     if (!weekStartDate) {
-      res.status(400).json({ message: 'Parámetro weekStartDate (YYYY-MM-DD) requerido' });
+      res
+        .status(400)
+        .json({ message: "Parámetro weekStartDate (YYYY-MM-DD) requerido" });
       return;
     }
 
     const start = new Date(weekStartDate);
     if (isNaN(start.getTime())) {
-      res.status(400).json({ message: 'weekStartDate inválida' });
+      res.status(400).json({ message: "weekStartDate inválida" });
       return;
     }
 
@@ -247,66 +268,73 @@ export const previewTeamRotationForWeek = async (req: Request, res: Response): P
         $lte: end,
       },
     })
-      .select('dienstNumber')
+      .select("dienstNumber")
       .lean();
 
     const dienstNumbers = Array.from(
       new Set(
-        dienste
-          .map(d => d.dienstNumber)
-          .filter((n) => typeof n === 'number')
-      )
+        dienste.map((d) => d.dienstNumber).filter((n) => typeof n === "number"),
+      ),
     ).sort((a, b) => a - b);
 
     if (dienstNumbers.length === 0) {
       res.status(200).json({
-        message: 'No hay Diensts para esa semana, nada que rotar.',
+        message: "No hay Diensts para esa semana, nada que rotar.",
         assignments: [],
       });
       return;
     }
 
     // 🔎 Cargar teams con info de rotación
-    const teams = await Team.find({}, { rotationMode: 1, fixedDienstNumber: 1 })
-      .lean();
+    const teams = await Team.find(
+      {},
+      { rotationMode: 1, fixedDienstNumber: 1 },
+    ).lean();
 
     const rotationInput = {
-  dienstNumbers,
-  teams: teams.map((t: any) => ({
-    teamId: t._id as mongoose.Types.ObjectId,   // 👈 casteamos para que cumpla WeekRotationInput
-    rotationMode: (t.rotationMode as 'rotating' | 'fixed' | 'none') ?? 'rotating',
-    fixedDienstNumber:
-      typeof t.fixedDienstNumber === 'number' ? t.fixedDienstNumber : null,
-  })),
-};
-
+      dienstNumbers,
+      teams: teams.map((t: any) => ({
+        teamId: t._id as mongoose.Types.ObjectId, // 👈 casteamos para que cumpla WeekRotationInput
+        rotationMode:
+          (t.rotationMode as "rotating" | "fixed" | "none") ?? "rotating",
+        fixedDienstNumber:
+          typeof t.fixedDienstNumber === "number" ? t.fixedDienstNumber : null,
+      })),
+    };
 
     const result = computeTeamAssignmentsForWeek(rotationInput);
 
     res.status(200).json({
-      message: 'Preview de rotación calculado correctamente',
+      message: "Preview de rotación calculado correctamente",
       dienstNumbers,
       assignments: result.assignments,
     });
   } catch (err) {
-    console.error('❌ Error en previewTeamRotationForWeek:', err);
-    res.status(500).json({ message: 'Error al calcular la rotación de equipos' });
+    console.error("❌ Error en previewTeamRotationForWeek:", err);
+    res
+      .status(500)
+      .json({ message: "Error al calcular la rotación de equipos" });
   }
 };
 
 // 🔍 Devuelve los IDs de equipos que ya están usados en algún Dienst de esa semana
-export const getUsedTeamsForWeek = async (req: Request, res: Response): Promise<void> => {
+export const getUsedTeamsForWeek = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { weekStartDate } = req.query as { weekStartDate?: string };
 
     if (!weekStartDate) {
-      res.status(400).json({ message: 'Parámetro weekStartDate requerido (YYYY-MM-DD)' });
+      res
+        .status(400)
+        .json({ message: "Parámetro weekStartDate requerido (YYYY-MM-DD)" });
       return;
     }
 
     const startDate = new Date(weekStartDate);
     if (isNaN(startDate.getTime())) {
-      res.status(400).json({ message: 'weekStartDate inválida' });
+      res.status(400).json({ message: "weekStartDate inválida" });
       return;
     }
 
@@ -346,7 +374,7 @@ export const getUsedTeamsForWeek = async (req: Request, res: Response): Promise<
           $lte: endDate,
         },
       },
-      { assignments: 1 }
+      { assignments: 1 },
     ).lean();
 
     if (!diensts || diensts.length === 0) {
@@ -374,8 +402,10 @@ export const getUsedTeamsForWeek = async (req: Request, res: Response): Promise<
 
     res.status(200).json({ usedTeamIds: Array.from(usedTeamIds) });
   } catch (err) {
-    console.error('❌ Error en getUsedTeamsForWeek:', err);
-    res.status(500).json({ message: 'Error al obtener equipos usados en la semana' });
+    console.error("❌ Error en getUsedTeamsForWeek:", err);
+    res
+      .status(500)
+      .json({ message: "Error al obtener equipos usados en la semana" });
   }
 };
 
@@ -384,56 +414,61 @@ export const updateTeam = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     if (!isObjectId(id)) {
-      res.status(400).json({ message: 'ID de team inválido' });
+      res.status(400).json({ message: "ID de team inválido" });
       return;
     }
 
-    const {
-      driver,
-      medic,
-      rotationMode,
-      fixedDienstNumber,
-      ambulanceId,
-    } = req.body as {
-      driver?: string;
-      medic?: string;
-      rotationMode?: 'rotating' | 'fixed' | 'none';
-      fixedDienstNumber?: number | string | null;
-      ambulanceId?: string | null;
-    };
+    const { driver, medic, rotationMode, fixedDienstNumber, ambulanceId } =
+      req.body as {
+        driver?: string;
+        medic?: string;
+        rotationMode?: "rotating" | "fixed" | "none";
+        fixedDienstNumber?: number | string | null;
+        ambulanceId?: string | null;
+      };
 
     // ✅ Comprobamos que vienen driver y medic (para este flujo de edición)
     if (!driver || !medic) {
-      res.status(400).json({ message: 'driver y medic son obligatorios' });
+      res.status(400).json({ message: "driver y medic son obligatorios" });
       return;
     }
 
     if (!isObjectId(driver) || !isObjectId(medic)) {
-      res.status(400).json({ message: 'driver y medic deben ser ObjectId válidos' });
+      res
+        .status(400)
+        .json({ message: "driver y medic deben ser ObjectId válidos" });
       return;
     }
 
     if (driver === medic) {
-      res.status(400).json({ message: 'driver y medic no pueden ser la misma persona' });
+      res
+        .status(400)
+        .json({ message: "driver y medic no pueden ser la misma persona" });
       return;
     }
 
     // 🔁 Normalizar rotationMode
-    let normalizedRotation: 'rotating' | 'fixed' | 'none' = 'rotating';
-    if (rotationMode === 'fixed' || rotationMode === 'none' || rotationMode === 'rotating') {
+    let normalizedRotation: "rotating" | "fixed" | "none" = "rotating";
+    if (
+      rotationMode === "fixed" ||
+      rotationMode === "none" ||
+      rotationMode === "rotating"
+    ) {
       normalizedRotation = rotationMode;
     }
 
     // 🔢 Normalizar fixedDienstNumber solo si rotationMode === 'fixed'
     let normalizedFixedDienst: number | null = null;
-    if (normalizedRotation === 'fixed') {
-      const num = typeof fixedDienstNumber === 'string'
-        ? Number(fixedDienstNumber)
-        : fixedDienstNumber;
+    if (normalizedRotation === "fixed") {
+      const num =
+        typeof fixedDienstNumber === "string"
+          ? Number(fixedDienstNumber)
+          : fixedDienstNumber;
 
       if (!Number.isInteger(num) || num == null || num < 1) {
         res.status(400).json({
-          message: 'fixedDienstNumber debe ser un número entero ≥ 1 cuando rotationMode es "fixed"',
+          message:
+            'fixedDienstNumber debe ser un número entero ≥ 1 cuando rotationMode es "fixed"',
         });
         return;
       }
@@ -448,7 +483,7 @@ export const updateTeam = async (req: Request, res: Response) => {
     ]);
 
     if (!driverUser || !medicUser) {
-      res.status(400).json({ message: 'Usuario driver o medic inexistente' });
+      res.status(400).json({ message: "Usuario driver o medic inexistente" });
       return;
     }
 
@@ -460,7 +495,9 @@ export const updateTeam = async (req: Request, res: Response) => {
     }).lean();
 
     if (duplicated) {
-      res.status(409).json({ message: 'Ya existe otro team con esa pareja driver+medic' });
+      res
+        .status(409)
+        .json({ message: "Ya existe otro team con esa pareja driver+medic" });
       return;
     }
 
@@ -479,7 +516,7 @@ export const updateTeam = async (req: Request, res: Response) => {
     if (driverConflict) {
       res.status(409).json({
         message:
-          'El conductor seleccionado ya pertenece a otro equipo. Elimínalo de su equipo actual antes de asignarlo aquí.',
+          "El conductor seleccionado ya pertenece a otro equipo. Elimínalo de su equipo actual antes de asignarlo aquí.",
       });
       return;
     }
@@ -487,7 +524,7 @@ export const updateTeam = async (req: Request, res: Response) => {
     if (medicConflict) {
       res.status(409).json({
         message:
-          'El sanitario seleccionado ya pertenece a otro equipo. Elimínalo de su equipo actual antes de asignarlo aquí.',
+          "El sanitario seleccionado ya pertenece a otro equipo. Elimínalo de su equipo actual antes de asignarlo aquí.",
       });
       return;
     }
@@ -496,7 +533,7 @@ export const updateTeam = async (req: Request, res: Response) => {
     const normalizedAmbulance =
       ambulanceId === undefined
         ? undefined // no tocar
-        : ambulanceId === null || ambulanceId === ''
+        : ambulanceId === null || ambulanceId === ""
           ? null
           : new mongoose.Types.ObjectId(ambulanceId);
 
@@ -511,44 +548,41 @@ export const updateTeam = async (req: Request, res: Response) => {
       updateDoc.ambulanceId = normalizedAmbulance;
     }
 
-    const updated = await Team.findByIdAndUpdate(
-      id,
-      updateDoc,
-      { new: true, runValidators: true }
-    )
-      .populate('driver', 'name lastName ambulanceRole pscheinExpiry')
-      .populate('medic', 'name lastName ambulanceRole pscheinExpiry')
-      .populate('ambulanceId', 'ambulanceNumber licensePlate');
+    const updated = await Team.findByIdAndUpdate(id, updateDoc, {
+      new: true,
+      runValidators: true,
+    })
+      .populate("driver", "name lastName ambulanceRole pscheinExpiry")
+      .populate("medic", "name lastName ambulanceRole pscheinExpiry")
+      .populate("ambulanceId", "ambulanceNumber licensePlate");
 
     if (!updated) {
-      res.status(404).json({ message: 'Team no encontrado' });
+      res.status(404).json({ message: "Team no encontrado" });
       return;
     }
 
     res.status(200).json(updated);
   } catch (err) {
-    console.error('❌ Error updateTeam:', err);
-    res.status(500).json({ message: 'Error al actualizar team' });
+    console.error("❌ Error updateTeam:", err);
+    res.status(500).json({ message: "Error al actualizar team" });
   }
 };
-
-
 
 export const deleteTeam = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     if (!isObjectId(id)) {
-      res.status(400).json({ message: 'ID inválido' });
+      res.status(400).json({ message: "ID inválido" });
       return;
     }
     const deleted = await Team.findByIdAndDelete(id);
     if (!deleted) {
-      res.status(404).json({ message: 'Team no encontrado' });
+      res.status(404).json({ message: "Team no encontrado" });
       return;
     }
-    res.status(200).json({ message: 'Team eliminado' });
+    res.status(200).json({ message: "Team eliminado" });
   } catch (err) {
-    console.error('❌ Error deleteTeam:', err);
-    res.status(500).json({ message: 'Error al eliminar team' });
+    console.error("❌ Error deleteTeam:", err);
+    res.status(500).json({ message: "Error al eliminar team" });
   }
 };

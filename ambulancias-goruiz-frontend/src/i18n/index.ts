@@ -7,24 +7,22 @@ import en from "../locales/en/common.json";
 
 const savedLang = (localStorage.getItem("lang") || "es").toLowerCase();
 
-i18n
-  .use(initReactI18next)
-  .init({
-    resources: {
-      es: { common: es },
-      de: { common: de },
-      en: { common: en }
-    },
-    lng: savedLang,
-    fallbackLng: "es",
-    supportedLngs: ["es", "en", "de"],
-    nonExplicitSupportedLngs: true,
-    load: "languageOnly",
-    ns: ["common"],
-    defaultNS: "common",
-    interpolation: {
-      escapeValue: false // React ya hace escaping
-    }
-  });
+i18n.use(initReactI18next).init({
+  resources: {
+    es: { common: es },
+    de: { common: de },
+    en: { common: en },
+  },
+  lng: savedLang,
+  fallbackLng: "es",
+  supportedLngs: ["es", "en", "de"],
+  nonExplicitSupportedLngs: true,
+  load: "languageOnly",
+  ns: ["common"],
+  defaultNS: "common",
+  interpolation: {
+    escapeValue: false, // React ya hace escaping
+  },
+});
 
 export default i18n;

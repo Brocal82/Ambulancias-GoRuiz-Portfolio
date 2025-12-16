@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import type { DienstTemplate } from '../../types/dienst';
+import { useState } from "react";
+import type { DienstTemplate } from "../../types/dienst";
 import {
   createDienstTemplate,
   type DienstTemplateInput,
-} from '../../api/dienstTemplates';
+} from "../../api/dienstTemplates";
 
-const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const dayLabels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 // Orden visual: Lunes (1) → Sábado (6) → Domingo (0)
 const orderedDayIndices = [1, 2, 3, 4, 5, 6, 0];
 
@@ -29,47 +29,46 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
   token,
   onCreated,
 }) => {
-  const [dienstNumber, setDienstNumber] = useState<number | ''>('');
+  const [dienstNumber, setDienstNumber] = useState<number | "">("");
   // Horario global ya no se muestra, pero lo seguimos usando de fallback para el backend
-  const [startTime, setStartTime] = useState<string>('06:00');
-  const [endTime, setEndTime] = useState<string>('14:00');
+  const [startTime, setStartTime] = useState<string>("06:00");
+  const [endTime, setEndTime] = useState<string>("14:00");
   const [isActive, setIsActive] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   // 🗓️ Estado local para el horario por día
-  const [perDaySchedule, setPerDaySchedule] = useState<DayScheduleFormRow[]>(() =>
-    dayLabels.map((_, index) => ({
-      dayIndex: index,
-      isOff: false,
-      startTime: '06:00',
-      endTime: '14:00',
-    }))
+  const [perDaySchedule, setPerDaySchedule] = useState<DayScheduleFormRow[]>(
+    () =>
+      dayLabels.map((_, index) => ({
+        dayIndex: index,
+        isOff: false,
+        startTime: "06:00",
+        endTime: "14:00",
+      })),
   );
 
   if (!isOpen) return null;
 
   const handleToggleDayOff = (dayIndex: number, isOff: boolean) => {
     setPerDaySchedule((prev) =>
-      prev.map((day) =>
-        day.dayIndex === dayIndex ? { ...day, isOff } : day
-      )
+      prev.map((day) => (day.dayIndex === dayIndex ? { ...day, isOff } : day)),
     );
   };
 
   const handleChangeDayStartTime = (dayIndex: number, value: string) => {
     setPerDaySchedule((prev) =>
       prev.map((day) =>
-        day.dayIndex === dayIndex ? { ...day, startTime: value } : day
-      )
+        day.dayIndex === dayIndex ? { ...day, startTime: value } : day,
+      ),
     );
   };
 
   const handleChangeDayEndTime = (dayIndex: number, value: string) => {
     setPerDaySchedule((prev) =>
       prev.map((day) =>
-        day.dayIndex === dayIndex ? { ...day, endTime: value } : day
-      )
+        day.dayIndex === dayIndex ? { ...day, endTime: value } : day,
+      ),
     );
   };
 
@@ -77,18 +76,18 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
     event.preventDefault();
 
     if (!token) {
-      setError('No hay token de autenticación. Inicia sesión de nuevo.');
+      setError("No hay token de autenticación. Inicia sesión de nuevo.");
       return;
     }
 
-    if (dienstNumber === '' || dienstNumber <= 0) {
-      setError('Debes indicar un número de Dienst válido.');
+    if (dienstNumber === "" || dienstNumber <= 0) {
+      setError("Debes indicar un número de Dienst válido.");
       return;
     }
 
     const allDaysOff = perDaySchedule.every((d) => d.isOff);
     if (allDaysOff) {
-      setError('No tiene sentido que todos los días sean libres.');
+      setError("No tiene sentido que todos los días sean libres.");
       return;
     }
 
@@ -103,8 +102,8 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
 
       // 🧮 Definir horario global para compatibilidad backend
       const workingDays = perDaySchedule.filter((d) => !d.isOff);
-      const globalStart = workingDays[0]?.startTime || startTime || '06:00';
-      const globalEnd = workingDays[0]?.endTime || endTime || '14:00';
+      const globalStart = workingDays[0]?.startTime || startTime || "06:00";
+      const globalEnd = workingDays[0]?.endTime || endTime || "14:00";
 
       // 🧱 perDaySchedule para la API
       const perDayScheduleForApi = perDaySchedule.map((d) => ({
@@ -128,25 +127,24 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
       onCreated(created);
 
       // Reseteamos el formulario
-      setDienstNumber('');
-      setStartTime('06:00');
-      setEndTime('14:00');
+      setDienstNumber("");
+      setStartTime("06:00");
+      setEndTime("14:00");
       setIsActive(true);
       setPerDaySchedule(
         dayLabels.map((_, index) => ({
           dayIndex: index,
           isOff: false,
-          startTime: '06:00',
-          endTime: '14:00',
-        }))
+          startTime: "06:00",
+          endTime: "14:00",
+        })),
       );
 
       onClose();
     } catch (err: any) {
-      console.error('Error al crear plantilla de Dienst:', err);
+      console.error("Error al crear plantilla de Dienst:", err);
       const msg =
-        err?.response?.data?.message ||
-        'Error al crear la plantilla de Dienst';
+        err?.response?.data?.message || "Error al crear la plantilla de Dienst";
       setError(msg);
     } finally {
       setSaving(false);
@@ -174,7 +172,8 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
           <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-3">
             <div className="mb-2 flex items-center justify-between gap-2">
               <p className="text-[11px] text-gray-600">
-                Configura el número de Dienst y el horario por día. Los días libres se muestran en verde con la palmera 🌴.
+                Configura el número de Dienst y el horario por día. Los días
+                libres se muestran en verde con la palmera 🌴.
               </p>
               <span className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 sm:inline">
                 Semana de lunes a domingo
@@ -191,10 +190,7 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
                 </div>
                 <div className="space-y-2">
                   <div>
-                    <label
-                      htmlFor="createDienstNumber"
-                      className="sr-only"
-                    >
+                    <label htmlFor="createDienstNumber" className="sr-only">
                       Número de Dienst
                     </label>
                     <input
@@ -204,7 +200,7 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
                       value={dienstNumber}
                       onChange={(e) =>
                         setDienstNumber(
-                          e.target.value === '' ? '' : Number(e.target.value)
+                          e.target.value === "" ? "" : Number(e.target.value),
                         )
                       }
                       className="w-full rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -241,8 +237,8 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
                     key={day.dayIndex}
                     className={`flex h-full flex-col rounded-xl border p-2 text-xs shadow-sm transition-colors ${
                       isOff
-                        ? 'border-emerald-200 bg-emerald-50'
-                        : 'border-gray-200 bg-white'
+                        ? "border-emerald-200 bg-emerald-50"
+                        : "border-gray-200 bg-white"
                     }`}
                   >
                     {/* Cabecera día + icono toggle */}
@@ -260,7 +256,7 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
                             : `Marcar ${dayLabels[day.dayIndex]} como libre`
                         }
                       >
-                        {isOff ? '⚙️' : '🌴'}
+                        {isOff ? "⚙️" : "🌴"}
                       </button>
                     </div>
 
@@ -287,7 +283,7 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
                             onChange={(e) =>
                               handleChangeDayStartTime(
                                 day.dayIndex,
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="w-full rounded-md border border-gray-300 px-1 py-0.5 text-[11px] focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -307,7 +303,7 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
                             onChange={(e) =>
                               handleChangeDayEndTime(
                                 day.dayIndex,
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="w-full rounded-md border border-gray-300 px-1 py-0.5 text-[11px] focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -336,7 +332,7 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
               disabled={saving}
               className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
             >
-              {saving ? 'Creando...' : 'Crear plantilla'}
+              {saving ? "Creando..." : "Crear plantilla"}
             </button>
           </div>
         </form>

@@ -102,7 +102,6 @@ const AdminSummaryGroupModal: React.FC<AdminSummaryGroupModalProps> = ({
             const assignedDay = mapSummaryToAssignedDay(summary);
             const reviewedAt = s.reviewedAt as string | undefined;
 
-
             const label = summary.isFinalClosure
               ? t("pages.summaries.admin.detail.badge.final", "Final")
               : t("pages.summaries.admin.detail.badge.partial", "Parcial");
@@ -114,24 +113,31 @@ const AdminSummaryGroupModal: React.FC<AdminSummaryGroupModalProps> = ({
 
             const ambulanceNumber =
               s.ambulanceNumber ??
-              t("pages.workday.common.unknownAmbulance", "Ambulancia desconocida");
+              t(
+                "pages.workday.common.unknownAmbulance",
+                "Ambulancia desconocida",
+              );
 
             const initialKm = summary.initialKm;
             const finalKm = summary.finalKm ?? summary.initialKm;
 
             return (
               <div
-                key={s._id ?? `${summary.assignmentId}-${summary.isFinalClosure ? "final" : "partial"}`}
+                key={
+                  s._id ??
+                  `${summary.assignmentId}-${summary.isFinalClosure ? "final" : "partial"}`
+                }
                 className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-3"
               >
                 {/* Encabezado de cada bloque (parcial / final) */}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 text-sm">
                     <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${summary.isFinalClosure
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-amber-100 text-amber-800"
-                        }`}
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                        summary.isFinalClosure
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-amber-100 text-amber-800"
+                      }`}
                     >
                       {label}
                     </span>
@@ -141,7 +147,7 @@ const AdminSummaryGroupModal: React.FC<AdminSummaryGroupModalProps> = ({
                         {t(
                           "pages.summaries.admin.detail.effectivePatients",
                           "Viajes Prämie: {{count}}",
-                          { count: s.totalEffectivePatients }
+                          { count: s.totalEffectivePatients },
                         )}
                       </span>
                     )}
@@ -152,14 +158,10 @@ const AdminSummaryGroupModal: React.FC<AdminSummaryGroupModalProps> = ({
                       {new Date(reviewedAt).toLocaleString()}
                     </div>
                   )}
-
-
                 </div>
 
                 {/* Nota / motivo de este resumen */}
-                <p className="text-[12px] text-slate-700 italic">
-                  {note}
-                </p>
+                <p className="text-[12px] text-slate-700 italic">{note}</p>
 
                 {/* Tabla con viajes y km usando ReviewSummary */}
                 <ReviewSummary
@@ -168,7 +170,7 @@ const AdminSummaryGroupModal: React.FC<AdminSummaryGroupModalProps> = ({
                   initialKm={initialKm}
                   finalKm={finalKm}
                   trips={[...summary.trips].sort((a, b) =>
-                    a.timeWarning.localeCompare(b.timeWarning)
+                    a.timeWarning.localeCompare(b.timeWarning),
                   )}
                   dense
                 />

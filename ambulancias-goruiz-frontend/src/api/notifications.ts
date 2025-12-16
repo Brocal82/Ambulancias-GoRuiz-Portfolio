@@ -1,5 +1,10 @@
-import axios from './axios';
-import type { NotificationItem, NotificationListResponse, NotificationRole, NotificationType } from '../types/notification';
+import axios from "./axios";
+import type {
+  NotificationItem,
+  NotificationListResponse,
+  NotificationRole,
+  NotificationType,
+} from "../types/notification";
 
 type ListParams = {
   userId?: string;
@@ -12,18 +17,25 @@ type ListParams = {
 
 // GET /api/notifications
 export async function getNotifications(params: ListParams) {
-  const { data } = await axios.get<NotificationListResponse>('/notifications', { params });
+  const { data } = await axios.get<NotificationListResponse>("/notifications", {
+    params,
+  });
   return data;
 }
 
 // POST /api/notifications
 export async function createNotification(payload: Partial<NotificationItem>) {
-  const { data } = await axios.post<NotificationItem>('/notifications', payload);
+  const { data } = await axios.post<NotificationItem>(
+    "/notifications",
+    payload,
+  );
   return data;
 }
 
 // PATCH /api/notifications/:id/read
 export async function markNotificationAsRead(id: string) {
-  const { data } = await axios.patch<NotificationItem>(`/notifications/${id}/read`);
+  const { data } = await axios.patch<NotificationItem>(
+    `/notifications/${id}/read`,
+  );
   return data;
 }

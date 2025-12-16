@@ -1,30 +1,30 @@
 // src/index.ts
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 dotenv.config();
 
-import express from 'express';
-import mongoose from 'mongoose';
-import cors from 'cors';
-import path from 'path';
-import cron from 'node-cron';
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import path from "path";
+import cron from "node-cron";
 
 // Rutas
-import userRoutes from './routes/userRoutes';
-import dienstRoutes from './routes/dienstRoutes';
-import hospitalRoutes from './routes/hospitalRoutes';
-import tripRoutes from './routes/tripRoutes';
-import workdaySummaryRoutes from './routes/workdaySummaryRoutes';
-import praemienRoutes from './routes/praemienRoutes';
-import vacationRoutes from './routes/vacationRoutes';
-import ambulanceRoutes from './routes/ambulanceRoutes';
-import messageRoutes from './routes/messageRoutes';
-import appointmentRoutes from './routes/appointmentRoutes';
-import notificationRoutes from './routes/notificationRoutes';
-import teamRoutes from './routes/teamRoutes';
-import sickLeaveRoutes from './routes/sickLeaveRoutes';
+import userRoutes from "./routes/userRoutes";
+import dienstRoutes from "./routes/dienstRoutes";
+import hospitalRoutes from "./routes/hospitalRoutes";
+import tripRoutes from "./routes/tripRoutes";
+import workdaySummaryRoutes from "./routes/workdaySummaryRoutes";
+import praemienRoutes from "./routes/praemienRoutes";
+import vacationRoutes from "./routes/vacationRoutes";
+import ambulanceRoutes from "./routes/ambulanceRoutes";
+import messageRoutes from "./routes/messageRoutes";
+import appointmentRoutes from "./routes/appointmentRoutes";
+import notificationRoutes from "./routes/notificationRoutes";
+import teamRoutes from "./routes/teamRoutes";
+import sickLeaveRoutes from "./routes/sickLeaveRoutes";
 
 // Utils
-import cleanupOldDiensts from './utils/cleanupOldDiensts';
+import cleanupOldDiensts from "./utils/cleanupOldDiensts";
 
 const app = express();
 
@@ -33,10 +33,12 @@ const app = express();
 // ----------------------------------------------------------------------------
 const PORT = Number(process.env.PORT) || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
-const TZ = 'Europe/Berlin';
+const TZ = "Europe/Berlin";
 
 if (!MONGODB_URI) {
-  console.error('❌ Error: MONGODB_URI no está definida en las variables de entorno');
+  console.error(
+    "❌ Error: MONGODB_URI no está definida en las variables de entorno",
+  );
   process.exit(1);
 }
 
@@ -45,8 +47,8 @@ if (!MONGODB_URI) {
  * CORS: permitir localhost en dev y Netlify en prod sin hardcodear
  * Define una var ALLOWED_ORIGINS="http://localhost:5173,https://tu-app.netlify.app"
  */
-const allowedFromEnv = (process.env.ALLOWED_ORIGINS || '')
-  .split(',')
+const allowedFromEnv = (process.env.ALLOWED_ORIGINS || "")
+  .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
 
@@ -55,10 +57,7 @@ if (FRONTEND_URL && !allowedFromEnv.includes(FRONTEND_URL)) {
   allowedFromEnv.push(FRONTEND_URL);
 }
 
-const allowedOrigins = new Set([
-  'http://localhost:5173',
-  ...allowedFromEnv,
-]);
+const allowedOrigins = new Set(["http://localhost:5173", ...allowedFromEnv]);
 
 app.use(
   cors({
@@ -69,9 +68,9 @@ app.use(
       return callback(new Error(`Origen no permitido por CORS: ${origin}`));
     },
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  })
+    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  }),
 );
 
 // ----------------------------------------------------------------------------
@@ -82,32 +81,32 @@ app.use(express.json());
 // ✅ Servir estáticos de /uploads
 // Nota: el middleware de subida guarda en dist/uploads (por __dirname de middlewares).
 // Para evitar desajustes, servimos tanto ./uploads (dist) como ../uploads (raíz).
-const uploadsDist = path.join(__dirname, './uploads');
-const uploadsRoot = path.join(__dirname, '../uploads');
-app.use('/uploads', express.static(uploadsDist));
-app.use('/uploads', express.static(uploadsRoot));
+const uploadsDist = path.join(__dirname, "./uploads");
+const uploadsRoot = path.join(__dirname, "../uploads");
+app.use("/uploads", express.static(uploadsDist));
+app.use("/uploads", express.static(uploadsRoot));
 
 // Healthcheck simple para Render/monitoreo
-app.get('/health', (_req, res) => {
+app.get("/health", (_req, res) => {
   res.status(200).json({ ok: true, uptime: process.uptime() });
 });
 
 // ----------------------------------------------------------------------------
 // Rutas API
 // ----------------------------------------------------------------------------
-app.use('/api/users', userRoutes);
-app.use('/api/diensts', dienstRoutes);
-app.use('/api/hospitals', hospitalRoutes);
-app.use('/api/trips', tripRoutes);
-app.use('/api/workday-summary', workdaySummaryRoutes);
-app.use('/api/praemien', praemienRoutes);
-app.use('/api/vacations', vacationRoutes);
-app.use('/api/ambulances', ambulanceRoutes);
-app.use('/api/messages', messageRoutes);
-app.use('/api/appointments', appointmentRoutes);
-app.use('/api', notificationRoutes);
-app.use('/api/teams', teamRoutes);
-app.use('/api/sick-leaves', sickLeaveRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/diensts", dienstRoutes);
+app.use("/api/hospitals", hospitalRoutes);
+app.use("/api/trips", tripRoutes);
+app.use("/api/workday-summary", workdaySummaryRoutes);
+app.use("/api/praemien", praemienRoutes);
+app.use("/api/vacations", vacationRoutes);
+app.use("/api/ambulances", ambulanceRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/appointments", appointmentRoutes);
+app.use("/api", notificationRoutes);
+app.use("/api/teams", teamRoutes);
+app.use("/api/sick-leaves", sickLeaveRoutes);
 
 // ----------------------------------------------------------------------------
 // Conexión a DB y arranque
@@ -115,38 +114,42 @@ app.use('/api/sick-leaves', sickLeaveRoutes);
 mongoose
   .connect(MONGODB_URI)
   .then(async () => {
-    console.log('🟢 Conectado a MongoDB');
+    console.log("🟢 Conectado a MongoDB");
 
     // No limpiar en el arranque
     // await cleanupOldDiensts();
 
     // Cron: Lunes 00:00 (Europe/Berlin)
     cron.schedule(
-      '0 0 * * 1',
+      "0 0 * * 1",
       async () => {
         const fired = new Date();
-        console.log(`[CRON] cleanupOldDiensts START @ ${fired.toISOString()} (server time)`);
+        console.log(
+          `[CRON] cleanupOldDiensts START @ ${fired.toISOString()} (server time)`,
+        );
         try {
           await cleanupOldDiensts();
-          console.log('[CRON] cleanupOldDiensts DONE');
+          console.log("[CRON] cleanupOldDiensts DONE");
         } catch (err) {
-          console.error('[CRON] cleanupOldDiensts ERROR:', err);
+          console.error("[CRON] cleanupOldDiensts ERROR:", err);
         }
       },
-      { timezone: TZ }
+      { timezone: TZ },
     );
 
     // Render escucha en 0.0.0.0 por defecto; lo ponemos explícito por claridad
-    app.listen(PORT, '0.0.0.0', () => {
+    app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Server listening on http://0.0.0.0:${PORT}`);
       console.log(`🕒 Cron activo: lunes 00:00 (${TZ})`);
-      console.log(`🔓 CORS permitido desde: ${Array.from(allowedOrigins).join(', ')}`);
+      console.log(
+        `🔓 CORS permitido desde: ${Array.from(allowedOrigins).join(", ")}`,
+      );
       console.log(`📂 Sirviendo /uploads desde:`);
       console.log(`   - ${uploadsDist}`);
       console.log(`   - ${uploadsRoot}`);
     });
   })
   .catch((err) => {
-    console.error('🔴 Error de conexión a MongoDB:', err);
+    console.error("🔴 Error de conexión a MongoDB:", err);
     process.exit(1);
   });

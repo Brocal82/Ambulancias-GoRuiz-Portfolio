@@ -1,22 +1,22 @@
 // frontend/src/types/appointment.ts
-import type { User } from './user';
+import type { User } from "./user";
 
 export type AppointmentStatus =
-  | 'pending'
-  | 'proposed'
-  | 'confirmed'
-  | 'cancelled'
-  | 'rescheduled';
+  | "pending"
+  | "proposed"
+  | "confirmed"
+  | "cancelled"
+  | "rescheduled";
 
 export interface TimeSlot {
   start: string; // ISO UTC
-  end: string;   // ISO UTC
+  end: string; // ISO UTC
 }
 
 export interface Appointment {
   _id: string;
-  workerId: string | Pick<User, '_id' | 'name' | 'lastName' | 'email'>;
-  adminId?: string | Pick<User, '_id' | 'name' | 'lastName' | 'email'>;
+  workerId: string | Pick<User, "_id" | "name" | "lastName" | "email">;
+  adminId?: string | Pick<User, "_id" | "name" | "lastName" | "email">;
   reason: string;
   details: string;
   status: AppointmentStatus;

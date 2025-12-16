@@ -1,6 +1,6 @@
 // src/context/AuthContext.ts
-import { createContext } from 'react';
-import type { User } from '../types/user'; // ✅ Importamos el tipo User
+import { createContext } from "react";
+import type { User } from "../types/user"; // ✅ Importamos el tipo User
 
 export interface AuthContextType {
   token: string | null;
@@ -11,4 +11,6 @@ export interface AuthContextType {
   logout: () => void;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined,
+);

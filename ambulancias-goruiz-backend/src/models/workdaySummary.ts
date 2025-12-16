@@ -22,21 +22,21 @@ interface TripEntry {
 }
 
 const tripSchema = new Schema<TripEntry>({
-  auftragNumber:       { type: String, required: true },
-  patientName:         { type: String, required: true },
-  fromAddress:         { type: String, required: true },
-  toAddress:           { type: String, required: true },
-  timeWarning:         { type: String, required: true },
-  timeAtHome:          { type: String },
-  timePickup:          { type: String },
-  timeArrival:         { type: String },
-  timeEnd:             { type: String },
-  kmStart:             { type: Number },
-  kmEnd:               { type: Number },
-  wasCancelled:        { type: Boolean, required: true },
-  cancelledAtPickup:   { type: Boolean, default: false },
-  countsTrip:          { type: Number, enum: [0, 1], default: 1, required: true },
-  reports:             { type: String, default: "" },
+  auftragNumber: { type: String, required: true },
+  patientName: { type: String, required: true },
+  fromAddress: { type: String, required: true },
+  toAddress: { type: String, required: true },
+  timeWarning: { type: String, required: true },
+  timeAtHome: { type: String },
+  timePickup: { type: String },
+  timeArrival: { type: String },
+  timeEnd: { type: String },
+  kmStart: { type: Number },
+  kmEnd: { type: Number },
+  wasCancelled: { type: Boolean, required: true },
+  cancelledAtPickup: { type: Boolean, default: false },
+  countsTrip: { type: Number, enum: [0, 1], default: 1, required: true },
+  reports: { type: String, default: "" },
 });
 
 /* ─────────────────────────────────────────────
@@ -71,28 +71,32 @@ export interface IWorkdaySummary extends Document {
  * 3. Schema principal del resumen
  * ───────────────────────────────────────────── */
 const workdaySummarySchema = new Schema<IWorkdaySummary>({
-  date:                { type: String, required: true },
-  assignmentId:        { type: String, required: true },
-  driver:              { type: Schema.Types.ObjectId, ref: "User", required: true },
-  medic:               { type: Schema.Types.ObjectId, ref: "User", required: true },
-  ambulanceId:         { type: Schema.Types.ObjectId, ref: "Ambulance", required: true },
-  ambulanceNumber:     { type: String, required: true },
-  dienstNumber:        { type: Number },
-  startTime:           { type: String },
-  endTime:             { type: String },
-  initialKm:           { type: Number, required: true },
-  finalKm:             { type: Number },
-  totalDienstKm:       { type: Number, required: true },
-  trips:               { type: [tripSchema], required: true },
-  isFinalClosure:      { type: Boolean, default: true },
-  partialClosureReason:{ type: String, default: "" },
-  extraNote:           { type: String, default: "" },
+  date: { type: String, required: true },
+  assignmentId: { type: String, required: true },
+  driver: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  medic: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  ambulanceId: {
+    type: Schema.Types.ObjectId,
+    ref: "Ambulance",
+    required: true,
+  },
+  ambulanceNumber: { type: String, required: true },
+  dienstNumber: { type: Number },
+  startTime: { type: String },
+  endTime: { type: String },
+  initialKm: { type: Number, required: true },
+  finalKm: { type: Number },
+  totalDienstKm: { type: Number, required: true },
+  trips: { type: [tripSchema], required: true },
+  isFinalClosure: { type: Boolean, default: true },
+  partialClosureReason: { type: String, default: "" },
+  extraNote: { type: String, default: "" },
   totalEffectivePatients: { type: Number, required: true },
-  totalRealTrips:        { type: Number, required: true },
+  totalRealTrips: { type: Number, required: true },
 
   /** 👇 NUEVO: revisión */
-  isReviewed:          { type: Boolean, default: false },
-  reviewedAt:          { type: Date },
+  isReviewed: { type: Boolean, default: false },
+  reviewedAt: { type: Date },
 });
 
 // (Opcional, rendimiento): índice simple por isReviewed

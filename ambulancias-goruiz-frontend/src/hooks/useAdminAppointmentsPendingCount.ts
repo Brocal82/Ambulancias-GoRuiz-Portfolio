@@ -33,7 +33,8 @@ export function useAdminAppointmentsPendingCount({ pollMs = 0 }: Options = {}) {
       // Log suave + estado de error, sin interrumpir UI
       // eslint-disable-next-line no-console
       console.warn("[useAdminAppointmentsPendingCount] fetch error:", e);
-      if (mountedRef.current) setError("Error al cargar el contador de citas pendientes");
+      if (mountedRef.current)
+        setError("Error al cargar el contador de citas pendientes");
     } finally {
       if (mountedRef.current) setLoading(false);
     }
@@ -66,12 +67,18 @@ export function useAdminAppointmentsPendingCount({ pollMs = 0 }: Options = {}) {
 
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener(ADMIN_APPOINTMENTS_CHANGED_EVENT as any, onChanged as EventListener);
+    window.addEventListener(
+      ADMIN_APPOINTMENTS_CHANGED_EVENT as any,
+      onChanged as EventListener,
+    );
 
     return () => {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener(ADMIN_APPOINTMENTS_CHANGED_EVENT as any, onChanged as EventListener);
+      window.removeEventListener(
+        ADMIN_APPOINTMENTS_CHANGED_EVENT as any,
+        onChanged as EventListener,
+      );
     };
   }, [fetchCount]);
 

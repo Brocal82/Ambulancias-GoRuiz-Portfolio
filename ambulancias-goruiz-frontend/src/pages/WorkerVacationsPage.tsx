@@ -1,19 +1,22 @@
 // frontend/src/pages/WorkerVacationsPage.tsx
-import { useEffect, useState, useCallback, useRef } from 'react';
-import type { IVacationRequest } from '../types/vacationRequest';
-import { getUserVacationRequests, respondToAlternativeDate } from '../api/vacation';
-import { useAuth } from '../hooks/useAuth';
-import AlternativeDateModal from '../components/vacation/AlternativeDateModal';
-import VacationRequestForm from '../components/vacation/VacationRequestForm';
-import UserVacationList from '../components/vacation/UserVacationList';
-import { useTranslation } from 'react-i18next';
-import { toastT } from '../utils/toast';
+import { useEffect, useState, useCallback, useRef } from "react";
+import type { IVacationRequest } from "../types/vacationRequest";
+import {
+  getUserVacationRequests,
+  respondToAlternativeDate,
+} from "../api/vacation";
+import { useAuth } from "../hooks/useAuth";
+import AlternativeDateModal from "../components/vacation/AlternativeDateModal";
+import VacationRequestForm from "../components/vacation/VacationRequestForm";
+import UserVacationList from "../components/vacation/UserVacationList";
+import { useTranslation } from "react-i18next";
+import { toastT } from "../utils/toast";
 
-import AdminVacationMonthGrid from '../components/vacation/AdminVacationMonthGrid';
-import WorkerAvailabilityMonthModal from '../components/vacation/WorkerAvailabilityMonthModal';
+import AdminVacationMonthGrid from "../components/vacation/AdminVacationMonthGrid";
+import WorkerAvailabilityMonthModal from "../components/vacation/WorkerAvailabilityMonthModal";
 
 // Prefetch/caché compartida
-import { getVacationAvailability } from '../api/vacation';
+import { getVacationAvailability } from "../api/vacation";
 
 const WorkerVacationsPage = () => {
   const { token } = useAuth();
@@ -21,7 +24,7 @@ const WorkerVacationsPage = () => {
 
   const [requests, setRequests] = useState<IVacationRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [modalInitialStartDate] = useState<Date>(new Date());
@@ -35,7 +38,9 @@ const WorkerVacationsPage = () => {
 
   // ===== Modal de disponibilidad mensual (solo lectura) =====
   const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null); // 0..11
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(
+    null,
+  ); // 0..11
   const [selectedYear, setSelectedYear] = useState<number>(gridYear);
 
   // 🔄 Forzar refresco del grid cuando cambie la disponibilidad sin recargar
@@ -45,10 +50,9 @@ const WorkerVacationsPage = () => {
   const forceRefreshMonth = useCallback(async (y: number, m1: number) => {
     try {
       await getVacationAvailability({ year: y, month: m1 }, { force: true });
-    } catch { }
+    } catch {}
     setGridRefreshTick((n) => n + 1);
   }, []);
-
 
   // ✅ fetchRequests como useCallback para usar deps estables (token, t)
   const fetchRequests = useCallback(async () => {
@@ -57,10 +61,10 @@ const WorkerVacationsPage = () => {
     try {
       const data = await getUserVacationRequests(token);
       setRequests(data);
-      setError('');
+      setError("");
       setShowForm(data.length === 0);
     } catch {
-      const msgKey = 'toasts.vacations.worker.loadError';
+      const msgKey = "toasts.vacations.worker.loadError";
       setError(t(msgKey));
       toastT.error([msgKey]);
     } finally {
@@ -86,8 +90,15 @@ const WorkerVacationsPage = () => {
   // Escuchar CustomEvent (misma pestaña)
   useEffect(() => {
     const handler = () => safeRefetch();
-    window.addEventListener('vacation-requests-updated', handler as EventListener);
-    return () => window.removeEventListener('vacation-requests-updated', handler as EventListener);
+    window.addEventListener(
+      "vacation-requests-updated",
+      handler as EventListener,
+    );
+    return () =>
+      window.removeEventListener(
+        "vacation-requests-updated",
+        handler as EventListener,
+      );
   }, [safeRefetch]);
 
   // Live update del GRID (colores) — escucha invalidaciones de disponibilidad
@@ -99,10 +110,16 @@ const WorkerVacationsPage = () => {
 
     // Misma pestaña
     const onCustom = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { year?: number; month?: number };
+      const detail = (e as CustomEvent).detail as {
+        year?: number;
+        month?: number;
+      };
       if (detail?.year && detail?.month) schedule(detail.year, detail.month);
     };
-    window.addEventListener('vacation-availability-invalidated', onCustom as EventListener);
+    window.addEventListener(
+      "vacation-availability-invalidated",
+      onCustom as EventListener,
+    );
 
     // BroadcastChannel entre pestañas
     let bc: BroadcastChannel | null = null;
@@ -110,34 +127,43 @@ const WorkerVacationsPage = () => {
       const BC = (window as any).BroadcastChannel as
         | (new (name: string) => BroadcastChannel)
         | undefined;
-      if (typeof BC === 'function') {
-        bc = new BC('vacations');
+      if (typeof BC === "function") {
+        bc = new BC("vacations");
         bc.onmessage = (msg: MessageEvent) => {
           const data = msg.data || {};
-          if (data?.type === 'availability-invalidated' && data.year && data.month) {
+          if (
+            data?.type === "availability-invalidated" &&
+            data.year &&
+            data.month
+          ) {
             schedule(data.year, data.month);
           }
         };
       }
-    } catch { }
+    } catch {}
 
     // Fallback: storage
     const onStorage = (ev: StorageEvent) => {
-      if (ev.key !== '__vac_av_inval__' || !ev.newValue) return;
+      if (ev.key !== "__vac_av_inval__" || !ev.newValue) return;
       try {
         const payload = JSON.parse(ev.newValue);
-        if (payload?.year && payload?.month) schedule(payload.year, payload.month);
-      } catch { }
+        if (payload?.year && payload?.month)
+          schedule(payload.year, payload.month);
+      } catch {}
     };
-    window.addEventListener('storage', onStorage);
+    window.addEventListener("storage", onStorage);
 
     return () => {
-      window.removeEventListener('vacation-availability-invalidated', onCustom as EventListener);
-      window.removeEventListener('storage', onStorage);
-      try { bc?.close?.(); } catch { }
+      window.removeEventListener(
+        "vacation-availability-invalidated",
+        onCustom as EventListener,
+      );
+      window.removeEventListener("storage", onStorage);
+      try {
+        bc?.close?.();
+      } catch {}
     };
   }, [forceRefreshMonth]);
-
 
   // Escuchar BroadcastChannel (otras pestañas/ventanas)
   useEffect(() => {
@@ -146,39 +172,41 @@ const WorkerVacationsPage = () => {
       const BC = (window as any).BroadcastChannel as
         | (new (name: string) => BroadcastChannel)
         | undefined;
-      if (typeof BC === 'function') {
-        bc = new BC('vacations');
+      if (typeof BC === "function") {
+        bc = new BC("vacations");
         bc.onmessage = (msg: MessageEvent) => {
           const data = msg.data || {};
-          if (data?.type === 'requests-updated') {
+          if (data?.type === "requests-updated") {
             safeRefetch();
           }
         };
       }
-    } catch { }
+    } catch {}
     return () => {
-      try { bc?.close?.(); } catch { }
+      try {
+        bc?.close?.();
+      } catch {}
     };
   }, [safeRefetch]);
 
   // 🔁 Fallback entre pestañas/ventanas: escucha evento 'storage' cuando Admin escribe __vac_req_upd__
   useEffect(() => {
     const onStorage = (ev: StorageEvent) => {
-      if (ev.key === '__vac_req_upd__' && ev.newValue) {
+      if (ev.key === "__vac_req_upd__" && ev.newValue) {
         safeRefetch();
       }
     };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, [safeRefetch]);
 
   const handleRespondAlternative = async (id: string, accept: boolean) => {
     if (!token) return;
     try {
       await toastT.promise(respondToAlternativeDate(token, id, { accept }), {
-        pending: ['toasts.vacations.worker.respondPending'],
-        success: ['toasts.vacations.worker.respondSuccess'],
-        error: ['toasts.vacations.worker.error'],
+        pending: ["toasts.vacations.worker.respondPending"],
+        success: ["toasts.vacations.worker.respondSuccess"],
+        error: ["toasts.vacations.worker.error"],
       });
       fetchRequests();
     } catch {
@@ -188,9 +216,9 @@ const WorkerVacationsPage = () => {
 
   const handleFormSuccess = () => {
     setShowForm(false);
-    toastT.success(['toasts.vacations.worker.formSuccess']);
+    toastT.success(["toasts.vacations.worker.formSuccess"]);
     fetchRequests();
-    setFormMessage(t('toasts.vacations.worker.formSuccess'));
+    setFormMessage(t("toasts.vacations.worker.formSuccess"));
   };
 
   /* =========================================================
@@ -208,19 +236,22 @@ const WorkerVacationsPage = () => {
 
   // Prefetch de todo un año (12 meses). Evitamos repetir con un Set.
   const prefetchedYearsRef = useRef<Set<number>>(new Set());
-  const prefetchYear = useCallback(async (y: number) => {
-    if (prefetchedYearsRef.current.has(y)) return;
-    prefetchedYearsRef.current.add(y);
-    const tasks: Promise<any>[] = [];
-    for (let m1 = 1; m1 <= 12; m1++) {
-      tasks.push(prefetchMonth(y, m1));
-    }
-    try {
-      await Promise.allSettled(tasks);
-    } catch {
-      // silencioso
-    }
-  }, [prefetchMonth]);
+  const prefetchYear = useCallback(
+    async (y: number) => {
+      if (prefetchedYearsRef.current.has(y)) return;
+      prefetchedYearsRef.current.add(y);
+      const tasks: Promise<any>[] = [];
+      for (let m1 = 1; m1 <= 12; m1++) {
+        tasks.push(prefetchMonth(y, m1));
+      }
+      try {
+        await Promise.allSettled(tasks);
+      } catch {
+        // silencioso
+      }
+    },
+    [prefetchMonth],
+  );
 
   // Prefetch de año actual y siguiente cuando se abre el formulario
   useEffect(() => {
@@ -245,19 +276,27 @@ const WorkerVacationsPage = () => {
   }, [prefetchMonth]);
 
   // Al abrir un mes desde el grid: precarga ese mes y el siguiente (para el modal)
-  const handleOpenMonth = useCallback(async (monthIdx: number, y: number) => {
-    const m1 = monthIdx + 1;
-    await prefetchMonth(y, m1);
-    await prefetchMonth(m1 === 12 ? y + 1 : y, m1 === 12 ? 1 : m1 + 1);
-    setSelectedMonthIndex(monthIdx);
-    setSelectedYear(y);
-    setIsMonthModalOpen(true);
-  }, [prefetchMonth]);
+  const handleOpenMonth = useCallback(
+    async (monthIdx: number, y: number) => {
+      const m1 = monthIdx + 1;
+      await prefetchMonth(y, m1);
+      await prefetchMonth(m1 === 12 ? y + 1 : y, m1 === 12 ? 1 : m1 + 1);
+      setSelectedMonthIndex(monthIdx);
+      setSelectedYear(y);
+      setIsMonthModalOpen(true);
+    },
+    [prefetchMonth],
+  );
 
   /* ========================================================= */
 
   // ===== Render principal =====
-  if (loading) return <p className="p-4 text-sm text-slate-600">{t('pages.vacations.workerPage.loading')}</p>;
+  if (loading)
+    return (
+      <p className="p-4 text-sm text-slate-600">
+        {t("pages.vacations.workerPage.loading")}
+      </p>
+    );
   if (error) return <p className="p-4 text-sm text-red-600">{error}</p>;
 
   return (
@@ -265,7 +304,7 @@ const WorkerVacationsPage = () => {
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6">
         <div className="mb-4 text-center">
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
-            {t('pages.vacations.workerPage.title')}
+            {t("pages.vacations.workerPage.title")}
           </h2>
         </div>
 
@@ -278,7 +317,6 @@ const WorkerVacationsPage = () => {
             onYearChange={(y) => setGridYear(y)}
             onMonthOpen={handleOpenMonth}
           />
-
         </div>
 
         <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
@@ -288,23 +326,27 @@ const WorkerVacationsPage = () => {
               onClick={() => setShowForm(!showForm)}
             >
               {showForm
-                ? t('pages.vacations.workerPage.toggleCloseForm')
-                : t('pages.vacations.workerPage.toggleOpenForm')}
+                ? t("pages.vacations.workerPage.toggleCloseForm")
+                : t("pages.vacations.workerPage.toggleOpenForm")}
             </button>
-            {formMessage && <p className="text-sm text-emerald-700">{formMessage}</p>}
+            {formMessage && (
+              <p className="text-sm text-emerald-700">{formMessage}</p>
+            )}
           </div>
 
           <div
             className={[
-              'mb-4 rounded-xl ring-1 ring-slate-200 p-3 bg-slate-50 transition-all',
-              showForm ? 'block' : 'hidden',
-            ].join(' ')}
+              "mb-4 rounded-xl ring-1 ring-slate-200 p-3 bg-slate-50 transition-all",
+              showForm ? "block" : "hidden",
+            ].join(" ")}
           >
             <VacationRequestForm onSuccess={handleFormSuccess} />
           </div>
 
           {requests.length === 0 && !loading && !showForm && (
-            <p className="text-sm text-slate-600">{t('pages.vacations.workerPage.empty')}</p>
+            <p className="text-sm text-slate-600">
+              {t("pages.vacations.workerPage.empty")}
+            </p>
           )}
 
           {requests.length > 0 && (
@@ -333,8 +375,8 @@ const WorkerVacationsPage = () => {
         year={selectedYear}
         onClose={() => setIsMonthModalOpen(false)}
         acceptedRanges={requests
-          .filter(r => r.status === 'accepted')
-          .map(r => ({ startISO: r.startDate, endISO: r.endDate }))}
+          .filter((r) => r.status === "accepted")
+          .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
       />
     </div>
   );

@@ -1,11 +1,11 @@
 // src/utils/vacationMonthUtils.ts
-import type { IVacationRequest } from '../types/vacationRequest';
+import type { IVacationRequest } from "../types/vacationRequest";
 
 export type MonthInfo = {
   monthIndex: number; // 0..11
-  label: string;      // nombre del mes localizado según `locale`
-  start: Date;        // inicio del mes (00:00:00.000)
-  end: Date;          // fin del mes (23:59:59.999)
+  label: string; // nombre del mes localizado según `locale`
+  start: Date; // inicio del mes (00:00:00.000)
+  end: Date; // fin del mes (23:59:59.999)
 };
 
 /**
@@ -18,14 +18,14 @@ export type MonthInfo = {
  */
 export function getYearMonths(
   year: number = new Date().getFullYear(),
-  locale: string = 'es',
-  tz: string = 'Europe/Berlin'
+  locale: string = "es",
+  tz: string = "Europe/Berlin",
 ): MonthInfo[] {
   return Array.from({ length: 12 }, (_, m) => {
     const start = new Date(year, m, 1, 0, 0, 0, 0);
     const end = new Date(year, m + 1, 0, 23, 59, 59, 999); // último día del mes
     const label = new Intl.DateTimeFormat(locale, {
-      month: 'long',
+      month: "long",
       timeZone: tz,
     }).format(start);
 
@@ -34,7 +34,12 @@ export function getYearMonths(
 }
 
 /** Comprueba si dos rangos [aStart, aEnd] y [bStart, bEnd] se solapan */
-export function rangesOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
+export function rangesOverlap(
+  aStart: Date,
+  aEnd: Date,
+  bStart: Date,
+  bEnd: Date,
+) {
   return aStart <= bEnd && bStart <= aEnd;
 }
 
@@ -46,7 +51,7 @@ export function requestOverlapsMonth(
   req: IVacationRequest,
   monthIndex: number,
   year: number = new Date().getFullYear(),
-  tz: string = 'Europe/Berlin'
+  tz: string = "Europe/Berlin",
 ) {
   const { start, end } = getYearMonths(year, undefined, tz)[monthIndex];
   const rStart = new Date(req.startDate);
@@ -61,7 +66,7 @@ export function requestOverlapsMonth(
 export function countRequestsByMonth(
   requests: IVacationRequest[],
   year: number = new Date().getFullYear(),
-  tz: string = 'Europe/Berlin'
+  tz: string = "Europe/Berlin",
 ) {
   const months = getYearMonths(year, undefined, tz);
   const counts = Array(12).fill(0) as number[];
@@ -82,11 +87,11 @@ export function filterRequestsByMonth(
   requests: IVacationRequest[],
   monthIndex: number,
   year: number = new Date().getFullYear(),
-  tz: string = 'Europe/Berlin'
+  tz: string = "Europe/Berlin",
 ) {
   const { start, end } = getYearMonths(year, undefined, tz)[monthIndex];
-  return requests.filter(req =>
-    rangesOverlap(new Date(req.startDate), new Date(req.endDate), start, end)
+  return requests.filter((req) =>
+    rangesOverlap(new Date(req.startDate), new Date(req.endDate), start, end),
   );
 }
 
@@ -94,6 +99,5 @@ export function filterRequestsByMonth(
 export function monthsForRange(start: Date, end: Date) {
   const s = { y: start.getFullYear(), m1: start.getMonth() + 1 };
   const e = { y: end.getFullYear(), m1: end.getMonth() + 1 };
-  return (s.y === e.y && s.m1 === e.m1) ? [s] : [s, e];
+  return s.y === e.y && s.m1 === e.m1 ? [s] : [s, e];
 }
-

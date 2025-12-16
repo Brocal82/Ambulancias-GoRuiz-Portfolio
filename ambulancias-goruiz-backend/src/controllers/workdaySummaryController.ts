@@ -9,7 +9,10 @@ import { calculateEffectivePatients } from "../utils/prämienUtils";
 /* ─────────────────────────────
  * CIERRE COMPLETO DEL DÍA
  * ───────────────────────────── */
-export const createWorkdaySummary = async (req: Request, res: Response): Promise<void> => {
+export const createWorkdaySummary = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const {
       date,
@@ -32,31 +35,41 @@ export const createWorkdaySummary = async (req: Request, res: Response): Promise
     if (!Array.isArray(trips)) missing.push("trips (debe ser array)");
 
     if (missing.length) {
-      res.status(400).json({ message: `Faltan campos obligatorios: ${missing.join(", ")}` });
+      res
+        .status(400)
+        .json({ message: `Faltan campos obligatorios: ${missing.join(", ")}` });
       return;
     }
 
     // ✅ Normalizaciones defensivas
-    const nInitialKm = typeof initialKm === "string" ? Number(initialKm) : initialKm;
+    const nInitialKm =
+      typeof initialKm === "string" ? Number(initialKm) : initialKm;
     const nFinalKm = typeof finalKm === "string" ? Number(finalKm) : finalKm;
 
     const sanitizedTrips = (trips as any[]).map((t) => ({
       ...t,
       wasCancelled: !!t.wasCancelled,
       cancelledAtPickup: !!t.cancelledAtPickup,
-      countsTrip: typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
+      countsTrip:
+        typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
     }));
 
     // 🔎 Busca Dienst/horarios como antes (ObjectId)
     const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
-    const dienst = await Dienst.findOne({ "assignments._id": assignmentObjectId });
+    const dienst = await Dienst.findOne({
+      "assignments._id": assignmentObjectId,
+    });
 
     if (!dienst) {
-      res.status(404).json({ message: "Dienst no encontrado con ese assignmentId" });
+      res
+        .status(404)
+        .json({ message: "Dienst no encontrado con ese assignmentId" });
       return;
     }
 
-    const assignment = dienst.assignments.find(a => a._id?.toString() === assignmentObjectId.toString());
+    const assignment = dienst.assignments.find(
+      (a) => a._id?.toString() === assignmentObjectId.toString(),
+    );
     if (!assignment) {
       res.status(404).json({ message: "Asignación no encontrada" });
       return;
@@ -68,9 +81,14 @@ export const createWorkdaySummary = async (req: Request, res: Response): Promise
     const { driver, medic } = assignment;
 
     // 🧮 Cálculos
-    const totalEffectivePatients = calculateEffectivePatients(sanitizedTrips, date);
+    const totalEffectivePatients = calculateEffectivePatients(
+      sanitizedTrips,
+      date,
+    );
     const totalDienstKm = nFinalKm - nInitialKm;
-    const totalRealTrips = sanitizedTrips.filter((t: any) => !t.wasCancelled || t.cancelledAtPickup).length;
+    const totalRealTrips = sanitizedTrips.filter(
+      (t: any) => !t.wasCancelled || t.cancelledAtPickup,
+    ).length;
 
     const newSummary = await WorkdaySummary.create({
       date,
@@ -95,7 +113,10 @@ export const createWorkdaySummary = async (req: Request, res: Response): Promise
     if (sanitizedTrips.length > 0) {
       const ids = sanitizedTrips.map((t: any) => t._id).filter(Boolean);
       if (ids.length > 0) {
-        await Trip.updateMany({ _id: { $in: ids } }, { $set: { sentInSummary: true } });
+        await Trip.updateMany(
+          { _id: { $in: ids } },
+          { $set: { sentInSummary: true } },
+        );
       }
     }
 
@@ -106,12 +127,13 @@ export const createWorkdaySummary = async (req: Request, res: Response): Promise
   }
 };
 
-
-
 /* ─────────────────────────────
  * CIERRE PARCIAL DEL DÍA
  * ───────────────────────────── */
-export const submitPartialClosure = async (req: Request, res: Response): Promise<void> => {
+export const submitPartialClosure = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const {
       date,
@@ -136,7 +158,11 @@ export const submitPartialClosure = async (req: Request, res: Response): Promise
     if (initialKm === undefined) missing.push("initialKm");
     if (finalKm === undefined) missing.push("finalKm");
     if (!Array.isArray(trips)) missing.push("trips (debe ser array)");
-    if (!partialClosureReason || (typeof partialClosureReason === "string" && partialClosureReason.trim() === "")) {
+    if (
+      !partialClosureReason ||
+      (typeof partialClosureReason === "string" &&
+        partialClosureReason.trim() === "")
+    ) {
       missing.push("partialClosureReason");
     }
     if (missing.length) {
@@ -145,14 +171,16 @@ export const submitPartialClosure = async (req: Request, res: Response): Promise
     }
 
     // ✅ Normalizaciones defensivas
-    const nInitialKm = typeof initialKm === "string" ? Number(initialKm) : initialKm;
+    const nInitialKm =
+      typeof initialKm === "string" ? Number(initialKm) : initialKm;
     const nFinalKm = typeof finalKm === "string" ? Number(finalKm) : finalKm;
 
     const sanitizedTrips = (trips as any[]).map((t) => ({
       ...t,
       wasCancelled: !!t.wasCancelled,
       cancelledAtPickup: !!t.cancelledAtPickup,
-      countsTrip: typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
+      countsTrip:
+        typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
     }));
 
     // 🔎 Enriquecer con horario/dienstNumber si es posible
@@ -162,8 +190,12 @@ export const submitPartialClosure = async (req: Request, res: Response): Promise
 
     try {
       const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
-      const dienst = await Dienst.findOne({ "assignments._id": assignmentObjectId });
-      const assignment = dienst?.assignments.find(a => a._id?.toString() === assignmentObjectId.toString());
+      const dienst = await Dienst.findOne({
+        "assignments._id": assignmentObjectId,
+      });
+      const assignment = dienst?.assignments.find(
+        (a) => a._id?.toString() === assignmentObjectId.toString(),
+      );
       dienstNumber = dienst?.dienstNumber ?? null;
       startTime = assignment?.startTime ?? null;
       endTime = assignment?.endTime ?? null;
@@ -172,9 +204,14 @@ export const submitPartialClosure = async (req: Request, res: Response): Promise
     }
 
     // 🧮 Cálculos
-    const totalEffectivePatients = calculateEffectivePatients(sanitizedTrips, date);
+    const totalEffectivePatients = calculateEffectivePatients(
+      sanitizedTrips,
+      date,
+    );
     const totalDienstKm = nFinalKm - nInitialKm;
-    const totalRealTrips = sanitizedTrips.filter((t: any) => !t.wasCancelled || t.cancelledAtPickup).length;
+    const totalRealTrips = sanitizedTrips.filter(
+      (t: any) => !t.wasCancelled || t.cancelledAtPickup,
+    ).length;
 
     const summary = new WorkdaySummary({
       date,
@@ -187,7 +224,10 @@ export const submitPartialClosure = async (req: Request, res: Response): Promise
       finalKm: nFinalKm,
       totalDienstKm,
       trips: sanitizedTrips,
-      partialClosureReason: typeof partialClosureReason === "string" ? partialClosureReason.trim() : partialClosureReason,
+      partialClosureReason:
+        typeof partialClosureReason === "string"
+          ? partialClosureReason.trim()
+          : partialClosureReason,
       isFinalClosure: false,
       totalEffectivePatients,
       totalRealTrips,
@@ -201,7 +241,10 @@ export const submitPartialClosure = async (req: Request, res: Response): Promise
     if (sanitizedTrips.length > 0) {
       const ids = sanitizedTrips.map((t: any) => t._id).filter(Boolean);
       if (ids.length > 0) {
-        await Trip.updateMany({ _id: { $in: ids } }, { $set: { sentInSummary: true } });
+        await Trip.updateMany(
+          { _id: { $in: ids } },
+          { $set: { sentInSummary: true } },
+        );
       }
     }
 
@@ -212,32 +255,36 @@ export const submitPartialClosure = async (req: Request, res: Response): Promise
   }
 };
 
-
-
 /* ─────────────────────────────
  * GET TODOS LOS RESÚMENES
  * ───────────────────────────── */
-export const getAllWorkdaySummaries = async (req: Request, res: Response): Promise<void> => {
+export const getAllWorkdaySummaries = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const summaries = await WorkdaySummary.find()
       .sort({ date: -1 })
-      .populate('driver', 'name lastName')
-      .populate('medic', 'name lastName')
+      .populate("driver", "name lastName")
+      .populate("medic", "name lastName")
       .populate({
-        path: 'trips',
-        select: 'auftragNumber wasCancelled cancelledAtPickup countsTrip kmStart kmEnd timeWarning timeAtHome timePickup timeArrival timeEnd fromAddress toAddress patientName reports'
+        path: "trips",
+        select:
+          "auftragNumber wasCancelled cancelledAtPickup countsTrip kmStart kmEnd timeWarning timeAtHome timePickup timeArrival timeEnd fromAddress toAddress patientName reports",
       })
       .lean();
 
     const diensts = await Dienst.find().lean();
 
     const enriched = summaries.map((s: any) => {
-      const dienst = diensts.find(d =>
-        d.assignments.some(a => a._id && a._id.toString() === s.assignmentId.toString())
+      const dienst = diensts.find((d) =>
+        d.assignments.some(
+          (a) => a._id && a._id.toString() === s.assignmentId.toString(),
+        ),
       );
 
       const assignment = dienst?.assignments.find(
-        a => a._id && a._id.toString() === s.assignmentId.toString()
+        (a) => a._id && a._id.toString() === s.assignmentId.toString(),
       );
 
       return {
@@ -256,12 +303,13 @@ export const getAllWorkdaySummaries = async (req: Request, res: Response): Promi
   }
 };
 
-
-
 /* ─────────────────────────────
  * AVERÍAS
  * ───────────────────────────── */
-export const reportIssue = async (req: Request, res: Response): Promise<void> => {
+export const reportIssue = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const {
       dienstNumber,
@@ -269,7 +317,7 @@ export const reportIssue = async (req: Request, res: Response): Promise<void> =>
       startTime,
       endTime,
       team,
-      ambulanceNumber,       // ✅ ahora usamos ambulanceNumber
+      ambulanceNumber, // ✅ ahora usamos ambulanceNumber
       ambulanceId,
       finalKm,
       timestamp,
@@ -279,8 +327,16 @@ export const reportIssue = async (req: Request, res: Response): Promise<void> =>
     } = req.body;
 
     // ✅ Validación con ambulanceNumber
-    if (!dienstNumber || !ambulanceNumber || !ambulanceId || !timestamp || !issueText) {
-      res.status(400).json({ message: "Faltan datos obligatorios para reporte de avería." });
+    if (
+      !dienstNumber ||
+      !ambulanceNumber ||
+      !ambulanceId ||
+      !timestamp ||
+      !issueText
+    ) {
+      res
+        .status(400)
+        .json({ message: "Faltan datos obligatorios para reporte de avería." });
       return;
     }
 
@@ -300,7 +356,7 @@ export const reportIssue = async (req: Request, res: Response): Promise<void> =>
       startTime,
       endTime,
       team,
-      ambulanceNumber,   // ✅ actualizado
+      ambulanceNumber, // ✅ actualizado
       ambulanceId,
       finalKm,
       timestamp,
@@ -312,12 +368,16 @@ export const reportIssue = async (req: Request, res: Response): Promise<void> =>
     res.status(201).json(newIssue);
   } catch (err) {
     console.error("❌ Error reportIssue:", err);
-    res.status(500).json({ message: "Error interno al generar reporte de avería." });
+    res
+      .status(500)
+      .json({ message: "Error interno al generar reporte de avería." });
   }
 };
 
-
-export const getAllIssueReports = async (req: Request, res: Response): Promise<void> => {
+export const getAllIssueReports = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const issues = await WorkdayIssue.find().sort({ timestamp: -1 });
     res.status(200).json(issues);
@@ -327,12 +387,13 @@ export const getAllIssueReports = async (req: Request, res: Response): Promise<v
   }
 };
 
-
-
 /* ─────────────────────────────
  * AVERÍAS: BORRAR REPORTE
  * ───────────────────────────── */
-export const deleteIssueReport = async (req: Request, res: Response): Promise<void> => {
+export const deleteIssueReport = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { id } = req.params;
 
@@ -354,12 +415,13 @@ export const deleteIssueReport = async (req: Request, res: Response): Promise<vo
   }
 };
 
-
-
 /* ─────────────────────────────
  * AVERÍAS: MARCAR COMO VISTAS
  * ───────────────────────────── */
-export const markIssueSeen = async (req: Request, res: Response): Promise<void> => {
+export const markIssueSeen = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { id } = req.params;
 
@@ -371,7 +433,7 @@ export const markIssueSeen = async (req: Request, res: Response): Promise<void> 
     const updated = await WorkdayIssue.findByIdAndUpdate(
       id,
       { $set: { isSeen: true, seenAt: new Date() } },
-      { new: true }
+      { new: true },
     );
 
     if (!updated) {
@@ -386,14 +448,16 @@ export const markIssueSeen = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-
-
 /* ─────────────────────────────
  * AVERÍAS: CONTADOR (redefinido con isSeen)
  * ───────────────────────────── */
-export const getIssuesCount = async (req: Request, res: Response): Promise<void> => {
+export const getIssuesCount = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const rawStatus = typeof req.query.status === "string" ? req.query.status : "open";
+    const rawStatus =
+      typeof req.query.status === "string" ? req.query.status : "open";
     const status = rawStatus.toLowerCase();
 
     let filter: any = {};
@@ -415,19 +479,21 @@ export const getIssuesCount = async (req: Request, res: Response): Promise<void>
   }
 };
 
-
-
 /* ─────────────────────────────
  * SUMMARIES: CONTADOR POR ESTADO (se mantiene igual)
  * ───────────────────────────── */
-export const getSummariesCountByStatus = async (req: Request, res: Response): Promise<void> => {
+export const getSummariesCountByStatus = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const rawStatus = typeof req.query.status === 'string' ? req.query.status : 'pending';
+    const rawStatus =
+      typeof req.query.status === "string" ? req.query.status : "pending";
     const status = rawStatus.toLowerCase();
 
     let count = 0;
 
-    if (status === 'pending') {
+    if (status === "pending") {
       // Definición amplia de "pendiente":
       // - status === 'pending'
       // - reviewStatus === 'pending'
@@ -435,8 +501,8 @@ export const getSummariesCountByStatus = async (req: Request, res: Response): Pr
       // - O NO existen reviewStatus ni isReviewed (lo tratamos como no revisado)
       count = await WorkdaySummary.countDocuments({
         $or: [
-          { status: 'pending' },
-          { reviewStatus: 'pending' },
+          { status: "pending" },
+          { reviewStatus: "pending" },
           { isReviewed: false },
           {
             $and: [
@@ -455,41 +521,42 @@ export const getSummariesCountByStatus = async (req: Request, res: Response): Pr
 
     res.status(200).json({ count });
   } catch (error) {
-    console.error('❌ Error al contar summaries por estado:', error);
-    res.status(500).json({ message: 'Error al contar resúmenes' });
+    console.error("❌ Error al contar summaries por estado:", error);
+    res.status(500).json({ message: "Error al contar resúmenes" });
   }
 };
-
-
 
 /**
  * PATCH /workday-summary/:id/review
  * Marca el resumen como revisado (isReviewed=true) y setea reviewedAt=now.
  * Responde el documento actualizado.
  */
-export const markSummaryReviewed = async (req: Request, res: Response): Promise<void> => {
+export const markSummaryReviewed = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { id } = req.params;
 
     if (!mongoose.isValidObjectId(id)) {
-      res.status(400).json({ message: 'ID inválido' });
+      res.status(400).json({ message: "ID inválido" });
       return;
     }
 
     const updated = await WorkdaySummary.findByIdAndUpdate(
       id,
       { $set: { isReviewed: true, reviewedAt: new Date() } },
-      { new: true }
+      { new: true },
     );
 
     if (!updated) {
-      res.status(404).json({ message: 'Resumen no encontrado' });
+      res.status(404).json({ message: "Resumen no encontrado" });
       return;
     }
 
     res.status(200).json(updated);
   } catch (error) {
-    console.error('❌ Error al marcar resumen como revisado:', error);
-    res.status(500).json({ message: 'Error al marcar resumen como revisado' });
+    console.error("❌ Error al marcar resumen como revisado:", error);
+    res.status(500).json({ message: "Error al marcar resumen como revisado" });
   }
 };

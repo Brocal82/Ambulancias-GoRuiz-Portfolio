@@ -1,5 +1,5 @@
 // backend/src/models/DienstTemplate.ts
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface DaySchedule {
   /**
@@ -25,7 +25,7 @@ export interface DaySchedule {
 export interface IDienstTemplate extends Document {
   dienstNumber: number;
   startTime: string; // formato "HH:mm", igual que en Dienst.assignments
-  endTime: string;   // formato "HH:mm"
+  endTime: string; // formato "HH:mm"
   daysOff: number[]; // 0=domingo, ..., 6=sábado
   isActive: boolean;
   /**
@@ -61,7 +61,7 @@ const DayScheduleSchema = new Schema<DaySchedule>(
   },
   {
     _id: false, // No necesitamos _id para cada entrada de día
-  }
+  },
 );
 
 const DienstTemplateSchema = new Schema<IDienstTemplate>({
@@ -87,7 +87,7 @@ const DienstTemplateSchema = new Schema<IDienstTemplate>({
       validator: (arr: number[]) =>
         Array.isArray(arr) &&
         arr.every((d) => Number.isInteger(d) && d >= 0 && d <= 6),
-      message: 'daysOff must be an array of integers between 0 and 6',
+      message: "daysOff must be an array of integers between 0 and 6",
     },
   },
   isActive: {
@@ -102,6 +102,6 @@ const DienstTemplateSchema = new Schema<IDienstTemplate>({
 
 const DienstTemplate: Model<IDienstTemplate> =
   mongoose.models.DienstTemplate ||
-  mongoose.model<IDienstTemplate>('DienstTemplate', DienstTemplateSchema);
+  mongoose.model<IDienstTemplate>("DienstTemplate", DienstTemplateSchema);
 
 export default DienstTemplate;

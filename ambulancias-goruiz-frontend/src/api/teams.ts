@@ -1,6 +1,6 @@
 // frontend/src/api/teams.ts
-import api from './axios';
-import type { User } from '../types/user';
+import api from "./axios";
+import type { User } from "../types/user";
 
 export interface Team {
   _id: string;
@@ -10,7 +10,7 @@ export interface Team {
   updatedAt?: string;
 
   // ⚙️ Configuración de rotación del equipo
-  rotationMode?: 'rotating' | 'fixed' | 'none';
+  rotationMode?: "rotating" | "fixed" | "none";
   fixedDienstNumber?: number | null;
 
   // 🚑 Ambulancia fija populada desde backend (opcional)
@@ -25,10 +25,10 @@ export interface Team {
 
 export interface CreateTeamPayload {
   driver: string; // userId
-  medic: string;  // userId
+  medic: string; // userId
 
   // ⚙️ Nueva configuración de rotación
-  rotationMode?: 'rotating' | 'fixed' | 'none';
+  rotationMode?: "rotating" | "fixed" | "none";
 
   /**
    * Número del Dienst fijo si rotationMode === 'fixed'.
@@ -46,11 +46,10 @@ export interface CreateTeamPayload {
 export interface UpdateTeamPayload {
   driver: string;
   medic: string;
-  rotationMode?: 'rotating' | 'fixed' | 'none';
+  rotationMode?: "rotating" | "fixed" | "none";
   fixedDienstNumber?: number | null;
   ambulanceId?: string | null;
 }
-
 
 /* -----------------------------------------------------------
    🔎 Equipos ya usados en una semana/dienst
@@ -65,9 +64,9 @@ export interface UsedTeamsForWeekResponse {
  */
 export const getUsedTeamsForWeek = async (
   token: string,
-  params: { weekStartDate: string; dienstNumber: number }
+  params: { weekStartDate: string; dienstNumber: number },
 ): Promise<string[]> => {
-  const res = await api.get<UsedTeamsForWeekResponse>('/teams/used-for-week', {
+  const res = await api.get<UsedTeamsForWeekResponse>("/teams/used-for-week", {
     params: {
       weekStartDate: params.weekStartDate,
       dienstNumber: params.dienstNumber,
@@ -84,7 +83,7 @@ export const getUsedTeamsForWeek = async (
 
 // GET /api/teams
 export const getTeams = async (token: string): Promise<Team[]> => {
-  const res = await api.get<Team[]>('/teams', {
+  const res = await api.get<Team[]>("/teams", {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;
@@ -93,9 +92,9 @@ export const getTeams = async (token: string): Promise<Team[]> => {
 // POST /api/teams
 export const createTeam = async (
   payload: CreateTeamPayload,
-  token: string
+  token: string,
 ): Promise<Team> => {
-  const res = await api.post<Team>('/teams', payload, {
+  const res = await api.post<Team>("/teams", payload, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;
@@ -105,7 +104,7 @@ export const createTeam = async (
 export const updateTeam = async (
   teamId: string,
   payload: UpdateTeamPayload,
-  token: string
+  token: string,
 ): Promise<Team> => {
   const res = await api.patch<Team>(`/teams/${teamId}`, payload, {
     headers: { Authorization: `Bearer ${token}` },
@@ -113,9 +112,11 @@ export const updateTeam = async (
   return res.data;
 };
 
-
 // DELETE /api/teams/:id
-export const deleteTeam = async (teamId: string, token: string): Promise<void> => {
+export const deleteTeam = async (
+  teamId: string,
+  token: string,
+): Promise<void> => {
   await api.delete(`/teams/${teamId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });

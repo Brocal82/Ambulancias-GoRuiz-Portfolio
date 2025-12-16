@@ -1,9 +1,9 @@
 // backend/src/utils/sickUtils.ts
-import mongoose from 'mongoose';
-import { DateTime } from 'luxon';
-import SickLeave from '../models/SickLeave';
+import mongoose from "mongoose";
+import { DateTime } from "luxon";
+import SickLeave from "../models/SickLeave";
 
-const ZONE = 'Europe/Berlin';
+const ZONE = "Europe/Berlin";
 
 /**
  * Devuelve true si el usuario tiene una baja ACEPTADA que cubra el día indicado.
@@ -21,14 +21,14 @@ export async function isOnSickDay(params: {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) return false;
 
   // Límites del día en Berlin
-  const startBER = DateTime.fromISO(dateISO, { zone: ZONE }).startOf('day');
-  const endBER   = DateTime.fromISO(dateISO, { zone: ZONE }).endOf('day');
+  const startBER = DateTime.fromISO(dateISO, { zone: ZONE }).startOf("day");
+  const endBER = DateTime.fromISO(dateISO, { zone: ZONE }).endOf("day");
 
   const count = await SickLeave.countDocuments({
     user: userId,
-    status: 'accepted',
+    status: "accepted",
     startDate: { $lte: endBER.toJSDate() },
-    endDate:   { $gte: startBER.toJSDate() },
+    endDate: { $gte: startBER.toJSDate() },
   });
 
   return count > 0;
@@ -47,15 +47,17 @@ export async function findOverlappingSickLeave(params: {
   if (!mongoose.Types.ObjectId.isValid(userId)) return null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) return null;
 
-  const startBER = DateTime.fromISO(dateISO, { zone: ZONE }).startOf('day');
-  const endBER   = DateTime.fromISO(dateISO, { zone: ZONE }).endOf('day');
+  const startBER = DateTime.fromISO(dateISO, { zone: ZONE }).startOf("day");
+  const endBER = DateTime.fromISO(dateISO, { zone: ZONE }).endOf("day");
 
   return SickLeave.findOne({
     user: userId,
-    status: 'accepted',
+    status: "accepted",
     startDate: { $lte: endBER.toJSDate() },
-    endDate:   { $gte: startBER.toJSDate() },
+    endDate: { $gte: startBER.toJSDate() },
   })
-    .select('_id startDate endDate status documentUrl requiresDocument verificationStatus documentDueAt')
+    .select(
+      "_id startDate endDate status documentUrl requiresDocument verificationStatus documentDueAt",
+    )
     .lean();
 }

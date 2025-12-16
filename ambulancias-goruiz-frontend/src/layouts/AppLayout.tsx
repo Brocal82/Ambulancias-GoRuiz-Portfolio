@@ -18,7 +18,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const isAdmin = role === "admin";
   const { t } = useTranslation();
 
-
   const goHome = () => {
     if (isWorker) navigate("/worker");
     if (isAdmin) navigate("/admin");
@@ -35,8 +34,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
           {/* Izquierda: logo/nombre app */}
           <button
             onClick={goHome}
-            title={t('layout.actions.goHome') as string}
-            aria-label={t('layout.actions.goHome') as string}
+            title={t("layout.actions.goHome") as string}
+            aria-label={t("layout.actions.goHome") as string}
             className="group inline-flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 rounded-lg"
           >
             <svg
@@ -47,10 +46,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
               stroke="currentColor"
               strokeWidth={2}
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9.75L12 3l9 6.75M4.5 10.5V21h15v-10.5" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 9.75L12 3l9 6.75M4.5 10.5V21h15v-10.5"
+              />
             </svg>
             <span className="text-lg sm:text-xl font-semibold tracking-tight text-slate-50">
-              {t('layout.appName')}
+              {t("layout.appName")}
             </span>
           </button>
 
@@ -58,30 +61,35 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <div className="flex-1" />
 
           {/* Derecha: usuario + logout */}
-          <nav className="flex items-center gap-3 sm:gap-4" aria-label={t('layout.nav.actions') as string}>
+          <nav
+            className="flex items-center gap-3 sm:gap-4"
+            aria-label={t("layout.nav.actions") as string}
+          >
             {user && (
               <div className="flex items-center gap-3">
-
                 <span className="text-sm font-medium text-slate-100">
                   {user.lastName}, {user.name}
                 </span>
                 <Link
                   to="/profile"
-                  title={t('layout.actions.profile') as string}
-                  aria-label={t('layout.actions.profile') as string}
+                  title={t("layout.actions.profile") as string}
+                  aria-label={t("layout.actions.profile") as string}
                   className="shrink-0"
                 >
                   <img
                     src={
                       user.profileImage
                         ? buildImageUrl(user.profileImage)
-                        : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
+                        : "https://cdn-icons-png.flaticon.com/512/149/149071.png"
                     }
-                    alt={t('layout.avatarAlt', { name: `${user.name} ${user.lastName}` }) as string}
+                    alt={
+                      t("layout.avatarAlt", {
+                        name: `${user.name} ${user.lastName}`,
+                      }) as string
+                    }
                     className="w-9 h-9 rounded-full ring-1 ring-slate-500 object-cover transition-transform hover:scale-105"
                   />
                 </Link>
-
               </div>
             )}
 
@@ -89,10 +97,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
               onClick={logout}
               className="inline-flex items-center justify-center rounded-lg bg-rose-500 px-3 py-1.5 text-sm font-medium text-white
                    shadow-sm hover:bg-rose-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
-              title={t('layout.actions.logout') as string}
-              aria-label={t('layout.actions.logout') as string}
+              title={t("layout.actions.logout") as string}
+              aria-label={t("layout.actions.logout") as string}
             >
-              {t('layout.logout')}
+              {t("layout.logout")}
             </button>
           </nav>
 
@@ -102,7 +110,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
         </div>
       </header>
-
 
       {/* Main grows to push footer down */}
       <main role="main" className="flex-1">
@@ -121,9 +128,4 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </footer>
     </div>
   );
-
-
 }
-
-
-

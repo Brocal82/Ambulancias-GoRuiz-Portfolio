@@ -1,12 +1,12 @@
 // backend/src/utils/overlap.ts
-import { computeShiftBounds } from './time';
+import { computeShiftBounds } from "./time";
 
 /**
  * Comprueba si dos turnos (cada uno con dateISO + start/end HH:mm) se solapan.
  */
 export function shiftsOverlap(
   a: { date: string; startTime: string; endTime: string },
-  b: { date: string; startTime: string; endTime: string }
+  b: { date: string; startTime: string; endTime: string },
 ): boolean {
   if (!a?.date || !a?.startTime || !a?.endTime) return false;
   if (!b?.date || !b?.startTime || !b?.endTime) return false;

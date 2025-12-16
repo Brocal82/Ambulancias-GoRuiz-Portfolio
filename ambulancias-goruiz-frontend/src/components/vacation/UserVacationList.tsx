@@ -1,14 +1,14 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { IVacationRequest } from '../../types/vacationRequest';
-import { useTranslation } from 'react-i18next';
-import { formatISOToDDMMYYYY } from '../../utils/timeUtils';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import type { IVacationRequest } from "../../types/vacationRequest";
+import { useTranslation } from "react-i18next";
+import { formatISOToDDMMYYYY } from "../../utils/timeUtils";
 
 type Props = {
   requests: IVacationRequest[];
   onRespondAlternative: (id: string, accept: boolean) => void;
 };
 
-type VacationStatus = IVacationRequest['status'];
+type VacationStatus = IVacationRequest["status"];
 
 const calcDays = (start: string, end: string) => {
   const s = new Date(start);
@@ -16,7 +16,7 @@ const calcDays = (start: string, end: string) => {
   s.setHours(0, 0, 0, 0);
   e.setHours(0, 0, 0, 0);
   const diff = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
-  return Number.isNaN(diff) ? '—' : Math.max(diff, 1);
+  return Number.isNaN(diff) ? "—" : Math.max(diff, 1);
 };
 
 type AdminMessageModalState = {
@@ -29,7 +29,10 @@ type AdminMessageModalState = {
   proposedEnd?: string;
 };
 
-const UserVacationList: React.FC<Props> = ({ requests, onRespondAlternative }) => {
+const UserVacationList: React.FC<Props> = ({
+  requests,
+  onRespondAlternative,
+}) => {
   const { t } = useTranslation();
 
   // ✅ Modal “pro” (sin alerts)
@@ -42,59 +45,72 @@ const UserVacationList: React.FC<Props> = ({ requests, onRespondAlternative }) =
     closeBtnRef.current?.focus();
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMsgModal(null);
+      if (e.key === "Escape") setMsgModal(null);
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [msgModal?.open]);
 
   const statusBadge = (status: VacationStatus) => {
-    const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium';
+    const base =
+      "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium";
 
-    if (status === 'pending') {
+    if (status === "pending") {
       return (
         <span className={`${base} bg-amber-100 text-amber-800`}>
-          {t('pages.vacations.status.pending', 'Pendiente')}
+          {t("pages.vacations.status.pending", "Pendiente")}
         </span>
       );
     }
 
-    if (status === 'accepted') {
+    if (status === "accepted") {
       return (
         <span className={`${base} bg-emerald-100 text-emerald-800`}>
-          {t('pages.vacations.status.accepted', 'Aceptada')}
+          {t("pages.vacations.status.accepted", "Aceptada")}
         </span>
       );
     }
 
-    if (status === 'option_sent') {
+    if (status === "option_sent") {
       return (
         <span className={`${base} bg-sky-100 text-sky-800`}>
-          {t('pages.vacations.status.option_sent', 'alternativa')}
+          {t("pages.vacations.status.option_sent", "alternativa")}
         </span>
       );
     }
 
     return (
       <span className={`${base} bg-rose-100 text-rose-800`}>
-        {t('pages.vacations.status.cancelled', 'Cancelada')}
+        {t("pages.vacations.status.cancelled", "Cancelada")}
       </span>
     );
   };
 
   const openAdminMessage = (req: IVacationRequest) => {
     const adminNote = ((req as any).adminNote as string | undefined)?.trim();
-    const proposedStart = (req as any).adminOptionStartDate as string | undefined;
+    const proposedStart = (req as any).adminOptionStartDate as
+      | string
+      | undefined;
     const proposedEnd = (req as any).adminOptionEndDate as string | undefined;
 
-    const hasProposal = req.status === 'option_sent' && !!proposedStart && !!proposedEnd;
+    const hasProposal =
+      req.status === "option_sent" && !!proposedStart && !!proposedEnd;
 
     const title =
-      req.status === 'cancelled'
-        ? t('pages.vacations.workerList.adminMessageTitle.cancelled', 'Mensaje del administrador (cancelación)')
+      req.status === "cancelled"
+        ? t(
+            "pages.vacations.workerList.adminMessageTitle.cancelled",
+            "Mensaje del administrador (cancelación)",
+          )
         : hasProposal
-          ? t('pages.vacations.workerList.adminMessageTitle.option', 'Propuesta del administrador')
-          : t('pages.vacations.workerList.adminMessageTitle.default', 'Mensaje del administrador');
+          ? t(
+              "pages.vacations.workerList.adminMessageTitle.option",
+              "Propuesta del administrador",
+            )
+          : t(
+              "pages.vacations.workerList.adminMessageTitle.default",
+              "Mensaje del administrador",
+            );
 
     setMsgModal({
       open: true,
@@ -112,7 +128,7 @@ const UserVacationList: React.FC<Props> = ({ requests, onRespondAlternative }) =
   if (!safeRequests || safeRequests.length === 0) {
     return (
       <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500 shadow-sm">
-        {t('pages.vacations.list.empty')}
+        {t("pages.vacations.list.empty")}
       </div>
     );
   }
@@ -132,19 +148,19 @@ const UserVacationList: React.FC<Props> = ({ requests, onRespondAlternative }) =
           <thead className="sticky top-0 bg-slate-50 z-10">
             <tr className="text-slate-600 border-b border-slate-200 text-center">
               <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                {t('pages.vacations.workerList.th.dates', 'Fechas')}
+                {t("pages.vacations.workerList.th.dates", "Fechas")}
               </th>
               <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                {t('pages.vacations.workerList.th.days', 'Días')}
+                {t("pages.vacations.workerList.th.days", "Días")}
               </th>
               <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                {t('pages.vacations.workerList.th.status', 'Estado')}
+                {t("pages.vacations.workerList.th.status", "Estado")}
               </th>
               <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                {t('pages.vacations.workerList.th.message', 'Mensaje')}
+                {t("pages.vacations.workerList.th.message", "Mensaje")}
               </th>
               <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                {t('pages.vacations.workerList.th.actions', 'Acciones')}
+                {t("pages.vacations.workerList.th.actions", "Acciones")}
               </th>
             </tr>
           </thead>
@@ -153,12 +169,20 @@ const UserVacationList: React.FC<Props> = ({ requests, onRespondAlternative }) =
             {safeRequests.map((req) => {
               const days = calcDays(req.startDate, req.endDate);
 
-              const proposedStart = (req as any).adminOptionStartDate as string | undefined;
-              const proposedEnd = (req as any).adminOptionEndDate as string | undefined;
+              const proposedStart = (req as any).adminOptionStartDate as
+                | string
+                | undefined;
+              const proposedEnd = (req as any).adminOptionEndDate as
+                | string
+                | undefined;
               const hasAlternative =
-                req.status === 'option_sent' && !!proposedStart && !!proposedEnd;
+                req.status === "option_sent" &&
+                !!proposedStart &&
+                !!proposedEnd;
 
-              const adminNote = ((req as any).adminNote as string | undefined)?.trim();
+              const adminNote = (
+                (req as any).adminNote as string | undefined
+              )?.trim();
               const hasAdminMessage = !!adminNote && adminNote.length > 0;
 
               // ✅ Sobre si hay propuesta o mensaje
@@ -172,7 +196,8 @@ const UserVacationList: React.FC<Props> = ({ requests, onRespondAlternative }) =
                   {/* Fechas */}
                   <td className="px-3 py-2 align-top">
                     <div className="text-slate-800 whitespace-nowrap">
-                      {formatISOToDDMMYYYY(req.startDate)} — {formatISOToDDMMYYYY(req.endDate)}
+                      {formatISOToDDMMYYYY(req.startDate)} —{" "}
+                      {formatISOToDDMMYYYY(req.endDate)}
                     </div>
 
                     {/* ✅ Eliminado: badge azul debajo de las fechas */}
@@ -194,8 +219,14 @@ const UserVacationList: React.FC<Props> = ({ requests, onRespondAlternative }) =
                       <button
                         type="button"
                         onClick={() => openAdminMessage(req)}
-                        title={t('pages.vacations.workerList.adminMessage', 'Ver mensaje / propuesta')}
-                        aria-label={t('pages.vacations.workerList.adminMessage', 'Ver mensaje / propuesta')}
+                        title={t(
+                          "pages.vacations.workerList.adminMessage",
+                          "Ver mensaje / propuesta",
+                        )}
+                        aria-label={t(
+                          "pages.vacations.workerList.adminMessage",
+                          "Ver mensaje / propuesta",
+                        )}
                         className="inline-flex items-center justify-center rounded-full
                           bg-slate-100 text-slate-700 hover:bg-slate-200
                           h-8 w-8 text-sm shadow-sm
@@ -216,7 +247,10 @@ const UserVacationList: React.FC<Props> = ({ requests, onRespondAlternative }) =
                           type="button"
                           onClick={() => onRespondAlternative(req._id, true)}
                           className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-sm text-white shadow-sm hover:bg-emerald-100 focus:outline-none focus:ring-4 focus:ring-emerald-100"
-                          title={t('pages.vacations.workerList.actions.acceptAlt', 'Aceptar alternativa')}
+                          title={t(
+                            "pages.vacations.workerList.actions.acceptAlt",
+                            "Aceptar alternativa",
+                          )}
                         >
                           ✅
                         </button>
@@ -225,7 +259,10 @@ const UserVacationList: React.FC<Props> = ({ requests, onRespondAlternative }) =
                           type="button"
                           onClick={() => onRespondAlternative(req._id, false)}
                           className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-sm text-white shadow-sm hover:bg-rose-100 focus:outline-none focus:ring-4 focus:ring-rose-100"
-                          title={t('pages.vacations.workerList.actions.rejectAlt', 'Rechazar alternativa')}
+                          title={t(
+                            "pages.vacations.workerList.actions.rejectAlt",
+                            "Rechazar alternativa",
+                          )}
                         >
                           ❌
                         </button>
@@ -242,96 +279,98 @@ const UserVacationList: React.FC<Props> = ({ requests, onRespondAlternative }) =
       </div>
 
       {/* Modal compacto de mensaje del admin */}
-{msgModal?.open && (
-  <div className="fixed inset-0 z-50 flex items-start justify-center p-2 sm:p-4">
-    <div className="fixed inset-0 bg-black/50" onClick={() => setMsgModal(null)} />
+      {msgModal?.open && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-2 sm:p-4">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setMsgModal(null)}
+          />
 
-    <div
-      className="relative z-10 w-full max-w-sm rounded-xl bg-white shadow-xl ring-1 ring-slate-200"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="admin-message-title"
-    >
-      {/* Header */}
-      <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2">
-        <h3
-          id="admin-message-title"
-          className="text-sm font-semibold text-slate-900"
-        >
-          {msgModal.title}
-        </h3>
+          <div
+            className="relative z-10 w-full max-w-sm rounded-xl bg-white shadow-xl ring-1 ring-slate-200"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-message-title"
+          >
+            {/* Header */}
+            <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2">
+              <h3
+                id="admin-message-title"
+                className="text-sm font-semibold text-slate-900"
+              >
+                {msgModal.title}
+              </h3>
 
-        <button
-          ref={closeBtnRef}
-          onClick={() => setMsgModal(null)}
-          className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-full
+              <button
+                ref={closeBtnRef}
+                onClick={() => setMsgModal(null)}
+                className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-full
             text-slate-600 hover:bg-slate-100
             focus:outline-none focus:ring-2 focus:ring-slate-300"
-          aria-label="Cerrar"
-        >
-          ✕
-        </button>
-      </div>
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
 
-      {/* Body */}
-      <div className="px-3 py-3 space-y-3 text-xs">
-        {/* Fechas */}
-        <div className="flex flex-wrap gap-2">
-          {/* Solicitadas */}
-          <span
-            className="inline-flex items-center rounded-full
+            {/* Body */}
+            <div className="px-3 py-3 space-y-3 text-xs">
+              {/* Fechas */}
+              <div className="flex flex-wrap gap-2">
+                {/* Solicitadas */}
+                <span
+                  className="inline-flex items-center rounded-full
               bg-amber-100 text-amber-800
               px-2.5 py-1 font-medium"
-            title="Fechas solicitadas"
-          >
-            🟡 {formatISOToDDMMYYYY(msgModal.requestedStart)} —{' '}
-            {formatISOToDDMMYYYY(msgModal.requestedEnd)}
-          </span>
+                  title="Fechas solicitadas"
+                >
+                  🟡 {formatISOToDDMMYYYY(msgModal.requestedStart)} —{" "}
+                  {formatISOToDDMMYYYY(msgModal.requestedEnd)}
+                </span>
 
-          {/* Propuestas */}
-          {msgModal.proposedStart && msgModal.proposedEnd && (
-            <span
-              className="inline-flex items-center rounded-full
+                {/* Propuestas */}
+                {msgModal.proposedStart && msgModal.proposedEnd && (
+                  <span
+                    className="inline-flex items-center rounded-full
                 bg-sky-100 text-sky-800
                 px-2.5 py-1 font-medium"
-              title="Fechas propuestas"
-            >
-              🔵 {formatISOToDDMMYYYY(msgModal.proposedStart)} —{' '}
-              {formatISOToDDMMYYYY(msgModal.proposedEnd)}
-            </span>
-          )}
-        </div>
+                    title="Fechas propuestas"
+                  >
+                    🔵 {formatISOToDDMMYYYY(msgModal.proposedStart)} —{" "}
+                    {formatISOToDDMMYYYY(msgModal.proposedEnd)}
+                  </span>
+                )}
+              </div>
 
-        {/* Mensaje */}
-        {msgModal.message ? (
-          <div
-            className="rounded-lg bg-slate-50 ring-1 ring-slate-200
+              {/* Mensaje */}
+              {msgModal.message ? (
+                <div
+                  className="rounded-lg bg-slate-50 ring-1 ring-slate-200
               px-2.5 py-2 text-slate-700 whitespace-pre-wrap break-words"
-          >
-            {msgModal.message}
-          </div>
-        ) : (
-          <div className="text-slate-400 italic">
-            No hay mensaje adicional.
-          </div>
-        )}
-      </div>
+                >
+                  {msgModal.message}
+                </div>
+              ) : (
+                <div className="text-slate-400 italic">
+                  No hay mensaje adicional.
+                </div>
+              )}
+            </div>
 
-      {/* Footer */}
-      <div className="border-t border-slate-200 px-3 py-2 flex justify-end">
-        <button
-          onClick={() => setMsgModal(null)}
-          className="rounded-lg px-3 py-1.5 text-xs font-medium
+            {/* Footer */}
+            <div className="border-t border-slate-200 px-3 py-2 flex justify-end">
+              <button
+                onClick={() => setMsgModal(null)}
+                className="rounded-lg px-3 py-1.5 text-xs font-medium
             text-slate-700 ring-1 ring-slate-200
             hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-100"
-        >
-          Cerrar
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

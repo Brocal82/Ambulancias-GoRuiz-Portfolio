@@ -13,7 +13,7 @@ const LANG_FLAG: Record<Lang, { code: string; label: string }> = {
 export default function LanguageSwitcher() {
   const { i18n } = useTranslation();
   const [lang, setLang] = useState<Lang>(
-    (localStorage.getItem("lang") as Lang) || "es"
+    (localStorage.getItem("lang") as Lang) || "es",
   );
 
   useEffect(() => {
@@ -65,7 +65,11 @@ export default function LanguageSwitcher() {
               <ReactCountryFlag
                 countryCode={countryCode}
                 svg
-                style={{ width: "1.25rem", height: "1.25rem", borderRadius: "2px" }}
+                style={{
+                  width: "1.25rem",
+                  height: "1.25rem",
+                  borderRadius: "2px",
+                }}
                 aria-hidden="true"
               />
             </label>

@@ -12,16 +12,26 @@ import { useNavigate } from "react-router-dom";
 import FinalReviewModal from "../components/workday/FinalReviewModal";
 import PartialReviewModal from "../components/workday/PartialReviewModal";
 import { sendPartialClosure, sendFinalClosure } from "../api/workdaySummary";
-import type { PartialSummaryPayload, FinalSummaryPayload } from "../types/workdaySummary";
+import type {
+  PartialSummaryPayload,
+  FinalSummaryPayload,
+} from "../types/workdaySummary";
 import { checkTripLogic, type TripDraft } from "../utils/tripValidators";
-import { getCurrentTimeString, formatYYYYMMDDToDDMMYYYY } from "../utils/timeUtils";
-import { saveAmbulanceData, loadAmbulanceData, clearAmbulanceData, confirmedAmbulanceKey } from "../utils/workdayKey";
+import {
+  getCurrentTimeString,
+  formatYYYYMMDDToDDMMYYYY,
+} from "../utils/timeUtils";
+import {
+  saveAmbulanceData,
+  loadAmbulanceData,
+  clearAmbulanceData,
+  confirmedAmbulanceKey,
+} from "../utils/workdayKey";
 import { getAllAmbulances } from "../api/ambulances";
 import type { Ambulance } from "../types/ambulance";
 import { useTranslation } from "react-i18next";
 import { notifyAdminIssuesChanged } from "../hooks/useAdminIssuesOpenCount";
 import { notifyAdminSummariesChanged } from "../hooks/useAdminSummariesPendingCount";
-
 
 /** Devuelve true si AHORA ya se pueden registrar viajes. */
 const canStartTripNow = (startTime: string, dienstDate: string): boolean => {
@@ -33,7 +43,8 @@ const canStartTripNow = (startTime: string, dienstDate: string): boolean => {
 };
 
 /** Clave de día cerrado en localStorage */
-const getClosedDayKey = (date: string, uid?: string) => `workdayClosed-${date}-${uid ?? "anon"}`;
+const getClosedDayKey = (date: string, uid?: string) =>
+  `workdayClosed-${date}-${uid ?? "anon"}`;
 
 /** ¿El Dienst cruza medianoche? */
 const crossesMidnight = (start: string, end: string) => {
@@ -101,7 +112,8 @@ const MyWorkday = () => {
   const kmEndRef = useRef<HTMLInputElement>(null);
 
   const [anschlussActive, setAnschlussActive] = useState(false);
-  const [previousTripFormData, setPreviousTripFormData] = useState<TripData | null>(null);
+  const [previousTripFormData, setPreviousTripFormData] =
+    useState<TripData | null>(null);
   const anschlussGuardRef = useRef(false);
 
   const [tripFormData, setTripFormData] = useState<TripData>({
@@ -149,10 +161,13 @@ const MyWorkday = () => {
       assignedDay.assignmentId,
       ambulanceId,
       ambulanceNum, // <— usar el valor real, no el state aún sincrónico
-      initialAmbulanceKm
+      initialAmbulanceKm,
     );
 
-    localStorage.setItem(confirmedAmbulanceKey(assignedDay.assignmentId), "true");
+    localStorage.setItem(
+      confirmedAmbulanceKey(assignedDay.assignmentId),
+      "true",
+    );
   };
 
   const handleCloseTripModal = () => setSelectedTrip(null);
@@ -171,7 +186,9 @@ const MyWorkday = () => {
     try {
       const data = await getTripsByDate(today, token);
       const pending = data.filter((t) => !t.sentInSummary);
-      const mine = pending.filter((t) => t.driver === user._id || t.medic === user._id);
+      const mine = pending.filter(
+        (t) => t.driver === user._id || t.medic === user._id,
+      );
       setTrips(mine);
     } catch (err) {
       console.error(err);
@@ -188,7 +205,9 @@ const MyWorkday = () => {
       let todayAssignment = days.find((d) => d.date === today);
 
       if (!todayAssignment) {
-        const yesterdayStr = new Date(Date.now() - 86_400_000).toISOString().split("T")[0];
+        const yesterdayStr = new Date(Date.now() - 86_400_000)
+          .toISOString()
+          .split("T")[0];
         const yestAssignment = days.find((d) => d.date === yesterdayStr);
         if (
           yestAssignment &&
@@ -251,13 +270,19 @@ const MyWorkday = () => {
     }
 
     const isConfirmed =
-      localStorage.getItem(confirmedAmbulanceKey(assignedDay.assignmentId)) === "true";
+      localStorage.getItem(confirmedAmbulanceKey(assignedDay.assignmentId)) ===
+      "true";
     setVehicleConfirmed(isConfirmed);
   }, [assignedDay, ambulances]);
 
   useEffect(() => {
     if (assignedDay && ambulanceId && ambulanceNumber && initialAmbulanceKm) {
-      saveAmbulanceData(assignedDay.assignmentId, ambulanceId, ambulanceNumber, initialAmbulanceKm);
+      saveAmbulanceData(
+        assignedDay.assignmentId,
+        ambulanceId,
+        ambulanceNumber,
+        initialAmbulanceKm,
+      );
     }
   }, [ambulanceId, ambulanceNumber, initialAmbulanceKm, assignedDay]);
 
@@ -272,7 +297,7 @@ const MyWorkday = () => {
         kmStart: Number(tripFormData.kmStart),
         kmEnd: Number(tripFormData.kmEnd),
       },
-      wasCancelled
+      wasCancelled,
     );
     setDraftError(result.error || "");
     setBadField(result.badField);
@@ -333,7 +358,7 @@ const MyWorkday = () => {
     }
 
     if (!canStartTripNow(assignedDay.startTime, assignedDay.date)) {
-      toastT.error(["toasts.workday.tooEarly"])
+      toastT.error(["toasts.workday.tooEarly"]);
       return;
     }
 
@@ -402,7 +427,6 @@ const MyWorkday = () => {
     } catch (err) {
       console.error("❌ Error al crear trip:", err);
       toastT.error(["toasts.workday.tripSaveError"]);
-
     }
   };
 
@@ -426,11 +450,19 @@ const MyWorkday = () => {
     }
   };
 
-  const handleConfirmFinalClosure = async (note: string, finalKmFromModal: number) => {
+  const handleConfirmFinalClosure = async (
+    note: string,
+    finalKmFromModal: number,
+  ) => {
     if (!token || !assignedDay || !user?._id) return;
 
     // ✅ exige datos confirmados de vehículo
-    if (!vehicleConfirmed || !ambulanceId || !ambulanceNumber || !initialAmbulanceKm) {
+    if (
+      !vehicleConfirmed ||
+      !ambulanceId ||
+      !ambulanceNumber ||
+      !initialAmbulanceKm
+    ) {
       toastT.warn(["toasts.workday.enterAmbulanceAndKm"]);
       return;
     }
@@ -454,7 +486,8 @@ const MyWorkday = () => {
         ...t,
         wasCancelled: !!t.wasCancelled,
         cancelledAtPickup: !!t.cancelledAtPickup,
-        countsTrip: typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
+        countsTrip:
+          typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
       }));
 
       const summaryData: FinalSummaryPayload = {
@@ -483,7 +516,6 @@ const MyWorkday = () => {
         endTime: assignedDay.endTime,
       };
 
-
       // Opcional: log para depurar si volviese a fallar
       // console.log("[final-closure] payload:", summaryData);
 
@@ -491,11 +523,16 @@ const MyWorkday = () => {
 
       notifyAdminSummariesChanged();
 
-
       toastT.success(["toasts.workday.dayClosedSuccess"]);
 
-      localStorage.setItem(getClosedDayKey(today, assignedDay.driver._id), "true");
-      localStorage.setItem(getClosedDayKey(today, assignedDay.medic._id), "true");
+      localStorage.setItem(
+        getClosedDayKey(today, assignedDay.driver._id),
+        "true",
+      );
+      localStorage.setItem(
+        getClosedDayKey(today, assignedDay.medic._id),
+        "true",
+      );
 
       setTrips([]);
       setIsClosingDay(true);
@@ -508,12 +545,16 @@ const MyWorkday = () => {
         message: err?.response?.data?.message,
         data: err?.response?.data,
       });
-      toastT.error([err?.response?.data?.message || "toasts.workday.dayCloseError"]);
+      toastT.error([
+        err?.response?.data?.message || "toasts.workday.dayCloseError",
+      ]);
     }
   };
 
-
-  const handleSendPartialClosure = async (reason: string, finalKmValue: number) => {
+  const handleSendPartialClosure = async (
+    reason: string,
+    finalKmValue: number,
+  ) => {
     if (!token || !assignedDay) return;
 
     const reasonTrimmed = (reason ?? "").trim();
@@ -548,7 +589,8 @@ const MyWorkday = () => {
         ...t,
         wasCancelled: !!t.wasCancelled,
         cancelledAtPickup: !!t.cancelledAtPickup,
-        countsTrip: typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
+        countsTrip:
+          typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
       }));
 
       const payload: PartialSummaryPayload & { issueData?: any } = {
@@ -575,14 +617,16 @@ const MyWorkday = () => {
 
       notifyAdminSummariesChanged();
 
-
       // Si vino una avería en el parcial, notifica para refrescar el badge
       if (issueData) {
         notifyAdminIssuesChanged();
       }
 
-
-      toastT.success(issueData ? ["toasts.workday.partialSentWithIssue"] : ["toasts.workday.partialSent"]);
+      toastT.success(
+        issueData
+          ? ["toasts.workday.partialSentWithIssue"]
+          : ["toasts.workday.partialSent"],
+      );
 
       clearAmbulanceData(assignedDay.assignmentId);
       localStorage.removeItem(confirmedAmbulanceKey(assignedDay.assignmentId));
@@ -603,10 +647,11 @@ const MyWorkday = () => {
         message: err?.response?.data?.message,
         data: err?.response?.data,
       });
-      toastT.error([err?.response?.data?.message || "toasts.workday.partialSendError"]);
+      toastT.error([
+        err?.response?.data?.message || "toasts.workday.partialSendError",
+      ]);
     }
   };
-
 
   // Activar Anschluss
   const handleAddAnschluss = () => {
@@ -685,14 +730,22 @@ const MyWorkday = () => {
                   <p className="font-semibold text-lg mb-1">
                     {t("pages.workday.teamLabel")}
                   </p>
-                  <p>🚗 {assignedDay.driver?.lastName}, {assignedDay.driver?.name}</p>
-                  <p>🧑‍⚕️ {assignedDay.medic?.lastName}, {assignedDay.medic?.name}</p>
+                  <p>
+                    🚗 {assignedDay.driver?.lastName},{" "}
+                    {assignedDay.driver?.name}
+                  </p>
+                  <p>
+                    🧑‍⚕️ {assignedDay.medic?.lastName}, {assignedDay.medic?.name}
+                  </p>
                 </div>
               )}
 
               <div className="w-full max-w-xs space-y-4">
                 <div>
-                  <label htmlFor="ambulanceId" className="block text-sm font-medium text-slate-700">
+                  <label
+                    htmlFor="ambulanceId"
+                    className="block text-sm font-medium text-slate-700"
+                  >
                     {t("pages.workday.selectAmbulance.label")}
                   </label>
                   <select
@@ -704,7 +757,9 @@ const MyWorkday = () => {
                              ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
                              disabled:bg-slate-50"
                   >
-                    <option value="">{t("pages.workday.selectAmbulance.placeholder")}</option>
+                    <option value="">
+                      {t("pages.workday.selectAmbulance.placeholder")}
+                    </option>
                     {ambulances.map((amb) => (
                       <option key={amb._id} value={amb._id}>
                         {amb.ambulanceNumber}
@@ -714,7 +769,10 @@ const MyWorkday = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="initialAmbulanceKm" className="block text-sm font-medium text-slate-700">
+                  <label
+                    htmlFor="initialAmbulanceKm"
+                    className="block text-sm font-medium text-slate-700"
+                  >
                     {t("pages.workday.initialKm")}
                   </label>
                   <input
@@ -748,7 +806,10 @@ const MyWorkday = () => {
                 {/* Datos del viaje */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="auftragNumber" className="block text-sm font-medium text-slate-700">
+                    <label
+                      htmlFor="auftragNumber"
+                      className="block text-sm font-medium text-slate-700"
+                    >
                       {t("pages.workday.auftragNumber")}
                     </label>
                     <input
@@ -756,7 +817,12 @@ const MyWorkday = () => {
                       id="auftragNumber"
                       placeholder="0000"
                       value={tripFormData.auftragNumber}
-                      onChange={(e) => setTripFormData((prev) => ({ ...prev, auftragNumber: e.target.value }))}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          auftragNumber: e.target.value,
+                        }))
+                      }
                       className="w-full rounded-lg bg-white px-3 py-2
                                ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
                                disabled:bg-slate-50"
@@ -764,7 +830,10 @@ const MyWorkday = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="patientName" className="block text-sm font-medium text-slate-700">
+                    <label
+                      htmlFor="patientName"
+                      className="block text-sm font-medium text-slate-700"
+                    >
                       {t("pages.workday.patientName")}
                     </label>
                     <input
@@ -772,7 +841,12 @@ const MyWorkday = () => {
                       id="patientName"
                       placeholder="Antonio Ruiz"
                       value={tripFormData.patientName}
-                      onChange={(e) => setTripFormData((prev) => ({ ...prev, patientName: e.target.value }))}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          patientName: e.target.value,
+                        }))
+                      }
                       className="w-full rounded-lg bg-white px-3 py-2
                                ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
                                disabled:bg-slate-50"
@@ -782,7 +856,10 @@ const MyWorkday = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                   <div>
-                    <label htmlFor="fromAddress" className="block text-sm font-medium text-slate-700">
+                    <label
+                      htmlFor="fromAddress"
+                      className="block text-sm font-medium text-slate-700"
+                    >
                       {t("pages.workday.fromAddress")}
                     </label>
                     <input
@@ -790,7 +867,12 @@ const MyWorkday = () => {
                       id="fromAddress"
                       placeholder="...Straße"
                       value={tripFormData.fromAddress}
-                      onChange={(e) => setTripFormData((prev) => ({ ...prev, fromAddress: e.target.value }))}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          fromAddress: e.target.value,
+                        }))
+                      }
                       className="w-full rounded-lg bg-white px-3 py-2
                                ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
                                disabled:bg-slate-50"
@@ -798,7 +880,10 @@ const MyWorkday = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="toAddress" className="block text-sm font-medium text-slate-700">
+                    <label
+                      htmlFor="toAddress"
+                      className="block text-sm font-medium text-slate-700"
+                    >
                       {t("pages.workday.toAddress")}
                     </label>
                     <input
@@ -806,7 +891,12 @@ const MyWorkday = () => {
                       id="toAddress"
                       placeholder="...Straße"
                       value={tripFormData.toAddress}
-                      onChange={(e) => setTripFormData((prev) => ({ ...prev, toAddress: e.target.value }))}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          toAddress: e.target.value,
+                        }))
+                      }
                       className="w-full rounded-lg bg-white px-3 py-2
                                ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
                                disabled:bg-slate-50"
@@ -817,7 +907,10 @@ const MyWorkday = () => {
                 {/* Tiempos y KMs */}
                 <div className="grid grid-cols-1 md:grid-cols-7 gap-3 mt-4">
                   <div>
-                    <label htmlFor="timeWarning" className="block text-sm font-medium text-slate-700 text-center">
+                    <label
+                      htmlFor="timeWarning"
+                      className="block text-sm font-medium text-slate-700 text-center"
+                    >
                       {t("pages.workday.time.warning")}
                     </label>
                     <input
@@ -826,15 +919,31 @@ const MyWorkday = () => {
                       id="timeWarning"
                       type="time"
                       value={tripFormData.timeWarning}
-                      onChange={(e) => setTripFormData((prev) => ({ ...prev, timeWarning: e.target.value }))}
-                      onDoubleClick={() => setTripFormData((prev) => ({ ...prev, timeWarning: getCurrentTimeString() }))}
-                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeWarning" ? "ring-rose-300" : "ring-slate-300 focus:ring-blue-300"
-                        } ring-1 bg-white`}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeWarning: e.target.value,
+                        }))
+                      }
+                      onDoubleClick={() =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeWarning: getCurrentTimeString(),
+                        }))
+                      }
+                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
+                        badField === "timeWarning"
+                          ? "ring-rose-300"
+                          : "ring-slate-300 focus:ring-blue-300"
+                      } ring-1 bg-white`}
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="timeAtHome" className="block text-sm font-medium text-slate-700 text-center">
+                    <label
+                      htmlFor="timeAtHome"
+                      className="block text-sm font-medium text-slate-700 text-center"
+                    >
                       {t("pages.workday.time.atHome")}
                     </label>
                     <input
@@ -845,19 +954,35 @@ const MyWorkday = () => {
                       value={tripFormData.timeAtHome}
                       onChange={(e) => {
                         const value = e.target.value;
-                        setTripFormData((prev) => ({ ...prev, timeAtHome: value }));
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeAtHome: value,
+                        }));
                         if (anschlussActive) {
-                          setPreviousTripFormData((prev) => (prev ? { ...prev, timeArrival: value } : null));
+                          setPreviousTripFormData((prev) =>
+                            prev ? { ...prev, timeArrival: value } : null,
+                          );
                         }
                       }}
-                      onDoubleClick={() => setTripFormData((prev) => ({ ...prev, timeAtHome: getCurrentTimeString() }))}
-                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeAtHome" ? "ring-rose-300" : "ring-slate-300 focus:ring-blue-300"
-                        } ring-1 bg-white`}
+                      onDoubleClick={() =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeAtHome: getCurrentTimeString(),
+                        }))
+                      }
+                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
+                        badField === "timeAtHome"
+                          ? "ring-rose-300"
+                          : "ring-slate-300 focus:ring-blue-300"
+                      } ring-1 bg-white`}
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="kmStart" className="block text-sm font-medium text-slate-700 text-center">
+                    <label
+                      htmlFor="kmStart"
+                      className="block text-sm font-medium text-slate-700 text-center"
+                    >
                       {t("pages.workday.km.start")}
                     </label>
                     <input
@@ -865,21 +990,34 @@ const MyWorkday = () => {
                       disabled={formBlocked}
                       id="kmStart"
                       type="number"
-                      value={tripFormData.kmStart === 0 ? "" : tripFormData.kmStart}
+                      value={
+                        tripFormData.kmStart === 0 ? "" : tripFormData.kmStart
+                      }
                       onChange={(e) => {
                         const value = Number(e.target.value);
-                        setTripFormData((prev) => ({ ...prev, kmStart: value }));
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          kmStart: value,
+                        }));
                         if (anschlussActive) {
-                          setPreviousTripFormData((prev) => (prev ? { ...prev, kmEnd: value } : null));
+                          setPreviousTripFormData((prev) =>
+                            prev ? { ...prev, kmEnd: value } : null,
+                          );
                         }
                       }}
-                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "kmStart" ? "ring-rose-300" : "ring-slate-300 focus:ring-blue-300"
-                        } ring-1 bg-white`}
+                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
+                        badField === "kmStart"
+                          ? "ring-rose-300"
+                          : "ring-slate-300 focus:ring-blue-300"
+                      } ring-1 bg-white`}
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="timePickup" className="block text-sm font-medium text-slate-700 text-center">
+                    <label
+                      htmlFor="timePickup"
+                      className="block text-sm font-medium text-slate-700 text-center"
+                    >
                       {t("pages.workday.time.pickup")}
                     </label>
                     <input
@@ -892,7 +1030,11 @@ const MyWorkday = () => {
                         const newTime = e.target.value;
                         setTripFormData((prev) => {
                           const updated = { ...prev, timePickup: newTime };
-                          if (anschlussActive && previousTripFormData && anschlussGuardRef.current) {
+                          if (
+                            anschlussActive &&
+                            previousTripFormData &&
+                            anschlussGuardRef.current
+                          ) {
                             anschlussGuardRef.current = false;
                             const updatedTrip: TripData = {
                               ...previousTripFormData,
@@ -911,7 +1053,11 @@ const MyWorkday = () => {
                         setTripFormData((prev) => {
                           const currentTime = getCurrentTimeString();
                           const updated = { ...prev, timePickup: currentTime };
-                          if (anschlussActive && previousTripFormData && anschlussGuardRef.current) {
+                          if (
+                            anschlussActive &&
+                            previousTripFormData &&
+                            anschlussGuardRef.current
+                          ) {
                             anschlussGuardRef.current = false;
                             const updatedTrip: TripData = {
                               ...previousTripFormData,
@@ -926,13 +1072,19 @@ const MyWorkday = () => {
                           return updated;
                         })
                       }
-                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timePickup" ? "ring-rose-300" : "ring-slate-300 focus:ring-blue-300"
-                        } ring-1 bg-white`}
+                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
+                        badField === "timePickup"
+                          ? "ring-rose-300"
+                          : "ring-slate-300 focus:ring-blue-300"
+                      } ring-1 bg-white`}
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="timeArrival" className="block text-sm font-medium text-slate-700 text-center">
+                    <label
+                      htmlFor="timeArrival"
+                      className="block text-sm font-medium text-slate-700 text-center"
+                    >
                       {t("pages.workday.time.arrival")}
                     </label>
                     <input
@@ -941,15 +1093,31 @@ const MyWorkday = () => {
                       id="timeArrival"
                       type="time"
                       value={tripFormData.timeArrival}
-                      onChange={(e) => setTripFormData((prev) => ({ ...prev, timeArrival: e.target.value }))}
-                      onDoubleClick={() => setTripFormData((prev) => ({ ...prev, timeArrival: getCurrentTimeString() }))}
-                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeArrival" ? "ring-rose-300" : "ring-slate-300 focus:ring-blue-300"
-                        } ring-1 bg-white`}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeArrival: e.target.value,
+                        }))
+                      }
+                      onDoubleClick={() =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeArrival: getCurrentTimeString(),
+                        }))
+                      }
+                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
+                        badField === "timeArrival"
+                          ? "ring-rose-300"
+                          : "ring-slate-300 focus:ring-blue-300"
+                      } ring-1 bg-white`}
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="kmEnd" className="block text-sm font-medium text-slate-700 text-center">
+                    <label
+                      htmlFor="kmEnd"
+                      className="block text-sm font-medium text-slate-700 text-center"
+                    >
                       {t("pages.workday.km.end")}
                     </label>
                     <input
@@ -958,14 +1126,25 @@ const MyWorkday = () => {
                       id="kmEnd"
                       type="number"
                       value={tripFormData.kmEnd === 0 ? "" : tripFormData.kmEnd}
-                      onChange={(e) => setTripFormData((prev) => ({ ...prev, kmEnd: Number(e.target.value) }))}
-                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "kmEnd" ? "ring-rose-300" : "ring-slate-300 focus:ring-blue-300"
-                        } ring-1 bg-white`}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          kmEnd: Number(e.target.value),
+                        }))
+                      }
+                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
+                        badField === "kmEnd"
+                          ? "ring-rose-300"
+                          : "ring-slate-300 focus:ring-blue-300"
+                      } ring-1 bg-white`}
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="timeEnd" className="block text-sm font-medium text-slate-700 text-center">
+                    <label
+                      htmlFor="timeEnd"
+                      className="block text-sm font-medium text-slate-700 text-center"
+                    >
                       {t("pages.workday.time.end")}
                     </label>
                     <input
@@ -974,29 +1153,51 @@ const MyWorkday = () => {
                       id="timeEnd"
                       type="time"
                       value={tripFormData.timeEnd}
-                      onChange={(e) => setTripFormData((prev) => ({ ...prev, timeEnd: e.target.value }))}
-                      onDoubleClick={() => setTripFormData((prev) => ({ ...prev, timeEnd: getCurrentTimeString() }))}
-                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeEnd" ? "ring-rose-300" : "ring-slate-300 focus:ring-blue-300"
-                        } ring-1 bg-white`}
+                      onChange={(e) =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeEnd: e.target.value,
+                        }))
+                      }
+                      onDoubleClick={() =>
+                        setTripFormData((prev) => ({
+                          ...prev,
+                          timeEnd: getCurrentTimeString(),
+                        }))
+                      }
+                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
+                        badField === "timeEnd"
+                          ? "ring-rose-300"
+                          : "ring-slate-300 focus:ring-blue-300"
+                      } ring-1 bg-white`}
                     />
                   </div>
                 </div>
-
 
                 {/* Botones auxiliares */}
                 {(tripFormData.timePickup || anschlussActive) && (
                   <div className="flex items-center mt-3 space-x-2">
                     <button
                       type="button"
-                      onClick={anschlussActive ? handleCancelAnschluss : handleAddAnschluss}
+                      onClick={
+                        anschlussActive
+                          ? handleCancelAnschluss
+                          : handleAddAnschluss
+                      }
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold transition 
                       ${anschlussActive ? "bg-red-500 hover:bg-red-600" : "bg-orange-500 hover:bg-orange-600"}`}
-                      title={anschlussActive ? t("pages.workday.anschluss.cancelTitle") : t("pages.workday.anschluss.addTitle")}
+                      title={
+                        anschlussActive
+                          ? t("pages.workday.anschluss.cancelTitle")
+                          : t("pages.workday.anschluss.addTitle")
+                      }
                     >
                       {anschlussActive ? "✖" : "+"}
                     </button>
                     <span className="text-sm text-slate-700">
-                      {anschlussActive ? t("pages.workday.anschluss.cancelLabel") : t("pages.workday.anschluss.addLabel")}
+                      {anschlussActive
+                        ? t("pages.workday.anschluss.cancelLabel")
+                        : t("pages.workday.anschluss.addLabel")}
                     </span>
                   </div>
                 )}
@@ -1005,19 +1206,27 @@ const MyWorkday = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       type="button"
-                      onClick={() => { setWasCancelled(!wasCancelled); if (wasCancelled) setCountsTrip(1); }}
+                      onClick={() => {
+                        setWasCancelled(!wasCancelled);
+                        if (wasCancelled) setCountsTrip(1);
+                      }}
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold transition 
                       ${wasCancelled ? "bg-red-600 hover:bg-red-700" : "bg-slate-400 hover:bg-slate-500"}`}
                       title="Marcar viaje como cancelado"
                     >
                       {wasCancelled ? "✖" : "🅂"}
                     </button>
-                    <span className="text-sm text-slate-700">{t("pages.workday.storno.label")}</span>
+                    <span className="text-sm text-slate-700">
+                      {t("pages.workday.storno.label")}
+                    </span>
                   </div>
 
                   {wasCancelled && (
                     <div className="ml-6">
-                      <label htmlFor="countsTrip" className="block text-sm font-medium text-slate-700 mb-1">
+                      <label
+                        htmlFor="countsTrip"
+                        className="block text-sm font-medium text-slate-700 mb-1"
+                      >
                         {t("pages.workday.storno.countsQuestion")}
                       </label>
                       <select
@@ -1027,15 +1236,22 @@ const MyWorkday = () => {
                         className="w-full rounded-lg bg-white px-3 py-2
                                  ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300"
                       >
-                        <option value={1}>{t("pages.workday.storno.counts.yes")}</option>
-                        <option value={0}>{t("pages.workday.storno.counts.no")}</option>
+                        <option value={1}>
+                          {t("pages.workday.storno.counts.yes")}
+                        </option>
+                        <option value={0}>
+                          {t("pages.workday.storno.counts.no")}
+                        </option>
                       </select>
                     </div>
                   )}
                 </div>
 
                 <div className="mt-2">
-                  <label htmlFor="reports" className="block text-sm font-medium text-slate-700">
+                  <label
+                    htmlFor="reports"
+                    className="block text-sm font-medium text-slate-700"
+                  >
                     {t("pages.workday.reports.label")}
                   </label>
                   <textarea
@@ -1061,23 +1277,34 @@ const MyWorkday = () => {
                 <button
                   onClick={handleSaveTrip}
                   disabled={Boolean(draftError)}
-                  className={`w-full mt-2 py-2 px-4 rounded-lg text-white ${draftError ? "bg-slate-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-                    }`}
+                  className={`w-full mt-2 py-2 px-4 rounded-lg text-white ${
+                    draftError
+                      ? "bg-slate-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  }`}
                 >
                   {t("pages.workday.saveTrip")}
                 </button>
 
-                <h3 className="text-xl font-semibold mt-6">{t("pages.workday.tripSummary")}</h3>
+                <h3 className="text-xl font-semibold mt-6">
+                  {t("pages.workday.tripSummary")}
+                </h3>
                 <ul className="mt-2 space-y-2">
                   {trips.map((trip: Trip, idx: number) => {
-                    const totalKm = trip.wasCancelled ? 0 : (typeof trip.totalKm === "number" ? trip.totalKm : trip.kmEnd - trip.kmStart);
+                    const totalKm = trip.wasCancelled
+                      ? 0
+                      : typeof trip.totalKm === "number"
+                        ? trip.totalKm
+                        : trip.kmEnd - trip.kmStart;
 
                     const getMultiplier = () => {
                       const isWeekendAfternoonShift = () => {
                         if (!assignedDay) return false;
                         const day = new Date(assignedDay.date).getDay();
                         if (day !== 0 && day !== 6) return false;
-                        const [h] = assignedDay.startTime.split(":").map(Number);
+                        const [h] = assignedDay.startTime
+                          .split(":")
+                          .map(Number);
                         return h >= 14 && h <= 17;
                       };
                       if (trip.countsTrip === 0) return 0;
@@ -1177,7 +1404,9 @@ const MyWorkday = () => {
         </>
       )}
 
-      {selectedTrip && <TripModal trip={selectedTrip} onClose={handleCloseTripModal} />}
+      {selectedTrip && (
+        <TripModal trip={selectedTrip} onClose={handleCloseTripModal} />
+      )}
 
       {showReviewModal && !isFinalClosure && assignedDay && (
         <PartialReviewModal
@@ -1210,7 +1439,6 @@ const MyWorkday = () => {
       )}
     </div>
   );
-
 };
 
 export default MyWorkday;

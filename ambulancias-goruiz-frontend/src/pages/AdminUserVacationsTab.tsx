@@ -1,17 +1,17 @@
 // src/pages/AdminUserVacationsTab.tsx
-import { useEffect, useState } from 'react';
-import type { IVacationRequest } from '../types/vacationRequest';
-import { getVacationRequests, deleteVacationRequest } from '../api/vacation';
-import { useAuth } from '../hooks/useAuth';
-import { useTranslation } from 'react-i18next';
-import { toastT } from '../utils/toast';
-import { formatISOToDDMMYYYY } from '../utils/timeUtils';
+import { useEffect, useState } from "react";
+import type { IVacationRequest } from "../types/vacationRequest";
+import { getVacationRequests, deleteVacationRequest } from "../api/vacation";
+import { useAuth } from "../hooks/useAuth";
+import { useTranslation } from "react-i18next";
+import { toastT } from "../utils/toast";
+import { formatISOToDDMMYYYY } from "../utils/timeUtils";
 
 interface Props {
   userId: string;
 }
 
-type VacationStatus = IVacationRequest['status'];
+type VacationStatus = IVacationRequest["status"];
 
 const AdminUserVacationsTab = ({ userId }: Props) => {
   const { token } = useAuth();
@@ -19,7 +19,7 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
 
   const [vacations, setVacations] = useState<IVacationRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const load = async () => {
     if (!token || !userId) return;
@@ -30,13 +30,14 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
 
       // Mantengo tu lógica: solo vacaciones aceptadas de ese usuario
       const acceptedVacations = allVacations.filter(
-        (v: IVacationRequest) => v.user._id === userId && v.status === 'accepted'
+        (v: IVacationRequest) =>
+          v.user._id === userId && v.status === "accepted",
       );
 
       setVacations(acceptedVacations);
-      setError('');
+      setError("");
     } catch {
-      setError(t('pages.vacations.adminUserTab.error'));
+      setError(t("pages.vacations.adminUserTab.error"));
     } finally {
       setLoading(false);
     }
@@ -50,37 +51,38 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
   const handleDeleteVacation = async (id: string) => {
     if (!token) return;
 
-    if (!window.confirm(t('pages.vacations.adminUserTab.confirmDelete'))) return;
+    if (!window.confirm(t("pages.vacations.adminUserTab.confirmDelete")))
+      return;
 
     try {
       await deleteVacationRequest(token, id);
       setVacations((prev) => prev.filter((v) => v._id !== id));
-      toastT.success(['toasts.vacations.deleted']);
+      toastT.success(["toasts.vacations.deleted"]);
     } catch {
-      toastT.error(['toasts.vacations.deleteError']);
+      toastT.error(["toasts.vacations.deleteError"]);
     }
   };
 
   const handleEditVacation = (id: string) => {
-    toastT.info(['toasts.vacations.editPending', { id }]);
+    toastT.info(["toasts.vacations.editPending", { id }]);
   };
 
   const badge = (status: VacationStatus) => {
     const base =
-      'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium';
+      "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium";
 
-    if (status === 'pending') {
+    if (status === "pending") {
       return (
         <span className={`${base} bg-amber-100 text-amber-800`}>
-          {t('pages.vacations.status.pending', 'Pendiente')}
+          {t("pages.vacations.status.pending", "Pendiente")}
         </span>
       );
     }
 
-    if (status === 'accepted') {
+    if (status === "accepted") {
       return (
         <span className={`${base} bg-emerald-100 text-emerald-800`}>
-          {t('pages.vacations.status.accepted', 'Aceptada')}
+          {t("pages.vacations.status.accepted", "Aceptada")}
         </span>
       );
     }
@@ -88,7 +90,7 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
     // rejected u otros
     return (
       <span className={`${base} bg-rose-100 text-rose-800`}>
-        {t('pages.vacations.status.rejected', 'Rechazada')}
+        {t("pages.vacations.status.rejected", "Rechazada")}
       </span>
     );
   };
@@ -99,7 +101,7 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
     s.setHours(0, 0, 0, 0);
     e.setHours(0, 0, 0, 0);
     const diff = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
-    if (Number.isNaN(diff)) return '—';
+    if (Number.isNaN(diff)) return "—";
     return Math.max(diff, 1);
   };
 
@@ -110,8 +112,8 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
         {loading && (
           <div className="p-4 text-sm text-slate-600 text-center">
             {t(
-              'pages.vacations.adminUserTab.loading',
-              'Cargando solicitudes de vacaciones...'
+              "pages.vacations.adminUserTab.loading",
+              "Cargando solicitudes de vacaciones...",
             )}
           </div>
         )}
@@ -125,8 +127,8 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
         {!loading && !error && vacations.length === 0 && (
           <div className="p-4 text-sm text-slate-600 text-center">
             {t(
-              'pages.vacations.adminUserTab.empty',
-              'No hay vacaciones registradas para este trabajador'
+              "pages.vacations.adminUserTab.empty",
+              "No hay vacaciones registradas para este trabajador",
             )}
           </div>
         )}
@@ -145,16 +147,16 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
               <thead className="sticky top-0 bg-slate-50 z-10">
                 <tr className="text-slate-600 border-b border-slate-200 text-center">
                   <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                    {t('pages.vacations.adminUserTab.th.dates', 'Fechas')}
+                    {t("pages.vacations.adminUserTab.th.dates", "Fechas")}
                   </th>
                   <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                    {t('pages.vacations.adminUserTab.th.days', 'Días')}
+                    {t("pages.vacations.adminUserTab.th.days", "Días")}
                   </th>
                   <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                    {t('pages.vacations.adminUserTab.th.status', 'Estado')}
+                    {t("pages.vacations.adminUserTab.th.status", "Estado")}
                   </th>
                   <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                    {t('pages.vacations.adminUserTab.th.actions', 'Acciones')}
+                    {t("pages.vacations.adminUserTab.th.actions", "Acciones")}
                   </th>
                 </tr>
               </thead>
@@ -171,7 +173,7 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
                       {/* Fechas */}
                       <td className="px-3 py-2 align-top">
                         <div className="text-slate-800 whitespace-nowrap">
-                          {formatISOToDDMMYYYY(v.startDate)} —{' '}
+                          {formatISOToDDMMYYYY(v.startDate)} —{" "}
                           {formatISOToDDMMYYYY(v.endDate)}
                         </div>
                       </td>
@@ -188,13 +190,14 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
 
                       <td className="px-3 py-2 align-top">
                         <div className="flex flex-wrap justify-center gap-2">
-
                           {/* ✏️ Editar */}
                           <button
                             type="button"
                             onClick={() => handleEditVacation(v._id)}
                             className="inline-flex items-center justify-center rounded-full border-slate-300 bg-white px-2.5 py-1.5 text-sm hover:bg-slate-50 text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
-                            title={t('pages.vacations.adminUserTab.actions.edit')}
+                            title={t(
+                              "pages.vacations.adminUserTab.actions.edit",
+                            )}
                           >
                             ✏️
                           </button>
@@ -204,11 +207,12 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
                             type="button"
                             onClick={() => handleDeleteVacation(v._id)}
                             className="inline-flex items-center justify-center rounded-full bg-red-50 px-2.5 py-1.5 text-sm text-red-700 hover:bg-red-100 focus:outline-none focus:ring-4 focus:ring-red-100"
-                            title={t('pages.vacations.adminUserTab.actions.delete')}
+                            title={t(
+                              "pages.vacations.adminUserTab.actions.delete",
+                            )}
                           >
                             🗑️
                           </button>
-
                         </div>
                       </td>
                     </tr>

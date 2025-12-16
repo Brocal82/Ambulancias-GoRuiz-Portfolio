@@ -1,5 +1,5 @@
 // backend/src/utils/teamRotation.ts
-import { Types } from 'mongoose';
+import { Types } from "mongoose";
 
 /**
  * Modo de rotación de un equipo.
@@ -7,7 +7,7 @@ import { Types } from 'mongoose';
  *  - 'rotating' → lógica de rotación (la implementaremos después)
  *  - 'none'     → sin comportamiento automático (asignación manual)
  */
-export type RotationMode = 'rotating' | 'fixed' | 'none';
+export type RotationMode = "rotating" | "fixed" | "none";
 
 export interface TeamRotationInfo {
   teamId: Types.ObjectId | string;
@@ -59,7 +59,9 @@ export interface WeekRotationResult {
  *  - Si hay varios equipos con el mismo fixedDienstNumber, se queda con el primero.
  *  - No toca los equipos 'rotating' ni 'none' (los trataremos en pasos posteriores).
  */
-export function computeTeamAssignmentsForWeek(input: WeekRotationInput): WeekRotationResult {
+export function computeTeamAssignmentsForWeek(
+  input: WeekRotationInput,
+): WeekRotationResult {
   const { dienstNumbers, teams } = input;
 
   const assignments: Array<{ dienstNumber: number; teamId: string }> = [];
@@ -68,7 +70,7 @@ export function computeTeamAssignmentsForWeek(input: WeekRotationInput): WeekRot
 
   // 1) Equipos de Dienst fijo
   const fixedTeams = teams.filter(
-    (t) => t.rotationMode === 'fixed' && t.fixedDienstNumber != null
+    (t) => t.rotationMode === "fixed" && t.fixedDienstNumber != null,
   );
 
   for (const team of fixedTeams) {

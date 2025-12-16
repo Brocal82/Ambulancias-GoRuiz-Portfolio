@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   getAllAmbulances,
   createAmbulance,
   updateAmbulance,
-  deleteAmbulance
-} from '../api/ambulances';
-import type { Ambulance } from '../types/ambulance';
-import AmbulanceFormModal from '../components/ambulances/AmbulanceFormModal';
-import { useAuth } from '../hooks/useAuth';
-import { useTranslation } from 'react-i18next';
+  deleteAmbulance,
+} from "../api/ambulances";
+import type { Ambulance } from "../types/ambulance";
+import AmbulanceFormModal from "../components/ambulances/AmbulanceFormModal";
+import { useAuth } from "../hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
 
 const AdminAmbulancesPage: React.FC = () => {
@@ -20,7 +20,9 @@ const AdminAmbulancesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [ambulanceToEdit, setAmbulanceToEdit] = useState<Ambulance | null>(null);
+  const [ambulanceToEdit, setAmbulanceToEdit] = useState<Ambulance | null>(
+    null,
+  );
 
   useEffect(() => {
     fetchAmbulances();
@@ -35,7 +37,7 @@ const AdminAmbulancesPage: React.FC = () => {
       setAmbulances(data);
       setError(null);
     } catch {
-      setError(t('pages.ambulances.adminPage.error'));
+      setError(t("pages.ambulances.adminPage.error"));
     } finally {
       setLoading(false);
     }
@@ -53,23 +55,26 @@ const AdminAmbulancesPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!token) {
-      toastT.error(['pages.ambulances.adminPage.alerts.tokenMissing']);
+      toastT.error(["pages.ambulances.adminPage.alerts.tokenMissing"]);
       return;
     }
 
-    if (!window.confirm(t('pages.ambulances.adminPage.confirmDelete'))) return;
+    if (!window.confirm(t("pages.ambulances.adminPage.confirmDelete"))) return;
 
     try {
       await deleteAmbulance(id, token);
       fetchAmbulances();
     } catch {
-      toastT.error(['pages.ambulances.adminPage.alerts.deleteError']);
+      toastT.error(["pages.ambulances.adminPage.alerts.deleteError"]);
     }
   };
 
-  const handleSave = async (ambulanceData: Omit<Ambulance, '_id'>, id?: string) => {
+  const handleSave = async (
+    ambulanceData: Omit<Ambulance, "_id">,
+    id?: string,
+  ) => {
     if (!token) {
-      toastT.error(['pages.ambulances.adminPage.alerts.tokenMissing']);
+      toastT.error(["pages.ambulances.adminPage.alerts.tokenMissing"]);
       return;
     }
 
@@ -82,11 +87,16 @@ const AdminAmbulancesPage: React.FC = () => {
       setModalOpen(false);
       fetchAmbulances();
     } catch {
-      toastT.error(['pages.ambulances.adminPage.alerts.saveError']);
+      toastT.error(["pages.ambulances.adminPage.alerts.saveError"]);
     }
   };
 
-  if (loading) return <p className="text-center mt-10">{t('pages.ambulances.adminPage.loading')}</p>;
+  if (loading)
+    return (
+      <p className="text-center mt-10">
+        {t("pages.ambulances.adminPage.loading")}
+      </p>
+    );
   if (error) return <p className="text-center mt-10 text-red-600">{error}</p>;
 
   return (
@@ -95,7 +105,7 @@ const AdminAmbulancesPage: React.FC = () => {
         <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-5">
           <div className="flex items-center justify-between gap-3 mb-4">
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900">
-              {t('pages.ambulances.adminPage.title')}
+              {t("pages.ambulances.adminPage.title")}
             </h1>
 
             {/* Botón Nueva ambulancia */}
@@ -103,8 +113,12 @@ const AdminAmbulancesPage: React.FC = () => {
               onClick={handleOpenNew}
               className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-100"
             >
-              <span className="hidden sm:inline">{t('pages.ambulances.adminPage.actions.new')}</span>
-              <span className="sm:hidden">+ {t('pages.ambulances.adminPage.actions.new')}</span>
+              <span className="hidden sm:inline">
+                {t("pages.ambulances.adminPage.actions.new")}
+              </span>
+              <span className="sm:hidden">
+                + {t("pages.ambulances.adminPage.actions.new")}
+              </span>
             </button>
           </div>
 
@@ -112,14 +126,14 @@ const AdminAmbulancesPage: React.FC = () => {
           {ambulances.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-slate-500">
-                {t('pages.ambulances.adminPage.empty')}
+                {t("pages.ambulances.adminPage.empty")}
               </p>
               <div className="mt-4">
                 <button
                   onClick={handleOpenNew}
                   className="rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-100"
                 >
-                  {t('pages.ambulances.adminPage.actions.new')}
+                  {t("pages.ambulances.adminPage.actions.new")}
                 </button>
               </div>
             </div>
@@ -135,21 +149,21 @@ const AdminAmbulancesPage: React.FC = () => {
                 <thead className="bg-slate-100 text-slate-800 sticky top-0 z-10">
                   <tr>
                     <th className="px-4 py-2 text-center font-semibold whitespace-nowrap">
-                      {t('pages.ambulances.adminPage.table.brand')}
+                      {t("pages.ambulances.adminPage.table.brand")}
                     </th>
                     <th className="px-4 py-2 text-center font-semibold whitespace-nowrap">
-                      {t('pages.ambulances.adminPage.table.model')}
+                      {t("pages.ambulances.adminPage.table.model")}
                     </th>
                     <th className="px-4 py-2 text-center font-semibold whitespace-nowrap">
-                      {t('pages.ambulances.adminPage.table.licensePlate')}
+                      {t("pages.ambulances.adminPage.table.licensePlate")}
                     </th>
                     {/* un pelín más de aire a la derecha de la 4ª col */}
                     <th className="px-4 py-2 text-center font-semibold whitespace-nowrap pr-6">
-                      {t('pages.ambulances.adminPage.table.ambulanceNumber')}
+                      {t("pages.ambulances.adminPage.table.ambulanceNumber")}
                     </th>
                     {/* aire suave a la izquierda de Acciones */}
                     <th className="px-4 py-2 text-center font-semibold whitespace-nowrap pl-6">
-                      {t('pages.ambulances.adminPage.table.actions')}
+                      {t("pages.ambulances.adminPage.table.actions")}
                     </th>
                   </tr>
                 </thead>
@@ -161,10 +175,14 @@ const AdminAmbulancesPage: React.FC = () => {
                       className="even:bg-slate-50/40 hover:bg-blue-50 transition-colors"
                     >
                       <td className="px-4 py-2 border-t border-slate-200 align-middle text-center">
-                        <span className="inline-block font-medium text-slate-900">{amb.brand}</span>
+                        <span className="inline-block font-medium text-slate-900">
+                          {amb.brand}
+                        </span>
                       </td>
                       <td className="px-4 py-2 border-t border-slate-200 align-middle text-center">
-                        <span className="inline-block text-slate-700">{amb.modelName}</span>
+                        <span className="inline-block text-slate-700">
+                          {amb.modelName}
+                        </span>
                       </td>
                       <td className="px-4 py-2 border-t border-slate-200 align-middle text-center">
                         <span className="inline-block rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-800">
@@ -187,7 +205,7 @@ const AdminAmbulancesPage: React.FC = () => {
                bg-white hover:bg-blue-50 hover:border-blue-400 
                focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
                           >
-                            {t('pages.ambulances.adminPage.actions.edit')}
+                            {t("pages.ambulances.adminPage.actions.edit")}
                           </button>
                           <button
                             onClick={() => handleDelete(amb._id)}
@@ -196,17 +214,15 @@ const AdminAmbulancesPage: React.FC = () => {
                bg-white hover:bg-rose-50 hover:border-rose-400 
                focus:outline-none focus:ring-2 focus:ring-rose-100 transition"
                           >
-                            {t('pages.ambulances.adminPage.actions.delete')}
+                            {t("pages.ambulances.adminPage.actions.delete")}
                           </button>
                         </div>
-
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-
           )}
 
           {/* Modal formulario */}

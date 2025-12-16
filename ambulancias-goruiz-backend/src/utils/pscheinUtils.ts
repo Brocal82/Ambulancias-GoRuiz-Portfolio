@@ -1,4 +1,4 @@
-export type PscheinStatus = 'valid' | 'warning' | 'expired' | 'no-date';
+export type PscheinStatus = "valid" | "warning" | "expired" | "no-date";
 
 export interface PscheinInfo {
   status: PscheinStatus;
@@ -40,7 +40,9 @@ function diffDaysCeil(a: Date, b: Date): number {
 
 /** Meses ENTEROS hasta la fecha (floor), ajustando por día del mes */
 function wholeMonthsUntil(expiry: Date, from: Date): number {
-  let months = (expiry.getFullYear() - from.getFullYear()) * 12 + (expiry.getMonth() - from.getMonth());
+  let months =
+    (expiry.getFullYear() - from.getFullYear()) * 12 +
+    (expiry.getMonth() - from.getMonth());
   // Si el “día” de expiry todavía no ha llegado este mes, restamos 1
   if (expiry.getDate() < from.getDate()) months -= 1;
   return Math.max(0, months);
@@ -53,16 +55,16 @@ function wholeMonthsUntil(expiry: Date, from: Date): number {
  * - daysLeft: días totales restantes (>=0, ceil)
  */
 export function getPscheinInfo(date?: string): PscheinInfo {
-  if (!date) return { status: 'no-date' };
+  if (!date) return { status: "no-date" };
 
   const expiry = new Date(date);
-  if (Number.isNaN(expiry.getTime())) return { status: 'no-date' };
+  if (Number.isNaN(expiry.getTime())) return { status: "no-date" };
 
   const now = new Date();
 
   if (expiry < now) {
     return {
-      status: 'expired',
+      status: "expired",
       monthsLeft: 0,
       daysLeft: 0,
       isoExpiry: expiry.toISOString(),
@@ -73,7 +75,7 @@ export function getPscheinInfo(date?: string): PscheinInfo {
   const daysLeft = diffDaysCeil(expiry, now);
   const threshold = getWarningThresholdMonths();
 
-  const status: PscheinStatus = monthsLeft <= threshold ? 'warning' : 'valid';
+  const status: PscheinStatus = monthsLeft <= threshold ? "warning" : "valid";
 
   return { status, monthsLeft, daysLeft, isoExpiry: expiry.toISOString() };
 }

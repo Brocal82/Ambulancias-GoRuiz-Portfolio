@@ -1,24 +1,24 @@
-import React from 'react';
+import React from "react";
 
 type FileUploadProps = {
   id: string;
-  label?: string;                      // texto del botón (ej. "Adjuntar")
-  accept?: string;                     // ej. ".pdf,image/jpeg,image/png" o "image/*"
-  multiple?: boolean;                  // true si quieres varios
-  maxSizeMB?: number;                  // ej. 5 => 5 MB
-  onChange?: (files: FileList | null) => void;      // retrocompatible
-  onFileSelect?: (file: File | null) => void;       // flujo 1 archivo
-  onFilesSelect?: (files: File[] | null) => void;   // flujo múltiples
-  onError?: (message: string) => void;              // para toasts opcionales
-  hintWhenEmpty?: string;              // texto cuando no hay archivos seleccionados
-  className?: string;                  // estilos extra
+  label?: string; // texto del botón (ej. "Adjuntar")
+  accept?: string; // ej. ".pdf,image/jpeg,image/png" o "image/*"
+  multiple?: boolean; // true si quieres varios
+  maxSizeMB?: number; // ej. 5 => 5 MB
+  onChange?: (files: FileList | null) => void; // retrocompatible
+  onFileSelect?: (file: File | null) => void; // flujo 1 archivo
+  onFilesSelect?: (files: File[] | null) => void; // flujo múltiples
+  onError?: (message: string) => void; // para toasts opcionales
+  hintWhenEmpty?: string; // texto cuando no hay archivos seleccionados
+  className?: string; // estilos extra
   disabled?: boolean;
-  showSelectedList?: boolean;          // NUEVO: si false, no renderiza la lista interna
+  showSelectedList?: boolean; // NUEVO: si false, no renderiza la lista interna
 };
 
 const FileUpload: React.FC<FileUploadProps> = ({
   id,
-  label = 'Adjuntar',
+  label = "Adjuntar",
   accept,
   multiple = false,
   maxSizeMB,
@@ -26,15 +26,15 @@ const FileUpload: React.FC<FileUploadProps> = ({
   onFileSelect,
   onFilesSelect,
   onError,
-  hintWhenEmpty = 'No hay archivos seleccionados',
-  className = '',
+  hintWhenEmpty = "No hay archivos seleccionados",
+  className = "",
   disabled = false,
   showSelectedList = true,
 }) => {
   const [files, setFiles] = React.useState<FileList | null>(null);
 
   const maxBytes =
-    typeof maxSizeMB === 'number' ? maxSizeMB * 1024 * 1024 : undefined;
+    typeof maxSizeMB === "number" ? maxSizeMB * 1024 * 1024 : undefined;
 
   const validateFile = (file: File): string | null => {
     if (maxBytes && file.size > maxBytes) {
@@ -43,16 +43,16 @@ const FileUpload: React.FC<FileUploadProps> = ({
     if (accept) {
       // Acepta extensiones (.pdf), comodines (image/*) y mimes exactos (image/png)
       const tokens = accept
-        .split(',')
+        .split(",")
         .map((s) => s.trim().toLowerCase())
         .filter(Boolean);
 
-      const ext = '.' + (file.name.split('.').pop() || '').toLowerCase();
-      const mime = (file.type || '').toLowerCase();
+      const ext = "." + (file.name.split(".").pop() || "").toLowerCase();
+      const mime = (file.type || "").toLowerCase();
 
       const ok = tokens.some((tok) => {
-        if (tok.startsWith('.')) return tok === ext; // extensión
-        if (tok.endsWith('/*')) {
+        if (tok.startsWith(".")) return tok === ext; // extensión
+        if (tok.endsWith("/*")) {
           const base = tok.slice(0, -2); // ej: "image"
           return mime.startsWith(`${base}/`);
         }
@@ -76,7 +76,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       if (err) {
         onError?.(err);
         // reset defensivo
-        e.currentTarget.value = '';
+        e.currentTarget.value = "";
         setFiles(null);
         onChange?.(null);
         onFileSelect?.(null);
@@ -114,14 +114,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
       <label
         htmlFor={id}
         className={[
-          'inline-flex items-center gap-2 rounded-md border border-slate-300',
-          'bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700',
-          'shadow-sm transition-all duration-150',
+          "inline-flex items-center gap-2 rounded-md border border-slate-300",
+          "bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700",
+          "shadow-sm transition-all duration-150",
           disabled
-            ? 'opacity-60 cursor-not-allowed'
-            : 'hover:bg-slate-100 hover:border-slate-400 cursor-pointer',
-          'focus:outline-none focus:ring-2 focus:ring-slate-200',
-        ].join(' ')}
+            ? "opacity-60 cursor-not-allowed"
+            : "hover:bg-slate-100 hover:border-slate-400 cursor-pointer",
+          "focus:outline-none focus:ring-2 focus:ring-slate-200",
+        ].join(" ")}
       >
         <span aria-hidden="true">📎</span>
         <span>{label}</span>
@@ -132,7 +132,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
         files && files.length > 0 ? (
           <ul className="mt-1 list-disc list-inside text-xs text-slate-700">
             {Array.from(files).map((f) => (
-              <li key={f.name} className="truncate max-w-[220px]" title={f.name}>
+              <li
+                key={f.name}
+                className="truncate max-w-[220px]"
+                title={f.name}
+              >
                 {f.name}
               </li>
             ))}

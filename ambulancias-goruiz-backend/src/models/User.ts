@@ -1,20 +1,20 @@
 //src/models/User.ts
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema } from "mongoose";
 
 export interface IUser extends Document {
   name: string;
   lastName: string;
   email: string;
   password: string;
-  role: 'admin' | 'worker';
-  ambulanceRole?: 'driver' | 'medic' | 'both';
+  role: "admin" | "worker";
+  ambulanceRole?: "driver" | "medic" | "both";
   address?: string;
   phone?: string;
   emergencyPhone?: string;
   pscheinExpiry?: string; // Formato ISO, ej: '2025-12-31'
-  profileImage?: string;  // URL o base64 si usas subida
-  documents?: string[];   // Lista de archivos subidos (PDF, etc.)
-  rotationMode?: 'rotating' | 'fixed' | 'none';
+  profileImage?: string; // URL o base64 si usas subida
+  documents?: string[]; // Lista de archivos subidos (PDF, etc.)
+  rotationMode?: "rotating" | "fixed" | "none";
   fixedDienstNumber?: number | null;
 }
 
@@ -25,13 +25,13 @@ const userSchema = new Schema<IUser>({
   password: { type: String, required: true },
   role: {
     type: String,
-    enum: ['admin', 'worker'],
-    default: 'worker',
+    enum: ["admin", "worker"],
+    default: "worker",
     required: true,
   },
   ambulanceRole: {
     type: String,
-    enum: ['driver', 'medic', 'both'],
+    enum: ["driver", "medic", "both"],
     required: false,
   },
   address: {
@@ -58,18 +58,17 @@ const userSchema = new Schema<IUser>({
     type: [String],
     required: false,
   },
-    rotationMode: {
+  rotationMode: {
     type: String,
-    enum: ['rotating', 'fixed', 'none'],
-    default: 'none',
+    enum: ["rotating", "fixed", "none"],
+    default: "none",
   },
   fixedDienstNumber: {
     type: Number,
     required: false,
     default: null,
   },
-
 });
 
-const User = mongoose.model<IUser>('User', userSchema);
+const User = mongoose.model<IUser>("User", userSchema);
 export default User;

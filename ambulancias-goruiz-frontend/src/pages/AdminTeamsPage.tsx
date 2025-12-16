@@ -1,16 +1,16 @@
 // frontend/src/pages/AdminTeamsPage.tsx
-import { useEffect, useState, useCallback } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { useTranslation } from 'react-i18next';
-import { getTeams, createTeam, updateTeam, deleteTeam } from '../api/teams';
-import type { Team, UpdateTeamPayload } from '../api/teams';
-import TeamCreateModal from '../components/teams/TeamCreateModal';
-import TeamEditModal from '../components/teams/TeamEditModal';
-import { toastT } from '../utils/toast';
-import { getPscheinInfo } from '../utils/pscheinUtils';
-import { getVacationFlagsInRange, type VacFlag } from '../api/vacation';
-import { getSickFlagsInRange, type SickFlag } from '../api/sickLeaves';
-import { fmtDDMM } from '../utils/timeUtils';
+import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { useTranslation } from "react-i18next";
+import { getTeams, createTeam, updateTeam, deleteTeam } from "../api/teams";
+import type { Team, UpdateTeamPayload } from "../api/teams";
+import TeamCreateModal from "../components/teams/TeamCreateModal";
+import TeamEditModal from "../components/teams/TeamEditModal";
+import { toastT } from "../utils/toast";
+import { getPscheinInfo } from "../utils/pscheinUtils";
+import { getVacationFlagsInRange, type VacFlag } from "../api/vacation";
+import { getSickFlagsInRange, type SickFlag } from "../api/sickLeaves";
+import { fmtDDMM } from "../utils/timeUtils";
 
 export default function AdminTeamsPage() {
   const { token } = useAuth();
@@ -22,22 +22,32 @@ export default function AdminTeamsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
 
-
   // 🏖️ / 🤒 Flags semanales por usuario (mapas por userId)
-  const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
+  const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>(
+    {},
+  );
   const [sickFlags, setSickFlags] = useState<Record<string, SickFlag>>({});
 
   // =========================
   // Fecha (Europe/Berlin)
   // =========================
   const getBerlinYMD = (d: Date) => {
-    const y = Number(d.toLocaleString('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric' }));
-    const m = Number(d.toLocaleString('en-CA', { timeZone: 'Europe/Berlin', month: '2-digit' }));
-    const day = Number(d.toLocaleString('en-CA', { timeZone: 'Europe/Berlin', day: '2-digit' }));
+    const y = Number(
+      d.toLocaleString("en-CA", { timeZone: "Europe/Berlin", year: "numeric" }),
+    );
+    const m = Number(
+      d.toLocaleString("en-CA", {
+        timeZone: "Europe/Berlin",
+        month: "2-digit",
+      }),
+    );
+    const day = Number(
+      d.toLocaleString("en-CA", { timeZone: "Europe/Berlin", day: "2-digit" }),
+    );
     return { y, m, day };
   };
   const toISO = (y: number, m: number, d: number) =>
-    `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
   // Semana actual (Lun→Dom) en Berlin
   const getBerlinWeekRangeISO = () => {
@@ -49,8 +59,16 @@ export default function AdminTeamsPage() {
     const mondayUTC = new Date(Date.UTC(y, m - 1, day + diffToMonday));
     const sundayUTC = new Date(Date.UTC(y, m - 1, day + diffToMonday + 6));
     return {
-      weekStartISO: toISO(mondayUTC.getUTCFullYear(), mondayUTC.getUTCMonth() + 1, mondayUTC.getUTCDate()),
-      weekEndISO: toISO(sundayUTC.getUTCFullYear(), sundayUTC.getUTCMonth() + 1, sundayUTC.getUTCDate()),
+      weekStartISO: toISO(
+        mondayUTC.getUTCFullYear(),
+        mondayUTC.getUTCMonth() + 1,
+        mondayUTC.getUTCDate(),
+      ),
+      weekEndISO: toISO(
+        sundayUTC.getUTCFullYear(),
+        sundayUTC.getUTCMonth() + 1,
+        sundayUTC.getUTCDate(),
+      ),
     };
   };
 
@@ -65,7 +83,7 @@ export default function AdminTeamsPage() {
       console.error(e);
       setError(
         e?.response?.data?.message ??
-        t('pages.adminTeams.loadError', 'No se pudieron cargar los equipos')
+          t("pages.adminTeams.loadError", "No se pudieron cargar los equipos"),
       );
     } finally {
       setLoading(false);
@@ -88,8 +106,8 @@ export default function AdminTeamsPage() {
     for (const team of teams) {
       const dId = (team.driver as any)?._id || (team.driver as any);
       const mId = (team.medic as any)?._id || (team.medic as any);
-      if (typeof dId === 'string') ids.add(dId);
-      if (typeof mId === 'string') ids.add(mId);
+      if (typeof dId === "string") ids.add(dId);
+      if (typeof mId === "string") ids.add(mId);
     }
     const userIds = Array.from(ids);
     if (userIds.length === 0) {
@@ -122,7 +140,10 @@ export default function AdminTeamsPage() {
           setSickFlags(sFlags);
         }
       } catch (e) {
-        console.error('❌ Error al cargar flags (vacaciones/bajas) en AdminTeamsPage:', e);
+        console.error(
+          "❌ Error al cargar flags (vacaciones/bajas) en AdminTeamsPage:",
+          e,
+        );
         if (!cancelled) {
           setVacationFlags({});
           setSickFlags({});
@@ -139,11 +160,13 @@ export default function AdminTeamsPage() {
     if (!token) return;
     try {
       await createTeam(payload, token);
-      toastT.success(['pages.adminTeams.created']);
+      toastT.success(["pages.adminTeams.created"]);
       await load();
     } catch (e: any) {
       console.error(e);
-      toastT.error([e?.response?.data?.message || 'pages.adminTeams.createError']);
+      toastT.error([
+        e?.response?.data?.message || "pages.adminTeams.createError",
+      ]);
     }
   };
 
@@ -151,76 +174,88 @@ export default function AdminTeamsPage() {
     setEditingTeam(team);
   };
 
-    const handleUpdateTeam = async (
+  const handleUpdateTeam = async (
     teamId: string,
-    payload: UpdateTeamPayload
+    payload: UpdateTeamPayload,
   ) => {
     if (!token) return;
 
     try {
       await updateTeam(teamId, payload, token);
-      toastT.success(['pages.adminTeams.updated']);
+      toastT.success(["pages.adminTeams.updated"]);
       await load();
       setEditingTeam(null);
     } catch (e: any) {
       console.error(e);
       toastT.error([
-        e?.response?.data?.message || 'pages.adminTeams.updateError',
+        e?.response?.data?.message || "pages.adminTeams.updateError",
       ]);
     }
   };
 
-
   const handleDelete = async (teamId: string) => {
     if (!token) return;
     const confirmed = confirm(
-      t('pages.adminTeams.confirmDelete', '¿Eliminar este equipo?')
+      t("pages.adminTeams.confirmDelete", "¿Eliminar este equipo?"),
     );
     if (!confirmed) return;
 
     try {
       await deleteTeam(teamId, token);
-      toastT.success(['pages.adminTeams.deleted']);
+      toastT.success(["pages.adminTeams.deleted"]);
       await load();
     } catch (e: any) {
       console.error(e);
-      toastT.error([e?.response?.data?.message || 'pages.adminTeams.deleteError']);
+      toastT.error([
+        e?.response?.data?.message || "pages.adminTeams.deleteError",
+      ]);
     }
   };
 
   // ⚙️ Estilo visual + iconos para conductor según P-Schein
   const getDriverDecor = (team: Team) => {
     const d = team?.driver as any;
-    if (!d || typeof d !== 'object') {
-      return { cls: '', title: undefined as string | undefined, expired: false, warning: false };
+    if (!d || typeof d !== "object") {
+      return {
+        cls: "",
+        title: undefined as string | undefined,
+        expired: false,
+        warning: false,
+      };
     }
 
     const info = getPscheinInfo(d.pscheinExpiry ?? undefined);
 
-    if (info.status === 'expired') {
+    if (info.status === "expired") {
       return {
-        cls: 'text-red-600 font-medium',
-        title: t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado, no puede conducir') as string,
+        cls: "text-red-600 font-medium",
+        title: t(
+          "pages.diensts.adminPage.driverPscheinExpired",
+          "P-Schein caducado, no puede conducir",
+        ) as string,
         expired: true,
         warning: false,
       };
     }
 
-    if (info.status === 'warning') {
+    if (info.status === "warning") {
       return {
-        cls: 'text-amber-600 font-medium',
-        title: t('pages.diensts.adminPage.driverPscheinWarning', { count: info.monthsLeft ?? 0 }) as string,
+        cls: "text-amber-600 font-medium",
+        title: t("pages.diensts.adminPage.driverPscheinWarning", {
+          count: info.monthsLeft ?? 0,
+        }) as string,
         expired: false,
         warning: true,
       };
     }
 
-    return { cls: '', title: undefined, expired: false, warning: false };
+    return { cls: "", title: undefined, expired: false, warning: false };
   };
 
   // 🔎 Decor vacaciones+baja por persona (tooltip SOLO en iconos; fechas DD/MM; FULL si está)
   const getPersonLeaveDecor = (person: any) => {
-    const id: string | undefined = typeof person === 'object' && person ? person._id : person;
+    const id: string | undefined =
+      typeof person === "object" && person ? person._id : person;
     const vf = id ? vacationFlags[id] : undefined;
     const sf = id ? sickFlags[id] : undefined;
 
@@ -231,22 +266,22 @@ export default function AdminTeamsPage() {
     const vacFromFull = vf?.vacationStartFull;
     const vacToFull = vf?.vacationUntilFull;
     const vacTitle = hasVac
-      ? (vacFromFull && vacToFull
-        ? `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}: ${fmtDDMM(vacFromFull)} → ${fmtDDMM(vacToFull)}`
-        : `🏖️ ${t('pages.diensts.weekModals.vacations', 'Vacaciones')}`)
+      ? vacFromFull && vacToFull
+        ? `🏖️ ${t("pages.diensts.weekModals.vacations", "Vacaciones")}: ${fmtDDMM(vacFromFull)} → ${fmtDDMM(vacToFull)}`
+        : `🏖️ ${t("pages.diensts.weekModals.vacations", "Vacaciones")}`
       : undefined;
 
     // Bajas tooltip
     const sickFromFull = sf?.sickStartFull || sf?.sickStartInRange;
     const sickToFull = sf?.sickUntilFull || sf?.sickUntilInRange;
     const sickTitle = hasSick
-      ? (sickFromFull && sickToFull
-        ? `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}: ${fmtDDMM(sickFromFull)} → ${fmtDDMM(sickToFull)}`
-        : `🤒 ${t('pages.sick.tooltip.full', 'Baja médica')}`)
+      ? sickFromFull && sickToFull
+        ? `🤒 ${t("pages.sick.tooltip.full", "Baja médica")}: ${fmtDDMM(sickFromFull)} → ${fmtDDMM(sickToFull)}`
+        : `🤒 ${t("pages.sick.tooltip.full", "Baja médica")}`
       : undefined;
 
     return {
-      dimCls: (hasVac || hasSick) ? 'text-slate-400' : '',
+      dimCls: hasVac || hasSick ? "text-slate-400" : "",
       vacTitle,
       sickTitle,
       showVac: hasVac,
@@ -259,10 +294,10 @@ export default function AdminTeamsPage() {
       <div className="mb-6 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            {t('pages.adminTeams.title', 'Equipos (driver + medic)')}
+            {t("pages.adminTeams.title", "Equipos (driver + medic)")}
           </h1>
           <p className="text-slate-600">
-            {t('pages.adminTeams.subtitle', 'Crea y gestiona parejas fijas.')}
+            {t("pages.adminTeams.subtitle", "Crea y gestiona parejas fijas.")}
           </p>
         </div>
 
@@ -270,13 +305,13 @@ export default function AdminTeamsPage() {
           onClick={() => setShowCreate(true)}
           className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
         >
-          ➕ {t('pages.adminTeams.createBtn', 'Nuevo equipo')}
+          ➕ {t("pages.adminTeams.createBtn", "Nuevo equipo")}
         </button>
       </div>
 
       {loading && (
         <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
-          {t('common.loading', 'Cargando...')}
+          {t("common.loading", "Cargando...")}
         </div>
       )}
 
@@ -288,7 +323,7 @@ export default function AdminTeamsPage() {
 
       {!loading && !error && teams.length === 0 && (
         <div className="rounded-xl bg-white p-6 ring-1 ring-slate-200 text-slate-600">
-          {t('pages.adminTeams.empty', 'Todavía no hay equipos creados.')}
+          {t("pages.adminTeams.empty", "Todavía no hay equipos creados.")}
         </div>
       )}
 
@@ -317,7 +352,7 @@ export default function AdminTeamsPage() {
                   <button
                     onClick={() => handleEdit(team)}
                     className="rounded-lg bg-slate-200 p-0.5 text-xs text-slate-700 hover:bg-slate-300 transition"
-                    title={t('common.edit', 'Editar')}
+                    title={t("common.edit", "Editar")}
                   >
                     ✏️
                   </button>
@@ -325,7 +360,7 @@ export default function AdminTeamsPage() {
                   <button
                     onClick={() => handleDelete(team._id)}
                     className="rounded-lg p-0.5 text-xs text-white hover:bg-rose-500 transition"
-                    title={t('common.delete', 'Eliminar')}
+                    title={t("common.delete", "Eliminar")}
                   >
                     🗑️
                   </button>
@@ -340,17 +375,24 @@ export default function AdminTeamsPage() {
                     >
                       <span>🧑‍✈️</span>
                       <span>
-                        {(team.driver?.lastName || '—')}, {team.driver?.name || '—'}
+                        {team.driver?.lastName || "—"},{" "}
+                        {team.driver?.name || "—"}
                       </span>
 
                       {/* Iconos pegados al nombre */}
                       {driverLeave.showVac && (
-                        <span title={driverLeave.vacTitle} className="align-middle cursor-help">
+                        <span
+                          title={driverLeave.vacTitle}
+                          className="align-middle cursor-help"
+                        >
                           🏖️
                         </span>
                       )}
                       {driverLeave.showSick && (
-                        <span title={driverLeave.sickTitle} className="align-middle cursor-help">
+                        <span
+                          title={driverLeave.sickTitle}
+                          className="align-middle cursor-help"
+                        >
                           🤒
                         </span>
                       )}
@@ -359,8 +401,8 @@ export default function AdminTeamsPage() {
                           title={
                             driverPscheinTitle ||
                             t(
-                              'pages.diensts.adminPage.driverPscheinExpired',
-                              'P-Schein caducado'
+                              "pages.diensts.adminPage.driverPscheinExpired",
+                              "P-Schein caducado",
                             )
                           }
                           className="align-middle cursor-help"
@@ -369,7 +411,10 @@ export default function AdminTeamsPage() {
                         </span>
                       )}
                       {!driverExpired && driverWarning && (
-                        <span title={driverPscheinTitle} className="align-middle cursor-help">
+                        <span
+                          title={driverPscheinTitle}
+                          className="align-middle cursor-help"
+                        >
                           ⚠️
                         </span>
                       )}
@@ -383,17 +428,23 @@ export default function AdminTeamsPage() {
                     >
                       <span>🧑‍⚕️</span>
                       <span>
-                        {(team.medic?.lastName || '—')}, {team.medic?.name || '—'}
+                        {team.medic?.lastName || "—"}, {team.medic?.name || "—"}
                       </span>
 
                       {/* Iconos pegados al nombre */}
                       {medicLeave.showVac && (
-                        <span title={medicLeave.vacTitle} className="align-middle cursor-help">
+                        <span
+                          title={medicLeave.vacTitle}
+                          className="align-middle cursor-help"
+                        >
                           🏖️
                         </span>
                       )}
                       {medicLeave.showSick && (
-                        <span title={medicLeave.sickTitle} className="align-middle cursor-help">
+                        <span
+                          title={medicLeave.sickTitle}
+                          className="align-middle cursor-help"
+                        >
                           🤒
                         </span>
                       )}
@@ -407,27 +458,34 @@ export default function AdminTeamsPage() {
                   <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-slate-700 ring-1 ring-slate-200">
                     <span className="ml-1">
                       {(() => {
-                        const mode = team.rotationMode || 'rotating';
+                        const mode = team.rotationMode || "rotating";
 
-                        if (mode === 'fixed') {
+                        if (mode === "fixed") {
                           const num = team.fixedDienstNumber;
                           return (
                             <>
-                              📌{' '}
+                              📌{" "}
                               {num
                                 ? t(
-                                  'pages.adminTeams.rotation.badgeFixedWithNum',
-                                  'Dienst #{num}'
-                                ).replace('{num}', String(num))
-                                : t('pages.adminTeams.rotation.badgeFixed', 'Fijo')}
+                                    "pages.adminTeams.rotation.badgeFixedWithNum",
+                                    "Dienst #{num}",
+                                  ).replace("{num}", String(num))
+                                : t(
+                                    "pages.adminTeams.rotation.badgeFixed",
+                                    "Fijo",
+                                  )}
                             </>
                           );
                         }
 
-                        if (mode === 'none') {
+                        if (mode === "none") {
                           return (
                             <>
-                              ✋ {t('pages.adminTeams.rotation.badgeNone', 'Manual')}
+                              ✋{" "}
+                              {t(
+                                "pages.adminTeams.rotation.badgeNone",
+                                "Manual",
+                              )}
                             </>
                           );
                         }
@@ -435,17 +493,20 @@ export default function AdminTeamsPage() {
                         // rotating
                         return (
                           <>
-                            🔁 {t('pages.adminTeams.rotation.badgeRotating', 'Rotación')}
+                            🔁{" "}
+                            {t(
+                              "pages.adminTeams.rotation.badgeRotating",
+                              "Rotación",
+                            )}
                           </>
                         );
                       })()}
                     </span>
                   </span>
 
-
                   {/* Ambulancia */}
                   <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-slate-700 ring-1 ring-slate-200">
-                    🚑{' '}
+                    🚑{" "}
                     <span className="ml-1">
                       {(() => {
                         const amb: any =
@@ -454,18 +515,17 @@ export default function AdminTeamsPage() {
                           (team as any).fixedAmbulance ||
                           null;
 
-                        if (!amb) return '—';
-                        if (typeof amb === 'string') return amb || '—';
-                        if (typeof amb === 'object') return amb.ambulanceNumber || '—';
-                        return '—';
+                        if (!amb) return "—";
+                        if (typeof amb === "string") return amb || "—";
+                        if (typeof amb === "object")
+                          return amb.ambulanceNumber || "—";
+                        return "—";
                       })()}
                     </span>
                   </span>
                 </div>
               </div>
             );
-
-
           })}
         </div>
       )}
@@ -478,7 +538,6 @@ export default function AdminTeamsPage() {
           onConfirm={handleUpdateTeam}
         />
       )}
-
 
       {showCreate && (
         <TeamCreateModal

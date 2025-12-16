@@ -1,16 +1,16 @@
 // frontend/src/api/users.ts
-import api from './axios';
-import type { User } from '../types/user';
+import api from "./axios";
+import type { User } from "../types/user";
 
 // ✅ Obtener todos los usuarios completos (para Admin)
 export const getAllUsers = async (token: string): Promise<User[]> => {
   try {
-    const response = await api.get<User[]>('/users', {
+    const response = await api.get<User[]>("/users", {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   } catch (error) {
-    console.error('Error al obtener usuarios:', error);
+    console.error("Error al obtener usuarios:", error);
     throw error;
   }
 };
@@ -18,9 +18,9 @@ export const getAllUsers = async (token: string): Promise<User[]> => {
 // ✅ Obtener usuarios disponibles por fecha, rol y (opcional) horas para evitar solapes
 export const getAvailableUsersForDate = async (
   date: string,
-  desiredRole: 'driver' | 'medic' | 'both',
+  desiredRole: "driver" | "medic" | "both",
   token: string,
-  opts?: { startTime?: string; endTime?: string; includeExpired?: boolean }
+  opts?: { startTime?: string; endTime?: string; includeExpired?: boolean },
 ): Promise<User[]> => {
   const response = await api.get(`/users/available`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -29,21 +29,24 @@ export const getAvailableUsersForDate = async (
       desiredRole,
       startTime: opts?.startTime,
       endTime: opts?.endTime,
-      includeExpired: opts?.includeExpired ? 'true' : undefined,
+      includeExpired: opts?.includeExpired ? "true" : undefined,
     },
   });
   return response.data;
 };
 
 // ✅ Obtener usuario por id
-export const getUserById = async (token: string, userId: string): Promise<User> => {
+export const getUserById = async (
+  token: string,
+  userId: string,
+): Promise<User> => {
   try {
     const response = await api.get<User>(`/users/${userId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   } catch (error) {
-    console.error('Error al obtener el perfil:', error);
+    console.error("Error al obtener el perfil:", error);
     throw error;
   }
 };
@@ -52,7 +55,7 @@ export const getUserById = async (token: string, userId: string): Promise<User> 
 export const updateUserProfile = async (
   userId: string,
   updatedData: Partial<User>,
-  token: string
+  token: string,
 ): Promise<User> => {
   try {
     const response = await api.patch<User>(`/users/${userId}`, updatedData, {
@@ -60,13 +63,16 @@ export const updateUserProfile = async (
     });
     return response.data;
   } catch (error) {
-    console.error('Error al actualizar el perfil:', error);
+    console.error("Error al actualizar el perfil:", error);
     throw error;
   }
 };
 
 // ✅ Eliminar usuario
-export const deleteUser = async (userId: string, token: string): Promise<void> => {
+export const deleteUser = async (
+  userId: string,
+  token: string,
+): Promise<void> => {
   await api.delete(`/users/${userId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -75,9 +81,9 @@ export const deleteUser = async (userId: string, token: string): Promise<void> =
 // ✅ Eliminar documento del usuario (DELETE con body)
 export const deleteUserDocument = async (
   filePath: string,
-  token: string
+  token: string,
 ): Promise<{ documents: string[] }> => {
-  const response = await api.delete('/users/me/document', {
+  const response = await api.delete("/users/me/document", {
     headers: { Authorization: `Bearer ${token}` },
     data: { filePath },
   });
@@ -94,29 +100,28 @@ export const uploadUserFiles = async (
   files: {
     profileImage?: File | null;
     documents?: FileList | File[] | null;
-  }
+  },
 ): Promise<{ profileImage?: string; documents?: string[] }> => {
   const form = new FormData();
 
   if (files.profileImage) {
-    form.append('profileImage', files.profileImage);
+    form.append("profileImage", files.profileImage);
   }
 
   if (files.documents) {
     const docsArray = Array.isArray(files.documents)
       ? files.documents
       : Array.from(files.documents);
-    docsArray.forEach((doc) => form.append('documents', doc));
+    docsArray.forEach((doc) => form.append("documents", doc));
   }
 
-  const response = await api.post<{ profileImage?: string; documents?: string[] }>(
-    '/users/me/upload',
-    form,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      // No pongas 'Content-Type': axios lo infiere con boundary al mandar FormData
-    }
-  );
+  const response = await api.post<{
+    profileImage?: string;
+    documents?: string[];
+  }>("/users/me/upload", form, {
+    headers: { Authorization: `Bearer ${token}` },
+    // No pongas 'Content-Type': axios lo infiere con boundary al mandar FormData
+  });
 
   return response.data;
 };

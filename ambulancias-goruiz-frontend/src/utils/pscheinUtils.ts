@@ -1,15 +1,15 @@
 // frontend/src/utils/pscheinUtils.ts
-export type PscheinStatus = 'valid' | 'warning' | 'expired' | 'no-date';
+export type PscheinStatus = "valid" | "warning" | "expired" | "no-date";
 
 export function getPscheinInfo(date?: string): {
   status: PscheinStatus;
   monthsLeft?: number; // puede ser negativo si ya caducó
-  daysLeft?: number;   // idem
+  daysLeft?: number; // idem
 } {
-  if (!date) return { status: 'no-date' };
+  if (!date) return { status: "no-date" };
 
   const expiry = new Date(date);
-  if (isNaN(expiry.getTime())) return { status: 'no-date' };
+  if (isNaN(expiry.getTime())) return { status: "no-date" };
 
   const now = new Date();
 
@@ -18,37 +18,42 @@ export function getPscheinInfo(date?: string): {
   const monthsLeft = Math.round(daysLeft / 30.44);
 
   if (expiry < now) {
-    return { status: 'expired', monthsLeft, daysLeft };
+    return { status: "expired", monthsLeft, daysLeft };
   }
 
   if (monthsLeft <= 6) {
-    return { status: 'warning', monthsLeft, daysLeft };
+    return { status: "warning", monthsLeft, daysLeft };
   }
 
-  return { status: 'valid', monthsLeft, daysLeft };
+  return { status: "valid", monthsLeft, daysLeft };
 }
 
 /**
  * Devuelve el título del tooltip para P-Schein warning o expirado.
  * Usa la traducción con conteo de meses.
- * 
+ *
  * @param pscheinExpiry ISO string (YYYY-MM-DD)
  * @param t función de traducción i18n
  */
-export function getPscheinWarningTitle(pscheinExpiry?: string, t?: (key: string, vars?: any) => string): string {
+export function getPscheinWarningTitle(
+  pscheinExpiry?: string,
+  t?: (key: string, vars?: any) => string,
+): string {
   const info = getPscheinInfo(pscheinExpiry);
 
-  if (info.status === 'expired') {
+  if (info.status === "expired") {
     return t
-      ? t('pages.diensts.adminPage.driverPscheinExpired', 'P-Schein caducado')
-      : 'P-Schein caducado';
+      ? t("pages.diensts.adminPage.driverPscheinExpired", "P-Schein caducado")
+      : "P-Schein caducado";
   }
 
-  if (info.status === 'warning' && typeof info.monthsLeft === 'number') {
+  if (info.status === "warning" && typeof info.monthsLeft === "number") {
     return t
-      ? t('pages.diensts.adminPage.driverPscheinWarning', { count: info.monthsLeft })
+      ? t("pages.diensts.adminPage.driverPscheinWarning", {
+          count: info.monthsLeft,
+        })
       : `P-Schein caduca en ${info.monthsLeft} meses`;
   }
 
-  return '';
+  return "";
 }

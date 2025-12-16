@@ -7,7 +7,10 @@ import { startOfMonth, endOfMonth } from "date-fns";
 /**
  * Controlador que calcula y guarda la media mensual de prämien para un usuario
  */
-export const saveMonthlyPraemie = async (req: Request, res: Response): Promise<void> => {
+export const saveMonthlyPraemie = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = (req as any).userId;
     if (!userId) {
@@ -24,7 +27,10 @@ export const saveMonthlyPraemie = async (req: Request, res: Response): Promise<v
 
     // Obtener workdays cerrados para ese usuario y mes
     const summaries = await WorkdaySummary.find({
-      date: { $gte: monthStart.toISOString().split("T")[0], $lte: monthEnd.toISOString().split("T")[0] },
+      date: {
+        $gte: monthStart.toISOString().split("T")[0],
+        $lte: monthEnd.toISOString().split("T")[0],
+      },
       $or: [{ driver: userId }, { medic: userId }],
       isFinalClosure: true,
     }).select("totalEffectivePatients");
@@ -34,7 +40,10 @@ export const saveMonthlyPraemie = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    const totalPatients = summaries.reduce((acc, s) => acc + s.totalEffectivePatients, 0);
+    const totalPatients = summaries.reduce(
+      (acc, s) => acc + s.totalEffectivePatients,
+      0,
+    );
     const averagePatients = totalPatients / summaries.length;
 
     // Determinar nivel premio
@@ -55,7 +64,7 @@ export const saveMonthlyPraemie = async (req: Request, res: Response): Promise<v
         premieLevel,
         createdAt: new Date(),
       },
-      { upsert: true, new: true }
+      { upsert: true, new: true },
     );
 
     res.status(200).json({ message: "Monthly prämie guardada", data: updated });

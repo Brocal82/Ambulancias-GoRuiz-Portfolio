@@ -1,28 +1,34 @@
 // frontend/src/api/sickLeaves.ts
 import axiosInstance from "./axios";
 
-export type SickLeaveStatus = 'pending' | 'accepted' | 'rejected';
-export type SickVerificationStatus = 'not_required' | 'pending' | 'received' | 'overdue';
+export type SickLeaveStatus = "pending" | "accepted" | "rejected";
+export type SickVerificationStatus =
+  | "not_required"
+  | "pending"
+  | "received"
+  | "overdue";
 
 export interface SickLeave {
   _id: string;
-  user: string | {
-    _id: string;
-    name: string;
-    lastName: string;
-    email?: string;
-    role?: 'admin' | 'worker';
-  };
-  startDate: string;              // ISO date
-  endDate: string;                // ISO date
-  status: SickLeaveStatus;        // pending | accepted | rejected
+  user:
+    | string
+    | {
+        _id: string;
+        name: string;
+        lastName: string;
+        email?: string;
+        role?: "admin" | "worker";
+      };
+  startDate: string; // ISO date
+  endDate: string; // ISO date
+  status: SickLeaveStatus; // pending | accepted | rejected
   note?: string;
-  
+
   documentUrl?: string;
   documents?: string[];
   requiresDocument?: boolean;
   verificationStatus?: SickVerificationStatus;
-  documentDueAt?: string;         // ISO date
+  documentDueAt?: string; // ISO date
   createdAt: string;
   updatedAt: string;
 }
@@ -35,10 +41,10 @@ export interface SickLeave {
  */
 export interface SickFlag {
   hasSickInRange: boolean;
-  sickStartInRange?: string;  // 'YYYY-MM-DD' (tramo solapado con el rango consultado)
-  sickUntilInRange?: string;  // 'YYYY-MM-DD'
-  sickStartFull?: string;     // 'YYYY-MM-DD' (tramo completo real de la baja)
-  sickUntilFull?: string;     // 'YYYY-MM-DD'
+  sickStartInRange?: string; // 'YYYY-MM-DD' (tramo solapado con el rango consultado)
+  sickUntilInRange?: string; // 'YYYY-MM-DD'
+  sickStartFull?: string; // 'YYYY-MM-DD' (tramo completo real de la baja)
+  sickUntilFull?: string; // 'YYYY-MM-DD'
 }
 
 export type SickFlagsByUser = Record<string, SickFlag>;
@@ -53,22 +59,25 @@ export async function createSickLeave(payload: {
   note?: string;
   documentUrl?: string;
 }): Promise<SickLeave> {
-  const { data } = await axiosInstance.post('/sick-leaves', payload);
+  const { data } = await axiosInstance.post("/sick-leaves", payload);
   return data;
 }
 
 export async function listMySickLeaves(): Promise<SickLeave[]> {
-  const { data } = await axiosInstance.get('/sick-leaves/mine');
+  const { data } = await axiosInstance.get("/sick-leaves/mine");
   return data;
 }
 
 export async function attachSickDocument(
   sickLeaveId: string,
-  documentUrl: string
+  documentUrl: string,
 ): Promise<SickLeave> {
-  const { data } = await axiosInstance.post(`/sick-leaves/${sickLeaveId}/attach-document`, {
-    documentUrl,
-  });
+  const { data } = await axiosInstance.post(
+    `/sick-leaves/${sickLeaveId}/attach-document`,
+    {
+      documentUrl,
+    },
+  );
   return data;
 }
 
@@ -80,14 +89,14 @@ export async function attachSickDocument(
  */
 export async function attachSickDocumentFile(
   sickLeaveId: string,
-  file: File
+  file: File,
 ): Promise<SickLeave> {
   const form = new FormData();
-  form.append('document', file); // <-- nombre de campo esperado en backend
+  form.append("document", file); // <-- nombre de campo esperado en backend
 
   const { data } = await axiosInstance.post(
     `/sick-leaves/${sickLeaveId}/attach-document-file`,
-    form
+    form,
     // No setear Content-Type: axios lo resuelve con boundary al enviar FormData
   );
   return data;
@@ -105,25 +114,33 @@ export async function adminListSickLeaves(params?: {
   userId?: string;
 }): Promise<SickLeave[]> {
   const search = new URLSearchParams();
-  if (params?.status) search.set('status', params.status);
-  if (params?.userId) search.set('user', params.userId);
+  if (params?.status) search.set("status", params.status);
+  if (params?.userId) search.set("user", params.userId);
 
   const qs = search.toString();
-  const url = qs ? `/sick-leaves?${qs}` : '/sick-leaves';
+  const url = qs ? `/sick-leaves?${qs}` : "/sick-leaves";
 
   const { data } = await axiosInstance.get(url);
   return data;
 }
 
 /** Acepta una baja por su ID (dispara la desasignación parcial en backend) */
-export async function adminAcceptSickLeave(sickLeaveId: string): Promise<SickLeave> {
-  const { data } = await axiosInstance.post(`/sick-leaves/${sickLeaveId}/accept`);
+export async function adminAcceptSickLeave(
+  sickLeaveId: string,
+): Promise<SickLeave> {
+  const { data } = await axiosInstance.post(
+    `/sick-leaves/${sickLeaveId}/accept`,
+  );
   return data;
 }
 
 /** Rechaza una baja por su ID */
-export async function adminRejectSickLeave(sickLeaveId: string): Promise<SickLeave> {
-  const { data } = await axiosInstance.post(`/sick-leaves/${sickLeaveId}/reject`);
+export async function adminRejectSickLeave(
+  sickLeaveId: string,
+): Promise<SickLeave> {
+  const { data } = await axiosInstance.post(
+    `/sick-leaves/${sickLeaveId}/reject`,
+  );
   return data;
 }
 
@@ -133,32 +150,34 @@ export async function adminRejectSickLeave(sickLeaveId: string): Promise<SickLea
  */
 export async function getSickFlagsInRange(params: {
   userIds: string[];
-  fromISO: string;            // 'YYYY-MM-DD'
-  toISO: string;              // 'YYYY-MM-DD'
-  includeFullSpan?: boolean;  // true → devuelve sickStartFull/sickUntilFull
+  fromISO: string; // 'YYYY-MM-DD'
+  toISO: string; // 'YYYY-MM-DD'
+  includeFullSpan?: boolean; // true → devuelve sickStartFull/sickUntilFull
 }): Promise<SickFlagsByUser> {
-  const { data } = await axiosInstance.post<SickFlagsByUser>('/sick-leaves/check-range', params);
+  const { data } = await axiosInstance.post<SickFlagsByUser>(
+    "/sick-leaves/check-range",
+    params,
+  );
   return data;
 }
-
 
 /**
  * Admin: contador de bajas pendientes (o por status).
  * Pensado para usarse igual que getVacationPendingCount(token, 'pending').
- * 
+ *
  * El parámetro `token` se mantiene por simetría con el hook de vacaciones,
  * aunque el auth realmente lo gestiona el interceptor de axiosInstance.
  */
 export async function getSickLeavesPendingCount(
   token: string, // se mantiene por simetría con vacaciones
-  status: SickLeaveStatus | 'all' = 'pending'
+  status: SickLeaveStatus | "all" = "pending",
 ): Promise<number> {
   // Evitamos warning de TS: sabemos que el token no se usa aquí porque
   // el auth real lo hace el interceptor de axiosInstance
   void token;
 
   // Usamos el endpoint que ya existe: adminListSickLeaves
-  if (status === 'all') {
+  if (status === "all") {
     const all = await adminListSickLeaves();
     return all.length;
   }
@@ -166,5 +185,3 @@ export async function getSickLeavesPendingCount(
   const list = await adminListSickLeaves({ status: status as SickLeaveStatus });
   return list.length;
 }
-
-

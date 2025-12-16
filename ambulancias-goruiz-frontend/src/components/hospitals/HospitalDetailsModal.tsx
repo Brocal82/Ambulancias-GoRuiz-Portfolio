@@ -1,6 +1,6 @@
-import type { Hospital } from '../../types/hospital';
-import { useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
+import type { Hospital } from "../../types/hospital";
+import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   hospital: Hospital;
@@ -14,10 +14,10 @@ const HospitalDetailsModal = ({ hospital, onClose }: Props) => {
   // Cerrar con Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === "Escape") onClose();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
   // Cerrar al hacer click en el backdrop
@@ -29,7 +29,7 @@ const HospitalDetailsModal = ({ hospital, onClose }: Props) => {
   const isOpen =
     (hospital as any).isOpen ??
     ((hospital as any).status
-      ? String((hospital as any).status).toLowerCase() === 'open'
+      ? String((hospital as any).status).toLowerCase() === "open"
       : undefined);
 
   return (
@@ -50,7 +50,10 @@ const HospitalDetailsModal = ({ hospital, onClose }: Props) => {
             <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 ring-1 ring-blue-100">
               <span aria-hidden>🏥</span>
             </div>
-            <h2 id="hospital-details-title" className="text-lg md:text-xl font-bold text-slate-900">
+            <h2
+              id="hospital-details-title"
+              className="text-lg md:text-xl font-bold text-slate-900"
+            >
               {hospital.name}
             </h2>
           </div>
@@ -58,7 +61,7 @@ const HospitalDetailsModal = ({ hospital, onClose }: Props) => {
           <button
             onClick={onClose}
             className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label={t('common.close', 'Cerrar')}
+            aria-label={t("common.close", "Cerrar")}
           >
             ✕
           </button>
@@ -71,19 +74,19 @@ const HospitalDetailsModal = ({ hospital, onClose }: Props) => {
             <div className="space-y-3">
               <div>
                 <p className="text-slate-500 text-xs uppercase tracking-wide">
-                  {t('pages.hospitals.detailsModal.address', 'Dirección')}
+                  {t("pages.hospitals.detailsModal.address", "Dirección")}
                 </p>
                 <p className="mt-0.5 font-medium text-slate-900">
-                  {hospital.address || '—'}
+                  {hospital.address || "—"}
                 </p>
               </div>
 
               <div>
                 <p className="text-slate-500 text-xs uppercase tracking-wide">
-                  {t('pages.hospitals.detailsModal.phone', 'Teléfono')}
+                  {t("pages.hospitals.detailsModal.phone", "Teléfono")}
                 </p>
                 <p className="mt-0.5 font-medium text-slate-900">
-                  {hospital.phone || '—'}
+                  {hospital.phone || "—"}
                 </p>
               </div>
             </div>
@@ -91,7 +94,10 @@ const HospitalDetailsModal = ({ hospital, onClose }: Props) => {
             {/* Columna derecha */}
             <div className="space-y-2 md:border-l md:pl-6 border-slate-200">
               <p className="text-slate-500 text-xs uppercase tracking-wide">
-                {t('pages.hospitals.detailsModal.specialties', 'Especialidades')}
+                {t(
+                  "pages.hospitals.detailsModal.specialties",
+                  "Especialidades",
+                )}
               </p>
 
               {hospital.specialties?.length ? (
@@ -113,18 +119,18 @@ const HospitalDetailsModal = ({ hospital, onClose }: Props) => {
         </div>
 
         {/* Footer: badge de estado abajo a la derecha (si hay dato) */}
-        {typeof isOpen === 'boolean' && (
+        {typeof isOpen === "boolean" && (
           <div className="px-6 py-3 border-t border-slate-200 flex justify-end">
             <span
               className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
                 isOpen
-                  ? 'bg-green-50 text-green-700 ring-1 ring-green-200'
-                  : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
+                  ? "bg-green-50 text-green-700 ring-1 ring-green-200"
+                  : "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
               }`}
             >
               {isOpen
-                ? t('pages.hospitals.status.open', 'Abierto')
-                : t('pages.hospitals.status.closed', 'Cerrado')}
+                ? t("pages.hospitals.status.open", "Abierto")
+                : t("pages.hospitals.status.closed", "Cerrado")}
             </span>
           </div>
         )}

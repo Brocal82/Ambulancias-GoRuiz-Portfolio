@@ -50,7 +50,9 @@ const DienstPage = () => {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">{t("pages.diensts.dienstPage.title")}</h2>
+      <h2 className="text-xl font-bold mb-4">
+        {t("pages.diensts.dienstPage.title")}
+      </h2>
 
       <ul className="space-y-8">
         {diensts.map((dienst) => {
@@ -69,7 +71,9 @@ const DienstPage = () => {
             <li key={dienst.dienstNumber}>
               <div className="mb-2">
                 <p className="text-lg font-semibold">
-                  {t("pages.diensts.adminPage.dienstLabel", { num: dienst.dienstNumber })}
+                  {t("pages.diensts.adminPage.dienstLabel", {
+                    num: dienst.dienstNumber,
+                  })}
                 </p>
                 <p className="mb-2 text-sm text-gray-600">
                   {t("pages.diensts.dienstPage.range", {
@@ -81,12 +85,14 @@ const DienstPage = () => {
 
               <div className="grid grid-cols-7 gap-2">
                 {allWeekDates.map((day) => {
-                  const assignment = dienst.assignments.find((a) => a.date === day);
+                  const assignment = dienst.assignments.find(
+                    (a) => a.date === day,
+                  );
                   const bgColor = assignment
                     ? isPartialAssignment(assignment)
                       ? "bg-yellow-100" // parcialmente asignado
-                      : "bg-blue-100"   // completamente asignado
-                    : "bg-green-100";   // día libre
+                      : "bg-blue-100" // completamente asignado
+                    : "bg-green-100"; // día libre
 
                   return (
                     <div
@@ -104,10 +110,13 @@ const DienstPage = () => {
 
                       {assignment ? (
                         <>
-                          <p className="text-xs">🕒 {assignment.startTime} - {assignment.endTime}</p>
+                          <p className="text-xs">
+                            🕒 {assignment.startTime} - {assignment.endTime}
+                          </p>
                           <p className="text-xs">
                             🚑{" "}
-                            {typeof assignment.ambulanceId === "object" && "ambulanceNumber" in assignment.ambulanceId
+                            {typeof assignment.ambulanceId === "object" &&
+                            "ambulanceNumber" in assignment.ambulanceId
                               ? assignment.ambulanceId.ambulanceNumber
                               : "—"}
                           </p>

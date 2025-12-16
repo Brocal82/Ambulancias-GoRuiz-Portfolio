@@ -38,7 +38,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [ambulanceId, setAmbulanceId] = useState("");
-  const [ambulances, setAmbulances] = useState<{ _id: string; ambulanceNumber: string }[]>([]);
+  const [ambulances, setAmbulances] = useState<
+    { _id: string; ambulanceNumber: string }[]
+  >([]);
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [selectedMedicId, setSelectedMedicId] = useState("");
   const [availableDrivers, setAvailableDrivers] = useState<UserRef[]>([]);
@@ -50,7 +52,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [openMedicList, setOpenMedicList] = useState(false);
 
   // Flags (día objetivo)
-  const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
+  const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>(
+    {},
+  );
   const [sickFlags, setSickFlags] = useState<Record<string, SickFlag>>({});
   const [flagsLoading, setFlagsLoading] = useState(false);
 
@@ -66,17 +70,24 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
       if (typeof assignment.ambulanceId === "string") {
         setAmbulanceId(assignment.ambulanceId);
-      } else if (assignment.ambulanceId && typeof assignment.ambulanceId === "object") {
+      } else if (
+        assignment.ambulanceId &&
+        typeof assignment.ambulanceId === "object"
+      ) {
         setAmbulanceId(assignment.ambulanceId._id);
       } else {
         setAmbulanceId("");
       }
 
       setSelectedDriverId(
-        typeof assignment.driver === "string" ? assignment.driver : assignment.driver?._id || ""
+        typeof assignment.driver === "string"
+          ? assignment.driver
+          : assignment.driver?._id || "",
       );
       setSelectedMedicId(
-        typeof assignment.medic === "string" ? assignment.medic : assignment.medic?._id || ""
+        typeof assignment.medic === "string"
+          ? assignment.medic
+          : assignment.medic?._id || "",
       );
     }
   }, [assignment]);
@@ -85,7 +96,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const ensureSelectedPresent = async (
     list: UserRef[],
     selectedId: string | undefined,
-    token: string
+    token: string,
   ): Promise<UserRef[]> => {
     if (!selectedId) return list;
     if (list.some((u) => u._id === selectedId)) return list;
@@ -114,19 +125,32 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
         const [drivers, medics] = await Promise.all([
           getAvailableUsersForDate(date, "driver", token, commonOpts),
-          getAvailableUsersForDate(date, "medic", token, { startTime, endTime }),
+          getAvailableUsersForDate(date, "medic", token, {
+            startTime,
+            endTime,
+          }),
         ]);
 
         let drv = mergeWithAssigned(drivers, assignment, "driver");
         let med = mergeWithAssigned(medics, assignment, "medic");
 
         const driverIdFromAssignment =
-          typeof assignment?.driver === "string" ? assignment?.driver : undefined;
+          typeof assignment?.driver === "string"
+            ? assignment?.driver
+            : undefined;
         const medicIdFromAssignment =
           typeof assignment?.medic === "string" ? assignment?.medic : undefined;
 
-        drv = await ensureSelectedPresent(drv, driverIdFromAssignment ?? selectedDriverId, token);
-        med = await ensureSelectedPresent(med, medicIdFromAssignment ?? selectedMedicId, token);
+        drv = await ensureSelectedPresent(
+          drv,
+          driverIdFromAssignment ?? selectedDriverId,
+          token,
+        );
+        med = await ensureSelectedPresent(
+          med,
+          medicIdFromAssignment ?? selectedMedicId,
+          token,
+        );
 
         setAvailableDrivers(drv);
         setAvailableMedics(med);
@@ -202,7 +226,10 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
           includeFullSpan: true,
         });
 
-        const [vacFlags, sickFlagsRes] = await Promise.all([vacPromise, sickPromise]);
+        const [vacFlags, sickFlagsRes] = await Promise.all([
+          vacPromise,
+          sickPromise,
+        ]);
         if (!cancelled) {
           setVacationFlags(vacFlags);
           setSickFlags(sickFlagsRes);
@@ -221,7 +248,15 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, token, date, availableDrivers, availableMedics, selectedDriverId, selectedMedicId]);
+  }, [
+    isOpen,
+    token,
+    date,
+    availableDrivers,
+    availableMedics,
+    selectedDriverId,
+    selectedMedicId,
+  ]);
 
   if (!isOpen) return null;
 
@@ -237,7 +272,11 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       toastT.warn(["toasts.assignments.missingFields"]);
       return;
     }
-    if (selectedDriverId && selectedMedicId && selectedDriverId === selectedMedicId) {
+    if (
+      selectedDriverId &&
+      selectedMedicId &&
+      selectedDriverId === selectedMedicId
+    ) {
       toastT.warn(["toasts.assignments.samePerson"]);
       return;
     }
@@ -251,7 +290,10 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       return;
     }
     // ⛔ No permitir guardar si alguno está de VACACIONES ese día (seguridad)
-    if (selectedDriverId && vacationFlags[selectedDriverId]?.hasVacationInRange) {
+    if (
+      selectedDriverId &&
+      vacationFlags[selectedDriverId]?.hasVacationInRange
+    ) {
       toastT.warn(["toasts.assignments.userOnVacationDriver"]);
       return;
     }
@@ -260,38 +302,41 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       return;
     }
 
-
     try {
       const updatedAssignment: UpdateAssignment = {
-  _id: assignment?._id || "",
-  date,
-  startTime,
-  endTime,
-  driver: selectedDriverId,
-  medic: selectedMedicId,
-};
+        _id: assignment?._id || "",
+        date,
+        startTime,
+        endTime,
+        driver: selectedDriverId,
+        medic: selectedMedicId,
+      };
 
-// Detecta si ANTES había ambulancia
-const hadAmbulanceBefore =
-  typeof assignment?.ambulanceId === "string"
-    ? assignment?.ambulanceId?.trim()?.length > 0
-    : assignment?.ambulanceId && typeof assignment.ambulanceId === "object"
-      ? Boolean((assignment.ambulanceId as any)?._id)
-      : false;
+      // Detecta si ANTES había ambulancia
+      const hadAmbulanceBefore =
+        typeof assignment?.ambulanceId === "string"
+          ? assignment?.ambulanceId?.trim()?.length > 0
+          : assignment?.ambulanceId &&
+              typeof assignment.ambulanceId === "object"
+            ? Boolean((assignment.ambulanceId as any)?._id)
+            : false;
 
-// Lógica de ambulancia:
-// - Si el select tiene un valor => enviamos ese ID (asignar/actualizar)
-// - Si el select está vacío PERO antes había ambulancia => enviamos "" para BORRAR explícitamente
-// - Si el select está vacío y antes NO había => no mandamos el campo
-if (ambulanceId && ambulanceId.trim() !== "") {
-  updatedAssignment.ambulanceId = ambulanceId;
-} else if (hadAmbulanceBefore) {
-  // borrado explícito
-  updatedAssignment.ambulanceId = "";
-}
+      // Lógica de ambulancia:
+      // - Si el select tiene un valor => enviamos ese ID (asignar/actualizar)
+      // - Si el select está vacío PERO antes había ambulancia => enviamos "" para BORRAR explícitamente
+      // - Si el select está vacío y antes NO había => no mandamos el campo
+      if (ambulanceId && ambulanceId.trim() !== "") {
+        updatedAssignment.ambulanceId = ambulanceId;
+      } else if (hadAmbulanceBefore) {
+        // borrado explícito
+        updatedAssignment.ambulanceId = "";
+      }
 
-
-      await updateDienstPartial(dienstId, { assignments: [updatedAssignment] }, token);
+      await updateDienstPartial(
+        dienstId,
+        { assignments: [updatedAssignment] },
+        token,
+      );
       toastT.success(["toasts.assignments.saveSuccess"]);
       onClose();
       onUpdate();
@@ -349,7 +394,8 @@ if (ambulanceId && ambulanceId.trim() !== "") {
 
   // Tooltips de vacaciones/bajas (día actual)
   const userVacationInfo = (u?: UserRef | null) => {
-    if (!u || !u._id) return { has: false, title: undefined as string | undefined };
+    if (!u || !u._id)
+      return { has: false, title: undefined as string | undefined };
     const vf = vacationFlags[u._id];
     const has = !!vf?.hasVacationInRange;
     if (!has) return { has: false, title: undefined as string | undefined };
@@ -358,7 +404,7 @@ if (ambulanceId && ambulanceId.trim() !== "") {
     let title: string | undefined;
     if (fromFull && toFull) {
       title = `🏖️ ${t("pages.diensts.weekModals.vacations", "Vacaciones")}: ${fmtDDMM(
-        fromFull
+        fromFull,
       )} → ${fmtDDMM(toFull)}`;
     } else {
       title = `🏖️ ${t("pages.diensts.weekModals.vacations", "Vacaciones")}`;
@@ -366,7 +412,8 @@ if (ambulanceId && ambulanceId.trim() !== "") {
     return { has: true, title };
   };
   const userSickInfo = (u?: UserRef | null) => {
-    if (!u || !u._id) return { has: false, title: undefined as string | undefined };
+    if (!u || !u._id)
+      return { has: false, title: undefined as string | undefined };
     const sf = sickFlags[u._id];
     const has = !!sf?.hasSickInRange;
     if (!has) return { has: false, title: undefined as string | undefined };
@@ -375,7 +422,7 @@ if (ambulanceId && ambulanceId.trim() !== "") {
     let title: string | undefined;
     if (fromFull && toFull) {
       title = `🤒 ${t("pages.sick.tooltip.full", "Baja médica")}: ${fmtDDMM(fromFull)} → ${fmtDDMM(
-        toFull
+        toFull,
       )}`;
     } else {
       title = `🤒 ${t("pages.sick.tooltip.full", "Baja médica")}`;
@@ -387,16 +434,18 @@ if (ambulanceId && ambulanceId.trim() !== "") {
   const selectedDriver = useMemo(
     () =>
       availableDrivers.find((u) => u._id === selectedDriverId) ||
-      availableDrivers.find((u) => (assignment?.driver as any)?._id === u._id) ||
+      availableDrivers.find(
+        (u) => (assignment?.driver as any)?._id === u._id,
+      ) ||
       null,
-    [availableDrivers, selectedDriverId, assignment]
+    [availableDrivers, selectedDriverId, assignment],
   );
   const selectedMedic = useMemo(
     () =>
       availableMedics.find((u) => u._id === selectedMedicId) ||
       availableMedics.find((u) => (assignment?.medic as any)?._id === u._id) ||
       null,
-    [availableMedics, selectedMedicId, assignment]
+    [availableMedics, selectedMedicId, assignment],
   );
 
   return (
@@ -407,7 +456,9 @@ if (ambulanceId && ambulanceId.trim() !== "") {
       {/* Card */}
       <div className="relative z-10 w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200">
         <h3 className="text-lg font-semibold text-slate-900 mb-4">
-          {t("pages.assignmentModal.title", { date: formatYYYYMMDDToDDMMYYYY(date) })}
+          {t("pages.assignmentModal.title", {
+            date: formatYYYYMMDDToDDMMYYYY(date),
+          })}
         </h3>
 
         <div className="space-y-3">
@@ -415,7 +466,10 @@ if (ambulanceId && ambulanceId.trim() !== "") {
             <>
               {/* Horas y ambulancia */}
               <div className="space-y-1">
-                <label htmlFor="startTime" className="block text-sm font-medium text-slate-700">
+                <label
+                  htmlFor="startTime"
+                  className="block text-sm font-medium text-slate-700"
+                >
                   {t("pages.assignmentModal.labels.startTime")}
                 </label>
                 <input
@@ -428,7 +482,10 @@ if (ambulanceId && ambulanceId.trim() !== "") {
               </div>
 
               <div className="space-y-1">
-                <label htmlFor="endTime" className="block text-sm font-medium text-slate-700">
+                <label
+                  htmlFor="endTime"
+                  className="block text-sm font-medium text-slate-700"
+                >
                   {t("pages.assignmentModal.labels.endTime")}
                 </label>
                 <input
@@ -441,7 +498,10 @@ if (ambulanceId && ambulanceId.trim() !== "") {
               </div>
 
               <div className="space-y-1">
-                <label htmlFor="ambulanceId" className="block text-sm font-medium text-slate-700">
+                <label
+                  htmlFor="ambulanceId"
+                  className="block text-sm font-medium text-slate-700"
+                >
                   {t("pages.assignmentModal.labels.ambulance")}
                 </label>
                 <select
@@ -450,7 +510,9 @@ if (ambulanceId && ambulanceId.trim() !== "") {
                   onChange={(e) => setAmbulanceId(e.target.value)}
                   className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
                 >
-                  <option value="">{t("pages.assignmentModal.placeholders.selectAmbulance")}</option>
+                  <option value="">
+                    {t("pages.assignmentModal.placeholders.selectAmbulance")}
+                  </option>
                   {ambulances.map((amb) => (
                     <option key={amb._id} value={amb._id}>
                       {amb.ambulanceNumber}
@@ -461,7 +523,10 @@ if (ambulanceId && ambulanceId.trim() !== "") {
 
               {/* Conductor */}
               <div className="space-y-1">
-                <label htmlFor={driverBtnId} className="block text-sm font-medium text-slate-700">
+                <label
+                  htmlFor={driverBtnId}
+                  className="block text-sm font-medium text-slate-700"
+                >
                   {t("pages.assignmentModal.labels.driver")}
                 </label>
 
@@ -476,31 +541,49 @@ if (ambulanceId && ambulanceId.trim() !== "") {
                   >
                     <span className="truncate">
                       {(() => {
-                        const u = selectedDriver || (assignment?.driver as any) || null;
-                        if (!u) return t("pages.assignmentModal.placeholders.selectDriver");
+                        const u =
+                          selectedDriver || (assignment?.driver as any) || null;
+                        if (!u)
+                          return t(
+                            "pages.assignmentModal.placeholders.selectDriver",
+                          );
                         const vac = userVacationInfo(u);
                         const sick = userSickInfo(u);
                         return (
                           <>
                             <span
                               className={mergeClasses(
-                                typeof u === "object" ? driverClass((u as any)?.pscheinExpiry) : "",
+                                typeof u === "object"
+                                  ? driverClass((u as any)?.pscheinExpiry)
+                                  : "",
                                 // solo vac/sick se ven "apagados" en el nombre; si está caducado mantenemos el rojo visible
-                                (vac.has || sick.has) && dimClass
+                                (vac.has || sick.has) && dimClass,
                               )}
-                              title={typeof u === "object" ? driverPscheinTitle(u) : undefined}
+                              title={
+                                typeof u === "object"
+                                  ? driverPscheinTitle(u)
+                                  : undefined
+                              }
                             >
                               {typeof u === "object"
                                 ? `${u.lastName || ""}, ${u.name || ""}`
-                                : t("pages.assignmentModal.placeholders.selectDriver")}
+                                : t(
+                                    "pages.assignmentModal.placeholders.selectDriver",
+                                  )}
                             </span>
                             {vac.has && (
-                              <span className="ml-1 align-middle text-slate-400" title={vac.title}>
+                              <span
+                                className="ml-1 align-middle text-slate-400"
+                                title={vac.title}
+                              >
                                 🏖️
                               </span>
                             )}
                             {sick.has && (
-                              <span className="ml-1 align-middle text-slate-500" title={sick.title}>
+                              <span
+                                className="ml-1 align-middle text-slate-500"
+                                title={sick.title}
+                              >
                                 🤒
                               </span>
                             )}
@@ -535,22 +618,26 @@ if (ambulanceId && ambulanceId.trim() !== "") {
                         </div>
                       )}
 
-                          {/* Opción para limpiar el conductor */}
-                        <button
-                          role="option"
-                          aria-selected={selectedDriverId === ""}
-                          onClick={() => {
-                            setSelectedDriverId("");
-                            setOpenDriverList(false);
-                          }}
-                          className={mergeClasses(
-                            'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
-                            selectedDriverId === '' && 'bg-slate-50'
-                          )}
-                        >
-                          — {t("pages.assignmentModal.placeholders.selectDriver", "Sin asignar")} —
-                        </button>
-
+                      {/* Opción para limpiar el conductor */}
+                      <button
+                        role="option"
+                        aria-selected={selectedDriverId === ""}
+                        onClick={() => {
+                          setSelectedDriverId("");
+                          setOpenDriverList(false);
+                        }}
+                        className={mergeClasses(
+                          "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
+                          selectedDriverId === "" && "bg-slate-50",
+                        )}
+                      >
+                        —{" "}
+                        {t(
+                          "pages.assignmentModal.placeholders.selectDriver",
+                          "Sin asignar",
+                        )}{" "}
+                        —
+                      </button>
 
                       {availableDrivers
                         .slice()
@@ -558,9 +645,11 @@ if (ambulanceId && ambulanceId.trim() !== "") {
                           const da = driverExpired(a) ? 1 : 0;
                           const db = driverExpired(b) ? 1 : 0;
                           if (da !== db) return da - db;
-                          const ka = `${a.lastName || ''} ${a.name || ''}`.toLowerCase();
-                          const kb = `${b.lastName || ''} ${b.name || ''}`.toLowerCase();
-                          return ka.localeCompare(kb, 'es');
+                          const ka =
+                            `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
+                          const kb =
+                            `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
+                          return ka.localeCompare(kb, "es");
                         })
                         .map((u) => {
                           const vac = userVacationInfo(u);
@@ -576,59 +665,83 @@ if (ambulanceId && ambulanceId.trim() !== "") {
                               aria-selected={selectedDriverId === u._id}
                               onClick={() => {
                                 if (expired) return; // no puede conducir con P-Schein caducado
-                                if (isSick) return;  // bloqueado si está de baja
-                                if (isVac) return;  // 🆕 bloqueado si está de vacaciones
+                                if (isSick) return; // bloqueado si está de baja
+                                if (isVac) return; // 🆕 bloqueado si está de vacaciones
                                 setSelectedDriverId(u._id || "");
-                                if (u._id === selectedMedicId) setSelectedMedicId("");
+                                if (u._id === selectedMedicId)
+                                  setSelectedMedicId("");
                                 setOpenDriverList(false);
                               }}
                               className={mergeClasses(
-                                'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
-                                selectedDriverId === u._id && 'bg-slate-50',
-                                (expired || isSick || isVac) && 'opacity-50 cursor-not-allowed' // 🆕 añade isVac
+                                "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
+                                selectedDriverId === u._id && "bg-slate-50",
+                                (expired || isSick || isVac) &&
+                                  "opacity-50 cursor-not-allowed", // 🆕 añade isVac
                               )}
                             >
                               <span
                                 className={mergeClasses(
                                   driverClass((u as any)?.pscheinExpiry),
-                                  (isVac || isSick || expired) && 'opacity-50' // atenuado si vac/sick/expired
+                                  (isVac || isSick || expired) && "opacity-50", // atenuado si vac/sick/expired
                                 )}
                                 title={driverPscheinTitle(u)}
                               >
-                                {(u.lastName || '') + ', ' + (u.name || '')}
+                                {(u.lastName || "") + ", " + (u.name || "")}
                               </span>
                               {vac.has && (
-                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
+                                <span
+                                  className="ml-1 align-middle text-slate-400"
+                                  title={vac.title}
+                                >
+                                  🏖️
+                                </span>
                               )}
                               {isSick && (
-                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+                                <span
+                                  className="ml-1 align-middle text-slate-500"
+                                  title={sick.title}
+                                >
+                                  🤒
+                                </span>
                               )}
                             </button>
                           );
                         })}
-
                     </div>
                   )}
                 </div>
 
                 {/* Leyenda driver */}
                 <p className="mt-1 text-[11px] text-slate-500">
-                  🚫 {t("pages.diensts.adminPage.legendCantDrive", "No puede conducir, P-Schein caducado")}
+                  🚫{" "}
+                  {t(
+                    "pages.diensts.adminPage.legendCantDrive",
+                    "No puede conducir, P-Schein caducado",
+                  )}
                 </p>
 
                 {/* Hint vacaciones/bajas */}
                 {flagsLoading ? (
-                  <p className="mt-1 text-[11px] text-slate-500">{t("common.loading", "Cargando...")}</p>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    {t("common.loading", "Cargando...")}
+                  </p>
                 ) : (
                   <p className="mt-1 text-[11px] text-slate-500">
-                    🏖️/🤒 {t("pages.diensts.weekModals.vacationsHint", "Pasa el ratón por los iconos para ver fechas")}
+                    🏖️/🤒{" "}
+                    {t(
+                      "pages.diensts.weekModals.vacationsHint",
+                      "Pasa el ratón por los iconos para ver fechas",
+                    )}
                   </p>
                 )}
               </div>
 
               {/* Sanitario */}
               <div className="space-y-1">
-                <label htmlFor={medicBtnId} className="block text-sm font-medium text-slate-700">
+                <label
+                  htmlFor={medicBtnId}
+                  className="block text-sm font-medium text-slate-700"
+                >
                   {t("pages.assignmentModal.labels.medic")}
                 </label>
 
@@ -643,24 +756,40 @@ if (ambulanceId && ambulanceId.trim() !== "") {
                   >
                     <span className="truncate">
                       {(() => {
-                        const u = selectedMedic || (assignment?.medic as any) || null;
-                        if (!u) return t("pages.assignmentModal.placeholders.selectMedic");
+                        const u =
+                          selectedMedic || (assignment?.medic as any) || null;
+                        if (!u)
+                          return t(
+                            "pages.assignmentModal.placeholders.selectMedic",
+                          );
                         const vac = userVacationInfo(u);
                         const sick = userSickInfo(u);
                         return (
                           <>
-                            <span className={mergeClasses((vac.has || sick.has) && dimClass)}>
+                            <span
+                              className={mergeClasses(
+                                (vac.has || sick.has) && dimClass,
+                              )}
+                            >
                               {typeof u === "object"
                                 ? `${u.lastName || ""}, ${u.name || ""}`
-                                : t("pages.assignmentModal.placeholders.selectMedic")}
+                                : t(
+                                    "pages.assignmentModal.placeholders.selectMedic",
+                                  )}
                             </span>
                             {vac.has && (
-                              <span className="ml-1 align-middle text-slate-400" title={vac.title}>
+                              <span
+                                className="ml-1 align-middle text-slate-400"
+                                title={vac.title}
+                              >
                                 🏖️
                               </span>
                             )}
                             {sick.has && (
-                              <span className="ml-1 align-middle text-slate-500" title={sick.title}>
+                              <span
+                                className="ml-1 align-middle text-slate-500"
+                                title={sick.title}
+                              >
                                 🤒
                               </span>
                             )}
@@ -695,34 +824,40 @@ if (ambulanceId && ambulanceId.trim() !== "") {
                         </div>
                       )}
 
-                          {/* Opción para limpiar el sanitario */}
-                          <button
-                            role="option"
-                            aria-selected={selectedMedicId === ""}
-                            onClick={() => {
-                              setSelectedMedicId("");
-                              setOpenMedicList(false);
-                            }}
-                            className={mergeClasses(
-                              'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
-                              selectedMedicId === '' && 'bg-slate-50'
-                            )}
-                          >
-                            — {t("pages.assignmentModal.placeholders.selectMedic", "Sin asignar")} —
-                          </button>
-
+                      {/* Opción para limpiar el sanitario */}
+                      <button
+                        role="option"
+                        aria-selected={selectedMedicId === ""}
+                        onClick={() => {
+                          setSelectedMedicId("");
+                          setOpenMedicList(false);
+                        }}
+                        className={mergeClasses(
+                          "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
+                          selectedMedicId === "" && "bg-slate-50",
+                        )}
+                      >
+                        —{" "}
+                        {t(
+                          "pages.assignmentModal.placeholders.selectMedic",
+                          "Sin asignar",
+                        )}{" "}
+                        —
+                      </button>
 
                       {availableMedics
                         .slice()
                         .sort((a, b) => {
-                          const ka = `${a.lastName || ''} ${a.name || ''}`.toLowerCase();
-                          const kb = `${b.lastName || ''} ${b.name || ''}`.toLowerCase();
-                          return ka.localeCompare(kb, 'es');
+                          const ka =
+                            `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
+                          const kb =
+                            `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
+                          return ka.localeCompare(kb, "es");
                         })
                         .map((u) => {
                           const vac = userVacationInfo(u);
                           const sick = userSickInfo(u);
-                          const isVac = vac.has;   // 🆕 vacaciones
+                          const isVac = vac.has; // 🆕 vacaciones
                           const isSick = sick.has;
 
                           return (
@@ -731,41 +866,62 @@ if (ambulanceId && ambulanceId.trim() !== "") {
                               role="option"
                               aria-selected={selectedMedicId === u._id}
                               onClick={() => {
-                                if (isVac) return;  // 🆕 bloqueado si está de vacaciones
-                                if (isSick) return;  // bloqueado si está de baja
-                                if (u._id === selectedDriverId) setSelectedDriverId("");
+                                if (isVac) return; // 🆕 bloqueado si está de vacaciones
+                                if (isSick) return; // bloqueado si está de baja
+                                if (u._id === selectedDriverId)
+                                  setSelectedDriverId("");
                                 setSelectedMedicId(u._id || "");
                                 setOpenMedicList(false);
                               }}
                               className={mergeClasses(
-                                'w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none',
-                                selectedMedicId === u._id && 'bg-slate-50',
-                                (isVac || isSick) && 'opacity-50 cursor-not-allowed' // 🆕 añade isVac
+                                "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
+                                selectedMedicId === u._id && "bg-slate-50",
+                                (isVac || isSick) &&
+                                  "opacity-50 cursor-not-allowed", // 🆕 añade isVac
                               )}
                             >
-                              <span className={mergeClasses((isVac || isSick) && 'opacity-50')}>
-                                {(u.lastName || '') + ', ' + (u.name || '')}
+                              <span
+                                className={mergeClasses(
+                                  (isVac || isSick) && "opacity-50",
+                                )}
+                              >
+                                {(u.lastName || "") + ", " + (u.name || "")}
                               </span>
                               {vac.has && (
-                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>🏖️</span>
+                                <span
+                                  className="ml-1 align-middle text-slate-400"
+                                  title={vac.title}
+                                >
+                                  🏖️
+                                </span>
                               )}
                               {sick.has && (
-                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>🤒</span>
+                                <span
+                                  className="ml-1 align-middle text-slate-500"
+                                  title={sick.title}
+                                >
+                                  🤒
+                                </span>
                               )}
                             </button>
                           );
                         })}
-
                     </div>
                   )}
                 </div>
 
                 {/* Hint vacaciones/bajas */}
                 {flagsLoading ? (
-                  <p className="mt-1 text-[11px] text-slate-500">{t("common.loading", "Cargando...")}</p>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    {t("common.loading", "Cargando...")}
+                  </p>
                 ) : (
                   <p className="mt-1 text-[11px] text-slate-500">
-                    🏖️/🤒 {t("pages.diensts.weekModals.vacationsHint", "Pasa el ratón por los iconos para ver fechas")}
+                    🏖️/🤒{" "}
+                    {t(
+                      "pages.diensts.weekModals.vacationsHint",
+                      "Pasa el ratón por los iconos para ver fechas",
+                    )}
                   </p>
                 )}
               </div>
@@ -775,7 +931,9 @@ if (ambulanceId && ambulanceId.trim() !== "") {
                 disabled={isLoading}
                 className="mt-3 w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:opacity-50"
               >
-                {isLoading ? t("pages.assignmentModal.buttons.saving") : t("pages.assignmentModal.buttons.save")}
+                {isLoading
+                  ? t("pages.assignmentModal.buttons.saving")
+                  : t("pages.assignmentModal.buttons.save")}
               </button>
 
               {assignment && (
@@ -784,7 +942,9 @@ if (ambulanceId && ambulanceId.trim() !== "") {
                   disabled={isLoading}
                   className="w-full rounded-xl bg-rose-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100 disabled:opacity-50"
                 >
-                  {isLoading ? t("pages.assignmentModal.buttons.deleting") : t("pages.assignmentModal.buttons.deleteDay")}
+                  {isLoading
+                    ? t("pages.assignmentModal.buttons.deleting")
+                    : t("pages.assignmentModal.buttons.deleteDay")}
                 </button>
               )}
             </>
@@ -796,8 +956,10 @@ if (ambulanceId && ambulanceId.trim() !== "") {
               <p className="text-sm text-slate-700">
                 {t("pages.assignmentModal.readOnly.ambulance")}{" "}
                 {typeof assignment?.ambulanceId === "object"
-                  ? assignment.ambulanceId?.ambulanceNumber ?? t("pages.assignmentModal.info.dash")
-                  : assignment?.ambulanceNumber ?? t("pages.assignmentModal.info.dash")}
+                  ? (assignment.ambulanceId?.ambulanceNumber ??
+                    t("pages.assignmentModal.info.dash"))
+                  : (assignment?.ambulanceNumber ??
+                    t("pages.assignmentModal.info.dash"))}
               </p>
               <p className="text-sm text-slate-700">
                 {t("pages.assignmentModal.readOnly.driver")}{" "}

@@ -38,7 +38,7 @@ export const parseHHMM = (hhmm: string): number => {
 /* ---------------------------------------------------------- */
 export const checkTripLogic = (
   v: TripDraft,
-  wasCancelled: boolean = false // ✅ nuevo parámetro opcional
+  wasCancelled: boolean = false, // ✅ nuevo parámetro opcional
 ): { error: string | null; badField: keyof TripDraft | null } => {
   // ✅ Si el viaje fue cancelado, saltamos la validación
   if (wasCancelled) {
@@ -90,4 +90,3 @@ export const checkTripLogic = (
   /* 3️⃣  OK ------------------------------------------------- */
   return { error: null, badField: null };
 };
-

@@ -75,19 +75,24 @@ const WorkerPraemienHistory = ({ userId }: Props) => {
                 "bg-slate-50 text-slate-700 ring-1 ring-slate-200";
               if (averagePatients >= 10) {
                 premieLevel = t("pages.praemien.levels.10");
-                levelClass = "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
+                levelClass =
+                  "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
               } else if (averagePatients >= 9) {
                 premieLevel = t("pages.praemien.levels.9");
-                levelClass = "bg-violet-50 text-violet-700 ring-1 ring-violet-200";
+                levelClass =
+                  "bg-violet-50 text-violet-700 ring-1 ring-violet-200";
               } else if (averagePatients >= 8) {
                 premieLevel = t("pages.praemien.levels.8");
-                levelClass = "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200";
+                levelClass =
+                  "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200";
               } else if (averagePatients >= 7) {
                 premieLevel = t("pages.praemien.levels.7");
                 levelClass = "bg-blue-50 text-blue-700 ring-1 ring-blue-200";
               }
 
-              const avgRounded = (Math.round(averagePatients * 2) / 2).toFixed(1);
+              const avgRounded = (Math.round(averagePatients * 2) / 2).toFixed(
+                1,
+              );
 
               return (
                 <tr
@@ -100,7 +105,9 @@ const WorkerPraemienHistory = ({ userId }: Props) => {
                     {avgRounded}
                   </td>
                   <td className="px-3 py-2">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ${levelClass}`}>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ${levelClass}`}
+                    >
                       {premieLevel}
                     </span>
                   </td>

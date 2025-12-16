@@ -1,6 +1,6 @@
 // frontend/src/pages/AdminDienstsPage.tsx
-import { useCallback, useEffect, useState } from 'react';
-import type { Dienst, UserRef } from '../types/dienst';
+import { useCallback, useEffect, useState } from "react";
+import type { Dienst, UserRef } from "../types/dienst";
 import {
   getAllDiensts,
   generateDienstsForWeek,
@@ -8,30 +8,36 @@ import {
   assignTeamToWeek,
   assignUserToWeek,
   clearPeopleForWeek,
-  swapWeekRoles
-} from '../api/diensts';
-import AssignmentModal from '../components/AssignmentModal';
-import TeamAssignModal from '../components/diensts/TeamAssignModal';
-import UserAssignModal from '../components/diensts/UserAssignModal';
-import { isPartialAssignment, isTeamIncomplete } from '../utils/assignmentUtils';
-import { useAuth } from '../hooks/useAuth';
-import { useTranslation } from 'react-i18next';
+  swapWeekRoles,
+} from "../api/diensts";
+import AssignmentModal from "../components/AssignmentModal";
+import TeamAssignModal from "../components/diensts/TeamAssignModal";
+import UserAssignModal from "../components/diensts/UserAssignModal";
+import {
+  isPartialAssignment,
+  isTeamIncomplete,
+} from "../utils/assignmentUtils";
+import { useAuth } from "../hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
-import { getPscheinInfo, getPscheinWarningTitle } from '../utils/pscheinUtils';
-import { formatCellDateUnified } from '../utils/timeUtils';
+import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
+import { formatCellDateUnified } from "../utils/timeUtils";
 
 // Helpers de render seguro
 const displayAmbulance = (a: unknown) =>
-  a && typeof a === 'object'
-    ? (a as any).ambulanceNumber ?? '—'
-    : (typeof a === 'string' && a ? a : '—');
+  a && typeof a === "object"
+    ? ((a as any).ambulanceNumber ?? "—")
+    : typeof a === "string" && a
+      ? a
+      : "—";
 
 const displayPerson = (p: unknown) =>
-  typeof p === 'string'
+  typeof p === "string"
     ? p
-    : p && typeof p === 'object'
-      ? `${(p as any).lastName ?? ''}${(p as any).lastName ? ', ' : ''}${(p as any).name ?? ''}` || '—'
-      : '—';
+    : p && typeof p === "object"
+      ? `${(p as any).lastName ?? ""}${(p as any).lastName ? ", " : ""}${(p as any).name ?? ""}` ||
+        "—"
+      : "—";
 
 const AdminPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
@@ -58,7 +64,9 @@ const AdminPage = () => {
   } | null>(null);
 
   // Estado para colapsar/desplegar semanas (key = weekStartISO)
-  const [collapsedWeeks, setCollapsedWeeks] = useState<Record<string, boolean>>({});
+  const [collapsedWeeks, setCollapsedWeeks] = useState<Record<string, boolean>>(
+    {},
+  );
 
   const { token } = useAuth();
   const { t, i18n } = useTranslation();
@@ -80,7 +88,9 @@ const AdminPage = () => {
       // ✅ Nos quedamos con todos los Diensts con número >= 1
       //    y los ordenamos por número ascendente.
       const normalized = data
-        .filter((d) => typeof d.dienstNumber === 'number' && d.dienstNumber >= 1)
+        .filter(
+          (d) => typeof d.dienstNumber === "number" && d.dienstNumber >= 1,
+        )
         .sort((a, b) => a.dienstNumber - b.dienstNumber);
 
       setDiensts(normalized);
@@ -88,7 +98,6 @@ const AdminPage = () => {
       console.error("Error al obtener los diensts:", error);
     }
   }, [token]);
-
 
   useEffect(() => {
     fetchDiensts();
@@ -101,7 +110,6 @@ const AdminPage = () => {
     const diff = day === 0 ? -6 : 1 - day;
     monday.setDate(monday.getDate() + diff);
     return [0, 1, 2].map((i) => {
-
       const copy = new Date(monday);
       copy.setDate(copy.getDate() + i * 7);
       return copy;
@@ -114,16 +122,16 @@ const AdminPage = () => {
     <div className="min-h-[400px]">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-          {t('pages.diensts.adminPage.title')}
+          {t("pages.diensts.adminPage.title")}
         </h1>
       </div>
 
       {weekStartDates.map((weekStart, index) => {
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
-        const weekStartISO = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
+        const weekStartISO = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}-${String(weekStart.getDate()).padStart(2, "0")}`;
         const isCollapsed = collapsedWeeks[weekStartISO] ?? false;
-        const hasWeekDiensts = diensts.some(d => {
+        const hasWeekDiensts = diensts.some((d) => {
           if (!d.weekStartDate) return false;
           const parsedDate = new Date(d.weekStartDate);
           return (
@@ -132,13 +140,12 @@ const AdminPage = () => {
           );
         });
 
-
         return (
           <div
             key={index}
             className="mb-8 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4"
           >
-                        {/* Header de semana */}
+            {/* Header de semana */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
               {hasWeekDiensts ? (
                 // Si hay Diensts: header clicable con flecha 🔼 / 🔽
@@ -149,21 +156,19 @@ const AdminPage = () => {
                   aria-expanded={!isCollapsed}
                 >
                   <span>
-                    {t('pages.diensts.adminPage.weekRange', {
+                    {t("pages.diensts.adminPage.weekRange", {
                       from: fmtDate(weekStart),
-                      to: fmtDate(weekEnd)
+                      to: fmtDate(weekEnd),
                     })}
                   </span>
-                  <span className="text-xs">
-                    {isCollapsed ? '🔽' : '🔼'}
-                  </span>
+                  <span className="text-xs">{isCollapsed ? "🔽" : "🔼"}</span>
                 </button>
               ) : (
                 // Si NO hay Diensts: solo texto, sin flecha y sin onClick
                 <h2 className="text-sm font-medium text-slate-700">
-                  {t('pages.diensts.adminPage.weekRange', {
+                  {t("pages.diensts.adminPage.weekRange", {
                     from: fmtDate(weekStart),
-                    to: fmtDate(weekEnd)
+                    to: fmtDate(weekEnd),
                   })}
                 </h2>
               )}
@@ -175,21 +180,27 @@ const AdminPage = () => {
                     className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-colors"
                     onClick={async () => {
                       const confirmCreate = confirm(
-                        t('pages.diensts.adminPage.confirmCreate', { date: fmtDate(weekStart) })
+                        t("pages.diensts.adminPage.confirmCreate", {
+                          date: fmtDate(weekStart),
+                        }),
                       );
                       if (!confirmCreate || !token) return;
 
                       try {
                         await generateDienstsForWeek(weekStartISO, token);
-                        toastT.success(['pages.diensts.adminPage.alerts.createOk']);
+                        toastT.success([
+                          "pages.diensts.adminPage.alerts.createOk",
+                        ]);
                         fetchDiensts();
                       } catch (err) {
                         console.error("Error al crear plantillas:", err);
-                        toastT.error(['pages.diensts.adminPage.alerts.createErr']);
+                        toastT.error([
+                          "pages.diensts.adminPage.alerts.createErr",
+                        ]);
                       }
                     }}
                   >
-                    {t('pages.diensts.adminPage.actions.create')}
+                    {t("pages.diensts.adminPage.actions.create")}
                   </button>
                 )}
 
@@ -199,26 +210,31 @@ const AdminPage = () => {
                     className="inline-flex items-center gap-2 rounded-lg bg-rose-500/90 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-colors"
                     onClick={async () => {
                       const confirmDelete = confirm(
-                        t('pages.diensts.adminPage.confirmDelete', { date: fmtDate(weekStart) })
+                        t("pages.diensts.adminPage.confirmDelete", {
+                          date: fmtDate(weekStart),
+                        }),
                       );
                       if (!confirmDelete || !token) return;
 
                       try {
                         await deleteDienstsForWeek(weekStartISO, token);
-                        toastT.success(['pages.diensts.adminPage.alerts.deleteOk']);
+                        toastT.success([
+                          "pages.diensts.adminPage.alerts.deleteOk",
+                        ]);
                         fetchDiensts();
                       } catch (err) {
                         console.error("Error al eliminar diensts:", err);
-                        toastT.error(['pages.diensts.adminPage.alerts.deleteErr']);
+                        toastT.error([
+                          "pages.diensts.adminPage.alerts.deleteErr",
+                        ]);
                       }
                     }}
                   >
-                    {t('pages.diensts.adminPage.actions.delete')}
+                    {t("pages.diensts.adminPage.actions.delete")}
                   </button>
                 )}
               </div>
             </div>
-
 
             {/* Listado de diensts de esa semana */}
             {!isCollapsed && (
@@ -243,7 +259,11 @@ const AdminPage = () => {
                     const hasAnyPersonAssigned =
                       Array.isArray(dienst.assignments) &&
                       dienst.assignments.some(
-                        (a) => a?.date && a?.startTime && a?.endTime && (a.driver || a.medic)
+                        (a) =>
+                          a?.date &&
+                          a?.startTime &&
+                          a?.endTime &&
+                          (a.driver || a.medic),
                       );
 
                     return (
@@ -253,7 +273,9 @@ const AdminPage = () => {
                       >
                         <div className="flex items-center justify-between mb-2">
                           <p className="font-medium text-slate-800">
-                            {t('pages.diensts.adminPage.dienstLabel', { num: dienst.dienstNumber })}
+                            {t("pages.diensts.adminPage.dienstLabel", {
+                              num: dienst.dienstNumber,
+                            })}
                           </p>
 
                           {/* Grupo de iconos de acciones */}
@@ -261,7 +283,9 @@ const AdminPage = () => {
                             {/* 👤 Asignar un trabajador (siempre visible) */}
                             <button
                               className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
-                              title={t('pages.diensts.adminPage.assignUserToWeek')}
+                              title={t(
+                                "pages.diensts.adminPage.assignUserToWeek",
+                              )}
                               onClick={() =>
                                 setWeekUserModal({
                                   open: true,
@@ -277,14 +301,16 @@ const AdminPage = () => {
                                 👤
                               </span>
                               <span className="sr-only">
-                                {t('pages.diensts.adminPage.assignUserToWeek')}
+                                {t("pages.diensts.adminPage.assignUserToWeek")}
                               </span>
                             </button>
 
                             {/* 👥 Asignar pareja (siempre visible) */}
                             <button
                               className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
-                              title={t('pages.diensts.adminPage.assignTeamToWeek')}
+                              title={t(
+                                "pages.diensts.adminPage.assignTeamToWeek",
+                              )}
                               onClick={() =>
                                 setWeekTeamModal({
                                   open: true,
@@ -300,7 +326,7 @@ const AdminPage = () => {
                                 👥
                               </span>
                               <span className="sr-only">
-                                {t('pages.diensts.adminPage.assignTeamToWeek')}
+                                {t("pages.diensts.adminPage.assignTeamToWeek")}
                               </span>
                             </button>
 
@@ -308,40 +334,54 @@ const AdminPage = () => {
                             {hasAnyPersonAssigned && (
                               <button
                                 className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
-                                title={t('pages.diensts.adminPage.swapRolesWeek')}
+                                title={t(
+                                  "pages.diensts.adminPage.swapRolesWeek",
+                                )}
                                 onClick={async () => {
                                   if (!token) return;
                                   const ok = confirm(
-                                    t('pages.diensts.adminPage.confirmSwap', {
+                                    t("pages.diensts.adminPage.confirmSwap", {
                                       num: dienst.dienstNumber,
                                       date: fmtDate(weekStart),
-                                    }) as string
+                                    }) as string,
                                   );
                                   if (!ok) return;
 
                                   try {
                                     await swapWeekRoles(
-                                      { dienstNumber: dienst.dienstNumber, weekStartDate: weekStartISO },
-                                      token
+                                      {
+                                        dienstNumber: dienst.dienstNumber,
+                                        weekStartDate: weekStartISO,
+                                      },
+                                      token,
                                     );
-                                    toastT.success(['pages.diensts.adminPage.swapWeekOk']);
+                                    toastT.success([
+                                      "pages.diensts.adminPage.swapWeekOk",
+                                    ]);
                                     fetchDiensts();
                                   } catch (err: any) {
-                                    const code = err?.response?.data?.code as string | undefined;
+                                    const code = err?.response?.data?.code as
+                                      | string
+                                      | undefined;
 
-                                    if (code === 'swap_not_permitted') {
+                                    if (code === "swap_not_permitted") {
                                       // 🚫 Caso específico: roles no compatibles o P-Schein caducado
                                       toastT.error([
-                                        'pages.diensts.adminPage.swapWeekNotPermitted',
+                                        "pages.diensts.adminPage.swapWeekNotPermitted",
                                       ]);
                                       console.warn(
-                                        '⚠️ swap_not_permitted details:',
-                                        err?.response?.data?.details
+                                        "⚠️ swap_not_permitted details:",
+                                        err?.response?.data?.details,
                                       );
                                     } else {
                                       // ❌ Error genérico
-                                      console.error('❌ Error en swapWeekRoles:', err);
-                                      toastT.error(['pages.diensts.adminPage.swapWeekErr']);
+                                      console.error(
+                                        "❌ Error en swapWeekRoles:",
+                                        err,
+                                      );
+                                      toastT.error([
+                                        "pages.diensts.adminPage.swapWeekErr",
+                                      ]);
                                     }
                                   }
                                 }}
@@ -353,7 +393,7 @@ const AdminPage = () => {
                                   ⇅
                                 </span>
                                 <span className="sr-only">
-                                  {t('pages.diensts.adminPage.swapRolesWeek')}
+                                  {t("pages.diensts.adminPage.swapRolesWeek")}
                                 </span>
                               </button>
                             )}
@@ -362,27 +402,36 @@ const AdminPage = () => {
                             {hasAnyPersonAssigned && (
                               <button
                                 className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-rose-700 transition-transform transform hover:scale-110 focus:outline-none"
-                                title={t('pages.diensts.adminPage.clearWeekPeople')}
+                                title={t(
+                                  "pages.diensts.adminPage.clearWeekPeople",
+                                )}
                                 onClick={async () => {
                                   if (!token) return;
                                   const ok = confirm(
-                                    t('pages.diensts.adminPage.confirmClear', {
+                                    t("pages.diensts.adminPage.confirmClear", {
                                       num: dienst.dienstNumber,
                                       date: fmtDate(weekStart),
-                                    }) as string
+                                    }) as string,
                                   );
                                   if (!ok) return;
 
                                   try {
                                     await clearPeopleForWeek(
-                                      { dienstNumber: dienst.dienstNumber, weekStartDate: weekStartISO },
-                                      token
+                                      {
+                                        dienstNumber: dienst.dienstNumber,
+                                        weekStartDate: weekStartISO,
+                                      },
+                                      token,
                                     );
-                                    toastT.success(['pages.diensts.adminPage.clearOk']);
+                                    toastT.success([
+                                      "pages.diensts.adminPage.clearOk",
+                                    ]);
                                     fetchDiensts();
                                   } catch (err) {
                                     console.error(err);
-                                    toastT.error(['pages.diensts.adminPage.clearErr']);
+                                    toastT.error([
+                                      "pages.diensts.adminPage.clearErr",
+                                    ]);
                                   }
                                 }}
                               >
@@ -393,7 +442,7 @@ const AdminPage = () => {
                                   🧽
                                 </span>
                                 <span className="sr-only">
-                                  {t('pages.diensts.adminPage.clearWeekPeople')}
+                                  {t("pages.diensts.adminPage.clearWeekPeople")}
                                 </span>
                               </button>
                             )}
@@ -403,16 +452,18 @@ const AdminPage = () => {
                         {/* Grid de 7 días */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                           {weekDates.map((day) => {
-                            const assignment = dienst.assignments.find((a) => a.date === day);
+                            const assignment = dienst.assignments.find(
+                              (a) => a.date === day,
+                            );
                             const cls = assignment
                               ? isPartialAssignment(assignment)
-                                ? 'bg-amber-50 ring-amber-200'
-                                : 'bg-blue-50 ring-blue-200'
-                              : 'bg-emerald-50 ring-emerald-200';
+                                ? "bg-amber-50 ring-amber-200"
+                                : "bg-blue-50 ring-blue-200"
+                              : "bg-emerald-50 ring-emerald-200";
                             const incompleteBorderClass =
                               assignment && isTeamIncomplete(assignment)
-                                ? 'border-2 border-red-500'
-                                : 'border border-transparent';
+                                ? "border-2 border-red-500"
+                                : "border border-transparent";
 
                             return (
                               <button
@@ -433,34 +484,55 @@ const AdminPage = () => {
                                 {assignment ? (
                                   <div className="space-y-0.5 text-xs text-slate-700">
                                     <p>
-                                      🕒 {assignment.startTime} - {assignment.endTime}
+                                      🕒 {assignment.startTime} -{" "}
+                                      {assignment.endTime}
                                     </p>
-                                    <p>🚑 {displayAmbulance(assignment?.ambulanceId)}</p>
+                                    <p>
+                                      🚑{" "}
+                                      {displayAmbulance(
+                                        assignment?.ambulanceId,
+                                      )}
+                                    </p>
 
                                     {/* Conductor: rojo si P-Schein caducado; ámbar si warning */}
                                     <p>
-                                      👨‍✈️{' '}
+                                      👨‍✈️{" "}
                                       {(() => {
-                                        let drvClass = '';
-                                        let drvTitle: string | undefined = undefined;
+                                        let drvClass = "";
+                                        let drvTitle: string | undefined =
+                                          undefined;
 
-                                        if (typeof assignment.driver === 'object' && assignment.driver) {
+                                        if (
+                                          typeof assignment.driver ===
+                                            "object" &&
+                                          assignment.driver
+                                        ) {
                                           const info = getPscheinInfo(
-                                            (assignment.driver as any).pscheinExpiry
+                                            (assignment.driver as any)
+                                              .pscheinExpiry,
                                           );
-                                          if (info.status === 'expired') {
-                                            drvClass = 'text-red-600 font-medium';
-                                          } else if (info.status === 'warning') {
-                                            drvClass = 'text-amber-600 font-medium';
+                                          if (info.status === "expired") {
+                                            drvClass =
+                                              "text-red-600 font-medium";
+                                          } else if (
+                                            info.status === "warning"
+                                          ) {
+                                            drvClass =
+                                              "text-amber-600 font-medium";
                                           }
-                                          drvTitle = getPscheinWarningTitle(
-                                            (assignment.driver as any).pscheinExpiry,
-                                            t as any
-                                          ) || undefined;
+                                          drvTitle =
+                                            getPscheinWarningTitle(
+                                              (assignment.driver as any)
+                                                .pscheinExpiry,
+                                              t as any,
+                                            ) || undefined;
                                         }
 
                                         return (
-                                          <span className={drvClass} title={drvTitle}>
+                                          <span
+                                            className={drvClass}
+                                            title={drvTitle}
+                                          >
                                             {displayPerson(assignment?.driver)}
                                           </span>
                                         );
@@ -471,7 +543,7 @@ const AdminPage = () => {
                                   </div>
                                 ) : (
                                   <p className="text-xs text-emerald-800 mt-1">
-                                    🌴 {t('pages.diensts.adminPage.freeDay')}
+                                    🌴 {t("pages.diensts.adminPage.freeDay")}
                                   </p>
                                 )}
                               </button>
@@ -513,13 +585,13 @@ const AdminPage = () => {
                   teamId,
                   resolvedRoles,
                 },
-                token
+                token,
               );
 
-              toastT.success(['pages.diensts.adminPage.assignWeekOk']);
+              toastT.success(["pages.diensts.adminPage.assignWeekOk"]);
 
               if (resp?.hints?.driverExpiredButBoth) {
-                toastT.info(['pages.diensts.adminPage.considerSwap']);
+                toastT.info(["pages.diensts.adminPage.considerSwap"]);
               }
 
               setWeekTeamModal(null);
@@ -528,43 +600,56 @@ const AdminPage = () => {
               const code = err?.response?.data?.code as string | undefined;
               const details = err?.response?.data?.details;
 
-              if (code === 'pschein_expired') {
-                toastT.error(['pages.diensts.adminPage.errors.pscheinExpired']);
-              } else if (code === 'weekly_conflict') {
-                let driverDates = '';
-                let medicDates = '';
+              if (code === "pschein_expired") {
+                toastT.error(["pages.diensts.adminPage.errors.pscheinExpired"]);
+              } else if (code === "weekly_conflict") {
+                let driverDates = "";
+                let medicDates = "";
 
                 if (Array.isArray(details)) {
                   driverDates = details
-                    .filter((d: any) => d?.role === 'driver')
+                    .filter((d: any) => d?.role === "driver")
                     .map((d: any) => d?.date)
                     .filter(Boolean)
-                    .join(', ');
+                    .join(", ");
                   medicDates = details
-                    .filter((d: any) => d?.role === 'medic')
+                    .filter((d: any) => d?.role === "medic")
                     .map((d: any) => d?.date)
                     .filter(Boolean)
-                    .join(', ');
-                } else if (details && typeof details === 'object') {
-                  const drv = Array.isArray(details.driverConf) ? details.driverConf : [];
-                  const med = Array.isArray(details.medicConf) ? details.medicConf : [];
-                  driverDates = drv.map((d: any) => d?.date).filter(Boolean).join(', ');
-                  medicDates = med.map((d: any) => d?.date).filter(Boolean).join(', ');
+                    .join(", ");
+                } else if (details && typeof details === "object") {
+                  const drv = Array.isArray(details.driverConf)
+                    ? details.driverConf
+                    : [];
+                  const med = Array.isArray(details.medicConf)
+                    ? details.medicConf
+                    : [];
+                  driverDates = drv
+                    .map((d: any) => d?.date)
+                    .filter(Boolean)
+                    .join(", ");
+                  medicDates = med
+                    .map((d: any) => d?.date)
+                    .filter(Boolean)
+                    .join(", ");
                 }
 
                 if (driverDates || medicDates) {
                   toastT.error([
-                    'pages.diensts.adminPage.teamWeeklyConflictWithDates',
+                    "pages.diensts.adminPage.teamWeeklyConflictWithDates",
                     { driverDates, medicDates },
                   ]);
                 } else {
-                  toastT.error(['pages.diensts.adminPage.teamWeeklyConflict']);
+                  toastT.error(["pages.diensts.adminPage.teamWeeklyConflict"]);
                 }
               } else {
-                toastT.error(['pages.diensts.adminPage.assignWeekErr']);
+                toastT.error(["pages.diensts.adminPage.assignWeekErr"]);
               }
 
-              console.error('assignTeamToWeek error:', err?.response?.data || err);
+              console.error(
+                "assignTeamToWeek error:",
+                err?.response?.data || err,
+              );
             }
           }}
           weekStartISO={weekTeamModal.weekStartISO}
@@ -588,23 +673,29 @@ const AdminPage = () => {
                   role,
                   userId,
                 },
-                token
+                token,
               );
 
-              toastT.success(['pages.diensts.adminPage.assignUserWeekOk']);
+              toastT.success(["pages.diensts.adminPage.assignUserWeekOk"]);
               setWeekUserModal(null);
               fetchDiensts();
             } catch (err: any) {
-              console.error('❌ Error al asignar usuario a la semana:', err);
+              console.error("❌ Error al asignar usuario a la semana:", err);
 
-              if (err?.response?.data?.code === 'weekly_conflict') {
-                toastT.error(['pages.diensts.adminPage.assignUserWeekConflict']);
-              } else if (err?.response?.data?.code === 'pschein_expired') {
-                toastT.error(['pages.diensts.adminPage.assignUserWeekPscheinExpired']);
-              } else if (err?.response?.data?.code === 'no_assignable_days') {
-                toastT.error(['pages.diensts.adminPage.assignUserNoAssignableDays']);
+              if (err?.response?.data?.code === "weekly_conflict") {
+                toastT.error([
+                  "pages.diensts.adminPage.assignUserWeekConflict",
+                ]);
+              } else if (err?.response?.data?.code === "pschein_expired") {
+                toastT.error([
+                  "pages.diensts.adminPage.assignUserWeekPscheinExpired",
+                ]);
+              } else if (err?.response?.data?.code === "no_assignable_days") {
+                toastT.error([
+                  "pages.diensts.adminPage.assignUserNoAssignableDays",
+                ]);
               } else {
-                toastT.error(['pages.diensts.adminPage.assignUserWeekErr']);
+                toastT.error(["pages.diensts.adminPage.assignUserWeekErr"]);
               }
             }
           }}

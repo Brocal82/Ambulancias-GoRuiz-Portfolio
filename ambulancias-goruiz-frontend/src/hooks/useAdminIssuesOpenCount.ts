@@ -32,7 +32,8 @@ export function useAdminIssuesOpenCount({ pollMs = 0 }: Options = {}) {
     } catch (e) {
       // eslint-disable-next-line no-console
       console.warn("[useAdminIssuesOpenCount] fetch error:", e);
-      if (mountedRef.current) setError("Error al cargar el contador de averías");
+      if (mountedRef.current)
+        setError("Error al cargar el contador de averías");
     } finally {
       if (mountedRef.current) setLoading(false);
     }
@@ -64,12 +65,18 @@ export function useAdminIssuesOpenCount({ pollMs = 0 }: Options = {}) {
 
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener(ADMIN_ISSUES_CHANGED_EVENT as any, onChanged as EventListener);
+    window.addEventListener(
+      ADMIN_ISSUES_CHANGED_EVENT as any,
+      onChanged as EventListener,
+    );
 
     return () => {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener(ADMIN_ISSUES_CHANGED_EVENT as any, onChanged as EventListener);
+      window.removeEventListener(
+        ADMIN_ISSUES_CHANGED_EVENT as any,
+        onChanged as EventListener,
+      );
     };
   }, [fetchCount]);
 

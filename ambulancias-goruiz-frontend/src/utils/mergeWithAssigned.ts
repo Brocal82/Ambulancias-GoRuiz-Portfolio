@@ -9,19 +9,22 @@ import type { FlexibleAssignment } from "../types/assignment";
 export function mergeWithAssigned(
   availableUsers: UserRef[],
   assignment: FlexibleAssignment | undefined,
-  currentRole: "driver" | "medic"
+  currentRole: "driver" | "medic",
 ): UserRef[] {
   const merged = [...availableUsers];
 
   const currentUser =
-    typeof assignment?.[currentRole] === "object" ? assignment[currentRole] : null;
+    typeof assignment?.[currentRole] === "object"
+      ? assignment[currentRole]
+      : null;
 
   const otherRole = currentRole === "driver" ? "medic" : "driver";
   const otherUser =
     typeof assignment?.[otherRole] === "object" ? assignment[otherRole] : null;
 
   // ✅ Asegura que el usuario actual se añade si no está en la lista
-  const isAlreadyIncluded = currentUser && merged.some(u => u._id === currentUser._id);
+  const isAlreadyIncluded =
+    currentUser && merged.some((u) => u._id === currentUser._id);
 
   const isConflictingWithOther =
     currentUser &&

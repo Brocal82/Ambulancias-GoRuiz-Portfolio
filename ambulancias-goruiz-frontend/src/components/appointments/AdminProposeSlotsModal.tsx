@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
-import { proposeSlots } from '../../api/appointments';
-import { useAuth } from '../../hooks/useAuth';
+import { useEffect, useMemo, useState } from "react";
+import { proposeSlots } from "../../api/appointments";
+import { useAuth } from "../../hooks/useAuth";
 import { toastT } from "../../utils/toast";
-import { APP_TZ } from '../../config/app';
-import { localDateTimeToUtcISO } from '../../utils/tz';
-import { useTranslation } from 'react-i18next';
-import type { Appointment } from '../../types/appointment';
+import { APP_TZ } from "../../config/app";
+import { localDateTimeToUtcISO } from "../../utils/tz";
+import { useTranslation } from "react-i18next";
+import type { Appointment } from "../../types/appointment";
 
 interface Props {
   appointmentId: string;
@@ -29,9 +29,9 @@ export default function AdminProposeSlotsModal({
   const { t } = useTranslation();
 
   const emptyRows: SlotRow[] = [
-    { date: '', time: '' },
-    { date: '', time: '' },
-    { date: '', time: '' },
+    { date: "", time: "" },
+    { date: "", time: "" },
+    { date: "", time: "" },
   ];
 
   const [rows, setRows] = useState<SlotRow[]>(emptyRows);
@@ -47,10 +47,10 @@ export default function AdminProposeSlotsModal({
     const slots = rows
       .filter((r) => r.date && r.time)
       .map((r) =>
-        localDateTimeToUtcISO(APP_TZ, r.date, r.time, defaultDurationMinutes)
+        localDateTimeToUtcISO(APP_TZ, r.date, r.time, defaultDurationMinutes),
       )
       .filter(
-        (x): x is NonNullable<ReturnType<typeof localDateTimeToUtcISO>> => !!x
+        (x): x is NonNullable<ReturnType<typeof localDateTimeToUtcISO>> => !!x,
       );
     return slots;
   }, [rows, defaultDurationMinutes]);
@@ -59,24 +59,24 @@ export default function AdminProposeSlotsModal({
 
   const validate = () => {
     if (!canSubmit) {
-      throw new Error('Debes completar al menos 1 opción con fecha y hora.');
+      throw new Error("Debes completar al menos 1 opción con fecha y hora.");
     }
     const now = Date.now();
     const sorted = [...computed].sort(
-      (a, b) => a.start.getTime() - b.start.getTime()
+      (a, b) => a.start.getTime() - b.start.getTime(),
     );
     for (let i = 0; i < sorted.length; i++) {
       const s = sorted[i];
       if (s.start.getTime() <= now) {
-        throw new Error('No se pueden proponer horarios en el pasado.');
+        throw new Error("No se pueden proponer horarios en el pasado.");
       }
       if (s.end <= s.start) {
-        throw new Error('Cada opción debe tener start < end.');
+        throw new Error("Cada opción debe tener start < end.");
       }
       if (i > 0) {
         const prev = sorted[i - 1];
         if (prev.end > s.start) {
-          throw new Error('Las opciones no deben solaparse. Ajusta las horas.');
+          throw new Error("Las opciones no deben solaparse. Ajusta las horas.");
         }
       }
     }
@@ -89,21 +89,27 @@ export default function AdminProposeSlotsModal({
       const sorted = validate();
 
       const payload = {
-        proposedSlots: sorted.map((s) => ({ start: s.startISO, end: s.endISO })),
+        proposedSlots: sorted.map((s) => ({
+          start: s.startISO,
+          end: s.endISO,
+        })),
       };
 
       // Esperamos que la API devuelva la cita actualizada.
       // Si devuelve { appointment: ... } o directamente la cita, soportamos ambos.
       const resp = await proposeSlots(appointmentId, payload, token!);
       const updated: Appointment =
-        (resp && (resp as any).appointment) ? (resp as any).appointment : (resp as Appointment);
+        resp && (resp as any).appointment
+          ? (resp as any).appointment
+          : (resp as Appointment);
 
       toastT.success(["toasts.appointments.proposeSuccess"]);
       onClose();
       onSuccess?.(updated);
     } catch (e: any) {
       toastT.error(
-        e?.response?.data?.message ?? e?.message ?? ["toasts.appointments.proposeError"]
+        e?.response?.data?.message ??
+          e?.message ?? ["toasts.appointments.proposeError"],
       );
     } finally {
       setLoading(false);
@@ -126,7 +132,7 @@ export default function AdminProposeSlotsModal({
             id="propose-title"
             className="text-lg font-semibold tracking-tight text-slate-900"
           >
-            {t('pages.appointments.propose.title')}
+            {t("pages.appointments.propose.title")}
           </h2>
         </div>
 
@@ -143,7 +149,9 @@ export default function AdminProposeSlotsModal({
                 aria-labelledby={`slot-legend-${idx}`}
               >
                 <legend id={`slot-legend-${idx}`} className="sr-only">
-                  {t('pages.appointments.propose.optionLegend', { index: idx + 1 })}
+                  {t("pages.appointments.propose.optionLegend", {
+                    index: idx + 1,
+                  })}
                 </legend>
 
                 {/* Fecha */}
@@ -152,7 +160,9 @@ export default function AdminProposeSlotsModal({
                     htmlFor={dateId}
                     className="block text-sm font-medium text-slate-700 mb-1"
                   >
-                    {t('pages.appointments.propose.dateLabel', { index: idx + 1 })}
+                    {t("pages.appointments.propose.dateLabel", {
+                      index: idx + 1,
+                    })}
                   </label>
                   <input
                     id={dateId}
@@ -162,12 +172,14 @@ export default function AdminProposeSlotsModal({
                     onChange={(e) => {
                       const v = e.target.value;
                       setRows((rs) =>
-                        rs.map((r, i) => (i === idx ? { ...r, date: v } : r))
+                        rs.map((r, i) => (i === idx ? { ...r, date: v } : r)),
                       );
                     }}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-                    placeholder={t('pages.appointments.propose.datePlaceholder')}
-                    title={t('pages.appointments.propose.dateTitle')}
+                    placeholder={t(
+                      "pages.appointments.propose.datePlaceholder",
+                    )}
+                    title={t("pages.appointments.propose.dateTitle")}
                     aria-describedby={`${dateId}-hint`}
                   />
                 </div>
@@ -178,7 +190,9 @@ export default function AdminProposeSlotsModal({
                     htmlFor={timeId}
                     className="block text-sm font-medium text-slate-700 mb-1"
                   >
-                    {t('pages.appointments.propose.timeLabel', { index: idx + 1 })}
+                    {t("pages.appointments.propose.timeLabel", {
+                      index: idx + 1,
+                    })}
                   </label>
                   <input
                     id={timeId}
@@ -188,12 +202,14 @@ export default function AdminProposeSlotsModal({
                     onChange={(e) => {
                       const v = e.target.value;
                       setRows((rs) =>
-                        rs.map((r, i) => (i === idx ? { ...r, time: v } : r))
+                        rs.map((r, i) => (i === idx ? { ...r, time: v } : r)),
                       );
                     }}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-                    placeholder={t('pages.appointments.propose.timePlaceholder')}
-                    title={t('pages.appointments.propose.timeTitle')}
+                    placeholder={t(
+                      "pages.appointments.propose.timePlaceholder",
+                    )}
+                    title={t("pages.appointments.propose.timeTitle")}
                     aria-describedby={`${timeId}-hint`}
                   />
                 </div>
@@ -209,7 +225,7 @@ export default function AdminProposeSlotsModal({
             className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100"
             disabled={loading}
           >
-            {t('pages.appointments.propose.actions.cancel')}
+            {t("pages.appointments.propose.actions.cancel")}
           </button>
           <button
             onClick={handleSubmit}
@@ -217,8 +233,8 @@ export default function AdminProposeSlotsModal({
             disabled={!canSubmit || loading}
           >
             {loading
-              ? t('pages.appointments.propose.actions.submitting')
-              : t('pages.appointments.propose.actions.submit')}
+              ? t("pages.appointments.propose.actions.submitting")
+              : t("pages.appointments.propose.actions.submit")}
           </button>
         </div>
       </div>

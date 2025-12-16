@@ -15,8 +15,8 @@ const TripModal: React.FC<TripModalProps> = ({ trip, onClose }) => {
   const totalKm = trip.wasCancelled
     ? 0
     : typeof trip.totalKm === "number"
-    ? trip.totalKm
-    : trip.kmEnd - trip.kmStart;
+      ? trip.totalKm
+      : trip.kmEnd - trip.kmStart;
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:items-center">
@@ -42,67 +42,97 @@ const TripModal: React.FC<TripModalProps> = ({ trip, onClose }) => {
         </button>
 
         {/* Title */}
-        <h3 id="trip-modal-title" className="pr-10 text-lg font-semibold text-slate-900">
+        <h3
+          id="trip-modal-title"
+          className="pr-10 text-lg font-semibold text-slate-900"
+        >
           {t("pages.components.tripModal.title")}
         </h3>
 
         {/* Content */}
-<div className="mt-4 space-y-2 text-sm">
-  <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200 space-y-1">
-    <p className="flex gap-2">
-      <span className="font-medium text-slate-700">📝 {t("pages.components.tripModal.auftrag")}:</span>
-      <span className="text-slate-800">{trip.auftragNumber}</span>
-    </p>
+        <div className="mt-4 space-y-2 text-sm">
+          <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200 space-y-1">
+            <p className="flex gap-2">
+              <span className="font-medium text-slate-700">
+                📝 {t("pages.components.tripModal.auftrag")}:
+              </span>
+              <span className="text-slate-800">{trip.auftragNumber}</span>
+            </p>
 
-    <p className="flex gap-2">
-      <span className="font-medium text-slate-700">👤 {t("pages.components.tripModal.patient")}:</span>
-      <span className="text-slate-800">{trip.patientName || t("pages.components.tripModal.noName")}</span>
-    </p>
+            <p className="flex gap-2">
+              <span className="font-medium text-slate-700">
+                👤 {t("pages.components.tripModal.patient")}:
+              </span>
+              <span className="text-slate-800">
+                {trip.patientName || t("pages.components.tripModal.noName")}
+              </span>
+            </p>
 
-    <p className="flex gap-2">
-      <span className="font-medium text-slate-700">📍 {t("pages.components.tripModal.from")}:</span>
-      <span className="text-slate-800">{trip.fromAddress || t("pages.components.tripModal.noAddress")}</span>
-    </p>
+            <p className="flex gap-2">
+              <span className="font-medium text-slate-700">
+                📍 {t("pages.components.tripModal.from")}:
+              </span>
+              <span className="text-slate-800">
+                {trip.fromAddress || t("pages.components.tripModal.noAddress")}
+              </span>
+            </p>
 
-    <p className="flex gap-2">
-      <span className="font-medium text-slate-700">🏥 {t("pages.components.tripModal.to")}:</span>
-      <span className="text-slate-800">{trip.toAddress || t("pages.components.tripModal.noDestination")}</span>
-    </p>
+            <p className="flex gap-2">
+              <span className="font-medium text-slate-700">
+                🏥 {t("pages.components.tripModal.to")}:
+              </span>
+              <span className="text-slate-800">
+                {trip.toAddress ||
+                  t("pages.components.tripModal.noDestination")}
+              </span>
+            </p>
 
-    <p className="flex gap-2">
-      <span className="font-medium text-slate-700">⏱️ {t("pages.components.tripModal.time")}:</span>
-      <span className="text-slate-800 font-mono">{trip.timeWarning} — {trip.timeEnd}</span>
-    </p>
+            <p className="flex gap-2">
+              <span className="font-medium text-slate-700">
+                ⏱️ {t("pages.components.tripModal.time")}:
+              </span>
+              <span className="text-slate-800 font-mono">
+                {trip.timeWarning} — {trip.timeEnd}
+              </span>
+            </p>
 
-    <p className="flex gap-2">
-      <span className="font-medium text-slate-700">📏 {t("pages.components.tripModal.km")}:</span>
-      <span className="text-slate-800">
-        <span className="font-mono">{trip.kmStart}</span> →
-        <span className="font-mono"> {trip.kmEnd}</span>
-        <span className="ml-2 text-slate-600">
-          ({t("pages.components.tripModal.total")} <span className="font-mono">{totalKm}</span> km)
-        </span>
-      </span>
-    </p>
-  </div>
+            <p className="flex gap-2">
+              <span className="font-medium text-slate-700">
+                📏 {t("pages.components.tripModal.km")}:
+              </span>
+              <span className="text-slate-800">
+                <span className="font-mono">{trip.kmStart}</span> →
+                <span className="font-mono"> {trip.kmEnd}</span>
+                <span className="ml-2 text-slate-600">
+                  ({t("pages.components.tripModal.total")}{" "}
+                  <span className="font-mono">{totalKm}</span> km)
+                </span>
+              </span>
+            </p>
+          </div>
 
-  <div className="rounded-xl p-3 ring-1 ring-slate-200">
-    <p className="font-medium text-slate-700">📝 {t("pages.components.tripModal.reports")}:</p>
-    <p className="mt-1 whitespace-pre-line text-slate-800">
-      {trip.reports || t("pages.components.tripModal.noReports")}
-    </p>
-  </div>
+          <div className="rounded-xl p-3 ring-1 ring-slate-200">
+            <p className="font-medium text-slate-700">
+              📝 {t("pages.components.tripModal.reports")}:
+            </p>
+            <p className="mt-1 whitespace-pre-line text-slate-800">
+              {trip.reports || t("pages.components.tripModal.noReports")}
+            </p>
+          </div>
 
-  {trip.wasCancelled && (
-    <div className="rounded-lg bg-rose-50 px-3 py-2 text-rose-700 ring-1 ring-rose-200">
-      <span className="font-semibold">⚠️ {t("pages.components.tripModal.cancelled")}</span>
-      {trip.cancelledAtPickup && (
-        <span className="ml-1">{t("pages.components.tripModal.cancelledAtPickup")}</span>
-      )}
-    </div>
-  )}
-</div>
-
+          {trip.wasCancelled && (
+            <div className="rounded-lg bg-rose-50 px-3 py-2 text-rose-700 ring-1 ring-rose-200">
+              <span className="font-semibold">
+                ⚠️ {t("pages.components.tripModal.cancelled")}
+              </span>
+              {trip.cancelledAtPickup && (
+                <span className="ml-1">
+                  {t("pages.components.tripModal.cancelledAtPickup")}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Footer */}
         <div className="mt-4 flex justify-end">

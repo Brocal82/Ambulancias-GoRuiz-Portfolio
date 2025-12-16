@@ -1,13 +1,17 @@
 // frontend/src/pages/WorkerMessagesPage.tsx
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { getMyMessages, deleteMessageForUser, markMessageAsRead } from '../api/messages';
-import type { Message } from '../types/message';
-import { useAuth } from '../hooks/useAuth';
-import { toastT } from '../utils/toast';
-import { useTranslation } from 'react-i18next';
-import { getPublicUrl } from '../utils/url';
-import { format } from 'date-fns';
-import { notifyUnreadMessagesChanged } from '../hooks/useUnreadMessagesCount';
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import {
+  getMyMessages,
+  deleteMessageForUser,
+  markMessageAsRead,
+} from "../api/messages";
+import type { Message } from "../types/message";
+import { useAuth } from "../hooks/useAuth";
+import { toastT } from "../utils/toast";
+import { useTranslation } from "react-i18next";
+import { getPublicUrl } from "../utils/url";
+import { format } from "date-fns";
+import { notifyUnreadMessagesChanged } from "../hooks/useUnreadMessagesCount";
 
 const WorkerMessagesPage = () => {
   const { token, user } = useAuth();
@@ -25,23 +29,23 @@ const WorkerMessagesPage = () => {
     (msg: Message) => {
       if (!meId) return false;
       const readBy = (msg.readBy as unknown as string[]) || [];
-      return !readBy.some(u => String(u) === meId);
+      return !readBy.some((u) => String(u) === meId);
     },
-    [meId]
+    [meId],
   );
 
   // ordenamos por fecha desc
   const sorted = useMemo(
     () =>
       [...messages].sort(
-        (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
+        (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime(),
       ),
-    [messages]
+    [messages],
   );
 
   // ⭐ Auto-scroll arriba al cargar la página
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   useEffect(() => {
@@ -50,7 +54,7 @@ const WorkerMessagesPage = () => {
         const data = await getMyMessages(token!, { unreadOnly: false });
         setMessages(data);
       } catch (error) {
-        console.error('❌ Error al cargar mensajes:', error);
+        console.error("❌ Error al cargar mensajes:", error);
       } finally {
         setLoading(false);
       }
@@ -62,16 +66,16 @@ const WorkerMessagesPage = () => {
     if (!token) return;
     try {
       await deleteMessageForUser(token, messageId);
-      setMessages(prev => prev.filter(msg => msg._id !== messageId));
-      setExpanded(prev => {
+      setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+      setExpanded((prev) => {
         const next = new Set(prev);
         next.delete(messageId);
         return next;
       });
       notifyUnreadMessagesChanged();
     } catch (error) {
-      console.error('❌ Error al borrar mensaje:', error);
-      toastT.error(['toasts.messages.deleteError']);
+      console.error("❌ Error al borrar mensaje:", error);
+      toastT.error(["toasts.messages.deleteError"]);
     }
   };
 
@@ -79,7 +83,7 @@ const WorkerMessagesPage = () => {
     async (msg: Message) => {
       const id = msg._id;
 
-      setExpanded(prev => {
+      setExpanded((prev) => {
         const next = new Set(prev);
         if (next.has(id)) next.delete(id);
         else next.add(id);
@@ -94,24 +98,28 @@ const WorkerMessagesPage = () => {
           markedAnyAsReadRef.current = true;
           notifyUnreadMessagesChanged();
           // actualizar estado local: añadir mi id a readBy
-          setMessages(prev =>
-            prev.map(m =>
+          setMessages((prev) =>
+            prev.map((m) =>
               m._id === id
                 ? {
                     ...m,
                     readBy: Array.from(
-                      new Set([...(m.readBy as unknown as string[] | undefined || []), meId])
-                    ) as unknown as Message['readBy'],
+                      new Set([
+                        ...((m.readBy as unknown as string[] | undefined) ||
+                          []),
+                        meId,
+                      ]),
+                    ) as unknown as Message["readBy"],
                   }
-                : m
-            )
+                : m,
+            ),
           );
         } catch (error) {
-          console.error('❌ Error al marcar como leído:', error);
+          console.error("❌ Error al marcar como leído:", error);
         }
       }
     },
-    [expanded, token, meId, isUnread]
+    [expanded, token, meId, isUnread],
   );
 
   // al salir de la página, por si hubo varias lecturas rápidas
@@ -125,20 +133,20 @@ const WorkerMessagesPage = () => {
     <div className="min-h-screen bg-slate-50 p-6">
       <div className="mx-auto max-w-4xl">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-6 text-center">
-          {t('pages.messages.workerPage.title')}
+          {t("pages.messages.workerPage.title")}
         </h1>
 
         {loading ? (
           <p className="text-center text-slate-500">
-            {t('pages.messages.workerPage.loading')}
+            {t("pages.messages.workerPage.loading")}
           </p>
         ) : sorted.length === 0 ? (
           <p className="text-center text-slate-400">
-            {t('pages.messages.workerPage.empty')}
+            {t("pages.messages.workerPage.empty")}
           </p>
         ) : (
           <ul className="space-y-3">
-            {sorted.map(msg => {
+            {sorted.map((msg) => {
               const unread = isUnread(msg);
               const isOpen = expanded.has(msg._id);
 
@@ -149,9 +157,11 @@ const WorkerMessagesPage = () => {
                 <li
                   key={msg._id}
                   className={[
-                    'relative rounded-xl ring-1 transition overflow-hidden bg-white',
-                    isOpen ? 'ring-slate-300 shadow-sm' : 'ring-slate-200 hover:ring-slate-300',
-                  ].join(' ')}
+                    "relative rounded-xl ring-1 transition overflow-hidden bg-white",
+                    isOpen
+                      ? "ring-slate-300 shadow-sm"
+                      : "ring-slate-200 hover:ring-slate-300",
+                  ].join(" ")}
                 >
                   {/* Header / botón accesible (compactado) */}
                   <button
@@ -165,25 +175,27 @@ const WorkerMessagesPage = () => {
                     {/* dot rojo si no leído */}
                     <span
                       className={[
-                        'inline-block w-2.5 h-2.5 rounded-full flex-shrink-0',
-                        unread ? 'bg-red-500' : 'bg-slate-300',
-                      ].join(' ')}
+                        "inline-block w-2.5 h-2.5 rounded-full flex-shrink-0",
+                        unread ? "bg-red-500" : "bg-slate-300",
+                      ].join(" ")}
                       aria-hidden="true"
                     />
                     {/* fecha + remitente */}
                     <span className="text-xs text-slate-600">
-                      {t('pages.messages.workerPage.from') || 'From'}{' '}
+                      {t("pages.messages.workerPage.from") || "From"}{" "}
                       <span className="font-medium">
                         {msg.sender?.lastName}, {msg.sender?.name}
-                      </span>{' '}
-                      · {format(new Date(msg.sentAt), 'dd/MM/yyyy HH:mm')}
+                      </span>{" "}
+                      · {format(new Date(msg.sentAt), "dd/MM/yyyy HH:mm")}
                     </span>
                     {/* asunto a la derecha */}
                     <span
                       className={[
-                        'ml-auto truncate text-xs',
-                        unread ? 'font-bold text-slate-900' : 'font-semibold text-slate-800',
-                      ].join(' ')}
+                        "ml-auto truncate text-xs",
+                        unread
+                          ? "font-bold text-slate-900"
+                          : "font-semibold text-slate-800",
+                      ].join(" ")}
                       title={msg.subject}
                     >
                       {msg.subject}
@@ -191,9 +203,9 @@ const WorkerMessagesPage = () => {
                     {/* chevron */}
                     <span
                       className={[
-                        'ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-sm transition-transform',
-                        isOpen ? 'rotate-180' : 'rotate-0',
-                      ].join(' ')}
+                        "ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-sm transition-transform",
+                        isOpen ? "rotate-180" : "rotate-0",
+                      ].join(" ")}
                       aria-hidden="true"
                     >
                       ▾
@@ -213,8 +225,14 @@ const WorkerMessagesPage = () => {
                       <button
                         onClick={() => void handleDelete(msg._id)}
                         className="text-rose-600 hover:text-rose-700 font-bold text-lg leading-none transition"
-                        title={t('pages.messages.workerPage.actions.deleteTitle') || 'Delete message'}
-                        aria-label={t('pages.messages.workerPage.actions.deleteTitle') || 'Delete message'}
+                        title={
+                          t("pages.messages.workerPage.actions.deleteTitle") ||
+                          "Delete message"
+                        }
+                        aria-label={
+                          t("pages.messages.workerPage.actions.deleteTitle") ||
+                          "Delete message"
+                        }
                         type="button"
                       >
                         ×
@@ -230,7 +248,8 @@ const WorkerMessagesPage = () => {
                     {msg.attachments?.length ? (
                       <div className="mt-2">
                         <h3 className="text-xs font-medium text-slate-700">
-                          {t('pages.messages.workerPage.attachments') || 'Attachments'}
+                          {t("pages.messages.workerPage.attachments") ||
+                            "Attachments"}
                         </h3>
 
                         <ul className="mt-2 flex flex-wrap justify-start gap-2">
@@ -241,7 +260,7 @@ const WorkerMessagesPage = () => {
                             >
                               <a
                                 href={`${getPublicUrl(att.url)}?v=${encodeURIComponent(
-                                  att.filename
+                                  att.filename,
                                 )}-${encodeURIComponent(msg.sentAt)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"

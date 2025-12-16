@@ -1,13 +1,13 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { getMyMessages } from '../api/messages';
-import { useAuth } from '../hooks/useAuth';
+import { useEffect, useRef, useState, useCallback } from "react";
+import { getMyMessages } from "../api/messages";
+import { useAuth } from "../hooks/useAuth";
 
 type Options = {
   pollMs?: number; // intervalo de refresco (0 = sin polling)
 };
 
 // Nombre del evento global para actualizar el contador
-export const UNREAD_MSGS_EVENT = 'unread-messages-changed';
+export const UNREAD_MSGS_EVENT = "unread-messages-changed";
 
 export function useUnreadMessagesCount({ pollMs = 30000 }: Options = {}) {
   const { token } = useAuth();
@@ -27,7 +27,7 @@ export function useUnreadMessagesCount({ pollMs = 30000 }: Options = {}) {
       const msgs = await getMyMessages(token); // tu API ya retorna solo no leídos
       setCount(Array.isArray(msgs) ? msgs.length : 0);
     } catch (e: any) {
-      setError(e?.message ?? 'Error obteniendo mensajes no leídos');
+      setError(e?.message ?? "Error obteniendo mensajes no leídos");
     } finally {
       setLoading(false);
     }
@@ -45,21 +45,27 @@ export function useUnreadMessagesCount({ pollMs = 30000 }: Options = {}) {
     // refrescar al volver el foco/visibilidad
     const onFocus = () => void fetchCount();
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') void fetchCount();
+      if (document.visibilityState === "visible") void fetchCount();
     };
 
     // refrescar al emitir evento global desde cualquier parte de la app
     const onExternalChange = () => void fetchCount();
 
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener(UNREAD_MSGS_EVENT, onExternalChange as EventListener);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener(
+      UNREAD_MSGS_EVENT,
+      onExternalChange as EventListener,
+    );
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener(UNREAD_MSGS_EVENT, onExternalChange as EventListener);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener(
+        UNREAD_MSGS_EVENT,
+        onExternalChange as EventListener,
+      );
     };
   }, [fetchCount, pollMs]);
 

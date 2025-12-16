@@ -1,12 +1,12 @@
-import React, { useMemo, useState } from 'react';
-import type { Appointment } from '../../types/appointment';
+import React, { useMemo, useState } from "react";
+import type { Appointment } from "../../types/appointment";
 import {
   getMonthMatrix,
   groupAppointmentsByDay,
   ymd,
-} from '../../utils/appointmentMonthUtils';
-import { useTranslation } from 'react-i18next';
-import DayAppointmentsModal from './DayAppointmentsModal';
+} from "../../utils/appointmentMonthUtils";
+import { useTranslation } from "react-i18next";
+import DayAppointmentsModal from "./DayAppointmentsModal";
 
 type Props = {
   items: Appointment[];
@@ -23,19 +23,22 @@ const AdminMonthCalendar: React.FC<Props> = ({
 }) => {
   const { t, i18n } = useTranslation();
 
-  const cells = useMemo(() => getMonthMatrix(year, monthIndex), [year, monthIndex]);
+  const cells = useMemo(
+    () => getMonthMatrix(year, monthIndex),
+    [year, monthIndex],
+  );
   const grouped = useMemo(() => groupAppointmentsByDay(items), [items]);
 
   const monthTitle = useMemo(
     () =>
       new Date(year, monthIndex, 1).toLocaleDateString(i18n.language, {
-        month: 'long',
-        year: 'numeric',
+        month: "long",
+        year: "numeric",
       }),
-    [year, monthIndex, i18n.language]
+    [year, monthIndex, i18n.language],
   );
 
-  const weekdayLabels = t('pages.appointments.calendar.weekdayLabels', {
+  const weekdayLabels = t("pages.appointments.calendar.weekdayLabels", {
     returnObjects: true,
   }) as string[];
 
@@ -88,21 +91,25 @@ const AdminMonthCalendar: React.FC<Props> = ({
             <div
               key={key}
               className={[
-                'relative min-h-[96px] rounded-xl p-2 ring-1 ring-slate-200',
-                cell.date ? 'bg-white' : 'bg-slate-50 opacity-80',
-                clickable ? 'cursor-pointer hover:ring-blue-300 hover:bg-blue-50/30' : '',
-              ].join(' ')}
+                "relative min-h-[96px] rounded-xl p-2 ring-1 ring-slate-200",
+                cell.date ? "bg-white" : "bg-slate-50 opacity-80",
+                clickable
+                  ? "cursor-pointer hover:ring-blue-300 hover:bg-blue-50/30"
+                  : "",
+              ].join(" ")}
               aria-label={
                 cell.date
-                  ? t('pages.appointments.calendar.aria.day', { num: cell.dayNumber })
-                  : t('pages.appointments.calendar.aria.emptyCell')
+                  ? t("pages.appointments.calendar.aria.day", {
+                      num: cell.dayNumber,
+                    })
+                  : t("pages.appointments.calendar.aria.emptyCell")
               }
               {...(clickable && {
-                role: 'button' as const,
+                role: "button" as const,
                 tabIndex: 0,
                 onClick: () => openModalForDay(cell.date!),
                 onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
+                  if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     openModalForDay(cell.date!);
                   }
@@ -111,15 +118,15 @@ const AdminMonthCalendar: React.FC<Props> = ({
             >
               {/* Número de día */}
               <div className="mb-1 text-[11px] font-medium text-slate-500">
-                {cell.dayNumber ?? ''}
+                {cell.dayNumber ?? ""}
               </div>
 
               {/* Globo con número de citas (solo si hay) */}
               {count > 0 && (
                 <span
                   className="absolute top-2 right-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white ring-2 ring-blue-100"
-                  title={`${count} ${count === 1 ? 'cita' : 'citas'}`}
-                  aria-label={`${count} ${count === 1 ? 'cita' : 'citas'}`}
+                  title={`${count} ${count === 1 ? "cita" : "citas"}`}
+                  aria-label={`${count} ${count === 1 ? "cita" : "citas"}`}
                 >
                   {count}
                 </span>

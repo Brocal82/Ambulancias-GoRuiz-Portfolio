@@ -1,16 +1,19 @@
 // frontend/src/components/teams/TeamEditModal.tsx
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import TeamPicker from '../common/TeamPicker';
-import type { TeamPickerValue } from '../common/TeamPicker';
-import { useAuth } from '../../hooks/useAuth';
-import type { Team, UpdateTeamPayload } from '../../api/teams';
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import TeamPicker from "../common/TeamPicker";
+import type { TeamPickerValue } from "../common/TeamPicker";
+import { useAuth } from "../../hooks/useAuth";
+import type { Team, UpdateTeamPayload } from "../../api/teams";
 
 interface TeamEditModalProps {
   isOpen: boolean;
   team: Team;
   onClose: () => void;
-  onConfirm: (teamId: string, payload: UpdateTeamPayload) => Promise<void> | void;
+  onConfirm: (
+    teamId: string,
+    payload: UpdateTeamPayload,
+  ) => Promise<void> | void;
 }
 
 type AmbulanceLite = {
@@ -29,24 +32,24 @@ export default function TeamEditModal({
 
   // 👤 Selección de personas
   const [value, setValue] = useState<TeamPickerValue>({
-    driver: team.driver?._id || '',
-    medic: team.medic?._id || '',
+    driver: team.driver?._id || "",
+    medic: team.medic?._id || "",
   });
 
   // 🔁 Configuración de rotación
-  const [rotationMode, setRotationMode] = useState<'rotating' | 'fixed' | 'none'>(
-    team.rotationMode ?? 'rotating'
-  );
-  const [fixedDienstNumber, setFixedDienstNumber] = useState<number | ''>(
-    team.rotationMode === 'fixed' && team.fixedDienstNumber != null
+  const [rotationMode, setRotationMode] = useState<
+    "rotating" | "fixed" | "none"
+  >(team.rotationMode ?? "rotating");
+  const [fixedDienstNumber, setFixedDienstNumber] = useState<number | "">(
+    team.rotationMode === "fixed" && team.fixedDienstNumber != null
       ? team.fixedDienstNumber
-      : ''
+      : "",
   );
 
   // 🚑 Ambulancia fija opcional
   const [ambulances, setAmbulances] = useState<AmbulanceLite[]>([]);
   const [ambulanceId, setAmbulanceId] = useState<string>(
-    (team.ambulanceId as any)?._id || ''
+    (team.ambulanceId as any)?._id || "",
   );
   const [loadingAmbulances, setLoadingAmbulances] = useState(false);
 
@@ -55,17 +58,17 @@ export default function TeamEditModal({
   // Sincronizar estado cuando cambie el team (por si se reabre con otro)
   useEffect(() => {
     setValue({
-      driver: team.driver?._id || '',
-      medic: team.medic?._id || '',
+      driver: team.driver?._id || "",
+      medic: team.medic?._id || "",
     });
 
-    setRotationMode(team.rotationMode ?? 'rotating');
+    setRotationMode(team.rotationMode ?? "rotating");
     setFixedDienstNumber(
-      team.rotationMode === 'fixed' && team.fixedDienstNumber != null
+      team.rotationMode === "fixed" && team.fixedDienstNumber != null
         ? team.fixedDienstNumber
-        : ''
+        : "",
     );
-    setAmbulanceId((team.ambulanceId as any)?._id || '');
+    setAmbulanceId((team.ambulanceId as any)?._id || "");
   }, [team]);
 
   // 🔁 Cargar ambulancias cuando se abra el modal
@@ -77,11 +80,11 @@ export default function TeamEditModal({
     (async () => {
       try {
         setLoadingAmbulances(true);
-        const res = await fetch('/api/ambulances', {
+        const res = await fetch("/api/ambulances", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) {
-          console.error('❌ Error HTTP al cargar ambulancias:', res.status);
+          console.error("❌ Error HTTP al cargar ambulancias:", res.status);
           return;
         }
         const data = (await res.json()) as AmbulanceLite[];
@@ -89,16 +92,16 @@ export default function TeamEditModal({
           setAmbulances(
             Array.isArray(data)
               ? data.sort((a, b) =>
-                  (a.ambulanceNumber || '').localeCompare(
-                    b.ambulanceNumber || '',
-                    'es'
-                  )
+                  (a.ambulanceNumber || "").localeCompare(
+                    b.ambulanceNumber || "",
+                    "es",
+                  ),
                 )
-              : []
+              : [],
           );
         }
       } catch (e) {
-        console.error('❌ Error al cargar ambulancias en TeamEditModal:', e);
+        console.error("❌ Error al cargar ambulancias en TeamEditModal:", e);
       } finally {
         if (!cancelled) setLoadingAmbulances(false);
       }
@@ -112,19 +115,15 @@ export default function TeamEditModal({
   if (!isOpen) return null;
 
   const samePerson = !!value.driver && value.driver === value.medic;
-  const isFixed = rotationMode === 'fixed';
+  const isFixed = rotationMode === "fixed";
   const fixedValid =
-    !isFixed || (fixedDienstNumber !== '' && Number(fixedDienstNumber) > 0);
+    !isFixed || (fixedDienstNumber !== "" && Number(fixedDienstNumber) > 0);
 
-  const canSave =
-    !!value.driver &&
-    !!value.medic &&
-    !samePerson &&
-    fixedValid;
+  const canSave = !!value.driver && !!value.medic && !samePerson && fixedValid;
 
   // Utilidad sencilla para clases
   const cx = (...classes: (string | false | null | undefined)[]) =>
-    classes.filter(Boolean).join(' ');
+    classes.filter(Boolean).join(" ");
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -137,7 +136,7 @@ export default function TeamEditModal({
         medic: value.medic,
         rotationMode,
         fixedDienstNumber:
-          isFixed && fixedDienstNumber !== ''
+          isFixed && fixedDienstNumber !== ""
             ? Number(fixedDienstNumber)
             : null,
         ambulanceId: ambulanceId || null,
@@ -161,12 +160,12 @@ export default function TeamEditModal({
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
             <h3 className="text-lg font-semibold text-slate-900">
-              {t('pages.adminTeams.editModal.title', 'Editar equipo')}
+              {t("pages.adminTeams.editModal.title", "Editar equipo")}
             </h3>
             <p className="mt-1 text-xs text-slate-500">
               {t(
-                'pages.adminTeams.editModal.subtitle',
-                'Modifica miembros, ambulancia y modo de rotación.'
+                "pages.adminTeams.editModal.subtitle",
+                "Modifica miembros, ambulancia y modo de rotación.",
               )}
             </p>
           </div>
@@ -175,7 +174,7 @@ export default function TeamEditModal({
             type="button"
             onClick={onClose}
             className="rounded-full p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
-            aria-label={t('common.close', 'Cerrar')}
+            aria-label={t("common.close", "Cerrar")}
           >
             ✕
           </button>
@@ -184,7 +183,7 @@ export default function TeamEditModal({
         {/* 👤 Picker con las reglas */}
         <section className="space-y-2">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            {t('pages.adminTeams.editModal.members', 'Miembros del equipo')}
+            {t("pages.adminTeams.editModal.members", "Miembros del equipo")}
           </p>
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-3">
@@ -194,8 +193,8 @@ export default function TeamEditModal({
           {samePerson && (
             <p className="mt-1 text-xs text-rose-600">
               {t(
-                'pages.adminTeams.validation.samePerson',
-                'El conductor y el sanitario no pueden ser la misma persona'
+                "pages.adminTeams.validation.samePerson",
+                "El conductor y el sanitario no pueden ser la misma persona",
               )}
             </p>
           )}
@@ -208,8 +207,8 @@ export default function TeamEditModal({
             className="text-xs font-medium uppercase tracking-wide text-slate-500"
           >
             {t(
-              'pages.adminTeams.modal.ambulanceSection',
-              'Ambulancia fija (opcional)'
+              "pages.adminTeams.modal.ambulanceSection",
+              "Ambulancia fija (opcional)",
             )}
           </label>
 
@@ -222,10 +221,10 @@ export default function TeamEditModal({
           >
             <option value="">
               {loadingAmbulances
-                ? t('common.loading', 'Cargando...')
+                ? t("common.loading", "Cargando...")
                 : t(
-                    'pages.adminTeams.modal.ambulancePlaceholder',
-                    'Sin ambulancia fija'
+                    "pages.adminTeams.modal.ambulancePlaceholder",
+                    "Sin ambulancia fija",
                   )}
             </option>
             {ambulances.map((amb) => (
@@ -237,8 +236,8 @@ export default function TeamEditModal({
 
           <p className="text-[11px] text-slate-500">
             {t(
-              'pages.adminTeams.modal.ambulanceHelp',
-              'Si este equipo suele trabajar siempre con la misma ambulancia, puedes seleccionarla aquí.'
+              "pages.adminTeams.modal.ambulanceHelp",
+              "Si este equipo suele trabajar siempre con la misma ambulancia, puedes seleccionarla aquí.",
             )}
           </p>
         </section>
@@ -246,82 +245,70 @@ export default function TeamEditModal({
         {/* 🔁 Configuración de rotación del equipo */}
         <section className="mt-4 space-y-2">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            {t(
-              'pages.adminTeams.rotation.sectionTitle',
-              'Modo de rotación'
-            )}
+            {t("pages.adminTeams.rotation.sectionTitle", "Modo de rotación")}
           </p>
 
           {/* Botones de modo compactos */}
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setRotationMode('rotating')}
+              onClick={() => setRotationMode("rotating")}
               disabled={submitting}
               className={cx(
-                'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition',
-                rotationMode === 'rotating'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition",
+                rotationMode === "rotating"
+                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
               )}
             >
               <span>🔁</span>
               <span>
-                {t(
-                  'pages.adminTeams.rotation.badgeRotatingShort',
-                  'Rotación'
-                )}
+                {t("pages.adminTeams.rotation.badgeRotatingShort", "Rotación")}
               </span>
             </button>
 
             <button
               type="button"
-              onClick={() => setRotationMode('fixed')}
+              onClick={() => setRotationMode("fixed")}
               disabled={submitting}
               className={cx(
-                'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition',
-                rotationMode === 'fixed'
-                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition",
+                rotationMode === "fixed"
+                  ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
               )}
             >
               <span>📌</span>
               <span>
-                {t(
-                  'pages.adminTeams.rotation.badgeFixedShort',
-                  'Dienst fijo'
-                )}
+                {t("pages.adminTeams.rotation.badgeFixedShort", "Dienst fijo")}
               </span>
             </button>
 
             <button
               type="button"
-              onClick={() => setRotationMode('none')}
+              onClick={() => setRotationMode("none")}
               disabled={submitting}
               className={cx(
-                'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition',
-                rotationMode === 'none'
-                  ? 'border-amber-500 bg-amber-50 text-amber-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition",
+                rotationMode === "none"
+                  ? "border-amber-500 bg-amber-50 text-amber-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
               )}
             >
               <span>✋</span>
               <span>
-                {t(
-                  'pages.adminTeams.rotation.badgeNoneShort',
-                  'Manual'
-                )}
+                {t("pages.adminTeams.rotation.badgeNoneShort", "Manual")}
               </span>
             </button>
           </div>
 
           {/* Número de Dienst fijo solo cuando rotationMode === 'fixed' */}
-          {rotationMode === 'fixed' && (
+          {rotationMode === "fixed" && (
             <div className="mt-2">
               <label className="block text-xs font-medium text-slate-600">
                 {t(
-                  'pages.adminTeams.rotation.fixedDienstNumber',
-                  'Número de Dienst fijo'
+                  "pages.adminTeams.rotation.fixedDienstNumber",
+                  "Número de Dienst fijo",
                 )}
               </label>
               <input
@@ -330,21 +317,23 @@ export default function TeamEditModal({
                 value={fixedDienstNumber}
                 onChange={(e) =>
                   setFixedDienstNumber(
-                    e.target.value === '' ? '' : Number(e.target.value)
+                    e.target.value === "" ? "" : Number(e.target.value),
                   )
                 }
                 disabled={submitting}
                 className="mt-1 w-32 rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-1.5 text-xs bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50"
-                placeholder={t(
-                  'pages.adminTeams.rotation.fixedDienstPlaceholder',
-                  'Ej: 7'
-                ) as string}
+                placeholder={
+                  t(
+                    "pages.adminTeams.rotation.fixedDienstPlaceholder",
+                    "Ej: 7",
+                  ) as string
+                }
               />
               {!fixedValid && (
                 <p className="mt-1 text-[11px] text-rose-600">
                   {t(
-                    'pages.adminTeams.rotation.fixedDienstError',
-                    'Indica un número de Dienst válido mayor que 0'
+                    "pages.adminTeams.rotation.fixedDienstError",
+                    "Indica un número de Dienst válido mayor que 0",
                   )}
                 </p>
               )}
@@ -353,8 +342,8 @@ export default function TeamEditModal({
 
           <p className="mt-1 text-[11px] text-slate-500">
             {t(
-              'pages.adminTeams.rotation.editHelp',
-              'Los cambios afectarán a la lógica de rotación en semanas futuras.'
+              "pages.adminTeams.rotation.editHelp",
+              "Los cambios afectarán a la lógica de rotación en semanas futuras.",
             )}
           </p>
         </section>
@@ -367,15 +356,15 @@ export default function TeamEditModal({
             className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50"
           >
             {submitting
-              ? t('common.saving', 'Guardando...')
-              : t('common.saveChanges', 'Guardar cambios')}
+              ? t("common.saving", "Guardando...")
+              : t("common.saveChanges", "Guardar cambios")}
           </button>
           <button
             onClick={onClose}
             disabled={submitting}
             className="w-full rounded-xl bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-300 focus:outline-none focus:ring-4 focus:ring-slate-100"
           >
-            {t('common.cancel', 'Cancelar')}
+            {t("common.cancel", "Cancelar")}
           </button>
         </div>
       </div>

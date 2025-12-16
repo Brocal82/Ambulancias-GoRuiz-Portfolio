@@ -1,12 +1,11 @@
 //src/controllers/vacationController.ts
-import { Request, Response } from 'express';
-import type { IVacationRequestModel } from '../models/vacationRequest';
-import VacationRequest from '../models/vacationRequest';
-import { findOverCapacityDays } from '../utils/vacationCapacity';
-import { DateTime } from 'luxon';
-import mongoose from 'mongoose';
-import { clearUserFromDienstsInRange } from '../utils/dienstClearUtils';
-
+import { Request, Response } from "express";
+import type { IVacationRequestModel } from "../models/vacationRequest";
+import VacationRequest from "../models/vacationRequest";
+import { findOverCapacityDays } from "../utils/vacationCapacity";
+import { DateTime } from "luxon";
+import mongoose from "mongoose";
+import { clearUserFromDienstsInRange } from "../utils/dienstClearUtils";
 
 // ======================================================
 // Config mensual embebida (NO se crea archivo nuevo)
@@ -15,15 +14,19 @@ import {
   Schema as MongooseSchema,
   model as mongooseModel,
   models as mongooseModels,
-} from 'mongoose';
+} from "mongoose";
 
-const ZONE = 'Europe/Berlin';
-
+const ZONE = "Europe/Berlin";
 
 // ✅ Añade aquí el tipo y el type guard (justo debajo de los imports de mongoose)
-type VacationStatus = 'pending' | 'accepted' | 'cancelled' | 'option_sent';
+type VacationStatus = "pending" | "accepted" | "cancelled" | "option_sent";
 function isVacationStatus(x: unknown): x is VacationStatus {
-  return x === 'pending' || x === 'accepted' || x === 'cancelled' || x === 'option_sent';
+  return (
+    x === "pending" ||
+    x === "accepted" ||
+    x === "cancelled" ||
+    x === "option_sent"
+  );
 }
 
 interface IVacationMonthConfig {
@@ -36,7 +39,7 @@ interface IVacationMonthConfig {
 const VacationMonthConfig =
   (mongooseModels.VacationMonthConfig as mongoose.Model<IVacationMonthConfig>) ||
   mongooseModel<IVacationMonthConfig>(
-    'VacationMonthConfig',
+    "VacationMonthConfig",
     new MongooseSchema<IVacationMonthConfig>(
       {
         monthKey: { type: String, required: true, unique: true, index: true },
@@ -48,14 +51,14 @@ const VacationMonthConfig =
           },
         ],
       },
-      { timestamps: true }
-    )
+      { timestamps: true },
+    ),
   );
 
 const DEFAULT_MAX_PER_DAY = Number(process.env.MAX_VACATIONS_PER_DAY ?? 2);
 
 function toMonthKey(year: number, month1to12: number) {
-  return `${year}-${String(month1to12).padStart(2, '0')}`;
+  return `${year}-${String(month1to12).padStart(2, "0")}`;
 }
 function dayStart(d: Date) {
   const x = new Date(d);
@@ -81,30 +84,40 @@ async function getMaxPerDayForDate(date: Date): Promise<number> {
   return cfg?.maxPerDay ?? DEFAULT_MAX_PER_DAY;
 }
 
-
 // ======================================================
 // Controladores existentes
 // ======================================================
 
 // Obtener todas las solicitudes (solo admin)
-export const getVacationRequests = async (req: Request, res: Response): Promise<void> => {
+export const getVacationRequests = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const requests = await VacationRequest.find().populate('user', 'name lastName email');
+    const requests = await VacationRequest.find().populate(
+      "user",
+      "name lastName email",
+    );
     res.status(200).json(requests);
   } catch (error) {
-    console.error('Error al obtener solicitudes de vacaciones:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al obtener solicitudes de vacaciones:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
 // Crear nueva solicitud (trabajador)
-export const createVacationRequest = async (req: Request, res: Response): Promise<void> => {
+export const createVacationRequest = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = (req as any).userId; // del token
     const { startDate, endDate } = req.body;
 
     if (!startDate || !endDate) {
-      res.status(400).json({ message: 'Las fechas de inicio y fin son obligatorias' });
+      res
+        .status(400)
+        .json({ message: "Las fechas de inicio y fin son obligatorias" });
       return;
     }
 
@@ -112,7 +125,7 @@ export const createVacationRequest = async (req: Request, res: Response): Promis
       user: new mongoose.Types.ObjectId(userId),
       startDate,
       endDate,
-      status: 'pending',
+      status: "pending",
       requestedAt: new Date(),
     });
 
@@ -120,17 +133,25 @@ export const createVacationRequest = async (req: Request, res: Response): Promis
 
     res.status(201).json(newRequest);
   } catch (error) {
-    console.error('Error al crear solicitud de vacaciones:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al crear solicitud de vacaciones:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
 // Actualizar solicitud (admin): estado, alternativa, nota
-export const updateVacationRequest = async (req: Request, res: Response): Promise<void> => {
+export const updateVacationRequest = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   const { id } = req.params;
-  const { status, adminOptionStartDate, adminOptionEndDate, adminNote } = req.body;
+  const { status, adminOptionStartDate, adminOptionEndDate, adminNote } =
+    req.body;
 
-  let acceptedRange: { userId: string; startISO: string; endISO: string } | null = null;
+  let acceptedRange: {
+    userId: string;
+    startISO: string;
+    endISO: string;
+  } | null = null;
   const session = await mongoose.startSession();
 
   try {
@@ -138,55 +159,64 @@ export const updateVacationRequest = async (req: Request, res: Response): Promis
       // 1) Cargar la solicitud dentro de la transacción
       const request = await VacationRequest.findById(id).session(session);
       if (!request) {
-        res.status(404).json({ message: 'Solicitud no encontrada' });
+        res.status(404).json({ message: "Solicitud no encontrada" });
         // lanzamos para abortar la tx sin duplicar respuestas
-        throw new Error('__ABORT__');
+        throw new Error("__ABORT__");
       }
 
       // 2) Validación de capacidad SOLO si se va a aceptar
-      if (status === 'accepted') {
-        const maxPerDay = await getMaxPerDayForDate(new Date(request.startDate));
+      if (status === "accepted") {
+        const maxPerDay = await getMaxPerDayForDate(
+          new Date(request.startDate),
+        );
         const overDays = await findOverCapacityDays(
           VacationRequest,
           request.startDate,
           request.endDate,
           maxPerDay,
-          request._id.toString()
+          request._id.toString(),
         );
 
         if (overDays.length > 0) {
           res.status(409).json({
-            code: 'capacity_exceeded',
-            message: 'Capacidad diaria alcanzada para uno o más días del rango.',
+            code: "capacity_exceeded",
+            message:
+              "Capacidad diaria alcanzada para uno o más días del rango.",
             days: overDays, // ISO (00:00) de los días bloqueados
           });
           // abortar transacción sin guardar cambios
-          throw new Error('__ABORT__');
+          throw new Error("__ABORT__");
         }
       }
 
       // 3) Actualizar campos permitidos (con type guard para evitar warning de TS)
-      if (typeof status !== 'undefined') {
+      if (typeof status !== "undefined") {
         if (isVacationStatus(status)) {
           request.status = status;
         } else {
-          res.status(400).json({ message: 'Estado inválido' });
-          throw new Error('__ABORT__');
+          res.status(400).json({ message: "Estado inválido" });
+          throw new Error("__ABORT__");
         }
       }
 
-      if (adminOptionStartDate) request.adminOptionStartDate = new Date(adminOptionStartDate);
-      if (adminOptionEndDate) request.adminOptionEndDate = new Date(adminOptionEndDate);
-      if (typeof adminNote === 'string') request.adminNote = adminNote;
+      if (adminOptionStartDate)
+        request.adminOptionStartDate = new Date(adminOptionStartDate);
+      if (adminOptionEndDate)
+        request.adminOptionEndDate = new Date(adminOptionEndDate);
+      if (typeof adminNote === "string") request.adminNote = adminNote;
 
       // 4) Guardar dentro de la transacción
       await request.save({ session });
 
       // 5) Si el estado final es 'accepted', preparamos el rango para limpiar Diensts
-      if (request.status === 'accepted') {
+      if (request.status === "accepted") {
         const userIdStr = String(request.user);
-        const startISO = DateTime.fromJSDate(request.startDate, { zone: ZONE }).toISODate()!;
-        const endISO   = DateTime.fromJSDate(request.endDate,   { zone: ZONE }).toISODate()!;
+        const startISO = DateTime.fromJSDate(request.startDate, {
+          zone: ZONE,
+        }).toISODate()!;
+        const endISO = DateTime.fromJSDate(request.endDate, {
+          zone: ZONE,
+        }).toISODate()!;
         acceptedRange = { userId: userIdStr, startISO, endISO };
       }
 
@@ -200,68 +230,82 @@ export const updateVacationRequest = async (req: Request, res: Response): Promis
         await clearUserFromDienstsInRange(acceptedRange);
       } catch (clearErr) {
         console.error(
-          '⚠️ Error al desasignar usuario de Diensts tras aceptar vacaciones:',
-          clearErr
+          "⚠️ Error al desasignar usuario de Diensts tras aceptar vacaciones:",
+          clearErr,
         );
       }
     }
   } catch (err: any) {
-    if (err?.message === '__ABORT__') {
+    if (err?.message === "__ABORT__") {
       // ya respondimos dentro de la tx (404 o 409)
       return;
     }
-    console.error('❌ Error al actualizar solicitud de vacaciones:', err);
+    console.error("❌ Error al actualizar solicitud de vacaciones:", err);
     if (!res.headersSent) {
-      res.status(500).json({ message: 'Error interno del servidor' });
+      res.status(500).json({ message: "Error interno del servidor" });
     }
   } finally {
     session.endSession();
   }
 };
 
-
-
 // Responder a fecha alternativa (trabajador)
-export const respondToAlternativeDate = async (req: Request, res: Response): Promise<void> => {
+export const respondToAlternativeDate = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = (req as any).userId;
     const { id } = req.params;
     const { accept } = req.body; // boolean
 
-    const request = await VacationRequest.findById(id) as IVacationRequestModel | null;
+    const request = (await VacationRequest.findById(
+      id,
+    )) as IVacationRequestModel | null;
     if (!request) {
-      res.status(404).json({ message: 'Solicitud no encontrada' });
+      res.status(404).json({ message: "Solicitud no encontrada" });
       return;
     }
 
     if (request.user.toString() !== userId) {
-      res.status(403).json({ message: 'No autorizado para responder a esta solicitud' });
+      res
+        .status(403)
+        .json({ message: "No autorizado para responder a esta solicitud" });
       return;
     }
 
-    let acceptedRange: { userId: string; startISO: string; endISO: string } | null = null;
+    let acceptedRange: {
+      userId: string;
+      startISO: string;
+      endISO: string;
+    } | null = null;
 
     if (accept) {
       // Usuario acepta la alternativa → actualizar fechas y estado
-      if (request.adminOptionStartDate) request.startDate = request.adminOptionStartDate;
-      if (request.adminOptionEndDate) request.endDate = request.adminOptionEndDate;
-      request.status = 'accepted';
+      if (request.adminOptionStartDate)
+        request.startDate = request.adminOptionStartDate;
+      if (request.adminOptionEndDate)
+        request.endDate = request.adminOptionEndDate;
+      request.status = "accepted";
       request.adminOptionStartDate = undefined;
       request.adminOptionEndDate = undefined;
       request.adminNote = undefined;
 
       // Preparar rango para limpiar Diensts
-      const startISO = DateTime.fromJSDate(request.startDate, { zone: ZONE }).toISODate()!;
-      const endISO   = DateTime.fromJSDate(request.endDate,   { zone: ZONE }).toISODate()!;
+      const startISO = DateTime.fromJSDate(request.startDate, {
+        zone: ZONE,
+      }).toISODate()!;
+      const endISO = DateTime.fromJSDate(request.endDate, {
+        zone: ZONE,
+      }).toISODate()!;
       acceptedRange = {
         userId: String(request.user),
         startISO,
         endISO,
       };
-
     } else {
       // Usuario rechaza → cancelar
-      request.status = 'cancelled';
+      request.status = "cancelled";
       request.adminOptionStartDate = undefined;
       request.adminOptionEndDate = undefined;
       request.adminNote = undefined;
@@ -273,48 +317,61 @@ export const respondToAlternativeDate = async (req: Request, res: Response): Pro
     if (acceptedRange) {
       try {
         const clearResult = await clearUserFromDienstsInRange(acceptedRange);
-        console.log('🧹 Vacaciones (alternativa) limpiadas en Diensts:', clearResult);
+        console.log(
+          "🧹 Vacaciones (alternativa) limpiadas en Diensts:",
+          clearResult,
+        );
       } catch (err) {
-        console.error('❌ Error limpiando Diensts tras aceptar alternativa:', err);
+        console.error(
+          "❌ Error limpiando Diensts tras aceptar alternativa:",
+          err,
+        );
       }
     }
 
     res.status(200).json(request);
-
   } catch (error) {
-    console.error('Error al responder a fecha alternativa:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al responder a fecha alternativa:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
-
-export const getUserVacationRequests = async (req: Request, res: Response): Promise<void> => {
+export const getUserVacationRequests = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = (req as any).userId; // obtener id desde el token (middleware authenticateToken)
-    const requests = await VacationRequest.find({ user: userId }).populate('user', 'name lastName email');
+    const requests = await VacationRequest.find({ user: userId }).populate(
+      "user",
+      "name lastName email",
+    );
     res.status(200).json(requests);
   } catch (error) {
-    console.error('Error al obtener solicitudes del usuario:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al obtener solicitudes del usuario:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
-export const deleteVacationRequest = async (req: Request, res: Response): Promise<void> => {
+export const deleteVacationRequest = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { id } = req.params;
     const request = await VacationRequest.findById(id);
 
     if (!request) {
-      res.status(404).json({ message: 'Solicitud no encontrada' });
+      res.status(404).json({ message: "Solicitud no encontrada" });
       return;
     }
 
     await request.deleteOne();
 
-    res.status(200).json({ message: 'Solicitud eliminada correctamente' });
+    res.status(200).json({ message: "Solicitud eliminada correctamente" });
   } catch (error) {
-    console.error('Error al eliminar solicitud de vacaciones:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al eliminar solicitud de vacaciones:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -324,16 +381,20 @@ export const deleteVacationRequest = async (req: Request, res: Response): Promis
  * - status por query (opcional), por defecto 'pending'
  * - se usa conteo derivado del propio módulo (sin duplicar notificaciones)
  */
-export const getVacationPendingCount = async (req: Request, res: Response): Promise<void> => {
+export const getVacationPendingCount = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const rawStatus = typeof req.query.status === 'string' ? req.query.status : 'pending';
+    const rawStatus =
+      typeof req.query.status === "string" ? req.query.status : "pending";
     const status = rawStatus.toLowerCase();
 
     const count = await VacationRequest.countDocuments({ status });
     res.status(200).json({ count });
   } catch (error) {
-    console.error('Error al contar solicitudes de vacaciones:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al contar solicitudes de vacaciones:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -347,11 +408,14 @@ export const getVacationPendingCount = async (req: Request, res: Response): Prom
 //   vacationUntilInRange?: string; // 'YYYY-MM-DD' (acotado al rango solicitado)
 // }}
 // ======================================================
-export const checkVacationsInRange = async (req: Request, res: Response): Promise<void> => {
+export const checkVacationsInRange = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     // Helper local para 'YYYY-MM-DD' en Europe/Berlin
     const fmtYmdBerlin = (d: DateTime): string =>
-      d.setZone(ZONE).toFormat('yyyy-LL-dd');
+      d.setZone(ZONE).toFormat("yyyy-LL-dd");
 
     const { userIds, fromISO, toISO } = req.body as {
       userIds?: string[];
@@ -360,16 +424,21 @@ export const checkVacationsInRange = async (req: Request, res: Response): Promis
     };
 
     if (!Array.isArray(userIds) || userIds.length === 0 || !fromISO || !toISO) {
-      res.status(400).json({ message: 'Parámetros inválidos. Se requieren userIds[], fromISO y toISO.' });
+      res
+        .status(400)
+        .json({
+          message:
+            "Parámetros inválidos. Se requieren userIds[], fromISO y toISO.",
+        });
       return;
     }
 
     // Normalizamos el rango en zona Berlín [00:00..23:59]
-    const fromDT = DateTime.fromISO(fromISO, { zone: ZONE }).startOf('day');
-    const toDT   = DateTime.fromISO(toISO,   { zone: ZONE }).endOf('day');
+    const fromDT = DateTime.fromISO(fromISO, { zone: ZONE }).startOf("day");
+    const toDT = DateTime.fromISO(toISO, { zone: ZONE }).endOf("day");
 
     if (!fromDT.isValid || !toDT.isValid || fromDT > toDT) {
-      res.status(400).json({ message: 'Rango de fechas inválido.' });
+      res.status(400).json({ message: "Rango de fechas inválido." });
       return;
     }
 
@@ -377,19 +446,19 @@ export const checkVacationsInRange = async (req: Request, res: Response): Promis
 
     // Solo solicitudes ACCEPTED que SOLAPEN el rango
     const requests = await VacationRequest.find({
-      status: 'accepted',
+      status: "accepted",
       user: { $in: userObjectIds },
       startDate: { $lte: toDT.toJSDate() },
       endDate: { $gte: fromDT.toJSDate() },
     })
-      .select('user startDate endDate')
+      .select("user startDate endDate")
       .lean();
 
     type Flags = {
       hasVacationInRange: boolean;
       vacationStartInRange?: string; // recortado a la semana
       vacationUntilInRange?: string;
-      vacationStartFull?: string;    // rango real completo
+      vacationStartFull?: string; // rango real completo
       vacationUntilFull?: string;
     };
 
@@ -403,12 +472,16 @@ export const checkVacationsInRange = async (req: Request, res: Response): Promis
     for (const r of requests) {
       const uid = String(r.user);
 
-      const reqStart = DateTime.fromJSDate(r.startDate as Date, { zone: ZONE }).startOf('day');
-      const reqEnd   = DateTime.fromJSDate(r.endDate as Date,   { zone: ZONE }).endOf('day');
+      const reqStart = DateTime.fromJSDate(r.startDate as Date, {
+        zone: ZONE,
+      }).startOf("day");
+      const reqEnd = DateTime.fromJSDate(r.endDate as Date, {
+        zone: ZONE,
+      }).endOf("day");
 
       // Rango solapado con la semana (para palmera/apagado)
       const overlapStart = reqStart < fromDT ? fromDT : reqStart;
-      const overlapEnd   = reqEnd   > toDT   ? toDT   : reqEnd;
+      const overlapEnd = reqEnd > toDT ? toDT : reqEnd;
       if (overlapStart > overlapEnd) continue;
 
       const prev = result[uid];
@@ -423,21 +496,31 @@ export const checkVacationsInRange = async (req: Request, res: Response): Promis
         };
       } else {
         // Unimos: min/max para IN-RANGE y para FULL
-        const prevInStart = DateTime.fromISO(prev.vacationStartInRange!, { zone: ZONE }).startOf('day');
-        const prevInEnd   = DateTime.fromISO(prev.vacationUntilInRange!, { zone: ZONE }).endOf('day');
+        const prevInStart = DateTime.fromISO(prev.vacationStartInRange!, {
+          zone: ZONE,
+        }).startOf("day");
+        const prevInEnd = DateTime.fromISO(prev.vacationUntilInRange!, {
+          zone: ZONE,
+        }).endOf("day");
 
-        const newInStart = prevInStart < overlapStart ? prevInStart : overlapStart;
-        const newInEnd   = prevInEnd   > overlapEnd   ? prevInEnd   : overlapEnd;
+        const newInStart =
+          prevInStart < overlapStart ? prevInStart : overlapStart;
+        const newInEnd = prevInEnd > overlapEnd ? prevInEnd : overlapEnd;
 
         const prevFullStart = prev.vacationStartFull
-          ? DateTime.fromISO(prev.vacationStartFull, { zone: ZONE }).startOf('day')
+          ? DateTime.fromISO(prev.vacationStartFull, { zone: ZONE }).startOf(
+              "day",
+            )
           : reqStart;
         const prevFullEnd = prev.vacationUntilFull
-          ? DateTime.fromISO(prev.vacationUntilFull, { zone: ZONE }).endOf('day')
+          ? DateTime.fromISO(prev.vacationUntilFull, { zone: ZONE }).endOf(
+              "day",
+            )
           : reqEnd;
 
-        const newFullStart = prevFullStart < reqStart ? prevFullStart : reqStart;
-        const newFullEnd   = prevFullEnd   > reqEnd   ? prevFullEnd   : reqEnd;
+        const newFullStart =
+          prevFullStart < reqStart ? prevFullStart : reqStart;
+        const newFullEnd = prevFullEnd > reqEnd ? prevFullEnd : reqEnd;
 
         result[uid] = {
           hasVacationInRange: true,
@@ -451,12 +534,10 @@ export const checkVacationsInRange = async (req: Request, res: Response): Promis
 
     res.status(200).json(result);
   } catch (error) {
-    console.error('Error en checkVacationsInRange:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error en checkVacationsInRange:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
-
-
 
 // ======================================================
 // NUEVO: Disponibilidad mensual (enmascara blackouts como capacidad)
@@ -465,13 +546,20 @@ export const checkVacationsInRange = async (req: Request, res: Response): Promis
 // GET /vacations/availability?year=YYYY&month=MM
 // Respuesta: { year, month, maxPerDay, days:[{ day, approvedCount, pendingCount, remaining, state }] }
 // state: "green" | "yellow" | "red"
-export const getAvailability = async (req: Request, res: Response): Promise<void> => {
+export const getAvailability = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const year = Number(req.query.year);
     const month = Number(req.query.month); // 1..12
 
     if (!year || !month || month < 1 || month > 12) {
-      res.status(400).json({ message: 'Parámetros inválidos: year y month (1..12) son requeridos' });
+      res
+        .status(400)
+        .json({
+          message: "Parámetros inválidos: year y month (1..12) son requeridos",
+        });
       return;
     }
 
@@ -485,11 +573,11 @@ export const getAvailability = async (req: Request, res: Response): Promise<void
 
     // Trae solicitudes que solapan el mes y que afectan a la disponibilidad visual
     const requests = await VacationRequest.find({
-      status: { $in: ['pending', 'accepted'] }, // 'option_sent' la puedes añadir si la consideras "pendiente"
+      status: { $in: ["pending", "accepted"] }, // 'option_sent' la puedes añadir si la consideras "pendiente"
       startDate: { $lte: monthEnd },
       endDate: { $gte: monthStart },
     })
-      .select('startDate endDate status user')
+      .select("startDate endDate status user")
       .lean();
 
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -498,21 +586,23 @@ export const getAvailability = async (req: Request, res: Response): Promise<void
       approvedCount: number;
       pendingCount: number;
       remaining: number; // restante en base a ACEPTADAS (nuevo significado)
-      state: 'green' | 'yellow' | 'red';
+      state: "green" | "yellow" | "red";
     }[] = [];
 
     for (let d = 1; d <= daysInMonth; d++) {
       const current = new Date(year, month - 1, d);
 
       // Blackout → enmascarar como capacidad llena
-      const isBlackout = blackouts.some((r) => isInRange(current, r.startDate, r.endDate));
+      const isBlackout = blackouts.some((r) =>
+        isInRange(current, r.startDate, r.endDate),
+      );
       if (isBlackout) {
         days.push({
           day: d,
           approvedCount: maxPerDay,
           pendingCount: 0,
           remaining: 0,
-          state: 'red',
+          state: "red",
         });
         continue;
       }
@@ -523,8 +613,8 @@ export const getAvailability = async (req: Request, res: Response): Promise<void
 
       for (const r of requests) {
         if (isInRange(current, r.startDate as Date, r.endDate as Date)) {
-          if (r.status === 'accepted') approvedCount += 1;
-          else if (r.status === 'pending') pendingCount += 1;
+          if (r.status === "accepted") approvedCount += 1;
+          else if (r.status === "pending") pendingCount += 1;
         }
       }
 
@@ -532,32 +622,38 @@ export const getAvailability = async (req: Request, res: Response): Promise<void
       const remaining = Math.max(0, maxPerDay - approvedCount);
 
       // 🔴 NUEVAS reglas de color
-      const state: 'green' | 'yellow' | 'red' =
-        approvedCount >= maxPerDay ? 'red' :
-          pendingCount > 0 ? 'yellow' :
-            'green';
+      const state: "green" | "yellow" | "red" =
+        approvedCount >= maxPerDay
+          ? "red"
+          : pendingCount > 0
+            ? "yellow"
+            : "green";
 
       days.push({ day: d, approvedCount, pendingCount, remaining, state });
     }
 
     res.status(200).json({ year, month, maxPerDay, days });
   } catch (error) {
-    console.error('Error al calcular disponibilidad:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al calcular disponibilidad:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
-
 
 // ======================================================
 // NUEVO: Config mensual (admin)
 // ======================================================
 
 // GET /vacations/month-config?monthKey=YYYY-MM
-export const getMonthConfig = async (req: Request, res: Response): Promise<void> => {
+export const getMonthConfig = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const monthKey = String(req.query.monthKey || '');
+    const monthKey = String(req.query.monthKey || "");
     if (!monthKey || !/^\d{4}-\d{2}$/.test(monthKey)) {
-      res.status(400).json({ message: 'monthKey inválido. Formato "YYYY-MM".' });
+      res
+        .status(400)
+        .json({ message: 'monthKey inválido. Formato "YYYY-MM".' });
       return;
     }
     const cfg = await VacationMonthConfig.findOne({ monthKey }).lean();
@@ -566,16 +662,19 @@ export const getMonthConfig = async (req: Request, res: Response): Promise<void>
         monthKey,
         maxPerDay: DEFAULT_MAX_PER_DAY,
         blackouts: [],
-      }
+      },
     );
   } catch (error) {
-    console.error('Error al obtener config mensual:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al obtener config mensual:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
 // POST /vacations/month-config  { monthKey, maxPerDay, blackouts:[{startDate,endDate}] }
-export const upsertMonthConfig = async (req: Request, res: Response): Promise<void> => {
+export const upsertMonthConfig = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { monthKey, maxPerDay, blackouts } = req.body as {
       monthKey: string;
@@ -584,12 +683,15 @@ export const upsertMonthConfig = async (req: Request, res: Response): Promise<vo
     };
 
     if (!monthKey || !/^\d{4}-\d{2}$/.test(monthKey)) {
-      res.status(400).json({ message: 'monthKey inválido. Formato "YYYY-MM".' });
+      res
+        .status(400)
+        .json({ message: 'monthKey inválido. Formato "YYYY-MM".' });
       return;
     }
 
     const payload: Partial<IVacationMonthConfig> = { monthKey };
-    if (typeof maxPerDay === 'number' && maxPerDay >= 0) payload.maxPerDay = maxPerDay;
+    if (typeof maxPerDay === "number" && maxPerDay >= 0)
+      payload.maxPerDay = maxPerDay;
     if (Array.isArray(blackouts)) {
       payload.blackouts = blackouts.map((r) => ({
         startDate: new Date(r.startDate),
@@ -600,12 +702,12 @@ export const upsertMonthConfig = async (req: Request, res: Response): Promise<vo
     const updated = await VacationMonthConfig.findOneAndUpdate(
       { monthKey },
       payload,
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, new: true, setDefaultsOnInsert: true },
     );
 
     res.status(200).json(updated);
   } catch (error) {
-    console.error('Error al guardar config mensual:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al guardar config mensual:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };

@@ -15,7 +15,7 @@ const notifySummariesChanged = () =>
 // Helper ISO yyyy-mm-dd
 const toISODate = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
+    d.getDate(),
   ).padStart(2, "0")}`;
 
 const AdminSummariesPage = () => {
@@ -28,7 +28,7 @@ const AdminSummariesPage = () => {
   // mes visible en el grid: mes actual
   const today = new Date();
   const [viewDate, setViewDate] = useState<Date>(
-    new Date(today.getFullYear(), today.getMonth(), 1)
+    new Date(today.getFullYear(), today.getMonth(), 1),
   );
 
   const [summaries, setSummaries] = useState<WorkdaySummary[]>([]);
@@ -72,7 +72,7 @@ const AdminSummariesPage = () => {
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener(
       ADMIN_SUMMARIES_CHANGED_EVENT as any,
-      onChanged as EventListener
+      onChanged as EventListener,
     );
 
     return () => {
@@ -80,7 +80,7 @@ const AdminSummariesPage = () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener(
         ADMIN_SUMMARIES_CHANGED_EVENT as any,
-        onChanged as EventListener
+        onChanged as EventListener,
       );
     };
   }, [fetchSummaries]);
@@ -111,7 +111,8 @@ const AdminSummariesPage = () => {
         typeof (s as any).isReviewed === "undefined";
 
       if (isUnread) {
-        if (!dayUnreadGroups.has(dayKey)) dayUnreadGroups.set(dayKey, new Set());
+        if (!dayUnreadGroups.has(dayKey))
+          dayUnreadGroups.set(dayKey, new Set());
         dayUnreadGroups.get(dayKey)!.add(groupKey);
       }
     }
@@ -153,12 +154,12 @@ const AdminSummariesPage = () => {
     () =>
       selectedDate
         ? summaries
-          .filter((s) => s.date === selectedDate)
-          .sort(
-            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-          )
+            .filter((s) => s.date === selectedDate)
+            .sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+            )
         : [],
-    [summaries, selectedDate]
+    [summaries, selectedDate],
   );
 
   // ✅ Marcar como revisado TODOS los resúmenes "unread" dentro de un grupo
@@ -170,7 +171,7 @@ const AdminSummariesPage = () => {
         .filter(
           (s: any) =>
             (s as any).isReviewed === false ||
-            typeof (s as any).isReviewed === "undefined"
+            typeof (s as any).isReviewed === "undefined",
         )
         .map((s: any) => s._id as string | undefined)
         .filter(Boolean) as string[];
@@ -179,7 +180,9 @@ const AdminSummariesPage = () => {
 
       try {
         // 1) backend: marcar todos como leídos
-        await Promise.all(unreadIds.map((id) => markSummaryReviewed(token, id)));
+        await Promise.all(
+          unreadIds.map((id) => markSummaryReviewed(token, id)),
+        );
 
         // 2) refrescar contadores/cambios globales (si lo usas en badges)
         notifySummariesChanged();
@@ -190,21 +193,24 @@ const AdminSummariesPage = () => {
           prev.map((item: any) =>
             unreadIds.includes(item?._id)
               ? ({ ...item, isReviewed: true, reviewedAt } as any)
-              : item
-          )
+              : item,
+          ),
         );
       } catch (err) {
         console.warn("No se pudieron marcar como revisados:", err);
       }
     },
-    [token]
+    [token],
   );
 
   // 👉 Recibimos un GRUPO de resúmenes (mismo Dienst: parciales + final).
   //    Marcamos como leído y abrimos el modal de detalle.
   const handleSelectDaySummaryGroup = async (group: WorkdaySummary[]) => {
     // eslint-disable-next-line no-console
-    console.log("Grupo de resúmenes seleccionado desde DaySummariesModal:", group);
+    console.log(
+      "Grupo de resúmenes seleccionado desde DaySummariesModal:",
+      group,
+    );
 
     await markGroupAsReviewed(group);
 
@@ -214,7 +220,9 @@ const AdminSummariesPage = () => {
   };
 
   if (loading) {
-    return <p className="text-center mt-8">{t("pages.summaries.admin.loading")}</p>;
+    return (
+      <p className="text-center mt-8">{t("pages.summaries.admin.loading")}</p>
+    );
   }
 
   return (

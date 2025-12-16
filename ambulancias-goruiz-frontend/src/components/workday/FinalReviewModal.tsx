@@ -34,17 +34,19 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
 
   const [note, setNote] = useState<string>("");
   const [finalKmLocal, setFinalKmLocal] = useState<number | "">(
-    finalKm === "" ? "" : Number(finalKm)
+    finalKm === "" ? "" : Number(finalKm),
   );
   const [hasIssue, setHasIssue] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [issueData, setIssueData] = useState<any | null>(null); // guardamos la avería sin auto-enviar
   const [isSending, setIsSending] = useState(false);
 
-
   const parsedInitialKm = Number(initialKm);
   const parsedFinalKm = finalKmLocal === "" ? 0 : Number(finalKmLocal);
-  const totalEffectivePatients = calculateEffectivePatients(trips, assignedDay.date);
+  const totalEffectivePatients = calculateEffectivePatients(
+    trips,
+    assignedDay.date,
+  );
 
   if (!isOpen) return null;
 
@@ -79,7 +81,6 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
     }
   };
 
-
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-5xl overflow-y-auto max-h-[90vh] space-y-6">
@@ -89,17 +90,19 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
 
         <ReviewSummary
           assignedDay={assignedDay}
-          ambulanceNumber={ambulanceNumber ?? t("pages.workday.common.unknownAmbulance")}
+          ambulanceNumber={
+            ambulanceNumber ?? t("pages.workday.common.unknownAmbulance")
+          }
           initialKm={parsedInitialKm}
           finalKm={parsedFinalKm}
           trips={trips}
           dense
         />
 
-
-
         <p className="text-center font-semibold text-green-700">
-          {t("pages.workday.final.totalPatients", { count: totalEffectivePatients })}
+          {t("pages.workday.final.totalPatients", {
+            count: totalEffectivePatients,
+          })}
         </p>
 
         <textarea
@@ -187,9 +190,10 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
                 : "bg-blue-600 text-white hover:bg-blue-700",
             ].join(" ")}
           >
-            {isSending ? (t("common.sending", "Enviando...") as string) : t("pages.workday.final.actions.sendToAdmin")}
+            {isSending
+              ? (t("common.sending", "Enviando...") as string)
+              : t("pages.workday.final.actions.sendToAdmin")}
           </button>
-
         </div>
       </div>
     </div>
