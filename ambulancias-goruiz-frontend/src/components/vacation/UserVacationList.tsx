@@ -99,18 +99,18 @@ const UserVacationList: React.FC<Props> = ({
     const title =
       req.status === "cancelled"
         ? t(
-            "pages.vacations.workerList.adminMessageTitle.cancelled",
-            "Mensaje del administrador (cancelación)",
-          )
+          "pages.vacations.workerList.adminMessageTitle.cancelled",
+          "Mensaje del administrador (cancelación)",
+        )
         : hasProposal
           ? t(
-              "pages.vacations.workerList.adminMessageTitle.option",
-              "Propuesta del administrador",
-            )
+            "pages.vacations.workerList.adminMessageTitle.option",
+            "Propuesta del administrador",
+          )
           : t(
-              "pages.vacations.workerList.adminMessageTitle.default",
-              "Mensaje del administrador",
-            );
+            "pages.vacations.workerList.adminMessageTitle.default",
+            "Mensaje del administrador",
+          );
 
     setMsgModal({
       open: true,
