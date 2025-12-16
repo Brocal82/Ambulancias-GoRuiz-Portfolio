@@ -126,7 +126,9 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
           }
         };
       }
-    } catch { /* noop */ }
+    } catch {
+      /* noop */
+    }
 
     // 3) storage fallback
     const storageHandler = (ev: StorageEvent) => {
@@ -134,14 +136,20 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
       try {
         const payload = JSON.parse(ev.newValue);
         if (payload?.year && payload?.month) scheduleRefresh(payload.year, payload.month);
-      } catch { /* noop */ }
+      } catch {
+        /* noop */
+      }
     };
     window.addEventListener('storage', storageHandler);
 
     return () => {
       window.removeEventListener('vacation-availability-invalidated', customHandler as EventListener);
       window.removeEventListener('storage', storageHandler);
-      try { bc?.close?.(); } catch { /* noop */ }
+      try {
+        bc?.close?.();
+      } catch {
+        /* noop */
+      }
       if (refreshTimerRef.current) {
         window.clearTimeout(refreshTimerRef.current);
         refreshTimerRef.current = null;
@@ -151,10 +159,9 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
 
   const getDayState = (day: number | null): DayState | null => {
     if (!availability || day === null) return null;
-    const rec = availability.days.find(d => d.day === day);
+    const rec = availability.days.find((d) => d.day === day);
     return rec ? rec.state : 'green';
   };
-
 
   // =============== BORDES CONTINUOS (solo rangos aceptados recibidos por props) ===============
 
@@ -250,18 +257,23 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-2 sm:p-4">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+
       <div
         className="relative z-10 w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 flex flex-col max-h-[90vh]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="worker-availability-month-title"
       >
-        {/* Header */}
+        {/* Header (mismo estilo que admin) */}
         <div className="sticky top-0 z-10 bg-white border-b border-slate-200 p-3">
           <div className="flex items-center gap-2">
-            <h3 id="worker-availability-month-title" className="text-base font-semibold text-slate-900 truncate">
+            <h3
+              id="worker-availability-month-title"
+              className="text-base font-semibold text-slate-900 truncate"
+            >
               {monthIndex !== null ? `${fmtMonth(year, monthIndex)} · ${year}` : ''}
             </h3>
+
             <button
               aria-label={t('pages.vacations.monthModal.close')}
               onClick={onClose}
@@ -274,78 +286,93 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          <div className="flex items-center gap-2 text-[11px]">
-            <span className="inline-flex items-center gap-1">
-              <span className="inline-block h-2 w-2 rounded bg-green-500" />
-              {t('pages.vacations.monthGrid.legend.available')}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="inline-block h-2 w-2 rounded bg-yellow-400" />
-              {t('pages.vacations.monthGrid.legend.requested')}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="inline-block h-2 w-2 rounded bg-red-500" />
-              {t('pages.vacations.monthGrid.legend.full')}
-            </span>
-
-            {availability && (
-              <span className="ml-auto text-slate-500">
-                {t('pages.vacations.adminPage.capacity', { count: availability.maxPerDay })}
+          {/* Caja del calendario (coherente con admin) */}
+          <div className="rounded-xl ring-1 ring-slate-200 bg-white p-2">
+            {/* Leyenda estilo “bajas” (solo visual) */}
+            <div className="mb-2 flex items-center gap-2 text-[11px] text-slate-600">
+              <span className="inline-flex items-center gap-2">
+                <span className="h-3 w-3 rounded border-2 border-emerald-300" />
+                {t('pages.vacations.monthGrid.legend.available')}
               </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="h-3 w-3 rounded border-2 border-amber-300" />
+                {t('pages.vacations.monthGrid.legend.requested')}
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="h-3 w-3 rounded border-2 border-rose-300" />
+                {t('pages.vacations.monthGrid.legend.full')}
+              </span>
+
+              {availability && (
+                <span className="ml-auto text-slate-500">
+                  {t('pages.vacations.adminPage.capacity', { count: availability.maxPerDay })}
+                </span>
+              )}
+            </div>
+
+            {/* Week headers L–D */}
+            <div className="grid grid-cols-7 text-center text-[10px] uppercase tracking-wide text-slate-500 mb-0.5">
+              {weekdayHeaders.map((w, i) => (
+                <div key={i} className="py-0.5">
+                  {w}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar grid */}
+            <div className="grid grid-cols-7 gap-0.5">
+              {availLoading &&
+                Array.from({ length: 42 }).map((_, i) => (
+                  <div
+                    key={`sk-${i}`}
+                    className="h-6 sm:h-7 md:h-8 rounded bg-slate-100 animate-pulse"
+                  />
+                ))}
+
+              {!availLoading &&
+                calendarCells.map((cell, idx) => {
+                  if (cell === null) {
+                    return (
+                      <div
+                        key={`empty-${idx}`}
+                        className="h-6 sm:h-7 md:h-8 rounded bg-transparent"
+                      />
+                    );
+                  }
+                  const state = getDayState(cell);
+                  const color =
+                  state === 'red'
+                    ? 'bg-rose-50 text-slate-800 border-2 border-rose-300'
+                    : state === 'yellow'
+                      ? 'bg-amber-50 text-slate-800 border-2 border-amber-300'
+                      : 'bg-emerald-50 text-slate-800 border-2 border-emerald-300';
+
+
+                  const borderCls = borderMap[cell] ?? '';
+
+                  return (
+                    <div
+                      key={`d-${cell}-${idx}`}
+                      className={[
+                        'h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none',
+                        color,
+                        borderCls,
+                      ].join(' ')}
+                      title={`${cell}`}
+                      aria-label={`${cell}`}
+                    >
+                      {cell}
+                    </div>
+                  );
+                })}
+            </div>
+
+            {availError && (
+              <p className="mt-2 text-[11px] text-rose-600">
+                {t('common.loadError', 'No se pudo cargar la disponibilidad.')}
+              </p>
             )}
           </div>
-
-          {/* Week headers L–D */}
-          <div className="grid grid-cols-7 text-center text-[10px] uppercase tracking-wide text-slate-500 mb-0.5">
-            {weekdayHeaders.map((w, i) => (
-              <div key={i} className="py-0.5">{w}</div>
-            ))}
-          </div>
-
-          {/* Calendar grid (aplicamos borderMap en cada día) */}
-          <div className="grid grid-cols-7 gap-0.5">
-            {availLoading &&
-              Array.from({ length: 42 }).map((_, i) => (
-                <div key={`sk-${i}`} className="h-6 sm:h-7 md:h-8 rounded bg-slate-100 animate-pulse" />
-              ))}
-
-            {!availLoading &&
-              calendarCells.map((cell, idx) => {
-                if (cell === null) {
-                  return <div key={`empty-${idx}`} className="h-6 sm:h-7 md:h-8 rounded bg-transparent" />;
-                }
-                const state = getDayState(cell);
-                const color =
-                  state === 'red'
-                    ? 'bg-red-500 text-white'
-                    : state === 'yellow'
-                      ? 'bg-yellow-400 text-slate-900'
-                      : 'bg-green-500 text-white';
-
-                const borderCls = borderMap[cell] ?? '';
-
-                return (
-                  <div
-                    key={`d-${cell}-${idx}`}
-                    className={[
-                      'h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none',
-                      color,
-                      borderCls, // 👈 borde(s) del/los rangos aceptados del usuario
-                    ].join(' ')}
-                    title={`${cell}`}
-                    aria-label={`${cell}`}
-                  >
-                    {cell}
-                  </div>
-                );
-              })}
-          </div>
-
-          {availError && (
-            <p className="mt-1 text-[11px] text-rose-600">
-              {t('common.loadError', 'No se pudo cargar la disponibilidad.')}
-            </p>
-          )}
         </div>
 
         {/* Footer */}

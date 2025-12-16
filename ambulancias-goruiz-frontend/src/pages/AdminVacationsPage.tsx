@@ -368,17 +368,19 @@ const AdminVacationRequests = () => {
             {t('pages.vacations.adminPage.title')}
           </h2>
 
-          {/* Grid de meses con navegación de año */}
-          <AdminVacationMonthGrid
-            key={`${gridYear}-${gridRefreshTick}`} // ✅ fuerza rerender cuando cambie la disponibilidad
-            requests={requests}
-            year={gridYear}
-            onYearChange={(y) => setGridYear(y)}
-            onMonthOpen={(monthIdx, y) => {
-              setSelectedMonth(monthIdx);
-              setSelectedYear(y);
-            }}
-          />
+          {/* Bloque con borde (selector año + leyenda + grid) — h2 queda fuera */}
+          <div className="rounded-xl ring-1 ring-slate-200 bg-white p-3 sm:p-4 mb-6">
+            <AdminVacationMonthGrid
+              key={`${gridYear}-${gridRefreshTick}`} // ✅ fuerza rerender cuando cambie la disponibilidad
+              requests={requests}
+              year={gridYear}
+              onYearChange={(y) => setGridYear(y)}
+              onMonthOpen={(monthIdx, y) => {
+                setSelectedMonth(monthIdx);
+                setSelectedYear(y);
+              }}
+            />
+          </div>
 
 
           {/* Modal del mes (abre con mes + AÑO correctos) */}

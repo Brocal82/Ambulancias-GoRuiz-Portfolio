@@ -273,19 +273,37 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString(locale, { timeZone: 'Europe/Berlin' });
 
-  const statusBadge = (status: VacationStatus) => {
-    const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium';
-    switch (status) {
-      case 'accepted':
-        return <span className={`${base} bg-green-100 text-green-700`}>{t('pages.vacations.monthModal.filters.accepted')}</span>;
-      case 'cancelled':
-        return <span className={`${base} bg-red-100 text-red-700`}>{t('pages.vacations.monthModal.filters.cancelled')}</span>;
-      case 'option_sent':
-        return <span className={`${base} bg-blue-100 text-blue-700`}>{t('pages.vacations.monthModal.filters.option_sent')}</span>;
-      default:
-        return <span className={`${base} bg-yellow-100 text-yellow-700`}>{t('pages.vacations.monthModal.filters.pending')}</span>;
-    }
-  };
+const statusBadge = (status: VacationStatus) => {
+  const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium';
+  switch (status) {
+    case 'accepted':
+      return (
+        <span className={`${base} bg-green-100 text-green-700`}>
+          {t('pages.vacations.monthModal.filters.accepted')}
+        </span>
+      );
+    case 'cancelled':
+      return (
+        <span className={`${base} bg-red-100 text-red-700`}>
+          {t('pages.vacations.monthModal.filters.cancelled')}
+        </span>
+      );
+    case 'option_sent':
+      return (
+        <span className={`${base} bg-blue-100 text-blue-700`}>
+          {t('pages.vacations.monthModal.filters.option_sent')}
+        </span>
+      );
+    default:
+      return (
+        <span className={`${base} bg-yellow-100 text-yellow-700`}>
+          {t('pages.vacations.monthModal.filters.pending')}
+        </span>
+      );
+  }
+};
+
+
 
   const handleAccept = async (id: string) => {
     if (!token || monthIndex === null) return;
@@ -575,26 +593,29 @@ const AdminVacationMonthModal: React.FC<Props> = ({
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
             {/* Calendario mini */}
             <div className="rounded-xl ring-1 ring-slate-200 p-2">
-              <div className="mb-1 flex items-center gap-2 text-[10px]">
-                <span className="inline-flex items-center gap-1">
-                  <span className="inline-block h-2 w-2 rounded bg-green-500" />
-                  {t('pages.vacations.monthGrid.legend.available')}
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="inline-block h-2 w-2 rounded bg-yellow-400" />
-                  {t('pages.vacations.monthGrid.legend.requested')}
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="inline-block h-2 w-2 rounded bg-red-500" />
-                  {t('pages.vacations.monthGrid.legend.full')}
-                </span>
+              <div className="mb-1 flex items-center gap-3 text-[10px] text-slate-600">
+  <span className="inline-flex items-center gap-1">
+    <span className="inline-block h-2.5 w-2.5 rounded border-2 border-emerald-300" />
+    {t('pages.vacations.monthGrid.legend.available')}
+  </span>
 
-                {availability && (
-                  <span className="ml-auto text-slate-500">
-                    {t('pages.vacations.adminPage.capacity', { count: availability.maxPerDay })}
-                  </span>
-                )}
-              </div>
+  <span className="inline-flex items-center gap-1">
+    <span className="inline-block h-2.5 w-2.5 rounded border-2 border-amber-300" />
+    {t('pages.vacations.monthGrid.legend.requested')}
+  </span>
+
+  <span className="inline-flex items-center gap-1">
+    <span className="inline-block h-2.5 w-2.5 rounded border-2 border-rose-300" />
+    {t('pages.vacations.monthGrid.legend.full')}
+  </span>
+
+  {availability && (
+    <span className="ml-auto text-slate-500">
+      {t('pages.vacations.adminPage.capacity', { count: availability.maxPerDay })}
+    </span>
+  )}
+</div>
+
 
               <div className="grid grid-cols-7 text-center text-[10px] uppercase tracking-wide text-slate-500 mb-0.5">
                 {weekdayHeaders.map((w, i) => (
@@ -617,10 +638,12 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                     const state = getDayState(cell);
                     const color =
                       state === 'red'
-                        ? 'bg-red-500 text-white'
+                        ? 'bg-rose-50 text-slate-800 border-2 border-rose-300'
                         : state === 'yellow'
-                          ? 'bg-yellow-400 text-slate-900'
-                          : 'bg-green-500 text-white';
+                          ? 'bg-amber-50 text-slate-800 border-2 border-amber-300'
+                          : 'bg-emerald-50 text-slate-800 border-2 border-emerald-300';
+
+
 
                     // 🟣 Bordes exteriores para formar contorno continuo del rango (todas las aceptadas)
                     const borderCls = borderMap[cell] ?? '';
