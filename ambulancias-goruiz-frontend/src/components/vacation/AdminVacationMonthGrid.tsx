@@ -33,6 +33,7 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
   year = new Date().getFullYear(),
   onYearChange,
   onMonthOpen,
+  onMonthClick,
 }) => {
   const { t, i18n } = useTranslation();
 
@@ -47,13 +48,6 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
     setLocalYear(next);
     onYearChange?.(next);
   };
-  const handleYearInput = (val: string) => {
-    const n = Number(val);
-    if (!Number.isNaN(n) && n >= 1900 && n <= 3000) {
-      setLocalYear(n);
-      onYearChange?.(n);
-    }
-  };
 
   const months = getYearMonths(localYear, i18n.language);
   const counts = countRequestsByMonth(requests, localYear);
@@ -62,6 +56,7 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
   const [availabilityByMonth, setAvailabilityByMonth] = useState<
     Record<number, MonthAvailabilitySummary>
   >({});
+
   const initialSummary: MonthAvailabilitySummary = useMemo(
     () => ({ green: 0, yellow: 0, red: 0, maxPerDay: 0, loaded: false }),
     []
@@ -90,12 +85,12 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
     const m1 = m0 + 1;
     try {
       const data = await getVacationAvailability({ year: y, month: m1 }, { force });
-      setAvailabilityByMonth(prev => ({
+      setAvailabilityByMonth((prev) => ({
         ...prev,
         [m0]: buildSummary(data),
       }));
     } catch {
-      setAvailabilityByMonth(prev => ({
+      setAvailabilityByMonth((prev) => ({
         ...prev,
         [m0]: { ...initialSummary, loaded: true, error: 'load_error' },
       }));
@@ -142,6 +137,7 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
             next[r.value.monthIndex] = r.value.summary;
           }
         }
+
         months.forEach(({ monthIndex }) => {
           if (!next[monthIndex]) {
             next[monthIndex] = { ...initialSummary, loaded: true, error: 'load_error' };
@@ -166,7 +162,7 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
     return () => {
       cancelled = true;
       // limpiar timeouts pendientes
-      Object.values(refreshTimerRef.current).forEach(id => window.clearTimeout(id));
+      Object.values(refreshTimerRef.current).forEach((id) => window.clearTimeout(id));
       refreshTimerRef.current = {};
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -218,68 +214,110 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
     return () => {
       window.removeEventListener('vacation-availability-invalidated', customHandler as EventListener);
       window.removeEventListener('storage', storageHandler);
-      try { bc?.close?.(); } catch { /* noop */ }
+      try {
+        bc?.close?.();
+      } catch {
+        /* noop */
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localYear]);
 
-  return (
-    <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6 mb-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold tracking-tight text-slate-900">
-          {t('pages.vacations.monthGrid.title', { year: localYear })}
-        </h3>
+  // =============================
+  // ✅ NUEVO: borde por mes según estado de requests (igual que Sick)
+  // Prioridad: pending/option_sent > accepted > cancelled > none
+  // =============================
+  const monthBorderPriority = useMemo(() => {
+    return months.map(({ start, end }) => {
+      let hasPending = false;
+      let hasAccepted = false;
+      let hasCancelled = false;
 
-        {/* ---- Controles de año ---- */}
+      for (const r of requests) {
+        const rs = new Date(r.startDate);
+        const re = new Date(r.endDate);
+
+        // overlap simple
+        if (rs > end || re < start) continue;
+
+        if (r.status === 'pending' || r.status === 'option_sent') hasPending = true;
+        else if (r.status === 'accepted') hasAccepted = true;
+        else if (r.status === 'cancelled') hasCancelled = true;
+      }
+
+      if (hasPending) return 'pending' as const;
+      if (hasAccepted) return 'accepted' as const;
+      if (hasCancelled) return 'cancelled' as const;
+      return 'none' as const;
+    });
+  }, [months, requests]);
+
+  const monthBorderClass = (monthIndex: number) => {
+    const p = monthBorderPriority[monthIndex];
+    if (p === 'pending') return 'border-amber-300 ring-2 ring-amber-100';
+    if (p === 'accepted') return 'border-emerald-300 ring-2 ring-emerald-100';
+    if (p === 'cancelled') return 'border-rose-300 ring-2 ring-rose-100';
+    return 'border-slate-200';
+  };
+
+  return (
+    <div className="mb-4 p-0">
+      {/* Barra superior: selector año (izquierda) + leyenda (derecha) */}
+      <div className="mb-4 flex items-center justify-between gap-4 flex-wrap">
+        {/* IZQUIERDA: selector de año (estilo Sick) */}
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => handleYearDelta(-1)}
-            className="rounded-lg px-2.5 py-1.5 text-sm ring-1 ring-slate-300 hover:bg-slate-50"
-            aria-label={t('common.prev', 'Anterior')}
-            title={t('common.prev', 'Anterior') as string}
-          >
-            ←
-          </button>
-          <input
-            type="number"
-            min={1900}
-            max={3000}
-            value={localYear}
-            onChange={(e) => handleYearInput(e.target.value)}
-            className="w-24 rounded-lg border border-slate-300 ring-1 ring-slate-200 px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-4 focus:ring-blue-100"
-            aria-label={t('common.year', 'Año') as string}
-            title={t('common.year', 'Año') as string}
-          />
-          <button
-            type="button"
-            onClick={() => handleYearDelta(1)}
-            className="rounded-lg px-2.5 py-1.5 text-sm ring-1 ring-slate-300 hover:bg-slate-50"
-            aria-label={t('common.next', 'Siguiente')}
-            title={t('common.next', 'Siguiente') as string}
-          >
-            →
-          </button>
+          <span className="text-xs sm:text-sm text-slate-700">
+            {t('common.year', 'Año')}:
+          </span>
+
+          <div className="inline-flex items-center rounded-full ring-1 ring-slate-200 bg-white shadow-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => handleYearDelta(-1)}
+              className="px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100"
+              aria-label={t('common.prev', 'Anterior') as string}
+              title={t('common.prev', 'Anterior') as string}
+            >
+              ◀
+            </button>
+
+            <span className="px-4 py-1.5 text-sm font-medium text-slate-900 tabular-nums">
+              {localYear}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => handleYearDelta(1)}
+              className="px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100"
+              aria-label={t('common.next', 'Siguiente') as string}
+              title={t('common.next', 'Siguiente') as string}
+            >
+              ▶
+            </button>
+          </div>
         </div>
 
-        {/* Leyenda compacta */}
-<div className="hidden sm:flex items-center gap-3 text-xs">
-  <span className="inline-flex items-center gap-1">
-    <span className="inline-block h-3 w-3 rounded bg-green-500" />
-    {t('pages.vacations.monthGrid.legend.available')}
-  </span>
-  <span className="inline-flex items-center gap-1">
-    <span className="inline-block h-3 w-3 rounded bg-yellow-400" />
-    {t('pages.vacations.monthGrid.legend.requested')}
-  </span>
-  <span className="inline-flex items-center gap-1">
-    <span className="inline-block h-3 w-3 rounded bg-red-500" />
-    {t('pages.vacations.monthGrid.legend.full')}
-  </span>
-</div>
+        {/* DERECHA: leyenda (estilo Bajas) */}
+        <div className="hidden sm:flex items-center gap-3 text-xs text-slate-600">
+          <span className="inline-flex items-center gap-2">
+            <span className="h-3 w-3 rounded border-2 border-amber-300" />
+            {t('pages.vacations.legend.pending', 'Pendientes')}
+          </span>
+
+          <span className="inline-flex items-center gap-2">
+            <span className="h-3 w-3 rounded border-2 border-emerald-300" />
+            {t('pages.vacations.legend.accepted', 'Aceptadas')}
+          </span>
+
+          <span className="inline-flex items-center gap-2">
+            <span className="h-3 w-3 rounded border-2 border-rose-300" />
+            {t('pages.vacations.legend.cancelled', 'Canceladas')}
+          </span>
+        </div>
 
       </div>
 
+      {/* Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {months.map(({ monthIndex, label }) => {
           const count = counts[monthIndex] ?? 0;
@@ -289,11 +327,12 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
           const loaded = avail.loaded;
           const disabledStyle = !loaded ? 'opacity-80' : '';
 
-          // Mantén solo esta llamada:
           const openMonth = () => {
-            onMonthOpen?.(monthIndex, localYear); // <-- SOLO este
-            // (Compat) si tienes onMonthClick legacy, déjalo sin usar para evitar doble apertura:
-            // onMonthClick?.(monthIndex)
+            // Nuevo: apertura con mes + año (modal correcto)
+            onMonthOpen?.(monthIndex, localYear);
+
+            // Compat legacy (si alguien aún lo usa)
+            onMonthClick?.(monthIndex);
           };
 
           return (
@@ -304,8 +343,8 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
               aria-label={t('pages.vacations.monthGrid.ariaOpenMonth', { label, year: localYear })}
               className={[
                 'group relative rounded-xl p-3 transition',
-                'ring-1 ring-slate-200 hover:shadow-sm hover:-translate-y-0.5',
-                hasItems ? 'bg-white' : 'bg-slate-50 hover:opacity-100',
+                // ✅ mismo estilo, solo cambia el color del borde según el estado
+                `border bg-white hover:shadow-sm hover:-translate-y-0.5 ${monthBorderClass(monthIndex)}`,
                 'focus:outline-none focus:ring-4 focus:ring-blue-100',
                 'flex flex-col items-stretch justify-between min-h-[90px]',
                 disabledStyle,
@@ -313,10 +352,13 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
             >
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-slate-900">{label}</span>
+
                 <span
                   className={[
-                    'ml-2 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium',
-                    hasItems ? 'bg-blue-50 text-blue-700 group-hover:bg-blue-100' : 'bg-slate-100 text-slate-600',
+                    'ml-2 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium border',
+                    hasItems
+                      ? 'bg-blue-50 text-blue-700 border-blue-100 group-hover:bg-blue-100'
+                      : 'bg-slate-100 text-slate-600 border-slate-200',
                   ].join(' ')}
                   title={t('pages.vacations.monthGrid.count', { count }) as string}
                   aria-label={t('pages.vacations.monthGrid.count', { count }) as string}
@@ -325,66 +367,37 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
                 </span>
               </div>
 
-              {/* Resumen barras apiladas */}
-              <div className="mt-3">
-                {loaded ? (
-                  (() => {
-                    const total = Math.max(1, avail.green + avail.yellow + avail.red);
-                    const gw = (avail.green / total) * 100;
-                    const yw = (avail.yellow / total) * 100;
-                    const rw = (avail.red / total) * 100;
-                    return (
-                      <div className="space-y-2">
-                        <div className="w-full h-2.5 rounded bg-slate-100 overflow-hidden">
-                          <svg viewBox="0 0 100 10" preserveAspectRatio="none" className="w-full h-full block">
-                            <rect x={0} y={0} width={gw} height={10} className="fill-green-500">
-                              <title>{`${avail.green} ${t('common.daysAvailable', 'días disponibles')}`}</title>
-                            </rect>
-                            <rect x={gw} y={0} width={yw} height={10} className="fill-yellow-400">
-                              <title>{`${avail.yellow} ${t('common.daysRequested', 'días solicitados')}`}</title>
-                            </rect>
-                            <rect x={gw + yw} y={0} width={rw} height={10} className="fill-red-500">
-                              <title>{`${avail.red} ${t('common.daysFull', 'días completos')}`}</title>
-                            </rect>
-                          </svg>
-                        </div>
-                        <div className="flex items-center justify-between text-[11px] text-slate-600">
-                          <span className="inline-flex items-center gap-1">
-                            <span className="inline-block h-2 w-2 rounded bg-green-500" />
-                            {avail.green}
-                          </span>
-                          <span className="inline-flex items-center gap-1">
-                            <span className="inline-block h-2 w-2 rounded bg-yellow-400" />
-                            {avail.yellow}
-                          </span>
-                          <span className="inline-flex items-center gap-1">
-                            <span className="inline-block h-2 w-2 rounded bg-red-500" />
-                            {avail.red}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })()
-                ) : (
-                  <div className="space-y-2 animate-pulse">
-                    <div className="w-full h-2.5 rounded bg-slate-100" />
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span className="inline-flex items-center gap-1">
-                        <span className="inline-block h-2 w-2 rounded bg-slate-200" />
-                        —
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <span className="inline-block h-2 w-2 rounded bg-slate-200" />
-                        —
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <span className="inline-block h-2 w-2 rounded bg-slate-200" />
-                        —
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* Resumen (solo contadores, sin amarillo) */}
+<div className="mt-3">
+  {loaded ? (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-[11px] text-slate-600">
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block h-2 w-2 rounded bg-green-500" />
+          {avail.green}
+        </span>
+
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block h-2 w-2 rounded bg-red-500" />
+          {avail.red}
+        </span>
+      </div>
+    </div>
+  ) : (
+    <div className="space-y-2 animate-pulse">
+      <div className="flex items-center justify-between text-[11px] text-slate-400">
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block h-2 w-2 rounded bg-slate-200" /> —
+        </span>
+
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block h-2 w-2 rounded bg-slate-200" /> —
+        </span>
+      </div>
+    </div>
+  )}
+</div>
+
             </button>
           );
         })}
