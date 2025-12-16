@@ -149,6 +149,10 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   const [highlightRequestId, setHighlightRequestId] = useState<string | null>(
     null,
   );
+  useEffect(() => {
+    if (!isOpen) return;
+    setHighlightRequestId(null);
+  }, [isOpen, monthIndex, year]);
 
   useEffect(() => {
     if (!isOpen || monthIndex === null) return;
@@ -466,11 +470,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     }
   };
 
-  // =========================
-  // 🔳 BORDES CONTIGUOS (contorno continuo) para TODAS las aceptadas del mes visible
-  // =========================
 
-  /** Construye las clases de borde por día para un rango (ajustado al mes visible) */
+  /** Highlight visual del rango seleccionado (background completo, sin bordes lilas) */
   const buildBorderMapFromRange = (
     start: Date,
     end: Date,
@@ -482,6 +483,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     // Limitar rango al mes visible
     const monthStart = new Date(year, monthIndex, 1);
     const monthEnd = new Date(year, monthIndex, daysInMonth, 23, 59, 59, 999);
+
     const s = start < monthStart ? monthStart : start;
     const e = end > monthEnd ? monthEnd : end;
     if (e.getTime() < s.getTime()) return {};
@@ -489,46 +491,21 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     const startDay = s.getDate();
     const endDay = e.getDate();
 
-    // Columna (1..7) tomando lunes como primer día
-    const colOf = (day: number) => {
-      const d = new Date(year, monthIndex!, day);
-      const js = d.getDay(); // 0-dom..6-sab
-      return ((js + 6) % 7) + 1; // 1-lun..7-dom
-    };
-
-    // Recorremos por semanas, uniendo con líneas superior/inferior y laterales
-    let cur = startDay;
-    while (cur <= endDay) {
-      const colStart = colOf(cur);
-      const lastDayOfWeek = Math.min(endDay, cur + (7 - colStart));
-
-      // línea superior solo en la primera semana del rango
-      if (cur === startDay) {
-        for (let d = cur; d <= lastDayOfWeek; d++) {
-          classes[d] = (classes[d] ?? "") + " border-t-2 border-violet-500";
-        }
-      }
-      // línea inferior solo en la última semana del rango
-      if (lastDayOfWeek === endDay) {
-        for (let d = cur; d <= lastDayOfWeek; d++) {
-          classes[d] = (classes[d] ?? "") + " border-b-2 border-violet-500";
-        }
-      }
-
-      // laterales
-      classes[cur] = (classes[cur] ?? "") + " border-l-2 border-violet-500";
-      classes[lastDayOfWeek] =
-        (classes[lastDayOfWeek] ?? "") + " border-r-2 border-violet-500";
-
-      cur = lastDayOfWeek + 1;
+    // 🔵 Background visible y claro (no se mezcla con verde/amarillo/rojo)
+    for (let d = startDay; d <= endDay; d++) {
+      classes[d] =
+        (classes[d] ?? '') +
+        ' bg-sky-200/70 text-slate-900 ring-1 ring-sky-400';
     }
 
-    // Puntas redondeadas
-    classes[startDay] = (classes[startDay] ?? "") + " rounded-l-full";
-    classes[endDay] = (classes[endDay] ?? "") + " rounded-r-full";
+    // Redondeo tipo “pastilla”
+    classes[startDay] = (classes[startDay] ?? '') + ' rounded-l-full';
+    classes[endDay] = (classes[endDay] ?? '') + ' rounded-r-full';
 
     return classes;
   };
+
+
 
   /** Borde SOLO para la solicitud seleccionada que solape el mes visible */
   const borderMap = useMemo(() => {
@@ -870,9 +847,12 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                               toggleHighlightFor(req);
                             }}
                             className={[
-                              "border-t border-slate-200 cursor-pointer transition-colors",
-                              isActive ? "bg-violet-50" : "hover:bg-slate-50",
-                            ].join(" ")}
+                              'border-t border-slate-200 cursor-pointer transition-colors',
+                              isActive
+                                ? '!bg-amber-100 hover:!bg-amber-100 ring-1 ring-amber-300'
+                                : 'hover:bg-slate-50',
+                            ].join(' ')}
+
                           >
                             {/* Trabajador */}
                             <td className="px-2 py-2 text-center align-top">

@@ -69,6 +69,33 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
     );
   }, [monthIndex, year]);
 
+  const acceptedDaysSet = useMemo(() => {
+    if (monthIndex === null || acceptedRanges.length === 0) return new Set<number>();
+
+    const days = new Set<number>();
+
+    for (const r of acceptedRanges) {
+      const start = new Date(r.startISO);
+      const end = new Date(r.endISO);
+
+      const monthStart = new Date(year, monthIndex, 1);
+      const monthEnd = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
+
+      // ¿solapa este mes?
+      if (end < monthStart || start > monthEnd) continue;
+
+      const s = start < monthStart ? monthStart : start;
+      const e = end > monthEnd ? monthEnd : end;
+
+      for (let d = s.getDate(); d <= e.getDate(); d++) {
+        days.add(d);
+      }
+    }
+
+    return days;
+  }, [acceptedRanges, monthIndex, year]);
+
+
   const loadAvailability = async (y: number, m1: number, force = false) => {
     const key = `${y}-${String(m1).padStart(2, "0")}`;
     inFlightKeyRef.current = key;
@@ -193,97 +220,6 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
 
   // =============== BORDES CONTINUOS (solo rangos aceptados recibidos por props) ===============
 
-  /** Construye un mapa día->clases de borde para un rango recortado al mes actual */
-  const buildBorderMapFromRange = (
-    start: Date,
-    end: Date,
-  ): Record<number, string> => {
-    if (monthIndex === null) return {};
-    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-    const classes: Record<number, string> = {};
-
-    // Límites del mes actual
-    const monthStart = new Date(year, monthIndex, 1);
-    const monthEnd = new Date(year, monthIndex, daysInMonth, 23, 59, 59, 999);
-
-    const s = start < monthStart ? monthStart : start;
-    const e = end > monthEnd ? monthEnd : end;
-    if (e.getTime() < s.getTime()) return {};
-
-    const startDay = s.getDate();
-    const endDay = e.getDate();
-
-    // helper: columna 1..7 (lun..dom)
-    const colOf = (day: number) => {
-      const d = new Date(year, monthIndex!, day);
-      const js = d.getDay(); // 0-dom..6-sáb
-      return ((js + 6) % 7) + 1;
-    };
-
-    let cur = startDay;
-    while (cur <= endDay) {
-      const colStart = colOf(cur);
-      const lastDayOfWeek = Math.min(endDay, cur + (7 - colStart));
-
-      // bordes horizontales para primera y última fila del rango
-      if (cur === startDay) {
-        for (let d = cur; d <= lastDayOfWeek; d++) {
-          classes[d] = (classes[d] ?? "") + " border-t-2 border-violet-500";
-        }
-      }
-      if (lastDayOfWeek === endDay) {
-        for (let d = cur; d <= lastDayOfWeek; d++) {
-          classes[d] = (classes[d] ?? "") + " border-b-2 border-violet-500";
-        }
-      }
-
-      // laterales
-      classes[cur] = (classes[cur] ?? "") + " border-l-2 border-violet-500";
-      classes[lastDayOfWeek] =
-        (classes[lastDayOfWeek] ?? "") + " border-r-2 border-violet-500";
-
-      cur = lastDayOfWeek + 1;
-    }
-
-    // redondeo de puntas visibles en este mes
-    classes[startDay] = (classes[startDay] ?? "") + " rounded-l-full";
-    classes[endDay] = (classes[endDay] ?? "") + " rounded-r-full";
-
-    return classes;
-  };
-
-  /** Fusiona varios mapas día->clases */
-  const mergeBorderMaps = (maps: Record<number, string>[]) => {
-    const out: Record<number, string> = {};
-    for (const m of maps) {
-      for (const [k, v] of Object.entries(m)) {
-        const d = Number(k);
-        out[d] = out[d] ? `${out[d]} ${v}` : v;
-      }
-    }
-    return out;
-  };
-
-  /** Un único mapa con TODOS los rangos aceptados recibidos por props (recortados al mes) */
-  const borderMap = useMemo(() => {
-    if (monthIndex === null || acceptedRanges.length === 0) return {};
-    const maps: Record<number, string>[] = [];
-    for (const r of acceptedRanges) {
-      const s = new Date(r.startISO);
-      const e = new Date(r.endISO);
-
-      // ¿toca este mes?
-      const firstOfMonth = new Date(year, monthIndex, 1);
-      const lastOfMonth = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
-      const overlaps = s <= lastOfMonth && e >= firstOfMonth;
-      if (!overlaps) continue;
-
-      maps.push(buildBorderMapFromRange(s, e));
-    }
-    return mergeBorderMaps(maps);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [acceptedRanges, monthIndex, year]);
-
   if (!isOpen || monthIndex === null) return null;
 
   return (
@@ -376,6 +312,7 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
                     );
                   }
                   const state = getDayState(cell);
+
                   const color =
                     state === "red"
                       ? "bg-rose-50 text-slate-800 border-2 border-rose-300"
@@ -383,7 +320,12 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
                         ? "bg-amber-50 text-slate-800 border-2 border-amber-300"
                         : "bg-emerald-50 text-slate-800 border-2 border-emerald-300";
 
-                  const borderCls = borderMap[cell] ?? "";
+                  const isAccepted = acceptedDaysSet.has(cell);
+
+                  // BG azulón para días aceptados (sustituye al color base)
+                  const acceptedCls = isAccepted
+                    ? "!bg-sky-200 !border-sky-300 !text-slate-900 font-semibold"
+                    : "";
 
                   return (
                     <div
@@ -391,7 +333,7 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
                       className={[
                         "h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none",
                         color,
-                        borderCls,
+                        acceptedCls,
                       ].join(" ")}
                       title={`${cell}`}
                       aria-label={`${cell}`}
@@ -399,6 +341,7 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
                       {cell}
                     </div>
                   );
+
                 })}
             </div>
 
