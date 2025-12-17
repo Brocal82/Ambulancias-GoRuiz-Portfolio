@@ -14,6 +14,9 @@ import type { User, AmbulanceRole } from "../types/user";
 import { useTranslation } from "react-i18next";
 import { buildImageUrl } from "../utils/apiOrigins";
 import FileUpload from "../components/common/FileUpload";
+import SaveButton from "../components/common/actions/SaveButton";
+import DangerDeleteButton from "../components/common/actions/DangerDeleteButton";
+
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const API_ORIGIN = API_BASE.replace(/\/api\/?$/, "");
@@ -208,7 +211,8 @@ const Profile = ({ userId }: ProfileProps) => {
   const pschein = getPscheinInfo(formData.pscheinExpiry);
 
   return (
-    <div className="mx-auto max-w-xl px-4 sm:px-5 py-5 rounded-2xl bg-white shadow ring-1 ring-slate-200">
+    <div className="relative mx-auto max-w-xl px-4 sm:px-5 py-5 rounded-2xl bg-white shadow ring-1 ring-slate-200">
+
       <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-4 text-center">
         {t("pages.profile.title")}
       </h2>
@@ -339,11 +343,10 @@ const Profile = ({ userId }: ProfileProps) => {
                   onClick={() =>
                     setFormData({ ...formData, ambulanceRole: currentRole })
                   }
-                  className={`px-3 py-1.5 text-xs rounded-xl transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${
-                    formData.ambulanceRole === currentRole
-                      ? "bg-blue-600 text-white shadow-md -translate-y-0.5"
-                      : "bg-white text-slate-700 hover:bg-slate-50 ring-1 ring-slate-200 shadow-sm"
-                  }`}
+                  className={`px-3 py-1.5 text-xs rounded-xl transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${formData.ambulanceRole === currentRole
+                    ? "bg-blue-600 text-white shadow-md -translate-y-0.5"
+                    : "bg-white text-slate-700 hover:bg-slate-50 ring-1 ring-slate-200 shadow-sm"
+                    }`}
                 >
                   {currentRole === "driver"
                     ? t("pages.profile.roles.driver")
@@ -359,62 +362,61 @@ const Profile = ({ userId }: ProfileProps) => {
         {/* P-Schein compacto */}
         {(formData.ambulanceRole === "driver" ||
           formData.ambulanceRole === "both") && (
-          <div className="space-y-1">
-            <label
-              htmlFor="pscheinExpiry"
-              className="block text-xs font-medium text-slate-700"
-            >
-              {t("pages.profile.labels.pscheinExpiry")}
-            </label>
-            <input
-              type="date"
-              id="pscheinExpiry"
-              name="pscheinExpiry"
-              value={formData.pscheinExpiry || ""}
-              onChange={handleChange}
-              className={`w-full rounded-lg px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 ${
-                getPscheinInfo(formData.pscheinExpiry).status === "expired"
+            <div className="space-y-1">
+              <label
+                htmlFor="pscheinExpiry"
+                className="block text-xs font-medium text-slate-700"
+              >
+                {t("pages.profile.labels.pscheinExpiry")}
+              </label>
+              <input
+                type="date"
+                id="pscheinExpiry"
+                name="pscheinExpiry"
+                value={formData.pscheinExpiry || ""}
+                onChange={handleChange}
+                className={`w-full rounded-lg px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 ${getPscheinInfo(formData.pscheinExpiry).status === "expired"
                   ? "border border-red-500 focus:ring-red-100"
                   : getPscheinInfo(formData.pscheinExpiry).status === "warning"
                     ? "border border-orange-400 focus:ring-orange-100"
                     : "border border-slate-300 focus:ring-blue-100 focus:border-blue-400"
-              }`}
-            />
+                  }`}
+              />
 
-            {pschein.status === "expired" && (
-              <p className="text-red-600 text-xs mt-0.5">
-                {t(
-                  "pages.profile.pschein.expiredDynamic",
-                  "❌ P-Schein caducado hace {{months}} meses",
-                  { months: Math.abs(pschein.monthsLeft ?? 0) },
-                )}
-              </p>
-            )}
+              {pschein.status === "expired" && (
+                <p className="text-red-600 text-xs mt-0.5">
+                  {t(
+                    "pages.profile.pschein.expiredDynamic",
+                    "❌ P-Schein caducado hace {{months}} meses",
+                    { months: Math.abs(pschein.monthsLeft ?? 0) },
+                  )}
+                </p>
+              )}
 
-            {pschein.status === "warning" && (
-              <p className="text-orange-600 text-xs mt-0.5">
-                {t(
-                  "pages.profile.pschein.warningDynamic",
-                  "⚠️ Expira en {{months}} meses ({{days}} días)",
-                  {
-                    months: pschein.monthsLeft ?? 0,
-                    days: pschein.daysLeft ?? 0,
-                  },
-                )}
-              </p>
-            )}
+              {pschein.status === "warning" && (
+                <p className="text-orange-600 text-xs mt-0.5">
+                  {t(
+                    "pages.profile.pschein.warningDynamic",
+                    "⚠️ Expira en {{months}} meses ({{days}} días)",
+                    {
+                      months: pschein.monthsLeft ?? 0,
+                      days: pschein.daysLeft ?? 0,
+                    },
+                  )}
+                </p>
+              )}
 
-            {pschein.status === "valid" && (
-              <p className="text-emerald-600 text-xs mt-0.5">
-                {t(
-                  "pages.profile.pschein.validDynamic",
-                  "✅ Válido ({{months}} meses restantes)",
-                  { months: pschein.monthsLeft ?? 0 },
-                )}
-              </p>
-            )}
-          </div>
-        )}
+              {pschein.status === "valid" && (
+                <p className="text-emerald-600 text-xs mt-0.5">
+                  {t(
+                    "pages.profile.pschein.validDynamic",
+                    "✅ Válido ({{months}} meses restantes)",
+                    { months: pschein.monthsLeft ?? 0 },
+                  )}
+                </p>
+              )}
+            </div>
+          )}
 
         {/* Dirección */}
         <div className="space-y-1">
@@ -525,32 +527,20 @@ const Profile = ({ userId }: ProfileProps) => {
           </div>
         )}
 
-        {/* Guardar */}
-        <button
-          type="submit"
-          className="w-full mt-4 inline-flex justify-center items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
-        >
-          {t("pages.profile.actions.save")}
-        </button>
+        {/* Acciones de perfil (debajo de documentos) */}
+        <div className="mt-6 flex items-center gap-4">
+          {/* Eliminar (solo admin editando a otro usuario) */}
+          {role === "admin" && userId && userId !== userIdFromAuthContext && (
+            <DangerDeleteButton onClick={handleDeleteUser} />
+          )}
 
-        {/* Danger Zone (solo admin, al editar a otro) */}
-        {role === "admin" && userId && userId !== userIdFromAuthContext && (
-          <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-3">
-            <h3 className="text-xs font-semibold text-red-700 mb-1">
-              {t("pages.profile.danger.title")}
-            </h3>
-            <p className="text-xs text-red-700/90 mb-2">
-              {t("pages.profile.danger.description")}
-            </p>
-            <button
-              type="button"
-              onClick={handleDeleteUser}
-              className="w-full inline-flex justify-center items-center rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100"
-            >
-              {t("pages.profile.actions.deleteUser")}
-            </button>
+          {/* Guardar */}
+          <div className="ml-auto">
+            <SaveButton />
           </div>
-        )}
+        </div>
+
+
       </form>
     </div>
   );
