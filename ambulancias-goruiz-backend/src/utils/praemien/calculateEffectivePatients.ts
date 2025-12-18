@@ -1,5 +1,5 @@
-// backend/src/utils/prämienUtils.ts
-import { Trip } from "../types/Trip";
+// backend/src/utils/calculateEffectivePatients.ts
+import { Trip } from "../../types/Trip";
 
 export function calculateEffectivePatients(
   trips: Trip[],

@@ -4,7 +4,7 @@ import Dienst from "../models/Dienst";
 import Trip from "../models/Trip";
 import WorkdaySummary from "../models/workdaySummary";
 import WorkdayIssue from "../models/WorkdayIssue";
-import { calculateEffectivePatients } from "../utils/praemienUtils";
+import { calculateEffectivePatients } from "../utils/praemien/calculateEffectivePatients";
 
 /* ─────────────────────────────
  * CIERRE COMPLETO DEL DÍA
