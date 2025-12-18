@@ -15,7 +15,7 @@ import Profile from "./pages/Profile";
 import WorkerDashboard from "./pages/WorkerDashboard";
 import WorkerDienstsPage from "./pages/WorkerDienstsPage";
 import WorkerHospitalsPage from "./pages/WorkerHospitalsPage";
-import WorkerPrämienPage from "./pages/WorkerPraemienPage";
+import WorkerPraemienPage from "./pages/WorkerPraemienPage";
 import WorkerVacationsPage from "./pages/WorkerVacationsPage";
 import WorkerMessagesPage from "./pages/WorkerMessagesPage";
 import WorkerAppointmentsPage from "./pages/WorkerAppointmentsPage";
@@ -88,7 +88,7 @@ export default function App() {
               path="/worker/praemien"
               element={
                 <AppLayout>
-                  <WorkerPrämienPage />
+                  <WorkerPraemienPage />
                 </AppLayout>
               }
             />
