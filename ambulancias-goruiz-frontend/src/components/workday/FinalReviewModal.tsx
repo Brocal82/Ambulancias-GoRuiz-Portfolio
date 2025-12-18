@@ -3,7 +3,7 @@ import { toastT } from "../../utils/toast";
 import ReviewSummary from "./ReviewSummary";
 import type { Trip } from "../../types/trip";
 import type { AssignedDayFull } from "../../types/dienst";
-import { calculateEffectivePatients } from "../../utils/praemienUtils";
+import { calculateEffectivePatients } from "../../utils/praemien/calculateEffectivePatients";
 import IssueReportModal from "./IssueReportModal";
 import { useTranslation } from "react-i18next";
 
