@@ -4,6 +4,10 @@ import { getPraemienMonthlyHistory } from "../api/praemien";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { monthLabel } from "../utils/intl";
+import {
+  getPraemieI18nKey,
+  getPraemieLevelFromAverage,
+} from "../utils/praemien/praemienLevels";
 
 interface Props {
   userId?: string;
@@ -70,29 +74,21 @@ const WorkerPraemienHistory = ({ userId }: Props) => {
               // month es 1..12 -> Date usa 0..11
               const monthName = monthLabel(year, month - 1);
 
-              let premieLevel = t("pages.praemien.levels.none");
-              let levelClass =
-                "bg-slate-50 text-slate-700 ring-1 ring-slate-200";
-              if (averagePatients >= 10) {
-                premieLevel = t("pages.praemien.levels.10");
-                levelClass =
-                  "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
-              } else if (averagePatients >= 9) {
-                premieLevel = t("pages.praemien.levels.9");
-                levelClass =
-                  "bg-violet-50 text-violet-700 ring-1 ring-violet-200";
-              } else if (averagePatients >= 8) {
-                premieLevel = t("pages.praemien.levels.8");
-                levelClass =
-                  "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200";
-              } else if (averagePatients >= 7) {
-                premieLevel = t("pages.praemien.levels.7");
+              const level = getPraemieLevelFromAverage(averagePatients);
+              const premieLevel = t(getPraemieI18nKey(level));
+
+              let levelClass = "bg-slate-50 text-slate-700 ring-1 ring-slate-200";
+              if (level === 10) {
+                levelClass = "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
+              } else if (level === 9) {
+                levelClass = "bg-violet-50 text-violet-700 ring-1 ring-violet-200";
+              } else if (level === 8) {
+                levelClass = "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200";
+              } else if (level === 7) {
                 levelClass = "bg-blue-50 text-blue-700 ring-1 ring-blue-200";
               }
 
-              const avgRounded = (Math.round(averagePatients * 2) / 2).toFixed(
-                1,
-              );
+              const avgRounded = (Math.round(averagePatients * 2) / 2).toFixed(1);
 
               return (
                 <tr

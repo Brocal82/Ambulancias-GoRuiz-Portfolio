@@ -1,5 +1,5 @@
 // src/pages/WorkerPraemienPage.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getMonthlyPraemienSummary } from "../api/praemien";
 import type { MonthlyPraemienDay } from "../api/praemien";
 import { saveMonthlyPraemie } from "../api/praemienHistory";
@@ -7,6 +7,10 @@ import WorkerPraemienHistory from "./WorkerPraemienHistory";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { formatDate } from "../utils/intl";
+import {
+  getPraemieI18nKey,
+  getPraemieLevelFromAverage,
+} from "../utils/praemien/praemienLevels";
 
 const PRAMIEN_LEVELS = [7, 8, 9, 10];
 
@@ -16,7 +20,6 @@ const WorkerPraemienPage = () => {
 
   const [summaries, setSummaries] = useState<MonthlyPraemienDay[]>([]);
   const [media, setMedia] = useState(0);
-  const [premieLevel, setPremieLevel] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -39,13 +42,10 @@ const WorkerPraemienPage = () => {
       });
   }, [token, t]);
 
-  // Determina el nivel global mostrado (solo cambia el texto)
-  useEffect(() => {
-    if (media >= 10) setPremieLevel(t("pages.praemien.levels.10"));
-    else if (media >= 9) setPremieLevel(t("pages.praemien.levels.9"));
-    else if (media >= 8) setPremieLevel(t("pages.praemien.levels.8"));
-    else if (media >= 7) setPremieLevel(t("pages.praemien.levels.7"));
-    else setPremieLevel(t("pages.praemien.levels.none"));
+  // Nivel global (derivado, no estado)
+  const premieLevelLabel = useMemo(() => {
+    const level = getPraemieLevelFromAverage(media);
+    return t(getPraemieI18nKey(level));
   }, [media, t]);
 
   // Guarda el resumen mensual (mantenemos la lógica; guardamos la etiqueta localizada actual)
@@ -59,7 +59,7 @@ const WorkerPraemienPage = () => {
     saveMonthlyPraemie(token, {
       month: monthString,
       averagePatients: media,
-      premieLevel,
+      premieLevel: premieLevelLabel,
     })
       .then(() => {
         // ok
@@ -68,7 +68,7 @@ const WorkerPraemienPage = () => {
         // silent warning, como antes
         console.warn("No se pudo guardar el resumen mensual.");
       });
-  }, [media, premieLevel, token]);
+  }, [media, premieLevelLabel, token]);
 
   // Calcula % cumplimiento y diferencia media diaria
   const calculatePraemieStats = (threshold: number) => {
@@ -104,7 +104,9 @@ const WorkerPraemienPage = () => {
         {media > 0 && (
           <p className="text-center text-sm text-slate-700 mb-6">
             {t("pages.praemien.page.globalLevel")}{" "}
-            <span className="font-semibold text-blue-600">{premieLevel}</span>
+            <span className="font-semibold text-blue-600">
+              {premieLevelLabel}
+            </span>
           </p>
         )}
 
@@ -121,9 +123,8 @@ const WorkerPraemienPage = () => {
                     {t("pages.praemien.page.patientsPerDay", { level })}
                   </span>
                   <span
-                    className={`font-mono ${
-                      isPositive ? "text-emerald-600" : "text-red-600"
-                    }`}
+                    className={`font-mono ${isPositive ? "text-emerald-600" : "text-red-600"
+                      }`}
                   >
                     {isPositive ? "+" : ""}
                     {averageDiff}
@@ -137,9 +138,7 @@ const WorkerPraemienPage = () => {
                       "h-3 rounded-full",
                       isPositive ? "bg-emerald-500" : "bg-red-500",
                       "transition-[width]",
-                      // define la variable --p con tu porcentaje…
                       `[--p:${percentage}%]`,
-                      // …y úsala para el width sin inline style
                       "w-[var(--p)]",
                     ].join(" ")}
                   />

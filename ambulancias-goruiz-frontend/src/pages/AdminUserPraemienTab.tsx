@@ -4,6 +4,10 @@ import { getMonthlyPraemienSummary } from "../api/praemien";
 import { useAuth } from "../hooks/useAuth";
 import WorkerPraemienHistory from "./WorkerPraemienHistory";
 import { useTranslation } from "react-i18next";
+import {
+  getPraemieI18nKey,
+  getPraemieLevelFromAverage,
+} from "../utils/praemien/praemienLevels";
 
 interface Props {
   userId: string;
@@ -28,11 +32,8 @@ const AdminUserPraemienTab = ({ userId }: Props) => {
 
   const levelLabel = useMemo(() => {
     if (averagePatients == null) return "";
-    if (averagePatients >= 10) return t("pages.praemien.levels.10");
-    if (averagePatients >= 9) return t("pages.praemien.levels.9");
-    if (averagePatients >= 8) return t("pages.praemien.levels.8");
-    if (averagePatients >= 7) return t("pages.praemien.levels.7");
-    return t("pages.praemien.levels.none");
+    const level = getPraemieLevelFromAverage(averagePatients);
+    return t(getPraemieI18nKey(level));
   }, [averagePatients, t]);
 
   if (loading) return <p>{t("pages.praemien.page.loading")}</p>;
@@ -56,9 +57,7 @@ const AdminUserPraemienTab = ({ userId }: Props) => {
           </span>
         </p>
       ) : (
-        <p className="text-gray-500">
-          {t("pages.praemien.adminUserTab.noData")}
-        </p>
+        <p className="text-gray-500">{t("pages.praemien.adminUserTab.noData")}</p>
       )}
 
       <div className="mt-8 border-t pt-6">
