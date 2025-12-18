@@ -4,7 +4,7 @@ import React from "react";
 interface SaveButtonProps
     extends React.ButtonHTMLAttributes<HTMLButtonElement> { }
 
-const SaveButton = (props: SaveButtonProps) => {
+const SaveIconButton = (props: SaveButtonProps) => {
     return (
         <button
             type="submit"
@@ -27,4 +27,4 @@ const SaveButton = (props: SaveButtonProps) => {
     );
 };
 
-export default SaveButton;
+export default SaveIconButton;

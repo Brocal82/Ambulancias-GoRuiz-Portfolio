@@ -14,7 +14,7 @@ import type { User, AmbulanceRole } from "../types/user";
 import { useTranslation } from "react-i18next";
 import { buildImageUrl } from "../utils/apiOrigins";
 import FileUpload from "../components/common/FileUpload";
-import SaveButton from "../components/common/actions/SaveButton";
+import SaveIconButton from "../components/common/actions/SaveIconButton";
 import DangerDeleteButton from "../components/common/actions/DangerDeleteButton";
 import DeleteIconButton from "../components/common/actions/DeleteIconButton";
 import { displayFileNameFromUrl } from "../utils/fileName";
@@ -478,10 +478,10 @@ const Profile = ({ userId }: ProfileProps) => {
                         value={formData.pscheinExpiry || ""}
                         onChange={handleChange}
                         className={`w-full rounded-lg px-2 py-1 text-xs shadow-sm focus:outline-none focus:ring-2 ${getPscheinInfo(formData.pscheinExpiry).status === "expired"
-                            ? "border border-red-500 focus:ring-red-100"
-                            : getPscheinInfo(formData.pscheinExpiry).status === "warning"
-                              ? "border border-orange-400 focus:ring-orange-100"
-                              : "border border-slate-300 focus:ring-blue-100 focus:border-blue-400"
+                          ? "border border-red-500 focus:ring-red-100"
+                          : getPscheinInfo(formData.pscheinExpiry).status === "warning"
+                            ? "border border-orange-400 focus:ring-orange-100"
+                            : "border border-slate-300 focus:ring-blue-100 focus:border-blue-400"
                           }`}
                       />
 
@@ -574,7 +574,7 @@ const Profile = ({ userId }: ProfileProps) => {
             )}
 
             <div className="ml-auto">
-              <SaveButton />
+              <SaveIconButton />
             </div>
           </div>
         </form>
