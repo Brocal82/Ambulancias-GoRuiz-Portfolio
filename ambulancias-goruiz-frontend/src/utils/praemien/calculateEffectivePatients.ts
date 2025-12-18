@@ -1,5 +1,5 @@
-//src/utils/prämienUtils.ts
-import type { Trip } from "../types/trip";
+//src/utils/praemie/calculateEffectivePatients.ts
+import type { Trip } from "../../types/trip";
 
 export function calculateEffectivePatients(
   trips: Trip[],
