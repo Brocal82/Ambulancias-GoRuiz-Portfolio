@@ -27,7 +27,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-100 to-slate-200 text-slate-900">
       {/* Header */}
       <header
-        className="sticky top-0 z-40 bg-slate-700/95 backdrop-blur border-b border-slate-600"
+        className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800"
         role="banner"
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
@@ -40,7 +40,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-blue-200 group-hover:text-blue-100 transition-colors"
+              className="h-6 w-6 text-slate-200 group-hover:text-white transition-colors"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -67,9 +67,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
           >
             {user && (
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-slate-100">
+                <span className="text-sm font-medium text-slate-200">
                   {user.lastName}, {user.name}
                 </span>
+
                 <Link
                   to="/profile"
                   title={t("layout.actions.profile") as string}
@@ -87,7 +88,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                         name: `${user.name} ${user.lastName}`,
                       }) as string
                     }
-                    className="w-9 h-9 rounded-full ring-1 ring-slate-500 object-cover transition-transform hover:scale-105"
+                    className="w-9 h-9 rounded-full ring-1 ring-slate-600 object-cover transition-transform hover:scale-105"
                   />
                 </Link>
               </div>
@@ -121,7 +122,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </main>
 
       {/* Footer always at the bottom */}
-      <footer className="bg-slate-700 border-t border-slate-600">
+      <footer className="bg-slate-900 border-t border-slate-800">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-4 text-center text-xs sm:text-sm text-slate-200">
           &copy; 2025 Ambulancias Gorruiz
         </div>
