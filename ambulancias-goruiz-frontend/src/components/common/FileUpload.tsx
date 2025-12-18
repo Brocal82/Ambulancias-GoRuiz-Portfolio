@@ -130,19 +130,24 @@ const FileUpload: React.FC<FileUploadProps> = ({
       {/* Lista interna de seleccionados (ocultable) */}
       {showSelectedList ? (
         files && files.length > 0 ? (
-          <ul className="mt-1 list-disc list-inside text-xs text-slate-700">
+          <ul className="text-xs text-slate-700 space-y-1">
+
             {Array.from(files).map((f) => (
               <li
                 key={f.name}
-                className="truncate max-w-[220px]"
+                className="truncate max-w-[220px] text-center"
                 title={f.name}
               >
+
                 {f.name}
               </li>
             ))}
           </ul>
         ) : (
-          <p className="mt-1 text-xs text-slate-500">{hintWhenEmpty}</p>
+          <p className="text-xs text-slate-500 text-center">
+            {hintWhenEmpty}
+          </p>
+
         )
       ) : null}
     </div>
