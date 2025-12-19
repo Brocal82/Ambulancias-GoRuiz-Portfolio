@@ -524,11 +524,11 @@
                 }
             },
             "levels": {
-                "none": "❌ No alcanza mínimo",
-                "7": "🥉 Prämie 7",
-                "8": "🥈 Prämie 8",
-                "9": "🎖 Prämie 9",
-                "10": "🏆 Prämie 10"
+                "none": "🐌 0 Prämie",
+                "7": "🥉 7 Prämie",
+                "8": "🥈  8 Prämie",
+                "9": "🎖 9 Prämie",
+                "10": "🏆 10 Prämie"
             },
             "history": {
                 "loading": "Cargando historial mensual...",
