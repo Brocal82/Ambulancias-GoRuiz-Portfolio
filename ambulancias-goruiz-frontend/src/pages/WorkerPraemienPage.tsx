@@ -11,8 +11,8 @@ import {
   getPraemieI18nKey,
   getPraemieLevelFromAverage,
 } from "../utils/praemien/praemienLevels";
+import PraemieProgressBars from "../components/praemien/PraemieProgressBars";
 
-const PRAMIEN_LEVELS = [7, 8, 9, 10];
 
 const WorkerPraemienPage = () => {
   const { token } = useAuth();
@@ -70,22 +70,6 @@ const WorkerPraemienPage = () => {
       });
   }, [media, premieLevelLabel, token]);
 
-  // Calcula % cumplimiento y diferencia media diaria
-  const calculatePraemieStats = (threshold: number) => {
-    let totalDifference = 0;
-    summaries.forEach((day) => {
-      totalDifference += day.totalCountedPatients - threshold;
-    });
-    const totalDays = summaries.length || 1; // evitar división por cero
-    const averageDiff = totalDifference / totalDays;
-
-    const percentage = Math.min(100, Math.max(0, (media / threshold) * 100));
-
-    return {
-      percentage,
-      averageDiff: Math.round(averageDiff * 2) / 2, // redondeo a múltiplos de 0.5
-    };
-  };
 
   if (loading)
     return (
@@ -111,42 +95,8 @@ const WorkerPraemienPage = () => {
         )}
 
         {/* Barras de prämien */}
-        <div className="mx-auto max-w-3xl rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6 mb-8">
-          {PRAMIEN_LEVELS.map((level) => {
-            const { percentage, averageDiff } = calculatePraemieStats(level);
-            const isPositive = averageDiff >= 0;
+        <PraemieProgressBars averagePatients={media} days={summaries} />
 
-            return (
-              <div key={level} className="mb-5 last:mb-0">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-slate-800">
-                    {t("pages.praemien.page.patientsPerDay", { level })}
-                  </span>
-                  <span
-                    className={`font-mono ${isPositive ? "text-emerald-600" : "text-red-600"
-                      }`}
-                  >
-                    {isPositive ? "+" : ""}
-                    {averageDiff}
-                  </span>
-                </div>
-
-                {/* Barra de progreso estilizada */}
-                <div className="w-full h-3 rounded-full bg-slate-200 ring-1 ring-slate-300 overflow-hidden">
-                  <div
-                    className={[
-                      "h-3 rounded-full",
-                      isPositive ? "bg-emerald-500" : "bg-red-500",
-                      "transition-[width]",
-                      `[--p:${percentage}%]`,
-                      "w-[var(--p)]",
-                    ].join(" ")}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
 
         {/* Historial diario (mini-calendario mensual) */}
         <div className="mx-auto max-w-3xl">
@@ -155,12 +105,6 @@ const WorkerPraemienPage = () => {
           </h2>
 
           <MonthlyMiniCalendar days={summaries} />
-
-          {summaries.length === 0 && (
-            <p className="text-center py-6 text-slate-400">
-              {t("pages.praemien.page.table.empty")}
-            </p>
-          )}
         </div>
 
 
