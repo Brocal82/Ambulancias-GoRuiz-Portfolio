@@ -1,1304 +1,1304 @@
 {
-  "layout": {
-    "appName": "GORRUIZ Ambulances",
-    "logout": "Logout"
-  },
-  "pages": {
-    "welcome": {
-      "title": "GORRUIZ Ambulances",
-      "login": "Login",
-      "register": "Register"
+    "layout": {
+        "appName": "GORRUIZ Ambulances",
+        "logout": "Logout"
     },
-    "login": {
-      "title": "Login",
-      "back": "⬅️ Back to home",
-      "email": "Email",
-      "password": "Password",
-      "submit": "Sign in",
-      "genericError": "Login failed"
-    },
-    "register": {
-      "title": "Register",
-      "back": "⬅️ Back to home",
-      "name": "First name",
-      "lastName": "Last name",
-      "email": "Email",
-      "password": "Password",
-      "submit": "Sign up",
-      "success": "Registration successful. Redirecting to login...",
-      "genericError": "Registration failed"
-    },
-    "adminDashboard": {
-      "title": "Admin Dashboard",
-      "users": {
-        "title": "👤 Workers",
-        "desc": "Manage user profiles"
-      },
-      "teams": {
-        "title": "👥 Teams",
-        "desc": "Manage fixed pairs (driver + medic)"
-      },
-      "diensts": {
-        "title": "🗓️ Duty roster",
-        "desc": "Edit weekly services"
-      },
-      "dienstTemplates": {
-        "title": "🗂️ Dienst Templates",
-        "desc": "Create, configure, and edit weekly Dienst schedules."
-      },
-      "summaries": {
-        "title": "📈 Final reports",
-        "desc": "View submitted day closures"
-      },
-      "hospitals": {
-        "title": "🏥 Hospitals",
-        "desc": "Add and edit hospitals"
-      },
-      "ambulances": {
-        "title": "🚑 Ambulances",
-        "desc": "Add and edit ambulances"
-      },
-      "mechanics": {
-        "title": "🛠️ Mechanics",
-        "desc": "Review ambulance reports"
-      },
-      "vacations": {
-        "title": "🏖️ Vacations",
-        "desc": "Manage Holidays requests"
-      },
-      "appointments": {
-        "title": "📕 Appointments",
-        "desc": "Calendar and requests"
-      },
-      "messages": {
-        "title": "📨 Messages",
-        "desc": "Send important announcements"
-      },
-      "sickLeaves": {
-        "title": "🤒 Sick Leaves",
-        "desc": "Review, approve or reject requests and manage documents"
-      },
-      "payrollDocs": {
-        "title": "🛠 Payroll/Docs/Digital Signature",
-        "desc": "Coming soon"
-      },
-      "clothes": {
-        "title": "🛠 Clothing",
-        "desc": "Coming soon"
-      },
-      "formation": {
-        "title": "🛠 Game/Training",
-        "desc": "Próximamente"
-      }
-    },
-    "workerDashboard": {
-      "title": "Worker Dashboard",
-      "profile": {
-        "title": "👤 Profile",
-        "desc": "Edit your personal information"
-      },
-      "dienst": {
-        "title": "📅 Duty roster",
-        "desc": "See your assigned days"
-      },
-      "workday": {
-        "title": "🚨 Today’s workday",
-        "desc": "Record and manage your daily trips"
-      },
-      "praemien": {
-        "title": "🎖 Bonuses",
-        "desc": "Check your monthly progress"
-      },
-      "hospitals": {
-        "title": "🏥 Hospitals",
-        "desc": "View available hospitals"
-      },
-      "messages": {
-        "title": "📩 Messages",
-        "desc": "Read admin messages"
-      },
-      "vacations": {
-        "title": "🏖️ Vacations",
-        "desc": "Manage your vacation requests"
-      },
-      "appointments": {
-        "title": "📕 Appointments",
-        "desc": "Request and manage appointments"
-      },
-      "sickLeaves": {
-        "title": "🤒 Sick Leaves",
-        "desc": "Request your sick leave and check its status"
-      },
-      "payrollDocs": {
-        "title": "🛠 Payroll/Documents",
-        "desc": "Coming soon"
-      },
-      "game": {
-        "title": "🛠 Game/Training",
-        "desc": "Coming soon"
-      },
-      "clothes": {
-        "title": "🛠 Clothing",
-        "desc": "Coming soon"
-      }
-    },
-    "adminUsers": {
-      "title": "Registered Users",
-      "search": {
-        "label": "Search by name:",
-        "placeholder": "First or last name"
-      },
-      "legend": {
-        "expired": "P-Schein expired",
-        "warning": "P-Schein within 6 months"
-      },
-      "filters": {
-        "role": {
-          "label": "Filter by role:",
-          "all": "⭐"
+    "pages": {
+        "welcome": {
+            "title": "GORRUIZ Ambulances",
+            "login": "Login",
+            "register": "Register"
         },
-        "status": {
-          "label": "Filter by status:",
-          "all": "⭐",
-          "onLeave": "🤒",
-          "onVacation": "🏖️"
+        "login": {
+            "title": "Login",
+            "back": "⬅️ Back to home",
+            "email": "Email",
+            "password": "Password",
+            "submit": "Sign in",
+            "genericError": "Login failed"
+        },
+        "register": {
+            "title": "Register",
+            "back": "⬅️ Back to home",
+            "name": "First name",
+            "lastName": "Last name",
+            "email": "Email",
+            "password": "Password",
+            "submit": "Sign up",
+            "success": "Registration successful. Redirecting to login...",
+            "genericError": "Registration failed"
+        },
+        "adminDashboard": {
+            "title": "Admin Dashboard",
+            "users": {
+                "title": "👤 Workers",
+                "desc": "Manage user profiles"
+            },
+            "teams": {
+                "title": "👥 Teams",
+                "desc": "Manage fixed pairs (driver + medic)"
+            },
+            "diensts": {
+                "title": "🗓️ Duty roster",
+                "desc": "Edit weekly services"
+            },
+            "dienstTemplates": {
+                "title": "🗂️ Dienst Templates",
+                "desc": "Create, configure, and edit weekly Dienst schedules."
+            },
+            "summaries": {
+                "title": "📈 Final reports",
+                "desc": "View submitted day closures"
+            },
+            "hospitals": {
+                "title": "🏥 Hospitals",
+                "desc": "Add and edit hospitals"
+            },
+            "ambulances": {
+                "title": "🚑 Ambulances",
+                "desc": "Add and edit ambulances"
+            },
+            "mechanics": {
+                "title": "🛠️ Mechanics",
+                "desc": "Review ambulance reports"
+            },
+            "vacations": {
+                "title": "🏖️ Vacations",
+                "desc": "Manage Holidays requests"
+            },
+            "appointments": {
+                "title": "📕 Appointments",
+                "desc": "Calendar and requests"
+            },
+            "messages": {
+                "title": "📨 Messages",
+                "desc": "Send important announcements"
+            },
+            "sickLeaves": {
+                "title": "🤒 Sick Leaves",
+                "desc": "Review, approve or reject requests and manage documents"
+            },
+            "payrollDocs": {
+                "title": "🛠 Payroll/Docs/Digital Signature",
+                "desc": "Coming soon"
+            },
+            "clothes": {
+                "title": "🛠 Clothing",
+                "desc": "Coming soon"
+            },
+            "formation": {
+                "title": "🛠 Game/Training",
+                "desc": "Próximamente"
+            }
+        },
+        "workerDashboard": {
+            "title": "Worker Dashboard",
+            "profile": {
+                "title": "👤 Profile",
+                "desc": "Edit your personal information"
+            },
+            "dienst": {
+                "title": "📅 Duty roster",
+                "desc": "See your assigned days"
+            },
+            "workday": {
+                "title": "🚨 Today’s workday",
+                "desc": "Record and manage your daily trips"
+            },
+            "praemien": {
+                "title": "🎖 Bonuses",
+                "desc": "Check your monthly progress"
+            },
+            "hospitals": {
+                "title": "🏥 Hospitals",
+                "desc": "View available hospitals"
+            },
+            "messages": {
+                "title": "📩 Messages",
+                "desc": "Read admin messages"
+            },
+            "vacations": {
+                "title": "🏖️ Vacations",
+                "desc": "Manage your vacation requests"
+            },
+            "appointments": {
+                "title": "📕 Appointments",
+                "desc": "Request and manage appointments"
+            },
+            "sickLeaves": {
+                "title": "🤒 Sick Leaves",
+                "desc": "Request your sick leave and check its status"
+            },
+            "payrollDocs": {
+                "title": "🛠 Payroll/Documents",
+                "desc": "Coming soon"
+            },
+            "game": {
+                "title": "🛠 Game/Training",
+                "desc": "Coming soon"
+            },
+            "clothes": {
+                "title": "🛠 Clothing",
+                "desc": "Coming soon"
+            }
+        },
+        "adminUsers": {
+            "title": "Registered Users",
+            "search": {
+                "label": "Search by name:",
+                "placeholder": "First or last name"
+            },
+            "legend": {
+                "expired": "P-Schein expired",
+                "warning": "P-Schein within 6 months"
+            },
+            "filters": {
+                "role": {
+                    "label": "Filter by role:",
+                    "all": "⭐"
+                },
+                "status": {
+                    "label": "Filter by status:",
+                    "all": "⭐",
+                    "onLeave": "🤒",
+                    "onVacation": "🏖️"
+                }
+            },
+            "columns": {
+                "lastName": "Last name",
+                "name": "First name",
+                "email": "Email",
+                "role": "Role"
+            }
+        },
+        "adminTeams": {
+            "title": "Teams",
+            "subtitle": "Create and manage fixed pairs.",
+            "createBtn": "New team",
+            "loadError": "Failed to load teams",
+            "empty": "No teams created yet.",
+            "team": "Team",
+            "confirmDelete": "Delete this team?",
+            "created": "Team created",
+            "createError": "Could not create the team",
+            "deleted": "Team deleted",
+            "deleteError": "Could not delete the team",
+            "modal": {
+                "title": "Create team",
+                "driver": "Driver",
+                "medic": "Medic"
+            }
+        },
+        "profile": {
+            "title": "User Profile",
+            "loading": "Loading...",
+            "messages": {
+                "loadError": "Error loading profile",
+                "saved": "✅ Changes saved",
+                "saveError": "❌ Error saving profile",
+                "docDeleted": "✅ Document deleted",
+                "docDeleteError": "❌ Could not delete the document",
+                "removeImageSuccess": "✅ Profile image removed",
+                "removeImageError": "❌ Error removing the image",
+                "missingRequired": "Missing required data to update the profile.",
+                "cannotDeleteSelf": "You cannot delete your own account.",
+                "confirmDelete": "Are you sure you want to delete {{name}}? This action cannot be undone.",
+                "userDeleted": "✅ User deleted successfully",
+                "userDeleteError": "❌ Error deleting the user"
+            },
+            "labels": {
+                "name": "First name",
+                "lastName": "Last name",
+                "email": "Email",
+                "ambulanceRole": "Ambulance role",
+                "pscheinExpiry": "P-Schein expiry date",
+                "address": "Address",
+                "phone": "Phone",
+                "emergencyPhone": "Emergency phone",
+                "documents": "Upload documents (PDF)",
+                "uploadedDocs": "📄 Uploaded documents:"
+            },
+            "placeholders": {
+                "name": "Your first name",
+                "lastName": "Your last name",
+                "address": "Street and number",
+                "phone": "Phone number",
+                "emergencyPhone": "Emergency contact number"
+            },
+            "image": {
+                "alt": "Profile photo",
+                "changeTitle": "Click to change profile image",
+                "remove": "❌ Remove image",
+                "emailLocked": "This email cannot be modified",
+                "removeButtonTitle": "Delete profile image"
+            },
+            "documents": {
+                "upload": "Upload document",
+                "noneSelected": "No files selected",
+                "view": "View document",
+                "deleteTitle": "Delete document"
+            },
+            "roles": {
+                "driver": "🚑",
+                "medic": "🩺",
+                "both": "🟰"
+            },
+            "pschein": {
+                "expired": "❌ The P-Schein is expired",
+                "warning": "⚠️ The P-Schein expires in less than 6 months"
+            },
+            "actions": {
+                "save": "Save changes",
+                "close": "Close",
+                "deleteUser": "Delete user"
+            },
+            "danger": {
+                "title": "Danger Zone",
+                "description": "This action will delete the user and all their data. It cannot be undone."
+            }
+        },
+        "assignmentModal": {
+            "title": "Day details: {{date}}",
+            "labels": {
+                "startTime": "Start time",
+                "endTime": "End time",
+                "ambulance": "🚑 Ambulance",
+                "driver": "Driver",
+                "medic": "Medic"
+            },
+            "placeholders": {
+                "selectAmbulance": "-- Select an ambulance --",
+                "selectDriver": "-- Select driver --",
+                "selectMedic": "-- Select medic --"
+            },
+            "readOnly": {
+                "ambulance": "🚑 Ambulance:",
+                "driver": "👨‍✈️ Driver:",
+                "medic": "👩‍⚕️ Medic:"
+            },
+            "buttons": {
+                "save": "Save changes",
+                "deleteDay": "Delete this day",
+                "close": "Close",
+                "saving": "Saving...",
+                "deleting": "Deleting..."
+            },
+            "info": {
+                "dayOff": "🌴 Day off",
+                "dash": "—"
+            },
+            "confirm": {
+                "delete": "Are you sure you want to delete this day?"
+            },
+            "toasts": {
+                "loadUsersError": "❌ Error loading users.",
+                "loadAmbulancesError": "❌ Error loading ambulances",
+                "dienstIdMissing": "🚫 Dienst ID not defined.",
+                "requiredFields": "🚫 Fill start time, end time and ambulance.",
+                "samePerson": "🚫 You can't assign the same person as driver and medic.",
+                "saved": "✅ Changes saved",
+                "saveError": "❌ Error saving changes",
+                "deleted": "✅ Day deleted",
+                "deleteError": "❌ Error deleting assignment."
+            }
+        },
+        "hospitals": {
+            "adminPage": {
+                "title": "Hospital management",
+                "filters": {
+                    "byName": "Filter by name:",
+                    "byNamePlaceholder": "Type the hospital name",
+                    "bySpecialty": "Filter by specialty:",
+                    "allSpecialties": "All specialties",
+                    "selectSpecialtyPlaceholder": "Select a specialty"
+                },
+                "actions": {
+                    "toggleFormOpen": "➕ Add hospital",
+                    "toggleFormClose": "Cancel",
+                    "saveHospital": "Save hospital",
+                    "edit": "Edit",
+                    "delete": "Delete"
+                },
+                "form": {
+                    "name": "Name",
+                    "address": "Address",
+                    "phone": "Phone",
+                    "specialties": "Specialties (comma separated)"
+                },
+                "status": {
+                    "label": "Hospital status",
+                    "open": "🟢 Open",
+                    "closed": "🔴 Closed"
+                },
+                "confirm": {
+                    "delete": "Are you sure you want to delete this hospital?"
+                },
+                "toasts": {
+                    "loadError": "Error loading hospitals",
+                    "stateUpdated": "Hospital status updated",
+                    "stateUpdateError": "Error updating status",
+                    "created": "Hospital added successfully",
+                    "createError": "Error adding hospital",
+                    "deleted": "Hospital deleted",
+                    "deleteError": "Error deleting hospital"
+                }
+            },
+            "workerPage": {
+                "title": "🏥 Available hospitals",
+                "filters": {
+                    "byName": "Filter by name:",
+                    "byNamePlaceholder": "Search hospital by name...",
+                    "bySpecialty": "Filter by specialty:",
+                    "allSpecialties": "All specialties",
+                    "selectSpecialtyPlaceholder": "Select a specialty"
+                },
+                "status": {
+                    "open": "🟢 Open",
+                    "closed": "🔴 Closed"
+                }
+            },
+            "detailsModal": {
+                "address": "Address:",
+                "phone": "Phone:",
+                "specialties": "Specialties:",
+                "close": "Close"
+            },
+            "editModal": {
+                "title": "Edit hospital",
+                "inputs": {
+                    "name": "Name",
+                    "address": "Address",
+                    "phone": "Phone"
+                },
+                "specialties": {
+                    "title": "Specialties",
+                    "newPlaceholder": "New specialty"
+                },
+                "status": {
+                    "openCheckbox": "Hospital open"
+                },
+                "buttons": {
+                    "cancel": "Cancel",
+                    "save": "Save"
+                },
+                "toasts": {
+                    "updated": "Hospital updated successfully",
+                    "updateError": "Error updating hospital"
+                }
+            }
+        },
+        "vacations": {
+            "adminPage": {
+                "title": "Vacation Requests",
+                "loading": "Loading requests...",
+                "error": "Error loading requests.",
+                "empty": "No vacation requests.",
+                "capacity": "Daily capacity: max {{count}}",
+                "table": {
+                    "user": "Worker",
+                    "startDate": "Start Date",
+                    "endDate": "End Date",
+                    "status": "Status",
+                    "actions": "Actions"
+                },
+                "status": {
+                    "pending": "pending",
+                    "accepted": "accepted",
+                    "cancelled": "rejected",
+                    "option_sent": "option sent"
+                },
+                "actions": {
+                    "accept": "Accept",
+                    "altOption": "Alt option",
+                    "cancel": "Cancel",
+                    "delete": "Delete",
+                    "confirm": "Confirm",
+                    "sending": "Sending...",
+                    "confirmDelete": "Are you sure you want to delete this request?",
+                    "cancelMessagePlaceholder": "Message for the worker",
+                    "confirmRejection": "Confirm rejection",
+                    "close": "Close"
+                },
+                "badges": {
+                    "requested": "Requested:",
+                    "proposal": "Proposed:",
+                    "note": "Note:"
+                }
+            },
+            "workerPage": {
+                "title": "My Vacation Requests",
+                "toggleOpenForm": "New request",
+                "toggleCloseForm": "Close form",
+                "empty": "No vacation requests.",
+                "loading": "Loading requests...",
+                "error": "Error loading requests.",
+                "formSuccess": "Request submitted successfully."
+            },
+            "requestForm": {
+                "title": "Request Vacation",
+                "send": "Submit request",
+                "sending": "Sending...",
+                "mustLogin": "You must be logged in to request vacations.",
+                "success": "Request submitted successfully.",
+                "error": "Error submitting the request. Try again."
+            },
+            "list": {
+                "empty": "No vacation requests."
+            },
+            "listItem": {
+                "requested": "Requested:",
+                "proposal": "Proposed:",
+                "note": "Note:",
+                "accept": "Accept",
+                "reject": "Reject",
+                "status": {
+                    "accepted": "Accepted",
+                    "cancelled": "Rejected",
+                    "option_sent": "Option sent",
+                    "pending": "Pending"
+                }
+            },
+            "monthGrid": {
+                "title": "Vacations by month · {{year}}",
+                "count": "{{count}} requests",
+                "ariaOpenMonth": "Open month {{label}} {{year}}",
+                "legend": {
+                    "available": "Available",
+                    "requested": "Requested",
+                    "full": "Full"
+                }
+            },
+            "monthModal": {
+                "countLine": "{{count}} requests in this month",
+                "filters": {
+                    "userPlaceholder": "Filter by user...",
+                    "statusLabel": "Filter by status",
+                    "all": "All statuses",
+                    "pending": "Pending",
+                    "accepted": "Accepted",
+                    "cancelled": "Rejected",
+                    "option_sent": "Option sent",
+                    "sortToggle": "Sort: start {{dir}}",
+                    "asc": "↑",
+                    "desc": "↓"
+                },
+                "empty": "No requests in this month.",
+                "close": "Close",
+                "confirmDelete": "Are you sure you want to delete this request?"
+            },
+            "altModal": {
+                "title": "Alternative dates",
+                "notePlaceholder": "Note for the worker (optional)",
+                "cancel": "Cancel",
+                "send": "Send option"
+            },
+            "adminUserTab": {
+                "title": "Approved vacations",
+                "loading": "Loading vacations...",
+                "error": "Error loading vacations.",
+                "empty": "No approved vacations.",
+                "actions": {
+                    "edit": "Edit",
+                    "delete": "Delete"
+                },
+                "confirmDelete": "Are you sure you want to delete this vacation request?",
+                "toasts": {
+                    "deleted": "Request deleted",
+                    "deleteError": "Error deleting the request"
+                },
+                "editPending": "Edit functionality for request {{id}} is pending implementation."
+            }
+        },
+        "praemien": {
+            "page": {
+                "loading": "Loading bonus summary...",
+                "error": "Failed to load bonus data.",
+                "title": "🎖 Monthly Prämien Summary",
+                "globalLevel": "level achieved:",
+                "patientsPerDay": "{{level}} patients / day",
+                "dailyHistoryTitle": "Daily history",
+                "table": {
+                    "date": "Date",
+                    "patients": "Trips",
+                    "empty": "No data available"
+                }
+            },
+            "levels": {
+                "none": "🐌 0 Prämie",
+                "7": "🥉 7 Prämie",
+                "8": "🥈  8 Prämie",
+                "9": "🎖 9 Prämie",
+                "10": "🏆 10 Prämie"
+            },
+            "history": {
+                "loading": "Loading monthly history...",
+                "empty": "No monthly history available.",
+                "title": "Monthly Prämien History",
+                "table": {
+                    "year": "Year",
+                    "month": "Month",
+                    "avgPatients": "Average patients",
+                    "level": "Prämie level"
+                }
+            },
+            "adminUserTab": {
+                "currentTitle": "Current Prämie",
+                "levelPrefix": "Level:",
+                "average": "Average: {{avg}} patients/day",
+                "noData": "No data for the current prämie."
+            }
+        },
+        "mechanics": {
+            "adminPage": {
+                "title": "🔧 Technical breakdown reports",
+                "loading": "Loading issues...",
+                "empty": "No breakdown reports yet.",
+                "dienst": "Dienst #{{num}}",
+                "labels": {
+                    "date": "📅 Date:",
+                    "time": "⏱ Time:",
+                    "team": "Team:",
+                    "ambulance": "Ambulance:",
+                    "model": "Model:",
+                    "numberPlate": "Number plate:",
+                    "finalKm": "Final KM:",
+                    "issue": "🛠️ Issue:",
+                    "seenAt": "Seen at"
+                },
+                "ambulanceFallback": "{{number}} (ID: {{id}})",
+                "delete": "Delete",
+                "confirmDelete": "Are you sure you want to delete this report? This action cannot be undone."
+            },
+            "issueModal": {
+                "title": "🔧 Technical breakdown report",
+                "dienst": "Dienst #{{num}}",
+                "date": "Date",
+                "time": "Time",
+                "driver": "🚗 Driver:",
+                "medic": "🧑‍⚕️ Medic:",
+                "ambulance": "🚐 Ambulance:",
+                "unknownAmbulance": "Unknown",
+                "finalKmLabel": "🔢 Final KM",
+                "finalKmPlaceholder": "Enter final kilometers",
+                "timestamp": "⏱ Timestamp:",
+                "descriptionPlaceholder": "Describe the issue…",
+                "actions": {
+                    "cancel": "Cancel",
+                    "send": "Send report"
+                }
+            }
+        },
+        "appointments": {
+            "admin": {
+                "title": "Appointments (Admin)"
+            },
+            "worker": {
+                "title": "My Appointments",
+                "confirmDelete": "Are you sure you want to delete this appointment from the history?",
+                "actions": {
+                    "delete": "Delete",
+                    "deleteTitle": "Delete this appointment"
+                }
+            },
+            "actions": {
+                "refresh": "Refresh",
+                "proposeSlots": "Propose time slots",
+                "request": "Request appointment",
+                "requestTitle": "Request a new appointment",
+                "chooseSlot": "Choose slot",
+                "chooseSlotTitle": "Choose one of the proposed slots"
+            },
+            "status": {
+                "loading": "Loading...",
+                "loadingYear": "Loading yearly calendar...",
+                "loadingMonth": "Loading month...",
+                "loadingMine": "Loading appointments…"
+            },
+            "statusLabel": {
+                "pending": "Pending",
+                "proposed": "Proposed",
+                "confirmed": "Confirmed",
+                "rescheduled": "Rescheduled",
+                "cancelled": "Cancelled"
+            },
+            "pending": {
+                "title": "Pending",
+                "empty": "There are no pending requests."
+            },
+            "next": {
+                "title": "Next appointment"
+            },
+            "requests": {
+                "title": "My requests",
+                "waitingOptions": "You have proposed times pending (admin hasn't provided options yet)."
+            },
+            "history": {
+                "title": "History & other appointments"
+            },
+            "labels": {
+                "when": "When:",
+                "reason": "Reason:",
+                "worker": "Worker:",
+                "status": "Status:",
+                "proposedSlots": "Proposed time slots"
+            },
+            "empty": {
+                "worker": "You don't have appointments yet. Need to contact an admin?"
+            },
+            "propose": {
+                "title": "Proposed time slots",
+                "optionLegend": "Option {{index}}",
+                "dateLabel": "Date (option {{index}})",
+                "datePlaceholder": "YYYY-MM-DD",
+                "dateTitle": "Select a date",
+                "timeLabel": "Start time (option {{index}})",
+                "timePlaceholder": "HH:MM",
+                "timeTitle": "Select a start time",
+                "actions": {
+                    "cancel": "Cancel",
+                    "submit": "Propose",
+                    "submitting": "Sending..."
+                }
+            },
+            "choose": {
+                "title": "Choose a time slot",
+                "empty": "No options available. Please wait for the administrator to propose times.",
+                "optionAria": "Option {{index}}: {{label}}",
+                "actions": {
+                    "cancel": "Cancel",
+                    "confirm": "Confirm",
+                    "confirming": "Confirming..."
+                }
+            },
+            "detail": {
+                "title": "Appointment details",
+                "rebook": "Reschedule",
+                "rebookTitle": "Reschedule",
+                "saveNewDatetime": "Save new date/time",
+                "labels": {
+                    "worker": "Worker:",
+                    "admin": "Admin:",
+                    "currentWhen": "Current date/time:",
+                    "status": "Status:",
+                    "reason": "Reason",
+                    "description": "Description"
+                },
+                "inputs": {
+                    "newDate": "New date",
+                    "newTime": "New time"
+                },
+                "placeholders": {
+                    "date": "YYYY-MM-DD",
+                    "time": "HH:MM"
+                },
+                "titles": {
+                    "date": "Select a date",
+                    "time": "Select a time"
+                },
+                "actions": {
+                    "close": "Close",
+                    "delete": "Delete",
+                    "deleting": "Deleting...",
+                    "save": "Save",
+                    "saving": "Saving...",
+                    "cancelEdit": "Cancel",
+                    "cancelling": "Cancelling..."
+                },
+                "cancelThisTitle": "Cancel this appointment",
+                "confirmCancel": "Are you sure you want to cancel this appointment?"
+            },
+            "request": {
+                "title": "Request appointment",
+                "labels": {
+                    "reason": "Reason",
+                    "details": "Detail / Description"
+                },
+                "placeholders": {
+                    "reasonExample": "e.g. Schedule review",
+                    "detailsHint": "Briefly describe your request"
+                },
+                "actions": {
+                    "cancel": "Cancel",
+                    "submit": "Submit request",
+                    "submitting": "Sending..."
+                }
+            },
+            "monthGrid": {
+                "title": "Appointments per month · {{year}}",
+                "count_one": "{{count}} appointment",
+                "count_other": "{{count}} appointments",
+                "ariaOpenMonth": "Open month {{label}} {{year}}"
+            },
+            "calendar": {
+                "weekdayLabels": ["M", "T", "W", "T", "F", "S", "S"],
+                "workerFallback": "Worker",
+                "dayAppointmentsTitle": "Appointments for the day",
+                "noAppointments": "No appointments for this day.",
+                "actions": {
+                    "close": "Close"
+                },
+                "labels": {
+                    "moreWithCount": "+{{count}} more"
+                },
+                "aria": {
+                    "day": "Day {{num}}",
+                    "emptyCell": "Empty cell",
+                    "appointment": "Appointment: {{worker}} at {{time}}"
+                }
+            }
+        },
+        "messages": {
+            "adminPage": {
+                "title": "📨 Send Message",
+                "labels": {
+                    "subject": "Subject",
+                    "body": "Message",
+                    "recipients": "Recipients"
+                },
+                "attachmentHelp": "PDF, JPG or PNG. Max 5MB",
+                "placeholders": {
+                    "subject": "Message subject",
+                    "body": "Write the message content"
+                },
+                "sendToAll": "Send to all workers",
+                "actions": {
+                    "send": "Send message",
+                    "viewSent": "📨 View sent messages",
+                    "attach": "Attach",
+                    "removeAttachment": "Remove attachment"
+                }
+            },
+            "sentPage": {
+                "title": "📨 Messages sent to all",
+                "sentOn": "Sent on",
+                "empty": "No general messages have been sent yet.",
+                "confirmDelete": "Are you sure you want to delete this message?",
+                "deleted": "Message deleted",
+                "deleteError": "Error deleting the message",
+                "actions": {
+                    "back": "← Back",
+                    "view": "View",
+                    "hide": "Hide",
+                    "delete": "Delete"
+                },
+                "attachments": "Attachments"
+            },
+            "workerPage": {
+                "title": "📨 Your Messages",
+                "loading": "Loading messages...",
+                "empty": "You have no messages.",
+                "from": "From:",
+                "actions": {
+                    "deleteTitle": "Delete message"
+                },
+                "attachments": "Attachments"
+            },
+            "userTab": {
+                "title": "📤 Send message to worker",
+                "fields": {
+                    "subject": "Subject",
+                    "body": "Message"
+                },
+                "placeholders": {
+                    "subject": "Write the message subject",
+                    "body": "Write your message here..."
+                },
+                "actions": {
+                    "send": "Send message",
+                    "sending": "Sending..."
+                },
+                "toasts": {
+                    "fillRequired": "Please fill in both subject and message body",
+                    "sent": "Message sent successfully",
+                    "error": "There was an error sending the message"
+                }
+            }
+        },
+        "ambulances": {
+            "adminPage": {
+                "title": "Ambulance Administration",
+                "loading": "Loading ambulances...",
+                "error": "Failed to load ambulances",
+                "empty": "No ambulances registered.",
+                "table": {
+                    "brand": "Brand",
+                    "model": "Model",
+                    "licensePlate": "License plate",
+                    "ambulanceNumber": "Ambulance number",
+                    "actions": "Actions"
+                },
+                "actions": {
+                    "new": "+ New Ambulance",
+                    "edit": "Edit",
+                    "delete": "Delete"
+                },
+                "confirmDelete": "Are you sure you want to delete this ambulance?",
+                "alerts": {
+                    "tokenMissing": "Token not available",
+                    "deleteError": "Failed to delete ambulance",
+                    "saveError": "Failed to save ambulance"
+                }
+            },
+            "formModal": {
+                "titleNew": "Create New Ambulance",
+                "titleEdit": "Edit Ambulance",
+                "fields": {
+                    "brand": "Brand:",
+                    "model": "Model:",
+                    "licensePlate": "License plate:",
+                    "ambulanceNumber": "Ambulance number:"
+                },
+                "validation": {
+                    "required": "This field is required",
+                    "maxLength": "Must not exceed {{max}} characters"
+                },
+                "actions": {
+                    "cancel": "Cancel",
+                    "save": "Save"
+                }
+            }
+        },
+        "diensts": {
+            "adminPage": {
+                "title": "Dienst Plan (Admin)",
+                "weekRange": "Week from {{from}} to {{to}}",
+                "actions": {
+                    "create": "Create",
+                    "delete": "Delete"
+                },
+                "confirmCreate": "Create templates for the week starting {{date}}?",
+                "confirmDelete": "Delete all Diensts for the week starting {{date}}?",
+                "assignTeamToWeek": "Assign Team",
+                "assignUserToWeek": "Assign worker to week",
+                "alerts": {
+                    "createOk": "✅ Templates created successfully",
+                    "createErr": "❌ Could not create templates. They may already exist.",
+                    "deleteOk": "🗑️ Diensts deleted successfully",
+                    "deleteErr": "❌ Could not delete Diensts."
+                },
+                "dienstLabel": "Dienst #{{num}}",
+                "freeDay": "Free",
+                "assignWeekOk": "✅ Team successfully assigned for the week",
+                "assignWeekErr": "❌ Could not assign team for the week",
+                "assignUserWeekOk": "✅ Worker successfully assigned for the week.",
+                "assignUserWeekErr": "❌ Error assigning worker to the week. Please try again.",
+                "assignUserWeekConflict": "⚠️ The worker is already assigned to another Dienst this week.",
+                "assignUserWeekPscheinExpired": "❌ Cannot assign: the driver's P-Schein is expired.",
+                "assignUserNoAssignableDays": "⚠️ No days could be assigned. The worker has vacations or unavailable days.",
+                "driverPscheinExpired": "❌ Driver’s P-Schein expired",
+                "driverPscheinExpiredLabel": "❌ P-Schein expired",
+                "driverPscheinWarning_one": "⚠️ The P-Schein expires in {{count}} month",
+                "driverPscheinWarning_other": "⚠️ The P-Schein expires in {{count}} months",
+                "teamWeeklyConflict": "⚠️ This team is already assigned to another Dienst this week.",
+                "teamWeeklyConflictWithDates": "⚠️ This team already has assignments this week.",
+                "errors": {
+                    "pscheinExpired": "❌ Cannot assign: driver's P-Schein is expired.",
+                    "weeklyConflict": "⚠️ Cannot assign: one member is already assigned in another Dienst this week.",
+                    "weeklyConflictWithDates": "⚠️ Cannot assign: there are already assignments this week. Driver: {{driverDates}}. Medic: {{medicDates}}."
+                },
+                "clearWeekPeople": "Clear assignments for the week",
+                "clearPeopleWeek": "Clear assignments for the week",
+                "confirmClear": "Remove all assignments (driver and medic) for Dienst #{{num}} (week starting {{date}})?",
+                "clearOk": "🧽 Assignments cleared for the week",
+                "clearErr": "❌ Could not clear assignments for the week",
+                "swapRolesWeek": "Swap roles for the week",
+                "confirmSwap": "Do you want to swap the roles in Dienst #{{num}} (week starting {{date}})?",
+                "swapWeekOk": "✅ Roles swapped successfully.",
+                "swapWeekErr": "❌ Could not swap roles.",
+                "swapWeekNotPermitted": "❌ Cannot swap: one of the members cannot perform the target role (incompatible role or expired P-Schein).",
+                "considerSwap": "⚠️ The driver’s P-Schein is expired, but they can still work as a medic. Consider swapping roles (⇅).",
+                "assignOneAria": "Assign a worker for the whole week",
+                "legendCantDrive": "Cannot drive, P-Schein expired"
+            },
+            "assignTeamModal": {
+                "title": "Assign Team to week",
+                "select": "Select a pair",
+                "confirm": "Assign"
+            },
+            "weekModals": {
+                "vacations": "Holidays",
+                "vacationsHint": "Hover to see holiday dates"
+            },
+            "workerPage": {
+                "title": "Your assigned days",
+                "loading": "Loading assigned days...",
+                "weekRange": "Week from {{from}} to {{to}}",
+                "freeDay": "Free"
+            },
+            "dienstPage": {
+                "title": "Your Diensts",
+                "loading": "Loading diensts...",
+                "range": "From {{from}} to {{to}}",
+                "freeDay": "Free"
+            },
+            "adminUserTab": {
+                "title": "Assigned Diensts",
+                "loading": "Loading assigned days..."
+            }
+        },
+        "adminUserDetail": {
+            "title": "Worker Details",
+            "loading": "Loading worker data...",
+            "nameLabel": "Name:",
+            "tabs": {
+                "profile": "Profile",
+                "diensts": "Diensts",
+                "praemien": "Prämien",
+                "vacations": "Vacations",
+                "sick": "Sick leaves",
+                "messages": "Messages"
+            }
+        },
+        "sick": {
+            "admin": {
+                "empty": "No sick leaves registered for this worker",
+                "listError": "Failed to load sick leaves",
+                "th": {
+                    "dates": "Dates",
+                    "days": "Days",
+                    "status": "Status",
+                    "doc": "Documents"
+                }
+            },
+            "status": {
+                "pending": "Pending",
+                "accepted": "Accepted",
+                "rejected": "Rejected"
+            },
+            "docs": {
+                "none": "No document",
+                "count": "{{n}} documents"
+            }
+        },
+        "workday": {
+            "title": "📋 My Working Day: {{date}}",
+            "closedDay": "✅ Day closed. No active shift today.",
+            "noAssignment": "🚫 You don't have a shift assigned today.",
+            "cantStart": "⏳ You can record trips starting 30 minutes before your shift. Start time: {{start}}",
+            "dienstTimeLabel": "⏰ Shift:",
+            "teamLabel": "Team:",
+            "selectAmbulance": {
+                "label": "🚐 Select ambulance",
+                "placeholder": "-- Select an ambulance --"
+            },
+            "initialKm": "🔢 Initial KM",
+            "confirmInitialData": "✅ Confirm initial data",
+            "auftragNumber": "Auftrag number",
+            "patientName": "Patient name",
+            "fromAddress": "Pickup address",
+            "toAddress": "Drop-off address",
+            "time": {
+                "warning": "Call",
+                "atHome": "Origin",
+                "pickup": "Pickup",
+                "arrival": "Arrival",
+                "end": "Free"
+            },
+            "km": {
+                "start": "KM start",
+                "end": "KM end"
+            },
+            "anschluss": {
+                "addTitle": "Add Anschluss",
+                "cancelTitle": "Cancel Anschluss",
+                "addLabel": "Anschluss",
+                "cancelLabel": "Cancel Anschluss"
+            },
+            "storno": {
+                "label": "Storno",
+                "countsQuestion": "Does this trip count?",
+                "counts": {
+                    "yes": "✅ Yes, counts (1)",
+                    "no": "❌ No, doesn't count (0)"
+                }
+            },
+            "reports": {
+                "label": "Notes / reports",
+                "placeholder": "Notes about the trip",
+                "title": "Write any note here"
+            },
+            "saveTrip": "Save trip",
+            "tripSummary": "🧾 Trip summary",
+            "tripCancelledTag": "(cancelled)",
+            "closeAndSend": "✅ Close day and send summary",
+            "needVehicleData": "🚐 Enter the ambulance number and initial KM and click \"Confirm initial data\" to create trips.",
+            "closeQuestion": {
+                "title": "Is it the end of the day?",
+                "yes": "✅ Yes, final closure",
+                "partial": "⚠️ No, send partial closure",
+                "cancel": "Cancel"
+            },
+            "partial": {
+                "title": "🟠 Partial day review",
+                "totalPatients": "Total trips for bonus: {{count}}",
+                "placeholders": {
+                    "report": "Reason for partial closure...",
+                    "finalKm": "Ambulance final kilometers"
+                },
+                "issue": {
+                    "button": "Issue",
+                    "registered": "🛠️ Issue recorded. You can now send the partial closure."
+                },
+                "actions": {
+                    "cancel": "Cancel",
+                    "sendToAdmin": "Send to Admin"
+                },
+                "toasts": {
+                    "reportRequired": "✏️ Please enter a reason for the partial closure.",
+                    "finalKmRequired": "📏 Enter the final kilometers."
+                }
+            },
+            "common": {
+                "unknownAmbulance": "Unknown"
+            },
+            "final": {
+                "title": "✅ Final day review",
+                "totalPatients": "Total trips for bonus: {{count}}",
+                "placeholders": {
+                    "note": "Reason for final closure (optional)…",
+                    "finalKm": "Ambulance final kilometers"
+                },
+                "issue": {
+                    "button": "Issue",
+                    "autoNote": "⚠️ Issue"
+                },
+                "actions": {
+                    "cancel": "Cancel",
+                    "sendToAdmin": "Send to Admin"
+                },
+                "toasts": {
+                    "finalKmRequired": "📏 Enter the final kilometers."
+                }
+            },
+            "reviewSummary": {
+                "labels": {
+                    "team": "👥 Team:",
+                    "observations": "📝 Notes:",
+                    "deletedUser": "User deleted",
+                    "noName": "No name",
+                    "totalKm": "Total: {{km}} km"
+                },
+                "table": {
+                    "auftrag": "Auftrag",
+                    "patient": "Patient",
+                    "pickup": "From",
+                    "destination": "To",
+                    "warning": "Call",
+                    "homeArrival": "Origin",
+                    "kmStart": "KM start",
+                    "pickupTime": "Pickup",
+                    "arrivalTime": "Arrival",
+                    "kmEnd": "KM end",
+                    "timeEnd": "Free",
+                    "kmDiff": "KM diff",
+                    "praemie": "Bonus"
+                }
+            }
+        },
+        "summaries": {
+            "admin": {
+                "title": "Shift Reports",
+                "loading": "Loading summaries...",
+                "dateHeader": "📅 {{date}}",
+                "table": {
+                    "headers": {
+                        "dienstTime": "Dienst",
+                        "ambulance": "Ambulance",
+                        "team": "👥 Team",
+                        "kmRange": "Km",
+                        "kmTotal": "Total Km",
+                        "trips": "Trips",
+                        "premie": "Bonus",
+                        "noteReason": "Reason",
+                        "closure": "Closure"
+                    }
+                },
+                "row": {
+                    "dienstNumber": "Dienst #{{num}}",
+                    "noSchedule": "No schedule",
+                    "start": "Start:",
+                    "end": "End:",
+                    "final": "✅ Final",
+                    "partial": "Partial"
+                }
+            }
+        },
+        "components": {
+            "tripModal": {
+                "close": "Close",
+                "title": "Trip details",
+                "auftrag": "Assignment",
+                "patient": "Patient",
+                "noName": "No name",
+                "from": "From",
+                "noAddress": "No address",
+                "to": "To",
+                "noDestination": "No destination",
+                "time": "Time",
+                "km": "KM",
+                "total": "Total",
+                "reports": "Notes",
+                "noReports": "No notes",
+                "cancelled": "This trip was cancelled",
+                "cancelledAtPickup": "at pickup point"
+            }
         }
-      },
-      "columns": {
-        "lastName": "Last name",
-        "name": "First name",
-        "email": "Email",
-        "role": "Role"
-      }
     },
-    "adminTeams": {
-      "title": "Teams",
-      "subtitle": "Create and manage fixed pairs.",
-      "createBtn": "New team",
-      "loadError": "Failed to load teams",
-      "empty": "No teams created yet.",
-      "team": "Team",
-      "confirmDelete": "Delete this team?",
-      "created": "Team created",
-      "createError": "Could not create the team",
-      "deleted": "Team deleted",
-      "deleteError": "Could not delete the team",
-      "modal": {
-        "title": "Create team",
-        "driver": "Driver",
-        "medic": "Medic"
-      }
-    },
-    "profile": {
-      "title": "User Profile",
-      "loading": "Loading...",
-      "messages": {
-        "loadError": "Error loading profile",
-        "saved": "✅ Changes saved",
-        "saveError": "❌ Error saving profile",
-        "docDeleted": "✅ Document deleted",
-        "docDeleteError": "❌ Could not delete the document",
-        "removeImageSuccess": "✅ Profile image removed",
-        "removeImageError": "❌ Error removing the image",
-        "missingRequired": "Missing required data to update the profile.",
-        "cannotDeleteSelf": "You cannot delete your own account.",
-        "confirmDelete": "Are you sure you want to delete {{name}}? This action cannot be undone.",
-        "userDeleted": "✅ User deleted successfully",
-        "userDeleteError": "❌ Error deleting the user"
-      },
-      "labels": {
-        "name": "First name",
-        "lastName": "Last name",
-        "email": "Email",
-        "ambulanceRole": "Ambulance role",
-        "pscheinExpiry": "P-Schein expiry date",
-        "address": "Address",
-        "phone": "Phone",
-        "emergencyPhone": "Emergency phone",
-        "documents": "Upload documents (PDF)",
-        "uploadedDocs": "📄 Uploaded documents:"
-      },
-      "placeholders": {
-        "name": "Your first name",
-        "lastName": "Your last name",
-        "address": "Street and number",
-        "phone": "Phone number",
-        "emergencyPhone": "Emergency contact number"
-      },
-      "image": {
-        "alt": "Profile photo",
-        "changeTitle": "Click to change profile image",
-        "remove": "❌ Remove image",
-        "emailLocked": "This email cannot be modified",
-        "removeButtonTitle": "Delete profile image"
-      },
-      "documents": {
-        "upload": "Upload document",
-        "noneSelected": "No files selected",
-        "view": "View document",
-        "deleteTitle": "Delete document"
-      },
-      "roles": {
-        "driver": "🚑",
-        "medic": "🩺",
-        "both": "🟰"
-      },
-      "pschein": {
-        "expired": "❌ The P-Schein is expired",
-        "warning": "⚠️ The P-Schein expires in less than 6 months"
-      },
-      "actions": {
-        "save": "Save changes",
-        "close": "Close",
-        "deleteUser": "Delete user"
-      },
-      "danger": {
-        "title": "Danger Zone",
-        "description": "This action will delete the user and all their data. It cannot be undone."
-      }
-    },
-    "assignmentModal": {
-      "title": "Day details: {{date}}",
-      "labels": {
-        "startTime": "Start time",
-        "endTime": "End time",
-        "ambulance": "🚑 Ambulance",
-        "driver": "Driver",
-        "medic": "Medic"
-      },
-      "placeholders": {
-        "selectAmbulance": "-- Select an ambulance --",
-        "selectDriver": "-- Select driver --",
-        "selectMedic": "-- Select medic --"
-      },
-      "readOnly": {
-        "ambulance": "🚑 Ambulance:",
-        "driver": "👨‍✈️ Driver:",
-        "medic": "👩‍⚕️ Medic:"
-      },
-      "buttons": {
-        "save": "Save changes",
-        "deleteDay": "Delete this day",
-        "close": "Close",
-        "saving": "Saving...",
-        "deleting": "Deleting..."
-      },
-      "info": {
-        "dayOff": "🌴 Day off",
-        "dash": "—"
-      },
-      "confirm": {
-        "delete": "Are you sure you want to delete this day?"
-      },
-      "toasts": {
-        "loadUsersError": "❌ Error loading users.",
-        "loadAmbulancesError": "❌ Error loading ambulances",
-        "dienstIdMissing": "🚫 Dienst ID not defined.",
-        "requiredFields": "🚫 Fill start time, end time and ambulance.",
-        "samePerson": "🚫 You can't assign the same person as driver and medic.",
-        "saved": "✅ Changes saved",
-        "saveError": "❌ Error saving changes",
-        "deleted": "✅ Day deleted",
-        "deleteError": "❌ Error deleting assignment."
-      }
-    },
-    "hospitals": {
-      "adminPage": {
-        "title": "Hospital management",
-        "filters": {
-          "byName": "Filter by name:",
-          "byNamePlaceholder": "Type the hospital name",
-          "bySpecialty": "Filter by specialty:",
-          "allSpecialties": "All specialties",
-          "selectSpecialtyPlaceholder": "Select a specialty"
-        },
-        "actions": {
-          "toggleFormOpen": "➕ Add hospital",
-          "toggleFormClose": "Cancel",
-          "saveHospital": "Save hospital",
-          "edit": "Edit",
-          "delete": "Delete"
-        },
-        "form": {
-          "name": "Name",
-          "address": "Address",
-          "phone": "Phone",
-          "specialties": "Specialties (comma separated)"
-        },
-        "status": {
-          "label": "Hospital status",
-          "open": "🟢 Open",
-          "closed": "🔴 Closed"
-        },
-        "confirm": {
-          "delete": "Are you sure you want to delete this hospital?"
-        },
-        "toasts": {
-          "loadError": "Error loading hospitals",
-          "stateUpdated": "Hospital status updated",
-          "stateUpdateError": "Error updating status",
-          "created": "Hospital added successfully",
-          "createError": "Error adding hospital",
-          "deleted": "Hospital deleted",
-          "deleteError": "Error deleting hospital"
-        }
-      },
-      "workerPage": {
-        "title": "🏥 Available hospitals",
-        "filters": {
-          "byName": "Filter by name:",
-          "byNamePlaceholder": "Search hospital by name...",
-          "bySpecialty": "Filter by specialty:",
-          "allSpecialties": "All specialties",
-          "selectSpecialtyPlaceholder": "Select a specialty"
-        },
-        "status": {
-          "open": "🟢 Open",
-          "closed": "🔴 Closed"
-        }
-      },
-      "detailsModal": {
-        "address": "Address:",
-        "phone": "Phone:",
-        "specialties": "Specialties:",
-        "close": "Close"
-      },
-      "editModal": {
-        "title": "Edit hospital",
-        "inputs": {
-          "name": "Name",
-          "address": "Address",
-          "phone": "Phone"
-        },
-        "specialties": {
-          "title": "Specialties",
-          "newPlaceholder": "New specialty"
-        },
-        "status": {
-          "openCheckbox": "Hospital open"
-        },
-        "buttons": {
-          "cancel": "Cancel",
-          "save": "Save"
-        },
-        "toasts": {
-          "updated": "Hospital updated successfully",
-          "updateError": "Error updating hospital"
-        }
-      }
-    },
-    "vacations": {
-      "adminPage": {
-        "title": "Vacation Requests",
-        "loading": "Loading requests...",
-        "error": "Error loading requests.",
-        "empty": "No vacation requests.",
-        "capacity": "Daily capacity: max {{count}}",
-        "table": {
-          "user": "Worker",
-          "startDate": "Start Date",
-          "endDate": "End Date",
-          "status": "Status",
-          "actions": "Actions"
-        },
-        "status": {
-          "pending": "pending",
-          "accepted": "accepted",
-          "cancelled": "rejected",
-          "option_sent": "option sent"
-        },
-        "actions": {
-          "accept": "Accept",
-          "altOption": "Alt option",
-          "cancel": "Cancel",
-          "delete": "Delete",
-          "confirm": "Confirm",
-          "sending": "Sending...",
-          "confirmDelete": "Are you sure you want to delete this request?",
-          "cancelMessagePlaceholder": "Message for the worker",
-          "confirmRejection": "Confirm rejection",
-          "close": "Close"
-        },
-        "badges": {
-          "requested": "Requested:",
-          "proposal": "Proposed:",
-          "note": "Note:"
-        }
-      },
-      "workerPage": {
-        "title": "My Vacation Requests",
-        "toggleOpenForm": "New request",
-        "toggleCloseForm": "Close form",
-        "empty": "No vacation requests.",
-        "loading": "Loading requests...",
-        "error": "Error loading requests.",
-        "formSuccess": "Request submitted successfully."
-      },
-      "requestForm": {
-        "title": "Request Vacation",
-        "send": "Submit request",
-        "sending": "Sending...",
-        "mustLogin": "You must be logged in to request vacations.",
-        "success": "Request submitted successfully.",
-        "error": "Error submitting the request. Try again."
-      },
-      "list": {
-        "empty": "No vacation requests."
-      },
-      "listItem": {
-        "requested": "Requested:",
-        "proposal": "Proposed:",
-        "note": "Note:",
-        "accept": "Accept",
-        "reject": "Reject",
-        "status": {
-          "accepted": "Accepted",
-          "cancelled": "Rejected",
-          "option_sent": "Option sent",
-          "pending": "Pending"
-        }
-      },
-      "monthGrid": {
-        "title": "Vacations by month · {{year}}",
-        "count": "{{count}} requests",
-        "ariaOpenMonth": "Open month {{label}} {{year}}",
-        "legend": {
-          "available": "Available",
-          "requested": "Requested",
-          "full": "Full"
-        }
-      },
-      "monthModal": {
-        "countLine": "{{count}} requests in this month",
-        "filters": {
-          "userPlaceholder": "Filter by user...",
-          "statusLabel": "Filter by status",
-          "all": "All statuses",
-          "pending": "Pending",
-          "accepted": "Accepted",
-          "cancelled": "Rejected",
-          "option_sent": "Option sent",
-          "sortToggle": "Sort: start {{dir}}",
-          "asc": "↑",
-          "desc": "↓"
-        },
-        "empty": "No requests in this month.",
-        "close": "Close",
-        "confirmDelete": "Are you sure you want to delete this request?"
-      },
-      "altModal": {
-        "title": "Alternative dates",
-        "notePlaceholder": "Note for the worker (optional)",
-        "cancel": "Cancel",
-        "send": "Send option"
-      },
-      "adminUserTab": {
-        "title": "Approved vacations",
-        "loading": "Loading vacations...",
-        "error": "Error loading vacations.",
-        "empty": "No approved vacations.",
-        "actions": {
-          "edit": "Edit",
-          "delete": "Delete"
-        },
-        "confirmDelete": "Are you sure you want to delete this vacation request?",
-        "toasts": {
-          "deleted": "Request deleted",
-          "deleteError": "Error deleting the request"
-        },
-        "editPending": "Edit functionality for request {{id}} is pending implementation."
-      }
-    },
-    "praemien": {
-      "page": {
-        "loading": "Loading bonus summary...",
-        "error": "Failed to load bonus data.",
-        "title": "🎖 Monthly Prämien Summary",
-        "globalLevel": "level achieved:",
-        "patientsPerDay": "{{level}} patients / day",
-        "dailyHistoryTitle": "Daily history",
-        "table": {
-          "date": "Date",
-          "patients": "Trips",
-          "empty": "No data available"
-        }
-      },
-      "levels": {
-        "none": "❌ Minimum not reached",
-        "7": "🥉 Prämie 7",
-        "8": "🥈 Prämie 8",
-        "9": "🎖 Prämie 9",
-        "10": "🏆 Prämie 10"
-      },
-      "history": {
-        "loading": "Loading monthly history...",
-        "empty": "No monthly history available.",
-        "title": "Monthly Prämien History",
-        "table": {
-          "year": "Year",
-          "month": "Month",
-          "avgPatients": "Average patients",
-          "level": "Prämie level"
-        }
-      },
-      "adminUserTab": {
-        "currentTitle": "Current Prämie",
-        "levelPrefix": "Level:",
-        "average": "Average: {{avg}} patients/day",
-        "noData": "No data for the current prämie."
-      }
-    },
-    "mechanics": {
-      "adminPage": {
-        "title": "🔧 Technical breakdown reports",
-        "loading": "Loading issues...",
-        "empty": "No breakdown reports yet.",
-        "dienst": "Dienst #{{num}}",
-        "labels": {
-          "date": "📅 Date:",
-          "time": "⏱ Time:",
-          "team": "Team:",
-          "ambulance": "Ambulance:",
-          "model": "Model:",
-          "numberPlate": "Number plate:",
-          "finalKm": "Final KM:",
-          "issue": "🛠️ Issue:",
-          "seenAt": "Seen at"
-        },
-        "ambulanceFallback": "{{number}} (ID: {{id}})",
-        "delete": "Delete",
-        "confirmDelete": "Are you sure you want to delete this report? This action cannot be undone."
-      },
-      "issueModal": {
-        "title": "🔧 Technical breakdown report",
-        "dienst": "Dienst #{{num}}",
-        "date": "Date",
-        "time": "Time",
-        "driver": "🚗 Driver:",
-        "medic": "🧑‍⚕️ Medic:",
-        "ambulance": "🚐 Ambulance:",
-        "unknownAmbulance": "Unknown",
-        "finalKmLabel": "🔢 Final KM",
-        "finalKmPlaceholder": "Enter final kilometers",
-        "timestamp": "⏱ Timestamp:",
-        "descriptionPlaceholder": "Describe the issue…",
-        "actions": {
-          "cancel": "Cancel",
-          "send": "Send report"
-        }
-      }
-    },
-    "appointments": {
-      "admin": {
-        "title": "Appointments (Admin)"
-      },
-      "worker": {
-        "title": "My Appointments",
-        "confirmDelete": "Are you sure you want to delete this appointment from the history?",
-        "actions": {
-          "delete": "Delete",
-          "deleteTitle": "Delete this appointment"
-        }
-      },
-      "actions": {
-        "refresh": "Refresh",
-        "proposeSlots": "Propose time slots",
-        "request": "Request appointment",
-        "requestTitle": "Request a new appointment",
-        "chooseSlot": "Choose slot",
-        "chooseSlotTitle": "Choose one of the proposed slots"
-      },
-      "status": {
+    "common": {
         "loading": "Loading...",
-        "loadingYear": "Loading yearly calendar...",
-        "loadingMonth": "Loading month...",
-        "loadingMine": "Loading appointments…"
-      },
-      "statusLabel": {
-        "pending": "Pending",
-        "proposed": "Proposed",
-        "confirmed": "Confirmed",
-        "rescheduled": "Rescheduled",
-        "cancelled": "Cancelled"
-      },
-      "pending": {
-        "title": "Pending",
-        "empty": "There are no pending requests."
-      },
-      "next": {
-        "title": "Next appointment"
-      },
-      "requests": {
-        "title": "My requests",
-        "waitingOptions": "You have proposed times pending (admin hasn't provided options yet)."
-      },
-      "history": {
-        "title": "History & other appointments"
-      },
-      "labels": {
-        "when": "When:",
-        "reason": "Reason:",
-        "worker": "Worker:",
-        "status": "Status:",
-        "proposedSlots": "Proposed time slots"
-      },
-      "empty": {
-        "worker": "You don't have appointments yet. Need to contact an admin?"
-      },
-      "propose": {
-        "title": "Proposed time slots",
-        "optionLegend": "Option {{index}}",
-        "dateLabel": "Date (option {{index}})",
-        "datePlaceholder": "YYYY-MM-DD",
-        "dateTitle": "Select a date",
-        "timeLabel": "Start time (option {{index}})",
-        "timePlaceholder": "HH:MM",
-        "timeTitle": "Select a start time",
-        "actions": {
-          "cancel": "Cancel",
-          "submit": "Propose",
-          "submitting": "Sending..."
-        }
-      },
-      "choose": {
-        "title": "Choose a time slot",
-        "empty": "No options available. Please wait for the administrator to propose times.",
-        "optionAria": "Option {{index}}: {{label}}",
-        "actions": {
-          "cancel": "Cancel",
-          "confirm": "Confirm",
-          "confirming": "Confirming..."
-        }
-      },
-      "detail": {
-        "title": "Appointment details",
-        "rebook": "Reschedule",
-        "rebookTitle": "Reschedule",
-        "saveNewDatetime": "Save new date/time",
-        "labels": {
-          "worker": "Worker:",
-          "admin": "Admin:",
-          "currentWhen": "Current date/time:",
-          "status": "Status:",
-          "reason": "Reason",
-          "description": "Description"
-        },
-        "inputs": {
-          "newDate": "New date",
-          "newTime": "New time"
-        },
-        "placeholders": {
-          "date": "YYYY-MM-DD",
-          "time": "HH:MM"
-        },
-        "titles": {
-          "date": "Select a date",
-          "time": "Select a time"
-        },
-        "actions": {
-          "close": "Close",
-          "delete": "Delete",
-          "deleting": "Deleting...",
-          "save": "Save",
-          "saving": "Saving...",
-          "cancelEdit": "Cancel",
-          "cancelling": "Cancelling..."
-        },
-        "cancelThisTitle": "Cancel this appointment",
-        "confirmCancel": "Are you sure you want to cancel this appointment?"
-      },
-      "request": {
-        "title": "Request appointment",
-        "labels": {
-          "reason": "Reason",
-          "details": "Detail / Description"
-        },
-        "placeholders": {
-          "reasonExample": "e.g. Schedule review",
-          "detailsHint": "Briefly describe your request"
-        },
-        "actions": {
-          "cancel": "Cancel",
-          "submit": "Submit request",
-          "submitting": "Sending..."
-        }
-      },
-      "monthGrid": {
-        "title": "Appointments per month · {{year}}",
-        "count_one": "{{count}} appointment",
-        "count_other": "{{count}} appointments",
-        "ariaOpenMonth": "Open month {{label}} {{year}}"
-      },
-      "calendar": {
-        "weekdayLabels": ["M", "T", "W", "T", "F", "S", "S"],
-        "workerFallback": "Worker",
-        "dayAppointmentsTitle": "Appointments for the day",
-        "noAppointments": "No appointments for this day.",
-        "actions": {
-          "close": "Close"
-        },
-        "labels": {
-          "moreWithCount": "+{{count}} more"
-        },
-        "aria": {
-          "day": "Day {{num}}",
-          "emptyCell": "Empty cell",
-          "appointment": "Appointment: {{worker}} at {{time}}"
-        }
-      }
+        "select": "Select",
+        "saving": "Saving...",
+        "create": "Create",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "month": "month",
+        "months": "months",
+        "left": "left"
     },
-    "messages": {
-      "adminPage": {
-        "title": "📨 Send Message",
-        "labels": {
-          "subject": "Subject",
-          "body": "Message",
-          "recipients": "Recipients"
+    "toasts": {
+        "mechanics": {
+            "loadError": "❌ Failed to load reports or ambulances.",
+            "reportSent": "🔧 Issue reported successfully.",
+            "reportError": "❌ Could not report the issue.",
+            "invalidAmbulance": "🚑 Please select a valid ambulance.",
+            "missingDescription": "📝 Please describe the issue before sending.",
+            "invalidFinalKm": "📏 Enter a valid final KM number.",
+            "deleteSuccess": "Report deleted successfully.",
+            "deleteError": "Failed to delete the report."
         },
-        "attachmentHelp": "PDF, JPG or PNG. Max 5MB",
-        "placeholders": {
-          "subject": "Message subject",
-          "body": "Write the message content"
+        "teams": {
+            "loadError": "Failed to load teams"
         },
-        "sendToAll": "Send to all workers",
-        "actions": {
-          "send": "Send message",
-          "viewSent": "📨 View sent messages",
-          "attach": "Attach",
-          "removeAttachment": "Remove attachment"
+        "hospitals": {
+            "loadError": "❌ Failed to load hospitals.",
+            "addSuccess": "🏥 Hospital added successfully.",
+            "addError": "❌ Failed to add hospital.",
+            "updateSuccess": "✅ Hospital updated successfully.",
+            "updateError": "❌ Failed to update hospital.",
+            "deleteSuccess": "🗑️ Hospital deleted.",
+            "deleteError": "❌ Failed to delete hospital.",
+            "stateUpdated": "✅ Hospital status updated",
+            "stateUpdateError": "❌ Error updating status"
+        },
+        "assignments": {
+            "missingFields": "🚫 Fill start time, end time and ambulance.",
+            "samePerson": "🚫 You cannot assign the same person as driver and medic.",
+            "saveSuccess": "✅ Changes saved",
+            "saveError": "❌ Failed to save changes",
+            "deleteSuccess": "✅ Day removed",
+            "deleteError": "❌ Failed to remove the assignment.",
+            "missingDienstId": "🚫 Dienst ID is not defined.",
+            "loadUsersError": "❌ Error loading users.",
+            "loadAmbulancesError": "❌ Error loading ambulances"
+        },
+        "profile": {
+            "saveSuccess": "✅ Profile saved successfully",
+            "saveError": "❌ Failed to save profile",
+            "docDeleted": "✅ Document deleted",
+            "docDeleteError": "❌ Could not delete the document",
+            "imageDeleted": "✅ Profile image removed",
+            "imageDeleteError": "❌ Failed to remove the image",
+            "uploadError": "❌ Failed to upload files",
+            "deleteSuccess": "🗑️ User deleted successfully",
+            "deleteError": "❌ Failed to delete the user"
+        },
+        "vacations": {
+            "requestSent": "✅ Request sent successfully.",
+            "requestError": "❌ Error sending request.",
+            "deleted": "🗑️ Request deleted",
+            "deleteError": "❌ Error deleting request.",
+            "editPending": "Edit request {{id}} feature not yet implemented.",
+            "worker": {
+                "loadError": "❌ Error loading your requests.",
+                "error": "❌ An error occurred.",
+                "respondPending": "📨 Sending response...",
+                "respondSuccess": "✅ Response sent successfully.",
+                "formSuccess": "✅ Request sent successfully."
+            },
+            "admin": {
+                "loadError": "❌ Error loading vacation requests.",
+                "error": "❌ An error occurred while processing the request.",
+                "updating": "🔄 Updating...",
+                "accepted": "✅ Vacation request accepted.",
+                "cancelled": "🛑 Vacation request cancelled.",
+                "updated": "✅ Vacation status updated.",
+                "capacityExceeded": "⚠️ Daily vacation capacity reached. No more requests can be accepted for these days.",
+                "sendingAlt": "📤 Sending alternative...",
+                "altSent": "✅ Alternative option sent.",
+                "cancelling": "🛑 Cancelling...",
+                "deleting": "🗑️ Deleting...",
+                "deleted": "🗑️ Request deleted."
+            }
+        },
+        "messages": {
+            "fillRequired": "✏️ Please fill subject and message",
+            "fillRequiredRecipients": "✏️ Please fill subject and message, and select at least one recipient",
+            "sent": "✅ Message sent successfully",
+            "error": "❌ Failed to send the message",
+            "deleteError": "❌ Failed to delete the message",
+            "invalidFileType": "Invalid file type (only PDF, JPG or PNG)",
+            "fileTooLarge": "The file exceeds the 5MB limit"
+        },
+        "workday": {
+            "needInitialData": "🚐 Select an ambulance and initial KM.",
+            "initialDataConfirmed": "✅ Data confirmed. You can now record trips.",
+            "loadTripsError": "❌ Failed to load today's trips.",
+            "loadAssignmentError": "❌ Failed to load today's assignment.",
+            "mandatoryFields": "✏️ Please fill in all required fields.",
+            "noAssignmentToday": "❌ You have no dienst assignment today.",
+            "tooEarly": "⏳ You can only create trips 30 minutes before the Dienst starts.",
+            "tripSaved": "✅ Trip saved.",
+            "tripSaveError": "❌ Failed to save the trip.",
+            "anschlussSaved": "✅ Patient 1 (Anschluss) saved.",
+            "anschlussSaveError": "❌ Failed to save patient 1.",
+            "enterAmbulanceAndKm": "🚐 Enter ambulance number and initial KM.",
+            "enterFinalKmInModal": "📏 Enter the final kilometers in the modal.",
+            "finalKmLessThanInitial": "❌ Final KM cannot be less than initial KM.",
+            "dayClosedSuccess": "✅ Day closed and data sent to admin.",
+            "dayCloseError": "❌ Could not close the day.",
+            "partialSent": "✅ Partial closure sent to admin.",
+            "partialSentWithIssue": "✅ Partial closure sent to admin. Includes issue report.",
+            "partialSendError": "❌ Failed to send partial closure.",
+            "partial": {
+                "reportRequired": "✏️ Please enter a reason for the partial closure.",
+                "finalKmRequired": "📏 Enter the final kilometers.",
+                "issueRegistered": "🛠️ Issue recorded. You can now send the partial closure."
+            },
+            "final": {
+                "finalKmRequired": "📏 Enter the final kilometers.",
+                "issueRegistered": "🛠️ Issue recorded. You can now send the Final closure."
+            }
+        },
+        "appointments": {
+            "loadError": "❌ Failed to load appointments.",
+            "reloadPendingError": "❌ Failed to reload pending appointments.",
+            "reloadConfirmedError": "❌ Failed to reload confirmed appointments.",
+            "cancelSuccess": "✅ Appointment cancelled.",
+            "cancelError": "❌ Failed to cancel appointment.",
+            "invalidDateTime": "🚫 Invalid date/time.",
+            "pastDateError": "🚫 Cannot schedule in the past.",
+            "rescheduleSuccess": "✅ Appointment rescheduled.",
+            "rescheduleError": "❌ Failed to reschedule appointment.",
+            "proposeSuccess": "✅ Options proposed.",
+            "proposeError": "❌ Failed to propose options.",
+            "chooseRequired": "⚠️ Please select an option.",
+            "confirmSuccess": "✅ Appointment confirmed.",
+            "confirmError": "❌ Failed to confirm appointment.",
+            "requestFill": "✏️ Please complete reason and details.",
+            "requestSuccess": "✅ Request sent.",
+            "requestError": "❌ Failed to create request.",
+            "deleteSuccess": "Appointment deleted.",
+            "deleteError": "Could not delete the appointment."
+        },
+        "users": {
+            "loadError": "❌ Failed to load users.",
+            "updateSuccess": "✅ User updated successfully.",
+            "updateError": "❌ Failed to update user.",
+            "deleteSuccess": "🗑️ User deleted successfully.",
+            "deleteError": "❌ Failed to delete user."
+        },
+        "auth": {
+            "sessionExpiring": "⚠️ Your session is about to expire."
         }
-      },
-      "sentPage": {
-        "title": "📨 Messages sent to all",
-        "sentOn": "Sent on",
-        "empty": "No general messages have been sent yet.",
-        "confirmDelete": "Are you sure you want to delete this message?",
-        "deleted": "Message deleted",
-        "deleteError": "Error deleting the message",
-        "actions": {
-          "back": "← Back",
-          "view": "View",
-          "hide": "Hide",
-          "delete": "Delete"
-        },
-        "attachments": "Attachments"
-      },
-      "workerPage": {
-        "title": "📨 Your Messages",
-        "loading": "Loading messages...",
-        "empty": "You have no messages.",
-        "from": "From:",
-        "actions": {
-          "deleteTitle": "Delete message"
-        },
-        "attachments": "Attachments"
-      },
-      "userTab": {
-        "title": "📤 Send message to worker",
-        "fields": {
-          "subject": "Subject",
-          "body": "Message"
-        },
-        "placeholders": {
-          "subject": "Write the message subject",
-          "body": "Write your message here..."
-        },
-        "actions": {
-          "send": "Send message",
-          "sending": "Sending..."
-        },
-        "toasts": {
-          "fillRequired": "Please fill in both subject and message body",
-          "sent": "Message sent successfully",
-          "error": "There was an error sending the message"
-        }
-      }
-    },
-    "ambulances": {
-      "adminPage": {
-        "title": "Ambulance Administration",
-        "loading": "Loading ambulances...",
-        "error": "Failed to load ambulances",
-        "empty": "No ambulances registered.",
-        "table": {
-          "brand": "Brand",
-          "model": "Model",
-          "licensePlate": "License plate",
-          "ambulanceNumber": "Ambulance number",
-          "actions": "Actions"
-        },
-        "actions": {
-          "new": "+ New Ambulance",
-          "edit": "Edit",
-          "delete": "Delete"
-        },
-        "confirmDelete": "Are you sure you want to delete this ambulance?",
-        "alerts": {
-          "tokenMissing": "Token not available",
-          "deleteError": "Failed to delete ambulance",
-          "saveError": "Failed to save ambulance"
-        }
-      },
-      "formModal": {
-        "titleNew": "Create New Ambulance",
-        "titleEdit": "Edit Ambulance",
-        "fields": {
-          "brand": "Brand:",
-          "model": "Model:",
-          "licensePlate": "License plate:",
-          "ambulanceNumber": "Ambulance number:"
-        },
-        "validation": {
-          "required": "This field is required",
-          "maxLength": "Must not exceed {{max}} characters"
-        },
-        "actions": {
-          "cancel": "Cancel",
-          "save": "Save"
-        }
-      }
-    },
-    "diensts": {
-      "adminPage": {
-        "title": "Dienst Plan (Admin)",
-        "weekRange": "Week from {{from}} to {{to}}",
-        "actions": {
-          "create": "Create",
-          "delete": "Delete"
-        },
-        "confirmCreate": "Create templates for the week starting {{date}}?",
-        "confirmDelete": "Delete all Diensts for the week starting {{date}}?",
-        "assignTeamToWeek": "Assign Team",
-        "assignUserToWeek": "Assign worker to week",
-        "alerts": {
-          "createOk": "✅ Templates created successfully",
-          "createErr": "❌ Could not create templates. They may already exist.",
-          "deleteOk": "🗑️ Diensts deleted successfully",
-          "deleteErr": "❌ Could not delete Diensts."
-        },
-        "dienstLabel": "Dienst #{{num}}",
-        "freeDay": "Free",
-        "assignWeekOk": "✅ Team successfully assigned for the week",
-        "assignWeekErr": "❌ Could not assign team for the week",
-        "assignUserWeekOk": "✅ Worker successfully assigned for the week.",
-        "assignUserWeekErr": "❌ Error assigning worker to the week. Please try again.",
-        "assignUserWeekConflict": "⚠️ The worker is already assigned to another Dienst this week.",
-        "assignUserWeekPscheinExpired": "❌ Cannot assign: the driver's P-Schein is expired.",
-        "assignUserNoAssignableDays": "⚠️ No days could be assigned. The worker has vacations or unavailable days.",
-        "driverPscheinExpired": "❌ Driver’s P-Schein expired",
-        "driverPscheinExpiredLabel": "❌ P-Schein expired",
-        "driverPscheinWarning_one": "⚠️ The P-Schein expires in {{count}} month",
-        "driverPscheinWarning_other": "⚠️ The P-Schein expires in {{count}} months",
-        "teamWeeklyConflict": "⚠️ This team is already assigned to another Dienst this week.",
-        "teamWeeklyConflictWithDates": "⚠️ This team already has assignments this week.",
-        "errors": {
-          "pscheinExpired": "❌ Cannot assign: driver's P-Schein is expired.",
-          "weeklyConflict": "⚠️ Cannot assign: one member is already assigned in another Dienst this week.",
-          "weeklyConflictWithDates": "⚠️ Cannot assign: there are already assignments this week. Driver: {{driverDates}}. Medic: {{medicDates}}."
-        },
-        "clearWeekPeople": "Clear assignments for the week",
-        "clearPeopleWeek": "Clear assignments for the week",
-        "confirmClear": "Remove all assignments (driver and medic) for Dienst #{{num}} (week starting {{date}})?",
-        "clearOk": "🧽 Assignments cleared for the week",
-        "clearErr": "❌ Could not clear assignments for the week",
-        "swapRolesWeek": "Swap roles for the week",
-        "confirmSwap": "Do you want to swap the roles in Dienst #{{num}} (week starting {{date}})?",
-        "swapWeekOk": "✅ Roles swapped successfully.",
-        "swapWeekErr": "❌ Could not swap roles.",
-        "swapWeekNotPermitted": "❌ Cannot swap: one of the members cannot perform the target role (incompatible role or expired P-Schein).",
-        "considerSwap": "⚠️ The driver’s P-Schein is expired, but they can still work as a medic. Consider swapping roles (⇅).",
-        "assignOneAria": "Assign a worker for the whole week",
-        "legendCantDrive": "Cannot drive, P-Schein expired"
-      },
-      "assignTeamModal": {
-        "title": "Assign Team to week",
-        "select": "Select a pair",
-        "confirm": "Assign"
-      },
-      "weekModals": {
-        "vacations": "Holidays",
-        "vacationsHint": "Hover to see holiday dates"
-      },
-      "workerPage": {
-        "title": "Your assigned days",
-        "loading": "Loading assigned days...",
-        "weekRange": "Week from {{from}} to {{to}}",
-        "freeDay": "Free"
-      },
-      "dienstPage": {
-        "title": "Your Diensts",
-        "loading": "Loading diensts...",
-        "range": "From {{from}} to {{to}}",
-        "freeDay": "Free"
-      },
-      "adminUserTab": {
-        "title": "Assigned Diensts",
-        "loading": "Loading assigned days..."
-      }
-    },
-    "adminUserDetail": {
-      "title": "Worker Details",
-      "loading": "Loading worker data...",
-      "nameLabel": "Name:",
-      "tabs": {
-        "profile": "Profile",
-        "diensts": "Diensts",
-        "praemien": "Prämien",
-        "vacations": "Vacations",
-        "sick": "Sick leaves",
-        "messages": "Messages"
-      }
-    },
-    "sick": {
-      "admin": {
-        "empty": "No sick leaves registered for this worker",
-        "listError": "Failed to load sick leaves",
-        "th": {
-          "dates": "Dates",
-          "days": "Days",
-          "status": "Status",
-          "doc": "Documents"
-        }
-      },
-      "status": {
-        "pending": "Pending",
-        "accepted": "Accepted",
-        "rejected": "Rejected"
-      },
-      "docs": {
-        "none": "No document",
-        "count": "{{n}} documents"
-      }
-    },
-    "workday": {
-      "title": "📋 My Working Day: {{date}}",
-      "closedDay": "✅ Day closed. No active shift today.",
-      "noAssignment": "🚫 You don't have a shift assigned today.",
-      "cantStart": "⏳ You can record trips starting 30 minutes before your shift. Start time: {{start}}",
-      "dienstTimeLabel": "⏰ Shift:",
-      "teamLabel": "Team:",
-      "selectAmbulance": {
-        "label": "🚐 Select ambulance",
-        "placeholder": "-- Select an ambulance --"
-      },
-      "initialKm": "🔢 Initial KM",
-      "confirmInitialData": "✅ Confirm initial data",
-      "auftragNumber": "Auftrag number",
-      "patientName": "Patient name",
-      "fromAddress": "Pickup address",
-      "toAddress": "Drop-off address",
-      "time": {
-        "warning": "Call",
-        "atHome": "Origin",
-        "pickup": "Pickup",
-        "arrival": "Arrival",
-        "end": "Free"
-      },
-      "km": {
-        "start": "KM start",
-        "end": "KM end"
-      },
-      "anschluss": {
-        "addTitle": "Add Anschluss",
-        "cancelTitle": "Cancel Anschluss",
-        "addLabel": "Anschluss",
-        "cancelLabel": "Cancel Anschluss"
-      },
-      "storno": {
-        "label": "Storno",
-        "countsQuestion": "Does this trip count?",
-        "counts": {
-          "yes": "✅ Yes, counts (1)",
-          "no": "❌ No, doesn't count (0)"
-        }
-      },
-      "reports": {
-        "label": "Notes / reports",
-        "placeholder": "Notes about the trip",
-        "title": "Write any note here"
-      },
-      "saveTrip": "Save trip",
-      "tripSummary": "🧾 Trip summary",
-      "tripCancelledTag": "(cancelled)",
-      "closeAndSend": "✅ Close day and send summary",
-      "needVehicleData": "🚐 Enter the ambulance number and initial KM and click \"Confirm initial data\" to create trips.",
-      "closeQuestion": {
-        "title": "Is it the end of the day?",
-        "yes": "✅ Yes, final closure",
-        "partial": "⚠️ No, send partial closure",
-        "cancel": "Cancel"
-      },
-      "partial": {
-        "title": "🟠 Partial day review",
-        "totalPatients": "Total trips for bonus: {{count}}",
-        "placeholders": {
-          "report": "Reason for partial closure...",
-          "finalKm": "Ambulance final kilometers"
-        },
-        "issue": {
-          "button": "Issue",
-          "registered": "🛠️ Issue recorded. You can now send the partial closure."
-        },
-        "actions": {
-          "cancel": "Cancel",
-          "sendToAdmin": "Send to Admin"
-        },
-        "toasts": {
-          "reportRequired": "✏️ Please enter a reason for the partial closure.",
-          "finalKmRequired": "📏 Enter the final kilometers."
-        }
-      },
-      "common": {
-        "unknownAmbulance": "Unknown"
-      },
-      "final": {
-        "title": "✅ Final day review",
-        "totalPatients": "Total trips for bonus: {{count}}",
-        "placeholders": {
-          "note": "Reason for final closure (optional)…",
-          "finalKm": "Ambulance final kilometers"
-        },
-        "issue": {
-          "button": "Issue",
-          "autoNote": "⚠️ Issue"
-        },
-        "actions": {
-          "cancel": "Cancel",
-          "sendToAdmin": "Send to Admin"
-        },
-        "toasts": {
-          "finalKmRequired": "📏 Enter the final kilometers."
-        }
-      },
-      "reviewSummary": {
-        "labels": {
-          "team": "👥 Team:",
-          "observations": "📝 Notes:",
-          "deletedUser": "User deleted",
-          "noName": "No name",
-          "totalKm": "Total: {{km}} km"
-        },
-        "table": {
-          "auftrag": "Auftrag",
-          "patient": "Patient",
-          "pickup": "From",
-          "destination": "To",
-          "warning": "Call",
-          "homeArrival": "Origin",
-          "kmStart": "KM start",
-          "pickupTime": "Pickup",
-          "arrivalTime": "Arrival",
-          "kmEnd": "KM end",
-          "timeEnd": "Free",
-          "kmDiff": "KM diff",
-          "praemie": "Bonus"
-        }
-      }
-    },
-    "summaries": {
-      "admin": {
-        "title": "Shift Reports",
-        "loading": "Loading summaries...",
-        "dateHeader": "📅 {{date}}",
-        "table": {
-          "headers": {
-            "dienstTime": "Dienst",
-            "ambulance": "Ambulance",
-            "team": "👥 Team",
-            "kmRange": "Km",
-            "kmTotal": "Total Km",
-            "trips": "Trips",
-            "premie": "Bonus",
-            "noteReason": "Reason",
-            "closure": "Closure"
-          }
-        },
-        "row": {
-          "dienstNumber": "Dienst #{{num}}",
-          "noSchedule": "No schedule",
-          "start": "Start:",
-          "end": "End:",
-          "final": "✅ Final",
-          "partial": "Partial"
-        }
-      }
-    },
-    "components": {
-      "tripModal": {
-        "close": "Close",
-        "title": "Trip details",
-        "auftrag": "Assignment",
-        "patient": "Patient",
-        "noName": "No name",
-        "from": "From",
-        "noAddress": "No address",
-        "to": "To",
-        "noDestination": "No destination",
-        "time": "Time",
-        "km": "KM",
-        "total": "Total",
-        "reports": "Notes",
-        "noReports": "No notes",
-        "cancelled": "This trip was cancelled",
-        "cancelledAtPickup": "at pickup point"
-      }
     }
-  },
-  "common": {
-    "loading": "Loading...",
-    "select": "Select",
-    "saving": "Saving...",
-    "create": "Create",
-    "cancel": "Cancel",
-    "delete": "Delete",
-    "month": "month",
-    "months": "months",
-    "left": "left"
-  },
-  "toasts": {
-    "mechanics": {
-      "loadError": "❌ Failed to load reports or ambulances.",
-      "reportSent": "🔧 Issue reported successfully.",
-      "reportError": "❌ Could not report the issue.",
-      "invalidAmbulance": "🚑 Please select a valid ambulance.",
-      "missingDescription": "📝 Please describe the issue before sending.",
-      "invalidFinalKm": "📏 Enter a valid final KM number.",
-      "deleteSuccess": "Report deleted successfully.",
-      "deleteError": "Failed to delete the report."
-    },
-    "teams": {
-      "loadError": "Failed to load teams"
-    },
-    "hospitals": {
-      "loadError": "❌ Failed to load hospitals.",
-      "addSuccess": "🏥 Hospital added successfully.",
-      "addError": "❌ Failed to add hospital.",
-      "updateSuccess": "✅ Hospital updated successfully.",
-      "updateError": "❌ Failed to update hospital.",
-      "deleteSuccess": "🗑️ Hospital deleted.",
-      "deleteError": "❌ Failed to delete hospital.",
-      "stateUpdated": "✅ Hospital status updated",
-      "stateUpdateError": "❌ Error updating status"
-    },
-    "assignments": {
-      "missingFields": "🚫 Fill start time, end time and ambulance.",
-      "samePerson": "🚫 You cannot assign the same person as driver and medic.",
-      "saveSuccess": "✅ Changes saved",
-      "saveError": "❌ Failed to save changes",
-      "deleteSuccess": "✅ Day removed",
-      "deleteError": "❌ Failed to remove the assignment.",
-      "missingDienstId": "🚫 Dienst ID is not defined.",
-      "loadUsersError": "❌ Error loading users.",
-      "loadAmbulancesError": "❌ Error loading ambulances"
-    },
-    "profile": {
-      "saveSuccess": "✅ Profile saved successfully",
-      "saveError": "❌ Failed to save profile",
-      "docDeleted": "✅ Document deleted",
-      "docDeleteError": "❌ Could not delete the document",
-      "imageDeleted": "✅ Profile image removed",
-      "imageDeleteError": "❌ Failed to remove the image",
-      "uploadError": "❌ Failed to upload files",
-      "deleteSuccess": "🗑️ User deleted successfully",
-      "deleteError": "❌ Failed to delete the user"
-    },
-    "vacations": {
-      "requestSent": "✅ Request sent successfully.",
-      "requestError": "❌ Error sending request.",
-      "deleted": "🗑️ Request deleted",
-      "deleteError": "❌ Error deleting request.",
-      "editPending": "Edit request {{id}} feature not yet implemented.",
-      "worker": {
-        "loadError": "❌ Error loading your requests.",
-        "error": "❌ An error occurred.",
-        "respondPending": "📨 Sending response...",
-        "respondSuccess": "✅ Response sent successfully.",
-        "formSuccess": "✅ Request sent successfully."
-      },
-      "admin": {
-        "loadError": "❌ Error loading vacation requests.",
-        "error": "❌ An error occurred while processing the request.",
-        "updating": "🔄 Updating...",
-        "accepted": "✅ Vacation request accepted.",
-        "cancelled": "🛑 Vacation request cancelled.",
-        "updated": "✅ Vacation status updated.",
-        "capacityExceeded": "⚠️ Daily vacation capacity reached. No more requests can be accepted for these days.",
-        "sendingAlt": "📤 Sending alternative...",
-        "altSent": "✅ Alternative option sent.",
-        "cancelling": "🛑 Cancelling...",
-        "deleting": "🗑️ Deleting...",
-        "deleted": "🗑️ Request deleted."
-      }
-    },
-    "messages": {
-      "fillRequired": "✏️ Please fill subject and message",
-      "fillRequiredRecipients": "✏️ Please fill subject and message, and select at least one recipient",
-      "sent": "✅ Message sent successfully",
-      "error": "❌ Failed to send the message",
-      "deleteError": "❌ Failed to delete the message",
-      "invalidFileType": "Invalid file type (only PDF, JPG or PNG)",
-      "fileTooLarge": "The file exceeds the 5MB limit"
-    },
-    "workday": {
-      "needInitialData": "🚐 Select an ambulance and initial KM.",
-      "initialDataConfirmed": "✅ Data confirmed. You can now record trips.",
-      "loadTripsError": "❌ Failed to load today's trips.",
-      "loadAssignmentError": "❌ Failed to load today's assignment.",
-      "mandatoryFields": "✏️ Please fill in all required fields.",
-      "noAssignmentToday": "❌ You have no dienst assignment today.",
-      "tooEarly": "⏳ You can only create trips 30 minutes before the Dienst starts.",
-      "tripSaved": "✅ Trip saved.",
-      "tripSaveError": "❌ Failed to save the trip.",
-      "anschlussSaved": "✅ Patient 1 (Anschluss) saved.",
-      "anschlussSaveError": "❌ Failed to save patient 1.",
-      "enterAmbulanceAndKm": "🚐 Enter ambulance number and initial KM.",
-      "enterFinalKmInModal": "📏 Enter the final kilometers in the modal.",
-      "finalKmLessThanInitial": "❌ Final KM cannot be less than initial KM.",
-      "dayClosedSuccess": "✅ Day closed and data sent to admin.",
-      "dayCloseError": "❌ Could not close the day.",
-      "partialSent": "✅ Partial closure sent to admin.",
-      "partialSentWithIssue": "✅ Partial closure sent to admin. Includes issue report.",
-      "partialSendError": "❌ Failed to send partial closure.",
-      "partial": {
-        "reportRequired": "✏️ Please enter a reason for the partial closure.",
-        "finalKmRequired": "📏 Enter the final kilometers.",
-        "issueRegistered": "🛠️ Issue recorded. You can now send the partial closure."
-      },
-      "final": {
-        "finalKmRequired": "📏 Enter the final kilometers.",
-        "issueRegistered": "🛠️ Issue recorded. You can now send the Final closure."
-      }
-    },
-    "appointments": {
-      "loadError": "❌ Failed to load appointments.",
-      "reloadPendingError": "❌ Failed to reload pending appointments.",
-      "reloadConfirmedError": "❌ Failed to reload confirmed appointments.",
-      "cancelSuccess": "✅ Appointment cancelled.",
-      "cancelError": "❌ Failed to cancel appointment.",
-      "invalidDateTime": "🚫 Invalid date/time.",
-      "pastDateError": "🚫 Cannot schedule in the past.",
-      "rescheduleSuccess": "✅ Appointment rescheduled.",
-      "rescheduleError": "❌ Failed to reschedule appointment.",
-      "proposeSuccess": "✅ Options proposed.",
-      "proposeError": "❌ Failed to propose options.",
-      "chooseRequired": "⚠️ Please select an option.",
-      "confirmSuccess": "✅ Appointment confirmed.",
-      "confirmError": "❌ Failed to confirm appointment.",
-      "requestFill": "✏️ Please complete reason and details.",
-      "requestSuccess": "✅ Request sent.",
-      "requestError": "❌ Failed to create request.",
-      "deleteSuccess": "Appointment deleted.",
-      "deleteError": "Could not delete the appointment."
-    },
-    "users": {
-      "loadError": "❌ Failed to load users.",
-      "updateSuccess": "✅ User updated successfully.",
-      "updateError": "❌ Failed to update user.",
-      "deleteSuccess": "🗑️ User deleted successfully.",
-      "deleteError": "❌ Failed to delete user."
-    },
-    "auth": {
-      "sessionExpiring": "⚠️ Your session is about to expire."
-    }
-  }
 }

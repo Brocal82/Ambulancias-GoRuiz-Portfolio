@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getMonthlyPraemienSummary } from "../api/praemien";
 import { useAuth } from "../hooks/useAuth";
-import WorkerPraemienHistory from "./WorkerPraemienHistory";
+import WorkerPraemienHistory from "../components/praemien/WorkerPraemienHistory";
 import { useTranslation } from "react-i18next";
 import {
   getPraemieI18nKey,

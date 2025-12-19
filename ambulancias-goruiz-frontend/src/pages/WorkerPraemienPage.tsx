@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getMonthlyPraemienSummary } from "../api/praemien";
 import type { MonthlyPraemienDay } from "../api/praemien";
 import { saveMonthlyPraemie } from "../api/praemienHistory";
-import WorkerPraemienHistory from "./WorkerPraemienHistory";
+import WorkerPraemienHistory from "../components/praemien/WorkerPraemienHistory";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { formatDate } from "../utils/intl";
