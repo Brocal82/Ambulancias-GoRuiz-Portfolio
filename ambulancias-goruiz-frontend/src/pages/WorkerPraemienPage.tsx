@@ -7,12 +7,11 @@ import WorkerPraemienHistory from "../components/praemien/WorkerPraemienHistory"
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import MonthlyMiniCalendar from "../components/praemien/MonthlyMiniCalendar";
+import PraemieProgressBars from "../components/praemien/PraemieProgressBars";
 import {
   getPraemieI18nKey,
   getPraemieLevelFromAverage,
 } from "../utils/praemien/praemienLevels";
-import PraemieProgressBars from "../components/praemien/PraemieProgressBars";
-
 
 const WorkerPraemienPage = () => {
   const { token } = useAuth();
@@ -42,8 +41,8 @@ const WorkerPraemienPage = () => {
       });
   }, [token, t]);
 
-  // Nivel global (derivado, no estado)
-  const premieLevelLabel = useMemo(() => {
+  // Label del nivel (lo seguimos calculando aquí SOLO para guardarlo en el historial mensual)
+  const premieLevelLabelForSaving = useMemo(() => {
     const level = getPraemieLevelFromAverage(media);
     return t(getPraemieI18nKey(level));
   }, [media, t]);
@@ -59,7 +58,7 @@ const WorkerPraemienPage = () => {
     saveMonthlyPraemie(token, {
       month: monthString,
       averagePatients: media,
-      premieLevel: premieLevelLabel,
+      premieLevel: premieLevelLabelForSaving,
     })
       .then(() => {
         // ok
@@ -68,8 +67,7 @@ const WorkerPraemienPage = () => {
         // silent warning, como antes
         console.warn("No se pudo guardar el resumen mensual.");
       });
-  }, [media, premieLevelLabel, token]);
-
+  }, [media, premieLevelLabelForSaving, token]);
 
   if (loading)
     return (
@@ -80,23 +78,12 @@ const WorkerPraemienPage = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 text-center mb-4">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 text-center mb-8">
           {t("pages.praemien.page.title")}
         </h1>
 
-        {/* Nivel global alcanzado */}
-        {media > 0 && (
-          <p className="text-center text-sm text-slate-700 mb-6">
-            {t("pages.praemien.page.globalLevel")}{" "}
-            <span className="font-semibold text-blue-600">
-              {premieLevelLabel}
-            </span>
-          </p>
-        )}
-
-        {/* Barras de prämien */}
+        {/* Barras + nivel global dentro del componente */}
         <PraemieProgressBars averagePatients={media} days={summaries} />
-
 
         {/* Historial diario (mini-calendario mensual) */}
         <div className="mx-auto max-w-3xl">
@@ -107,8 +94,7 @@ const WorkerPraemienPage = () => {
           <MonthlyMiniCalendar days={summaries} />
         </div>
 
-
-        {/* Historial mensual (componente existente) */}
+        {/* Historial mensual */}
         <div className="mx-auto max-w-3xl mt-8">
           <WorkerPraemienHistory />
         </div>

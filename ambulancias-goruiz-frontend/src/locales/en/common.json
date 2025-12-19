@@ -514,7 +514,7 @@
                 "loading": "Loading bonus summary...",
                 "error": "Failed to load bonus data.",
                 "title": "🎖 Monthly Prämien Summary",
-                "globalLevel": "level achieved:",
+                "globalLevel": "Level achieved:",
                 "patientsPerDay": "{{level}} patients / day",
                 "dailyHistoryTitle": "Daily history",
                 "table": {
