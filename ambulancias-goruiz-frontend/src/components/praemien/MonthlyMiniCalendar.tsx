@@ -26,7 +26,7 @@ function mondayIndex(jsDay: number): number {
 }
 
 export default function MonthlyMiniCalendar({ days }: Props) {
-    const { i18n } = useTranslation();
+    const { i18n, t } = useTranslation();
 
     const { monthTitle, cells } = useMemo(() => {
         // Si no hay días, igualmente renderizamos el mes actual vacío (sin valores)
@@ -156,11 +156,16 @@ export default function MonthlyMiniCalendar({ days }: Props) {
     return (
         <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
             {/* Header */}
-            <div className="flex items-center justify-between mb-3">
-                <h2 className="text-base font-semibold text-slate-900 capitalize">
-                    {monthTitle || "—"}
+            <div className="flex items-baseline justify-between mb-3">
+                <h2 className="text-base font-semibold text-slate-900">
+                    {t("pages.praemien.page.dailyHistoryTitle")}
                 </h2>
+
+                <span className="text-xs text-slate-500 tabular-nums capitalize">
+                    {monthTitle || "—"}
+                </span>
             </div>
+
 
             {/* Weekday row */}
             <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-slate-600 mb-2">

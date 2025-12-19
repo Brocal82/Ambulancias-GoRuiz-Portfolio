@@ -87,12 +87,9 @@ const WorkerPraemienPage = () => {
 
         {/* Historial diario (mini-calendario mensual) */}
         <div className="mx-auto max-w-3xl">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">
-            {t("pages.praemien.page.dailyHistoryTitle")}
-          </h2>
-
           <MonthlyMiniCalendar days={summaries} />
         </div>
+
 
         {/* Historial mensual */}
         <div className="mx-auto max-w-3xl mt-8">
