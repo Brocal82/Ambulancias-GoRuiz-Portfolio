@@ -6,7 +6,7 @@ import { saveMonthlyPraemie } from "../api/praemienHistory";
 import WorkerPraemienHistory from "./WorkerPraemienHistory";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { formatDate } from "../utils/intl";
+import MonthlyMiniCalendar from "../components/praemien/MonthlyMiniCalendar";
 import {
   getPraemieI18nKey,
   getPraemieLevelFromAverage,
@@ -148,60 +148,21 @@ const WorkerPraemienPage = () => {
           })}
         </div>
 
-        {/* Historial diario */}
-        <div className="mx-auto max-w-3xl rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
+        {/* Historial diario (mini-calendario mensual) */}
+        <div className="mx-auto max-w-3xl">
           <h2 className="text-lg font-semibold text-slate-900 mb-4">
             {t("pages.praemien.page.dailyHistoryTitle")}
           </h2>
 
-          <div className="overflow-y-auto max-h-96 rounded-xl ring-1 ring-slate-200">
-            <table className="w-full table-fixed">
-              <colgroup>
-                <col className="w-1/2" />
-                <col className="w-1/2" />
-              </colgroup>
+          <MonthlyMiniCalendar days={summaries} />
 
-              <thead className="bg-slate-50 sticky top-0 z-10">
-                <tr className="text-center">
-                  <th className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-900">
-                    {t("pages.praemien.page.table.date")}
-                  </th>
-                  <th className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-900">
-                    {t("pages.praemien.page.table.patients")}
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-slate-200">
-                {summaries.map(({ date, totalCountedPatients }) => (
-                  <tr
-                    key={date}
-                    className="hover:bg-blue-50/50 transition-colors text-center"
-                  >
-                    <td className="px-4 py-2 text-sm text-slate-800">
-                      {formatDate(date, {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                      })}
-                    </td>
-                    <td className="px-4 py-2 text-sm font-semibold text-slate-900 tabular-nums">
-                      {totalCountedPatients}
-                    </td>
-                  </tr>
-                ))}
-
-                {summaries.length === 0 && (
-                  <tr>
-                    <td colSpan={2} className="text-center py-6 text-slate-400">
-                      {t("pages.praemien.page.table.empty")}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          {summaries.length === 0 && (
+            <p className="text-center py-6 text-slate-400">
+              {t("pages.praemien.page.table.empty")}
+            </p>
+          )}
         </div>
+
 
         {/* Historial mensual (componente existente) */}
         <div className="mx-auto max-w-3xl mt-8">
