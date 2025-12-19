@@ -29,16 +29,54 @@ export default function MonthlyMiniCalendar({ days }: Props) {
     const { i18n } = useTranslation();
 
     const { monthTitle, cells } = useMemo(() => {
-        // Si no hay días, devolvemos una estructura vacía
+        // Si no hay días, igualmente renderizamos el mes actual vacío (sin valores)
         if (!days || days.length === 0) {
-            return {
-                monthTitle: "",
-                cells: [] as Array<
-                    | { type: "empty"; key: string }
-                    | { type: "day"; key: string; dayNumber: number; value?: number }
-                >,
-            };
+            const now = new Date();
+            const year = now.getFullYear();
+            const month0 = now.getMonth(); // 0..11
+
+            const monthFormatter = new Intl.DateTimeFormat(i18n.language || undefined, {
+                month: "long",
+            });
+            const yearFormatter = new Intl.DateTimeFormat(i18n.language || undefined, {
+                year: "numeric",
+            });
+
+            const monthTitleLocal = `${monthFormatter.format(
+                new Date(year, month0, 1),
+            )} ${yearFormatter.format(new Date(year, month0, 1))}`;
+
+            const totalDays = daysInMonth(year, month0);
+
+            const firstOfMonth = new Date(year, month0, 1);
+            const offset = mondayIndex(firstOfMonth.getDay()); // 0..6
+
+            const result: Array<
+                | { type: "empty"; key: string }
+                | { type: "day"; key: string; dayNumber: number; value?: number }
+            > = [];
+
+            for (let i = 0; i < 42; i++) {
+                const dayNum = i - offset + 1;
+                if (dayNum < 1 || dayNum > totalDays) {
+                    result.push({ type: "empty", key: `e-${i}` });
+                    continue;
+                }
+
+                const d = new Date(year, month0, dayNum);
+                const key = d.toISOString().slice(0, 10);
+
+                result.push({
+                    type: "day",
+                    key,
+                    dayNumber: dayNum,
+                    value: undefined,
+                });
+            }
+
+            return { monthTitle: monthTitleLocal, cells: result };
         }
+
 
         // Asumimos que "days" es del mes actual (lo que devuelve tu API).
         // Tomamos el primer elemento como referencia.
