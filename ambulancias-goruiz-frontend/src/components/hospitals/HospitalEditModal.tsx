@@ -1,6 +1,8 @@
 import type { Hospital } from "../../types/hospital";
 import { useEffect, useMemo, useRef, useState, useId } from "react";
 import { useTranslation } from "react-i18next";
+import { getHospitalIsOpen } from "../../utils/hospitals/status";
+
 
 interface Props {
   hospital: Hospital;
@@ -12,15 +14,10 @@ interface Props {
 
 type StatusUnion = "open" | "closed";
 
-const toLocalStatus = (h: any): boolean | undefined => {
-  if (typeof h?.isOpen === "boolean") return h.isOpen;
-  if (typeof h?.status === "string") {
-    const v = h.status.toLowerCase();
-    if (v === "open") return true;
-    if (v === "closed") return false;
-  }
-  return undefined;
+const toLocalStatus = (h: Hospital): boolean | undefined => {
+  return getHospitalIsOpen(h);
 };
+
 
 const fromLocalStatus = (
   base: any,
@@ -146,11 +143,10 @@ const HospitalEditModal = ({
   const footerBadge =
     typeof isOpenState === "boolean" ? (
       <span
-        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
-          isOpenState
+        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${isOpenState
             ? "bg-green-50 text-green-700 ring-1 ring-green-200"
             : "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
-        }`}
+          }`}
       >
         {isOpenState
           ? t("pages.hospitals.status.open", "Abierto")
@@ -401,11 +397,10 @@ const HospitalEditModal = ({
               <button
                 type="submit"
                 disabled={!canSave}
-                className={`inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-white shadow ${
-                  canSave
+                className={`inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-white shadow ${canSave
                     ? "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     : "bg-slate-300 cursor-not-allowed"
-                }`}
+                  }`}
               >
                 {t("common.save", "Guardar")}
               </button>
