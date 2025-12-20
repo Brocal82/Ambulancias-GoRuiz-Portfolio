@@ -20,7 +20,6 @@ import WorkerVacationsPage from "./pages/WorkerVacationsPage";
 import WorkerMessagesPage from "./pages/WorkerMessagesPage";
 import WorkerAppointmentsPage from "./pages/WorkerAppointmentsPage";
 import WorkerSickLeavesPage from "./pages/WorkerSickLeavesPage";
-
 import MyWorkday from "./pages/MyWorkDay";
 
 import AdminDashboard from "./pages/AdminDashboard";
@@ -51,211 +50,40 @@ export default function App() {
 
           {/* Rutas protegidas */}
           <Route element={<RequireAuth />}>
-            {/* Trabajador */}
-            <Route
-              path="/profile"
-              element={
-                <AppLayout>
-                  <Profile />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/worker"
-              element={
-                <AppLayout>
-                  <WorkerDashboard />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/dienst"
-              element={
-                <AppLayout>
-                  <WorkerDienstsPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/worker/hospitals"
-              element={
-                <AppLayout>
-                  <WorkerHospitalsPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/worker/praemien"
-              element={
-                <AppLayout>
-                  <WorkerPraemienPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/worker/vacations"
-              element={
-                <AppLayout>
-                  <WorkerVacationsPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/worker/sick-leaves"
-              element={
-                <AppLayout>
-                  <WorkerSickLeavesPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/worker/messages"
-              element={
-                <AppLayout>
-                  <WorkerMessagesPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/my-workday"
-              element={
-                <AppLayout>
-                  <MyWorkday />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/worker/appointments"
-              element={
-                <AppLayout>
-                  <WorkerAppointmentsPage />
-                </AppLayout>
-              }
-            />
+            {/* ✅ AppLayout montado una sola vez */}
+            <Route element={<AppLayout />}>
+              {/* Trabajador */}
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/worker" element={<WorkerDashboard />} />
+              <Route path="/dienst" element={<WorkerDienstsPage />} />
+              <Route path="/worker/hospitals" element={<WorkerHospitalsPage />} />
+              <Route path="/worker/praemien" element={<WorkerPraemienPage />} />
+              <Route path="/worker/vacations" element={<WorkerVacationsPage />} />
+              <Route path="/worker/sick-leaves" element={<WorkerSickLeavesPage />} />
+              <Route path="/worker/messages" element={<WorkerMessagesPage />} />
+              <Route path="/my-workday" element={<MyWorkday />} />
+              <Route path="/worker/appointments" element={<WorkerAppointmentsPage />} />
 
-            {/* Admin */}
-            <Route
-              path="/admin"
-              element={
-                <AppLayout>
-                  <AdminDashboard />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/admin/users"
-              element={
-                <AppLayout>
-                  <AdminUsersPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/admin/diensts"
-              element={
-                <AppLayout>
-                  <AdminDienstsPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/admin/dienst-templates"
-              element={
-                <AppLayout>
-                  <AdminDienstTemplatesPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/admin/hospitals"
-              element={
-                <AppLayout>
-                  <AdminHospitalsPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/admin/vacations"
-              element={
-                <AppLayout>
-                  <AdminVacationsPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/admin/messages"
-              element={
-                <AppLayout>
-                  <AdminMessagesPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/admin/messages/sent"
-              element={
-                <AppLayout>
-                  <AdminSentMessages />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/admin/summaries"
-              element={
-                <AppLayout>
-                  <AdminSummariesPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/admin/ambulances"
-              element={
-                <AppLayout>
-                  <AdminAmbulancesPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/admin/user/:userId"
-              element={
-                <AppLayout>
-                  <AdminUserDetailDashboard />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/admin/mechanics"
-              element={
-                <AppLayout>
-                  <AdminMechanicsPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/admin/appointments"
-              element={
-                <AppLayout>
-                  <AdminAppointmentsPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/admin/teams"
-              element={
-                <AppLayout>
-                  <AdminTeamsPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/admin/sick-leaves"
-              element={
-                <AppLayout>
-                  <AdminSickLeavesPage />
-                </AppLayout>
-              }
-            />
+              {/* Admin */}
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+              <Route path="/admin/diensts" element={<AdminDienstsPage />} />
+              <Route path="/admin/dienst-templates" element={<AdminDienstTemplatesPage />} />
+              <Route path="/admin/hospitals" element={<AdminHospitalsPage />} />
+              <Route path="/admin/vacations" element={<AdminVacationsPage />} />
+              <Route path="/admin/messages" element={<AdminMessagesPage />} />
+              <Route path="/admin/messages/sent" element={<AdminSentMessages />} />
+              <Route path="/admin/summaries" element={<AdminSummariesPage />} />
+              <Route path="/admin/ambulances" element={<AdminAmbulancesPage />} />
+              <Route path="/admin/user/:userId" element={<AdminUserDetailDashboard />} />
+              <Route path="/admin/mechanics" element={<AdminMechanicsPage />} />
+              <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
+              <Route path="/admin/teams" element={<AdminTeamsPage />} />
+              <Route path="/admin/sick-leaves" element={<AdminSickLeavesPage />} />
+            </Route>
           </Route>
         </Routes>
+
         <ToastContainer position="top-right" autoClose={3000} />
       </BrowserRouter>
     </AuthProvider>
