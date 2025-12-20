@@ -1,16 +1,11 @@
 // src/layouts/AppLayout.tsx
-import type { ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import LanguageSwitcher from "../components/ui/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 import { buildImageUrl } from "../utils/apiOrigins";
 
-interface AppLayoutProps {
-  children: ReactNode;
-}
-
-export default function AppLayout({ children }: AppLayoutProps) {
+export default function AppLayout() {
   const { logout, role, user } = useAuth();
 
   const navigate = useNavigate();
@@ -57,7 +52,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </span>
           </button>
 
-          {/* Spacer que empuja todo lo demás a la derecha */}
+          {/* Spacer */}
           <div className="flex-1" />
 
           {/* Derecha: usuario + logout */}
@@ -105,7 +100,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </button>
           </nav>
 
-          {/* Esquina derecha: switcher separado */}
+          {/* Esquina derecha: switcher */}
           <div className="ml-2">
             <LanguageSwitcher />
           </div>
@@ -116,7 +111,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <main role="main" className="flex-1">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6">
           <div className="rounded-2xl bg-slate-50/90 ring-1 ring-slate-200 shadow-sm p-4 sm:p-6">
-            {children}
+            {/* ✅ Aquí va la página actual */}
+            <Outlet />
           </div>
         </div>
       </main>

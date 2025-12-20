@@ -15,49 +15,75 @@ export const AuthProvider = ({ children }: Props) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
 
+  // ✅ Estado clave
+  const [isAuthReady, setIsAuthReady] = useState(false);
+
+  /**
+   * Inicialización: leer sessionStorage rápido
+   * y refrescar el usuario en segundo plano
+   */
   useEffect(() => {
-    const initializeAuth = async () => {
+    const initializeAuth = () => {
       const storedToken = sessionStorage.getItem("token");
       const storedUserId = sessionStorage.getItem("userId");
       const storedRole = sessionStorage.getItem("role");
+      const storedUser = sessionStorage.getItem("user");
 
       if (storedToken && storedUserId && storedRole) {
         setToken(storedToken);
         setUserId(storedUserId);
         setRole(storedRole);
 
-        try {
-          const res = await fetch(`/api/users/${storedUserId}`, {
-            headers: { Authorization: `Bearer ${storedToken}` },
-          });
-
-          if (!res.ok) throw new Error("No se pudo obtener el usuario");
-
-          const freshUser: User = await res.json();
-          setUser(freshUser);
-          sessionStorage.setItem("user", JSON.stringify(freshUser));
-        } catch (error) {
-          console.error("❌ Error al refrescar usuario:", error);
-
-          // 🔒 Cierre de sesión manual para evitar dependencia de logout
-          setToken(null);
-          setUserId(null);
-          setRole(null);
-          setUser(null);
-          sessionStorage.clear();
-          window.location.href = "/";
+        // Pintar user inmediatamente si existe
+        if (storedUser) {
+          try {
+            setUser(JSON.parse(storedUser));
+          } catch {
+            sessionStorage.removeItem("user");
+          }
         }
+
+        // Refresco en segundo plano (no bloquea render)
+        void refreshUser(storedUserId, storedToken);
       }
 
-      setLoading(false);
+      // 👉 A partir de aquí ya podemos decidir rutas
+      setIsAuthReady(true);
     };
 
     initializeAuth();
   }, []);
 
-  // ⏰ Advertencia antes de que expire el token
+  /**
+   * Refrescar usuario sin bloquear la app
+   */
+  const refreshUser = async (id: string, tkn: string) => {
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        headers: { Authorization: `Bearer ${tkn}` },
+      });
+
+      if (!res.ok) throw new Error("No se pudo obtener el usuario");
+
+      const freshUser: User = await res.json();
+      setUser(freshUser);
+      sessionStorage.setItem("user", JSON.stringify(freshUser));
+    } catch (error) {
+      console.error("❌ Error al refrescar usuario:", error);
+
+      // Limpiamos sesión sin recargar la SPA
+      setToken(null);
+      setUserId(null);
+      setRole(null);
+      setUser(null);
+      sessionStorage.clear();
+    }
+  };
+
+  /**
+   * Aviso antes de que expire el token
+   */
   useEffect(() => {
     if (!token) return;
 
@@ -65,7 +91,7 @@ export const AuthProvider = ({ children }: Props) => {
     if (!expiration) return;
 
     const timeLeft = expiration - Date.now();
-    const warningThreshold = 60 * 1000; // 1 minuto
+    const warningThreshold = 60 * 1000; // 1 min
 
     if (timeLeft > warningThreshold) {
       const timer = setTimeout(() => {
@@ -79,11 +105,14 @@ export const AuthProvider = ({ children }: Props) => {
     }
   }, [token]);
 
+  /**
+   * Login
+   */
   const login = (
     newToken: string,
     newUserId: string,
     newRole: string,
-    newUser: User,
+    newUser: User
   ) => {
     setToken(newToken);
     setUserId(newUserId);
@@ -94,27 +123,35 @@ export const AuthProvider = ({ children }: Props) => {
     sessionStorage.setItem("userId", newUserId);
     sessionStorage.setItem("role", newRole);
     sessionStorage.setItem("user", JSON.stringify(newUser));
+
+    setIsAuthReady(true);
   };
 
-  /** Cierre de sesión */
+  /**
+   * Logout
+   */
   const logout = () => {
-    // 🔸 NO tocamos las marcas de “workdayClosed-…”
-    //     → así permanecen asociadas al usuario y a la fecha.
-
-    /* Limpiar estado y storage */
     setToken(null);
     setUserId(null);
     setRole(null);
     setUser(null);
 
     sessionStorage.clear();
-    window.location.href = "/"; // redirección a la pantalla de login / inicio
+    window.location.href = "/";
   };
 
-  if (loading) return <p className="p-4">Cargando sesión...</p>;
-
   return (
-    <AuthContext.Provider value={{ token, userId, role, user, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        token,
+        userId,
+        role,
+        user,
+        isAuthReady,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

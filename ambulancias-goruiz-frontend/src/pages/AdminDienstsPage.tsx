@@ -36,11 +36,12 @@ const displayPerson = (p: unknown) =>
     ? p
     : p && typeof p === "object"
       ? `${(p as any).lastName ?? ""}${(p as any).lastName ? ", " : ""}${(p as any).name ?? ""}` ||
-        "—"
+      "—"
       : "—";
 
 const AdminPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<{
     date: string;
     assignment?: Dienst["assignments"][0] & {
@@ -96,6 +97,8 @@ const AdminPage = () => {
       setDiensts(normalized);
     } catch (error) {
       console.error("Error al obtener los diensts:", error);
+    } finally {
+      setIsInitialLoading(false);
     }
   }, [token]);
 
@@ -126,438 +129,446 @@ const AdminPage = () => {
         </h1>
       </div>
 
-      {weekStartDates.map((weekStart, index) => {
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 6);
-        const weekStartISO = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}-${String(weekStart.getDate()).padStart(2, "0")}`;
-        const isCollapsed = collapsedWeeks[weekStartISO] ?? false;
-        const hasWeekDiensts = diensts.some((d) => {
-          if (!d.weekStartDate) return false;
-          const parsedDate = new Date(d.weekStartDate);
-          return (
-            !isNaN(parsedDate.getTime()) &&
-            parsedDate.toISOString().split("T")[0] === weekStartISO
-          );
-        });
+      {isInitialLoading ? (
+        <div className="mb-6 rounded-xl bg-white ring-1 ring-slate-200 p-4 text-sm text-slate-600">
+          Cargando diensts...
+        </div>
+      ) : (
+        weekStartDates.map((weekStart, index) => {
 
-        return (
-          <div
-            key={index}
-            className="mb-8 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4"
-          >
-            {/* Header de semana */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
-              {hasWeekDiensts ? (
-                // Si hay Diensts: header clicable con flecha 🔼 / 🔽
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900 focus:outline-none"
-                  onClick={() => toggleWeekCollapsed(weekStartISO)}
-                  aria-expanded={!isCollapsed}
-                >
-                  <span>
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          const weekStartISO = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}-${String(weekStart.getDate()).padStart(2, "0")}`;
+          const isCollapsed = collapsedWeeks[weekStartISO] ?? false;
+          const hasWeekDiensts = diensts.some((d) => {
+            if (!d.weekStartDate) return false;
+            const parsedDate = new Date(d.weekStartDate);
+            return (
+              !isNaN(parsedDate.getTime()) &&
+              parsedDate.toISOString().split("T")[0] === weekStartISO
+            );
+          });
+
+          return (
+            <div
+              key={index}
+              className="mb-8 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4"
+            >
+              {/* Header de semana */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+                {hasWeekDiensts ? (
+                  // Si hay Diensts: header clicable con flecha 🔼 / 🔽
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900 focus:outline-none"
+                    onClick={() => toggleWeekCollapsed(weekStartISO)}
+                    aria-expanded={!isCollapsed}
+                  >
+                    <span>
+                      {t("pages.diensts.adminPage.weekRange", {
+                        from: fmtDate(weekStart),
+                        to: fmtDate(weekEnd),
+                      })}
+                    </span>
+                    <span className="text-xs">{isCollapsed ? "🔽" : "🔼"}</span>
+                  </button>
+                ) : (
+                  // Si NO hay Diensts: solo texto, sin flecha y sin onClick
+                  <h2 className="text-sm font-medium text-slate-700">
                     {t("pages.diensts.adminPage.weekRange", {
                       from: fmtDate(weekStart),
                       to: fmtDate(weekEnd),
                     })}
-                  </span>
-                  <span className="text-xs">{isCollapsed ? "🔽" : "🔼"}</span>
-                </button>
-              ) : (
-                // Si NO hay Diensts: solo texto, sin flecha y sin onClick
-                <h2 className="text-sm font-medium text-slate-700">
-                  {t("pages.diensts.adminPage.weekRange", {
-                    from: fmtDate(weekStart),
-                    to: fmtDate(weekEnd),
-                  })}
-                </h2>
-              )}
-
-              <div className="flex flex-wrap gap-2">
-                {/* Mostrar botón Crear solo si NO existen Diensts esa semana */}
-                {!hasWeekDiensts && (
-                  <button
-                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-colors"
-                    onClick={async () => {
-                      const confirmCreate = confirm(
-                        t("pages.diensts.adminPage.confirmCreate", {
-                          date: fmtDate(weekStart),
-                        }),
-                      );
-                      if (!confirmCreate || !token) return;
-
-                      try {
-                        await generateDienstsForWeek(weekStartISO, token);
-                        toastT.success([
-                          "pages.diensts.adminPage.alerts.createOk",
-                        ]);
-                        fetchDiensts();
-                      } catch (err) {
-                        console.error("Error al crear plantillas:", err);
-                        toastT.error([
-                          "pages.diensts.adminPage.alerts.createErr",
-                        ]);
-                      }
-                    }}
-                  >
-                    {t("pages.diensts.adminPage.actions.create")}
-                  </button>
+                  </h2>
                 )}
 
-                {/* Mostrar botón Borrar solo si EXISTEN Diensts esa semana */}
-                {hasWeekDiensts && (
-                  <button
-                    className="inline-flex items-center gap-2 rounded-lg bg-rose-500/90 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-colors"
-                    onClick={async () => {
-                      const confirmDelete = confirm(
-                        t("pages.diensts.adminPage.confirmDelete", {
-                          date: fmtDate(weekStart),
-                        }),
-                      );
-                      if (!confirmDelete || !token) return;
+                <div className="flex flex-wrap gap-2">
+                  {/* Mostrar botón Crear solo si NO existen Diensts esa semana */}
+                  {!hasWeekDiensts && (
+                    <button
+                      className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-colors"
+                      onClick={async () => {
+                        const confirmCreate = confirm(
+                          t("pages.diensts.adminPage.confirmCreate", {
+                            date: fmtDate(weekStart),
+                          }),
+                        );
+                        if (!confirmCreate || !token) return;
 
-                      try {
-                        await deleteDienstsForWeek(weekStartISO, token);
-                        toastT.success([
-                          "pages.diensts.adminPage.alerts.deleteOk",
-                        ]);
-                        fetchDiensts();
-                      } catch (err) {
-                        console.error("Error al eliminar diensts:", err);
-                        toastT.error([
-                          "pages.diensts.adminPage.alerts.deleteErr",
-                        ]);
-                      }
-                    }}
-                  >
-                    {t("pages.diensts.adminPage.actions.delete")}
-                  </button>
-                )}
+                        try {
+                          await generateDienstsForWeek(weekStartISO, token);
+                          toastT.success([
+                            "pages.diensts.adminPage.alerts.createOk",
+                          ]);
+                          fetchDiensts();
+                        } catch (err) {
+                          console.error("Error al crear plantillas:", err);
+                          toastT.error([
+                            "pages.diensts.adminPage.alerts.createErr",
+                          ]);
+                        }
+                      }}
+                    >
+                      {t("pages.diensts.adminPage.actions.create")}
+                    </button>
+                  )}
+
+                  {/* Mostrar botón Borrar solo si EXISTEN Diensts esa semana */}
+                  {hasWeekDiensts && (
+                    <button
+                      className="inline-flex items-center gap-2 rounded-lg bg-rose-500/90 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-colors"
+                      onClick={async () => {
+                        const confirmDelete = confirm(
+                          t("pages.diensts.adminPage.confirmDelete", {
+                            date: fmtDate(weekStart),
+                          }),
+                        );
+                        if (!confirmDelete || !token) return;
+
+                        try {
+                          await deleteDienstsForWeek(weekStartISO, token);
+                          toastT.success([
+                            "pages.diensts.adminPage.alerts.deleteOk",
+                          ]);
+                          fetchDiensts();
+                        } catch (err) {
+                          console.error("Error al eliminar diensts:", err);
+                          toastT.error([
+                            "pages.diensts.adminPage.alerts.deleteErr",
+                          ]);
+                        }
+                      }}
+                    >
+                      {t("pages.diensts.adminPage.actions.delete")}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Listado de diensts de esa semana */}
-            {!isCollapsed && (
-              <>
-                {diensts
-                  .filter((dienst) => {
-                    if (!dienst.weekStartDate) return false;
-                    const parsedDate = new Date(dienst.weekStartDate);
-                    return (
-                      !isNaN(parsedDate.getTime()) &&
-                      parsedDate.toISOString().split("T")[0] === weekStartISO
-                    );
-                  })
-                  .map((dienst) => {
-                    const weekDates = Array.from({ length: 7 }, (_, i) => {
-                      const d = new Date(weekStart);
-                      d.setDate(d.getDate() + i);
-                      return d.toISOString().split("T")[0];
-                    });
-
-                    // ✅ Mostrar swap/clear solo si hay alguien asignado en la semana
-                    const hasAnyPersonAssigned =
-                      Array.isArray(dienst.assignments) &&
-                      dienst.assignments.some(
-                        (a) =>
-                          a?.date &&
-                          a?.startTime &&
-                          a?.endTime &&
-                          (a.driver || a.medic),
+              {/* Listado de diensts de esa semana */}
+              {!isCollapsed && (
+                <>
+                  {diensts
+                    .filter((dienst) => {
+                      if (!dienst.weekStartDate) return false;
+                      const parsedDate = new Date(dienst.weekStartDate);
+                      return (
+                        !isNaN(parsedDate.getTime()) &&
+                        parsedDate.toISOString().split("T")[0] === weekStartISO
                       );
+                    })
+                    .map((dienst) => {
+                      const weekDates = Array.from({ length: 7 }, (_, i) => {
+                        const d = new Date(weekStart);
+                        d.setDate(d.getDate() + i);
+                        return d.toISOString().split("T")[0];
+                      });
 
-                    return (
-                      <div
-                        key={`${weekStart.toISOString()}-${dienst.dienstNumber}`}
-                        className="mb-6"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="font-medium text-slate-800">
-                            {t("pages.diensts.adminPage.dienstLabel", {
-                              num: dienst.dienstNumber,
-                            })}
-                          </p>
+                      // ✅ Mostrar swap/clear solo si hay alguien asignado en la semana
+                      const hasAnyPersonAssigned =
+                        Array.isArray(dienst.assignments) &&
+                        dienst.assignments.some(
+                          (a) =>
+                            a?.date &&
+                            a?.startTime &&
+                            a?.endTime &&
+                            (a.driver || a.medic),
+                        );
 
-                          {/* Grupo de iconos de acciones */}
-                          <div className="flex items-center gap-3">
-                            {/* 👤 Asignar un trabajador (siempre visible) */}
-                            <button
-                              className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
-                              title={t(
-                                "pages.diensts.adminPage.assignUserToWeek",
-                              )}
-                              onClick={() =>
-                                setWeekUserModal({
-                                  open: true,
-                                  dienstNumber: dienst.dienstNumber,
-                                  weekStartISO,
-                                })
-                              }
-                            >
-                              <span
-                                aria-hidden
-                                className="block text-[16px] leading-none translate-y-[1px] scale-[0.95]"
-                              >
-                                👤
-                              </span>
-                              <span className="sr-only">
-                                {t("pages.diensts.adminPage.assignUserToWeek")}
-                              </span>
-                            </button>
+                      return (
+                        <div
+                          key={`${weekStart.toISOString()}-${dienst.dienstNumber}`}
+                          className="mb-6"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-medium text-slate-800">
+                              {t("pages.diensts.adminPage.dienstLabel", {
+                                num: dienst.dienstNumber,
+                              })}
+                            </p>
 
-                            {/* 👥 Asignar pareja (siempre visible) */}
-                            <button
-                              className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
-                              title={t(
-                                "pages.diensts.adminPage.assignTeamToWeek",
-                              )}
-                              onClick={() =>
-                                setWeekTeamModal({
-                                  open: true,
-                                  dienstNumber: dienst.dienstNumber,
-                                  weekStartISO,
-                                })
-                              }
-                            >
-                              <span
-                                aria-hidden
-                                className="block text-[18px] leading-none -translate-y-[1px] scale-[1.12]"
-                              >
-                                👥
-                              </span>
-                              <span className="sr-only">
-                                {t("pages.diensts.adminPage.assignTeamToWeek")}
-                              </span>
-                            </button>
-
-                            {/* ⇅ Intercambiar roles (solo si hay alguien asignado) */}
-                            {hasAnyPersonAssigned && (
+                            {/* Grupo de iconos de acciones */}
+                            <div className="flex items-center gap-3">
+                              {/* 👤 Asignar un trabajador (siempre visible) */}
                               <button
                                 className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
                                 title={t(
-                                  "pages.diensts.adminPage.swapRolesWeek",
+                                  "pages.diensts.adminPage.assignUserToWeek",
                                 )}
-                                onClick={async () => {
-                                  if (!token) return;
-                                  const ok = confirm(
-                                    t("pages.diensts.adminPage.confirmSwap", {
-                                      num: dienst.dienstNumber,
-                                      date: fmtDate(weekStart),
-                                    }) as string,
-                                  );
-                                  if (!ok) return;
-
-                                  try {
-                                    await swapWeekRoles(
-                                      {
-                                        dienstNumber: dienst.dienstNumber,
-                                        weekStartDate: weekStartISO,
-                                      },
-                                      token,
-                                    );
-                                    toastT.success([
-                                      "pages.diensts.adminPage.swapWeekOk",
-                                    ]);
-                                    fetchDiensts();
-                                  } catch (err: any) {
-                                    const code = err?.response?.data?.code as
-                                      | string
-                                      | undefined;
-
-                                    if (code === "swap_not_permitted") {
-                                      // 🚫 Caso específico: roles no compatibles o P-Schein caducado
-                                      toastT.error([
-                                        "pages.diensts.adminPage.swapWeekNotPermitted",
-                                      ]);
-                                      console.warn(
-                                        "⚠️ swap_not_permitted details:",
-                                        err?.response?.data?.details,
-                                      );
-                                    } else {
-                                      // ❌ Error genérico
-                                      console.error(
-                                        "❌ Error en swapWeekRoles:",
-                                        err,
-                                      );
-                                      toastT.error([
-                                        "pages.diensts.adminPage.swapWeekErr",
-                                      ]);
-                                    }
-                                  }
-                                }}
-                              >
-                                <span
-                                  aria-hidden
-                                  className="block text-[16px] leading-none translate-y-[1px]"
-                                >
-                                  ⇅
-                                </span>
-                                <span className="sr-only">
-                                  {t("pages.diensts.adminPage.swapRolesWeek")}
-                                </span>
-                              </button>
-                            )}
-
-                            {/* 🧽 Limpiar asignaciones (solo si hay alguien asignado) */}
-                            {hasAnyPersonAssigned && (
-                              <button
-                                className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-rose-700 transition-transform transform hover:scale-110 focus:outline-none"
-                                title={t(
-                                  "pages.diensts.adminPage.clearWeekPeople",
-                                )}
-                                onClick={async () => {
-                                  if (!token) return;
-                                  const ok = confirm(
-                                    t("pages.diensts.adminPage.confirmClear", {
-                                      num: dienst.dienstNumber,
-                                      date: fmtDate(weekStart),
-                                    }) as string,
-                                  );
-                                  if (!ok) return;
-
-                                  try {
-                                    await clearPeopleForWeek(
-                                      {
-                                        dienstNumber: dienst.dienstNumber,
-                                        weekStartDate: weekStartISO,
-                                      },
-                                      token,
-                                    );
-                                    toastT.success([
-                                      "pages.diensts.adminPage.clearOk",
-                                    ]);
-                                    fetchDiensts();
-                                  } catch (err) {
-                                    console.error(err);
-                                    toastT.error([
-                                      "pages.diensts.adminPage.clearErr",
-                                    ]);
-                                  }
-                                }}
-                              >
-                                <span
-                                  aria-hidden
-                                  className="block text-[17px] leading-none translate-y-[0.5px]"
-                                >
-                                  🧽
-                                </span>
-                                <span className="sr-only">
-                                  {t("pages.diensts.adminPage.clearWeekPeople")}
-                                </span>
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Grid de 7 días */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                          {weekDates.map((day) => {
-                            const assignment = dienst.assignments.find(
-                              (a) => a.date === day,
-                            );
-                            const cls = assignment
-                              ? isPartialAssignment(assignment)
-                                ? "bg-amber-50 ring-amber-200"
-                                : "bg-blue-50 ring-blue-200"
-                              : "bg-emerald-50 ring-emerald-200";
-                            const incompleteBorderClass =
-                              assignment && isTeamIncomplete(assignment)
-                                ? "border-2 border-red-500"
-                                : "border border-transparent";
-
-                            return (
-                              <button
-                                key={day}
-                                type="button"
-                                className={`text-left rounded-xl p-3 ring-1 ${cls} ${incompleteBorderClass} hover:shadow-sm hover:-translate-y-0.5 transition`}
                                 onClick={() =>
-                                  setSelectedAssignment({
-                                    date: day,
-                                    assignment,
-                                    dienstId: dienst._id,
+                                  setWeekUserModal({
+                                    open: true,
+                                    dienstNumber: dienst.dienstNumber,
+                                    weekStartISO,
                                   })
                                 }
                               >
-                                <p className="text-xs font-semibold text-slate-800 mb-1">
-                                  {formatCellDateUnified(day, i18n.language)}
-                                </p>
-                                {assignment ? (
-                                  <div className="space-y-0.5 text-xs text-slate-700">
-                                    <p>
-                                      🕒 {assignment.startTime} -{" "}
-                                      {assignment.endTime}
-                                    </p>
-                                    <p>
-                                      🚑{" "}
-                                      {displayAmbulance(
-                                        assignment?.ambulanceId,
-                                      )}
-                                    </p>
+                                <span
+                                  aria-hidden
+                                  className="block text-[16px] leading-none translate-y-[1px] scale-[0.95]"
+                                >
+                                  👤
+                                </span>
+                                <span className="sr-only">
+                                  {t("pages.diensts.adminPage.assignUserToWeek")}
+                                </span>
+                              </button>
 
-                                    {/* Conductor: rojo si P-Schein caducado; ámbar si warning */}
-                                    <p>
-                                      👨‍✈️{" "}
-                                      {(() => {
-                                        let drvClass = "";
-                                        let drvTitle: string | undefined =
-                                          undefined;
+                              {/* 👥 Asignar pareja (siempre visible) */}
+                              <button
+                                className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
+                                title={t(
+                                  "pages.diensts.adminPage.assignTeamToWeek",
+                                )}
+                                onClick={() =>
+                                  setWeekTeamModal({
+                                    open: true,
+                                    dienstNumber: dienst.dienstNumber,
+                                    weekStartISO,
+                                  })
+                                }
+                              >
+                                <span
+                                  aria-hidden
+                                  className="block text-[18px] leading-none -translate-y-[1px] scale-[1.12]"
+                                >
+                                  👥
+                                </span>
+                                <span className="sr-only">
+                                  {t("pages.diensts.adminPage.assignTeamToWeek")}
+                                </span>
+                              </button>
 
-                                        if (
-                                          typeof assignment.driver ===
+                              {/* ⇅ Intercambiar roles (solo si hay alguien asignado) */}
+                              {hasAnyPersonAssigned && (
+                                <button
+                                  className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
+                                  title={t(
+                                    "pages.diensts.adminPage.swapRolesWeek",
+                                  )}
+                                  onClick={async () => {
+                                    if (!token) return;
+                                    const ok = confirm(
+                                      t("pages.diensts.adminPage.confirmSwap", {
+                                        num: dienst.dienstNumber,
+                                        date: fmtDate(weekStart),
+                                      }) as string,
+                                    );
+                                    if (!ok) return;
+
+                                    try {
+                                      await swapWeekRoles(
+                                        {
+                                          dienstNumber: dienst.dienstNumber,
+                                          weekStartDate: weekStartISO,
+                                        },
+                                        token,
+                                      );
+                                      toastT.success([
+                                        "pages.diensts.adminPage.swapWeekOk",
+                                      ]);
+                                      fetchDiensts();
+                                    } catch (err: any) {
+                                      const code = err?.response?.data?.code as
+                                        | string
+                                        | undefined;
+
+                                      if (code === "swap_not_permitted") {
+                                        // 🚫 Caso específico: roles no compatibles o P-Schein caducado
+                                        toastT.error([
+                                          "pages.diensts.adminPage.swapWeekNotPermitted",
+                                        ]);
+                                        console.warn(
+                                          "⚠️ swap_not_permitted details:",
+                                          err?.response?.data?.details,
+                                        );
+                                      } else {
+                                        // ❌ Error genérico
+                                        console.error(
+                                          "❌ Error en swapWeekRoles:",
+                                          err,
+                                        );
+                                        toastT.error([
+                                          "pages.diensts.adminPage.swapWeekErr",
+                                        ]);
+                                      }
+                                    }
+                                  }}
+                                >
+                                  <span
+                                    aria-hidden
+                                    className="block text-[16px] leading-none translate-y-[1px]"
+                                  >
+                                    ⇅
+                                  </span>
+                                  <span className="sr-only">
+                                    {t("pages.diensts.adminPage.swapRolesWeek")}
+                                  </span>
+                                </button>
+                              )}
+
+                              {/* 🧽 Limpiar asignaciones (solo si hay alguien asignado) */}
+                              {hasAnyPersonAssigned && (
+                                <button
+                                  className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-rose-700 transition-transform transform hover:scale-110 focus:outline-none"
+                                  title={t(
+                                    "pages.diensts.adminPage.clearWeekPeople",
+                                  )}
+                                  onClick={async () => {
+                                    if (!token) return;
+                                    const ok = confirm(
+                                      t("pages.diensts.adminPage.confirmClear", {
+                                        num: dienst.dienstNumber,
+                                        date: fmtDate(weekStart),
+                                      }) as string,
+                                    );
+                                    if (!ok) return;
+
+                                    try {
+                                      await clearPeopleForWeek(
+                                        {
+                                          dienstNumber: dienst.dienstNumber,
+                                          weekStartDate: weekStartISO,
+                                        },
+                                        token,
+                                      );
+                                      toastT.success([
+                                        "pages.diensts.adminPage.clearOk",
+                                      ]);
+                                      fetchDiensts();
+                                    } catch (err) {
+                                      console.error(err);
+                                      toastT.error([
+                                        "pages.diensts.adminPage.clearErr",
+                                      ]);
+                                    }
+                                  }}
+                                >
+                                  <span
+                                    aria-hidden
+                                    className="block text-[17px] leading-none translate-y-[0.5px]"
+                                  >
+                                    🧽
+                                  </span>
+                                  <span className="sr-only">
+                                    {t("pages.diensts.adminPage.clearWeekPeople")}
+                                  </span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Grid de 7 días */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                            {weekDates.map((day) => {
+                              const assignment = dienst.assignments.find(
+                                (a) => a.date === day,
+                              );
+                              const cls = assignment
+                                ? isPartialAssignment(assignment)
+                                  ? "bg-amber-50 ring-amber-200"
+                                  : "bg-blue-50 ring-blue-200"
+                                : "bg-emerald-50 ring-emerald-200";
+                              const incompleteBorderClass =
+                                assignment && isTeamIncomplete(assignment)
+                                  ? "border-2 border-red-500"
+                                  : "border border-transparent";
+
+                              return (
+                                <button
+                                  key={day}
+                                  type="button"
+                                  className={`text-left rounded-xl p-3 ring-1 ${cls} ${incompleteBorderClass} hover:shadow-sm hover:-translate-y-0.5 transition`}
+                                  onClick={() =>
+                                    setSelectedAssignment({
+                                      date: day,
+                                      assignment,
+                                      dienstId: dienst._id,
+                                    })
+                                  }
+                                >
+                                  <p className="text-xs font-semibold text-slate-800 mb-1">
+                                    {formatCellDateUnified(day, i18n.language)}
+                                  </p>
+                                  {assignment ? (
+                                    <div className="space-y-0.5 text-xs text-slate-700">
+                                      <p>
+                                        🕒 {assignment.startTime} -{" "}
+                                        {assignment.endTime}
+                                      </p>
+                                      <p>
+                                        🚑{" "}
+                                        {displayAmbulance(
+                                          assignment?.ambulanceId,
+                                        )}
+                                      </p>
+
+                                      {/* Conductor: rojo si P-Schein caducado; ámbar si warning */}
+                                      <p>
+                                        👨‍✈️{" "}
+                                        {(() => {
+                                          let drvClass = "";
+                                          let drvTitle: string | undefined =
+                                            undefined;
+
+                                          if (
+                                            typeof assignment.driver ===
                                             "object" &&
-                                          assignment.driver
-                                        ) {
-                                          const info = getPscheinInfo(
-                                            (assignment.driver as any)
-                                              .pscheinExpiry,
-                                          );
-                                          if (info.status === "expired") {
-                                            drvClass =
-                                              "text-red-600 font-medium";
-                                          } else if (
-                                            info.status === "warning"
+                                            assignment.driver
                                           ) {
-                                            drvClass =
-                                              "text-amber-600 font-medium";
-                                          }
-                                          drvTitle =
-                                            getPscheinWarningTitle(
+                                            const info = getPscheinInfo(
                                               (assignment.driver as any)
                                                 .pscheinExpiry,
-                                              t as any,
-                                            ) || undefined;
-                                        }
+                                            );
+                                            if (info.status === "expired") {
+                                              drvClass =
+                                                "text-red-600 font-medium";
+                                            } else if (
+                                              info.status === "warning"
+                                            ) {
+                                              drvClass =
+                                                "text-amber-600 font-medium";
+                                            }
+                                            drvTitle =
+                                              getPscheinWarningTitle(
+                                                (assignment.driver as any)
+                                                  .pscheinExpiry,
+                                                t as any,
+                                              ) || undefined;
+                                          }
 
-                                        return (
-                                          <span
-                                            className={drvClass}
-                                            title={drvTitle}
-                                          >
-                                            {displayPerson(assignment?.driver)}
-                                          </span>
-                                        );
-                                      })()}
+                                          return (
+                                            <span
+                                              className={drvClass}
+                                              title={drvTitle}
+                                            >
+                                              {displayPerson(assignment?.driver)}
+                                            </span>
+                                          );
+                                        })()}
+                                      </p>
+
+                                      <p>🧑‍⚕️ {displayPerson(assignment?.medic)}</p>
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-emerald-800 mt-1">
+                                      🌴 {t("pages.diensts.adminPage.freeDay")}
                                     </p>
-
-                                    <p>🧑‍⚕️ {displayPerson(assignment?.medic)}</p>
-                                  </div>
-                                ) : (
-                                  <p className="text-xs text-emerald-800 mt-1">
-                                    🌴 {t("pages.diensts.adminPage.freeDay")}
-                                  </p>
-                                )}
-                              </button>
-                            );
-                          })}
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-              </>
-            )}
-          </div>
-        );
-      })}
+                      );
+                    })}
+                </>
+              )}
+            </div>
+          );
+        })
+      )}
+
 
       {selectedAssignment && (
         <AssignmentModal
