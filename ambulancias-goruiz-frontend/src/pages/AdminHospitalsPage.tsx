@@ -8,8 +8,10 @@ import {
 import type { Hospital } from "../types/hospital";
 import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
-import Select from "react-select";
-import { normalizeText } from "../utils/textUtils";
+import { filterAndSortHospitals, getUniqueSpecialties } from "../utils/hospitals/hospitalsFilters";
+import HospitalsFilters from "../components/hospitals/HospitalsFilters";
+import HospitalsList from "../components/hospitals/HospitalsList";
+
 import HospitalEditModal from "../components/hospitals/HospitalEditModal";
 import HospitalDetailsModal from "../components/hospitals/HospitalDetailsModal";
 import { useTranslation } from "react-i18next";
@@ -141,31 +143,15 @@ const AdminHospitalsPage = () => {
     }
   };
 
-  // Sugerencias únicas de especialidades
-  const specialtiesSet = new Map<string, string>();
-  hospitals.forEach((h) => {
-    h.specialties.forEach((spec) => {
-      const normalized = normalizeText(spec);
-      if (!specialtiesSet.has(normalized)) {
-        specialtiesSet.set(normalized, spec);
-      }
-    });
-  });
-  const specialties = Array.from(specialtiesSet.values());
+  const specialties = getUniqueSpecialties(hospitals);
 
-  // Filtro + ORDEN ALFABÉTICO (A→Z)
-  const filteredHospitals = hospitals.filter((h) => {
-    const matchesSpecialty =
-      selectedSpecialty === "all" ||
-      h.specialties.some(
-        (spec) => normalizeText(spec) === normalizeText(selectedSpecialty),
-      );
-    const matchesName = h.name.toLowerCase().includes(searchName.toLowerCase());
-    return matchesSpecialty && matchesName;
-  });
-  const sortedHospitals = [...filteredHospitals].sort((a, b) =>
-    a.name.localeCompare(b.name, undefined, { sensitivity: "accent" }),
+
+  const sortedHospitals = filterAndSortHospitals(
+    hospitals,
+    selectedSpecialty,
+    searchName,
   );
+
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -173,131 +159,20 @@ const AdminHospitalsPage = () => {
         {t("pages.hospitals.adminPage.title")}
       </h1>
 
-      {/* Filtros (compacto, sin warnings) */}
-      <div className="rounded-lg bg-white ring-1 ring-slate-200 p-3 md:p-4 mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-          {/* Filtro por nombre */}
-          <div>
-            <label
-              htmlFor="hospitalNameSearch"
-              className="block text-[11px] font-medium text-slate-700 mb-1"
-            >
-              {t("pages.hospitals.adminPage.filters.byName")}
-            </label>
-            <input
-              id="hospitalNameSearch"
-              type="text"
-              value={searchName}
-              onChange={(e) => setSearchName(e.target.value)}
-              placeholder={
-                t(
-                  "pages.hospitals.adminPage.filters.byNamePlaceholder",
-                ) as string
-              }
-              className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            />
-          </div>
+      <HospitalsFilters
+        specialties={specialties}
+        selectedSpecialty={selectedSpecialty}
+        onChangeSelectedSpecialty={setSelectedSpecialty}
+        searchName={searchName}
+        onChangeSearchName={setSearchName}
+        rightActionLabel={
+          showForm
+            ? (t("pages.hospitals.adminPage.actions.toggleFormClose") as string)
+            : (t("pages.hospitals.adminPage.actions.toggleFormOpen") as string)
+        }
+        onRightActionClick={() => setShowForm(!showForm)}
+      />
 
-          {/* Filtro por especialidad */}
-          <div>
-            <label
-              htmlFor="specialtyFilter"
-              className="block text-[11px] font-medium text-slate-700 mb-1"
-            >
-              {t("pages.hospitals.adminPage.filters.bySpecialty")}
-            </label>
-            <Select
-              inputId="specialtyFilter"
-              options={[
-                {
-                  value: "all",
-                  label: t(
-                    "pages.hospitals.adminPage.filters.allSpecialties",
-                  ) as string,
-                },
-                ...specialties.map((spec) => ({ value: spec, label: spec })),
-              ]}
-              value={
-                selectedSpecialty === "all"
-                  ? {
-                      value: "all",
-                      label: t(
-                        "pages.hospitals.adminPage.filters.allSpecialties",
-                      ) as string,
-                    }
-                  : { value: selectedSpecialty, label: selectedSpecialty }
-              }
-              onChange={(option) =>
-                setSelectedSpecialty(option?.value || "all")
-              }
-              className="text-sm"
-              classNamePrefix="react-select"
-              placeholder={
-                t(
-                  "pages.hospitals.adminPage.filters.selectSpecialtyPlaceholder",
-                ) as string
-              }
-              isSearchable
-              /* Estilos compactos y accesibles para react-select */
-              styles={{
-                control: (base, state) => ({
-                  ...base,
-                  minHeight: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  borderColor: state.isFocused ? "#3b82f6" : "#cbd5e1",
-                  boxShadow: state.isFocused
-                    ? "0 0 0 2px rgba(59,130,246,.2)"
-                    : "none",
-                }),
-                valueContainer: (base) => ({
-                  ...base,
-                  padding: "0 8px",
-                }),
-                input: (base) => ({
-                  ...base,
-                  margin: 0,
-                  padding: 0,
-                }),
-                indicatorsContainer: (base) => ({
-                  ...base,
-                  height: 32,
-                }),
-                dropdownIndicator: (base) => ({
-                  ...base,
-                  padding: "4px 6px",
-                }),
-                clearIndicator: (base) => ({
-                  ...base,
-                  padding: "4px 6px",
-                }),
-                menu: (base) => ({
-                  ...base,
-                  borderRadius: 8,
-                  overflow: "hidden",
-                }),
-              }}
-            />
-          </div>
-
-          {/* Botón mostrar/ocultar formulario */}
-          <div className="flex md:justify-end">
-            <button
-              type="button"
-              onClick={() => setShowForm(!showForm)}
-              className="inline-flex items-center rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {showForm
-                ? (t(
-                    "pages.hospitals.adminPage.actions.toggleFormClose",
-                  ) as string)
-                : (t(
-                    "pages.hospitals.adminPage.actions.toggleFormOpen",
-                  ) as string)}
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Formulario nuevo hospital */}
       {showForm && (
@@ -490,76 +365,15 @@ const AdminHospitalsPage = () => {
       )}
 
       {/* Listado (COMPACTO + ORDENADO) */}
-      <ul className="space-y-2">
-        {sortedHospitals.map((hospital) => (
-          <li
-            key={hospital._id}
-            className="flex items-center justify-between gap-3 rounded-xl bg-white p-3 ring-1 ring-slate-200 shadow-sm"
-          >
-            <button
-              type="button"
-              onClick={() => setSelectedHospital(hospital)}
-              className="text-left"
-              title={
-                t("pages.hospitals.adminPage.actions.viewDetails") as string
-              }
-            >
-              <span className="text-sm md:text-base font-semibold text-slate-900 hover:underline">
-                {hospital.name}
-              </span>
-            </button>
+      <HospitalsList
+        hospitals={sortedHospitals}
+        mode="admin"
+        onOpenDetails={(hospital) => setSelectedHospital(hospital)}
+        onToggleOpen={handleToggleOpen}
+        onEdit={(hospital) => setEditingHospital(hospital)}
+        onDelete={handleDeleteHospital}
+      />
 
-            <div className="flex shrink-0 items-center gap-2">
-              <label
-                htmlFor={`hospital-status-${hospital._id}`}
-                className="sr-only"
-              >
-                {t("pages.hospitals.adminPage.status.label")}
-              </label>
-              <div className="flex items-center gap-1.5">
-                {/* Punto verde (abierto) */}
-                <button
-                  type="button"
-                  onClick={() => !hospital.isOpen && handleToggleOpen(hospital)}
-                  className={`w-4 h-4 rounded-full border-2 ${
-                    hospital.isOpen
-                      ? "bg-green-500 border-green-600"
-                      : "bg-white border-slate-300"
-                  }`}
-                  title={t("pages.hospitals.adminPage.status.open") as string}
-                />
-                {/* Punto rojo (cerrado) */}
-                <button
-                  type="button"
-                  onClick={() => hospital.isOpen && handleToggleOpen(hospital)}
-                  className={`w-4 h-4 rounded-full border-2 ${
-                    !hospital.isOpen
-                      ? "bg-rose-500 border-rose-600"
-                      : "bg-white border-slate-300"
-                  }`}
-                  title={t("pages.hospitals.adminPage.status.closed") as string}
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setEditingHospital(hospital)}
-                className="inline-flex items-center rounded-md border px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
-              >
-                {t("pages.hospitals.adminPage.actions.edit")}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleDeleteHospital(hospital._id)}
-                className="inline-flex items-center rounded-md border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-300"
-              >
-                {t("pages.hospitals.adminPage.actions.delete")}
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
 
       {/* Modales */}
       {editingHospital && (
