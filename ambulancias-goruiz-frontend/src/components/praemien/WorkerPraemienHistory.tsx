@@ -42,17 +42,20 @@ const WorkerPraemienHistory = ({ userId }: Props) => {
       .finally(() => setLoading(false));
   }, [token, userId]);
 
+  const now = useMemo(() => new Date(), []);
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // 1..12
+
   // Elegimos el año “más reciente” con datos
   const selectedYear = useMemo(() => {
     if (!history.length) {
-      return new Date().getFullYear(); // año actual si no hay historial
+      return currentYear; // año actual si no hay historial
     }
     return history.reduce(
       (max, item) => Math.max(max, item.year),
       history[0].year,
     );
-  }, [history]);
-
+  }, [history, currentYear]);
 
   // Mapa de lookup: "year-month" -> item
   const historyMap = useMemo(() => {
@@ -71,14 +74,15 @@ const WorkerPraemienHistory = ({ userId }: Props) => {
     );
   }
 
-
   return (
     <div className="max-w-4xl mx-auto mt-6 rounded-2xl bg-white ring-1 ring-slate-200 p-4 shadow-sm">
       <div className="flex items-baseline justify-between mb-3">
         <h2 className="text-base font-semibold text-slate-900">
           {t("pages.praemien.history.title")}
         </h2>
-        <span className="text-xs text-slate-500 tabular-nums">{selectedYear}</span>
+        <span className="text-xs text-slate-500 tabular-nums">
+          {selectedYear}
+        </span>
       </div>
 
       {/* 2 filas x 6 columnas: compacto */}
@@ -86,39 +90,49 @@ const WorkerPraemienHistory = ({ userId }: Props) => {
         {MONTHS.map(({ month, label }) => {
           const item = historyMap.get(`${selectedYear}-${month}`);
 
+          const isCurrentMonthBox =
+            selectedYear === currentYear && month === currentMonth;
+
           // Si hay datos, calculamos nivel; si no, "none"
           const level = item
             ? getPraemieLevelFromAverage(item.averagePatients)
             : 0;
 
-          // nivel 0 -> none
           const levelKey = getPraemieI18nKey(level);
           const levelText = t(levelKey);
 
           // Estilo sutil: solo un toque de color si hay prämie
           const hasPremie = level >= 7;
 
-          const boxClass = hasPremie
-            ? "bg-blue-50 ring-blue-100"
-            : "bg-white ring-slate-200";
+          // 🎨 Estilo: mes actual con look neutro y “pendiente”
+          const boxClass = isCurrentMonthBox
+            ? "bg-slate-50 ring-slate-200"
+            : hasPremie
+              ? "bg-blue-50 ring-blue-100"
+              : "bg-white ring-slate-200";
 
           return (
             <div
               key={`${selectedYear}-${month}`}
               className={[
-                "rounded-md ring-1 px-1.5 py-2",
-                "flex flex-col items-center justify-center text-center gap-0.5",
+                "rounded-md ring-1 overflow-hidden", // 👈 overflow para que el header respete bordes
+                "flex flex-col text-center",
                 boxClass,
               ].join(" ")}
             >
-              {/* Mes */}
-              <div className="text-[10px] font-bold text-slate-700 leading-none">
-                {label}
+              {/* Header del mes (franja completa) */}
+              <div
+                className="w-full bg-slate-100/80 border-b border-slate-200 py-0.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-700 leading-none">
+                  {label}
+                </div>
               </div>
 
-              {/* Prämie */}
-              <div className="text-[10px] leading-tight text-slate-900">
-                {levelText}
+              {/* Contenido */}
+              <div className="px-1.5 py-2 flex items-center justify-center">
+                <div className="text-[10px] leading-tight text-slate-900">
+                  {isCurrentMonthBox ? "⏳" : levelText}
+                </div>
               </div>
             </div>
 
