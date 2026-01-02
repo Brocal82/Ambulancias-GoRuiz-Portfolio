@@ -6,7 +6,9 @@ import {
   deleteAmbulance,
 } from "../api/ambulances";
 import type { Ambulance } from "../types/ambulance";
-import AmbulanceFormModal from "../components/ambulances/AmbulanceFormModal";
+import CreateAmbulanceModal from "../components/ambulances/CreateAmbulanceModal";
+import EditAmbulanceModal from "../components/ambulances/EditAmbulanceModal";
+
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
@@ -22,10 +24,8 @@ const AdminAmbulancesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [ambulanceToEdit, setAmbulanceToEdit] = useState<Ambulance | null>(
-    null,
-  );
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [ambulanceToEdit, setAmbulanceToEdit] = useState<Ambulance | null>(null);
 
   useEffect(() => {
     fetchAmbulances();
@@ -47,14 +47,14 @@ const AdminAmbulancesPage: React.FC = () => {
   };
 
   const handleOpenNew = () => {
-    setAmbulanceToEdit(null);
-    setModalOpen(true);
+    setIsCreateOpen(true);
   };
+
 
   const handleEdit = (amb: Ambulance) => {
     setAmbulanceToEdit(amb);
-    setModalOpen(true);
   };
+
 
   const handleDelete = async (id: string) => {
     if (!token) {
@@ -87,7 +87,9 @@ const AdminAmbulancesPage: React.FC = () => {
       } else {
         await createAmbulance(ambulanceData, token);
       }
-      setModalOpen(false);
+      setIsCreateOpen(false);
+      setAmbulanceToEdit(null);
+
       fetchAmbulances();
     } catch {
       toastT.error(["pages.ambulances.adminPage.alerts.saveError"]);
@@ -124,16 +126,16 @@ const AdminAmbulancesPage: React.FC = () => {
               <p className="text-slate-500">
                 {t("pages.ambulances.adminPage.empty")}
               </p>
-              <div className="mt-4">
-                <button
+
+              <div className="mt-4 flex justify-center">
+                <CreateIconButton
                   onClick={handleOpenNew}
-                  className="rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-100"
-                >
-                  {t("pages.ambulances.adminPage.actions.new")}
-                </button>
+                  label={t("pages.ambulances.adminPage.actions.new")}
+                />
               </div>
             </div>
           ) : (
+
             <div className="overflow-x-auto rounded-xl ring-1 ring-slate-200">
               <table className="w-full table-auto text-sm border-collapse">
                 {/* 4 primeras columnas flexibles + Acciones con ancho fijo */}
@@ -216,13 +218,23 @@ const AdminAmbulancesPage: React.FC = () => {
             </div>
           )}
 
-          {/* Modal formulario */}
-          <AmbulanceFormModal
-            isOpen={modalOpen}
-            onClose={() => setModalOpen(false)}
+          {/* Modal Crear */}
+          <CreateAmbulanceModal
+            isOpen={isCreateOpen}
+            onClose={() => setIsCreateOpen(false)}
             onSave={handleSave}
-            initialData={ambulanceToEdit}
           />
+
+          {/* Modal Editar */}
+          {ambulanceToEdit && (
+            <EditAmbulanceModal
+              isOpen={Boolean(ambulanceToEdit)}
+              onClose={() => setAmbulanceToEdit(null)}
+              onSave={handleSave}
+              initialData={ambulanceToEdit}
+            />
+          )}
+
         </div>
       </div>
     </div>
