@@ -112,13 +112,11 @@ const AdminHospitalsPage = () => {
         onChangeSelectedSpecialty={setSelectedSpecialty}
         searchName={searchName}
         onChangeSearchName={setSearchName}
-        rightActionLabel={
-          showForm
-            ? (t("pages.hospitals.adminPage.actions.toggleFormClose") as string)
-            : (t("pages.hospitals.adminPage.actions.toggleFormOpen") as string)
-        }
-        onRightActionClick={() => setShowForm((v) => !v)}
+        rightActionLabel={t("pages.hospitals.adminPage.actions.toggleFormOpen") as string}
+        onRightActionClick={() => setShowForm(true)}
+        hideRightAction={showForm}
       />
+
 
       {/* Formulario (extraído a componente) */}
       {showForm && (

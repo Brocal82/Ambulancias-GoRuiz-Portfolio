@@ -15,7 +15,7 @@ interface Props {
     rightActionLabel?: string;
     onRightActionClick?: () => void;
 
-    // ✅ NUEVO: permite ocultar explícitamente el botón derecho
+    // ✅ permite ocultar explícitamente el botón derecho (cuando el form esté abierto)
     hideRightAction?: boolean;
 }
 
@@ -87,7 +87,9 @@ const HospitalsFilters = ({
                         className="text-sm"
                         classNamePrefix="react-select"
                         placeholder={
-                            t("pages.hospitals.adminPage.filters.selectSpecialtyPlaceholder") as string
+                            t(
+                                "pages.hospitals.adminPage.filters.selectSpecialtyPlaceholder"
+                            ) as string
                         }
                         isSearchable
                         styles={{

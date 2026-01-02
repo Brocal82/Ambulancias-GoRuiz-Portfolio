@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import SaveIconButton from "../common/actions/SaveIconButton";
+import CancelButton from "../common/actions/CancelButton";
+
 
 interface Props {
     specialties: string[];
@@ -75,17 +78,26 @@ const HospitalCreateForm = ({ specialties, onSubmit, onClose }: Props) => {
         setNewSpecs([]);
     };
 
+    const canShowAddSpecBtn =
+        (specInput || form.specialties).trim().length > 0;
+
     return (
-        <div className="mt-4 rounded-2xl bg-white ring-1 ring-slate-200 shadow-sm">
-            {/* Header del formulario */}
-            <div className="flex items-center justify-between px-5 md:px-6 py-3 border-b border-slate-200">
-                <div className="flex items-center gap-3">
-                    <div className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 ring-1 ring-blue-100">
-                        <span aria-hidden>🏥</span>
-                    </div>
-                    <h3 className="text-sm md:text-base font-bold text-slate-900">
-                        {t("pages.hospitals.adminPage.form.newHospitalTitle", "Nuevo hospital")}
+        <div className="mt-4 overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200 shadow-sm">
+            {/* Top bar minimal */}
+            <div className="flex items-center justify-between px-5 py-3">
+                <div className="min-w-0">
+                    <h3 className="text-sm font-semibold text-slate-900">
+                        {t(
+                            "pages.hospitals.adminPage.form.newHospitalTitle",
+                            "Nuevo hospital",
+                        )}
                     </h3>
+                    <p className="text-xs text-slate-500">
+                        {t(
+                            "pages.hospitals.adminPage.form.subtitle",
+                            "Completa los datos básicos y añade especialidades.",
+                        )}
+                    </p>
                 </div>
 
                 <button
@@ -99,13 +111,15 @@ const HospitalCreateForm = ({ specialties, onSubmit, onClose }: Props) => {
                 </button>
             </div>
 
-            {/* Body del formulario */}
-            <form onSubmit={handleSubmit} className="px-5 md:px-6 py-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Columna izquierda: Nombre, Dirección, Teléfono */}
+            <div className="h-px bg-slate-200" />
+
+            {/* Body */}
+            <form onSubmit={handleSubmit} className="px-5 py-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:items-start">
+                    {/* Columna izquierda: datos */}
                     <div className="space-y-3">
                         <div>
-                            <label className="block text-slate-600 text-[11px] uppercase tracking-wide mb-1">
+                            <label className="block text-[11px] font-medium text-slate-600">
                                 {t("pages.hospitals.adminPage.form.nameLabel", "Nombre")}
                             </label>
                             <input
@@ -113,13 +127,14 @@ const HospitalCreateForm = ({ specialties, onSubmit, onClose }: Props) => {
                                 placeholder={t("pages.hospitals.adminPage.form.name") as string}
                                 value={form.name}
                                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+
                                 required
                             />
                         </div>
 
                         <div>
-                            <label className="block text-slate-600 text-[11px] uppercase tracking-wide mb-1">
+                            <label className="block text-[11px] font-medium text-slate-600">
                                 {t("pages.hospitals.adminPage.form.addressLabel", "Dirección")}
                             </label>
                             <input
@@ -127,13 +142,14 @@ const HospitalCreateForm = ({ specialties, onSubmit, onClose }: Props) => {
                                 placeholder={t("pages.hospitals.adminPage.form.address") as string}
                                 value={form.address}
                                 onChange={(e) => setForm({ ...form, address: e.target.value })}
-                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+
                                 required
                             />
                         </div>
 
                         <div>
-                            <label className="block text-slate-600 text-[11px] uppercase tracking-wide mb-1">
+                            <label className="block text-[11px] font-medium text-slate-600">
                                 {t("pages.hospitals.adminPage.form.phoneLabel", "Teléfono")}
                             </label>
                             <input
@@ -141,23 +157,29 @@ const HospitalCreateForm = ({ specialties, onSubmit, onClose }: Props) => {
                                 placeholder={t("pages.hospitals.adminPage.form.phone") as string}
                                 value={form.phone}
                                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+
                                 required
                             />
                         </div>
                     </div>
 
-                    {/* Columna derecha: Especialidades (chips) */}
-                    <div className="space-y-3 md:border-l md:pl-5 border-slate-200">
+                    {/* Columna derecha: especialidades */}
+                    <div className="space-y-3">
                         <div>
-                            <label className="block text-slate-600 text-[11px] uppercase tracking-wide mb-1">
-                                {t("pages.hospitals.adminPage.form.specialtiesLabel", "Especialidades")}
+                            <label className="block text-[11px] font-medium text-slate-600">
+                                {t(
+                                    "pages.hospitals.adminPage.form.specialtiesLabel",
+                                    "Especialidades",
+                                )}
                             </label>
 
-                            <div className="flex gap-2">
+                            <div className="mt-1 flex items-center gap-2">
                                 <input
                                     type="text"
-                                    placeholder={t("pages.hospitals.adminPage.form.specialties") as string}
+                                    placeholder={
+                                        t("pages.hospitals.adminPage.form.specialties") as string
+                                    }
                                     list="specialties"
                                     value={specInput || form.specialties}
                                     onChange={(e) => {
@@ -177,28 +199,32 @@ const HospitalCreateForm = ({ specialties, onSubmit, onClose }: Props) => {
                                             removeSpec(newSpecs[newSpecs.length - 1]);
                                         }
                                     }}
-                                    className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                    className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+
                                 />
 
-                                <button
-                                    type="button"
-                                    onClick={addSpec}
-                                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 shadow-sm hover:bg-slate-50"
-                                    title={
-                                        t(
-                                            "pages.hospitals.adminPage.form.addSpecialtyBtn",
-                                            "Añadir especialidad",
-                                        ) as string
-                                    }
-                                    aria-label={
-                                        t(
-                                            "pages.hospitals.adminPage.form.addSpecialtyBtn",
-                                            "Añadir especialidad",
-                                        ) as string
-                                    }
-                                >
-                                    {t("common.add", "Añadir")}
-                                </button>
+                                {canShowAddSpecBtn && (
+                                    <button
+                                        type="button"
+                                        onClick={addSpec}
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-sm text-slate-700 shadow-sm hover:bg-slate-50"
+
+                                        title={
+                                            t(
+                                                "pages.hospitals.adminPage.form.addSpecialtyBtn",
+                                                "Añadir especialidad",
+                                            ) as string
+                                        }
+                                        aria-label={
+                                            t(
+                                                "pages.hospitals.adminPage.form.addSpecialtyBtn",
+                                                "Añadir especialidad",
+                                            ) as string
+                                        }
+                                    >
+                                        ⤴
+                                    </button>
+                                )}
                             </div>
 
                             <datalist id="specialties">
@@ -207,7 +233,7 @@ const HospitalCreateForm = ({ specialties, onSubmit, onClose }: Props) => {
                                 ))}
                             </datalist>
 
-                            {/* Chips */}
+                            {/* Chips: se listan dentro de ESTA columna */}
                             <div className="mt-2 flex flex-wrap gap-2">
                                 {newSpecs.map((spec) => (
                                     <span
@@ -240,18 +266,25 @@ const HospitalCreateForm = ({ specialties, onSubmit, onClose }: Props) => {
                     </div>
                 </div>
 
-                {/* Footer */}
-                <div className="mt-5 pt-4 border-t border-slate-200 flex items-center justify-end">
-                    <button
-                        type="submit"
-                        className="inline-flex items-center rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    >
+                {/* Footer minimal */}
+                <div className="mt-4 flex items-center justify-end gap-2">
+                    <CancelButton onClick={onClose}>
+                        {t("common.cancel", "Cancelar")}
+                    </CancelButton>
+
+
+
+                    {/* Usa tu botón reutilizable */}
+                    <SaveIconButton type="submit">
                         {t("pages.hospitals.adminPage.actions.saveHospital")}
-                    </button>
+                    </SaveIconButton>
                 </div>
             </form>
         </div>
     );
+
+
+
 };
 
 export default HospitalCreateForm;
