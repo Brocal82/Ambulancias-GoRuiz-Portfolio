@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { getAllHospitals } from "../api/hospitals";
 import type { Hospital } from "../types/hospital";
 import HospitalDetailsModal from "../components/hospitals/HospitalDetailsModal";
@@ -22,7 +22,7 @@ const WorkerHospitalsPage = () => {
     null,
   );
 
-  // Igual que Admin: usamos "all"
+  // Igual que Admin
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>("all");
   const [searchName, setSearchName] = useState<string>("");
 
@@ -41,11 +41,21 @@ const WorkerHospitalsPage = () => {
     fetchHospitals();
   }, [token]);
 
-  const specialties = getUniqueSpecialties(hospitals);
-  const sortedHospitals = filterAndSortHospitals(
-    hospitals,
-    selectedSpecialty,
-    searchName,
+  // 🔹 useMemo: especialidades únicas
+  const specialties = useMemo(
+    () => getUniqueSpecialties(hospitals),
+    [hospitals],
+  );
+
+  // 🔹 useMemo: filtrado + ordenado
+  const sortedHospitals = useMemo(
+    () =>
+      filterAndSortHospitals(
+        hospitals,
+        selectedSpecialty,
+        searchName,
+      ),
+    [hospitals, selectedSpecialty, searchName],
   );
 
   return (
@@ -60,6 +70,7 @@ const WorkerHospitalsPage = () => {
         onChangeSelectedSpecialty={setSelectedSpecialty}
         searchName={searchName}
         onChangeSearchName={setSearchName}
+        hideRightAction
       />
 
       <HospitalsList
