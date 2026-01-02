@@ -14,6 +14,9 @@ interface Props {
     // Opcional: en Admin mostramos un botón; en Worker no.
     rightActionLabel?: string;
     onRightActionClick?: () => void;
+
+    // ✅ NUEVO: permite ocultar explícitamente el botón derecho
+    hideRightAction?: boolean;
 }
 
 const HospitalsFilters = ({
@@ -24,6 +27,7 @@ const HospitalsFilters = ({
     onChangeSearchName,
     rightActionLabel,
     onRightActionClick,
+    hideRightAction,
 }: Props) => {
     const { t } = useTranslation();
 
@@ -83,9 +87,7 @@ const HospitalsFilters = ({
                         className="text-sm"
                         classNamePrefix="react-select"
                         placeholder={
-                            t(
-                                "pages.hospitals.adminPage.filters.selectSpecialtyPlaceholder",
-                            ) as string
+                            t("pages.hospitals.adminPage.filters.selectSpecialtyPlaceholder") as string
                         }
                         isSearchable
                         styles={{
@@ -131,7 +133,7 @@ const HospitalsFilters = ({
 
                 {/* Acción derecha (opcional) */}
                 <div className="flex md:justify-end">
-                    {rightActionLabel && onRightActionClick ? (
+                    {!hideRightAction && rightActionLabel && onRightActionClick && (
                         <button
                             type="button"
                             onClick={onRightActionClick}
@@ -139,8 +141,6 @@ const HospitalsFilters = ({
                         >
                             {rightActionLabel}
                         </button>
-                    ) : (
-                        <div />
                     )}
                 </div>
             </div>
