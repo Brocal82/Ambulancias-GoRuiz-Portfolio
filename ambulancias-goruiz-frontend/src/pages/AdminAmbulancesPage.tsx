@@ -10,6 +10,9 @@ import AmbulanceFormModal from "../components/ambulances/AmbulanceFormModal";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
+import CreateIconButton from "../components/common/actions/CreateIconButton";
+import EditIconButton from "../components/common/actions/EditIconButton";
+import DeleteIconButton from "../components/common/actions/DeleteIconButton";
 
 const AdminAmbulancesPage: React.FC = () => {
   const { token } = useAuth();
@@ -108,18 +111,11 @@ const AdminAmbulancesPage: React.FC = () => {
               {t("pages.ambulances.adminPage.title")}
             </h1>
 
-            {/* Botón Nueva ambulancia */}
-            <button
+            <CreateIconButton
               onClick={handleOpenNew}
-              className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-100"
-            >
-              <span className="hidden sm:inline">
-                {t("pages.ambulances.adminPage.actions.new")}
-              </span>
-              <span className="sm:hidden">
-                + {t("pages.ambulances.adminPage.actions.new")}
-              </span>
-            </button>
+              label={t("pages.ambulances.adminPage.actions.new")}
+            />
+
           </div>
 
           {/* Lista vacía */}
@@ -198,24 +194,19 @@ const AdminAmbulancesPage: React.FC = () => {
                       {/* Acciones con ancho fijo y centradas */}
                       <td className="px-4 py-2 border-t border-slate-200 align-middle text-center pl-6">
                         <div className="flex justify-center gap-2">
-                          <button
-                            onClick={() => handleEdit(amb)}
-                            className="w-24 h-7 inline-flex items-center justify-center whitespace-nowrap
-               rounded-md border border-blue-300 text-xs font-medium text-blue-700 
-               bg-white hover:bg-blue-50 hover:border-blue-400 
-               focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
-                          >
-                            {t("pages.ambulances.adminPage.actions.edit")}
-                          </button>
-                          <button
-                            onClick={() => handleDelete(amb._id)}
-                            className="w-24 h-7 inline-flex items-center justify-center whitespace-nowrap
-               rounded-md border border-rose-300 text-xs font-medium text-rose-700 
-               bg-white hover:bg-rose-50 hover:border-rose-400 
-               focus:outline-none focus:ring-2 focus:ring-rose-100 transition"
-                          >
-                            {t("pages.ambulances.adminPage.actions.delete")}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <EditIconButton
+                              onClick={() => handleEdit(amb)}
+                              title={t("pages.ambulances.adminPage.actions.edit")}
+                            />
+
+                            <DeleteIconButton
+                              onClick={() => handleDelete(amb._id)}
+                              title={t("pages.ambulances.adminPage.actions.delete")}
+                            />
+
+                          </div>
+
                         </div>
                       </td>
                     </tr>

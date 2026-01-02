@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import type { Ambulance } from "../../types/ambulance";
 import { useTranslation } from "react-i18next";
+import CancelButton from "../common/actions/CancelButton";
+import SaveIconButton from "../common/actions/SaveIconButton";
 
 interface Props {
   isOpen: boolean;
@@ -24,24 +26,35 @@ const AmbulanceFormModal: React.FC<Props> = ({
   const [licensePlate, setLicensePlate] = useState("");
   const [ambulanceNumber, setAmbulanceNumber] = useState("");
 
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isDirty, setIsDirty] = useState(false); // 👈 detecta cambios en modo edit
 
+  /* =======================
+     Inicialización / Reset
+     ======================= */
   useEffect(() => {
     if (initialData) {
+      // Modo EDIT
       setBrand(initialData.brand);
       setModelName(initialData.modelName);
       setLicensePlate(initialData.licensePlate);
       setAmbulanceNumber(initialData.ambulanceNumber);
       setErrors({});
+      setIsDirty(false);
     } else {
+      // Modo CREATE
       setBrand("");
       setModelName("");
       setLicensePlate("");
       setAmbulanceNumber("");
       setErrors({});
+      setIsDirty(false);
     }
   }, [initialData, isOpen]);
 
+  /* =======================
+     Validaciones
+     ======================= */
   const validateField = (value: string) => {
     if (!value.trim()) {
       return t("pages.ambulances.formModal.validation.required");
@@ -55,16 +68,23 @@ const AmbulanceFormModal: React.FC<Props> = ({
   };
 
   const validateAll = () => {
-    const newErrors: { [key: string]: string } = {};
-    newErrors.brand = validateField(brand);
-    newErrors.modelName = validateField(modelName);
-    newErrors.licensePlate = validateField(licensePlate);
-    newErrors.ambulanceNumber = validateField(ambulanceNumber);
+    const newErrors: Record<string, string> = {
+      brand: validateField(brand),
+      modelName: validateField(modelName),
+      licensePlate: validateField(licensePlate),
+      ambulanceNumber: validateField(ambulanceNumber),
+    };
+
     setErrors(newErrors);
     return Object.values(newErrors).every((err) => err === "");
   };
 
+  /* =======================
+     Cambios de campos
+     ======================= */
   const handleChange = (field: string, value: string) => {
+    setIsDirty(true); // 👈 cualquier cambio marca el formulario como modificado
+
     switch (field) {
       case "brand":
         setBrand(value);
@@ -88,30 +108,46 @@ const AmbulanceFormModal: React.FC<Props> = ({
     }
   };
 
+  /* =======================
+     Submit
+     ======================= */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateAll()) return;
+
     await onSave(
       { brand, modelName, licensePlate, ambulanceNumber },
-      initialData?._id,
+      initialData?._id
     );
+
     onClose();
   };
 
   if (!isOpen) return null;
 
-  const isSaveDisabled =
+  /* =======================
+     Lógica botón Guardar
+     ======================= */
+  const isFormInvalid =
     Object.values(errors).some((err) => err !== "") ||
     !brand.trim() ||
     !modelName.trim() ||
     !licensePlate.trim() ||
     !ambulanceNumber.trim();
 
+  const isEditMode = Boolean(initialData);
+
+  const isSaveDisabled =
+    isFormInvalid || (isEditMode && !isDirty);
+
+  /* =======================
+     Render
+     ======================= */
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-lg bg-white rounded-2xl shadow-lg ring-1 ring-slate-200"
+        className="w-full max-w-lg rounded-2xl bg-white shadow-lg ring-1 ring-slate-200"
         role="dialog"
         aria-modal="true"
         aria-labelledby="ambulance-form-title"
@@ -122,7 +158,7 @@ const AmbulanceFormModal: React.FC<Props> = ({
             id="ambulance-form-title"
             className="text-lg font-semibold text-slate-900"
           >
-            {initialData
+            {isEditMode
               ? t("pages.ambulances.formModal.titleEdit")
               : t("pages.ambulances.formModal.titleNew")}
           </h2>
@@ -134,26 +170,28 @@ const AmbulanceFormModal: React.FC<Props> = ({
             {/* Brand */}
             <div>
               <label
-                htmlFor="amb-brand"
+                htmlFor="ambulance-brand"
                 className="block text-sm font-medium text-slate-700 mb-1"
               >
                 {t("pages.ambulances.formModal.fields.brand")}
               </label>
               <input
-                id="amb-brand"
+                id="ambulance-brand"
                 type="text"
                 value={brand}
                 onChange={(e) => handleChange("brand", e.target.value)}
-                title={t("pages.ambulances.formModal.titles.brand") as string}
-                aria-describedby={errors.brand ? "amb-brand-error" : undefined}
-                className={`w-full rounded-md border px-3 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 ${
-                  errors.brand
+                title={t("pages.ambulances.formModal.fields.brand") as string}
+                aria-describedby={errors.brand ? "ambulance-brand-error" : undefined}
+                className={`w-full rounded-md border px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 ${errors.brand
                     ? "border-red-500"
                     : "border-slate-300 focus:border-blue-400"
-                }`}
+                  }`}
               />
               {errors.brand && (
-                <p id="amb-brand-error" className="text-red-600 text-xs mt-1">
+                <p
+                  id="ambulance-brand-error"
+                  className="mt-1 text-xs text-red-600"
+                >
                   {errors.brand}
                 </p>
               )}
@@ -162,28 +200,28 @@ const AmbulanceFormModal: React.FC<Props> = ({
             {/* Model */}
             <div>
               <label
-                htmlFor="amb-model"
+                htmlFor="ambulance-model"
                 className="block text-sm font-medium text-slate-700 mb-1"
               >
                 {t("pages.ambulances.formModal.fields.model")}
               </label>
               <input
-                id="amb-model"
+                id="ambulance-model"
                 type="text"
                 value={modelName}
                 onChange={(e) => handleChange("modelName", e.target.value)}
-                title={t("pages.ambulances.formModal.titles.model") as string}
-                aria-describedby={
-                  errors.modelName ? "amb-model-error" : undefined
-                }
-                className={`w-full rounded-md border px-3 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 ${
-                  errors.modelName
+                title={t("pages.ambulances.formModal.fields.model") as string}
+                aria-describedby={errors.modelName ? "ambulance-model-error" : undefined}
+                className={`w-full rounded-md border px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 ${errors.modelName
                     ? "border-red-500"
                     : "border-slate-300 focus:border-blue-400"
-                }`}
+                  }`}
               />
               {errors.modelName && (
-                <p id="amb-model-error" className="text-red-600 text-xs mt-1">
+                <p
+                  id="ambulance-model-error"
+                  className="mt-1 text-xs text-red-600"
+                >
                   {errors.modelName}
                 </p>
               )}
@@ -192,30 +230,32 @@ const AmbulanceFormModal: React.FC<Props> = ({
             {/* License Plate */}
             <div>
               <label
-                htmlFor="amb-plate"
+                htmlFor="ambulance-plate"
                 className="block text-sm font-medium text-slate-700 mb-1"
               >
                 {t("pages.ambulances.formModal.fields.licensePlate")}
               </label>
               <input
-                id="amb-plate"
+                id="ambulance-plate"
                 type="text"
                 value={licensePlate}
-                onChange={(e) => handleChange("licensePlate", e.target.value)}
-                title={
-                  t("pages.ambulances.formModal.titles.licensePlate") as string
+                onChange={(e) =>
+                  handleChange("licensePlate", e.target.value)
                 }
+                title={t("pages.ambulances.formModal.fields.licensePlate") as string}
                 aria-describedby={
-                  errors.licensePlate ? "amb-plate-error" : undefined
+                  errors.licensePlate ? "ambulance-plate-error" : undefined
                 }
-                className={`w-full rounded-md border px-3 py-1.5 text-sm bg-white shadow-sm font-mono tracking-tight focus:outline-none focus:ring-4 focus:ring-blue-100 ${
-                  errors.licensePlate
+                className={`w-full rounded-md border px-3 py-1.5 text-sm font-mono shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 ${errors.licensePlate
                     ? "border-red-500"
                     : "border-slate-300 focus:border-blue-400"
-                }`}
+                  }`}
               />
               {errors.licensePlate && (
-                <p id="amb-plate-error" className="text-red-600 text-xs mt-1">
+                <p
+                  id="ambulance-plate-error"
+                  className="mt-1 text-xs text-red-600"
+                >
                   {errors.licensePlate}
                 </p>
               )}
@@ -224,34 +264,32 @@ const AmbulanceFormModal: React.FC<Props> = ({
             {/* Ambulance Number */}
             <div>
               <label
-                htmlFor="amb-number"
+                htmlFor="ambulance-number"
                 className="block text-sm font-medium text-slate-700 mb-1"
               >
                 {t("pages.ambulances.formModal.fields.ambulanceNumber")}
               </label>
               <input
-                id="amb-number"
+                id="ambulance-number"
                 type="text"
                 value={ambulanceNumber}
                 onChange={(e) =>
                   handleChange("ambulanceNumber", e.target.value)
                 }
-                title={
-                  t(
-                    "pages.ambulances.formModal.titles.ambulanceNumber",
-                  ) as string
-                }
+                title={t("pages.ambulances.formModal.fields.ambulanceNumber") as string}
                 aria-describedby={
-                  errors.ambulanceNumber ? "amb-number-error" : undefined
+                  errors.ambulanceNumber ? "ambulance-number-error" : undefined
                 }
-                className={`w-full rounded-md border px-3 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 ${
-                  errors.ambulanceNumber
+                className={`w-full rounded-md border px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 ${errors.ambulanceNumber
                     ? "border-red-500"
                     : "border-slate-300 focus:border-blue-400"
-                }`}
+                  }`}
               />
               {errors.ambulanceNumber && (
-                <p id="amb-number-error" className="text-red-600 text-xs mt-1">
+                <p
+                  id="ambulance-number-error"
+                  className="mt-1 text-xs text-red-600"
+                >
                   {errors.ambulanceNumber}
                 </p>
               )}
@@ -259,26 +297,18 @@ const AmbulanceFormModal: React.FC<Props> = ({
           </div>
         </div>
 
+
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-slate-200 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100 active:scale-95 transition"
-          >
+        <div className="px-5 py-3 flex items-center justify-end gap-2">
+          <CancelButton onClick={onClose}>
             {t("pages.ambulances.formModal.actions.cancel")}
-          </button>
-          <button
+          </CancelButton>
+
+          <SaveIconButton
             type="submit"
             disabled={isSaveDisabled}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 active:scale-95 transition ${
-              isSaveDisabled
-                ? "bg-slate-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
-            }`}
-          >
-            {t("pages.ambulances.formModal.actions.save")}
-          </button>
+            title={t("pages.ambulances.formModal.actions.save")}
+          />
         </div>
       </form>
     </div>

@@ -2,6 +2,8 @@ import type { Hospital } from "../../types/hospital";
 import { useEffect, useMemo, useRef, useState, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { getHospitalIsOpen } from "../../utils/hospitals/status";
+import CancelButton from "../common/actions/CancelButton";
+import SaveIconButton from "../common/actions/SaveIconButton";
 
 
 interface Props {
@@ -144,8 +146,8 @@ const HospitalEditModal = ({
     typeof isOpenState === "boolean" ? (
       <span
         className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${isOpenState
-            ? "bg-green-50 text-green-700 ring-1 ring-green-200"
-            : "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
+          ? "bg-green-50 text-green-700 ring-1 ring-green-200"
+          : "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
           }`}
       >
         {isOpenState
@@ -387,23 +389,16 @@ const HospitalEditModal = ({
               )}
             </div>
             <div className="md:col-span-2 flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 shadow-sm hover:bg-slate-50"
-              >
+              <CancelButton onClick={onClose}>
                 {t("common.cancel", "Cancelar")}
-              </button>
-              <button
+              </CancelButton>
+
+              <SaveIconButton
                 type="submit"
                 disabled={!canSave}
-                className={`inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-white shadow ${canSave
-                    ? "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    : "bg-slate-300 cursor-not-allowed"
-                  }`}
-              >
-                {t("common.save", "Guardar")}
-              </button>
+                title={t("common.save", "Guardar")}
+              />
+
             </div>
           </form>
         </div>

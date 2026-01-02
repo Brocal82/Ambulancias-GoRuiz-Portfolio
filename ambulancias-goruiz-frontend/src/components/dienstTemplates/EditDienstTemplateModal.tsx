@@ -4,6 +4,8 @@ import {
   updateDienstTemplate,
   type DienstTemplateInput,
 } from "../../api/dienstTemplates";
+import CancelButton from "../common/actions/CancelButton";
+import SaveIconButton from "../common/actions/SaveIconButton";
 
 interface Props {
   isOpen: boolean;
@@ -212,6 +214,7 @@ const EditDienstTemplateModal: React.FC<Props> = ({
                     Nº Dienst
                   </span>
                 </div>
+
                 <div className="space-y-2">
                   <div>
                     <label htmlFor="editDienstNumber" className="sr-only">
@@ -224,7 +227,7 @@ const EditDienstTemplateModal: React.FC<Props> = ({
                       value={editDienstNumber}
                       onChange={(e) =>
                         setEditDienstNumber(
-                          e.target.value === "" ? "" : Number(e.target.value),
+                          e.target.value === "" ? "" : Number(e.target.value)
                         )
                       }
                       className="w-full rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -252,7 +255,7 @@ const EditDienstTemplateModal: React.FC<Props> = ({
               {/* Columnas: Lunes → Domingo */}
               {orderedDayIndices.map((index) => {
                 const day = perDayScheduleRows.find(
-                  (d) => d.dayIndex === index,
+                  (d) => d.dayIndex === index
                 );
                 if (!day) return null;
 
@@ -261,20 +264,21 @@ const EditDienstTemplateModal: React.FC<Props> = ({
                 return (
                   <div
                     key={day.dayIndex}
-                    className={`flex h-full flex-col rounded-xl border p-2 text-xs shadow-sm transition-colors ${
-                      isOff
-                        ? "border-emerald-200 bg-emerald-50"
-                        : "border-gray-200 bg-white"
-                    }`}
+                    className={`flex h-full flex-col rounded-xl border p-2 text-xs shadow-sm transition-colors ${isOff
+                      ? "border-emerald-200 bg-emerald-50"
+                      : "border-gray-200 bg-white"
+                      }`}
                   >
-                    {/* Cabecera día + icono toggle */}
+                    {/* Cabecera día + toggle */}
                     <div className="mb-2 flex items-center justify-between gap-1">
                       <span className="text-[11px] font-semibold text-gray-800">
                         {dayLabels[day.dayIndex]}
                       </span>
                       <button
                         type="button"
-                        onClick={() => handleToggleDayOff(day.dayIndex, !isOff)}
+                        onClick={() =>
+                          handleToggleDayOff(day.dayIndex, !isOff)
+                        }
                         className="rounded-full p-1 text-[13px] hover:bg-black/5"
                         aria-label={
                           isOff
@@ -286,7 +290,7 @@ const EditDienstTemplateModal: React.FC<Props> = ({
                       </button>
                     </div>
 
-                    {/* Contenido: horas o libre */}
+                    {/* Contenido */}
                     {isOff ? (
                       <div className="flex flex-1 items-center justify-center text-[11px] font-medium text-emerald-800">
                         <span className="flex items-center gap-1">
@@ -300,7 +304,7 @@ const EditDienstTemplateModal: React.FC<Props> = ({
                             htmlFor={`edit-startTime-${day.dayIndex}`}
                             className="sr-only"
                           >
-                            {`Hora de inicio (${dayLabels[day.dayIndex]})`}
+                            Hora de inicio ({dayLabels[day.dayIndex]})
                           </label>
                           <input
                             id={`edit-startTime-${day.dayIndex}`}
@@ -309,18 +313,19 @@ const EditDienstTemplateModal: React.FC<Props> = ({
                             onChange={(e) =>
                               handleChangeDayStartTime(
                                 day.dayIndex,
-                                e.target.value,
+                                e.target.value
                               )
                             }
                             className="w-full rounded-md border border-gray-300 px-1 py-0.5 text-[11px] focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           />
                         </div>
+
                         <div>
                           <label
                             htmlFor={`edit-endTime-${day.dayIndex}`}
                             className="sr-only"
                           >
-                            {`Hora de fin (${dayLabels[day.dayIndex]})`}
+                            Hora de fin ({dayLabels[day.dayIndex]})
                           </label>
                           <input
                             id={`edit-endTime-${day.dayIndex}`}
@@ -329,7 +334,7 @@ const EditDienstTemplateModal: React.FC<Props> = ({
                             onChange={(e) =>
                               handleChangeDayEndTime(
                                 day.dayIndex,
-                                e.target.value,
+                                e.target.value
                               )
                             }
                             className="w-full rounded-md border border-gray-300 px-1 py-0.5 text-[11px] focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -344,27 +349,23 @@ const EditDienstTemplateModal: React.FC<Props> = ({
           </div>
 
           {/* Botones */}
-          <div className="mt-2 flex justify-end gap-2 border-t border-gray-100 pt-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
-              disabled={saving}
-            >
+          <div className="mt-3 flex items-center justify-end gap-2">
+
+            <CancelButton onClick={onClose} disabled={saving}>
               Cancelar
-            </button>
-            <button
+            </CancelButton>
+
+            <SaveIconButton
               type="submit"
               disabled={saving}
-              className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-            >
-              {saving ? "Guardando..." : "Guardar cambios"}
-            </button>
+              title={saving ? "Guardando..." : "Guardar cambios"}
+            />
           </div>
         </form>
       </div>
     </div>
   );
+
 };
 
 export default EditDienstTemplateModal;

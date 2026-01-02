@@ -5,6 +5,8 @@ import TeamPicker from "../common/TeamPicker";
 import type { TeamPickerValue } from "../common/TeamPicker";
 import { useAuth } from "../../hooks/useAuth";
 import type { Team, UpdateTeamPayload } from "../../api/teams";
+import CancelButton from "../common/actions/CancelButton";
+import SaveIconButton from "../common/actions/SaveIconButton";
 
 interface TeamEditModalProps {
   isOpen: boolean;
@@ -92,11 +94,11 @@ export default function TeamEditModal({
           setAmbulances(
             Array.isArray(data)
               ? data.sort((a, b) =>
-                  (a.ambulanceNumber || "").localeCompare(
-                    b.ambulanceNumber || "",
-                    "es",
-                  ),
-                )
+                (a.ambulanceNumber || "").localeCompare(
+                  b.ambulanceNumber || "",
+                  "es",
+                ),
+              )
               : [],
           );
         }
@@ -223,9 +225,9 @@ export default function TeamEditModal({
               {loadingAmbulances
                 ? t("common.loading", "Cargando...")
                 : t(
-                    "pages.adminTeams.modal.ambulancePlaceholder",
-                    "Sin ambulancia fija",
-                  )}
+                  "pages.adminTeams.modal.ambulancePlaceholder",
+                  "Sin ambulancia fija",
+                )}
             </option>
             {ambulances.map((amb) => (
               <option key={amb._id} value={amb._id}>
@@ -349,24 +351,22 @@ export default function TeamEditModal({
         </section>
 
         {/* Footer botones */}
-        <div className="mt-5 space-y-2">
-          <button
+        <div className="mt-3 flex items-center justify-end gap-2">
+          <CancelButton onClick={onClose} disabled={submitting}>
+            {t("common.cancel", "Cancelar")}
+          </CancelButton>
+
+          <SaveIconButton
             onClick={handleSave}
             disabled={!canSave || submitting}
-            className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50"
-          >
-            {submitting
-              ? t("common.saving", "Guardando...")
-              : t("common.saveChanges", "Guardar cambios")}
-          </button>
-          <button
-            onClick={onClose}
-            disabled={submitting}
-            className="w-full rounded-xl bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-300 focus:outline-none focus:ring-4 focus:ring-slate-100"
-          >
-            {t("common.cancel", "Cancelar")}
-          </button>
+            title={
+              submitting
+                ? t("common.saving", "Guardando...")
+                : t("common.saveChanges", "Guardar cambios")
+            }
+          />
         </div>
+
       </div>
     </div>
   );

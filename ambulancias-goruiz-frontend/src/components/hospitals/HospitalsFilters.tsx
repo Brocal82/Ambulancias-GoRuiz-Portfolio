@@ -1,5 +1,6 @@
 import Select from "react-select";
 import { useTranslation } from "react-i18next";
+import CreateIconButton from "../common/actions/CreateIconButton";
 
 type SpecialtyOption = { value: string; label: string };
 
@@ -135,16 +136,15 @@ const HospitalsFilters = ({
 
                 {/* Acción derecha (opcional) */}
                 <div className="flex md:justify-end">
-                    {!hideRightAction && rightActionLabel && onRightActionClick && (
-                        <button
-                            type="button"
-                            onClick={onRightActionClick}
-                            className="inline-flex items-center rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            {rightActionLabel}
-                        </button>
-                    )}
+                    <CreateIconButton
+                        onClick={onRightActionClick}
+                        label={rightActionLabel || "Crear"}
+                        hidden={hideRightAction}
+                    />
+
                 </div>
+
+
             </div>
         </div>
     );

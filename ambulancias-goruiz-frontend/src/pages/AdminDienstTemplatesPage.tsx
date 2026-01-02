@@ -7,6 +7,7 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import EditDienstTemplateModal from "../components/dienstTemplates/EditDienstTemplateModal";
 import CreateDienstTemplateModal from "../components/dienstTemplates/CreateDienstTemplateModal";
+import CreateIconButton from "../components/common/actions/CreateIconButton";
 
 const dayLabels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 // Orden visual: Lunes (1) → Sábado (6) → Domingo (0)
@@ -102,13 +103,11 @@ const AdminDienstTemplatesPage: React.FC = () => {
           <h1 className="text-2xl font-bold">Diensts</h1>
         </div>
 
-        <button
-          type="button"
+        <CreateIconButton
           onClick={() => setIsCreateOpen(true)}
-          className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          + Crear Dienst
-        </button>
+          label="Crear Dienst"
+        />
+
       </div>
 
       {loading && (
@@ -155,11 +154,10 @@ const AdminDienstTemplatesPage: React.FC = () => {
                 return (
                   <tr
                     key={tpl._id}
-                    className={`transition-colors ${
-                      isActiveTpl
+                    className={`transition-colors ${isActiveTpl
                         ? "hover:bg-gray-50/60"
                         : "bg-rose-50/70 hover:bg-rose-100/80"
-                    }`}
+                      }`}
                   >
                     {/* Nº Dienst + icono de estado */}
                     <td className="px-4 py-2 align-middle">

@@ -11,6 +11,7 @@ import { getPscheinInfo } from "../utils/pscheinUtils";
 import { getVacationFlagsInRange, type VacFlag } from "../api/vacation";
 import { getSickFlagsInRange, type SickFlag } from "../api/sickLeaves";
 import { fmtDDMM } from "../utils/timeUtils";
+import CreateIconButton from "../components/common/actions/CreateIconButton";
 
 export default function AdminTeamsPage() {
   const { token } = useAuth();
@@ -83,7 +84,7 @@ export default function AdminTeamsPage() {
       console.error(e);
       setError(
         e?.response?.data?.message ??
-          t("pages.adminTeams.loadError", "No se pudieron cargar los equipos"),
+        t("pages.adminTeams.loadError", "No se pudieron cargar los equipos"),
       );
     } finally {
       setLoading(false);
@@ -301,12 +302,11 @@ export default function AdminTeamsPage() {
           </p>
         </div>
 
-        <button
+        <CreateIconButton
           onClick={() => setShowCreate(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
-        >
-          ➕ {t("pages.adminTeams.createBtn", "Nuevo equipo")}
-        </button>
+          label={t("pages.adminTeams.createBtn", "Nuevo equipo")}
+        />
+
       </div>
 
       {loading && (
@@ -467,13 +467,13 @@ export default function AdminTeamsPage() {
                               📌{" "}
                               {num
                                 ? t(
-                                    "pages.adminTeams.rotation.badgeFixedWithNum",
-                                    "Dienst #{num}",
-                                  ).replace("{num}", String(num))
+                                  "pages.adminTeams.rotation.badgeFixedWithNum",
+                                  "Dienst #{num}",
+                                ).replace("{num}", String(num))
                                 : t(
-                                    "pages.adminTeams.rotation.badgeFixed",
-                                    "Fijo",
-                                  )}
+                                  "pages.adminTeams.rotation.badgeFixed",
+                                  "Fijo",
+                                )}
                             </>
                           );
                         }
