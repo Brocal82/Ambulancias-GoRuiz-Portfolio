@@ -333,7 +333,7 @@ const AdminMessagesPage = () => {
   "
               title={t("pages.messages.adminPage.actions.viewSent")}
             >
-              📂
+              <span className="text-xl leading-none">📂</span>
             </button>
           </div>
         </div>
