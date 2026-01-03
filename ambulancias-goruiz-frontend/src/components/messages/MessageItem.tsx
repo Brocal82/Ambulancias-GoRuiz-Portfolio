@@ -6,11 +6,12 @@ import { useTranslation } from "react-i18next";
 interface Props {
     message: Message;
     isOpen: boolean;
-    onToggle: () => void;
+    onToggle: () => void | Promise<void>;   // ✅ aquí
     unread?: boolean;
-    onDelete?: () => void;
+    onDelete?: () => void | Promise<void>;  // ✅ aquí
     showDelete?: boolean;
 }
+
 
 const MessageItem = ({
     message,

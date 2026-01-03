@@ -6,7 +6,8 @@ import type { Message } from "../types/message";
 import { useNavigate } from "react-router-dom";
 import { toastT } from "../utils/toast";
 import { useTranslation } from "react-i18next";
-import MessageItem from "../components/messages/MessageItem";
+import MessageList from "../components/messages/MessageList";
+
 
 const AdminSentMessages = () => {
   const { token } = useAuth();
@@ -115,22 +116,15 @@ const AdminSentMessages = () => {
             {t("pages.messages.sentPage.empty")}
           </p>
         ) : (
-          <ul className="space-y-3">
-            {sorted.map((msg) => {
-              const isOpen = expanded.has(msg._id);
+          <MessageList
+            messages={sorted}
+            expanded={expanded}
+            onToggle={(msg) => toggleMessage(msg._id)}
+            showDelete
+            onDelete={(msg) => handleDelete(msg._id)}
+          />
 
-              return (
-                <MessageItem
-                  key={msg._id}
-                  message={msg}
-                  isOpen={isOpen}
-                  onToggle={() => toggleMessage(msg._id)}
-                  showDelete
-                  onDelete={() => handleDelete(msg._id)}
-                />
-              );
-            })}
-          </ul>
+
 
         )}
       </div>

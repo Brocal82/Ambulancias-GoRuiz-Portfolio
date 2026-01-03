@@ -10,7 +10,8 @@ import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
 import { useTranslation } from "react-i18next";
 import { notifyUnreadMessagesChanged } from "../hooks/useUnreadMessagesCount";
-import MessageItem from "../components/messages/MessageItem";
+import MessageList from "../components/messages/MessageList";
+
 
 const WorkerMessagesPage = () => {
   const { token, user } = useAuth();
@@ -144,25 +145,15 @@ const WorkerMessagesPage = () => {
             {t("pages.messages.workerPage.empty")}
           </p>
         ) : (
-          <ul className="space-y-3">
-            {sorted.map((msg) => {
-              const unread = isUnread(msg);
-              const isOpen = expanded.has(msg._id);
+          <MessageList
+            messages={sorted}
+            expanded={expanded}
+            onToggle={(msg) => toggleMessage(msg)}
+            isUnread={(msg) => isUnread(msg)}
+            showDelete
+            onDelete={(msg) => handleDelete(msg._id)}
+          />
 
-              return (
-                <MessageItem
-                  key={msg._id}
-                  message={msg}
-                  isOpen={isOpen}
-                  unread={unread}
-                  onToggle={() => void toggleMessage(msg)}
-                  showDelete
-                  onDelete={() => void handleDelete(msg._id)}
-                />
-              );
-            })}
-
-          </ul>
         )}
       </div>
     </div>

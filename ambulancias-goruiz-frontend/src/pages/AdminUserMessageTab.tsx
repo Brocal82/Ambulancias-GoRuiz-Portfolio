@@ -6,7 +6,8 @@ import { toastT } from "../utils/toast";
 import { useTranslation } from "react-i18next";
 import { getMessagesForUserAsAdmin } from "../api/messages";
 import type { Message } from "../types/message";
-import MessageItem from "../components/messages/MessageItem";
+import MessageList from "../components/messages/MessageList";
+
 import MessageAttachmentsPicker from "../components/messages/MessageAttachmentsPicker";
 
 interface Props {
@@ -277,21 +278,12 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
                     "Todavía no hay mensajes para este trabajador."}
                 </p>
               ) : (
-                <ul className="space-y-3">
-                  {sortedMessages.map((msg) => {
-                    const isOpen = expanded.has(msg._id);
+                <MessageList
+                  messages={sortedMessages}
+                  expanded={expanded}
+                  onToggle={(msg) => toggleMessage(msg._id)}
+                />
 
-                    return (
-                      <MessageItem
-                        key={msg._id}
-                        message={msg}
-                        isOpen={isOpen}
-                        unread={false}
-                        onToggle={() => toggleMessage(msg._id)}
-                      />
-                    );
-                  })}
-                </ul>
 
               )}
             </div>
