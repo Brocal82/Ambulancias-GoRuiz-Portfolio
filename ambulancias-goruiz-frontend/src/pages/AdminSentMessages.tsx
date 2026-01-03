@@ -3,11 +3,10 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { getSentMessages, deleteMessage } from "../api/messages";
 import type { Message } from "../types/message";
-import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { toastT } from "../utils/toast";
 import { useTranslation } from "react-i18next";
-import { buildAttachmentUrl } from "../utils/messages/buildAttachmentUrl";
+import MessageItem from "../components/messages/MessageItem";
 
 const AdminSentMessages = () => {
   const { token } = useAuth();
@@ -119,125 +118,20 @@ const AdminSentMessages = () => {
           <ul className="space-y-3">
             {sorted.map((msg) => {
               const isOpen = expanded.has(msg._id);
-              const btnId = `sent-toggle-${msg._id}`;
-              const panelId = `sent-panel-${msg._id}`;
 
               return (
-                <li
+                <MessageItem
                   key={msg._id}
-                  className={[
-                    "relative rounded-xl ring-1 transition overflow-hidden bg-white",
-                    isOpen
-                      ? "ring-slate-300 shadow-sm"
-                      : "ring-slate-200 hover:ring-slate-300",
-                  ].join(" ")}
-                >
-                  {/* Cabecera clickable accesible – versión compacta */}
-                  <button
-                    id={btnId}
-                    type="button"
-                    onClick={() => toggleMessage(msg._id)}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-slate-50 transition-colors duration-150"
-                    aria-expanded={isOpen}
-                    aria-controls={panelId}
-                  >
-                    {/* Fecha */}
-                    <span className="text-xs text-slate-600">
-                      {t("pages.messages.sentPage.sentOn")}{" "}
-                      {format(new Date(msg.sentAt), "dd/MM/yyyy HH:mm")}
-                    </span>
-                    {/* Asunto */}
-                    <span
-                      className="ml-auto truncate text-xs font-medium text-slate-800"
-                      title={msg.subject}
-                    >
-                      {msg.subject}
-                    </span>
-                    {/* Chevron */}
-                    <span
-                      className={[
-                        "ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-sm transition-transform",
-                        isOpen
-                          ? "rotate-180 text-blue-600"
-                          : "rotate-0 text-slate-500",
-                      ].join(" ")}
-                      aria-hidden="true"
-                    >
-                      ▾
-                    </span>
-                  </button>
-
-                  {/* Panel */}
-                  <div
-                    id={panelId}
-                    role="region"
-                    aria-labelledby={btnId}
-                    hidden={!isOpen}
-                    className="px-4 pb-3 pt-1 border-t border-slate-100"
-                  >
-                    {/* Acción borrar */}
-                    <div className="flex items-center justify-end mb-2">
-                      <button
-                        onClick={() => handleDelete(msg._id)}
-                        className="text-rose-600 hover:text-rose-700 font-bold text-lg leading-none transition"
-                        title={
-                          t("pages.messages.sentPage.actions.delete") ||
-                          "Delete message"
-                        }
-                        aria-label={
-                          t("pages.messages.sentPage.actions.delete") ||
-                          "Delete message"
-                        }
-                        type="button"
-                      >
-                        ×
-                      </button>
-                    </div>
-
-                    {/* Cuerpo */}
-                    <p className="mt-1 text-slate-700 text-xs whitespace-pre-line">
-                      {msg.body}
-                    </p>
-
-                    {/* Adjuntos estilo chips (como WorkerMessages / AdminUserMessageTab) */}
-                    {msg.attachments?.length ? (
-                      <div className="mt-2">
-                        <h3 className="text-xs font-medium text-slate-700">
-                          {t("pages.messages.sentPage.attachments") ||
-                            "Attachments"}
-                        </h3>
-                        <ul className="mt-2 flex flex-wrap justify-start gap-2">
-                          {msg.attachments.map((att) => (
-                            <li
-                              key={att.filename}
-                              className="inline-flex items-center"
-                            >
-                              <a
-                                href={buildAttachmentUrl(att, msg.sentAt)}
-
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download
-                                className="group inline-flex items-center max-w-full rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-[11px] hover:bg-slate-100"
-                                title={att.originalName}
-                              >
-                                <span aria-hidden="true" className="mr-1">
-                                  📎
-                                </span>
-                                <span className="truncate max-w-[180px]">
-                                  {att.originalName}
-                                </span>
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
-                  </div>
-                </li>
+                  message={msg}
+                  isOpen={isOpen}
+                  onToggle={() => toggleMessage(msg._id)}
+                  showDelete
+                  onDelete={() => handleDelete(msg._id)}
+                />
               );
             })}
           </ul>
+
         )}
       </div>
     </div>

@@ -7,8 +7,7 @@ import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import FileUpload from "../components/common/FileUpload";
-import AttachmentChips from "../components/messages/AttachmentChips";
+import MessageAttachmentsPicker from "../components/messages/MessageAttachmentsPicker";
 
 const AdminMessagesPage = () => {
   const { token } = useAuth();
@@ -134,61 +133,12 @@ const AdminMessagesPage = () => {
           </div>
 
           {/* Adjunto */}
-          <div className="space-y-2">
-            <FileUpload
-              id="admin-message-attachment"
-              label={
-                t("pages.messages.adminPage.actions.attach") ||
-                "Adjuntar archivo"
-              }
-              hintWhenEmpty={
-                t("pages.messages.adminPage.attachmentHelp") ||
-                "PDF, JPG o PNG. Máx 5MB."
-              }
-              accept=".pdf,image/jpeg,image/png"
-              multiple
-              maxSizeMB={5}
-              showSelectedList={false}
-              onFilesSelect={(files) => {
-                const incoming = files || [];
-                setAttachments((prev) => {
-                  const merged = [...prev];
-                  for (const f of incoming) {
-                    const dup = merged.some(
-                      (e) =>
-                        e.name === f.name &&
-                        e.size === f.size &&
-                        e.lastModified === f.lastModified,
-                    );
-                    if (!dup) merged.push(f);
-                  }
-                  return merged;
-                });
-              }}
-              onError={(msg) => toastT.warn([msg])}
-            />
+          <MessageAttachmentsPicker
+            id="admin-message-attachment"
+            files={attachments}
+            setFiles={setAttachments}
+          />
 
-            <AttachmentChips
-              items={attachments.map((f) => ({
-                key: f.name + f.size + f.lastModified,
-                name: f.name,
-                title: f.name,
-              }))}
-              onRemove={(idx) =>
-                setAttachments((prev) => {
-                  const copy = [...prev];
-                  copy.splice(idx, 1);
-                  return copy;
-                })
-              }
-            />
-
-
-            <p className="mt-1 text-[11px] text-slate-500">
-              {t("pages.messages.adminPage.attachmentHelp") ||
-                "PDF, JPG o PNG. Máx 5MB."}
-            </p>
-          </div>
 
           {/* Destinatarios */}
           <div className="space-y-2">

@@ -4,12 +4,10 @@ import { useAuth } from "../hooks/useAuth";
 import { sendMessage, sendMessageMultipart } from "../api/messages";
 import { toastT } from "../utils/toast";
 import { useTranslation } from "react-i18next";
-import FileUpload from "../components/common/FileUpload";
-import AttachmentChips from "../components/messages/AttachmentChips";
 import { getMessagesForUserAsAdmin } from "../api/messages";
 import type { Message } from "../types/message";
-import { buildAttachmentUrl } from "../utils/messages/buildAttachmentUrl";
-import { format } from "date-fns";
+import MessageItem from "../components/messages/MessageItem";
+import MessageAttachmentsPicker from "../components/messages/MessageAttachmentsPicker";
 
 interface Props {
   userId: string;
@@ -197,61 +195,16 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
         {/* ✅ Adjuntos + Enviar en la misma fila (centrados) */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           {/* Adjuntos */}
-          <div className="flex-1 space-y-2">
-            <FileUpload
-              key={uploadKey}
+          <div className="flex-1">
+            <MessageAttachmentsPicker
               id="admin-user-msg-attachment"
-              label={
-                t("pages.messages.adminPage.actions.attach") || "Adjuntar archivo"
-              }
-              hintWhenEmpty={
-                t("pages.messages.adminPage.attachmentHelp") ||
-                "PDF, JPG o PNG. Máx 5MB."
-              }
-              accept=".pdf,image/jpeg,image/png"
-              multiple
-              maxSizeMB={5}
-              showSelectedList={false}
-              onFilesSelect={(files) => {
-                const incoming = files || [];
-                setAttachments((prev) => {
-                  const merged = [...prev];
-                  for (const f of incoming) {
-                    const dup = merged.some(
-                      (e) =>
-                        e.name === f.name &&
-                        e.size === f.size &&
-                        e.lastModified === f.lastModified,
-                    );
-                    if (!dup) merged.push(f);
-                  }
-                  return merged;
-                });
-              }}
+              files={attachments}
+              setFiles={setAttachments}
+              uploadKey={uploadKey}
               onError={(msg) => toastT.warn([msg])}
             />
-
-            <AttachmentChips
-              items={attachments.map((f) => ({
-                key: f.name + f.size + f.lastModified,
-                name: f.name,
-                title: f.name,
-              }))}
-              onRemove={(idx) =>
-                setAttachments((prev) => {
-                  const copy = [...prev];
-                  copy.splice(idx, 1);
-                  return copy;
-                })
-              }
-            />
-
-
-            <p className="mt-1 text-[11px] text-slate-500">
-              {t("pages.messages.adminPage.attachmentHelp") ||
-                "PDF, JPG o PNG. Máx 5MB."}
-            </p>
           </div>
+
 
           {/* Enviar (alineado con Adjuntar) */}
           <div className="sm:pb-[2px]">
@@ -327,110 +280,19 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
                 <ul className="space-y-3">
                   {sortedMessages.map((msg) => {
                     const isOpen = expanded.has(msg._id);
-                    const btnId = `admin-user-msg-toggle-${msg._id}`;
-                    const panelId = `admin-user-msg-panel-${msg._id}`;
 
                     return (
-                      <li
+                      <MessageItem
                         key={msg._id}
-                        className={[
-                          "relative rounded-xl ring-1 transition overflow-hidden bg-white",
-                          isOpen
-                            ? "ring-slate-300 shadow-sm"
-                            : "ring-slate-200 hover:ring-slate-300",
-                        ].join(" ")}
-                      >
-                        <button
-                          id={btnId}
-                          type="button"
-                          onClick={() => toggleMessage(msg._id)}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-left cursor-pointer select-none hover:bg-slate-50 transition-colors duration-150"
-                          aria-expanded={isOpen}
-                          aria-controls={panelId}
-                        >
-                          <span
-                            className="inline-block w-2 h-2 rounded-full flex-shrink-0 bg-slate-300"
-                            aria-hidden="true"
-                          />
-
-                          <span className="text-xs text-slate-600">
-                            {t("pages.messages.workerPage.from") || "From"}{" "}
-                            <span className="font-medium">
-                              {msg.sender?.lastName}, {msg.sender?.name}
-                            </span>{" "}
-                            · {format(new Date(msg.sentAt), "dd/MM/yyyy HH:mm")}
-                          </span>
-
-                          <span
-                            className="ml-auto truncate text-xs font-medium text-slate-700"
-                            title={msg.subject}
-                          >
-                            {msg.subject}
-                          </span>
-
-                          <span
-                            className={[
-                              "ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-sm transition-transform",
-                              isOpen
-                                ? "rotate-180 text-blue-600"
-                                : "rotate-0 text-slate-500",
-                            ].join(" ")}
-                            aria-hidden="true"
-                          >
-                            ▾
-                          </span>
-                        </button>
-
-                        <div
-                          id={panelId}
-                          role="region"
-                          aria-labelledby={btnId}
-                          hidden={!isOpen}
-                          className="px-4 pb-3 pt-1 border-t border-slate-100"
-                        >
-                          <p className="mt-1 text-slate-700 text-xs whitespace-pre-line">
-                            {msg.body}
-                          </p>
-
-                          {msg.attachments?.length ? (
-                            <div className="mt-2">
-                              <h4 className="text-xs font-medium text-slate-700">
-                                {t("pages.messages.workerPage.attachments") ||
-                                  "Attachments"}
-                              </h4>
-
-                              <ul className="mt-1 flex flex-wrap justify-start gap-2">
-                                {msg.attachments.map((att) => (
-                                  <li
-                                    key={att.filename}
-                                    className="inline-flex items-center"
-                                  >
-                                    <a
-                                      href={buildAttachmentUrl(att, msg.sentAt)}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      download
-                                      className="group inline-flex items-center max-w-full rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-[11px] hover:bg-slate-100"
-                                      title={att.originalName}
-                                    >
-
-                                      <span aria-hidden="true" className="mr-1">
-                                        📎
-                                      </span>
-                                      <span className="truncate max-w-[180px]">
-                                        {att.originalName}
-                                      </span>
-                                    </a>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          ) : null}
-                        </div>
-                      </li>
+                        message={msg}
+                        isOpen={isOpen}
+                        unread={false}
+                        onToggle={() => toggleMessage(msg._id)}
+                      />
                     );
                   })}
                 </ul>
+
               )}
             </div>
           </div>
