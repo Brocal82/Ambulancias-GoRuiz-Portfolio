@@ -8,6 +8,7 @@ import { toastT } from "../utils/toast";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import FileUpload from "../components/common/FileUpload";
+import AttachmentChips from "../components/messages/AttachmentChips";
 
 const AdminMessagesPage = () => {
   const { token } = useAuth();
@@ -167,36 +168,21 @@ const AdminMessagesPage = () => {
               onError={(msg) => toastT.warn([msg])}
             />
 
-            {attachments.length > 0 && (
-              <ul className="mt-2 flex flex-wrap justify-start gap-2">
-                {attachments.map((file, idx) => (
-                  <li
-                    key={file.name + file.size + file.lastModified}
-                    className="group inline-flex items-center max-w-full rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-xs"
-                    title={file.name}
-                  >
-                    <span aria-hidden="true" className="mr-1">
-                      📎
-                    </span>
-                    <span className="truncate max-w-[220px]">{file.name}</span>
-                    <button
-                      type="button"
-                      aria-label={t("common.remove", "Quitar")}
-                      className="ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-rose-600 hover:bg-rose-50"
-                      onClick={() =>
-                        setAttachments((prev) => {
-                          const copy = [...prev];
-                          copy.splice(idx, 1);
-                          return copy;
-                        })
-                      }
-                    >
-                      ×
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <AttachmentChips
+              items={attachments.map((f) => ({
+                key: f.name + f.size + f.lastModified,
+                name: f.name,
+                title: f.name,
+              }))}
+              onRemove={(idx) =>
+                setAttachments((prev) => {
+                  const copy = [...prev];
+                  copy.splice(idx, 1);
+                  return copy;
+                })
+              }
+            />
+
 
             <p className="mt-1 text-[11px] text-slate-500">
               {t("pages.messages.adminPage.attachmentHelp") ||
