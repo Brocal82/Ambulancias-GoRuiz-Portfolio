@@ -7,8 +7,8 @@ import { useTranslation } from "react-i18next";
 import { getMessagesForUserAsAdmin } from "../api/messages";
 import type { Message } from "../types/message";
 import MessageList from "../components/messages/MessageList";
-
 import MessageAttachmentsPicker from "../components/messages/MessageAttachmentsPicker";
+import { useMessageExpansion } from "../hooks/useMessageExpansion";
 
 interface Props {
   userId: string;
@@ -31,7 +31,8 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState<boolean>(true);
 
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const { expanded, toggleById, setExpanded } = useMessageExpansion();
+
 
   // ✅ Modal para ver mensajes enviados
   const [isMsgModalOpen, setIsMsgModalOpen] = useState(false);
@@ -40,14 +41,6 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
     (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime(),
   );
 
-  const toggleMessage = (id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
 
   const historyTitle = userFullName
     ? `${t("pages.messages.userTab.historyPrefix", "Mensajes enviados a")} ${userFullName}`
@@ -229,7 +222,11 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
           role="dialog"
           aria-modal="true"
           aria-label={historyTitle}
-          onClick={() => setIsMsgModalOpen(false)}
+          onClick={() => {
+            setIsMsgModalOpen(false);
+            setExpanded(new Set());
+          }}
+
         >
           <div className="absolute inset-0 bg-black/30" />
 
@@ -256,7 +253,11 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
 
                 <button
                   type="button"
-                  onClick={() => setIsMsgModalOpen(false)}
+                  onClick={() => {
+                    setIsMsgModalOpen(false);
+                    setExpanded(new Set());
+                  }}
+
                   className="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-700 hover:bg-slate-100"
                   aria-label={t("common.close", "Cerrar")}
                   title={t("common.close", "Cerrar")}
@@ -281,8 +282,9 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
                 <MessageList
                   messages={sortedMessages}
                   expanded={expanded}
-                  onToggle={(msg) => toggleMessage(msg._id)}
+                  onToggle={(msg) => toggleById(msg._id)}
                 />
+
 
 
               )}

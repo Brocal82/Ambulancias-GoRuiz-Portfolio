@@ -11,6 +11,8 @@ import { toastT } from "../utils/toast";
 import { useTranslation } from "react-i18next";
 import { notifyUnreadMessagesChanged } from "../hooks/useUnreadMessagesCount";
 import MessageList from "../components/messages/MessageList";
+import { useMessageExpansion } from "../hooks/useMessageExpansion";
+
 
 
 const WorkerMessagesPage = () => {
@@ -19,7 +21,9 @@ const WorkerMessagesPage = () => {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const { expanded, toggleById, setExpanded } = useMessageExpansion();
+
+
   const markedAnyAsReadRef = useRef(false);
 
   const meId = user?._id ? String(user._id) : null;
@@ -83,12 +87,8 @@ const WorkerMessagesPage = () => {
     async (msg: Message) => {
       const id = msg._id;
 
-      setExpanded((prev) => {
-        const next = new Set(prev);
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
-        return next;
-      });
+      toggleById(id);
+
 
       // si se abre por primera vez y estaba no leído → marcar como leído
       const wasExpanded = expanded.has(id);
@@ -119,8 +119,9 @@ const WorkerMessagesPage = () => {
         }
       }
     },
-    [expanded, token, meId, isUnread],
+    [expanded, token, meId, isUnread, toggleById],
   );
+
 
   // al salir de la página, por si hubo varias lecturas rápidas
   useEffect(() => {
@@ -148,8 +149,9 @@ const WorkerMessagesPage = () => {
           <MessageList
             messages={sorted}
             expanded={expanded}
-            onToggle={(msg) => toggleMessage(msg)}
-            isUnread={(msg) => isUnread(msg)}
+            onToggle={toggleMessage}
+            isUnread={isUnread}
+
             showDelete
             onDelete={(msg) => handleDelete(msg._id)}
           />

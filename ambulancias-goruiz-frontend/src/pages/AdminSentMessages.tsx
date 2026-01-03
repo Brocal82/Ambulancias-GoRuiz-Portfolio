@@ -1,5 +1,5 @@
 // frontend/src/pages/AdminSentMessages.tsx
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { getSentMessages, deleteMessage } from "../api/messages";
 import type { Message } from "../types/message";
@@ -7,12 +7,14 @@ import { useNavigate } from "react-router-dom";
 import { toastT } from "../utils/toast";
 import { useTranslation } from "react-i18next";
 import MessageList from "../components/messages/MessageList";
+import { useMessageExpansion } from "../hooks/useMessageExpansion";
 
 
 const AdminSentMessages = () => {
   const { token } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const { expanded, toggleById, setExpanded } = useMessageExpansion();
+
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -43,14 +45,6 @@ const AdminSentMessages = () => {
     [messages],
   );
 
-  const toggleMessage = useCallback((id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
 
   const handleDelete = async (id: string) => {
     if (!token) return;
@@ -119,7 +113,8 @@ const AdminSentMessages = () => {
           <MessageList
             messages={sorted}
             expanded={expanded}
-            onToggle={(msg) => toggleMessage(msg._id)}
+            onToggle={(msg) => toggleById(msg._id)}
+
             showDelete
             onDelete={(msg) => handleDelete(msg._id)}
           />
