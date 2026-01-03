@@ -9,7 +9,7 @@ import type { Message } from "../types/message";
 import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
 import { useTranslation } from "react-i18next";
-import { getPublicUrl } from "../utils/url";
+import { buildAttachmentUrl } from "../utils/messages/buildAttachmentUrl";
 import { format } from "date-fns";
 import { notifyUnreadMessagesChanged } from "../hooks/useUnreadMessagesCount";
 
@@ -102,15 +102,15 @@ const WorkerMessagesPage = () => {
             prev.map((m) =>
               m._id === id
                 ? {
-                    ...m,
-                    readBy: Array.from(
-                      new Set([
-                        ...((m.readBy as unknown as string[] | undefined) ||
-                          []),
-                        meId,
-                      ]),
-                    ) as unknown as Message["readBy"],
-                  }
+                  ...m,
+                  readBy: Array.from(
+                    new Set([
+                      ...((m.readBy as unknown as string[] | undefined) ||
+                        []),
+                      meId,
+                    ]),
+                  ) as unknown as Message["readBy"],
+                }
                 : m,
             ),
           );
@@ -259,9 +259,8 @@ const WorkerMessagesPage = () => {
                               className="inline-flex items-center"
                             >
                               <a
-                                href={`${getPublicUrl(att.url)}?v=${encodeURIComponent(
-                                  att.filename,
-                                )}-${encodeURIComponent(msg.sentAt)}`}
+                                href={buildAttachmentUrl(att, msg.sentAt)}
+
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 download

@@ -7,7 +7,7 @@ import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { toastT } from "../utils/toast";
 import { useTranslation } from "react-i18next";
-import { getPublicUrl } from "../utils/url";
+import { buildAttachmentUrl } from "../utils/messages/buildAttachmentUrl";
 
 const AdminSentMessages = () => {
   const { token } = useAuth();
@@ -58,7 +58,7 @@ const AdminSentMessages = () => {
     if (
       !window.confirm(
         t("pages.messages.sentPage.confirmDelete") ||
-          "Are you sure you want to delete this message?",
+        "Are you sure you want to delete this message?",
       )
     ) {
       return;
@@ -77,7 +77,7 @@ const AdminSentMessages = () => {
       console.error("❌ Error deleting message:", error);
       toastT.error(
         t("pages.messages.sentPage.deleteError") ||
-          "Error deleting the message",
+        "Error deleting the message",
       );
     }
   };
@@ -213,9 +213,8 @@ const AdminSentMessages = () => {
                               className="inline-flex items-center"
                             >
                               <a
-                                href={`${getPublicUrl(att.url)}?v=${encodeURIComponent(
-                                  att.filename,
-                                )}-${encodeURIComponent(msg.sentAt)}`}
+                                href={buildAttachmentUrl(att, msg.sentAt)}
+
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 download

@@ -8,7 +8,7 @@ import FileUpload from "../components/common/FileUpload";
 import AttachmentChips from "../components/messages/AttachmentChips";
 import { getMessagesForUserAsAdmin } from "../api/messages";
 import type { Message } from "../types/message";
-import { getPublicUrl } from "../utils/url";
+import { buildAttachmentUrl } from "../utils/messages/buildAttachmentUrl";
 import { format } from "date-fns";
 
 interface Props {
@@ -406,15 +406,14 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
                                     className="inline-flex items-center"
                                   >
                                     <a
-                                      href={`${getPublicUrl(att.url)}?v=${encodeURIComponent(
-                                        att.filename,
-                                      )}-${encodeURIComponent(msg.sentAt)}`}
+                                      href={buildAttachmentUrl(att, msg.sentAt)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       download
                                       className="group inline-flex items-center max-w-full rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-[11px] hover:bg-slate-100"
                                       title={att.originalName}
                                     >
+
                                       <span aria-hidden="true" className="mr-1">
                                         📎
                                       </span>
