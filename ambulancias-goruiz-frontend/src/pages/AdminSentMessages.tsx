@@ -8,6 +8,7 @@ import { toastT } from "../utils/toast";
 import { useTranslation } from "react-i18next";
 import MessageList from "../components/messages/MessageList";
 import { useMessageExpansion } from "../hooks/useMessageExpansion";
+import { sortMessagesByDateDesc } from "../utils/messages/sortMessagesByDateDesc";
 
 
 const AdminSentMessages = () => {
@@ -37,13 +38,8 @@ const AdminSentMessages = () => {
   }, [token]);
 
   // Orden descendente por fecha
-  const sorted = useMemo(
-    () =>
-      [...messages].sort(
-        (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime(),
-      ),
-    [messages],
-  );
+  const sorted = useMemo(() => sortMessagesByDateDesc(messages), [messages]);
+
 
 
   const handleDelete = async (id: string) => {

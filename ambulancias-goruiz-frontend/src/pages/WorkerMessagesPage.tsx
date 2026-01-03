@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { notifyUnreadMessagesChanged } from "../hooks/useUnreadMessagesCount";
 import MessageList from "../components/messages/MessageList";
 import { useMessageExpansion } from "../hooks/useMessageExpansion";
+import { sortMessagesByDateDesc } from "../utils/messages/sortMessagesByDateDesc";
 
 
 
@@ -39,13 +40,8 @@ const WorkerMessagesPage = () => {
   );
 
   // ordenamos por fecha desc
-  const sorted = useMemo(
-    () =>
-      [...messages].sort(
-        (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime(),
-      ),
-    [messages],
-  );
+  const sorted = useMemo(() => sortMessagesByDateDesc(messages), [messages]);
+
 
   // ⭐ Auto-scroll arriba al cargar la página
   useEffect(() => {

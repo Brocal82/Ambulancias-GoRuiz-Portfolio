@@ -1,5 +1,5 @@
 // frontend/src/pages/AdminUserMessageTab.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { sendMessage, sendMessageMultipart } from "../api/messages";
 import { toastT } from "../utils/toast";
@@ -9,6 +9,7 @@ import type { Message } from "../types/message";
 import MessageList from "../components/messages/MessageList";
 import MessageAttachmentsPicker from "../components/messages/MessageAttachmentsPicker";
 import { useMessageExpansion } from "../hooks/useMessageExpansion";
+import { sortMessagesByDateDesc } from "../utils/messages/sortMessagesByDateDesc";
 
 interface Props {
   userId: string;
@@ -37,9 +38,11 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
   // ✅ Modal para ver mensajes enviados
   const [isMsgModalOpen, setIsMsgModalOpen] = useState(false);
 
-  const sortedMessages = [...messages].sort(
-    (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime(),
+  const sortedMessages = useMemo(
+    () => sortMessagesByDateDesc(messages),
+    [messages],
   );
+
 
 
   const historyTitle = userFullName
