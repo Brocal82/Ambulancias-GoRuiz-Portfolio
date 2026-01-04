@@ -30,14 +30,11 @@ export default function AdminSickLeavesPage() {
 
   // === Datos para grid + detalle (todas las bajas) ===
   const [allItemsForCounts, setAllItemsForCounts] = useState<SickLeave[]>([]);
-  const [loadingCounts, setLoadingCounts] = useState<boolean>(true);
 
   // === Año / Mes seleccionado ===
   const nowYear = new Date().getFullYear();
-  const yearOptions = [nowYear - 1, nowYear, nowYear + 1];
   const [selectedYear, setSelectedYear] = useState<number>(nowYear);
-  const minYear = yearOptions[0];
-  const maxYear = yearOptions[yearOptions.length - 1];
+
 
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(
     null,
@@ -45,12 +42,20 @@ export default function AdminSickLeavesPage() {
 
   const decYear = () => {
     setSelectedMonthIndex(null); // UX: al cambiar año, vuelves al grid
-    setSelectedYear((y) => Math.max(minYear, y - 1));
+    setSelectedYear((y) => y - 1);
   };
+
   const incYear = () => {
     setSelectedMonthIndex(null);
-    setSelectedYear((y) => Math.min(maxYear, y + 1));
+    setSelectedYear((y) => y + 1);
   };
+
+  const goThisYear = () => {
+    setSelectedMonthIndex(null);
+    setSelectedYear(nowYear);
+  };
+
+
 
   const months = useMemo(
     () => getYearMonths(selectedYear, i18n.language || "es", "Europe/Berlin"),
@@ -61,16 +66,13 @@ export default function AdminSickLeavesPage() {
   const loadAllForCounts = async () => {
     if (!token) return;
     try {
-      setLoadingCounts(true);
-      const data = await adminListSickLeaves({}); // todas
+      const data = await adminListSickLeaves({});
       setAllItemsForCounts(data);
     } catch (err: any) {
       console.error(err);
-      // silencioso
-    } finally {
-      setLoadingCounts(false);
     }
   };
+
 
   useEffect(() => {
     loadAllForCounts();
@@ -219,46 +221,7 @@ export default function AdminSickLeavesPage() {
         <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
           {/* Controles + leyenda (misma línea) */}
           <div className="flex items-center justify-between gap-4 flex-wrap">
-            {/* IZQUIERDA: selector de año */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs sm:text-sm text-slate-700">
-                {t("pages.sick.admin.year", "Año")}:
-              </span>
 
-              <div className="inline-flex items-center rounded-full ring-1 ring-slate-200 bg-white shadow-sm overflow-hidden">
-                <button
-                  type="button"
-                  onClick={decYear}
-                  disabled={selectedYear <= minYear}
-                  className="px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-slate-100"
-                  aria-label={t("common.prev", "Anterior") as string}
-                  title={t("common.prev", "Anterior") as string}
-                >
-                  ◀
-                </button>
-
-                <span className="px-4 py-1.5 text-sm font-medium text-slate-900 tabular-nums">
-                  {selectedYear}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={incYear}
-                  disabled={selectedYear >= maxYear}
-                  className="px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-slate-100"
-                  aria-label={t("common.next", "Siguiente") as string}
-                  title={t("common.next", "Siguiente") as string}
-                >
-                  ▶
-                </button>
-              </div>
-
-              {loadingCounts && (
-                <span className="text-xs text-slate-500 ml-2">
-                  {t("common.loading", "Cargando...")}
-                </span>
-              )}
-            </div>
 
             {/* DERECHA: leyenda */}
             <div className="flex flex-wrap items-center justify-end gap-3 text-xs text-slate-600">
@@ -287,22 +250,20 @@ export default function AdminSickLeavesPage() {
               onSelect={(idx) => setSelectedMonthIndex(idx)}
               locale={i18n.language || "es"}
               countLabel={(n) =>
-                t("pages.sick.admin.grid.count", "{{n}} baja(s)", {
-                  n,
-                }) as string
+                t("pages.sick.admin.grid.count", "{{n}} baja(s)", { n }) as string
               }
-              compact
+              onPrevYear={decYear}
+              onNextYear={incYear}
+              onThisYear={goThisYear}
               monthBorderClass={(idx) => {
                 const p = monthBorderPriority[idx];
-                if (p === "pending")
-                  return "border-amber-300 ring-2 ring-amber-200";
-                if (p === "accepted")
-                  return "border-emerald-300 ring-2 ring-emerald-100";
-                if (p === "rejected")
-                  return "border-rose-300 ring-2 ring-rose-100";
+                if (p === "pending") return "border-amber-300 ring-2 ring-amber-200";
+                if (p === "accepted") return "border-emerald-300 ring-2 ring-emerald-100";
+                if (p === "rejected") return "border-rose-300 ring-2 ring-rose-100";
                 return "";
               }}
             />
+
           </div>
 
           {/* Detalle del mes (solo cuando hay mes seleccionado) */}
@@ -478,11 +439,10 @@ export default function AdminSickLeavesPage() {
 
                                     <div
                                       id={`docs-panel-month-${it._id}`}
-                                      className={`overflow-hidden transition-all duration-200 ease-out ${
-                                        isOpen
-                                          ? "opacity-100 max-h-56 mt-2"
-                                          : "opacity-0 max-h-0 mt-0"
-                                      }`}
+                                      className={`overflow-hidden transition-all duration-200 ease-out ${isOpen
+                                        ? "opacity-100 max-h-56 mt-2"
+                                        : "opacity-0 max-h-0 mt-0"
+                                        }`}
                                     >
                                       <ul className="flex flex-wrap justify-center gap-2">
                                         {docUrls.map((url, idx) => {
