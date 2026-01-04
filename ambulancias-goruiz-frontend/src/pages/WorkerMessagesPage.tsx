@@ -13,8 +13,11 @@ import { notifyUnreadMessagesChanged } from "../hooks/useUnreadMessagesCount";
 import MessageList from "../components/messages/MessageList";
 import { useMessageExpansion } from "../hooks/useMessageExpansion";
 import { sortMessagesByDateDesc } from "../utils/messages/sortMessagesByDateDesc";
-
-
+import MessagesYearGrid from "../components/messages/MessagesYearGrid";
+import {
+  buildCountsByMonthForYear,
+  filterMessagesByYearMonth,
+} from "../utils/messages/messagesByMonth";
 
 const WorkerMessagesPage = () => {
   const { token, user } = useAuth();
@@ -24,6 +27,11 @@ const WorkerMessagesPage = () => {
   const [loading, setLoading] = useState(true);
   const { expanded, toggleById, setExpanded } = useMessageExpansion();
 
+  // ✅ Grid year/month inline
+  const [year, setYear] = useState<number>(new Date().getFullYear());
+
+  // ✅ Ningún mes abierto por defecto (lista oculta)
+  const [openMonth, setOpenMonth] = useState<number | null>(null);
 
   const markedAnyAsReadRef = useRef(false);
 
@@ -41,7 +49,6 @@ const WorkerMessagesPage = () => {
 
   // ordenamos por fecha desc
   const sorted = useMemo(() => sortMessagesByDateDesc(messages), [messages]);
-
 
   // ⭐ Auto-scroll arriba al cargar la página
   useEffect(() => {
@@ -85,7 +92,6 @@ const WorkerMessagesPage = () => {
 
       toggleById(id);
 
-
       // si se abre por primera vez y estaba no leído → marcar como leído
       const wasExpanded = expanded.has(id);
       if (!wasExpanded && token && meId && isUnread(msg)) {
@@ -101,8 +107,7 @@ const WorkerMessagesPage = () => {
                   ...m,
                   readBy: Array.from(
                     new Set([
-                      ...((m.readBy as unknown as string[] | undefined) ||
-                        []),
+                      ...((m.readBy as unknown as string[] | undefined) || []),
                       meId,
                     ]),
                   ) as unknown as Message["readBy"],
@@ -118,7 +123,6 @@ const WorkerMessagesPage = () => {
     [expanded, token, meId, isUnread, toggleById],
   );
 
-
   // al salir de la página, por si hubo varias lecturas rápidas
   useEffect(() => {
     return () => {
@@ -126,13 +130,61 @@ const WorkerMessagesPage = () => {
     };
   }, []);
 
+  const countsByMonth = useMemo(() => {
+    // ✅ usamos messages (no sorted) porque la cuenta no depende del orden
+    return buildCountsByMonthForYear(messages, year, meId);
+  }, [messages, year, meId]);
+
+  const monthMessages = useMemo(() => {
+    if (openMonth === null) return [];
+    const filtered = filterMessagesByYearMonth(messages, year, openMonth);
+    return sortMessagesByDateDesc(filtered);
+  }, [messages, year, openMonth]);
+
+  const monthTitle = useMemo(() => {
+    if (openMonth === null) return "";
+    const d = new Date(year, openMonth, 1);
+    return d.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+  }, [year, openMonth]);
+
   return (
     <div className="min-h-screen bg-slate-50 p-6">
-      <div className="mx-auto max-w-4xl">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-6 text-center">
+      <div className="mx-auto max-w-4xl space-y-5">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 text-center">
           {t("pages.messages.workerPage.title")}
         </h1>
 
+        {/* ✅ Grid 12 meses + navegación año (SIEMPRE visible) */}
+        <MessagesYearGrid
+          year={year}
+          locale="es-ES"
+          selectedMonth={openMonth}
+          countsByMonth={countsByMonth}
+          onSelectMonth={(m) => {
+            // ✅ toggle: si clicas el mismo mes, cierras
+            setOpenMonth((prev) => (prev === m ? null : m));
+            // cerramos expansiones al cambiar de mes (limpio)
+            setExpanded(new Set());
+          }}
+          onPrevYear={() => {
+            setYear(year - 1);
+            setOpenMonth(null); // lista oculta al cambiar de año
+            setExpanded(new Set());
+          }}
+          onNextYear={() => {
+            setYear(year + 1);
+            setOpenMonth(null); // lista oculta al cambiar de año
+            setExpanded(new Set());
+          }}
+          onThisYear={() => {
+            const now = new Date();
+            setYear(now.getFullYear());
+            setOpenMonth(null); // no auto-abrir
+            setExpanded(new Set());
+          }}
+        />
+
+        {/* ✅ Estado de carga / vacío (sin ocultar el grid) */}
         {loading ? (
           <p className="text-center text-slate-500">
             {t("pages.messages.workerPage.loading")}
@@ -141,17 +193,38 @@ const WorkerMessagesPage = () => {
           <p className="text-center text-slate-400">
             {t("pages.messages.workerPage.empty")}
           </p>
-        ) : (
-          <MessageList
-            messages={sorted}
-            expanded={expanded}
-            onToggle={toggleMessage}
-            isUnread={isUnread}
+        ) : null}
 
-            showDelete
-            onDelete={(msg) => handleDelete(msg._id)}
-          />
+        {/* ✅ Lista SOLO si hay un mes abierto */}
+        {openMonth !== null && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            {monthMessages.length === 0 ? (
+              <p className="text-sm text-slate-400">
+                {t(
+                  "pages.messages.monthGrid.emptyMonth",
+                  "No hay mensajes en este mes.",
+                )}
+              </p>
+            ) : (
+              <>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h4 className="text-sm font-semibold text-slate-800 capitalize">
+                    {t("pages.messages.monthGrid.monthTitle", "Mensajes de")}{" "}
+                    {monthTitle}
+                  </h4>
+                </div>
 
+                <MessageList
+                  messages={monthMessages}
+                  expanded={expanded}
+                  onToggle={toggleMessage}
+                  isUnread={isUnread}
+                  showDelete
+                  onDelete={(msg) => handleDelete(msg._id)}
+                />
+              </>
+            )}
+          </div>
         )}
       </div>
     </div>
