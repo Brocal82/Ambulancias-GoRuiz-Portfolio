@@ -177,12 +177,14 @@ export default function AdminAppointmentsPage() {
               <AdminAppointmentMonthGrid
                 items={confirmedYear}
                 year={year}
+                selectedMonth={selectedMonth}
                 onMonthClick={(mi) => {
                   setSelectedMonth((prev) => (prev === mi ? null : mi));
                 }}
                 highlightCurrentMonth
                 currentMonthIndex={currentMonthIndex}
               />
+
             )}
           </section>
 

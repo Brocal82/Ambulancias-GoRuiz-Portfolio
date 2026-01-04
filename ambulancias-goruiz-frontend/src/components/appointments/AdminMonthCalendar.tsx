@@ -1,3 +1,4 @@
+// frontend/src/components/appointments/AdminMonthCalendar.tsx
 import React, { useMemo, useState } from "react";
 import type { Appointment } from "../../types/appointment";
 import {
@@ -13,6 +14,11 @@ type Props = {
   year: number;
   monthIndex: number;
   onAppointmentClick?: (a: Appointment) => void;
+};
+
+const isPendingAction = (a: Appointment) => {
+  const status = (a as any)?.status as string | undefined;
+  return status === "pending" || status === "proposed";
 };
 
 const AdminMonthCalendar: React.FC<Props> = ({
@@ -58,16 +64,23 @@ const AdminMonthCalendar: React.FC<Props> = ({
     setOpenDayModal(true);
   };
 
+  // ✅ Importante: hoyKey debe estar en el MISMO formato que ymd()
+  const todayKey = ymd(new Date());
+
   return (
-    <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
-      {/* 1) Título mes/año */}
-      <div className="mb-4 flex items-center justify-between">
+    <div className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm">
+      {/* Header */}
+      <div className="mb-4 flex items-center justify-between gap-3">
         <h3 className="text-lg font-semibold tracking-tight text-slate-900 capitalize">
           {monthTitle}
         </h3>
+
+        <div className="hidden text-xs text-slate-500 select-none sm:block">
+          {new Date().toLocaleDateString(i18n.language)}
+        </div>
       </div>
 
-      {/* 2) Cabecera de días */}
+      {/* Cabecera de días */}
       <div className="mb-3 grid grid-cols-7 gap-2">
         {weekdayLabels.map((w, i) => (
           <div
@@ -79,29 +92,53 @@ const AdminMonthCalendar: React.FC<Props> = ({
         ))}
       </div>
 
-      {/* 3) Cuadrícula de días */}
+      {/* Cuadrícula de días */}
       <div className="grid grid-cols-7 gap-2">
         {cells.map((cell, idx) => {
           const key = cell.date ? ymd(cell.date) : `empty-${idx}`;
           const list = cell.date ? (grouped.get(key) ?? []) : [];
           const count = list.length;
+
+          const hasPending = list.some(isPendingAction);
+          const isToday = !!cell.date && key === todayKey;
+
           const clickable = !!cell.date && count > 0;
+
+          // ✅ Base con RING (no border)
+          const baseClasses =
+            "relative min-h-[56px] rounded-xl p-2 border bg-white transition " +
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400";
+
+
+          // ✅ Estados también con RING + BG (no border)
+          // ✅ OJO: NO metemos bg-white aquí porque lo decidimos en stateClasses
+          const stateClasses = !cell.date
+            ? "border-slate-200 bg-transparent opacity-70"
+            : hasPending
+              ? "border-amber-400 ring-2 ring-amber-200"
+              : isToday
+                ? "border-blue-300"
+                : count > 0
+                  ? "border-orange-300"
+                  : "border-slate-200";
+
+
+
+          const hoverClasses = clickable
+            ? "group cursor-pointer hover:shadow-sm hover:bg-slate-50"
+            : "";
+
+
 
           return (
             <div
               key={key}
-              className={[
-                "relative min-h-[96px] rounded-xl p-2 ring-1 ring-slate-200",
-                cell.date ? "bg-white" : "bg-slate-50 opacity-80",
-                clickable
-                  ? "cursor-pointer hover:ring-blue-300 hover:bg-blue-50/30"
-                  : "",
-              ].join(" ")}
+              className={`${baseClasses} ${hoverClasses} ${stateClasses}`}
               aria-label={
                 cell.date
                   ? t("pages.appointments.calendar.aria.day", {
-                      num: cell.dayNumber,
-                    })
+                    num: cell.dayNumber,
+                  })
                   : t("pages.appointments.calendar.aria.emptyCell")
               }
               {...(clickable && {
@@ -121,16 +158,25 @@ const AdminMonthCalendar: React.FC<Props> = ({
                 {cell.dayNumber ?? ""}
               </div>
 
-              {/* Globo con número de citas (solo si hay) */}
+              {/* Badge contador (solo si hay citas) */}
               {count > 0 && (
                 <span
-                  className="absolute top-2 right-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white ring-2 ring-blue-100"
+                  className={[
+                    "absolute top-2 right-2 inline-flex items-center justify-center rounded-full px-2 py-1 text-[10px] font-semibold ring-1 transition-colors",
+
+                    hasPending
+                      ? "bg-amber-100 text-amber-900 ring-amber-200"
+                      : "bg-orange-100 text-orange-900 ring-orange-200",
+
+                    clickable ? "group-hover:bg-orange-200/80" : "",
+                  ].join(" ")}
                   title={`${count} ${count === 1 ? "cita" : "citas"}`}
                   aria-label={`${count} ${count === 1 ? "cita" : "citas"}`}
                 >
                   {count}
                 </span>
               )}
+
             </div>
           );
         })}
