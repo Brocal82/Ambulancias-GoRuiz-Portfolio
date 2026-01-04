@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminMessagesPage.tsx
 import { useEffect, useState, useMemo } from "react";
 import { getAllUsers } from "../api/users";
-import { sendMessage, sendMessageMultipart } from "../api/messages";
+import { useSendMessage } from "../hooks/useSendMessage";
 import type { User } from "../types/user";
 import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
@@ -11,6 +11,8 @@ import MessageAttachmentsPicker from "../components/messages/MessageAttachmentsP
 
 const AdminMessagesPage = () => {
   const { token } = useAuth();
+  const { send, loading } = useSendMessage();
+
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -45,6 +47,8 @@ const AdminMessagesPage = () => {
   }, [users, search]);
 
   const handleSend = async () => {
+    if (!token) return;
+
     const recipients = sendToAll ? users.map((u) => u._id) : selectedIds;
 
     if (!subject || !body || recipients.length === 0) {
@@ -52,47 +56,25 @@ const AdminMessagesPage = () => {
       return;
     }
 
-    try {
-      if (attachments.length > 0) {
-        // Envío con multipart/form-data si hay uno o varios adjuntos
-        const formData = new FormData();
-        formData.append("subject", subject);
-        formData.append("body", body);
-        formData.append("toAllWorkers", sendToAll ? "true" : "false");
-        formData.append("recipients", JSON.stringify(recipients));
+    const res = await send({
+      token,
+      subject,
+      body,
+      recipients,
+      toAllWorkers: sendToAll,
+      attachments,
+    });
 
-        // Añadir TODOS los adjuntos con el mismo campo 'attachment'
-        attachments.forEach((file) => {
-          formData.append("attachment", file, file.name);
-        });
+    if (!res.ok) return;
 
-        await sendMessageMultipart(token!, formData);
-      } else {
-        // Flujo original JSON si no hay adjuntos
-        await sendMessage(token!, {
-          subject,
-          body,
-          recipients,
-          toAllWorkers: sendToAll,
-        });
-      }
-
-      toastT.success(["toasts.messages.sent"]);
-      setSubject("");
-      setBody("");
-      setSelectedIds([]);
-      setSendToAll(false);
-      setAttachments([]); // limpiar adjuntos
-      setSearch("");
-    } catch (error: any) {
-      console.error("❌ Error al enviar mensaje:", error);
-      const msg =
-        error?.response?.data?.message ??
-        t("toasts.messages.error") ??
-        "Error sending the message";
-      toastT.error(msg);
-    }
+    setSubject("");
+    setBody("");
+    setSelectedIds([]);
+    setSendToAll(false);
+    setAttachments([]);
+    setSearch("");
   };
+
 
   const totalSelected = sendToAll ? users.length : selectedIds.length;
 
@@ -240,6 +222,7 @@ const AdminMessagesPage = () => {
             <button
               onClick={handleSend}
               type="button"
+              disabled={loading}
               className="
                 inline-flex items-center gap-2
                 rounded-full border border-blue-300 bg-blue-50
