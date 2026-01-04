@@ -159,6 +159,7 @@ const AdminSummariesMonthGrid: React.FC<Props> = ({
           const iso = cell.iso as string;
           const isSelected = selectedDate === iso;
           const isToday = iso === todayISO;
+
           const counts = summariesByDate[iso];
           const total = counts?.total ?? 0;
           const unread = counts?.unread ?? 0;
@@ -166,11 +167,17 @@ const AdminSummariesMonthGrid: React.FC<Props> = ({
           const baseClasses =
             "relative flex h-16 flex-col rounded-xl border bg-white p-2 text-left text-xs transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 hover:shadow-sm";
 
+          // ✅ estilo coherente con messages grid:
+          // - selected: azul un pelín más oscuro
+          // - unread: ámbar con ring suave
+          // - today: borde azul suave (sin badge)
           const stateClasses = isSelected
-            ? "border-blue-500 ring-2 ring-blue-200 bg-blue-50"
+            ? "border-blue-600 ring-2 ring-blue-200 bg-blue-50"
             : unread > 0
-              ? "border-amber-300 bg-amber-50/60"
-              : "border-slate-200";
+              ? "border-amber-400 ring-2 ring-amber-200 bg-amber-50/60"
+              : isToday
+                ? "border-blue-300 bg-white"
+                : "border-slate-200";
 
           return (
             <button
@@ -179,26 +186,20 @@ const AdminSummariesMonthGrid: React.FC<Props> = ({
               onClick={() => onSelectDate?.(iso)}
               className={`${baseClasses} ${stateClasses}`}
               aria-current={isSelected ? "date" : undefined}
-              aria-label={`${iso} (${total} resúmenes${
-                unread > 0 ? `, ${unread} sin revisar` : ""
-              })`}
+              aria-label={`${iso} (${total} resúmenes${unread > 0 ? `, ${unread} sin revisar` : ""
+                })`}
             >
               <div className="flex items-start justify-between">
                 <span className="text-xs font-semibold text-slate-800">
                   {cell.date.getDate()}
                 </span>
-
-                {isToday && (
-                  <span className="rounded-full bg-blue-100 px-1.5 py-[1px] text-[10px] font-medium text-blue-700">
-                    Hoy
-                  </span>
-                )}
               </div>
 
               {/* Resúmenes del día */}
               {total > 0 && (
                 <div className="mt-auto flex items-center justify-between text-[10px]">
-                  <span className="inline-flex items-center justify-center min-w-[1.6rem] rounded-full bg-slate-900 text-[10px] font-semibold text-white px-1 py-[2px]">
+                  {/* ✅ contador más suave (no negro agresivo) */}
+                  <span className="inline-flex items-center justify-center min-w-[1.6rem] rounded-full bg-slate-100 text-[10px] font-semibold text-slate-700 px-1 py-[2px] border border-slate-200">
                     {total}
                   </span>
 
@@ -215,17 +216,7 @@ const AdminSummariesMonthGrid: React.FC<Props> = ({
         })}
       </div>
 
-      {/* Pequeña leyenda */}
-      <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
-        <div className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm border border-amber-300 bg-amber-50" />
-          <span>Pendientes de revisar</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm border border-blue-500 bg-blue-50" />
-          <span>Día seleccionado</span>
-        </div>
-      </div>
+      {/* ✅ Leyenda eliminada (igual que en messages grid) */}
     </div>
   );
 };
