@@ -1,7 +1,6 @@
 // frontend/src/pages/AdminUserMessageTab.tsx
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../hooks/useAuth";
-import { sendMessage, sendMessageMultipart } from "../api/messages";
 import { toastT } from "../utils/toast";
 import { useTranslation } from "react-i18next";
 import { getMessagesForUserAsAdmin } from "../api/messages";
@@ -9,6 +8,7 @@ import type { Message } from "../types/message";
 import MessageList from "../components/messages/MessageList";
 import MessageAttachmentsPicker from "../components/messages/MessageAttachmentsPicker";
 import { useMessageExpansion } from "../hooks/useMessageExpansion";
+import { useSendMessage } from "../hooks/useSendMessage";
 import { sortMessagesByDateDesc } from "../utils/messages/sortMessagesByDateDesc";
 
 interface Props {
@@ -22,7 +22,8 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
 
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { send, loading } = useSendMessage();
+
 
   // ✅ Igual que AdminMessagesPage: múltiples adjuntos
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -75,49 +76,25 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
     }
     if (!token) return;
 
-    setLoading(true);
-    try {
-      if (attachments.length > 0) {
-        // ✅ Envío con multipart/form-data (varios adjuntos)
-        const formData = new FormData();
-        formData.append("subject", subject);
-        formData.append("body", body);
-        formData.append("recipients", JSON.stringify([userId]));
+    const res = await send({
+      token,
+      subject,
+      body,
+      recipients: [userId],
+      attachments,
+    });
 
-        // ✅ Añadir TODOS los adjuntos como 'attachment'
-        attachments.forEach((file) => {
-          formData.append("attachment", file, file.name);
-        });
+    if (!res.ok) return;
 
-        await sendMessageMultipart(token, formData);
-      } else {
-        // Envío JSON clásico
-        await sendMessage(token, {
-          subject,
-          body,
-          recipients: [userId],
-        });
-      }
+    setSubject("");
+    setBody("");
+    setAttachments([]);
+    setUploadKey((k) => k + 1); // limpia UI del picker
 
-      toastT.success(["toasts.messages.sent"]);
-      setSubject("");
-      setBody("");
-      setAttachments([]);
-      setUploadKey((k) => k + 1); // limpia UI del FileUpload
-
-      // 🔁 Refrescar historial tras enviar
-      await fetchMessages();
-    } catch (error) {
-      console.error("❌ Error al enviar mensaje:", error);
-      toastT.error(
-        (error as any)?.response?.data?.message ||
-        (t("toasts.messages.error") as string) ||
-        "Error sending the message",
-      );
-    } finally {
-      setLoading(false);
-    }
+    // 🔁 Refrescar historial tras enviar
+    await fetchMessages();
   };
+
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
