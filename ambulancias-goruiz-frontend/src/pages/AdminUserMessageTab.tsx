@@ -5,11 +5,11 @@ import { toastT } from "../utils/toast";
 import { useTranslation } from "react-i18next";
 import { getMessagesForUserAsAdmin } from "../api/messages";
 import type { Message } from "../types/message";
-import MessageList from "../components/messages/MessageList";
 import MessageAttachmentsPicker from "../components/messages/MessageAttachmentsPicker";
 import { useMessageExpansion } from "../hooks/useMessageExpansion";
 import { useSendMessage } from "../hooks/useSendMessage";
 import { sortMessagesByDateDesc } from "../utils/messages/sortMessagesByDateDesc";
+import MessagesMonthPickerModal from "../components/messages/MessagesMonthPickerModal";
 
 interface Props {
   userId: string;
@@ -24,27 +24,28 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
   const [body, setBody] = useState("");
   const { send, loading } = useSendMessage();
 
-
   // ✅ Igual que AdminMessagesPage: múltiples adjuntos
   const [attachments, setAttachments] = useState<File[]>([]);
   const [uploadKey, setUploadKey] = useState(0);
 
   // Historial de mensajes enviados a este usuario
   const [messages, setMessages] = useState<Message[]>([]);
-  const [loadingMessages, setLoadingMessages] = useState<boolean>(true);
 
   const { expanded, toggleById, setExpanded } = useMessageExpansion();
 
-
   // ✅ Modal para ver mensajes enviados
   const [isMsgModalOpen, setIsMsgModalOpen] = useState(false);
+
+  // ✅ Año/mes (grid)
+  const [year, setYear] = useState<number>(new Date().getFullYear());
+
+  // ✅ oculto por defecto (misma UX que Worker/AdminSent)
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
   const sortedMessages = useMemo(
     () => sortMessagesByDateDesc(messages),
     [messages],
   );
-
-
 
   const historyTitle = userFullName
     ? `${t("pages.messages.userTab.historyPrefix", "Mensajes enviados a")} ${userFullName}`
@@ -54,13 +55,10 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
   const fetchMessages = async () => {
     if (!token || !userId) return;
     try {
-      setLoadingMessages(true);
       const data = await getMessagesForUserAsAdmin(token, userId);
       setMessages(data);
     } catch (error) {
       console.error("❌ Error al cargar mensajes de este usuario:", error);
-    } finally {
-      setLoadingMessages(false);
     }
   };
 
@@ -109,7 +107,6 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
 
     try {
       // ✅ borra en BD (admin)
-      // usa tu api ya existente:
       const { deleteMessage } = await import("../api/messages");
       await deleteMessage(messageId, token);
 
@@ -132,8 +129,6 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
     }
   };
 
-
-
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Card de envío */}
@@ -154,10 +149,16 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
             )}
           </h2>
 
-          {/* ✅ Carpeta arriba a la derecha (alineada con el h2) */}
+          {/* ✅ Carpeta arriba a la derecha */}
           <button
             type="button"
-            onClick={() => setIsMsgModalOpen(true)}
+            onClick={() => {
+              const now = new Date();
+              setYear(now.getFullYear());
+              setSelectedMonth(null); // ✅ lista oculta por defecto
+              setExpanded(new Set());
+              setIsMsgModalOpen(true);
+            }}
             className="
               inline-flex items-center justify-center
               w-8 h-8 rounded-full
@@ -180,9 +181,7 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
           <input
             id="subject"
             type="text"
-            placeholder={
-              t("pages.messages.userTab.placeholders.subject") as string
-            }
+            placeholder={t("pages.messages.userTab.placeholders.subject") as string}
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
@@ -204,9 +203,8 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
           />
         </div>
 
-        {/* ✅ Adjuntos + Enviar en la misma fila (centrados) */}
+        {/* Adjuntos + Enviar */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          {/* Adjuntos */}
           <div className="flex-1">
             <MessageAttachmentsPicker
               id="admin-user-msg-attachment"
@@ -217,8 +215,6 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
             />
           </div>
 
-
-          {/* Enviar (alineado con Adjuntar) */}
           <div className="sm:pb-[2px]">
             <button
               onClick={handleSend}
@@ -233,86 +229,37 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
         </div>
       </div>
 
-      {/* ✅ Modal de mensajes enviados */}
-      {isMsgModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label={historyTitle}
-          onClick={() => {
-            setIsMsgModalOpen(false);
-            setExpanded(new Set());
-          }}
-
-        >
-          <div className="absolute inset-0 bg-black/30" />
-
-          <div
-            className="relative w-full max-w-3xl rounded-2xl bg-white shadow-xl ring-1 ring-slate-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3 bg-slate-50 rounded-t-2xl">
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-slate-600 truncate">
-                  {historyTitle}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => fetchMessages()}
-                  className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-100"
-                  title={t("common.refresh", "Refrescar")}
-                >
-                  ↻
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMsgModalOpen(false);
-                    setExpanded(new Set());
-                  }}
-
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-700 hover:bg-slate-100"
-                  aria-label={t("common.close", "Cerrar")}
-                  title={t("common.close", "Cerrar")}
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-
-            <div className="px-5 py-4 max-h-[70vh] overflow-y-auto">
-              {loadingMessages ? (
-                <p className="text-sm text-slate-500">
-                  {t("pages.messages.userTab.loadingHistory") ||
-                    "Cargando mensajes..."}
-                </p>
-              ) : sortedMessages.length === 0 ? (
-                <p className="text-sm text-slate-400">
-                  {t("pages.messages.userTab.emptyHistory") ||
-                    "Todavía no hay mensajes para este trabajador."}
-                </p>
-              ) : (
-                <MessageList
-                  messages={sortedMessages}
-                  expanded={expanded}
-                  onToggle={(msg) => toggleById(msg._id)}
-                  showDelete
-                  onDelete={(msg) => handleDeleteMessage(msg._id)}
-                />
-
-
-
-
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ✅ Modal de mensajes enviados (Grid 12 meses + lista del mes) */}
+      <MessagesMonthPickerModal
+        isOpen={isMsgModalOpen}
+        onClose={() => {
+          setIsMsgModalOpen(false);
+          setExpanded(new Set());
+          setSelectedMonth(null); // ✅ al cerrar, vuelve a oculto
+        }}
+        title={historyTitle}
+        locale="es-ES"
+        messages={sortedMessages}
+        meId={null}
+        year={year}
+        setYear={(y) => {
+          setYear(y);
+          setSelectedMonth(null); // ✅ al cambiar año, ocultamos lista
+          setExpanded(new Set());
+        }}
+        selectedMonth={selectedMonth}
+        setSelectedMonth={(m) => {
+          // ✅ toggle: mismo mes => cerrar
+          setSelectedMonth((prev) => (prev === m ? null : m));
+          setExpanded(new Set());
+        }}
+        expanded={expanded}
+        onToggle={(msg) => toggleById(msg._id)}
+        showDelete
+        onDelete={(msg) => handleDeleteMessage(msg._id)}
+        onRefresh={() => fetchMessages()}
+        refreshLabel={t("common.refresh", "Refrescar") as string}
+      />
     </div>
   );
 };
