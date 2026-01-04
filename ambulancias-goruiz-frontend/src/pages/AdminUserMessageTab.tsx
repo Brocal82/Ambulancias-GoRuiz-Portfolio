@@ -95,6 +95,44 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
     await fetchMessages();
   };
 
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!token) return;
+
+    if (
+      !window.confirm(
+        t("pages.messages.sentPage.confirmDelete") ||
+        "Are you sure you want to delete this message?",
+      )
+    ) {
+      return;
+    }
+
+    try {
+      // ✅ borra en BD (admin)
+      // usa tu api ya existente:
+      const { deleteMessage } = await import("../api/messages");
+      await deleteMessage(messageId, token);
+
+      // ✅ quita del estado local (sin refetch obligatorio)
+      setMessages((prev) => prev.filter((m) => m._id !== messageId));
+
+      // ✅ si estaba expandido, lo cerramos
+      setExpanded((prev) => {
+        const next = new Set(prev);
+        next.delete(messageId);
+        return next;
+      });
+
+      toastT.success(t("pages.messages.sentPage.deleted") || "Message deleted");
+    } catch (error) {
+      console.error("❌ Error deleting message:", error);
+      toastT.error(
+        t("pages.messages.sentPage.deleteError") || "Error deleting the message",
+      );
+    }
+  };
+
+
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -263,7 +301,10 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
                   messages={sortedMessages}
                   expanded={expanded}
                   onToggle={(msg) => toggleById(msg._id)}
+                  showDelete
+                  onDelete={(msg) => handleDeleteMessage(msg._id)}
                 />
+
 
 
 
