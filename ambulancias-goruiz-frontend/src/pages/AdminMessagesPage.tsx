@@ -14,6 +14,7 @@ import { useMessageExpansion } from "../hooks/useMessageExpansion";
 import { sortMessagesByDateDesc } from "../utils/messages/sortMessagesByDateDesc";
 import MessagesMonthPickerModal from "../components/messages/MessagesMonthPickerModal";
 import RecipientsPicker from "../components/messages/RecipientsPicker";
+import SendMessageButton from "../components/common/actions/SendMessageButton";
 
 const AdminMessagesPage = () => {
   const { token } = useAuth();
@@ -226,29 +227,16 @@ const AdminMessagesPage = () => {
 
           {/* Acciones */}
           <div className="flex justify-end pt-4">
-            <button
+            <SendMessageButton
               onClick={handleSend}
-              type="button"
               disabled={!canSend || loading}
-              className={`
-      inline-flex items-center gap-2
-      rounded-full border px-4 py-1.5
-      text-xs font-medium shadow-sm
-      focus:outline-none focus:ring-2
-      w-full sm:w-auto justify-center
-      ${!canSend || loading
-                  ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
-                  : "border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-400 focus:ring-blue-300"
-                }
-    `}
-            >
-              <span className="text-sm">➤</span>
-              <span>
-                {loading
-                  ? (t("common.sending", "Enviando...") as string)
-                  : (t("pages.messages.adminPage.actions.send") as string)}
-              </span>
-            </button>
+              loading={loading}
+              label={t("pages.messages.adminPage.actions.send") as string}
+              loadingLabel={t("pages.messages.adminPage.actions.sending") as string}
+            />
+
+
+
           </div>
 
         </div>

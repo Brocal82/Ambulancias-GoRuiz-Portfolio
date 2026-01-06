@@ -762,7 +762,7 @@
                 },
                 "sendToAll": "An alle senden",
                 "actions": {
-                    "send": "Nachricht senden",
+                    "send": "Senden",
                     "viewSent": "📨 Gesendete Nachrichten ansehen",
                     "attach": "Anhängen",
                     "removeAttachment": "Anhang entfernen"
@@ -804,7 +804,7 @@
                     "body": "Schreibe deine Nachricht hier..."
                 },
                 "actions": {
-                    "send": "Nachricht senden",
+                    "send": "Senden",
                     "sending": "Senden..."
                 },
                 "toasts": {
