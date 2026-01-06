@@ -749,7 +749,7 @@
         },
         "messages": {
             "adminPage": {
-                "title": "📨 Send Message",
+                "title": "📨 Messages",
                 "labels": {
                     "subject": "Subject",
                     "body": "Message",
@@ -760,7 +760,7 @@
                     "subject": "Message subject",
                     "body": "Write the message content"
                 },
-                "sendToAll": "Send to all workers",
+                "sendToAll": "Send to all",
                 "actions": {
                     "send": "Send message",
                     "viewSent": "📨 View sent messages",

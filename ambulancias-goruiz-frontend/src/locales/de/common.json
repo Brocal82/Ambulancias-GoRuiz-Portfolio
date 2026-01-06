@@ -749,7 +749,7 @@
         },
         "messages": {
             "adminPage": {
-                "title": "📨 Nachricht senden",
+                "title": "📨 Nachrichten",
                 "labels": {
                     "subject": "Betreff",
                     "body": "Nachricht",
@@ -760,7 +760,7 @@
                     "subject": "Betreff der Nachricht",
                     "body": "Schreibe den Inhalt der Nachricht"
                 },
-                "sendToAll": "An alle Mitarbeiter senden",
+                "sendToAll": "An alle senden",
                 "actions": {
                     "send": "Nachricht senden",
                     "viewSent": "📨 Gesendete Nachrichten ansehen",
