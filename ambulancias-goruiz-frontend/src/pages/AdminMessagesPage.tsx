@@ -13,6 +13,7 @@ import type { Message } from "../types/message";
 import { useMessageExpansion } from "../hooks/useMessageExpansion";
 import { sortMessagesByDateDesc } from "../utils/messages/sortMessagesByDateDesc";
 import MessagesMonthPickerModal from "../components/messages/MessagesMonthPickerModal";
+import RecipientsPicker from "../components/messages/RecipientsPicker";
 
 const AdminMessagesPage = () => {
   const { token } = useAuth();
@@ -32,7 +33,13 @@ const AdminMessagesPage = () => {
   const [sentMessages, setSentMessages] = useState<Message[]>([]);
   const { expanded, toggleById, setExpanded } = useMessageExpansion();
   const [sentYear, setSentYear] = useState<number>(new Date().getFullYear());
-  const [sentMonth, setSentMonth] = useState<number | null>(new Date().getMonth());
+  const [sentMonth, setSentMonth] = useState<number | null>(null);
+  const canSend =
+    subject.trim().length > 0 &&
+    body.trim().length > 0 &&
+    (sendToAll || selectedIds.length > 0);
+
+
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -49,15 +56,6 @@ const AdminMessagesPage = () => {
     void fetchUsers();
   }, [token]);
 
-  const filteredUsers = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return users;
-    return users.filter((u) =>
-      `${u.lastName} ${u.name}`.toLowerCase().includes(term),
-    );
-  }, [users, search]);
-
-  const totalSelected = sendToAll ? users.length : selectedIds.length;
 
   const handleSend = async () => {
     if (!token) return;
@@ -99,9 +97,12 @@ const AdminMessagesPage = () => {
   };
 
   const openSentModal = async () => {
+    setSentMonth(null);      // ✅ abre sin mes seleccionado
+    setExpanded(new Set());  // ✅ opcional: sin expansiones abiertas
     setIsSentModalOpen(true);
     await fetchSentMessages();
   };
+  ;
 
   const sortedSentMessages = useMemo(
     () => sortMessagesByDateDesc(sentMessages),
@@ -148,6 +149,34 @@ const AdminMessagesPage = () => {
         </h1>
 
         <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6 space-y-6">
+          {/* Header interno: h2 + 📂 (como AdminUserMessageTab) */}
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+              <span aria-hidden="true" className="text-gray-500">
+                ✉️
+              </span>
+              <span className="text-gray-700 font-medium">
+                {t("pages.messages.adminPage.sendTitle", "Enviar mensajes")}
+              </span>
+            </h2>
+
+            <button
+              type="button"
+              onClick={openSentModal}
+              className="
+        inline-flex items-center justify-center
+        w-8 h-8 rounded-full
+        text-blue-700 hover:text-blue-900
+        hover:bg-blue-100
+        transition
+      "
+              title={t("pages.messages.adminPage.actions.viewSent")}
+              aria-label={t("pages.messages.adminPage.actions.viewSent")}
+            >
+              <span className="text-xl leading-none">📂</span>
+            </button>
+          </div>
+
           {/* Asunto */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
@@ -183,132 +212,47 @@ const AdminMessagesPage = () => {
             setFiles={setAttachments}
           />
 
-          {/* Destinatarios */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <label className="block text-sm font-medium text-slate-700">
-                {t("pages.messages.adminPage.labels.recipients")}
-              </label>
-            </div>
-
-            <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
-              <label className="inline-flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={sendToAll}
-                  onChange={() => setSendToAll(!sendToAll)}
-                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-200"
-                />
-                <span className="text-sm text-slate-700">
-                  {t("pages.messages.adminPage.sendToAll")}
-                </span>
-              </label>
-
-              <span className="text-[11px] text-slate-500">
-                {t(
-                  "pages.messages.adminPage.selectedCount",
-                  "Seleccionados: {{n}}",
-                  { n: totalSelected },
-                )}
-              </span>
-            </div>
-
-            {!sendToAll && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder={
-                      t(
-                        "pages.messages.adminPage.searchPlaceholder",
-                        "Buscar trabajador...",
-                      ) as string
-                    }
-                    className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-
-                <div className="rounded-xl ring-1 ring-slate-200 max-h-56 overflow-y-auto bg-slate-50/60">
-                  {filteredUsers.length === 0 ? (
-                    <p className="px-3 py-2 text-[11px] text-slate-500">
-                      {t(
-                        "pages.messages.adminPage.noWorkersFound",
-                        "No se han encontrado trabajadores.",
-                      )}
-                    </p>
-                  ) : (
-                    <ul className="divide-y divide-slate-200">
-                      {filteredUsers.map((user) => (
-                        <li key={user._id} className="px-3 py-1.5">
-                          <label className="flex items-center gap-2 text-xs text-slate-700">
-                            <input
-                              type="checkbox"
-                              value={user._id}
-                              checked={selectedIds.includes(user._id)}
-                              onChange={(e) => {
-                                const id = e.target.value;
-                                setSelectedIds((prev) =>
-                                  prev.includes(id)
-                                    ? prev.filter((uid) => uid !== id)
-                                    : [...prev, id],
-                                );
-                              }}
-                              className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-200"
-                            />
-                            <span className="truncate">
-                              {user.lastName}, {user.name}
-                            </span>
-                          </label>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Destinatarios (UX escalable) */}
+          <RecipientsPicker
+            users={users}
+            search={search}
+            setSearch={setSearch}
+            selectedIds={selectedIds}
+            setSelectedIds={setSelectedIds}
+            sendToAll={sendToAll}
+            setSendToAll={setSendToAll}
+            maxResults={12}
+          />
 
           {/* Acciones */}
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-200">
+          <div className="flex justify-end pt-4">
             <button
               onClick={handleSend}
               type="button"
-              disabled={loading}
-              className="
-                inline-flex items-center gap-2
-                rounded-full border border-blue-300 bg-blue-50
-                px-4 py-1.5
-                text-xs font-medium text-blue-700
-                shadow-sm
-                hover:bg-blue-100 hover:border-blue-400
-                focus:outline-none focus:ring-2 focus:ring-blue-300
-                w-full sm:w-auto justify-center
-              "
+              disabled={!canSend || loading}
+              className={`
+      inline-flex items-center gap-2
+      rounded-full border px-4 py-1.5
+      text-xs font-medium shadow-sm
+      focus:outline-none focus:ring-2
+      w-full sm:w-auto justify-center
+      ${!canSend || loading
+                  ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
+                  : "border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-400 focus:ring-blue-300"
+                }
+    `}
             >
               <span className="text-sm">➤</span>
-              <span>{t("pages.messages.adminPage.actions.send")}</span>
-            </button>
-
-            {/* 📂 abre modal */}
-            <button
-              onClick={openSentModal}
-              type="button"
-              className="
-                inline-flex items-center justify-center
-                w-7 h-7 rounded-full
-                text-blue-700 hover:text-blue-900
-                hover:bg-blue-100
-                transition
-                group
-              "
-              title={t("pages.messages.adminPage.actions.viewSent")}
-            >
-              <span className="text-xl leading-none">📂</span>
+              <span>
+                {loading
+                  ? (t("common.sending", "Enviando...") as string)
+                  : (t("pages.messages.adminPage.actions.send") as string)}
+              </span>
             </button>
           </div>
+
         </div>
+
       </div>
 
       {/* ✅ Modal de enviados por mes */}
