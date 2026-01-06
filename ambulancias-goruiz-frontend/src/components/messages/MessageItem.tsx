@@ -2,6 +2,7 @@ import type { Message } from "../../types/message";
 import { format } from "date-fns";
 import { buildAttachmentUrl } from "../../utils/messages/buildAttachmentUrl";
 import { useTranslation } from "react-i18next";
+import DeleteIconButton from "../common/actions/DeleteIconButton";
 
 interface Props {
     message: Message;
@@ -98,17 +99,15 @@ const MessageItem = ({
                 {/* Delete */}
                 {showDelete && onDelete && (
                     <div className="flex items-center justify-end mb-2">
-                        <button
+                        <DeleteIconButton
                             onClick={onDelete}
-                            className="text-rose-600 hover:text-rose-700 font-bold text-lg leading-none transition"
-                            title={t("common.delete", "Eliminar")}
-                            aria-label={t("common.delete", "Eliminar")}
-                            type="button"
-                        >
-                            ×
-                        </button>
+                            title={t("common.delete", "Eliminar") as string}
+                            aria-label={t("common.delete", "Eliminar") as string}
+                        />
                     </div>
                 )}
+
+
 
                 {/* Body */}
                 <p className="mt-1 text-slate-700 text-xs whitespace-pre-line">
