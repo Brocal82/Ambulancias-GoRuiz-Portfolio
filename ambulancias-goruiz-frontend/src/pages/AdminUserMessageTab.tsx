@@ -10,6 +10,7 @@ import { useMessageExpansion } from "../hooks/useMessageExpansion";
 import { useSendMessage } from "../hooks/useSendMessage";
 import { sortMessagesByDateDesc } from "../utils/messages/sortMessagesByDateDesc";
 import MessagesMonthPickerModal from "../components/messages/MessagesMonthPickerModal";
+import SendMessageButton from "../components/common/actions/SendMessageButton";
 
 interface Props {
   userId: string;
@@ -216,15 +217,14 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
           </div>
 
           <div className="sm:pb-[2px]">
-            <button
+            <SendMessageButton
               onClick={handleSend}
               disabled={loading}
-              className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 w-full sm:w-auto"
-            >
-              {loading
-                ? (t("pages.messages.userTab.actions.sending") as string)
-                : (t("pages.messages.userTab.actions.send") as string)}
-            </button>
+              loading={loading}
+              label={t("pages.messages.userTab.actions.send") as string}
+              loadingLabel={t("pages.messages.userTab.actions.sending") as string}
+            />
+
           </div>
         </div>
       </div>

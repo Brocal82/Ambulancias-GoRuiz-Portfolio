@@ -762,7 +762,7 @@
                 },
                 "sendToAll": "Send to all",
                 "actions": {
-                    "send": "Send message",
+                    "send": "Send",
                     "viewSent": "📨 View sent messages",
                     "attach": "Attach",
                     "removeAttachment": "Remove attachment"
@@ -804,7 +804,7 @@
                     "body": "Write your message here..."
                 },
                 "actions": {
-                    "send": "Send message",
+                    "send": "Send",
                     "sending": "Sending..."
                 },
                 "toasts": {
