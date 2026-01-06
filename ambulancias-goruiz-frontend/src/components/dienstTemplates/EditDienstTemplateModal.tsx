@@ -98,6 +98,25 @@ const EditDienstTemplateModal: React.FC<Props> = ({
     setSaving(false);
   }, [template]);
 
+  const allDaysOff = perDayScheduleRows.every((d) => d.isOff);
+
+  const isValid =
+    editDienstNumber !== "" &&
+    Number(editDienstNumber) > 0 &&
+    !allDaysOff;
+
+  // ⬇️ detectamos si el usuario ha cambiado algo
+  const initialRows = buildInitialPerDaySchedule(template);
+
+  const isDirty =
+    Number(editDienstNumber) !== Number(template.dienstNumber) ||
+    editIsActive !== (template.isActive ?? true) ||
+    JSON.stringify(perDayScheduleRows) !== JSON.stringify(initialRows);
+
+  const canSave = isValid && isDirty;
+
+
+
   const handleToggleDayOff = (dayIndex: number, isOff: boolean) => {
     setPerDayScheduleRows((prev) =>
       prev.map((day) => (day.dayIndex === dayIndex ? { ...day, isOff } : day)),
@@ -357,9 +376,11 @@ const EditDienstTemplateModal: React.FC<Props> = ({
 
             <SaveIconButton
               type="submit"
-              disabled={saving}
+              disabled={saving || !canSave}
               title={saving ? "Guardando..." : "Guardar cambios"}
             />
+
+
           </div>
         </form>
       </div>

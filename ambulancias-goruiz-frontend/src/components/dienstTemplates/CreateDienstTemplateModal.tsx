@@ -4,6 +4,9 @@ import {
   createDienstTemplate,
   type DienstTemplateInput,
 } from "../../api/dienstTemplates";
+import CancelButton from "../common/actions/CancelButton";
+import SaveIconButton from "../common/actions/SaveIconButton";
+
 
 const dayLabels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 // Orden visual: Lunes (1) → Sábado (6) → Domingo (0)
@@ -47,6 +50,14 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
         endTime: "14:00",
       })),
   );
+
+  const allDaysOff = perDaySchedule.every((d) => d.isOff);
+
+  const canSave =
+    dienstNumber !== "" &&
+    Number(dienstNumber) > 0 &&
+    !allDaysOff;
+
 
   if (!isOpen) return null;
 
@@ -235,11 +246,10 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
                 return (
                   <div
                     key={day.dayIndex}
-                    className={`flex h-full flex-col rounded-xl border p-2 text-xs shadow-sm transition-colors ${
-                      isOff
-                        ? "border-emerald-200 bg-emerald-50"
-                        : "border-gray-200 bg-white"
-                    }`}
+                    className={`flex h-full flex-col rounded-xl border p-2 text-xs shadow-sm transition-colors ${isOff
+                      ? "border-emerald-200 bg-emerald-50"
+                      : "border-gray-200 bg-white"
+                      }`}
                   >
                     {/* Cabecera día + icono toggle */}
                     <div className="mb-2 flex items-center justify-between gap-1">
@@ -318,23 +328,23 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
           </div>
 
           {/* Botones */}
-          <div className="mt-2 flex justify-end gap-2 border-t border-gray-100 pt-3">
-            <button
-              type="button"
+          <div className="mt-2 flex items-center justify-end gap-2 pt-3">
+
+
+            <CancelButton
               onClick={onClose}
               disabled={saving}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
-            >
-              Cancelar
-            </button>
-            <button
+            />
+
+            <SaveIconButton
               type="submit"
-              disabled={saving}
-              className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-            >
-              {saving ? "Creando..." : "Crear plantilla"}
-            </button>
+              disabled={saving || !canSave}
+            />
+
           </div>
+
+
+
         </form>
       </div>
     </div>
