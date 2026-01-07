@@ -1,6 +1,6 @@
 // src/utils/ambulances/ambulanceFormUtils.ts
 
-import type { AmbulanceFormValues } from "../../types/ambulance";
+import type { Ambulance, AmbulanceFormValues } from "../../types/ambulance";
 
 
 export const MAX_AMBULANCE_FIELD_LENGTH = 30;
@@ -52,3 +52,22 @@ export function hasMissingAmbulanceFields(values: AmbulanceFormValues) {
   const v = normalizeAmbulanceFormValues(values);
   return !v.brand || !v.modelName || !v.licensePlate || !v.ambulanceNumber;
 }
+
+export function getInitialAmbulanceFormValues(initialData?: Ambulance | null): AmbulanceFormValues {
+  if (!initialData) {
+    return {
+      brand: "",
+      modelName: "",
+      licensePlate: "",
+      ambulanceNumber: "",
+    };
+  }
+
+  return {
+    brand: initialData.brand ?? "",
+    modelName: initialData.modelName ?? "",
+    licensePlate: initialData.licensePlate ?? "",
+    ambulanceNumber: initialData.ambulanceNumber ?? "",
+  };
+}
+

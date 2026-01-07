@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { Ambulance, AmbulanceFormErrors, AmbulanceFormValues } from "../../types/ambulance";
 import {
     MAX_AMBULANCE_FIELD_LENGTH,
+    getInitialAmbulanceFormValues,
     hasMissingAmbulanceFields,
     normalizeAmbulanceFormValues,
     validateAmbulanceField,
@@ -30,26 +31,11 @@ export function useAmbulanceForm(initialData?: Ambulance | null, isOpen?: boolea
     useEffect(() => {
         if (!isOpen) return;
 
-        if (initialData) {
-            setValues({
-                brand: initialData.brand ?? "",
-                modelName: initialData.modelName ?? "",
-                licensePlate: initialData.licensePlate ?? "",
-                ambulanceNumber: initialData.ambulanceNumber ?? "",
-            });
-            setErrors({});
-            setIsDirty(false);
-        } else {
-            setValues({
-                brand: "",
-                modelName: "",
-                licensePlate: "",
-                ambulanceNumber: "",
-            });
-            setErrors({});
-            setIsDirty(false);
-        }
+        setValues(getInitialAmbulanceFormValues(initialData));
+        setErrors({});
+        setIsDirty(false);
     }, [initialData, isOpen]);
+
 
     const validateField = (value: string) => validateAmbulanceField(value, t);
 
