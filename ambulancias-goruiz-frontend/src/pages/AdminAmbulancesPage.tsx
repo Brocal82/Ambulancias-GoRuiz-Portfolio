@@ -1,3 +1,4 @@
+//src/pages/AdminAmbulancesPage.tsx.
 import { useEffect, useState } from "react";
 import {
   getAllAmbulances,

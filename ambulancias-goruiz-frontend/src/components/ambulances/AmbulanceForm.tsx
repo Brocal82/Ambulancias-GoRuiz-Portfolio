@@ -1,3 +1,4 @@
+//src/components/ambulances/AmbulanceForm.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Ambulance } from "../../types/ambulance";
@@ -178,8 +179,8 @@ const AmbulanceForm: React.FC<AmbulanceFormProps> = ({ values, errors, onChange 
                         title={t("pages.ambulances.formModal.fields.licensePlate") as string}
                         aria-describedby={errors.licensePlate ? "ambulance-plate-error" : undefined}
                         className={`w-full rounded-md border px-3 py-1.5 text-sm font-mono shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 ${errors.licensePlate
-                                ? "border-red-500"
-                                : "border-slate-300 focus:border-blue-400"
+                            ? "border-red-500"
+                            : "border-slate-300 focus:border-blue-400"
                             }`}
                     />
                     {errors.licensePlate && (
@@ -205,8 +206,8 @@ const AmbulanceForm: React.FC<AmbulanceFormProps> = ({ values, errors, onChange 
                         title={t("pages.ambulances.formModal.fields.ambulanceNumber") as string}
                         aria-describedby={errors.ambulanceNumber ? "ambulance-number-error" : undefined}
                         className={`w-full rounded-md border px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 ${errors.ambulanceNumber
-                                ? "border-red-500"
-                                : "border-slate-300 focus:border-blue-400"
+                            ? "border-red-500"
+                            : "border-slate-300 focus:border-blue-400"
                             }`}
                     />
                     {errors.ambulanceNumber && (
