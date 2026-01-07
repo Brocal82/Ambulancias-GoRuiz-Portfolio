@@ -3,6 +3,7 @@ import type { Hospital } from "../../types/hospital";
 import { useEffect, useMemo, useRef, useState, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { toLocalHospitalStatus } from "../../utils/hospitals/status";
+import { mergeUniqueSpecialties, parseSpecialtiesInput, } from "../../utils/hospitals/specialties";
 import CancelButton from "../common/actions/CancelButton";
 import SaveIconButton from "../common/actions/SaveIconButton";
 
@@ -85,11 +86,13 @@ const HospitalEditModal = ({
 
   // Especialidades (arriba a la derecha)
   const addSpec = () => {
-    const v = specInput.trim();
-    if (!v) return;
-    if (!specialties.includes(v)) setSpecialties((prev) => [...prev, v]);
+    const parts = parseSpecialtiesInput(specInput);
+    if (!parts.length) return;
+
+    setSpecialties((prev) => mergeUniqueSpecialties(prev, parts));
     setSpecInput("");
   };
+
   const removeSpec = (s: string) => {
     setSpecialties((prev) => prev.filter((x) => x !== s));
   };
@@ -288,10 +291,11 @@ const HospitalEditModal = ({
                     value={specInput}
                     onChange={(e) => setSpecInput(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
+                      if (e.key === "Enter" || e.key === ",") {
                         e.preventDefault();
                         addSpec();
                       }
+
                       if (
                         e.key === "Backspace" &&
                         !specInput &&

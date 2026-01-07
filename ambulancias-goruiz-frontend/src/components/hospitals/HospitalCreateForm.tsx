@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import SaveIconButton from "../common/actions/SaveIconButton";
 import CancelButton from "../common/actions/CancelButton";
+import { mergeUniqueSpecialties, parseSpecialtiesInput, } from "../../utils/hospitals/specialties";
+
 
 
 interface Props {
@@ -31,25 +33,16 @@ const HospitalCreateForm = ({ specialties, onSubmit, onClose }: Props) => {
     const [newSpecs, setNewSpecs] = useState<string[]>([]);
 
     const addSpec = () => {
-        const raw = (specInput || form.specialties).trim();
-        if (!raw) return;
-
-        const parts = raw
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean);
-
+        const raw = specInput || form.specialties;
+        const parts = parseSpecialtiesInput(raw);
         if (!parts.length) return;
 
-        setNewSpecs((prev) => {
-            const set = new Set(prev);
-            parts.forEach((p) => set.add(p));
-            return Array.from(set);
-        });
+        setNewSpecs((prev) => mergeUniqueSpecialties(prev, parts));
 
         setSpecInput("");
         setForm((f) => ({ ...f, specialties: "" }));
     };
+
 
     const removeSpec = (s: string) => {
         setNewSpecs((prev) => prev.filter((x) => x !== s));
@@ -58,13 +51,9 @@ const HospitalCreateForm = ({ specialties, onSubmit, onClose }: Props) => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const tail = form.specialties
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean);
+        const tail = parseSpecialtiesInput(form.specialties);
+        const finalSpecialties = mergeUniqueSpecialties(newSpecs, tail);
 
-        const combinedSet = new Set<string>([...newSpecs, ...tail]);
-        const finalSpecialties = Array.from(combinedSet);
 
         onSubmit({
             name: form.name.trim(),
