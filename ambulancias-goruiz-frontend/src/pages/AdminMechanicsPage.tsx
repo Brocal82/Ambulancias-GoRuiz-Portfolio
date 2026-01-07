@@ -19,6 +19,7 @@ import { useTranslation } from "react-i18next";
 import { notifyAdminIssuesChanged } from "../hooks/useAdminIssuesOpenCount";
 import { normalizeIssues } from "../utils/mechanics/normalizeIssue";
 import { sortIssuesByDateDesc } from "../utils/mechanics/sortIssuesByDateDesc";
+import DeleteIconButton from "../components/common/actions/DeleteIconButton";
 
 
 const AdminMechanicsPage = () => {
@@ -248,13 +249,13 @@ const AdminMechanicsPage = () => {
                                 ) as string)
                             }
                           />
-                          <span className="text-sm text-slate-600">
+                          <span className="font-medium text-slate-800">
+                            {t("pages.mechanics.adminPage.labels.ambulance")} {issue.ambulanceNumber}
+                          </span>
+                          <span className="ml-auto text-sm text-slate-600">
                             {new Date(issue.timestamp).toLocaleString()}
                           </span>
-                          <span className="ml-auto font-medium text-slate-800">
-                            {t("pages.mechanics.adminPage.labels.ambulance")}{" "}
-                            {issue.ambulanceNumber}
-                          </span>
+
                           <span
                             className={[
                               "ml-2 inline-flex items-center justify-center w-6 h-6 rounded-full text-base transition-transform",
@@ -274,16 +275,13 @@ const AdminMechanicsPage = () => {
                           className="px-5 pb-5 pt-1 border-t border-slate-100"
                         >
                           <div className="flex items-center justify-end mb-3">
-                            <button
+                            <DeleteIconButton
                               onClick={() => handleDelete(issue._id)}
-                              className="text-rose-600 hover:text-rose-700 font-bold text-lg leading-none transition"
                               title={t("pages.mechanics.adminPage.delete") as string}
                               aria-label={t("pages.mechanics.adminPage.delete") as string}
-                              type="button"
-                            >
-                              ×
-                            </button>
+                            />
                           </div>
+
 
                           <div className="mb-3">
                             <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-2.5 py-1 text-xs font-medium ring-1 ring-slate-200">
