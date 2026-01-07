@@ -94,13 +94,20 @@ const AdminMechanicsPage = () => {
 
   const toggleExpand = useCallback(
     async (issue: WorkdayIssue) => {
-      let wasAlreadyExpanded = false;
+      let shouldMarkSeen = false;
 
       setExpanded((prev) => {
-        wasAlreadyExpanded = prev.has(issue._id);
+        const isExpanded = prev.has(issue._id);
+
+        // Solo marcar como visto si:
+        // - se está abriendo
+        // - aún no estaba visto
+        if (!isExpanded && issue.isSeen !== true) {
+          shouldMarkSeen = true;
+        }
 
         const next = new Set(prev);
-        if (next.has(issue._id)) {
+        if (isExpanded) {
           next.delete(issue._id);
         } else {
           next.add(issue._id);
@@ -108,12 +115,11 @@ const AdminMechanicsPage = () => {
         return next;
       });
 
-      // Si se expande por primera vez y estaba no vista → marcar como vista
-      if (!wasAlreadyExpanded && issue.isSeen !== true && token) {
-
+      // 🔒 Fuera del setState (seguro)
+      if (shouldMarkSeen && token) {
         try {
           const updated = await markIssueSeen(token, issue._id);
-          // Actualiza estado local
+
           setIssues((cur) =>
             cur.map((it) =>
               it._id === issue._id
@@ -125,16 +131,16 @@ const AdminMechanicsPage = () => {
                 : it,
             ),
           );
-          // Notificar al Dashboard para refrescar badge
+
           notifyAdminIssuesChanged();
         } catch (err) {
           console.error("❌ Error al marcar avería como vista:", err);
-          // Sin toast intrusivo; se reintentará al volver a expandir si sigue no vista.
         }
       }
     },
-    [expanded, token],
+    [token],
   );
+
 
   return (
     <div className="min-h-screen bg-slate-50">
