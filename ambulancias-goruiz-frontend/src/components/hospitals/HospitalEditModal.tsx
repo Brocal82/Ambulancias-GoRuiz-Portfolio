@@ -2,7 +2,10 @@
 import type { Hospital } from "../../types/hospital";
 import { useEffect, useMemo, useRef, useState, useId } from "react";
 import { useTranslation } from "react-i18next";
-import { getHospitalIsOpen } from "../../utils/hospitals/status";
+import {
+  toLocalHospitalStatus,
+  fromLocalHospitalStatus,
+} from "../../utils/hospitals/status";
 import CancelButton from "../common/actions/CancelButton";
 import SaveIconButton from "../common/actions/SaveIconButton";
 
@@ -15,27 +18,7 @@ interface Props {
   allSpecialties?: string[];
 }
 
-type StatusUnion = "open" | "closed";
 
-const toLocalStatus = (h: Hospital): boolean | undefined => {
-  return getHospitalIsOpen(h);
-};
-
-
-const fromLocalStatus = (
-  base: any,
-  isOpenBool: boolean | undefined,
-): { isOpen?: boolean; status?: StatusUnion } => {
-  if (typeof base?.isOpen === "boolean") {
-    return typeof isOpenBool === "boolean" ? { isOpen: isOpenBool } : {};
-  }
-  if (typeof base?.status === "string") {
-    return typeof isOpenBool === "boolean"
-      ? { status: (isOpenBool ? "open" : "closed") as StatusUnion }
-      : {};
-  }
-  return typeof isOpenBool === "boolean" ? { isOpen: isOpenBool } : {};
-};
 
 const arraysEqualUnordered = (a: string[] = [], b: string[] = []) => {
   if (a.length !== b.length) return false;
@@ -69,7 +52,7 @@ const HospitalEditModal = ({
   );
   const [specInput, setSpecInput] = useState("");
   const [isOpenState, setIsOpenState] = useState<boolean | undefined>(
-    toLocalStatus(hospital),
+    toLocalHospitalStatus(hospital),
   );
   const [touched, setTouched] = useState({ name: false, address: false });
 
@@ -82,7 +65,7 @@ const HospitalEditModal = ({
       setSpecialties(
         Array.isArray(hospital.specialties) ? hospital.specialties : [],
       );
-      setIsOpenState(toLocalStatus(hospital));
+      setIsOpenState(toLocalHospitalStatus(hospital));
       setSpecInput("");
       setTouched({ name: false, address: false });
       prevIdRef.current = hospital._id;
@@ -124,13 +107,13 @@ const HospitalEditModal = ({
       specialties,
       hospital.specialties ?? [],
     );
-    const statusEqual = toLocalStatus(hospital) === isOpenState;
+    const statusEqual = toLocalHospitalStatus(hospital) === isOpenState;
     return !(baseEqual && specsEqual && statusEqual);
   }, [name, address, phone, specialties, hospital, isOpenState]);
 
   const handleSave = () => {
     if (!canSave) return;
-    const statusPatch = fromLocalStatus(hospital, isOpenState);
+    const statusPatch = fromLocalHospitalStatus(hospital, isOpenState);
     const updated: Hospital = {
       ...hospital,
       name: name.trim(),

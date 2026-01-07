@@ -15,3 +15,35 @@ export const getHospitalIsOpen = (hospital: Hospital): boolean | undefined => {
 
   return undefined;
 };
+
+// --- EDIT MODAL helpers ---
+
+export type HospitalStatusUnion = "open" | "closed";
+
+// Convierte hospital → boolean local (para radio buttons)
+export const toLocalHospitalStatus = (
+  hospital: Hospital,
+): boolean | undefined => {
+  return getHospitalIsOpen(hospital);
+};
+
+// Convierte boolean local → payload compatible (isOpen o status)
+export const fromLocalHospitalStatus = (
+  base: Hospital,
+  isOpenBool: boolean | undefined,
+): { isOpen?: boolean; status?: HospitalStatusUnion } => {
+  const anyHospital = base as any;
+
+  if (typeof anyHospital?.isOpen === "boolean") {
+    return typeof isOpenBool === "boolean" ? { isOpen: isOpenBool } : {};
+  }
+
+  if (typeof anyHospital?.status === "string") {
+    return typeof isOpenBool === "boolean"
+      ? { status: isOpenBool ? "open" : "closed" }
+      : {};
+  }
+
+  return typeof isOpenBool === "boolean" ? { isOpen: isOpenBool } : {};
+};
+
