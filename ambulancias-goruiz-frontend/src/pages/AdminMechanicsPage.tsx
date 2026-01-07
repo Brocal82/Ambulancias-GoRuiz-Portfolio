@@ -33,6 +33,8 @@ const AdminMechanicsPage = () => {
   const [openMonth, setOpenMonth] = useState<number | null>(null);
 
 
+
+
   const countsByMonth = useMemo(
     () => buildIssueCountsByMonthForYear(issues, year),
     [issues, year],
@@ -94,20 +96,16 @@ const AdminMechanicsPage = () => {
 
   const toggleExpand = useCallback(
     async (issue: WorkdayIssue) => {
-      let shouldMarkSeen = false;
+      if (!token) return;
 
+      // ✅ Calculamos esto ANTES del setState (sin estado desfasado)
+      const isCurrentlyExpanded = expanded.has(issue._id);
+      const shouldMarkSeen = !isCurrentlyExpanded && issue.isSeen !== true;
+
+      // Toggle UI
       setExpanded((prev) => {
-        const isExpanded = prev.has(issue._id);
-
-        // Solo marcar como visto si:
-        // - se está abriendo
-        // - aún no estaba visto
-        if (!isExpanded && issue.isSeen !== true) {
-          shouldMarkSeen = true;
-        }
-
         const next = new Set(prev);
-        if (isExpanded) {
+        if (next.has(issue._id)) {
           next.delete(issue._id);
         } else {
           next.add(issue._id);
@@ -115,8 +113,8 @@ const AdminMechanicsPage = () => {
         return next;
       });
 
-      // 🔒 Fuera del setState (seguro)
-      if (shouldMarkSeen && token) {
+      // Marcar como visto solo si se está abriendo por primera vez y era no visto
+      if (shouldMarkSeen) {
         try {
           const updated = await markIssueSeen(token, issue._id);
 
@@ -138,8 +136,9 @@ const AdminMechanicsPage = () => {
         }
       }
     },
-    [token],
+    [expanded, token],
   );
+
 
 
   return (
