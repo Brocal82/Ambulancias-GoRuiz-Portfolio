@@ -1,5 +1,8 @@
 // src/utils/ambulances/ambulanceFormUtils.ts
 
+import type { AmbulanceFormValues } from "../../types/ambulance";
+
+
 export const MAX_AMBULANCE_FIELD_LENGTH = 30;
 
 type TFn = (key: string, options?: Record<string, unknown>) => string;
@@ -7,12 +10,7 @@ type TFn = (key: string, options?: Record<string, unknown>) => string;
 /**
  * Normaliza los valores del form (MISMO comportamiento que antes).
  */
-export function normalizeAmbulanceFormValues<T extends {
-  brand: string;
-  modelName: string;
-  licensePlate: string;
-  ambulanceNumber: string;
-}>(values: T) {
+export function normalizeAmbulanceFormValues(values: AmbulanceFormValues) {
   return {
     brand: values.brand.trim(),
     modelName: values.modelName.trim(),
@@ -20,6 +18,7 @@ export function normalizeAmbulanceFormValues<T extends {
     ambulanceNumber: values.ambulanceNumber.trim(),
   };
 }
+
 
 /**
  * Valida un campo individual (MISMA lógica que antes).
@@ -37,12 +36,7 @@ export function validateAmbulanceField(value: string, t: TFn) {
 /**
  * Valida todos los campos del form y devuelve un objeto de errores.
  */
-export function validateAmbulanceFormValues<T extends {
-  brand: string;
-  modelName: string;
-  licensePlate: string;
-  ambulanceNumber: string;
-}>(values: T, t: TFn) {
+export function validateAmbulanceFormValues(values: AmbulanceFormValues, t: TFn) {
   return {
     brand: validateAmbulanceField(values.brand, t),
     modelName: validateAmbulanceField(values.modelName, t),
@@ -54,12 +48,7 @@ export function validateAmbulanceFormValues<T extends {
 /**
  * Comprueba si faltan campos obligatorios (basado en valores normalizados).
  */
-export function hasMissingAmbulanceFields<T extends {
-  brand: string;
-  modelName: string;
-  licensePlate: string;
-  ambulanceNumber: string;
-}>(values: T) {
+export function hasMissingAmbulanceFields(values: AmbulanceFormValues) {
   const v = normalizeAmbulanceFormValues(values);
   return !v.brand || !v.modelName || !v.licensePlate || !v.ambulanceNumber;
 }

@@ -6,3 +6,8 @@ export interface Ambulance {
   licensePlate: string;
   ambulanceNumber: string;
 }
+
+export type AmbulanceFormValues = Omit<Ambulance, "_id">;
+
+export type AmbulanceFormErrors = Partial<Record<keyof AmbulanceFormValues, string>>;
+

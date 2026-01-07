@@ -1,7 +1,7 @@
 //src/components/ambulances/AmbulanceForm.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { Ambulance } from "../../types/ambulance";
+import type { Ambulance, AmbulanceFormErrors, AmbulanceFormValues } from "../../types/ambulance";
 import {
     MAX_AMBULANCE_FIELD_LENGTH,
     hasMissingAmbulanceFields,
@@ -12,11 +12,6 @@ import {
 
 
 export const MAX_LENGTH = MAX_AMBULANCE_FIELD_LENGTH;
-
-
-export type AmbulanceFormValues = Omit<Ambulance, "_id">;
-
-type AmbulanceFormErrors = Partial<Record<keyof AmbulanceFormValues, string>>;
 
 
 export function useAmbulanceForm(initialData?: Ambulance | null, isOpen?: boolean) {
