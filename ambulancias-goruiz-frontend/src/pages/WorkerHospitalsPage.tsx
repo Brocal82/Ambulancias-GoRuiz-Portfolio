@@ -1,3 +1,4 @@
+//src/pages/WorkerHospitalsPage.tsx
 import { useEffect, useState, useMemo } from "react";
 import { getAllHospitals } from "../api/hospitals";
 import type { Hospital } from "../types/hospital";

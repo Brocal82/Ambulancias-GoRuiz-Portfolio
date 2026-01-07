@@ -1,3 +1,4 @@
+//src/utils/hospitals/status.ts
 import type { Hospital } from "../../types/hospital";
 
 // Devuelve boolean si puede inferirlo, o undefined si no hay dato

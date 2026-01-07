@@ -1,3 +1,4 @@
+//src/components/hospitals/HospitalCreateForm.tsx
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import SaveIconButton from "../common/actions/SaveIconButton";

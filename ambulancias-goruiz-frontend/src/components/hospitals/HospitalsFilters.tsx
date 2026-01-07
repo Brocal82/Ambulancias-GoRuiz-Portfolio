@@ -1,3 +1,4 @@
+//src/components/hospitals/HospitalsFilters.tsx
 import Select from "react-select";
 import { useTranslation } from "react-i18next";
 import CreateIconButton from "../common/actions/CreateIconButton";

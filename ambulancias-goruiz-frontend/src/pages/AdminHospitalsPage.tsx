@@ -1,3 +1,4 @@
+//src/pages/AdminHospitalsPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import {
   createHospital,

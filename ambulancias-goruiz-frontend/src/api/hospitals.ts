@@ -1,3 +1,4 @@
+//src/api/hospitals.ts
 import axios from "./axios";
 import type { Hospital } from "../types/hospital";
 
