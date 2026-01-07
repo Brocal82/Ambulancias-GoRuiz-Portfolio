@@ -6,6 +6,8 @@ import {
   toLocalHospitalStatus,
   fromLocalHospitalStatus,
 } from "../../utils/hospitals/status";
+import { buildUpdateHospitalPayload } from "../../utils/hospitals/hospitalPayload";
+
 import CancelButton from "../common/actions/CancelButton";
 import SaveIconButton from "../common/actions/SaveIconButton";
 
@@ -113,15 +115,18 @@ const HospitalEditModal = ({
 
   const handleSave = () => {
     if (!canSave) return;
-    const statusPatch = fromLocalHospitalStatus(hospital, isOpenState);
     const updated: Hospital = {
       ...hospital,
-      name: name.trim(),
-      address: address.trim(),
-      phone: phone.trim(),
-      specialties,
-      ...statusPatch,
+      ...buildUpdateHospitalPayload(hospital, {
+        ...hospital,
+        name,
+        address,
+        phone,
+        specialties,
+        isOpen: isOpenState,
+      } as Hospital),
     };
+
     if (onUpdated) onUpdated(updated);
     else if (onSave) onSave(updated);
   };

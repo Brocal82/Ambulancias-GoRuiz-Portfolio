@@ -13,7 +13,10 @@ import {
   filterAndSortHospitals,
   getUniqueSpecialties,
 } from "../utils/hospitals/hospitalsFilters";
-
+import {
+  buildCreateHospitalPayload,
+  buildUpdateHospitalPayload,
+} from "../utils/hospitals/hospitalPayload";
 import HospitalsFilters from "../components/hospitals/HospitalsFilters";
 import HospitalsList from "../components/hospitals/HospitalsList";
 import HospitalCreateForm from "../components/hospitals/HospitalCreateForm";
@@ -129,13 +132,7 @@ const AdminHospitalsPage = () => {
 
             try {
               const newHospital = await createHospital(
-                {
-                  name: data.name,
-                  address: data.address,
-                  phone: data.phone,
-                  specialties: data.specialties,
-                  isOpen: true,
-                },
+                buildCreateHospitalPayload(data),
                 token,
               );
 
@@ -146,6 +143,7 @@ const AdminHospitalsPage = () => {
               console.error(error);
               toastT.error(["toasts.hospitals.addError"]);
             }
+
           }}
         />
       )}
@@ -170,22 +168,10 @@ const AdminHospitalsPage = () => {
             if (!token) return;
 
             try {
-              const payload: Partial<Hospital> = {
-                name: updated.name?.trim(),
-                address: updated.address?.trim(),
-                phone: (updated.phone ?? "").trim(),
-                specialties: Array.isArray(updated.specialties)
-                  ? updated.specialties
-                  : [],
-                ...(typeof (updated as any).isOpen === "boolean"
-                  ? { isOpen: (updated as any).isOpen }
-                  : {}),
-                ...(typeof (updated as any).status === "string"
-                  ? { status: (updated as any).status }
-                  : {}),
-              };
+              const payload = buildUpdateHospitalPayload(editingHospital, updated);
 
               const saved = await updateHospital(updated._id, payload, token);
+
 
               setHospitals((prev) =>
                 prev.map((h) => (h._id === saved._id ? saved : h)),
