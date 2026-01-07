@@ -2,9 +2,10 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import type { Ambulance } from "../../types/ambulance";
-import CancelButton from "../common/actions/CancelButton";
-import SaveIconButton from "../common/actions/SaveIconButton";
 import AmbulanceForm, { useAmbulanceForm } from "./AmbulanceForm";
+import AmbulanceModalLayout from "./AmbulanceModalLayout";
+import { buildAmbulanceSubmitHandler } from "../../utils/ambulances/ambulanceSubmit";
+
 
 interface Props {
     isOpen: boolean;
@@ -33,50 +34,30 @@ const EditAmbulanceModal: React.FC<Props> = ({
 
     const isSaveDisabled = isFormInvalid || !isDirty;
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!validateAll()) return;
+    const handleSubmit = buildAmbulanceSubmitHandler({
+        validateAll,
+        getPayload: normalizeValues,
+        onSave,
+        onClose,
+        id: initialData._id,
+    });
 
-        await onSave(normalizeValues(), initialData._id);
-        onClose();
-    };
-
-    if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <form
-                onSubmit={handleSubmit}
-                className="w-full max-w-lg rounded-2xl bg-white shadow-lg ring-1 ring-slate-200"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="ambulance-edit-title"
-            >
-                {/* Header */}
-                <div className="px-5 py-3 border-b border-slate-200">
-                    <h2 id="ambulance-edit-title" className="text-lg font-semibold text-slate-900">
-                        {t("pages.ambulances.formModal.titleEdit")}
-                    </h2>
-                </div>
-
-                {/* Body */}
-                <AmbulanceForm values={values} errors={errors} onChange={setField} />
-
-                {/* Footer */}
-                <div className="px-5 py-3 flex items-center justify-end gap-2">
-                    <CancelButton onClick={onClose}>
-                        {t("pages.ambulances.formModal.actions.cancel")}
-                    </CancelButton>
-
-                    <SaveIconButton
-                        type="submit"
-                        disabled={isSaveDisabled}
-                        title={t("pages.ambulances.formModal.actions.save")}
-                    />
-                </div>
-            </form>
-        </div>
+        <AmbulanceModalLayout
+            isOpen={isOpen}
+            titleId="ambulance-edit-title"
+            title={t("pages.ambulances.formModal.titleEdit")}
+            onClose={onClose}
+            onSubmit={handleSubmit}
+            isSaveDisabled={isSaveDisabled}
+            saveTitle={t("pages.ambulances.formModal.actions.save")}
+            cancelLabel={t("pages.ambulances.formModal.actions.cancel")}
+        >
+            <AmbulanceForm values={values} errors={errors} onChange={setField} />
+        </AmbulanceModalLayout>
     );
+
 };
 
 export default EditAmbulanceModal;
