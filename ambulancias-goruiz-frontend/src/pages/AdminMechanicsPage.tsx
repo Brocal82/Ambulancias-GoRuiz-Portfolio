@@ -18,6 +18,8 @@ import type { Ambulance } from "../types/ambulance";
 import { useTranslation } from "react-i18next";
 import { notifyAdminIssuesChanged } from "../hooks/useAdminIssuesOpenCount";
 import { normalizeIssues } from "../utils/mechanics/normalizeIssue";
+import { sortIssuesByDateDesc } from "../utils/mechanics/sortIssuesByDateDesc";
+
 
 const AdminMechanicsPage = () => {
   const { token } = useAuth();
@@ -39,9 +41,7 @@ const AdminMechanicsPage = () => {
   const monthIssues = useMemo(() => {
     if (openMonth === null) return [];
     const filtered = filterIssuesByYearMonth(issues, year, openMonth);
-    return [...filtered].sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-    );
+    return sortIssuesByDateDesc(filtered);
   }, [issues, year, openMonth]);
 
 
