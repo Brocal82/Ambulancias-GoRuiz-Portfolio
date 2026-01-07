@@ -1,3 +1,4 @@
+//src/components/hospitals/HospitalDetailsModal.tsx
 import type { Hospital } from "../../types/hospital";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -121,8 +122,8 @@ const HospitalDetailsModal = ({ hospital, onClose }: Props) => {
           <div className="px-6 py-3 border-t border-slate-200 flex justify-end">
             <span
               className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${isOpen
-                  ? "bg-green-50 text-green-700 ring-1 ring-green-200"
-                  : "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
+                ? "bg-green-50 text-green-700 ring-1 ring-green-200"
+                : "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
                 }`}
             >
               {isOpen

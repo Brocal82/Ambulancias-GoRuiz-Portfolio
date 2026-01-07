@@ -1,3 +1,4 @@
+//src/components/hospitals/HospitalsList.tsx
 import type { Hospital } from "../../types/hospital";
 import { useTranslation } from "react-i18next";
 import { getHospitalIsOpen } from "../../utils/hospitals/status";
@@ -73,8 +74,8 @@ const HospitalsList = ({
                                             isOpen === false && onToggleOpen && onToggleOpen(hospital);
                                         }}
                                         className={`h-4 w-4 rounded-full border-2 ${isOpen === true
-                                                ? "bg-green-500 border-green-600"
-                                                : "bg-white border-slate-300"
+                                            ? "bg-green-500 border-green-600"
+                                            : "bg-white border-slate-300"
                                             }`}
                                         title={t("pages.hospitals.adminPage.status.open") as string}
                                         aria-label={t("pages.hospitals.adminPage.status.open") as string}
@@ -88,8 +89,8 @@ const HospitalsList = ({
                                             isOpen === true && onToggleOpen && onToggleOpen(hospital);
                                         }}
                                         className={`h-4 w-4 rounded-full border-2 ${isOpen === false
-                                                ? "bg-rose-500 border-rose-600"
-                                                : "bg-white border-slate-300"
+                                            ? "bg-rose-500 border-rose-600"
+                                            : "bg-white border-slate-300"
                                             }`}
                                         title={t("pages.hospitals.adminPage.status.closed") as string}
                                         aria-label={t("pages.hospitals.adminPage.status.closed") as string}
@@ -99,8 +100,8 @@ const HospitalsList = ({
                                 <div className="flex items-center" aria-hidden="true">
                                     <div
                                         className={`h-4 w-4 rounded-full border-2 ${isOpen === true
-                                                ? "bg-green-500 border-green-600"
-                                                : "bg-rose-500 border-rose-600"
+                                            ? "bg-green-500 border-green-600"
+                                            : "bg-rose-500 border-rose-600"
                                             }`}
                                         title={
                                             isOpen === true

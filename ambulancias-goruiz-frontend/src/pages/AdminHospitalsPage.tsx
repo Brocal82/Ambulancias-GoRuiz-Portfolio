@@ -1,10 +1,11 @@
+//src/pages/AdminHospitalsPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import {
   createHospital,
   deleteHospital,
-  getAllHospitals,
   updateHospital,
 } from "../api/hospitals";
+import { fetchHospitals } from "../utils/hospitals/fetchHospitals";
 import type { Hospital } from "../types/hospital";
 import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
@@ -12,6 +13,14 @@ import {
   filterAndSortHospitals,
   getUniqueSpecialties,
 } from "../utils/hospitals/hospitalsFilters";
+import {
+  buildCreateHospitalPayload,
+  buildUpdateHospitalPayload,
+} from "../utils/hospitals/hospitalPayload";
+import {
+  fromLocalHospitalStatus,
+  getHospitalIsOpen,
+} from "../utils/hospitals/status";
 
 import HospitalsFilters from "../components/hospitals/HospitalsFilters";
 import HospitalsList from "../components/hospitals/HospitalsList";
@@ -37,10 +46,11 @@ const AdminHospitalsPage = () => {
 
   // 1) Fetch hospitales
   useEffect(() => {
-    const fetchHospitals = async () => {
+    const loadHospitals = async () => {
       try {
         if (!token) return;
-        const data = await getAllHospitals(token);
+
+        const data = await fetchHospitals(token);
         setHospitals(data);
       } catch (error) {
         console.error(error);
@@ -48,8 +58,9 @@ const AdminHospitalsPage = () => {
       }
     };
 
-    fetchHospitals();
+    loadHospitals();
   }, [token]);
+
 
   // 2) Especialidades únicas (memo para evitar recalcular cada render)
   const specialties = useMemo(() => getUniqueSpecialties(hospitals), [hospitals]);
@@ -65,11 +76,15 @@ const AdminHospitalsPage = () => {
     try {
       if (!token) return;
 
+      const currentIsOpen = getHospitalIsOpen(hospital);
+      const nextIsOpen = !(currentIsOpen === true);
+
       const updated = await updateHospital(
         hospital._id,
-        { isOpen: !hospital.isOpen },
+        fromLocalHospitalStatus(hospital, nextIsOpen),
         token,
       );
+
 
       setHospitals((prev) =>
         prev.map((h) => (h._id === updated._id ? updated : h)),
@@ -128,13 +143,7 @@ const AdminHospitalsPage = () => {
 
             try {
               const newHospital = await createHospital(
-                {
-                  name: data.name,
-                  address: data.address,
-                  phone: data.phone,
-                  specialties: data.specialties,
-                  isOpen: true,
-                },
+                buildCreateHospitalPayload(data),
                 token,
               );
 
@@ -145,6 +154,7 @@ const AdminHospitalsPage = () => {
               console.error(error);
               toastT.error(["toasts.hospitals.addError"]);
             }
+
           }}
         />
       )}
@@ -169,22 +179,10 @@ const AdminHospitalsPage = () => {
             if (!token) return;
 
             try {
-              const payload: Partial<Hospital> = {
-                name: updated.name?.trim(),
-                address: updated.address?.trim(),
-                phone: (updated.phone ?? "").trim(),
-                specialties: Array.isArray(updated.specialties)
-                  ? updated.specialties
-                  : [],
-                ...(typeof (updated as any).isOpen === "boolean"
-                  ? { isOpen: (updated as any).isOpen }
-                  : {}),
-                ...(typeof (updated as any).status === "string"
-                  ? { status: (updated as any).status }
-                  : {}),
-              };
+              const payload = buildUpdateHospitalPayload(editingHospital, updated);
 
               const saved = await updateHospital(updated._id, payload, token);
+
 
               setHospitals((prev) =>
                 prev.map((h) => (h._id === saved._id ? saved : h)),

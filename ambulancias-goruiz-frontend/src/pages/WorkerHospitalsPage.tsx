@@ -1,5 +1,5 @@
+//src/pages/WorkerHospitalsPage.tsx
 import { useEffect, useState, useMemo } from "react";
-import { getAllHospitals } from "../api/hospitals";
 import type { Hospital } from "../types/hospital";
 import HospitalDetailsModal from "../components/hospitals/HospitalDetailsModal";
 import { useAuth } from "../hooks/useAuth";
@@ -12,6 +12,7 @@ import {
   filterAndSortHospitals,
   getUniqueSpecialties,
 } from "../utils/hospitals/hospitalsFilters";
+import { fetchHospitals } from "../utils/hospitals/fetchHospitals";
 
 const WorkerHospitalsPage = () => {
   const { token } = useAuth();
@@ -27,10 +28,11 @@ const WorkerHospitalsPage = () => {
   const [searchName, setSearchName] = useState<string>("");
 
   useEffect(() => {
-    const fetchHospitals = async () => {
+    const loadHospitals = async () => {
       try {
         if (!token) return;
-        const data = await getAllHospitals(token);
+
+        const data = await fetchHospitals(token);
         setHospitals(data);
       } catch (error) {
         console.error("Error al cargar hospitales:", error);
@@ -38,23 +40,15 @@ const WorkerHospitalsPage = () => {
       }
     };
 
-    fetchHospitals();
+    loadHospitals();
   }, [token]);
 
   // 🔹 useMemo: especialidades únicas
-  const specialties = useMemo(
-    () => getUniqueSpecialties(hospitals),
-    [hospitals],
-  );
+  const specialties = useMemo(() => getUniqueSpecialties(hospitals), [hospitals]);
 
   // 🔹 useMemo: filtrado + ordenado
   const sortedHospitals = useMemo(
-    () =>
-      filterAndSortHospitals(
-        hospitals,
-        selectedSpecialty,
-        searchName,
-      ),
+    () => filterAndSortHospitals(hospitals, selectedSpecialty, searchName),
     [hospitals, selectedSpecialty, searchName],
   );
 

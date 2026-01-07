@@ -1,3 +1,4 @@
+//src/types/hospital.ts
 export interface Hospital {
   _id: string;
   name: string;
