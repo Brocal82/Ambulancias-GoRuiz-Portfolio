@@ -17,6 +17,7 @@ import { getAllAmbulances } from "../api/ambulances";
 import type { Ambulance } from "../types/ambulance";
 import { useTranslation } from "react-i18next";
 import { notifyAdminIssuesChanged } from "../hooks/useAdminIssuesOpenCount";
+import { normalizeIssues } from "../utils/mechanics/normalizeIssue";
 
 const AdminMechanicsPage = () => {
   const { token } = useAuth();
@@ -50,13 +51,8 @@ const AdminMechanicsPage = () => {
         if (!token) return;
 
         const issuesData = await getAllIssueReports(token);
-        // Asegura defaults si el backend aún devuelve sin campos
-        const normalized = issuesData.map((i) => ({
-          ...i,
-          isSeen: i.isSeen ?? false,
-          seenAt: i.seenAt ?? null,
-        }));
-        setIssues(normalized);
+        setIssues(normalizeIssues(issuesData));
+
 
         const ambulancesData = await getAllAmbulances(token);
         setAmbulances(ambulancesData);
