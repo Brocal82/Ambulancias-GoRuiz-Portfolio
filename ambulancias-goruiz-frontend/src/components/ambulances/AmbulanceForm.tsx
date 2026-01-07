@@ -2,21 +2,22 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Ambulance } from "../../types/ambulance";
+import {
+    MAX_AMBULANCE_FIELD_LENGTH,
+    hasMissingAmbulanceFields,
+    normalizeAmbulanceFormValues,
+    validateAmbulanceField,
+    validateAmbulanceFormValues,
+} from "../../utils/ambulances/ambulanceFormUtils";
 
-export const MAX_LENGTH = 30;
+
+export const MAX_LENGTH = MAX_AMBULANCE_FIELD_LENGTH;
+
 
 export type AmbulanceFormValues = Omit<Ambulance, "_id">;
 
 type AmbulanceFormErrors = Partial<Record<keyof AmbulanceFormValues, string>>;
 
-function normalize(values: AmbulanceFormValues) {
-    return {
-        brand: values.brand.trim(),
-        modelName: values.modelName.trim(),
-        licensePlate: values.licensePlate.trim(),
-        ambulanceNumber: values.ambulanceNumber.trim(),
-    };
-}
 
 export function useAmbulanceForm(initialData?: Ambulance | null, isOpen?: boolean) {
     const { t } = useTranslation();
@@ -55,13 +56,8 @@ export function useAmbulanceForm(initialData?: Ambulance | null, isOpen?: boolea
         }
     }, [initialData, isOpen]);
 
-    const validateField = (value: string) => {
-        if (!value.trim()) return t("pages.ambulances.formModal.validation.required");
-        if (value.length > MAX_LENGTH) {
-            return t("pages.ambulances.formModal.validation.maxLength", { max: MAX_LENGTH });
-        }
-        return "";
-    };
+    const validateField = (value: string) => validateAmbulanceField(value, t);
+
 
     const setField = (field: keyof AmbulanceFormValues, value: string) => {
         setIsDirty(true);
@@ -70,23 +66,18 @@ export function useAmbulanceForm(initialData?: Ambulance | null, isOpen?: boolea
     };
 
     const validateAll = () => {
-        const nextErrors: AmbulanceFormErrors = {
-            brand: validateField(values.brand),
-            modelName: validateField(values.modelName),
-            licensePlate: validateField(values.licensePlate),
-            ambulanceNumber: validateField(values.ambulanceNumber),
-        };
+        const nextErrors: AmbulanceFormErrors = validateAmbulanceFormValues(values, t);
         setErrors(nextErrors);
         return Object.values(nextErrors).every((e) => !e);
     };
 
+
     const isFormInvalid = useMemo(() => {
         const hasErrors = Object.values(errors).some((e) => Boolean(e));
-        const v = normalize(values);
-        const missing =
-            !v.brand || !v.modelName || !v.licensePlate || !v.ambulanceNumber;
+        const missing = hasMissingAmbulanceFields(values);
         return hasErrors || missing;
     }, [errors, values]);
+
 
     return {
         t,
@@ -96,7 +87,7 @@ export function useAmbulanceForm(initialData?: Ambulance | null, isOpen?: boolea
         isFormInvalid,
         setField,
         validateAll,
-        normalizeValues: () => normalize(values),
+        normalizeValues: () => normalizeAmbulanceFormValues(values),
         resetDirty: () => setIsDirty(false),
     };
 }
