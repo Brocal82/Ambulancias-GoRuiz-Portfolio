@@ -3,9 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import {
   createHospital,
   deleteHospital,
-  getAllHospitals,
   updateHospital,
 } from "../api/hospitals";
+import { fetchHospitals } from "../utils/hospitals/fetchHospitals";
 import type { Hospital } from "../types/hospital";
 import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
@@ -46,10 +46,11 @@ const AdminHospitalsPage = () => {
 
   // 1) Fetch hospitales
   useEffect(() => {
-    const fetchHospitals = async () => {
+    const loadHospitals = async () => {
       try {
         if (!token) return;
-        const data = await getAllHospitals(token);
+
+        const data = await fetchHospitals(token);
         setHospitals(data);
       } catch (error) {
         console.error(error);
@@ -57,8 +58,9 @@ const AdminHospitalsPage = () => {
       }
     };
 
-    fetchHospitals();
+    loadHospitals();
   }, [token]);
+
 
   // 2) Especialidades únicas (memo para evitar recalcular cada render)
   const specialties = useMemo(() => getUniqueSpecialties(hospitals), [hospitals]);
