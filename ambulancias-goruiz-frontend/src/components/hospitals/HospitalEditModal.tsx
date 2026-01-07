@@ -2,12 +2,7 @@
 import type { Hospital } from "../../types/hospital";
 import { useEffect, useMemo, useRef, useState, useId } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  toLocalHospitalStatus,
-  fromLocalHospitalStatus,
-} from "../../utils/hospitals/status";
-import { buildUpdateHospitalPayload } from "../../utils/hospitals/hospitalPayload";
-
+import { toLocalHospitalStatus } from "../../utils/hospitals/status";
 import CancelButton from "../common/actions/CancelButton";
 import SaveIconButton from "../common/actions/SaveIconButton";
 
@@ -115,21 +110,20 @@ const HospitalEditModal = ({
 
   const handleSave = () => {
     if (!canSave) return;
+
     const updated: Hospital = {
       ...hospital,
-      ...buildUpdateHospitalPayload(hospital, {
-        ...hospital,
-        name,
-        address,
-        phone,
-        specialties,
-        isOpen: isOpenState,
-      } as Hospital),
-    };
+      name,
+      address,
+      phone,
+      specialties,
+      isOpen: isOpenState,
+    } as Hospital;
 
     if (onUpdated) onUpdated(updated);
     else if (onSave) onSave(updated);
   };
+
 
   const footerBadge =
     typeof isOpenState === "boolean" ? (
