@@ -17,6 +17,11 @@ import {
   buildCreateHospitalPayload,
   buildUpdateHospitalPayload,
 } from "../utils/hospitals/hospitalPayload";
+import {
+  fromLocalHospitalStatus,
+  getHospitalIsOpen,
+} from "../utils/hospitals/status";
+
 import HospitalsFilters from "../components/hospitals/HospitalsFilters";
 import HospitalsList from "../components/hospitals/HospitalsList";
 import HospitalCreateForm from "../components/hospitals/HospitalCreateForm";
@@ -69,11 +74,15 @@ const AdminHospitalsPage = () => {
     try {
       if (!token) return;
 
+      const currentIsOpen = getHospitalIsOpen(hospital);
+      const nextIsOpen = !(currentIsOpen === true);
+
       const updated = await updateHospital(
         hospital._id,
-        { isOpen: !hospital.isOpen },
+        fromLocalHospitalStatus(hospital, nextIsOpen),
         token,
       );
+
 
       setHospitals((prev) =>
         prev.map((h) => (h._id === updated._id ? updated : h)),
