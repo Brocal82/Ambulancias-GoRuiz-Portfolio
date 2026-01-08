@@ -17,17 +17,10 @@ import {
   getVacationAvailability,
   type VacationAvailabilityResponse,
 } from "../../api/vacation";
+import { calcVacationDays } from "../../utils/vacation/calcVacationDays";
 
 type VacationStatus = "pending" | "accepted" | "cancelled" | "option_sent";
 
-const calcDays = (startISO: string, endISO: string) => {
-  const s = new Date(startISO);
-  const e = new Date(endISO);
-  s.setHours(0, 0, 0, 0);
-  e.setHours(0, 0, 0, 0);
-  const diff = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
-  return Number.isNaN(diff) ? "—" : Math.max(diff, 1);
-};
 
 interface Props {
   isOpen: boolean;
@@ -832,7 +825,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                     <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
                       {filtered.map((req) => {
                         const isActive = highlightRequestId === req._id;
-                        const days = calcDays(req.startDate, req.endDate);
+                        const days = calcVacationDays(req.startDate, req.endDate);
+
 
                         const hasProposal =
                           !!req.adminOptionStartDate &&

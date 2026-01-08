@@ -14,6 +14,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
 import StatusBadge from "../components/common/StatusBadge";
+import { calcVacationDays } from "../utils/vacation/calcVacationDays";
 
 // Nombre del evento global para refrescar el badge del Dashboard
 const ADMIN_VACATIONS_CHANGED_EVENT = "admin-vacations-changed";
@@ -33,14 +34,14 @@ function emitVacationSync(payload: {
     window.dispatchEvent(
       new CustomEvent("vacation-requests-updated", { detail }),
     );
-  } catch {}
+  } catch { }
 
   // Otras pestañas/ventanas (canal dedicado)
   try {
     const bc = new BroadcastChannel("vacations");
     bc.postMessage({ type: "requests-updated", ...detail });
     bc.close?.();
-  } catch {}
+  } catch { }
 
   // 🔁 Fallback universal: dispara evento 'storage' en otras pestañas
   try {
@@ -48,9 +49,9 @@ function emitVacationSync(payload: {
     setTimeout(() => {
       try {
         localStorage.removeItem("__vac_req_upd__");
-      } catch {}
+      } catch { }
     }, 500);
-  } catch {}
+  } catch { }
 }
 
 const AdminVacationRequests = () => {
@@ -75,7 +76,7 @@ const AdminVacationRequests = () => {
   const forceRefreshMonth = useCallback(async (y: number, m1: number) => {
     try {
       await getVacationAvailability({ year: y, month: m1 }, { force: true });
-    } catch {}
+    } catch { }
     setGridRefreshTick((n) => n + 1);
   }, []);
 
@@ -145,7 +146,7 @@ const AdminVacationRequests = () => {
           }
         };
       }
-    } catch {}
+    } catch { }
 
     // Fallback: storage
     const onStorage = (ev: StorageEvent) => {
@@ -163,7 +164,7 @@ const AdminVacationRequests = () => {
       window.removeEventListener("storage", onStorage);
       try {
         bc?.close?.();
-      } catch {}
+      } catch { }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -207,7 +208,7 @@ const AdminVacationRequests = () => {
           }
         };
       }
-    } catch {}
+    } catch { }
 
     // Fallback universal: evento 'storage'
     const onStorage = (ev: StorageEvent) => {
@@ -216,7 +217,7 @@ const AdminVacationRequests = () => {
         const payload = JSON.parse(ev.newValue);
         if (payload?.year && payload?.month)
           schedule(payload.year, payload.month);
-      } catch {}
+      } catch { }
     };
     window.addEventListener("storage", onStorage);
 
@@ -228,18 +229,10 @@ const AdminVacationRequests = () => {
       window.removeEventListener("storage", onStorage);
       try {
         bc?.close?.();
-      } catch {}
+      } catch { }
     };
   }, [forceRefreshMonth]);
 
-  const calcDays = (start: string, end: string) => {
-    const s = new Date(start);
-    const e = new Date(end);
-    s.setHours(0, 0, 0, 0);
-    e.setHours(0, 0, 0, 0);
-    const diff = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
-    return Number.isNaN(diff) ? "—" : Math.max(diff, 1);
-  };
 
   type VacationStatus = "pending" | "accepted" | "cancelled" | "option_sent";
 
@@ -479,7 +472,8 @@ const AdminVacationRequests = () => {
 
                 <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
                   {actionableRequests.map((req) => {
-                    const days = calcDays(req.startDate, req.endDate);
+                    const days = calcVacationDays(req.startDate, req.endDate);
+
 
                     return (
                       <tr
@@ -554,11 +548,11 @@ const AdminVacationRequests = () => {
                                 >
                                   {isSendingCancel
                                     ? t(
-                                        "pages.vacations.adminPage.actions.sending",
-                                      )
+                                      "pages.vacations.adminPage.actions.sending",
+                                    )
                                     : t(
-                                        "pages.vacations.adminPage.actions.confirm",
-                                      )}
+                                      "pages.vacations.adminPage.actions.confirm",
+                                    )}
                                 </button>
                                 <button
                                   className="inline-flex items-center justify-center rounded-full bg-gray-200 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-gray-300 focus:ring-4 focus:ring-gray-100"
