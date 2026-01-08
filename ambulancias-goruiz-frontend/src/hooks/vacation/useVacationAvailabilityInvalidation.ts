@@ -1,17 +1,15 @@
 import { useEffect } from "react";
-import { subscribeAvailabilityInvalidated } from "../../utils/vacation/vacationAvailabilityEvents";
-
-
-type Payload = { year: number; month: number }; // month 1..12
+import {
+  subscribeAvailabilityInvalidated,
+  type VacationAvailabilityInvalidatedDetail,
+} from "../../utils/vacation/vacationAvailabilityEvents";
 
 /**
  * Escucha invalidaciones de disponibilidad (misma pestaña + otras pestañas)
- * y ejecuta `handler` con { year, month }.
+ * y ejecuta `handler` con { year, month, ts? }.
  */
 export function useVacationAvailabilityInvalidation(
-  handler: (p: Payload) => void,
+  handler: (p: VacationAvailabilityInvalidatedDetail) => void,
 ) {
-  useEffect(() => {
-    return subscribeAvailabilityInvalidated(handler);
-  }, [handler]);
+  useEffect(() => subscribeAvailabilityInvalidated(handler), [handler]);
 }
