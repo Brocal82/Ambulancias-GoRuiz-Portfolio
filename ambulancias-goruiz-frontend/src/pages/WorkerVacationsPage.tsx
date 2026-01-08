@@ -17,6 +17,7 @@ import WorkerAvailabilityMonthModal from "../components/vacation/WorkerAvailabil
 
 // Prefetch/caché compartida
 import { getVacationAvailability } from "../api/vacation";
+import { useVacationRequestsUpdated } from "../hooks/vacation/useVacationRequestsUpdated";
 
 const WorkerVacationsPage = () => {
   const { token } = useAuth();
@@ -50,7 +51,7 @@ const WorkerVacationsPage = () => {
   const forceRefreshMonth = useCallback(async (y: number, m1: number) => {
     try {
       await getVacationAvailability({ year: y, month: m1 }, { force: true });
-    } catch {}
+    } catch { }
     setGridRefreshTick((n) => n + 1);
   }, []);
 
@@ -87,19 +88,12 @@ const WorkerVacationsPage = () => {
     fetchRequests();
   }, [fetchRequests]);
 
-  // Escuchar CustomEvent (misma pestaña)
-  useEffect(() => {
-    const handler = () => safeRefetch();
-    window.addEventListener(
-      "vacation-requests-updated",
-      handler as EventListener,
-    );
-    return () =>
-      window.removeEventListener(
-        "vacation-requests-updated",
-        handler as EventListener,
-      );
-  }, [safeRefetch]);
+  // 🔔 Escuchar cambios en solicitudes (accept / cancel / delete) sin recargar
+  useVacationRequestsUpdated(() => {
+    safeRefetch();
+  });
+
+
 
   // Live update del GRID (colores) — escucha invalidaciones de disponibilidad
   useEffect(() => {
@@ -140,7 +134,7 @@ const WorkerVacationsPage = () => {
           }
         };
       }
-    } catch {}
+    } catch { }
 
     // Fallback: storage
     const onStorage = (ev: StorageEvent) => {
@@ -149,7 +143,7 @@ const WorkerVacationsPage = () => {
         const payload = JSON.parse(ev.newValue);
         if (payload?.year && payload?.month)
           schedule(payload.year, payload.month);
-      } catch {}
+      } catch { }
     };
     window.addEventListener("storage", onStorage);
 
@@ -161,44 +155,10 @@ const WorkerVacationsPage = () => {
       window.removeEventListener("storage", onStorage);
       try {
         bc?.close?.();
-      } catch {}
+      } catch { }
     };
   }, [forceRefreshMonth]);
 
-  // Escuchar BroadcastChannel (otras pestañas/ventanas)
-  useEffect(() => {
-    let bc: BroadcastChannel | null = null;
-    try {
-      const BC = (window as any).BroadcastChannel as
-        | (new (name: string) => BroadcastChannel)
-        | undefined;
-      if (typeof BC === "function") {
-        bc = new BC("vacations");
-        bc.onmessage = (msg: MessageEvent) => {
-          const data = msg.data || {};
-          if (data?.type === "requests-updated") {
-            safeRefetch();
-          }
-        };
-      }
-    } catch {}
-    return () => {
-      try {
-        bc?.close?.();
-      } catch {}
-    };
-  }, [safeRefetch]);
-
-  // 🔁 Fallback entre pestañas/ventanas: escucha evento 'storage' cuando Admin escribe __vac_req_upd__
-  useEffect(() => {
-    const onStorage = (ev: StorageEvent) => {
-      if (ev.key === "__vac_req_upd__" && ev.newValue) {
-        safeRefetch();
-      }
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, [safeRefetch]);
 
   const handleRespondAlternative = async (id: string, accept: boolean) => {
     if (!token) return;
