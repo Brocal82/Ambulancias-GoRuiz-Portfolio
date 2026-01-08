@@ -6,6 +6,7 @@ import {
   type VacationAvailabilityResponse,
 } from "../../api/vacation";
 import { monthLabel as fmtMonth } from "../../utils/intl";
+import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
 
 type DayState = "green" | "yellow" | "red";
 
@@ -130,87 +131,18 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, monthIndex, year]);
 
-  // Live update: misma pestaña + entre pestañas
-  useEffect(() => {
+  useVacationAvailabilityInvalidation(({ year: y, month: m1 }) => {
     if (!isOpen || monthIndex === null) return;
 
     const myMonth = monthIndex + 1;
+    if (y !== year || m1 !== myMonth) return;
 
-    const scheduleRefresh = (y: number, m1: number) => {
-      if (y !== year || m1 !== myMonth) return;
-      if (refreshTimerRef.current) window.clearTimeout(refreshTimerRef.current);
-      refreshTimerRef.current = window.setTimeout(() => {
-        loadAvailability(year, myMonth, true);
-      }, 200);
-    };
+    if (refreshTimerRef.current) window.clearTimeout(refreshTimerRef.current);
+    refreshTimerRef.current = window.setTimeout(() => {
+      loadAvailability(year, myMonth, true);
+    }, 200);
+  });
 
-    // 1) CustomEvent
-    const customHandler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as {
-        year: number;
-        month: number;
-      };
-      if (detail?.year && detail?.month)
-        scheduleRefresh(detail.year, detail.month);
-    };
-    window.addEventListener(
-      "vacation-availability-invalidated",
-      customHandler as EventListener,
-    );
-
-    // 2) BroadcastChannel
-    let bc: BroadcastChannel | null = null;
-    try {
-      const BC = (window as any).BroadcastChannel as
-        | (new (name: string) => BroadcastChannel)
-        | undefined;
-      if (typeof BC === "function") {
-        bc = new BC("vacations");
-        bc.onmessage = (msg: MessageEvent) => {
-          const data = msg.data || {};
-          if (
-            data?.type === "availability-invalidated" &&
-            data.year &&
-            data.month
-          ) {
-            scheduleRefresh(data.year, data.month);
-          }
-        };
-      }
-    } catch {
-      /* noop */
-    }
-
-    // 3) storage fallback
-    const storageHandler = (ev: StorageEvent) => {
-      if (ev.key !== "__vac_av_inval__" || !ev.newValue) return;
-      try {
-        const payload = JSON.parse(ev.newValue);
-        if (payload?.year && payload?.month)
-          scheduleRefresh(payload.year, payload.month);
-      } catch {
-        /* noop */
-      }
-    };
-    window.addEventListener("storage", storageHandler);
-
-    return () => {
-      window.removeEventListener(
-        "vacation-availability-invalidated",
-        customHandler as EventListener,
-      );
-      window.removeEventListener("storage", storageHandler);
-      try {
-        bc?.close?.();
-      } catch {
-        /* noop */
-      }
-      if (refreshTimerRef.current) {
-        window.clearTimeout(refreshTimerRef.current);
-        refreshTimerRef.current = null;
-      }
-    };
-  }, [isOpen, monthIndex, year]);
 
   const getDayState = (day: number | null): DayState | null => {
     if (!availability || day === null) return null;
