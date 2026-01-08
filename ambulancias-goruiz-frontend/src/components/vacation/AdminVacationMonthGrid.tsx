@@ -5,6 +5,7 @@ import {
   getYearMonths,
   countRequestsByMonth,
 } from "../../utils/vacationMonthUtils";
+import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
 import { useTranslation } from "react-i18next";
 
 // API disponibilidad
@@ -187,73 +188,19 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localYear, i18n.language]);
 
-  // ===== Live update: escucha invalidaciones (misma pestaña + entre pestañas) =====
-  useEffect(() => {
-    const customHandler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as {
-        year: number;
-        month: number;
-      }; // month 1..12
-      if (detail?.year && detail?.month) {
-        scheduleRefreshMonth(detail.year, detail.month);
-      }
-    };
-    window.addEventListener(
-      "vacation-availability-invalidated",
-      customHandler as EventListener,
-    );
-
-    // BroadcastChannel entre pestañas
-    let bc: BroadcastChannel | null = null;
-    try {
-      const BC = (window as any).BroadcastChannel as
-        | (new (name: string) => BroadcastChannel)
-        | undefined;
-      if (typeof BC === "function") {
-        bc = new BC("vacations");
-        bc.onmessage = (msg: MessageEvent) => {
-          const data = msg.data || {};
-          if (
-            data?.type === "availability-invalidated" &&
-            data.year &&
-            data.month
-          ) {
-            scheduleRefreshMonth(data.year, data.month);
-          }
-        };
-      }
-    } catch {
-      // noop
-    }
-
-    // Fallback: evento storage
-    const storageHandler = (ev: StorageEvent) => {
-      if (ev.key !== "__vac_av_inval__" || !ev.newValue) return;
-      try {
-        const payload = JSON.parse(ev.newValue);
-        if (payload?.year && payload?.month) {
-          scheduleRefreshMonth(payload.year, payload.month);
-        }
-      } catch {
-        // noop
-      }
-    };
-    window.addEventListener("storage", storageHandler);
-
-    return () => {
-      window.removeEventListener(
-        "vacation-availability-invalidated",
-        customHandler as EventListener,
-      );
-      window.removeEventListener("storage", storageHandler);
-      try {
-        bc?.close?.();
-      } catch {
-        /* noop */
-      }
-    };
+  const handleAvailabilityInvalidated = React.useCallback(
+    (p: { year: number; month: number }) => {
+      // p.month viene 1..12
+      scheduleRefreshMonth(p.year, p.month);
+    },
+    // scheduleRefreshMonth depende de localYear (y es estable dentro del render actual)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localYear]);
+    [localYear],
+  );
+
+
+  useVacationAvailabilityInvalidation(handleAvailabilityInvalidated);
+
 
   // =============================
   // ✅ NUEVO: borde por mes según estado de requests (igual que Sick)
