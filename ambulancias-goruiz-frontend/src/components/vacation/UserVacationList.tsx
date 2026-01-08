@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { IVacationRequest } from "../../types/vacationRequest";
 import { useTranslation } from "react-i18next";
 import { formatISOToDDMMYYYY } from "../../utils/timeUtils";
+import { calcVacationDays } from "../../utils/vacation/calcVacationDays";
 
 type Props = {
   requests: IVacationRequest[];
@@ -9,15 +10,6 @@ type Props = {
 };
 
 type VacationStatus = IVacationRequest["status"];
-
-const calcDays = (start: string, end: string) => {
-  const s = new Date(start);
-  const e = new Date(end);
-  s.setHours(0, 0, 0, 0);
-  e.setHours(0, 0, 0, 0);
-  const diff = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
-  return Number.isNaN(diff) ? "—" : Math.max(diff, 1);
-};
 
 type AdminMessageModalState = {
   open: boolean;
@@ -167,7 +159,8 @@ const UserVacationList: React.FC<Props> = ({
 
           <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
             {safeRequests.map((req) => {
-              const days = calcDays(req.startDate, req.endDate);
+              const days = calcVacationDays(req.startDate, req.endDate);
+
 
               const proposedStart = (req as any).adminOptionStartDate as
                 | string
