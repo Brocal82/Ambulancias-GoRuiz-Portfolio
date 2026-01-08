@@ -6,6 +6,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
 import { formatISOToDDMMYYYY } from "../utils/timeUtils";
+import { calcVacationDays } from "../utils/vacation/calcVacationDays";
 
 interface Props {
   userId: string;
@@ -95,15 +96,6 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
     );
   };
 
-  const calcDays = (start: string, end: string) => {
-    const s = new Date(start);
-    const e = new Date(end);
-    s.setHours(0, 0, 0, 0);
-    e.setHours(0, 0, 0, 0);
-    const diff = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
-    if (Number.isNaN(diff)) return "—";
-    return Math.max(diff, 1);
-  };
 
   return (
     <div className="space-y-4">
@@ -163,7 +155,8 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
 
               <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
                 {vacations.map((v) => {
-                  const days = calcDays(v.startDate, v.endDate);
+                  const days = calcVacationDays(v.startDate, v.endDate);
+
 
                   return (
                     <tr
