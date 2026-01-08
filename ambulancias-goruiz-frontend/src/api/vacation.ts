@@ -1,6 +1,7 @@
 // frontend/src/api/vacation.ts
 import axiosInstance from "./axios";
 import type { IVacationRequest } from "../types/vacationRequest";
+import { emitAvailabilityInvalidated } from "../utils/vacation/vacationAvailabilityEvents";
 
 /* =========================
    Tipos y payloads básicos
@@ -359,14 +360,15 @@ export function invalidateAvailability(year: number, month: number) {
   } catch {}
 }
 
-/**
- * Helper para invalidar el mes actual y el siguiente (útil tras aceptar/cancelar).
- */
-export function invalidateThisAndNextMonth(year: number, month: number) {
-  invalidateAvailability(year, month);
-  const next = month === 12 ? { y: year + 1, m: 1 } : { y: year, m: month + 1 };
-  invalidateAvailability(next.y, next.m);
+export function invalidateThisAndNextMonth(year: number, month1: number) {
+  // month1: 1..12
+  emitAvailabilityInvalidated({ year, month: month1 });
+
+  // siguiente mes (con salto de año)
+  if (month1 === 12) emitAvailabilityInvalidated({ year: year + 1, month: 1 });
+  else emitAvailabilityInvalidated({ year, month: month1 + 1 });
 }
+
 
 /* =========================================================
    Helpers de invalidación por evento y por rango (TZ Berlín)
@@ -389,55 +391,25 @@ function getBerlinYearMonth(iso: string): { y: number; m1: number } | null {
   return { y, m1 };
 }
 
-// ✅ Versión limpia y compatible (sin warnings)
-export function invalidateAvailabilityByRange(
-  startDate: string,
-  _endDate?: string,
-) {
-  try {
-    // 🗓️ Si existe helper getBerlinYearMonth, úsalo:
-    let year: number, month: number;
+export function invalidateAvailabilityByRange(startISO: string, endISO: string) {
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return;
 
-    if (typeof getBerlinYearMonth === "function") {
-      const startInfo = getBerlinYearMonth(startDate);
-      if (!startInfo) return;
-      year = startInfo.y;
-      month = startInfo.m1;
-    } else {
-      const start = new Date(startDate);
-      year = start.getFullYear();
-      month = start.getMonth() + 1;
+  // Normalizamos a inicio de mes para iterar por meses
+  let y = start.getFullYear();
+  let m0 = start.getMonth(); // 0..11
+
+  const endY = end.getFullYear();
+  const endM0 = end.getMonth();
+
+  while (y < endY || (y === endY && m0 <= endM0)) {
+    emitAvailabilityInvalidated({ year: y, month: m0 + 1 }); // 1..12
+    m0++;
+    if (m0 > 11) {
+      m0 = 0;
+      y++;
     }
-
-    // 1️⃣ CustomEvent (misma pestaña)
-    window.dispatchEvent(
-      new CustomEvent("vacation-availability-invalidated", {
-        detail: { year, month },
-      }),
-    );
-
-    // 2️⃣ BroadcastChannel (otras pestañas/ventanas)
-    try {
-      const bc = new BroadcastChannel("vacations");
-      bc.postMessage({ type: "availability-invalidated", year, month });
-      bc.close?.();
-    } catch {}
-
-    // 3️⃣ localStorage (fallback universal)
-    try {
-      localStorage.setItem(
-        "__vac_av_inval__",
-        JSON.stringify({ year, month, ts: Date.now() }),
-      );
-    } catch {}
-
-    // 🧹 limpiar almacenamiento para evitar eventos acumulados
-    setTimeout(() => {
-      try {
-        localStorage.removeItem("__vac_av_inval__");
-      } catch {}
-    }, 2000);
-  } catch (err) {
-    console.warn("Error invalidando disponibilidad:", err);
   }
 }
+
