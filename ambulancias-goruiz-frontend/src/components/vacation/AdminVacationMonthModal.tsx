@@ -19,7 +19,7 @@ import {
   type VacationAvailabilityResponse,
 } from "../../api/vacation";
 import { calcVacationDays } from "../../utils/vacation/calcVacationDays";
-import { emitVacationRequestsUpdated } from "../../utils/vacation/vacationEvents";
+import { emitVacationRequestsUpdated } from "../../utils/vacation/vacationRequestEvents";
 import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
 
 
