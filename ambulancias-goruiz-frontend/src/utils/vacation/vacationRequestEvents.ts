@@ -2,7 +2,8 @@
 
 export type VacationRequestsUpdatedDetail = {
   id: string;
-  status: "accepted" | "cancelled" | "deleted";
+  status: "accepted" | "cancelled" | "deleted" | "option_sent";
+
   ts?: number;
 };
 

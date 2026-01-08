@@ -286,6 +286,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     note: string,
   ) => {
     if (!token || !currentRequestId || monthIndex === null) return;
+
     try {
       await updateVacationRequest(token, currentRequestId, {
         status: "option_sent",
@@ -293,14 +294,18 @@ const AdminVacationMonthModal: React.FC<Props> = ({
         adminOptionEndDate: altEndISO,
         adminNote: note,
       });
+
+      // 🔔 Emitir sincronización al Worker (la propuesta cambia lo que ve)
+      emitVacationRequestsUpdated({ id: currentRequestId, status: "option_sent" });
+
       setIsAltOpen(false);
       setCurrentRequestId(null);
-      // ⚠️ option_sent no cambia estado final del worker → no emitimos
       onActionDone?.();
     } catch {
       toastT.error(["toasts.vacations.worker.loadError"]);
     }
   };
+
 
   const handleStartCancelFlow = (id: string) => {
     setCancelingRequestId(id);
