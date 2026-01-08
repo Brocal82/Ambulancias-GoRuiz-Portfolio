@@ -1,6 +1,7 @@
 // src/pages/AdminUserVacationsTab.tsx
 import { useEffect, useState } from "react";
 import type { IVacationRequest } from "../types/vacationRequest";
+import type { VacationStatus } from "../types/vacation";
 import { getVacationRequests, deleteVacationRequest } from "../api/vacation";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -12,7 +13,6 @@ interface Props {
   userId: string;
 }
 
-type VacationStatus = IVacationRequest["status"];
 
 const AdminUserVacationsTab = ({ userId }: Props) => {
   const { token } = useAuth();

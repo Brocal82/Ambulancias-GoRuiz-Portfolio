@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { IVacationRequest } from "../../types/vacationRequest";
+import type { VacationStatus } from "../../types/vacation";
 import { useTranslation } from "react-i18next";
 import { formatISOToDDMMYYYY } from "../../utils/timeUtils";
 import { calcVacationDays } from "../../utils/vacation/calcVacationDays";
@@ -8,8 +9,6 @@ type Props = {
   requests: IVacationRequest[];
   onRespondAlternative: (id: string, accept: boolean) => void;
 };
-
-type VacationStatus = IVacationRequest["status"];
 
 type AdminMessageModalState = {
   open: boolean;
@@ -79,11 +78,10 @@ const UserVacationList: React.FC<Props> = ({
   };
 
   const openAdminMessage = (req: IVacationRequest) => {
-    const adminNote = ((req as any).adminNote as string | undefined)?.trim();
-    const proposedStart = (req as any).adminOptionStartDate as
-      | string
-      | undefined;
-    const proposedEnd = (req as any).adminOptionEndDate as string | undefined;
+    const adminNote = req.adminNote?.trim();
+    const proposedStart = req.adminOptionStartDate;
+    const proposedEnd = req.adminOptionEndDate;
+
 
     const hasProposal =
       req.status === "option_sent" && !!proposedStart && !!proposedEnd;
@@ -162,20 +160,16 @@ const UserVacationList: React.FC<Props> = ({
               const days = calcVacationDays(req.startDate, req.endDate);
 
 
-              const proposedStart = (req as any).adminOptionStartDate as
-                | string
-                | undefined;
-              const proposedEnd = (req as any).adminOptionEndDate as
-                | string
-                | undefined;
+              const proposedStart = req.adminOptionStartDate;
+              const proposedEnd = req.adminOptionEndDate;
+
               const hasAlternative =
                 req.status === "option_sent" &&
                 !!proposedStart &&
                 !!proposedEnd;
 
-              const adminNote = (
-                (req as any).adminNote as string | undefined
-              )?.trim();
+              const adminNote = req.adminNote?.trim();
+
               const hasAdminMessage = !!adminNote && adminNote.length > 0;
 
               // ✅ Sobre si hay propuesta o mensaje

@@ -1,6 +1,7 @@
 // frontend/src/components/vacation/AdminVacationMonthModal.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { IVacationRequest } from "../../types/vacationRequest";
+import type { VacationStatus } from "../../types/vacation";
 import { filterRequestsByMonth } from "../../utils/vacationMonthUtils";
 import {
   updateVacationRequest,
@@ -18,8 +19,6 @@ import {
   type VacationAvailabilityResponse,
 } from "../../api/vacation";
 import { calcVacationDays } from "../../utils/vacation/calcVacationDays";
-
-type VacationStatus = "pending" | "accepted" | "cancelled" | "option_sent";
 
 
 interface Props {
