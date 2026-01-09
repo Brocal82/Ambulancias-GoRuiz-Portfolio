@@ -94,10 +94,14 @@ const WorkerVacationsPage = () => {
     fetchRequests();
   }, [fetchRequests]);
 
-  // 🔔 Escuchar cambios en solicitudes (accept / cancel / delete) sin recargar
-  useVacationRequestsUpdated(() => {
+
+
+  const handleRequestsUpdated = useCallback(() => {
     safeRefetch();
-  });
+  }, [safeRefetch]);
+
+  useVacationRequestsUpdated(handleRequestsUpdated);
+
 
   // Live update del GRID (colores) — escucha invalidaciones de disponibilidad
   useEffect(() => {

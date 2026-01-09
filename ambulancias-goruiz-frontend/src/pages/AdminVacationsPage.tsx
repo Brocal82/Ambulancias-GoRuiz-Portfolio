@@ -26,9 +26,10 @@ const notifyVacationsChanged = () =>
 // ✅ Helper mínimo para sincronizar Worker sin recargar (incluye fallback por storage)
 function emitVacationSync(payload: {
   id: string;
-  status: "accepted" | "cancelled" | "deleted";
+  status: "accepted" | "cancelled" | "deleted" | "option_sent";
   ts?: number;
 }) {
+
   const detail = { ts: Date.now(), ...payload };
 
   // Misma pestaña
@@ -316,6 +317,7 @@ const AdminVacationRequests = () => {
     adminNote: string,
   ) => {
     if (!token) return;
+
     try {
       await toastT.promise(
         updateVacationRequest(token, id, {
@@ -331,16 +333,19 @@ const AdminVacationRequests = () => {
         },
       );
 
-      // ⚠️ option_sent no cambia capacidad ni estado final del worker → NO emitir
+      // 🔔 Sync Worker: la propuesta alternativa cambia lo que ve el trabajador
+      emitVacationSync({ id, status: "option_sent" });
 
       // 🔔 Notificar al Dashboard
       notifyVacationsChanged();
 
+      // 🔄 Refrescar lista del Admin
       fetchRequests();
     } catch {
       // el error ya se muestra por toast
     }
   };
+
 
   const handleConfirmCancel = async (id: string) => {
     if (!token) return;
