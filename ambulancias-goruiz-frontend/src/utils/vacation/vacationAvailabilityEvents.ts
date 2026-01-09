@@ -1,4 +1,4 @@
-// frontend/src/utils/vacation/vacationAvailabilityEvents.ts
+//frontend/src/utils/vacation/vacationAvailabilityEvents.ts
 
 export type VacationAvailabilityInvalidatedDetail = {
   year: number;
