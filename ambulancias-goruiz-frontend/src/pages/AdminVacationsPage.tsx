@@ -15,6 +15,8 @@ import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
 import StatusBadge from "../components/common/StatusBadge";
 import { calcVacationDays } from "../utils/vacation/calcVacationDays";
+import { useVacationRequestsUpdated } from "../hooks/vacation/useVacationRequestsUpdated";
+
 
 // Nombre del evento global para refrescar el badge del Dashboard
 const ADMIN_VACATIONS_CHANGED_EVENT = "admin-vacations-changed";
@@ -122,6 +124,11 @@ const AdminVacationRequests = () => {
     fetchRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  useVacationRequestsUpdated(() => {
+    fetchRequests();
+  });
+
 
   // 🔔 NUEVO: escuchar “request creada/actualizada” desde cualquier pestaña y refrescar lista
   useEffect(() => {
