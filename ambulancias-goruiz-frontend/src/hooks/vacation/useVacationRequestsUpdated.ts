@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import {
   subscribeVacationRequestsUpdated,
   type VacationRequestsUpdatedDetail,
-} from "../../utils/vacation/vacationRequestEvents";
+} from "../../utils/vacation/vacationEvents";
 
 /**
  * Hook: escucha cambios en requests (accepted/cancelled/deleted)
