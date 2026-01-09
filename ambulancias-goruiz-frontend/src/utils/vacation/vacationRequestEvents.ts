@@ -2,10 +2,10 @@
 
 export type VacationRequestsUpdatedDetail = {
   id: string;
-  status: "accepted" | "cancelled" | "deleted" | "option_sent";
-
+  status: "accepted" | "cancelled" | "deleted" | "option_sent" | "created";
   ts?: number;
 };
+
 
 const EVENT_NAME = "vacation-requests-updated";
 const BC_NAME = "vacations";

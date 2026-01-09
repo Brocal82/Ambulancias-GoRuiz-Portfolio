@@ -20,6 +20,11 @@ import {
 } from "../../api/vacation";
 import { useTranslation } from "react-i18next";
 import { es as dfEs, de as dfDe, enGB as dfEnGB } from "date-fns/locale";
+import {
+  emitVacationRequestsUpdated,
+  emitAvailabilityInvalidated,
+} from "../../utils/vacation/vacationEvents";
+
 
 interface VacationRequestFormProps {
   onSuccess?: () => void;
@@ -223,6 +228,7 @@ const VacationRequestForm: React.FC<VacationRequestFormProps> = ({
 
     setLoading(true);
     setMessage(null);
+
     try {
       // 👇 Asegura que todos los meses entre start y end estén cargados
       await ensureAllMonthsInRangeLoaded(
@@ -243,10 +249,40 @@ const VacationRequestForm: React.FC<VacationRequestFormProps> = ({
         return;
       }
 
-      await createVacationRequest(token, {
+      // ✅ Crear request
+      const created = await createVacationRequest(token, {
         startDate: selectionRange.startDate.toISOString(),
         endDate: selectionRange.endDate.toISOString(),
       });
+
+      // ✅ 1) Avisar a Admin/otras pestañas para refrescar lista
+      emitVacationRequestsUpdated({
+        id: (created as any)?._id ?? "created",
+        status: "created",
+      });
+
+      // ✅ 2) Invalidar disponibilidad para meses afectados (colores/capacidad)
+      try {
+        const s = selectionRange.startDate;
+        const e = selectionRange.endDate;
+
+        let y = s.getFullYear();
+        let m0 = s.getMonth(); // 0..11
+        const endY = e.getFullYear();
+        const endM0 = e.getMonth();
+
+        while (y < endY || (y === endY && m0 <= endM0)) {
+          emitAvailabilityInvalidated({ year: y, month: m0 + 1 }); // 1..12
+          m0++;
+          if (m0 > 11) {
+            m0 = 0;
+            y++;
+          }
+        }
+      } catch {
+        /* noop */
+      }
+
       setMessage(t("pages.vacations.requestForm.success"));
       onSuccess?.();
     } catch {
@@ -255,6 +291,7 @@ const VacationRequestForm: React.FC<VacationRequestFormProps> = ({
       setLoading(false);
     }
   };
+
 
   return (
     <div className="mx-auto max-w-lg rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
@@ -284,17 +321,16 @@ const VacationRequestForm: React.FC<VacationRequestFormProps> = ({
           preventSnapRefocus
           calendarFocus="forwards"
           fixedHeight
-          /* Sin onShownDateChange para evitar saltos al cambiar mes/año */
+        /* Sin onShownDateChange para evitar saltos al cambiar mes/año */
         />
       </div>
 
       {message && (
         <p
-          className={`mt-3 text-sm ${
-            message === t("pages.vacations.requestForm.success")
+          className={`mt-3 text-sm ${message === t("pages.vacations.requestForm.success")
               ? "text-emerald-700"
               : "text-rose-600"
-          }`}
+            }`}
         >
           {message}
         </p>
