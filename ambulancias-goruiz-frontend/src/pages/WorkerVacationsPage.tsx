@@ -24,6 +24,8 @@ import {
   emitVacationRequestsUpdated,
   emitAvailabilityInvalidated,
 } from "../utils/vacation/vacationEvents";
+import { useVacationAvailabilityInvalidation } from "../hooks/vacation/useVacationAvailabilityInvalidation";
+
 
 const WorkerVacationsPage = () => {
   const { token } = useAuth();
@@ -103,69 +105,12 @@ const WorkerVacationsPage = () => {
   useVacationRequestsUpdated(handleRequestsUpdated);
 
 
-  // Live update del GRID (colores) — escucha invalidaciones de disponibilidad
-  useEffect(() => {
-    const schedule = (y: number, m1: number) => {
-      // Refuerza caché de ese mes y remonta el grid
-      forceRefreshMonth(y, m1);
-    };
+  // ✅ Live update del GRID (colores) — usando hook centralizado del módulo
+  useVacationAvailabilityInvalidation(({ year, month }) => {
+    // month viene 1..12
+    forceRefreshMonth(year, month);
+  });
 
-    // Misma pestaña
-    const onCustom = (e: Event) => {
-      const detail = (e as CustomEvent).detail as {
-        year?: number;
-        month?: number;
-      };
-      if (detail?.year && detail?.month) schedule(detail.year, detail.month);
-    };
-    window.addEventListener(
-      "vacation-availability-invalidated",
-      onCustom as EventListener,
-    );
-
-    // BroadcastChannel entre pestañas
-    let bc: BroadcastChannel | null = null;
-    try {
-      const BC = (window as any).BroadcastChannel as
-        | (new (name: string) => BroadcastChannel)
-        | undefined;
-      if (typeof BC === "function") {
-        bc = new BC("vacations");
-        bc.onmessage = (msg: MessageEvent) => {
-          const data = msg.data || {};
-          if (
-            data?.type === "availability-invalidated" &&
-            data.year &&
-            data.month
-          ) {
-            schedule(data.year, data.month);
-          }
-        };
-      }
-    } catch { }
-
-    // Fallback: storage
-    const onStorage = (ev: StorageEvent) => {
-      if (ev.key !== "__vac_av_inval__" || !ev.newValue) return;
-      try {
-        const payload = JSON.parse(ev.newValue);
-        if (payload?.year && payload?.month)
-          schedule(payload.year, payload.month);
-      } catch { }
-    };
-    window.addEventListener("storage", onStorage);
-
-    return () => {
-      window.removeEventListener(
-        "vacation-availability-invalidated",
-        onCustom as EventListener,
-      );
-      window.removeEventListener("storage", onStorage);
-      try {
-        bc?.close?.();
-      } catch { }
-    };
-  }, [forceRefreshMonth]);
 
   // ✅ ÚLTIMO AJUSTE DE HOY: Worker -> Admin sync al responder alternativa
   const handleRespondAlternative = async (id: string, accept: boolean) => {
