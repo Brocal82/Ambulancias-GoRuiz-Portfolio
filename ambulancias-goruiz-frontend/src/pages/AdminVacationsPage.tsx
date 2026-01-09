@@ -1,5 +1,5 @@
 // frontend/src/pages/AdminVacationsPage.tsx
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type { IVacationRequest } from "../types/vacationRequest";
 import {
   getVacationRequests,
@@ -16,6 +16,7 @@ import { toastT } from "../utils/toast";
 import StatusBadge from "../components/common/StatusBadge";
 import { calcVacationDays } from "../utils/vacation/calcVacationDays";
 import { useVacationRequestsUpdated } from "../hooks/vacation/useVacationRequestsUpdated";
+import { useVacationAvailabilityInvalidation } from "../hooks/vacation/useVacationAvailabilityInvalidation";
 import { emitVacationRequestsUpdated } from "../utils/vacation/vacationEvents";
 
 
@@ -74,8 +75,9 @@ const AdminVacationRequests = () => {
         ? "en-US"
         : "es-ES";
 
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     if (!token) return;
+
     setLoading(true);
     try {
       const data = await getVacationRequests(token);
@@ -88,81 +90,50 @@ const AdminVacationRequests = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, t]);
+
+  // 🔁 Debouncer para evitar refetch duplicado (eventos múltiples / renders)
+  const refetchTimer = useRef<number | null>(null);
+
+  const safeRefetch = useCallback(() => {
+    if (refetchTimer.current) return;
+
+    refetchTimer.current = window.setTimeout(() => {
+      refetchTimer.current = null;
+      fetchRequests();
+    }, 100);
+  }, [fetchRequests]);
+
+
 
   useEffect(() => {
     fetchRequests();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [fetchRequests]);
+
+  useEffect(() => {
+    return () => {
+      if (refetchTimer.current) {
+        window.clearTimeout(refetchTimer.current);
+        refetchTimer.current = null;
+      }
+    };
+  }, []);
+
+
 
   useVacationRequestsUpdated(() => {
-    fetchRequests();
+    safeRefetch();
   });
 
 
-  // Live update del GRID (colores) — escucha invalidaciones de disponibilidad
-  useEffect(() => {
-    const schedule = (y: number, m1: number) => {
-      // Refresca la caché del mes invalidado y fuerza rerender del grid
-      forceRefreshMonth(y, m1);
-    };
+  useVacationAvailabilityInvalidation(({ year: y, month: m1 }) => {
+    // Si quieres limitar a solo el año visible del grid:
+    if (y !== gridYear) return;
 
-    // Misma pestaña (CustomEvent)
-    const onCustom = (e: Event) => {
-      const detail = (e as CustomEvent).detail as {
-        year?: number;
-        month?: number;
-      };
-      if (detail?.year && detail?.month) schedule(detail.year, detail.month);
-    };
-    window.addEventListener(
-      "vacation-availability-invalidated",
-      onCustom as EventListener,
-    );
+    // Refresca la caché del mes invalidado y fuerza rerender del grid
+    forceRefreshMonth(y, m1);
+  });
 
-    // BroadcastChannel entre pestañas/ventanas
-    let bc: BroadcastChannel | null = null;
-    try {
-      const BC = (window as any).BroadcastChannel as
-        | (new (name: string) => BroadcastChannel)
-        | undefined;
-      if (typeof BC === "function") {
-        bc = new BC("vacations");
-        bc.onmessage = (msg: MessageEvent) => {
-          const data = msg.data || {};
-          if (
-            data?.type === "availability-invalidated" &&
-            data.year &&
-            data.month
-          ) {
-            schedule(data.year, data.month);
-          }
-        };
-      }
-    } catch { }
-
-    // Fallback universal: evento 'storage'
-    const onStorage = (ev: StorageEvent) => {
-      if (ev.key !== "__vac_av_inval__" || !ev.newValue) return;
-      try {
-        const payload = JSON.parse(ev.newValue);
-        if (payload?.year && payload?.month)
-          schedule(payload.year, payload.month);
-      } catch { }
-    };
-    window.addEventListener("storage", onStorage);
-
-    return () => {
-      window.removeEventListener(
-        "vacation-availability-invalidated",
-        onCustom as EventListener,
-      );
-      window.removeEventListener("storage", onStorage);
-      try {
-        bc?.close?.();
-      } catch { }
-    };
-  }, [forceRefreshMonth]);
 
 
   type VacationStatus = "pending" | "accepted" | "cancelled" | "option_sent";
