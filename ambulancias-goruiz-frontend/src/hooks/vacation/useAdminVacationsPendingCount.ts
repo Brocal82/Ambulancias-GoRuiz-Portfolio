@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getVacationPendingCount } from "../api/vacation";
-import { useAuth } from "../hooks/useAuth"; // named export
+import { getVacationPendingCount } from "../../api/vacation";
+import { useAuth } from "../useAuth"; // named export
 
 type Options = {
   /** Intervalo de refresco en ms. 0 = sin polling (por defecto). */

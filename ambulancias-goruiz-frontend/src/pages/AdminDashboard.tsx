@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 // ✅ Hook para contador de pendientes de Vacaciones
-import useAdminVacationsPendingCount from "../hooks/useAdminVacationsPendingCount";
+import useAdminVacationsPendingCount from "../hooks/vacation/useAdminVacationsPendingCount";
 import useAdminSummariesPendingCount from "../hooks/useAdminSummariesPendingCount";
 import { useAdminAppointmentsPendingCount } from "../hooks/useAdminAppointmentsPendingCount";
 import { useAdminIssuesOpenCount } from "../hooks/useAdminIssuesOpenCount";
@@ -94,7 +94,7 @@ const AdminDashboard = () => {
           aria-label={
             summariesHasPending
               ? t("pages.adminDashboard.summaries.title") +
-                ` (${summariesPendingCount})`
+              ` (${summariesPendingCount})`
               : t("pages.adminDashboard.summaries.title")
           }
         >
@@ -157,7 +157,7 @@ const AdminDashboard = () => {
           aria-label={
             vacationsHasPending
               ? t("pages.adminDashboard.vacations.title") +
-                ` (${vacationsPendingCount})`
+              ` (${vacationsPendingCount})`
               : t("pages.adminDashboard.vacations.title")
           }
         >
@@ -184,7 +184,7 @@ const AdminDashboard = () => {
           aria-label={
             sickHasPending
               ? t("pages.adminDashboard.sickLeaves.title") +
-                ` (${sickPendingCount})`
+              ` (${sickPendingCount})`
               : t("pages.adminDashboard.sickLeaves.title")
           }
         >
