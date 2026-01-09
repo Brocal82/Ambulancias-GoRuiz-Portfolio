@@ -81,15 +81,6 @@ const WorkerVacationsPage = () => {
     }
   }, [token, t]);
 
-  // 🔁 Debouncer para evitar refetch duplicado
-  const refetchTimer = useRef<number | null>(null);
-  const safeRefetch = useCallback(() => {
-    if (refetchTimer.current) return;
-    refetchTimer.current = window.setTimeout(() => {
-      refetchTimer.current = null;
-      fetchRequests();
-    }, 100);
-  }, [fetchRequests]);
 
   // Carga inicial y cuando cambie fetchRequests
   useEffect(() => {
@@ -99,8 +90,10 @@ const WorkerVacationsPage = () => {
 
 
   const handleRequestsUpdated = useCallback(() => {
-    safeRefetch();
-  }, [safeRefetch]);
+    fetchRequests();
+  }, [fetchRequests]);
+
+
 
   useVacationRequestsUpdated(handleRequestsUpdated);
 
@@ -133,9 +126,11 @@ const WorkerVacationsPage = () => {
 
       // 2) Avisar a Admin/otras pestañas de que cambió la request
       emitVacationRequestsUpdated({
+        type: "updated",
         id,
         status: accept ? "accepted" : "cancelled",
       });
+
 
       // 3) Invalidar disponibilidad para meses afectados (colores/capacidad)
       if (startISO && endISO) {

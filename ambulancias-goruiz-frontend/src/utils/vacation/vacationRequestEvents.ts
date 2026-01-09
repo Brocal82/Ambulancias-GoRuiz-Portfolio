@@ -1,10 +1,14 @@
 // frontend/src/utils/vacation/vacationRequestEvents.ts
 
+export type VacationRequestEventType = "created" | "updated" | "deleted";
+
 export type VacationRequestsUpdatedDetail = {
-  id: string;
-  status: "accepted" | "cancelled" | "deleted" | "option_sent" | "created";
+  type: VacationRequestEventType;
+  id?: string; // opcional: en "created" podría no venir
+  status?: "pending" | "accepted" | "cancelled" | "option_sent";
   ts?: number;
 };
+
 
 
 const EVENT_NAME = "vacation-requests-updated";
@@ -27,7 +31,10 @@ function safeParseJSON<T>(raw: string | null): T | null {
  * - Fallback: localStorage (dispara 'storage' en otras pestañas)
  */
 export function emitVacationRequestsUpdated(detail: VacationRequestsUpdatedDetail) {
-  const payload: VacationRequestsUpdatedDetail = { ts: Date.now(), ...detail };
+const payload: VacationRequestsUpdatedDetail = {
+  ...detail,
+  ts: Date.now(),
+};
 
   // 1) Misma pestaña
   try {
@@ -39,7 +46,14 @@ export function emitVacationRequestsUpdated(detail: VacationRequestsUpdatedDetai
   // 2) Otras pestañas/ventanas: BroadcastChannel
   try {
     const bc = new BroadcastChannel(BC_NAME);
-    bc.postMessage({ type: "requests-updated", ...payload });
+    bc.postMessage({
+  type: "requests-updated", // canal
+  eventType: payload.type,  // evento real
+  id: payload.id,
+  status: payload.status,
+  ts: payload.ts,
+});
+
     bc.close?.();
   } catch {
     /* noop */
@@ -84,15 +98,20 @@ export function subscribeVacationRequestsUpdated(
   try {
     bc = new BroadcastChannel(BC_NAME);
     bc.onmessage = (msg: MessageEvent) => {
-      const data = msg.data || {};
-      if (data?.type !== "requests-updated") return;
-      if (!data.id || !data.status) return;
-      handler({
-        id: String(data.id),
-        status: data.status,
-        ts: data.ts ? Number(data.ts) : undefined,
-      });
-    };
+  const data = msg.data || {};
+  if (data?.type !== "requests-updated") return;
+
+  const detail: VacationRequestsUpdatedDetail = {
+    type: data.eventType, // 👈 nuevo
+    id: data.id ? String(data.id) : undefined,
+    status: data.status,
+    ts: data.ts ? Number(data.ts) : undefined,
+  };
+
+  if (!detail.type) return;
+  handler(detail);
+};
+
   } catch {
     bc = null;
   }

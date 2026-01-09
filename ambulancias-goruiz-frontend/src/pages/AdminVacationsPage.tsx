@@ -95,17 +95,6 @@ const AdminVacationRequests = () => {
   // 🔁 Debouncer para evitar refetch duplicado (eventos múltiples / renders)
   const refetchTimer = useRef<number | null>(null);
 
-  const safeRefetch = useCallback(() => {
-    if (refetchTimer.current) return;
-
-    refetchTimer.current = window.setTimeout(() => {
-      refetchTimer.current = null;
-      fetchRequests();
-    }, 100);
-  }, [fetchRequests]);
-
-
-
   useEffect(() => {
     fetchRequests();
   }, [fetchRequests]);
@@ -122,8 +111,10 @@ const AdminVacationRequests = () => {
 
 
   useVacationRequestsUpdated(() => {
-    safeRefetch();
+    fetchRequests();
   });
+
+
 
 
   useVacationAvailabilityInvalidation(({ year: y, month: m1 }) => {
@@ -158,7 +149,12 @@ const AdminVacationRequests = () => {
         }
 
         // 🔔 Sync Worker y Dashboard
-        emitVacationRequestsUpdated({ id, status: "accepted" });
+        emitVacationRequestsUpdated({
+          type: "updated",
+          id,
+          status: "accepted",
+        });
+
 
         notifyVacationsChanged();
 
@@ -195,7 +191,11 @@ const AdminVacationRequests = () => {
         if (req) {
           invalidateAvailabilityByRange(req.startDate, req.endDate);
         }
-        emitVacationRequestsUpdated({ id, status: "cancelled" });
+        emitVacationRequestsUpdated({
+          type: "updated",
+          id,
+          status: "cancelled",
+        });
       }
 
       notifyVacationsChanged();
@@ -229,7 +229,11 @@ const AdminVacationRequests = () => {
       );
 
       // 🔔 Sync Worker: la propuesta alternativa cambia lo que ve el trabajador
-      emitVacationRequestsUpdated({ id, status: "option_sent" });
+      emitVacationRequestsUpdated({
+        type: "updated",
+        id,
+        status: "option_sent",
+      });
 
       // 🔔 Notificar al Dashboard
       notifyVacationsChanged();
@@ -265,7 +269,11 @@ const AdminVacationRequests = () => {
       }
 
       // 🔔 Emitir sincronización a Worker
-      emitVacationRequestsUpdated({ id, status: "cancelled" });
+      emitVacationRequestsUpdated({
+        type: "updated",
+        id,
+        status: "cancelled",
+      });
 
       setCancelingRequestId(null);
       setCancelMessage("");

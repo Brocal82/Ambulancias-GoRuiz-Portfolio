@@ -257,9 +257,10 @@ const VacationRequestForm: React.FC<VacationRequestFormProps> = ({
 
       // ✅ 1) Avisar a Admin/otras pestañas para refrescar lista
       emitVacationRequestsUpdated({
-        id: (created as any)?._id ?? "created",
-        status: "created",
+        type: "created",
+        id: (created as any)?._id,
       });
+
 
       // ✅ 2) Invalidar disponibilidad para meses afectados (colores/capacidad)
       try {
@@ -328,8 +329,8 @@ const VacationRequestForm: React.FC<VacationRequestFormProps> = ({
       {message && (
         <p
           className={`mt-3 text-sm ${message === t("pages.vacations.requestForm.success")
-              ? "text-emerald-700"
-              : "text-rose-600"
+            ? "text-emerald-700"
+            : "text-rose-600"
             }`}
         >
           {message}
