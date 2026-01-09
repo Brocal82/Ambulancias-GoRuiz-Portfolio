@@ -16,6 +16,8 @@ import { toastT } from "../utils/toast";
 import StatusBadge from "../components/common/StatusBadge";
 import { calcVacationDays } from "../utils/vacation/calcVacationDays";
 import { useVacationRequestsUpdated } from "../hooks/vacation/useVacationRequestsUpdated";
+import { emitVacationRequestsUpdated } from "../utils/vacation/vacationEvents";
+
 
 
 // Nombre del evento global para refrescar el badge del Dashboard
@@ -23,39 +25,6 @@ const ADMIN_VACATIONS_CHANGED_EVENT = "admin-vacations-changed";
 const notifyVacationsChanged = () =>
   window.dispatchEvent(new Event(ADMIN_VACATIONS_CHANGED_EVENT));
 
-// ✅ Helper mínimo para sincronizar Worker sin recargar (incluye fallback por storage)
-function emitVacationSync(payload: {
-  id: string;
-  status: "accepted" | "cancelled" | "deleted" | "option_sent";
-  ts?: number;
-}) {
-
-  const detail = { ts: Date.now(), ...payload };
-
-  // Misma pestaña
-  try {
-    window.dispatchEvent(
-      new CustomEvent("vacation-requests-updated", { detail }),
-    );
-  } catch { }
-
-  // Otras pestañas/ventanas (canal dedicado)
-  try {
-    const bc = new BroadcastChannel("vacations");
-    bc.postMessage({ type: "requests-updated", ...detail });
-    bc.close?.();
-  } catch { }
-
-  // 🔁 Fallback universal: dispara evento 'storage' en otras pestañas
-  try {
-    localStorage.setItem("__vac_req_upd__", JSON.stringify(detail));
-    setTimeout(() => {
-      try {
-        localStorage.removeItem("__vac_req_upd__");
-      } catch { }
-    }, 500);
-  } catch { }
-}
 
 const AdminVacationRequests = () => {
   const { token } = useAuth();
@@ -130,52 +99,6 @@ const AdminVacationRequests = () => {
     fetchRequests();
   });
 
-
-  // 🔔 NUEVO: escuchar “request creada/actualizada” desde cualquier pestaña y refrescar lista
-  useEffect(() => {
-    const onCustom = () => fetchRequests();
-    window.addEventListener(
-      "vacation-requests-updated",
-      onCustom as EventListener,
-    );
-
-    // BroadcastChannel
-    let bc: BroadcastChannel | null = null;
-    try {
-      const BC = (window as any).BroadcastChannel as
-        | (new (name: string) => BroadcastChannel)
-        | undefined;
-      if (typeof BC === "function") {
-        bc = new BC("vacations");
-        bc.onmessage = (msg: MessageEvent) => {
-          const data = msg.data || {};
-          if (data?.type === "requests-updated") {
-            fetchRequests();
-          }
-        };
-      }
-    } catch { }
-
-    // Fallback: storage
-    const onStorage = (ev: StorageEvent) => {
-      if (ev.key === "__vac_req_upd__" && ev.newValue) {
-        fetchRequests();
-      }
-    };
-    window.addEventListener("storage", onStorage);
-
-    return () => {
-      window.removeEventListener(
-        "vacation-requests-updated",
-        onCustom as EventListener,
-      );
-      window.removeEventListener("storage", onStorage);
-      try {
-        bc?.close?.();
-      } catch { }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Live update del GRID (colores) — escucha invalidaciones de disponibilidad
   useEffect(() => {
@@ -264,7 +187,8 @@ const AdminVacationRequests = () => {
         }
 
         // 🔔 Sync Worker y Dashboard
-        emitVacationSync({ id, status: "accepted" });
+        emitVacationRequestsUpdated({ id, status: "accepted" });
+
         notifyVacationsChanged();
 
         // ✅ Toast de éxito + refresco
@@ -300,7 +224,7 @@ const AdminVacationRequests = () => {
         if (req) {
           invalidateAvailabilityByRange(req.startDate, req.endDate);
         }
-        emitVacationSync({ id, status: "cancelled" });
+        emitVacationRequestsUpdated({ id, status: "cancelled" });
       }
 
       notifyVacationsChanged();
@@ -334,7 +258,7 @@ const AdminVacationRequests = () => {
       );
 
       // 🔔 Sync Worker: la propuesta alternativa cambia lo que ve el trabajador
-      emitVacationSync({ id, status: "option_sent" });
+      emitVacationRequestsUpdated({ id, status: "option_sent" });
 
       // 🔔 Notificar al Dashboard
       notifyVacationsChanged();
@@ -370,7 +294,7 @@ const AdminVacationRequests = () => {
       }
 
       // 🔔 Emitir sincronización a Worker
-      emitVacationSync({ id, status: "cancelled" });
+      emitVacationRequestsUpdated({ id, status: "cancelled" });
 
       setCancelingRequestId(null);
       setCancelMessage("");
