@@ -19,6 +19,12 @@ import WorkerAvailabilityMonthModal from "../components/vacation/WorkerAvailabil
 import { getVacationAvailability } from "../api/vacation";
 import { useVacationRequestsUpdated } from "../hooks/vacation/useVacationRequestsUpdated";
 
+// ✅ NUEVO: emitir eventos para sincronizar Admin y invalidar disponibilidad
+import {
+  emitVacationRequestsUpdated,
+  emitAvailabilityInvalidated,
+} from "../utils/vacation/vacationEvents";
+
 const WorkerVacationsPage = () => {
   const { token } = useAuth();
   const { t } = useTranslation();
@@ -93,8 +99,6 @@ const WorkerVacationsPage = () => {
     safeRefetch();
   });
 
-
-
   // Live update del GRID (colores) — escucha invalidaciones de disponibilidad
   useEffect(() => {
     const schedule = (y: number, m1: number) => {
@@ -159,20 +163,59 @@ const WorkerVacationsPage = () => {
     };
   }, [forceRefreshMonth]);
 
-
+  // ✅ ÚLTIMO AJUSTE DE HOY: Worker -> Admin sync al responder alternativa
   const handleRespondAlternative = async (id: string, accept: boolean) => {
     if (!token) return;
+
+    // Guardamos el rango ANTES del await para no depender del backend
+    const req = requests.find((r) => r._id === id);
+    const startISO = req?.startDate;
+    const endISO = req?.endDate;
+
     try {
       await toastT.promise(respondToAlternativeDate(token, id, { accept }), {
         pending: ["toasts.vacations.worker.respondPending"],
         success: ["toasts.vacations.worker.respondSuccess"],
         error: ["toasts.vacations.worker.error"],
       });
+
+      // 1) Refrescar lista Worker
       fetchRequests();
+
+      // 2) Avisar a Admin/otras pestañas de que cambió la request
+      emitVacationRequestsUpdated({
+        id,
+        status: accept ? "accepted" : "cancelled",
+      });
+
+      // 3) Invalidar disponibilidad para meses afectados (colores/capacidad)
+      if (startISO && endISO) {
+        try {
+          const s = new Date(startISO);
+          const e = new Date(endISO);
+
+          let y = s.getFullYear();
+          let m0 = s.getMonth(); // 0..11
+          const endY = e.getFullYear();
+          const endM0 = e.getMonth();
+
+          while (y < endY || (y === endY && m0 <= endM0)) {
+            emitAvailabilityInvalidated({ year: y, month: m0 + 1 });
+            m0++;
+            if (m0 > 11) {
+              m0 = 0;
+              y++;
+            }
+          }
+        } catch {
+          /* noop */
+        }
+      }
     } catch {
       // errores ya se muestran por toast
     }
   };
+
 
   const handleFormSuccess = () => {
     setShowForm(false);
