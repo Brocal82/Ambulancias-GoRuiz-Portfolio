@@ -1,8 +1,10 @@
+//src/hooks/vacation/useVacationAvailabilityInvalidation.ts
 import { useEffect } from "react";
 import {
   subscribeAvailabilityInvalidated,
   type VacationAvailabilityInvalidatedDetail,
-} from "../../utils/vacation/vacationAvailabilityEvents";
+} from "../../utils/vacation/vacationEvents";
+
 
 /**
  * Escucha invalidaciones de disponibilidad (misma pestaña + otras pestañas)

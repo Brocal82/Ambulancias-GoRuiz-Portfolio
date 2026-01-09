@@ -1,7 +1,8 @@
 // frontend/src/api/vacation.ts
 import axiosInstance from "./axios";
 import type { IVacationRequest } from "../types/vacationRequest";
-import { emitAvailabilityInvalidated } from "../utils/vacation/vacationAvailabilityEvents";
+import { emitAvailabilityInvalidated } from "../utils/vacation/vacationEvents";
+
 
 /* =========================
    Tipos y payloads básicos
