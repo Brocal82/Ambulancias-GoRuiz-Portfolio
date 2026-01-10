@@ -1,9 +1,8 @@
 // frontend/src/pages/AdminVacationsPage.tsx
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import {
   getVacationRequests,
   updateVacationRequest,
-  getVacationAvailability,
 } from "../api/vacation";
 import AlternativeDateModal from "../components/vacation/AlternativeDateModal";
 import AdminVacationMonthGrid from "../components/vacation/AdminVacationMonthGrid";
@@ -13,10 +12,11 @@ import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
 import { invalidateAvailabilityForRange } from "../utils/vacation/invalidateAvailabilityForRange";
 import { useVacationRequestsSync } from "../hooks/vacation/useVacationRequestSync";
-import { useVacationAvailabilityInvalidation } from "../hooks/vacation/useVacationAvailabilityInvalidation";
 import { emitVacationRequestsUpdated } from "../utils/vacation/vacationEvents";
 import PageShell from "../components/common/PageShell";
 import AdminActionableVacationRequestsTable from "../components/vacation/AdminActionableVacationRequestsTable";
+import { useVacationMonthGridRefresh } from "../hooks/vacation/useVacationMonthGridRefresh";
+
 
 // Nombre del evento global para refrescar el badge del Dashboard
 const ADMIN_VACATIONS_CHANGED_EVENT = "admin-vacations-changed";
@@ -27,23 +27,15 @@ const AdminVacationRequests = () => {
   const { token } = useAuth();
   const { t, i18n } = useTranslation();
 
-  // ====== Estado del grid de meses (con año navegable) ======
-  const [gridYear, setGridYear] = useState<number>(new Date().getFullYear());
+  const { gridYear, setGridYear, gridRefreshTick } = useVacationMonthGridRefresh({
+    initialYear: new Date().getFullYear(),
+    onlyWhenYearMatchesVisible: true,
+  });
 
   // ====== Estado del modal del mes (abrir con mes + año correctos) ======
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null); // 0..11
   const [selectedYear, setSelectedYear] = useState<number>(gridYear);
 
-  // 🔄 Forzar refresco del grid cuando cambie la disponibilidad sin recargar
-  const [gridRefreshTick, setGridRefreshTick] = useState(0);
-
-  // Refresca caché del mes concreto y fuerza rerender del grid
-  const forceRefreshMonth = useCallback(async (y: number, m1: number) => {
-    try {
-      await getVacationAvailability({ year: y, month: m1 }, { force: true });
-    } catch { }
-    setGridRefreshTick((n) => n + 1);
-  }, []);
 
   // ====== Estado para AlternativeDateModal existente ======
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,14 +70,6 @@ const AdminVacationRequests = () => {
     fetcher: getVacationRequests,
     debounceMs: 150,
     onErrorToastKey: "toasts.vacations.admin.loadError",
-  });
-
-  useVacationAvailabilityInvalidation(({ year: y, month: m1 }) => {
-    // Si quieres limitar a solo el año visible del grid:
-    if (y !== gridYear) return;
-
-    // Refresca la caché del mes invalidado y fuerza rerender del grid
-    forceRefreshMonth(y, m1);
   });
 
   type VacationStatus = "pending" | "accepted" | "cancelled" | "option_sent";

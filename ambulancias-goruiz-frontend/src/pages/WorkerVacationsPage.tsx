@@ -20,8 +20,9 @@ import { useVacationRequestsSync } from "../hooks/vacation/useVacationRequestSyn
 import { emitVacationRequestsUpdated } from "../utils/vacation/vacationEvents";
 import { invalidateAvailabilityForRange } from "../utils/vacation/invalidateAvailabilityForRange";
 
-import { useVacationAvailabilityInvalidation } from "../hooks/vacation/useVacationAvailabilityInvalidation";
 import PageShell from "../components/common/PageShell";
+import { useVacationMonthGridRefresh } from "../hooks/vacation/useVacationMonthGridRefresh";
+
 
 
 
@@ -32,8 +33,9 @@ const WorkerVacationsPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [formMessage, setFormMessage] = useState<string | null>(null);
 
-  // ===== Navegación de años para el grid =====
-  const [gridYear, setGridYear] = useState<number>(new Date().getFullYear());
+  const { gridYear, setGridYear, gridRefreshTick } = useVacationMonthGridRefresh({
+    initialYear: new Date().getFullYear(),
+  });
 
   // ===== Modal de disponibilidad mensual (solo lectura) =====
   const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
@@ -42,16 +44,6 @@ const WorkerVacationsPage = () => {
   ); // 0..11
   const [selectedYear, setSelectedYear] = useState<number>(gridYear);
 
-  // 🔄 Forzar refresco del grid cuando cambie la disponibilidad sin recargar
-  const [gridRefreshTick, setGridRefreshTick] = useState(0);
-
-  // Refresca caché del mes concreto y fuerza rerender del grid
-  const forceRefreshMonth = useCallback(async (y: number, m1: number) => {
-    try {
-      await getVacationAvailability({ year: y, month: m1 }, { force: true });
-    } catch { }
-    setGridRefreshTick((n) => n + 1);
-  }, []);
 
   const {
     requests,
@@ -69,13 +61,6 @@ const WorkerVacationsPage = () => {
     },
   });
 
-
-
-  // ✅ Live update del GRID (colores) — usando hook centralizado del módulo
-  useVacationAvailabilityInvalidation(({ year, month }) => {
-    // month viene 1..12
-    forceRefreshMonth(year, month);
-  });
 
 
   // ✅ Worker -> Admin sync al responder alternativa
