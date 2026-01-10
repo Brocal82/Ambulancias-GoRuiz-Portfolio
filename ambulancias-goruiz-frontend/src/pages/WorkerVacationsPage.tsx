@@ -1,9 +1,6 @@
 // frontend/src/pages/WorkerVacationsPage.tsx
 import { useEffect, useState, useCallback, useRef } from "react";
-import {
-  getUserVacationRequests,
-  respondToAlternativeDate,
-} from "../api/vacation";
+import { getUserVacationRequests, respondToAlternativeDate, getVacationAvailability } from "../api/vacation";
 import { useAuth } from "../hooks/useAuth";
 import VacationRequestForm from "../components/vacation/VacationRequestForm";
 import UserVacationList from "../components/vacation/UserVacationList";
@@ -14,7 +11,6 @@ import AdminVacationMonthGrid from "../components/vacation/AdminVacationMonthGri
 import WorkerAvailabilityMonthModal from "../components/vacation/WorkerAvailabilityMonthModal";
 
 // Prefetch/caché compartida
-import { getVacationAvailability } from "../api/vacation";
 import { useVacationRequestsSync } from "../hooks/vacation/useVacationRequestSync";
 
 import { emitVacationRequestsUpdated } from "../utils/vacation/vacationEvents";
