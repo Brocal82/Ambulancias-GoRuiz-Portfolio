@@ -1,8 +1,12 @@
 {
-  "scripts": {
-    "format": "prettier --write ."
-  },
-  "devDependencies": {
-    "prettier": "^3.7.4"
-  }
+    "scripts": {
+        "format": "prettier --write .",
+        "dev:backend": "npm --prefix ambulancias-goruiz-backend run dev",
+        "dev:frontend": "npm --prefix ambulancias-goruiz-frontend run dev",
+        "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
+    },
+    "devDependencies": {
+        "prettier": "^3.7.4",
+        "concurrently": "^9.0.0"
+    }
 }
