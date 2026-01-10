@@ -3,12 +3,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { IVacationRequest } from "../../types/vacationRequest";
 import type { VacationStatus } from "../../types/vacation";
 import { filterRequestsByMonth } from "../../utils/vacationMonthUtils";
-import {
-  updateVacationRequest,
-  deleteVacationRequest,
-  invalidateThisAndNextMonth,
-  invalidateAvailabilityByRange, // 👈 NUEVO
-} from "../../api/vacation";
+import { updateVacationRequest, deleteVacationRequest } from "../../api/vacation";
+import { invalidateAvailabilityForRange } from "../../utils/vacation/invalidateAvailabilityForRange";
 import AlternativeDateModal from "./AlternativeDateModal";
 import { useAuth } from "../../hooks/useAuth";
 import { toastT } from "../../utils/toast";
@@ -211,11 +207,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     return items;
   }, [monthRequests, searchText, statusFilter, sortAsc]);
 
-  // Invalida el mes visible en el modal (y el siguiente) para refresco en vivo
-  const invalidateVisibleMonth = () => {
-    if (monthIndex === null) return;
-    invalidateThisAndNextMonth(year, monthIndex + 1);
-  };
 
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString(locale, { timeZone: "Europe/Berlin" });
@@ -255,15 +246,22 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     if (!token || monthIndex === null) return;
     try {
       await updateVacationRequest(token, id, { status: "accepted" });
-      // 🔔 Emitir sincronización a Worker (después del await)
-      emitVacationRequestsUpdated({ id, status: "accepted" });
 
+      // 🔔 Emitir sincronización a Worker
+      emitVacationRequestsUpdated({ type: "updated", id, status: "accepted" });
 
-      // Invalidar y refrescar mini-calendario visible
-      invalidateVisibleMonth();
+      // 🟢 Invalidar disponibilidad por rango (cambia capacidad)
+      const req = requests.find((r) => r._id === id);
+      if (req) {
+        invalidateAvailabilityForRange(req.startDate, req.endDate);
+      }
+
+      // Refrescar mini-calendario visible
       const m1 = monthIndex + 1;
       window.setTimeout(() => loadAvailability(year, m1, true), 200);
+
       onActionDone?.();
+
     } catch {
       toastT.error(["toasts.vacations.worker.error"]);
     }
@@ -296,7 +294,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       });
 
       // 🔔 Emitir sincronización al Worker (la propuesta cambia lo que ve)
-      emitVacationRequestsUpdated({ id: currentRequestId, status: "option_sent" });
+      emitVacationRequestsUpdated({ type: "updated", id: currentRequestId, status: "option_sent" });
+
 
       setIsAltOpen(false);
       setCurrentRequestId(null);
@@ -322,10 +321,14 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       });
 
       // 🔔 Emitir sincronización a Worker
-      emitVacationRequestsUpdated({ id, status: "cancelled" });
+      emitVacationRequestsUpdated({ type: "updated", id, status: "cancelled" });
 
+      // 🟢 Invalidar disponibilidad por rango (libera capacidad)
+      const req = requests.find((r) => r._id === id);
+      if (req) {
+        invalidateAvailabilityForRange(req.startDate, req.endDate);
+      }
 
-      invalidateVisibleMonth();
       const m1 = monthIndex + 1;
       window.setTimeout(() => loadAvailability(year, m1, true), 200);
       setCancelingRequestId(null);
@@ -350,15 +353,14 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       await deleteVacationRequest(token, id);
 
       // 🔔 Emitir sincronización (borrado) — el Worker refrescará su lista
-      emitVacationRequestsUpdated({ id, status: "deleted" });
+      emitVacationRequestsUpdated({ type: "deleted", id });
 
 
-      // 🟢 Si el borrado libera capacidad (p.ej. era 'accepted'), invalidar por rango
+      // 🟢 Si el borrado afecta capacidad (p.ej. era 'accepted'), invalidar por rango
       if (startISO && endISO) {
-        try {
-          invalidateAvailabilityByRange(startISO, endISO);
-        } catch { }
+        invalidateAvailabilityForRange(startISO, endISO);
       }
+
 
       // Refrescar mini-calendario del mes visible (forzado) tras breve retardo
       const m1 = monthIndex + 1;
