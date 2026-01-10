@@ -1,6 +1,5 @@
 // frontend/src/pages/AdminVacationsPage.tsx
-import { useEffect, useState, useCallback, useRef } from "react";
-import type { IVacationRequest } from "../types/vacationRequest";
+import { useState, useCallback } from "react";
 import {
   getVacationRequests,
   updateVacationRequest,
@@ -15,7 +14,7 @@ import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
 import StatusBadge from "../components/common/StatusBadge";
 import { calcVacationDays } from "../utils/vacation/calcVacationDays";
-import { useVacationRequestsUpdated } from "../hooks/vacation/useVacationRequestsUpdated";
+import { useVacationRequestsSync } from "../hooks/vacation/useVacationRequestSync";
 import { useVacationAvailabilityInvalidation } from "../hooks/vacation/useVacationAvailabilityInvalidation";
 import { emitVacationRequestsUpdated } from "../utils/vacation/vacationEvents";
 
@@ -30,10 +29,6 @@ const notifyVacationsChanged = () =>
 const AdminVacationRequests = () => {
   const { token } = useAuth();
   const { t, i18n } = useTranslation();
-
-  const [requests, setRequests] = useState<IVacationRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   // ====== Estado del grid de meses (con año navegable) ======
   const [gridYear, setGridYear] = useState<number>(new Date().getFullYear());
@@ -75,46 +70,18 @@ const AdminVacationRequests = () => {
         ? "en-US"
         : "es-ES";
 
-  const fetchRequests = useCallback(async () => {
-    if (!token) return;
-
-    setLoading(true);
-    try {
-      const data = await getVacationRequests(token);
-      setRequests(data);
-      setError("");
-    } catch {
-      const msgKey = "toasts.vacations.admin.loadError";
-      setError(t(msgKey));
-      toastT.error([msgKey]);
-    } finally {
-      setLoading(false);
-    }
-  }, [token, t]);
-
-  // 🔁 Debouncer para evitar refetch duplicado (eventos múltiples / renders)
-  const refetchTimer = useRef<number | null>(null);
-
-  useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
-
-  useEffect(() => {
-    return () => {
-      if (refetchTimer.current) {
-        window.clearTimeout(refetchTimer.current);
-        refetchTimer.current = null;
-      }
-    };
-  }, []);
-
-
-
-  useVacationRequestsUpdated(() => {
-    fetchRequests();
+  const {
+    requests,
+    loading,
+    error,
+    refetch: fetchRequests,
+  } = useVacationRequestsSync({
+    token,
+    enabled: !!token,
+    fetcher: getVacationRequests,
+    debounceMs: 150,
+    onErrorToastKey: "toasts.vacations.admin.loadError",
   });
-
-
 
 
   useVacationAvailabilityInvalidation(({ year: y, month: m1 }) => {

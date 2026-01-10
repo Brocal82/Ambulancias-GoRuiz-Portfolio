@@ -1,12 +1,10 @@
 // frontend/src/pages/WorkerVacationsPage.tsx
 import { useEffect, useState, useCallback, useRef } from "react";
-import type { IVacationRequest } from "../types/vacationRequest";
 import {
   getUserVacationRequests,
   respondToAlternativeDate,
 } from "../api/vacation";
 import { useAuth } from "../hooks/useAuth";
-import AlternativeDateModal from "../components/vacation/AlternativeDateModal";
 import VacationRequestForm from "../components/vacation/VacationRequestForm";
 import UserVacationList from "../components/vacation/UserVacationList";
 import { useTranslation } from "react-i18next";
@@ -17,7 +15,7 @@ import WorkerAvailabilityMonthModal from "../components/vacation/WorkerAvailabil
 
 // Prefetch/caché compartida
 import { getVacationAvailability } from "../api/vacation";
-import { useVacationRequestsUpdated } from "../hooks/vacation/useVacationRequestsUpdated";
+import { useVacationRequestsSync } from "../hooks/vacation/useVacationRequestSync";
 
 // ✅ NUEVO: emitir eventos para sincronizar Admin y invalidar disponibilidad
 import {
@@ -30,14 +28,6 @@ import { useVacationAvailabilityInvalidation } from "../hooks/vacation/useVacati
 const WorkerVacationsPage = () => {
   const { token } = useAuth();
   const { t } = useTranslation();
-
-  const [requests, setRequests] = useState<IVacationRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const [modalInitialStartDate] = useState<Date>(new Date());
-  const [modalInitialEndDate] = useState<Date>(new Date());
 
   const [showForm, setShowForm] = useState(false);
   const [formMessage, setFormMessage] = useState<string | null>(null);
@@ -63,39 +53,22 @@ const WorkerVacationsPage = () => {
     setGridRefreshTick((n) => n + 1);
   }, []);
 
-  // ✅ fetchRequests como useCallback para usar deps estables (token, t)
-  const fetchRequests = useCallback(async () => {
-    if (!token) return;
-    setLoading(true);
-    try {
-      const data = await getUserVacationRequests(token);
-      setRequests(data);
-      setError("");
+  const {
+    requests,
+    loading,
+    error,
+    refetch: fetchRequests,
+  } = useVacationRequestsSync({
+    token,
+    enabled: !!token,
+    fetcher: getUserVacationRequests,
+    debounceMs: 150,
+    onErrorToastKey: "toasts.vacations.worker.loadError",
+    onAfterFetch: (data) => {
       setShowForm(data.length === 0);
-    } catch {
-      const msgKey = "toasts.vacations.worker.loadError";
-      setError(t(msgKey));
-      toastT.error([msgKey]);
-    } finally {
-      setLoading(false);
-    }
-  }, [token, t]);
+    },
+  });
 
-
-  // Carga inicial y cuando cambie fetchRequests
-  useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
-
-
-
-  const handleRequestsUpdated = useCallback(() => {
-    fetchRequests();
-  }, [fetchRequests]);
-
-
-
-  useVacationRequestsUpdated(handleRequestsUpdated);
 
 
   // ✅ Live update del GRID (colores) — usando hook centralizado del módulo
@@ -306,13 +279,6 @@ const WorkerVacationsPage = () => {
           )}
         </div>
 
-        <AlternativeDateModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          initialStartDate={modalInitialStartDate}
-          initialEndDate={modalInitialEndDate}
-          onSubmit={() => setIsModalOpen(false)}
-        />
       </div>
 
       {/* Modal de disponibilidad mensual (separado en componente) */}
