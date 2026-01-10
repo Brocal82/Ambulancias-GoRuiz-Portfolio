@@ -21,6 +21,8 @@ import { emitVacationRequestsUpdated } from "../utils/vacation/vacationEvents";
 import { invalidateAvailabilityForRange } from "../utils/vacation/invalidateAvailabilityForRange";
 
 import { useVacationAvailabilityInvalidation } from "../hooks/vacation/useVacationAvailabilityInvalidation";
+import PageShell from "../components/common/PageShell";
+
 
 
 const WorkerVacationsPage = () => {
@@ -199,68 +201,57 @@ const WorkerVacationsPage = () => {
   if (error) return <p className="p-4 text-sm text-red-600">{error}</p>;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-4 text-center">
-          <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
-            {t("pages.vacations.workerPage.title")}
-          </h2>
-        </div>
-
-        {/* Grid de 12 meses con navegación de año integrada */}
-        <div className="mb-4">
-          <AdminVacationMonthGrid
-            key={`${gridYear}-${gridRefreshTick}`}
-            requests={requests}
-            year={gridYear}
-            onYearChange={(y) => setGridYear(y)}
-            onMonthOpen={handleOpenMonth}
-          />
-        </div>
-
-        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <button
-              className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
-              onClick={() => setShowForm(!showForm)}
-            >
-              {showForm
-                ? t("pages.vacations.workerPage.toggleCloseForm")
-                : t("pages.vacations.workerPage.toggleOpenForm")}
-            </button>
-            {formMessage && (
-              <p className="text-sm text-emerald-700">{formMessage}</p>
-            )}
-          </div>
-
-          <div
-            className={[
-              "mb-4 rounded-xl ring-1 ring-slate-200 p-3 bg-slate-50 transition-all",
-              showForm ? "block" : "hidden",
-            ].join(" ")}
-          >
-            <VacationRequestForm onSuccess={handleFormSuccess} />
-          </div>
-
-          {requests.length === 0 && !loading && !showForm && (
-            <p className="text-sm text-slate-600">
-              {t("pages.vacations.workerPage.empty")}
-            </p>
-          )}
-
-          {requests.length > 0 && (
-            <div className="mt-2">
-              <UserVacationList
-                requests={requests}
-                onRespondAlternative={handleRespondAlternative}
-              />
-            </div>
-          )}
-        </div>
-
+    <PageShell title={t("pages.vacations.workerPage.title")}>
+      {/* Grid de 12 meses con navegación de año integrada */}
+      <div className="mb-4">
+        <AdminVacationMonthGrid
+          key={`${gridYear}-${gridRefreshTick}`}
+          requests={requests}
+          year={gridYear}
+          onYearChange={(y) => setGridYear(y)}
+          onMonthOpen={handleOpenMonth}
+        />
       </div>
 
-      {/* Modal de disponibilidad mensual (separado en componente) */}
+      <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <button
+            className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
+            onClick={() => setShowForm(!showForm)}
+          >
+            {showForm
+              ? t("pages.vacations.workerPage.toggleCloseForm")
+              : t("pages.vacations.workerPage.toggleOpenForm")}
+          </button>
+          {formMessage && <p className="text-sm text-emerald-700">{formMessage}</p>}
+        </div>
+
+        <div
+          className={[
+            "mb-4 rounded-xl ring-1 ring-slate-200 p-3 bg-slate-50 transition-all",
+            showForm ? "block" : "hidden",
+          ].join(" ")}
+        >
+          <VacationRequestForm onSuccess={handleFormSuccess} />
+        </div>
+
+        {requests.length === 0 && !loading && !showForm && (
+          <p className="text-sm text-slate-600">
+            {t("pages.vacations.workerPage.empty")}
+          </p>
+        )}
+
+        {requests.length > 0 && (
+          <div className="mt-2">
+            <UserVacationList
+              requests={requests}
+              onRespondAlternative={handleRespondAlternative}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Modal de disponibilidad mensual */}
       <WorkerAvailabilityMonthModal
         isOpen={isMonthModalOpen}
         monthIndex={selectedMonthIndex}
@@ -270,8 +261,9 @@ const WorkerVacationsPage = () => {
           .filter((r) => r.status === "accepted")
           .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
       />
-    </div>
+    </PageShell>
   );
+
 };
 
 export default WorkerVacationsPage;
