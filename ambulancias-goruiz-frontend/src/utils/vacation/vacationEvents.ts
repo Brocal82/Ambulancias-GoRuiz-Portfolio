@@ -12,3 +12,6 @@ export {
   emitAvailabilityInvalidated,
   subscribeAvailabilityInvalidated,
 } from "./vacationAvailabilityEvents";
+
+export { invalidateAvailabilityForRange } from "./invalidateAvailabilityForRange";
+

@@ -4,12 +4,10 @@ export type VacationRequestEventType = "created" | "updated" | "deleted";
 
 export type VacationRequestsUpdatedDetail = {
   type: VacationRequestEventType;
-  id?: string; // opcional: en "created" podría no venir
+  id: string; // obligatorio
   status?: "pending" | "accepted" | "cancelled" | "option_sent";
   ts?: number;
 };
-
-
 
 const EVENT_NAME = "vacation-requests-updated";
 const BC_NAME = "vacations";
@@ -30,11 +28,13 @@ function safeParseJSON<T>(raw: string | null): T | null {
  * - Otras pestañas: BroadcastChannel (si existe)
  * - Fallback: localStorage (dispara 'storage' en otras pestañas)
  */
-export function emitVacationRequestsUpdated(detail: VacationRequestsUpdatedDetail) {
-const payload: VacationRequestsUpdatedDetail = {
-  ...detail,
-  ts: Date.now(),
-};
+export function emitVacationRequestsUpdated(
+  detail: VacationRequestsUpdatedDetail,
+) {
+  const payload: VacationRequestsUpdatedDetail = {
+    ...detail,
+    ts: Date.now(),
+  };
 
   // 1) Misma pestaña
   try {
@@ -47,13 +47,12 @@ const payload: VacationRequestsUpdatedDetail = {
   try {
     const bc = new BroadcastChannel(BC_NAME);
     bc.postMessage({
-  type: "requests-updated", // canal
-  eventType: payload.type,  // evento real
-  id: payload.id,
-  status: payload.status,
-  ts: payload.ts,
-});
-
+      type: "requests-updated", // canal
+      eventType: payload.type, // evento real
+      id: payload.id,
+      status: payload.status,
+      ts: payload.ts,
+    });
     bc.close?.();
   } catch {
     /* noop */
@@ -88,7 +87,9 @@ export function subscribeVacationRequestsUpdated(
   // 1) CustomEvent
   const customHandler = (e: Event) => {
     const detail = (e as CustomEvent).detail as VacationRequestsUpdatedDetail;
-    if (!detail?.id || !detail?.status) return;
+    // type + id obligatorios
+    if (!detail?.type) return;
+    if (!detail?.id) return;
     handler(detail);
   };
   window.addEventListener(EVENT_NAME, customHandler as EventListener);
@@ -98,20 +99,22 @@ export function subscribeVacationRequestsUpdated(
   try {
     bc = new BroadcastChannel(BC_NAME);
     bc.onmessage = (msg: MessageEvent) => {
-  const data = msg.data || {};
-  if (data?.type !== "requests-updated") return;
+      const data = msg.data || {};
+      if (data?.type !== "requests-updated") return;
 
-  const detail: VacationRequestsUpdatedDetail = {
-    type: data.eventType, // 👈 nuevo
-    id: data.id ? String(data.id) : undefined,
-    status: data.status,
-    ts: data.ts ? Number(data.ts) : undefined,
-  };
+      // type + id obligatorios
+      if (!data.eventType) return;
+      if (!data.id) return;
 
-  if (!detail.type) return;
-  handler(detail);
-};
+      const detail: VacationRequestsUpdatedDetail = {
+        type: String(data.eventType) as VacationRequestEventType,
+        id: String(data.id),
+        status: data.status as VacationRequestsUpdatedDetail["status"],
+        ts: data.ts ? Number(data.ts) : undefined,
+      };
 
+      handler(detail);
+    };
   } catch {
     bc = null;
   }
@@ -120,7 +123,9 @@ export function subscribeVacationRequestsUpdated(
   const storageHandler = (ev: StorageEvent) => {
     if (ev.key !== STORAGE_KEY) return;
     const payload = safeParseJSON<VacationRequestsUpdatedDetail>(ev.newValue);
-    if (!payload?.id || !payload?.status) return;
+    // type + id obligatorios
+    if (!payload?.type) return;
+    if (!payload?.id) return;
     handler(payload);
   };
   window.addEventListener("storage", storageHandler);

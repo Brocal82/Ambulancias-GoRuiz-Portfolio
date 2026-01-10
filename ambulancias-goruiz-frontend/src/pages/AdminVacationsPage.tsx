@@ -3,7 +3,6 @@ import { useState, useCallback } from "react";
 import {
   getVacationRequests,
   updateVacationRequest,
-  invalidateAvailabilityByRange,
   getVacationAvailability,
 } from "../api/vacation";
 import AlternativeDateModal from "../components/vacation/AlternativeDateModal";
@@ -14,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
 import StatusBadge from "../components/common/StatusBadge";
 import { calcVacationDays } from "../utils/vacation/calcVacationDays";
+import { invalidateAvailabilityForRange } from "../utils/vacation/invalidateAvailabilityForRange";
 import { useVacationRequestsSync } from "../hooks/vacation/useVacationRequestSync";
 import { useVacationAvailabilityInvalidation } from "../hooks/vacation/useVacationAvailabilityInvalidation";
 import { emitVacationRequestsUpdated } from "../utils/vacation/vacationEvents";
@@ -112,8 +112,9 @@ const AdminVacationRequests = () => {
         // 🟢 Invalidar disponibilidad en vivo (cambia capacidad)
         const req = requests.find((r) => r._id === id);
         if (req) {
-          invalidateAvailabilityByRange(req.startDate, req.endDate);
+          invalidateAvailabilityForRange(req.startDate, req.endDate);
         }
+
 
         // 🔔 Sync Worker y Dashboard
         emitVacationRequestsUpdated({
@@ -156,8 +157,9 @@ const AdminVacationRequests = () => {
       if (status === "cancelled") {
         const req = requests.find((r) => r._id === id);
         if (req) {
-          invalidateAvailabilityByRange(req.startDate, req.endDate);
+          invalidateAvailabilityForRange(req.startDate, req.endDate);
         }
+
         emitVacationRequestsUpdated({
           type: "updated",
           id,
@@ -232,8 +234,9 @@ const AdminVacationRequests = () => {
       // 🟢 Invalidar disponibilidad en vivo tras cancelar (libera cupo)
       const req = requests.find((r) => r._id === id);
       if (req) {
-        invalidateAvailabilityByRange(req.startDate, req.endDate);
+        invalidateAvailabilityForRange(req.startDate, req.endDate);
       }
+
 
       // 🔔 Emitir sincronización a Worker
       emitVacationRequestsUpdated({

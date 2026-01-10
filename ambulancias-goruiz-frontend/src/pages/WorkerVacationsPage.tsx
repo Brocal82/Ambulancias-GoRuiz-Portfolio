@@ -17,11 +17,9 @@ import WorkerAvailabilityMonthModal from "../components/vacation/WorkerAvailabil
 import { getVacationAvailability } from "../api/vacation";
 import { useVacationRequestsSync } from "../hooks/vacation/useVacationRequestSync";
 
-// ✅ NUEVO: emitir eventos para sincronizar Admin y invalidar disponibilidad
-import {
-  emitVacationRequestsUpdated,
-  emitAvailabilityInvalidated,
-} from "../utils/vacation/vacationEvents";
+import { emitVacationRequestsUpdated } from "../utils/vacation/vacationEvents";
+import { invalidateAvailabilityForRange } from "../utils/vacation/invalidateAvailabilityForRange";
+
 import { useVacationAvailabilityInvalidation } from "../hooks/vacation/useVacationAvailabilityInvalidation";
 
 
@@ -78,7 +76,7 @@ const WorkerVacationsPage = () => {
   });
 
 
-  // ✅ ÚLTIMO AJUSTE DE HOY: Worker -> Admin sync al responder alternativa
+  // ✅ Worker -> Admin sync al responder alternativa
   const handleRespondAlternative = async (id: string, accept: boolean) => {
     if (!token) return;
 
@@ -104,34 +102,15 @@ const WorkerVacationsPage = () => {
         status: accept ? "accepted" : "cancelled",
       });
 
-
       // 3) Invalidar disponibilidad para meses afectados (colores/capacidad)
       if (startISO && endISO) {
-        try {
-          const s = new Date(startISO);
-          const e = new Date(endISO);
-
-          let y = s.getFullYear();
-          let m0 = s.getMonth(); // 0..11
-          const endY = e.getFullYear();
-          const endM0 = e.getMonth();
-
-          while (y < endY || (y === endY && m0 <= endM0)) {
-            emitAvailabilityInvalidated({ year: y, month: m0 + 1 });
-            m0++;
-            if (m0 > 11) {
-              m0 = 0;
-              y++;
-            }
-          }
-        } catch {
-          /* noop */
-        }
+        invalidateAvailabilityForRange(startISO, endISO);
       }
     } catch {
       // errores ya se muestran por toast
     }
   };
+
 
 
   const handleFormSuccess = () => {
