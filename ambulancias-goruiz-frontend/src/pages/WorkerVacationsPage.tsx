@@ -15,6 +15,8 @@ import { toastT } from "../utils/toast";
 
 import AdminVacationMonthGrid from "../components/vacation/AdminVacationMonthGrid";
 import SelectableWorkerAvailabilityMonthModal from "../components/vacation/SelectableWorkerAvailabilityMonthModal";
+import WorkerAvailabilityMonthModal from "../components/vacation/WorkerAvailabilityMonthModal";
+
 
 
 // Prefetch/caché compartida
@@ -34,6 +36,8 @@ const WorkerVacationsPage = () => {
   const { t } = useTranslation();
 
   const [showForm, setShowForm] = useState(false);
+  const [useNewGridFlow, setUseNewGridFlow] = useState(true);
+
   const [formMessage, setFormMessage] = useState<string | null>(null);
 
   const { gridYear, setGridYear, gridRefreshTick } = useVacationMonthGridRefresh({
@@ -238,14 +242,28 @@ const WorkerVacationsPage = () => {
 
       <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <button
-            className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
-            onClick={() => setShowForm(!showForm)}
-          >
-            {showForm
-              ? t("pages.vacations.workerPage.toggleCloseForm")
-              : t("pages.vacations.workerPage.toggleOpenForm")}
-          </button>
+          <label className="inline-flex items-center gap-2 text-xs text-slate-700 select-none">
+            <input
+              type="checkbox"
+              checked={useNewGridFlow}
+              onChange={(e) => setUseNewGridFlow(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            {t("pages.vacations.workerPage.newFlowToggle", "Modo nuevo (beta): solicitar desde el mes")}
+          </label>
+
+          {!useNewGridFlow && (
+            <button
+              className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
+              onClick={() => setShowForm(!showForm)}
+            >
+              {showForm
+                ? t("pages.vacations.workerPage.toggleCloseForm")
+                : t("pages.vacations.workerPage.toggleOpenForm")}
+            </button>
+          )}
+
+
           {formMessage && <p className="text-sm text-emerald-700">{formMessage}</p>}
         </div>
 
@@ -275,33 +293,29 @@ const WorkerVacationsPage = () => {
       </div>
 
       {/* ✅ NUEVO: Modal selectable (Worker solicita desde el mes) */}
-      <SelectableWorkerAvailabilityMonthModal
-        isOpen={isMonthModalOpen}
-        monthIndex={selectedMonthIndex}
-        year={selectedYear}
-        onClose={() => setIsMonthModalOpen(false)}
-        acceptedRanges={requests
-          .filter((r) => r.status === "accepted")
-          .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
-        onRequestRange={handleRequestFromGrid}
-        blockRedDays
-      />
-
-      {/* ♻️ Fallback temporal: modal viejo (solo lectura)
-    Si algo fallara con el nuevo, lo reactivamos en un paso posterior con un toggle.
-    De momento lo dejamos comentado para no duplicar UI.
-*/}
-      {/*
-<WorkerAvailabilityMonthModal
-  isOpen={isMonthModalOpen}
-  monthIndex={selectedMonthIndex}
-  year={selectedYear}
-  onClose={() => setIsMonthModalOpen(false)}
-  acceptedRanges={requests
-    .filter((r) => r.status === "accepted")
-    .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
-/>
-*/}
+      {useNewGridFlow ? (
+        <SelectableWorkerAvailabilityMonthModal
+          isOpen={isMonthModalOpen}
+          monthIndex={selectedMonthIndex}
+          year={selectedYear}
+          onClose={() => setIsMonthModalOpen(false)}
+          acceptedRanges={requests
+            .filter((r) => r.status === "accepted")
+            .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
+          onRequestRange={handleRequestFromGrid}
+          blockRedDays
+        />
+      ) : (
+        <WorkerAvailabilityMonthModal
+          isOpen={isMonthModalOpen}
+          monthIndex={selectedMonthIndex}
+          year={selectedYear}
+          onClose={() => setIsMonthModalOpen(false)}
+          acceptedRanges={requests
+            .filter((r) => r.status === "accepted")
+            .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
+        />
+      )}
 
     </PageShell>
   );
