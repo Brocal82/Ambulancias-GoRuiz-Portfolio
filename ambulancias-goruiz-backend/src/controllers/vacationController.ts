@@ -143,15 +143,42 @@ export const updateVacationRequest = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  const { id } = req.params;
-  const { status, adminOptionStartDate, adminOptionEndDate, adminNote } =
-    req.body;
+const { id } = req.params;
+
+// Permitir "force" por query o body, pero SOLO admin podrá usarlo realmente
+const forceRaw = (req.query.force ?? req.body?.force ?? req.body?.canForceAccept) as unknown;
+
+const force =
+  forceRaw === true ||
+  forceRaw === "true" ||
+  forceRaw === 1 ||
+  forceRaw === "1";
+
+const roleFromMiddleware = (req as any).userRole as string | undefined;
+const roleFromReqUser = req.user?.role;
+const isAdmin = roleFromMiddleware === "admin" || roleFromReqUser === "admin";
+const canForceAccept = force && isAdmin;
+
+const { status, adminOptionStartDate, adminOptionEndDate, adminNote } = req.body;
+
+// 🔎 DEBUG temporal (borra luego)
+console.log("FORCE DEBUG:", {
+  id,
+  status,
+  forceRaw,
+  force,
+  isAdmin,
+  role: req.user?.role,
+  canForceAccept,
+});
+
 
   let acceptedRange: {
     userId: string;
     startISO: string;
     endISO: string;
   } | null = null;
+
   const session = await mongoose.startSession();
 
   try {
@@ -160,15 +187,14 @@ export const updateVacationRequest = async (
       const request = await VacationRequest.findById(id).session(session);
       if (!request) {
         res.status(404).json({ message: "Solicitud no encontrada" });
-        // lanzamos para abortar la tx sin duplicar respuestas
         throw new Error("__ABORT__");
       }
 
       // 2) Validación de capacidad SOLO si se va a aceptar
-      if (status === "accepted") {
-        const maxPerDay = await getMaxPerDayForDate(
-          new Date(request.startDate),
-        );
+      //    (si es force + admin, se salta esta validación)
+      if (status === "accepted" && !canForceAccept) {
+        const maxPerDay = await getMaxPerDayForDate(new Date(request.startDate));
+
         const overDays = await findOverCapacityDays(
           VacationRequest,
           request.startDate,
@@ -180,16 +206,21 @@ export const updateVacationRequest = async (
         if (overDays.length > 0) {
           res.status(409).json({
             code: "capacity_exceeded",
-            message:
-              "Capacidad diaria alcanzada para uno o más días del rango.",
-            days: overDays, // ISO (00:00) de los días bloqueados
+            message: "Capacidad diaria alcanzada para uno o más días del rango.",
+            days: overDays,
           });
-          // abortar transacción sin guardar cambios
           throw new Error("__ABORT__");
         }
       }
 
-      // 3) Actualizar campos permitidos (con type guard para evitar warning de TS)
+      // 🟠 Log si se fuerza aceptación por encima de capacidad
+      if (status === "accepted" && canForceAccept) {
+        console.warn(
+          `⚠️ Admin forzó aceptación por encima de capacidad. requestId=${id}`,
+        );
+      }
+
+      // 3) Actualizar campos permitidos
       if (typeof status !== "undefined") {
         if (isVacationStatus(status)) {
           request.status = status;
@@ -199,11 +230,15 @@ export const updateVacationRequest = async (
         }
       }
 
-      if (adminOptionStartDate)
+      if (adminOptionStartDate) {
         request.adminOptionStartDate = new Date(adminOptionStartDate);
-      if (adminOptionEndDate)
+      }
+      if (adminOptionEndDate) {
         request.adminOptionEndDate = new Date(adminOptionEndDate);
-      if (typeof adminNote === "string") request.adminNote = adminNote;
+      }
+      if (typeof adminNote === "string") {
+        request.adminNote = adminNote;
+      }
 
       // 4) Guardar dentro de la transacción
       await request.save({ session });
@@ -237,9 +272,9 @@ export const updateVacationRequest = async (
     }
   } catch (err: any) {
     if (err?.message === "__ABORT__") {
-      // ya respondimos dentro de la tx (404 o 409)
       return;
     }
+
     console.error("❌ Error al actualizar solicitud de vacaciones:", err);
     if (!res.headersSent) {
       res.status(500).json({ message: "Error interno del servidor" });
@@ -248,6 +283,7 @@ export const updateVacationRequest = async (
     session.endSession();
   }
 };
+
 
 // Responder a fecha alternativa (trabajador)
 export const respondToAlternativeDate = async (
