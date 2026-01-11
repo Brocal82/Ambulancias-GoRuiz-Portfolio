@@ -23,13 +23,22 @@ export const authenticateToken = (
     return;
   }
 
-  try {
-    // Verificar el token usando la clave secreta
+    try {
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
-    (req as any).userId = decoded.userId; // Puedes extender tipos después
+
+    (req as any).userId = decoded.userId;
     (req as any).userRole = decoded.role;
+
+    // ✅ Compatibilidad: además de userId/userRole, rellenamos req.user
+    req.user = {
+      id: decoded.userId,
+      email: "",
+      role: decoded.role,
+    };
+
     next();
   } catch (err) {
     res.status(403).json({ message: "Token inválido o expirado" });
   }
+
 };

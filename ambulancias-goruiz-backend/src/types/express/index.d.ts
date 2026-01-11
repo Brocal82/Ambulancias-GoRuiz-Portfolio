@@ -1,5 +1,5 @@
 //backend/src/types/express/index.d.ts
-import { Request } from "express";
+export {};
 
 declare global {
   namespace Express {
@@ -12,3 +12,4 @@ declare global {
     }
   }
 }
+

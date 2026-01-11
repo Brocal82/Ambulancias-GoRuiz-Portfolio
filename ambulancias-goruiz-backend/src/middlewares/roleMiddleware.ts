@@ -4,7 +4,7 @@ import { Request, Response, NextFunction } from "express";
 // Middleware para verificar que el usuario tiene el rol necesario
 export const authorizeRole = (requiredRole: "admin" | "worker") => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const userRole = (req as any).userRole;
+const userRole = (req as any).userRole ?? req.user?.role;
 
     if (userRole === requiredRole) {
       next();
