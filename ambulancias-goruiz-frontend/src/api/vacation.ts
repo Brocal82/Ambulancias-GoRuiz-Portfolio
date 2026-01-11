@@ -18,6 +18,7 @@ interface UpdateVacationPayload {
   adminOptionStartDate?: string;
   adminOptionEndDate?: string;
   adminNote?: string;
+  force?: boolean;
 }
 
 interface RespondAlternativePayload {

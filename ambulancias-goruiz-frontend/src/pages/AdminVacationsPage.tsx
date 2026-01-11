@@ -106,14 +106,54 @@ const AdminVacationRequests = () => {
         toastT.success(["toasts.vacations.admin.accepted"]);
         fetchRequests();
       } catch (e: any) {
-        // Capacidad excedida (bloquear tercer aceptado)
+        // Capacidad excedida
         if (e?.status === 409 && e?.body?.code === "capacity_exceeded") {
           toastT.error(["toasts.vacations.admin.capacityExceeded"]);
+
+          const wantForce = window.confirm(
+            t(
+              "pages.vacations.adminPage.confirmForceAccept",
+              "⚠️ La capacidad está llena para esas fechas.\n\n¿Quieres FORZAR la aceptación igualmente?",
+            ),
+          );
+
+          if (!wantForce) return;
+
+          try {
+            await updateVacationRequest(token, id, { status: "accepted", force: true });
+
+            // 🟢 Invalidar disponibilidad en vivo (cambia capacidad)
+            const req = requests.find((r) => r._id === id);
+            if (req) {
+              invalidateAvailabilityForRange(req.startDate, req.endDate);
+            }
+
+            // 🔔 Sync Worker y Dashboard
+            emitVacationRequestsUpdated({
+              type: "updated",
+              id,
+              status: "accepted",
+            });
+
+            notifyVacationsChanged();
+
+            toastT.success([
+              "toasts.vacations.admin.forceAccepted",
+              { defaultValue: "Aceptada (forzada) ✅" },
+            ]);
+
+            fetchRequests();
+          } catch {
+            toastT.error(["toasts.vacations.admin.error"]);
+          }
+
           return;
         }
+
         // Otros errores
         toastT.error(["toasts.vacations.admin.error"]);
       }
+
       return;
     }
 
