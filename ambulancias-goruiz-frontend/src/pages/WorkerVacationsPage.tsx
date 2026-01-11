@@ -1,6 +1,12 @@
 // frontend/src/pages/WorkerVacationsPage.tsx
 import { useEffect, useState, useCallback, useRef } from "react";
-import { getUserVacationRequests, respondToAlternativeDate, getVacationAvailability } from "../api/vacation";
+import {
+  createVacationRequest,
+  getUserVacationRequests,
+  respondToAlternativeDate,
+  getVacationAvailability,
+} from "../api/vacation";
+
 import { useAuth } from "../hooks/useAuth";
 import VacationRequestForm from "../components/vacation/VacationRequestForm";
 import UserVacationList from "../components/vacation/UserVacationList";
@@ -8,7 +14,8 @@ import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
 
 import AdminVacationMonthGrid from "../components/vacation/AdminVacationMonthGrid";
-import WorkerAvailabilityMonthModal from "../components/vacation/WorkerAvailabilityMonthModal";
+import SelectableWorkerAvailabilityMonthModal from "../components/vacation/SelectableWorkerAvailabilityMonthModal";
+
 
 // Prefetch/caché compartida
 import { useVacationRequestsSync } from "../hooks/vacation/useVacationRequestSync";
@@ -102,6 +109,41 @@ const WorkerVacationsPage = () => {
     fetchRequests();
     setFormMessage(t("toasts.vacations.worker.formSuccess"));
   };
+
+  const handleRequestFromGrid = async (p: {
+    startISO: string;
+    endISO: string;
+    days: number;
+  }) => {
+    if (!token) return;
+
+    try {
+      await toastT.promise(
+        createVacationRequest(token, {
+          startDate: p.startISO,
+          endDate: p.endISO,
+        }),
+        {
+          pending: ["toasts.vacations.worker.formPending"],
+          success: ["toasts.vacations.worker.formSuccess"],
+          error: ["toasts.vacations.worker.error"],
+        },
+      );
+
+      // 1) Refrescar lista Worker (además de eventos globales que ya emite la API)
+      fetchRequests();
+
+      // 2) Cerrar modal (UX)
+      setIsMonthModalOpen(false);
+
+      // 3) Mensaje visual como el flujo viejo
+      setShowForm(false);
+      setFormMessage(t("toasts.vacations.worker.formSuccess"));
+    } catch {
+      // El toast ya muestra el error
+    }
+  };
+
 
   /* =========================================================
      PREFETCH: evitar “clic para refrescar” en el date-range
@@ -232,8 +274,8 @@ const WorkerVacationsPage = () => {
         )}
       </div>
 
-      {/* Modal de disponibilidad mensual */}
-      <WorkerAvailabilityMonthModal
+      {/* ✅ NUEVO: Modal selectable (Worker solicita desde el mes) */}
+      <SelectableWorkerAvailabilityMonthModal
         isOpen={isMonthModalOpen}
         monthIndex={selectedMonthIndex}
         year={selectedYear}
@@ -241,7 +283,26 @@ const WorkerVacationsPage = () => {
         acceptedRanges={requests
           .filter((r) => r.status === "accepted")
           .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
+        onRequestRange={handleRequestFromGrid}
+        blockRedDays
       />
+
+      {/* ♻️ Fallback temporal: modal viejo (solo lectura)
+    Si algo fallara con el nuevo, lo reactivamos en un paso posterior con un toggle.
+    De momento lo dejamos comentado para no duplicar UI.
+*/}
+      {/*
+<WorkerAvailabilityMonthModal
+  isOpen={isMonthModalOpen}
+  monthIndex={selectedMonthIndex}
+  year={selectedYear}
+  onClose={() => setIsMonthModalOpen(false)}
+  acceptedRanges={requests
+    .filter((r) => r.status === "accepted")
+    .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
+/>
+*/}
+
     </PageShell>
   );
 
