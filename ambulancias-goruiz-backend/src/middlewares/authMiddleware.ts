@@ -23,7 +23,7 @@ export const authenticateToken = (
     return;
   }
 
-    try {
+  try {
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
 
     (req as any).userId = decoded.userId;

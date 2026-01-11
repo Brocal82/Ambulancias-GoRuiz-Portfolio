@@ -244,6 +244,9 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 
   const handleAccept = async (id: string) => {
     if (!token || monthIndex === null) return;
+
+    const req = requests.find((r) => r._id === id);
+
     try {
       await updateVacationRequest(token, id, { status: "accepted" });
 
@@ -251,7 +254,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       emitVacationRequestsUpdated({ type: "updated", id, status: "accepted" });
 
       // 🟢 Invalidar disponibilidad por rango (cambia capacidad)
-      const req = requests.find((r) => r._id === id);
       if (req) {
         invalidateAvailabilityForRange(req.startDate, req.endDate);
       }
@@ -261,11 +263,56 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       window.setTimeout(() => loadAvailability(year, m1, true), 200);
 
       onActionDone?.();
+    } catch (e: any) {
+      // Capacidad excedida -> ofrecer forzar
+      if (e?.status === 409 && e?.body?.code === "capacity_exceeded") {
+        toastT.error(["toasts.vacations.admin.capacityExceeded"]);
 
-    } catch {
-      toastT.error(["toasts.vacations.worker.error"]);
+        const wantForce = window.confirm(
+          t(
+            "pages.vacations.adminPage.confirmForceAccept",
+            "⚠️ La capacidad está llena para esas fechas.\n\n¿Quieres FORZAR la aceptación igualmente?",
+          ),
+        );
+
+        if (!wantForce) return;
+
+        try {
+          await updateVacationRequest(token, id, {
+            status: "accepted",
+            force: true,
+          });
+
+          // 🔔 Emitir sincronización a Worker
+          emitVacationRequestsUpdated({ type: "updated", id, status: "accepted" });
+
+          // 🟢 Invalidar disponibilidad por rango (cambia capacidad)
+          if (req) {
+            invalidateAvailabilityForRange(req.startDate, req.endDate);
+          }
+
+          // Refrescar mini-calendario visible
+          const m1 = monthIndex + 1;
+          window.setTimeout(() => loadAvailability(year, m1, true), 200);
+
+          onActionDone?.();
+
+          toastT.success([
+            "toasts.vacations.admin.forceAccepted",
+            { defaultValue: "Aceptada (forzada) ✅" },
+          ]);
+        } catch {
+          toastT.error(["toasts.vacations.admin.error"]);
+        }
+
+        return;
+      }
+
+      // Otros errores
+      toastT.error(["toasts.vacations.admin.error"]);
     }
   };
+
 
   const openAlternative = async (req: IVacationRequest) => {
     setCurrentRequestId(req._id);
