@@ -157,6 +157,21 @@ export const deleteVacationRequest = async (token: string, id: string) => {
   return response.data;
 };
 
+// Cancelar solicitud propia (worker, solo si está pending / option_sent)
+export const cancelMyVacationRequest = async (token: string, id: string) => {
+  const response = await axiosInstance.patch(
+    `/vacations/${id}/cancel`,
+    {},
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+
+  return response.data;
+};
+
+
+
 /* =========================
    Contador pendientes
    ========================= */

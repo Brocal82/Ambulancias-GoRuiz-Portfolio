@@ -5,6 +5,7 @@ import {
   getUserVacationRequests,
   respondToAlternativeDate,
   getVacationAvailability,
+  cancelMyVacationRequest
 } from "../api/vacation";
 
 import { useAuth } from "../hooks/useAuth";
@@ -86,6 +87,51 @@ const WorkerVacationsPage = () => {
       // errores ya se muestran por toast
     }
   };
+
+  // ✅ Worker: cancelar una solicitud propia (pending / option_sent)
+  const handleCancelRequest = async (id: string) => {
+    if (!token) return;
+
+    const req = requests.find((r) => r._id === id);
+    if (!req) return;
+
+    const ok = window.confirm(
+      t(
+        "pages.vacations.workerPage.cancelConfirm",
+        "¿Seguro que quieres cancelar esta solicitud?",
+      ),
+    );
+    if (!ok) return;
+
+    const startISO = req.startDate;
+    const endISO = req.endDate;
+
+    try {
+      await toastT.promise(cancelMyVacationRequest(token, id), {
+        pending: ["toasts.vacations.worker.cancelPending"],
+        success: ["toasts.vacations.worker.cancelSuccess"],
+        error: ["toasts.vacations.worker.error"],
+      });
+
+      // 1) Refrescar lista Worker
+      fetchRequests();
+
+      // 2) Avisar a Admin/otras pestañas
+      emitVacationRequestsUpdated({
+        type: "updated",
+        id,
+        status: "cancelled",
+      });
+
+      // 3) Invalidar disponibilidad para meses afectados (colores/capacidad)
+      if (startISO && endISO) {
+        invalidateAvailabilityForRange(startISO, endISO);
+      }
+    } catch {
+      // toast ya gestiona error
+    }
+  };
+
 
   // ✅ Solicitar desde el modal selectable
   const handleRequestFromGrid = async (p: {
@@ -198,7 +244,9 @@ const WorkerVacationsPage = () => {
             <UserVacationList
               requests={requests}
               onRespondAlternative={handleRespondAlternative}
+              onCancelRequest={handleCancelRequest}
             />
+
           </div>
         )}
       </div>
