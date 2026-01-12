@@ -181,20 +181,20 @@ const WorkerVacationsPage = () => {
     [prefetchMonth],
   );
 
-  // Prefetch de año actual y siguiente cuando se abre el formulario
+  // Prefetch de año actual y siguiente cuando se abre el formulario (SOLO modo viejo)
   useEffect(() => {
-    if (!showForm) return;
+    if (useNewGridFlow || !showForm) return;
     prefetchYear(gridYear);
     prefetchYear(gridYear + 1);
-  }, [showForm, gridYear, prefetchYear]);
+  }, [useNewGridFlow, showForm, gridYear, prefetchYear]);
 
-  // Si cambias el año en el grid mientras el formulario está abierto, precarga ese año
+  // Si cambias el año en el grid mientras el formulario está abierto (SOLO modo viejo)
   useEffect(() => {
-    if (!showForm) return;
+    if (useNewGridFlow || !showForm) return;
     prefetchYear(gridYear);
-  }, [gridYear, showForm, prefetchYear]);
+  }, [useNewGridFlow, gridYear, showForm, prefetchYear]);
 
-  // Prefetch ligero al montar: mes actual + siguiente (para modal/UX)
+  // Prefetch ligero al montar: mes actual + siguiente (para modal / UX general)
   useEffect(() => {
     const now = new Date();
     const y = now.getFullYear();
@@ -202,6 +202,7 @@ const WorkerVacationsPage = () => {
     prefetchMonth(y, m1);
     prefetchMonth(m1 === 12 ? y + 1 : y, m1 === 12 ? 1 : m1 + 1);
   }, [prefetchMonth]);
+
 
   // Al abrir un mes desde el grid: precarga ese mes y el siguiente (para el modal)
   const handleOpenMonth = useCallback(
@@ -267,20 +268,24 @@ const WorkerVacationsPage = () => {
           {formMessage && <p className="text-sm text-emerald-700">{formMessage}</p>}
         </div>
 
-        <div
-          className={[
-            "mb-4 rounded-xl ring-1 ring-slate-200 p-3 bg-slate-50 transition-all",
-            showForm ? "block" : "hidden",
-          ].join(" ")}
-        >
-          <VacationRequestForm onSuccess={handleFormSuccess} />
-        </div>
+        {!useNewGridFlow && (
+          <div
+            className={[
+              "mb-4 rounded-xl ring-1 ring-slate-200 p-3 bg-slate-50 transition-all",
+              showForm ? "block" : "hidden",
+            ].join(" ")}
+          >
+            <VacationRequestForm onSuccess={handleFormSuccess} />
+          </div>
+        )}
 
-        {requests.length === 0 && !loading && !showForm && (
+
+        {!useNewGridFlow && requests.length === 0 && !loading && !showForm && (
           <p className="text-sm text-slate-600">
             {t("pages.vacations.workerPage.empty")}
           </p>
         )}
+
 
         {requests.length > 0 && (
           <div className="mt-2">
@@ -302,6 +307,9 @@ const WorkerVacationsPage = () => {
           acceptedRanges={requests
             .filter((r) => r.status === "accepted")
             .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
+          pendingRanges={requests
+            .filter((r) => r.status === "pending" || r.status === "option_sent")
+            .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
           onRequestRange={handleRequestFromGrid}
           blockRedDays
         />
@@ -316,6 +324,7 @@ const WorkerVacationsPage = () => {
             .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
         />
       )}
+
 
     </PageShell>
   );
