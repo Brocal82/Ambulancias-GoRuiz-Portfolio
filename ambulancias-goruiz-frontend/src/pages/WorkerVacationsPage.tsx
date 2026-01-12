@@ -1,5 +1,5 @@
 // frontend/src/pages/WorkerVacationsPage.tsx
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   createVacationRequest,
   getUserVacationRequests,
@@ -8,16 +8,12 @@ import {
 } from "../api/vacation";
 
 import { useAuth } from "../hooks/useAuth";
-import VacationRequestForm from "../components/vacation/VacationRequestForm";
 import UserVacationList from "../components/vacation/UserVacationList";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
 
 import AdminVacationMonthGrid from "../components/vacation/AdminVacationMonthGrid";
 import SelectableWorkerAvailabilityMonthModal from "../components/vacation/SelectableWorkerAvailabilityMonthModal";
-import WorkerAvailabilityMonthModal from "../components/vacation/WorkerAvailabilityMonthModal";
-
-
 
 // Prefetch/caché compartida
 import { useVacationRequestsSync } from "../hooks/vacation/useVacationRequestSync";
@@ -28,15 +24,9 @@ import { invalidateAvailabilityForRange } from "../utils/vacation/invalidateAvai
 import PageShell from "../components/common/PageShell";
 import { useVacationMonthGridRefresh } from "../hooks/vacation/useVacationMonthGridRefresh";
 
-
-
-
 const WorkerVacationsPage = () => {
   const { token } = useAuth();
   const { t } = useTranslation();
-
-  const [showForm, setShowForm] = useState(false);
-  const [useNewGridFlow, setUseNewGridFlow] = useState(true);
 
   const [formMessage, setFormMessage] = useState<string | null>(null);
 
@@ -44,13 +34,10 @@ const WorkerVacationsPage = () => {
     initialYear: new Date().getFullYear(),
   });
 
-  // ===== Modal de disponibilidad mensual (solo lectura) =====
+  // ===== Modal mes (selectable) =====
   const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(
-    null,
-  ); // 0..11
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null); // 0..11
   const [selectedYear, setSelectedYear] = useState<number>(gridYear);
-
 
   const {
     requests,
@@ -63,12 +50,7 @@ const WorkerVacationsPage = () => {
     fetcher: getUserVacationRequests,
     debounceMs: 150,
     onErrorToastKey: "toasts.vacations.worker.loadError",
-    onAfterFetch: (data) => {
-      setShowForm(data.length === 0);
-    },
   });
-
-
 
   // ✅ Worker -> Admin sync al responder alternativa
   const handleRespondAlternative = async (id: string, accept: boolean) => {
@@ -105,15 +87,7 @@ const WorkerVacationsPage = () => {
     }
   };
 
-
-
-  const handleFormSuccess = () => {
-    setShowForm(false);
-    toastT.success(["toasts.vacations.worker.formSuccess"]);
-    fetchRequests();
-    setFormMessage(t("toasts.vacations.worker.formSuccess"));
-  };
-
+  // ✅ Solicitar desde el modal selectable
   const handleRequestFromGrid = async (p: {
     startISO: string;
     endISO: string;
@@ -140,17 +114,15 @@ const WorkerVacationsPage = () => {
       // 2) Cerrar modal (UX)
       setIsMonthModalOpen(false);
 
-      // 3) Mensaje visual como el flujo viejo
-      setShowForm(false);
+      // 3) Mensaje visual
       setFormMessage(t("toasts.vacations.worker.formSuccess"));
     } catch {
       // El toast ya muestra el error
     }
   };
 
-
   /* =========================================================
-     PREFETCH: evitar “clic para refrescar” en el date-range
+     PREFETCH (mantener solo lo necesario para el flujo nuevo)
      ========================================================= */
 
   // Prefetch de un mes 1..12
@@ -162,38 +134,6 @@ const WorkerVacationsPage = () => {
     }
   }, []);
 
-  // Prefetch de todo un año (12 meses). Evitamos repetir con un Set.
-  const prefetchedYearsRef = useRef<Set<number>>(new Set());
-  const prefetchYear = useCallback(
-    async (y: number) => {
-      if (prefetchedYearsRef.current.has(y)) return;
-      prefetchedYearsRef.current.add(y);
-      const tasks: Promise<any>[] = [];
-      for (let m1 = 1; m1 <= 12; m1++) {
-        tasks.push(prefetchMonth(y, m1));
-      }
-      try {
-        await Promise.allSettled(tasks);
-      } catch {
-        // silencioso
-      }
-    },
-    [prefetchMonth],
-  );
-
-  // Prefetch de año actual y siguiente cuando se abre el formulario (SOLO modo viejo)
-  useEffect(() => {
-    if (useNewGridFlow || !showForm) return;
-    prefetchYear(gridYear);
-    prefetchYear(gridYear + 1);
-  }, [useNewGridFlow, showForm, gridYear, prefetchYear]);
-
-  // Si cambias el año en el grid mientras el formulario está abierto (SOLO modo viejo)
-  useEffect(() => {
-    if (useNewGridFlow || !showForm) return;
-    prefetchYear(gridYear);
-  }, [useNewGridFlow, gridYear, showForm, prefetchYear]);
-
   // Prefetch ligero al montar: mes actual + siguiente (para modal / UX general)
   useEffect(() => {
     const now = new Date();
@@ -203,13 +143,13 @@ const WorkerVacationsPage = () => {
     prefetchMonth(m1 === 12 ? y + 1 : y, m1 === 12 ? 1 : m1 + 1);
   }, [prefetchMonth]);
 
-
   // Al abrir un mes desde el grid: precarga ese mes y el siguiente (para el modal)
   const handleOpenMonth = useCallback(
     async (monthIdx: number, y: number) => {
       const m1 = monthIdx + 1;
       await prefetchMonth(y, m1);
       await prefetchMonth(m1 === 12 ? y + 1 : y, m1 === 12 ? 1 : m1 + 1);
+
       setSelectedMonthIndex(monthIdx);
       setSelectedYear(y);
       setIsMonthModalOpen(true);
@@ -226,6 +166,7 @@ const WorkerVacationsPage = () => {
         {t("pages.vacations.workerPage.loading")}
       </p>
     );
+
   if (error) return <p className="p-4 text-sm text-red-600">{error}</p>;
 
   return (
@@ -243,49 +184,14 @@ const WorkerVacationsPage = () => {
 
       <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <label className="inline-flex items-center gap-2 text-xs text-slate-700 select-none">
-            <input
-              type="checkbox"
-              checked={useNewGridFlow}
-              onChange={(e) => setUseNewGridFlow(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300"
-            />
-            {t("pages.vacations.workerPage.newFlowToggle", "Modo nuevo (beta): solicitar desde el mes")}
-          </label>
-
-          {!useNewGridFlow && (
-            <button
-              className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
-              onClick={() => setShowForm(!showForm)}
-            >
-              {showForm
-                ? t("pages.vacations.workerPage.toggleCloseForm")
-                : t("pages.vacations.workerPage.toggleOpenForm")}
-            </button>
-          )}
-
-
           {formMessage && <p className="text-sm text-emerald-700">{formMessage}</p>}
         </div>
 
-        {!useNewGridFlow && (
-          <div
-            className={[
-              "mb-4 rounded-xl ring-1 ring-slate-200 p-3 bg-slate-50 transition-all",
-              showForm ? "block" : "hidden",
-            ].join(" ")}
-          >
-            <VacationRequestForm onSuccess={handleFormSuccess} />
-          </div>
-        )}
-
-
-        {!useNewGridFlow && requests.length === 0 && !loading && !showForm && (
+        {requests.length === 0 && !loading && (
           <p className="text-sm text-slate-600">
             {t("pages.vacations.workerPage.empty")}
           </p>
         )}
-
 
         {requests.length > 0 && (
           <div className="mt-2">
@@ -297,38 +203,23 @@ const WorkerVacationsPage = () => {
         )}
       </div>
 
-      {/* ✅ NUEVO: Modal selectable (Worker solicita desde el mes) */}
-      {useNewGridFlow ? (
-        <SelectableWorkerAvailabilityMonthModal
-          isOpen={isMonthModalOpen}
-          monthIndex={selectedMonthIndex}
-          year={selectedYear}
-          onClose={() => setIsMonthModalOpen(false)}
-          acceptedRanges={requests
-            .filter((r) => r.status === "accepted")
-            .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
-          pendingRanges={requests
-            .filter((r) => r.status === "pending" || r.status === "option_sent")
-            .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
-          onRequestRange={handleRequestFromGrid}
-          blockRedDays
-        />
-      ) : (
-        <WorkerAvailabilityMonthModal
-          isOpen={isMonthModalOpen}
-          monthIndex={selectedMonthIndex}
-          year={selectedYear}
-          onClose={() => setIsMonthModalOpen(false)}
-          acceptedRanges={requests
-            .filter((r) => r.status === "accepted")
-            .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
-        />
-      )}
-
-
+      {/* ✅ ÚNICO MODAL: flujo nuevo */}
+      <SelectableWorkerAvailabilityMonthModal
+        isOpen={isMonthModalOpen}
+        monthIndex={selectedMonthIndex}
+        year={selectedYear}
+        onClose={() => setIsMonthModalOpen(false)}
+        acceptedRanges={requests
+          .filter((r) => r.status === "accepted")
+          .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
+        pendingRanges={requests
+          .filter((r) => r.status === "pending" || r.status === "option_sent")
+          .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
+        onRequestRange={handleRequestFromGrid}
+        blockRedDays
+      />
     </PageShell>
   );
-
 };
 
 export default WorkerVacationsPage;

@@ -234,17 +234,35 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
         return false;
     }, [availability, selectedSummary]);
 
+    const isBlockedDay = (day: number) => {
+        // pasado
+        if (isPastLocalDay(new Date(year, monthIndex!, day, 0, 0, 0, 0))) return true;
+
+        // ya es mío (pending o accepted)
+        if (acceptedDaysSet.has(day) || pendingDaysSet.has(day)) return true;
+
+        // rojo (sin disponibilidad)
+        const st = getDayState(day);
+        if (blockRedDays && st === "red") return true;
+
+        return false;
+    };
+
+    const rangeHasBlockedDays = (a: number, b: number) => {
+        const start = Math.min(a, b);
+        const end = Math.max(a, b);
+        for (let d = start; d <= end; d++) {
+            if (isBlockedDay(d)) return true;
+        }
+        return false;
+    };
+
+
     const handleDayClick = (day: number) => {
         if (!availability || monthIndex === null) return;
 
-        const state = getDayState(day);
-
-        // 🚫 No permitir seleccionar días pasados
-        if (isPastLocalDay(new Date(year, monthIndex, day, 0, 0, 0, 0))) return;
-
-
-        // Bloquear click en rojo (primera versión)
-        if (blockRedDays && state === "red") return;
+        // Bloqueo directo del día clicado
+        if (isBlockedDay(day)) return;
 
         // 1er click: fija start
         if (rangeStartDay === null) {
@@ -253,16 +271,23 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
             return;
         }
 
-        // 2º click: fija end (permite invertir)
+        // 2º click: intenta fijar end, pero bloquea si el rango incluye días bloqueados
         if (rangeEndDay === null) {
+            if (rangeHasBlockedDays(rangeStartDay, day)) {
+                // si el rango pasa por un día bloqueado, reiniciamos selección en el día clicado
+                setRangeStartDay(day);
+                setRangeEndDay(null);
+                return;
+            }
             setRangeEndDay(day);
             return;
         }
 
-        // Si ya hay ambos: reinicia con nuevo start
+        // Si ya hay ambos: reinicia con nuevo start (siempre que no esté bloqueado)
         setRangeStartDay(day);
         setRangeEndDay(null);
     };
+
 
     const selectionHasPast = useMemo(() => {
         if (!selectedSummary || monthIndex === null) return false;
@@ -289,8 +314,9 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
             <div className="fixed inset-0 bg-black/50" onClick={onClose} />
 
             <div
-                className="relative z-10 w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 flex flex-col max-h-[90vh]"
+                className="relative z-10 w-full max-w-2xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 flex flex-col max-h-[90vh]"
                 role="dialog"
+
                 aria-modal="true"
                 aria-labelledby="worker-availability-month-title"
             >
@@ -402,7 +428,8 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                                     const isAccepted = acceptedDaysSet.has(cell);
                                     const isSelected = isInSelectedRange(cell);
                                     const isPendingMine = pendingDaysSet.has(cell);
-                                    const isPastDay = isPastLocalDay(new Date(year, monthIndex, cell, 0, 0, 0, 0));
+                                    const isBlocked = isBlockedDay(cell);
+
 
 
                                     // 🔹 Base: Worker SOLO ve verde o rojo (amarillo global desaparece)
@@ -454,12 +481,10 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
 
 
                                     // 🔹 Bloqueo real por capacidad
-                                    const blockedCls =
-                                        isPastDay
-                                            ? "opacity-40 cursor-not-allowed"
-                                            : blockRedDays && state === "red"
-                                                ? "opacity-60 cursor-not-allowed"
-                                                : "cursor-pointer hover:brightness-95 active:scale-[0.98]";
+                                    const blockedCls = isBlocked
+                                        ? "opacity-40 cursor-not-allowed pointer-events-none"
+                                        : "cursor-pointer hover:brightness-95 active:scale-[0.98]";
+
 
 
 
@@ -467,6 +492,7 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                                         <button
                                             type="button"
                                             key={`d-${cell}-${idx}`}
+                                            disabled={isBlocked}
                                             onClick={() => handleDayClick(cell)}
                                             className={[
                                                 "h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none transition",
@@ -477,14 +503,15 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                                                 selectionShapeCls,
                                                 blockedCls,
 
-
-                                                "focus:outline-none focus:ring-2 focus:ring-blue-200",
+                                                // 👇 opcional: focus solo si no está bloqueado (evita focus raro)
+                                                !isBlocked ? "focus:outline-none focus:ring-2 focus:ring-blue-200" : "",
                                             ].join(" ")}
                                             title={`${cell}`}
                                             aria-label={`${cell}`}
                                         >
                                             {cell}
                                         </button>
+
                                     );
                                 })}
                         </div>
