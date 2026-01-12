@@ -1,11 +1,10 @@
-// frontend/src/pages/WorkerVacationsPage.tsx
 import { useEffect, useState, useCallback } from "react";
 import {
   createVacationRequest,
   getUserVacationRequests,
   respondToAlternativeDate,
   getVacationAvailability,
-  cancelMyVacationRequest
+  cancelMyVacationRequest,
 } from "../api/vacation";
 
 import { useAuth } from "../hooks/useAuth";
@@ -29,11 +28,12 @@ const WorkerVacationsPage = () => {
   const { token } = useAuth();
   const { t } = useTranslation();
 
-  const [formMessage, setFormMessage] = useState<string | null>(null);
-
   const { gridYear, setGridYear, gridRefreshTick } = useVacationMonthGridRefresh({
     initialYear: new Date().getFullYear(),
   });
+
+  // ✅ Desplegable (solo icono)
+  const [showActiveRequests, setShowActiveRequests] = useState(false);
 
   // ===== Modal mes (selectable) =====
   const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
@@ -52,6 +52,11 @@ const WorkerVacationsPage = () => {
     debounceMs: 150,
     onErrorToastKey: "toasts.vacations.worker.loadError",
   });
+
+  // ✅ Solo activas (NO pasadas / NO canceladas / NO historial)
+  const activeRequests = requests.filter(
+    (r) => r.status === "pending" || r.status === "option_sent" || r.status === "accepted"
+  );
 
   // ✅ Worker -> Admin sync al responder alternativa
   const handleRespondAlternative = async (id: string, accept: boolean) => {
@@ -132,7 +137,6 @@ const WorkerVacationsPage = () => {
     }
   };
 
-
   // ✅ Solicitar desde el modal selectable
   const handleRequestFromGrid = async (p: {
     startISO: string;
@@ -160,8 +164,6 @@ const WorkerVacationsPage = () => {
       // 2) Cerrar modal (UX)
       setIsMonthModalOpen(false);
 
-      // 3) Mensaje visual
-      setFormMessage(t("toasts.vacations.worker.formSuccess"));
     } catch {
       // El toast ya muestra el error
     }
@@ -228,28 +230,50 @@ const WorkerVacationsPage = () => {
         />
       </div>
 
-      <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          {formMessage && <p className="text-sm text-emerald-700">{formMessage}</p>}
-        </div>
+      {/* ✅ Botón solo icono (derecha) */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setShowActiveRequests((v) => !v)}
+          className={`
+  p-2 rounded-xl border shadow-sm transition
+  ${showActiveRequests ? "bg-slate-200 border-slate-400" : "bg-white border-slate-300 hover:bg-slate-100"}
+`}
+          aria-expanded={showActiveRequests}
+          aria-label={t(
+            "pages.vacations.workerPage.toggleRequests",
+            "Ver/ocultar solicitudes"
+          )}
+          title={t(
+            "pages.vacations.workerPage.toggleRequests",
+            "Ver/ocultar solicitudes"
+          )}
+        >
+          <span className="text-2xl leading-none">🏖️</span>
+        </button>
+      </div>
 
-        {requests.length === 0 && !loading && (
-          <p className="text-sm text-slate-600">
-            {t("pages.vacations.workerPage.empty")}
-          </p>
-        )}
 
-        {requests.length > 0 && (
-          <div className="mt-2">
+      {/* ✅ Lista desplegable (solo activas) */}
+      {showActiveRequests && (
+        <div className="mt-3 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
+          {activeRequests.length === 0 && !loading ? (
+            <p className="text-sm text-slate-600">
+              {t(
+                "pages.vacations.workerPage.empty",
+                "No tienes solicitudes activas."
+              )}
+            </p>
+          ) : (
             <UserVacationList
-              requests={requests}
+              requests={activeRequests}
               onRespondAlternative={handleRespondAlternative}
               onCancelRequest={handleCancelRequest}
             />
+          )}
+        </div>
+      )}
 
-          </div>
-        )}
-      </div>
 
       {/* ✅ ÚNICO MODAL: flujo nuevo */}
       <SelectableWorkerAvailabilityMonthModal
