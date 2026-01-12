@@ -6,6 +6,7 @@ import {
 } from "../../api/vacation";
 import { monthLabel as fmtMonth } from "../../utils/intl";
 import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
+import { isPastLocalDay } from "../../utils/vacation/isPastLocalDay";
 
 type DayState = "green" | "yellow" | "red";
 type AcceptedRange = { startISO: string; endISO: string };
@@ -238,6 +239,10 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
 
         const state = getDayState(day);
 
+        // 🚫 No permitir seleccionar días pasados
+        if (isPastLocalDay(new Date(year, monthIndex, day, 0, 0, 0, 0))) return;
+
+
         // Bloquear click en rojo (primera versión)
         if (blockRedDays && state === "red") return;
 
@@ -259,12 +264,23 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
         setRangeEndDay(null);
     };
 
+    const selectionHasPast = useMemo(() => {
+        if (!selectedSummary || monthIndex === null) return false;
+        const { a, b } = selectedSummary;
+        for (let d = a; d <= b; d++) {
+            if (isPastLocalDay(new Date(year, monthIndex, d, 0, 0, 0, 0))) return true;
+        }
+        return false;
+    }, [selectedSummary, monthIndex, year]);
+
     const canRequest =
         !!selectedSummary &&
         !!onRequestRange &&
         !availLoading &&
         !availError &&
-        !(blockRedDays && selectionHasRed);
+        !(blockRedDays && selectionHasRed) &&
+        !selectionHasPast;
+
 
     if (!isOpen || monthIndex === null) return null;
 
@@ -386,6 +402,8 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                                     const isAccepted = acceptedDaysSet.has(cell);
                                     const isSelected = isInSelectedRange(cell);
                                     const isPendingMine = pendingDaysSet.has(cell);
+                                    const isPastDay = isPastLocalDay(new Date(year, monthIndex, cell, 0, 0, 0, 0));
+
 
                                     // 🔹 Base: Worker SOLO ve verde o rojo (amarillo global desaparece)
                                     const baseColor =
@@ -437,9 +455,12 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
 
                                     // 🔹 Bloqueo real por capacidad
                                     const blockedCls =
-                                        blockRedDays && state === "red"
-                                            ? "opacity-60 cursor-not-allowed"
-                                            : "cursor-pointer hover:brightness-95 active:scale-[0.98]";
+                                        isPastDay
+                                            ? "opacity-40 cursor-not-allowed"
+                                            : blockRedDays && state === "red"
+                                                ? "opacity-60 cursor-not-allowed"
+                                                : "cursor-pointer hover:brightness-95 active:scale-[0.98]";
+
 
 
                                     return (
@@ -495,6 +516,17 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                                             )}
                                         </p>
                                     )}
+
+                                    {selectionHasPast && (
+                                        <p className="mt-1 text-[11px] text-rose-700">
+                                            {String(
+                                                t("pages.vacations.workerPage.pastDaysBlocked", {
+                                                    defaultValue: "No puedes solicitar vacaciones en días pasados.",
+                                                }),
+                                            )}
+                                        </p>
+                                    )}
+
 
                                     <button
                                         type="button"
