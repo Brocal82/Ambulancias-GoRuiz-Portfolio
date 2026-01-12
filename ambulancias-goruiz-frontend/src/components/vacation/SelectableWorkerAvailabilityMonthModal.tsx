@@ -7,6 +7,9 @@ import {
 import { monthLabel as fmtMonth } from "../../utils/intl";
 import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
 import { isPastLocalDay } from "../../utils/vacation/isPastLocalDay";
+import type { IVacationRequest } from "../../types/vacationRequest";
+import WorkerMonthRequests from "./WorkerMonthRequests";
+
 
 type DayState = "green" | "yellow" | "red";
 type AcceptedRange = { startISO: string; endISO: string };
@@ -20,6 +23,11 @@ type Props = {
     pendingRanges?: AcceptedRange[];
     onRequestRange: (p: { startISO: string; endISO: string; days: number }) => void;
     blockRedDays?: boolean;
+
+    /** ✅ M-1: solo cableado (aún no se usa dentro del modal) */
+    monthRequests?: IVacationRequest[];
+    onCancelRequest?: (id: string) => void;
+    onRespondAlternative?: (id: string, accept: boolean) => void;
 };
 
 
@@ -32,6 +40,11 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
     pendingRanges = [],
     onRequestRange,
     blockRedDays = true,
+
+    /** ✅ M-1: solo cableado (aún no se usa dentro del modal) */
+    monthRequests = [],
+    onCancelRequest,
+    onRespondAlternative,
 }) => {
 
     const { t, i18n } = useTranslation();
@@ -314,7 +327,7 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
             <div className="fixed inset-0 bg-black/50" onClick={onClose} />
 
             <div
-                className="relative z-10 w-full max-w-2xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 flex flex-col max-h-[90vh]"
+                className="relative z-10 w-full max-w-4xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 flex flex-col max-h-[90vh]"
                 role="dialog"
 
                 aria-modal="true"
@@ -589,6 +602,15 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                         </div>
                     </div>
                 </div>
+
+                <WorkerMonthRequests
+                    requests={monthRequests}
+                    monthIndex={monthIndex}
+                    year={year}
+                    onCancelRequest={onCancelRequest}
+                    onRespondAlternative={onRespondAlternative}
+                />
+
 
                 {/* Footer */}
                 <div className="sticky bottom-0 bg-white border-t border-slate-200 p-3 flex items-center justify-end">

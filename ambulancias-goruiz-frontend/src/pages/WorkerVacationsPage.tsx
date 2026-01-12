@@ -266,7 +266,7 @@ const WorkerVacationsPage = () => {
             </p>
           ) : (
             <UserVacationList
-              requests={activeRequests}
+              requests={requests}
               onRespondAlternative={handleRespondAlternative}
               onCancelRequest={handleCancelRequest}
             />
@@ -289,7 +289,13 @@ const WorkerVacationsPage = () => {
           .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
         onRequestRange={handleRequestFromGrid}
         blockRedDays
+
+        /** ✅ M-1: solo cableado (aún no se usa dentro del modal) */
+        monthRequests={requests}
+        onCancelRequest={handleCancelRequest}
+        onRespondAlternative={handleRespondAlternative}
       />
+
     </PageShell>
   );
 };
