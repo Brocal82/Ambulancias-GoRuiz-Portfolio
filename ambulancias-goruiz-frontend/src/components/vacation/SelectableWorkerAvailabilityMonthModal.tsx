@@ -12,22 +12,15 @@ type AcceptedRange = { startISO: string; endISO: string };
 
 type Props = {
     isOpen: boolean;
-    monthIndex: number | null; // 0..11
+    monthIndex: number | null;
     year: number;
     onClose: () => void;
-
-    /** rangos aceptados del propio worker (solo visual) */
     acceptedRanges?: AcceptedRange[];
-
-    /**
-     * ✅ NUEVO (Paso 2): callback para solicitar vacaciones desde selección
-     * - startISO/endISO son ISO completos (Date.toISOString())
-     */
-    onRequestRange?: (p: { startISO: string; endISO: string; days: number }) => void;
-
-    /** Si quieres permitir/mostrar selección solo en verdes+amarillos */
-    blockRedDays?: boolean; // default true
+    pendingRanges?: AcceptedRange[];
+    onRequestRange: (p: { startISO: string; endISO: string; days: number }) => void;
+    blockRedDays?: boolean;
 };
+
 
 const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
     isOpen,
@@ -35,9 +28,11 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
     year,
     onClose,
     acceptedRanges = [],
+    pendingRanges = [],
     onRequestRange,
     blockRedDays = true,
 }) => {
+
     const { t, i18n } = useTranslation();
 
     const locale =
@@ -113,6 +108,35 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
         return days;
     }, [acceptedRanges, monthIndex, year]);
 
+    const pendingDaysSet = useMemo(() => {
+        if (monthIndex === null || pendingRanges.length === 0) {
+            return new Set<number>();
+        }
+
+        const days = new Set<number>();
+
+        for (const r of pendingRanges) {
+            const start = new Date(r.startISO);
+            const end = new Date(r.endISO);
+
+            const monthStart = new Date(year, monthIndex, 1);
+            const monthEnd = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
+
+            // Si no solapa con este mes, saltamos
+            if (end < monthStart || start > monthEnd) continue;
+
+            const s = start < monthStart ? monthStart : start;
+            const e = end > monthEnd ? monthEnd : end;
+
+            for (let d = s.getDate(); d <= e.getDate(); d++) {
+                days.add(d);
+            }
+        }
+
+        return days;
+    }, [pendingRanges, monthIndex, year]);
+
+
     const loadAvailability = async (y: number, m1: number, force = false) => {
         const key = `${y}-${String(m1).padStart(2, "0")}`;
         inFlightKeyRef.current = key;
@@ -156,12 +180,15 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
             loadAvailability(year, myMonth, true);
         }, 200);
     });
-
     const getDayState = (day: number | null): DayState | null => {
         if (!availability || day === null) return null;
         const rec = availability.days.find((d) => d.day === day);
-        return rec ? rec.state : "green";
+        const state = rec ? rec.state : "green";
+
+        // ✅ Worker NO ve el amarillo global (solo se usa rojo para bloquear)
+        return state === "red" ? "red" : "green";
     };
+
 
     const isInSelectedRange = (day: number) => {
         if (rangeStartDay === null) return false;
@@ -275,28 +302,55 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
                     <div className="rounded-xl ring-1 ring-slate-200 bg-white p-2">
                         {/* Leyenda */}
-                        <div className="mb-2 flex items-center gap-2 text-[11px] text-slate-600">
+                        <div className="mb-2 flex items-center gap-2 text-[11px] text-slate-600 flex-wrap">
                             <span className="inline-flex items-center gap-2">
                                 <span className="h-3 w-3 rounded border-2 border-emerald-300" />
-                                {t("pages.vacations.monthGrid.legend.available")}
+                                {String(
+                                    t("pages.vacations.monthGrid.legend.available", {
+                                        defaultValue: "Disponible",
+                                    }),
+                                )}
                             </span>
+
                             <span className="inline-flex items-center gap-2">
                                 <span className="h-3 w-3 rounded border-2 border-amber-300" />
-                                {t("pages.vacations.monthGrid.legend.requested")}
+                                {String(
+                                    t("pages.vacations.monthGrid.legend.myPending", {
+                                        defaultValue: "Mis pendientes",
+                                    }),
+                                )}
                             </span>
+
+                            <span className="inline-flex items-center gap-2">
+                                <span className="h-3 w-3 rounded border-2 border-orange-400" />
+                                {String(
+                                    t("pages.vacations.monthGrid.legend.myAccepted", {
+                                        defaultValue: "Aceptadas",
+                                    }),
+                                )}
+                            </span>
+
                             <span className="inline-flex items-center gap-2">
                                 <span className="h-3 w-3 rounded border-2 border-rose-300" />
-                                {t("pages.vacations.monthGrid.legend.full")}
+                                {String(
+                                    t("pages.vacations.monthGrid.legend.full", {
+                                        defaultValue: "Sin disponibilidad",
+                                    }),
+                                )}
                             </span>
 
                             {availability && (
                                 <span className="ml-auto text-slate-500">
-                                    {t("pages.vacations.adminPage.capacity", {
-                                        count: availability.maxPerDay,
-                                    })}
+                                    {String(
+                                        t("pages.vacations.adminPage.capacity", {
+                                            count: availability.maxPerDay,
+                                            defaultValue: `Capacidad: ${availability.maxPerDay}`,
+                                        }),
+                                    )}
                                 </span>
                             )}
                         </div>
+
 
                         {/* Week headers */}
                         <div className="grid grid-cols-7 text-center text-[10px] uppercase tracking-wide text-slate-500 mb-0.5">
@@ -308,7 +362,7 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                         </div>
 
                         {/* Calendar */}
-                        <div className="grid grid-cols-7 gap-0.5">
+                        <div className="grid grid-cols-7 gap-0">
                             {availLoading &&
                                 Array.from({ length: 42 }).map((_, i) => (
                                     <div
@@ -331,26 +385,62 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                                     const state = getDayState(cell);
                                     const isAccepted = acceptedDaysSet.has(cell);
                                     const isSelected = isInSelectedRange(cell);
+                                    const isPendingMine = pendingDaysSet.has(cell);
 
+                                    // 🔹 Base: Worker SOLO ve verde o rojo (amarillo global desaparece)
                                     const baseColor =
                                         state === "red"
                                             ? "bg-rose-50 text-slate-800 border-2 border-rose-300"
-                                            : state === "yellow"
-                                                ? "bg-amber-50 text-slate-800 border-2 border-amber-300"
-                                                : "bg-emerald-50 text-slate-800 border-2 border-emerald-300";
+                                            : "bg-emerald-50 text-slate-800 border-2 border-emerald-300";
 
+                                    // 🔹 Aceptadas propias → azul (prioridad máxima)
                                     const acceptedCls = isAccepted
-                                        ? "!bg-sky-200 !border-sky-300 !text-slate-900 font-semibold"
+                                        ? "!bg-orange-200 !border-orange-400 !text-slate-900 font-semibold"
                                         : "";
 
-                                    const selectedCls = isSelected
-                                        ? "ring-2 ring-blue-400 ring-offset-1 ring-offset-white"
-                                        : "";
 
+                                    // 🔹 Pendientes propias → amarillo (solo si NO está aceptada)
+                                    const pendingFillCls =
+                                        !isAccepted && isPendingMine
+                                            ? "!bg-amber-100 !border-amber-300 !text-slate-900 font-semibold"
+                                            : "";
+
+                                    // ✅ Selección preview: se ve como “pending” (amarillo), y conectada
+                                    const isRangeSingle = rangeStartDay !== null && rangeEndDay === null && cell === rangeStartDay;
+
+                                    const a = rangeStartDay !== null ? Math.min(rangeStartDay, rangeEndDay ?? rangeStartDay) : null;
+                                    const b = rangeStartDay !== null ? Math.max(rangeStartDay, rangeEndDay ?? rangeStartDay) : null;
+
+                                    const isRangeStart = a !== null && cell === a;
+                                    const isRangeEnd = b !== null && cell === b;
+
+                                    // Fondo amarillo SOLO para la selección actual (preview)
+                                    // OJO: no debe pisar accepted/pending real
+                                    const selectionFillCls =
+                                        isSelected && !isAccepted && !isPendingMine
+                                            ? "!bg-amber-50 !border-amber-200 !text-slate-900"
+                                            : "";
+
+                                    // Redondeo “barra”: solo extremos del rango
+                                    const selectionShapeCls =
+                                        isSelected && (a !== null && b !== null)
+                                            ? isRangeSingle
+                                                ? "rounded-md"
+                                                : isRangeStart
+                                                    ? "rounded-l-md rounded-r-none"
+                                                    : isRangeEnd
+                                                        ? "rounded-r-md rounded-l-none"
+                                                        : "rounded-none"
+                                            : "";
+
+
+
+                                    // 🔹 Bloqueo real por capacidad
                                     const blockedCls =
                                         blockRedDays && state === "red"
                                             ? "opacity-60 cursor-not-allowed"
                                             : "cursor-pointer hover:brightness-95 active:scale-[0.98]";
+
 
                                     return (
                                         <button
@@ -361,8 +451,12 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                                                 "h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none transition",
                                                 baseColor,
                                                 acceptedCls,
-                                                selectedCls,
+                                                pendingFillCls,
+                                                selectionFillCls,
+                                                selectionShapeCls,
                                                 blockedCls,
+
+
                                                 "focus:outline-none focus:ring-2 focus:ring-blue-200",
                                             ].join(" ")}
                                             title={`${cell}`}
