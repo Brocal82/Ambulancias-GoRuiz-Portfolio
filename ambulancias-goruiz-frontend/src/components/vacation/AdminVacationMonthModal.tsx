@@ -497,78 +497,36 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                 >
                   {monthLabel} · {year}
                 </h3>
-                <p className="mt-0.5 text-xs text-slate-600">
-                  {t("pages.vacations.monthModal.countLine", { count: monthCount })}
-                </p>
               </div>
 
-              <div className="ml-auto flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("")}
-                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ring-slate-300 ${statusFilter === ""
-                    ? "bg-slate-900 text-white"
-                    : "bg-white text-slate-700 hover:bg-slate-50"
-                    } focus:outline-none focus:ring-2 focus:ring-blue-100`}
+              <div className="ml-auto flex items-center gap-2">
+                {/* ✅ Solo contador a la derecha */}
+                <span
+                  className="inline-flex items-center justify-center rounded-full
+    px-3.5 py-1.5 text-[12px]
+    font-semibold tabular-nums
+    text-slate-900
+    bg-white
+    border-2 border-slate-300
+    shadow-sm"
                 >
-                  {t("pages.vacations.monthModal.filters.all")}
-                  {monthCount > 0 ? ` (${monthCount})` : ""}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("pending")}
-                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === "pending"
-                    ? "bg-amber-500 text-white ring-amber-500"
-                    : "bg-white text-amber-700 ring-amber-300 hover:bg-amber-50"
-                    } focus:outline-none focus:ring-2 focus:ring-amber-100`}
-                >
-                  {t("pages.vacations.monthModal.filters.pending")}
-                  {statusCounts.pending ? ` (${statusCounts.pending})` : ""}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("accepted")}
-                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === "accepted"
-                    ? "bg-emerald-600 text-white ring-emerald-600"
-                    : "bg-white text-emerald-700 ring-emerald-300 hover:bg-emerald-50"
-                    } focus:outline-none focus:ring-2 focus:ring-emerald-100`}
-                >
-                  {t("pages.vacations.monthModal.filters.accepted")}
-                  {statusCounts.accepted ? ` (${statusCounts.accepted})` : ""}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("cancelled")}
-                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === "cancelled"
-                    ? "bg-rose-600 text-white ring-rose-600"
-                    : "bg-white text-rose-700 ring-rose-300 hover:bg-rose-50"
-                    } focus:outline-none focus:ring-2 focus:ring-rose-100`}
-                >
-                  {t("pages.vacations.monthModal.filters.cancelled")}
-                  {statusCounts.cancelled ? ` (${statusCounts.cancelled})` : ""}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("option_sent")}
-                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === "option_sent"
-                    ? "bg-blue-600 text-white ring-blue-600"
-                    : "bg-white text-blue-700 ring-blue-300 hover:bg-blue-50"
-                    } focus:outline-none focus:ring-2 focus:ring-blue-100`}
-                >
-                  {t("pages.vacations.monthModal.filters.option_sent")}
-                  {statusCounts.option_sent ? ` (${statusCounts.option_sent})` : ""}
-                </button>
+                  {monthCount}
+                </span>
 
+
+
+                {/* ✅ Cerrar */}
                 <button
                   ref={closeBtnRef}
                   aria-label={t("pages.vacations.monthModal.close")}
                   onClick={onClose}
-                  className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400
-                    focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400
+      focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                 >
                   ✕
                 </button>
               </div>
+
             </div>
           </div>
 
@@ -701,65 +659,137 @@ const AdminVacationMonthModal: React.FC<Props> = ({
             {/* ✅ Solo si está abierto: mostramos filtros + tabla */}
             {showMonthRequests && (
               <>
-                {/* Filtros compactos (los dejamos por ahora) */}
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex gap-2">
-                    <input
-                      id="vacation-filter-user"
-                      type="text"
-                      value={searchText}
-                      onChange={(e) => setSearchText(e.target.value)}
-                      placeholder={t(
-                        "pages.vacations.monthModal.filters.userPlaceholder",
-                      )}
-                      aria-label={t(
-                        "pages.vacations.monthModal.filters.userPlaceholder",
-                      )}
-                      className="w-full sm:w-56 rounded-lg border border-slate-300 ring-1 ring-slate-200 px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                    <select
-                      id="vacation-filter-status"
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value as any)}
-                      aria-label={t(
-                        "pages.vacations.monthModal.filters.statusLabel",
-                      )}
-                      className="rounded-lg border border-slate-300 ring-1 ring-slate-200 px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    >
-                      <option value="">
-                        {t("pages.vacations.monthModal.filters.all")}
-                      </option>
-                      <option value="pending">
-                        {t("pages.vacations.monthModal.filters.pending")}
-                      </option>
-                      <option value="accepted">
-                        {t("pages.vacations.monthModal.filters.accepted")}
-                      </option>
-                      <option value="cancelled">
-                        {t("pages.vacations.monthModal.filters.cancelled")}
-                      </option>
-                      <option value="option_sent">
-                        {t("pages.vacations.monthModal.filters.option_sent")}
-                      </option>
-                    </select>
-                  </div>
+                {/* ✅ Filtros pro + buscador (solo dentro del desplegable 🏖️) */}
+                <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    {/* Buscador */}
+                    <div className="min-w-0 sm:shrink-0">
+                      <input
+                        id="vacation-filter-user"
+                        type="text"
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        placeholder={t("pages.vacations.monthModal.filters.userPlaceholder")}
+                        aria-label={t("pages.vacations.monthModal.filters.userPlaceholder")}
+                        className="w-full sm:w-[260px] md:w-[320px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs shadow-sm
+          focus:outline-none focus:ring-4 focus:ring-blue-100"
+                      />
+                    </div>
 
-                  <button
-                    onClick={() => setSortAsc((v) => !v)}
-                    aria-label={t("pages.vacations.monthModal.filters.sortToggle", {
-                      dir: sortAsc
-                        ? t("pages.vacations.monthModal.filters.asc")
-                        : t("pages.vacations.monthModal.filters.desc"),
-                    })}
-                    className="rounded-lg border border-slate-300 ring-1 ring-slate-200 px-2 py-1.5 text-xs hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                  >
-                    {t("pages.vacations.monthModal.filters.sortToggle", {
-                      dir: sortAsc
-                        ? t("pages.vacations.monthModal.filters.asc")
-                        : t("pages.vacations.monthModal.filters.desc"),
-                    })}
-                  </button>
+                    {/* Filtros (minimal, borde color) + sort */}
+                    <div className="flex items-center justify-between gap-2 sm:justify-end">
+                      <div className="flex items-center gap-2">
+                        {/* ⭐ Todas */}
+                        <button
+                          type="button"
+                          onClick={() => setStatusFilter("")}
+                          aria-pressed={statusFilter === ""}
+                          title={t("pages.vacations.monthModal.filters.all") as string}
+                          className={[
+                            "inline-flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition",
+                            statusFilter === ""
+                              ? "border-slate-400 ring-2 ring-slate-200 text-slate-900"
+                              : "border-slate-300 text-slate-600 hover:bg-slate-100",
+                          ].join(" ")}
+                        >
+                          <span className="text-[16px] leading-none">⭐</span>
+                        </button>
+
+                        {/* Pending (ámbar) */}
+                        <button
+                          type="button"
+                          onClick={() => setStatusFilter("pending")}
+                          aria-pressed={statusFilter === "pending"}
+                          title={t("pages.vacations.monthModal.filters.pending") as string}
+                          className={[
+                            "inline-flex items-center justify-center rounded-full bg-white px-3 py-2 text-[11px] font-semibold tabular-nums shadow-sm transition",
+                            "border",
+                            statusFilter === "pending"
+                              ? "border-amber-400 text-slate-900 ring-2 ring-amber-100"
+                              : "border-amber-300 text-slate-700 hover:border-amber-400 hover:bg-[#FEF3C7]",
+
+                          ].join(" ")}
+                        >
+                          {statusCounts.pending}
+                        </button>
+
+                        {/* Accepted (verde) */}
+                        <button
+                          type="button"
+                          onClick={() => setStatusFilter("accepted")}
+                          aria-pressed={statusFilter === "accepted"}
+                          title={t("pages.vacations.monthModal.filters.accepted") as string}
+                          className={[
+                            "inline-flex items-center justify-center rounded-full bg-white px-3 py-2 text-[11px] font-semibold tabular-nums shadow-sm transition",
+                            "border",
+                            statusFilter === "accepted"
+                              ? "border-emerald-400 text-slate-900 ring-2 ring-emerald-100"
+                              : "border-emerald-300 text-slate-700 hover:bg-emerald-100",
+                          ].join(" ")}
+                        >
+                          {statusCounts.accepted}
+                        </button>
+
+                        {/* Cancelled (rojo) */}
+                        <button
+                          type="button"
+                          onClick={() => setStatusFilter("cancelled")}
+                          aria-pressed={statusFilter === "cancelled"}
+                          title={t("pages.vacations.monthModal.filters.cancelled") as string}
+                          className={[
+                            "inline-flex items-center justify-center rounded-full bg-white px-3 py-2 text-[11px] font-semibold tabular-nums shadow-sm transition",
+                            "border",
+                            statusFilter === "cancelled"
+                              ? "border-rose-400 text-slate-900 ring-2 ring-rose-100"
+                              : "border-rose-300 text-slate-700 hover:bg-rose-100",
+                          ].join(" ")}
+                        >
+                          {statusCounts.cancelled}
+                        </button>
+
+                        {/* Option sent (azul) */}
+                        <button
+                          type="button"
+                          onClick={() => setStatusFilter("option_sent")}
+                          aria-pressed={statusFilter === "option_sent"}
+                          title={t("pages.vacations.monthModal.filters.option_sent") as string}
+                          className={[
+                            "inline-flex items-center justify-center rounded-full bg-white px-3 py-2 text-[11px] font-semibold tabular-nums shadow-sm transition",
+                            "border",
+                            statusFilter === "option_sent"
+                              ? "border-blue-400 text-slate-900 ring-2 ring-blue-100"
+                              : "border-blue-300 text-slate-700 hover:bg-blue-100",
+                          ].join(" ")}
+                        >
+                          {statusCounts.option_sent}
+                        </button>
+                      </div>
+
+                      {/* Orden (minimal) */}
+                      <button
+                        type="button"
+                        onClick={() => setSortAsc((v) => !v)}
+                        aria-label={t("pages.vacations.monthModal.filters.sortToggle", {
+                          dir: sortAsc
+                            ? t("pages.vacations.monthModal.filters.asc")
+                            : t("pages.vacations.monthModal.filters.desc"),
+                        }) as string}
+                        title={t("pages.vacations.monthModal.filters.sortToggle", {
+                          dir: sortAsc
+                            ? t("pages.vacations.monthModal.filters.asc")
+                            : t("pages.vacations.monthModal.filters.desc"),
+                        }) as string}
+                        className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs shadow-sm hover:bg-slate-50
+          focus:outline-none focus:ring-4 focus:ring-blue-100"
+                      >
+                        {sortAsc ? "⬆️" : "⬇️"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
+
+
+
 
                 {/* Tabla */}
                 <div className="mt-2">
