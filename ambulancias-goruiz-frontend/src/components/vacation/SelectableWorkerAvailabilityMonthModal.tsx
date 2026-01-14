@@ -297,7 +297,6 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                 return;
             }
 
-
             // Si es posterior => intentamos fijar end
             // (Validación mínima dentro del mes visible: se mantiene tu lógica actual)
             if (rangeHasBlockedDays(rangeStartDate.getDate(), day)) {
@@ -316,7 +315,6 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
         setRangeEndDate(null);
     };
 
-
     const selectionHasPast = useMemo(() => {
         if (!selectedSummary || monthIndex === null) return false;
         const { a, b } = selectedSummary;
@@ -334,8 +332,26 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
         !(blockRedDays && selectionHasRed) &&
         !selectionHasPast;
 
-    // ✅ Flechas: visibles solo tras elegir start y antes de elegir end
-    const showNavArrows = !!rangeStartDate && !rangeEndDate;
+    // ✅ Flechas: visibles desde que existe START (aunque ya haya END)
+    const showNavArrows = !!rangeStartDate;
+
+    // ✅ Mes/año del START (para saber cuándo permitir volver)
+    const startMonthIndex = rangeStartDate?.getMonth() ?? null;
+    const startYear = rangeStartDate?.getFullYear() ?? null;
+
+    // ✅ Solo mostramos "volver" si estamos fuera del mes/año donde se eligió el START
+    const canGoPrev =
+        showNavArrows &&
+        startMonthIndex !== null &&
+        startYear !== null &&
+        (monthIndex !== startMonthIndex || year !== startYear);
+
+    const goPrevMonth = () => {
+        if (monthIndex === null) return;
+        const prevMonthIndex = monthIndex === 0 ? 11 : monthIndex - 1;
+        const prevYear = monthIndex === 0 ? year - 1 : year;
+        onNavigateMonth?.({ year: prevYear, monthIndex: prevMonthIndex });
+    };
 
     const goNextMonth = () => {
         if (monthIndex === null) return;
@@ -343,6 +359,7 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
         const nextYear = monthIndex === 11 ? year + 1 : year;
         onNavigateMonth?.({ year: nextYear, monthIndex: nextMonthIndex });
     };
+
 
     if (!isOpen || monthIndex === null) return null;
 
@@ -563,7 +580,7 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                             </p>
                         )}
 
-                        {/* ✅ Resumen + botón solicitar */}
+                        {/* ✅ Resumen + botón solicitar + flechas */}
                         <div className="mt-3 rounded-xl bg-slate-50 ring-1 ring-slate-200 p-2">
                             {selectedSummary ? (
                                 <>
@@ -577,15 +594,29 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                                         </p>
 
                                         {showNavArrows && (
-                                            <button
-                                                type="button"
-                                                onClick={goNextMonth}
-                                                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-700 hover:bg-slate-200 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
-                                                aria-label={t("common.nextMonth", "Mes siguiente")}
-                                                title={t("common.nextMonth", "Mes siguiente")}
-                                            >
-                                                →
-                                            </button>
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                {canGoPrev && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={goPrevMonth}
+                                                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-700 hover:bg-slate-200 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                                                        aria-label={t("common.prevMonth", "Mes anterior")}
+                                                        title={t("common.prevMonth", "Mes anterior")}
+                                                    >
+                                                        ←
+                                                    </button>
+                                                )}
+
+                                                <button
+                                                    type="button"
+                                                    onClick={goNextMonth}
+                                                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-700 hover:bg-slate-200 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                                                    aria-label={t("common.nextMonth", "Mes siguiente")}
+                                                    title={t("common.nextMonth", "Mes siguiente")}
+                                                >
+                                                    →
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
 
@@ -654,7 +685,6 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                                 </div>
                             )}
                         </div>
-
                     </div>
                 </div>
 
