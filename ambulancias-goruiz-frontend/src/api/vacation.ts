@@ -394,24 +394,26 @@ function getBerlinYearMonth(iso: string): { y: number; m1: number } | null {
 }
 
 export function invalidateAvailabilityByRange(startISO: string, endISO: string) {
-  const start = new Date(startISO);
-  const end = new Date(endISO);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return;
+  const startYM = getBerlinYearMonth(startISO);
+  const endYM = getBerlinYearMonth(endISO);
+  if (!startYM || !endYM) return;
 
-  // Normalizamos a inicio de mes para iterar por meses
-  let y = start.getFullYear();
-  let m0 = start.getMonth(); // 0..11
+  // Iteramos meses entre startYM y endYM, ambos inclusive (en "Berlin")
+  let y = startYM.y;
+  let m1 = startYM.m1; // 1..12
 
-  const endY = end.getFullYear();
-  const endM0 = end.getMonth();
+  const endY = endYM.y;
+  const endM1 = endYM.m1;
 
-  while (y < endY || (y === endY && m0 <= endM0)) {
-    emitAvailabilityInvalidated({ year: y, month: m0 + 1 }); // 1..12
-    m0++;
-    if (m0 > 11) {
-      m0 = 0;
+  while (y < endY || (y === endY && m1 <= endM1)) {
+    emitAvailabilityInvalidated({ year: y, month: m1 }); // month 1..12
+
+    m1++;
+    if (m1 > 12) {
+      m1 = 1;
       y++;
     }
   }
 }
+
 
