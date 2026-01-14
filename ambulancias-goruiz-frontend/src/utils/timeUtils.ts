@@ -8,15 +8,30 @@ export const getCurrentTimeString = (): string => {
   return `${hours}:${minutes}`;
 };
 
-/** Convierte una fecha ISO a 'DD-MM-YYYY' */
+/** Convierte una fecha ISO (o YYYY-MM-DD) a 'DD-MM-YYYY' usando Europe/Berlin */
 export function formatISOToDDMMYYYY(iso?: string): string {
   if (!iso) return "";
-  const date = new Date(iso);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
+
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+
+  // Formateo estable con TZ Berlin
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d);
+
+  const day = parts.find((p) => p.type === "day")?.value ?? "";
+  const month = parts.find((p) => p.type === "month")?.value ?? "";
+  const year = parts.find((p) => p.type === "year")?.value ?? "";
+
+  if (!day || !month || !year) return "";
+
   return `${day}-${month}-${year}`;
 }
+
 
 /** Convierte una fecha 'YYYY-MM-DD' a 'DD-MM-YYYY' */
 export function formatYYYYMMDDToDDMMYYYY(dateStr?: string): string {
