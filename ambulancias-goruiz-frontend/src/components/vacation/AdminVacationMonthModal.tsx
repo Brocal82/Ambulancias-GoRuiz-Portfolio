@@ -5,7 +5,7 @@ import type { VacationStatus } from "../../types/vacation";
 import { filterRequestsByMonth } from "../../utils/vacationMonthUtils";
 import { updateVacationRequest, deleteVacationRequest } from "../../api/vacation";
 import { invalidateAvailabilityForRange } from "../../utils/vacation/invalidateAvailabilityForRange";
-import AlternativeDateModal from "./AlternativeDateModal";
+import AdminAlternativeOptionModal from "../common/AdminAlternativeOptionModal";
 import { useAuth } from "../../hooks/useAuth";
 import { toastT } from "../../utils/toast";
 import { useTranslation } from "react-i18next";
@@ -169,8 +169,15 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 
   const [isAltOpen, setIsAltOpen] = useState(false);
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
-  const [altInitialStart, setAltInitialStart] = useState<Date>(new Date());
-  const [altInitialEnd, setAltInitialEnd] = useState<Date>(new Date());
+
+  // mes/año visible del modal (flechas)
+  const [altMonthIndex, setAltMonthIndex] = useState<number | null>(null);
+  const [altYear, setAltYear] = useState<number>(year);
+
+  // rango inicial (preselección)
+  const [altInitialStart, setAltInitialStart] = useState<Date | undefined>(undefined);
+  const [altInitialEnd, setAltInitialEnd] = useState<Date | undefined>(undefined);
+
 
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
@@ -332,11 +339,18 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 
     const start = new Date(req.startDate);
     const end = new Date(req.endDate);
+
+    // abrir en el mes del start (UX natural)
+    setAltMonthIndex(start.getMonth());
+    setAltYear(start.getFullYear());
+
+    // preselección del rango original
     setAltInitialStart(start);
     setAltInitialEnd(end);
 
     setIsAltOpen(true);
   };
+
 
   const handleAlternativeSubmit = async (
     altStartISO: string,
@@ -353,11 +367,15 @@ const AdminVacationMonthModal: React.FC<Props> = ({
         adminNote: note,
       });
 
+      // 🔔 Sync (misma pestaña + otras pestañas)
       emitVacationRequestsUpdated({
         type: "updated",
         id: currentRequestId,
         status: "option_sent",
       });
+
+      // 🟢 Invalidar disponibilidad del rango propuesto (refresca grids + modales)
+      invalidateAvailabilityForRange(altStartISO, altEndISO);
 
       setIsAltOpen(false);
       setCurrentRequestId(null);
@@ -366,6 +384,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       toastT.error(["toasts.vacations.worker.loadError"]);
     }
   };
+
 
   const handleStartCancelFlow = (id: string) => {
     setCancelingRequestId(id);
@@ -831,13 +850,22 @@ const AdminVacationMonthModal: React.FC<Props> = ({
         </div>
       </div>
 
-      <AlternativeDateModal
+      <AdminAlternativeOptionModal
         isOpen={isAltOpen}
+        monthIndex={altMonthIndex}
+        year={altYear}
         onClose={() => setIsAltOpen(false)}
         initialStartDate={altInitialStart}
         initialEndDate={altInitialEnd}
-        onSubmit={handleAlternativeSubmit}
+        onNavigateMonth={(next) => {
+          setAltYear(next.year);
+          setAltMonthIndex(next.monthIndex);
+        }}
+        onSubmit={({ startISO, endISO, adminNote }) => {
+          handleAlternativeSubmit(startISO, endISO, adminNote);
+        }}
       />
+
     </>
   );
 };
