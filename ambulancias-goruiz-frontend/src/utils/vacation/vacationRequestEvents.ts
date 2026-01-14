@@ -7,11 +7,35 @@ export type VacationRequestsUpdatedDetail = {
   id: string; // obligatorio
   status?: "pending" | "accepted" | "cancelled" | "option_sent";
   ts?: number;
+
+  /** ✅ dedupe: id de pestaña emisora */
+  senderId?: string;
 };
 
 const EVENT_NAME = "vacation-requests-updated";
 const BC_NAME = "vacations";
 const STORAGE_KEY = "__vac_req_upd__";
+
+// ✅ id estable por pestaña (sessionStorage)
+const SENDER_STORAGE_KEY = "__vac_sender_id__";
+function getSenderId(): string {
+  try {
+    const existing = sessionStorage.getItem(SENDER_STORAGE_KEY);
+    if (existing) return existing;
+
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    sessionStorage.setItem(SENDER_STORAGE_KEY, id);
+    return id;
+  } catch {
+    return "unknown";
+  }
+}
+
+const THIS_SENDER_ID = getSenderId();
 
 function safeParseJSON<T>(raw: string | null): T | null {
   if (!raw) return null;
@@ -34,6 +58,7 @@ export function emitVacationRequestsUpdated(
   const payload: VacationRequestsUpdatedDetail = {
     ...detail,
     ts: Date.now(),
+    senderId: THIS_SENDER_ID,
   };
 
   // 1) Misma pestaña
@@ -44,6 +69,7 @@ export function emitVacationRequestsUpdated(
   }
 
   // 2) Otras pestañas/ventanas: BroadcastChannel
+  // (⚠️ la misma pestaña también lo puede recibir, pero lo deduplicamos por senderId)
   try {
     const bc = new BroadcastChannel(BC_NAME);
     bc.postMessage({
@@ -52,6 +78,7 @@ export function emitVacationRequestsUpdated(
       id: payload.id,
       status: payload.status,
       ts: payload.ts,
+      senderId: payload.senderId,
     });
     bc.close?.();
   } catch {
@@ -84,10 +111,14 @@ export function emitVacationRequestsUpdated(
 export function subscribeVacationRequestsUpdated(
   handler: (detail: VacationRequestsUpdatedDetail) => void,
 ) {
-  // 1) CustomEvent
+  const shouldIgnoreSelf = (detail?: VacationRequestsUpdatedDetail) => {
+    if (!detail?.senderId) return false;
+    return detail.senderId === THIS_SENDER_ID;
+  };
+
+  // 1) CustomEvent (misma pestaña) -> ✅ SI lo procesamos
   const customHandler = (e: Event) => {
     const detail = (e as CustomEvent).detail as VacationRequestsUpdatedDetail;
-    // type + id obligatorios
     if (!detail?.type) return;
     if (!detail?.id) return;
     handler(detail);
@@ -101,8 +132,6 @@ export function subscribeVacationRequestsUpdated(
     bc.onmessage = (msg: MessageEvent) => {
       const data = msg.data || {};
       if (data?.type !== "requests-updated") return;
-
-      // type + id obligatorios
       if (!data.eventType) return;
       if (!data.id) return;
 
@@ -111,7 +140,11 @@ export function subscribeVacationRequestsUpdated(
         id: String(data.id),
         status: data.status as VacationRequestsUpdatedDetail["status"],
         ts: data.ts ? Number(data.ts) : undefined,
+        senderId: typeof data.senderId === "string" ? data.senderId : undefined,
       };
+
+      // ✅ dedupe: si viene de esta misma pestaña, ignorar
+      if (shouldIgnoreSelf(detail)) return;
 
       handler(detail);
     };
@@ -123,9 +156,12 @@ export function subscribeVacationRequestsUpdated(
   const storageHandler = (ev: StorageEvent) => {
     if (ev.key !== STORAGE_KEY) return;
     const payload = safeParseJSON<VacationRequestsUpdatedDetail>(ev.newValue);
-    // type + id obligatorios
     if (!payload?.type) return;
     if (!payload?.id) return;
+
+    // ✅ dedupe: si viene de esta misma pestaña, ignorar
+    if (shouldIgnoreSelf(payload)) return;
+
     handler(payload);
   };
   window.addEventListener("storage", storageHandler);
