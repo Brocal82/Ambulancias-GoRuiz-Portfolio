@@ -57,6 +57,12 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                 ? "en-US"
                 : "es-ES";
 
+    const formatShortDate = (d: Date) => {
+        // Ej: 28 ene (es-ES) / 28. Jan (de-DE) / Jan 28 (en-US)
+        return d.toLocaleDateString(locale, { day: "2-digit", month: "short" });
+    };
+
+
     const [availability, setAvailability] =
         useState<VacationAvailabilityResponse | null>(null);
     const [availLoading, setAvailLoading] = useState(false);
@@ -230,6 +236,18 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
             endISO: b.toISOString(),
         };
     }, [rangeStartDate, rangeEndDate]);
+
+    const selectedLabel = useMemo(() => {
+        if (!rangeStartDate) return null;
+
+        const end = rangeEndDate ?? rangeStartDate;
+
+        const a = rangeStartDate < end ? rangeStartDate : end;
+        const b = rangeStartDate < end ? end : rangeStartDate;
+
+        return `${formatShortDate(a)} – ${formatShortDate(b)}`;
+    }, [rangeStartDate, rangeEndDate, locale]);
+
 
     const selectionHasRed = useMemo(() => {
         // Igual que antes: validamos rojo por días del mes visible (lo mínimo para no romper)
@@ -580,111 +598,103 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                             </p>
                         )}
 
-                        {/* ✅ Resumen + botón solicitar + flechas */}
-                        <div className="mt-3 rounded-xl bg-slate-50 ring-1 ring-slate-200 p-2">
-                            {selectedSummary ? (
-                                <>
-                                    <div className="flex items-center justify-between gap-2">
-                                        <p className="text-xs text-slate-700">
-                                            {String(
-                                                t("pages.vacations.workerPage.selectedRange", {
-                                                    defaultValue: `Del ${selectedSummary.a} al ${selectedSummary.b} (${selectedSummary.days} días)`,
-                                                }),
-                                            )}
-                                        </p>
+                        {/* ✅ Resumen centrado + flechas a la derecha + botón abajo derecha */}
+                        <div className="mt-3">
+                            {/* 1) Línea centrada SOLO si hay selección */}
+                            {selectedSummary && (
+                                <div className="flex justify-center">
+                                    <div className="inline-flex items-center gap-2">
+                                        {/* Flecha volver (izquierda) */}
+                                        {showNavArrows && canGoPrev && (
+                                            <button
+                                                type="button"
+                                                onClick={goPrevMonth}
+                                                className="inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-700 hover:bg-slate-100 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                                                aria-label={t("common.prevMonth", "Mes anterior")}
+                                                title={t("common.prevMonth", "Mes anterior")}
+                                            >
+                                                <span className="text-lg leading-none">‹</span>
 
+                                            </button>
+                                        )}
+
+                                        {/* Texto centrado */}
+                                        <div className="flex items-center gap-2 whitespace-nowrap">
+                                            <span className="text-xs font-medium text-slate-800">
+                                                {selectedLabel ?? ""}
+                                            </span>
+
+                                            <span className="rounded-full border border-slate-200 px-2 py-0.5 text-[11px] text-slate-600">
+                                                {selectedSummary.days}{" "}
+                                                {String(t("pages.vacations.workerPage.days", { defaultValue: "días" }))}
+                                            </span>
+                                        </div>
+
+
+                                        {/* Flecha siguiente (derecha) */}
                                         {showNavArrows && (
-                                            <div className="flex items-center gap-1 shrink-0">
-                                                {canGoPrev && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={goPrevMonth}
-                                                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-700 hover:bg-slate-200 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
-                                                        aria-label={t("common.prevMonth", "Mes anterior")}
-                                                        title={t("common.prevMonth", "Mes anterior")}
-                                                    >
-                                                        ←
-                                                    </button>
-                                                )}
+                                            <button
+                                                type="button"
+                                                onClick={goNextMonth}
+                                                className="inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-700 hover:bg-slate-100 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                                                aria-label={t("common.nextMonth", "Mes siguiente")}
+                                                title={t("common.nextMonth", "Mes siguiente")}
+                                            >
+                                                <span className="text-lg leading-none">›</span>
 
-                                                <button
-                                                    type="button"
-                                                    onClick={goNextMonth}
-                                                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-700 hover:bg-slate-200 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
-                                                    aria-label={t("common.nextMonth", "Mes siguiente")}
-                                                    title={t("common.nextMonth", "Mes siguiente")}
-                                                >
-                                                    →
-                                                </button>
-                                            </div>
+                                            </button>
                                         )}
                                     </div>
+                                </div>
 
-                                    {blockRedDays && selectionHasRed && (
-                                        <p className="mt-1 text-[11px] text-rose-700">
-                                            {t(
-                                                "pages.vacations.requestForm.rangeBlocked",
-                                                "El rango contiene días sin disponibilidad.",
-                                            )}
-                                        </p>
+                            )}
+
+                            {/* 2) Mensajes de error se quedan, pero sin “caja gris” */}
+                            {selectedSummary && blockRedDays && selectionHasRed && (
+                                <p className="mt-1 text-[11px] text-rose-700 text-center">
+                                    {t(
+                                        "pages.vacations.requestForm.rangeBlocked",
+                                        "El rango contiene días sin disponibilidad.",
                                     )}
+                                </p>
+                            )}
 
-                                    {selectionHasPast && (
-                                        <p className="mt-1 text-[11px] text-rose-700">
-                                            {String(
-                                                t("pages.vacations.workerPage.pastDaysBlocked", {
-                                                    defaultValue: "No puedes solicitar vacaciones en días pasados.",
-                                                }),
-                                            )}
-                                        </p>
+                            {selectedSummary && selectionHasPast && (
+                                <p className="mt-1 text-[11px] text-rose-700 text-center">
+                                    {String(
+                                        t("pages.vacations.workerPage.pastDaysBlocked", {
+                                            defaultValue: "No puedes solicitar vacaciones en días pasados.",
+                                        }),
                                     )}
+                                </p>
+                            )}
 
-                                    <div className="mt-2 flex justify-end">
-                                        <button
-                                            type="button"
-                                            disabled={!canRequest}
-                                            onClick={() => {
-                                                if (!selectedSummary) return;
-                                                onRequestRange?.({
-                                                    startISO: selectedSummary.startISO,
-                                                    endISO: selectedSummary.endISO,
-                                                    days: selectedSummary.days,
-                                                });
-                                            }}
-                                            className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-xs font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50"
-                                        >
-                                            {String(
-                                                t("pages.vacations.workerPage.requestFromGrid", {
-                                                    defaultValue: "Solicitar",
-                                                }),
-                                            )}
-                                        </button>
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="flex items-center justify-between gap-2">
-                                    <p className="text-xs text-slate-600">
+                            {/* 3) Botón separado abajo a la derecha */}
+                            {selectedSummary && (
+                                <div className="mt-2 flex justify-end">
+                                    <button
+                                        type="button"
+                                        disabled={!canRequest}
+                                        onClick={() => {
+                                            if (!selectedSummary) return;
+                                            onRequestRange?.({
+                                                startISO: selectedSummary.startISO,
+                                                endISO: selectedSummary.endISO,
+                                                days: selectedSummary.days,
+                                            });
+                                        }}
+                                        className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-xs font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50"
+                                    >
                                         {String(
-                                            t("pages.vacations.workerPage.clickToSelect", {
-                                                defaultValue: "Haz clic en un día para empezar a seleccionar.",
+                                            t("pages.vacations.workerPage.requestFromGrid", {
+                                                defaultValue: "Solicitar",
                                             }),
                                         )}
-                                    </p>
-
-                                    {showNavArrows && (
-                                        <button
-                                            type="button"
-                                            onClick={goNextMonth}
-                                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-700 hover:bg-slate-200 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
-                                            aria-label={t("common.nextMonth", "Mes siguiente")}
-                                            title={t("common.nextMonth", "Mes siguiente")}
-                                        >
-                                            →
-                                        </button>
-                                    )}
+                                    </button>
                                 </div>
                             )}
                         </div>
+
                     </div>
                 </div>
 
