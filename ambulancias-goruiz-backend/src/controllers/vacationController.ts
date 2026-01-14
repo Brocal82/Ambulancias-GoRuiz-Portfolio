@@ -138,6 +138,43 @@ export const createVacationRequest = async (
   }
 };
 
+// Worker cancela su propia solicitud (solo pending / option_sent)
+export const cancelMyVacationRequest = async (req: any, res: any) => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ message: "No autorizado" });
+    }
+
+    const request = await VacationRequest.findById(id);
+    if (!request) {
+      return res.status(404).json({ message: "Solicitud no encontrada" });
+    }
+
+    // ✅ Seguridad: solo el dueño puede cancelar
+    if (String(request.user) !== String(userId)) {
+      return res.status(403).json({ message: "No puedes cancelar esta solicitud" });
+    }
+
+    // ✅ Solo permitir cancelar si está pendiente (y opcionalmente option_sent)
+    const status = String(request.status);
+    if (status !== "pending" && status !== "option_sent") {
+      return res.status(400).json({ message: "Solo puedes cancelar solicitudes pendientes" });
+    }
+
+    request.status = "cancelled";
+    await request.save();
+
+    return res.status(200).json(request);
+  } catch (err) {
+    console.error("❌ cancelMyVacationRequest error:", err);
+    return res.status(500).json({ message: "Error al cancelar la solicitud" });
+  }
+};
+
+
 // Actualizar solicitud (admin): estado, alternativa, nota
 export const updateVacationRequest = async (
   req: Request,

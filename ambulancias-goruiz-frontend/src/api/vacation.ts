@@ -1,7 +1,11 @@
 // frontend/src/api/vacation.ts
 import axiosInstance from "./axios";
 import type { IVacationRequest } from "../types/vacationRequest";
-import { emitAvailabilityInvalidated } from "../utils/vacation/vacationEvents";
+import {
+  emitAvailabilityInvalidated,
+  emitVacationRequestsUpdated,
+} from "../utils/vacation/vacationEvents";
+
 
 
 /* =========================
@@ -74,30 +78,20 @@ export const createVacationRequest = async (
     // noop
   }
 
-  // 🔔 NUEVO: difundir que el listado de solicitudes cambió (para que Admin recargue sin refresh)
-  try {
-    // misma pestaña
-    window.dispatchEvent(
-      new CustomEvent("vacation-requests-updated", {
-        detail: { ts: Date.now() },
-      }),
-    );
-  } catch {}
-  try {
-    // otras pestañas: BroadcastChannel
-    const BC = (window as any).BroadcastChannel as
-      | (new (name: string) => BroadcastChannel)
-      | undefined;
-    if (typeof BC === "function") {
-      const bc = new BC("vacations");
-      bc.postMessage({ type: "requests-updated", ts: Date.now() });
-      bc.close?.();
-    }
-  } catch {}
-  try {
-    // fallback: localStorage
-    localStorage.setItem("__vac_req_upd__", JSON.stringify({ ts: Date.now() }));
-  } catch {}
+  // 🔔 Difundir que el listado de solicitudes cambió (Admin/Worker/otras pestañas)
+try {
+  const createdId = (response.data as any)?._id;
+  if (createdId) {
+    emitVacationRequestsUpdated({ type: "created", id: String(createdId) });
+  } else {
+    // Si por algún motivo no llega _id, enviamos un "updated" genérico con un id dummy estable
+    // (pero idealmente siempre habrá _id).
+    emitVacationRequestsUpdated({ type: "updated", id: "unknown" });
+  }
+} catch {
+  // noop
+}
+
 
   return response.data;
 };
@@ -162,6 +156,21 @@ export const deleteVacationRequest = async (token: string, id: string) => {
   });
   return response.data;
 };
+
+// Cancelar solicitud propia (worker, solo si está pending / option_sent)
+export const cancelMyVacationRequest = async (token: string, id: string) => {
+  const response = await axiosInstance.patch(
+    `/vacations/${id}/cancel`,
+    {},
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+
+  return response.data;
+};
+
+
 
 /* =========================
    Contador pendientes

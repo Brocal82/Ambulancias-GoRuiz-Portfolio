@@ -5,7 +5,7 @@ import type { VacationStatus } from "../../types/vacation";
 import { filterRequestsByMonth } from "../../utils/vacationMonthUtils";
 import { updateVacationRequest, deleteVacationRequest } from "../../api/vacation";
 import { invalidateAvailabilityForRange } from "../../utils/vacation/invalidateAvailabilityForRange";
-import AlternativeDateModal from "./AlternativeDateModal";
+import AdminAlternativeOptionModal from "../common/AdminAlternativeOptionModal";
 import { useAuth } from "../../hooks/useAuth";
 import { toastT } from "../../utils/toast";
 import { useTranslation } from "react-i18next";
@@ -17,8 +17,6 @@ import {
 import { emitVacationRequestsUpdated } from "../../utils/vacation/vacationEvents";
 import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
 import AdminVacationRequestsTable from "./AdminVacationRequestsTable";
-
-
 
 interface Props {
   isOpen: boolean;
@@ -107,10 +105,25 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   const [highlightRequestId, setHighlightRequestId] = useState<string | null>(
     null,
   );
+
+  // ✅ Toggle: mostrar/ocultar solicitudes del mes (tabla)
+  const [showMonthRequests, setShowMonthRequests] = useState(false);
+
   useEffect(() => {
     if (!isOpen) return;
+
     setHighlightRequestId(null);
+
+    // ✅ SIEMPRE empezar con el desplegable cerrado
+    setShowMonthRequests(false);
+
+    // empezar limpio
+    setSearchText("");
+    setStatusFilter("");
+    setSortAsc(true);
+
   }, [isOpen, monthIndex, year]);
+
 
   useEffect(() => {
     if (!isOpen || monthIndex === null) return;
@@ -137,14 +150,13 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     }, 200);
   });
 
-
   const getDayState = (day: number | null): DayState | null => {
     if (!availability || day === null) return null;
     const rec = availability.days.find((d) => d.day === day);
     return rec ? rec.state : "green";
   };
 
-  // ========= Estado existente (compactado) =========
+  // ========= Estado filtros (los dejamos, por ahora) =========
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | VacationStatus>("");
   const [sortAsc, setSortAsc] = useState(true);
@@ -157,8 +169,15 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 
   const [isAltOpen, setIsAltOpen] = useState(false);
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
-  const [altInitialStart, setAltInitialStart] = useState<Date>(new Date());
-  const [altInitialEnd, setAltInitialEnd] = useState<Date>(new Date());
+
+  // mes/año visible del modal (flechas)
+  const [altMonthIndex, setAltMonthIndex] = useState<number | null>(null);
+  const [altYear, setAltYear] = useState<number>(year);
+
+  // rango inicial (preselección)
+  const [altInitialStart, setAltInitialStart] = useState<Date | undefined>(undefined);
+  const [altInitialEnd, setAltInitialEnd] = useState<Date | undefined>(undefined);
+
 
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
@@ -179,6 +198,33 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     return filterRequestsByMonth(requests, monthIndex, year);
   }, [requests, monthIndex, year]);
 
+  // aplicar filtros/orden (solo sobre las del mes)
+  const filtered = useMemo(() => {
+    let items = monthRequests;
+
+    // filtro por texto (usuario)
+    if (searchText.trim()) {
+      const q = searchText.toLowerCase();
+      items = items.filter((r) => {
+        const name = `${r.user?.name ?? ""} ${r.user?.lastName ?? ""}`.toLowerCase();
+        return name.includes(q);
+      });
+    }
+
+    // filtro por estado
+    if (statusFilter) items = items.filter((r) => r.status === statusFilter);
+
+    // orden por fecha inicio
+    items = [...items].sort((a, b) => {
+      const aStart = new Date(a.startDate).getTime();
+      const bStart = new Date(b.startDate).getTime();
+      return sortAsc ? aStart - bStart : bStart - aStart;
+    });
+
+    return items;
+  }, [monthRequests, searchText, statusFilter, sortAsc]);
+
+
   const monthCount = monthRequests.length;
 
   const statusCounts = useMemo(() => {
@@ -186,27 +232,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     for (const r of monthRequests) acc[r.status]++;
     return acc;
   }, [monthRequests]);
-
-  // aplicar filtros/orden
-  const filtered = useMemo(() => {
-    let items = monthRequests;
-    if (searchText.trim()) {
-      const q = searchText.toLowerCase();
-      items = items.filter((r) => {
-        const name =
-          `${r.user?.name ?? ""} ${r.user?.lastName ?? ""}`.toLowerCase();
-        return name.includes(q);
-      });
-    }
-    if (statusFilter) items = items.filter((r) => r.status === statusFilter);
-    items = [...items].sort((a, b) => {
-      const aStart = new Date(a.startDate).getTime();
-      const bStart = new Date(b.startDate).getTime();
-      return sortAsc ? aStart - bStart : bStart - aStart;
-    });
-    return items;
-  }, [monthRequests, searchText, statusFilter, sortAsc]);
-
 
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString(locale, { timeZone: "Europe/Berlin" });
@@ -250,21 +275,17 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     try {
       await updateVacationRequest(token, id, { status: "accepted" });
 
-      // 🔔 Emitir sincronización a Worker
       emitVacationRequestsUpdated({ type: "updated", id, status: "accepted" });
 
-      // 🟢 Invalidar disponibilidad por rango (cambia capacidad)
       if (req) {
         invalidateAvailabilityForRange(req.startDate, req.endDate);
       }
 
-      // Refrescar mini-calendario visible
       const m1 = monthIndex + 1;
       window.setTimeout(() => loadAvailability(year, m1, true), 200);
 
       onActionDone?.();
     } catch (e: any) {
-      // Capacidad excedida -> ofrecer forzar
       if (e?.status === 409 && e?.body?.code === "capacity_exceeded") {
         toastT.error(["toasts.vacations.admin.capacityExceeded"]);
 
@@ -283,15 +304,16 @@ const AdminVacationMonthModal: React.FC<Props> = ({
             force: true,
           });
 
-          // 🔔 Emitir sincronización a Worker
-          emitVacationRequestsUpdated({ type: "updated", id, status: "accepted" });
+          emitVacationRequestsUpdated({
+            type: "updated",
+            id,
+            status: "accepted",
+          });
 
-          // 🟢 Invalidar disponibilidad por rango (cambia capacidad)
           if (req) {
             invalidateAvailabilityForRange(req.startDate, req.endDate);
           }
 
-          // Refrescar mini-calendario visible
           const m1 = monthIndex + 1;
           window.setTimeout(() => loadAvailability(year, m1, true), 200);
 
@@ -308,22 +330,27 @@ const AdminVacationMonthModal: React.FC<Props> = ({
         return;
       }
 
-      // Otros errores
       toastT.error(["toasts.vacations.admin.error"]);
     }
   };
-
 
   const openAlternative = async (req: IVacationRequest) => {
     setCurrentRequestId(req._id);
 
     const start = new Date(req.startDate);
     const end = new Date(req.endDate);
+
+    // abrir en el mes del start (UX natural)
+    setAltMonthIndex(start.getMonth());
+    setAltYear(start.getFullYear());
+
+    // preselección del rango original
     setAltInitialStart(start);
     setAltInitialEnd(end);
 
     setIsAltOpen(true);
   };
+
 
   const handleAlternativeSubmit = async (
     altStartISO: string,
@@ -340,9 +367,15 @@ const AdminVacationMonthModal: React.FC<Props> = ({
         adminNote: note,
       });
 
-      // 🔔 Emitir sincronización al Worker (la propuesta cambia lo que ve)
-      emitVacationRequestsUpdated({ type: "updated", id: currentRequestId, status: "option_sent" });
+      // 🔔 Sync (misma pestaña + otras pestañas)
+      emitVacationRequestsUpdated({
+        type: "updated",
+        id: currentRequestId,
+        status: "option_sent",
+      });
 
+      // 🟢 Invalidar disponibilidad del rango propuesto (refresca grids + modales)
+      invalidateAvailabilityForRange(altStartISO, altEndISO);
 
       setIsAltOpen(false);
       setCurrentRequestId(null);
@@ -367,10 +400,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
         adminNote: cancelMessage,
       });
 
-      // 🔔 Emitir sincronización a Worker
       emitVacationRequestsUpdated({ type: "updated", id, status: "cancelled" });
 
-      // 🟢 Invalidar disponibilidad por rango (libera capacidad)
       const req = requests.find((r) => r._id === id);
       if (req) {
         invalidateAvailabilityForRange(req.startDate, req.endDate);
@@ -392,24 +423,18 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     if (!token || monthIndex === null) return;
     if (!window.confirm(t("pages.vacations.monthModal.confirmDelete"))) return;
     try {
-      // ⚠️ Guardar el rango ANTES de borrar
       const req = requests.find((r) => r._id === id);
       const startISO = req?.startDate;
       const endISO = req?.endDate;
 
       await deleteVacationRequest(token, id);
 
-      // 🔔 Emitir sincronización (borrado) — el Worker refrescará su lista
       emitVacationRequestsUpdated({ type: "deleted", id });
 
-
-      // 🟢 Si el borrado afecta capacidad (p.ej. era 'accepted'), invalidar por rango
       if (startISO && endISO) {
         invalidateAvailabilityForRange(startISO, endISO);
       }
 
-
-      // Refrescar mini-calendario del mes visible (forzado) tras breve retardo
       const m1 = monthIndex + 1;
       window.setTimeout(() => loadAvailability(year, m1, true), 200);
 
@@ -419,7 +444,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     }
   };
 
-  // 👉 Toggle de resaltado al hacer click en toda la tarjeta (solo UI de lista)
   const toggleHighlightFor = (req: IVacationRequest) => {
     if (highlightRequestId === req._id) {
       setHighlightRequestId(null);
@@ -428,8 +452,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     }
   };
 
-
-  /** Highlight visual del rango seleccionado (background completo, sin bordes lilas) */
   const buildBorderMapFromRange = (
     start: Date,
     end: Date,
@@ -438,7 +460,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
     const classes: Record<number, string> = {};
 
-    // Limitar rango al mes visible
     const monthStart = new Date(year, monthIndex, 1);
     const monthEnd = new Date(year, monthIndex, daysInMonth, 23, 59, 59, 999);
 
@@ -449,31 +470,24 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     const startDay = s.getDate();
     const endDay = e.getDate();
 
-    // 🔵 Background visible y claro (no se mezcla con verde/amarillo/rojo)
     for (let d = startDay; d <= endDay; d++) {
       classes[d] =
-        (classes[d] ?? '') +
-        ' bg-sky-200/70 text-slate-900 ring-1 ring-sky-400';
+        (classes[d] ?? "") +
+        " bg-sky-200/70 text-slate-900 ring-1 ring-sky-400";
     }
 
-    // Redondeo tipo “pastilla”
-    classes[startDay] = (classes[startDay] ?? '') + ' rounded-l-full';
-    classes[endDay] = (classes[endDay] ?? '') + ' rounded-r-full';
+    classes[startDay] = (classes[startDay] ?? "") + " rounded-l-full";
+    classes[endDay] = (classes[endDay] ?? "") + " rounded-r-full";
 
     return classes;
   };
 
-
-
-  /** Borde SOLO para la solicitud seleccionada que solape el mes visible */
   const borderMap = useMemo(() => {
     if (monthIndex === null || !highlightRequestId) return {};
 
-    // Busca la petición seleccionada
     const sel = requests.find((r) => r._id === highlightRequestId);
     if (!sel) return {};
 
-    // Construye el contorno del rango (se recorta al mes en el helper)
     const s = new Date(sel.startDate);
     const e = new Date(sel.endDate);
     return buildBorderMapFromRange(s, e);
@@ -486,14 +500,13 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       <div className="fixed inset-0 z-50 flex items-start justify-center p-2 sm:p-4">
         <div className="fixed inset-0 bg-black/50" onClick={onClose} />
 
-        {/* Panel compacto con layout de columnas y scroll interno */}
         <div
           className="relative z-10 w-full max-w-4xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 flex flex-col max-h-[90vh]"
           role="dialog"
           aria-modal="true"
           aria-labelledby="vacation-month-modal-title"
         >
-          {/* Header compacto y sticky */}
+          {/* Header */}
           <div className="sticky top-0 z-10 bg-white border-b border-slate-200 p-3">
             <div className="flex items-start gap-2">
               <div className="min-w-0">
@@ -503,86 +516,40 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                 >
                   {monthLabel} · {year}
                 </h3>
-                <p className="mt-0.5 text-xs text-slate-600">
-                  {t("pages.vacations.monthModal.countLine", {
-                    count: monthCount,
-                  })}
-                </p>
               </div>
 
-              <div className="ml-auto flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("")}
-                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ring-slate-300 ${statusFilter === ""
-                    ? "bg-slate-900 text-white"
-                    : "bg-white text-slate-700 hover:bg-slate-50"
-                    } focus:outline-none focus:ring-2 focus:ring-blue-100`}
+              <div className="ml-auto flex items-center gap-2">
+                {/* ✅ Solo contador a la derecha */}
+                <span
+                  className="inline-flex items-center justify-center rounded-full
+    px-3.5 py-1.5 text-[12px]
+    font-semibold tabular-nums
+    text-slate-900
+    bg-white
+    border-2 border-slate-300
+    shadow-sm"
                 >
-                  {t("pages.vacations.monthModal.filters.all")}
-                  {monthCount > 0 ? ` (${monthCount})` : ""}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("pending")}
-                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === "pending"
-                    ? "bg-amber-500 text-white ring-amber-500"
-                    : "bg-white text-amber-700 ring-amber-300 hover:bg-amber-50"
-                    } focus:outline-none focus:ring-2 focus:ring-amber-100`}
-                >
-                  {t("pages.vacations.monthModal.filters.pending")}
-                  {statusCounts.pending ? ` (${statusCounts.pending})` : ""}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("accepted")}
-                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === "accepted"
-                    ? "bg-emerald-600 text-white ring-emerald-600"
-                    : "bg-white text-emerald-700 ring-emerald-300 hover:bg-emerald-50"
-                    } focus:outline-none focus:ring-2 focus:ring-emerald-100`}
-                >
-                  {t("pages.vacations.monthModal.filters.accepted")}
-                  {statusCounts.accepted ? ` (${statusCounts.accepted})` : ""}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("cancelled")}
-                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === "cancelled"
-                    ? "bg-rose-600 text-white ring-rose-600"
-                    : "bg-white text-rose-700 ring-rose-300 hover:bg-rose-50"
-                    } focus:outline-none focus:ring-2 focus:ring-rose-100`}
-                >
-                  {t("pages.vacations.monthModal.filters.cancelled")}
-                  {statusCounts.cancelled ? ` (${statusCounts.cancelled})` : ""}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("option_sent")}
-                  className={`rounded-full px-2.5 py-1 text-[10px] ring-1 ${statusFilter === "option_sent"
-                    ? "bg-blue-600 text-white ring-blue-600"
-                    : "bg-white text-blue-700 ring-blue-300 hover:bg-blue-50"
-                    } focus:outline-none focus:ring-2 focus:ring-blue-100`}
-                >
-                  {t("pages.vacations.monthModal.filters.option_sent")}
-                  {statusCounts.option_sent
-                    ? ` (${statusCounts.option_sent})`
-                    : ""}
-                </button>
+                  {monthCount}
+                </span>
 
+
+
+                {/* ✅ Cerrar */}
                 <button
                   ref={closeBtnRef}
                   aria-label={t("pages.vacations.monthModal.close")}
                   onClick={onClose}
-                  className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400
-                    focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400
+      focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                 >
                   ✕
                 </button>
               </div>
+
             </div>
           </div>
 
-          {/* Contenido scrollable y compacto */}
+          {/* Contenido */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
             {/* Calendario mini */}
             <div className="rounded-xl ring-1 ring-slate-200 p-2">
@@ -647,7 +614,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                           ? "bg-amber-50 text-slate-800 border-2 border-amber-300"
                           : "bg-emerald-50 text-slate-800 border-2 border-emerald-300";
 
-                    // 🟣 Bordes exteriores para formar contorno continuo del rango (todas las aceptadas)
                     const borderCls = borderMap[cell] ?? "";
 
                     return (
@@ -656,11 +622,16 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                         className={[
                           "h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none",
                           color,
-                          borderCls, // 👈 bordes solo donde toca (top/bottom/left/right)
+                          borderCls,
                         ].join(" ")}
                         title={
                           availability
-                            ? `${cell} · ${availability.days.find((d) => d.day === cell)?.approvedCount ?? 0} ${t("pages.vacations.adminPage.badges.accepted", "aceptadas")}`
+                            ? `${cell} · ${availability.days.find((d) => d.day === cell)
+                              ?.approvedCount ?? 0
+                            } ${t(
+                              "pages.vacations.adminPage.badges.accepted",
+                              "aceptadas",
+                            )}`
                             : `${cell}`
                         }
                         aria-label={`${cell}${borderCls ? " · highlighted" : ""}`}
@@ -673,102 +644,201 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 
               {availError && (
                 <p className="mt-1 text-[10px] text-rose-600">
-                  {t(
-                    "common.loadError",
-                    "No se pudo cargar la disponibilidad.",
-                  )}
+                  {t("common.loadError", "No se pudo cargar la disponibilidad.")}
                 </p>
               )}
             </div>
 
-            {/* Filtros compactos */}
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex gap-2">
-                <input
-                  id="vacation-filter-user"
-                  type="text"
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  placeholder={t(
-                    "pages.vacations.monthModal.filters.userPlaceholder",
-                  )}
-                  aria-label={t(
-                    "pages.vacations.monthModal.filters.userPlaceholder",
-                  )}
-                  className="w-full sm:w-56 rounded-lg border border-slate-300 ring-1 ring-slate-200 px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-                <select
-                  id="vacation-filter-status"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as any)}
-                  aria-label={t(
-                    "pages.vacations.monthModal.filters.statusLabel",
-                  )}
-                  className="rounded-lg border border-slate-300 ring-1 ring-slate-200 px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-100"
-                >
-                  <option value="">
-                    {t("pages.vacations.monthModal.filters.all")}
-                  </option>
-                  <option value="pending">
-                    {t("pages.vacations.monthModal.filters.pending")}
-                  </option>
-                  <option value="accepted">
-                    {t("pages.vacations.monthModal.filters.accepted")}
-                  </option>
-                  <option value="cancelled">
-                    {t("pages.vacations.monthModal.filters.cancelled")}
-                  </option>
-                  <option value="option_sent">
-                    {t("pages.vacations.monthModal.filters.option_sent")}
-                  </option>
-                </select>
-              </div>
-
+            {/* ✅ Botón 🏖️ (igual que Worker) — debajo del calendario */}
+            <div className="flex justify-end">
               <button
-                onClick={() => setSortAsc((v) => !v)}
-                aria-label={t("pages.vacations.monthModal.filters.sortToggle", {
-                  dir: sortAsc
-                    ? t("pages.vacations.monthModal.filters.asc")
-                    : t("pages.vacations.monthModal.filters.desc"),
-                })}
-                className="rounded-lg border border-slate-300 ring-1 ring-slate-200 px-2 py-1.5 text-xs hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                type="button"
+                onClick={() => setShowMonthRequests((v) => !v)}
+                className={`
+                  p-2 rounded-xl border shadow-sm transition
+                  ${showMonthRequests
+                    ? "bg-slate-200 border-slate-400"
+                    : "bg-white border-slate-300 hover:bg-slate-100"
+                  }
+                `}
+                aria-expanded={showMonthRequests}
+                aria-label={t(
+                  "pages.vacations.adminMonthModal.toggleMonthRequests",
+                  "Ver/ocultar solicitudes de este mes",
+                )}
+                title={t(
+                  "pages.vacations.adminMonthModal.toggleMonthRequests",
+                  "Ver/ocultar solicitudes de este mes",
+                )}
               >
-                {t("pages.vacations.monthModal.filters.sortToggle", {
-                  dir: sortAsc
-                    ? t("pages.vacations.monthModal.filters.asc")
-                    : t("pages.vacations.monthModal.filters.desc"),
-                })}
+                <span className="text-2xl leading-none">🏖️</span>
               </button>
             </div>
 
-            {/* Lista compacta (extraída a componente) */}
-            <div className="mt-2">
-              <AdminVacationRequestsTable
-                t={t}
-                rows={filtered}
-                highlightRequestId={highlightRequestId}
-                onToggleHighlight={toggleHighlightFor}
-                fmtDate={fmtDate}
-                statusBadge={statusBadge}
-                onAccept={handleAccept}
-                onOpenAlternative={openAlternative}
-                onDelete={handleDelete}
-                cancelingRequestId={cancelingRequestId}
-                cancelMessage={cancelMessage}
-                isSendingCancel={isSendingCancel}
-                onStartCancelFlow={handleStartCancelFlow}
-                onCancelMessageChange={setCancelMessage}
-                onConfirmCancel={handleConfirmCancel}
-                onAbortCancelFlow={() => {
-                  setCancelingRequestId(null);
-                  setCancelMessage("");
-                }}
-              />
-            </div>
+            {/* ✅ Solo si está abierto: mostramos filtros + tabla */}
+            {showMonthRequests && (
+              <>
+                {/* ✅ Filtros pro + buscador (solo dentro del desplegable 🏖️) */}
+                <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    {/* Buscador */}
+                    <div className="min-w-0 sm:shrink-0">
+                      <input
+                        id="vacation-filter-user"
+                        type="text"
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        placeholder={t("pages.vacations.monthModal.filters.userPlaceholder")}
+                        aria-label={t("pages.vacations.monthModal.filters.userPlaceholder")}
+                        className="w-full sm:w-[260px] md:w-[320px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs shadow-sm
+          focus:outline-none focus:ring-4 focus:ring-blue-100"
+                      />
+                    </div>
 
+                    {/* Filtros (minimal, borde color) + sort */}
+                    <div className="flex items-center justify-between gap-2 sm:justify-end">
+                      <div className="flex items-center gap-2">
+                        {/* ⭐ Todas */}
+                        <button
+                          type="button"
+                          onClick={() => setStatusFilter("")}
+                          aria-pressed={statusFilter === ""}
+                          title={t("pages.vacations.monthModal.filters.all") as string}
+                          className={[
+                            "inline-flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition",
+                            statusFilter === ""
+                              ? "border-slate-400 ring-2 ring-slate-200 text-slate-900"
+                              : "border-slate-300 text-slate-600 hover:bg-slate-100",
+                          ].join(" ")}
+                        >
+                          <span className="text-[16px] leading-none">⭐</span>
+                        </button>
+
+                        {/* Pending (ámbar) */}
+                        <button
+                          type="button"
+                          onClick={() => setStatusFilter("pending")}
+                          aria-pressed={statusFilter === "pending"}
+                          title={t("pages.vacations.monthModal.filters.pending") as string}
+                          className={[
+                            "inline-flex items-center justify-center rounded-full bg-white px-3 py-2 text-[11px] font-semibold tabular-nums shadow-sm transition",
+                            "border",
+                            statusFilter === "pending"
+                              ? "border-amber-400 text-slate-900 ring-2 ring-amber-100"
+                              : "border-amber-300 text-slate-700 hover:border-amber-400 hover:bg-[#FEF3C7]",
+
+                          ].join(" ")}
+                        >
+                          {statusCounts.pending}
+                        </button>
+
+                        {/* Accepted (verde) */}
+                        <button
+                          type="button"
+                          onClick={() => setStatusFilter("accepted")}
+                          aria-pressed={statusFilter === "accepted"}
+                          title={t("pages.vacations.monthModal.filters.accepted") as string}
+                          className={[
+                            "inline-flex items-center justify-center rounded-full bg-white px-3 py-2 text-[11px] font-semibold tabular-nums shadow-sm transition",
+                            "border",
+                            statusFilter === "accepted"
+                              ? "border-emerald-400 text-slate-900 ring-2 ring-emerald-100"
+                              : "border-emerald-300 text-slate-700 hover:bg-emerald-100",
+                          ].join(" ")}
+                        >
+                          {statusCounts.accepted}
+                        </button>
+
+                        {/* Cancelled (rojo) */}
+                        <button
+                          type="button"
+                          onClick={() => setStatusFilter("cancelled")}
+                          aria-pressed={statusFilter === "cancelled"}
+                          title={t("pages.vacations.monthModal.filters.cancelled") as string}
+                          className={[
+                            "inline-flex items-center justify-center rounded-full bg-white px-3 py-2 text-[11px] font-semibold tabular-nums shadow-sm transition",
+                            "border",
+                            statusFilter === "cancelled"
+                              ? "border-rose-400 text-slate-900 ring-2 ring-rose-100"
+                              : "border-rose-300 text-slate-700 hover:bg-rose-100",
+                          ].join(" ")}
+                        >
+                          {statusCounts.cancelled}
+                        </button>
+
+                        {/* Option sent (azul) */}
+                        <button
+                          type="button"
+                          onClick={() => setStatusFilter("option_sent")}
+                          aria-pressed={statusFilter === "option_sent"}
+                          title={t("pages.vacations.monthModal.filters.option_sent") as string}
+                          className={[
+                            "inline-flex items-center justify-center rounded-full bg-white px-3 py-2 text-[11px] font-semibold tabular-nums shadow-sm transition",
+                            "border",
+                            statusFilter === "option_sent"
+                              ? "border-blue-400 text-slate-900 ring-2 ring-blue-100"
+                              : "border-blue-300 text-slate-700 hover:bg-blue-100",
+                          ].join(" ")}
+                        >
+                          {statusCounts.option_sent}
+                        </button>
+                      </div>
+
+                      {/* Orden (minimal) */}
+                      <button
+                        type="button"
+                        onClick={() => setSortAsc((v) => !v)}
+                        aria-label={t("pages.vacations.monthModal.filters.sortToggle", {
+                          dir: sortAsc
+                            ? t("pages.vacations.monthModal.filters.asc")
+                            : t("pages.vacations.monthModal.filters.desc"),
+                        }) as string}
+                        title={t("pages.vacations.monthModal.filters.sortToggle", {
+                          dir: sortAsc
+                            ? t("pages.vacations.monthModal.filters.asc")
+                            : t("pages.vacations.monthModal.filters.desc"),
+                        }) as string}
+                        className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs shadow-sm hover:bg-slate-50
+          focus:outline-none focus:ring-4 focus:ring-blue-100"
+                      >
+                        {sortAsc ? "⬆️" : "⬇️"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+
+
+
+                {/* Tabla */}
+                <div className="mt-2">
+                  <AdminVacationRequestsTable
+                    t={t}
+                    rows={filtered}
+                    highlightRequestId={highlightRequestId}
+                    onToggleHighlight={toggleHighlightFor}
+                    fmtDate={fmtDate}
+                    statusBadge={statusBadge}
+                    onAccept={handleAccept}
+                    onOpenAlternative={openAlternative}
+                    onDelete={handleDelete}
+                    cancelingRequestId={cancelingRequestId}
+                    cancelMessage={cancelMessage}
+                    isSendingCancel={isSendingCancel}
+                    onStartCancelFlow={handleStartCancelFlow}
+                    onCancelMessageChange={setCancelMessage}
+                    onConfirmCancel={handleConfirmCancel}
+                    onAbortCancelFlow={() => {
+                      setCancelingRequestId(null);
+                      setCancelMessage("");
+                    }}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Footer compacto y sticky */}
+          {/* Footer */}
           <div className="sticky bottom-0 bg-white border-t border-slate-200 p-3 flex items-center justify-end">
             <button
               onClick={onClose}
@@ -780,13 +850,22 @@ const AdminVacationMonthModal: React.FC<Props> = ({
         </div>
       </div>
 
-      <AlternativeDateModal
+      <AdminAlternativeOptionModal
         isOpen={isAltOpen}
+        monthIndex={altMonthIndex}
+        year={altYear}
         onClose={() => setIsAltOpen(false)}
         initialStartDate={altInitialStart}
         initialEndDate={altInitialEnd}
-        onSubmit={handleAlternativeSubmit}
+        onNavigateMonth={(next) => {
+          setAltYear(next.year);
+          setAltMonthIndex(next.monthIndex);
+        }}
+        onSubmit={({ startISO, endISO, adminNote }) => {
+          handleAlternativeSubmit(startISO, endISO, adminNote);
+        }}
       />
+
     </>
   );
 };

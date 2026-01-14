@@ -6,6 +6,9 @@ import { getVacationRequests, deleteVacationRequest } from "../api/vacation";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
+import { emitVacationRequestsUpdated } from "../utils/vacation/vacationEvents";
+import { invalidateAvailabilityForRange } from "../utils/vacation/invalidateAvailabilityForRange";
+
 import { formatISOToDDMMYYYY } from "../utils/timeUtils";
 import { calcVacationDays } from "../utils/vacation/calcVacationDays";
 
@@ -52,17 +55,34 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
   const handleDeleteVacation = async (id: string) => {
     if (!token) return;
 
-    if (!window.confirm(t("pages.vacations.adminUserTab.confirmDelete")))
-      return;
+    const toDelete = vacations.find((v) => v._id === id);
+
+    if (!window.confirm(t("pages.vacations.adminUserTab.confirmDelete"))) return;
 
     try {
       await deleteVacationRequest(token, id);
+
+      // ✅ Actualiza UI local inmediata
       setVacations((prev) => prev.filter((v) => v._id !== id));
+
+      // ✅ Avisar al “sistema global” (Worker/Admin hooks escuchan esto)
+      emitVacationRequestsUpdated({
+        type: "deleted",
+        id,
+        status: "cancelled",
+      });
+
+      // ✅ Invalidar caches de disponibilidad (colores/capacidad del grid)
+      if (toDelete?.startDate && toDelete?.endDate) {
+        invalidateAvailabilityForRange(toDelete.startDate, toDelete.endDate);
+      }
+
       toastT.success(["toasts.vacations.deleted"]);
     } catch {
       toastT.error(["toasts.vacations.deleteError"]);
     }
   };
+
 
   const handleEditVacation = (id: string) => {
     toastT.info(["toasts.vacations.editPending", { id }]);

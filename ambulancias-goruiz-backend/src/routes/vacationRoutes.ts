@@ -4,6 +4,7 @@ import {
   getUserVacationRequests,
   getVacationRequests,
   createVacationRequest,
+  cancelMyVacationRequest,
   updateVacationRequest,
   respondToAlternativeDate,
   deleteVacationRequest,
@@ -41,6 +42,10 @@ router.post(
 
 // El trabajador crea una solicitud
 router.post("/", authenticateToken, createVacationRequest);
+
+// Worker cancela su propia solicitud (pending / option_sent)
+router.patch("/:id/cancel", authenticateToken, cancelMyVacationRequest);
+
 
 // El admin puede obtener todas las solicitudes
 router.get("/", authenticateToken, authorizeRole("admin"), getVacationRequests);

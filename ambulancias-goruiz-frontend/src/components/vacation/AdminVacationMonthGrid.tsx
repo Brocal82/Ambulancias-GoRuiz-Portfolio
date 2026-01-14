@@ -203,11 +203,12 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
 
 
   // =============================
-  // ✅ NUEVO: borde por mes según estado de requests (igual que Sick)
-  // Prioridad: pending/option_sent > accepted > cancelled > none
+  // ✅ Borde por mes según estado de requests
+  // Prioridad: option_sent > pending > accepted > cancelled > none
   // =============================
   const monthBorderPriority = useMemo(() => {
     return months.map(({ start, end }) => {
+      let hasOptionSent = false;
       let hasPending = false;
       let hasAccepted = false;
       let hasCancelled = false;
@@ -219,12 +220,13 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
         // overlap simple
         if (rs > end || re < start) continue;
 
-        if (r.status === "pending" || r.status === "option_sent")
-          hasPending = true;
+        if (r.status === "option_sent") hasOptionSent = true;
+        else if (r.status === "pending") hasPending = true;
         else if (r.status === "accepted") hasAccepted = true;
         else if (r.status === "cancelled") hasCancelled = true;
       }
 
+      if (hasOptionSent) return "option_sent" as const;
       if (hasPending) return "pending" as const;
       if (hasAccepted) return "accepted" as const;
       if (hasCancelled) return "cancelled" as const;
@@ -234,11 +236,13 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
 
   const monthBorderClass = (monthIndex: number) => {
     const p = monthBorderPriority[monthIndex];
+    if (p === "option_sent") return "border-sky-300 ring-2 ring-sky-100";
     if (p === "pending") return "border-amber-300 ring-2 ring-amber-100";
     if (p === "accepted") return "border-emerald-300 ring-2 ring-emerald-100";
     if (p === "cancelled") return "border-rose-300 ring-2 ring-rose-100";
     return "border-slate-200";
   };
+
 
   return (
     <div className="mb-4 p-0">
@@ -277,11 +281,16 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* DERECHA: leyenda (estilo Bajas) */}
+        {/* DERECHA: leyenda */}
         <div className="hidden sm:flex items-center gap-3 text-xs text-slate-600">
           <span className="inline-flex items-center gap-2">
             <span className="h-3 w-3 rounded border-2 border-amber-300" />
             {t("pages.vacations.legend.pending", "Pendientes")}
+          </span>
+
+          <span className="inline-flex items-center gap-2">
+            <span className="h-3 w-3 rounded border-2 border-sky-300" />
+            {t("pages.vacations.legend.optionSent", "Alternativa")}
           </span>
 
           <span className="inline-flex items-center gap-2">
@@ -294,6 +303,7 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
             {t("pages.vacations.legend.cancelled", "Canceladas")}
           </span>
         </div>
+
       </div>
 
       {/* Grid */}
@@ -351,8 +361,9 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
                     t("pages.vacations.monthGrid.count", { count }) as string
                   }
                 >
-                  {t("pages.vacations.monthGrid.count", { count })}
+                  {count}
                 </span>
+
               </div>
 
               {/* Resumen (solo contadores, sin amarillo) */}

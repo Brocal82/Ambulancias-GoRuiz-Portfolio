@@ -1,14 +1,19 @@
-// frontend/src/pages/WorkerVacationsPage.tsx
-import { useEffect, useState, useCallback, useRef } from "react";
-import { getUserVacationRequests, respondToAlternativeDate, getVacationAvailability } from "../api/vacation";
+import { useEffect, useState, useCallback } from "react";
+import {
+  createVacationRequest,
+  getUserVacationRequests,
+  respondToAlternativeDate,
+  getVacationAvailability,
+  cancelMyVacationRequest,
+} from "../api/vacation";
+
 import { useAuth } from "../hooks/useAuth";
-import VacationRequestForm from "../components/vacation/VacationRequestForm";
 import UserVacationList from "../components/vacation/UserVacationList";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
 
 import AdminVacationMonthGrid from "../components/vacation/AdminVacationMonthGrid";
-import WorkerAvailabilityMonthModal from "../components/vacation/WorkerAvailabilityMonthModal";
+import SelectableWorkerAvailabilityMonthModal from "../components/vacation/SelectableWorkerAvailabilityMonthModal";
 
 // Prefetch/caché compartida
 import { useVacationRequestsSync } from "../hooks/vacation/useVacationRequestSync";
@@ -20,27 +25,21 @@ import { toBerlinDayKey } from "../utils/dates/dayKey";
 import PageShell from "../components/common/PageShell";
 import { useVacationMonthGridRefresh } from "../hooks/vacation/useVacationMonthGridRefresh";
 
-
-
-
 const WorkerVacationsPage = () => {
   const { token } = useAuth();
   const { t } = useTranslation();
-
-  const [showForm, setShowForm] = useState(false);
-  const [formMessage, setFormMessage] = useState<string | null>(null);
 
   const { gridYear, setGridYear, gridRefreshTick } = useVacationMonthGridRefresh({
     initialYear: new Date().getFullYear(),
   });
 
-  // ===== Modal de disponibilidad mensual (solo lectura) =====
-  const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(
-    null,
-  ); // 0..11
-  const [selectedYear, setSelectedYear] = useState<number>(gridYear);
+  // ✅ Desplegable (solo icono)
+  const [showActiveRequests, setShowActiveRequests] = useState(false);
 
+  // ===== Modal mes (selectable) =====
+  const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null); // 0..11
+  const [selectedYear, setSelectedYear] = useState<number>(gridYear);
 
   const {
     requests,
@@ -53,12 +52,12 @@ const WorkerVacationsPage = () => {
     fetcher: getUserVacationRequests,
     debounceMs: 150,
     onErrorToastKey: "toasts.vacations.worker.loadError",
-    onAfterFetch: (data) => {
-      setShowForm(data.length === 0);
-    },
   });
 
-
+  // ✅ Solo activas (NO pasadas / NO canceladas / NO historial)
+  const activeRequests = requests.filter(
+    (r) => r.status === "pending" || r.status === "option_sent" || r.status === "accepted"
+  );
 
   // ✅ Worker -> Admin sync al responder alternativa
   const handleRespondAlternative = async (id: string, accept: boolean) => {
@@ -176,7 +175,7 @@ const WorkerVacationsPage = () => {
   };
 
   /* =========================================================
-     PREFETCH: evitar “clic para refrescar” en el date-range
+     PREFETCH (mantener solo lo necesario para el flujo nuevo)
      ========================================================= */
 
   // Prefetch de un mes 1..12
@@ -188,39 +187,7 @@ const WorkerVacationsPage = () => {
     }
   }, []);
 
-  // Prefetch de todo un año (12 meses). Evitamos repetir con un Set.
-  const prefetchedYearsRef = useRef<Set<number>>(new Set());
-  const prefetchYear = useCallback(
-    async (y: number) => {
-      if (prefetchedYearsRef.current.has(y)) return;
-      prefetchedYearsRef.current.add(y);
-      const tasks: Promise<any>[] = [];
-      for (let m1 = 1; m1 <= 12; m1++) {
-        tasks.push(prefetchMonth(y, m1));
-      }
-      try {
-        await Promise.allSettled(tasks);
-      } catch {
-        // silencioso
-      }
-    },
-    [prefetchMonth],
-  );
-
-  // Prefetch de año actual y siguiente cuando se abre el formulario
-  useEffect(() => {
-    if (!showForm) return;
-    prefetchYear(gridYear);
-    prefetchYear(gridYear + 1);
-  }, [showForm, gridYear, prefetchYear]);
-
-  // Si cambias el año en el grid mientras el formulario está abierto, precarga ese año
-  useEffect(() => {
-    if (!showForm) return;
-    prefetchYear(gridYear);
-  }, [gridYear, showForm, prefetchYear]);
-
-  // Prefetch ligero al montar: mes actual + siguiente (para modal/UX)
+  // Prefetch ligero al montar: mes actual + siguiente (para modal / UX general)
   useEffect(() => {
     const now = new Date();
     const y = now.getFullYear();
@@ -235,12 +202,27 @@ const WorkerVacationsPage = () => {
       const m1 = monthIdx + 1;
       await prefetchMonth(y, m1);
       await prefetchMonth(m1 === 12 ? y + 1 : y, m1 === 12 ? 1 : m1 + 1);
+
       setSelectedMonthIndex(monthIdx);
       setSelectedYear(y);
       setIsMonthModalOpen(true);
     },
     [prefetchMonth],
   );
+
+  const handleNavigateMonthFromModal = useCallback(
+    async (next: { year: number; monthIndex: number }) => {
+      // Prefetch del mes destino y el siguiente (para UX fluida)
+      const m1 = next.monthIndex + 1;
+      await prefetchMonth(next.year, m1);
+      await prefetchMonth(m1 === 12 ? next.year + 1 : next.year, m1 === 12 ? 1 : m1 + 1);
+
+      setSelectedYear(next.year);
+      setSelectedMonthIndex(next.monthIndex);
+    },
+    [prefetchMonth],
+  );
+
 
   /* ========================================================= */
 
@@ -251,6 +233,7 @@ const WorkerVacationsPage = () => {
         {t("pages.vacations.workerPage.loading")}
       </p>
     );
+
   if (error) return <p className="p-4 text-sm text-red-600">{error}</p>;
 
   return (
@@ -266,50 +249,59 @@ const WorkerVacationsPage = () => {
         />
       </div>
 
-      <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <button
-            className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
-            onClick={() => setShowForm(!showForm)}
-          >
-            {showForm
-              ? t("pages.vacations.workerPage.toggleCloseForm")
-              : t("pages.vacations.workerPage.toggleOpenForm")}
-          </button>
-          {formMessage && <p className="text-sm text-emerald-700">{formMessage}</p>}
-        </div>
-
-        <div
-          className={[
-            "mb-4 rounded-xl ring-1 ring-slate-200 p-3 bg-slate-50 transition-all",
-            showForm ? "block" : "hidden",
-          ].join(" ")}
+      {/* ✅ Botón solo icono (derecha) */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setShowActiveRequests((v) => !v)}
+          className={`
+  p-2 rounded-xl border shadow-sm transition
+  ${showActiveRequests ? "bg-slate-200 border-slate-400" : "bg-white border-slate-300 hover:bg-slate-100"}
+`}
+          aria-expanded={showActiveRequests}
+          aria-label={t(
+            "pages.vacations.workerPage.toggleRequests",
+            "Ver/ocultar solicitudes"
+          )}
+          title={t(
+            "pages.vacations.workerPage.toggleRequests",
+            "Ver/ocultar solicitudes"
+          )}
         >
-          <VacationRequestForm onSuccess={handleFormSuccess} />
-        </div>
+          <span className="text-2xl leading-none">🏖️</span>
+        </button>
+      </div>
 
-        {requests.length === 0 && !loading && !showForm && (
-          <p className="text-sm text-slate-600">
-            {t("pages.vacations.workerPage.empty")}
-          </p>
-        )}
 
-        {requests.length > 0 && (
-          <div className="mt-2">
+      {/* ✅ Lista desplegable (solo activas) */}
+      {showActiveRequests && (
+        <div className="mt-3 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
+          {activeRequests.length === 0 && !loading ? (
+            <p className="text-sm text-slate-600">
+              {t(
+                "pages.vacations.workerPage.empty",
+                "No tienes solicitudes activas."
+              )}
+            </p>
+          ) : (
             <UserVacationList
               requests={requests}
               onRespondAlternative={handleRespondAlternative}
+              onCancelRequest={handleCancelRequest}
             />
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      {/* Modal de disponibilidad mensual */}
-      <WorkerAvailabilityMonthModal
+
+      {/* ✅ ÚNICO MODAL: flujo nuevo */}
+      <SelectableWorkerAvailabilityMonthModal
         isOpen={isMonthModalOpen}
         monthIndex={selectedMonthIndex}
         year={selectedYear}
         onClose={() => setIsMonthModalOpen(false)}
+        onNavigateMonth={handleNavigateMonthFromModal}
+
         acceptedRanges={requests
           .filter((r) => r.status === "accepted")
 <<<<<<< Updated upstream
@@ -336,9 +328,9 @@ const WorkerVacationsPage = () => {
         onRespondAlternative={handleRespondAlternative}
 >>>>>>> Stashed changes
       />
+
     </PageShell>
   );
-
 };
 
 export default WorkerVacationsPage;
