@@ -96,13 +96,13 @@ const WorkerVacationsPage = () => {
 
 
 
-<<<<<<< Updated upstream
-  const handleFormSuccess = () => {
-    setShowForm(false);
-    toastT.success(["toasts.vacations.worker.formSuccess"]);
-    fetchRequests();
-    setFormMessage(t("toasts.vacations.worker.formSuccess"));
-=======
+  // ✅ Cancelar solicitud propia
+  const handleCancelRequest = async (id: string) => {
+    if (!token) return;
+
+    const req = requests.find((r) => r._id === id);
+    if (!req) return;
+
     const ok = window.confirm(
       t(
         "pages.vacations.workerPage.cancelConfirm",
@@ -154,7 +154,6 @@ const WorkerVacationsPage = () => {
           startDate: toBerlinDayKey(p.startISO) ?? p.startISO,
           endDate: toBerlinDayKey(p.endISO) ?? p.endISO,
         }),
-
         {
           pending: ["toasts.vacations.worker.formPending"],
           success: ["toasts.vacations.worker.formSuccess"],
@@ -167,12 +166,11 @@ const WorkerVacationsPage = () => {
 
       // 2) Cerrar modal (UX)
       setIsMonthModalOpen(false);
-
     } catch {
       // El toast ya muestra el error
     }
->>>>>>> Stashed changes
   };
+
 
   /* =========================================================
      PREFETCH (mantener solo lo necesario para el flujo nuevo)
@@ -304,9 +302,6 @@ const WorkerVacationsPage = () => {
 
         acceptedRanges={requests
           .filter((r) => r.status === "accepted")
-<<<<<<< Updated upstream
-          .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
-=======
           .map((r) => ({
             startISO: toBerlinDayKey(r.startDate) ?? r.startDate,
             endISO: toBerlinDayKey(r.endDate) ?? r.endDate,
@@ -326,7 +321,7 @@ const WorkerVacationsPage = () => {
         monthRequests={requests}
         onCancelRequest={handleCancelRequest}
         onRespondAlternative={handleRespondAlternative}
->>>>>>> Stashed changes
+
       />
 
     </PageShell>
