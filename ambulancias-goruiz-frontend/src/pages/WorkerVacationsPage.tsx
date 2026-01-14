@@ -15,6 +15,7 @@ import { useVacationRequestsSync } from "../hooks/vacation/useVacationRequestSyn
 
 import { emitVacationRequestsUpdated } from "../utils/vacation/vacationEvents";
 import { invalidateAvailabilityForRange } from "../utils/vacation/invalidateAvailabilityForRange";
+import { toBerlinDayKey } from "../utils/dates/dayKey";
 
 import PageShell from "../components/common/PageShell";
 import { useVacationMonthGridRefresh } from "../hooks/vacation/useVacationMonthGridRefresh";
@@ -96,11 +97,82 @@ const WorkerVacationsPage = () => {
 
 
 
+<<<<<<< Updated upstream
   const handleFormSuccess = () => {
     setShowForm(false);
     toastT.success(["toasts.vacations.worker.formSuccess"]);
     fetchRequests();
     setFormMessage(t("toasts.vacations.worker.formSuccess"));
+=======
+    const ok = window.confirm(
+      t(
+        "pages.vacations.workerPage.cancelConfirm",
+        "¿Seguro que quieres cancelar esta solicitud?",
+      ),
+    );
+    if (!ok) return;
+
+    const startISO = req.startDate;
+    const endISO = req.endDate;
+
+    try {
+      await toastT.promise(cancelMyVacationRequest(token, id), {
+        pending: ["toasts.vacations.worker.cancelPending"],
+        success: ["toasts.vacations.worker.cancelSuccess"],
+        error: ["toasts.vacations.worker.error"],
+      });
+
+      // 1) Refrescar lista Worker
+      fetchRequests();
+
+      // 2) Avisar a Admin/otras pestañas
+      emitVacationRequestsUpdated({
+        type: "updated",
+        id,
+        status: "cancelled",
+      });
+
+      // 3) Invalidar disponibilidad para meses afectados (colores/capacidad)
+      if (startISO && endISO) {
+        invalidateAvailabilityForRange(startISO, endISO);
+      }
+    } catch {
+      // toast ya gestiona error
+    }
+  };
+
+  // ✅ Solicitar desde el modal selectable
+  const handleRequestFromGrid = async (p: {
+    startISO: string;
+    endISO: string;
+    days: number;
+  }) => {
+    if (!token) return;
+
+    try {
+      await toastT.promise(
+        createVacationRequest(token, {
+          startDate: toBerlinDayKey(p.startISO) ?? p.startISO,
+          endDate: toBerlinDayKey(p.endISO) ?? p.endISO,
+        }),
+
+        {
+          pending: ["toasts.vacations.worker.formPending"],
+          success: ["toasts.vacations.worker.formSuccess"],
+          error: ["toasts.vacations.worker.error"],
+        },
+      );
+
+      // 1) Refrescar lista Worker (además de eventos globales que ya emite la API)
+      fetchRequests();
+
+      // 2) Cerrar modal (UX)
+      setIsMonthModalOpen(false);
+
+    } catch {
+      // El toast ya muestra el error
+    }
+>>>>>>> Stashed changes
   };
 
   /* =========================================================
@@ -240,7 +312,29 @@ const WorkerVacationsPage = () => {
         onClose={() => setIsMonthModalOpen(false)}
         acceptedRanges={requests
           .filter((r) => r.status === "accepted")
+<<<<<<< Updated upstream
           .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
+=======
+          .map((r) => ({
+            startISO: toBerlinDayKey(r.startDate) ?? r.startDate,
+            endISO: toBerlinDayKey(r.endDate) ?? r.endDate,
+          }))}
+
+        pendingRanges={requests
+          .filter((r) => r.status === "pending" || r.status === "option_sent")
+          .map((r) => ({
+            startISO: toBerlinDayKey(r.startDate) ?? r.startDate,
+            endISO: toBerlinDayKey(r.endDate) ?? r.endDate,
+          }))}
+
+        onRequestRange={handleRequestFromGrid}
+        blockRedDays
+
+        /** ✅ M-1: solo cableado (aún no se usa dentro del modal) */
+        monthRequests={requests}
+        onCancelRequest={handleCancelRequest}
+        onRespondAlternative={handleRespondAlternative}
+>>>>>>> Stashed changes
       />
     </PageShell>
   );
