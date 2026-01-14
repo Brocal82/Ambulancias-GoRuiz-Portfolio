@@ -417,7 +417,7 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                         {/* Leyenda */}
                         <div className="mb-2 flex items-center gap-2 text-[11px] text-slate-600 flex-wrap">
                             <span className="inline-flex items-center gap-2">
-                                <span className="h-3 w-3 rounded border-2 border-emerald-300" />
+                                <span className="h-3 w-3 rounded border-2 border-emerald-300 bg-emerald-50" />
                                 {String(
                                     t("pages.vacations.monthGrid.legend.available", {
                                         defaultValue: "Disponible",
@@ -426,7 +426,7 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                             </span>
 
                             <span className="inline-flex items-center gap-2">
-                                <span className="h-3 w-3 rounded border-2 border-amber-300" />
+                                <span className="h-3 w-3 rounded border-2 border-amber-300 bg-amber-100" />
                                 {String(
                                     t("pages.vacations.monthGrid.legend.myPending", {
                                         defaultValue: "Mis pendientes",
@@ -435,7 +435,7 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                             </span>
 
                             <span className="inline-flex items-center gap-2">
-                                <span className="h-3 w-3 rounded border-2 border-orange-400" />
+                                <span className="h-3 w-3 rounded border-2 border-sky-500 bg-sky-300" />
                                 {String(
                                     t("pages.vacations.monthGrid.legend.myAccepted", {
                                         defaultValue: "Aceptadas",
@@ -444,13 +444,14 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                             </span>
 
                             <span className="inline-flex items-center gap-2">
-                                <span className="h-3 w-3 rounded border-2 border-rose-300" />
+                                <span className="h-3 w-3 rounded border-2 border-rose-300 bg-rose-50" />
                                 {String(
                                     t("pages.vacations.monthGrid.legend.full", {
                                         defaultValue: "Sin disponibilidad",
                                     }),
                                 )}
                             </span>
+
 
                             {availability && (
                                 <span className="ml-auto text-slate-500">
@@ -506,8 +507,10 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                                             : "bg-emerald-50 text-slate-800 border-2 border-emerald-300";
 
                                     const acceptedCls = isAccepted
-                                        ? "!bg-orange-200 !border-orange-400 !text-slate-900 font-semibold"
+                                        ? "!bg-sky-300 !border-sky-500 !text-slate-900 font-semibold"
                                         : "";
+
+
 
                                     const pendingFillCls =
                                         !isAccepted && isPendingMine
