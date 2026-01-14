@@ -205,6 +205,20 @@ const WorkerVacationsPage = () => {
     [prefetchMonth],
   );
 
+  const handleNavigateMonthFromModal = useCallback(
+    async (next: { year: number; monthIndex: number }) => {
+      // Prefetch del mes destino y el siguiente (para UX fluida)
+      const m1 = next.monthIndex + 1;
+      await prefetchMonth(next.year, m1);
+      await prefetchMonth(m1 === 12 ? next.year + 1 : next.year, m1 === 12 ? 1 : m1 + 1);
+
+      setSelectedYear(next.year);
+      setSelectedMonthIndex(next.monthIndex);
+    },
+    [prefetchMonth],
+  );
+
+
   /* ========================================================= */
 
   // ===== Render principal =====
@@ -281,6 +295,8 @@ const WorkerVacationsPage = () => {
         monthIndex={selectedMonthIndex}
         year={selectedYear}
         onClose={() => setIsMonthModalOpen(false)}
+        onNavigateMonth={handleNavigateMonthFromModal}
+
         acceptedRanges={requests
           .filter((r) => r.status === "accepted")
           .map((r) => ({ startISO: r.startDate, endISO: r.endDate }))}
