@@ -1,23 +1,19 @@
+// frontend/src/utils/vacation/isPastLocalDay.ts
+import { toBerlinDayKey, todayBerlinDayKey } from "../dates/dayKey";
+
 /**
- * Devuelve true si `date` es anterior a "hoy" en hora local.
- * Comparación a nivel de día (00:00 local).
+ * Devuelve true si `date` es anterior a "hoy" en TZ Europe/Berlin,
+ * comparando por DayKey (YYYY-MM-DD).
+ *
+ * Nota:
+ * - Mantenemos el nombre del archivo/función para NO romper imports existentes.
+ * - Internamente ya NO usa "hora local del navegador".
  */
 export function isPastLocalDay(date: Date): boolean {
-  const now = new Date();
+  const dKey = toBerlinDayKey(date);
+  const todayKey = todayBerlinDayKey();
 
-  const today0 = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    0, 0, 0, 0
-  );
+  if (!dKey || !todayKey) return false;
 
-  const d0 = new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-    0, 0, 0, 0
-  );
-
-  return d0.getTime() < today0.getTime();
+  return dKey < todayKey;
 }
