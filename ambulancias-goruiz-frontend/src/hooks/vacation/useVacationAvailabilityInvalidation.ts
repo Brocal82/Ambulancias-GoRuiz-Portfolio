@@ -1,17 +1,28 @@
-//src/hooks/vacation/useVacationAvailabilityInvalidation.ts
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   subscribeAvailabilityInvalidated,
   type VacationAvailabilityInvalidatedDetail,
 } from "../../utils/vacation/vacationEvents";
 
-
 /**
- * Escucha invalidaciones de disponibilidad (misma pestaña + otras pestañas)
- * y ejecuta `handler` con { year, month, ts? }.
+ * Hook de infraestructura:
+ * - Se suscribe UNA sola vez a availability-invalidated
+ * - Ejecuta siempre el handler más reciente
+ * - Evita resuscripciones innecesarias
  */
 export function useVacationAvailabilityInvalidation(
   handler: (p: VacationAvailabilityInvalidatedDetail) => void,
 ) {
-  useEffect(() => subscribeAvailabilityInvalidated(handler), [handler]);
+  const handlerRef = useRef(handler);
+
+  // Mantener siempre el handler más reciente
+  useEffect(() => {
+    handlerRef.current = handler;
+  }, [handler]);
+
+  useEffect(() => {
+    return subscribeAvailabilityInvalidated((detail) => {
+      handlerRef.current(detail);
+    });
+  }, []);
 }
