@@ -4,6 +4,9 @@ import type { VacationStatus } from "../../types/vacation";
 import { useTranslation } from "react-i18next";
 import { formatISOToDDMMYYYY } from "../../utils/timeUtils";
 import { calcVacationDays } from "../../utils/vacation/calcVacationDays";
+import { getRequestRangeBerlin } from "../../utils/vacation/getRequestRangeBerlin";
+import { toBerlinDayKey } from "../../utils/dates/dayKey";
+
 
 type Props = {
   requests: IVacationRequest[];
@@ -84,6 +87,9 @@ const UserVacationList: React.FC<Props> = ({
     const proposedStart = req.adminOptionStartDate;
     const proposedEnd = req.adminOptionEndDate;
 
+    const { start, end } = getRequestRangeBerlin(req);
+
+
 
     const hasProposal =
       req.status === "option_sent" && !!proposedStart && !!proposedEnd;
@@ -108,8 +114,9 @@ const UserVacationList: React.FC<Props> = ({
       open: true,
       title,
       message: adminNote || undefined,
-      requestedStart: req.startDate,
-      requestedEnd: req.endDate,
+      requestedStart: start.toISOString(),
+      requestedEnd: end.toISOString(),
+
       proposedStart: hasProposal ? proposedStart : undefined,
       proposedEnd: hasProposal ? proposedEnd : undefined,
     });
@@ -159,11 +166,19 @@ const UserVacationList: React.FC<Props> = ({
 
           <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
             {safeRequests.map((req) => {
-              const days = calcVacationDays(req.startDate, req.endDate);
+              // ✅ Fuente de verdad: rango Berlin (día calendario)
+              const { start, end } = getRequestRangeBerlin(req);
+
+              // ✅ Días usando dayKey Berlin (evita depender de ISO directo en UI)
+              const startKey = toBerlinDayKey(start.toISOString());
+              const endKey = toBerlinDayKey(end.toISOString());
+              const days = calcVacationDays(startKey, endKey);
+
 
 
               const proposedStart = req.adminOptionStartDate;
               const proposedEnd = req.adminOptionEndDate;
+
 
               const hasAlternative =
                 req.status === "option_sent" &&
@@ -185,8 +200,9 @@ const UserVacationList: React.FC<Props> = ({
                   {/* Fechas */}
                   <td className="px-3 py-2 align-top">
                     <div className="text-slate-800 whitespace-nowrap">
-                      {formatISOToDDMMYYYY(req.startDate)} —{" "}
-                      {formatISOToDDMMYYYY(req.endDate)}
+                      {formatISOToDDMMYYYY(start.toISOString())} —{" "}
+                      {formatISOToDDMMYYYY(end.toISOString())}
+
                     </div>
 
                     {/* ✅ Eliminado: badge azul debajo de las fechas */}

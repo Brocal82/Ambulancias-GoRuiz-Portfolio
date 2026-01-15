@@ -4,6 +4,9 @@ import type { TFunction } from "i18next";
 import type { IVacationRequest } from "../../types/vacationRequest";
 import StatusBadge from "../common/StatusBadge";
 import { calcVacationDays } from "../../utils/vacation/calcVacationDays";
+import { getRequestRangeBerlin } from "../../utils/vacation/getRequestRangeBerlin";
+import { toBerlinDayKey } from "../../utils/dates/dayKey";
+
 
 type Props = {
     t: TFunction;
@@ -75,9 +78,14 @@ const AdminActionableVacationRequestsTable: React.FC<Props> = ({
 
                 <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
                     {rows.map((req) => {
-                        const days = calcVacationDays(req.startDate, req.endDate);
+                        const { start, end } = getRequestRangeBerlin(req);
+
+                        const startKey = toBerlinDayKey(start.toISOString());
+                        const endKey = toBerlinDayKey(end.toISOString());
+                        const days = calcVacationDays(startKey, endKey);
 
                         return (
+
                             <tr
                                 key={req._id}
                                 className="border-t border-slate-200 hover:bg-slate-50/70 transition-colors"
@@ -101,13 +109,10 @@ const AdminActionableVacationRequestsTable: React.FC<Props> = ({
                                 {/* Fechas */}
                                 <td className="px-3 py-2 align-top">
                                     <div className="text-slate-800 whitespace-nowrap">
-                                        {new Date(req.startDate).toLocaleDateString(locale, {
-                                            timeZone: "Europe/Berlin",
-                                        })}
+                                        {start.toLocaleDateString(locale, { timeZone: "Europe/Berlin" })}
                                         {" — "}
-                                        {new Date(req.endDate).toLocaleDateString(locale, {
-                                            timeZone: "Europe/Berlin",
-                                        })}
+                                        {end.toLocaleDateString(locale, { timeZone: "Europe/Berlin" })}
+
                                     </div>
                                 </td>
 

@@ -4,6 +4,9 @@ import type { TFunction } from "i18next";
 import type { IVacationRequest } from "../../types/vacationRequest";
 import type { VacationStatus } from "../../types/vacation";
 import { calcVacationDays } from "../../utils/vacation/calcVacationDays";
+import { getRequestRangeBerlin } from "../../utils/vacation/getRequestRangeBerlin";
+import { toBerlinDayKey } from "../../utils/dates/dayKey";
+
 
 type Props = {
     t: TFunction;
@@ -91,7 +94,12 @@ const AdminVacationRequestsTable: React.FC<Props> = ({
                 <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
                     {rows.map((req) => {
                         const isActive = highlightRequestId === req._id;
-                        const days = calcVacationDays(req.startDate, req.endDate);
+
+                        const { start, end } = getRequestRangeBerlin(req);
+                        const startKey = toBerlinDayKey(start.toISOString());
+                        const endKey = toBerlinDayKey(end.toISOString());
+                        const days = calcVacationDays(startKey, endKey);
+
 
                         const hasProposal =
                             !!req.adminOptionStartDate && !!req.adminOptionEndDate;
