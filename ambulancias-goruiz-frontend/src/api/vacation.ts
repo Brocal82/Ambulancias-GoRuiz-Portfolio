@@ -10,6 +10,7 @@ import {
   setCachedAvailability,
   deleteCachedAvailability
 } from "../utils/vacation/vacationAvailabilityCache";
+import { invalidateAvailabilityByRangeBerlin } from "../utils/vacation/invalidateAvailabilityByRangeBerlin";
 
 
 
@@ -353,40 +354,10 @@ export function emitAvailabilityInvalidation(year: number, month: number) {
   invalidateAvailability(year, month);
 }
 
-function getBerlinYearMonth(iso: string): { y: number; m1: number } | null {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return null;
-  const y = Number(
-    d.toLocaleString("en-CA", { year: "numeric", timeZone: "Europe/Berlin" }),
-  );
-  const m1 = Number(
-    d.toLocaleString("en-CA", { month: "2-digit", timeZone: "Europe/Berlin" }),
-  );
-  if (!y || !m1) return null;
-  return { y, m1 };
-}
 
 export function invalidateAvailabilityByRange(startISO: string, endISO: string) {
-  const startYM = getBerlinYearMonth(startISO);
-  const endYM = getBerlinYearMonth(endISO);
-  if (!startYM || !endYM) return;
-
-  // Iteramos meses entre startYM y endYM, ambos inclusive (en "Berlin")
-  let y = startYM.y;
-  let m1 = startYM.m1; // 1..12
-
-  const endY = endYM.y;
-  const endM1 = endYM.m1;
-
-  while (y < endY || (y === endY && m1 <= endM1)) {
-    emitAvailabilityInvalidated({ year: y, month: m1 }); // month 1..12
-
-    m1++;
-    if (m1 > 12) {
-      m1 = 1;
-      y++;
-    }
-  }
+  invalidateAvailabilityByRangeBerlin(startISO, endISO);
 }
+
 
 
