@@ -1,4 +1,5 @@
 // src/utils/timeUtils.ts
+import { toBerlinDayKey, dayKeyToLocalDate } from "./dates/dayKey";
 
 /** Devuelve la hora actual como 'HH:mm' */
 export const getCurrentTimeString = (): string => {
@@ -8,28 +9,21 @@ export const getCurrentTimeString = (): string => {
   return `${hours}:${minutes}`;
 };
 
-/** Convierte una fecha ISO (o YYYY-MM-DD) a 'DD-MM-YYYY' usando Europe/Berlin */
-export function formatISOToDDMMYYYY(iso?: string): string {
-  if (!iso) return "";
+/**
+ * Formatea un ISO a DD/MM/YYYY anclado a día calendario Europe/Berlin.
+ * Evita bugs de timezone (Z) que pueden mover el día.
+ */
+export function formatISOToDDMMYYYY(iso: string): string {
+  const key = toBerlinDayKey(iso);
+  if (!key) return "—";
 
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
+  const d = dayKeyToLocalDate(key);
 
-  // Formateo estable con TZ Berlin
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Berlin",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(d);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = String(d.getFullYear());
 
-  const day = parts.find((p) => p.type === "day")?.value ?? "";
-  const month = parts.find((p) => p.type === "month")?.value ?? "";
-  const year = parts.find((p) => p.type === "year")?.value ?? "";
-
-  if (!day || !month || !year) return "";
-
-  return `${day}-${month}-${year}`;
+  return `${dd}/${mm}/${yyyy}`;
 }
 
 
