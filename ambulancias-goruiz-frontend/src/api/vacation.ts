@@ -336,12 +336,13 @@ export function invalidateAvailability(year: number, month: number) {
 
 export function invalidateThisAndNextMonth(year: number, month1: number) {
   // month1: 1..12
-  emitAvailabilityInvalidated({ year, month: month1 });
+  invalidateAvailability(year, month1);
 
   // siguiente mes (con salto de año)
-  if (month1 === 12) emitAvailabilityInvalidated({ year: year + 1, month: 1 });
-  else emitAvailabilityInvalidated({ year, month: month1 + 1 });
+  if (month1 === 12) invalidateAvailability(year + 1, 1);
+  else invalidateAvailability(year, month1 + 1);
 }
+
 
 
 /* =========================================================
