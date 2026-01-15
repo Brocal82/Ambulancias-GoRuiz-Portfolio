@@ -17,6 +17,7 @@ import {
 import { emitVacationRequestsUpdated } from "../../utils/vacation/vacationEvents";
 import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
 import AdminVacationRequestsTable from "./AdminVacationRequestsTable";
+import { toBerlinDayKey } from "../../utils/dates/dayKey";
 
 interface Props {
   isOpen: boolean;
@@ -457,18 +458,37 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     end: Date,
   ): Record<number, string> => {
     if (monthIndex === null) return {};
-    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+
     const classes: Record<number, string> = {};
 
-    const monthStart = new Date(year, monthIndex, 1);
-    const monthEnd = new Date(year, monthIndex, daysInMonth, 23, 59, 59, 999);
+    // Mes visible en dayKey (Berlin-day), usando 12:00 para evitar DST edge cases
+    const monthStartKey = toBerlinDayKey(
+      new Date(year, monthIndex, 1, 12, 0, 0, 0),
+    );
+    const monthEndKey = toBerlinDayKey(
+      new Date(year, monthIndex + 1, 0, 12, 0, 0, 0),
+    );
 
-    const s = start < monthStart ? monthStart : start;
-    const e = end > monthEnd ? monthEnd : end;
-    if (e.getTime() < s.getTime()) return {};
+    const sKeyRaw = toBerlinDayKey(start);
+    const eKeyRaw = toBerlinDayKey(end);
 
-    const startDay = s.getDate();
-    const endDay = e.getDate();
+    if (!monthStartKey || !monthEndKey || !sKeyRaw || !eKeyRaw) return {};
+
+    // Normalizamos por si vienen invertidas
+    const sKey = sKeyRaw <= eKeyRaw ? sKeyRaw : eKeyRaw;
+    const eKey = sKeyRaw <= eKeyRaw ? eKeyRaw : sKeyRaw;
+
+    // Clamp al mes visible (en keys)
+    const clampedStartKey = sKey < monthStartKey ? monthStartKey : sKey;
+    const clampedEndKey = eKey > monthEndKey ? monthEndKey : eKey;
+
+    if (clampedEndKey < clampedStartKey) return {};
+
+    // Como ya está clamp al mes, extraer "DD" es seguro (mismo mes)
+    const startDay = Number(clampedStartKey.split("-")[2]);
+    const endDay = Number(clampedEndKey.split("-")[2]);
+
+    if (!Number.isFinite(startDay) || !Number.isFinite(endDay)) return {};
 
     for (let d = startDay; d <= endDay; d++) {
       classes[d] =
@@ -481,6 +501,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 
     return classes;
   };
+
 
   const borderMap = useMemo(() => {
     if (monthIndex === null || !highlightRequestId) return {};

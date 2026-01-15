@@ -2,6 +2,8 @@ import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { IVacationRequest } from "../../types/vacationRequest";
 import UserVacationList from "./UserVacationList";
+import { toBerlinDayKey } from "../../utils/dates/dayKey";
+import { getRequestRangeBerlin } from "../../utils/vacation/getRequestRangeBerlin";
 
 type Props = {
     /** Solicitudes activas (o las que tú le pases) */
@@ -28,18 +30,30 @@ const WorkerMonthRequests: React.FC<Props> = ({
     const { t } = useTranslation();
 
     const monthRequests = useMemo(() => {
-        // Rango del mes: [monthStart, nextMonthStart)
-        const monthStart = new Date(year, monthIndex, 1, 0, 0, 0, 0);
-        const nextMonthStart = new Date(year, monthIndex + 1, 1, 0, 0, 0, 0);
+        // Rango del mes en "Berlin dayKey" (inclusive)
+        // Usamos 12:00 para evitar edge cases de DST al convertir a dayKey.
+        const monthStartKey = toBerlinDayKey(new Date(year, monthIndex, 1, 12, 0, 0, 0));
+        const monthEndKey = toBerlinDayKey(new Date(year, monthIndex + 1, 0, 12, 0, 0, 0));
+
+        if (!monthStartKey || !monthEndKey) return [];
 
         return requests.filter((r) => {
-            const start = new Date(r.startDate);
-            const end = new Date(r.endDate);
+            const { start, end } = getRequestRangeBerlin(r);
 
-            // Solape: start < nextMonthStart && end >= monthStart
-            return start < nextMonthStart && end >= monthStart;
+            const sKey = toBerlinDayKey(start);
+            const eKey = toBerlinDayKey(end);
+            if (!sKey || !eKey) return false;
+
+            // Normalizamos por si algo viene invertido
+            const startKey = sKey <= eKey ? sKey : eKey;
+            const endKey = sKey <= eKey ? eKey : sKey;
+
+            // Solape inclusivo: [startKey, endKey] toca [monthStartKey, monthEndKey]
+            return startKey <= monthEndKey && monthStartKey <= endKey;
         });
     }, [requests, monthIndex, year]);
+
+
 
     // Si no hay solicitudes para este mes, no mostramos nada
     if (monthRequests.length === 0) return null;

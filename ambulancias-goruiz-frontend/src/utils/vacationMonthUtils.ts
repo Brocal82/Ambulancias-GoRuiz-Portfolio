@@ -1,5 +1,7 @@
 // src/utils/vacationMonthUtils.ts
 import type { IVacationRequest } from "../types/vacationRequest";
+import { toBerlinDayKey } from "./dates/dayKey";
+import { getRequestRangeBerlin } from "./vacation/getRequestRangeBerlin";
 
 export type MonthInfo = {
   monthIndex: number; // 0..11
@@ -7,6 +9,27 @@ export type MonthInfo = {
   start: Date; // inicio del mes (00:00:00.000)
   end: Date; // fin del mes (23:59:59.999)
 };
+
+function normalizeKeyRange(a: string, b: string) {
+  return a <= b ? { startKey: a, endKey: b } : { startKey: b, endKey: a };
+}
+
+function monthKeyRange(year: number, monthIndex: number) {
+  // Usamos 12:00 para evitar edge cases de DST al convertir a dayKey
+  const startKey = toBerlinDayKey(new Date(year, monthIndex, 1, 12, 0, 0, 0));
+  const endKey = toBerlinDayKey(new Date(year, monthIndex + 1, 0, 12, 0, 0, 0));
+  return { startKey, endKey };
+}
+
+function keyRangesOverlap(
+  aStart: string,
+  aEnd: string,
+  bStart: string,
+  bEnd: string,
+) {
+  return aStart <= bEnd && bStart <= aEnd;
+}
+
 
 /**
  * Devuelve los 12 meses del año con:
@@ -43,6 +66,7 @@ export function rangesOverlap(
   return aStart <= bEnd && bStart <= aEnd;
 }
 
+
 /**
  * ¿Una solicitud solapa con el mes indicado del año dado?
  * Mantiene la firma original; usa internamente `getYearMonths`.
@@ -51,13 +75,25 @@ export function requestOverlapsMonth(
   req: IVacationRequest,
   monthIndex: number,
   year: number = new Date().getFullYear(),
-  tz: string = "Europe/Berlin",
 ) {
-  const { start, end } = getYearMonths(year, undefined, tz)[monthIndex];
-  const rStart = new Date(req.startDate);
-  const rEnd = new Date(req.endDate);
-  return rangesOverlap(rStart, rEnd, start, end);
+  const { startKey: mStart, endKey: mEnd } = monthKeyRange(year, monthIndex);
+   const { start, end } = getRequestRangeBerlin(req);
+
+const sKey = toBerlinDayKey(
+  new Date(start.getFullYear(), start.getMonth(), start.getDate(), 12, 0, 0, 0),
+);
+const eKey = toBerlinDayKey(
+  new Date(end.getFullYear(), end.getMonth(), end.getDate(), 12, 0, 0, 0),
+);
+
+
+
+  if (!mStart || !mEnd || !sKey || !eKey) return false;
+
+  const { startKey, endKey } = normalizeKeyRange(sKey, eKey);
+  return keyRangesOverlap(startKey, endKey, mStart, mEnd);
 }
+
 
 /**
  * Devuelve un array de 12 contadores de solicitudes por mes (incluye solapes entre meses).
@@ -66,34 +102,71 @@ export function requestOverlapsMonth(
 export function countRequestsByMonth(
   requests: IVacationRequest[],
   year: number = new Date().getFullYear(),
-  tz: string = "Europe/Berlin",
 ) {
-  const months = getYearMonths(year, undefined, tz);
   const counts = Array(12).fill(0) as number[];
 
+  // Precalcular rangos por mes en dayKey
+  const monthRanges = Array.from({ length: 12 }, (_, m) => {
+    const { startKey, endKey } = monthKeyRange(year, m);
+    return { startKey, endKey };
+  });
+
   for (const req of requests) {
-    const rStart = new Date(req.startDate);
-    const rEnd = new Date(req.endDate);
+    const { start, end } = getRequestRangeBerlin(req);
+
+const sKey = toBerlinDayKey(
+  new Date(start.getFullYear(), start.getMonth(), start.getDate(), 12, 0, 0, 0),
+);
+const eKey = toBerlinDayKey(
+  new Date(end.getFullYear(), end.getMonth(), end.getDate(), 12, 0, 0, 0),
+);
+
+
+    if (!sKey || !eKey) continue;
+
+    const { startKey, endKey } = normalizeKeyRange(sKey, eKey);
+
     for (let m = 0; m < 12; m++) {
-      const { start, end } = months[m];
-      if (rangesOverlap(rStart, rEnd, start, end)) counts[m]++;
+      const mr = monthRanges[m];
+      if (!mr.startKey || !mr.endKey) continue;
+
+      if (keyRangesOverlap(startKey, endKey, mr.startKey, mr.endKey)) {
+        counts[m]++;
+      }
     }
   }
+
   return counts;
 }
+
 
 /** Filtra y devuelve las solicitudes que tocan el mes indicado */
 export function filterRequestsByMonth(
   requests: IVacationRequest[],
   monthIndex: number,
   year: number = new Date().getFullYear(),
-  tz: string = "Europe/Berlin",
 ) {
-  const { start, end } = getYearMonths(year, undefined, tz)[monthIndex];
-  return requests.filter((req) =>
-    rangesOverlap(new Date(req.startDate), new Date(req.endDate), start, end),
-  );
+  const { startKey: mStart, endKey: mEnd } = monthKeyRange(year, monthIndex);
+  if (!mStart || !mEnd) return [];
+
+  return requests.filter((req) => {
+        const { start, end } = getRequestRangeBerlin(req);
+
+const sKey = toBerlinDayKey(
+  new Date(start.getFullYear(), start.getMonth(), start.getDate(), 12, 0, 0, 0),
+);
+const eKey = toBerlinDayKey(
+  new Date(end.getFullYear(), end.getMonth(), end.getDate(), 12, 0, 0, 0),
+);
+
+
+    if (!sKey || !eKey) return false;
+
+    const { startKey, endKey } = normalizeKeyRange(sKey, eKey);
+    return keyRangesOverlap(startKey, endKey, mStart, mEnd);
+  });
 }
+
 
 /** Devuelve los pares de { y, m1 } (1..2 meses) que abarca un rango */
 export function monthsForRange(start: Date, end: Date) {
