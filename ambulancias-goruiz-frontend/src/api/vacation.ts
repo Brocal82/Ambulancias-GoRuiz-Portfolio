@@ -5,6 +5,12 @@ import {
   emitAvailabilityInvalidated,
   emitVacationRequestsUpdated,
 } from "../utils/vacation/vacationEvents";
+import {
+  getCachedAvailability,
+  setCachedAvailability,
+  deleteCachedAvailability
+} from "../utils/vacation/vacationAvailabilityCache";
+
 
 
 
@@ -301,75 +307,32 @@ export async function getVacationFlagsInRange(
   return data;
 }
 
-/* =========================================================
-   Caché + invalidación por mes y evento
-   ========================================================= */
-
-type MonthKey = string;
-const toMonthKey = (y: number, m1: number) =>
-  `${y}-${String(m1).padStart(2, "0")}`;
-
-const availabilityCache = new Map<MonthKey, VacationAvailabilityResponse>();
-
-export function getCachedAvailability(year: number, month: number) {
-  return availabilityCache.get(toMonthKey(year, month));
-}
-
-export function setCachedAvailability(
-  year: number,
-  month: number,
-  data: VacationAvailabilityResponse,
-) {
-  availabilityCache.set(toMonthKey(year, month), data);
-}
-
 /**
- * Invalida la disponibilidad en memoria para (año, mes) y difunde a:
- * - misma pestaña: CustomEvent('vacation-availability-invalidated')
- * - otras pestañas: BroadcastChannel 'vacations' y evento 'storage'
+ * Invalida la disponibilidad en memoria para (año, mes) y difunde el evento
+ * usando el bus oficial de vacaciones.
  *
  * month: 1..12
+ *
+ * ⚠️ Importante:
+ * - Aquí NO reimplementamos CustomEvent/BroadcastChannel/localStorage.
+ * - Eso vive en utils/vacation/vacationAvailabilityEvents.ts
  */
 export function invalidateAvailability(year: number, month: number) {
+  // 1) borrar caché en memoria (por pestaña)
   try {
-    availabilityCache.delete(toMonthKey(year, month));
-  } catch {}
+    deleteCachedAvailability(year, month);
+  } catch {
+    /* noop */
+  }
 
-  // misma pestaña
+  // 2) difundir invalidación (misma pestaña + otras pestañas)
   try {
-    window.dispatchEvent(
-      new CustomEvent("vacation-availability-invalidated", {
-        detail: { year, month },
-      }),
-    );
-  } catch {}
-
-  // otras pestañas: BroadcastChannel
-  let bc: BroadcastChannel | null = null;
-  try {
-    const BC = (window as any).BroadcastChannel as
-      | (new (name: string) => BroadcastChannel)
-      | undefined;
-    if (typeof BC === "function") {
-      bc = new BC("vacations");
-      bc.postMessage({
-        type: "availability-invalidated",
-        year,
-        month,
-        ts: Date.now(),
-      });
-      bc.close?.();
-    }
-  } catch {}
-
-  // otras pestañas: fallback localStorage
-  try {
-    localStorage.setItem(
-      "__vac_av_inval__",
-      JSON.stringify({ year, month, ts: Date.now() }),
-    );
-  } catch {}
+    emitAvailabilityInvalidated({ year, month });
+  } catch {
+    /* noop */
+  }
 }
+
 
 export function invalidateThisAndNextMonth(year: number, month1: number) {
   // month1: 1..12
