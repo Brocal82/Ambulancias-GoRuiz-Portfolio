@@ -17,6 +17,7 @@ import {
 import { emitVacationRequestsUpdated } from "../../utils/vacation/vacationEvents";
 import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
 import AdminVacationRequestsTable from "./AdminVacationRequestsTable";
+import { adminStatusBadge } from "./ui/adminStatusBadge";
 import { toBerlinDayKey } from "../../utils/dates/dayKey";
 
 interface Props {
@@ -237,36 +238,9 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString(locale, { timeZone: "Europe/Berlin" });
 
-  const statusBadge = (status: VacationStatus) => {
-    const base =
-      "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium";
-    switch (status) {
-      case "accepted":
-        return (
-          <span className={`${base} bg-green-100 text-green-700`}>
-            {t("pages.vacations.monthModal.filters.accepted")}
-          </span>
-        );
-      case "cancelled":
-        return (
-          <span className={`${base} bg-red-100 text-red-700`}>
-            {t("pages.vacations.monthModal.filters.cancelled")}
-          </span>
-        );
-      case "option_sent":
-        return (
-          <span className={`${base} bg-blue-100 text-blue-700`}>
-            {t("pages.vacations.monthModal.filters.option_sent")}
-          </span>
-        );
-      default:
-        return (
-          <span className={`${base} bg-yellow-100 text-yellow-700`}>
-            {t("pages.vacations.monthModal.filters.pending")}
-          </span>
-        );
-    }
-  };
+  const statusBadge = (status: VacationStatus) => adminStatusBadge(t, status);
+
+
 
   const handleAccept = async (id: string) => {
     if (!token || monthIndex === null) return;

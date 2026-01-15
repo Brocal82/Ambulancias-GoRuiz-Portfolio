@@ -3,7 +3,7 @@ import React from "react";
 import type { IVacationRequest } from "../../types/vacationRequest";
 import { useTranslation } from "react-i18next";
 import { getRequestRangeBerlin } from "../../utils/vacation/getRequestRangeBerlin";
-
+import VacationStatusBadge from "./ui/VacationStatusBadge";
 
 type Props = {
   request: IVacationRequest;
@@ -33,37 +33,6 @@ const UserVacationListItem: React.FC<Props> = ({
       year: "numeric",
     });
 
-  const statusBadge = (status: IVacationRequest["status"]) => {
-    const base =
-      "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium";
-    switch (status) {
-      case "accepted":
-        return (
-          <span className={`${base} bg-green-100 text-green-700`}>
-            {t("pages.vacations.listItem.status.accepted")}
-          </span>
-        );
-      case "cancelled":
-        return (
-          <span className={`${base} bg-red-100 text-red-700`}>
-            {t("pages.vacations.listItem.status.cancelled")}
-          </span>
-        );
-      case "option_sent":
-        return (
-          <span className={`${base} bg-blue-100 text-blue-700`}>
-            {t("pages.vacations.listItem.status.option_sent")}
-          </span>
-        );
-      default:
-        return (
-          <span className={`${base} bg-yellow-100 text-yellow-700`}>
-            {t("pages.vacations.listItem.status.pending")}
-          </span>
-        );
-    }
-  };
-
   return (
     <li className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md">
       <div className="flex items-start justify-between gap-2">
@@ -81,7 +50,6 @@ const UserVacationListItem: React.FC<Props> = ({
                   </>
                 );
               })()}
-
             </span>
 
             {req.adminOptionStartDate && req.adminOptionEndDate && (
@@ -107,7 +75,9 @@ const UserVacationListItem: React.FC<Props> = ({
           )}
         </div>
 
-        <div className="shrink-0">{statusBadge(req.status)}</div>
+        <div className="shrink-0">
+          <VacationStatusBadge status={req.status} />
+        </div>
       </div>
 
       {req.status === "option_sent" && (

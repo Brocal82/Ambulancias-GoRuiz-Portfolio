@@ -8,6 +8,8 @@ import { toBerlinDayKey } from "../../utils/dates/dayKey";
 import VacationStatusBadge from "./ui/VacationStatusBadge";
 
 
+
+
 type Props = {
   requests: IVacationRequest[];
   onRespondAlternative: (id: string, accept: boolean) => void;
@@ -184,6 +186,8 @@ const UserVacationList: React.FC<Props> = ({
                   <td className="px-3 py-2 align-top whitespace-nowrap">
                     <VacationStatusBadge status={req.status} />
                   </td>
+
+
 
 
                   {/* Mensaje */}
