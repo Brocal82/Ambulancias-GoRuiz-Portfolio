@@ -1,9 +1,7 @@
 // frontend/src/hooks/vacation/useVacationRequestsSync.ts
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { IVacationRequest } from "../../types/vacationRequest";
-import {
-  useVacationRequestsUpdated,
-} from "./useVacationRequestsUpdated";
+import { useVacationRequestsUpdated } from "./useVacationRequestsUpdated";
 import type { VacationRequestsUpdatedDetail } from "../../utils/vacation/vacationEvents";
 import { toastT } from "../../utils/toast";
 
@@ -27,18 +25,16 @@ type UseVacationRequestsSyncParams = {
    */
   debounceMs?: number;
 
-    /**
+  /**
    * Key de toast de error (opcional) si quieres mostrar toast al fallar el fetch
    */
   onErrorToastKey?: string;
 
-    /**
+  /**
    * Callback opcional que se ejecuta después de un fetch OK.
    * Útil para lógica de UI en páginas (ej: showForm si no hay requests).
    */
   onAfterFetch?: (data: IVacationRequest[]) => void;
-
-
 };
 
 type UseVacationRequestsSyncResult = {
@@ -57,14 +53,18 @@ type UseVacationRequestsSyncResult = {
 export function useVacationRequestsSync(
   params: UseVacationRequestsSyncParams,
 ): UseVacationRequestsSyncResult {
-  const { token, fetcher, enabled = true, debounceMs = 150, onErrorToastKey, onAfterFetch } = params;
+  const {
+    token,
+    fetcher,
+    enabled = true,
+    debounceMs = 150,
+    onErrorToastKey,
+    onAfterFetch,
+  } = params;
 
-    // ✅ Guardia unificada: solo podemos hacer fetch si el hook está habilitado y hay token
+  // ✅ Guardia unificada: solo podemos hacer fetch si el hook está habilitado y hay token
   // (No cambia el comportamiento: antes se comprobaba en doFetch y scheduleRefetch)
   const canFetch = enabled && !!token;
-
-
-
 
   const [requests, setRequests] = useState<IVacationRequest[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -72,8 +72,8 @@ export function useVacationRequestsSync(
 
   const refetchTimerRef = useRef<number | null>(null);
 
-    // ✅ Helper interno: limpia el timer pendiente (si existe)
-  // No cambia comportamiento: es exactamente el mismo cleanup que ya hacíamos en el return del useEffect.
+  // ✅ Helper interno: limpia el timer pendiente (si existe)
+  // No cambia comportamiento: es exactamente el mismo cleanup que ya hacíamos.
   const clearRefetchTimer = useCallback(() => {
     if (refetchTimerRef.current) {
       window.clearTimeout(refetchTimerRef.current);
@@ -81,6 +81,15 @@ export function useVacationRequestsSync(
     }
   }, []);
 
+  // ✅ Helper interno: maneja el error del fetch
+  // Mantiene exactamente la misma semántica que antes (error + toast opcional)
+  const handleFetchError = useCallback(() => {
+    setError("load_error");
+
+    if (onErrorToastKey) {
+      toastT.error([onErrorToastKey]);
+    }
+  }, [onErrorToastKey]);
 
   const doFetch = useCallback(async () => {
     if (!canFetch) return;
@@ -91,52 +100,37 @@ export function useVacationRequestsSync(
     setLoading(true);
     setError(null);
 
-
     try {
       const data = await fetcher(token);
-setRequests(data);
-onAfterFetch?.(data);
-
+      setRequests(data);
+      onAfterFetch?.(data);
     } catch {
-  setError("load_error");
-  if (onErrorToastKey) {
-    // Importa toastT arriba si aún no lo tienes
-    // import { toastT } from "../../utils/toast";
-    toastT.error([onErrorToastKey]);
-  }
-}
- finally {
+      handleFetchError();
+    } finally {
       setLoading(false);
     }
-    }, [canFetch, token, fetcher]);
-
+  }, [canFetch, token, fetcher, onAfterFetch, handleFetchError]);
 
   const scheduleRefetch = useCallback(() => {
-        if (!canFetch) return;
+    if (!canFetch) return;
 
-
+    // ✅ Importante: mantenemos la semántica actual (si hay timer activo, no reprogramar)
     if (refetchTimerRef.current) return;
 
     refetchTimerRef.current = window.setTimeout(() => {
       refetchTimerRef.current = null;
       doFetch();
     }, debounceMs);
-    }, [canFetch, doFetch, debounceMs]);
-
+  }, [canFetch, doFetch, debounceMs]);
 
   // Fetch inicial / cuando cambie token/enabled/fetcher
   useEffect(() => {
     doFetch();
 
-return () => {
-  if (refetchTimerRef.current) {
-    window.clearTimeout(refetchTimerRef.current);
-    refetchTimerRef.current = null;
-  }
-};
-
-}, [doFetch, clearRefetchTimer]);
-
+    return () => {
+      clearRefetchTimer();
+    };
+  }, [doFetch, clearRefetchTimer]);
 
   // Escucha eventos requests-updated (misma pestaña + otras pestañas)
   const handleRequestsUpdated = useCallback(
