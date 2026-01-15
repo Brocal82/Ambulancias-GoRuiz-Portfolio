@@ -72,6 +72,16 @@ export function useVacationRequestsSync(
 
   const refetchTimerRef = useRef<number | null>(null);
 
+    // ✅ Helper interno: limpia el timer pendiente (si existe)
+  // No cambia comportamiento: es exactamente el mismo cleanup que ya hacíamos en el return del useEffect.
+  const clearRefetchTimer = useCallback(() => {
+    if (refetchTimerRef.current) {
+      window.clearTimeout(refetchTimerRef.current);
+      refetchTimerRef.current = null;
+    }
+  }, []);
+
+
   const doFetch = useCallback(async () => {
     if (!canFetch) return;
 
@@ -118,13 +128,15 @@ onAfterFetch?.(data);
   useEffect(() => {
     doFetch();
 
-    return () => {
-      if (refetchTimerRef.current) {
-        window.clearTimeout(refetchTimerRef.current);
-        refetchTimerRef.current = null;
-      }
-    };
-  }, [doFetch]);
+return () => {
+  if (refetchTimerRef.current) {
+    window.clearTimeout(refetchTimerRef.current);
+    refetchTimerRef.current = null;
+  }
+};
+
+}, [doFetch, clearRefetchTimer]);
+
 
   // Escucha eventos requests-updated (misma pestaña + otras pestañas)
   const handleRequestsUpdated = useCallback(
