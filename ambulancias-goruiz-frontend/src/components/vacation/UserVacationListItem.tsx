@@ -2,6 +2,8 @@
 import React from "react";
 import type { IVacationRequest } from "../../types/vacationRequest";
 import { useTranslation } from "react-i18next";
+import { getRequestRangeBerlin } from "../../utils/vacation/getRequestRangeBerlin";
+
 
 type Props = {
   request: IVacationRequest;
@@ -71,7 +73,15 @@ const UserVacationListItem: React.FC<Props> = ({
               {t("pages.vacations.listItem.requested")}
             </span>
             <span className="text-gray-600">
-              {fmtDate(req.startDate)} — {fmtDate(req.endDate)}
+              {(() => {
+                const { start, end } = getRequestRangeBerlin(req);
+                return (
+                  <>
+                    {fmtDate(start.toISOString())} — {fmtDate(end.toISOString())}
+                  </>
+                );
+              })()}
+
             </span>
 
             {req.adminOptionStartDate && req.adminOptionEndDate && (
