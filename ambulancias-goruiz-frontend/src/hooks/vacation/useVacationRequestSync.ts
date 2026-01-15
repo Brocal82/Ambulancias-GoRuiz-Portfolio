@@ -62,6 +62,25 @@ export function useVacationRequestsSync(
     onAfterFetch,
   } = params;
 
+    // ✅ Refs para evitar efectos colaterales por cambios de identidad en callbacks opcionales
+  // - No queremos que doFetch cambie (y dispare refetch) si la page redefine callbacks inline.
+  const onAfterFetchRef = useRef<UseVacationRequestsSyncParams["onAfterFetch"]>(
+    onAfterFetch,
+  );
+  const onErrorToastKeyRef = useRef<
+    UseVacationRequestsSyncParams["onErrorToastKey"]
+  >(onErrorToastKey);
+
+  // Mantener el valor más reciente en los refs sin afectar dependencias de doFetch
+  useEffect(() => {
+    onAfterFetchRef.current = onAfterFetch;
+  }, [onAfterFetch]);
+
+  useEffect(() => {
+    onErrorToastKeyRef.current = onErrorToastKey;
+  }, [onErrorToastKey]);
+
+
   // ✅ Guardia unificada: solo podemos hacer fetch si el hook está habilitado y hay token
   // (No cambia el comportamiento: antes se comprobaba en doFetch y scheduleRefetch)
   const canFetch = enabled && !!token;
@@ -86,10 +105,12 @@ export function useVacationRequestsSync(
   const handleFetchError = useCallback(() => {
     setError("load_error");
 
-    if (onErrorToastKey) {
-      toastT.error([onErrorToastKey]);
+    const toastKey = onErrorToastKeyRef.current;
+    if (toastKey) {
+      toastT.error([toastKey]);
     }
-  }, [onErrorToastKey]);
+  }, []);
+
 
   const doFetch = useCallback(async () => {
     if (!canFetch) return;
@@ -103,13 +124,14 @@ export function useVacationRequestsSync(
     try {
       const data = await fetcher(token);
       setRequests(data);
-      onAfterFetch?.(data);
+      onAfterFetchRef.current?.(data);
     } catch {
       handleFetchError();
     } finally {
       setLoading(false);
     }
-  }, [canFetch, token, fetcher, onAfterFetch, handleFetchError]);
+  }, [canFetch, token, fetcher, handleFetchError]);
+
 
   const scheduleRefetch = useCallback(() => {
     if (!canFetch) return;
