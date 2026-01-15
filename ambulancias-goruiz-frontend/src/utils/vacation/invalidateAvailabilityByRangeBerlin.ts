@@ -2,13 +2,20 @@
 import { emitAvailabilityInvalidated } from "./vacationEvents";
 
 /**
- * Calcula e invalida meses afectados por un rango ISO usando TZ Europe/Berlin.
+ * Implementación base (TZ Europe/Berlin) para invalidación por rango.
  *
- * ⚠️ Fase 1:
- * - Copia literal del comportamiento previo que vivía en api/vacation.ts
- * - No cambiar la lógica (anti-rotura)
- * - Prepara el terreno para unificar con invalidateAvailabilityForRange en fases futuras
+ * Regla del dominio:
+ * - La aplicación opera en Alemania -> el calendario se interpreta en Europe/Berlin.
+ *
+ * Nota:
+ * - El punto oficial para consumidores es `invalidateAvailabilityForRange`
+ *   (reexportado por vacationEvents.ts).
+ * - Este archivo contiene el cálculo concreto de meses (Berlin) y emite eventos.
+ *
+ * ⚠️ Importante:
+ * - No tocar lógica aquí sin una fase dedicada (riesgo de casos frontera).
  */
+
 
 function getBerlinYearMonth(iso: string): { y: number; m1: number } | null {
   const d = new Date(iso);
