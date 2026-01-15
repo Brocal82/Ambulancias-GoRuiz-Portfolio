@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { IVacationRequest } from "../../types/vacationRequest";
-import type { VacationStatus } from "../../types/vacation";
 import { useTranslation } from "react-i18next";
 import { formatISOToDDMMYYYY } from "../../utils/timeUtils";
 import { calcVacationDays } from "../../utils/vacation/calcVacationDays";
 import { getRequestRangeBerlin } from "../../utils/vacation/getRequestRangeBerlin";
 import { toBerlinDayKey } from "../../utils/dates/dayKey";
+import VacationStatusBadge from "./ui/VacationStatusBadge";
 
 
 type Props = {
@@ -47,40 +47,7 @@ const UserVacationList: React.FC<Props> = ({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [msgModal?.open]);
 
-  const statusBadge = (status: VacationStatus) => {
-    const base =
-      "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium";
 
-    if (status === "pending") {
-      return (
-        <span className={`${base} bg-amber-100 text-amber-800`}>
-          {t("pages.vacations.status.pending", "Pendiente")}
-        </span>
-      );
-    }
-
-    if (status === "accepted") {
-      return (
-        <span className={`${base} bg-emerald-100 text-emerald-800`}>
-          {t("pages.vacations.status.accepted", "Aceptada")}
-        </span>
-      );
-    }
-
-    if (status === "option_sent") {
-      return (
-        <span className={`${base} bg-sky-100 text-sky-800`}>
-          {t("pages.vacations.status.option_sent", "alternativa")}
-        </span>
-      );
-    }
-
-    return (
-      <span className={`${base} bg-rose-100 text-rose-800`}>
-        {t("pages.vacations.status.cancelled", "Cancelada")}
-      </span>
-    );
-  };
 
   const openAdminMessage = (req: IVacationRequest) => {
     const adminNote = req.adminNote?.trim();
@@ -215,8 +182,9 @@ const UserVacationList: React.FC<Props> = ({
 
                   {/* Estado */}
                   <td className="px-3 py-2 align-top whitespace-nowrap">
-                    {statusBadge(req.status)}
+                    <VacationStatusBadge status={req.status} />
                   </td>
+
 
                   {/* Mensaje */}
                   <td className="px-3 py-2 align-top whitespace-nowrap">
