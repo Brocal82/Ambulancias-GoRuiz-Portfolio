@@ -59,6 +59,11 @@ export function useVacationRequestsSync(
 ): UseVacationRequestsSyncResult {
   const { token, fetcher, enabled = true, debounceMs = 150, onErrorToastKey, onAfterFetch } = params;
 
+    // ✅ Guardia unificada: solo podemos hacer fetch si el hook está habilitado y hay token
+  // (No cambia el comportamiento: antes se comprobaba en doFetch y scheduleRefetch)
+  const canFetch = enabled && !!token;
+
+
 
 
   const [requests, setRequests] = useState<IVacationRequest[]>([]);
@@ -68,11 +73,14 @@ export function useVacationRequestsSync(
   const refetchTimerRef = useRef<number | null>(null);
 
   const doFetch = useCallback(async () => {
-    if (!enabled) return;
+    if (!canFetch) return;
+
+    // ✅ Narrowing de TS: a partir de aquí token es string seguro
     if (!token) return;
 
     setLoading(true);
     setError(null);
+
 
     try {
       const data = await fetcher(token);
@@ -90,11 +98,12 @@ onAfterFetch?.(data);
  finally {
       setLoading(false);
     }
-  }, [enabled, token, fetcher]);
+    }, [canFetch, token, fetcher]);
+
 
   const scheduleRefetch = useCallback(() => {
-    if (!enabled) return;
-    if (!token) return;
+        if (!canFetch) return;
+
 
     if (refetchTimerRef.current) return;
 
@@ -102,7 +111,8 @@ onAfterFetch?.(data);
       refetchTimerRef.current = null;
       doFetch();
     }, debounceMs);
-  }, [enabled, token, doFetch, debounceMs]);
+    }, [canFetch, doFetch, debounceMs]);
+
 
   // Fetch inicial / cuando cambie token/enabled/fetcher
   useEffect(() => {
