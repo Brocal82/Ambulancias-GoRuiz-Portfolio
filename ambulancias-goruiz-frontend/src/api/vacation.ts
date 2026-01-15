@@ -345,16 +345,6 @@ export function invalidateThisAndNextMonth(year: number, month1: number) {
 }
 
 
-
-/* =========================================================
-   Helpers de invalidación por evento y por rango (TZ Berlín)
-   ========================================================= */
-
-export function emitAvailabilityInvalidation(year: number, month: number) {
-  invalidateAvailability(year, month);
-}
-
-
 export function invalidateAvailabilityByRange(startISO: string, endISO: string) {
   invalidateAvailabilityByRangeBerlin(startISO, endISO);
 }
