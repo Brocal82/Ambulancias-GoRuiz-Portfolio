@@ -7,8 +7,8 @@ import { displayFileNameFromUrl } from "../utils/fileName";
 import {
   adminListSickLeaves,
   type SickLeave,
-  type SickLeaveStatus,
 } from "../api/sickLeaves";
+import StatusBadge from "../components/common/StatusBadge";
 
 type Props = {
   userId: string;
@@ -54,27 +54,6 @@ export default function AdminUserSickLeavesTab({ userId }: Props) {
     load();
   }, [token, userId]);
 
-  const badge = (st: SickLeaveStatus) => {
-    const base =
-      "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium";
-    if (st === "pending")
-      return (
-        <span className={`${base} bg-amber-100 text-amber-800`}>
-          {t("pages.sick.status.pending", "Pendiente")}
-        </span>
-      );
-    if (st === "accepted")
-      return (
-        <span className={`${base} bg-emerald-100 text-emerald-800`}>
-          {t("pages.sick.status.accepted", "Aceptada")}
-        </span>
-      );
-    return (
-      <span className={`${base} bg-rose-100 text-rose-800`}>
-        {t("pages.sick.status.rejected", "Rechazada")}
-      </span>
-    );
-  };
 
   return (
     <div className="space-y-4">
@@ -165,7 +144,16 @@ export default function AdminUserSickLeavesTab({ userId }: Props) {
                       </td>
                       <td className="px-3 py-2 align-top">{days}</td>
                       <td className="px-3 py-2 align-top whitespace-nowrap">
-                        {badge(it.status)}
+                        <StatusBadge
+                          tone={
+                            it.status === "pending"
+                              ? "amber"
+                              : it.status === "accepted"
+                                ? "emerald"
+                                : "rose"
+                          }
+                          label={t(`pages.sick.status.${it.status}`, it.status)}
+                        />
                       </td>
                       <td className="px-3 py-2 align-top">
                         {docUrls.length === 0 ? (
@@ -194,11 +182,10 @@ export default function AdminUserSickLeavesTab({ userId }: Props) {
 
                             <div
                               id={`docs-panel-${it._id}`}
-                              className={`overflow-hidden transition-all duration-200 ease-out mt-2 ${
-                                isOpen
+                              className={`overflow-hidden transition-all duration-200 ease-out mt-2 ${isOpen
                                   ? "opacity-100 max-h-56"
                                   : "opacity-0 max-h-0"
-                              }`}
+                                }`}
                             >
                               <ul className="flex flex-wrap justify-center gap-2">
                                 {docUrls.map((url, idx) => {

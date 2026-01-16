@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Appointment } from "../../types/appointment";
 import { useAuth } from "../../hooks/useAuth";
 import { cancelAppointment, updateAppointment } from "../../api/appointments";
@@ -6,6 +6,7 @@ import { toastT } from "../../utils/toast";
 import { APP_TZ } from "../../config/app";
 import { partsFromISO, localDateTimeToUtcISO } from "../../utils/tz";
 import { useTranslation } from "react-i18next";
+import StatusBadge from "../common/StatusBadge";
 
 type Props = {
   isOpen: boolean;
@@ -54,8 +55,8 @@ const AdminAppointmentDetail: React.FC<Props> = ({
 
   const when = item.selectedSlot?.start
     ? new Date(item.selectedSlot.start).toLocaleString("de-DE", {
-        timeZone: APP_TZ,
-      })
+      timeZone: APP_TZ,
+    })
     : "—";
 
   const statusLabel = t(`pages.appointments.statusLabel.${item.status}`);
@@ -134,24 +135,22 @@ const AdminAppointmentDetail: React.FC<Props> = ({
             </h3>
 
             {/* Status pill */}
-            <span
-              className={[
-                "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+            <StatusBadge
+              label={statusLabel}
+              tone={
                 item.status === "confirmed" || item.status === "rescheduled"
-                  ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-                  : item.status === "proposed"
-                    ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
-                    : item.status === "pending"
-                      ? "bg-sky-50 text-sky-700 ring-1 ring-sky-200"
+                  ? "emerald"
+                  : item.status === "pending"
+                    ? "amber"
+                    : item.status === "proposed"
+                      ? "sky"
                       : item.status === "cancelled"
-                        ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
-                        : "bg-slate-50 text-slate-700 ring-1 ring-slate-200",
-              ].join(" ")}
-              aria-label={t("pages.appointments.detail.labels.status")}
-              title={statusLabel}
-            >
-              {statusLabel}
-            </span>
+                        ? "rose"
+                        : "slate"
+              }
+
+            />
+
           </div>
 
           {!isCancelled && !editMode && (

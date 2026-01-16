@@ -35,6 +35,19 @@ export default function AdminAppointmentsPage() {
   const statusLabel = (s: Appointment["status"]) =>
     t(`pages.appointments.statusLabel.${s}`);
 
+  const toneForAppointmentStatus = (s: Appointment["status"]) =>
+    s === "confirmed" || s === "rescheduled"
+      ? "emerald"
+      : s === "pending"
+        ? "amber"
+        : s === "proposed"
+          ? "sky"
+          : s === "cancelled"
+            ? "rose"
+            : "slate";
+
+
+
   // --- Estado de pendientes (pending + proposed) ---
   const [pending, setPending] = useState<Appointment[]>([]);
   const [loadingPending, setLoadingPending] = useState(true);
@@ -266,9 +279,12 @@ export default function AdminAppointmentsPage() {
                               </button>
                             )}
                             <StatusBadge
-                              status={a.status}
                               label={statusLabel(a.status)}
+                              tone={toneForAppointmentStatus(a.status)}
                             />
+
+
+
                           </div>
                         </div>
 

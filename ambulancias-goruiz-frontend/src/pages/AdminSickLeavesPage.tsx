@@ -13,6 +13,7 @@ import {
 } from "../api/sickLeaves";
 import { getYearMonths, rangesOverlap } from "../utils/vacationMonthUtils";
 import AdminSickMonthGrid from "../components/sick/AdminSickMonthGrid";
+import StatusBadge from "../components/common/StatusBadge";
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return "—";
@@ -166,27 +167,19 @@ export default function AdminSickLeavesPage() {
     }
   };
 
-  const badge = (st: SickLeaveStatus) => {
-    const base =
-      "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium";
-    if (st === "pending")
-      return (
-        <span className={`${base} bg-amber-100 text-amber-800`}>
-          {t("pages.sick.status.pending", "Pendiente")}
-        </span>
-      );
-    if (st === "accepted")
-      return (
-        <span className={`${base} bg-emerald-100 text-emerald-800`}>
-          {t("pages.sick.status.accepted", "Aceptada")}
-        </span>
-      );
-    return (
-      <span className={`${base} bg-rose-100 text-rose-800`}>
-        {t("pages.sick.status.rejected", "Rechazada")}
-      </span>
-    );
+  const toneByStatus: Record<SickLeaveStatus, "amber" | "emerald" | "rose"> = {
+    pending: "amber",
+    accepted: "emerald",
+    rejected: "rose",
   };
+
+  const badge = (st: SickLeaveStatus) => (
+    <StatusBadge
+      tone={toneByStatus[st]}
+      label={t(`pages.sick.status.${st}`, st)}
+    />
+  );
+
 
   // ✅ Estilos tabla estilo AdminVacations
   const tableClass =

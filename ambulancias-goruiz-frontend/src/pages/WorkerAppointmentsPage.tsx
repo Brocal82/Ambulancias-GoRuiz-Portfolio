@@ -90,6 +90,25 @@ export default function WorkerAppointmentsPage() {
   const statusLabel = (s: Appointment["status"]) =>
     t(`pages.appointments.statusLabel.${s}`);
 
+  const toneForAppointmentStatus = (
+    status: Appointment["status"],
+  ): "amber" | "emerald" | "sky" | "rose" | "slate" => {
+    switch (status) {
+      case "pending":
+        return "amber";
+      case "proposed":
+        return "sky";
+      case "confirmed":
+      case "rescheduled":
+        return "emerald";
+      case "cancelled":
+        return "rose";
+      default:
+        return "slate";
+    }
+  };
+
+
   // Próxima cita confirmada / reprogramada (futura más cercana)
   const nextConfirmed = useMemo(() => {
     const now = Date.now();
@@ -203,9 +222,11 @@ export default function WorkerAppointmentsPage() {
               {t("pages.appointments.next.title")}
             </h3>
             <StatusBadge
-              status={nextConfirmed.status}
+              tone={toneForAppointmentStatus(nextConfirmed.status)}
               label={statusLabel(nextConfirmed.status)}
             />
+
+
           </div>
           <div className="mt-2 text-sm text-emerald-900">
             <div>
@@ -273,9 +294,11 @@ export default function WorkerAppointmentsPage() {
                         </button>
                       )}
                       <StatusBadge
-                        status={a.status}
+                        tone={toneForAppointmentStatus(a.status)}
                         label={statusLabel(a.status)}
                       />
+
+
                     </div>
                   </div>
                 </li>
@@ -331,9 +354,11 @@ export default function WorkerAppointmentsPage() {
                 {/* Status fijo en la esquina inferior derecha */}
                 <div className="absolute bottom-2 right-2">
                   <StatusBadge
-                    status={a.status}
+                    tone={toneForAppointmentStatus(a.status)}
                     label={statusLabel(a.status)}
                   />
+
+
                 </div>
               </li>
             ))}

@@ -13,6 +13,7 @@ import FileUpload from "../components/common/FileUpload";
 import { buildImageUrl } from "../utils/apiOrigins";
 import { displayFileNameFromUrl } from "../utils/fileName";
 import SickLeaveRequestForm from "../components/sick/SickLeaveRequestForm";
+import StatusBadge from "../components/common/StatusBadge";
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return "—";
@@ -157,27 +158,6 @@ export default function WorkerSickLeavesPage() {
     }
   };
 
-  const badge = (status: SickLeave["status"]) => {
-    const base =
-      "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium";
-    if (status === "pending")
-      return (
-        <span className={`${base} bg-amber-100 text-amber-800`}>
-          {t("pages.sick.status.pending", "Pendiente")}
-        </span>
-      );
-    if (status === "accepted")
-      return (
-        <span className={`${base} bg-emerald-100 text-emerald-800`}>
-          {t("pages.sick.status.accepted", "Aceptada")}
-        </span>
-      );
-    return (
-      <span className={`${base} bg-rose-100 text-rose-800`}>
-        {t("pages.sick.status.rejected", "Rechazada")}
-      </span>
-    );
-  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -199,13 +179,13 @@ export default function WorkerSickLeavesPage() {
             >
               {showCreateForm
                 ? t(
-                    "pages.vacations.workerPage.toggleCloseForm",
-                    "Cerrar formulario",
-                  )
+                  "pages.vacations.workerPage.toggleCloseForm",
+                  "Cerrar formulario",
+                )
                 : t(
-                    "pages.vacations.workerPage.toggleOpenForm",
-                    "Abrir formulario",
-                  )}
+                  "pages.vacations.workerPage.toggleOpenForm",
+                  "Abrir formulario",
+                )}
             </button>
 
             {/* Si quieres mostrar un mensaje como en Vacation, úsalo aquí */}
@@ -476,7 +456,16 @@ export default function WorkerSickLeavesPage() {
 
                           {/* Estado */}
                           <td className="px-3 py-2 align-top whitespace-nowrap">
-                            {badge(it.status)}
+                            <StatusBadge
+                              tone={
+                                it.status === "pending"
+                                  ? "amber"
+                                  : it.status === "accepted"
+                                    ? "emerald"
+                                    : "rose"
+                              }
+                              label={t(`pages.sick.status.${it.status}`, it.status)}
+                            />
                           </td>
 
                           {/* Documentos */}
@@ -507,11 +496,10 @@ export default function WorkerSickLeavesPage() {
 
                                 <div
                                   id={`docs-panel-${it._id}`}
-                                  className={`overflow-hidden transition-all duration-200 ease-out mt-2 ${
-                                    isOpen
+                                  className={`overflow-hidden transition-all duration-200 ease-out mt-2 ${isOpen
                                       ? "opacity-100 max-h-56"
                                       : "opacity-0 max-h-0"
-                                  }`}
+                                    }`}
                                 >
                                   <ul className="flex flex-wrap justify-center gap-2">
                                     {docUrls.map((url, idx) => {

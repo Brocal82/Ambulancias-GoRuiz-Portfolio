@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Appointment } from "../../types/appointment";
 import { getYearMonths } from "../../utils/appointmentMonthUtils";
 import { useTranslation } from "react-i18next";
+import StatusBadge from "../common/StatusBadge";
 
 type MonthCounts = {
   total: number;
@@ -196,9 +197,12 @@ const AdminAppointmentMonthGrid: React.FC<Props> = ({
               {(hasItems || hasPending) && (
                 <div className="mt-auto flex items-center justify-between text-[10px]">
                   {hasItems ? (
-                    <span className="inline-flex items-center justify-center min-w-[1.6rem] rounded-full bg-slate-100 text-[10px] font-semibold text-slate-700 px-2 py-[2px] ring-1 ring-slate-200">
-                      {total}
-                    </span>
+                    <StatusBadge
+                      tone="slate"
+                      label={String(total)}
+                      className="text-[10px] font-semibold px-2 py-[2px] min-w-[1.6rem] justify-center"
+                    />
+
                   ) : (
                     <span />
                   )}
