@@ -11,6 +11,7 @@ import { invalidateAvailabilityForRange } from "../utils/vacation/invalidateAvai
 
 import { formatISOToDDMMYYYY } from "../utils/timeUtils";
 import { calcVacationDays } from "../utils/vacation/calcVacationDays";
+import StatusBadge from "../components/common/StatusBadge";
 
 interface Props {
   userId: string;
@@ -88,33 +89,15 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
     toastT.info(["toasts.vacations.editPending", { id }]);
   };
 
-  const badge = (status: VacationStatus) => {
-    const base =
-      "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium";
-
-    if (status === "pending") {
-      return (
-        <span className={`${base} bg-amber-100 text-amber-800`}>
-          {t("pages.vacations.status.pending", "Pendiente")}
-        </span>
-      );
-    }
-
-    if (status === "accepted") {
-      return (
-        <span className={`${base} bg-emerald-100 text-emerald-800`}>
-          {t("pages.vacations.status.accepted", "Aceptada")}
-        </span>
-      );
-    }
-
-    // rejected u otros
-    return (
-      <span className={`${base} bg-rose-100 text-rose-800`}>
-        {t("pages.vacations.status.rejected", "Rechazada")}
-      </span>
-    );
+  const toneByVacationStatus = (status: VacationStatus) => {
+    if (status === "pending") return "amber";
+    if (status === "accepted") return "emerald";
+    if (status === "option_sent") return "sky";
+    return "rose"; // cancelled
   };
+
+  const vacationStatusLabel = (status: VacationStatus) =>
+    t(`pages.vacations.adminPage.status.${status}`, status);
 
 
   return (
@@ -198,7 +181,11 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
 
                       {/* Estado */}
                       <td className="px-3 py-2 align-top whitespace-nowrap">
-                        {badge(v.status)}
+                        <StatusBadge
+                          tone={toneByVacationStatus(v.status)}
+                          label={vacationStatusLabel(v.status)}
+                        />
+
                       </td>
 
                       <td className="px-3 py-2 align-top">

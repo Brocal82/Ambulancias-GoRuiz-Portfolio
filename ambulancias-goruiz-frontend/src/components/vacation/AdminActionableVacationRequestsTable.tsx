@@ -122,11 +122,18 @@ const AdminActionableVacationRequestsTable: React.FC<Props> = ({
                                 {/* Estado */}
                                 <td className="px-3 py-2 align-top whitespace-nowrap">
                                     <StatusBadge
-                                        context="vacation"
-                                        palette="vacation"
-                                        status={req.status}
+                                        tone={
+                                            req.status === "pending"
+                                                ? "amber"
+                                                : req.status === "accepted"
+                                                    ? "emerald"
+                                                    : req.status === "option_sent"
+                                                        ? "sky"
+                                                        : "rose"
+                                        }
                                         label={t(`pages.vacations.adminPage.status.${req.status}`)}
                                     />
+
 
 
                                 </td>

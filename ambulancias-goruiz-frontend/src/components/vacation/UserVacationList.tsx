@@ -5,7 +5,7 @@ import { formatISOToDDMMYYYY } from "../../utils/timeUtils";
 import { calcVacationDays } from "../../utils/vacation/calcVacationDays";
 import { getRequestRangeBerlin } from "../../utils/vacation/getRequestRangeBerlin";
 import { toBerlinDayKey } from "../../utils/dates/dayKey";
-import VacationStatusBadge from "./ui/VacationStatusBadge";
+import StatusBadge from "../common/StatusBadge";
 
 
 
@@ -32,6 +32,27 @@ const UserVacationList: React.FC<Props> = ({
   onCancelRequest,
 }) => {
   const { t } = useTranslation();
+
+  const getVacationTone = (status: IVacationRequest["status"]) => {
+    switch (status) {
+      case "pending":
+        return "amber";
+      case "accepted":
+        return "emerald";
+      case "option_sent":
+        return "sky";
+      case "cancelled":
+        return "rose";
+      default:
+        return "slate";
+    }
+  };
+
+  const getVacationStatusLabel = (status: IVacationRequest["status"]) => {
+    // Usamos las keys que YA tienes en locales: pages.vacations.listItem.status.*
+    return t(`pages.vacations.listItem.status.${status}`);
+  };
+
 
   // ✅ Modal “pro” (sin alerts)
   const [msgModal, setMsgModal] = useState<AdminMessageModalState | null>(null);
@@ -184,8 +205,13 @@ const UserVacationList: React.FC<Props> = ({
 
                   {/* Estado */}
                   <td className="px-3 py-2 align-top whitespace-nowrap">
-                    <VacationStatusBadge status={req.status} />
+                    <StatusBadge
+                      tone={getVacationTone(req.status)}
+                      label={getVacationStatusLabel(req.status)}
+                    />
                   </td>
+
+
 
 
 
@@ -312,27 +338,21 @@ const UserVacationList: React.FC<Props> = ({
               {/* Fechas */}
               <div className="flex flex-wrap gap-2">
                 {/* Solicitadas */}
-                <span
-                  className="inline-flex items-center rounded-full
-              bg-amber-100 text-amber-800
-              px-2.5 py-1 font-medium"
-                  title="Fechas solicitadas"
-                >
-                  🟡 {formatISOToDDMMYYYY(msgModal.requestedStart)} —{" "}
-                  {formatISOToDDMMYYYY(msgModal.requestedEnd)}
-                </span>
+                <StatusBadge
+                  tone="amber"
+                  label={`🟡 ${formatISOToDDMMYYYY(msgModal.requestedStart)} — ${formatISOToDDMMYYYY(msgModal.requestedEnd)}`}
+                  className="px-2.5 py-1 font-medium"
+                />
+
 
                 {/* Propuestas */}
                 {msgModal.proposedStart && msgModal.proposedEnd && (
-                  <span
-                    className="inline-flex items-center rounded-full
-                bg-sky-100 text-sky-800
-                px-2.5 py-1 font-medium"
-                    title="Fechas propuestas"
-                  >
-                    🔵 {formatISOToDDMMYYYY(msgModal.proposedStart)} —{" "}
-                    {formatISOToDDMMYYYY(msgModal.proposedEnd)}
-                  </span>
+                  <StatusBadge
+                    tone="sky"
+                    label={`🔵 ${formatISOToDDMMYYYY(msgModal.proposedStart)} — ${formatISOToDDMMYYYY(msgModal.proposedEnd)}`}
+                    className="px-2.5 py-1 font-medium"
+                  />
+
                 )}
               </div>
 

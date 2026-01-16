@@ -17,7 +17,6 @@ import {
 import { emitVacationRequestsUpdated } from "../../utils/vacation/vacationEvents";
 import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
 import AdminVacationRequestsTable from "./AdminVacationRequestsTable";
-import { adminStatusBadge } from "./ui/adminStatusBadge";
 import { toBerlinDayKey } from "../../utils/dates/dayKey";
 
 interface Props {
@@ -237,9 +236,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString(locale, { timeZone: "Europe/Berlin" });
-
-  const statusBadge = (status: VacationStatus) => adminStatusBadge(t, status);
-
 
 
   const handleAccept = async (id: string) => {
@@ -813,7 +809,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                     highlightRequestId={highlightRequestId}
                     onToggleHighlight={toggleHighlightFor}
                     fmtDate={fmtDate}
-                    statusBadge={statusBadge}
                     onAccept={handleAccept}
                     onOpenAlternative={openAlternative}
                     onDelete={handleDelete}

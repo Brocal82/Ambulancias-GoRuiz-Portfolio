@@ -3,7 +3,7 @@ import React from "react";
 import type { IVacationRequest } from "../../types/vacationRequest";
 import { useTranslation } from "react-i18next";
 import { getRequestRangeBerlin } from "../../utils/vacation/getRequestRangeBerlin";
-import VacationStatusBadge from "./ui/VacationStatusBadge";
+import StatusBadge from "../common/StatusBadge";
 
 type Props = {
   request: IVacationRequest;
@@ -76,8 +76,20 @@ const UserVacationListItem: React.FC<Props> = ({
         </div>
 
         <div className="shrink-0">
-          <VacationStatusBadge status={req.status} />
+          <StatusBadge
+            tone={
+              req.status === "pending"
+                ? "amber"
+                : req.status === "accepted"
+                  ? "emerald"
+                  : req.status === "option_sent"
+                    ? "sky"
+                    : "rose"
+            }
+            label={t(`pages.vacations.listItem.status.${req.status}`)}
+          />
         </div>
+
       </div>
 
       {req.status === "option_sent" && (

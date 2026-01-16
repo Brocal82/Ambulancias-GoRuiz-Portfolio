@@ -2,10 +2,11 @@
 import React from "react";
 import type { TFunction } from "i18next";
 import type { IVacationRequest } from "../../types/vacationRequest";
-import type { VacationStatus } from "../../types/vacation";
 import { calcVacationDays } from "../../utils/vacation/calcVacationDays";
 import { getRequestRangeBerlin } from "../../utils/vacation/getRequestRangeBerlin";
 import { toBerlinDayKey } from "../../utils/dates/dayKey";
+import StatusBadge from "../common/StatusBadge";
+
 
 
 type Props = {
@@ -17,7 +18,7 @@ type Props = {
     onToggleHighlight: (req: IVacationRequest) => void;
 
     fmtDate: (iso: string) => string;
-    statusBadge: (status: VacationStatus) => React.ReactNode;
+
 
     // acciones
     onAccept: (id: string) => void;
@@ -40,7 +41,6 @@ const AdminVacationRequestsTable: React.FC<Props> = ({
     highlightRequestId,
     onToggleHighlight,
     fmtDate,
-    statusBadge,
     onAccept,
     onOpenAlternative,
     onDelete,
@@ -59,6 +59,23 @@ const AdminVacationRequestsTable: React.FC<Props> = ({
             </p>
         );
     }
+
+    const toneByVacationStatus = (
+        status: IVacationRequest["status"],
+    ): "amber" | "emerald" | "sky" | "rose" => {
+        switch (status) {
+            case "pending":
+                return "amber";
+            case "accepted":
+                return "emerald";
+            case "option_sent":
+                return "sky";
+            case "cancelled":
+            default:
+                return "rose";
+        }
+    };
+
 
     return (
         <div className="overflow-x-auto">
@@ -174,8 +191,12 @@ const AdminVacationRequestsTable: React.FC<Props> = ({
 
                                 {/* Estado */}
                                 <td className="px-2 py-2 text-center align-top whitespace-nowrap">
-                                    {statusBadge(req.status)}
+                                    <StatusBadge
+                                        tone={toneByVacationStatus(req.status)}
+                                        label={t(`pages.vacations.adminPage.status.${req.status}`)}
+                                    />
                                 </td>
+
 
                                 {/* Acciones */}
                                 <td className="px-2 py-2 text-center align-top whitespace-nowrap">
