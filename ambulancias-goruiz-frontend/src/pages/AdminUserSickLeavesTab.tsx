@@ -9,6 +9,7 @@ import {
   type SickLeave,
 } from "../api/sickLeaves";
 import StatusBadge from "../components/common/StatusBadge";
+import { sickLeaveTone } from "../utils/status/SickLeavesTone";
 
 type Props = {
   userId: string;
@@ -145,15 +146,10 @@ export default function AdminUserSickLeavesTab({ userId }: Props) {
                       <td className="px-3 py-2 align-top">{days}</td>
                       <td className="px-3 py-2 align-top whitespace-nowrap">
                         <StatusBadge
-                          tone={
-                            it.status === "pending"
-                              ? "amber"
-                              : it.status === "accepted"
-                                ? "emerald"
-                                : "rose"
-                          }
+                          tone={sickLeaveTone(it.status)}
                           label={t(`pages.sick.status.${it.status}`, it.status)}
                         />
+
                       </td>
                       <td className="px-3 py-2 align-top">
                         {docUrls.length === 0 ? (
@@ -183,8 +179,8 @@ export default function AdminUserSickLeavesTab({ userId }: Props) {
                             <div
                               id={`docs-panel-${it._id}`}
                               className={`overflow-hidden transition-all duration-200 ease-out mt-2 ${isOpen
-                                  ? "opacity-100 max-h-56"
-                                  : "opacity-0 max-h-0"
+                                ? "opacity-100 max-h-56"
+                                : "opacity-0 max-h-0"
                                 }`}
                             >
                               <ul className="flex flex-wrap justify-center gap-2">

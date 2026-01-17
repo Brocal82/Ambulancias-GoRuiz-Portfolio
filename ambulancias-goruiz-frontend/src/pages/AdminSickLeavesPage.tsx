@@ -14,6 +14,7 @@ import {
 import { getYearMonths, rangesOverlap } from "../utils/vacationMonthUtils";
 import AdminSickMonthGrid from "../components/sick/AdminSickMonthGrid";
 import StatusBadge from "../components/common/StatusBadge";
+import { sickLeaveTone } from "../utils/status/SickLeavesTone";
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return "—";
@@ -167,18 +168,11 @@ export default function AdminSickLeavesPage() {
     }
   };
 
-  const toneByStatus: Record<SickLeaveStatus, "amber" | "emerald" | "rose"> = {
-    pending: "amber",
-    accepted: "emerald",
-    rejected: "rose",
-  };
 
   const badge = (st: SickLeaveStatus) => (
-    <StatusBadge
-      tone={toneByStatus[st]}
-      label={t(`pages.sick.status.${st}`, st)}
-    />
+    <StatusBadge tone={sickLeaveTone(st)} label={t(`pages.sick.status.${st}`, st)} />
   );
+
 
 
   // ✅ Estilos tabla estilo AdminVacations
