@@ -14,7 +14,7 @@ import AdminAppointmentMonthGrid from "../components/appointments/AdminAppointme
 import AdminMonthCalendar from "../components/appointments/AdminMonthCalendar";
 import AdminAppointmentDetail from "../components/appointments/AdminAppointmentDetail";
 import StatusBadge from "../components/common/StatusBadge";
-import { toneForAppointmentStatus } from "../utils/status/appointment";
+import { toneForAppointmentStatus } from "../utils/status/appointmentTone";
 
 
 // Utils locales

@@ -7,6 +7,7 @@ import { APP_TZ } from "../../config/app";
 import { partsFromISO, localDateTimeToUtcISO } from "../../utils/tz";
 import { useTranslation } from "react-i18next";
 import StatusBadge from "../common/StatusBadge";
+import { toneForAppointmentStatus } from "../../utils/status/appointmentTone";
 
 type Props = {
   isOpen: boolean;
@@ -137,19 +138,9 @@ const AdminAppointmentDetail: React.FC<Props> = ({
             {/* Status pill */}
             <StatusBadge
               label={statusLabel}
-              tone={
-                item.status === "confirmed" || item.status === "rescheduled"
-                  ? "emerald"
-                  : item.status === "pending"
-                    ? "amber"
-                    : item.status === "proposed"
-                      ? "sky"
-                      : item.status === "cancelled"
-                        ? "rose"
-                        : "slate"
-              }
-
+              tone={toneForAppointmentStatus(item.status)}
             />
+
 
           </div>
 

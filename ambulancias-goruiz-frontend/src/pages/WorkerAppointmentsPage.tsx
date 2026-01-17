@@ -12,7 +12,7 @@ import { toastT } from "../utils/toast";
 import { APP_TZ } from "../config/app";
 import { useTranslation } from "react-i18next";
 import StatusBadge from "../components/common/StatusBadge";
-import { toneForAppointmentStatus } from "../utils/status/appointment";
+import { toneForAppointmentStatus } from "../utils/status/appointmentTone";
 
 /** Util: formato corto fecha/hora en la TZ de la app */
 function fmt(dtIso?: string): string {
