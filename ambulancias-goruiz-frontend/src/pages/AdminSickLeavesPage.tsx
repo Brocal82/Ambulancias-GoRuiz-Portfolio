@@ -14,7 +14,7 @@ import {
 import { getYearMonths, rangesOverlap } from "../utils/vacationMonthUtils";
 import AdminSickMonthGrid from "../components/sick/AdminSickMonthGrid";
 import StatusBadge from "../components/common/StatusBadge";
-import { sickLeaveTone } from "../utils/status/SickLeavesTone";
+import { sickLeaveTone } from "../utils/status/sickLeavesTone";
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return "—";

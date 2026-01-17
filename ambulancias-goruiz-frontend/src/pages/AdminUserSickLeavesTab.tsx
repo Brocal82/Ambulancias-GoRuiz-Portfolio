@@ -9,7 +9,7 @@ import {
   type SickLeave,
 } from "../api/sickLeaves";
 import StatusBadge from "../components/common/StatusBadge";
-import { sickLeaveTone } from "../utils/status/SickLeavesTone";
+import { sickLeaveTone } from "../utils/status/sickLeavesTone";
 
 type Props = {
   userId: string;

@@ -14,7 +14,7 @@ import { buildImageUrl } from "../utils/apiOrigins";
 import { displayFileNameFromUrl } from "../utils/fileName";
 import SickLeaveRequestForm from "../components/sick/SickLeaveRequestForm";
 import StatusBadge from "../components/common/StatusBadge";
-import { sickLeaveTone } from "../utils/status/SickLeavesTone";
+import { sickLeaveTone } from "../utils/status/sickLeavesTone";
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return "—";
