@@ -14,6 +14,8 @@ import AdminAppointmentMonthGrid from "../components/appointments/AdminAppointme
 import AdminMonthCalendar from "../components/appointments/AdminMonthCalendar";
 import AdminAppointmentDetail from "../components/appointments/AdminAppointmentDetail";
 import StatusBadge from "../components/common/StatusBadge";
+import { toneForAppointmentStatus } from "../utils/status/appointment";
+
 
 // Utils locales
 const formatRange = (startISO?: string, endISO?: string) => {
@@ -34,19 +36,6 @@ export default function AdminAppointmentsPage() {
   // --- helpers ---
   const statusLabel = (s: Appointment["status"]) =>
     t(`pages.appointments.statusLabel.${s}`);
-
-  const toneForAppointmentStatus = (s: Appointment["status"]) =>
-    s === "confirmed" || s === "rescheduled"
-      ? "emerald"
-      : s === "pending"
-        ? "amber"
-        : s === "proposed"
-          ? "sky"
-          : s === "cancelled"
-            ? "rose"
-            : "slate";
-
-
 
   // --- Estado de pendientes (pending + proposed) ---
   const [pending, setPending] = useState<Appointment[]>([]);

@@ -12,6 +12,7 @@ import { toastT } from "../utils/toast";
 import { APP_TZ } from "../config/app";
 import { useTranslation } from "react-i18next";
 import StatusBadge from "../components/common/StatusBadge";
+import { toneForAppointmentStatus } from "../utils/status/appointment";
 
 /** Util: formato corto fecha/hora en la TZ de la app */
 function fmt(dtIso?: string): string {
@@ -89,24 +90,6 @@ export default function WorkerAppointmentsPage() {
   // Traducción de estado
   const statusLabel = (s: Appointment["status"]) =>
     t(`pages.appointments.statusLabel.${s}`);
-
-  const toneForAppointmentStatus = (
-    status: Appointment["status"],
-  ): "amber" | "emerald" | "sky" | "rose" | "slate" => {
-    switch (status) {
-      case "pending":
-        return "amber";
-      case "proposed":
-        return "sky";
-      case "confirmed":
-      case "rescheduled":
-        return "emerald";
-      case "cancelled":
-        return "rose";
-      default:
-        return "slate";
-    }
-  };
 
 
   // Próxima cita confirmada / reprogramada (futura más cercana)
