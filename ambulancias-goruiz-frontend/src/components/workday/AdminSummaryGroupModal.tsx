@@ -4,6 +4,7 @@ import type { WorkdaySummary } from "../../types/workdaySummary";
 import type { AssignedDayFull } from "../../types/dienst";
 import ReviewSummary from "./ReviewSummary";
 import { useTranslation } from "react-i18next";
+import StatusBadge from "../common/StatusBadge";
 
 /**
  * Mapeo de WorkdaySummary (lo que recibe el admin)
@@ -132,15 +133,12 @@ const AdminSummaryGroupModal: React.FC<AdminSummaryGroupModalProps> = ({
                 {/* Encabezado de cada bloque (parcial / final) */}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 text-sm">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                        summary.isFinalClosure
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-amber-100 text-amber-800"
-                      }`}
-                    >
-                      {label}
-                    </span>
+                    <StatusBadge
+                      label={label}
+                      tone={summary.isFinalClosure ? "emerald" : "amber"}
+                      className="text-[11px] font-semibold px-2.5 py-0.5"
+                    />
+
 
                     {s.totalEffectivePatients != null && (
                       <span className="text-[11px] text-slate-700">

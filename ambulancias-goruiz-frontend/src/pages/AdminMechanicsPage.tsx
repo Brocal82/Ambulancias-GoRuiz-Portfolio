@@ -20,6 +20,7 @@ import { notifyAdminIssuesChanged } from "../hooks/useAdminIssuesOpenCount";
 import { normalizeIssues } from "../utils/mechanics/normalizeIssue";
 import { sortIssuesByDateDesc } from "../utils/mechanics/sortIssuesByDateDesc";
 import DeleteIconButton from "../components/common/actions/DeleteIconButton";
+import StatusBadge from "../components/common/StatusBadge";
 
 
 const AdminMechanicsPage = () => {
@@ -283,17 +284,22 @@ const AdminMechanicsPage = () => {
                           </div>
 
 
-                          <div className="mb-3">
-                            <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-2.5 py-1 text-xs font-medium ring-1 ring-slate-200">
-                              📅 {new Date(issue.timestamp).toLocaleString()}
-                            </span>
+                          <div className="mb-3 flex flex-wrap items-center gap-2">
+                            <StatusBadge
+                              tone="slate"
+                              label={`📅 ${new Date(issue.timestamp).toLocaleString()}`}
+                              className="px-2.5 py-1"
+                            />
+
                             {issue.seenAt && (
-                              <span className="ml-2 inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 px-2.5 py-1 text-xs font-medium ring-1 ring-emerald-200">
-                                {t("pages.mechanics.adminPage.labels.seenAt")}:{" "}
-                                {new Date(issue.seenAt).toLocaleString()}
-                              </span>
+                              <StatusBadge
+                                tone="emerald"
+                                label={`${t("pages.mechanics.adminPage.labels.seenAt")}: ${new Date(issue.seenAt).toLocaleString()}`}
+                                className="px-2.5 py-1"
+                              />
                             )}
                           </div>
+
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                             <div className="rounded-lg ring-1 ring-slate-200 p-3">
