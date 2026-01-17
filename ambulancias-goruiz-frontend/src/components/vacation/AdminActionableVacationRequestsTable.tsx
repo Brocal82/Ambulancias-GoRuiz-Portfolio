@@ -6,6 +6,7 @@ import StatusBadge from "../common/StatusBadge";
 import { calcVacationDays } from "../../utils/vacation/calcVacationDays";
 import { getRequestRangeBerlin } from "../../utils/vacation/getRequestRangeBerlin";
 import { toBerlinDayKey } from "../../utils/dates/dayKey";
+import { vacationRequestTone } from "../../utils/status/vacationRequestTone";
 
 
 type Props = {
@@ -122,15 +123,7 @@ const AdminActionableVacationRequestsTable: React.FC<Props> = ({
                                 {/* Estado */}
                                 <td className="px-3 py-2 align-top whitespace-nowrap">
                                     <StatusBadge
-                                        tone={
-                                            req.status === "pending"
-                                                ? "amber"
-                                                : req.status === "accepted"
-                                                    ? "emerald"
-                                                    : req.status === "option_sent"
-                                                        ? "sky"
-                                                        : "rose"
-                                        }
+                                        tone={vacationRequestTone(req.status)}
                                         label={t(`pages.vacations.adminPage.status.${req.status}`)}
                                     />
 

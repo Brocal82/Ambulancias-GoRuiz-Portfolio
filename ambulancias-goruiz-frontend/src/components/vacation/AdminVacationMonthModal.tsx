@@ -18,6 +18,7 @@ import { emitVacationRequestsUpdated } from "../../utils/vacation/vacationEvents
 import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
 import AdminVacationRequestsTable from "./AdminVacationRequestsTable";
 import { toBerlinDayKey } from "../../utils/dates/dayKey";
+import { vacationRequestFilterPillClass } from "../../utils/status/vacationRequestUi";
 
 interface Props {
   isOpen: boolean;
@@ -711,14 +712,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                           onClick={() => setStatusFilter("pending")}
                           aria-pressed={statusFilter === "pending"}
                           title={t("pages.vacations.monthModal.filters.pending") as string}
-                          className={[
-                            "inline-flex items-center justify-center rounded-full bg-white px-3 py-2 text-[11px] font-semibold tabular-nums shadow-sm transition",
-                            "border",
-                            statusFilter === "pending"
-                              ? "border-amber-400 text-slate-900 ring-2 ring-amber-100"
-                              : "border-amber-300 text-slate-700 hover:border-amber-400 hover:bg-[#FEF3C7]",
+                          className={vacationRequestFilterPillClass("pending", statusFilter === "pending")}
 
-                          ].join(" ")}
                         >
                           {statusCounts.pending}
                         </button>
@@ -729,13 +724,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                           onClick={() => setStatusFilter("accepted")}
                           aria-pressed={statusFilter === "accepted"}
                           title={t("pages.vacations.monthModal.filters.accepted") as string}
-                          className={[
-                            "inline-flex items-center justify-center rounded-full bg-white px-3 py-2 text-[11px] font-semibold tabular-nums shadow-sm transition",
-                            "border",
-                            statusFilter === "accepted"
-                              ? "border-emerald-400 text-slate-900 ring-2 ring-emerald-100"
-                              : "border-emerald-300 text-slate-700 hover:bg-emerald-100",
-                          ].join(" ")}
+                          className={vacationRequestFilterPillClass("accepted", statusFilter === "accepted")}
+
                         >
                           {statusCounts.accepted}
                         </button>
@@ -746,13 +736,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                           onClick={() => setStatusFilter("cancelled")}
                           aria-pressed={statusFilter === "cancelled"}
                           title={t("pages.vacations.monthModal.filters.cancelled") as string}
-                          className={[
-                            "inline-flex items-center justify-center rounded-full bg-white px-3 py-2 text-[11px] font-semibold tabular-nums shadow-sm transition",
-                            "border",
-                            statusFilter === "cancelled"
-                              ? "border-rose-400 text-slate-900 ring-2 ring-rose-100"
-                              : "border-rose-300 text-slate-700 hover:bg-rose-100",
-                          ].join(" ")}
+                          className={vacationRequestFilterPillClass("cancelled", statusFilter === "cancelled")}
+
                         >
                           {statusCounts.cancelled}
                         </button>
@@ -763,13 +748,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                           onClick={() => setStatusFilter("option_sent")}
                           aria-pressed={statusFilter === "option_sent"}
                           title={t("pages.vacations.monthModal.filters.option_sent") as string}
-                          className={[
-                            "inline-flex items-center justify-center rounded-full bg-white px-3 py-2 text-[11px] font-semibold tabular-nums shadow-sm transition",
-                            "border",
-                            statusFilter === "option_sent"
-                              ? "border-blue-400 text-slate-900 ring-2 ring-blue-100"
-                              : "border-blue-300 text-slate-700 hover:bg-blue-100",
-                          ].join(" ")}
+                          className={vacationRequestFilterPillClass("option_sent", statusFilter === "option_sent")}
+
                         >
                           {statusCounts.option_sent}
                         </button>

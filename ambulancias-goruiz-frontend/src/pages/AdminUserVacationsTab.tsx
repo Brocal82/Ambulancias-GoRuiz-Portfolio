@@ -1,7 +1,6 @@
 // src/pages/AdminUserVacationsTab.tsx
 import { useEffect, useState } from "react";
 import type { IVacationRequest } from "../types/vacationRequest";
-import type { VacationStatus } from "../types/vacation";
 import { getVacationRequests, deleteVacationRequest } from "../api/vacation";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -12,6 +11,7 @@ import { invalidateAvailabilityForRange } from "../utils/vacation/invalidateAvai
 import { formatISOToDDMMYYYY } from "../utils/timeUtils";
 import { calcVacationDays } from "../utils/vacation/calcVacationDays";
 import StatusBadge from "../components/common/StatusBadge";
+import { vacationRequestTone } from "../utils/status/vacationRequestTone";
 
 interface Props {
   userId: string;
@@ -88,16 +88,6 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
   const handleEditVacation = (id: string) => {
     toastT.info(["toasts.vacations.editPending", { id }]);
   };
-
-  const toneByVacationStatus = (status: VacationStatus) => {
-    if (status === "pending") return "amber";
-    if (status === "accepted") return "emerald";
-    if (status === "option_sent") return "sky";
-    return "rose"; // cancelled
-  };
-
-  const vacationStatusLabel = (status: VacationStatus) =>
-    t(`pages.vacations.adminPage.status.${status}`, status);
 
 
   return (
@@ -182,9 +172,10 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
                       {/* Estado */}
                       <td className="px-3 py-2 align-top whitespace-nowrap">
                         <StatusBadge
-                          tone={toneByVacationStatus(v.status)}
-                          label={vacationStatusLabel(v.status)}
+                          tone={vacationRequestTone(v.status)}
+                          label={t(`pages.vacations.adminPage.status.${v.status}`, v.status)}
                         />
+
 
                       </td>
 

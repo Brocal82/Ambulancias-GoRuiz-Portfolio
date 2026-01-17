@@ -13,6 +13,11 @@ import {
   getVacationAvailability,
   type VacationAvailabilityResponse,
 } from "../../api/vacation";
+import {
+  vacationMonthBorderPriority,
+  vacationRequestBorderClass,
+} from "../../utils/status/vacationRequestBorder";
+
 
 type Props = {
   requests: IVacationRequest[];
@@ -202,46 +207,15 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
   useVacationAvailabilityInvalidation(handleAvailabilityInvalidated);
 
 
-  // =============================
-  // ✅ Borde por mes según estado de requests
-  // Prioridad: option_sent > pending > accepted > cancelled > none
-  // =============================
   const monthBorderPriority = useMemo(() => {
-    return months.map(({ start, end }) => {
-      let hasOptionSent = false;
-      let hasPending = false;
-      let hasAccepted = false;
-      let hasCancelled = false;
-
-      for (const r of requests) {
-        const rs = new Date(r.startDate);
-        const re = new Date(r.endDate);
-
-        // overlap simple
-        if (rs > end || re < start) continue;
-
-        if (r.status === "option_sent") hasOptionSent = true;
-        else if (r.status === "pending") hasPending = true;
-        else if (r.status === "accepted") hasAccepted = true;
-        else if (r.status === "cancelled") hasCancelled = true;
-      }
-
-      if (hasOptionSent) return "option_sent" as const;
-      if (hasPending) return "pending" as const;
-      if (hasAccepted) return "accepted" as const;
-      if (hasCancelled) return "cancelled" as const;
-      return "none" as const;
-    });
+    return months.map(({ start, end }) =>
+      vacationMonthBorderPriority(requests, start, end),
+    );
   }, [months, requests]);
 
-  const monthBorderClass = (monthIndex: number) => {
-    const p = monthBorderPriority[monthIndex];
-    if (p === "option_sent") return "border-sky-300 ring-2 ring-sky-100";
-    if (p === "pending") return "border-amber-300 ring-2 ring-amber-100";
-    if (p === "accepted") return "border-emerald-300 ring-2 ring-emerald-100";
-    if (p === "cancelled") return "border-rose-300 ring-2 ring-rose-100";
-    return "border-slate-200";
-  };
+  const monthBorderClass = (monthIndex: number) =>
+    vacationRequestBorderClass(monthBorderPriority[monthIndex]);
+
 
 
   return (

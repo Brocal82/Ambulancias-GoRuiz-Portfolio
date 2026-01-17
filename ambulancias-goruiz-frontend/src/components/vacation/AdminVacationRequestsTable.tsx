@@ -6,6 +6,7 @@ import { calcVacationDays } from "../../utils/vacation/calcVacationDays";
 import { getRequestRangeBerlin } from "../../utils/vacation/getRequestRangeBerlin";
 import { toBerlinDayKey } from "../../utils/dates/dayKey";
 import StatusBadge from "../common/StatusBadge";
+import { vacationRequestTone } from "../../utils/status/vacationRequestTone";
 
 
 
@@ -59,23 +60,6 @@ const AdminVacationRequestsTable: React.FC<Props> = ({
             </p>
         );
     }
-
-    const toneByVacationStatus = (
-        status: IVacationRequest["status"],
-    ): "amber" | "emerald" | "sky" | "rose" => {
-        switch (status) {
-            case "pending":
-                return "amber";
-            case "accepted":
-                return "emerald";
-            case "option_sent":
-                return "sky";
-            case "cancelled":
-            default:
-                return "rose";
-        }
-    };
-
 
     return (
         <div className="overflow-x-auto">
@@ -192,7 +176,8 @@ const AdminVacationRequestsTable: React.FC<Props> = ({
                                 {/* Estado */}
                                 <td className="px-2 py-2 text-center align-top whitespace-nowrap">
                                     <StatusBadge
-                                        tone={toneByVacationStatus(req.status)}
+                                        tone={vacationRequestTone(req.status)}
+
                                         label={t(`pages.vacations.adminPage.status.${req.status}`)}
                                     />
                                 </td>

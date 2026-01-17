@@ -6,6 +6,7 @@ import { calcVacationDays } from "../../utils/vacation/calcVacationDays";
 import { getRequestRangeBerlin } from "../../utils/vacation/getRequestRangeBerlin";
 import { toBerlinDayKey } from "../../utils/dates/dayKey";
 import StatusBadge from "../common/StatusBadge";
+import { vacationRequestTone } from "../../utils/status/vacationRequestTone";
 
 
 
@@ -32,26 +33,6 @@ const UserVacationList: React.FC<Props> = ({
   onCancelRequest,
 }) => {
   const { t } = useTranslation();
-
-  const getVacationTone = (status: IVacationRequest["status"]) => {
-    switch (status) {
-      case "pending":
-        return "amber";
-      case "accepted":
-        return "emerald";
-      case "option_sent":
-        return "sky";
-      case "cancelled":
-        return "rose";
-      default:
-        return "slate";
-    }
-  };
-
-  const getVacationStatusLabel = (status: IVacationRequest["status"]) => {
-    // Usamos las keys que YA tienes en locales: pages.vacations.listItem.status.*
-    return t(`pages.vacations.listItem.status.${status}`);
-  };
 
 
   // ✅ Modal “pro” (sin alerts)
@@ -206,9 +187,10 @@ const UserVacationList: React.FC<Props> = ({
                   {/* Estado */}
                   <td className="px-3 py-2 align-top whitespace-nowrap">
                     <StatusBadge
-                      tone={getVacationTone(req.status)}
-                      label={getVacationStatusLabel(req.status)}
+                      tone={vacationRequestTone(req.status)}
+                      label={t(`pages.vacations.listItem.status.${req.status}`)}
                     />
+
                   </td>
 
 
