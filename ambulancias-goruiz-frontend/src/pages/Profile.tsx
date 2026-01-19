@@ -108,6 +108,10 @@ const Profile = ({ userId }: ProfileProps) => {
       const updatedUser = await getUserById(token, idToUpdate);
       setFormData(updatedUser);
 
+      // ✅ Limpiamos la selección local de documentos tras guardar
+      setDocumentsFiles(null);
+
+
       // Actualizamos contexto si es el propio usuario
       if (idToUpdate === userIdFromAuthContext) {
         login(token, idToUpdate, role || "worker", updatedUser);
@@ -214,6 +218,11 @@ const Profile = ({ userId }: ProfileProps) => {
   const pschein = getPscheinInfo(formData.pscheinExpiry);
   const showPschein =
     formData.ambulanceRole === "driver" || formData.ambulanceRole === "both";
+
+  // 📌 Documentos seleccionados (pendientes de guardar)
+  // documentsFiles es FileList | null, lo convertimos a array para poder mapearlo en el render
+  const pendingDocs = documentsFiles ? Array.from(documentsFiles) : [];
+
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6">
@@ -532,6 +541,23 @@ const Profile = ({ userId }: ProfileProps) => {
 
                 <div className="min-h-0 w-full flex justify-center">
                   <div className="w-full max-w-[220px]">
+                    {/* ✅ Pendientes de guardar (seleccionados pero aún no guardados) */}
+                    {pendingDocs.length > 0 && (
+                      <div className="mb-2 rounded-lg border border-orange-200 bg-orange-50 p-2">
+                        <p className="text-[11px] font-medium text-orange-700 mb-1">
+                          {t("pages.profile.documents.pending", "Pendientes de guardar")}
+                        </p>
+
+                        <ul className="text-[11px] text-slate-700 space-y-1">
+                          {pendingDocs.map((file) => (
+                            <li key={file.name} className="truncate" title={file.name}>
+                              📄 {file.name}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
                     {formData.documents && formData.documents.length > 0 ? (
                       <ul className="text-[11px] text-slate-700 space-y-1">
                         {formData.documents.map((docUrl, index) => (
