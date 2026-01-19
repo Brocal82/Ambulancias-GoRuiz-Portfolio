@@ -15,6 +15,8 @@ import { displayFileNameFromUrl } from "../utils/fileName";
 import SickLeaveRequestForm from "../components/sick/SickLeaveRequestForm";
 import StatusBadge from "../components/common/StatusBadge";
 import { sickLeaveTone } from "../utils/status/sickLeavesTone";
+import CreateIconButton from "../components/common/actions/CreateIconButton";
+import CancelButton from "../components/common/actions/CancelButton";
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return "—";
@@ -159,6 +161,13 @@ export default function WorkerSickLeavesPage() {
     }
   };
 
+  const handleCancelCreate = () => {
+    setShowCreateForm(false);
+    setStartDate("");
+    setEndDate("");
+    setNote("");
+    setCreateFiles([]);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -170,188 +179,179 @@ export default function WorkerSickLeavesPage() {
           </h2>
         </div>
 
-        {/* === Card principal (idéntica a Vacation) === */}
-        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4 mb-6">
-          {/* Toggle + mensaje (misma disposición que Vacation) */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <button
-              className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
-              onClick={() => setShowCreateForm(!showCreateForm)}
-            >
-              {showCreateForm
-                ? t(
-                  "pages.vacations.workerPage.toggleCloseForm",
-                  "Cerrar formulario",
-                )
-                : t(
-                  "pages.vacations.workerPage.toggleOpenForm",
-                  "Abrir formulario",
-                )}
-            </button>
+        {/* Formulario */}
+        {showCreateForm && (
+          <div className="rounded-xl ring-1 ring-slate-200 p-4 bg-slate-50 mb-6">
+            <style>{`
+              .vacation-range .rdrDateRangeWrapper,
+              .vacation-range .rdrCalendarWrapper,
+              .vacation-range .rdrMonths,
+              .vacation-range .rdrMonth { width: 100%; }
+            `}</style>
 
-            {/* Si quieres mostrar un mensaje como en Vacation, úsalo aquí */}
-            {/* {formMessage && <p className="text-sm text-emerald-700">{formMessage}</p>} */}
-          </div>
+            <div className="mx-auto max-w-lg">
+              <div className="rounded-2xl bg-white ring-1 ring-slate-200 p-5">
+                <h2 className="text-lg font-semibold text-slate-900 mb-3">
+                  {t("pages.sick.create.title", "Solicitar baja")}
+                </h2>
 
-          {/* Formulario idéntico a Vacation: tarjeta blanca interior + caja gris del calendario */}
-          {showCreateForm && (
-            // Caja GRIS directamente (sin tarjeta blanca intermedia)
-            <div className="rounded-xl ring-1 ring-slate-200 p-4 bg-slate-50">
-              {/* Ajuste de ancho del DateRange idéntico a Vacation */}
-              <style>{`
-      .vacation-range .rdrDateRangeWrapper,
-      .vacation-range .rdrCalendarWrapper,
-      .vacation-range .rdrMonths,
-      .vacation-range .rdrMonth { width: 100%; }
-    `}</style>
+                <div className="vacation-range rounded-xl ring-1 ring-slate-200 overflow-hidden w-full">
+                  <SickLeaveRequestForm
+                    startDateStr={startDate}
+                    endDateStr={endDate}
+                    localeCode={i18n.language}
+                    onChange={(s, e) => {
+                      setStartDate(s);
+                      setEndDate(e);
+                    }}
+                  />
+                </div>
 
-              <div className="mx-auto max-w-lg">
-                {/* TARJETA BLANCA INTERIOR: h2 + calendario + nota + adjuntar + enviar */}
-                <div className="rounded-2xl bg-white ring-1 ring-slate-200 p-5">
-                  {/* H2 dentro de la tarjeta blanca interior */}
-                  <h2 className="text-lg font-semibold text-slate-900 mb-3">
-                    {t("pages.sick.create.title", "Solicitar baja")}
-                  </h2>
+                {/* Cancelar debajo del calendario */}
+                <div className="mt-3 flex justify-end">
+                  <CancelButton
+                    onClick={handleCancelCreate}
+                    title={t("common.cancel", "Cancelar")}
+                  >
+                    {t("common.cancel", "Cancelar")}
+                  </CancelButton>
+                </div>
 
-                  {/* Calendario */}
-                  <div className="vacation-range rounded-xl ring-1 ring-slate-200 overflow-hidden w-full">
-                    <SickLeaveRequestForm
-                      startDateStr={startDate}
-                      endDateStr={endDate}
-                      localeCode={i18n.language}
-                      onChange={(s, e) => {
-                        setStartDate(s);
-                        setEndDate(e);
-                      }}
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <label
+                      htmlFor="sick-note"
+                      className="block text-xs font-medium text-slate-700"
+                    >
+                      {t("pages.sick.create.note", "Nota (opcional)")}
+                    </label>
+                    <input
+                      id="sick-note"
+                      type="text"
+                      className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      placeholder={t(
+                        "pages.sick.create.notePlaceholder",
+                        "Motivo breve, p. ej. fiebre",
+                      )}
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
                     />
                   </div>
 
-                  {/* Nota + Adjuntar dentro de la misma tarjeta blanca */}
-                  <div className="mt-3 space-y-3">
-                    <div>
-                      <label
-                        htmlFor="sick-note"
-                        className="block text-xs font-medium text-slate-700"
-                      >
-                        {t("pages.sick.create.note", "Nota (opcional)")}
-                      </label>
-                      <input
-                        id="sick-note"
-                        type="text"
-                        className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
-                        placeholder={t(
-                          "pages.sick.create.notePlaceholder",
-                          "Motivo breve, p. ej. fiebre",
-                        )}
-                        value={note}
-                        onChange={(e) => setNote(e.target.value)}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-slate-700">
-                        {t(
-                          "pages.sick.create.docs.label",
-                          "Adjuntar documentos (opcional)",
-                        )}
-                      </label>
-
-                      <FileUpload
-                        id="create-sick-docs"
-                        label={t("pages.sick.create.docs.select", "Adjuntar")}
-                        accept="application/pdf,image/*"
-                        multiple
-                        maxSizeMB={10}
-                        showSelectedList={false}
-                        onFilesSelect={(files) => {
-                          const incoming = files || [];
-                          setCreateFiles((prev) => {
-                            const merged = [...prev];
-                            for (const f of incoming) {
-                              const dup = merged.some(
-                                (e) =>
-                                  e.name === f.name &&
-                                  e.size === f.size &&
-                                  e.lastModified === f.lastModified,
-                              );
-                              if (!dup) merged.push(f);
-                            }
-                            return merged;
-                          });
-                        }}
-                        hintWhenEmpty={t(
-                          "pages.sick.create.docs.hint",
-                          "PDF o imágenes. Máx 10 MB por archivo",
-                        )}
-                        className="min-w-[200px]"
-                        disabled={loading || isCreatingUpload}
-                      />
-
-                      {createFiles.length > 0 && (
-                        <ul className="mt-2 flex flex-wrap justify-start gap-2">
-                          {createFiles.map((f, idx) => (
-                            <li
-                              key={f.name + f.size + f.lastModified}
-                              className="group inline-flex items-center max-w-full rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-xs"
-                              title={f.name}
-                            >
-                              <span aria-hidden="true" className="mr-1">
-                                📎
-                              </span>
-                              <span className="truncate max-w-[220px]">
-                                {f.name}
-                              </span>
-                              <button
-                                type="button"
-                                aria-label={t("common.remove", "Quitar")}
-                                className="ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-rose-600 hover:bg-rose-50"
-                                onClick={() =>
-                                  setCreateFiles((prev) => {
-                                    const copy = [...prev];
-                                    copy.splice(idx, 1);
-                                    return copy;
-                                  })
-                                }
-                              >
-                                ×
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700">
+                      {t(
+                        "pages.sick.create.docs.label",
+                        "Adjuntar documentos (opcional)",
                       )}
+                    </label>
 
-                      <p className="mt-1 text-[11px] text-slate-500">
-                        {t(
-                          "pages.sick.create.docs.note",
-                          "Puedes enviar la solicitud sin documento y adjuntarlo más tarde.",
-                        )}
-                      </p>
-                    </div>
+                    <FileUpload
+                      id="create-sick-docs"
+                      label={t("pages.sick.create.docs.select", "Adjuntar")}
+                      accept="application/pdf,image/*"
+                      multiple
+                      maxSizeMB={10}
+                      showSelectedList={false}
+                      onFilesSelect={(files) => {
+                        const incoming = files || [];
+                        setCreateFiles((prev) => {
+                          const merged = [...prev];
+                          for (const f of incoming) {
+                            const dup = merged.some(
+                              (e) =>
+                                e.name === f.name &&
+                                e.size === f.size &&
+                                e.lastModified === f.lastModified,
+                            );
+                            if (!dup) merged.push(f);
+                          }
+                          return merged;
+                        });
+                      }}
+                      hintWhenEmpty={t(
+                        "pages.sick.create.docs.hint",
+                        "PDF o imágenes. Máx 10 MB por archivo",
+                      )}
+                      className="min-w-[200px]"
+                      disabled={loading || isCreatingUpload}
+                    />
+
+                    {createFiles.length > 0 && (
+                      <ul className="mt-2 flex flex-wrap justify-start gap-2">
+                        {createFiles.map((f, idx) => (
+                          <li
+                            key={f.name + f.size + f.lastModified}
+                            className="group inline-flex items-center max-w-full rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-xs"
+                            title={f.name}
+                          >
+                            <span aria-hidden="true" className="mr-1">
+                              📎
+                            </span>
+                            <span className="truncate max-w-[220px]">
+                              {f.name}
+                            </span>
+                            <button
+                              type="button"
+                              aria-label={t("common.remove", "Quitar")}
+                              className="ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-rose-600 hover:bg-rose-50"
+                              onClick={() =>
+                                setCreateFiles((prev) => {
+                                  const copy = [...prev];
+                                  copy.splice(idx, 1);
+                                  return copy;
+                                })
+                              }
+                            >
+                              ×
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      {t(
+                        "pages.sick.create.docs.note",
+                        "Puedes enviar la solicitud sin documento y adjuntarlo más tarde.",
+                      )}
+                    </p>
                   </div>
-
-                  {/* Botón Enviar dentro de la tarjeta blanca interior */}
-                  <button
-                    type="submit"
-                    onClick={onSubmit as any}
-                    disabled={!canSubmit || loading || isCreatingUpload}
-                    className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50"
-                  >
-                    {isCreatingUpload
-                      ? t("pages.sick.create.uploading", "Enviando…")
-                      : t("pages.sick.create.submit", "Enviar")}
-                  </button>
                 </div>
+
+                <button
+                  type="submit"
+                  onClick={onSubmit as any}
+                  disabled={!canSubmit || loading || isCreatingUpload}
+                  className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50"
+                >
+                  {isCreatingUpload
+                    ? t("pages.sick.create.uploading", "Enviando…")
+                    : t("pages.sick.create.submit", "Enviar")}
+                </button>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* === Listado en tabla (sin cambios) === */}
         <div className="rounded-2xl bg-white ring-1 ring-slate-200 shadow">
           <div className="p-4">
-            <h2 className="text-sm font-semibold text-slate-800 mb-3">
-              {t("pages.sick.list.title", "Mis solicitudes")}
-            </h2>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold text-slate-800">
+                {t("pages.sick.list.title", "Mis solicitudes")}
+              </h2>
+
+              {!showCreateForm && (
+                <CreateIconButton
+                  onClick={() => setShowCreateForm(true)}
+                  label={t(
+                    "pages.vacations.workerPage.toggleOpenForm",
+                    "Abrir formulario",
+                  )}
+                />
+              )}
+            </div>
 
             {isLoadingList && (
               <div className="text-sm text-slate-600">
@@ -361,10 +361,7 @@ export default function WorkerSickLeavesPage() {
 
             {!isLoadingList && items.length === 0 && (
               <div className="text-sm text-slate-600">
-                {t(
-                  "pages.sick.list.empty",
-                  "Aún no has solicitado ninguna baja",
-                )}
+                {t("pages.sick.list.empty", "Aún no has solicitado ninguna baja")}
               </div>
             )}
 
@@ -411,9 +408,7 @@ export default function WorkerSickLeavesPage() {
                       ];
                       const seen = new Set<string>();
                       const docUrls = rawDocUrls.filter((u) => {
-                        const key = (
-                          displayFileNameFromUrl(u) || u
-                        ).toLowerCase();
+                        const key = (displayFileNameFromUrl(u) || u).toLowerCase();
                         if (seen.has(key)) return false;
                         seen.add(key);
                         return true;
@@ -429,8 +424,7 @@ export default function WorkerSickLeavesPage() {
                         s.setHours(0, 0, 0, 0);
                         e.setHours(0, 0, 0, 0);
                         const diff =
-                          Math.round((e.getTime() - s.getTime()) / 86400000) +
-                          1;
+                          Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
                         return isNaN(diff) ? "—" : Math.max(diff, 1);
                       })();
 
@@ -461,7 +455,6 @@ export default function WorkerSickLeavesPage() {
                               tone={sickLeaveTone(it.status)}
                               label={t(`pages.sick.status.${it.status}`, it.status)}
                             />
-
                           </td>
 
                           {/* Documentos */}
@@ -474,27 +467,21 @@ export default function WorkerSickLeavesPage() {
                               <div className="inline-block text-center">
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    setOpenDocsId(isOpen ? null : it._id)
-                                  }
+                                  onClick={() => setOpenDocsId(isOpen ? null : it._id)}
                                   className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
                                   aria-expanded={isOpen}
                                   aria-controls={`docs-panel-month-${it._id}`}
                                 >
                                   <span className="whitespace-nowrap">
-                                    {t(
-                                      "pages.sick.docs.count",
-                                      "{{n}} documentos",
-                                      { n: count },
-                                    )}
+                                    {t("pages.sick.docs.count", "{{n}} documentos", {
+                                      n: count,
+                                    })}
                                   </span>
                                 </button>
 
                                 <div
                                   id={`docs-panel-${it._id}`}
-                                  className={`overflow-hidden transition-all duration-200 ease-out mt-2 ${isOpen
-                                    ? "opacity-100 max-h-56"
-                                    : "opacity-0 max-h-0"
+                                  className={`overflow-hidden transition-all duration-200 ease-out mt-2 ${isOpen ? "opacity-100 max-h-56" : "opacity-0 max-h-0"
                                     }`}
                                 >
                                   <ul className="flex flex-wrap justify-center gap-2">
@@ -506,10 +493,7 @@ export default function WorkerSickLeavesPage() {
                                           className="inline-flex items-center max-w-full rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-[11px]"
                                           title={label}
                                         >
-                                          <span
-                                            aria-hidden="true"
-                                            className="mr-1"
-                                          >
+                                          <span aria-hidden="true" className="mr-1">
                                             📎
                                           </span>
                                           <a
@@ -575,10 +559,7 @@ export default function WorkerSickLeavesPage() {
                                         className="inline-flex items-center max-w-full rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-[11px]"
                                         title={f.name}
                                       >
-                                        <span
-                                          aria-hidden="true"
-                                          className="mr-1"
-                                        >
+                                        <span aria-hidden="true" className="mr-1">
                                           📎
                                         </span>
                                         <span className="truncate max-w-[150px]">
@@ -586,21 +567,13 @@ export default function WorkerSickLeavesPage() {
                                         </span>
                                         <button
                                           type="button"
-                                          aria-label={t(
-                                            "common.remove",
-                                            "Quitar",
-                                          )}
+                                          aria-label={t("common.remove", "Quitar")}
                                           className="ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-rose-600 hover:bg-rose-50"
                                           onClick={() =>
                                             setPendingFiles((prev) => {
-                                              const copy = [
-                                                ...(prev[it._id] || []),
-                                              ];
+                                              const copy = [...(prev[it._id] || [])];
                                               copy.splice(idx, 1);
-                                              return {
-                                                ...prev,
-                                                [it._id]: copy,
-                                              };
+                                              return { ...prev, [it._id]: copy };
                                             })
                                           }
                                         >
@@ -618,9 +591,7 @@ export default function WorkerSickLeavesPage() {
                                         }
                                         className="text-blue-600 hover:text-blue-800 disabled:opacity-50"
                                         disabled={isUploading}
-                                        onClick={() =>
-                                          onAttachSingleFile(it._id, f, idx)
-                                        }
+                                        onClick={() => onAttachSingleFile(it._id, f, idx)}
                                       >
                                         ⬆️
                                       </button>

@@ -13,6 +13,7 @@ import { APP_TZ } from "../config/app";
 import { useTranslation } from "react-i18next";
 import StatusBadge from "../components/common/StatusBadge";
 import { toneForAppointmentStatus } from "../utils/status/appointmentTone";
+import CreateIconButton from "../components/common/actions/CreateIconButton";
 
 /** Util: formato corto fecha/hora en la TZ de la app */
 function fmt(dtIso?: string): string {
@@ -181,13 +182,11 @@ export default function WorkerAppointmentsPage() {
         <h2 className="text-xl font-bold">
           {t("pages.appointments.worker.title")}
         </h2>
-        <button
+        <CreateIconButton
           onClick={() => setOpenRequest(true)}
-          className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-          title={t("pages.appointments.actions.requestTitle")}
-        >
-          <span>+ {t("pages.appointments.actions.request")}</span>
-        </button>
+          label={t("pages.appointments.actions.request")}
+        />
+
       </div>
 
       {/* Estado de carga */}
@@ -355,14 +354,9 @@ export default function WorkerAppointmentsPage() {
           <p className="text-gray-600">
             {t("pages.appointments.empty.worker")}
           </p>
-          <button
-            onClick={() => setOpenRequest(true)}
-            className="mt-3 inline-flex rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-          >
-            {t("pages.appointments.actions.request")}
-          </button>
         </div>
       )}
+
 
       {/* Modal: pedir cita */}
       <RequestAppointmentModal
