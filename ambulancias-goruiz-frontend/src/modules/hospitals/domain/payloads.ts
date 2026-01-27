@@ -1,6 +1,5 @@
 import type { Hospital } from "./types";
-import { fromLocalHospitalStatus } from "../../../utils/hospitals/status";
-
+import { fromLocalHospitalStatus } from "../utils/status";
 
 // Normaliza strings (trim seguro)
 const normalizeString = (v?: string): string => (v ?? "").trim();
