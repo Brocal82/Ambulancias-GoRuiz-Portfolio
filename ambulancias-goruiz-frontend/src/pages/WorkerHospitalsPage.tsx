@@ -1,18 +1,13 @@
 //src/pages/WorkerHospitalsPage.tsx
-import { useEffect, useState, useMemo } from "react";
-import type { Hospital } from "../types/hospital";
-import HospitalDetailsModal from "../components/hospitals/HospitalDetailsModal";
+import { useEffect, useMemo, useState } from "react";
+import type { Hospital } from "../modules/hospitals";
+import {
+  hospitalsComponents,
+  hospitalsUtils,
+} from "../modules/hospitals";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
-
-import HospitalsFilters from "../components/hospitals/HospitalsFilters";
-import HospitalsList from "../components/hospitals/HospitalsList";
-import {
-  filterAndSortHospitals,
-  getUniqueSpecialties,
-} from "../utils/hospitals/hospitalsFilters";
-import { fetchHospitals } from "../utils/hospitals/fetchHospitals";
 
 const WorkerHospitalsPage = () => {
   const { token } = useAuth();
@@ -23,7 +18,6 @@ const WorkerHospitalsPage = () => {
     null,
   );
 
-  // Igual que Admin
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>("all");
   const [searchName, setSearchName] = useState<string>("");
 
@@ -32,7 +26,7 @@ const WorkerHospitalsPage = () => {
       try {
         if (!token) return;
 
-        const data = await fetchHospitals(token);
+        const data = await hospitalsUtils.fetchHospitals(token);
         setHospitals(data);
       } catch (error) {
         console.error("Error al cargar hospitales:", error);
@@ -43,12 +37,18 @@ const WorkerHospitalsPage = () => {
     loadHospitals();
   }, [token]);
 
-  // 🔹 useMemo: especialidades únicas
-  const specialties = useMemo(() => getUniqueSpecialties(hospitals), [hospitals]);
+  const specialties = useMemo(
+    () => hospitalsUtils.getUniqueSpecialties(hospitals),
+    [hospitals],
+  );
 
-  // 🔹 useMemo: filtrado + ordenado
   const sortedHospitals = useMemo(
-    () => filterAndSortHospitals(hospitals, selectedSpecialty, searchName),
+    () =>
+      hospitalsUtils.filterAndSortHospitals(
+        hospitals,
+        selectedSpecialty,
+        searchName,
+      ),
     [hospitals, selectedSpecialty, searchName],
   );
 
@@ -58,7 +58,7 @@ const WorkerHospitalsPage = () => {
         {t("pages.hospitals.workerPage.title")}
       </h1>
 
-      <HospitalsFilters
+      <hospitalsComponents.HospitalsFilters
         specialties={specialties}
         selectedSpecialty={selectedSpecialty}
         onChangeSelectedSpecialty={setSelectedSpecialty}
@@ -67,14 +67,14 @@ const WorkerHospitalsPage = () => {
         hideRightAction
       />
 
-      <HospitalsList
+      <hospitalsComponents.HospitalsList
         hospitals={sortedHospitals}
         mode="worker"
         onOpenDetails={(hospital) => setSelectedHospital(hospital)}
       />
 
       {selectedHospital && (
-        <HospitalDetailsModal
+        <hospitalsComponents.HospitalDetailsModal
           hospital={selectedHospital}
           onClose={() => setSelectedHospital(null)}
         />

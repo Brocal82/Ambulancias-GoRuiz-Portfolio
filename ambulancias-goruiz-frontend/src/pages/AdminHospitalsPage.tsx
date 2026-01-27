@@ -1,33 +1,13 @@
 //src/pages/AdminHospitalsPage.tsx
 import { useEffect, useMemo, useState } from "react";
+import type { Hospital } from "../modules/hospitals";
 import {
-  createHospital,
-  deleteHospital,
-  updateHospital,
-} from "../api/hospitals";
-import { fetchHospitals } from "../utils/hospitals/fetchHospitals";
-import type { Hospital } from "../types/hospital";
+  hospitalsApi,
+  hospitalsComponents,
+  hospitalsUtils,
+} from "../modules/hospitals";
 import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
-import {
-  filterAndSortHospitals,
-  getUniqueSpecialties,
-} from "../utils/hospitals/hospitalsFilters";
-import {
-  buildCreateHospitalPayload,
-  buildUpdateHospitalPayload,
-} from "../utils/hospitals/hospitalPayload";
-import {
-  fromLocalHospitalStatus,
-  getHospitalIsOpen,
-} from "../utils/hospitals/status";
-
-import HospitalsFilters from "../components/hospitals/HospitalsFilters";
-import HospitalsList from "../components/hospitals/HospitalsList";
-import HospitalCreateForm from "../components/hospitals/HospitalCreateForm";
-import HospitalEditModal from "../components/hospitals/HospitalEditModal";
-import HospitalDetailsModal from "../components/hospitals/HospitalDetailsModal";
-
 import { useTranslation } from "react-i18next";
 
 const AdminHospitalsPage = () => {
@@ -50,7 +30,7 @@ const AdminHospitalsPage = () => {
       try {
         if (!token) return;
 
-        const data = await fetchHospitals(token);
+        const data = await hospitalsUtils.fetchHospitals(token);
         setHospitals(data);
       } catch (error) {
         console.error(error);
@@ -61,13 +41,20 @@ const AdminHospitalsPage = () => {
     loadHospitals();
   }, [token]);
 
-
   // 2) Especialidades únicas (memo para evitar recalcular cada render)
-  const specialties = useMemo(() => getUniqueSpecialties(hospitals), [hospitals]);
+  const specialties = useMemo(
+    () => hospitalsUtils.getUniqueSpecialties(hospitals),
+    [hospitals],
+  );
 
   // 3) Lista filtrada + ordenada (memo)
   const sortedHospitals = useMemo(
-    () => filterAndSortHospitals(hospitals, selectedSpecialty, searchName),
+    () =>
+      hospitalsUtils.filterAndSortHospitals(
+        hospitals,
+        selectedSpecialty,
+        searchName,
+      ),
     [hospitals, selectedSpecialty, searchName],
   );
 
@@ -76,15 +63,14 @@ const AdminHospitalsPage = () => {
     try {
       if (!token) return;
 
-      const currentIsOpen = getHospitalIsOpen(hospital);
+      const currentIsOpen = hospitalsUtils.getHospitalIsOpen(hospital);
       const nextIsOpen = !(currentIsOpen === true);
 
-      const updated = await updateHospital(
+      const updated = await hospitalsApi.updateHospital(
         hospital._id,
-        fromLocalHospitalStatus(hospital, nextIsOpen),
+        hospitalsUtils.fromLocalHospitalStatus(hospital, nextIsOpen),
         token,
       );
-
 
       setHospitals((prev) =>
         prev.map((h) => (h._id === updated._id ? updated : h)),
@@ -105,7 +91,7 @@ const AdminHospitalsPage = () => {
     if (!ok) return;
 
     try {
-      await deleteHospital(id, token);
+      await hospitalsApi.deleteHospital(id, token);
       setHospitals((prev) => prev.filter((h) => h._id !== id));
       toastT.success(["toasts.hospitals.deleteSuccess"]);
     } catch (error) {
@@ -121,29 +107,30 @@ const AdminHospitalsPage = () => {
       </h1>
 
       {/* Filtros reutilizables */}
-      <HospitalsFilters
+      <hospitalsComponents.HospitalsFilters
         specialties={specialties}
         selectedSpecialty={selectedSpecialty}
         onChangeSelectedSpecialty={setSelectedSpecialty}
         searchName={searchName}
         onChangeSearchName={setSearchName}
-        rightActionLabel={t("pages.hospitals.adminPage.actions.toggleFormOpen") as string}
+        rightActionLabel={
+          t("pages.hospitals.adminPage.actions.toggleFormOpen") as string
+        }
         onRightActionClick={() => setShowForm(true)}
         hideRightAction={showForm}
       />
 
-
       {/* Formulario (extraído a componente) */}
       {showForm && (
-        <HospitalCreateForm
+        <hospitalsComponents.HospitalCreateForm
           specialties={specialties}
           onClose={() => setShowForm(false)}
           onSubmit={async (data) => {
             if (!token) return;
 
             try {
-              const newHospital = await createHospital(
-                buildCreateHospitalPayload(data),
+              const newHospital = await hospitalsApi.createHospital(
+                hospitalsUtils.buildCreateHospitalPayload(data),
                 token,
               );
 
@@ -154,13 +141,12 @@ const AdminHospitalsPage = () => {
               console.error(error);
               toastT.error(["toasts.hospitals.addError"]);
             }
-
           }}
         />
       )}
 
       {/* Listado reutilizable */}
-      <HospitalsList
+      <hospitalsComponents.HospitalsList
         hospitals={sortedHospitals}
         mode="admin"
         onOpenDetails={(hospital) => setSelectedHospital(hospital)}
@@ -171,7 +157,7 @@ const AdminHospitalsPage = () => {
 
       {/* Modales */}
       {editingHospital && (
-        <HospitalEditModal
+        <hospitalsComponents.HospitalEditModal
           hospital={editingHospital}
           allSpecialties={specialties}
           onClose={() => setEditingHospital(null)}
@@ -179,10 +165,16 @@ const AdminHospitalsPage = () => {
             if (!token) return;
 
             try {
-              const payload = buildUpdateHospitalPayload(editingHospital, updated);
+              const payload = hospitalsUtils.buildUpdateHospitalPayload(
+                editingHospital,
+                updated,
+              );
 
-              const saved = await updateHospital(updated._id, payload, token);
-
+              const saved = await hospitalsApi.updateHospital(
+                updated._id,
+                payload,
+                token,
+              );
 
               setHospitals((prev) =>
                 prev.map((h) => (h._id === saved._id ? saved : h)),
@@ -199,7 +191,7 @@ const AdminHospitalsPage = () => {
       )}
 
       {selectedHospital && (
-        <HospitalDetailsModal
+        <hospitalsComponents.HospitalDetailsModal
           hospital={selectedHospital}
           onClose={() => setSelectedHospital(null)}
         />
