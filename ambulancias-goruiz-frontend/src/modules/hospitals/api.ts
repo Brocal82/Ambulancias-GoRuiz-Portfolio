@@ -1,1 +1,2 @@
-export * from '../../api/hospitals';
+export * from "./domain/api";
+
