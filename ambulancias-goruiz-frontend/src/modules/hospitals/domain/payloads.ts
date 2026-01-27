@@ -1,4 +1,4 @@
-import type { Hospital } from "./types";
+import type { CreateHospitalInput, Hospital, UpdateHospitalInput } from "./types";
 import { fromLocalHospitalStatus } from "../utils/status";
 
 // Normaliza strings (trim seguro)
@@ -11,12 +11,9 @@ const normalizeStringArray = (v?: unknown): string[] => {
 };
 
 // Payload para CREATE
-export const buildCreateHospitalPayload = (data: {
-  name: string;
-  address: string;
-  phone: string;
-  specialties: string[];
-}): Partial<Hospital> => {
+export const buildCreateHospitalPayload = (
+  data: CreateHospitalInput,
+): Partial<Hospital> => {
   return {
     name: normalizeString(data.name),
     address: normalizeString(data.address),
@@ -29,9 +26,9 @@ export const buildCreateHospitalPayload = (data: {
 // Payload para UPDATE
 export const buildUpdateHospitalPayload = (
   base: Hospital,
-  updated: Hospital,
+  updated: UpdateHospitalInput,
 ): Partial<Hospital> => {
-  const statusPatch = fromLocalHospitalStatus(base, (updated as any).isOpen);
+  const statusPatch = fromLocalHospitalStatus(base, updated.isOpen);
 
   return {
     name: normalizeString(updated.name),
