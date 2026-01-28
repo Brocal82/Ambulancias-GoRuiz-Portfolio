@@ -5,7 +5,8 @@ import { DateTime } from "luxon";
 import mongoose from "mongoose";
 import VacationRequest from "../../models/vacationRequest";
 import bcrypt from "bcrypt";
-import type { CreateUserDTO } from "./payloads";
+import jwt from "jsonwebtoken";
+import type { CreateUserDTO, LoginDTO, LoginResponseDTO } from "./payloads";
 import { validateEmail } from "./validators";
 
 
@@ -257,3 +258,48 @@ export async function createUserService(data: CreateUserDTO) {
   await newUser.save();
   return newUser;
 }
+
+export async function loginUserService(
+  data: LoginDTO,
+): Promise<LoginResponseDTO> {
+  const { email, password } = data;
+
+  if (!email || !password) {
+    throw new Error("Email y contraseña son obligatorios");
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new Error("Usuario no encontrado");
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    throw new Error("Contraseña incorrecta");
+  }
+
+  const token = jwt.sign(
+    { userId: user._id, email: user.email, role: user.role },
+    process.env.JWT_SECRET as string,
+    { expiresIn: "1h" },
+  );
+
+  return {
+    message: "Login exitoso",
+    token,
+    user: {
+      _id: String(user._id),
+      name: user.name,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      ambulanceRole: user.ambulanceRole,
+      pscheinExpiry: user.pscheinExpiry,
+      address: user.address,
+      phone: user.phone,
+      emergencyPhone: user.emergencyPhone,
+      profileImage: user.profileImage,
+    },
+  };
+}
+

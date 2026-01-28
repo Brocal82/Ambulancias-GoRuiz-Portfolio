@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 import Dienst from "../../models/Dienst";
 import mongoose from "mongoose";
 import { sanitizeUser, sanitizeUsers } from "./sanitize";
-import { getAvailableUsersForDateService, getUsersWithTodayVacationInfo, updateUserService, getUserByIdService, createUserService } from "./service";
+import { getAvailableUsersForDateService, getUsersWithTodayVacationInfo, updateUserService, getUserByIdService, createUserService, loginUserService } from "./service";
 import { parseUpdateUserDTO, parseCreateUserDTO } from "./parsers";
 
 
@@ -143,55 +143,32 @@ export const deleteUser = async (
 };
 
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    res.status(400).json({ message: "Email y contraseña son obligatorios" });
-    return;
-  }
-
   try {
-    const user = await User.findOne({ email });
+    const result = await loginUserService(req.body);
+    res.status(200).json(result);
+  } catch (error: any) {
+    const msg = String(error?.message || "");
 
-    if (!user) {
-      res.status(404).json({ message: "Usuario no encontrado" });
+    if (msg.includes("obligatorios")) {
+      res.status(400).json({ message: msg });
       return;
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      res.status(401).json({ message: "Contraseña incorrecta" });
+    if (msg.includes("no encontrado")) {
+      res.status(404).json({ message: msg });
       return;
     }
 
-    const token = jwt.sign(
-      { userId: user._id, email: user.email, role: user.role },
-      process.env.JWT_SECRET as string,
-      { expiresIn: "1h" },
-    );
+    if (msg.includes("incorrecta")) {
+      res.status(401).json({ message: msg });
+      return;
+    }
 
-    res.status(200).json({
-      message: "Login exitoso",
-      token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        lastName: user.lastName, // 👈 Añade esto
-        email: user.email,
-        role: user.role,
-        ambulanceRole: user.ambulanceRole,
-        pscheinExpiry: user.pscheinExpiry,
-        address: user.address,
-        phone: user.phone,
-        emergencyPhone: user.emergencyPhone,
-        profileImage: user.profileImage,
-      },
-    });
-  } catch (error) {
     console.error("❌ Error en login:", error);
     res.status(500).json({ message: "Error al iniciar sesión" });
   }
 };
+
 
 // ✅ Obtener todos los Diensts (solo para admin)
 export const getAllUsersDienst = async (

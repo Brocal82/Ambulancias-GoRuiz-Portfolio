@@ -32,3 +32,27 @@ export interface CreateUserDTO {
   role?: "admin" | "worker"; // por defecto worker
 }
 
+export interface LoginDTO {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponseDTO {
+  message: string;
+  token: string;
+  user: {
+    _id: string;
+    name: string;
+    lastName: string;
+    email: string;
+    role: "admin" | "worker";
+    ambulanceRole?: AmbulanceRole;
+    pscheinExpiry?: string;
+    address?: string;
+    phone?: string;
+    emergencyPhone?: string;
+    profileImage?: string;
+  };
+}
+
+
