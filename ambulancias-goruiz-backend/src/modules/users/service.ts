@@ -303,3 +303,14 @@ export async function loginUserService(
   };
 }
 
+export async function deleteUserService(userId: string) {
+  const deletedUser = await User.findByIdAndDelete(userId);
+
+  if (!deletedUser) {
+    throw new Error("Usuario no encontrado");
+  }
+
+  return deletedUser;
+}
+
+

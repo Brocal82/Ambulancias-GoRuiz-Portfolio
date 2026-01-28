@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 import Dienst from "../../models/Dienst";
 import mongoose from "mongoose";
 import { sanitizeUser, sanitizeUsers } from "./sanitize";
-import { getAvailableUsersForDateService, getUsersWithTodayVacationInfo, updateUserService, getUserByIdService, createUserService, loginUserService } from "./service";
+import { getAvailableUsersForDateService, getUsersWithTodayVacationInfo, updateUserService, getUserByIdService, createUserService, loginUserService, deleteUserService } from "./service";
 import { parseUpdateUserDTO, parseCreateUserDTO } from "./parsers";
 
 
@@ -121,7 +121,6 @@ export const getUserById = async (
   }
 };
 
-
 export const deleteUser = async (
   req: Request,
   res: Response,
@@ -129,18 +128,21 @@ export const deleteUser = async (
   const { id } = req.params;
 
   try {
-    const deletedUser = await User.findByIdAndDelete(id);
-    if (!deletedUser) {
-      res.status(404).json({ message: "Usuario no encontrado" });
+    await deleteUserService(id);
+    res.status(200).json({ message: "Usuario eliminado correctamente" });
+  } catch (error: any) {
+    const msg = String(error?.message || "");
+
+    if (msg.includes("no encontrado")) {
+      res.status(404).json({ message: msg });
       return;
     }
 
-    res.status(200).json({ message: "Usuario eliminado correctamente" });
-  } catch (error) {
     console.error("❌ Error al eliminar usuario:", error);
     res.status(500).json({ message: "Error al eliminar el usuario" });
   }
 };
+
 
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
