@@ -9,6 +9,7 @@ import mongoose from "mongoose";
 import { DateTime } from "luxon";
 import VacationRequest from "../../models/vacationRequest";
 import { sanitizeUser, sanitizeUsers } from "./sanitize";
+import { getAvailableUsersForDateService } from "./service";
 import { isOnVacationDay } from "../../utils/dienstValidation";
 
 const ZONE = "Europe/Berlin";
@@ -332,9 +333,9 @@ export const getAvailableUsersForDate: RequestHandler = async (
     req.query as {
       date?: string;
       desiredRole?: "driver" | "medic" | "both";
-      startTime?: string; // "HH:mm" opcional
-      endTime?: string; // "HH:mm" opcional
-      includeExpired?: string; // "true" para incluir P-Schein caducados en la respuesta
+      startTime?: string;
+      endTime?: string;
+      includeExpired?: string;
     };
 
   if (!date || typeof date !== "string") {
@@ -342,79 +343,16 @@ export const getAvailableUsersForDate: RequestHandler = async (
     return;
   }
 
+  const role = desiredRole ?? "both";
   const includeExpiredBool = String(includeExpired).toLowerCase() === "true";
 
-  const allowedRoles =
-    desiredRole === "driver"
-      ? ["driver", "both"]
-      : desiredRole === "medic"
-        ? ["medic", "both"]
-        : ["driver", "medic", "both"];
-
-  const toMin = (hhmm?: string) => {
-    if (!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return null;
-    const [h, m] = hhmm.split(":").map(Number);
-    return h * 60 + m;
-  };
-  const sReq = toMin(startTime);
-  const eReq = toMin(endTime);
-
-  const overlap = (
-    aStartMin: number | null,
-    aEndMin: number | null,
-    bStartMin: number | null,
-    bEndMin: number | null,
-  ) => {
-    const Astart = aStartMin ?? 0;
-    const Aend = aEndMin ?? 24 * 60;
-    const Bstart = bStartMin ?? 0;
-    const Bend = bEndMin ?? 24 * 60;
-    return Astart < Bend && Bstart < Aend;
-  };
-
   try {
-    const diensts = await Dienst.find(
-      { "assignments.date": date },
-      { assignments: 1 },
-    ).lean();
-
-    const busyUserIds = new Set<string>();
-
-    for (const d of diensts) {
-      for (const a of d.assignments ?? []) {
-        if (a.date !== date) continue;
-
-        const aStart = toMin(a.startTime);
-        const aEnd = toMin(a.endTime);
-
-        const shouldBlock =
-          sReq === null || eReq === null
-            ? true
-            : overlap(aStart, aEnd, sReq, eReq);
-
-        if (shouldBlock) {
-          if (a.driver) busyUserIds.add(String(a.driver));
-          if (a.medic) busyUserIds.add(String(a.medic));
-        }
-      }
-    }
-
-    const baseUsers = await User.find({
-      _id: { $nin: Array.from(busyUserIds) },
-      ambulanceRole: { $in: allowedRoles },
-    })
-      .sort({ lastName: 1 })
-      .lean();
-
-    const dateObj = DateTime.fromISO(date, { zone: ZONE }).startOf("day");
-
-    const available = baseUsers.filter((u: any) => {
-      if (desiredRole !== "driver") return true;
-      if (includeExpiredBool) return true; // ⬅️ permitir caducados para que la UI los muestre atenuados
-      const exp = u.pscheinExpiry
-        ? DateTime.fromISO(u.pscheinExpiry, { zone: ZONE })
-        : null;
-      return !exp || exp.endOf("day") >= dateObj;
+    const available = await getAvailableUsersForDateService({
+      date,
+      desiredRole: role,
+      startTime,
+      endTime,
+      includeExpired: includeExpiredBool,
     });
 
     res.json(sanitizeUsers(available as any[]));
@@ -423,6 +361,7 @@ export const getAvailableUsersForDate: RequestHandler = async (
     res.status(500).json({ message: "Error del servidor" });
   }
 };
+
 
 export const uploadUserFiles = async (
   req: Request,
