@@ -2,11 +2,13 @@
 import { useState, useEffect } from "react";
 import type { User } from "../../modules/users";
 import { getPscheinInfo } from "../../utils/pscheinUtils";
+import type { UpdateUserPayload } from "../../modules/users/domain/payloads";
+
 
 interface UserEditModalProps {
   user: User;
   onClose: () => void;
-  onSave: (updatedUser: User) => void;
+  onSave: (payload: UpdateUserPayload) => void;
   onDelete: (userId: string) => void;
 }
 
@@ -31,8 +33,22 @@ export default function UserEditModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData); // 🔁 Pasamos los datos actualizados al padre
+
+    const payload: UpdateUserPayload = {
+      name: formData.name,
+      lastName: formData.lastName,
+      email: formData.email,
+      ambulanceRole: formData.ambulanceRole,
+      address: formData.address,
+      phone: formData.phone,
+      emergencyPhone: formData.emergencyPhone,
+      pscheinExpiry: formData.pscheinExpiry,
+      profileImage: formData.profileImage,
+    };
+
+    onSave(payload);
   };
+
 
   const handleDelete = () => {
     onDelete(user._id);
@@ -172,10 +188,10 @@ export default function UserEditModal({
                     value={formData.pscheinExpiry || ""}
                     onChange={handleChange}
                     className={`w-full border rounded p-2 ${pschein.status === "expired"
-                        ? "border-red-500"
-                        : pschein.status === "warning"
-                          ? "border-orange-400"
-                          : "border-gray-300"
+                      ? "border-red-500"
+                      : pschein.status === "warning"
+                        ? "border-orange-400"
+                        : "border-gray-300"
                       }`}
                   />
 
