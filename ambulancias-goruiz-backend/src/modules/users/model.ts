@@ -1,0 +1,56 @@
+// backend/src/modules/users/model.ts
+import mongoose, { Document, Schema } from "mongoose";
+
+export interface IUser extends Document {
+  name: string;
+  lastName: string;
+  email: string;
+  password: string;
+  role: "admin" | "worker";
+  ambulanceRole?: "driver" | "medic" | "both";
+  address?: string;
+  phone?: string;
+  emergencyPhone?: string;
+  pscheinExpiry?: string;
+  profileImage?: string;
+  documents?: string[];
+  rotationMode?: "rotating" | "fixed" | "none";
+  fixedDienstNumber?: number | null;
+}
+
+const userSchema = new Schema<IUser>({
+  name: { type: String, required: true },
+  lastName: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: {
+    type: String,
+    enum: ["admin", "worker"],
+    default: "worker",
+    required: true,
+  },
+  ambulanceRole: {
+    type: String,
+    enum: ["driver", "medic", "both"],
+    required: false,
+  },
+  address: { type: String, required: false },
+  phone: { type: String, required: false },
+  emergencyPhone: { type: String, required: false },
+  pscheinExpiry: { type: String, required: false },
+  profileImage: { type: String, required: false },
+  documents: { type: [String], required: false },
+  rotationMode: {
+    type: String,
+    enum: ["rotating", "fixed", "none"],
+    default: "none",
+  },
+  fixedDienstNumber: {
+    type: Number,
+    required: false,
+    default: null,
+  },
+});
+
+const User = mongoose.model<IUser>("User", userSchema);
+export default User;
