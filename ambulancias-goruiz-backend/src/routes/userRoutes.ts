@@ -11,7 +11,7 @@ import {
   getAvailableUsersForDate,
   uploadUserFiles,
   deleteUserDocument,
-} from "../controllers/userController";
+} from "../modules/users/controller";
 
 import { authenticateToken } from "../middlewares/authMiddleware";
 import {
