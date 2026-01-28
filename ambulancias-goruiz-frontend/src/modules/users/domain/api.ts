@@ -1,6 +1,8 @@
 // frontend/src/modules/users/domain/api.ts
 import api from "../../../api/axios";
 import type { User } from "./types";
+import type { UpdateUserPayload, UploadUserFilesPayload } from "./payloads";
+
 
 
 // ✅ Obtener todos los usuarios completos (para Admin)
@@ -43,9 +45,10 @@ export const getUserById = async (
 
 export const updateUserProfile = async (
   userId: string,
-  updatedData: Partial<User>,
+  updatedData: UpdateUserPayload,
   token: string,
 ): Promise<User> => {
+
   const response = await api.patch<User>(`/users/${userId}`, updatedData, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -74,10 +77,7 @@ export const deleteUserDocument = async (
 
 export const uploadUserFiles = async (
   token: string,
-  files: {
-    profileImage?: File | null;
-    documents?: FileList | File[] | null;
-  },
+  files: UploadUserFilesPayload,
 ): Promise<{ profileImage?: string; documents?: string[] }> => {
   const form = new FormData();
 
