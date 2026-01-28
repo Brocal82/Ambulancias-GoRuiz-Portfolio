@@ -1,6 +1,7 @@
 // frontend/src/modules/users/domain/api.ts
 import api from "../../../api/axios";
-import type { User } from "../../../types/user";
+import type { User } from "./types";
+
 
 // ✅ Obtener todos los usuarios completos (para Admin)
 export const getAllUsers = async (token: string): Promise<User[]> => {
