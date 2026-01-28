@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState, useId } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { getAllUsers } from "../../api/users";
+import { UsersApi } from "../../modules/users";
 import { getPscheinInfo } from "../../utils/pscheinUtils";
 
 export type TeamPickerValue = { driver: string; medic: string };
@@ -45,7 +45,7 @@ export default function TeamPicker({
     (async () => {
       try {
         setLoading(true);
-        const all = await getAllUsers(token);
+        const all = await UsersApi.getAllUsers(token);
         const sorted = [...(all as UserLite[])].sort((a, b) =>
           (a.lastName || "").localeCompare(b.lastName || "", "es"),
         );
