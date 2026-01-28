@@ -1,2 +1,3 @@
 // frontend/src/modules/users/domain/types.ts
-export * from "../../../types/user";
+export type { User, AmbulanceRole, AppRole } from "../../../types/user";
+
