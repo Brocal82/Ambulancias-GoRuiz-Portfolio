@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useId, useMemo } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { updateDienstPartial, removeAssignment } from "../api/diensts";
-import { getAvailableUsersForDate, getUserById } from "../api/users";
+import { UsersApi } from "../modules/users";
+
 import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { toastT } from "../utils/toast";
 import "react-toastify/dist/ReactToastify.css";
@@ -102,7 +103,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     if (list.some((u) => u._id === selectedId)) return list;
 
     try {
-      const u = await getUserById(token, selectedId);
+      const u = await UsersApi.getUserById(token, selectedId);
       const asRef: UserRef = {
         _id: u._id,
         name: u.name,
@@ -124,8 +125,8 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         const commonOpts = { startTime, endTime, includeExpired: true }; // <- clave
 
         const [drivers, medics] = await Promise.all([
-          getAvailableUsersForDate(date, "driver", token, commonOpts),
-          getAvailableUsersForDate(date, "medic", token, {
+          UsersApi.getAvailableUsersForDate(date, "driver", token, commonOpts),
+          UsersApi.getAvailableUsersForDate(date, "medic", token, {
             startTime,
             endTime,
           }),
@@ -317,7 +318,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         typeof assignment?.ambulanceId === "string"
           ? assignment?.ambulanceId?.trim()?.length > 0
           : assignment?.ambulanceId &&
-              typeof assignment.ambulanceId === "object"
+            typeof assignment.ambulanceId === "object"
             ? Boolean((assignment.ambulanceId as any)?._id)
             : false;
 
@@ -568,8 +569,8 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                               {typeof u === "object"
                                 ? `${u.lastName || ""}, ${u.name || ""}`
                                 : t(
-                                    "pages.assignmentModal.placeholders.selectDriver",
-                                  )}
+                                  "pages.assignmentModal.placeholders.selectDriver",
+                                )}
                             </span>
                             {vac.has && (
                               <span
@@ -676,7 +677,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                                 "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
                                 selectedDriverId === u._id && "bg-slate-50",
                                 (expired || isSick || isVac) &&
-                                  "opacity-50 cursor-not-allowed", // 🆕 añade isVac
+                                "opacity-50 cursor-not-allowed", // 🆕 añade isVac
                               )}
                             >
                               <span
@@ -774,8 +775,8 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                               {typeof u === "object"
                                 ? `${u.lastName || ""}, ${u.name || ""}`
                                 : t(
-                                    "pages.assignmentModal.placeholders.selectMedic",
-                                  )}
+                                  "pages.assignmentModal.placeholders.selectMedic",
+                                )}
                             </span>
                             {vac.has && (
                               <span
@@ -877,7 +878,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                                 "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
                                 selectedMedicId === u._id && "bg-slate-50",
                                 (isVac || isSick) &&
-                                  "opacity-50 cursor-not-allowed", // 🆕 añade isVac
+                                "opacity-50 cursor-not-allowed", // 🆕 añade isVac
                               )}
                             >
                               <span
