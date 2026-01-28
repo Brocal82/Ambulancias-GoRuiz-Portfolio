@@ -1,9 +1,9 @@
 // frontend/src/pages/AdminUsersPage.tsx
 import { useEffect, useState, useCallback } from "react";
-import { getAllUsers, updateUserProfile, deleteUser } from "../api/users";
+import { UsersApi } from "../modules/users";
 import { useAuth } from "../hooks/useAuth";
 import UserEditModal from "../components/users/UserEditModal";
-import type { User } from "../types/user";
+import type { User } from "../modules/users";
 import { toastT } from "../utils/toast";
 import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +11,9 @@ import { useTranslation } from "react-i18next";
 import { getVacationFlagsInRange, type VacFlag } from "../api/vacation";
 import { getSickFlagsInRange, type SickFlag } from "../api/sickLeaves";
 import { fmtDDMM } from "../utils/timeUtils";
+
+
+const { getAllUsers, updateUserProfile, deleteUser } = UsersApi;
 
 // Mapeo de estilos de la píldora de rol (no cambia lógica)
 const rolePillClass: Record<
@@ -321,9 +324,8 @@ const AdminUsersPage = () => {
                       key={value}
                       type="button"
                       onClick={() => setRoleFilter(value)}
-                      className={`${baseClasses} ${
-                        isActive ? activeClasses : inactiveClasses
-                      }`}
+                      className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses
+                        }`}
                     >
                       {/* El texto (con o sin emoji) viene de i18n */}
                       <span>{label}</span>
@@ -466,9 +468,9 @@ const AdminUsersPage = () => {
                   const sickTitle = isSick
                     ? sickFromISO && sickToISO
                       ? `🤒 ${t(
-                          "pages.sick.tooltip.full",
-                          "Baja médica",
-                        )}: ${fmtDDMM(sickFromISO)} → ${fmtDDMM(sickToISO)}`
+                        "pages.sick.tooltip.full",
+                        "Baja médica",
+                      )}: ${fmtDDMM(sickFromISO)} → ${fmtDDMM(sickToISO)}`
                       : `🤒 ${t("pages.sick.tooltip.full", "Baja médica")}`
                     : undefined;
 
@@ -478,9 +480,8 @@ const AdminUsersPage = () => {
                   return (
                     <tr
                       key={user._id}
-                      className={`${
-                        index % 2 === 0 ? "bg-slate-50/50" : "bg-white"
-                      } group cursor-pointer hover:bg-blue-50/50 transition-colors`}
+                      className={`${index % 2 === 0 ? "bg-slate-50/50" : "bg-white"
+                        } group cursor-pointer hover:bg-blue-50/50 transition-colors`}
                       onClick={() => handleEdit(user)}
                     >
                       {/* Apellido */}
@@ -504,8 +505,8 @@ const AdminUsersPage = () => {
                         >
                           {user.ambulanceRole
                             ? t(
-                                `pages.profile.roles.${user.ambulanceRole}` as any,
-                              )
+                              `pages.profile.roles.${user.ambulanceRole}` as any,
+                            )
                             : "—"}
                         </span>
                       </td>
