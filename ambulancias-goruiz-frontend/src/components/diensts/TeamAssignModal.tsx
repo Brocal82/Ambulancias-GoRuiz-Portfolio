@@ -10,7 +10,8 @@ import {
 import { getVacationFlagsInRange, type VacFlag } from "../../api/vacation";
 import { getSickFlagsInRange, type SickFlag } from "../../api/sickLeaves";
 import { fmtDDMM } from "../../utils/timeUtils";
-import { getAvailableUsersForDate } from "../../api/users";
+import { UsersApi } from "../../modules/users";
+
 
 interface Props {
   isOpen: boolean;
@@ -146,8 +147,8 @@ export default function TeamAssignModal({
         setAvailabilityLoading(true);
         const opts = { startTime, endTime };
         const [drivers, medics] = await Promise.all([
-          getAvailableUsersForDate(date, "driver", token, opts),
-          getAvailableUsersForDate(date, "medic", token, opts),
+          UsersApi.getAvailableUsersForDate(date, "driver", token, opts),
+          UsersApi.getAvailableUsersForDate(date, "medic", token, opts),
         ]);
 
         if (cancelled) return;
@@ -614,9 +615,9 @@ export default function TeamAssignModal({
                       title={
                         isUsed
                           ? t(
-                              "pages.diensts.assignTeamModal.usedTooltip",
-                              "Este equipo ya está asignado a otro Dienst esta semana",
-                            )
+                            "pages.diensts.assignTeamModal.usedTooltip",
+                            "Este equipo ya está asignado a otro Dienst esta semana",
+                          )
                           : undefined
                       }
                     >
