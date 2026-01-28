@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { getAllUsers, getAvailableUsersForDate } from "../../api/users";
+import { UsersApi } from "../../modules/users";
 import type { AmbulanceRole, User } from "../../types/user";
 import {
   getPscheinInfo,
@@ -69,7 +69,7 @@ export default function UserAssignModal({
         setLoading(true);
 
         if (date) {
-          const data = await getAvailableUsersForDate(
+          const data = await UsersApi.getAvailableUsersForDate(
             date,
             role, // rol deseado actual
             token,
@@ -78,7 +78,8 @@ export default function UserAssignModal({
           setUsers(data);
           setUserId(""); // reset selección al cambiar role/date/horas
         } else {
-          const all = await getAllUsers(token);
+          const all = await UsersApi.getAllUsers(token)
+            ;
           setUsers(all);
         }
       } catch (e) {
@@ -177,8 +178,8 @@ export default function UserAssignModal({
       return getPscheinWarningTitle
         ? getPscheinWarningTitle(expiry, t)
         : (t("pages.diensts.adminPage.driverPscheinWarning", {
-            count: info.monthsLeft ?? 0,
-          }) as string);
+          count: info.monthsLeft ?? 0,
+        }) as string);
     }
     return undefined;
   };
@@ -293,45 +294,45 @@ export default function UserAssignModal({
                     ? t("common.loading", "Cargando...")
                     : selectedUser
                       ? (() => {
-                          const vac = userVacationInfo(selectedUser);
-                          const sick = userSickInfo(selectedUser);
-                          const dClass =
-                            role === "driver"
-                              ? driverPscheinClass(
-                                  (selectedUser as any)?.pscheinExpiry,
-                                )
-                              : "";
-                          const dim = vac.has || sick.has ? dimClass : "";
-                          const title = driverPscheinTitle(selectedUser);
-                          return (
-                            <>
+                        const vac = userVacationInfo(selectedUser);
+                        const sick = userSickInfo(selectedUser);
+                        const dClass =
+                          role === "driver"
+                            ? driverPscheinClass(
+                              (selectedUser as any)?.pscheinExpiry,
+                            )
+                            : "";
+                        const dim = vac.has || sick.has ? dimClass : "";
+                        const title = driverPscheinTitle(selectedUser);
+                        return (
+                          <>
+                            <span
+                              className={mergeClasses(dClass, dim)}
+                              title={title}
+                            >
+                              {(selectedUser.lastName || "") +
+                                ", " +
+                                (selectedUser.name || "")}
+                            </span>
+                            {vac.has && (
                               <span
-                                className={mergeClasses(dClass, dim)}
-                                title={title}
+                                className="ml-1 align-middle text-slate-400"
+                                title={vac.title}
                               >
-                                {(selectedUser.lastName || "") +
-                                  ", " +
-                                  (selectedUser.name || "")}
+                                🏖️
                               </span>
-                              {vac.has && (
-                                <span
-                                  className="ml-1 align-middle text-slate-400"
-                                  title={vac.title}
-                                >
-                                  🏖️
-                                </span>
-                              )}
-                              {sick.has && (
-                                <span
-                                  className="ml-1 align-middle text-slate-500"
-                                  title={sick.title}
-                                >
-                                  🤒
-                                </span>
-                              )}
-                            </>
-                          );
-                        })()
+                            )}
+                            {sick.has && (
+                              <span
+                                className="ml-1 align-middle text-slate-500"
+                                title={sick.title}
+                              >
+                                🤒
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()
                       : t("common.select", "Selecciona")}
                 </span>
                 <svg
