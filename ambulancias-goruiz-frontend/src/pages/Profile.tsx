@@ -3,14 +3,12 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toastT } from "../utils/toast";
 import { useAuth } from "../hooks/useAuth";
-import {
-  getUserById,
-  updateUserProfile,
-  deleteUserDocument,
-  deleteUser,
-} from "../api/users";
+import { UsersApi } from "../modules/users";
+const { getUserById, updateUserProfile, deleteUserDocument, deleteUser, uploadUserFiles } = UsersApi;
+
 import { getPscheinInfo } from "../utils/pscheinUtils";
-import type { User, AmbulanceRole } from "../types/user";
+import type { User, AmbulanceRole } from "../modules/users";
+
 import { useTranslation } from "react-i18next";
 import { buildImageUrl } from "../utils/apiOrigins";
 import FileUpload from "../components/common/FileUpload";
@@ -19,8 +17,6 @@ import DangerDeleteButton from "../components/common/actions/DangerDeleteButton"
 import DeleteIconButton from "../components/common/actions/DeleteIconButton";
 import { displayFileNameFromUrl } from "../utils/fileName";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-const API_ORIGIN = API_BASE.replace(/\/api\/?$/, "");
 
 interface ProfileProps {
   userId?: string;
@@ -73,28 +69,20 @@ const Profile = ({ userId }: ProfileProps) => {
     try {
       let uploadedProfileImage: string | undefined;
 
-      // Si hay archivos que subir
       if (profileImageFile || documentsFiles) {
-        const form = new FormData();
-        if (profileImageFile) form.append("profileImage", profileImageFile);
-        if (documentsFiles) {
-          Array.from(documentsFiles).forEach((doc) => {
-            form.append("documents", doc);
-          });
-        }
-
-        // Subimos archivos
-        const uploadRes = await fetch(`${API_ORIGIN}/api/users/me/upload`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: form,
+        const uploadData = await uploadUserFiles(token, {
+          profileImage: profileImageFile,
+          documents: documentsFiles,
         });
 
-        const uploadData = await uploadRes.json();
         if (uploadData?.profileImage) {
           uploadedProfileImage = uploadData.profileImage;
         }
+
+        // (Opcional, pero coherente): si el backend devuelve documents también,
+        // podemos actualizar formData localmente con ellos en el refetch posterior.
       }
+
 
       // Mezclamos con posible imagen nueva
       const finalFormData = {
