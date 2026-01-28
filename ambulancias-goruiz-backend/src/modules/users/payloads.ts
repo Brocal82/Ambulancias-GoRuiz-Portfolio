@@ -23,3 +23,12 @@ export interface UpdateUserDTO {
   // docs lo gestiona uploadUserFiles, no updateUser
   // documents?: string[];
 }
+
+export interface CreateUserDTO {
+  name: string;
+  lastName: string;
+  email: string;
+  password: string;
+  role?: "admin" | "worker"; // por defecto worker
+}
+

@@ -4,6 +4,8 @@ import Dienst from "../../models/Dienst";
 import { DateTime } from "luxon";
 import mongoose from "mongoose";
 import VacationRequest from "../../models/vacationRequest";
+import bcrypt from "bcrypt";
+import type { CreateUserDTO } from "./payloads";
 import { validateEmail } from "./validators";
 
 
@@ -214,4 +216,44 @@ export async function getUserByIdService(userId: string) {
   }
 
   return user;
+}
+
+export async function createUserService(data: CreateUserDTO) {
+  const { name, lastName, email, password, role = "worker" } = data;
+
+  if (!name || !lastName || !email) {
+    throw new Error("Nombre, apellidos y email son obligatorios");
+  }
+
+  if (!password || password.length < 6) {
+    throw new Error(
+      "La contraseña es obligatoria y debe tener al menos 6 caracteres",
+    );
+  }
+
+  if (!validateEmail(email)) {
+    throw new Error("El formato del email no es válido");
+  }
+
+  if (role !== "admin" && role !== "worker") {
+    throw new Error('Rol no válido. Debe ser "admin" o "worker"');
+  }
+
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    throw new Error("Ya existe un usuario con ese email");
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const newUser = new User({
+    name,
+    lastName,
+    email,
+    password: hashedPassword,
+    role,
+  });
+
+  await newUser.save();
+  return newUser;
 }

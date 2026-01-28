@@ -7,8 +7,8 @@ import jwt from "jsonwebtoken";
 import Dienst from "../../models/Dienst";
 import mongoose from "mongoose";
 import { sanitizeUser, sanitizeUsers } from "./sanitize";
-import { getAvailableUsersForDateService, getUsersWithTodayVacationInfo, updateUserService, getUserByIdService } from "./service";
-import { parseUpdateUserDTO } from "./parsers";
+import { getAvailableUsersForDateService, getUsersWithTodayVacationInfo, updateUserService, getUserByIdService, createUserService } from "./service";
+import { parseUpdateUserDTO, parseCreateUserDTO } from "./parsers";
 
 
 const ZONE = "Europe/Berlin";
@@ -23,65 +23,27 @@ export const createUser = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  const {
-    name,
-    lastName,
-    email,
-    password,
-    role = "worker",
-  } = req.body as IUser & { role?: string };
-
-  if (!name || !lastName || !email) {
-    res
-      .status(400)
-      .json({ message: "Nombre, apellidos y email son obligatorios" });
-    return;
-  }
-
-  if (!password || password.length < 6) {
-    res
-      .status(400)
-      .json({
-        message:
-          "La contraseña es obligatoria y debe tener al menos 6 caracteres",
-      });
-    return;
-  }
-
-  if (!validateEmail(email)) {
-    res.status(400).json({ message: "El formato del email no es válido" });
-    return;
-  }
-
-  if (role !== "admin" && role !== "worker") {
-    res
-      .status(400)
-      .json({ message: 'Rol no válido. Debe ser "admin" o "worker"' });
-    return;
-  }
+  const dto = parseCreateUserDTO(req.body);
 
   try {
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      res.status(400).json({ message: "Ya existe un usuario con ese email" });
+    const newUser = await createUserService(dto);
+    console.log("✅ Usuario guardado:", newUser);
+    res.status(201).json(sanitizeUser(newUser));
+  } catch (error: any) {
+    const msg = String(error?.message || "");
+
+    // 400 para validaciones/duplicado/rol, igual que antes
+    if (
+      msg.includes("obligatorios") ||
+      msg.includes("contraseña") ||
+      msg.includes("email") ||
+      msg.includes("Rol no válido") ||
+      msg.includes("Ya existe un usuario")
+    ) {
+      res.status(400).json({ message: msg });
       return;
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new User({
-      name,
-      lastName,
-      email,
-      password: hashedPassword,
-      role,
-      // ambulanceRole se completará más adelante desde el perfil
-    });
-
-    await newUser.save();
-    console.log("✅ Usuario guardado:", newUser);
-    res.status(201).json(newUser);
-  } catch (error) {
     console.error("❌ Error al crear usuario:", error);
     res.status(500).json({ message: "Error al crear el usuario" });
   }

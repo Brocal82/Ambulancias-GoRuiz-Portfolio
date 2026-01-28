@@ -1,5 +1,6 @@
 // backend/src/modules/users/parsers.ts
 import type { UpdateUserDTO } from "./payloads";
+import type { CreateUserDTO } from "./payloads";
 
 function asString(v: unknown): string | undefined {
   return typeof v === "string" ? v : undefined;
@@ -21,5 +22,18 @@ export function parseUpdateUserDTO(body: any): Partial<UpdateUserDTO> {
     emergencyPhone: asString(body?.emergencyPhone),
     pscheinExpiry: asString(body?.pscheinExpiry),
     profileImage: asString(body?.profileImage),
+  };
+}
+
+export function parseCreateUserDTO(body: any): CreateUserDTO {
+  return {
+    name: (typeof body?.name === "string" ? body.name : "").trim(),
+    lastName: (typeof body?.lastName === "string" ? body.lastName : "").trim(),
+    email: (typeof body?.email === "string" ? body.email : "").trim(),
+    password: typeof body?.password === "string" ? body.password : "",
+    role:
+      body?.role === "admin" || body?.role === "worker"
+        ? body.role
+        : undefined,
   };
 }
