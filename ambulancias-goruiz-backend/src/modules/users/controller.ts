@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 import Dienst from "../../models/Dienst";
 import mongoose from "mongoose";
 import { sanitizeUser, sanitizeUsers } from "./sanitize";
-import { getAvailableUsersForDateService, getUsersWithTodayVacationInfo } from "./service";
+import { getAvailableUsersForDateService, getUsersWithTodayVacationInfo, updateUserService } from "./service";
 
 
 const ZONE = "Europe/Berlin";
@@ -97,11 +97,7 @@ export const getUsers = async (_req: Request, res: Response): Promise<void> => {
 };
 
 
-// ✅ updateUser como función async que devuelve void
-export const updateUser = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateUser = async (req: Request, res: Response): Promise<void> => {
   const userId = req.params.id || req.user?.id;
 
   if (!userId) {
@@ -109,65 +105,30 @@ export const updateUser = async (
     return;
   }
 
-  const {
-    name,
-    lastName,
-    email,
-    ambulanceRole,
-    address,
-    phone,
-    emergencyPhone,
-    pscheinExpiry,
-    profileImage,
-  } = req.body;
-
-  if (!name || !email) {
-    res.status(400).json({ message: "El nombre y el email son obligatorios" });
-    return;
-  }
-
-  if (!validateEmail(email)) {
-    res.status(400).json({ message: "El formato del email no es válido" });
-    return;
-  }
-
   try {
-    // 👇 Preparamos manualmente el objeto de actualización
-    const updates: any = {
-      name,
-      lastName,
-      email,
-      ambulanceRole,
-      address,
-      phone,
-      emergencyPhone,
-      pscheinExpiry,
-    };
-
-    // ✅ Si viene el campo profileImage vacío, lo quitamos de la base de datos
-    if (profileImage === "") {
-      updates.profileImage = "";
-    } else if (profileImage) {
-      updates.profileImage = profileImage;
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(userId, updates, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!updatedUser) {
-      res.status(404).json({ message: "Usuario no encontrado" });
-      return;
-    }
+    const updatedUser = await updateUserService(userId, req.body);
 
     console.log("✅ Usuario actualizado:", updatedUser);
     res.status(200).json(sanitizeUser(updatedUser));
-  } catch (error) {
+  } catch (error: any) {
+    const msg = String(error?.message || "");
+
+    // Mapeo de errores a status codes (sin cambiar comportamiento)
+    if (msg.includes("no proporcionado") || msg.includes("obligatorios") || msg.includes("no es válido")) {
+      res.status(400).json({ message: msg });
+      return;
+    }
+
+    if (msg.includes("no encontrado")) {
+      res.status(404).json({ message: msg });
+      return;
+    }
+
     console.error("❌ Error al actualizar usuario:", error);
     res.status(500).json({ message: "Error al actualizar el usuario" });
   }
 };
+
 
 export const getUserById = async (
   req: Request,
