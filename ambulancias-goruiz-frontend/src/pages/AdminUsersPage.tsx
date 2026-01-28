@@ -13,8 +13,6 @@ import { getSickFlagsInRange, type SickFlag } from "../api/sickLeaves";
 import { fmtDDMM } from "../utils/timeUtils";
 
 
-const { getAllUsers, updateUserProfile, deleteUser } = UsersApi;
-
 // Mapeo de estilos de la píldora de rol (no cambia lógica)
 const rolePillClass: Record<
   NonNullable<User["ambulanceRole"]> | "unknown",
@@ -108,7 +106,8 @@ const AdminUsersPage = () => {
   const fetchUsers = useCallback(async () => {
     try {
       if (!token) return;
-      const data = await getAllUsers(token);
+      const data = await UsersApi.getAllUsers(token);
+
       const sortedUsers = data.sort((a, b) => {
         const aLast = a.lastName || "";
         const bLast = b.lastName || "";
@@ -210,7 +209,7 @@ const AdminUsersPage = () => {
   const handleSaveUser = async (updatedUser: User) => {
     if (!token) return;
     try {
-      await updateUserProfile(updatedUser._id, updatedUser, token);
+      await UsersApi.updateUserProfile(updatedUser._id, updatedUser, token);
       toastT.success(["toasts.users.updateSuccess"]);
       await fetchUsers();
       handleCloseModal();
@@ -223,7 +222,7 @@ const AdminUsersPage = () => {
   const handleDeleteUser = async (userId: string) => {
     if (!token) return;
     try {
-      await deleteUser(userId, token);
+      await UsersApi.deleteUser(userId, token);
       toastT.success(["toasts.users.deleteSuccess"]);
       await fetchUsers();
       handleCloseModal();
