@@ -6,43 +6,11 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import Dienst from "../../models/Dienst";
 import mongoose from "mongoose";
-import { DateTime } from "luxon";
-import VacationRequest from "../../models/vacationRequest";
 import { sanitizeUser, sanitizeUsers } from "./sanitize";
-import { getAvailableUsersForDateService } from "./service";
-import { isOnVacationDay } from "../../utils/dienstValidation";
+import { getAvailableUsersForDateService, getUsersWithTodayVacationInfo } from "./service";
+
 
 const ZONE = "Europe/Berlin";
-
-// 🔎 Helper: devuelve si el usuario está de vacaciones HOY y hasta cuándo
-async function getTodayVacationInfo(userId?: string) {
-  if (!userId || !mongoose.Types.ObjectId.isValid(String(userId))) {
-    return {
-      isOnVacation: false as const,
-      vacationUntil: undefined as string | undefined,
-    };
-  }
-  const now = DateTime.now().setZone(ZONE);
-  const startOfToday = now.startOf("day").toJSDate();
-  const endOfToday = now.endOf("day").toJSDate();
-
-  const vac = await VacationRequest.findOne({
-    user: new mongoose.Types.ObjectId(userId),
-    status: "accepted",
-    startDate: { $lte: endOfToday },
-    endDate: { $gte: startOfToday },
-  })
-    .select("endDate")
-    .lean();
-
-  if (!vac) {
-    return { isOnVacation: false as const, vacationUntil: undefined };
-  }
-  return {
-    isOnVacation: true as const,
-    vacationUntil: new Date(vac.endDate).toISOString(),
-  };
-}
 
 // Función para validar el formato del email
 const validateEmail = (email: string): boolean => {
@@ -120,26 +88,14 @@ export const createUser = async (
 
 export const getUsers = async (_req: Request, res: Response): Promise<void> => {
   try {
-    // Traemos usuarios ordenados como ya hacías
-    const users = await User.find().sort({ lastName: 1 }).lean();
-
-    // Para cada usuario, añadimos flags de vacaciones HOY (no rompe el shape)
-    await Promise.all(
-      users.map(async (u: any) => {
-        const info = await getTodayVacationInfo(String(u._id));
-        u.isOnVacation = info.isOnVacation;
-        if (info.isOnVacation) {
-          u.vacationUntil = info.vacationUntil;
-        }
-      }),
-    );
-
+    const users = await getUsersWithTodayVacationInfo();
     res.status(200).json(sanitizeUsers(users as any[]));
   } catch (error) {
     console.error("❌ Error al obtener usuarios:", error);
     res.status(500).json({ message: "Error al obtener usuarios" });
   }
 };
+
 
 // ✅ updateUser como función async que devuelve void
 export const updateUser = async (

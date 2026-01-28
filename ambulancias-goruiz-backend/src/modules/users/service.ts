@@ -2,6 +2,9 @@
 import User from "../../models/User";
 import Dienst from "../../models/Dienst";
 import { DateTime } from "luxon";
+import mongoose from "mongoose";
+import VacationRequest from "../../models/vacationRequest";
+
 
 const ZONE = "Europe/Berlin";
 
@@ -95,3 +98,55 @@ export async function getAvailableUsersForDateService(
 
   return available;
 }
+
+// 🔎 Helper: devuelve si el usuario está de vacaciones HOY y hasta cuándo
+async function getTodayVacationInfo(userId?: string) {
+  if (!userId || !mongoose.Types.ObjectId.isValid(String(userId))) {
+    return {
+      isOnVacation: false as const,
+      vacationUntil: undefined as string | undefined,
+    };
+  }
+
+  const now = DateTime.now().setZone(ZONE);
+  const startOfToday = now.startOf("day").toJSDate();
+  const endOfToday = now.endOf("day").toJSDate();
+
+  const vac = await VacationRequest.findOne({
+    user: new mongoose.Types.ObjectId(userId),
+    status: "accepted",
+    startDate: { $lte: endOfToday },
+    endDate: { $gte: startOfToday },
+  })
+    .select("endDate")
+    .lean();
+
+  if (!vac) {
+    return { isOnVacation: false as const, vacationUntil: undefined };
+  }
+
+  return {
+    isOnVacation: true as const,
+    vacationUntil: new Date(vac.endDate).toISOString(),
+  };
+}
+
+/**
+ * Devuelve usuarios ordenados + flags de vacaciones HOY (no cambia el shape).
+ */
+export async function getUsersWithTodayVacationInfo() {
+  const users = await User.find().sort({ lastName: 1 }).lean();
+
+  await Promise.all(
+    (users as any[]).map(async (u) => {
+      const info = await getTodayVacationInfo(String(u._id));
+      u.isOnVacation = info.isOnVacation;
+      if (info.isOnVacation) {
+        u.vacationUntil = info.vacationUntil;
+      }
+    }),
+  );
+
+  return users;
+}
+
