@@ -15,6 +15,8 @@ import SaveIconButton from "../components/common/actions/SaveIconButton";
 import DangerDeleteButton from "../components/common/actions/DangerDeleteButton";
 import DeleteIconButton from "../components/common/actions/DeleteIconButton";
 import { displayFileNameFromUrl } from "../utils/fileName";
+import type { UpdateUserPayload } from "../modules/users/domain/payloads";
+
 
 
 interface ProfileProps {
@@ -79,15 +81,26 @@ const Profile = ({ userId }: ProfileProps) => {
         }
       }
 
-
-
-      // Mezclamos con posible imagen nueva
-      const finalFormData = {
-        ...formData,
+      const payload: UpdateUserPayload = {
+        name: formData.name || "",
+        lastName: formData.lastName || "",
+        email: formData.email || "",
+        ambulanceRole: formData.ambulanceRole,
+        address: formData.address,
+        phone: formData.phone,
+        emergencyPhone: formData.emergencyPhone,
+        pscheinExpiry: formData.pscheinExpiry,
         profileImage: uploadedProfileImage || formData.profileImage,
       };
 
-      await UsersApi.updateUserProfile(idToUpdate, finalFormData, token);
+      // ✅ Validación mínima (evita mandar strings vacíos)
+      if (!payload.name || !payload.lastName || !payload.email) {
+        toastT.error("toasts.profile.missingRequired");
+        return;
+      }
+
+      await UsersApi.updateUserProfile(idToUpdate, payload, token);
+
 
       // Refrescamos datos
       const updatedUser = await UsersApi.getUserById(token, idToUpdate);
