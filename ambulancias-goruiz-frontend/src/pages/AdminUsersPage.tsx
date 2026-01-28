@@ -11,6 +11,8 @@ import { useTranslation } from "react-i18next";
 import { getVacationFlagsInRange, type VacFlag } from "../api/vacation";
 import { getSickFlagsInRange, type SickFlag } from "../api/sickLeaves";
 import { fmtDDMM } from "../utils/timeUtils";
+import type { UpdateUserPayload } from "../modules/users/domain/payloads";
+
 
 
 // Mapeo de estilos de la píldora de rol (no cambia lógica)
@@ -208,8 +210,21 @@ const AdminUsersPage = () => {
 
   const handleSaveUser = async (updatedUser: User) => {
     if (!token) return;
+
+    const payload: UpdateUserPayload = {
+      name: updatedUser.name,
+      lastName: updatedUser.lastName,
+      email: updatedUser.email,
+      ambulanceRole: updatedUser.ambulanceRole,
+      address: updatedUser.address,
+      phone: updatedUser.phone,
+      emergencyPhone: updatedUser.emergencyPhone,
+      pscheinExpiry: updatedUser.pscheinExpiry,
+      profileImage: updatedUser.profileImage,
+    };
+
     try {
-      await UsersApi.updateUserProfile(updatedUser._id, updatedUser, token);
+      await UsersApi.updateUserProfile(updatedUser._id, payload, token);
       toastT.success(["toasts.users.updateSuccess"]);
       await fetchUsers();
       handleCloseModal();
@@ -218,6 +233,7 @@ const AdminUsersPage = () => {
       toastT.error(["toasts.users.updateError"]);
     }
   };
+
 
   const handleDeleteUser = async (userId: string) => {
     if (!token) return;
