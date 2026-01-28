@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 import Dienst from "../../models/Dienst";
 import mongoose from "mongoose";
 import { sanitizeUser, sanitizeUsers } from "./sanitize";
-import { getAvailableUsersForDateService, getUsersWithTodayVacationInfo, updateUserService } from "./service";
+import { getAvailableUsersForDateService, getUsersWithTodayVacationInfo, updateUserService, getUserByIdService } from "./service";
 
 
 const ZONE = "Europe/Berlin";
@@ -136,24 +136,27 @@ export const getUserById = async (
 ): Promise<void> => {
   const { id } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    res.status(400).json({ message: "ID de usuario no válido" });
-    return;
-  }
-
   try {
-    const user = await User.findById(id);
-    if (!user) {
-      res.status(404).json({ message: "Usuario no encontrado" });
+    const user = await getUserByIdService(id);
+    res.status(200).json(sanitizeUser(user));
+  } catch (error: any) {
+    const msg = String(error?.message || "");
+
+    if (msg.includes("no válido")) {
+      res.status(400).json({ message: msg });
       return;
     }
 
-    res.status(200).json(sanitizeUser(user));
-  } catch (error) {
+    if (msg.includes("no encontrado")) {
+      res.status(404).json({ message: msg });
+      return;
+    }
+
     console.error("❌ Error al obtener usuario:", error);
     res.status(500).json({ message: "Error al obtener el usuario" });
   }
 };
+
 
 export const deleteUser = async (
   req: Request,

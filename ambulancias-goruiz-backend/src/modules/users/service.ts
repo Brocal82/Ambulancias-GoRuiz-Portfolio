@@ -201,3 +201,17 @@ export async function updateUserService(
 
   return updatedUser;
 }
+
+export async function getUserByIdService(userId: string) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("ID de usuario no válido");
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new Error("Usuario no encontrado");
+  }
+
+  return user;
+}
