@@ -7,7 +7,7 @@ import AdminUserVacationsTab from "./AdminUserVacationsTab";
 import AdminUserSickLeavesTab from "./AdminUserSickLeavesTab";
 import AdminUserMessageTab from "./AdminUserMessageTab";
 import { useAuth } from "../hooks/useAuth";
-import { getUserById } from "../api/users";
+import { UsersApi } from "../modules/users";
 import type { User } from "../types/user";
 import { useTranslation } from "react-i18next";
 
@@ -35,7 +35,7 @@ const AdminUserDetailDashboard = () => {
     if (!token || !userId) return;
 
     setLoadingUser(true);
-    getUserById(token, userId)
+    UsersApi.getUserById(token, userId)
       .then(setUser)
       .catch(console.error)
       .finally(() => setLoadingUser(false));
@@ -73,11 +73,10 @@ const AdminUserDetailDashboard = () => {
                 <button
                   key={key}
                   onClick={() => setActiveTab(key)}
-                  className={`px-4 py-2 text-sm rounded-xl transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${
-                    isActive
+                  className={`px-4 py-2 text-sm rounded-xl transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${isActive
                       ? "bg-blue-600 text-white shadow-md -translate-y-0.5"
                       : "bg-white text-slate-700 hover:bg-slate-50 ring-1 ring-slate-200 shadow-sm"
-                  }`}
+                    }`}
                 >
                   {t(`pages.adminUserDetail.tabs.${key}`)}
                 </button>
