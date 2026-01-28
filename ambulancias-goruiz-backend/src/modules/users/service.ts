@@ -4,6 +4,7 @@ import Dienst from "../../models/Dienst";
 import { DateTime } from "luxon";
 import mongoose from "mongoose";
 import VacationRequest from "../../models/vacationRequest";
+import { validateEmail } from "./validators";
 
 
 const ZONE = "Europe/Berlin";
@@ -150,3 +151,53 @@ export async function getUsersWithTodayVacationInfo() {
   return users;
 }
 
+interface UpdateUserInput {
+  name: string;
+  lastName?: string;
+  email: string;
+  ambulanceRole?: "driver" | "medic" | "both";
+  address?: string;
+  phone?: string;
+  emergencyPhone?: string;
+  pscheinExpiry?: string;
+  profileImage?: string;
+}
+
+export async function updateUserService(
+  userId: string,
+  data: UpdateUserInput,
+) {
+  if (!userId) {
+    throw new Error("ID de usuario no proporcionado");
+  }
+
+  const { name, email } = data;
+
+  if (!name || !email) {
+    throw new Error("El nombre y el email son obligatorios");
+  }
+
+  if (!validateEmail(email)) {
+    throw new Error("El formato del email no es válido");
+  }
+
+  const updates: Record<string, any> = { ...data };
+
+  // ⚠️ Control explícito de profileImage
+  if (data.profileImage === "") {
+    updates.profileImage = "";
+  } else if (data.profileImage === undefined) {
+    delete updates.profileImage;
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(userId, updates, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!updatedUser) {
+    throw new Error("Usuario no encontrado");
+  }
+
+  return updatedUser;
+}
