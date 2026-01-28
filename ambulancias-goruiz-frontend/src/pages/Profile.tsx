@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { toastT } from "../utils/toast";
 import { useAuth } from "../hooks/useAuth";
 import { UsersApi } from "../modules/users";
-const { getUserById, updateUserProfile, deleteUserDocument, deleteUser, uploadUserFiles } = UsersApi;
 
 import { getPscheinInfo } from "../utils/pscheinUtils";
 import type { User, AmbulanceRole } from "../modules/users";
@@ -43,7 +42,7 @@ const Profile = ({ userId }: ProfileProps) => {
       if (!idToFetch) return;
 
       try {
-        const fetchedUser = await getUserById(token, idToFetch);
+        const fetchedUser = await UsersApi.getUserById(token, idToFetch);
         setFormData(fetchedUser);
       } catch (error) {
         console.error(error);
@@ -70,7 +69,7 @@ const Profile = ({ userId }: ProfileProps) => {
       let uploadedProfileImage: string | undefined;
 
       if (profileImageFile || documentsFiles) {
-        const uploadData = await uploadUserFiles(token, {
+        const uploadData = await UsersApi.uploadUserFiles(token, {
           profileImage: profileImageFile,
           documents: documentsFiles,
         });
@@ -78,10 +77,8 @@ const Profile = ({ userId }: ProfileProps) => {
         if (uploadData?.profileImage) {
           uploadedProfileImage = uploadData.profileImage;
         }
-
-        // (Opcional, pero coherente): si el backend devuelve documents también,
-        // podemos actualizar formData localmente con ellos en el refetch posterior.
       }
+
 
 
       // Mezclamos con posible imagen nueva
@@ -90,10 +87,11 @@ const Profile = ({ userId }: ProfileProps) => {
         profileImage: uploadedProfileImage || formData.profileImage,
       };
 
-      await updateUserProfile(idToUpdate, finalFormData, token);
+      await UsersApi.updateUserProfile(idToUpdate, finalFormData, token);
 
       // Refrescamos datos
-      const updatedUser = await getUserById(token, idToUpdate);
+      const updatedUser = await UsersApi.getUserById(token, idToUpdate);
+
       setFormData(updatedUser);
 
       // ✅ Limpiamos la selección local de documentos tras guardar
@@ -120,7 +118,8 @@ const Profile = ({ userId }: ProfileProps) => {
     if (!token) return;
 
     try {
-      const result = await deleteUserDocument(filePath, token);
+      const result = await UsersApi.deleteUserDocument(filePath, token);
+
       toastT.success("toasts.profile.docDeleted");
       setFormData((prev) => ({
         ...prev,
@@ -146,7 +145,7 @@ const Profile = ({ userId }: ProfileProps) => {
     }
 
     try {
-      const updatedUser = await updateUserProfile(
+      const updatedUser = await UsersApi.updateUserProfile(
         userIdFromAuthContext,
         {
           name: formData.name,
@@ -194,7 +193,7 @@ const Profile = ({ userId }: ProfileProps) => {
     if (!confirmed) return;
 
     try {
-      await deleteUser(targetId, token);
+      await UsersApi.deleteUser(targetId, token);
       toastT.success("toasts.profile.deleteSuccess");
       navigate("/admin");
     } catch (error) {
