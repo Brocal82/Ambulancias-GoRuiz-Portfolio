@@ -1,6 +1,6 @@
 // frontend/src/pages/AdminMessagesPage.tsx
 import { useEffect, useState, useMemo } from "react";
-import { getAllUsers } from "../api/users";
+import { UsersApi } from "../modules/users";
 import { useSendMessage } from "../hooks/useSendMessage";
 import type { User } from "../types/user";
 import { useAuth } from "../hooks/useAuth";
@@ -46,7 +46,7 @@ const AdminMessagesPage = () => {
     const fetchUsers = async () => {
       if (!token) return;
       try {
-        const data = await getAllUsers(token);
+        const data = await UsersApi.getAllUsers(token);
         const workersOnly = data.filter((user) => user.role === "worker");
         setUsers(workersOnly);
       } catch (error) {
