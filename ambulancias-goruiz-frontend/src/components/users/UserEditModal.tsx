@@ -1,6 +1,6 @@
 // src/components/modals/UserEditModal.tsx
 import { useState, useEffect } from "react";
-import type { User } from "../../types/user";
+import type { User } from "../../modules/users";
 import { getPscheinInfo } from "../../utils/pscheinUtils";
 
 interface UserEditModalProps {
@@ -171,13 +171,12 @@ export default function UserEditModal({
                     name="pscheinExpiry"
                     value={formData.pscheinExpiry || ""}
                     onChange={handleChange}
-                    className={`w-full border rounded p-2 ${
-                      pschein.status === "expired"
+                    className={`w-full border rounded p-2 ${pschein.status === "expired"
                         ? "border-red-500"
                         : pschein.status === "warning"
                           ? "border-orange-400"
                           : "border-gray-300"
-                    }`}
+                      }`}
                   />
 
                   {pschein.status === "expired" && (
