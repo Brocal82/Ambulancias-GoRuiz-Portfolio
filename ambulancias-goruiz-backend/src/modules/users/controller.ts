@@ -8,6 +8,7 @@ import Dienst from "../../models/Dienst";
 import mongoose from "mongoose";
 import { sanitizeUser, sanitizeUsers } from "./sanitize";
 import { getAvailableUsersForDateService, getUsersWithTodayVacationInfo, updateUserService, getUserByIdService } from "./service";
+import { parseUpdateUserDTO } from "./parsers";
 
 
 const ZONE = "Europe/Berlin";
@@ -106,7 +107,8 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
   }
 
   try {
-    const updatedUser = await updateUserService(userId, req.body);
+const dto = parseUpdateUserDTO(req.body);
+const updatedUser = await updateUserService(userId, dto as any);
 
     console.log("✅ Usuario actualizado:", updatedUser);
     res.status(200).json(sanitizeUser(updatedUser));
