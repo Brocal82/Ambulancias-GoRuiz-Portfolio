@@ -9,7 +9,7 @@ import {
   assignUserToWeek,
   clearPeopleForWeek,
   swapWeekRoles,
-} from "../api/diensts";
+} from "../modules/diensts";
 import AssignmentModal from "../components/AssignmentModal";
 import TeamAssignModal from "../components/diensts/TeamAssignModal";
 import UserAssignModal from "../components/diensts/UserAssignModal";
