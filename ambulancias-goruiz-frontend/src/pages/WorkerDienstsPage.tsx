@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getAssignedDaysForUser } from "../api/diensts";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
-import type { AssignedDayFull } from "../types/dienst";
+import type { AssignedDay } from "../types/dienst";
 import type { FlexibleAssignment } from "../types/assignment";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -12,7 +12,7 @@ const WorkerDienstsPage = () => {
   const { userId, token } = useAuth();
   const { t, i18n } = useTranslation();
 
-  const [assignedDays, setAssignedDays] = useState<AssignedDayFull[]>([]);
+  const [assignedDays, setAssignedDays] = useState<AssignedDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<{
     date: string;
@@ -144,21 +144,21 @@ const WorkerDienstsPage = () => {
                                 <p>
                                   🚑{" "}
                                   {typeof assignment.ambulanceNumber ===
-                                  "string"
+                                    "string"
                                     ? assignment.ambulanceNumber
                                     : "—"}
                                 </p>
                                 <p>
                                   👨‍✈️{" "}
                                   {typeof assignment.driver === "object" &&
-                                  assignment.driver
+                                    assignment.driver
                                     ? `${assignment.driver.lastName}, ${assignment.driver.name}`
                                     : ""}
                                 </p>
                                 <p>
                                   🧑‍⚕️{" "}
                                   {typeof assignment.medic === "object" &&
-                                  assignment.medic
+                                    assignment.medic
                                     ? `${assignment.medic.lastName}, ${assignment.medic.name}`
                                     : ""}
                                 </p>

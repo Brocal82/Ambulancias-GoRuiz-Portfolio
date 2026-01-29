@@ -1,14 +1,16 @@
 // frontend/src/modules/diensts/domain/types.ts
-// FASE 1: compat -> re-export de los tipos legacy existentes (NO refactor)
+// FASE 2 (Paso 1): Tipos reales re-exportados desde legacy.
+// Aún NO movemos src/types/dienst.ts para no romper imports existentes.
+// En un paso posterior, migraremos el origen del export al módulo.
 
 export type {
-  UserRef,
-  DienstAssignment,
   Dienst,
+  DienstAssignment,
+  UserRef,
   UpdateAssignment,
   AssignedDay,
   AssignedDayFull,
-  DaySchedule,
   DienstTemplate,
+  DaySchedule,
 } from "../../../types/dienst";
 

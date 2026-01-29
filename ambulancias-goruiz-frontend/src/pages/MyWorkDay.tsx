@@ -6,7 +6,7 @@ import { getAssignedDaysForUser } from "../api/diensts";
 import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
 import type { Trip, TripData } from "../types/trip";
-import type { AssignedDayFull } from "../types/dienst";
+import type { AssignedDay, AssignedDayFull, UserRef } from "../types/dienst";
 import TripModal from "../components/trips/TripModal";
 import { useNavigate } from "react-router-dom";
 import FinalReviewModal from "../components/workday/FinalReviewModal";
@@ -54,7 +54,10 @@ const crossesMidnight = (start: string, end: string) => {
 };
 
 /** ¿AHORA mismo dentro del Dienst (soporta nocturno que empezó ayer)? */
-const isNowWithinDienst = (dienst: AssignedDayFull) => {
+const isNowWithinDienst = (
+  dienst: Pick<AssignedDay, "date" | "startTime" | "endTime">,
+) => {
+
   const now = new Date();
   const [sH, sM] = dienst.startTime.split(":").map(Number);
   const [eH, eM] = dienst.endTime.split(":").map(Number);
@@ -82,6 +85,7 @@ const MyWorkday = () => {
   const [reports, setReports] = useState("");
   const [trips, setTrips] = useState<Trip[]>([]);
   const [assignedDay, setAssignedDay] = useState<AssignedDayFull | null>(null);
+
   const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
   const [ambulanceId, setAmbulanceId] = useState<string>("");
 
@@ -196,19 +200,46 @@ const MyWorkday = () => {
     }
   }, [token, today, user?._id]);
 
+  const toUserRef = (v: unknown): UserRef | undefined => {
+    if (!v || typeof v !== "object") return undefined;
+    const anyV = v as any;
+    if (typeof anyV._id === "string") return anyV as UserRef;
+    return undefined;
+  };
+
+  const toAssignedDayFull = (d: AssignedDay): AssignedDayFull | null => {
+    const driver = toUserRef(d.driver);
+    const medic = toUserRef(d.medic);
+    if (!driver || !medic) return null;
+
+    return {
+      ...d,
+      driver,
+      medic,
+      ambulanceId: d.ambulanceId as any,
+    };
+  };
+
+
   const fetchAssignedDay = useCallback(async () => {
     if (!token || !user?._id) return;
 
     try {
-      const days = await getAssignedDaysForUser(user._id, token);
+      const daysRaw = await getAssignedDaysForUser(user._id, token);
 
-      let todayAssignment = days.find((d) => d.date === today);
+      const daysFull = daysRaw
+        .map(toAssignedDayFull)
+        .filter((d): d is AssignedDayFull => d !== null);
+
+      let todayAssignment = daysFull.find((d) => d.date === today);
 
       if (!todayAssignment) {
         const yesterdayStr = new Date(Date.now() - 86_400_000)
           .toISOString()
           .split("T")[0];
-        const yestAssignment = days.find((d) => d.date === yesterdayStr);
+
+        const yestAssignment = daysFull.find((d) => d.date === yesterdayStr);
+
         if (
           yestAssignment &&
           crossesMidnight(yestAssignment.startTime, yestAssignment.endTime) &&
@@ -231,15 +262,19 @@ const MyWorkday = () => {
     }
   }, [token, user?._id, today]);
 
+
   const checkStartPermission = (dienst: AssignedDayFull) => {
     const [startHour, startMinute] = dienst.startTime.split(":").map(Number);
     const now = new Date();
+
     const dienstStart = new Date();
     dienstStart.setHours(startHour);
     dienstStart.setMinutes(startMinute - 30);
     dienstStart.setSeconds(0);
+
     setCanStartWork(now >= dienstStart);
   };
+
 
   useEffect(() => {
     if (!user?._id) return;
@@ -931,11 +966,10 @@ const MyWorkday = () => {
                           timeWarning: getCurrentTimeString(),
                         }))
                       }
-                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
-                        badField === "timeWarning"
-                          ? "ring-rose-300"
-                          : "ring-slate-300 focus:ring-blue-300"
-                      } ring-1 bg-white`}
+                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeWarning"
+                        ? "ring-rose-300"
+                        : "ring-slate-300 focus:ring-blue-300"
+                        } ring-1 bg-white`}
                     />
                   </div>
 
@@ -970,11 +1004,10 @@ const MyWorkday = () => {
                           timeAtHome: getCurrentTimeString(),
                         }))
                       }
-                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
-                        badField === "timeAtHome"
-                          ? "ring-rose-300"
-                          : "ring-slate-300 focus:ring-blue-300"
-                      } ring-1 bg-white`}
+                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeAtHome"
+                        ? "ring-rose-300"
+                        : "ring-slate-300 focus:ring-blue-300"
+                        } ring-1 bg-white`}
                     />
                   </div>
 
@@ -1005,11 +1038,10 @@ const MyWorkday = () => {
                           );
                         }
                       }}
-                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
-                        badField === "kmStart"
-                          ? "ring-rose-300"
-                          : "ring-slate-300 focus:ring-blue-300"
-                      } ring-1 bg-white`}
+                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "kmStart"
+                        ? "ring-rose-300"
+                        : "ring-slate-300 focus:ring-blue-300"
+                        } ring-1 bg-white`}
                     />
                   </div>
 
@@ -1072,11 +1104,10 @@ const MyWorkday = () => {
                           return updated;
                         })
                       }
-                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
-                        badField === "timePickup"
-                          ? "ring-rose-300"
-                          : "ring-slate-300 focus:ring-blue-300"
-                      } ring-1 bg-white`}
+                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timePickup"
+                        ? "ring-rose-300"
+                        : "ring-slate-300 focus:ring-blue-300"
+                        } ring-1 bg-white`}
                     />
                   </div>
 
@@ -1105,11 +1136,10 @@ const MyWorkday = () => {
                           timeArrival: getCurrentTimeString(),
                         }))
                       }
-                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
-                        badField === "timeArrival"
-                          ? "ring-rose-300"
-                          : "ring-slate-300 focus:ring-blue-300"
-                      } ring-1 bg-white`}
+                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeArrival"
+                        ? "ring-rose-300"
+                        : "ring-slate-300 focus:ring-blue-300"
+                        } ring-1 bg-white`}
                     />
                   </div>
 
@@ -1132,11 +1162,10 @@ const MyWorkday = () => {
                           kmEnd: Number(e.target.value),
                         }))
                       }
-                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
-                        badField === "kmEnd"
-                          ? "ring-rose-300"
-                          : "ring-slate-300 focus:ring-blue-300"
-                      } ring-1 bg-white`}
+                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "kmEnd"
+                        ? "ring-rose-300"
+                        : "ring-slate-300 focus:ring-blue-300"
+                        } ring-1 bg-white`}
                     />
                   </div>
 
@@ -1165,11 +1194,10 @@ const MyWorkday = () => {
                           timeEnd: getCurrentTimeString(),
                         }))
                       }
-                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
-                        badField === "timeEnd"
-                          ? "ring-rose-300"
-                          : "ring-slate-300 focus:ring-blue-300"
-                      } ring-1 bg-white`}
+                      className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeEnd"
+                        ? "ring-rose-300"
+                        : "ring-slate-300 focus:ring-blue-300"
+                        } ring-1 bg-white`}
                     />
                   </div>
                 </div>
@@ -1277,11 +1305,10 @@ const MyWorkday = () => {
                 <button
                   onClick={handleSaveTrip}
                   disabled={Boolean(draftError)}
-                  className={`w-full mt-2 py-2 px-4 rounded-lg text-white ${
-                    draftError
-                      ? "bg-slate-400 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700"
-                  }`}
+                  className={`w-full mt-2 py-2 px-4 rounded-lg text-white ${draftError
+                    ? "bg-slate-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700"
+                    }`}
                 >
                   {t("pages.workday.saveTrip")}
                 </button>
