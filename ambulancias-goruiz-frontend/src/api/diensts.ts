@@ -1,8 +1,21 @@
 // frontend/src/api/diensts.ts
+
+/**
+ * ⚠️ LEGACY ENTRYPOINT
+ *
+ * Este archivo sigue siendo válido.
+ * En FASE 1 se mantiene por compatibilidad.
+ *
+ * Nuevo punto de entrada recomendado:
+ *   import { ... } from "@/modules/diensts";
+ *
+ * Se eliminará SOLO cuando todo el frontend migre a modules/diensts.
+ */
+
 import axios from "./axios";
 import type {
   Dienst,
-  AssignedDayFull,
+  AssignedDay,
   UpdateAssignment,
 } from "../types/dienst";
 
@@ -81,12 +94,10 @@ export const removeAssignment = async (
 export const getAssignedDaysForUser = async (
   userId: string,
   token: string,
-): Promise<AssignedDayFull[]> => {
-  const response = await axios.get<AssignedDayFull[]>(
+): Promise<AssignedDay[]> => {
+  const response = await axios.get<AssignedDay[]>(
     `/diensts/assigned-days/${userId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    },
+    { headers: { Authorization: `Bearer ${token}` } },
   );
   return response.data;
 };
@@ -217,14 +228,3 @@ export const swapWeekRoles = async (
   return res.data;
 };
 
-/**
- * ⚠️ LEGACY ENTRYPOINT
- *
- * Este archivo sigue siendo válido.
- * En FASE 1 se mantiene por compatibilidad.
- *
- * Nuevo punto de entrada recomendado:
- *   import { ... } from "@/modules/diensts";
- *
- * Se eliminará SOLO cuando todo el frontend migre a modules/diensts.
- */
