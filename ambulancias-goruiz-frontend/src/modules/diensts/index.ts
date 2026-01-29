@@ -1,11 +1,12 @@
 // frontend/src/modules/diensts/index.ts
-// Barrel principal del módulo Diensts (Frontend)
-export * from "./api";
-export * from "./domain";
-export * as DienstsDomain from "./domain";
+export * as DienstsApi from "./domain/api";
 
-// placeholders por consistencia con hospitals
+export * from "./domain"; // types + payloads
+export * from "./api";
+
+export * as DienstsDomain from "./domain";
 export * as DienstsComponents from "./components";
 export * as DienstsHooks from "./hooks";
 export * as DienstsUtils from "./utils";
 export * as DienstsPages from "./pages";
+
