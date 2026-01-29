@@ -216,3 +216,15 @@ export const swapWeekRoles = async (
   });
   return res.data;
 };
+
+/**
+ * ⚠️ LEGACY ENTRYPOINT
+ *
+ * Este archivo sigue siendo válido.
+ * En FASE 1 se mantiene por compatibilidad.
+ *
+ * Nuevo punto de entrada recomendado:
+ *   import { ... } from "@/modules/diensts";
+ *
+ * Se eliminará SOLO cuando todo el frontend migre a modules/diensts.
+ */
