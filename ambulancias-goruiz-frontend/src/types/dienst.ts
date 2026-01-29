@@ -45,11 +45,16 @@ export interface AssignedDay {
   date: string;
   startTime: string;
   endTime: string;
-  ambulanceId?: string;
+
+  // ✅ a veces viene string, a veces viene poblado como objeto
+  ambulanceId?: string | Ambulance;
   ambulanceNumber?: string;
+
+  // ✅ driver/medic pueden venir string, objeto o incluso undefined
   driver?: string | UserRef;
   medic?: string | UserRef;
 }
+
 
 export interface AssignedDayFull {
   dienstId: string;

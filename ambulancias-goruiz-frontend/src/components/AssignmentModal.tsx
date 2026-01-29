@@ -8,8 +8,8 @@ import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { toastT } from "../utils/toast";
 import "react-toastify/dist/ReactToastify.css";
 import type { UserRef, UpdateAssignment } from "../types/dienst";
-import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import type { FlexibleAssignment } from "../types/assignment";
+import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import { useTranslation } from "react-i18next";
 import { formatYYYYMMDDToDDMMYYYY, fmtDDMM } from "../utils/timeUtils";
 import { getVacationFlagsInRange, type VacFlag } from "../api/vacation";
@@ -18,11 +18,12 @@ import { getSickFlagsInRange, type SickFlag } from "../api/sickLeaves";
 interface AssignmentModalProps {
   isOpen: boolean;
   date: string; // 'YYYY-MM-DD'
-  assignment?: FlexibleAssignment;
+  assignment?: FlexibleAssignment; // ✅ tipo estable para el modal
   dienstId: string;
   onClose: () => void;
   onUpdate: () => void;
 }
+
 
 const AssignmentModal: React.FC<AssignmentModalProps> = ({
   isOpen,
@@ -305,13 +306,24 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
     try {
       const updatedAssignment: UpdateAssignment = {
-        _id: assignment?._id || "",
         date,
         startTime,
         endTime,
         driver: selectedDriverId,
         medic: selectedMedicId,
       };
+
+      // ✅ Si viene _id (cuando el objeto lo trae), lo añadimos. Si no, no.
+      const assignmentMongoId =
+        assignment && typeof (assignment as any)._id === "string"
+          ? ((assignment as any)._id as string)
+          : undefined;
+
+      if (assignmentMongoId) {
+        updatedAssignment._id = assignmentMongoId;
+      }
+
+
 
       // Detecta si ANTES había ambulancia
       const hadAmbulanceBefore =
@@ -368,6 +380,15 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   };
 
   // ===== Helpers visuales coherentes con UserAssignModal =====
+
+  // --- helpers de types (FASE 1 compat) ---
+  const toUserRef = (v: unknown): UserRef | null => {
+    if (!v || typeof v !== "object") return null;
+    const anyV = v as any;
+    if (typeof anyV._id === "string") return anyV as UserRef;
+    return null;
+  };
+
   const driverClass = (pschein?: string | null) => {
     if (!pschein) return "";
     const info = getPscheinInfo(pschein);
@@ -432,22 +453,36 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   };
 
   // Seleccionados (para rótulos)
-  const selectedDriver = useMemo(
-    () =>
-      availableDrivers.find((u) => u._id === selectedDriverId) ||
-      availableDrivers.find(
-        (u) => (assignment?.driver as any)?._id === u._id,
-      ) ||
-      null,
-    [availableDrivers, selectedDriverId, assignment],
-  );
-  const selectedMedic = useMemo(
-    () =>
-      availableMedics.find((u) => u._id === selectedMedicId) ||
-      availableMedics.find((u) => (assignment?.medic as any)?._id === u._id) ||
-      null,
-    [availableMedics, selectedMedicId, assignment],
-  );
+  const selectedDriver = useMemo(() => {
+    const bySelected = availableDrivers.find((u) => u._id === selectedDriverId);
+    if (bySelected) return bySelected;
+
+    const fromAssignment = toUserRef(assignment?.driver);
+    if (fromAssignment) {
+      return (
+        availableDrivers.find((u) => u._id === fromAssignment._id) ??
+        fromAssignment
+      );
+    }
+
+    return null;
+  }, [availableDrivers, selectedDriverId, assignment]);
+
+  const selectedMedic = useMemo(() => {
+    const bySelected = availableMedics.find((u) => u._id === selectedMedicId);
+    if (bySelected) return bySelected;
+
+    const fromAssignment = toUserRef(assignment?.medic);
+    if (fromAssignment) {
+      return (
+        availableMedics.find((u) => u._id === fromAssignment._id) ??
+        fromAssignment
+      );
+    }
+
+    return null;
+  }, [availableMedics, selectedMedicId, assignment]);
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

@@ -7,7 +7,9 @@ import {
 } from "../api/diensts";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
-import type { AssignedDayFull, Dienst } from "../types/dienst";
+import type { AssignedDay, Dienst, UserRef } from "../types/dienst";
+import type { FlexibleAssignment } from "../types/assignment";
+
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 
@@ -21,13 +23,17 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
 
   const [userDiensts, setUserDiensts] = useState<Dienst[]>([]);
   const [allDiensts, setAllDiensts] = useState<Dienst[]>([]);
-  const [assignedDays, setAssignedDays] = useState<AssignedDayFull[]>([]);
+  const [assignedDays, setAssignedDays] = useState<AssignedDay[]>([]);
+
   const [loading, setLoading] = useState(true);
+
   const [selectedAssignment, setSelectedAssignment] = useState<{
     date: string;
-    assignment?: AssignedDayFull;
+    assignment?: FlexibleAssignment;
     dienstId: string;
   } | null>(null);
+
+
 
   const fmtDate = (d: Date) => d.toLocaleDateString(i18n.language);
   const fmtCellDate = (isoDay: string) =>
@@ -68,13 +74,16 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
   const fetchData = useCallback(async () => {
     if (!userId || !token) return;
     setLoading(true);
+
     try {
       const [assignedDaysData, userDienstsData, allDienstsData] =
         await Promise.all([
+          // ✅ Este endpoint debería devolver AssignedDayFull[]
           getAssignedDaysForUser(userId, token),
           getDienstByUser(userId, token),
           getAllDiensts(token),
         ]);
+
       setAssignedDays(assignedDaysData);
       setUserDiensts(userDienstsData);
       setAllDiensts(allDienstsData);
@@ -100,15 +109,38 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
     return "—";
   };
 
-  // Normaliza para el modal (ambulanceId siempre string)
-  const normalizeAssignmentForModal = (a?: AssignedDayFull) => {
-    if (!a) return undefined;
-    const id =
-      typeof a.ambulanceId === "object"
-        ? ((a.ambulanceId as any)?._id ?? "")
-        : (a.ambulanceId ?? "");
-    return { ...a, ambulanceId: id } as any;
+  // Etiqueta segura para usuario (UserRef o id suelto)
+  const formatUserLabel = (u?: string | UserRef | null): string => {
+    if (!u) return "—";
+    if (typeof u === "string") return "—"; // solo id, sin datos aún
+    const last = u.lastName ?? "";
+    const name = u.name ?? "";
+    const label = `${last}${last && name ? ", " : ""}${name}`.trim();
+    return label || "—";
   };
+
+
+  // Adaptador local: AssignedDay -> FlexibleAssignment (contrato del modal)
+  const toFlexibleAssignment = (a?: AssignedDay): FlexibleAssignment | undefined => {
+    if (!a) return undefined;
+
+    const ambulanceId =
+      typeof a.ambulanceId === "object"
+        ? String((a.ambulanceId as any)?._id ?? "")
+        : (a.ambulanceId ?? "");
+
+    return {
+      _id: a.assignmentId, // id estable para UI
+      date: a.date,
+      startTime: a.startTime,
+      endTime: a.endTime,
+      ambulanceId,
+      ambulanceNumber: a.ambulanceNumber,
+      driver: a.driver ?? "",
+      medic: a.medic ?? "",
+    };
+  };
+
 
   // ✅ Encuentra el dienstId para un día (primero en los del usuario, luego en todos; por rango)
   const getDienstIdForDate = (dateStr: string): string => {
@@ -118,7 +150,7 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
     );
     if (fromUser) return fromUser._id;
 
-    // 2) Buscar por rango en TODAS las plantillas
+    // 2) Buscar por rango en TODOS los Diensts
     const candidatesByRange = allDiensts.filter((d) =>
       inSameWeek(dateStr, d.weekStartDate, (d as any).weekEndDate),
     );
@@ -150,12 +182,13 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
     return "";
   };
 
-  if (loading)
+  if (loading) {
     return (
       <p className="text-sm text-slate-600 p-4">
         {t("pages.diensts.adminUserTab.loading")}
       </p>
     );
+  }
 
   return (
     <div className="min-h-[400px]">
@@ -169,6 +202,7 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
         const today = new Date();
         const dow = today.getDay();
         const back = (dow + 6) % 7;
+
         const firstMonday = new Date(
           Date.UTC(
             today.getUTCFullYear(),
@@ -179,6 +213,7 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
         firstMonday.setUTCDate(firstMonday.getUTCDate() - back);
 
         const weeks = [0, 1]; // Dos semanas
+
         return (
           <div className="space-y-6">
             {weeks.map((weekOffset) => {
@@ -213,9 +248,8 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                         (a) => a.date === dateStr,
                       );
 
-                      // Colores suaves consistentes con el resto de la UI
                       const cls = assignment
-                        ? isPartialAssignment(assignment)
+                        ? isPartialAssignment(assignment as unknown as AssignedDay)
                           ? "bg-amber-50 ring-amber-200"
                           : "bg-blue-50 ring-blue-200"
                         : "bg-emerald-50 ring-emerald-200";
@@ -229,17 +263,20 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                             const foundDienstId = assignment
                               ? assignment.dienstId
                               : getDienstIdForDate(dateStr);
+
                             if (!foundDienstId) {
                               console.warn(
                                 `ID del Dienst no encontrado para la fecha ${dateStr}`,
                               );
                               return;
                             }
+
                             setSelectedAssignment({
                               date: dateStr,
-                              assignment: assignment || undefined,
+                              assignment: toFlexibleAssignment(assignment),
                               dienstId: foundDienstId,
                             });
+
                           }}
                         >
                           <p className="text-xs font-semibold text-slate-800 mb-1">
@@ -258,14 +295,8 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                                   assignment.ambulanceId,
                                 )}
                               </p>
-                              <p>
-                                👨‍✈️ {assignment.driver?.lastName},{" "}
-                                {assignment.driver?.name}
-                              </p>
-                              <p>
-                                🧑‍⚕️ {assignment.medic?.lastName},{" "}
-                                {assignment.medic?.name}
-                              </p>
+                              <p>👨‍✈️ {formatUserLabel(assignment.driver)}</p>
+                              <p>🧑‍⚕️ {formatUserLabel(assignment.medic)}</p>
                             </div>
                           ) : (
                             <p className="text-xs text-emerald-800 mt-1">
@@ -287,9 +318,7 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
         <AssignmentModal
           isOpen={true}
           date={selectedAssignment.date}
-          assignment={normalizeAssignmentForModal(
-            selectedAssignment.assignment,
-          )}
+          assignment={selectedAssignment.assignment}
           dienstId={selectedAssignment.dienstId}
           onClose={() => setSelectedAssignment(null)}
           onUpdate={fetchData}

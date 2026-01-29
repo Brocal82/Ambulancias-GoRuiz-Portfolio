@@ -1,5 +1,5 @@
-//src/utils/mergeWithAssigned.ts
-import type { UserRef } from "../types/dienst";
+// src/utils/mergeWithAssigned.ts
+import type { UserRef, AssignedDay } from "../types/dienst";
 import type { FlexibleAssignment } from "../types/assignment";
 
 /**
@@ -8,19 +8,19 @@ import type { FlexibleAssignment } from "../types/assignment";
  */
 export function mergeWithAssigned(
   availableUsers: UserRef[],
-  assignment: FlexibleAssignment | undefined,
+  assignment: (FlexibleAssignment | AssignedDay) | undefined,
   currentRole: "driver" | "medic",
 ): UserRef[] {
   const merged = [...availableUsers];
 
-  const currentUser =
-    typeof assignment?.[currentRole] === "object"
-      ? assignment[currentRole]
-      : null;
+  const currentVal = (assignment as any)?.[currentRole];
+  const currentUser: UserRef | null =
+    currentVal && typeof currentVal === "object" ? (currentVal as UserRef) : null;
 
   const otherRole = currentRole === "driver" ? "medic" : "driver";
-  const otherUser =
-    typeof assignment?.[otherRole] === "object" ? assignment[otherRole] : null;
+  const otherVal = (assignment as any)?.[otherRole];
+  const otherUser: UserRef | null =
+    otherVal && typeof otherVal === "object" ? (otherVal as UserRef) : null;
 
   // ✅ Asegura que el usuario actual se añade si no está en la lista
   const isAlreadyIncluded =

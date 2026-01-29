@@ -90,17 +90,21 @@ export const removeAssignment = async (
   );
 };
 
-// ✅ Obtener días asignados para un usuario (AssignedDay[])
+// ✅ Obtener días asignados para un usuario (AssignedDayFull[])
 export const getAssignedDaysForUser = async (
   userId: string,
   token: string,
 ): Promise<AssignedDay[]> => {
   const response = await axios.get<AssignedDay[]>(
     `/diensts/assigned-days/${userId}`,
-    { headers: { Authorization: `Bearer ${token}` } },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
   );
   return response.data;
 };
+
+
 
 // Crear un Dienst
 export const createDienst = async (
