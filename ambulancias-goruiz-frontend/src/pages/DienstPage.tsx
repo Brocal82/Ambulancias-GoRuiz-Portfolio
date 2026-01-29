@@ -1,6 +1,6 @@
 // src/pages/DienstPage.tsx
 import { useCallback, useEffect, useState } from "react";
-import { getDienstByUser } from "../api/diensts";
+import { getDienstByUser } from "../modules/diensts";
 import type { Dienst, UserRef } from "../types/dienst";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
@@ -116,7 +116,7 @@ const DienstPage = () => {
                           <p className="text-xs">
                             🚑{" "}
                             {typeof assignment.ambulanceId === "object" &&
-                            "ambulanceNumber" in assignment.ambulanceId
+                              "ambulanceNumber" in assignment.ambulanceId
                               ? assignment.ambulanceId.ambulanceNumber
                               : "—"}
                           </p>

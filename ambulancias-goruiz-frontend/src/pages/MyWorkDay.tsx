@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createTrip, getTripsByDate } from "../api/trips";
-import { getAssignedDaysForUser } from "../api/diensts";
+import { getAssignedDaysForUser } from "../modules/diensts";
 import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
 import type { Trip, TripData } from "../types/trip";

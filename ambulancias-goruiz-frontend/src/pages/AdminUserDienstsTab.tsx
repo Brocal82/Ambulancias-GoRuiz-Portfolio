@@ -4,7 +4,7 @@ import {
   getDienstByUser,
   getAssignedDaysForUser,
   getAllDiensts,
-} from "../api/diensts";
+} from "../modules/diensts";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
 import type { AssignedDay, Dienst, UserRef } from "../types/dienst";
