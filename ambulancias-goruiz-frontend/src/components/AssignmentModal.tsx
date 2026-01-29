@@ -1,7 +1,7 @@
 // frontend/src/components/AssignmentModal.tsx
 import React, { useState, useEffect, useId, useMemo } from "react";
 import { useAuth } from "../hooks/useAuth";
-import { updateDienstPartial, removeAssignment } from "../api/diensts";
+import { updateDienstPartial, removeAssignment } from "../modules/diensts";
 import { UsersApi } from "../modules/users";
 
 import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
