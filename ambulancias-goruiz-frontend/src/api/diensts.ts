@@ -13,11 +13,13 @@
  */
 
 import axios from "./axios";
-import type {
-  Dienst,
-  AssignedDay,
-  UpdateAssignment,
-} from "../types/dienst";
+import type { Dienst, AssignedDay, UpdateAssignment } from "../types/dienst";
+
+// ✅ Adapter (tu ruta real actual)
+import {
+  adaptAssignedDay,
+  adaptDienstAssignment,
+} from "../modules/diensts/domain/adapters/assignmentAdapter";
 
 // Obtener Diensts del usuario
 export const getDienstByUser = async (
@@ -30,7 +32,14 @@ export const getDienstByUser = async (
         Authorization: `Bearer ${token}`,
       },
     });
-    return response.data;
+
+    // ✅ Normaliza assignments para que driver/medic sean estables
+    return response.data.map((d) => ({
+      ...d,
+      assignments: Array.isArray(d.assignments)
+        ? d.assignments.map(adaptDienstAssignment)
+        : [],
+    }));
   } catch (error) {
     console.error("Error al obtener los diensts del usuario:", error);
     throw error;
@@ -45,7 +54,14 @@ export const getAllDiensts = async (token: string): Promise<Dienst[]> => {
         Authorization: `Bearer ${token}`,
       },
     });
-    return response.data;
+
+    // ✅ Normaliza assignments para que driver/medic sean estables
+    return response.data.map((d) => ({
+      ...d,
+      assignments: Array.isArray(d.assignments)
+        ? d.assignments.map(adaptDienstAssignment)
+        : [],
+    }));
   } catch (error) {
     console.error("Error al obtener todos los diensts:", error);
     throw error;
@@ -68,6 +84,9 @@ export const updateDienstPartial = async (
         },
       },
     );
+
+    // (Opcional) Si quieres devolverlo también normalizado:
+    // return { ...response.data, assignments: response.data.assignments?.map(adaptDienstAssignment) ?? [] };
     return response.data;
   } catch (error) {
     console.error("Error al actualizar dienst:", error);
@@ -90,7 +109,7 @@ export const removeAssignment = async (
   );
 };
 
-// ✅ Obtener días asignados para un usuario (AssignedDayFull[])
+// ✅ Obtener días asignados para un usuario (AssignedDay[])
 export const getAssignedDaysForUser = async (
   userId: string,
   token: string,
@@ -101,10 +120,10 @@ export const getAssignedDaysForUser = async (
       headers: { Authorization: `Bearer ${token}` },
     },
   );
-  return response.data;
+
+  // 🔒 Adapter: estabiliza driver/medic para que nunca rompa la UI
+  return response.data.map(adaptAssignedDay);
 };
-
-
 
 // Crear un Dienst
 export const createDienst = async (
@@ -231,4 +250,3 @@ export const swapWeekRoles = async (
   });
   return res.data;
 };
-

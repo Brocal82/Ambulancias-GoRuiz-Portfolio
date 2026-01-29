@@ -1,50 +1,77 @@
 // frontend/src/modules/diensts/domain/adapters/assignmentAdapter.ts
-import type {
-  AssignedDay,
-  AssignedDayFull,
-  UserRef,
-} from "../types";
+
+import type { AssignedDay, DienstAssignment, UserRef } from "../../../../types/dienst";
 
 /**
- * Normaliza un UserRef posible (id | UserRef | undefined)
+ * Convierte cualquier forma de driver/medic a UserRef usable.
+ * - Si viene como objeto con _id => OK
+ * - Si viene como string => placeholder (no rompe UI)
+ * - Si viene undefined/null => null
  */
-const toUserRef = (
-  value: string | UserRef | undefined,
-): UserRef | null => {
-  if (!value) return null;
-  if (typeof value === "string") return null;
-  if (typeof value === "object" && typeof value._id === "string") {
-    return value;
+export const toUserRefOrNull = (v: unknown): UserRef | null => {
+  if (!v) return null;
+
+  // string => placeholder (para que no crashee MyWorkDay con driver._id)
+  if (typeof v === "string") {
+    return { _id: v, name: "", lastName: "" };
   }
+
+  // object => validar _id
+  if (typeof v === "object") {
+    const anyV = v as any;
+    if (typeof anyV._id === "string") {
+      return {
+        _id: anyV._id,
+        name: typeof anyV.name === "string" ? anyV.name : "",
+        lastName: typeof anyV.lastName === "string" ? anyV.lastName : "",
+        ambulanceRole: anyV.ambulanceRole,
+        pscheinExpiry: anyV.pscheinExpiry,
+      };
+    }
+  }
+
   return null;
 };
 
 /**
- * Convierte AssignedDay → AssignedDayFull si es posible
- * Devuelve null si no hay datos suficientes
+ * Normaliza un AssignedDay para que driver/medic sean siempre UserRef | undefined
  */
-export const toAssignedDayFull = (
-  day: AssignedDay,
-): AssignedDayFull | null => {
-  const driver = toUserRef(day.driver);
-  const medic = toUserRef(day.medic);
-
-  if (!driver || !medic) return null;
+export const adaptAssignedDay = (d: AssignedDay): AssignedDay => {
+  const driver = toUserRefOrNull(d.driver) ?? undefined;
+  const medic = toUserRefOrNull(d.medic) ?? undefined;
 
   return {
-    ...day,
+    ...d,
     driver,
     medic,
-    ambulanceId: day.ambulanceId as any,
   };
 };
 
 /**
- * Convierte lista filtrando inválidos
+ * Normaliza un DienstAssignment para que driver/medic sean estables (nunca undefined raro).
  */
-export const toAssignedDayFullList = (
-  days: AssignedDay[],
-): AssignedDayFull[] =>
-  days
-    .map(toAssignedDayFull)
-    .filter((d): d is AssignedDayFull => d !== null);
+export const adaptDienstAssignment = (a: DienstAssignment): DienstAssignment => {
+  const driver =
+    toUserRefOrNull(a.driver) ?? (typeof a.driver === "string" ? a.driver : "");
+  const medic =
+    toUserRefOrNull(a.medic) ?? (typeof a.medic === "string" ? a.medic : "");
+
+  return {
+    ...a,
+    driver,
+    medic,
+  };
+};
+
+/**
+ * Helper opcional: extrae ambulanceId como string si viene poblado como objeto.
+ */
+export const normalizeAmbulanceIdToString = (ambulanceId: unknown): string => {
+  if (!ambulanceId) return "";
+  if (typeof ambulanceId === "string") return ambulanceId;
+  if (typeof ambulanceId === "object") {
+    const anyA = ambulanceId as any;
+    return typeof anyA._id === "string" ? anyA._id : "";
+  }
+  return "";
+};
