@@ -14,3 +14,6 @@ export type {
   DaySchedule,
 } from "../../../types/dienst";
 
+export type { FlexibleAssignment } from "../../../types/assignment";
+
+

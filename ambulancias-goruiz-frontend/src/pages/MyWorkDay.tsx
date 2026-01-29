@@ -6,7 +6,7 @@ import { getAssignedDaysForUser } from "../modules/diensts";
 import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
 import type { Trip, TripData } from "../types/trip";
-import type { AssignedDay, AssignedDayFull, UserRef } from "../types/dienst";
+import type { AssignedDay, AssignedDayFull, UserRef } from "../modules/diensts";
 import TripModal from "../components/trips/TripModal";
 import { useNavigate } from "react-router-dom";
 import FinalReviewModal from "../components/workday/FinalReviewModal";

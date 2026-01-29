@@ -1,6 +1,8 @@
 // frontend/src/modules/diensts/domain/adapters/assignmentAdapter.ts
 
-import type { AssignedDay, DienstAssignment, UserRef } from "../../../../types/dienst";
+import type { AssignedDay, DienstAssignment, UserRef } 
+from "../../../../modules/diensts";
+
 
 /**
  * Convierte cualquier forma de driver/medic a UserRef usable.

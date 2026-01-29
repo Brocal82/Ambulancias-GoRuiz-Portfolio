@@ -1,7 +1,7 @@
 // src/components/workday/IssueReportModal.tsx
 import React, { useState } from "react";
 import { toastT } from "../../utils/toast";
-import type { AssignedDayFull } from "../../types/dienst";
+import type { AssignedDayFull } from "../../modules/diensts";
 import { formatYYYYMMDDToDDMMYYYY } from "../../utils/timeUtils";
 import { useTranslation } from "react-i18next";
 

@@ -13,7 +13,8 @@
  */
 
 import axios from "./axios";
-import type { Dienst, AssignedDay, UpdateAssignment } from "../types/dienst";
+import type { Dienst, AssignedDay, UpdateAssignment } from "../modules/diensts";
+
 
 // ✅ Adapter (tu ruta real actual)
 import {

@@ -1,5 +1,5 @@
 // src/utils/mergeWithAssigned.ts
-import type { UserRef, AssignedDay } from "../types/dienst";
+import type { UserRef, AssignedDay } from "../modules/diensts";
 import type { FlexibleAssignment } from "../types/assignment";
 
 /**

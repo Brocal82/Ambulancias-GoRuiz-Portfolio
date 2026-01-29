@@ -1,62 +1,53 @@
-//src/utils/assignmentUtils.ts
-import type { DienstAssignment, UpdateAssignment } from "../types/dienst";
-import type { AssignedDayFull, AssignedDay } from "../types/dienst";
+// src/utils/assignmentUtils.ts
 
-type FlexibleAssignment =
-  | DienstAssignment
-  | (UpdateAssignment & { _id?: string })
-  | AssignedDay
-  | AssignedDayFull; // añadimos AssignedDayFull
+/**
+ * Util de UI.
+ * No depende de tipos de dominio (AssignedDay, DienstAssignment, etc).
+ * Solo necesita saber si hay horas y personas asignadas.
+ */
+type AssignmentLike = {
+  startTime?: string;
+  endTime?: string;
+  driver?: unknown;
+  medic?: unknown;
+};
+
+const hasPerson = (v: unknown): boolean =>
+  v !== null && v !== undefined && v !== "";
 
 export const isPartialAssignment = (
-  assignment: FlexibleAssignment | undefined,
+  assignment: AssignmentLike | null | undefined,
 ): boolean => {
   if (!assignment) return false;
 
   const hasStart = !!assignment.startTime;
   const hasEnd = !!assignment.endTime;
 
-  // driver y medic pueden ser string o objeto, chequeamos que no estén vacíos o nulos
-  const hasDriver =
-    assignment.driver !== null &&
-    assignment.driver !== undefined &&
-    assignment.driver !== "";
-  const hasMedic =
-    assignment.medic !== null &&
-    assignment.medic !== undefined &&
-    assignment.medic !== "";
+  const hasDriver = hasPerson(assignment.driver);
+  const hasMedic = hasPerson(assignment.medic);
 
-  // Día libre (verde): sin horas
+  // Día libre (verde)
   if (!hasStart && !hasEnd) return false;
 
-  // Parcial (amarillo): falta alguna hora o trabajador
+  // Parcial (amarillo)
   if (!hasStart || !hasEnd || !hasDriver || !hasMedic) return true;
 
-  // Completo (azul): todo está presente
+  // Completo (azul)
   return false;
 };
 
 export const isTeamIncomplete = (
-  assignment: FlexibleAssignment | undefined,
+  assignment: AssignmentLike | null | undefined,
 ): boolean => {
   if (!assignment) return false;
 
   const hasStart = !!assignment.startTime;
   const hasEnd = !!assignment.endTime;
 
-  // Normalizamos driver/medic (pueden ser string u objeto)
-  const hasDriver =
-    assignment.driver !== null &&
-    assignment.driver !== undefined &&
-    assignment.driver !== "";
-  const hasMedic =
-    assignment.medic !== null &&
-    assignment.medic !== undefined &&
-    assignment.medic !== "";
+  const hasDriver = hasPerson(assignment.driver);
+  const hasMedic = hasPerson(assignment.medic);
 
-  // Solo nos interesa marcar “incompleto” cuando ES un día trabajado (hay horas)
   if (!hasStart || !hasEnd) return false;
 
-  // Equipo incompleto = exactamente uno de los dos asignado (XOR)
   return (hasDriver && !hasMedic) || (!hasDriver && hasMedic);
 };

@@ -7,7 +7,7 @@ import {
 } from "../modules/diensts";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
-import type { AssignedDay, Dienst, UserRef } from "../types/dienst";
+import type { AssignedDay, Dienst, UserRef } from "../modules/diensts";
 import type { FlexibleAssignment } from "../types/assignment";
 
 import { useAuth } from "../hooks/useAuth";

@@ -1,7 +1,7 @@
 // src/pages/DienstPage.tsx
 import { useCallback, useEffect, useState } from "react";
 import { getDienstByUser } from "../modules/diensts";
-import type { Dienst, UserRef } from "../types/dienst";
+import type { Dienst, UserRef } from "../modules/diensts";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
 import { useAuth } from "../hooks/useAuth";

@@ -1,6 +1,6 @@
 // frontend/src/pages/AdminDienstsPage.tsx
 import { useCallback, useEffect, useState } from "react";
-import type { Dienst, UserRef } from "../types/dienst";
+import type { Dienst, UserRef } from "../modules/diensts";
 import {
   getAllDiensts,
   generateDienstsForWeek,

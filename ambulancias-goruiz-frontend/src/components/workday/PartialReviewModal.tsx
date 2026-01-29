@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import type { Trip } from "../../types/trip";
-import type { AssignedDayFull } from "../../types/dienst";
+import type { AssignedDayFull } from "../../modules/diensts";
 import ReviewSummary from "./ReviewSummary";
 import { toastT } from "../../utils/toast";
 import { calculateEffectivePatients } from "../../utils/praemien/calculateEffectivePatients";

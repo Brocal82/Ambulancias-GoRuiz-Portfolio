@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getAssignedDaysForUser } from "../modules/diensts";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
-import type { AssignedDay } from "../types/dienst";
+import type { AssignedDay } from "../modules/diensts";
 import type { FlexibleAssignment } from "../types/assignment";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";

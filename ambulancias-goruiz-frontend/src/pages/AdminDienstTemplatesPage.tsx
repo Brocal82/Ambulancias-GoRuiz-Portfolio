@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import type { DienstTemplate } from "../types/dienst";
+import type { DienstTemplate } from "../modules/diensts";
+
 import {
   getDienstTemplates,
   deleteDienstTemplate,
@@ -155,8 +156,8 @@ const AdminDienstTemplatesPage: React.FC = () => {
                   <tr
                     key={tpl._id}
                     className={`transition-colors ${isActiveTpl
-                        ? "hover:bg-gray-50/60"
-                        : "bg-rose-50/70 hover:bg-rose-100/80"
+                      ? "hover:bg-gray-50/60"
+                      : "bg-rose-50/70 hover:bg-rose-100/80"
                       }`}
                   >
                     {/* Nº Dienst + icono de estado */}

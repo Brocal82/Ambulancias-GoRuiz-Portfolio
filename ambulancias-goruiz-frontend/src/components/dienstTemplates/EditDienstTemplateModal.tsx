@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import type { DienstTemplate } from "../../types/dienst";
-import {
+import type { DienstTemplate } from "../../modules/diensts"; import {
   updateDienstTemplate,
   type DienstTemplateInput,
 } from "../../api/dienstTemplates";

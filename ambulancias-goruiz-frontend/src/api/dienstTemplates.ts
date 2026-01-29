@@ -1,6 +1,6 @@
 // frontend/src/api/dienstTemplates.ts
 import api from "./axios";
-import type { DienstTemplate, DaySchedule } from "../types/dienst";
+import type { DienstTemplate, DaySchedule } from "../modules/diensts";
 
 // Datos necesarios para crear/editar una plantilla
 export interface DienstTemplateInput {

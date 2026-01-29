@@ -1,5 +1,6 @@
 // frontend/src/types/assignment.ts
-import type { DienstAssignment, UserRef } from "./dienst";
+import type { DienstAssignment, UserRef } from "../modules/diensts";
+
 
 export interface FlexibleAssignment extends Omit<
   DienstAssignment,

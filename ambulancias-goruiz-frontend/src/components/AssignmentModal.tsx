@@ -7,8 +7,12 @@ import { UsersApi } from "../modules/users";
 import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { toastT } from "../utils/toast";
 import "react-toastify/dist/ReactToastify.css";
-import type { UserRef, UpdateAssignment } from "../types/dienst";
-import type { FlexibleAssignment } from "../types/assignment";
+import type {
+  UserRef,
+  UpdateAssignment,
+  FlexibleAssignment,
+} from "../modules/diensts";
+
 import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import { useTranslation } from "react-i18next";
 import { formatYYYYMMDDToDDMMYYYY, fmtDDMM } from "../utils/timeUtils";
