@@ -9,6 +9,7 @@ import {
 } from "../../utils/pscheinUtils";
 import { getVacationFlagsInRange, type VacFlag } from "../../api/vacation";
 import { getSickFlagsInRange, type SickFlag } from "../../api/sickLeaves";
+import { mergeClasses } from "../../modules/diensts/utils";
 import { fmtDDMM } from "../../utils/timeUtils";
 
 interface Props {
@@ -52,10 +53,11 @@ export default function UserAssignModal({
   const [flagsLoading, setFlagsLoading] = useState(false);
 
   const addDaysISO = (iso: string, days: number) => {
-    const d = new Date(iso);
+    const d = new Date(`${iso}T12:00:00`); // evita saltos por UTC
     d.setDate(d.getDate() + days);
-    return d.toISOString().split("T")[0];
+    return d.toISOString().slice(0, 10);
   };
+
   const weekEndISO = useMemo(() => addDaysISO(weekStartISO, 6), [weekStartISO]);
 
   const roleId = useId();
@@ -184,9 +186,6 @@ export default function UserAssignModal({
     return undefined;
   };
 
-  const mergeClasses = (...classes: (string | false | null | undefined)[]) =>
-    classes.filter(Boolean).join(" ");
-
   const dimClass = "opacity-50";
 
   const userVacationInfo = (u: User) => {
@@ -228,13 +227,19 @@ export default function UserAssignModal({
     [filteredByRole, userId],
   );
 
+  const handleClose = () => {
+    setOpenList(false);
+    onClose();
+  };
+
+
   if (!isOpen) return null;
 
   const canAssign = !!userId && !loading;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50" onClick={handleClose} />
       <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200">
         <h3 className="text-lg font-semibold text-slate-900 mb-3">
           {t(
@@ -383,7 +388,9 @@ export default function UserAssignModal({
                           : "";
                       const expired =
                         role === "driver" ? isDriverExpired(u) : false;
-                      const dim = vac.has || sick.has ? dimClass : "";
+                      const isBlocked = vac.has || sick.has || expired;
+
+                      const dim = isBlocked ? dimClass : "";
                       const title = driverPscheinTitle(u);
 
                       return (
@@ -392,15 +399,17 @@ export default function UserAssignModal({
                           role="option"
                           aria-selected={userId === u._id}
                           onClick={() => {
-                            if (expired) return;
+                            if (isBlocked) return;
                             setUserId(u._id);
                             setOpenList(false);
                           }}
+
                           className={mergeClasses(
                             "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
                             userId === u._id && "bg-slate-50",
-                            expired && "opacity-50 cursor-not-allowed",
+                            isBlocked && "opacity-50 cursor-not-allowed",
                           )}
+
                         >
                           <span
                             className={mergeClasses(dClass, dim)}
@@ -470,7 +479,7 @@ export default function UserAssignModal({
           </button>
           <button
             className="w-full rounded-xl bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-300 focus:outline-none focus:ring-4 focus:ring-slate-100"
-            onClick={onClose}
+            onClick={handleClose}
           >
             {t("common.cancel", "Cancelar")}
           </button>
