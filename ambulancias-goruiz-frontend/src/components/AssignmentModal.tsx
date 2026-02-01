@@ -6,11 +6,9 @@ import { UsersApi } from "../modules/users";
 
 import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { toastT } from "../utils/toast";
-import type {
-  UserRef,
-  UpdateAssignment,
-  FlexibleAssignment,
-} from "../modules/diensts";
+
+import type { UserRef, UpdateAssignment } from "../modules/diensts";
+import type { FlexibleAssignment } from "../types/assignment";
 
 import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import { useTranslation } from "react-i18next";
@@ -18,7 +16,10 @@ import {
   normalizeAmbulanceIdToString,
   toUserRefOrNull,
 } from "../modules/diensts/domain/adapters/assignmentAdapter";
-import { formatPersonLabel, mergeClasses } from "../modules/diensts/utils";
+import {
+  formatAmbulanceLabel,
+  formatPersonLabel,
+} from "../modules/diensts/utils";
 import { formatYYYYMMDDToDDMMYYYY, fmtDDMM } from "../utils/timeUtils";
 import { getVacationFlagsInRange, type VacFlag } from "../api/vacation";
 import { getSickFlagsInRange, type SickFlag } from "../api/sickLeaves";
@@ -32,6 +33,8 @@ interface AssignmentModalProps {
   onUpdate: () => void;
 }
 
+const mergeClasses = (...classes: (string | false | null | undefined)[]) =>
+  classes.filter(Boolean).join(" ");
 
 const AssignmentModal: React.FC<AssignmentModalProps> = ({
   isOpen,
@@ -74,24 +77,23 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
   // Precarga del assignment
   useEffect(() => {
-    if (assignment) {
-      setStartTime(assignment.startTime);
-      setEndTime(assignment.endTime);
+    if (!assignment) return;
 
-      setAmbulanceId(normalizeAmbulanceIdToString(assignment.ambulanceId));
+    setStartTime(assignment.startTime || "");
+    setEndTime(assignment.endTime || "");
 
+    setAmbulanceId(normalizeAmbulanceIdToString(assignment.ambulanceId));
 
-      setSelectedDriverId(
-        typeof assignment.driver === "string"
-          ? assignment.driver
-          : assignment.driver?._id || "",
-      );
-      setSelectedMedicId(
-        typeof assignment.medic === "string"
-          ? assignment.medic
-          : assignment.medic?._id || "",
-      );
-    }
+    setSelectedDriverId(
+      typeof assignment.driver === "string"
+        ? assignment.driver
+        : assignment.driver?._id || "",
+    );
+    setSelectedMedicId(
+      typeof assignment.medic === "string"
+        ? assignment.medic
+        : assignment.medic?._id || "",
+    );
   }, [assignment]);
 
   // Si el seleccionado viene como id y no está en la lista, lo traemos e inyectamos
@@ -118,12 +120,13 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
   };
 
-  // Cargar disponibles (incluyendo conductores con P-Schein caducado) y fusionar con asignado
+  // Cargar disponibles y fusionar con asignado
   useEffect(() => {
     const fetchAvailableUsers = async () => {
       if (!token || !isAdmin || !date) return;
+
       try {
-        const commonOpts = { startTime, endTime, includeExpired: true }; // <- clave
+        const commonOpts = { startTime, endTime, includeExpired: true };
 
         const [drivers, medics] = await Promise.all([
           UsersApi.getAvailableUsersForDate(date, "driver", token, commonOpts),
@@ -137,11 +140,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         let med = mergeWithAssigned(medics, assignment, "medic");
 
         const driverIdFromAssignment =
-          typeof assignment?.driver === "string"
-            ? assignment?.driver
-            : undefined;
+          typeof assignment?.driver === "string" ? assignment.driver : undefined;
         const medicIdFromAssignment =
-          typeof assignment?.medic === "string" ? assignment?.medic : undefined;
+          typeof assignment?.medic === "string" ? assignment.medic : undefined;
 
         drv = await ensureSelectedPresent(
           drv,
@@ -179,12 +180,13 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   useEffect(() => {
     const fetchAmbulances = async () => {
       if (!token) return;
+
       try {
         const response = await fetch("/api/ambulances", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
-        setAmbulances(data);
+        setAmbulances(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("❌ Error al cargar ambulancias:", error);
         toastT.error(["toasts.assignments.loadAmbulancesError"]);
@@ -212,6 +214,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
 
     let cancelled = false;
+
     (async () => {
       try {
         setFlagsLoading(true);
@@ -232,6 +235,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
           vacPromise,
           sickPromise,
         ]);
+
         if (!cancelled) {
           setVacationFlags(vacFlags);
           setSickFlags(sickFlagsRes);
@@ -274,15 +278,10 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       toastT.warn(["toasts.assignments.missingFields"]);
       return;
     }
-    if (
-      selectedDriverId &&
-      selectedMedicId &&
-      selectedDriverId === selectedMedicId
-    ) {
+    if (selectedDriverId && selectedMedicId && selectedDriverId === selectedMedicId) {
       toastT.warn(["toasts.assignments.samePerson"]);
       return;
     }
-    // bloqueo por baja
     if (selectedDriverId && sickFlags[selectedDriverId]?.hasSickInRange) {
       toastT.warn(["toasts.assignments.userSickDriver"]);
       return;
@@ -291,11 +290,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       toastT.warn(["toasts.assignments.userSickMedic"]);
       return;
     }
-    // ⛔ No permitir guardar si alguno está de VACACIONES ese día (seguridad)
-    if (
-      selectedDriverId &&
-      vacationFlags[selectedDriverId]?.hasVacationInRange
-    ) {
+    if (selectedDriverId && vacationFlags[selectedDriverId]?.hasVacationInRange) {
       toastT.warn(["toasts.assignments.userOnVacationDriver"]);
       return;
     }
@@ -323,33 +318,20 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         updatedAssignment._id = assignmentMongoId;
       }
 
-
-
-      // Detecta si ANTES había ambulancia
       const hadAmbulanceBefore =
         typeof assignment?.ambulanceId === "string"
-          ? assignment?.ambulanceId?.trim()?.length > 0
-          : assignment?.ambulanceId &&
-            typeof assignment.ambulanceId === "object"
+          ? assignment.ambulanceId.trim().length > 0
+          : assignment?.ambulanceId && typeof assignment.ambulanceId === "object"
             ? Boolean((assignment.ambulanceId as any)?._id)
             : false;
 
-      // Lógica de ambulancia:
-      // - Si el select tiene un valor => enviamos ese ID (asignar/actualizar)
-      // - Si el select está vacío PERO antes había ambulancia => enviamos "" para BORRAR explícitamente
-      // - Si el select está vacío y antes NO había => no mandamos el campo
       if (ambulanceId && ambulanceId.trim() !== "") {
         updatedAssignment.ambulanceId = ambulanceId;
       } else if (hadAmbulanceBefore) {
-        // borrado explícito
         updatedAssignment.ambulanceId = "";
       }
 
-      await updateDienstPartial(
-        dienstId,
-        { assignments: [updatedAssignment] },
-        token,
-      );
+      await updateDienstPartial(dienstId, { assignments: [updatedAssignment] }, token);
       toastT.success(["toasts.assignments.saveSuccess"]);
       onClose();
       onUpdate();
@@ -380,8 +362,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   };
 
   // ===== Helpers visuales coherentes con UserAssignModal =====
-
-
   const driverClass = (pschein?: string | null) => {
     if (!pschein) return "";
     const info = getPscheinInfo(pschein);
@@ -389,10 +369,12 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     if (info.status === "warning") return "text-yellow-600 font-medium";
     return "";
   };
+
   const driverExpired = (u: UserRef) => {
     const info = getPscheinInfo((u as any)?.pscheinExpiry);
     return info.status === "expired";
   };
+
   const driverPscheinTitle = (u?: UserRef | null) => {
     if (!u) return undefined;
     const expiry = (u as any)?.pscheinExpiry as string | undefined;
@@ -403,18 +385,18 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     return undefined;
   };
 
-  // "Apagado" para vacaciones/bajas; NO se usa para caducado para no perder el rojo.
   const dimClass = "text-slate-400";
 
-  // Tooltips de vacaciones/bajas (día actual)
   const userVacationInfo = (u?: UserRef | null) => {
-    if (!u || !u._id)
-      return { has: false, title: undefined as string | undefined };
+    if (!u || !u._id) return { has: false, title: undefined as string | undefined };
+
     const vf = vacationFlags[u._id];
     const has = !!vf?.hasVacationInRange;
     if (!has) return { has: false, title: undefined as string | undefined };
+
     const fromFull = vf?.vacationStartFull;
     const toFull = vf?.vacationUntilFull;
+
     let title: string | undefined;
     if (fromFull && toFull) {
       title = `🏖️ ${t("pages.diensts.weekModals.vacations", "Vacaciones")}: ${fmtDDMM(
@@ -423,16 +405,20 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     } else {
       title = `🏖️ ${t("pages.diensts.weekModals.vacations", "Vacaciones")}`;
     }
+
     return { has: true, title };
   };
+
   const userSickInfo = (u?: UserRef | null) => {
-    if (!u || !u._id)
-      return { has: false, title: undefined as string | undefined };
+    if (!u || !u._id) return { has: false, title: undefined as string | undefined };
+
     const sf = sickFlags[u._id];
     const has = !!sf?.hasSickInRange;
     if (!has) return { has: false, title: undefined as string | undefined };
+
     const fromFull = sf?.sickStartFull || sf?.sickStartInRange;
     const toFull = sf?.sickUntilFull || sf?.sickUntilInRange;
+
     let title: string | undefined;
     if (fromFull && toFull) {
       title = `🤒 ${t("pages.sick.tooltip.full", "Baja médica")}: ${fmtDDMM(fromFull)} → ${fmtDDMM(
@@ -441,23 +427,18 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     } else {
       title = `🤒 ${t("pages.sick.tooltip.full", "Baja médica")}`;
     }
+
     return { has: true, title };
   };
 
-  // Seleccionados (para rótulos)
   const selectedDriver = useMemo(() => {
     const bySelected = availableDrivers.find((u) => u._id === selectedDriverId);
     if (bySelected) return bySelected;
 
     const fromAssignment = toUserRefOrNull(assignment?.driver);
-
     if (fromAssignment) {
-      return (
-        availableDrivers.find((u) => u._id === fromAssignment._id) ??
-        fromAssignment
-      );
+      return availableDrivers.find((u) => u._id === fromAssignment._id) ?? fromAssignment;
     }
-
     return null;
   }, [availableDrivers, selectedDriverId, assignment]);
 
@@ -467,22 +448,15 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
     const fromAssignment = toUserRefOrNull(assignment?.medic);
     if (fromAssignment) {
-      return (
-        availableMedics.find((u) => u._id === fromAssignment._id) ??
-        fromAssignment
-      );
+      return availableMedics.find((u) => u._id === fromAssignment._id) ?? fromAssignment;
     }
-
     return null;
   }, [availableMedics, selectedMedicId, assignment]);
 
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
 
-      {/* Card */}
       <div className="relative z-10 w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200">
         <h3 className="text-lg font-semibold text-slate-900 mb-4">
           {t("pages.assignmentModal.title", {
@@ -493,7 +467,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         <div className="space-y-3">
           {isAdmin ? (
             <>
-              {/* Horas y ambulancia */}
+              {/* Horas */}
               <div className="space-y-1">
                 <label
                   htmlFor="startTime"
@@ -526,6 +500,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 />
               </div>
 
+              {/* Ambulancia */}
               <div className="space-y-1">
                 <label
                   htmlFor="ambulanceId"
@@ -570,48 +545,32 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   >
                     <span className="truncate">
                       {(() => {
-                        const u =
-                          selectedDriver || (assignment?.driver as any) || null;
-                        if (!u)
-                          return t(
-                            "pages.assignmentModal.placeholders.selectDriver",
-                          );
+                        const u = selectedDriver || toUserRefOrNull(assignment?.driver);
+                        if (!u) {
+                          return t("pages.assignmentModal.placeholders.selectDriver");
+                        }
                         const vac = userVacationInfo(u);
                         const sick = userSickInfo(u);
+
                         return (
                           <>
                             <span
                               className={mergeClasses(
-                                typeof u === "object"
-                                  ? driverClass((u as any)?.pscheinExpiry)
-                                  : "",
-                                // solo vac/sick se ven "apagados" en el nombre; si está caducado mantenemos el rojo visible
+                                driverClass((u as any)?.pscheinExpiry),
                                 (vac.has || sick.has) && dimClass,
                               )}
-                              title={
-                                typeof u === "object"
-                                  ? driverPscheinTitle(u)
-                                  : undefined
-                              }
+                              title={driverPscheinTitle(u)}
                             >
-                              {typeof u === "object"
-                                ? formatPersonLabel(u)
-                                : t("pages.assignmentModal.placeholders.selectDriver")}
-
+                              {formatPersonLabel(u)}
                             </span>
+
                             {vac.has && (
-                              <span
-                                className="ml-1 align-middle text-slate-400"
-                                title={vac.title}
-                              >
+                              <span className="ml-1 align-middle text-slate-400" title={vac.title}>
                                 🏖️
                               </span>
                             )}
                             {sick.has && (
-                              <span
-                                className="ml-1 align-middle text-slate-500"
-                                title={sick.title}
-                              >
+                              <span className="ml-1 align-middle text-slate-500" title={sick.title}>
                                 🤒
                               </span>
                             )}
@@ -619,6 +578,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                         );
                       })()}
                     </span>
+
                     <svg
                       className="h-4 w-4 shrink-0 text-slate-500"
                       viewBox="0 0 20 20"
@@ -646,7 +606,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                         </div>
                       )}
 
-                      {/* Opción para limpiar el conductor */}
                       <button
                         role="option"
                         aria-selected={selectedDriverId === ""}
@@ -659,12 +618,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                           selectedDriverId === "" && "bg-slate-50",
                         )}
                       >
-                        —{" "}
-                        {t(
-                          "pages.assignmentModal.placeholders.selectDriver",
-                          "Sin asignar",
-                        )}{" "}
-                        —
+                        — {t("pages.assignmentModal.placeholders.selectDriver", "Sin asignar")} —
                       </button>
 
                       {availableDrivers
@@ -673,10 +627,8 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                           const da = driverExpired(a) ? 1 : 0;
                           const db = driverExpired(b) ? 1 : 0;
                           if (da !== db) return da - db;
-                          const ka =
-                            `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
-                          const kb =
-                            `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
+                          const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
+                          const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
                           return ka.localeCompare(kb, "es");
                         })
                         .map((u) => {
@@ -684,7 +636,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                           const sick = userSickInfo(u);
                           const expired = driverExpired(u);
                           const isSick = sick.has;
-                          const isVac = vac.has; // ⛔ vacaciones en ESTA FECHA
+                          const isVac = vac.has;
 
                           return (
                             <button
@@ -692,43 +644,33 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                               role="option"
                               aria-selected={selectedDriverId === u._id}
                               onClick={() => {
-                                if (expired) return; // no puede conducir con P-Schein caducado
-                                if (isSick) return; // bloqueado si está de baja
-                                if (isVac) return; // 🆕 bloqueado si está de vacaciones
+                                if (expired || isSick || isVac) return;
                                 setSelectedDriverId(u._id || "");
-                                if (u._id === selectedMedicId)
-                                  setSelectedMedicId("");
+                                if (u._id === selectedMedicId) setSelectedMedicId("");
                                 setOpenDriverList(false);
                               }}
                               className={mergeClasses(
                                 "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
                                 selectedDriverId === u._id && "bg-slate-50",
-                                (expired || isSick || isVac) &&
-                                "opacity-50 cursor-not-allowed", // 🆕 añade isVac
+                                (expired || isSick || isVac) && "opacity-50 cursor-not-allowed",
                               )}
                             >
                               <span
                                 className={mergeClasses(
                                   driverClass((u as any)?.pscheinExpiry),
-                                  (isVac || isSick || expired) && "opacity-50", // atenuado si vac/sick/expired
+                                  (isVac || isSick) && "opacity-50",
                                 )}
                                 title={driverPscheinTitle(u)}
                               >
                                 {formatPersonLabel(u)}
                               </span>
                               {vac.has && (
-                                <span
-                                  className="ml-1 align-middle text-slate-400"
-                                  title={vac.title}
-                                >
+                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>
                                   🏖️
                                 </span>
                               )}
                               {isSick && (
-                                <span
-                                  className="ml-1 align-middle text-slate-500"
-                                  title={sick.title}
-                                >
+                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>
                                   🤒
                                 </span>
                               )}
@@ -739,7 +681,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   )}
                 </div>
 
-                {/* Leyenda driver */}
                 <p className="mt-1 text-[11px] text-slate-500">
                   🚫{" "}
                   {t(
@@ -748,7 +689,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   )}
                 </p>
 
-                {/* Hint vacaciones/bajas */}
                 {flagsLoading ? (
                   <p className="mt-1 text-[11px] text-slate-500">
                     {t("common.loading", "Cargando...")}
@@ -784,39 +724,24 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   >
                     <span className="truncate">
                       {(() => {
-                        const u =
-                          selectedMedic || (assignment?.medic as any) || null;
-                        if (!u)
-                          return t(
-                            "pages.assignmentModal.placeholders.selectMedic",
-                          );
+                        const u = selectedMedic || toUserRefOrNull(assignment?.medic);
+                        if (!u) {
+                          return t("pages.assignmentModal.placeholders.selectMedic");
+                        }
                         const vac = userVacationInfo(u);
                         const sick = userSickInfo(u);
                         return (
                           <>
-                            <span
-                              className={mergeClasses(
-                                (vac.has || sick.has) && dimClass,
-                              )}
-                            >
-                              {typeof u === "object"
-                                ? formatPersonLabel(u)
-                                : t("pages.assignmentModal.placeholders.selectMedic")}
-
+                            <span className={mergeClasses((vac.has || sick.has) && dimClass)}>
+                              {formatPersonLabel(u)}
                             </span>
                             {vac.has && (
-                              <span
-                                className="ml-1 align-middle text-slate-400"
-                                title={vac.title}
-                              >
+                              <span className="ml-1 align-middle text-slate-400" title={vac.title}>
                                 🏖️
                               </span>
                             )}
                             {sick.has && (
-                              <span
-                                className="ml-1 align-middle text-slate-500"
-                                title={sick.title}
-                              >
+                              <span className="ml-1 align-middle text-slate-500" title={sick.title}>
                                 🤒
                               </span>
                             )}
@@ -824,6 +749,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                         );
                       })()}
                     </span>
+
                     <svg
                       className="h-4 w-4 shrink-0 text-slate-500"
                       viewBox="0 0 20 20"
@@ -851,7 +777,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                         </div>
                       )}
 
-                      {/* Opción para limpiar el sanitario */}
                       <button
                         role="option"
                         aria-selected={selectedMedicId === ""}
@@ -864,27 +789,20 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                           selectedMedicId === "" && "bg-slate-50",
                         )}
                       >
-                        —{" "}
-                        {t(
-                          "pages.assignmentModal.placeholders.selectMedic",
-                          "Sin asignar",
-                        )}{" "}
-                        —
+                        — {t("pages.assignmentModal.placeholders.selectMedic", "Sin asignar")} —
                       </button>
 
                       {availableMedics
                         .slice()
                         .sort((a, b) => {
-                          const ka =
-                            `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
-                          const kb =
-                            `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
+                          const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
+                          const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
                           return ka.localeCompare(kb, "es");
                         })
                         .map((u) => {
                           const vac = userVacationInfo(u);
                           const sick = userSickInfo(u);
-                          const isVac = vac.has; // 🆕 vacaciones
+                          const isVac = vac.has;
                           const isSick = sick.has;
 
                           return (
@@ -893,40 +811,27 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                               role="option"
                               aria-selected={selectedMedicId === u._id}
                               onClick={() => {
-                                if (isVac) return; // 🆕 bloqueado si está de vacaciones
-                                if (isSick) return; // bloqueado si está de baja
-                                if (u._id === selectedDriverId)
-                                  setSelectedDriverId("");
+                                if (isVac || isSick) return;
+                                if (u._id === selectedDriverId) setSelectedDriverId("");
                                 setSelectedMedicId(u._id || "");
                                 setOpenMedicList(false);
                               }}
                               className={mergeClasses(
                                 "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
                                 selectedMedicId === u._id && "bg-slate-50",
-                                (isVac || isSick) &&
-                                "opacity-50 cursor-not-allowed", // 🆕 añade isVac
+                                (isVac || isSick) && "opacity-50 cursor-not-allowed",
                               )}
                             >
-                              <span
-                                className={mergeClasses(
-                                  (isVac || isSick) && "opacity-50",
-                                )}
-                              >
+                              <span className={mergeClasses((isVac || isSick) && "opacity-50")}>
                                 {formatPersonLabel(u)}
                               </span>
                               {vac.has && (
-                                <span
-                                  className="ml-1 align-middle text-slate-400"
-                                  title={vac.title}
-                                >
+                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>
                                   🏖️
                                 </span>
                               )}
                               {sick.has && (
-                                <span
-                                  className="ml-1 align-middle text-slate-500"
-                                  title={sick.title}
-                                >
+                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>
                                   🤒
                                 </span>
                               )}
@@ -937,7 +842,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   )}
                 </div>
 
-                {/* Hint vacaciones/bajas */}
                 {flagsLoading ? (
                   <p className="mt-1 text-[11px] text-slate-500">
                     {t("common.loading", "Cargando...")}
@@ -982,23 +886,15 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
               </p>
               <p className="text-sm text-slate-700">
                 {t("pages.assignmentModal.readOnly.ambulance")}{" "}
-                {typeof assignment?.ambulanceId === "object"
-                  ? (assignment.ambulanceId?.ambulanceNumber ??
-                    t("pages.assignmentModal.info.dash"))
-                  : (assignment?.ambulanceNumber ??
-                    t("pages.assignmentModal.info.dash"))}
+                {formatAmbulanceLabel(assignment.ambulanceId)}
               </p>
               <p className="text-sm text-slate-700">
                 {t("pages.assignmentModal.readOnly.driver")}{" "}
-                {typeof assignment.driver === "object"
-                  ? `${assignment.driver.lastName}, ${assignment.driver.name}`
-                  : "(ID)"}
+                {formatPersonLabel(toUserRefOrNull(assignment.driver) ?? undefined)}
               </p>
               <p className="text-sm text-slate-700">
                 {t("pages.assignmentModal.readOnly.medic")}{" "}
-                {typeof assignment.medic === "object"
-                  ? `${assignment.medic.lastName}, ${assignment.medic.name}`
-                  : "(ID)"}
+                {formatPersonLabel(toUserRefOrNull(assignment.medic) ?? undefined)}
               </p>
             </div>
           ) : (
