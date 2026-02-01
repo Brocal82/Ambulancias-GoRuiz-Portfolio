@@ -8,19 +8,23 @@ import type { FlexibleAssignment } from "../types/assignment";
  */
 export function mergeWithAssigned(
   availableUsers: UserRef[],
-  assignment: (FlexibleAssignment | AssignedDay) | undefined,
+  assignment: FlexibleAssignment | AssignedDay | undefined,
   currentRole: "driver" | "medic",
 ): UserRef[] {
-  const merged = [...availableUsers];
-
-  const currentVal = (assignment as any)?.[currentRole];
-  const currentUser: UserRef | null =
-    currentVal && typeof currentVal === "object" ? (currentVal as UserRef) : null;
-
   const otherRole = currentRole === "driver" ? "medic" : "driver";
   const otherVal = (assignment as any)?.[otherRole];
   const otherUser: UserRef | null =
     otherVal && typeof otherVal === "object" ? (otherVal as UserRef) : null;
+
+  // Si el otro rol ya tiene a alguien y NO es "both", lo quitamos del listado del rol actual
+  const merged =
+    otherUser && otherUser.ambulanceRole !== "both"
+      ? availableUsers.filter((u) => u._id !== otherUser._id)
+      : [...availableUsers];
+
+  const currentVal = (assignment as any)?.[currentRole];
+  const currentUser: UserRef | null =
+    currentVal && typeof currentVal === "object" ? (currentVal as UserRef) : null;
 
   // ✅ Asegura que el usuario actual se añade si no está en la lista
   const isAlreadyIncluded =
