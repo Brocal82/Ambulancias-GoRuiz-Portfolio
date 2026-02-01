@@ -12,16 +12,24 @@ type AssignmentLike = {
   medic?: unknown;
 };
 
-const hasPerson = (v: unknown): boolean =>
-  v !== null && v !== undefined && v !== "";
+const hasPerson = (v: unknown): boolean => {
+  if (v === null || v === undefined) return false;
+  if (typeof v === "string") return v.trim().length > 0;
+  return true; // objetos / ids / refs
+};
 
 export const isPartialAssignment = (
   assignment: AssignmentLike | null | undefined,
 ): boolean => {
   if (!assignment) return false;
 
-  const hasStart = !!assignment.startTime;
-  const hasEnd = !!assignment.endTime;
+  const hasStart =
+    typeof assignment.startTime === "string" &&
+    assignment.startTime.trim().length > 0;
+
+  const hasEnd =
+    typeof assignment.endTime === "string" &&
+    assignment.endTime.trim().length > 0;
 
   const hasDriver = hasPerson(assignment.driver);
   const hasMedic = hasPerson(assignment.medic);
@@ -41,8 +49,13 @@ export const isTeamIncomplete = (
 ): boolean => {
   if (!assignment) return false;
 
-  const hasStart = !!assignment.startTime;
-  const hasEnd = !!assignment.endTime;
+  const hasStart =
+    typeof assignment.startTime === "string" &&
+    assignment.startTime.trim().length > 0;
+
+  const hasEnd =
+    typeof assignment.endTime === "string" &&
+    assignment.endTime.trim().length > 0;
 
   const hasDriver = hasPerson(assignment.driver);
   const hasMedic = hasPerson(assignment.medic);
