@@ -18,6 +18,8 @@ import {
   formatPersonLabel,
 } from "../modules/diensts/utils/display";
 import { getWeekStartsBerlin, getWeekDays } from "../modules/diensts/utils/week";
+import { dayKeyToLocalDate, toBerlinDayKey, type DayKey } from "../utils/dates/dayKey";
+
 import {
   isPartialAssignment,
   isTeamIncomplete,
@@ -96,7 +98,7 @@ const AdminPage = () => {
     fetchDiensts();
   }, [fetchDiensts]);
 
-  const weekStartDates = getWeekStartsBerlin(3).map((k) => new Date(k));
+  const weekStartKeys = getWeekStartsBerlin(3) as DayKey[];
 
 
   return (
@@ -112,20 +114,19 @@ const AdminPage = () => {
           Cargando diensts...
         </div>
       ) : (
-        weekStartDates.map((weekStart, index) => {
+        weekStartKeys.map((weekStartISO, index) => {
+          const weekStart = dayKeyToLocalDate(weekStartISO);
+
 
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 6);
-          const weekStartISO = weekStart.toISOString().slice(0, 10);
+
           const isCollapsed = collapsedWeeks[weekStartISO] ?? false;
           const hasWeekDiensts = diensts.some((d) => {
             if (!d.weekStartDate) return false;
-            const parsedDate = new Date(d.weekStartDate);
-            return (
-              !isNaN(parsedDate.getTime()) &&
-              parsedDate.toISOString().split("T")[0] === weekStartISO
-            );
+            return toBerlinDayKey(d.weekStartDate) === weekStartISO;
           });
+
 
           return (
             <div
@@ -229,12 +230,9 @@ const AdminPage = () => {
                   {diensts
                     .filter((dienst) => {
                       if (!dienst.weekStartDate) return false;
-                      const parsedDate = new Date(dienst.weekStartDate);
-                      return (
-                        !isNaN(parsedDate.getTime()) &&
-                        parsedDate.toISOString().split("T")[0] === weekStartISO
-                      );
+                      return toBerlinDayKey(dienst.weekStartDate) === weekStartISO;
                     })
+
                     .map((dienst) => {
                       const weekDates = getWeekDays(weekStartISO as any).map(String);
 
