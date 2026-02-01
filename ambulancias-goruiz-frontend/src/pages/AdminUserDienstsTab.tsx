@@ -1,5 +1,5 @@
 // AdminUserDienstsTab.tsx
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getDienstByUser,
   getAssignedDaysForUser,
@@ -24,7 +24,6 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
   const [userDiensts, setUserDiensts] = useState<Dienst[]>([]);
   const [allDiensts, setAllDiensts] = useState<Dienst[]>([]);
   const [assignedDays, setAssignedDays] = useState<AssignedDay[]>([]);
-
   const [loading, setLoading] = useState(true);
 
   const [selectedAssignment, setSelectedAssignment] = useState<{
@@ -33,42 +32,31 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
     dienstId: string;
   } | null>(null);
 
-
+  // ✅ Siempre usa T12:00:00 para evitar desfases por UTC
+  const toNoonDate = (isoDay: string) => new Date(`${isoDay}T12:00:00`);
 
   const fmtDate = (d: Date) => d.toLocaleDateString(i18n.language);
+
   const fmtCellDate = (isoDay: string) =>
-    new Date(isoDay).toLocaleDateString(i18n.language, {
+    toNoonDate(isoDay).toLocaleDateString(i18n.language, {
       weekday: "short",
       day: "2-digit",
       month: "2-digit",
     });
 
-  // UTC helpers para comparar por día (evita líos de TZ)
-  const dayUTC = (d: Date) =>
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-  const toDate = (iso: string) => new Date(iso); // "YYYY-MM-DD" se interpreta como UTC
-  const isoDate = (d: Date) => d.toISOString().slice(0, 10);
-
-  const mondayOfISO = (iso: string) => {
-    const d = toDate(iso);
-    const dow = d.getUTCDay(); // 0..6
-    const diff = (dow + 6) % 7; // días hacia atrás hasta lunes
-    d.setUTCDate(d.getUTCDate() - diff);
-    d.setUTCHours(0, 0, 0, 0);
-    return isoDate(d);
+  const addDaysISO = (isoDay: string, days: number) => {
+    const d = toNoonDate(isoDay);
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0, 10);
   };
 
-  const inSameWeek = (dateIso: string, startIso?: string, endIso?: string) => {
-    if (!startIso) return false;
-    const date = toDate(dateIso);
-    const start = toDate(startIso);
-    const end = endIso ? toDate(endIso) : new Date(start);
-    if (!endIso) end.setUTCDate(start.getUTCDate() + 6);
-
-    const dUTC = dayUTC(date);
-    const sUTC = dayUTC(start);
-    const eUTC = dayUTC(end);
-    return dUTC >= sUTC && dUTC <= eUTC;
+  // Lunes de la semana (en ISO "YYYY-MM-DD") para una fecha ISO
+  const mondayOfISO = (isoDay: string) => {
+    const d = toNoonDate(isoDay);
+    const dow = d.getDay(); // 0..6 (dom..sab)
+    const diff = (dow + 6) % 7; // lunes=0
+    d.setDate(d.getDate() - diff);
+    return d.toISOString().slice(0, 10);
   };
 
   const fetchData = useCallback(async () => {
@@ -78,7 +66,6 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
     try {
       const [assignedDaysData, userDienstsData, allDienstsData] =
         await Promise.all([
-          // ✅ Este endpoint debería devolver AssignedDayFull[]
           getAssignedDaysForUser(userId, token),
           getDienstByUser(userId, token),
           getAllDiensts(token),
@@ -112,16 +99,17 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
   // Etiqueta segura para usuario (UserRef o id suelto)
   const formatUserLabel = (u?: string | UserRef | null): string => {
     if (!u) return "—";
-    if (typeof u === "string") return "—"; // solo id, sin datos aún
+    if (typeof u === "string") return "—"; // solo id, sin datos
     const last = u.lastName ?? "";
     const name = u.name ?? "";
     const label = `${last}${last && name ? ", " : ""}${name}`.trim();
     return label || "—";
   };
 
-
   // Adaptador local: AssignedDay -> FlexibleAssignment (contrato del modal)
-  const toFlexibleAssignment = (a?: AssignedDay): FlexibleAssignment | undefined => {
+  const toFlexibleAssignment = (
+    a?: AssignedDay,
+  ): FlexibleAssignment | undefined => {
     if (!a) return undefined;
 
     const ambulanceId =
@@ -141,45 +129,27 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
     };
   };
 
+  // Índice rápido: weekStartISO -> dienstId
+  const dienstIdByWeekStart = useMemo(() => {
+    const map = new Map<string, string>();
 
-  // ✅ Encuentra el dienstId para un día (primero en los del usuario, luego en todos; por rango)
+    const addList = (list: Dienst[]) => {
+      for (const d of list) {
+        if (!d.weekStartDate) continue;
+        const key = d.weekStartDate.slice(0, 10);
+        if (!map.has(key)) map.set(key, d._id);
+      }
+    };
+
+    addList(userDiensts);
+    addList(allDiensts);
+
+    return map;
+  }, [userDiensts, allDiensts]);
+
   const getDienstIdForDate = (dateStr: string): string => {
-    // 1) Buscar por rango en los Diensts del usuario
-    const fromUser = userDiensts.find((d) =>
-      inSameWeek(dateStr, d.weekStartDate, (d as any).weekEndDate),
-    );
-    if (fromUser) return fromUser._id;
-
-    // 2) Buscar por rango en TODOS los Diensts
-    const candidatesByRange = allDiensts.filter((d) =>
-      inSameWeek(dateStr, d.weekStartDate, (d as any).weekEndDate),
-    );
-    if (candidatesByRange.length > 0) {
-      return candidatesByRange.sort(
-        (a, b) => (a.dienstNumber ?? 999) - (b.dienstNumber ?? 999),
-      )[0]._id;
-    }
-
-    // 3) Plan B: comparar por lunes ISO de la semana
     const mondayIso = mondayOfISO(dateStr);
-    const byMonday = (list: Dienst[]) =>
-      list.filter(
-        (d) =>
-          d.weekStartDate && isoDate(new Date(d.weekStartDate)) === mondayIso,
-      );
-
-    const fromUserMonday = byMonday(userDiensts)[0];
-    if (fromUserMonday) return fromUserMonday._id;
-
-    const allMonday = byMonday(allDiensts);
-    if (allMonday.length > 0) {
-      return allMonday.sort(
-        (a, b) => (a.dienstNumber ?? 999) - (b.dienstNumber ?? 999),
-      )[0]._id;
-    }
-
-    console.warn(`ID del Dienst no encontrado para la fecha ${dateStr}`);
-    return "";
+    return dienstIdByWeekStart.get(mondayIso) ?? "";
   };
 
   if (loading) {
@@ -199,35 +169,20 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
       </div>
 
       {(() => {
-        const today = new Date();
-        const dow = today.getDay();
-        const back = (dow + 6) % 7;
-
-        const firstMonday = new Date(
-          Date.UTC(
-            today.getUTCFullYear(),
-            today.getUTCMonth(),
-            today.getUTCDate(),
-          ),
-        );
-        firstMonday.setUTCDate(firstMonday.getUTCDate() - back);
+        const todayISO = new Date().toISOString().slice(0, 10);
+        const firstMondayISO = mondayOfISO(todayISO);
 
         const weeks = [0, 1]; // Dos semanas
 
         return (
           <div className="space-y-6">
             {weeks.map((weekOffset) => {
-              const weekStart = new Date(firstMonday);
-              weekStart.setUTCDate(firstMonday.getUTCDate() + weekOffset * 7);
+              const weekStartISO = addDaysISO(firstMondayISO, weekOffset * 7);
+              const weekEndISO = addDaysISO(weekStartISO, 6);
 
-              const weekDates = Array.from({ length: 7 }, (_, i) => {
-                const d = new Date(weekStart);
-                d.setUTCDate(weekStart.getUTCDate() + i);
-                return isoDate(d);
-              });
-
-              const weekEnd = new Date(weekStart);
-              weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
+              const weekDates = Array.from({ length: 7 }, (_, i) =>
+                addDaysISO(weekStartISO, i),
+              );
 
               return (
                 <div
@@ -236,12 +191,11 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                 >
                   <p className="text-sm font-medium text-slate-700 mb-3">
                     {t("pages.diensts.adminPage.weekRange", {
-                      from: fmtDate(new Date(weekStart)),
-                      to: fmtDate(new Date(weekEnd)),
+                      from: fmtDate(toNoonDate(weekStartISO)),
+                      to: fmtDate(toNoonDate(weekEndISO)),
                     })}
                   </p>
 
-                  {/* Grid de 7 días */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                     {weekDates.map((dateStr) => {
                       const assignment = assignedDays.find(
@@ -249,7 +203,7 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                       );
 
                       const cls = assignment
-                        ? isPartialAssignment(assignment as unknown as AssignedDay)
+                        ? isPartialAssignment(assignment)
                           ? "bg-amber-50 ring-amber-200"
                           : "bg-blue-50 ring-blue-200"
                         : "bg-emerald-50 ring-emerald-200";
@@ -260,7 +214,7 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                           type="button"
                           className={`text-left rounded-xl p-3 ring-1 ${cls} hover:shadow-sm hover:-translate-y-0.5 transition cursor-pointer`}
                           onClick={() => {
-                            const foundDienstId = assignment
+                            const foundDienstId = assignment?.dienstId
                               ? assignment.dienstId
                               : getDienstIdForDate(dateStr);
 
@@ -276,7 +230,6 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                               assignment: toFlexibleAssignment(assignment),
                               dienstId: foundDienstId,
                             });
-
                           }}
                         >
                           <p className="text-xs font-semibold text-slate-800 mb-1">
