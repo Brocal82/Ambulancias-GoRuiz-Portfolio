@@ -1,34 +1,42 @@
 // src/pages/DienstPage.tsx
 import { useCallback, useEffect, useState } from "react";
 import { getDienstByUser } from "../modules/diensts";
-import type { Dienst, UserRef } from "../modules/diensts";
+import type { Dienst, FlexibleAssignment } from "../modules/diensts";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
+import { formatAmbulanceLabel } from "../modules/diensts/utils";
+
 
 const DienstPage = () => {
   const { userId, token } = useAuth();
   const { t, i18n } = useTranslation();
 
+  const fmtDate = (d: Date) =>
+    d.toLocaleDateString(i18n.language, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+
+
   const [diensts, setDiensts] = useState<Dienst[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<{
     date: string;
-    assignment?: Dienst["assignments"][0] & {
-      driver: string | UserRef;
-      medic: string | UserRef;
-    };
+    assignment?: FlexibleAssignment;
     dienstId: string;
   } | null>(null);
 
-  const fmtDate = (d: Date) => d.toLocaleDateString(i18n.language);
+
   const fmtCellDate = (isoDay: string) =>
-    new Date(isoDay).toLocaleDateString(i18n.language, {
+    new Date(`${isoDay}T12:00:00`).toLocaleDateString(i18n.language, {
       weekday: "short",
       day: "2-digit",
       month: "2-digit",
     });
+
 
   const fetchDiensts = useCallback(async () => {
     if (!userId || !token) return;
@@ -63,8 +71,10 @@ const DienstPage = () => {
 
           const allWeekDates = Array.from({ length: 14 }, (_, i) => {
             const d = new Date(start);
+            d.setHours(12, 0, 0, 0); // evita desplazamientos por UTC
             d.setDate(d.getDate() + i);
-            return d.toISOString().split("T")[0];
+            return d.toISOString().slice(0, 10);
+
           });
 
           return (
@@ -113,13 +123,8 @@ const DienstPage = () => {
                           <p className="text-xs">
                             🕒 {assignment.startTime} - {assignment.endTime}
                           </p>
-                          <p className="text-xs">
-                            🚑{" "}
-                            {typeof assignment.ambulanceId === "object" &&
-                              "ambulanceNumber" in assignment.ambulanceId
-                              ? assignment.ambulanceId.ambulanceNumber
-                              : "—"}
-                          </p>
+                          <p className="text-xs">🚑 {formatAmbulanceLabel(assignment.ambulanceId)}</p>
+
                         </>
                       ) : (
                         <p className="text-xs text-green-800 font-medium mt-2">
