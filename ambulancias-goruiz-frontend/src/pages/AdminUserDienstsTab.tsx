@@ -1,3 +1,4 @@
+//src/pages/AdminUserDienstsTab.tsx
 // AdminUserDienstsTab.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -57,6 +58,16 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
     const diff = (dow + 6) % 7; // lunes=0
     d.setDate(d.getDate() - diff);
     return d.toISOString().slice(0, 10);
+  };
+
+  // ✅ isPast (mismo criterio que AdminDienstsPage)
+  const isPastDay = (isoDay: string) => {
+    const today = new Date();
+    const todayISO = new Date(
+      `${today.toISOString().slice(0, 10)}T12:00:00`,
+    );
+    const d = toNoonDate(isoDay);
+    return d < todayISO;
   };
 
   const fetchData = useCallback(async () => {
@@ -208,12 +219,24 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                           : "bg-blue-50 ring-blue-200"
                         : "bg-emerald-50 ring-emerald-200";
 
+                      const isPast = isPastDay(dateStr);
+
                       return (
                         <button
                           key={dateStr}
                           type="button"
-                          className={`text-left rounded-xl p-3 ring-1 ${cls} hover:shadow-sm hover:-translate-y-0.5 transition cursor-pointer`}
+                          disabled={isPast}
+                          className={`
+                            text-left rounded-xl p-3 ring-1 transition
+                            ${cls}
+                            ${isPast
+                              ? "opacity-80 bg-slate-50 text-slate-400 cursor-not-allowed hover:shadow-none hover:translate-y-0"
+                              : "hover:shadow-sm hover:-translate-y-0.5"
+                            }
+                          `}
                           onClick={() => {
+                            if (isPast) return;
+
                             const foundDienstId = assignment?.dienstId
                               ? assignment.dienstId
                               : getDienstIdForDate(dateStr);
@@ -282,3 +305,4 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
 };
 
 export default AdminUserDienstsTab;
+

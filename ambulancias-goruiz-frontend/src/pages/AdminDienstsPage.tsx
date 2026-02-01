@@ -20,7 +20,7 @@ import {
   getWeekDays,
 } from "../modules/diensts/utils";
 import { dayKeyToLocalDate, toBerlinDayKey } from "../utils/dates/dayKey";
-
+import { isPastDay } from "../utils/dates/isPastDay";
 import {
   isPartialAssignment,
   isTeamIncomplete,
@@ -448,19 +448,34 @@ const AdminPage = () => {
                                   ? "border-2 border-red-500"
                                   : "border border-transparent";
 
+                              const isPast = isPastDay(day);
+
+
                               return (
                                 <button
                                   key={day}
                                   type="button"
-                                  className={`text-left rounded-xl p-3 ring-1 ${cls} ${incompleteBorderClass} hover:shadow-sm hover:-translate-y-0.5 transition`}
-                                  onClick={() =>
+                                  disabled={isPast}
+                                  className={`
+    text-left rounded-xl p-3 ring-1 transition
+    ${cls}
+    ${incompleteBorderClass}
+    ${isPast
+                                      ? "opacity-80 bg-slate-50 text-slate-400 cursor-not-allowed hover:shadow-none hover:translate-y-0"
+                                      : "hover:shadow-sm hover:-translate-y-0.5"
+                                    }
+  `}
+                                  onClick={() => {
+                                    if (isPast) return;
                                     setSelectedAssignment({
                                       date: day,
                                       assignment,
                                       dienstId: dienst._id,
-                                    })
-                                  }
+                                    });
+                                  }}
                                 >
+
+
                                   <p className="text-xs font-semibold text-slate-800 mb-1">
                                     {formatCellDateUnified(day, i18n.language)}
                                   </p>
