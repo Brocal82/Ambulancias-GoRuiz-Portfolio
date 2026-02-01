@@ -1,3 +1,4 @@
 // frontend/src/modules/diensts/utils/index.ts
-// FASE 1: placeholder
-export {};
+export * from "./display";
+export * from "./week";
+
