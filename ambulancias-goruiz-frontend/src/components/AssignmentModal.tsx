@@ -15,7 +15,11 @@ import type {
 
 import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import { useTranslation } from "react-i18next";
-import { normalizeAmbulanceIdToString } from "../modules/diensts/domain/adapters/assignmentAdapter";
+import {
+  normalizeAmbulanceIdToString,
+  toUserRefOrNull,
+} from "../modules/diensts/domain/adapters/assignmentAdapter";
+import { formatPersonLabel, mergeClasses } from "../modules/diensts/utils";
 import { formatYYYYMMDDToDDMMYYYY, fmtDDMM } from "../utils/timeUtils";
 import { getVacationFlagsInRange, type VacFlag } from "../api/vacation";
 import { getSickFlagsInRange, type SickFlag } from "../api/sickLeaves";
@@ -378,13 +382,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
   // ===== Helpers visuales coherentes con UserAssignModal =====
 
-  // --- helpers de types (FASE 1 compat) ---
-  const toUserRef = (v: unknown): UserRef | null => {
-    if (!v || typeof v !== "object") return null;
-    const anyV = v as any;
-    if (typeof anyV._id === "string") return anyV as UserRef;
-    return null;
-  };
 
   const driverClass = (pschein?: string | null) => {
     if (!pschein) return "";
@@ -406,8 +403,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
     return undefined;
   };
-  const mergeClasses = (...classes: (string | false | null | undefined)[]) =>
-    classes.filter(Boolean).join(" ");
+
   // "Apagado" para vacaciones/bajas; NO se usa para caducado para no perder el rojo.
   const dimClass = "text-slate-400";
 
@@ -454,7 +450,8 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     const bySelected = availableDrivers.find((u) => u._id === selectedDriverId);
     if (bySelected) return bySelected;
 
-    const fromAssignment = toUserRef(assignment?.driver);
+    const fromAssignment = toUserRefOrNull(assignment?.driver);
+
     if (fromAssignment) {
       return (
         availableDrivers.find((u) => u._id === fromAssignment._id) ??
@@ -469,7 +466,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     const bySelected = availableMedics.find((u) => u._id === selectedMedicId);
     if (bySelected) return bySelected;
 
-    const fromAssignment = toUserRef(assignment?.medic);
+    const fromAssignment = toUserRefOrNull(assignment?.medic);
     if (fromAssignment) {
       return (
         availableMedics.find((u) => u._id === fromAssignment._id) ??
@@ -599,10 +596,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                               }
                             >
                               {typeof u === "object"
-                                ? `${u.lastName || ""}, ${u.name || ""}`
-                                : t(
-                                  "pages.assignmentModal.placeholders.selectDriver",
-                                )}
+                                ? formatPersonLabel(u)
+                                : t("pages.assignmentModal.placeholders.selectDriver")}
+
                             </span>
                             {vac.has && (
                               <span
@@ -719,7 +715,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                                 )}
                                 title={driverPscheinTitle(u)}
                               >
-                                {(u.lastName || "") + ", " + (u.name || "")}
+                                {formatPersonLabel(u)}
                               </span>
                               {vac.has && (
                                 <span
@@ -805,10 +801,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                               )}
                             >
                               {typeof u === "object"
-                                ? `${u.lastName || ""}, ${u.name || ""}`
-                                : t(
-                                  "pages.assignmentModal.placeholders.selectMedic",
-                                )}
+                                ? formatPersonLabel(u)
+                                : t("pages.assignmentModal.placeholders.selectMedic")}
+
                             </span>
                             {vac.has && (
                               <span
@@ -918,7 +913,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                                   (isVac || isSick) && "opacity-50",
                                 )}
                               >
-                                {(u.lastName || "") + ", " + (u.name || "")}
+                                {formatPersonLabel(u)}
                               </span>
                               {vac.has && (
                                 <span
