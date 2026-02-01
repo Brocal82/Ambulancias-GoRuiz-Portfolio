@@ -10,6 +10,7 @@ import {
 import { getVacationFlagsInRange, type VacFlag } from "../../api/vacation";
 import { getSickFlagsInRange, type SickFlag } from "../../api/sickLeaves";
 import { fmtDDMM } from "../../utils/timeUtils";
+import { mergeClasses } from "../../modules/diensts/utils";
 import { UsersApi } from "../../modules/users";
 
 
@@ -73,12 +74,13 @@ export default function TeamAssignModal({
 
   const selectId = useId();
 
-  // Helpers locales
   const addDaysISO = (iso: string, days: number) => {
-    const d = new Date(iso);
+    // Usamos mediodía para evitar saltos por UTC/DST
+    const d = new Date(`${iso}T12:00:00`);
     d.setDate(d.getDate() + days);
-    return d.toISOString().split("T")[0];
+    return d.toISOString().slice(0, 10);
   };
+
 
   // Fin de semana = inicio + 6 días
   const weekEndISO = useMemo(() => addDaysISO(weekStartISO, 6), [weekStartISO]);
@@ -388,6 +390,12 @@ export default function TeamAssignModal({
     setResolvedRoles(compat.resolve);
   }, [compat]);
 
+  const handleClose = () => {
+    setOpenList(false);
+    onClose();
+  };
+
+
   if (!isOpen) return null;
 
   const driverClass = (pschein?: string | null) => {
@@ -397,9 +405,6 @@ export default function TeamAssignModal({
     if (info.status === "warning") return "text-yellow-600 font-medium";
     return "";
   };
-
-  const mergeClasses = (...classes: (string | false | null | undefined)[]) =>
-    classes.filter(Boolean).join(" ");
 
   const dimClass = "opacity-50";
 
@@ -531,7 +536,7 @@ export default function TeamAssignModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50" onClick={handleClose} />
       <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200">
         <h3 className="text-lg font-semibold text-slate-900 mb-3">
           {t("pages.diensts.assignTeamModal.title")}
@@ -731,7 +736,7 @@ export default function TeamAssignModal({
           </button>
           <button
             className="w-full rounded-xl bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-300 focus:outline-none focus:ring-4 focus:ring-slate-100"
-            onClick={onClose}
+            onClick={handleClose}
           >
             {t("common.cancel")}
           </button>
