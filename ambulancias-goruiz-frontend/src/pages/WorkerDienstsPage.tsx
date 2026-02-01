@@ -6,6 +6,11 @@ import { isPartialAssignment } from "../utils/assignmentUtils";
 import type { AssignedDay } from "../modules/diensts";
 import type { FlexibleAssignment } from "../types/assignment";
 import { useAuth } from "../hooks/useAuth";
+import {
+  formatAmbulanceLabel,
+  formatPersonLabel,
+} from "../modules/diensts/utils";
+
 import { useTranslation } from "react-i18next";
 
 const WorkerDienstsPage = () => {
@@ -76,10 +81,11 @@ const WorkerDienstsPage = () => {
                 weekStart.setDate(firstMonday.getDate() + weekOffset * 7);
 
                 const weekDates = Array.from({ length: 7 }, (_, i) => {
-                  const d = new Date(weekStart);
-                  d.setDate(weekStart.getDate() + i);
-                  return d.toISOString().split("T")[0];
+                  const d = new Date(`${weekStart.toISOString().slice(0, 10)}T12:00:00`);
+                  d.setDate(d.getDate() + i);
+                  return d.toISOString().slice(0, 10);
                 });
+
 
                 const weekEnd = new Date(weekStart);
                 weekEnd.setDate(weekStart.getDate() + 6);
@@ -141,27 +147,11 @@ const WorkerDienstsPage = () => {
                                   🕒 {assignment.startTime} -{" "}
                                   {assignment.endTime}
                                 </p>
-                                <p>
-                                  🚑{" "}
-                                  {typeof assignment.ambulanceNumber ===
-                                    "string"
-                                    ? assignment.ambulanceNumber
-                                    : "—"}
-                                </p>
-                                <p>
-                                  👨‍✈️{" "}
-                                  {typeof assignment.driver === "object" &&
-                                    assignment.driver
-                                    ? `${assignment.driver.lastName}, ${assignment.driver.name}`
-                                    : ""}
-                                </p>
-                                <p>
-                                  🧑‍⚕️{" "}
-                                  {typeof assignment.medic === "object" &&
-                                    assignment.medic
-                                    ? `${assignment.medic.lastName}, ${assignment.medic.name}`
-                                    : ""}
-                                </p>
+                                <p>🚑 {formatAmbulanceLabel(assignment.ambulanceNumber)}</p>
+
+                                <p>👨‍✈️ {formatPersonLabel(assignment.driver)}</p>
+                                <p>🧑‍⚕️ {formatPersonLabel(assignment.medic)}</p>
+
                               </div>
                             ) : (
                               <p className="text-xs text-emerald-800 mt-1">
