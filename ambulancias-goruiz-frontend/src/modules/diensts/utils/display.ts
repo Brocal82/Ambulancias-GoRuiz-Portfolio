@@ -24,15 +24,21 @@ export const formatPersonLabel = (p: unknown): string => {
  */
 export const formatAmbulanceLabel = (a: unknown): string => {
   if (!a) return "—";
+
+  // Si ya viene como string (id o número)
   if (typeof a === "string") return a || "—";
 
   if (typeof a === "object") {
     const anyA = a as any;
-    const n = anyA?.ambulanceNumber;
-  if (typeof n === "string" && n) return n;
-  if (typeof n === "number") return String(n);
 
+    const n = anyA?.ambulanceNumber;
+    if (typeof n === "string" && n.trim()) return n;
+    if (typeof n === "number") return String(n);
+
+    // fallback común si viene poblado pero sin número
+    if (typeof anyA?._id === "string") return "—";
   }
 
   return "—";
 };
+
