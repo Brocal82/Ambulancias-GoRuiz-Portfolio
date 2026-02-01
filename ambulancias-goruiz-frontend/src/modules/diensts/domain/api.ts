@@ -1,12 +1,18 @@
 // frontend/src/modules/diensts/domain/api.ts
 import axios from "../../../api/axios";
-
-
 import type { Dienst, AssignedDay, UpdateAssignment } from "./types";
 import {
   adaptAssignedDay,
   adaptDienstAssignment,
 } from "./adapters/assignmentAdapter";
+
+const normalizeDienst = (d: Dienst): Dienst => ({
+  ...d,
+  assignments: Array.isArray(d.assignments)
+    ? d.assignments.map(adaptDienstAssignment)
+    : [],
+});
+
 
 // Obtener Diensts del usuario
 export const getDienstByUser = async (
@@ -17,12 +23,7 @@ export const getDienstByUser = async (
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  return response.data.map((d) => ({
-    ...d,
-    assignments: Array.isArray(d.assignments)
-      ? d.assignments.map(adaptDienstAssignment)
-      : [],
-  }));
+  return response.data.map(normalizeDienst);
 };
 
 // Obtener todos los Diensts (admin)
@@ -31,13 +32,9 @@ export const getAllDiensts = async (token: string): Promise<Dienst[]> => {
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  return response.data.map((d) => ({
-    ...d,
-    assignments: Array.isArray(d.assignments)
-      ? d.assignments.map(adaptDienstAssignment)
-      : [],
-  }));
+  return response.data.map(normalizeDienst);
 };
+
 
 // Actualizar un Dienst parcialmente
 export const updateDienstPartial = async (
