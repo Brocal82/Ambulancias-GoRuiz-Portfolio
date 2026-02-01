@@ -1,21 +1,21 @@
 // frontend/src/modules/diensts/domain/adapters/assignmentAdapter.ts
 
-import type { AssignedDay, DienstAssignment, UserRef } 
-from "../../../../modules/diensts";
-
+import type { AssignedDay, DienstAssignment, UserRef } from "../..";
 
 /**
  * Convierte cualquier forma de driver/medic a UserRef usable.
  * - Si viene como objeto con _id => OK
- * - Si viene como string => placeholder (no rompe UI)
- * - Si viene undefined/null => null
+ * - Si viene como string no vacío => placeholder seguro
+ * - Si viene undefined / null / string vacío => null
  */
 export const toUserRefOrNull = (v: unknown): UserRef | null => {
   if (!v) return null;
 
-  // string => placeholder (para que no crashee MyWorkDay con driver._id)
+  // string => placeholder seguro
   if (typeof v === "string") {
-    return { _id: v, name: "", lastName: "" };
+    const id = v.trim();
+    if (!id) return null;
+    return { _id: id, name: "", lastName: "" };
   }
 
   // object => validar _id
@@ -50,13 +50,19 @@ export const adaptAssignedDay = (d: AssignedDay): AssignedDay => {
 };
 
 /**
- * Normaliza un DienstAssignment para que driver/medic sean estables (nunca undefined raro).
+ * Normaliza un DienstAssignment para que driver/medic sean estables
+ * (nunca undefined raro ni objeto inconsistente)
  */
-export const adaptDienstAssignment = (a: DienstAssignment): DienstAssignment => {
+export const adaptDienstAssignment = (
+  a: DienstAssignment,
+): DienstAssignment => {
   const driver =
-    toUserRefOrNull(a.driver) ?? (typeof a.driver === "string" ? a.driver : "");
+    toUserRefOrNull(a.driver) ??
+    (typeof a.driver === "string" ? a.driver : "");
+
   const medic =
-    toUserRefOrNull(a.medic) ?? (typeof a.medic === "string" ? a.medic : "");
+    toUserRefOrNull(a.medic) ??
+    (typeof a.medic === "string" ? a.medic : "");
 
   return {
     ...a,
@@ -66,14 +72,19 @@ export const adaptDienstAssignment = (a: DienstAssignment): DienstAssignment => 
 };
 
 /**
- * Helper opcional: extrae ambulanceId como string si viene poblado como objeto.
+ * Helper opcional: extrae ambulanceId como string
+ * si viene poblado como objeto.
  */
-export const normalizeAmbulanceIdToString = (ambulanceId: unknown): string => {
+export const normalizeAmbulanceIdToString = (
+  ambulanceId: unknown,
+): string => {
   if (!ambulanceId) return "";
   if (typeof ambulanceId === "string") return ambulanceId;
+
   if (typeof ambulanceId === "object") {
     const anyA = ambulanceId as any;
     return typeof anyA._id === "string" ? anyA._id : "";
   }
+
   return "";
 };
