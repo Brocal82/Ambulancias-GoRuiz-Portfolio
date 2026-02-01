@@ -27,11 +27,12 @@ const WorkerDienstsPage = () => {
 
   const fmtDate = (d: Date) => d.toLocaleDateString(i18n.language);
   const fmtCellDate = (isoDay: string) =>
-    new Date(isoDay).toLocaleDateString(i18n.language, {
+    new Date(`${isoDay}T12:00:00`).toLocaleDateString(i18n.language, {
       weekday: "short",
       day: "2-digit",
       month: "2-digit",
     });
+
 
   const fetchAssignedDays = useCallback(async () => {
     if (!userId || !token) return;
