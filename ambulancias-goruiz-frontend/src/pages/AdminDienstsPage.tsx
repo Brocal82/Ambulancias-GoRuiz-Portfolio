@@ -235,7 +235,7 @@ const AdminPage = () => {
                     })
 
                     .map((dienst) => {
-                      const weekDates = getWeekDays(weekStartISO as any).map(String);
+                      const weekDates = getWeekDays(weekStartISO);
 
 
                       // ✅ Mostrar swap/clear solo si hay alguien asignado en la semana
