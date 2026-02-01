@@ -15,6 +15,7 @@ import type {
 
 import { mergeWithAssigned } from "../utils/mergeWithAssigned";
 import { useTranslation } from "react-i18next";
+import { normalizeAmbulanceIdToString } from "../modules/diensts/domain/adapters/assignmentAdapter";
 import { formatYYYYMMDDToDDMMYYYY, fmtDDMM } from "../utils/timeUtils";
 import { getVacationFlagsInRange, type VacFlag } from "../api/vacation";
 import { getSickFlagsInRange, type SickFlag } from "../api/sickLeaves";
@@ -74,16 +75,8 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       setStartTime(assignment.startTime);
       setEndTime(assignment.endTime);
 
-      if (typeof assignment.ambulanceId === "string") {
-        setAmbulanceId(assignment.ambulanceId);
-      } else if (
-        assignment.ambulanceId &&
-        typeof assignment.ambulanceId === "object"
-      ) {
-        setAmbulanceId(assignment.ambulanceId._id);
-      } else {
-        setAmbulanceId("");
-      }
+      setAmbulanceId(normalizeAmbulanceIdToString(assignment.ambulanceId));
+
 
       setSelectedDriverId(
         typeof assignment.driver === "string"
