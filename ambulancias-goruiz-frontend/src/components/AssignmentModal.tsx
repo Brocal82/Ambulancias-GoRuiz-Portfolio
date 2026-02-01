@@ -1,12 +1,11 @@
 // frontend/src/components/AssignmentModal.tsx
-import React, { useState, useEffect, useId, useMemo } from "react";
+import { useState, useEffect, useId, useMemo } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { updateDienstPartial, removeAssignment } from "../modules/diensts";
 import { UsersApi } from "../modules/users";
 
 import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { toastT } from "../utils/toast";
-import "react-toastify/dist/ReactToastify.css";
 import type {
   UserRef,
   UpdateAssignment,
