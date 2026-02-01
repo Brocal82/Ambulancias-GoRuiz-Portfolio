@@ -14,6 +14,10 @@ import AssignmentModal from "../components/AssignmentModal";
 import TeamAssignModal from "../components/diensts/TeamAssignModal";
 import UserAssignModal from "../components/diensts/UserAssignModal";
 import {
+  formatAmbulanceLabel,
+  formatPersonLabel,
+} from "../modules/diensts/utils/display";
+import {
   isPartialAssignment,
   isTeamIncomplete,
 } from "../utils/assignmentUtils";
@@ -23,21 +27,6 @@ import { toastT } from "../utils/toast";
 import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { formatCellDateUnified } from "../utils/timeUtils";
 
-// Helpers de render seguro
-const displayAmbulance = (a: unknown) =>
-  a && typeof a === "object"
-    ? ((a as any).ambulanceNumber ?? "—")
-    : typeof a === "string" && a
-      ? a
-      : "—";
-
-const displayPerson = (p: unknown) =>
-  typeof p === "string"
-    ? p
-    : p && typeof p === "object"
-      ? `${(p as any).lastName ?? ""}${(p as any).lastName ? ", " : ""}${(p as any).name ?? ""}` ||
-      "—"
-      : "—";
 
 const AdminPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
@@ -498,9 +487,7 @@ const AdminPage = () => {
                                       </p>
                                       <p>
                                         🚑{" "}
-                                        {displayAmbulance(
-                                          assignment?.ambulanceId,
-                                        )}
+                                        {formatAmbulanceLabel(assignment?.ambulanceId)}
                                       </p>
 
                                       {/* Conductor: rojo si P-Schein caducado; ámbar si warning */}
@@ -542,13 +529,13 @@ const AdminPage = () => {
                                               className={drvClass}
                                               title={drvTitle}
                                             >
-                                              {displayPerson(assignment?.driver)}
+                                              {formatPersonLabel(assignment?.driver)}
                                             </span>
                                           );
                                         })()}
                                       </p>
 
-                                      <p>🧑‍⚕️ {displayPerson(assignment?.medic)}</p>
+                                      <p>🧑‍⚕️ {formatPersonLabel(assignment?.medic)}</p>
                                     </div>
                                   ) : (
                                     <p className="text-xs text-emerald-800 mt-1">
