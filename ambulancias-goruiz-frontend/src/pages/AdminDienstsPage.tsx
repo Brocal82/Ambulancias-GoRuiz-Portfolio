@@ -17,6 +17,7 @@ import {
   formatAmbulanceLabel,
   formatPersonLabel,
 } from "../modules/diensts/utils/display";
+import { getWeekStartsBerlin, getWeekDays } from "../modules/diensts/utils/week";
 import {
   isPartialAssignment,
   isTeamIncomplete,
@@ -95,20 +96,8 @@ const AdminPage = () => {
     fetchDiensts();
   }, [fetchDiensts]);
 
-  const getWeekStartDates = () => {
-    const today = new Date();
-    const monday = new Date(today);
-    const day = monday.getDay();
-    const diff = day === 0 ? -6 : 1 - day;
-    monday.setDate(monday.getDate() + diff);
-    return [0, 1, 2].map((i) => {
-      const copy = new Date(monday);
-      copy.setDate(copy.getDate() + i * 7);
-      return copy;
-    });
-  };
+  const weekStartDates = getWeekStartsBerlin(3).map((k) => new Date(k));
 
-  const weekStartDates = getWeekStartDates();
 
   return (
     <div className="min-h-[400px]">
@@ -127,7 +116,7 @@ const AdminPage = () => {
 
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 6);
-          const weekStartISO = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}-${String(weekStart.getDate()).padStart(2, "0")}`;
+          const weekStartISO = weekStart.toISOString().slice(0, 10);
           const isCollapsed = collapsedWeeks[weekStartISO] ?? false;
           const hasWeekDiensts = diensts.some((d) => {
             if (!d.weekStartDate) return false;
@@ -247,11 +236,8 @@ const AdminPage = () => {
                       );
                     })
                     .map((dienst) => {
-                      const weekDates = Array.from({ length: 7 }, (_, i) => {
-                        const d = new Date(weekStart);
-                        d.setDate(d.getDate() + i);
-                        return d.toISOString().split("T")[0];
-                      });
+                      const weekDates = getWeekDays(weekStartISO as any).map(String);
+
 
                       // ✅ Mostrar swap/clear solo si hay alguien asignado en la semana
                       const hasAnyPersonAssigned =
