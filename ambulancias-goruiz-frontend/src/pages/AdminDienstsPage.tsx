@@ -16,9 +16,10 @@ import UserAssignModal from "../components/diensts/UserAssignModal";
 import {
   formatAmbulanceLabel,
   formatPersonLabel,
-} from "../modules/diensts/utils/display";
-import { getWeekStartsBerlin, getWeekDays } from "../modules/diensts/utils/week";
-import { dayKeyToLocalDate, toBerlinDayKey, type DayKey } from "../utils/dates/dayKey";
+  getWeekStartsBerlin,
+  getWeekDays,
+} from "../modules/diensts/utils";
+import { dayKeyToLocalDate, toBerlinDayKey } from "../utils/dates/dayKey";
 
 import {
   isPartialAssignment,
@@ -98,7 +99,7 @@ const AdminPage = () => {
     fetchDiensts();
   }, [fetchDiensts]);
 
-  const weekStartKeys = getWeekStartsBerlin(3) as DayKey[];
+  const weekStartKeys = getWeekStartsBerlin(3);
 
 
   return (
