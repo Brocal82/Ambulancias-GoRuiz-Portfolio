@@ -29,7 +29,9 @@ export const formatAmbulanceLabel = (a: unknown): string => {
   if (typeof a === "object") {
     const anyA = a as any;
     const n = anyA?.ambulanceNumber;
-    if (typeof n === "string" && n) return n;
+  if (typeof n === "string" && n) return n;
+  if (typeof n === "number") return String(n);
+
   }
 
   return "—";
