@@ -9,6 +9,7 @@ import { useAuth } from "../hooks/useAuth";
 import { formatAmbulanceLabel, formatPersonLabel } from "../modules/diensts/utils";
 import { useTranslation } from "react-i18next";
 import { isPastDay } from "../utils/dates/isPastDay";
+import { DienstDayCell } from "../modules/diensts/components";
 
 const WorkerDienstsPage = () => {
   const { userId, token } = useAuth();
@@ -115,57 +116,40 @@ const WorkerDienstsPage = () => {
                       const isPast = isPastDay(dateStr);
 
                       return (
-                        <button
-                          key={dateStr}
-                          type="button"
-                          disabled={isPast}
-                          className={`
-    text-left rounded-xl p-3 ring-1 transition
-    ${cls}
-    ${isPast
-                              ? "opacity-80 bg-slate-50 text-slate-400 cursor-not-allowed hover:shadow-none hover:translate-y-0"
-                              : "hover:shadow-sm hover:-translate-y-0.5"
-                            }
-  `}
-                          onClick={() => {
-                            if (isPast) return;
-
-                            if (
-                              !assignment?.startTime ||
-                              !assignment?.endTime ||
-                              !assignment?.driver ||
-                              !assignment?.medic
-                            ) {
-                              return;
-                            }
-
+                        <DienstDayCell
+                          dayISO={dateStr}
+                          statusClass={cls}
+                          isPast={isPast}
+                          isDisabled={
+                            !assignment?.startTime ||
+                            !assignment?.endTime ||
+                            !assignment?.driver ||
+                            !assignment?.medic
+                          }
+                          lines={{
+                            dateLine: fmtCellDate(dateStr),
+                            ...(assignment
+                              ? {
+                                timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
+                                ambulanceLine: `🚑 ${formatAmbulanceLabel(
+                                  assignment.ambulanceNumber,
+                                )}`,
+                                driverLine: `👨‍✈️ ${formatPersonLabel(assignment.driver)}`,
+                                medicLine: `🧑‍⚕️ ${formatPersonLabel(assignment.medic)}`,
+                              }
+                              : {
+                                ambulanceLine: `🌴 ${t("pages.diensts.workerPage.freeDay")}`,
+                              }),
+                          }}
+                          onOpen={() => {
                             setSelectedAssignment({
-                              date: assignment.date,
+                              date: assignment!.date,
                               assignment: assignment as FlexibleAssignment,
-                              dienstId: assignment.dienstId,
+                              dienstId: assignment!.dienstId,
                             });
                           }}
-                        >
+                        />
 
-                          <p className="text-xs font-semibold text-slate-800 mb-1">
-                            {fmtCellDate(dateStr)}
-                          </p>
-
-                          {assignment ? (
-                            <div className="space-y-0.5 text-xs text-slate-700">
-                              <p>
-                                🕒 {assignment.startTime} - {assignment.endTime}
-                              </p>
-                              <p>🚑 {formatAmbulanceLabel(assignment.ambulanceNumber)}</p>
-                              <p>👨‍✈️ {formatPersonLabel(assignment.driver)}</p>
-                              <p>🧑‍⚕️ {formatPersonLabel(assignment.medic)}</p>
-                            </div>
-                          ) : (
-                            <p className="text-xs text-emerald-800 mt-1">
-                              🌴 {t("pages.diensts.workerPage.freeDay")}
-                            </p>
-                          )}
-                        </button>
                       );
                     })}
                   </div>
