@@ -5,11 +5,19 @@ import AssignmentModal from "../components/AssignmentModal";
 import type { AssignedDay } from "../modules/diensts";
 import type { FlexibleAssignment } from "../types/assignment";
 import { useAuth } from "../hooks/useAuth";
-import { formatAmbulanceLabel, formatPersonLabel } from "../modules/diensts/utils";
 import { useTranslation } from "react-i18next";
 import { isPastDay } from "../utils/dates/isPastDay";
 import { DienstDayCell } from "../modules/diensts/components";
-import { getAssignmentStatus, getStatusClass } from "../modules/diensts/utils";
+import {
+  formatAmbulanceLabel,
+  formatPersonLabel,
+  getAssignmentStatus,
+  getStatusClass,
+  getWeekDays,
+  getWeekStartsBerlin,
+} from "../modules/diensts/utils";
+
+
 
 
 const WorkerDienstsPage = () => {
@@ -74,32 +82,20 @@ const WorkerDienstsPage = () => {
       </div>
 
       {(() => {
-        const today = new Date();
-        const dayOfWeek = today.getDay();
-        const daysToSubtract = (dayOfWeek + 6) % 7; // lunes = 0
-        const firstMonday = new Date(today);
-        firstMonday.setDate(today.getDate() - daysToSubtract);
-
-        const weeks = [0, 1]; // Dos semanas
+        const weekStartKeys = getWeekStartsBerlin(2); // semana actual + siguiente
 
         return (
           <div className="space-y-6">
-            {weeks.map((weekOffset) => {
-              const weekStart = new Date(firstMonday);
-              weekStart.setDate(firstMonday.getDate() + weekOffset * 7);
+            {weekStartKeys.map((weekStartISO) => {
+              const weekDates = getWeekDays(weekStartISO);
 
-              const weekDates = Array.from({ length: 7 }, (_, i) => {
-                const d = new Date(`${weekStart.toISOString().slice(0, 10)}T12:00:00`);
-                d.setDate(d.getDate() + i);
-                return d.toISOString().slice(0, 10);
-              });
-
-              const weekEnd = new Date(weekStart);
-              weekEnd.setDate(weekStart.getDate() + 6);
+              const weekStart = new Date(`${weekStartISO}T12:00:00`);
+              const weekEnd = new Date(`${weekStartISO}T12:00:00`);
+              weekEnd.setDate(weekEnd.getDate() + 6);
 
               return (
                 <div
-                  key={weekOffset}
+                  key={weekStartISO}
                   className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4"
                 >
                   <p className="text-sm font-medium text-slate-700 mb-3">
@@ -114,15 +110,14 @@ const WorkerDienstsPage = () => {
                     {weekDates.map((dateStr) => {
                       const assignment = assignedByDate.get(dateStr);
 
-
                       const status = getAssignmentStatus(assignment);
                       const cls = getStatusClass(status);
-
 
                       const isPast = isPastDay(dateStr);
 
                       return (
                         <DienstDayCell
+                          key={dateStr}
                           dayISO={dateStr}
                           statusClass={cls}
                           isPast={isPast}
@@ -155,7 +150,6 @@ const WorkerDienstsPage = () => {
                             });
                           }}
                         />
-
                       );
                     })}
                   </div>
@@ -165,6 +159,7 @@ const WorkerDienstsPage = () => {
           </div>
         );
       })()}
+
 
       {selectedAssignment && (
         <AssignmentModal
