@@ -28,11 +28,8 @@ import { toastT } from "../utils/toast";
 import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { formatCellDateUnified } from "../utils/timeUtils";
 import type { FlexibleAssignment } from "../types/assignment";
-import { DienstDayCell } from "../modules/diensts/components";
+import { DienstDayCell, WeekBlock } from "../modules/diensts/components";
 import { getAssignmentStatus, getStatusClass } from "../modules/diensts/utils";
-
-
-
 
 const AdminPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
@@ -42,7 +39,6 @@ const AdminPage = () => {
     assignment?: FlexibleAssignment;
     dienstId: string;
   } | null>(null);
-
 
   // ⬇️ estado local para el modal de asignar Team a la semana
   const [weekTeamModal, setWeekTeamModal] = useState<{
@@ -69,7 +65,10 @@ const AdminPage = () => {
 
   // Convierte el assignment del Dienst a FlexibleAssignment (contrato estable del modal)
   const toFlexibleAssignment = (
-    a?: (Dienst["assignments"][0] & { driver?: string | UserRef; medic?: string | UserRef }),
+    a?: (Dienst["assignments"][0] & {
+      driver?: string | UserRef;
+      medic?: string | UserRef;
+    }),
   ): FlexibleAssignment | undefined => {
     if (!a) return undefined;
 
@@ -94,7 +93,6 @@ const AdminPage = () => {
       medic: (a.medic ?? "") as any,
     } as FlexibleAssignment;
   };
-
 
   const toggleWeekCollapsed = (weekKey: string) => {
     setCollapsedWeeks((prev) => ({
@@ -130,7 +128,6 @@ const AdminPage = () => {
 
   const weekStartKeys = getWeekStartsBerlin(3);
 
-
   return (
     <div className="min-h-[400px]">
       <div className="mb-6">
@@ -147,7 +144,6 @@ const AdminPage = () => {
         weekStartKeys.map((weekStartISO, index) => {
           const weekStart = dayKeyToLocalDate(weekStartISO);
 
-
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 6);
 
@@ -157,12 +153,20 @@ const AdminPage = () => {
             return toBerlinDayKey(d.weekStartDate) === weekStartISO;
           });
 
+          const title = t("pages.diensts.adminPage.weekRange", {
+            from: fmtDate(weekStart),
+            to: fmtDate(weekEnd),
+          });
 
           return (
-            <div
+            <WeekBlock
               key={index}
-              className="mb-8 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4"
+              title={title}
+              withGrid={false}
+              showTitle={false}
+              className="mb-8"
             >
+
               {/* Header de semana */}
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
                 {hasWeekDiensts ? (
@@ -173,22 +177,12 @@ const AdminPage = () => {
                     onClick={() => toggleWeekCollapsed(weekStartISO)}
                     aria-expanded={!isCollapsed}
                   >
-                    <span>
-                      {t("pages.diensts.adminPage.weekRange", {
-                        from: fmtDate(weekStart),
-                        to: fmtDate(weekEnd),
-                      })}
-                    </span>
+                    <span>{title}</span>
                     <span className="text-xs">{isCollapsed ? "🔽" : "🔼"}</span>
                   </button>
                 ) : (
                   // Si NO hay Diensts: solo texto, sin flecha y sin onClick
-                  <h2 className="text-sm font-medium text-slate-700">
-                    {t("pages.diensts.adminPage.weekRange", {
-                      from: fmtDate(weekStart),
-                      to: fmtDate(weekEnd),
-                    })}
-                  </h2>
+                  <h2 className="text-sm font-medium text-slate-700">{title}</h2>
                 )}
 
                 <div className="flex flex-wrap gap-2">
@@ -260,12 +254,12 @@ const AdminPage = () => {
                   {diensts
                     .filter((dienst) => {
                       if (!dienst.weekStartDate) return false;
-                      return toBerlinDayKey(dienst.weekStartDate) === weekStartISO;
+                      return (
+                        toBerlinDayKey(dienst.weekStartDate) === weekStartISO
+                      );
                     })
-
                     .map((dienst) => {
                       const weekDates = getWeekDays(weekStartISO);
-
 
                       // ✅ Mostrar swap/clear solo si hay alguien asignado en la semana
                       const hasAnyPersonAssigned =
@@ -377,7 +371,6 @@ const AdminPage = () => {
                                         | undefined;
 
                                       if (code === "swap_not_permitted") {
-                                        // 🚫 Caso específico: roles no compatibles o P-Schein caducado
                                         toastT.error([
                                           "pages.diensts.adminPage.swapWeekNotPermitted",
                                         ]);
@@ -386,7 +379,6 @@ const AdminPage = () => {
                                           err?.response?.data?.details,
                                         );
                                       } else {
-                                        // ❌ Error genérico
                                         console.error(
                                           "❌ Error en swapWeekRoles:",
                                           err,
@@ -477,9 +469,9 @@ const AdminPage = () => {
 
                               const isPast = isPastDay(day);
 
-
                               return (
                                 <DienstDayCell
+                                  key={day}
                                   dayISO={day}
                                   statusClass={cls}
                                   incompleteBorderClass={incompleteBorderClass}
@@ -492,7 +484,10 @@ const AdminPage = () => {
                                     });
                                   }}
                                   lines={{
-                                    dateLine: formatCellDateUnified(day, i18n.language),
+                                    dateLine: formatCellDateUnified(
+                                      day,
+                                      i18n.language,
+                                    ),
                                     ...(assignment
                                       ? {
                                         timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
@@ -504,43 +499,60 @@ const AdminPage = () => {
                                             👨‍✈️{" "}
                                             {(() => {
                                               let drvClass = "";
-                                              let drvTitle: string | undefined;
+                                              let drvTitle:
+                                                | string
+                                                | undefined;
 
                                               if (
-                                                typeof assignment.driver === "object" &&
+                                                typeof assignment.driver ===
+                                                "object" &&
                                                 assignment.driver
                                               ) {
                                                 const info = getPscheinInfo(
-                                                  (assignment.driver as any).pscheinExpiry,
+                                                  (assignment.driver as any)
+                                                    .pscheinExpiry,
                                                 );
                                                 if (info.status === "expired") {
-                                                  drvClass = "text-red-600 font-medium";
-                                                } else if (info.status === "warning") {
-                                                  drvClass = "text-amber-600 font-medium";
+                                                  drvClass =
+                                                    "text-red-600 font-medium";
+                                                } else if (
+                                                  info.status === "warning"
+                                                ) {
+                                                  drvClass =
+                                                    "text-amber-600 font-medium";
                                                 }
                                                 drvTitle =
                                                   getPscheinWarningTitle(
-                                                    (assignment.driver as any).pscheinExpiry,
+                                                    (assignment.driver as any)
+                                                      .pscheinExpiry,
                                                     t as any,
                                                   ) || undefined;
                                               }
 
                                               return (
-                                                <span className={drvClass} title={drvTitle}>
-                                                  {formatPersonLabel(assignment?.driver)}
+                                                <span
+                                                  className={drvClass}
+                                                  title={drvTitle}
+                                                >
+                                                  {formatPersonLabel(
+                                                    assignment?.driver,
+                                                  )}
                                                 </span>
                                               );
                                             })()}
                                           </>
                                         ),
-                                        medicLine: `🧑‍⚕️ ${formatPersonLabel(assignment?.medic)}`,
+                                        medicLine: `🧑‍⚕️ ${formatPersonLabel(
+                                          assignment?.medic,
+                                        )}`,
                                       }
                                       : {
-                                        ambulanceLine: `🌴 ${t("pages.diensts.adminPage.freeDay")}`,
+                                        ambulanceLine: `🌴 ${t(
+                                          "pages.diensts.adminPage.freeDay",
+                                        )}`,
                                       }),
                                   }}
                                 />
-
                               );
                             })}
                           </div>
@@ -549,11 +561,10 @@ const AdminPage = () => {
                     })}
                 </>
               )}
-            </div>
+            </WeekBlock>
           );
         })
       )}
-
 
       {selectedAssignment && (
         <AssignmentModal

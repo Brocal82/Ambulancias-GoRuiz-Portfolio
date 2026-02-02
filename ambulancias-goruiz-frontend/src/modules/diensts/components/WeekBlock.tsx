@@ -4,16 +4,31 @@ type WeekBlockProps = {
     title: string;
     children: React.ReactNode;
     className?: string;
+
+    /**
+     * ✅ true (default): WeekBlock incluye el grid de 7 días
+     * ✅ false: WeekBlock solo actúa como wrapper (sin grid)
+     */
+    withGrid?: boolean;
+
+    /**
+     * ✅ true (default): muestra el título arriba
+     * ✅ false: NO muestra el título (útil si el contenido ya trae su propio header)
+     */
+    showTitle?: boolean;
 };
 
 /**
- * Wrapper visual único para una semana (título + grid).
- * No mete lógica de fechas aquí: solo estructura y consistencia UX.
+ * Wrapper visual único para una semana (título + contenido).
+ * - Worker/AdminUser: withGrid=true, showTitle=true
+ * - AdminDiensts: withGrid=false, showTitle=false (porque ya tiene header propio)
  */
 export const WeekBlock: React.FC<WeekBlockProps> = ({
     title,
     children,
     className,
+    withGrid = true,
+    showTitle = true,
 }) => {
     return (
         <div
@@ -22,11 +37,17 @@ export const WeekBlock: React.FC<WeekBlockProps> = ({
                 className ?? "",
             ].join(" ")}
         >
-            <p className="text-sm font-medium text-slate-700 mb-3">{title}</p>
+            {showTitle && (
+                <p className="text-sm font-medium text-slate-700 mb-3">{title}</p>
+            )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                {children}
-            </div>
+            {withGrid ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                    {children}
+                </div>
+            ) : (
+                <>{children}</>
+            )}
         </div>
     );
 };
