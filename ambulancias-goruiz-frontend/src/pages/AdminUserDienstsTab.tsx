@@ -13,7 +13,7 @@ import { isPastDay } from "../utils/dates/isPastDay";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { DienstDayCell } from "../modules/diensts/components";
-import { getAssignmentStatus, getStatusClass } from "../modules/diensts/utils";
+import { getAssignmentStatus, getStatusClass, getWeekDays, getWeekStartsBerlin } from "../modules/diensts/utils";
 
 
 interface Props {
@@ -52,21 +52,6 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
       day: "2-digit",
       month: "2-digit",
     });
-
-  const addDaysISO = (isoDay: string, days: number) => {
-    const d = toNoonDate(isoDay);
-    d.setDate(d.getDate() + days);
-    return d.toISOString().slice(0, 10);
-  };
-
-  // Lunes de la semana (en ISO "YYYY-MM-DD") para una fecha ISO
-  const mondayOfISO = (isoDay: string) => {
-    const d = toNoonDate(isoDay);
-    const dow = d.getDay(); // 0..6 (dom..sab)
-    const diff = (dow + 6) % 7; // lunes=0
-    d.setDate(d.getDate() - diff);
-    return d.toISOString().slice(0, 10);
-  };
 
   const fetchData = useCallback(async () => {
     if (!userId || !token) return;
@@ -156,10 +141,10 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
     return map;
   }, [userDiensts, allDiensts]);
 
-  const getDienstIdForDate = (dateStr: string): string => {
-    const mondayIso = mondayOfISO(dateStr);
-    return dienstIdByWeekStart.get(mondayIso) ?? "";
+  const getDienstIdForWeekStart = (weekStartISO: string): string => {
+    return dienstIdByWeekStart.get(weekStartISO) ?? "";
   };
+
 
   if (loading) {
     return (
@@ -178,24 +163,18 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
       </div>
 
       {(() => {
-        const todayISO = new Date().toISOString().slice(0, 10);
-        const firstMondayISO = mondayOfISO(todayISO);
-
-        const weeks = [0, 1]; // Dos semanas
+        const weekStartKeys = getWeekStartsBerlin(2); // semana actual + siguiente
 
         return (
           <div className="space-y-6">
-            {weeks.map((weekOffset) => {
-              const weekStartISO = addDaysISO(firstMondayISO, weekOffset * 7);
-              const weekEndISO = addDaysISO(weekStartISO, 6);
-
-              const weekDates = Array.from({ length: 7 }, (_, i) =>
-                addDaysISO(weekStartISO, i),
-              );
+            {weekStartKeys.map((weekStartISO) => {
+              const weekDates = getWeekDays(weekStartISO);
+              const weekEndISO = weekDates[6];
+              const dienstIdForThisWeek = getDienstIdForWeekStart(weekStartISO);
 
               return (
                 <div
-                  key={weekOffset}
+                  key={weekStartISO}
                   className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4"
                 >
                   <p className="text-sm font-medium text-slate-700 mb-3">
@@ -209,15 +188,14 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                     {weekDates.map((dateStr) => {
                       const assignment = assignedByDate.get(dateStr);
 
-
                       const status = getAssignmentStatus(assignment);
                       const cls = getStatusClass(status);
-
 
                       const isPast = isPastDay(dateStr);
 
                       return (
                         <DienstDayCell
+                          key={dateStr}
                           dayISO={dateStr}
                           statusClass={cls}
                           isPast={isPast}
@@ -240,10 +218,12 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                           onOpen={() => {
                             const foundDienstId = assignment?.dienstId
                               ? assignment.dienstId
-                              : getDienstIdForDate(dateStr);
+                              : dienstIdForThisWeek;
 
                             if (!foundDienstId) {
-                              console.warn(`ID del Dienst no encontrado para la fecha ${dateStr}`);
+                              console.warn(
+                                `ID del Dienst no encontrado para la semana ${weekStartISO} (fecha ${dateStr})`,
+                              );
                               return;
                             }
 
@@ -254,7 +234,6 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                             });
                           }}
                         />
-
                       );
                     })}
                   </div>
@@ -264,6 +243,7 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
           </div>
         );
       })()}
+
 
       {selectedAssignment && (
         <AssignmentModal
