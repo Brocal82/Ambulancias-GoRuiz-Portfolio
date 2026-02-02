@@ -10,7 +10,7 @@ import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
 import type { AssignedDay, Dienst, UserRef } from "../modules/diensts";
 import type { FlexibleAssignment } from "../types/assignment";
-
+import { isPastDay } from "../utils/dates/isPastDay";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 
@@ -58,16 +58,6 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
     const diff = (dow + 6) % 7; // lunes=0
     d.setDate(d.getDate() - diff);
     return d.toISOString().slice(0, 10);
-  };
-
-  // ✅ isPast (mismo criterio que AdminDienstsPage)
-  const isPastDay = (isoDay: string) => {
-    const today = new Date();
-    const todayISO = new Date(
-      `${today.toISOString().slice(0, 10)}T12:00:00`,
-    );
-    const d = toNoonDate(isoDay);
-    return d < todayISO;
   };
 
   const fetchData = useCallback(async () => {

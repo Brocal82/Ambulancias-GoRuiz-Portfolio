@@ -8,6 +8,7 @@ import type { FlexibleAssignment } from "../types/assignment";
 import { useAuth } from "../hooks/useAuth";
 import { formatAmbulanceLabel, formatPersonLabel } from "../modules/diensts/utils";
 import { useTranslation } from "react-i18next";
+import { isPastDay } from "../utils/dates/isPastDay";
 
 const WorkerDienstsPage = () => {
   const { userId, token } = useAuth();
@@ -30,14 +31,6 @@ const WorkerDienstsPage = () => {
       month: "2-digit",
     });
 
-  // ✅ helper local: día pasado (anterior a hoy) evitando líos de TZ
-  const isPastDay = (dayISO: string): boolean => {
-    const today = new Date();
-    today.setHours(12, 0, 0, 0);
-
-    const day = new Date(`${dayISO}T12:00:00`);
-    return day < today;
-  };
 
   const fetchAssignedDays = useCallback(async () => {
     if (!userId || !token) return;
