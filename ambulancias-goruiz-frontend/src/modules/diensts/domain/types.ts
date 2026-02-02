@@ -89,9 +89,3 @@ export interface DienstTemplate {
   perDaySchedule?: DaySchedule[];
 }
 
-/**
- * UI/compat type (legacy)
- * Nota: FlexibleAssignment NO es estrictamente "domain", pero se re-exporta aquí
- * para que el frontend tenga un único punto de entrada.
- */
-export type { FlexibleAssignment } from "../../../types/assignment";

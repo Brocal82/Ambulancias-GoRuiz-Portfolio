@@ -1,7 +1,8 @@
 // src/pages/DienstPage.tsx
 import { useCallback, useEffect, useState } from "react";
 import { getDienstByUser } from "../modules/diensts";
-import type { Dienst, FlexibleAssignment } from "../modules/diensts";
+import type { Dienst } from "../modules/diensts";
+import type { FlexibleAssignment } from "../types/assignment";
 import AssignmentModal from "../components/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
 import { useAuth } from "../hooks/useAuth";
