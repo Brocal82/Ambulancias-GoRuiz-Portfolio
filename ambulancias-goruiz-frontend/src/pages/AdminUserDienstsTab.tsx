@@ -206,7 +206,7 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                       const cls = assignment
                         ? isPartialAssignment(assignment)
                           ? "bg-amber-50 ring-amber-200"
-                          : "bg-blue-50 ring-blue-200"
+                          : "bg-blue-100 ring-blue-300"
                         : "bg-emerald-50 ring-emerald-200";
 
                       const isPast = isPastDay(dateStr);
