@@ -12,7 +12,7 @@ import type { FlexibleAssignment } from "../types/assignment";
 import { isPastDay } from "../utils/dates/isPastDay";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { DienstDayCell } from "../modules/diensts/components";
+import { DienstDayCell, WeekBlock } from "../modules/diensts/components";
 import { getAssignmentStatus, getStatusClass, getWeekDays, getWeekStartsBerlin } from "../modules/diensts/utils";
 
 
@@ -173,73 +173,69 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
               const dienstIdForThisWeek = getDienstIdForWeekStart(weekStartISO);
 
               return (
-                <div
+                <WeekBlock
                   key={weekStartISO}
-                  className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4"
+                  title={t("pages.diensts.adminPage.weekRange", {
+                    from: fmtDate(toNoonDate(weekStartISO)),
+                    to: fmtDate(toNoonDate(weekEndISO)),
+                  })}
                 >
-                  <p className="text-sm font-medium text-slate-700 mb-3">
-                    {t("pages.diensts.adminPage.weekRange", {
-                      from: fmtDate(toNoonDate(weekStartISO)),
-                      to: fmtDate(toNoonDate(weekEndISO)),
-                    })}
-                  </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                    {weekDates.map((dateStr) => {
-                      const assignment = assignedByDate.get(dateStr);
+                  {weekDates.map((dateStr) => {
+                    const assignment = assignedByDate.get(dateStr);
 
-                      const status = getAssignmentStatus(assignment);
-                      const cls = getStatusClass(status);
+                    const status = getAssignmentStatus(assignment);
+                    const cls = getStatusClass(status);
 
-                      const isPast = isPastDay(dateStr);
+                    const isPast = isPastDay(dateStr);
 
-                      return (
-                        <DienstDayCell
-                          key={dateStr}
-                          dayISO={dateStr}
-                          statusClass={cls}
-                          isPast={isPast}
-                          lines={{
-                            dateLine: fmtCellDate(dateStr),
-                            ...(assignment
-                              ? {
-                                timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
-                                ambulanceLine: `🚑 ${ambulanceLabel(
-                                  assignment.ambulanceNumber,
-                                  assignment.ambulanceId,
-                                )}`,
-                                driverLine: `👨‍✈️ ${formatUserLabel(assignment.driver)}`,
-                                medicLine: `🧑‍⚕️ ${formatUserLabel(assignment.medic)}`,
-                              }
-                              : {
-                                ambulanceLine: `🌴 ${t("pages.diensts.adminPage.freeDay")}`,
-                              }),
-                          }}
-                          onOpen={() => {
-                            const foundDienstId = assignment?.dienstId
-                              ? assignment.dienstId
-                              : dienstIdForThisWeek;
-
-                            if (!foundDienstId) {
-                              console.warn(
-                                `ID del Dienst no encontrado para la semana ${weekStartISO} (fecha ${dateStr})`,
-                              );
-                              return;
+                    return (
+                      <DienstDayCell
+                        key={dateStr}
+                        dayISO={dateStr}
+                        statusClass={cls}
+                        isPast={isPast}
+                        lines={{
+                          dateLine: fmtCellDate(dateStr),
+                          ...(assignment
+                            ? {
+                              timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
+                              ambulanceLine: `🚑 ${ambulanceLabel(
+                                assignment.ambulanceNumber,
+                                assignment.ambulanceId,
+                              )}`,
+                              driverLine: `👨‍✈️ ${formatUserLabel(assignment.driver)}`,
+                              medicLine: `🧑‍⚕️ ${formatUserLabel(assignment.medic)}`,
                             }
+                            : {
+                              ambulanceLine: `🌴 ${t("pages.diensts.adminPage.freeDay")}`,
+                            }),
+                        }}
+                        onOpen={() => {
+                          const foundDienstId = assignment?.dienstId
+                            ? assignment.dienstId
+                            : dienstIdForThisWeek;
 
-                            setSelectedAssignment({
-                              date: dateStr,
-                              assignment: toFlexibleAssignment(assignment),
-                              dienstId: foundDienstId,
-                            });
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
+                          if (!foundDienstId) {
+                            console.warn(
+                              `ID del Dienst no encontrado para la semana ${weekStartISO} (fecha ${dateStr})`,
+                            );
+                            return;
+                          }
+
+                          setSelectedAssignment({
+                            date: dateStr,
+                            assignment: toFlexibleAssignment(assignment),
+                            dienstId: foundDienstId,
+                          });
+                        }}
+                      />
+                    );
+                  })}
+                </WeekBlock>
               );
             })}
+
           </div>
         );
       })()}
