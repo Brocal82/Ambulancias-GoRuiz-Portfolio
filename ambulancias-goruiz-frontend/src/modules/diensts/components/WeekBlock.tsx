@@ -1,34 +1,28 @@
 import type React from "react";
 
-type WeekBlockProps = {
+export type WeekBlockProps = {
     title: string;
     children: React.ReactNode;
     className?: string;
 
-    /**
-     * ✅ true (default): WeekBlock incluye el grid de 7 días
-     * ✅ false: WeekBlock solo actúa como wrapper (sin grid)
-     */
-    withGrid?: boolean;
-
-    /**
-     * ✅ true (default): muestra el título arriba
-     * ✅ false: NO muestra el título (útil si el contenido ya trae su propio header)
-     */
+    /** Si quieres que WeekBlock pinte el título arriba (por defecto true) */
     showTitle?: boolean;
+
+    /** Si quieres que WeekBlock envuelva children en la grid (por defecto true) */
+    withGrid?: boolean;
 };
 
 /**
- * Wrapper visual único para una semana (título + contenido).
- * - Worker/AdminUser: withGrid=true, showTitle=true
- * - AdminDiensts: withGrid=false, showTitle=false (porque ya tiene header propio)
+ * Wrapper visual único para una semana.
+ * - Puede pintar el título o dejarte poner un header custom.
+ * - Puede crear la grid estándar o dejarte renderizar lo que quieras dentro.
  */
 export const WeekBlock: React.FC<WeekBlockProps> = ({
     title,
     children,
     className,
-    withGrid = true,
     showTitle = true,
+    withGrid = true,
 }) => {
     return (
         <div

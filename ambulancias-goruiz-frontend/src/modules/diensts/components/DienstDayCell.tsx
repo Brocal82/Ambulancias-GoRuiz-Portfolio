@@ -28,6 +28,9 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
 }) => {
     const disabled = Boolean(isPast || isDisabled);
 
+    // ✅ Clase para que las líneas largas NO rompan el layout (misma altura visual)
+    const lineCls = "text-xs text-slate-700 truncate";
+
     return (
         <button
             type="button"
@@ -49,14 +52,15 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
         >
             <div className="space-y-0.5">
                 {lines?.dateLine && (
-                    <p className="text-xs font-semibold text-slate-800 mb-1">
+                    <p className="text-xs font-semibold text-slate-800 mb-1 truncate">
                         {lines.dateLine}
                     </p>
                 )}
-                {lines?.timeLine && <p className="text-xs">{lines.timeLine}</p>}
-                {lines?.ambulanceLine && <p className="text-xs">{lines.ambulanceLine}</p>}
-                {lines?.driverLine && <p className="text-xs">{lines.driverLine}</p>}
-                {lines?.medicLine && <p className="text-xs">{lines.medicLine}</p>}
+
+                {lines?.timeLine && <p className={lineCls}>{lines.timeLine}</p>}
+                {lines?.ambulanceLine && <p className={lineCls}>{lines.ambulanceLine}</p>}
+                {lines?.driverLine && <p className={lineCls}>{lines.driverLine}</p>}
+                {lines?.medicLine && <p className={lineCls}>{lines.medicLine}</p>}
             </div>
         </button>
     );

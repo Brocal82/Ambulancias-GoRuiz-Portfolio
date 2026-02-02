@@ -141,7 +141,7 @@ const AdminPage = () => {
           Cargando diensts...
         </div>
       ) : (
-        weekStartKeys.map((weekStartISO, index) => {
+        weekStartKeys.map((weekStartISO) => {
           const weekStart = dayKeyToLocalDate(weekStartISO);
 
           const weekEnd = new Date(weekStart);
@@ -160,7 +160,8 @@ const AdminPage = () => {
 
           return (
             <WeekBlock
-              key={index}
+              key={weekStartISO}
+
               title={title}
               withGrid={false}
               showTitle={false}
