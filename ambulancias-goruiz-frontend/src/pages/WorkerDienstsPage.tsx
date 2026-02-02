@@ -7,7 +7,7 @@ import type { FlexibleAssignment } from "../types/assignment";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { isPastDay } from "../utils/dates/isPastDay";
-import { DienstDayCell } from "../modules/diensts/components";
+import { DienstDayCell, WeekBlock } from "../modules/diensts/components";
 import {
   formatAmbulanceLabel,
   formatPersonLabel,
@@ -94,67 +94,61 @@ const WorkerDienstsPage = () => {
               weekEnd.setDate(weekEnd.getDate() + 6);
 
               return (
-                <div
+                <WeekBlock
                   key={weekStartISO}
-                  className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4"
+                  title={t("pages.diensts.workerPage.weekRange", {
+                    from: fmtDate(weekStart),
+                    to: fmtDate(weekEnd),
+                  })}
                 >
-                  <p className="text-sm font-medium text-slate-700 mb-3">
-                    {t("pages.diensts.workerPage.weekRange", {
-                      from: fmtDate(weekStart),
-                      to: fmtDate(weekEnd),
-                    })}
-                  </p>
+                  {weekDates.map((dateStr) => {
+                    const assignment = assignedByDate.get(dateStr);
 
-                  {/* Grid de 7 días */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                    {weekDates.map((dateStr) => {
-                      const assignment = assignedByDate.get(dateStr);
+                    const status = getAssignmentStatus(assignment);
+                    const cls = getStatusClass(status);
 
-                      const status = getAssignmentStatus(assignment);
-                      const cls = getStatusClass(status);
+                    const isPast = isPastDay(dateStr);
 
-                      const isPast = isPastDay(dateStr);
-
-                      return (
-                        <DienstDayCell
-                          key={dateStr}
-                          dayISO={dateStr}
-                          statusClass={cls}
-                          isPast={isPast}
-                          isDisabled={
-                            !assignment?.startTime ||
-                            !assignment?.endTime ||
-                            !assignment?.driver ||
-                            !assignment?.medic
-                          }
-                          lines={{
-                            dateLine: fmtCellDate(dateStr),
-                            ...(assignment
-                              ? {
-                                timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
-                                ambulanceLine: `🚑 ${formatAmbulanceLabel(
-                                  assignment.ambulanceNumber,
-                                )}`,
-                                driverLine: `👨‍✈️ ${formatPersonLabel(assignment.driver)}`,
-                                medicLine: `🧑‍⚕️ ${formatPersonLabel(assignment.medic)}`,
-                              }
-                              : {
-                                ambulanceLine: `🌴 ${t("pages.diensts.workerPage.freeDay")}`,
-                              }),
-                          }}
-                          onOpen={() => {
-                            setSelectedAssignment({
-                              date: assignment!.date,
-                              assignment: assignment as FlexibleAssignment,
-                              dienstId: assignment!.dienstId,
-                            });
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
+                    return (
+                      <DienstDayCell
+                        key={dateStr}
+                        dayISO={dateStr}
+                        statusClass={cls}
+                        isPast={isPast}
+                        isDisabled={
+                          !assignment?.startTime ||
+                          !assignment?.endTime ||
+                          !assignment?.driver ||
+                          !assignment?.medic
+                        }
+                        lines={{
+                          dateLine: fmtCellDate(dateStr),
+                          ...(assignment
+                            ? {
+                              timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
+                              ambulanceLine: `🚑 ${formatAmbulanceLabel(
+                                assignment.ambulanceNumber,
+                              )}`,
+                              driverLine: `👨‍✈️ ${formatPersonLabel(assignment.driver)}`,
+                              medicLine: `🧑‍⚕️ ${formatPersonLabel(assignment.medic)}`,
+                            }
+                            : {
+                              ambulanceLine: `🌴 ${t("pages.diensts.workerPage.freeDay")}`,
+                            }),
+                        }}
+                        onOpen={() => {
+                          setSelectedAssignment({
+                            date: assignment!.date,
+                            assignment: assignment as FlexibleAssignment,
+                            dienstId: assignment!.dienstId,
+                          });
+                        }}
+                      />
+                    );
+                  })}
+                </WeekBlock>
               );
+
             })}
           </div>
         );

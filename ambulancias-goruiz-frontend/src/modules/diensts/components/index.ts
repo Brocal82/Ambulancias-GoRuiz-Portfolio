@@ -3,5 +3,6 @@
 export { default as AssignmentModal } from "../../../components/AssignmentModal";
 
 export * from "./DienstDayCell";
+export * from "./WeekBlock";
 
 
