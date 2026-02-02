@@ -21,10 +21,7 @@ import {
 } from "../modules/diensts/utils";
 import { dayKeyToLocalDate, toBerlinDayKey } from "../utils/dates/dayKey";
 import { isPastDay } from "../utils/dates/isPastDay";
-import {
-  isPartialAssignment,
-  isTeamIncomplete,
-} from "../utils/assignmentUtils";
+import { isTeamIncomplete } from "../utils/assignmentUtils";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
@@ -32,6 +29,8 @@ import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { formatCellDateUnified } from "../utils/timeUtils";
 import type { FlexibleAssignment } from "../types/assignment";
 import { DienstDayCell } from "../modules/diensts/components";
+import { getAssignmentStatus, getStatusClass } from "../modules/diensts/utils";
+
 
 
 
@@ -468,11 +467,9 @@ const AdminPage = () => {
                               const assignment = dienst.assignments.find(
                                 (a) => a.date === day,
                               );
-                              const cls = assignment
-                                ? isPartialAssignment(assignment)
-                                  ? "bg-amber-50 ring-amber-200"
-                                  : "bg-blue-100 ring-blue-300"
-                                : "bg-emerald-50 ring-emerald-200";
+                              const status = getAssignmentStatus(assignment);
+                              const cls = getStatusClass(status);
+
                               const incompleteBorderClass =
                                 assignment && isTeamIncomplete(assignment)
                                   ? "border-2 border-red-500"

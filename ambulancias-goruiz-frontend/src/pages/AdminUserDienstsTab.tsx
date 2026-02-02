@@ -7,13 +7,14 @@ import {
   getAllDiensts,
 } from "../modules/diensts";
 import AssignmentModal from "../components/AssignmentModal";
-import { isPartialAssignment } from "../utils/assignmentUtils";
 import type { AssignedDay, Dienst, UserRef } from "../modules/diensts";
 import type { FlexibleAssignment } from "../types/assignment";
 import { isPastDay } from "../utils/dates/isPastDay";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { DienstDayCell } from "../modules/diensts/components";
+import { getAssignmentStatus, getStatusClass } from "../modules/diensts/utils";
+
 
 interface Props {
   userId: string;
@@ -204,11 +205,9 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                         (a) => a.date === dateStr,
                       );
 
-                      const cls = assignment
-                        ? isPartialAssignment(assignment)
-                          ? "bg-amber-50 ring-amber-200"
-                          : "bg-blue-100 ring-blue-300"
-                        : "bg-emerald-50 ring-emerald-200";
+                      const status = getAssignmentStatus(assignment);
+                      const cls = getStatusClass(status);
+
 
                       const isPast = isPastDay(dateStr);
 

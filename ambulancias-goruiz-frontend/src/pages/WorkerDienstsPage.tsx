@@ -2,7 +2,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { getAssignedDaysForUser } from "../modules/diensts";
 import AssignmentModal from "../components/AssignmentModal";
-import { isPartialAssignment } from "../utils/assignmentUtils";
 import type { AssignedDay } from "../modules/diensts";
 import type { FlexibleAssignment } from "../types/assignment";
 import { useAuth } from "../hooks/useAuth";
@@ -10,6 +9,8 @@ import { formatAmbulanceLabel, formatPersonLabel } from "../modules/diensts/util
 import { useTranslation } from "react-i18next";
 import { isPastDay } from "../utils/dates/isPastDay";
 import { DienstDayCell } from "../modules/diensts/components";
+import { getAssignmentStatus, getStatusClass } from "../modules/diensts/utils";
+
 
 const WorkerDienstsPage = () => {
   const { userId, token } = useAuth();
@@ -107,11 +108,9 @@ const WorkerDienstsPage = () => {
                     {weekDates.map((dateStr) => {
                       const assignment = assignedDays.find((a) => a.date === dateStr);
 
-                      const cls = assignment
-                        ? isPartialAssignment(assignment)
-                          ? "bg-amber-50 ring-amber-200"
-                          : "bg-blue-100 ring-blue-300"
-                        : "bg-emerald-50 ring-emerald-200";
+                      const status = getAssignmentStatus(assignment);
+                      const cls = getStatusClass(status);
+
 
                       const isPast = isPastDay(dateStr);
 
