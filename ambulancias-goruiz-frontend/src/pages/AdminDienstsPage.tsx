@@ -30,6 +30,8 @@ import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
 import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { formatCellDateUnified } from "../utils/timeUtils";
+import type { FlexibleAssignment } from "../types/assignment";
+
 
 
 const AdminPage = () => {
@@ -37,12 +39,10 @@ const AdminPage = () => {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<{
     date: string;
-    assignment?: Dienst["assignments"][0] & {
-      driver: string | UserRef;
-      medic: string | UserRef;
-    };
+    assignment?: FlexibleAssignment;
     dienstId: string;
   } | null>(null);
+
 
   // ⬇️ estado local para el modal de asignar Team a la semana
   const [weekTeamModal, setWeekTeamModal] = useState<{
@@ -66,6 +66,35 @@ const AdminPage = () => {
   const { t, i18n } = useTranslation();
 
   const fmtDate = (d: Date) => d.toLocaleDateString(i18n.language);
+
+  // Convierte el assignment del Dienst a FlexibleAssignment (contrato estable del modal)
+  const toFlexibleAssignment = (
+    a?: (Dienst["assignments"][0] & { driver?: string | UserRef; medic?: string | UserRef }),
+  ): FlexibleAssignment | undefined => {
+    if (!a) return undefined;
+
+    // Normaliza ambulanceId a string si viene poblado como objeto
+    const normalizedAmbulanceId =
+      a.ambulanceId && typeof a.ambulanceId === "object"
+        ? String((a.ambulanceId as any)?._id ?? "")
+        : (a.ambulanceId ?? "");
+
+    return {
+      _id: typeof (a as any)._id === "string" ? (a as any)._id : undefined,
+      date: a.date,
+      startTime: a.startTime,
+      endTime: a.endTime,
+      ambulanceId: normalizedAmbulanceId,
+      // si tu FlexibleAssignment tiene ambulanceNumber opcional, lo rellenamos si existe
+      ambulanceNumber:
+        a.ambulanceId && typeof a.ambulanceId === "object"
+          ? ((a.ambulanceId as any)?.ambulanceNumber as string | undefined)
+          : undefined,
+      driver: (a.driver ?? "") as any,
+      medic: (a.medic ?? "") as any,
+    } as FlexibleAssignment;
+  };
+
 
   const toggleWeekCollapsed = (weekKey: string) => {
     setCollapsedWeeks((prev) => ({
@@ -469,9 +498,10 @@ const AdminPage = () => {
                                     if (isPast) return;
                                     setSelectedAssignment({
                                       date: day,
-                                      assignment,
+                                      assignment: toFlexibleAssignment(assignment),
                                       dienstId: dienst._id,
                                     });
+
                                   }}
                                 >
 
