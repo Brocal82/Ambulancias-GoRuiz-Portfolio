@@ -31,6 +31,7 @@ import { toastT } from "../utils/toast";
 import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { formatCellDateUnified } from "../utils/timeUtils";
 import type { FlexibleAssignment } from "../types/assignment";
+import { DienstDayCell } from "../modules/diensts/components";
 
 
 
@@ -481,98 +482,68 @@ const AdminPage = () => {
 
 
                               return (
-                                <button
-                                  key={day}
-                                  type="button"
-                                  disabled={isPast}
-                                  className={`
-    text-left rounded-xl p-3 ring-1 transition
-    ${cls}
-    ${incompleteBorderClass}
-    ${isPast
-                                      ? "opacity-80 bg-slate-50 text-slate-400 cursor-not-allowed hover:shadow-none hover:translate-y-0"
-                                      : "hover:shadow-sm hover:-translate-y-0.5"
-                                    }
-  `}
-                                  onClick={() => {
-                                    if (isPast) return;
+                                <DienstDayCell
+                                  dayISO={day}
+                                  statusClass={cls}
+                                  incompleteBorderClass={incompleteBorderClass}
+                                  isPast={isPast}
+                                  onOpen={() => {
                                     setSelectedAssignment({
                                       date: day,
                                       assignment: toFlexibleAssignment(assignment),
                                       dienstId: dienst._id,
                                     });
-
                                   }}
-                                >
+                                  lines={{
+                                    dateLine: formatCellDateUnified(day, i18n.language),
+                                    ...(assignment
+                                      ? {
+                                        timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
+                                        ambulanceLine: `🚑 ${formatAmbulanceLabel(
+                                          assignment?.ambulanceId,
+                                        )}`,
+                                        driverLine: (
+                                          <>
+                                            👨‍✈️{" "}
+                                            {(() => {
+                                              let drvClass = "";
+                                              let drvTitle: string | undefined;
 
+                                              if (
+                                                typeof assignment.driver === "object" &&
+                                                assignment.driver
+                                              ) {
+                                                const info = getPscheinInfo(
+                                                  (assignment.driver as any).pscheinExpiry,
+                                                );
+                                                if (info.status === "expired") {
+                                                  drvClass = "text-red-600 font-medium";
+                                                } else if (info.status === "warning") {
+                                                  drvClass = "text-amber-600 font-medium";
+                                                }
+                                                drvTitle =
+                                                  getPscheinWarningTitle(
+                                                    (assignment.driver as any).pscheinExpiry,
+                                                    t as any,
+                                                  ) || undefined;
+                                              }
 
-                                  <p className="text-xs font-semibold text-slate-800 mb-1">
-                                    {formatCellDateUnified(day, i18n.language)}
-                                  </p>
-                                  {assignment ? (
-                                    <div className="space-y-0.5 text-xs text-slate-700">
-                                      <p>
-                                        🕒 {assignment.startTime} -{" "}
-                                        {assignment.endTime}
-                                      </p>
-                                      <p>
-                                        🚑{" "}
-                                        {formatAmbulanceLabel(assignment?.ambulanceId)}
-                                      </p>
+                                              return (
+                                                <span className={drvClass} title={drvTitle}>
+                                                  {formatPersonLabel(assignment?.driver)}
+                                                </span>
+                                              );
+                                            })()}
+                                          </>
+                                        ),
+                                        medicLine: `🧑‍⚕️ ${formatPersonLabel(assignment?.medic)}`,
+                                      }
+                                      : {
+                                        ambulanceLine: `🌴 ${t("pages.diensts.adminPage.freeDay")}`,
+                                      }),
+                                  }}
+                                />
 
-                                      {/* Conductor: rojo si P-Schein caducado; ámbar si warning */}
-                                      <p>
-                                        👨‍✈️{" "}
-                                        {(() => {
-                                          let drvClass = "";
-                                          let drvTitle: string | undefined =
-                                            undefined;
-
-                                          if (
-                                            typeof assignment.driver ===
-                                            "object" &&
-                                            assignment.driver
-                                          ) {
-                                            const info = getPscheinInfo(
-                                              (assignment.driver as any)
-                                                .pscheinExpiry,
-                                            );
-                                            if (info.status === "expired") {
-                                              drvClass =
-                                                "text-red-600 font-medium";
-                                            } else if (
-                                              info.status === "warning"
-                                            ) {
-                                              drvClass =
-                                                "text-amber-600 font-medium";
-                                            }
-                                            drvTitle =
-                                              getPscheinWarningTitle(
-                                                (assignment.driver as any)
-                                                  .pscheinExpiry,
-                                                t as any,
-                                              ) || undefined;
-                                          }
-
-                                          return (
-                                            <span
-                                              className={drvClass}
-                                              title={drvTitle}
-                                            >
-                                              {formatPersonLabel(assignment?.driver)}
-                                            </span>
-                                          );
-                                        })()}
-                                      </p>
-
-                                      <p>🧑‍⚕️ {formatPersonLabel(assignment?.medic)}</p>
-                                    </div>
-                                  ) : (
-                                    <p className="text-xs text-emerald-800 mt-1">
-                                      🌴 {t("pages.diensts.adminPage.freeDay")}
-                                    </p>
-                                  )}
-                                </button>
                               );
                             })}
                           </div>

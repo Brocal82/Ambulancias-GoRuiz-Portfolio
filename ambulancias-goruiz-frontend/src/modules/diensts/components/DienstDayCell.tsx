@@ -11,6 +11,7 @@ export type DienstDayCellLines = {
 export interface DienstDayCellProps {
     dayISO: string;
     statusClass: string;
+    incompleteBorderClass?: string;
     isPast: boolean;
     isDisabled?: boolean;
     lines?: DienstDayCellLines;
@@ -19,6 +20,7 @@ export interface DienstDayCellProps {
 
 export const DienstDayCell: React.FC<DienstDayCellProps> = ({
     statusClass,
+    incompleteBorderClass,
     isPast,
     isDisabled,
     lines,
@@ -38,6 +40,7 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
             className={`
         text-left rounded-xl p-3 ring-1 transition
         ${statusClass}
+        ${incompleteBorderClass ?? ""}
         ${disabled
                     ? "opacity-80 bg-slate-50 text-slate-400 cursor-not-allowed hover:shadow-none hover:translate-y-0"
                     : "hover:shadow-sm hover:-translate-y-0.5"
