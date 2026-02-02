@@ -28,6 +28,12 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
   const [allDiensts, setAllDiensts] = useState<Dienst[]>([]);
   const [assignedDays, setAssignedDays] = useState<AssignedDay[]>([]);
   const [loading, setLoading] = useState(true);
+  const assignedByDate = useMemo(() => {
+    const map = new Map<string, AssignedDay>();
+    for (const d of assignedDays) map.set(d.date, d);
+    return map;
+  }, [assignedDays]);
+
 
   const [selectedAssignment, setSelectedAssignment] = useState<{
     date: string;
@@ -201,9 +207,8 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                     {weekDates.map((dateStr) => {
-                      const assignment = assignedDays.find(
-                        (a) => a.date === dateStr,
-                      );
+                      const assignment = assignedByDate.get(dateStr);
+
 
                       const status = getAssignmentStatus(assignment);
                       const cls = getStatusClass(status);
