@@ -13,6 +13,7 @@ import type { FlexibleAssignment } from "../types/assignment";
 import { isPastDay } from "../utils/dates/isPastDay";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
+import { DienstDayCell } from "../modules/diensts/components";
 
 interface Props {
   userId: string;
@@ -212,29 +213,33 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                       const isPast = isPastDay(dateStr);
 
                       return (
-                        <button
-                          key={dateStr}
-                          type="button"
-                          disabled={isPast}
-                          className={`
-                            text-left rounded-xl p-3 ring-1 transition
-                            ${cls}
-                            ${isPast
-                              ? "opacity-80 bg-slate-50 text-slate-400 cursor-not-allowed hover:shadow-none hover:translate-y-0"
-                              : "hover:shadow-sm hover:-translate-y-0.5"
-                            }
-                          `}
-                          onClick={() => {
-                            if (isPast) return;
-
+                        <DienstDayCell
+                          dayISO={dateStr}
+                          statusClass={cls}
+                          isPast={isPast}
+                          lines={{
+                            dateLine: fmtCellDate(dateStr),
+                            ...(assignment
+                              ? {
+                                timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
+                                ambulanceLine: `🚑 ${ambulanceLabel(
+                                  assignment.ambulanceNumber,
+                                  assignment.ambulanceId,
+                                )}`,
+                                driverLine: `👨‍✈️ ${formatUserLabel(assignment.driver)}`,
+                                medicLine: `🧑‍⚕️ ${formatUserLabel(assignment.medic)}`,
+                              }
+                              : {
+                                ambulanceLine: `🌴 ${t("pages.diensts.adminPage.freeDay")}`,
+                              }),
+                          }}
+                          onOpen={() => {
                             const foundDienstId = assignment?.dienstId
                               ? assignment.dienstId
                               : getDienstIdForDate(dateStr);
 
                             if (!foundDienstId) {
-                              console.warn(
-                                `ID del Dienst no encontrado para la fecha ${dateStr}`,
-                              );
+                              console.warn(`ID del Dienst no encontrado para la fecha ${dateStr}`);
                               return;
                             }
 
@@ -244,32 +249,8 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                               dienstId: foundDienstId,
                             });
                           }}
-                        >
-                          <p className="text-xs font-semibold text-slate-800 mb-1">
-                            {fmtCellDate(dateStr)}
-                          </p>
+                        />
 
-                          {assignment ? (
-                            <div className="space-y-0.5 text-xs text-slate-700">
-                              <p>
-                                🕒 {assignment.startTime} - {assignment.endTime}
-                              </p>
-                              <p>
-                                🚑{" "}
-                                {ambulanceLabel(
-                                  assignment.ambulanceNumber,
-                                  assignment.ambulanceId,
-                                )}
-                              </p>
-                              <p>👨‍✈️ {formatUserLabel(assignment.driver)}</p>
-                              <p>🧑‍⚕️ {formatUserLabel(assignment.medic)}</p>
-                            </div>
-                          ) : (
-                            <p className="text-xs text-emerald-800 mt-1">
-                              🌴 {t("pages.diensts.adminPage.freeDay")}
-                            </p>
-                          )}
-                        </button>
                       );
                     })}
                   </div>
