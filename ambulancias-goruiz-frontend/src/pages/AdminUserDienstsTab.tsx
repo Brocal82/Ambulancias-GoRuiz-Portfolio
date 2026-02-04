@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { DienstDayCell, WeekBlock } from "../modules/diensts/components";
 import {
   formatPersonLabel,
+  formatAmbulanceLabel,
   getAssignmentStatus,
   getStatusClass,
   getWeekDays,
@@ -81,14 +82,26 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
 
   // Etiqueta segura para ambulancia
   const ambulanceLabel = (aNum?: string, aId?: unknown): string => {
+    // 1) Si viene número explícito, es lo más fiable (mantiene comportamiento actual)
     if (aNum) return aNum;
-    if (typeof aId === "string") return aId;
+
+    // 2) Intento estándar del módulo (cubre string y objeto con ambulanceNumber)
+    const base = formatAmbulanceLabel(aId);
+    if (base && base !== "—") return base;
+
+    // 3) Fallbacks legacy que tu vista ya soportaba (no perdemos info)
     if (aId && typeof aId === "object") {
       const obj = aId as any;
-      return obj.ambulanceNumber ?? obj.licensePlate ?? obj._id ?? "—";
+      const lp = obj?.licensePlate;
+      if (typeof lp === "string" && lp.trim()) return lp;
+
+      const id = obj?._id;
+      if (typeof id === "string" && id.trim()) return id;
     }
+
     return "—";
   };
+
 
 
   // Índice rápido: weekStartISO -> dienstId
