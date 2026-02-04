@@ -80,29 +80,6 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
     fetchData();
   }, [fetchData]);
 
-  // Etiqueta segura para ambulancia
-  const ambulanceLabel = (aNum?: string, aId?: unknown): string => {
-    // 1) Si viene número explícito, es lo más fiable (mantiene comportamiento actual)
-    if (aNum) return aNum;
-
-    // 2) Intento estándar del módulo (cubre string y objeto con ambulanceNumber)
-    const base = formatAmbulanceLabel(aId);
-    if (base && base !== "—") return base;
-
-    // 3) Fallbacks legacy que tu vista ya soportaba (no perdemos info)
-    if (aId && typeof aId === "object") {
-      const obj = aId as any;
-      const lp = obj?.licensePlate;
-      if (typeof lp === "string" && lp.trim()) return lp;
-
-      const id = obj?._id;
-      if (typeof id === "string" && id.trim()) return id;
-    }
-
-    return "—";
-  };
-
-
 
   // Índice rápido: weekStartISO -> dienstId
   const dienstIdByWeekStart = useMemo(() => {
@@ -186,10 +163,26 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                           ...(assignment
                             ? {
                               timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
-                              ambulanceLine: `🚑 ${ambulanceLabel(
-                                assignment.ambulanceNumber,
-                                assignment.ambulanceId,
-                              )}`,
+                              ambulanceLine: `🚑 ${(() => {
+                                if (assignment.ambulanceNumber) return assignment.ambulanceNumber;
+
+                                const base = formatAmbulanceLabel(assignment.ambulanceId);
+                                if (base && base !== "—") return base;
+
+                                const aId = assignment.ambulanceId;
+                                if (aId && typeof aId === "object") {
+                                  const obj = aId as any;
+
+                                  const lp = obj?.licensePlate;
+                                  if (typeof lp === "string" && lp.trim()) return lp;
+
+                                  const id = obj?._id;
+                                  if (typeof id === "string" && id.trim()) return id;
+                                }
+
+                                return "—";
+                              })()}`,
+
                               driverLine: `👨‍✈️ ${typeof assignment.driver === "string"
                                 ? "—"
                                 : formatPersonLabel(assignment.driver)
