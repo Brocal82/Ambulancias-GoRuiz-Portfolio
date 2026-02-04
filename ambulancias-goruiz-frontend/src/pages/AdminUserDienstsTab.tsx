@@ -169,6 +169,9 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                     const cls = getStatusClass(status);
 
                     const isPast = isPastDay(dateStr);
+                    const dateLine = formatCellDateUnified(dateStr, i18n.language);
+                    const freeLine = `🌴 ${t("pages.diensts.adminPage.freeDay")}`;
+
 
                     return (
                       <DienstDayCell
@@ -177,8 +180,7 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                         statusClass={cls}
                         isPast={isPast}
                         lines={{
-                          dateLine: formatCellDateUnified(dateStr, i18n.language),
-
+                          dateLine,
                           ...(assignment
                             ? {
                               timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
@@ -186,18 +188,20 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                                 assignment.ambulanceNumber,
                                 assignment.ambulanceId,
                               )}`,
-                              driverLine: `👨‍✈️ ${typeof assignment.driver === "string" ? "—" : formatPersonLabel(assignment.driver)
+                              driverLine: `👨‍✈️ ${typeof assignment.driver === "string"
+                                  ? "—"
+                                  : formatPersonLabel(assignment.driver)
                                 }`,
-                              medicLine: `🧑‍⚕️ ${typeof assignment.medic === "string" ? "—" : formatPersonLabel(assignment.medic)
+                              medicLine: `🧑‍⚕️ ${typeof assignment.medic === "string"
+                                  ? "—"
+                                  : formatPersonLabel(assignment.medic)
                                 }`,
-
                             }
                             : {
-                              ambulanceLine: `🌴 ${t(
-                                "pages.diensts.adminPage.freeDay",
-                              )}`,
+                              ambulanceLine: freeLine,
                             }),
                         }}
+
                         onOpen={() => {
                           const foundDienstId = assignment?.dienstId
                             ? assignment.dienstId
