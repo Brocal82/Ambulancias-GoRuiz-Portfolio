@@ -19,6 +19,7 @@ import {
   getWeekDays,
   getWeekStartsBerlin,
 } from "../modules/diensts/utils";
+import { formatCellDateUnified } from "../utils/timeUtils";
 
 interface Props {
   userId: string;
@@ -49,13 +50,6 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
   const toNoonDate = (isoDay: string) => new Date(`${isoDay}T12:00:00`);
 
   const fmtDate = (d: Date) => d.toLocaleDateString(i18n.language);
-
-  const fmtCellDate = (isoDay: string) =>
-    toNoonDate(isoDay).toLocaleDateString(i18n.language, {
-      weekday: "short",
-      day: "2-digit",
-      month: "2-digit",
-    });
 
   const fetchData = useCallback(async () => {
     if (!userId || !token) return;
@@ -200,7 +194,8 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                         statusClass={cls}
                         isPast={isPast}
                         lines={{
-                          dateLine: fmtCellDate(dateStr),
+                          dateLine: formatCellDateUnified(dateStr, i18n.language),
+
                           ...(assignment
                             ? {
                               timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
