@@ -1,3 +1,4 @@
+//src/modules/diensts/utils/dienstStatusStyles.ts
 import { isPartialAssignment } from "../../../utils/assignmentUtils";
 
 export type AssignmentStatus = "off" | "partial" | "full";
