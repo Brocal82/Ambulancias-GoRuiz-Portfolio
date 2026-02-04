@@ -89,33 +89,36 @@ const AdminUserDetailDashboard = () => {
         </div>
       </nav>
 
-      {/* Content container */}
-      {isDiensts ? (
-        // ✅ SIN card: sin ring, sin bg, sin shadow, sin padding
-        <div className="min-h-[400px]">
-          {userId && <AdminUserDienstsTab userId={userId} />}
-        </div>
-      ) : (
-        // ✅ CON card para el resto de tabs
-        <section className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6 min-h-[400px]">
-          {activeTab === "profile" && userId && <Profile userId={userId} />}
-          {activeTab === "praemien" && userId && (
-            <AdminUserPraemienTab userId={userId} />
-          )}
-          {activeTab === "vacations" && userId && (
-            <AdminUserVacationsTab userId={userId} />
-          )}
-          {activeTab === "sick" && userId && (
-            <AdminUserSickLeavesTab userId={userId} />
-          )}
-          {activeTab === "messages" && userId && user && (
-            <AdminUserMessageTab
-              userId={userId}
-              userFullName={`${user.lastName}, ${user.name}`}
-            />
-          )}
-        </section>
-      )}
+      {/* Content container (unificado) */}
+      <section className="w-full rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 min-h-[400px]">
+        {isDiensts ? (
+          // ✅ Diensts SIN padding para no reducir ancho útil (breakpoints/7 cols)
+          <div className="p-0">
+            {userId && <AdminUserDienstsTab userId={userId} />}
+          </div>
+        ) : (
+          // ✅ Resto de tabs CON padding consistente
+          <div className="p-6">
+            {activeTab === "profile" && userId && <Profile userId={userId} />}
+            {activeTab === "praemien" && userId && (
+              <AdminUserPraemienTab userId={userId} />
+            )}
+            {activeTab === "vacations" && userId && (
+              <AdminUserVacationsTab userId={userId} />
+            )}
+            {activeTab === "sick" && userId && (
+              <AdminUserSickLeavesTab userId={userId} />
+            )}
+            {activeTab === "messages" && userId && user && (
+              <AdminUserMessageTab
+                userId={userId}
+                userFullName={`${user.lastName}, ${user.name}`}
+              />
+            )}
+          </div>
+        )}
+      </section>
+
 
     </div>
   );

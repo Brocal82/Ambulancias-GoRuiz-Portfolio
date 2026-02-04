@@ -28,7 +28,7 @@ import { toastT } from "../utils/toast";
 import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { formatCellDateUnified } from "../utils/timeUtils";
 import type { FlexibleAssignment } from "../types/assignment";
-import { DienstDayCell, WeekBlock } from "../modules/diensts/components";
+import { DienstDayCell, WeekBlock, WEEK_GRID_CLASS } from "../modules/diensts/components";
 import { getAssignmentStatus, getStatusClass } from "../modules/diensts/utils";
 
 const AdminPage = () => {
@@ -455,7 +455,7 @@ const AdminPage = () => {
                           </div>
 
                           {/* Grid de 7 días */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                          <div className={WEEK_GRID_CLASS}>
                             {weekDates.map((day) => {
                               const assignment = dienst.assignments.find(
                                 (a) => a.date === day,

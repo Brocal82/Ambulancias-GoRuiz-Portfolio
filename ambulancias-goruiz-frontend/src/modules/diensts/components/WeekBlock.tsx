@@ -12,6 +12,10 @@ export type WeekBlockProps = {
     withGrid?: boolean;
 };
 
+export const WEEK_GRID_CLASS =
+    "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3";
+
+
 /**
  * Wrapper visual único para una semana.
  * - Puede pintar el título o dejarte poner un header custom.
@@ -36,7 +40,8 @@ export const WeekBlock: React.FC<WeekBlockProps> = ({
             )}
 
             {withGrid ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                <div className={WEEK_GRID_CLASS}>
+
                     {children}
                 </div>
             ) : (
