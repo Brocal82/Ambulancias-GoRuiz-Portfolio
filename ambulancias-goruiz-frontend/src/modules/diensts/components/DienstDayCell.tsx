@@ -28,8 +28,16 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
 }) => {
     const disabled = Boolean(isPast || isDisabled);
 
-    // ✅ Clase para que las líneas largas NO rompan el layout (misma altura visual)
-    const lineCls = "text-xs text-slate-700 truncate";
+    // 🌴 Día libre = solo hay ambulanceLine
+    const isFreeDay =
+        lines?.ambulanceLine &&
+        !lines?.timeLine &&
+        !lines?.driverLine &&
+        !lines?.medicLine;
+
+    // 🔒 UNA sola línea, sin saltos, con …
+    const lineCls =
+        "text-xs text-slate-700 flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis";
 
     return (
         <button
@@ -41,27 +49,43 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
                 onOpen();
             }}
             className={`
-        text-left rounded-xl p-3 ring-1 transition
+        rounded-xl p-3 ring-1 transition text-left
+        flex flex-col
         ${statusClass}
         ${incompleteBorderClass ?? ""}
         ${disabled
-                    ? "opacity-80 bg-slate-50 text-slate-400 cursor-not-allowed hover:shadow-none hover:translate-y-0"
+                    ? "opacity-80 bg-slate-50 text-slate-400 cursor-not-allowed"
                     : "hover:shadow-sm hover:-translate-y-0.5"
                 }
       `}
         >
-            <div className="space-y-0.5">
-                {lines?.dateLine && (
-                    <p className="text-xs font-semibold text-slate-800 mb-1 truncate">
-                        {lines.dateLine}
-                    </p>
-                )}
+            {/* 📅 Fecha — siempre arriba */}
+            {lines?.dateLine && (
+                <div className="text-xs font-semibold text-slate-800 text-center mb-2">
+                    {lines.dateLine}
+                </div>
+            )}
 
-                {lines?.timeLine && <p className={lineCls}>{lines.timeLine}</p>}
-                {lines?.ambulanceLine && <p className={lineCls}>{lines.ambulanceLine}</p>}
-                {lines?.driverLine && <p className={lineCls}>{lines.driverLine}</p>}
-                {lines?.medicLine && <p className={lineCls}>{lines.medicLine}</p>}
-            </div>
+            {/* 🌴 Día libre centrado */}
+            {isFreeDay ? (
+                <div className="flex flex-1 items-center justify-center">
+                    <p className="text-sm text-slate-700">{lines.ambulanceLine}</p>
+                </div>
+            ) : (
+                /* 📄 Día con contenido */
+                <div className="space-y-0.5">
+                    {lines?.timeLine && <p className={lineCls}>{lines.timeLine}</p>}
+                    {lines?.ambulanceLine && (
+                        <p className={lineCls}>{lines.ambulanceLine}</p>
+                    )}
+                    {lines?.driverLine && (
+                        <p className={lineCls}>{lines.driverLine}</p>
+                    )}
+                    {lines?.medicLine && (
+                        <p className={lineCls}>{lines.medicLine}</p>
+                    )}
+                </div>
+            )}
         </button>
     );
 };

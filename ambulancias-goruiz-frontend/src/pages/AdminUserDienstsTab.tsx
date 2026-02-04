@@ -1,4 +1,4 @@
-//src/pages/AdminUserDienstsTab.tsx
+// src/pages/AdminUserDienstsTab.tsx
 // AdminUserDienstsTab.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -13,8 +13,12 @@ import { isPastDay } from "../utils/dates/isPastDay";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { DienstDayCell, WeekBlock } from "../modules/diensts/components";
-import { getAssignmentStatus, getStatusClass, getWeekDays, getWeekStartsBerlin } from "../modules/diensts/utils";
-
+import {
+  getAssignmentStatus,
+  getStatusClass,
+  getWeekDays,
+  getWeekStartsBerlin,
+} from "../modules/diensts/utils";
 
 interface Props {
   userId: string;
@@ -28,12 +32,12 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
   const [allDiensts, setAllDiensts] = useState<Dienst[]>([]);
   const [assignedDays, setAssignedDays] = useState<AssignedDay[]>([]);
   const [loading, setLoading] = useState(true);
+
   const assignedByDate = useMemo(() => {
     const map = new Map<string, AssignedDay>();
     for (const d of assignedDays) map.set(d.date, d);
     return map;
   }, [assignedDays]);
-
 
   const [selectedAssignment, setSelectedAssignment] = useState<{
     date: string;
@@ -145,7 +149,6 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
     return dienstIdByWeekStart.get(weekStartISO) ?? "";
   };
 
-
   if (loading) {
     return (
       <p className="text-sm text-slate-600 p-4">
@@ -155,7 +158,9 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
   }
 
   return (
-    <div className="min-h-[400px]">
+    // ✅ QUITADO el contenedor “grande” con padding extra (p-6),
+    // para que no reduzca el ancho útil dentro del card padre.
+    <div className="min-h-[400px] w-full">
       <div className="mb-4">
         <h2 className="text-xl font-semibold tracking-tight text-slate-900">
           {t("pages.diensts.adminUserTab.title")}
@@ -166,7 +171,7 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
         const weekStartKeys = getWeekStartsBerlin(2); // semana actual + siguiente
 
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 w-full">
             {weekStartKeys.map((weekStartISO) => {
               const weekDates = getWeekDays(weekStartISO);
               const weekEndISO = weekDates[6];
@@ -180,7 +185,6 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                     to: fmtDate(toNoonDate(weekEndISO)),
                   })}
                 >
-
                   {weekDates.map((dateStr) => {
                     const assignment = assignedByDate.get(dateStr);
 
@@ -204,11 +208,17 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                                 assignment.ambulanceNumber,
                                 assignment.ambulanceId,
                               )}`,
-                              driverLine: `👨‍✈️ ${formatUserLabel(assignment.driver)}`,
-                              medicLine: `🧑‍⚕️ ${formatUserLabel(assignment.medic)}`,
+                              driverLine: `👨‍✈️ ${formatUserLabel(
+                                assignment.driver,
+                              )}`,
+                              medicLine: `🧑‍⚕️ ${formatUserLabel(
+                                assignment.medic,
+                              )}`,
                             }
                             : {
-                              ambulanceLine: `🌴 ${t("pages.diensts.adminPage.freeDay")}`,
+                              ambulanceLine: `🌴 ${t(
+                                "pages.diensts.adminPage.freeDay",
+                              )}`,
                             }),
                         }}
                         onOpen={() => {
@@ -235,11 +245,9 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                 </WeekBlock>
               );
             })}
-
           </div>
         );
       })()}
-
 
       {selectedAssignment && (
         <AssignmentModal
@@ -256,4 +264,3 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
 };
 
 export default AdminUserDienstsTab;
-
