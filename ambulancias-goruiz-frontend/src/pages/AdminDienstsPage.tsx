@@ -1,6 +1,6 @@
 // frontend/src/pages/AdminDienstsPage.tsx
 import { useCallback, useEffect, useState } from "react";
-import type { Dienst, UserRef } from "../modules/diensts";
+import type { Dienst } from "../modules/diensts";
 import {
   getAllDiensts,
   generateDienstsForWeek,
@@ -30,6 +30,7 @@ import { formatCellDateUnified } from "../utils/timeUtils";
 import type { FlexibleAssignment } from "../types/assignment";
 import { DienstDayCell, WeekBlock, WEEK_GRID_CLASS } from "../modules/diensts/components";
 import { getAssignmentStatus, getStatusClass } from "../modules/diensts/utils";
+import { toFlexibleFromDienstAssignment } from "../modules/diensts/assignments";
 
 const AdminPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
@@ -62,37 +63,6 @@ const AdminPage = () => {
   const { t, i18n } = useTranslation();
 
   const fmtDate = (d: Date) => d.toLocaleDateString(i18n.language);
-
-  // Convierte el assignment del Dienst a FlexibleAssignment (contrato estable del modal)
-  const toFlexibleAssignment = (
-    a?: (Dienst["assignments"][0] & {
-      driver?: string | UserRef;
-      medic?: string | UserRef;
-    }),
-  ): FlexibleAssignment | undefined => {
-    if (!a) return undefined;
-
-    // Normaliza ambulanceId a string si viene poblado como objeto
-    const normalizedAmbulanceId =
-      a.ambulanceId && typeof a.ambulanceId === "object"
-        ? String((a.ambulanceId as any)?._id ?? "")
-        : (a.ambulanceId ?? "");
-
-    return {
-      _id: typeof (a as any)._id === "string" ? (a as any)._id : undefined,
-      date: a.date,
-      startTime: a.startTime,
-      endTime: a.endTime,
-      ambulanceId: normalizedAmbulanceId,
-      // si tu FlexibleAssignment tiene ambulanceNumber opcional, lo rellenamos si existe
-      ambulanceNumber:
-        a.ambulanceId && typeof a.ambulanceId === "object"
-          ? ((a.ambulanceId as any)?.ambulanceNumber as string | undefined)
-          : undefined,
-      driver: (a.driver ?? "") as any,
-      medic: (a.medic ?? "") as any,
-    } as FlexibleAssignment;
-  };
 
   const toggleWeekCollapsed = (weekKey: string) => {
     setCollapsedWeeks((prev) => ({
@@ -480,7 +450,8 @@ const AdminPage = () => {
                                   onOpen={() => {
                                     setSelectedAssignment({
                                       date: day,
-                                      assignment: toFlexibleAssignment(assignment),
+                                      assignment: toFlexibleFromDienstAssignment(assignment as any),
+
                                       dienstId: dienst._id,
                                     });
                                   }}

@@ -20,6 +20,7 @@ import {
   getWeekStartsBerlin,
 } from "../modules/diensts/utils";
 import { formatCellDateUnified } from "../utils/timeUtils";
+import { toFlexibleFromAssignedDay } from "../modules/diensts/assignments";
 
 interface Props {
   userId: string;
@@ -98,28 +99,6 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
     return label || "—";
   };
 
-  // Adaptador local: AssignedDay -> FlexibleAssignment (contrato del modal)
-  const toFlexibleAssignment = (
-    a?: AssignedDay,
-  ): FlexibleAssignment | undefined => {
-    if (!a) return undefined;
-
-    const ambulanceId =
-      typeof a.ambulanceId === "object"
-        ? String((a.ambulanceId as any)?._id ?? "")
-        : (a.ambulanceId ?? "");
-
-    return {
-      _id: a.assignmentId, // id estable para UI
-      date: a.date,
-      startTime: a.startTime,
-      endTime: a.endTime,
-      ambulanceId,
-      ambulanceNumber: a.ambulanceNumber,
-      driver: a.driver ?? "",
-      medic: a.medic ?? "",
-    };
-  };
 
   // Índice rápido: weekStartISO -> dienstId
   const dienstIdByWeekStart = useMemo(() => {
@@ -230,7 +209,7 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
 
                           setSelectedAssignment({
                             date: dateStr,
-                            assignment: toFlexibleAssignment(assignment),
+                            assignment: toFlexibleFromAssignedDay(assignment),
                             dienstId: foundDienstId,
                           });
                         }}
