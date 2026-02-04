@@ -49,8 +49,8 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
                 onOpen();
             }}
             className={`
-        rounded-xl p-3 ring-1 transition text-left
-        flex flex-col
+        rounded-xl p-3 ring-1 transition text-left 
+        flex flex-col min-h-[116px]
         ${statusClass}
         ${incompleteBorderClass ?? ""}
         ${disabled
@@ -69,11 +69,14 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
             {/* 🌴 Día libre centrado */}
             {isFreeDay ? (
                 <div className="flex flex-1 items-center justify-center">
-                    <p className="text-sm text-slate-700">{lines.ambulanceLine}</p>
+                    <p className={`${lineCls} text-sm justify-center`}>
+                        {lines.ambulanceLine}
+                    </p>
                 </div>
             ) : (
+
                 /* 📄 Día con contenido */
-                <div className="space-y-0.5">
+                <div className="space-y-0.5 flex-1">
                     {lines?.timeLine && <p className={lineCls}>{lines.timeLine}</p>}
                     {lines?.ambulanceLine && (
                         <p className={lineCls}>{lines.ambulanceLine}</p>
