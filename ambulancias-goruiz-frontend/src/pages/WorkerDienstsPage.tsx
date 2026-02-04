@@ -17,6 +17,7 @@ import {
   getWeekStartsBerlin,
 } from "../modules/diensts/utils";
 import { formatCellDateUnified } from "../utils/timeUtils";
+import { toFlexibleFromAssignedDay } from "../modules/diensts/assignments";
 
 
 
@@ -132,12 +133,15 @@ const WorkerDienstsPage = () => {
                             }),
                         }}
                         onOpen={() => {
+                          if (!assignment) return;
+
                           setSelectedAssignment({
-                            date: assignment!.date,
-                            assignment: assignment as FlexibleAssignment,
-                            dienstId: assignment!.dienstId,
+                            date: assignment.date,
+                            assignment: toFlexibleFromAssignedDay(assignment),
+                            dienstId: assignment.dienstId,
                           });
                         }}
+
                       />
                     );
                   })}
