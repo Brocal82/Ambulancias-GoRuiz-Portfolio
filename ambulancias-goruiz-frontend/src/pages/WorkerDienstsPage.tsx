@@ -18,10 +18,7 @@ import {
 } from "../modules/diensts/utils";
 import { formatCellDateUnified } from "../utils/timeUtils";
 import { toFlexibleFromAssignedDay } from "../modules/diensts/assignments";
-
-
-
-
+import PageShell from "../components/common/PageShell";
 
 const WorkerDienstsPage = () => {
   const { userId, token } = useAuth();
@@ -69,12 +66,7 @@ const WorkerDienstsPage = () => {
   }
 
   return (
-    <div className="min-h-[400px]">
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold tracking-tight text-slate-900">
-          {t("pages.diensts.workerPage.title")}
-        </h2>
-      </div>
+    <PageShell title={t("pages.diensts.workerPage.title")} maxWidthClassName="max-w-6xl">
 
       {(() => {
         const weekStartKeys = getWeekStartsBerlin(2); // semana actual + siguiente
@@ -167,7 +159,7 @@ const WorkerDienstsPage = () => {
           onUpdate={fetchAssignedDays}
         />
       )}
-    </div>
+    </PageShell>
   );
 };
 
