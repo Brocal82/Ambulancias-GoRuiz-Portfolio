@@ -53,7 +53,10 @@ export function fmtDDMM(dateStr?: string): string {
  * - Ejemplos: "dom, 02/11" | "So, 02/11" | "Sun, 02/11"
  */
 export function formatCellDateUnified(isoDay: string, lang: string): string {
-  const d = new Date(isoDay);
+  // ✅ Anclaje seguro a día calendario (Berlin) para evitar desfases por timezone/UTC
+  const key = toBerlinDayKey(isoDay);
+  const d = key ? dayKeyToLocalDate(key) : new Date(`${isoDay}T12:00:00`);
+
   const dd = String(d.getDate()).padStart(2, "0");
   const mm = String(d.getMonth() + 1).padStart(2, "0");
 
@@ -72,3 +75,4 @@ export function formatCellDateUnified(isoDay: string, lang: string): string {
 
   return `${wk}, ${dd}/${mm}`;
 }
+
