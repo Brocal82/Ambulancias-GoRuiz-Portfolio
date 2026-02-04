@@ -1,6 +1,7 @@
 // frontend/src/modules/diensts/domain/adapters/assignmentAdapter.ts
 
 import type { AssignedDay, DienstAssignment, UserRef } from "../..";
+import type { FlexibleAssignment } from "../../../../types/assignment";
 
 /**
  * Convierte cualquier forma de driver/medic a UserRef usable.
@@ -88,3 +89,56 @@ export const normalizeAmbulanceIdToString = (
 
   return "";
 };
+
+/**
+ * Convierte AssignedDay (worker/admin-user) al contrato estable del modal: FlexibleAssignment
+ * - Mantiene exactamente los campos que hoy se pasan al modal
+ * - Normaliza ambulanceId a string
+ * - _id se toma de assignmentId (id estable para UI)
+ */
+export const toFlexibleFromAssignedDay = (
+  d?: AssignedDay,
+): FlexibleAssignment | undefined => {
+  if (!d) return undefined;
+
+  const ambulanceId = normalizeAmbulanceIdToString(d.ambulanceId);
+
+  return {
+    _id: d.assignmentId,
+    date: d.date,
+    startTime: d.startTime,
+    endTime: d.endTime,
+    ambulanceId,
+    ambulanceNumber: d.ambulanceNumber,
+    driver: (d.driver ?? "") as any,
+    medic: (d.medic ?? "") as any,
+  };
+};
+
+/**
+ * Convierte DienstAssignment (admin) al contrato estable del modal: FlexibleAssignment
+ * - Normaliza ambulanceId a string si viene poblado como objeto
+ * - Si _id viene como string lo preserva
+ */
+export const toFlexibleFromDienstAssignment = (
+  a?: DienstAssignment,
+): FlexibleAssignment | undefined => {
+  if (!a) return undefined;
+
+  const ambulanceId = normalizeAmbulanceIdToString(a.ambulanceId);
+
+  return {
+    _id: typeof (a as any)._id === "string" ? (a as any)._id : undefined,
+    date: a.date,
+    startTime: a.startTime,
+    endTime: a.endTime,
+    ambulanceId,
+    ambulanceNumber:
+      a.ambulanceId && typeof a.ambulanceId === "object"
+        ? ((a.ambulanceId as any)?.ambulanceNumber as string | undefined)
+        : undefined,
+    driver: (a.driver ?? "") as any,
+    medic: (a.medic ?? "") as any,
+  } as FlexibleAssignment;
+};
+
