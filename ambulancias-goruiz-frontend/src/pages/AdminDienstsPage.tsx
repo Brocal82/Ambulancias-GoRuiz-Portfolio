@@ -31,6 +31,8 @@ import type { FlexibleAssignment } from "../types/assignment";
 import { DienstDayCell, WeekBlock, WEEK_GRID_CLASS } from "../modules/diensts/components";
 import { getAssignmentStatus, getStatusClass } from "../modules/diensts/utils";
 import { toFlexibleFromDienstAssignment } from "../modules/diensts/assignments";
+import PageShell from "../components/common/PageShell";
+
 
 const AdminPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
@@ -99,12 +101,10 @@ const AdminPage = () => {
   const weekStartKeys = getWeekStartsBerlin(3);
 
   return (
-    <div className="min-h-[400px]">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-          {t("pages.diensts.adminPage.title")}
-        </h1>
-      </div>
+    <PageShell
+      title={t("pages.diensts.adminPage.title")}
+      maxWidthClassName="max-w-7xl"
+    >
 
       {isInitialLoading ? (
         <div className="mb-6 rounded-xl bg-white ring-1 ring-slate-200 p-4 text-sm text-slate-600">
@@ -682,7 +682,7 @@ const AdminPage = () => {
           weekStartISO={weekUserModal.weekStartISO}
         />
       )}
-    </div>
+    </PageShell>
   );
 };
 
