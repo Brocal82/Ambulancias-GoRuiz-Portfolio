@@ -8,6 +8,7 @@ import { isPartialAssignment } from "../utils/assignmentUtils";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { formatAmbulanceLabel } from "../modules/diensts/utils";
+import { formatCellDateUnified } from "../utils/timeUtils";
 
 
 const DienstPage = () => {
@@ -29,14 +30,6 @@ const DienstPage = () => {
     assignment?: FlexibleAssignment;
     dienstId: string;
   } | null>(null);
-
-
-  const fmtCellDate = (isoDay: string) =>
-    new Date(`${isoDay}T12:00:00`).toLocaleDateString(i18n.language, {
-      weekday: "short",
-      day: "2-digit",
-      month: "2-digit",
-    });
 
 
   const fetchDiensts = useCallback(async () => {
@@ -117,7 +110,9 @@ const DienstPage = () => {
                         })
                       }
                     >
-                      <p className="font-semibold">{fmtCellDate(day)}</p>
+                      <p className="font-semibold">
+                        {formatCellDateUnified(day, i18n.language)}
+                      </p>
 
                       {assignment ? (
                         <>
