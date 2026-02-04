@@ -137,12 +137,14 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
   return (
     // ✅ QUITADO el contenedor “grande” con padding extra (p-6),
     // para que no reduzca el ancho útil dentro del card padre.
-    <div className="min-h-[400px] w-full">
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+    <div className="min-h-[400px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl">
+
+      <div className="mb-4 text-center">
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
           {t("pages.diensts.adminUserTab.title")}
         </h2>
       </div>
+
 
       {(() => {
         const weekStartKeys = getWeekStartsBerlin(2); // semana actual + siguiente
@@ -189,12 +191,12 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                                 assignment.ambulanceId,
                               )}`,
                               driverLine: `👨‍✈️ ${typeof assignment.driver === "string"
-                                  ? "—"
-                                  : formatPersonLabel(assignment.driver)
+                                ? "—"
+                                : formatPersonLabel(assignment.driver)
                                 }`,
                               medicLine: `🧑‍⚕️ ${typeof assignment.medic === "string"
-                                  ? "—"
-                                  : formatPersonLabel(assignment.medic)
+                                ? "—"
+                                : formatPersonLabel(assignment.medic)
                                 }`,
                             }
                             : {
