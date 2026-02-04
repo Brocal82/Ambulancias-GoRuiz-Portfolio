@@ -440,6 +440,10 @@ const AdminPage = () => {
 
                               const isPast = isPastDay(day);
 
+                              const dateLine = formatCellDateUnified(day, i18n.language);
+                              const freeLine = `🌴 ${t("pages.diensts.adminPage.freeDay")}`;
+
+
                               return (
                                 <DienstDayCell
                                   key={day}
@@ -456,10 +460,8 @@ const AdminPage = () => {
                                     });
                                   }}
                                   lines={{
-                                    dateLine: formatCellDateUnified(
-                                      day,
-                                      i18n.language,
-                                    ),
+                                    dateLine,
+
                                     ...(assignment
                                       ? {
                                         timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
@@ -519,10 +521,9 @@ const AdminPage = () => {
                                         )}`,
                                       }
                                       : {
-                                        ambulanceLine: `🌴 ${t(
-                                          "pages.diensts.adminPage.freeDay",
-                                        )}`,
-                                      }),
+                                        ambulanceLine: freeLine,
+                                      }
+                                    ),
                                   }}
                                 />
                               );
