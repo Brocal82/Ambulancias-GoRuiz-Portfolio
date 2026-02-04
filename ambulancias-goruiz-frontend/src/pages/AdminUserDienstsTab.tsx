@@ -7,13 +7,14 @@ import {
   getAllDiensts,
 } from "../modules/diensts";
 import AssignmentModal from "../components/AssignmentModal";
-import type { AssignedDay, Dienst, UserRef } from "../modules/diensts";
+import type { AssignedDay, Dienst } from "../modules/diensts";
 import type { FlexibleAssignment } from "../types/assignment";
 import { isPastDay } from "../utils/dates/isPastDay";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { DienstDayCell, WeekBlock } from "../modules/diensts/components";
 import {
+  formatPersonLabel,
   getAssignmentStatus,
   getStatusClass,
   getWeekDays,
@@ -87,16 +88,6 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
       return obj.ambulanceNumber ?? obj.licensePlate ?? obj._id ?? "—";
     }
     return "—";
-  };
-
-  // Etiqueta segura para usuario (UserRef o id suelto)
-  const formatUserLabel = (u?: string | UserRef | null): string => {
-    if (!u) return "—";
-    if (typeof u === "string") return "—"; // solo id, sin datos
-    const last = u.lastName ?? "";
-    const name = u.name ?? "";
-    const label = `${last}${last && name ? ", " : ""}${name}`.trim();
-    return label || "—";
   };
 
 
@@ -182,12 +173,11 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                                 assignment.ambulanceNumber,
                                 assignment.ambulanceId,
                               )}`,
-                              driverLine: `👨‍✈️ ${formatUserLabel(
-                                assignment.driver,
-                              )}`,
-                              medicLine: `🧑‍⚕️ ${formatUserLabel(
-                                assignment.medic,
-                              )}`,
+                              driverLine: `👨‍✈️ ${typeof assignment.driver === "string" ? "—" : formatPersonLabel(assignment.driver)
+                                }`,
+                              medicLine: `🧑‍⚕️ ${typeof assignment.medic === "string" ? "—" : formatPersonLabel(assignment.medic)
+                                }`,
+
                             }
                             : {
                               ambulanceLine: `🌴 ${t(
