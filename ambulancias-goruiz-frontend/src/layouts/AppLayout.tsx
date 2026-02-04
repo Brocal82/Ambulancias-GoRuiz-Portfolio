@@ -25,7 +25,7 @@ export default function AppLayout() {
         className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800"
         role="banner"
       >
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
           {/* Izquierda: logo/nombre app */}
           <button
             onClick={goHome}
@@ -109,7 +109,7 @@ export default function AppLayout() {
 
       {/* Main grows to push footer down */}
       <main role="main" className="flex-1">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
           <div className="rounded-2xl bg-slate-50/90 ring-1 ring-slate-200 shadow-sm p-4 sm:p-6">
             {/* ✅ Aquí va la página actual */}
             <Outlet />
@@ -119,7 +119,7 @@ export default function AppLayout() {
 
       {/* Footer always at the bottom */}
       <footer className="bg-slate-900 border-t border-slate-800">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-4 text-center text-xs sm:text-sm text-slate-200">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 text-center text-xs sm:text-sm text-slate-200">
           &copy; 2025 Ambulancias Gorruiz
         </div>
       </footer>
