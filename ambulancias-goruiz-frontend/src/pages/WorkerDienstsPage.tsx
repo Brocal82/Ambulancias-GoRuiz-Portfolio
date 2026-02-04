@@ -103,6 +103,9 @@ const WorkerDienstsPage = () => {
                     const cls = getStatusClass(status);
 
                     const isPast = isPastDay(dateStr);
+                    const dateLine = formatCellDateUnified(dateStr, i18n.language);
+                    const freeLine = `🌴 ${t("pages.diensts.workerPage.freeDay")}`;
+
 
                     return (
                       <DienstDayCell
@@ -117,8 +120,7 @@ const WorkerDienstsPage = () => {
                           !assignment?.medic
                         }
                         lines={{
-                          dateLine: formatCellDateUnified(dateStr, i18n.language),
-
+                          dateLine,
                           ...(assignment
                             ? {
                               timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
@@ -129,9 +131,10 @@ const WorkerDienstsPage = () => {
                               medicLine: `🧑‍⚕️ ${formatPersonLabel(assignment.medic)}`,
                             }
                             : {
-                              ambulanceLine: `🌴 ${t("pages.diensts.workerPage.freeDay")}`,
+                              ambulanceLine: freeLine,
                             }),
                         }}
+
                         onOpen={() => {
                           if (!assignment) return;
 
