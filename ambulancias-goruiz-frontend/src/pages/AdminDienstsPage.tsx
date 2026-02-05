@@ -466,7 +466,7 @@ const AdminPage = () => {
                                       ? {
                                         timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
                                         ambulanceLine: `🚑 ${formatAmbulanceLabel(
-                                          assignment?.ambulanceId,
+                                          assignment.ambulanceId,
                                         )}`,
                                         driverLine: (
                                           <>
@@ -509,7 +509,7 @@ const AdminPage = () => {
                                                   title={drvTitle}
                                                 >
                                                   {formatPersonLabel(
-                                                    assignment?.driver,
+                                                    assignment.driver,
                                                   )}
                                                 </span>
                                               );
@@ -517,7 +517,7 @@ const AdminPage = () => {
                                           </>
                                         ),
                                         medicLine: `🧑‍⚕️ ${formatPersonLabel(
-                                          assignment?.medic,
+                                          assignment.medic,
                                         )}`,
                                       }
                                       : {
