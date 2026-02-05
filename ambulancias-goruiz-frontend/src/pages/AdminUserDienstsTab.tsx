@@ -183,14 +183,9 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                                 return "—";
                               })()}`,
 
-                              driverLine: `👨‍✈️ ${typeof assignment.driver === "string"
-                                ? "—"
-                                : formatPersonLabel(assignment.driver)
-                                }`,
-                              medicLine: `🧑‍⚕️ ${typeof assignment.medic === "string"
-                                ? "—"
-                                : formatPersonLabel(assignment.medic)
-                                }`,
+                              driverLine: `👨‍✈️ ${formatPersonLabel(assignment.driver)}`,
+                              medicLine: `🧑‍⚕️ ${formatPersonLabel(assignment.medic)}`,
+
                             }
                             : {
                               ambulanceLine: freeLine,
