@@ -176,19 +176,4 @@ export const clearPeopleForWeek = async (
   return res.data;
 };
 
-// Intercambiar roles driver/medic en TODA la semana de un Dienst
-export const swapWeekRoles = async (
-  payload: { dienstNumber: number; weekStartDate: string },
-  token: string,
-): Promise<{
-  message: string;
-  swappedCount: number;
-  dienstId: string;
-  weekStartDate: string;
-}> => {
-  const res = await axios.post("/diensts/swap-week-roles", payload, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
-};
 

@@ -7,6 +7,5 @@ export {
   getAssignedDaysForUser,
   assignTeamToWeek,
   assignUserToWeek,
-  clearPeopleForWeek,
-  swapWeekRoles,
+  clearPeopleForWeek
 } from "../../../controllers/dienstController";

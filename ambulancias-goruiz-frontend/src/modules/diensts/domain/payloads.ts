@@ -22,11 +22,6 @@ export type ClearPeopleForWeekPayload = {
   weekStartDate: string;
 };
 
-export type SwapWeekRolesPayload = {
-  dienstNumber: number;
-  weekStartDate: string;
-};
-
 export type UpdateDienstPartialPayload = {
   assignments: Array<{
     _id?: string;
