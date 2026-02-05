@@ -7,8 +7,7 @@ import {
   deleteDienstsForWeek,
   assignTeamToWeek,
   assignUserToWeek,
-  clearPeopleForWeek,
-  swapWeekRoles
+  clearPeopleForWeek
 } from "../modules/diensts";
 import AssignmentModal from "../components/AssignmentModal";
 import TeamAssignModal from "../components/diensts/TeamAssignModal";
@@ -305,72 +304,6 @@ const AdminPage = () => {
                                   {t("pages.diensts.adminPage.assignTeamToWeek")}
                                 </span>
                               </button>
-
-                              {/* ⇅ Intercambiar roles (solo si hay alguien asignado) */}
-                              {hasAnyPersonAssigned && (
-                                <button
-                                  className="flex items-center justify-center w-6 h-6 text-slate-600 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
-                                  title={t(
-                                    "pages.diensts.adminPage.swapRolesWeek",
-                                  )}
-                                  onClick={async () => {
-                                    if (!token) return;
-                                    const ok = confirm(
-                                      t("pages.diensts.adminPage.confirmSwap", {
-                                        num: dienst.dienstNumber,
-                                        date: fmtDate(weekStart),
-                                      }) as string,
-                                    );
-                                    if (!ok) return;
-
-                                    try {
-                                      await swapWeekRoles(
-                                        {
-                                          dienstNumber: dienst.dienstNumber,
-                                          weekStartDate: weekStartISO,
-                                        },
-                                        token,
-                                      );
-                                      toastT.success([
-                                        "pages.diensts.adminPage.swapWeekOk",
-                                      ]);
-                                      fetchDiensts();
-                                    } catch (err: any) {
-                                      const code = err?.response?.data?.code as
-                                        | string
-                                        | undefined;
-
-                                      if (code === "swap_not_permitted") {
-                                        toastT.error([
-                                          "pages.diensts.adminPage.swapWeekNotPermitted",
-                                        ]);
-                                        console.warn(
-                                          "⚠️ swap_not_permitted details:",
-                                          err?.response?.data?.details,
-                                        );
-                                      } else {
-                                        console.error(
-                                          "❌ Error en swapWeekRoles:",
-                                          err,
-                                        );
-                                        toastT.error([
-                                          "pages.diensts.adminPage.swapWeekErr",
-                                        ]);
-                                      }
-                                    }
-                                  }}
-                                >
-                                  <span
-                                    aria-hidden
-                                    className="block text-[16px] leading-none translate-y-[1px]"
-                                  >
-                                    ⇅
-                                  </span>
-                                  <span className="sr-only">
-                                    {t("pages.diensts.adminPage.swapRolesWeek")}
-                                  </span>
-                                </button>
-                              )}
 
                               {/* 🧽 Limpiar asignaciones (solo si hay alguien asignado) */}
                               {hasAnyPersonAssigned && (
