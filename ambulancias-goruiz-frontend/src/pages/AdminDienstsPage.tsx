@@ -454,7 +454,7 @@ const AdminPage = () => {
                                   onOpen={() => {
                                     setSelectedAssignment({
                                       date: day,
-                                      assignment: toFlexibleFromDienstAssignment(assignment as any),
+                                      assignment: toFlexibleFromDienstAssignment(assignment),
 
                                       dienstId: dienst._id,
                                     });
