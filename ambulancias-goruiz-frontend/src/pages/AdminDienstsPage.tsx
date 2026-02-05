@@ -8,16 +8,16 @@ import {
   assignTeamToWeek,
   assignUserToWeek,
   clearPeopleForWeek,
-  swapWeekRoles,
+  swapWeekRoles
 } from "../modules/diensts";
 import AssignmentModal from "../components/AssignmentModal";
 import TeamAssignModal from "../components/diensts/TeamAssignModal";
 import UserAssignModal from "../components/diensts/UserAssignModal";
 import {
-  formatAmbulanceLabel,
   formatPersonLabel,
   getWeekStartsBerlin,
   getWeekDays,
+  buildDienstDayCellLines
 } from "../modules/diensts/utils";
 import { dayKeyToLocalDate, toBerlinDayKey } from "../utils/dates/dayKey";
 import { isPastDay } from "../utils/dates/isPastDay";
@@ -26,7 +26,6 @@ import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
 import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
-import { formatCellDateUnified } from "../utils/timeUtils";
 import type { FlexibleAssignment } from "../types/assignment";
 import { DienstDayCell, WeekBlock, WEEK_GRID_CLASS } from "../modules/diensts/components";
 import { getAssignmentStatus, getStatusClass } from "../modules/diensts/utils";
@@ -440,9 +439,6 @@ const AdminPage = () => {
 
                               const isPast = isPastDay(day);
 
-                              const dateLine = formatCellDateUnified(day, i18n.language);
-                              const freeLine = `🌴 ${t("pages.diensts.adminPage.freeDay")}`;
-
                               const driverLine = assignment ? (
                                 <>
                                   👨‍✈️{" "}
@@ -477,9 +473,6 @@ const AdminPage = () => {
                                 </>
                               ) : undefined;
 
-
-
-
                               return (
                                 <DienstDayCell
                                   key={day}
@@ -496,25 +489,25 @@ const AdminPage = () => {
                                     });
                                   }}
                                   lines={{
-                                    dateLine,
+                                    ...buildDienstDayCellLines({
+                                      isoDay: day,
+                                      lang: i18n.language,
+                                      freeLabel: `🌴 ${t("pages.diensts.adminPage.freeDay")}`,
+                                      assignment: assignment
+                                        ? {
+                                          startTime: assignment.startTime,
+                                          endTime: assignment.endTime,
+                                          ambulanceId: assignment.ambulanceId,
+                                          driver: assignment.driver,
+                                          medic: assignment.medic,
+                                        }
+                                        : null,
+                                    }),
 
-                                    ...(assignment
-                                      ? {
-                                        timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
-                                        ambulanceLine: `🚑 ${formatAmbulanceLabel(
-                                          assignment.ambulanceId,
-                                        )}`,
-                                        driverLine,
-
-                                        medicLine: `🧑‍⚕️ ${formatPersonLabel(
-                                          assignment.medic,
-                                        )}`,
-                                      }
-                                      : {
-                                        ambulanceLine: freeLine,
-                                      }
-                                    ),
+                                    // ✅ mantenemos tu lógica especial del driver (P-Schein)
+                                    ...(assignment ? { driverLine } : {}),
                                   }}
+
                                 />
                               );
                             })}
