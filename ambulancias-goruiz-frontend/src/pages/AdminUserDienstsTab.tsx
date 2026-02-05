@@ -14,14 +14,12 @@ import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { DienstDayCell, WeekBlock } from "../modules/diensts/components";
 import {
-  formatPersonLabel,
-  formatAmbulanceLabel,
   getAssignmentStatus,
   getStatusClass,
   getWeekDays,
   getWeekStartsBerlin,
+  buildDienstDayCellLines
 } from "../modules/diensts/utils";
-import { formatCellDateUnified } from "../utils/timeUtils";
 import { toFlexibleFromAssignedDay } from "../modules/diensts/assignments";
 
 interface Props {
@@ -53,27 +51,6 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
   const toNoonDate = (isoDay: string) => new Date(`${isoDay}T12:00:00`);
 
   const fmtDate = (d: Date) => d.toLocaleDateString(i18n.language);
-
-  const getAmbulanceLabel = (a: AssignedDay): string => {
-    if (a.ambulanceNumber) return a.ambulanceNumber;
-
-    const base = formatAmbulanceLabel(a.ambulanceId);
-    if (base && base !== "—") return base;
-
-    const aId = a.ambulanceId;
-    if (aId && typeof aId === "object") {
-      const obj = aId as any;
-
-      const lp = obj?.licensePlate;
-      if (typeof lp === "string" && lp.trim()) return lp;
-
-      const id = obj?._id;
-      if (typeof id === "string" && id.trim()) return id;
-    }
-
-    return "—";
-  };
-
 
   const fetchData = useCallback(async () => {
     if (!userId || !token) return;
@@ -169,9 +146,6 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                     const cls = getStatusClass(status);
 
                     const isPast = isPastDay(dateStr);
-                    const dateLine = formatCellDateUnified(dateStr, i18n.language);
-                    const freeLine = `🌴 ${t("pages.diensts.adminPage.freeDay")}`;
-
 
                     return (
                       <DienstDayCell
@@ -179,22 +153,25 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                         dayISO={dateStr}
                         statusClass={cls}
                         isPast={isPast}
-                        lines={{
-                          dateLine,
-                          ...(assignment
+                        lines={buildDienstDayCellLines({
+                          isoDay: dateStr,
+                          lang: i18n.language,
+                          freeLabel: `🌴 ${t("pages.diensts.adminPage.freeDay")}`,
+                          assignment: assignment
                             ? {
-                              timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
-                              ambulanceLine: `🚑 ${getAmbulanceLabel(assignment)}`,
+                              startTime: assignment.startTime,
+                              endTime: assignment.endTime,
 
+                              // ⚠️ mantenemos EXACTAMENTE tu política de ambulancia
+                              ambulanceNumber: assignment.ambulanceNumber ?? undefined,
+                              ambulanceId: assignment.ambulanceId,
 
-                              driverLine: `👨‍✈️ ${formatPersonLabel(assignment.driver)}`,
-                              medicLine: `🧑‍⚕️ ${formatPersonLabel(assignment.medic)}`,
-
+                              driver: assignment.driver,
+                              medic: assignment.medic,
                             }
-                            : {
-                              ambulanceLine: freeLine,
-                            }),
-                        }}
+                            : null,
+                        })}
+
 
                         onOpen={() => {
                           const foundDienstId = assignment?.dienstId
