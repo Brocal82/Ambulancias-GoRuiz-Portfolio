@@ -102,13 +102,6 @@ router.post(
   DienstAssignments.assignTeamToWeek,
 );
 
-router.post(
-  "/swap-week-roles",
-  authenticateToken,
-  authorizeRole("admin"),
-  DienstAssignments.swapWeekRoles,
-);
-
 // Asignar UN usuario (driver/medic) a toda la semana de un Dienst
 router.post(
   "/assign-user-to-week",
