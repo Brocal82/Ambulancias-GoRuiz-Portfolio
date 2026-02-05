@@ -443,6 +443,42 @@ const AdminPage = () => {
                               const dateLine = formatCellDateUnified(day, i18n.language);
                               const freeLine = `🌴 ${t("pages.diensts.adminPage.freeDay")}`;
 
+                              const driverLine = assignment ? (
+                                <>
+                                  👨‍✈️{" "}
+                                  {(() => {
+                                    let drvClass = "";
+                                    let drvTitle: string | undefined;
+
+                                    if (typeof assignment.driver === "object" && assignment.driver) {
+                                      const info = getPscheinInfo(
+                                        (assignment.driver as any).pscheinExpiry,
+                                      );
+
+                                      if (info.status === "expired") {
+                                        drvClass = "text-red-600 font-medium";
+                                      } else if (info.status === "warning") {
+                                        drvClass = "text-amber-600 font-medium";
+                                      }
+
+                                      drvTitle =
+                                        getPscheinWarningTitle(
+                                          (assignment.driver as any).pscheinExpiry,
+                                          t as any,
+                                        ) || undefined;
+                                    }
+
+                                    return (
+                                      <span className={drvClass} title={drvTitle}>
+                                        {formatPersonLabel(assignment.driver)}
+                                      </span>
+                                    );
+                                  })()}
+                                </>
+                              ) : undefined;
+
+
+
 
                               return (
                                 <DienstDayCell
@@ -468,54 +504,8 @@ const AdminPage = () => {
                                         ambulanceLine: `🚑 ${formatAmbulanceLabel(
                                           assignment.ambulanceId,
                                         )}`,
-                                        driverLine: (
-                                          <>
-                                            👨‍✈️{" "}
-                                            {(() => {
-                                              let drvClass = "";
-                                              let drvTitle:
-                                                | string
-                                                | undefined;
+                                        driverLine,
 
-                                              if (
-                                                typeof assignment.driver ===
-                                                "object" &&
-                                                assignment.driver
-                                              ) {
-                                                const info = getPscheinInfo(
-                                                  (assignment.driver as any)
-                                                    .pscheinExpiry,
-                                                );
-                                                if (info.status === "expired") {
-                                                  drvClass =
-                                                    "text-red-600 font-medium";
-                                                } else if (
-                                                  info.status === "warning"
-                                                ) {
-                                                  drvClass =
-                                                    "text-amber-600 font-medium";
-                                                }
-                                                drvTitle =
-                                                  getPscheinWarningTitle(
-                                                    (assignment.driver as any)
-                                                      .pscheinExpiry,
-                                                    t as any,
-                                                  ) || undefined;
-                                              }
-
-                                              return (
-                                                <span
-                                                  className={drvClass}
-                                                  title={drvTitle}
-                                                >
-                                                  {formatPersonLabel(
-                                                    assignment.driver,
-                                                  )}
-                                                </span>
-                                              );
-                                            })()}
-                                          </>
-                                        ),
                                         medicLine: `🧑‍⚕️ ${formatPersonLabel(
                                           assignment.medic,
                                         )}`,
