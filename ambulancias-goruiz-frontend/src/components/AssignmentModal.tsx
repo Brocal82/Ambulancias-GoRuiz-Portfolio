@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import {
   normalizeAmbulanceIdToString,
   toUserRefOrNull,
-} from "../modules/diensts/domain/adapters/assignmentAdapter";
+} from "../modules/diensts/assignments";
 import {
   formatAmbulanceLabel,
   formatPersonLabel,
