@@ -54,6 +54,27 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
 
   const fmtDate = (d: Date) => d.toLocaleDateString(i18n.language);
 
+  const getAmbulanceLabel = (a: AssignedDay): string => {
+    if (a.ambulanceNumber) return a.ambulanceNumber;
+
+    const base = formatAmbulanceLabel(a.ambulanceId);
+    if (base && base !== "—") return base;
+
+    const aId = a.ambulanceId;
+    if (aId && typeof aId === "object") {
+      const obj = aId as any;
+
+      const lp = obj?.licensePlate;
+      if (typeof lp === "string" && lp.trim()) return lp;
+
+      const id = obj?._id;
+      if (typeof id === "string" && id.trim()) return id;
+    }
+
+    return "—";
+  };
+
+
   const fetchData = useCallback(async () => {
     if (!userId || !token) return;
     setLoading(true);
@@ -163,25 +184,8 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                           ...(assignment
                             ? {
                               timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
-                              ambulanceLine: `🚑 ${(() => {
-                                if (assignment.ambulanceNumber) return assignment.ambulanceNumber;
+                              ambulanceLine: `🚑 ${getAmbulanceLabel(assignment)}`,
 
-                                const base = formatAmbulanceLabel(assignment.ambulanceId);
-                                if (base && base !== "—") return base;
-
-                                const aId = assignment.ambulanceId;
-                                if (aId && typeof aId === "object") {
-                                  const obj = aId as any;
-
-                                  const lp = obj?.licensePlate;
-                                  if (typeof lp === "string" && lp.trim()) return lp;
-
-                                  const id = obj?._id;
-                                  if (typeof id === "string" && id.trim()) return id;
-                                }
-
-                                return "—";
-                              })()}`,
 
                               driverLine: `👨‍✈️ ${formatPersonLabel(assignment.driver)}`,
                               medicLine: `🧑‍⚕️ ${formatPersonLabel(assignment.medic)}`,
