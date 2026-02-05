@@ -100,12 +100,16 @@ const WorkerDienstsPage = () => {
                         dayISO={dateStr}
                         statusClass={cls}
                         isPast={isPast}
-                        isDisabled={
-                          !assignment?.startTime ||
-                          !assignment?.endTime ||
-                          !assignment?.driver ||
-                          !assignment?.medic
-                        }
+                        isDisabled={Boolean(
+                          assignment &&
+                          (
+                            !assignment.startTime ||
+                            !assignment.endTime ||
+                            !assignment.driver ||
+                            !assignment.medic
+                          )
+                        )}
+
                         lines={buildDienstDayCellLines({
                           isoDay: dateStr,
                           lang: i18n.language,
