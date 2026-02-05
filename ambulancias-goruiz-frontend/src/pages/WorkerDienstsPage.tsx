@@ -9,14 +9,12 @@ import { useTranslation } from "react-i18next";
 import { isPastDay } from "../utils/dates/isPastDay";
 import { DienstDayCell, WeekBlock } from "../modules/diensts/components";
 import {
-  formatAmbulanceLabel,
-  formatPersonLabel,
   getAssignmentStatus,
   getStatusClass,
   getWeekDays,
   getWeekStartsBerlin,
+  buildDienstDayCellLines
 } from "../modules/diensts/utils";
-import { formatCellDateUnified } from "../utils/timeUtils";
 import { toFlexibleFromAssignedDay } from "../modules/diensts/assignments";
 import PageShell from "../components/common/PageShell";
 
@@ -95,9 +93,6 @@ const WorkerDienstsPage = () => {
                     const cls = getStatusClass(status);
 
                     const isPast = isPastDay(dateStr);
-                    const dateLine = formatCellDateUnified(dateStr, i18n.language);
-                    const freeLine = `🌴 ${t("pages.diensts.workerPage.freeDay")}`;
-
 
                     return (
                       <DienstDayCell
@@ -111,21 +106,21 @@ const WorkerDienstsPage = () => {
                           !assignment?.driver ||
                           !assignment?.medic
                         }
-                        lines={{
-                          dateLine,
-                          ...(assignment
+                        lines={buildDienstDayCellLines({
+                          isoDay: dateStr,
+                          lang: i18n.language,
+                          freeLabel: `🌴 ${t("pages.diensts.workerPage.freeDay")}`,
+                          assignment: assignment
                             ? {
-                              timeLine: `🕒 ${assignment.startTime} - ${assignment.endTime}`,
-                              ambulanceLine: `🚑 ${formatAmbulanceLabel(
-                                assignment.ambulanceNumber,
-                              )}`,
-                              driverLine: `👨‍✈️ ${formatPersonLabel(assignment.driver)}`,
-                              medicLine: `🧑‍⚕️ ${formatPersonLabel(assignment.medic)}`,
+                              startTime: assignment.startTime,
+                              endTime: assignment.endTime,
+                              ambulanceNumber: assignment.ambulanceNumber,
+                              driver: assignment.driver,
+                              medic: assignment.medic,
                             }
-                            : {
-                              ambulanceLine: freeLine,
-                            }),
-                        }}
+                            : null,
+                        })}
+
 
                         onOpen={() => {
                           if (!assignment) return;
