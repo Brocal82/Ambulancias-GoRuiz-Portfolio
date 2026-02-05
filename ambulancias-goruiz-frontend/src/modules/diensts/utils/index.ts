@@ -3,6 +3,8 @@ export * from "./display";
 export * from "./week";
 export * from "./classNames";
 export * from "./dienstStatusStyles";
+export * from "./dayCellLines";
+
 
 
 
