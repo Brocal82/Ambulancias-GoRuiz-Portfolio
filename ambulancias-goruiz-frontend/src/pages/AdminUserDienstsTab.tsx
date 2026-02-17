@@ -6,7 +6,7 @@ import {
   getAssignedDaysForUser,
   getAllDiensts,
 } from "../modules/diensts";
-import AssignmentModal from "../components/AssignmentModal";
+import AssignmentModal from "../components/assignmentModal/AssignmentModal";
 import type { AssignedDay, Dienst } from "../modules/diensts";
 import type { FlexibleAssignment } from "../types/assignment";
 import { isPastDay } from "../utils/dates/isPastDay";

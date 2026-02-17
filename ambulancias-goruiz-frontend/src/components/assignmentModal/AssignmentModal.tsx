@@ -1,28 +1,28 @@
 // frontend/src/components/AssignmentModal.tsx
 import { useState, useEffect, useId, useMemo } from "react";
-import { useAuth } from "../hooks/useAuth";
-import { updateDienstPartial, removeAssignment } from "../modules/diensts";
-import { UsersApi } from "../modules/users";
+import { useAuth } from "../../hooks/useAuth";
+import { updateDienstPartial, removeAssignment } from "../../modules/diensts";
+import { UsersApi } from "../../modules/users";
 
-import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
-import { toastT } from "../utils/toast";
+import { getPscheinInfo, getPscheinWarningTitle } from "../../utils/pscheinUtils";
+import { toastT } from "../../utils/toast";
 
-import type { UserRef, UpdateAssignment } from "../modules/diensts";
-import type { FlexibleAssignment } from "../types/assignment";
+import type { UserRef, UpdateAssignment } from "../../modules/diensts";
+import type { FlexibleAssignment } from "../../types/assignment";
 
-import { mergeWithAssigned } from "../utils/mergeWithAssigned";
+import { mergeWithAssigned } from "../../utils/mergeWithAssigned";
 import { useTranslation } from "react-i18next";
 import {
   normalizeAmbulanceIdToString,
   toUserRefOrNull,
-} from "../modules/diensts/assignments";
+} from "../../modules/diensts/assignments";
 import {
   formatAmbulanceLabel,
   formatPersonLabel,
-} from "../modules/diensts/utils";
-import { formatYYYYMMDDToDDMMYYYY, fmtDDMM } from "../utils/timeUtils";
-import { getVacationFlagsInRange, type VacFlag } from "../api/vacation";
-import { getSickFlagsInRange, type SickFlag } from "../api/sickLeaves";
+} from "../../modules/diensts/utils";
+import { formatYYYYMMDDToDDMMYYYY, fmtDDMM } from "../../utils/timeUtils";
+import { getVacationFlagsInRange, type VacFlag } from "../../api/vacation";
+import { getSickFlagsInRange, type SickFlag } from "../../api/sickLeaves";
 
 interface AssignmentModalProps {
   isOpen: boolean;

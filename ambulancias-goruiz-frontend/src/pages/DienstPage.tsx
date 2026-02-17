@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getDienstByUser } from "../modules/diensts";
 import type { Dienst } from "../modules/diensts";
 import type { FlexibleAssignment } from "../types/assignment";
-import AssignmentModal from "../components/AssignmentModal";
+import AssignmentModal from "../components/assignmentModal/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";

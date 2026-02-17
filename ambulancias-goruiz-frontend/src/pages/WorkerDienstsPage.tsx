@@ -1,7 +1,7 @@
 // src/pages/WorkerDienstsPage.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getAssignedDaysForUser } from "../modules/diensts";
-import AssignmentModal from "../components/AssignmentModal";
+import AssignmentModal from "../components/assignmentModal/AssignmentModal";
 import type { AssignedDay } from "../modules/diensts";
 import type { FlexibleAssignment } from "../types/assignment";
 import { useAuth } from "../hooks/useAuth";
