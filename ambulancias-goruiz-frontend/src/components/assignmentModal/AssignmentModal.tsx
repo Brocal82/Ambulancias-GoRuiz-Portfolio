@@ -13,6 +13,7 @@ import {
   userSickInfo,
 } from "./utils";
 import UserDropdown from "./UserDropdown";
+import AmbulanceDropdown from "./AmbulanceDropdown";
 import { useAvailableUsersForAssignment } from "./hooks/useAvailableUsersForAssignment";
 import { useAmbulances } from "./hooks/useAmbulances";
 import { useDayFlags } from "./hooks/useDayFlags";
@@ -88,11 +89,15 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   // Dropdowns
   const [openDriverList, setOpenDriverList] = useState(false);
   const [openMedicList, setOpenMedicList] = useState(false);
+  const [openAmbulanceList, setOpenAmbulanceList] = useState(false);
+
 
 
   // IDs accesibilidad
   const driverBtnId = useId();
   const medicBtnId = useId();
+  const ambulanceBtnId = useId();
+
 
   // Precarga del assignment
   useEffect(() => {
@@ -253,34 +258,22 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
               {/* Ambulancia */}
               <div className="space-y-1">
-                <label
-                  htmlFor="ambulanceId"
-                  className="block text-sm font-medium text-slate-700"
-                >
-                  {t("pages.assignmentModal.labels.ambulance")}
-                </label>
-                <select
-                  id="ambulanceId"
-                  value={ambulanceId}
-                  onChange={(e) => setAmbulanceId(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-                >
-                  <option value="">
-                    {ambulanceId
-                      ? `— ${t("common.none", "Ninguno")} —`
-                      : t(
-                        "pages.assignmentModal.placeholders.selectAmbulance",
-                        "Selecciona ambulancia"
-                      )}
-                  </option>
+                <AmbulanceDropdown
+                  label={t("pages.assignmentModal.labels.ambulance")}
+                  buttonId={ambulanceBtnId}
+                  isOpen={openAmbulanceList}
+                  setIsOpen={setOpenAmbulanceList}
+                  ambulances={ambulances}
+                  selectedId={ambulanceId}
+                  setSelectedId={setAmbulanceId}
+                  emptyLabel={t("common.empty", "No hay resultados")}
+                  placeholderLabel={t(
+                    "pages.assignmentModal.placeholders.selectAmbulance",
+                    "Selecciona ambulancia"
+                  )}
+                  unassignedLabel={t("common.none", "Ninguno")}
+                />
 
-
-                  {ambulances.map((amb) => (
-                    <option key={amb._id} value={amb._id}>
-                      {amb.ambulanceNumber}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               {/* Conductor */}
