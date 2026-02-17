@@ -1,10 +1,19 @@
 import { useEffect, useState } from "react";
-import { UsersApi } from "../../../modules/users";
+import { UsersApi, type User } from "../../../modules/users";
 import type { UserRef } from "../../../modules/diensts";
 import type { FlexibleAssignment } from "../../../types/assignment";
 import { mergeWithAssigned } from "../../../utils/mergeWithAssigned";
 import { ensureSelectedPresent } from "../ensureSelectedPresent";
 import { toastT } from "../../../utils/toast";
+
+const toUserRefList = (users: User[]): UserRef[] =>
+  users.map((u) => ({
+    _id: u._id,
+    name: u.name,
+    lastName: u.lastName,
+    ambulanceRole: u.ambulanceRole,
+    pscheinExpiry: u.pscheinExpiry,
+  }));
 
 export const useAvailableUsersForAssignment = (params: {
   token: string | null | undefined;
@@ -45,8 +54,9 @@ export const useAvailableUsersForAssignment = (params: {
           }),
         ]);
 
-        let drv = mergeWithAssigned(drivers as any, assignment, "driver") as any as UserRef[];
-        let med = mergeWithAssigned(medics as any, assignment, "medic") as any as UserRef[];
+        let drv = mergeWithAssigned(toUserRefList(drivers), assignment, "driver");
+let med = mergeWithAssigned(toUserRefList(medics), assignment, "medic");
+
 
         const driverIdFromAssignment =
           typeof assignment?.driver === "string" ? assignment.driver : undefined;
