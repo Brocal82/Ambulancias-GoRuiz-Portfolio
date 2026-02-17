@@ -3,9 +3,17 @@ import { useState, useEffect, useId, useMemo } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { updateDienstPartial, removeAssignment } from "../../modules/diensts";
 import { UsersApi } from "../../modules/users";
-
-import { getPscheinInfo, getPscheinWarningTitle } from "../../utils/pscheinUtils";
 import { toastT } from "../../utils/toast";
+import {
+  mergeClasses,
+  dimClass,
+  driverClass,
+  driverExpired,
+  driverPscheinTitle,
+  userVacationInfo,
+  userSickInfo,
+} from "./utils";
+
 
 import type { UserRef, UpdateAssignment } from "../../modules/diensts";
 import type { FlexibleAssignment } from "../../types/assignment";
@@ -20,7 +28,7 @@ import {
   formatAmbulanceLabel,
   formatPersonLabel,
 } from "../../modules/diensts/utils";
-import { formatYYYYMMDDToDDMMYYYY, fmtDDMM } from "../../utils/timeUtils";
+import { formatYYYYMMDDToDDMMYYYY } from "../../utils/timeUtils";
 import { getVacationFlagsInRange, type VacFlag } from "../../api/vacation";
 import { getSickFlagsInRange, type SickFlag } from "../../api/sickLeaves";
 
@@ -32,9 +40,6 @@ interface AssignmentModalProps {
   onClose: () => void;
   onUpdate: () => void;
 }
-
-const mergeClasses = (...classes: (string | false | null | undefined)[]) =>
-  classes.filter(Boolean).join(" ");
 
 const AssignmentModal: React.FC<AssignmentModalProps> = ({
   isOpen,
@@ -361,75 +366,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
   };
 
-  // ===== Helpers visuales coherentes con UserAssignModal =====
-  const driverClass = (pschein?: string | null) => {
-    if (!pschein) return "";
-    const info = getPscheinInfo(pschein);
-    if (info.status === "expired") return "text-red-600 font-medium";
-    if (info.status === "warning") return "text-yellow-600 font-medium";
-    return "";
-  };
-
-  const driverExpired = (u: UserRef) => {
-    const info = getPscheinInfo((u as any)?.pscheinExpiry);
-    return info.status === "expired";
-  };
-
-  const driverPscheinTitle = (u?: UserRef | null) => {
-    if (!u) return undefined;
-    const expiry = (u as any)?.pscheinExpiry as string | undefined;
-    const info = getPscheinInfo(expiry);
-    if (info.status === "warning" || info.status === "expired") {
-      return getPscheinWarningTitle(expiry, t);
-    }
-    return undefined;
-  };
-
-  const dimClass = "text-slate-400";
-
-  const userVacationInfo = (u?: UserRef | null) => {
-    if (!u || !u._id) return { has: false, title: undefined as string | undefined };
-
-    const vf = vacationFlags[u._id];
-    const has = !!vf?.hasVacationInRange;
-    if (!has) return { has: false, title: undefined as string | undefined };
-
-    const fromFull = vf?.vacationStartFull;
-    const toFull = vf?.vacationUntilFull;
-
-    let title: string | undefined;
-    if (fromFull && toFull) {
-      title = `🏖️ ${t("pages.diensts.weekModals.vacations", "Vacaciones")}: ${fmtDDMM(
-        fromFull,
-      )} → ${fmtDDMM(toFull)}`;
-    } else {
-      title = `🏖️ ${t("pages.diensts.weekModals.vacations", "Vacaciones")}`;
-    }
-
-    return { has: true, title };
-  };
-
-  const userSickInfo = (u?: UserRef | null) => {
-    if (!u || !u._id) return { has: false, title: undefined as string | undefined };
-
-    const sf = sickFlags[u._id];
-    const has = !!sf?.hasSickInRange;
-    if (!has) return { has: false, title: undefined as string | undefined };
-
-    const fromFull = sf?.sickStartFull || sf?.sickStartInRange;
-    const toFull = sf?.sickUntilFull || sf?.sickUntilInRange;
-
-    let title: string | undefined;
-    if (fromFull && toFull) {
-      title = `🤒 ${t("pages.sick.tooltip.full", "Baja médica")}: ${fmtDDMM(fromFull)} → ${fmtDDMM(
-        toFull,
-      )}`;
-    } else {
-      title = `🤒 ${t("pages.sick.tooltip.full", "Baja médica")}`;
-    }
-
-    return { has: true, title };
-  };
 
   const selectedDriver = useMemo(() => {
     const bySelected = availableDrivers.find((u) => u._id === selectedDriverId);
@@ -549,8 +485,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                         if (!u) {
                           return t("pages.assignmentModal.placeholders.selectDriver");
                         }
-                        const vac = userVacationInfo(u);
-                        const sick = userSickInfo(u);
+                        const vac = userVacationInfo(u, vacationFlags, t);
+                        const sick = userSickInfo(u, sickFlags, t);
+
 
                         return (
                           <>
@@ -559,7 +496,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                                 driverClass((u as any)?.pscheinExpiry),
                                 (vac.has || sick.has) && dimClass,
                               )}
-                              title={driverPscheinTitle(u)}
+                              title={driverPscheinTitle(u, t)}
                             >
                               {formatPersonLabel(u)}
                             </span>
@@ -632,8 +569,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                           return ka.localeCompare(kb, "es");
                         })
                         .map((u) => {
-                          const vac = userVacationInfo(u);
-                          const sick = userSickInfo(u);
+                          const vac = userVacationInfo(u, vacationFlags, t);
+                          const sick = userSickInfo(u, sickFlags, t);
+
                           const expired = driverExpired(u);
                           const isSick = sick.has;
                           const isVac = vac.has;
@@ -660,7 +598,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                                   driverClass((u as any)?.pscheinExpiry),
                                   (isVac || isSick) && "opacity-50",
                                 )}
-                                title={driverPscheinTitle(u)}
+                                title={driverPscheinTitle(u, t)}
                               >
                                 {formatPersonLabel(u)}
                               </span>
@@ -728,8 +666,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                         if (!u) {
                           return t("pages.assignmentModal.placeholders.selectMedic");
                         }
-                        const vac = userVacationInfo(u);
-                        const sick = userSickInfo(u);
+                        const vac = userVacationInfo(u, vacationFlags, t);
+                        const sick = userSickInfo(u, sickFlags, t);
+
                         return (
                           <>
                             <span className={mergeClasses((vac.has || sick.has) && dimClass)}>
@@ -800,8 +739,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                           return ka.localeCompare(kb, "es");
                         })
                         .map((u) => {
-                          const vac = userVacationInfo(u);
-                          const sick = userSickInfo(u);
+                          const vac = userVacationInfo(u, vacationFlags, t);
+                          const sick = userSickInfo(u, sickFlags, t);
+
                           const isVac = vac.has;
                           const isSick = sick.has;
 
