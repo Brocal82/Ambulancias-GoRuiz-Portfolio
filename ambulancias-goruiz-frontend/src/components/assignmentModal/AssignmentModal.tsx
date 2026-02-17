@@ -2,7 +2,6 @@
 import { useState, useEffect, useId, useMemo } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { updateDienstPartial, removeAssignment } from "../../modules/diensts";
-import { UsersApi } from "../../modules/users";
 import { toastT } from "../../utils/toast";
 import {
   mergeClasses,
@@ -14,10 +13,11 @@ import {
   userSickInfo,
 } from "./utils";
 import UserDropdown from "./UserDropdown";
-import type { UserRef, UpdateAssignment } from "../../modules/diensts";
+import { useAvailableUsersForAssignment } from "./hooks/useAvailableUsersForAssignment";
+import { useAmbulances } from "./hooks/useAmbulances";
+import { useDayFlags } from "./hooks/useDayFlags";
+import type { UpdateAssignment } from "../../modules/diensts";
 import type { FlexibleAssignment } from "../../types/assignment";
-
-import { mergeWithAssigned } from "../../utils/mergeWithAssigned";
 import { useTranslation } from "react-i18next";
 import {
   normalizeAmbulanceIdToString,
@@ -28,8 +28,6 @@ import {
   formatPersonLabel,
 } from "../../modules/diensts/utils";
 import { formatYYYYMMDDToDDMMYYYY } from "../../utils/timeUtils";
-import { getVacationFlagsInRange, type VacFlag } from "../../api/vacation";
-import { getSickFlagsInRange, type SickFlag } from "../../api/sickLeaves";
 
 interface AssignmentModalProps {
   isOpen: boolean;
@@ -55,25 +53,41 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [ambulanceId, setAmbulanceId] = useState("");
-  const [ambulances, setAmbulances] = useState<
-    { _id: string; ambulanceNumber: string }[]
-  >([]);
+  const { ambulances } = useAmbulances({ token });
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [selectedMedicId, setSelectedMedicId] = useState("");
-  const [availableDrivers, setAvailableDrivers] = useState<UserRef[]>([]);
-  const [availableMedics, setAvailableMedics] = useState<UserRef[]>([]);
+  const { availableDrivers, availableMedics } = useAvailableUsersForAssignment({
+    token,
+    isAdmin,
+    date,
+    assignment,
+    startTime,
+    endTime,
+    selectedDriverId,
+    selectedMedicId,
+  });
+  const userIdsForFlags = useMemo(() => {
+    const ids = new Set<string>();
+    for (const u of availableDrivers) if (u?._id) ids.add(u._id);
+    for (const u of availableMedics) if (u?._id) ids.add(u._id);
+    if (selectedDriverId) ids.add(selectedDriverId);
+    if (selectedMedicId) ids.add(selectedMedicId);
+    return Array.from(ids);
+  }, [availableDrivers, availableMedics, selectedDriverId, selectedMedicId]);
+
+  const { vacationFlags, sickFlags, flagsLoading } = useDayFlags({
+    isOpen,
+    token,
+    date,
+    userIds: userIdsForFlags,
+  });
+
   const [isLoading, setIsLoading] = useState(false);
 
   // Dropdowns
   const [openDriverList, setOpenDriverList] = useState(false);
   const [openMedicList, setOpenMedicList] = useState(false);
 
-  // Flags (día objetivo)
-  const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>(
-    {},
-  );
-  const [sickFlags, setSickFlags] = useState<Record<string, SickFlag>>({});
-  const [flagsLoading, setFlagsLoading] = useState(false);
 
   // IDs accesibilidad
   const driverBtnId = useId();
@@ -100,173 +114,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     );
   }, [assignment]);
 
-  // Si el seleccionado viene como id y no está en la lista, lo traemos e inyectamos
-  const ensureSelectedPresent = async (
-    list: UserRef[],
-    selectedId: string | undefined,
-    token: string,
-  ): Promise<UserRef[]> => {
-    if (!selectedId) return list;
-    if (list.some((u) => u._id === selectedId)) return list;
-
-    try {
-      const u = await UsersApi.getUserById(token, selectedId);
-      const asRef: UserRef = {
-        _id: u._id,
-        name: u.name,
-        lastName: u.lastName,
-        ambulanceRole: u.ambulanceRole,
-        pscheinExpiry: u.pscheinExpiry,
-      };
-      return [asRef, ...list];
-    } catch {
-      return list;
-    }
-  };
-
-  // Cargar disponibles y fusionar con asignado
-  useEffect(() => {
-    const fetchAvailableUsers = async () => {
-      if (!token || !isAdmin || !date) return;
-
-      try {
-        const commonOpts = { startTime, endTime, includeExpired: true };
-
-        const [drivers, medics] = await Promise.all([
-          UsersApi.getAvailableUsersForDate(date, "driver", token, commonOpts),
-          UsersApi.getAvailableUsersForDate(date, "medic", token, {
-            startTime,
-            endTime,
-          }),
-        ]);
-
-        let drv = mergeWithAssigned(drivers, assignment, "driver");
-        let med = mergeWithAssigned(medics, assignment, "medic");
-
-        const driverIdFromAssignment =
-          typeof assignment?.driver === "string" ? assignment.driver : undefined;
-        const medicIdFromAssignment =
-          typeof assignment?.medic === "string" ? assignment.medic : undefined;
-
-        drv = await ensureSelectedPresent(
-          drv,
-          driverIdFromAssignment ?? selectedDriverId,
-          token,
-        );
-        med = await ensureSelectedPresent(
-          med,
-          medicIdFromAssignment ?? selectedMedicId,
-          token,
-        );
-
-        setAvailableDrivers(drv);
-        setAvailableMedics(med);
-      } catch (error) {
-        console.error("Error al cargar usuarios disponibles:", error);
-        toastT.error(["toasts.assignments.loadUsersError"]);
-      }
-    };
-
-    fetchAvailableUsers();
-  }, [
-    token,
-    isAdmin,
-    date,
-    assignment,
-    startTime,
-    endTime,
-    selectedDriverId,
-    selectedMedicId,
-    t,
-  ]);
-
-  // Cargar ambulancias
-  useEffect(() => {
-    const fetchAmbulances = async () => {
-      if (!token) return;
-
-      try {
-        const response = await fetch("/api/ambulances", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await response.json();
-        setAmbulances(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("❌ Error al cargar ambulancias:", error);
-        toastT.error(["toasts.assignments.loadAmbulancesError"]);
-      }
-    };
-
-    fetchAmbulances();
-  }, [token, t]);
-
-  // Flags del día (vacaciones/bajas) para tooltips FULL
-  useEffect(() => {
-    if (!isOpen || !token || !date) return;
-
-    const ids = new Set<string>();
-    for (const u of availableDrivers) if (u?._id) ids.add(u._id);
-    for (const u of availableMedics) if (u?._id) ids.add(u._id);
-    if (selectedDriverId) ids.add(selectedDriverId);
-    if (selectedMedicId) ids.add(selectedMedicId);
-
-    const userIds = Array.from(ids);
-    if (userIds.length === 0) {
-      setVacationFlags({});
-      setSickFlags({});
-      return;
-    }
-
-    let cancelled = false;
-
-    (async () => {
-      try {
-        setFlagsLoading(true);
-        const vacPromise = getVacationFlagsInRange(token, {
-          userIds,
-          fromISO: date,
-          toISO: date,
-          includeFullSpan: true,
-        });
-        const sickPromise = getSickFlagsInRange({
-          userIds,
-          fromISO: date,
-          toISO: date,
-          includeFullSpan: true,
-        });
-
-        const [vacFlags, sickFlagsRes] = await Promise.all([
-          vacPromise,
-          sickPromise,
-        ]);
-
-        if (!cancelled) {
-          setVacationFlags(vacFlags);
-          setSickFlags(sickFlagsRes);
-        }
-      } catch (e) {
-        console.error("❌ Error al obtener flags (día):", e);
-        if (!cancelled) {
-          setVacationFlags({});
-          setSickFlags({});
-        }
-      } finally {
-        if (!cancelled) setFlagsLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    isOpen,
-    token,
-    date,
-    availableDrivers,
-    availableMedics,
-    selectedDriverId,
-    selectedMedicId,
-  ]);
 
   if (!isOpen) return null;
 
