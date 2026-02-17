@@ -266,8 +266,15 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   className="w-full rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
                 >
                   <option value="">
-                    {t("pages.assignmentModal.placeholders.selectAmbulance")}
+                    {ambulanceId
+                      ? `— ${t("common.none", "Ninguno")} —`
+                      : t(
+                        "pages.assignmentModal.placeholders.selectAmbulance",
+                        "Selecciona ambulancia"
+                      )}
                   </option>
+
+
                   {ambulances.map((amb) => (
                     <option key={amb._id} value={amb._id}>
                       {amb.ambulanceNumber}
@@ -292,8 +299,14 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 clearOtherIfSame
                 availableUsers={availableDrivers}
                 renderSelected={(u) => {
+                  if (selectedDriverId === "") {
+                    return t("pages.assignmentModal.placeholders.selectDriver", "Selecciona conductor");
+
+                  }
+
                   if (!u) {
-                    return t("pages.assignmentModal.placeholders.selectDriver");
+                    return t("pages.assignmentModal.placeholders.selectDriver", "Selecciona conductor");
+
                   }
 
                   const vac = userVacationInfo(u, vacationFlags, t);
@@ -372,7 +385,8 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   return expired || vac.has || sick.has;
                 }}
                 emptyLabel={t("common.empty", "No hay resultados")}
-                unassignedLabel={t("pages.assignmentModal.placeholders.selectDriver", "Sin asignar")}
+                unassignedLabel={t("common.none", "Ninguno")}
+
               />
 
               {flagsLoading ? (
@@ -406,8 +420,14 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 clearOtherIfSame
                 availableUsers={availableMedics}
                 renderSelected={(u) => {
+                  if (selectedMedicId === "") {
+                    return t("pages.assignmentModal.placeholders.selectMedic", "Selecciona sanitario");
+
+                  }
+
                   if (!u) {
-                    return t("pages.assignmentModal.placeholders.selectMedic");
+                    return t("pages.assignmentModal.placeholders.selectMedic", "Selecciona sanitario");
+
                   }
 
                   const vac = userVacationInfo(u, vacationFlags, t);
@@ -466,7 +486,8 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   return vac.has || sick.has;
                 }}
                 emptyLabel={t("common.empty", "No hay resultados")}
-                unassignedLabel={t("pages.assignmentModal.placeholders.selectMedic", "Sin asignar")}
+                unassignedLabel={t("common.none", "Ninguno")}
+
               />
 
               <button

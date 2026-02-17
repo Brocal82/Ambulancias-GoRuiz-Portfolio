@@ -135,33 +135,21 @@ export const updateDienstPartial: RequestHandler = async (req, res) => {
       if (updatedCopy?.medic === "") updatedCopy.medic = undefined;
       // 🚦 Importante: NO tocar ambulanceId aquí; se gestiona más abajo según venga o no venga
 
-      // ✅ Validación de obligatorios (ambulancia NO es obligatoria)
-      // Reglas: date, startTime, endTime SIEMPRE; y AL MENOS uno de driver o medic.
-      const hasDriver =
-        updatedCopy?.driver !== undefined &&
-        updatedCopy?.driver !== null &&
-        updatedCopy?.driver !== "";
-      const hasMedic =
-        updatedCopy?.medic !== undefined &&
-        updatedCopy?.medic !== null &&
-        updatedCopy?.medic !== "";
+// ✅ Validación de obligatorios (ambulancia NO es obligatoria)
+// Reglas: date, startTime, endTime SIEMPRE.
+// driver/medic pueden quedar vacíos (permitir "Sin asignar").
+const missingRequired =
+  !updatedCopy?.date || !updatedCopy?.startTime || !updatedCopy?.endTime;
 
-      const missingRequired =
-        !updatedCopy?.date ||
-        !updatedCopy?.startTime ||
-        !updatedCopy?.endTime ||
-        (!hasDriver && !hasMedic);
+if (missingRequired) {
+  console.warn("Assignment incompleto ignorado (faltan obligatorios):", {
+    date: updatedCopy?.date,
+    startTime: updatedCopy?.startTime,
+    endTime: updatedCopy?.endTime,
+  });
+  continue;
+}
 
-      if (missingRequired) {
-        console.warn("Assignment incompleto ignorado (faltan obligatorios):", {
-          date: updatedCopy?.date,
-          startTime: updatedCopy?.startTime,
-          endTime: updatedCopy?.endTime,
-          driver: hasDriver,
-          medic: hasMedic,
-        });
-        continue;
-      }
 
       // Buscar por fecha (tu lógica actual usa la fecha como clave)
       const idx = dienst.assignments.findIndex(
@@ -195,11 +183,39 @@ export const updateDienstPartial: RequestHandler = async (req, res) => {
 
         // Roles: solo tocamos el que llegue en el payload
         if (hasDriverField) {
-          prev.driver = updatedCopy.driver; // puede ser id válido o undefined (si quisieras limpiar)
-        }
-        if (hasMedicField) {
-          prev.medic = updatedCopy.medic;
-        }
+  const incomingDriver = (incoming as any).driver;
+
+  if (incomingDriver === "" || incomingDriver === null) {
+    // ✅ Borrado robusto
+    // @ts-ignore
+    prev.driver = null;
+    // @ts-ignore
+    if ("driver" in prev) {
+      // @ts-ignore
+      delete prev.driver;
+    }
+  } else {
+    prev.driver = updatedCopy.driver;
+  }
+}
+
+if (hasMedicField) {
+  const incomingMedic = (incoming as any).medic;
+
+  if (incomingMedic === "" || incomingMedic === null) {
+    // ✅ Borrado robusto
+    // @ts-ignore
+    prev.medic = null;
+    // @ts-ignore
+    if ("medic" in prev) {
+      // @ts-ignore
+      delete prev.medic;
+    }
+  } else {
+    prev.medic = updatedCopy.medic;
+  }
+}
+
 
         // Ambulancia:
         // - si VIENE en el payload:
