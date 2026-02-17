@@ -16,7 +16,7 @@ import UserDropdown from "./UserDropdown";
 import { useAvailableUsersForAssignment } from "./hooks/useAvailableUsersForAssignment";
 import { useAmbulances } from "./hooks/useAmbulances";
 import { useDayFlags } from "./hooks/useDayFlags";
-import type { UpdateAssignment } from "../../modules/diensts";
+import { buildUpdateAssignment } from "./buildUpdateAssignment";
 import type { FlexibleAssignment } from "../../types/assignment";
 import { useTranslation } from "react-i18next";
 import {
@@ -27,6 +27,7 @@ import {
   formatAmbulanceLabel,
   formatPersonLabel,
 } from "../../modules/diensts/utils";
+import { validateAssignmentSave } from "./validation";
 import { formatYYYYMMDDToDDMMYYYY } from "../../utils/timeUtils";
 
 interface AssignmentModalProps {
@@ -121,66 +122,34 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const handleSave = async () => {
     if (!token) return;
 
-    if (!dienstId) {
-      toastT.error(["toasts.assignments.missingDienstId"]);
-      return;
-    }
-    if (!startTime || !endTime) {
-      toastT.warn(["toasts.assignments.missingFields"]);
-      return;
-    }
-    if (selectedDriverId && selectedMedicId && selectedDriverId === selectedMedicId) {
-      toastT.warn(["toasts.assignments.samePerson"]);
-      return;
-    }
-    if (selectedDriverId && sickFlags[selectedDriverId]?.hasSickInRange) {
-      toastT.warn(["toasts.assignments.userSickDriver"]);
-      return;
-    }
-    if (selectedMedicId && sickFlags[selectedMedicId]?.hasSickInRange) {
-      toastT.warn(["toasts.assignments.userSickMedic"]);
-      return;
-    }
-    if (selectedDriverId && vacationFlags[selectedDriverId]?.hasVacationInRange) {
-      toastT.warn(["toasts.assignments.userOnVacationDriver"]);
-      return;
-    }
-    if (selectedMedicId && vacationFlags[selectedMedicId]?.hasVacationInRange) {
-      toastT.warn(["toasts.assignments.userOnVacationMedic"]);
+    const validation = validateAssignmentSave({
+      dienstId,
+      startTime,
+      endTime,
+      selectedDriverId,
+      selectedMedicId,
+      sickFlags,
+      vacationFlags,
+    });
+
+    if (validation) {
+      if (validation.type === "error") toastT.error([validation.key]);
+      else toastT.warn([validation.key]);
       return;
     }
 
+
     try {
-      const updatedAssignment: UpdateAssignment = {
+      const updatedAssignment = buildUpdateAssignment({
         date,
         startTime,
         endTime,
-        driver: selectedDriverId,
-        medic: selectedMedicId,
-      };
+        selectedDriverId,
+        selectedMedicId,
+        ambulanceId,
+        assignment,
+      });
 
-      // ✅ Si viene _id (cuando el objeto lo trae), lo añadimos. Si no, no.
-      const assignmentMongoId =
-        assignment && typeof (assignment as any)._id === "string"
-          ? ((assignment as any)._id as string)
-          : undefined;
-
-      if (assignmentMongoId) {
-        updatedAssignment._id = assignmentMongoId;
-      }
-
-      const hadAmbulanceBefore =
-        typeof assignment?.ambulanceId === "string"
-          ? assignment.ambulanceId.trim().length > 0
-          : assignment?.ambulanceId && typeof assignment.ambulanceId === "object"
-            ? Boolean((assignment.ambulanceId as any)?._id)
-            : false;
-
-      if (ambulanceId && ambulanceId.trim() !== "") {
-        updatedAssignment.ambulanceId = ambulanceId;
-      } else if (hadAmbulanceBefore) {
-        updatedAssignment.ambulanceId = "";
-      }
 
       await updateDienstPartial(dienstId, { assignments: [updatedAssignment] }, token);
       toastT.success(["toasts.assignments.saveSuccess"]);
