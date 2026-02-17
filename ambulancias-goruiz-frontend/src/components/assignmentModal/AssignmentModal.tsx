@@ -13,8 +13,7 @@ import {
   userVacationInfo,
   userSickInfo,
 } from "./utils";
-
-
+import UserDropdown from "./UserDropdown";
 import type { UserRef, UpdateAssignment } from "../../modules/diensts";
 import type { FlexibleAssignment } from "../../types/assignment";
 
@@ -462,340 +461,197 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
               </div>
 
               {/* Conductor */}
-              <div className="space-y-1">
-                <label
-                  htmlFor={driverBtnId}
-                  className="block text-sm font-medium text-slate-700"
-                >
-                  {t("pages.assignmentModal.labels.driver")}
-                </label>
+              <UserDropdown
+                label={t("pages.assignmentModal.labels.driver")}
+                buttonId={driverBtnId}
+                isOpen={openDriverList}
+                setIsOpen={setOpenDriverList}
+                selectedUser={selectedDriver}
+                selectedId={selectedDriverId}
+                setSelectedId={(id) => {
+                  setSelectedDriverId(id);
+                  if (id && id === selectedMedicId) setSelectedMedicId("");
+                }}
+                otherSelectedId={selectedMedicId}
+                clearOtherIfSame
+                availableUsers={availableDrivers}
+                renderSelected={(u) => {
+                  if (!u) {
+                    return t("pages.assignmentModal.placeholders.selectDriver");
+                  }
 
-                <div className="relative">
-                  <button
-                    id={driverBtnId}
-                    type="button"
-                    className="w-full flex items-center justify-between rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-                    onClick={() => setOpenDriverList((v) => !v)}
-                    aria-haspopup="listbox"
-                    aria-expanded={openDriverList}
-                  >
-                    <span className="truncate">
-                      {(() => {
-                        const u = selectedDriver || toUserRefOrNull(assignment?.driver);
-                        if (!u) {
-                          return t("pages.assignmentModal.placeholders.selectDriver");
-                        }
-                        const vac = userVacationInfo(u, vacationFlags, t);
-                        const sick = userSickInfo(u, sickFlags, t);
+                  const vac = userVacationInfo(u, vacationFlags, t);
+                  const sick = userSickInfo(u, sickFlags, t);
 
-
-                        return (
-                          <>
-                            <span
-                              className={mergeClasses(
-                                driverClass((u as any)?.pscheinExpiry),
-                                (vac.has || sick.has) && dimClass,
-                              )}
-                              title={driverPscheinTitle(u, t)}
-                            >
-                              {formatPersonLabel(u)}
-                            </span>
-
-                            {vac.has && (
-                              <span className="ml-1 align-middle text-slate-400" title={vac.title}>
-                                🏖️
-                              </span>
-                            )}
-                            {sick.has && (
-                              <span className="ml-1 align-middle text-slate-500" title={sick.title}>
-                                🤒
-                              </span>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </span>
-
-                    <svg
-                      className="h-4 w-4 shrink-0 text-slate-500"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-
-                  {openDriverList && (
-                    <div
-                      role="listbox"
-                      tabIndex={-1}
-                      aria-label="Opciones del selector de conductor"
-                      className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg ring-1 ring-slate-200"
-                    >
-                      {availableDrivers.length === 0 && (
-                        <div className="px-3 py-2 text-sm text-slate-500">
-                          {t("common.empty", "No hay resultados")}
-                        </div>
-                      )}
-
-                      <button
-                        role="option"
-                        aria-selected={selectedDriverId === ""}
-                        onClick={() => {
-                          setSelectedDriverId("");
-                          setOpenDriverList(false);
-                        }}
+                  return (
+                    <>
+                      <span
                         className={mergeClasses(
-                          "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
-                          selectedDriverId === "" && "bg-slate-50",
+                          driverClass((u as any)?.pscheinExpiry),
+                          (vac.has || sick.has) && dimClass,
                         )}
+                        title={driverPscheinTitle(u, t)}
                       >
-                        — {t("pages.assignmentModal.placeholders.selectDriver", "Sin asignar")} —
-                      </button>
+                        {formatPersonLabel(u)}
+                      </span>
 
-                      {availableDrivers
-                        .slice()
-                        .sort((a, b) => {
-                          const da = driverExpired(a) ? 1 : 0;
-                          const db = driverExpired(b) ? 1 : 0;
-                          if (da !== db) return da - db;
-                          const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
-                          const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
-                          return ka.localeCompare(kb, "es");
-                        })
-                        .map((u) => {
-                          const vac = userVacationInfo(u, vacationFlags, t);
-                          const sick = userSickInfo(u, sickFlags, t);
+                      {vac.has && (
+                        <span className="ml-1 align-middle text-slate-400" title={vac.title}>
+                          🏖️
+                        </span>
+                      )}
+                      {sick.has && (
+                        <span className="ml-1 align-middle text-slate-500" title={sick.title}>
+                          🤒
+                        </span>
+                      )}
+                    </>
+                  );
+                }}
+                renderOption={(u) => {
+                  const vac = userVacationInfo(u, vacationFlags, t);
+                  const sick = userSickInfo(u, sickFlags, t);
 
-                          const expired = driverExpired(u);
-                          const isSick = sick.has;
-                          const isVac = vac.has;
+                  const isSick = sick.has;
+                  const isVac = vac.has;
 
-                          return (
-                            <button
-                              key={u._id}
-                              role="option"
-                              aria-selected={selectedDriverId === u._id}
-                              onClick={() => {
-                                if (expired || isSick || isVac) return;
-                                setSelectedDriverId(u._id || "");
-                                if (u._id === selectedMedicId) setSelectedMedicId("");
-                                setOpenDriverList(false);
-                              }}
-                              className={mergeClasses(
-                                "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
-                                selectedDriverId === u._id && "bg-slate-50",
-                                (expired || isSick || isVac) && "opacity-50 cursor-not-allowed",
-                              )}
-                            >
-                              <span
-                                className={mergeClasses(
-                                  driverClass((u as any)?.pscheinExpiry),
-                                  (isVac || isSick) && "opacity-50",
-                                )}
-                                title={driverPscheinTitle(u, t)}
-                              >
-                                {formatPersonLabel(u)}
-                              </span>
-                              {vac.has && (
-                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>
-                                  🏖️
-                                </span>
-                              )}
-                              {isSick && (
-                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>
-                                  🤒
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                    </div>
-                  )}
-                </div>
+                  return (
+                    <>
+                      <span
+                        className={mergeClasses(
+                          driverClass((u as any)?.pscheinExpiry),
+                          (isVac || isSick) && "opacity-50",
+                        )}
+                        title={driverPscheinTitle(u, t)}
+                      >
+                        {formatPersonLabel(u)}
+                      </span>
 
+                      {vac.has && (
+                        <span className="ml-1 align-middle text-slate-400" title={vac.title}>
+                          🏖️
+                        </span>
+                      )}
+                      {isSick && (
+                        <span className="ml-1 align-middle text-slate-500" title={sick.title}>
+                          🤒
+                        </span>
+                      )}
+                    </>
+                  );
+                }}
+                sortFn={(a, b) => {
+                  const da = driverExpired(a) ? 1 : 0;
+                  const db = driverExpired(b) ? 1 : 0;
+                  if (da !== db) return da - db;
+
+                  const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
+                  const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
+                  return ka.localeCompare(kb, "es");
+                }}
+                isDisabled={(u) => {
+                  const vac = userVacationInfo(u, vacationFlags, t);
+                  const sick = userSickInfo(u, sickFlags, t);
+                  const expired = driverExpired(u);
+                  return expired || vac.has || sick.has;
+                }}
+                emptyLabel={t("common.empty", "No hay resultados")}
+                unassignedLabel={t("pages.assignmentModal.placeholders.selectDriver", "Sin asignar")}
+              />
+
+              {flagsLoading ? (
                 <p className="mt-1 text-[11px] text-slate-500">
-                  🚫{" "}
+                  {t("common.loading", "Cargando...")}
+                </p>
+              ) : (
+                <p className="mt-1 text-[11px] text-slate-500">
+                  🏖️/🤒{" "}
                   {t(
-                    "pages.diensts.adminPage.legendCantDrive",
-                    "No puede conducir, P-Schein caducado",
+                    "pages.diensts.weekModals.vacationsHint",
+                    "Pasa el ratón por los iconos para ver fechas",
                   )}
                 </p>
-
-                {flagsLoading ? (
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    {t("common.loading", "Cargando...")}
-                  </p>
-                ) : (
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    🏖️/🤒{" "}
-                    {t(
-                      "pages.diensts.weekModals.vacationsHint",
-                      "Pasa el ratón por los iconos para ver fechas",
-                    )}
-                  </p>
-                )}
-              </div>
+              )}
 
               {/* Sanitario */}
-              <div className="space-y-1">
-                <label
-                  htmlFor={medicBtnId}
-                  className="block text-sm font-medium text-slate-700"
-                >
-                  {t("pages.assignmentModal.labels.medic")}
-                </label>
 
-                <div className="relative">
-                  <button
-                    id={medicBtnId}
-                    type="button"
-                    className="w-full flex items-center justify-between rounded-xl border border-slate-300 ring-1 ring-slate-200 px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-                    onClick={() => setOpenMedicList((v) => !v)}
-                    aria-haspopup="listbox"
-                    aria-expanded={openMedicList}
-                  >
-                    <span className="truncate">
-                      {(() => {
-                        const u = selectedMedic || toUserRefOrNull(assignment?.medic);
-                        if (!u) {
-                          return t("pages.assignmentModal.placeholders.selectMedic");
-                        }
-                        const vac = userVacationInfo(u, vacationFlags, t);
-                        const sick = userSickInfo(u, sickFlags, t);
+              <UserDropdown
+                label={t("pages.assignmentModal.labels.medic")}
+                buttonId={medicBtnId}
+                isOpen={openMedicList}
+                setIsOpen={setOpenMedicList}
+                selectedUser={selectedMedic}
+                selectedId={selectedMedicId}
+                setSelectedId={(id) => {
+                  if (id === selectedDriverId) setSelectedDriverId("");
+                  setSelectedMedicId(id);
+                }}
+                otherSelectedId={selectedDriverId}
+                clearOtherIfSame
+                availableUsers={availableMedics}
+                renderSelected={(u) => {
+                  if (!u) {
+                    return t("pages.assignmentModal.placeholders.selectMedic");
+                  }
 
-                        return (
-                          <>
-                            <span className={mergeClasses((vac.has || sick.has) && dimClass)}>
-                              {formatPersonLabel(u)}
-                            </span>
-                            {vac.has && (
-                              <span className="ml-1 align-middle text-slate-400" title={vac.title}>
-                                🏖️
-                              </span>
-                            )}
-                            {sick.has && (
-                              <span className="ml-1 align-middle text-slate-500" title={sick.title}>
-                                🤒
-                              </span>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </span>
+                  const vac = userVacationInfo(u, vacationFlags, t);
+                  const sick = userSickInfo(u, sickFlags, t);
 
-                    <svg
-                      className="h-4 w-4 shrink-0 text-slate-500"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-
-                  {openMedicList && (
-                    <div
-                      role="listbox"
-                      tabIndex={-1}
-                      aria-label="Opciones del selector de sanitario"
-                      className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg ring-1 ring-slate-200"
-                    >
-                      {availableMedics.length === 0 && (
-                        <div className="px-3 py-2 text-sm text-slate-500">
-                          {t("common.empty", "No hay resultados")}
-                        </div>
+                  return (
+                    <>
+                      <span className={(vac.has || sick.has) ? dimClass : ""}>
+                        {formatPersonLabel(u)}
+                      </span>
+                      {vac.has && (
+                        <span className="ml-1 align-middle text-slate-400" title={vac.title}>
+                          🏖️
+                        </span>
                       )}
+                      {sick.has && (
+                        <span className="ml-1 align-middle text-slate-500" title={sick.title}>
+                          🤒
+                        </span>
+                      )}
+                    </>
+                  );
+                }}
+                renderOption={(u) => {
+                  const vac = userVacationInfo(u, vacationFlags, t);
+                  const sick = userSickInfo(u, sickFlags, t);
+                  const isVac = vac.has;
+                  const isSick = sick.has;
 
-                      <button
-                        role="option"
-                        aria-selected={selectedMedicId === ""}
-                        onClick={() => {
-                          setSelectedMedicId("");
-                          setOpenMedicList(false);
-                        }}
-                        className={mergeClasses(
-                          "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
-                          selectedMedicId === "" && "bg-slate-50",
-                        )}
-                      >
-                        — {t("pages.assignmentModal.placeholders.selectMedic", "Sin asignar")} —
-                      </button>
-
-                      {availableMedics
-                        .slice()
-                        .sort((a, b) => {
-                          const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
-                          const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
-                          return ka.localeCompare(kb, "es");
-                        })
-                        .map((u) => {
-                          const vac = userVacationInfo(u, vacationFlags, t);
-                          const sick = userSickInfo(u, sickFlags, t);
-
-                          const isVac = vac.has;
-                          const isSick = sick.has;
-
-                          return (
-                            <button
-                              key={u._id}
-                              role="option"
-                              aria-selected={selectedMedicId === u._id}
-                              onClick={() => {
-                                if (isVac || isSick) return;
-                                if (u._id === selectedDriverId) setSelectedDriverId("");
-                                setSelectedMedicId(u._id || "");
-                                setOpenMedicList(false);
-                              }}
-                              className={mergeClasses(
-                                "w-full text-left px-3 py-2 text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none",
-                                selectedMedicId === u._id && "bg-slate-50",
-                                (isVac || isSick) && "opacity-50 cursor-not-allowed",
-                              )}
-                            >
-                              <span className={mergeClasses((isVac || isSick) && "opacity-50")}>
-                                {formatPersonLabel(u)}
-                              </span>
-                              {vac.has && (
-                                <span className="ml-1 align-middle text-slate-400" title={vac.title}>
-                                  🏖️
-                                </span>
-                              )}
-                              {sick.has && (
-                                <span className="ml-1 align-middle text-slate-500" title={sick.title}>
-                                  🤒
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                    </div>
-                  )}
-                </div>
-
-                {flagsLoading ? (
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    {t("common.loading", "Cargando...")}
-                  </p>
-                ) : (
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    🏖️/🤒{" "}
-                    {t(
-                      "pages.diensts.weekModals.vacationsHint",
-                      "Pasa el ratón por los iconos para ver fechas",
-                    )}
-                  </p>
-                )}
-              </div>
+                  return (
+                    <>
+                      <span className={(isVac || isSick) ? "opacity-50" : ""}>
+                        {formatPersonLabel(u)}
+                      </span>
+                      {vac.has && (
+                        <span className="ml-1 align-middle text-slate-400" title={vac.title}>
+                          🏖️
+                        </span>
+                      )}
+                      {sick.has && (
+                        <span className="ml-1 align-middle text-slate-500" title={sick.title}>
+                          🤒
+                        </span>
+                      )}
+                    </>
+                  );
+                }}
+                sortFn={(a, b) => {
+                  const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
+                  const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
+                  return ka.localeCompare(kb, "es");
+                }}
+                isDisabled={(u) => {
+                  const vac = userVacationInfo(u, vacationFlags, t);
+                  const sick = userSickInfo(u, sickFlags, t);
+                  return vac.has || sick.has;
+                }}
+                emptyLabel={t("common.empty", "No hay resultados")}
+                unassignedLabel={t("pages.assignmentModal.placeholders.selectMedic", "Sin asignar")}
+              />
 
               <button
                 onClick={handleSave}
