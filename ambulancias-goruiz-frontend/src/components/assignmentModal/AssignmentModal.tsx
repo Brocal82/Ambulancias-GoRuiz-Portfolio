@@ -15,6 +15,7 @@ import {
 } from "./presenters";
 import UserDropdown from "./UserDropdown";
 import AmbulanceDropdown from "./AmbulanceDropdown";
+import AssignmentModalReadOnly from "./AssingmentModalReadOnly";
 import { useAvailableUsersForAssignment } from "./hooks/useAvailableUsersForAssignment";
 import { useAmbulances } from "./hooks/useAmbulances";
 import { useDayFlags } from "./hooks/useDayFlags";
@@ -25,10 +26,7 @@ import {
   normalizeAmbulanceIdToString,
   toUserRefOrNull,
 } from "../../modules/diensts/assignments";
-import {
-  formatAmbulanceLabel,
-  formatPersonLabel,
-} from "../../modules/diensts/utils";
+import { formatPersonLabel } from "../../modules/diensts/utils";
 import { validateAssignmentSave } from "./validation";
 import { formatYYYYMMDDToDDMMYYYY } from "../../utils/timeUtils";
 
@@ -552,33 +550,10 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 </CancelButton>
               </div>
             </>
-          ) : assignment ? (
-            <div className="rounded-xl border border-slate-200 p-3 bg-slate-50">
-              <p className="text-sm text-slate-700">
-                🕒 {startTime} - {endTime}
-              </p>
-              <p className="text-sm text-slate-700">
-                {t("pages.assignmentModal.readOnly.ambulance")}{" "}
-                {formatAmbulanceLabel(assignment.ambulanceId)}
-              </p>
-              <p className="text-sm text-slate-700">
-                {t("pages.assignmentModal.readOnly.driver")}{" "}
-                {formatPersonLabel(
-                  toUserRefOrNull(assignment.driver) ?? undefined
-                )}
-              </p>
-              <p className="text-sm text-slate-700">
-                {t("pages.assignmentModal.readOnly.medic")}{" "}
-                {formatPersonLabel(
-                  toUserRefOrNull(assignment.medic) ?? undefined
-                )}
-              </p>
-            </div>
           ) : (
-            <p className="text-emerald-700 font-semibold text-center text-base">
-              {t("pages.assignmentModal.info.dayOff")}
-            </p>
-          )}
+            <AssignmentModalReadOnly assignment={assignment} startTime={startTime} endTime={endTime} />
+          )
+          }
         </div>
       </div>
     </div>
