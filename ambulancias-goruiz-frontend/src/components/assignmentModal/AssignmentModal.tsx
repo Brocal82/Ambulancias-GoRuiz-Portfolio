@@ -16,6 +16,7 @@ import {
 import UserDropdown from "./UserDropdown";
 import AmbulanceDropdown from "./AmbulanceDropdown";
 import AssignmentModalReadOnly from "./AssingmentModalReadOnly";
+import AssignmentModalAdminForm from "./AssignmentModalAdminForm";
 import { useAvailableUsersForAssignment } from "./hooks/useAvailableUsersForAssignment";
 import { useAmbulances } from "./hooks/useAmbulances";
 import { useDayFlags } from "./hooks/useDayFlags";
@@ -342,7 +343,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
         <div className="space-y-4">
           {isAdmin ? (
-            <>
+            <AssignmentModalAdminForm>
               {/* Row 1: startTime | endTime | ambulance */}
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 {/* Hora inicio */}
@@ -549,7 +550,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   {t("pages.assignmentModal.buttons.close")}
                 </CancelButton>
               </div>
-            </>
+            </AssignmentModalAdminForm>
           ) : (
             <AssignmentModalReadOnly assignment={assignment} startTime={startTime} endTime={endTime} />
           )
