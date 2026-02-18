@@ -343,6 +343,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         <div className="space-y-4">
           {isAdmin ? (
             <AssignmentModalAdminForm
+              // Row 1
               startTime={startTime}
               endTime={endTime}
               setStartTime={setStartTime}
@@ -353,114 +354,56 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
               ambulanceBtnId={ambulanceBtnId}
               openAmbulanceList={openAmbulanceList}
               setOpenAmbulanceList={setOpenAmbulanceList}
+
+              // Row 2 - Driver
+              selectedDriver={selectedDriver}
+              selectedDriverId={selectedDriverId}
+              setSelectedDriverId={setSelectedDriverId}
+              openDriverList={openDriverList}
+              setOpenDriverList={setOpenDriverList}
+              availableDrivers={availableDrivers}
+              driverBtnId={driverBtnId}
+
+              // Row 2 - Medic
+              selectedMedic={selectedMedic}
+              selectedMedicId={selectedMedicId}
+              setSelectedMedicId={setSelectedMedicId}
+              openMedicList={openMedicList}
+              setOpenMedicList={setOpenMedicList}
+              availableMedics={availableMedics}
+              medicBtnId={medicBtnId}
+
+              // Shared
               t={t}
+              renderUserSelected={renderUserSelected}
+              renderUserOption={renderUserOption}
+
+              isDriverDisabled={(u) => {
+                const { vac, sick } = getUserFlagsMeta(u, { vacationFlags, sickFlags }, t);
+                const expired = driverExpired(u);
+                return expired || vac.has || sick.has;
+              }}
+              isMedicDisabled={(u) => {
+                const { vac, sick } = getUserFlagsMeta(u, { vacationFlags, sickFlags }, t);
+                return vac.has || sick.has;
+              }}
+              sortDrivers={(a, b) => {
+                const da = driverExpired(a) ? 1 : 0;
+                const db = driverExpired(b) ? 1 : 0;
+                if (da !== db) return da - db;
+
+                const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
+                const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
+                return ka.localeCompare(kb, "es");
+              }}
+              sortMedics={(a, b) => {
+                const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
+                const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
+                return ka.localeCompare(kb, "es");
+              }}
             >
 
-              {/* Row 2: driver | medic */}
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {/* Conductor */}
-                <div>
-                  <UserDropdown
-                    label={t("pages.assignmentModal.labels.driver")}
-                    buttonId={driverBtnId}
-                    isOpen={openDriverList}
-                    setIsOpen={setOpenDriverList}
-                    selectedUser={selectedDriver}
-                    selectedId={selectedDriverId}
-                    setSelectedId={(id) => {
-                      setSelectedDriverId(id);
-                      if (id && id === selectedMedicId) setSelectedMedicId("");
-                    }}
-                    otherSelectedId={selectedMedicId}
-                    clearOtherIfSame
-                    availableUsers={availableDrivers}
-                    renderSelected={(u) =>
-                      renderUserSelected({
-                        selectedId: selectedDriverId,
-                        placeholder: t(
-                          "pages.assignmentModal.placeholders.selectDriver",
-                          "Selecciona conductor"
-                        ),
-                        user: u,
-                        isDriver: true,
-                      })
-                    }
 
-                    renderOption={(u) => renderUserOption({ user: u, isDriver: true })}
-
-                    sortFn={(a, b) => {
-                      const da = driverExpired(a) ? 1 : 0;
-                      const db = driverExpired(b) ? 1 : 0;
-                      if (da !== db) return da - db;
-
-                      const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
-                      const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
-                      return ka.localeCompare(kb, "es");
-                    }}
-                    isDisabled={(u) => {
-                      const { vac, sick } = getUserFlagsMeta(u, { vacationFlags, sickFlags }, t);
-                      const expired = driverExpired(u);
-                      return expired || vac.has || sick.has;
-                    }}
-
-                    emptyLabel={t("common.empty", "No hay resultados")}
-                    unassignedLabel={t("common.none", "Ninguno")}
-                  />
-
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    🚫{" "}
-                    {t(
-                      "pages.diensts.adminPage.legendCantDrive",
-                      "No puede conducir, P-Schein caducado"
-                    )}
-                  </p>
-                </div>
-
-                {/* Sanitario */}
-                <div>
-                  <UserDropdown
-                    label={t("pages.assignmentModal.labels.medic")}
-                    buttonId={medicBtnId}
-                    isOpen={openMedicList}
-                    setIsOpen={setOpenMedicList}
-                    selectedUser={selectedMedic}
-                    selectedId={selectedMedicId}
-                    setSelectedId={(id) => {
-                      if (id === selectedDriverId) setSelectedDriverId("");
-                      setSelectedMedicId(id);
-                    }}
-                    otherSelectedId={selectedDriverId}
-                    clearOtherIfSame
-                    availableUsers={availableMedics}
-                    renderSelected={(u) =>
-                      renderUserSelected({
-                        selectedId: selectedMedicId,
-                        placeholder: t(
-                          "pages.assignmentModal.placeholders.selectMedic",
-                          "Selecciona sanitario"
-                        ),
-                        user: u,
-                        isDriver: false,
-                      })
-                    }
-
-                    renderOption={(u) => renderUserOption({ user: u, isDriver: false })}
-
-                    sortFn={(a, b) => {
-                      const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
-                      const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
-                      return ka.localeCompare(kb, "es");
-                    }}
-                    isDisabled={(u) => {
-                      const { vac, sick } = getUserFlagsMeta(u, { vacationFlags, sickFlags }, t);
-                      return vac.has || sick.has;
-                    }}
-
-                    emptyLabel={t("common.empty", "No hay resultados")}
-                    unassignedLabel={t("common.none", "Ninguno")}
-                  />
-                </div>
-              </div>
 
               {/* Info flags */}
               <p className="mt-1 text-[11px] text-slate-500">
