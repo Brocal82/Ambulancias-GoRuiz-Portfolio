@@ -278,7 +278,7 @@
             },
             "buttons": {
                 "save": "Änderungen speichern",
-                "deleteDay": "Diesen Tag löschen",
+                "deleteDay": "Dienstfrei",
                 "close": "Schließen",
                 "saving": "Speichern...",
                 "deleting": "Löschen..."

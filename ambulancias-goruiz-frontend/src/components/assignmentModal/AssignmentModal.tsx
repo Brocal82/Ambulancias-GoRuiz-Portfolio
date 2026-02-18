@@ -5,6 +5,7 @@ import { updateDienstPartial, removeAssignment } from "../../modules/diensts";
 import { toastT } from "../../utils/toast";
 import SaveIconButton from "../common/actions/SaveIconButton";
 import CancelButton from "../common/actions/CancelButton";
+import DayOffIconButton from "../common/actions/DayOffIconButton";
 import {
   mergeClasses,
   dimClass,
@@ -93,12 +94,19 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [openMedicList, setOpenMedicList] = useState(false);
   const [openAmbulanceList, setOpenAmbulanceList] = useState(false);
 
-
-
   // IDs accesibilidad
   const driverBtnId = useId();
   const medicBtnId = useId();
   const ambulanceBtnId = useId();
+
+  const dayLabel = useMemo(() => {
+    // date viene en formato YYYY-MM-DD
+    const d = new Date(`${date}T00:00:00`);
+    const dayName = d.toLocaleDateString("es-ES", { weekday: "long" });
+    const prettyDate = formatYYYYMMDDToDDMMYYYY(date);
+    // Capitalizamos el día
+    return `${dayName.charAt(0).toUpperCase()}${dayName.slice(1)} · ${prettyDate}`;
+  }, [date]);
 
 
   // Precarga del assignment
@@ -145,7 +153,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       return;
     }
 
-
     try {
       const updatedAssignment = buildUpdateAssignment({
         date,
@@ -156,7 +163,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         ambulanceId,
         assignment,
       });
-
 
       await updateDienstPartial(dienstId, { assignments: [updatedAssignment] }, token);
       toastT.success(["toasts.assignments.saveSuccess"]);
@@ -217,11 +223,36 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
       <div className="relative z-10 w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200">
 
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">
-          {t("pages.assignmentModal.title", {
-            date: formatYYYYMMDDToDDMMYYYY(date),
-          })}
-        </h3>
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 leading-tight">
+              {dayLabel}
+            </h3>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isLoading}
+            aria-label={t("pages.assignmentModal.buttons.close", "Cerrar")}
+            className="
+    -mt-1 inline-flex items-center justify-center
+    w-9 h-9 rounded-full
+    text-rose-600
+    hover:bg-rose-50
+    hover:text-rose-700
+    focus:outline-none focus:ring-4 focus:ring-rose-200
+    active:scale-95
+    transition
+    disabled:opacity-50
+  "
+            title={t("pages.assignmentModal.buttons.close", "Cerrar")}
+          >
+            <span className="text-xl leading-none">×</span>
+          </button>
+
+        </div>
+
 
         <div className="space-y-4">
           {isAdmin ? (
@@ -519,48 +550,49 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 </div>
               </div>
 
-              {/* Hint flags */}
-              {flagsLoading ? (
-                <p className="text-[11px] text-slate-500">
-                  {t("common.loading", "Cargando...")}
-                </p>
-              ) : (
-                <p className="text-[11px] text-slate-500">
-                  🏖️/🤒{" "}
-                  {t(
-                    "pages.diensts.weekModals.vacationsHint",
-                    "Pasa el ratón por los iconos para ver fechas"
-                  )}
-                </p>
-              )}
+              {/* Info flags */}
+              <p className="mt-1 text-[11px] text-slate-500">
+                🏖️/🤒{" "}
+                {t(
+                  "pages.diensts.weekModals.vacationsHint",
+                  "Pasa el ratón por los iconos para ver fechas",
+                )}
+                {flagsLoading ? (
+                  <span className="ml-2 text-slate-400">
+                    {t("common.loading", "Cargando...")}
+                  </span>
+                ) : null}
+              </p>
 
-              {/* Acciones */}
-              <div className="space-y-2 pt-1">
-                <div className="flex items-center justify-end">
-                  <SaveIconButton
-                    type="button"
-                    onClick={handleSave}
+
+              {/* Acciones alineadas abajo derecha */}
+              <div className="mt-4 flex items-center justify-end gap-3">
+                <SaveIconButton
+                  type="button"
+                  onClick={handleSave}
+                  disabled={isLoading}
+                  title={
+                    isLoading
+                      ? t("pages.assignmentModal.buttons.saving")
+                      : t("pages.assignmentModal.buttons.save")
+                  }
+                />
+                {assignment && (
+                  <DayOffIconButton
+                    onClick={handleDelete}
                     disabled={isLoading}
                     title={
                       isLoading
-                        ? t("pages.assignmentModal.buttons.saving")
-                        : t("pages.assignmentModal.buttons.save")
+                        ? t("pages.assignmentModal.buttons.deleting")
+                        : t("pages.assignmentModal.buttons.deleteDay")
                     }
                   />
-                </div>
-
-
-                {assignment && (
-                  <button
-                    onClick={handleDelete}
-                    disabled={isLoading}
-                    className="w-full rounded-xl bg-rose-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100 disabled:opacity-50"
-                  >
-                    {isLoading
-                      ? t("pages.assignmentModal.buttons.deleting")
-                      : t("pages.assignmentModal.buttons.deleteDay")}
-                  </button>
                 )}
+
+
+                <CancelButton onClick={onClose} disabled={isLoading}>
+                  {t("pages.assignmentModal.buttons.close")}
+                </CancelButton>
               </div>
             </>
           ) : assignment ? (
@@ -574,11 +606,15 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
               </p>
               <p className="text-sm text-slate-700">
                 {t("pages.assignmentModal.readOnly.driver")}{" "}
-                {formatPersonLabel(toUserRefOrNull(assignment.driver) ?? undefined)}
+                {formatPersonLabel(
+                  toUserRefOrNull(assignment.driver) ?? undefined
+                )}
               </p>
               <p className="text-sm text-slate-700">
                 {t("pages.assignmentModal.readOnly.medic")}{" "}
-                {formatPersonLabel(toUserRefOrNull(assignment.medic) ?? undefined)}
+                {formatPersonLabel(
+                  toUserRefOrNull(assignment.medic) ?? undefined
+                )}
               </p>
             </div>
           ) : (
@@ -587,16 +623,10 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
             </p>
           )}
         </div>
-
-        <div className="mt-4 flex justify-end">
-          <CancelButton onClick={onClose} disabled={isLoading}>
-            {t("pages.assignmentModal.buttons.close")}
-          </CancelButton>
-        </div>
-
       </div>
     </div>
   );
+
 
 };
 

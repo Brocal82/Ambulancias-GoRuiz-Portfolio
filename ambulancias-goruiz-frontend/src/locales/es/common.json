@@ -278,7 +278,7 @@
             },
             "buttons": {
                 "save": "Guardar cambios",
-                "deleteDay": "Eliminar este día",
+                "deleteDay": "Día Libre",
                 "close": "Cerrar",
                 "saving": "Guardando...",
                 "deleting": "Eliminando..."

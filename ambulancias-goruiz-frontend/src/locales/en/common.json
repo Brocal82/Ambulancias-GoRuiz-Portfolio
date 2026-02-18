@@ -278,7 +278,7 @@
             },
             "buttons": {
                 "save": "Save changes",
-                "deleteDay": "Delete this day",
+                "deleteDay": "Day Off",
                 "close": "Close",
                 "saving": "Saving...",
                 "deleting": "Deleting..."
