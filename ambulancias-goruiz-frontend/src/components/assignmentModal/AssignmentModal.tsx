@@ -4,16 +4,12 @@ import { useAuth } from "../../hooks/useAuth";
 import { updateDienstPartial, removeAssignment } from "../../modules/diensts";
 import type { UserRef } from "../../modules/diensts";
 import { toastT } from "../../utils/toast";
-import SaveIconButton from "../common/actions/SaveIconButton";
-import CancelButton from "../common/actions/CancelButton";
-import DayOffIconButton from "../common/actions/DayOffIconButton";
 import { driverExpired } from "./utils";
 import {
   getUserFlagsMeta,
   getNameClass,
   getNameTitle,
 } from "./presenters";
-import UserDropdown from "./UserDropdown";
 import AssignmentModalReadOnly from "./AssingmentModalReadOnly";
 import AssignmentModalAdminForm from "./AssignmentModalAdminForm";
 import { useAvailableUsersForAssignment } from "./hooks/useAvailableUsersForAssignment";
@@ -401,54 +397,16 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
                 return ka.localeCompare(kb, "es");
               }}
+
+              flagsLoading={flagsLoading}
+
+              handleSave={handleSave}
+              handleDelete={handleDelete}
+              onClose={onClose}
+              isLoading={isLoading}
+              hasAssignment={!!assignment}
             >
 
-
-
-              {/* Info flags */}
-              <p className="mt-1 text-[11px] text-slate-500">
-                🏖️/🤒{" "}
-                {t(
-                  "pages.diensts.weekModals.vacationsHint",
-                  "Pasa el ratón por los iconos para ver fechas",
-                )}
-                {flagsLoading ? (
-                  <span className="ml-2 text-slate-400">
-                    {t("common.loading", "Cargando...")}
-                  </span>
-                ) : null}
-              </p>
-
-
-              {/* Acciones alineadas abajo derecha */}
-              <div className="mt-4 flex items-center justify-end gap-3">
-                <SaveIconButton
-                  type="button"
-                  onClick={handleSave}
-                  disabled={isLoading}
-                  title={
-                    isLoading
-                      ? t("pages.assignmentModal.buttons.saving")
-                      : t("pages.assignmentModal.buttons.save")
-                  }
-                />
-                {assignment && (
-                  <DayOffIconButton
-                    onClick={handleDelete}
-                    disabled={isLoading}
-                    title={
-                      isLoading
-                        ? t("pages.assignmentModal.buttons.deleting")
-                        : t("pages.assignmentModal.buttons.deleteDay")
-                    }
-                  />
-                )}
-
-
-                <CancelButton onClick={onClose} disabled={isLoading}>
-                  {t("pages.assignmentModal.buttons.close")}
-                </CancelButton>
-              </div>
             </AssignmentModalAdminForm>
           ) : (
             <AssignmentModalReadOnly assignment={assignment} startTime={startTime} endTime={endTime} />

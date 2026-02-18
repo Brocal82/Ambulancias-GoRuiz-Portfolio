@@ -2,6 +2,10 @@ import React from "react";
 import AmbulanceDropdown from "./AmbulanceDropdown";
 import UserDropdown from "./UserDropdown";
 import type { UserRef } from "../../modules/diensts";
+import SaveIconButton from "../common/actions/SaveIconButton";
+import CancelButton from "../common/actions/CancelButton";
+import DayOffIconButton from "../common/actions/DayOffIconButton";
+
 
 type Props = {
     // Row 1
@@ -53,6 +57,17 @@ type Props = {
     sortDrivers: (a: UserRef, b: UserRef) => number;
     sortMedics: (a: UserRef, b: UserRef) => number;
 
+    // Legend flags
+    flagsLoading: boolean;
+
+    // Actions
+    handleSave: () => void;
+    handleDelete: () => void;
+    onClose: () => void;
+    isLoading: boolean;
+    hasAssignment: boolean;
+
+
     children?: React.ReactNode;
 };
 
@@ -95,6 +110,15 @@ const AssignmentModalAdminForm: React.FC<Props> = ({
     isMedicDisabled,
     sortDrivers,
     sortMedics,
+
+    flagsLoading,
+
+    handleSave,
+    handleDelete,
+    onClose,
+    isLoading,
+    hasAssignment,
+
 
     children,
 }) => {
@@ -230,6 +254,52 @@ const AssignmentModalAdminForm: React.FC<Props> = ({
                     />
                 </div>
             </div>
+
+            {/* Info flags */}
+            <p className="mt-1 text-[11px] text-slate-500">
+                🏖️/🤒{" "}
+                {t(
+                    "pages.diensts.weekModals.vacationsHint",
+                    "Pasa el ratón por los iconos para ver fechas",
+                )}
+                {flagsLoading ? (
+                    <span className="ml-2 text-slate-400">
+                        {t("common.loading", "Cargando...")}
+                    </span>
+                ) : null}
+            </p>
+
+            {/* Acciones alineadas abajo derecha */}
+            <div className="mt-4 flex items-center justify-end gap-3">
+                <SaveIconButton
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isLoading}
+                    title={
+                        isLoading
+                            ? t("pages.assignmentModal.buttons.saving")
+                            : t("pages.assignmentModal.buttons.save")
+                    }
+                />
+
+                {hasAssignment && (
+                    <DayOffIconButton
+                        onClick={handleDelete}
+                        disabled={isLoading}
+                        title={
+                            isLoading
+                                ? t("pages.assignmentModal.buttons.deleting")
+                                : t("pages.assignmentModal.buttons.deleteDay")
+                        }
+                    />
+                )}
+
+                <CancelButton onClick={onClose} disabled={isLoading}>
+                    {t("pages.assignmentModal.buttons.close")}
+                </CancelButton>
+            </div>
+
+
 
             {children}
         </>
