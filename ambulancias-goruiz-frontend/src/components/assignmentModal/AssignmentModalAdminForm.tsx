@@ -269,34 +269,38 @@ const AssignmentModalAdminForm: React.FC<Props> = ({
                 ) : null}
             </p>
 
-            {/* Acciones alineadas abajo derecha */}
-            <div className="mt-4 flex items-center justify-end gap-3">
-                <SaveIconButton
-                    type="button"
-                    onClick={handleSave}
-                    disabled={isLoading}
-                    title={
-                        isLoading
-                            ? t("pages.assignmentModal.buttons.saving")
-                            : t("pages.assignmentModal.buttons.save")
-                    }
-                />
-
-                {hasAssignment && (
-                    <DayOffIconButton
-                        onClick={handleDelete}
-                        disabled={isLoading}
-                        title={
-                            isLoading
-                                ? t("pages.assignmentModal.buttons.deleting")
-                                : t("pages.assignmentModal.buttons.deleteDay")
-                        }
-                    />
-                )}
-
+            {/* Acciones alineadas izquierda / derecha */}
+            <div className="mt-4 flex items-center justify-between">
+                {/* Izquierda: Cancel */}
                 <CancelButton onClick={onClose} disabled={isLoading}>
                     {t("pages.assignmentModal.buttons.close")}
                 </CancelButton>
+
+                {/* Derecha: Save + Delete */}
+                <div className="flex items-center gap-3">
+                    {hasAssignment && (
+                        <DayOffIconButton
+                            onClick={handleDelete}
+                            disabled={isLoading}
+                            title={
+                                isLoading
+                                    ? t("pages.assignmentModal.buttons.deleting")
+                                    : t("pages.assignmentModal.buttons.deleteDay")
+                            }
+                        />
+                    )}
+
+                    <SaveIconButton
+                        type="button"
+                        onClick={handleSave}
+                        disabled={isLoading}
+                        title={
+                            isLoading
+                                ? t("pages.assignmentModal.buttons.saving")
+                                : t("pages.assignmentModal.buttons.save")
+                        }
+                    />
+                </div>
             </div>
 
 
