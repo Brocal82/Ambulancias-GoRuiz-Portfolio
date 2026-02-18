@@ -1,20 +1,18 @@
-// frontend/src/components/AssignmentModal.tsx
+// frontend/src/components/assignmentModal/AssignmentModal.tsx
 import { useState, useEffect, useId, useMemo } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { updateDienstPartial, removeAssignment } from "../../modules/diensts";
+import type { UserRef } from "../../modules/diensts";
 import { toastT } from "../../utils/toast";
 import SaveIconButton from "../common/actions/SaveIconButton";
 import CancelButton from "../common/actions/CancelButton";
 import DayOffIconButton from "../common/actions/DayOffIconButton";
+import { driverExpired } from "./utils";
 import {
-  mergeClasses,
-  dimClass,
-  driverClass,
-  driverExpired,
-  driverPscheinTitle,
-  userVacationInfo,
-  userSickInfo,
-} from "./utils";
+  getUserFlagsMeta,
+  getNameClass,
+  getNameTitle,
+} from "./presenters";
 import UserDropdown from "./UserDropdown";
 import AmbulanceDropdown from "./AmbulanceDropdown";
 import { useAvailableUsersForAssignment } from "./hooks/useAvailableUsersForAssignment";
@@ -53,7 +51,8 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 }) => {
   const { role: userRole, token } = useAuth();
   const isAdmin = userRole === "admin";
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
 
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -102,11 +101,29 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const dayLabel = useMemo(() => {
     // date viene en formato YYYY-MM-DD
     const d = new Date(`${date}T00:00:00`);
-    const dayName = d.toLocaleDateString("es-ES", { weekday: "long" });
+
+    // Map básico de i18n.language a locale para toLocaleDateString
+    // Ajusta o extiende si soportas otros códigos regionales.
+    const localeMap: Record<string, string> = {
+      es: "es-ES",
+      en: "en-US",
+      de: "de-DE",
+    };
+    const lang = (i18n?.language as string) || "es";
+    const locale = localeMap[lang.split("-")[0]] ?? localeMap[lang] ?? "es-ES";
+
+    const dayName = d.toLocaleDateString(locale, { weekday: "long" });
+
     const prettyDate = formatYYYYMMDDToDDMMYYYY(date);
-    // Capitalizamos el día
-    return `${dayName.charAt(0).toUpperCase()}${dayName.slice(1)} · ${prettyDate}`;
-  }, [date]);
+
+    // Capitalizamos la primera letra conservando el resto igual
+    const capitalizedDay =
+      dayName.length > 0 ? `${dayName.charAt(0).toUpperCase()}${dayName.slice(1)}` : dayName;
+
+    return `${capitalizedDay} · ${prettyDate}`;
+  }, [date, i18n?.language]);
+
+
 
 
   // Precarga del assignment
@@ -216,6 +233,77 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
     return null;
   }, [availableMedics, selectedMedicId, assignment]);
+
+  const renderUserSelected = (params: {
+    selectedId: string;
+    placeholder: string;
+    user: UserRef | null;
+    isDriver?: boolean;
+  }) => {
+    const { selectedId, placeholder, user, isDriver } = params;
+
+    if (selectedId === "" || !user) return placeholder;
+
+    const label = formatPersonLabel(user);
+    const { vac, sick } = getUserFlagsMeta(user, { vacationFlags, sickFlags }, t);
+
+    return (
+      <>
+        <span
+          className={getNameClass({
+            user,
+            isDriver,
+            dim: vac.has || sick.has,
+          })}
+          title={getNameTitle({ user, isDriver, t })}
+        >
+          {label}
+        </span>
+
+        {vac.has && (
+          <span className="ml-1 align-middle text-slate-400" title={vac.title}>
+            🏖️
+          </span>
+        )}
+        {sick.has && (
+          <span className="ml-1 align-middle text-slate-500" title={sick.title}>
+            🤒
+          </span>
+        )}
+      </>
+    );
+
+  };
+
+  const renderUserOption = (params: { user: UserRef; isDriver?: boolean }) => {
+    const { user, isDriver } = params;
+
+    const { vac, sick } = getUserFlagsMeta(user, { vacationFlags, sickFlags }, t);
+    const dim = vac.has || sick.has;
+
+    return (
+      <>
+        <span
+          className={getNameClass({ user, isDriver, dim })}
+          title={getNameTitle({ user, isDriver, t })}
+        >
+          {formatPersonLabel(user)}
+        </span>
+
+        {vac.has && (
+          <span className="ml-1 align-middle text-slate-400" title={vac.title}>
+            🏖️
+          </span>
+        )}
+        {sick.has && (
+          <span className="ml-1 align-middle text-slate-500" title={sick.title}>
+            🤒
+          </span>
+        )}
+      </>
+    );
+  };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -331,93 +419,20 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                     otherSelectedId={selectedMedicId}
                     clearOtherIfSame
                     availableUsers={availableDrivers}
-                    renderSelected={(u) => {
-                      if (selectedDriverId === "") {
-                        return t(
+                    renderSelected={(u) =>
+                      renderUserSelected({
+                        selectedId: selectedDriverId,
+                        placeholder: t(
                           "pages.assignmentModal.placeholders.selectDriver",
                           "Selecciona conductor"
-                        );
-                      }
+                        ),
+                        user: u,
+                        isDriver: true,
+                      })
+                    }
 
-                      if (!u) {
-                        return t(
-                          "pages.assignmentModal.placeholders.selectDriver",
-                          "Selecciona conductor"
-                        );
-                      }
+                    renderOption={(u) => renderUserOption({ user: u, isDriver: true })}
 
-                      const vac = userVacationInfo(u, vacationFlags, t);
-                      const sick = userSickInfo(u, sickFlags, t);
-
-                      return (
-                        <>
-                          <span
-                            className={mergeClasses(
-                              driverClass((u as any)?.pscheinExpiry),
-                              (vac.has || sick.has) && dimClass
-                            )}
-                            title={driverPscheinTitle(u, t)}
-                          >
-                            {formatPersonLabel(u)}
-                          </span>
-
-                          {vac.has && (
-                            <span
-                              className="ml-1 align-middle text-slate-400"
-                              title={vac.title}
-                            >
-                              🏖️
-                            </span>
-                          )}
-                          {sick.has && (
-                            <span
-                              className="ml-1 align-middle text-slate-500"
-                              title={sick.title}
-                            >
-                              🤒
-                            </span>
-                          )}
-                        </>
-                      );
-                    }}
-                    renderOption={(u) => {
-                      const vac = userVacationInfo(u, vacationFlags, t);
-                      const sick = userSickInfo(u, sickFlags, t);
-
-                      const isSick = sick.has;
-                      const isVac = vac.has;
-
-                      return (
-                        <>
-                          <span
-                            className={mergeClasses(
-                              driverClass((u as any)?.pscheinExpiry),
-                              (isVac || isSick) && "opacity-50"
-                            )}
-                            title={driverPscheinTitle(u, t)}
-                          >
-                            {formatPersonLabel(u)}
-                          </span>
-
-                          {vac.has && (
-                            <span
-                              className="ml-1 align-middle text-slate-400"
-                              title={vac.title}
-                            >
-                              🏖️
-                            </span>
-                          )}
-                          {isSick && (
-                            <span
-                              className="ml-1 align-middle text-slate-500"
-                              title={sick.title}
-                            >
-                              🤒
-                            </span>
-                          )}
-                        </>
-                      );
-                    }}
                     sortFn={(a, b) => {
                       const da = driverExpired(a) ? 1 : 0;
                       const db = driverExpired(b) ? 1 : 0;
@@ -428,11 +443,11 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                       return ka.localeCompare(kb, "es");
                     }}
                     isDisabled={(u) => {
-                      const vac = userVacationInfo(u, vacationFlags, t);
-                      const sick = userSickInfo(u, sickFlags, t);
+                      const { vac, sick } = getUserFlagsMeta(u, { vacationFlags, sickFlags }, t);
                       const expired = driverExpired(u);
                       return expired || vac.has || sick.has;
                     }}
+
                     emptyLabel={t("common.empty", "No hay resultados")}
                     unassignedLabel={t("common.none", "Ninguno")}
                   />
@@ -462,88 +477,30 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                     otherSelectedId={selectedDriverId}
                     clearOtherIfSame
                     availableUsers={availableMedics}
-                    renderSelected={(u) => {
-                      if (selectedMedicId === "") {
-                        return t(
+                    renderSelected={(u) =>
+                      renderUserSelected({
+                        selectedId: selectedMedicId,
+                        placeholder: t(
                           "pages.assignmentModal.placeholders.selectMedic",
                           "Selecciona sanitario"
-                        );
-                      }
+                        ),
+                        user: u,
+                        isDriver: false,
+                      })
+                    }
 
-                      if (!u) {
-                        return t(
-                          "pages.assignmentModal.placeholders.selectMedic",
-                          "Selecciona sanitario"
-                        );
-                      }
+                    renderOption={(u) => renderUserOption({ user: u, isDriver: false })}
 
-                      const vac = userVacationInfo(u, vacationFlags, t);
-                      const sick = userSickInfo(u, sickFlags, t);
-
-                      return (
-                        <>
-                          <span className={vac.has || sick.has ? dimClass : ""}>
-                            {formatPersonLabel(u)}
-                          </span>
-                          {vac.has && (
-                            <span
-                              className="ml-1 align-middle text-slate-400"
-                              title={vac.title}
-                            >
-                              🏖️
-                            </span>
-                          )}
-                          {sick.has && (
-                            <span
-                              className="ml-1 align-middle text-slate-500"
-                              title={sick.title}
-                            >
-                              🤒
-                            </span>
-                          )}
-                        </>
-                      );
-                    }}
-                    renderOption={(u) => {
-                      const vac = userVacationInfo(u, vacationFlags, t);
-                      const sick = userSickInfo(u, sickFlags, t);
-                      const isVac = vac.has;
-                      const isSick = sick.has;
-
-                      return (
-                        <>
-                          <span className={isVac || isSick ? "opacity-50" : ""}>
-                            {formatPersonLabel(u)}
-                          </span>
-                          {vac.has && (
-                            <span
-                              className="ml-1 align-middle text-slate-400"
-                              title={vac.title}
-                            >
-                              🏖️
-                            </span>
-                          )}
-                          {sick.has && (
-                            <span
-                              className="ml-1 align-middle text-slate-500"
-                              title={sick.title}
-                            >
-                              🤒
-                            </span>
-                          )}
-                        </>
-                      );
-                    }}
                     sortFn={(a, b) => {
                       const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
                       const kb = `${b.lastName || ""} ${b.name || ""}`.toLowerCase();
                       return ka.localeCompare(kb, "es");
                     }}
                     isDisabled={(u) => {
-                      const vac = userVacationInfo(u, vacationFlags, t);
-                      const sick = userSickInfo(u, sickFlags, t);
+                      const { vac, sick } = getUserFlagsMeta(u, { vacationFlags, sickFlags }, t);
                       return vac.has || sick.has;
                     }}
+
                     emptyLabel={t("common.empty", "No hay resultados")}
                     unassignedLabel={t("common.none", "Ninguno")}
                   />
