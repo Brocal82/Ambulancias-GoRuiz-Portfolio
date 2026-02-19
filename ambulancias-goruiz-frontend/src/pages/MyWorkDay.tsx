@@ -1,5 +1,4 @@
 // frontend/src/pages/MyWorkday.tsx
-
 import { useState, useEffect, useRef } from "react";
 import { createTrip } from "../api/trips";
 import { useAuth } from "../hooks/useAuth";
