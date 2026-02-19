@@ -20,7 +20,8 @@ interface Props {
     finalKm: number,
     totalEffectivePatients: number,
     issueData?: any,
-  ) => void;
+  ) => Promise<void>;
+
 }
 
 const PartialReviewModal: React.FC<Props> = ({
@@ -60,8 +61,7 @@ const PartialReviewModal: React.FC<Props> = ({
     return true;
   };
 
-  const handleSubmit = () => {
-    // 🛡️ evita multi-clicks
+  const handleSubmit = async () => {
     if (isSending) return;
 
     if (!report.trim()) {
@@ -71,15 +71,13 @@ const PartialReviewModal: React.FC<Props> = ({
     if (!ensureValidFinalKm()) return;
 
     setIsSending(true);
-
     try {
-      onSend(report.trim(), parsedFinalKm, totalEffectivePatients, issueData);
+      await onSend(report.trim(), parsedFinalKm, totalEffectivePatients, issueData);
     } finally {
-      // Igual que en el modal final: bloqueo anti-spam inmediato.
-      // Lo dejaremos perfecto con async/await cuando veamos MyWorkDay.tsx.
-      setTimeout(() => setIsSending(false), 800);
+      setIsSending(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">

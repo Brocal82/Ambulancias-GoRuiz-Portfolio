@@ -480,7 +480,9 @@ const MyWorkday = () => {
   const handleConfirmFinalClosure = async (
     note: string,
     finalKmFromModal: number,
+    _issueData?: any,
   ) => {
+
     if (!token || !assignedDay || !user?._id) return;
 
     // ✅ exige datos confirmados de vehículo
@@ -1395,10 +1397,11 @@ const MyWorkday = () => {
           initialKm={initialAmbulanceKm}
           finalKm={finalAmbulanceKm}
           onClose={() => setShowReviewModal(false)}
-          onSend={(reason, finalKmValue, issue) => {
+          onSend={async (reason, finalKmValue, _totalEffectivePatients, issue) => {
             setIssueData(issue || null);
-            handleSendPartialClosure(reason, finalKmValue);
+            await handleSendPartialClosure(reason, finalKmValue);
           }}
+
         />
       )}
 

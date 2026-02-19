@@ -10,7 +10,7 @@ import { useTranslation } from "react-i18next";
 interface FinalReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (note: string, finalKm: number, issueData?: any) => void;
+  onConfirm: (note: string, finalKm: number, issueData?: any) => Promise<void>;
   trips: Trip[];
   ambulanceId: string;
   ambulanceNumber: string;
@@ -63,23 +63,18 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
     return true;
   };
 
-  const handleSend = () => {
-    // 🛡️ evita multi-clicks
+  const handleSend = async () => {
     if (isSending) return;
-
     if (!ensureValidFinalKm()) return;
 
     setIsSending(true);
-
     try {
-      onConfirm(note.trim(), parsedFinalKm, issueData || undefined);
+      await onConfirm(note.trim(), parsedFinalKm, issueData || undefined);
     } finally {
-      // OJO: esto no “espera” a la API porque onConfirm es sync.
-      // Aun así, ya bloquea spam-clicks en el mismo momento.
-      // Si quieres que se desbloquee solo si hay error, lo haremos cuando veamos MyWorkDay.tsx.
-      setTimeout(() => setIsSending(false), 800);
+      setIsSending(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
