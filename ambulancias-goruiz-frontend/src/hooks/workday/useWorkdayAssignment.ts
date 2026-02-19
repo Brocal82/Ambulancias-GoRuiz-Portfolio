@@ -31,7 +31,7 @@ const isNowWithinDienst = (
 };
 
 /** Devuelve true si AHORA ya se pueden registrar viajes. (30 min antes) */
-const canStartTripNow = (startTime: string, dienstDate: string): boolean => {
+export const canStartTripNow = (startTime: string, dienstDate: string): boolean => {
   const [sh, sm] = startTime.split(":").map(Number);
   const start = new Date(dienstDate + "T00:00:00");
   start.setHours(sh, sm - 30, 0, 0);

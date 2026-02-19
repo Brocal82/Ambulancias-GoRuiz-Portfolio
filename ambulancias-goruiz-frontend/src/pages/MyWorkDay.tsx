@@ -15,7 +15,7 @@ import {
   buildPartialSummaryPayload,
 } from "../utils/workday/summaryPayload";
 import { useWorkdayTrips } from "../hooks/workday/useWorkdayTrips";
-import { useWorkdayAssignment } from "../hooks/workday/useWorkdayAssignment";
+import { useWorkdayAssignment, canStartTripNow } from "../hooks/workday/useWorkdayAssignment";
 import { checkTripLogic, type TripDraft } from "../utils/tripValidators";
 import {
   getCurrentTimeString,
@@ -32,21 +32,13 @@ import type { Ambulance } from "../types/ambulance";
 import { useTranslation } from "react-i18next";
 import { notifyAdminIssuesChanged } from "../hooks/useAdminIssuesOpenCount";
 import { notifyAdminSummariesChanged } from "../hooks/useAdminSummariesPendingCount";
-
-/** Devuelve true si AHORA ya se pueden registrar viajes. */
-const canStartTripNow = (startTime: string, dienstDate: string): boolean => {
-  const [sh, sm] = startTime.split(":").map(Number);
-  const start = new Date(dienstDate + "T00:00:00");
-  start.setHours(sh, sm - 30, 0, 0); // 30 min antes
-  const now = new Date();
-  return now >= start;
-};
+import { todayBerlinDayKey } from "../utils/dates/dayKey";
 
 
 const MyWorkday = () => {
   const { t } = useTranslation();
   const { token, user } = useAuth();
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayBerlinDayKey();
   const todayFormatted = formatYYYYMMDDToDDMMYYYY(today);
 
   const {
