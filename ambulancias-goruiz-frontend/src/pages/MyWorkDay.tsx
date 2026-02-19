@@ -6,7 +6,7 @@ import { getAssignedDaysForUser } from "../modules/diensts";
 import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
 import type { Trip, TripData } from "../types/trip";
-import type { AssignedDay, AssignedDayFull, UserRef } from "../modules/diensts";
+import type { AssignedDay, AssignedDayFull } from "../modules/diensts";
 import TripModal from "../components/trips/TripModal";
 import { useNavigate } from "react-router-dom";
 import FinalReviewModal from "../components/workday/FinalReviewModal";
@@ -200,26 +200,6 @@ const MyWorkday = () => {
     }
   }, [token, today, user?._id]);
 
-  const toUserRef = (v: unknown): UserRef | undefined => {
-    if (!v || typeof v !== "object") return undefined;
-    const anyV = v as any;
-    if (typeof anyV._id === "string") return anyV as UserRef;
-    return undefined;
-  };
-
-  const toAssignedDayFull = (d: AssignedDay): AssignedDayFull | null => {
-    const driver = toUserRef(d.driver);
-    const medic = toUserRef(d.medic);
-    if (!driver || !medic) return null;
-
-    return {
-      ...d,
-      driver,
-      medic,
-      ambulanceId: d.ambulanceId as any,
-    };
-  };
-
 
   const fetchAssignedDay = useCallback(async () => {
     if (!token || !user?._id) return;
@@ -227,9 +207,28 @@ const MyWorkday = () => {
     try {
       const daysRaw = await getAssignedDaysForUser(user._id, token);
 
-      const daysFull = daysRaw
-        .map(toAssignedDayFull)
-        .filter((d): d is AssignedDayFull => d !== null);
+      const daysFull = daysRaw.reduce<AssignedDayFull[]>((acc, d) => {
+        // driver/medic son (string | UserRef | undefined)
+        // queremos SOLO los que tengan UserRef real (no string, no undefined)
+        if (!d.driver || !d.medic) return acc;
+        if (typeof d.driver === "string" || typeof d.medic === "string") return acc;
+
+        acc.push({
+          dienstId: d.dienstId,
+          dienstNumber: d.dienstNumber,
+          assignmentId: d.assignmentId,
+          date: d.date,
+          startTime: d.startTime,
+          endTime: d.endTime,
+          ambulanceId: d.ambulanceId, // ✅ opcional OK
+          ambulanceNumber: d.ambulanceNumber,
+          driver: d.driver,
+          medic: d.medic,
+        });
+
+        return acc;
+      }, []);
+
 
       let todayAssignment = daysFull.find((d) => d.date === today);
 
@@ -264,16 +263,9 @@ const MyWorkday = () => {
 
 
   const checkStartPermission = (dienst: AssignedDayFull) => {
-    const [startHour, startMinute] = dienst.startTime.split(":").map(Number);
-    const now = new Date();
-
-    const dienstStart = new Date();
-    dienstStart.setHours(startHour);
-    dienstStart.setMinutes(startMinute - 30);
-    dienstStart.setSeconds(0);
-
-    setCanStartWork(now >= dienstStart);
+    setCanStartWork(canStartTripNow(dienst.startTime, dienst.date));
   };
+
 
 
   useEffect(() => {
