@@ -12,10 +12,10 @@ import { useNavigate } from "react-router-dom";
 import FinalReviewModal from "../components/workday/FinalReviewModal";
 import PartialReviewModal from "../components/workday/PartialReviewModal";
 import { sendPartialClosure, sendFinalClosure } from "../api/workdaySummary";
-import type {
-  PartialSummaryPayload,
-  FinalSummaryPayload,
-} from "../types/workdaySummary";
+import {
+  buildFinalSummaryPayload,
+  buildPartialSummaryPayload,
+} from "../utils/workday/summaryPayload";
 import { checkTripLogic, type TripDraft } from "../utils/tripValidators";
 import {
   getCurrentTimeString,
@@ -506,42 +506,18 @@ const MyWorkday = () => {
 
     try {
       setFinalAmbulanceKm(String(finalKmFromModal));
-      const totalDienstKm = finalKmFromModal - initialKmNumber;
 
-      // 🔧 normaliza trips (por si acaso)
-      const sanitizedTrips = trips.map((t) => ({
-        ...t,
-        wasCancelled: !!t.wasCancelled,
-        cancelledAtPickup: !!t.cancelledAtPickup,
-        countsTrip:
-          typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
-      }));
-
-      const summaryData: FinalSummaryPayload = {
-        date: today,
-        assignmentId: assignedDay.assignmentId,
-
-        // ✅ usa el estado confirmado (no assignedDay.ambulanceId)
-        ambulanceId: ambulanceId,
+      const summaryData = buildFinalSummaryPayload({
+        today,
+        assignedDay,
+        ambulanceId,
         ambulanceNumber,
-
-        // ✅ el tipo los exige
-        driver: assignedDay.driver._id,
-        medic: assignedDay.medic._id,
-
-        initialKm: initialKmNumber,
+        initialKm: Number(initialAmbulanceKm),
         finalKm: finalKmFromModal,
-        totalDienstKm,
-
-        // si estás usando sanitizedTrips, ponlo aquí
-        trips: sanitizedTrips,
-
+        trips,
         extraNote: note,
-        isFinalClosure: true,
-        dienstNumber: assignedDay.dienstNumber,
-        startTime: assignedDay.startTime,
-        endTime: assignedDay.endTime,
-      };
+      });
+
 
       // Opcional: log para depurar si volviese a fallar
       // console.log("[final-closure] payload:", summaryData);
@@ -610,35 +586,18 @@ const MyWorkday = () => {
     }
 
     try {
-      const totalDienstKm = Number(finalKmValue) - Number(initialAmbulanceKm);
-
-      const sanitizedTrips = trips.map((t) => ({
-        ...t,
-        wasCancelled: !!t.wasCancelled,
-        cancelledAtPickup: !!t.cancelledAtPickup,
-        countsTrip:
-          typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
-      }));
-
-      const payload: PartialSummaryPayload & { issueData?: any } = {
-        date: today,
-        assignmentId: assignedDay.assignmentId,
-        driver: assignedDay.driver._id,
-        medic: assignedDay.medic._id,
-        // ⬇️⬇️ USAR EL ESTADO, NO assignedDay
-        ambulanceId: ambulanceId,
+      const payload = buildPartialSummaryPayload({
+        today,
+        assignedDay,
+        ambulanceId,
         ambulanceNumber,
         initialKm: Number(initialAmbulanceKm),
         finalKm: Number(finalKmValue),
-        trips: sanitizedTrips,
-        totalDienstKm,
+        trips,
         partialClosureReason: reasonTrimmed,
-        isFinalClosure: false,
-        dienstNumber: assignedDay.dienstNumber,
-        startTime: assignedDay.startTime,
-        endTime: assignedDay.endTime,
-        ...(issueData ? { issueData } : {}),
-      };
+        issueData,
+      });
+
 
       await sendPartialClosure(payload, token);
 
