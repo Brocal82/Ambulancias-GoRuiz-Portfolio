@@ -1,12 +1,10 @@
 // frontend/src/pages/MyWorkday.tsx
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { createTrip, getTripsByDate } from "../api/trips";
-import { getAssignedDaysForUser } from "../modules/diensts";
+import { useState, useEffect, useRef } from "react";
+import { createTrip } from "../api/trips";
 import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
 import type { Trip, TripData } from "../types/trip";
-import type { AssignedDay, AssignedDayFull } from "../modules/diensts";
 import TripModal from "../components/trips/TripModal";
 import { useNavigate } from "react-router-dom";
 import FinalReviewModal from "../components/workday/FinalReviewModal";
@@ -16,6 +14,8 @@ import {
   buildFinalSummaryPayload,
   buildPartialSummaryPayload,
 } from "../utils/workday/summaryPayload";
+import { useWorkdayTrips } from "../hooks/workday/useWorkdayTrips";
+import { useWorkdayAssignment } from "../hooks/workday/useWorkdayAssignment";
 import { checkTripLogic, type TripDraft } from "../utils/tripValidators";
 import {
   getCurrentTimeString,
@@ -42,37 +42,6 @@ const canStartTripNow = (startTime: string, dienstDate: string): boolean => {
   return now >= start;
 };
 
-/** Clave de día cerrado en localStorage */
-const getClosedDayKey = (date: string, uid?: string) =>
-  `workdayClosed-${date}-${uid ?? "anon"}`;
-
-/** ¿El Dienst cruza medianoche? */
-const crossesMidnight = (start: string, end: string) => {
-  const [sh] = start.split(":").map(Number);
-  const [eh] = end.split(":").map(Number);
-  return eh < sh;
-};
-
-/** ¿AHORA mismo dentro del Dienst (soporta nocturno que empezó ayer)? */
-const isNowWithinDienst = (
-  dienst: Pick<AssignedDay, "date" | "startTime" | "endTime">,
-) => {
-
-  const now = new Date();
-  const [sH, sM] = dienst.startTime.split(":").map(Number);
-  const [eH, eM] = dienst.endTime.split(":").map(Number);
-
-  const start = new Date(dienst.date + "T00:00:00");
-  start.setHours(sH, sM, 0, 0);
-
-  const end = new Date(dienst.date + "T00:00:00");
-  end.setHours(eH, eM, 0, 0);
-  if (crossesMidnight(dienst.startTime, dienst.endTime)) {
-    end.setDate(end.getDate() + 1);
-  }
-
-  return now >= start && now <= end;
-};
 
 const MyWorkday = () => {
   const { t } = useTranslation();
@@ -80,16 +49,34 @@ const MyWorkday = () => {
   const today = new Date().toISOString().split("T")[0];
   const todayFormatted = formatYYYYMMDDToDDMMYYYY(today);
 
+  const {
+    trips,
+    setTrips,
+    isClosingDay,
+    getClosedDayKeyByDate,
+  } = useWorkdayTrips({
+    token,
+    userId: user?._id,
+    date: today,
+  });
+
+  const {
+    assignedDay,
+    canStartWork,
+  } = useWorkdayAssignment({
+    token,
+    userId: user?._id,
+    today,
+  });
+
+
   const [wasCancelled, setWasCancelled] = useState(false);
   const [countsTrip, setCountsTrip] = useState<number>(1);
   const [reports, setReports] = useState("");
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [assignedDay, setAssignedDay] = useState<AssignedDayFull | null>(null);
 
   const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
   const [ambulanceId, setAmbulanceId] = useState<string>("");
 
-  const [canStartWork, setCanStartWork] = useState(false);
   const [ambulanceNumber, setAmbulanceNumber] = useState("");
 
   const [vehicleConfirmed, setVehicleConfirmed] = useState(false);
@@ -98,7 +85,6 @@ const MyWorkday = () => {
   const [initialAmbulanceKm, setInitialAmbulanceKm] = useState("");
   const [finalAmbulanceKm, setFinalAmbulanceKm] = useState("");
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
-  const [isClosingDay, setIsClosingDay] = useState(false);
 
   const [showCloseQuestion, setShowCloseQuestion] = useState(false);
   const [isFinalClosure, setIsFinalClosure] = useState<boolean | null>(null);
@@ -176,110 +162,7 @@ const MyWorkday = () => {
 
   const handleCloseTripModal = () => setSelectedTrip(null);
   const handleOpenTripModal = (trip: Trip) => setSelectedTrip(trip);
-
-  const fetchTrips = useCallback(async () => {
-    if (!token || !user?._id) return;
-
-    const closedKey = getClosedDayKey(today, user._id);
-    const closedFlag = localStorage.getItem(closedKey);
-    if (closedFlag === "true") {
-      setTrips([]);
-      return;
-    }
-
-    try {
-      const data = await getTripsByDate(today, token);
-      const pending = data.filter((t) => !t.sentInSummary);
-      const mine = pending.filter(
-        (t) => t.driver === user._id || t.medic === user._id,
-      );
-      setTrips(mine);
-    } catch (err) {
-      console.error(err);
-      toastT.error(["toasts.workday.loadTripsError"]);
-    }
-  }, [token, today, user?._id]);
-
-
-  const fetchAssignedDay = useCallback(async () => {
-    if (!token || !user?._id) return;
-
-    try {
-      const daysRaw = await getAssignedDaysForUser(user._id, token);
-
-      const daysFull = daysRaw.reduce<AssignedDayFull[]>((acc, d) => {
-        // driver/medic son (string | UserRef | undefined)
-        // queremos SOLO los que tengan UserRef real (no string, no undefined)
-        if (!d.driver || !d.medic) return acc;
-        if (typeof d.driver === "string" || typeof d.medic === "string") return acc;
-
-        acc.push({
-          dienstId: d.dienstId,
-          dienstNumber: d.dienstNumber,
-          assignmentId: d.assignmentId,
-          date: d.date,
-          startTime: d.startTime,
-          endTime: d.endTime,
-          ambulanceId: d.ambulanceId, // ✅ opcional OK
-          ambulanceNumber: d.ambulanceNumber,
-          driver: d.driver,
-          medic: d.medic,
-        });
-
-        return acc;
-      }, []);
-
-
-      let todayAssignment = daysFull.find((d) => d.date === today);
-
-      if (!todayAssignment) {
-        const yesterdayStr = new Date(Date.now() - 86_400_000)
-          .toISOString()
-          .split("T")[0];
-
-        const yestAssignment = daysFull.find((d) => d.date === yesterdayStr);
-
-        if (
-          yestAssignment &&
-          crossesMidnight(yestAssignment.startTime, yestAssignment.endTime) &&
-          isNowWithinDienst(yestAssignment)
-        ) {
-          todayAssignment = yestAssignment;
-        }
-      }
-
-      if (todayAssignment) {
-        setAssignedDay(todayAssignment);
-        checkStartPermission(todayAssignment);
-      } else {
-        setAssignedDay(null);
-        setCanStartWork(false);
-      }
-    } catch (err) {
-      console.error(err);
-      toastT.error(["toasts.workday.loadAssignmentError"]);
-    }
-  }, [token, user?._id, today]);
-
-
-  const checkStartPermission = (dienst: AssignedDayFull) => {
-    setCanStartWork(canStartTripNow(dienst.startTime, dienst.date));
-  };
-
-
-
-  useEffect(() => {
-    if (!user?._id) return;
-    const closedDayKey = getClosedDayKey(today, user._id);
-    const closedFlag = localStorage.getItem(closedDayKey);
-    setIsClosingDay(closedFlag === "true");
-    if (closedFlag === "true") setTrips([]);
-  }, [today, user?._id]);
-
-  useEffect(() => {
-    fetchTrips();
-    fetchAssignedDay();
-  }, [fetchTrips, fetchAssignedDay]);
+  ;;
 
   useEffect(() => {
     if (!assignedDay || !ambulances.length) return;
@@ -530,17 +413,11 @@ const MyWorkday = () => {
 
       toastT.success(["toasts.workday.dayClosedSuccess"]);
 
-      localStorage.setItem(
-        getClosedDayKey(today, assignedDay.driver._id),
-        "true",
-      );
-      localStorage.setItem(
-        getClosedDayKey(today, assignedDay.medic._id),
-        "true",
-      );
+      localStorage.setItem(getClosedDayKeyByDate(today, assignedDay.driver._id), "true");
+      localStorage.setItem(getClosedDayKeyByDate(today, assignedDay.medic._id), "true");
+
 
       setTrips([]);
-      setIsClosingDay(true);
       setShowReviewModal(false);
       clearAmbulanceData(assignedDay.assignmentId);
       navigate("/worker");
