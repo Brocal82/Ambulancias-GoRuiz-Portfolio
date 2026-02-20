@@ -1018,7 +1018,7 @@
                 "title": "Hier beliebige Anmerkung eintragen"
             },
             "saveTrip": "Fahrt speichern",
-            "tripSummary": "🧾 Fahrtenübersicht",
+            "tripSummary": "Fahrtenübersicht",
             "tripCancelledTag": "(storniert)",
             "closeAndSend": "✅ Tag abschließen und Zusammenfassung senden",
             "needVehicleData": "🚐 Gib die Fahrzeug-Nr. und die Start-KM ein und klicke „Anfangsdaten bestätigen“, um Fahrten anzulegen.",

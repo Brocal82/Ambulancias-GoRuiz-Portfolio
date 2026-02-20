@@ -1018,7 +1018,7 @@
                 "title": "Escribe aquí cualquier observación"
             },
             "saveTrip": "Guardar viaje",
-            "tripSummary": "🧾 Resumen de viajes",
+            "tripSummary": "Resumen de viajes",
             "tripCancelledTag": "(cancelado)",
             "closeAndSend": "✅ Cerrar día y enviar resumen",
             "needVehicleData": "🚐 Introduce el nº de ambulancia y los KM iniciales y pulsa \"Confirmar datos iniciales\" para poder crear viajes.",

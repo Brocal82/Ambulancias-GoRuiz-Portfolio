@@ -79,6 +79,8 @@ const MyWorkday = () => {
   const [finalAmbulanceKm, setFinalAmbulanceKm] = useState("");
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
 
+  const [showTripsList, setShowTripsList] = useState(false);
+
   const [showCloseQuestion, setShowCloseQuestion] = useState(false);
   const [isFinalClosure, setIsFinalClosure] = useState<boolean | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -621,6 +623,8 @@ const MyWorkday = () => {
               vehicleConfirmed={vehicleConfirmed}
               isClosingDay={isClosingDay}
               onCloseAndSend={() => setShowCloseQuestion(true)}
+              isOpen={showTripsList}
+              onToggleOpen={() => setShowTripsList((prev) => !prev)}
             />
           )}
 

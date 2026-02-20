@@ -1018,7 +1018,7 @@
                 "title": "Write any note here"
             },
             "saveTrip": "Save trip",
-            "tripSummary": "🧾 Trip summary",
+            "tripSummary": "Trip summary",
             "tripCancelledTag": "(cancelled)",
             "closeAndSend": "✅ Close day and send summary",
             "needVehicleData": "🚐 Enter the ambulance number and initial KM and click \"Confirm initial data\" to create trips.",
