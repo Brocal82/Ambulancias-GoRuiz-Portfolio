@@ -1020,7 +1020,7 @@
             "saveTrip": "Fahrt speichern",
             "tripSummary": "Fahrtenübersicht",
             "tripCancelledTag": "(storniert)",
-            "closeAndSend": "✅ Tag abschließen und Zusammenfassung senden",
+            "closeAndSend": "✅ Zusammenfassung senden",
             "needVehicleData": "🚐 Gib die Fahrzeug-Nr. und die Start-KM ein und klicke „Anfangsdaten bestätigen“, um Fahrten anzulegen.",
             "closeQuestion": {
                 "title": "Ist es das Tagesende?",

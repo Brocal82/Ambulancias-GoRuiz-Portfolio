@@ -52,9 +52,12 @@ const WorkdayTripsSummary = ({
                     <button
                         type="button"
                         onClick={onCloseAndSend}
-                        className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg whitespace-nowrap"
+                        className="inline-flex items-center justify-center rounded-xl p-3 bg-white ring-1 ring-slate-200 hover:bg-slate-50 transition"
+                        title={t("pages.workday.closeAndSend")}
                     >
-                        {t("pages.workday.closeAndSend")}
+                        <span className="text-xl" aria-hidden="true">
+                            📤
+                        </span>
                     </button>
                 )}
             </div>
