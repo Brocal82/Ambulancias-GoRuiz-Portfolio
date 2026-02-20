@@ -324,8 +324,8 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                     }))
                                 }
                                 className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeWarning"
-                                        ? "ring-rose-300"
-                                        : "ring-slate-300 focus:ring-blue-300"
+                                    ? "ring-rose-300"
+                                    : "ring-slate-300 focus:ring-blue-300"
                                     } ring-1 bg-white`}
                             />
                         </div>
@@ -362,8 +362,8 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                     }))
                                 }
                                 className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeAtHome"
-                                        ? "ring-rose-300"
-                                        : "ring-slate-300 focus:ring-blue-300"
+                                    ? "ring-rose-300"
+                                    : "ring-slate-300 focus:ring-blue-300"
                                     } ring-1 bg-white`}
                             />
                         </div>
@@ -394,8 +394,8 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                     }
                                 }}
                                 className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "kmStart"
-                                        ? "ring-rose-300"
-                                        : "ring-slate-300 focus:ring-blue-300"
+                                    ? "ring-rose-300"
+                                    : "ring-slate-300 focus:ring-blue-300"
                                     } ring-1 bg-white`}
                             />
                         </div>
@@ -462,8 +462,8 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                     })
                                 }
                                 className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timePickup"
-                                        ? "ring-rose-300"
-                                        : "ring-slate-300 focus:ring-blue-300"
+                                    ? "ring-rose-300"
+                                    : "ring-slate-300 focus:ring-blue-300"
                                     } ring-1 bg-white`}
                             />
                         </div>
@@ -494,8 +494,8 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                     }))
                                 }
                                 className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeArrival"
-                                        ? "ring-rose-300"
-                                        : "ring-slate-300 focus:ring-blue-300"
+                                    ? "ring-rose-300"
+                                    : "ring-slate-300 focus:ring-blue-300"
                                     } ring-1 bg-white`}
                             />
                         </div>
@@ -520,8 +520,8 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                     }))
                                 }
                                 className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "kmEnd"
-                                        ? "ring-rose-300"
-                                        : "ring-slate-300 focus:ring-blue-300"
+                                    ? "ring-rose-300"
+                                    : "ring-slate-300 focus:ring-blue-300"
                                     } ring-1 bg-white`}
                             />
                         </div>
@@ -552,8 +552,8 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                     }))
                                 }
                                 className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeEnd"
-                                        ? "ring-rose-300"
-                                        : "ring-slate-300 focus:ring-blue-300"
+                                    ? "ring-rose-300"
+                                    : "ring-slate-300 focus:ring-blue-300"
                                     } ring-1 bg-white`}
                             />
                         </div>
@@ -661,8 +661,8 @@ const WorkdayTripEntry: React.FC<Props> = ({
                         onClick={onSaveTrip}
                         disabled={Boolean(draftError)}
                         className={`w-full mt-2 py-2 px-4 rounded-lg text-white ${draftError
-                                ? "bg-slate-400 cursor-not-allowed"
-                                : "bg-blue-600 hover:bg-blue-700"
+                            ? "bg-slate-400 cursor-not-allowed"
+                            : "bg-blue-600 hover:bg-blue-700"
                             }`}
                     >
                         {t("pages.workday.saveTrip")}

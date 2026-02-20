@@ -615,7 +615,7 @@ const MyWorkday = () => {
             />
           )}
 
-          {assignedDay && (
+          {assignedDay && vehicleConfirmed && (
             <WorkdayTripsSummary
               trips={trips}
               assignedDay={assignedDay}
