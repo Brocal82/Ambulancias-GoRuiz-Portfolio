@@ -41,6 +41,10 @@ const MyWorkday = () => {
   const { token, user } = useAuth();
   const today = todayBerlinDayKey();
   const todayFormatted = formatYYYYMMDDToDDMMYYYY(today);
+  const weekday = new Date(`${today}T00:00:00`).toLocaleDateString(
+    undefined,
+    { weekday: "long" }
+  );
 
   const {
     trips,
@@ -557,9 +561,22 @@ const MyWorkday = () => {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">
-        {t("pages.workday.title", { date: todayFormatted })}
-      </h2>
+      <div className="mb-6">
+        {assignedDay && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-base font-semibold text-slate-900">
+              <span aria-hidden="true">🕒</span>
+              <span>
+                {assignedDay.startTime}–{assignedDay.endTime}
+              </span>
+            </div>
+
+            <div className="text-sm text-slate-500 capitalize">
+              {weekday} · {todayFormatted}
+            </div>
+          </div>
+        )}
+      </div>
 
       {isClosingDay ? (
         <div className="mb-6 rounded-xl bg-red-50 text-red-700 ring-1 ring-red-200 p-4">
