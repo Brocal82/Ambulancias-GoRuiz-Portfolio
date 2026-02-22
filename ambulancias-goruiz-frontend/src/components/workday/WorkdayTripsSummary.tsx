@@ -34,7 +34,7 @@ const WorkdayTripsSummary = ({
                 <button
                     type="button"
                     onClick={onToggleOpen}
-                    className="relative inline-flex items-center justify-center rounded-xl p-3 bg-slate-100 hover:bg-slate-200 ring-1 ring-slate-200 transition"
+                    className="relative inline-flex items-center justify-center rounded-xl p-3 bg-white hover:bg-slate-50 ring-1 ring-slate-200 transition"
                     title={t("pages.workday.tripSummary")}
                 >
                     <span className="text-2xl" aria-hidden="true">

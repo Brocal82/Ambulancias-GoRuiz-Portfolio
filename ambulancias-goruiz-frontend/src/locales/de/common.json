@@ -983,7 +983,7 @@
             },
             "initialKm": "🔢 Start-KM",
             "confirmInitialData": "✅ Anfangsdaten bestätigen",
-            "auftragNumber": "Auftrag-Nummer",
+            "auftragNumber": "Auftrag",
             "patientName": "Patientenname",
             "fromAddress": "Abholadresse",
             "toAddress": "Zieladresse",

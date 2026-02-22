@@ -983,7 +983,7 @@
             },
             "initialKm": "🔢 Initial KM",
             "confirmInitialData": "✅ Confirm initial data",
-            "auftragNumber": "Auftrag number",
+            "auftragNumber": "Auftrag",
             "patientName": "Patient name",
             "fromAddress": "Pickup address",
             "toAddress": "Drop-off address",

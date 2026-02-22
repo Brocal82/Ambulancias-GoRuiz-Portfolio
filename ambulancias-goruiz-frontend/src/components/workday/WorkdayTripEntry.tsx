@@ -7,6 +7,7 @@ import type { AssignedDayFull } from "../../modules/diensts";
 import type { TripDraft } from "../../utils/tripValidators";
 import { getCurrentTimeString } from "../../utils/timeUtils";
 import { useTranslation } from "react-i18next";
+import SaveIconButton from "../common/actions/SaveIconButton";
 
 type BadField = keyof TripDraft | null;
 
@@ -114,6 +115,8 @@ const WorkdayTripEntry: React.FC<Props> = ({
     const canConfirmVisual =
         Boolean(ambulanceId) && Boolean(initialAmbulanceKm);
 
+    const [showReports, setShowReports] = React.useState(false);
+
     return (
         <div className="bg-white p-5 rounded-2xl shadow-sm ring-1 ring-slate-200 mb-6 space-y-4">
             {/* Cabecera asignación + selección vehículo */}
@@ -154,7 +157,7 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                 value={ambulanceId}
                                 onChange={(e) => setAmbulanceId(e.target.value)}
                                 disabled={vehicleConfirmed}
-                                className="h-[42px] rounded-lg bg-white px-3 text-sm
+                                className="h-[36px] rounded-lg bg-white px-3 text-sm
             ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
             disabled:bg-slate-50
             w-[170px]"
@@ -187,7 +190,7 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                 value={initialAmbulanceKm}
                                 onChange={(e) => setInitialAmbulanceKm(e.target.value)}
                                 disabled={vehicleConfirmed}
-                                className="h-[42px] rounded-lg bg-white px-3 text-sm text-right
+                                className="h-[36px] rounded-lg bg-white px-3 text-sm text-right
             ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
             disabled:bg-slate-50
             w-[120px]"
@@ -217,13 +220,13 @@ const WorkdayTripEntry: React.FC<Props> = ({
 
             {vehicleConfirmed ? (
                 <>
-                    {/* Datos del viaje */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
+                    {/* Datos del viaje (1 línea en desktop, compacta) */}
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end">
+                        {/* Auftrag */}
+                        <div className="md:col-span-2">
                             <label
                                 htmlFor="auftragNumber"
-                                className="block text-sm font-medium text-slate-700"
-                            >
+                                className="block text-xs font-medium text-slate-600 mb-1"                            >
                                 {t("pages.workday.auftragNumber")}
                             </label>
                             <input
@@ -237,17 +240,17 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                         auftragNumber: e.target.value,
                                     }))
                                 }
-                                className="w-full rounded-lg bg-white px-3 py-2
-                         ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
-                         disabled:bg-slate-50"
+                                className="h-[36px] w-full rounded-lg bg-white px-2.5 text-sm
+      ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
+      disabled:bg-slate-50"
                             />
                         </div>
 
-                        <div>
+                        {/* Paciente */}
+                        <div className="md:col-span-3">
                             <label
                                 htmlFor="patientName"
-                                className="block text-sm font-medium text-slate-700"
-                            >
+                                className="block text-xs font-medium text-slate-600 mb-1"                            >
                                 {t("pages.workday.patientName")}
                             </label>
                             <input
@@ -261,19 +264,17 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                         patientName: e.target.value,
                                     }))
                                 }
-                                className="w-full rounded-lg bg-white px-3 py-2
-                         ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
-                         disabled:bg-slate-50"
+                                className="h-[36px] w-full rounded-lg bg-white px-2.5 text-sm
+      ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
+      disabled:bg-slate-50"
                             />
                         </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                        <div>
+                        {/* Recogida */}
+                        <div className="md:col-span-3">
                             <label
                                 htmlFor="fromAddress"
-                                className="block text-sm font-medium text-slate-700"
-                            >
+                                className="block text-xs font-medium text-slate-600 mb-1"                            >
                                 {t("pages.workday.fromAddress")}
                             </label>
                             <input
@@ -287,17 +288,17 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                         fromAddress: e.target.value,
                                     }))
                                 }
-                                className="w-full rounded-lg bg-white px-3 py-2
-                         ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
-                         disabled:bg-slate-50"
+                                className="h-[36px] w-full rounded-lg bg-white px-2.5 text-sm
+      ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
+      disabled:bg-slate-50"
                             />
                         </div>
 
-                        <div>
+                        {/* Destino */}
+                        <div className="md:col-span-4">
                             <label
                                 htmlFor="toAddress"
-                                className="block text-sm font-medium text-slate-700"
-                            >
+                                className="block text-xs font-medium text-slate-600 mb-1"                            >
                                 {t("pages.workday.toAddress")}
                             </label>
                             <input
@@ -311,9 +312,9 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                         toAddress: e.target.value,
                                     }))
                                 }
-                                className="w-full rounded-lg bg-white px-3 py-2
-                         ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
-                         disabled:bg-slate-50"
+                                className="h-[36px] w-full rounded-lg bg-white px-2.5 text-sm
+      ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
+      disabled:bg-slate-50"
                             />
                         </div>
                     </div>
@@ -323,7 +324,7 @@ const WorkdayTripEntry: React.FC<Props> = ({
                         <div>
                             <label
                                 htmlFor="timeWarning"
-                                className="block text-sm font-medium text-slate-700 text-center"
+                                className="block text-xs font-medium text-slate-600 mb-1 text-center"
                             >
                                 {t("pages.workday.time.warning")}
                             </label>
@@ -345,17 +346,18 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                         timeWarning: getCurrentTimeString(),
                                     }))
                                 }
-                                className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeWarning"
-                                    ? "ring-rose-300"
-                                    : "ring-slate-300 focus:ring-blue-300"
-                                    } ring-1 bg-white`}
+                                className={`h-[36px] w-full rounded-lg bg-white px-2.5 text-sm focus:outline-none focus:ring-2
+        ${badField === "timeWarning"
+                                        ? "ring-1 ring-rose-300 focus:ring-rose-200"
+                                        : "ring-1 ring-slate-300 focus:ring-blue-300"
+                                    } disabled:bg-slate-50`}
                             />
                         </div>
 
                         <div>
                             <label
                                 htmlFor="timeAtHome"
-                                className="block text-sm font-medium text-slate-700 text-center"
+                                className="block text-xs font-medium text-slate-600 mb-1 text-center"
                             >
                                 {t("pages.workday.time.atHome")}
                             </label>
@@ -383,17 +385,18 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                         timeAtHome: getCurrentTimeString(),
                                     }))
                                 }
-                                className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeAtHome"
-                                    ? "ring-rose-300"
-                                    : "ring-slate-300 focus:ring-blue-300"
-                                    } ring-1 bg-white`}
+                                className={`h-[36px] w-full rounded-lg bg-white px-2.5 text-sm focus:outline-none focus:ring-2
+        ${badField === "timeAtHome"
+                                        ? "ring-1 ring-rose-300 focus:ring-rose-200"
+                                        : "ring-1 ring-slate-300 focus:ring-blue-300"
+                                    } disabled:bg-slate-50`}
                             />
                         </div>
 
                         <div>
                             <label
                                 htmlFor="kmStart"
-                                className="block text-sm font-medium text-slate-700 text-center"
+                                className="block text-xs font-medium text-slate-600 mb-1 text-center"
                             >
                                 {t("pages.workday.km.start")}
                             </label>
@@ -415,17 +418,18 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                         );
                                     }
                                 }}
-                                className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "kmStart"
-                                    ? "ring-rose-300"
-                                    : "ring-slate-300 focus:ring-blue-300"
-                                    } ring-1 bg-white`}
+                                className={`h-[36px] w-full rounded-lg bg-white px-2.5 text-sm focus:outline-none focus:ring-2
+        ${badField === "kmStart"
+                                        ? "ring-1 ring-rose-300 focus:ring-rose-200"
+                                        : "ring-1 ring-slate-300 focus:ring-blue-300"
+                                    } disabled:bg-slate-50`}
                             />
                         </div>
 
                         <div>
                             <label
                                 htmlFor="timePickup"
-                                className="block text-sm font-medium text-slate-700 text-center"
+                                className="block text-xs font-medium text-slate-600 mb-1 text-center"
                             >
                                 {t("pages.workday.time.pickup")}
                             </label>
@@ -454,8 +458,6 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                             };
                                             onSaveAnschlussPatient1(updatedTrip);
                                             setPreviousTripFormData(null);
-                                            // cerramos el modo anschluss
-                                            // (la lógica real sigue en el container)
                                         }
                                         return updated;
                                     });
@@ -483,17 +485,18 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                         return updated;
                                     })
                                 }
-                                className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timePickup"
-                                    ? "ring-rose-300"
-                                    : "ring-slate-300 focus:ring-blue-300"
-                                    } ring-1 bg-white`}
+                                className={`h-[36px] w-full rounded-lg bg-white px-2.5 text-sm focus:outline-none focus:ring-2
+        ${badField === "timePickup"
+                                        ? "ring-1 ring-rose-300 focus:ring-rose-200"
+                                        : "ring-1 ring-slate-300 focus:ring-blue-300"
+                                    } disabled:bg-slate-50`}
                             />
                         </div>
 
                         <div>
                             <label
                                 htmlFor="timeArrival"
-                                className="block text-sm font-medium text-slate-700 text-center"
+                                className="block text-xs font-medium text-slate-600 mb-1 text-center"
                             >
                                 {t("pages.workday.time.arrival")}
                             </label>
@@ -515,17 +518,18 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                         timeArrival: getCurrentTimeString(),
                                     }))
                                 }
-                                className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeArrival"
-                                    ? "ring-rose-300"
-                                    : "ring-slate-300 focus:ring-blue-300"
-                                    } ring-1 bg-white`}
+                                className={`h-[36px] w-full rounded-lg bg-white px-2.5 text-sm focus:outline-none focus:ring-2
+        ${badField === "timeArrival"
+                                        ? "ring-1 ring-rose-300 focus:ring-rose-200"
+                                        : "ring-1 ring-slate-300 focus:ring-blue-300"
+                                    } disabled:bg-slate-50`}
                             />
                         </div>
 
                         <div>
                             <label
                                 htmlFor="kmEnd"
-                                className="block text-sm font-medium text-slate-700 text-center"
+                                className="block text-xs font-medium text-slate-600 mb-1 text-center"
                             >
                                 {t("pages.workday.km.end")}
                             </label>
@@ -541,17 +545,18 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                         kmEnd: Number(e.target.value),
                                     }))
                                 }
-                                className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "kmEnd"
-                                    ? "ring-rose-300"
-                                    : "ring-slate-300 focus:ring-blue-300"
-                                    } ring-1 bg-white`}
+                                className={`h-[36px] w-full rounded-lg bg-white px-2.5 text-sm focus:outline-none focus:ring-2
+        ${badField === "kmEnd"
+                                        ? "ring-1 ring-rose-300 focus:ring-rose-200"
+                                        : "ring-1 ring-slate-300 focus:ring-blue-300"
+                                    } disabled:bg-slate-50`}
                             />
                         </div>
 
                         <div>
                             <label
                                 htmlFor="timeEnd"
-                                className="block text-sm font-medium text-slate-700 text-center"
+                                className="block text-xs font-medium text-slate-600 mb-1 text-center"
                             >
                                 {t("pages.workday.time.end")}
                             </label>
@@ -573,10 +578,11 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                         timeEnd: getCurrentTimeString(),
                                     }))
                                 }
-                                className={`w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${badField === "timeEnd"
-                                    ? "ring-rose-300"
-                                    : "ring-slate-300 focus:ring-blue-300"
-                                    } ring-1 bg-white`}
+                                className={`h-[36px] w-full rounded-lg bg-white px-2.5 text-sm focus:outline-none focus:ring-2
+        ${badField === "timeEnd"
+                                        ? "ring-1 ring-rose-300 focus:ring-rose-200"
+                                        : "ring-1 ring-slate-300 focus:ring-blue-300"
+                                    } disabled:bg-slate-50`}
                             />
                         </div>
                     </div>
@@ -608,87 +614,132 @@ const WorkdayTripEntry: React.FC<Props> = ({
                         </div>
                     )}
 
-                    <div className="space-y-2 mt-1">
-                        <div className="flex items-center space-x-2">
+                    {/* Acciones: Notas + Storno izquierda / Save derecha */}
+                    <div className="flex items-start justify-between mt-3">
+
+                        {/* IZQUIERDA */}
+                        <div className="flex items-start gap-4">
+
+                            {/* BOTÓN NOTAS */}
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setWasCancelled(!wasCancelled);
-                                    if (wasCancelled) setCountsTrip(1);
-                                }}
-                                className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold transition
-                  ${wasCancelled
-                                        ? "bg-red-600 hover:bg-red-700"
-                                        : "bg-slate-400 hover:bg-slate-500"
+                                onClick={() => setShowReports((prev) => !prev)}
+                                aria-label={t("pages.workday.reports.label")}
+                                title={t("pages.workday.reports.label")}
+                                className={`h-[36px] w-[36px] flex items-center justify-center rounded-lg ring-1 transition-colors duration-200
+        ${reports
+                                        ? "bg-blue-50 ring-blue-200 text-blue-600"
+                                        : "bg-white ring-slate-300 text-slate-600 hover:bg-slate-50 hover:text-blue-600"
                                     }`}
-                                title="Marcar viaje como cancelado"
                             >
-                                {wasCancelled ? "✖" : "🅂"}
+                                📝
                             </button>
-                            <span className="text-sm text-slate-700">
-                                {t("pages.workday.storno.label")}
-                            </span>
+
+                            {/* STORNO + +1 / 0 en línea */}
+                            <div className="flex items-center gap-3">
+
+                                {/* Botón STORNO */}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setWasCancelled(!wasCancelled);
+                                        if (wasCancelled) setCountsTrip(1);
+                                    }}
+                                    aria-label={t("pages.workday.storno.label")}
+                                    title={t("pages.workday.storno.label")}
+                                    className={`h-[36px] w-[36px] flex items-center justify-center
+      transition-all duration-150 ease-out
+      ${wasCancelled
+                                            ? "text-rose-600 scale-105"
+                                            : "text-slate-400 hover:text-rose-500 hover:scale-110 active:scale-95"
+                                        }`}
+                                >
+                                    🛑
+                                </button>
+
+                                {/* +1 / 0 SOLO si está cancelado */}
+                                {wasCancelled && (
+                                    <div className="flex items-center gap-2">
+
+                                        {/* +1 */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setCountsTrip(1)}
+                                            aria-label={t("pages.workday.storno.counts.yes")}
+                                            title={t("pages.workday.storno.counts.yes")}
+                                            className={`h-[28px] min-w-[36px] px-2 text-xs font-semibold rounded-md
+          transition-all duration-150
+          border
+          ${countsTrip === 1
+                                                    ? "border-emerald-400 text-emerald-600 bg-emerald-50"
+                                                    : "border-slate-300 text-slate-500 hover:border-emerald-300 hover:text-emerald-600"
+                                                }`}
+                                        >
+                                            +1
+                                        </button>
+
+                                        {/* 0 */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setCountsTrip(0)}
+                                            aria-label={t("pages.workday.storno.counts.no")}
+                                            title={t("pages.workday.storno.counts.no")}
+                                            className={`h-[28px] min-w-[36px] px-2 text-xs font-semibold rounded-md
+          transition-all duration-150
+          border
+          ${countsTrip === 0
+                                                    ? "border-rose-400 text-rose-600 bg-rose-50"
+                                                    : "border-slate-300 text-slate-500 hover:border-rose-300 hover:text-rose-600"
+                                                }`}
+                                        >
+                                            0
+                                        </button>
+
+                                    </div>
+                                )}
+
+                            </div>
+
                         </div>
 
-                        {wasCancelled && (
-                            <div className="ml-6">
-                                <label
-                                    htmlFor="countsTrip"
-                                    className="block text-sm font-medium text-slate-700 mb-1"
-                                >
-                                    {t("pages.workday.storno.countsQuestion")}
-                                </label>
-                                <select
-                                    id="countsTrip"
-                                    value={countsTrip}
-                                    onChange={(e) => setCountsTrip(Number(e.target.value))}
-                                    className="w-full rounded-lg bg-white px-3 py-2
-                           ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                >
-                                    <option value={1}>{t("pages.workday.storno.counts.yes")}</option>
-                                    <option value={0}>{t("pages.workday.storno.counts.no")}</option>
-                                </select>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="mt-2">
-                        <label
-                            htmlFor="reports"
-                            className="block text-sm font-medium text-slate-700"
-                        >
-                            {t("pages.workday.reports.label")}
-                        </label>
-                        <textarea
-                            disabled={formBlocked}
-                            id="reports"
-                            placeholder={t("pages.workday.reports.placeholder") as string}
-                            title={t("pages.workday.reports.title") as string}
-                            value={reports}
-                            onChange={(e) => setReports(e.target.value)}
-                            rows={3}
-                            className="w-full rounded-lg bg-white px-3 py-2
-                       ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
-                       disabled:bg-slate-50"
+                        {/* DERECHA — SAVE */}
+                        <SaveIconButton
+                            type="button"
+                            onClick={onSaveTrip}
+                            disabled={Boolean(draftError)}
+                            title={t("pages.workday.saveTrip")}
+                            aria-label={t("pages.workday.saveTrip")}
+                            className="w-[36px] h-[36px] text-xl"
                         />
                     </div>
+
+                    {/* Textarea */}
+                    {showReports && (
+                        <div className="mt-3">
+                            <label htmlFor="reports" className="sr-only">
+                                {t("pages.workday.reports.label")}
+                            </label>
+
+                            <textarea
+                                disabled={formBlocked}
+                                id="reports"
+                                placeholder={t("pages.workday.reports.placeholder") as string}
+                                title={t("pages.workday.reports.title") as string}
+                                value={reports}
+                                onChange={(e) => setReports(e.target.value)}
+                                rows={3}
+                                className="w-full rounded-lg bg-white px-3 py-2 text-sm
+        ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
+        disabled:bg-slate-50"
+                            />
+                        </div>
+                    )}
 
                     {draftError && (
                         <div className="mt-2 rounded-lg bg-rose-50 text-rose-700 ring-1 ring-rose-200 px-3 py-2">
                             {draftError}
                         </div>
                     )}
-
-                    <button
-                        onClick={onSaveTrip}
-                        disabled={Boolean(draftError)}
-                        className={`w-full mt-2 py-2 px-4 rounded-lg text-white ${draftError
-                            ? "bg-slate-400 cursor-not-allowed"
-                            : "bg-blue-600 hover:bg-blue-700"
-                            }`}
-                    >
-                        {t("pages.workday.saveTrip")}
-                    </button>
                 </>
             ) : (
                 <div className="rounded-lg bg-amber-50 text-amber-800 ring-1 ring-amber-200 p-4">

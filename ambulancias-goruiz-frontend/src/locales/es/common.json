@@ -983,7 +983,7 @@
             },
             "initialKm": "🔢 KM inicial",
             "confirmInitialData": "✅ Confirmar datos iniciales",
-            "auftragNumber": "Número de Auftrag",
+            "auftragNumber": "Auftrag",
             "patientName": "Nombre del paciente",
             "fromAddress": "Dirección de recogida",
             "toAddress": "Dirección de dejada",
