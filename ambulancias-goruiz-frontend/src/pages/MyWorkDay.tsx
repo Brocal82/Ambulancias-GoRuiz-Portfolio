@@ -568,6 +568,13 @@ const MyWorkday = () => {
     }
   };
 
+  // Terminar Anschluss (se consume cuando el paciente 2 ya fue recogido)
+  const handleFinishAnschluss = () => {
+    setAnschlussActive(false);
+    anschlussGuardRef.current = false;
+    setPreviousTripFormData(null);
+  };
+
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <div className="mb-6">
@@ -628,6 +635,7 @@ const MyWorkday = () => {
               setPreviousTripFormData={setPreviousTripFormData}
               anschlussGuardRef={anschlussGuardRef}
               onSaveAnschlussPatient1={saveAnschlussPatient1}
+              onFinishAnschluss={handleFinishAnschluss}
               draftError={draftError}
               badField={badField}
               onSaveTrip={handleSaveTrip}

@@ -46,6 +46,7 @@ interface Props {
     setPreviousTripFormData: React.Dispatch<React.SetStateAction<TripData | null>>;
     anschlussGuardRef: React.MutableRefObject<boolean>;
     onSaveAnschlussPatient1: (trip: TripData) => void;
+    onFinishAnschluss: () => void;
 
     draftError: string;
     badField: BadField;
@@ -96,6 +97,7 @@ const WorkdayTripEntry: React.FC<Props> = ({
     setPreviousTripFormData,
     anschlussGuardRef,
     onSaveAnschlussPatient1,
+    onFinishAnschluss,
 
     draftError,
     badField,
@@ -485,6 +487,7 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                             };
                                             onSaveAnschlussPatient1(updatedTrip);
                                             setPreviousTripFormData(null);
+                                            onFinishAnschluss();
                                         }
                                         return updated;
                                     });
@@ -508,6 +511,7 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                             };
                                             onSaveAnschlussPatient1(updatedTrip);
                                             setPreviousTripFormData(null);
+                                            onFinishAnschluss();
                                         }
                                         return updated;
                                     })
