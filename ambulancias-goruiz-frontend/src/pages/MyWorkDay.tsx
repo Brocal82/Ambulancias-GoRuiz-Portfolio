@@ -27,7 +27,7 @@ import {
   loadAmbulanceData,
   clearAmbulanceData,
   confirmedAmbulanceKey,
-} from "../utils/workdayKey";
+} from "../utils/workdayKey.ts";
 import { getAllAmbulances } from "../api/ambulances";
 import type { Ambulance } from "../types/ambulance";
 import { useTranslation } from "react-i18next";
