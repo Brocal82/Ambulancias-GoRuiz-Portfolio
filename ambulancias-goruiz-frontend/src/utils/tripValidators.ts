@@ -1,10 +1,11 @@
 /* utils/tripValidators.ts
    --------------------------------------------------------------
-   💡 Valida dos cosas:
+   💡 Valida:
       1. El orden lógico de las horas  (AVISO → DOMICILIO → …)
       2. El orden lógico de los kilómetros (kmStart ≤ kmEnd)
+      3. (Opcional) Validación Anschluss (kmStart ≥ minKmStart)
 
-   ▸ Devuelve un objeto:
+   ▸ Devuelve:
      {
        error:    string | null;         // Mensaje para el usuario
        badField: keyof TripDraft | null // Campo que provoca el error
@@ -38,7 +39,8 @@ export const parseHHMM = (hhmm: string): number => {
 /* ---------------------------------------------------------- */
 export const checkTripLogic = (
   v: TripDraft,
-  wasCancelled: boolean = false, // ✅ nuevo parámetro opcional
+  wasCancelled: boolean = false,
+  minKmStart?: number, // ← nuevo parámetro opcional para Anschluss
 ): { error: string | null; badField: keyof TripDraft | null } => {
   // ✅ Si el viaje fue cancelado, saltamos la validación
   if (wasCancelled) {
@@ -71,7 +73,8 @@ export const checkTripLogic = (
   const kmEndNum = Number(v.kmEnd);
 
   const bothKmFieldsFilled =
-    v.kmStart.toString().trim() !== "" && v.kmEnd.toString().trim() !== "";
+    v.kmStart.toString().trim() !== "" &&
+    v.kmEnd.toString().trim() !== "";
 
   if (
     bothKmFieldsFilled &&
@@ -87,6 +90,20 @@ export const checkTripLogic = (
     };
   }
 
-  /* 3️⃣  OK ------------------------------------------------- */
+  /* 3️⃣  Validación Anschluss ------------------------------ */
+  if (
+    typeof minKmStart === "number" &&
+    !isNaN(kmStartNum) &&
+    kmStartNum > 0 &&
+    kmStartNum < minKmStart
+  ) {
+    return {
+      error:
+        "📏 En Anschluss, los KM no pueden ser menores que los del paciente anterior.",
+      badField: "kmStart",
+    };
+  }
+
+  /* 4️⃣  OK ------------------------------------------------- */
   return { error: null, badField: null };
 };

@@ -407,22 +407,49 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                 type="number"
                                 value={tripFormData.kmStart === 0 ? "" : tripFormData.kmStart}
                                 onChange={(e) => {
-                                    const value = Number(e.target.value);
+                                    const raw = e.target.value;
+
+                                    // ✅ Permitimos borrar (vacío) sin convertirlo en 0 a lo bruto
+                                    const value = raw === "" ? 0 : Number(raw);
+
+                                    // ✅ Permitimos escribir libremente (aunque sea menor) para no bloquear "101"
                                     setTripFormData((prev) => ({
                                         ...prev,
                                         kmStart: value,
                                     }));
-                                    if (anschlussActive) {
-                                        setPreviousTripFormData((prev) =>
-                                            prev ? { ...prev, kmEnd: value } : null,
-                                        );
+                                }}
+                                onBlur={() => {
+                                    // ✅ En Anschluss: al salir del campo, corregimos si quedó por debajo del mínimo
+                                    if (anschlussActive && previousTripFormData) {
+                                        const minAllowed = Number(previousTripFormData.kmStart) || 0;
+                                        const current = Number(tripFormData.kmStart) || 0;
+
+                                        if (current > 0 && current < minAllowed) {
+                                            setTripFormData((prev) => ({
+                                                ...prev,
+                                                kmStart: minAllowed,
+                                            }));
+                                        }
                                     }
                                 }}
-                                className={`h-[36px] w-full rounded-lg bg-white px-2.5 text-sm focus:outline-none focus:ring-2
-        ${badField === "kmStart"
+                                className={`h-[36px] w-full rounded-lg bg-white px-2.5 text-sm focus:outline-none focus:ring-2 disabled:bg-slate-50
+    ${(() => {
+                                        // 🔴 Rojo SOLO si estamos en Anschluss y kmStart < mínimo
+                                        if (!anschlussActive || !previousTripFormData) return "";
+
+                                        const minAllowed = Number(previousTripFormData.kmStart) || 0;
+                                        const current = Number(tripFormData.kmStart) || 0;
+
+                                        const tooLow = current > 0 && minAllowed > 0 && current < minAllowed;
+                                        return tooLow ? "ring-1 ring-rose-300 focus:ring-rose-200" : "";
+                                    })()
+                                    }
+    ${
+                                    // Mantén tu lógica actual de badField (si ya la usas)
+                                    badField === "kmStart"
                                         ? "ring-1 ring-rose-300 focus:ring-rose-200"
                                         : "ring-1 ring-slate-300 focus:ring-blue-300"
-                                    } disabled:bg-slate-50`}
+                                    }`}
                             />
                         </div>
 

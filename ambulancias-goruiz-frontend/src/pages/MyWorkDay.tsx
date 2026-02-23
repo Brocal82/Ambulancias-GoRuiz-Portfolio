@@ -194,6 +194,13 @@ const MyWorkday = () => {
   }, [ambulanceId, ambulanceNumber, initialAmbulanceKm, assignedDay]);
 
   useEffect(() => {
+    // ✅ En Anschluss: el kmStart del paciente 2 NO puede ser menor
+    // que el kmStart del paciente 1 (guardado en previousTripFormData)
+    const minKmStart =
+      anschlussActive && previousTripFormData
+        ? Number(previousTripFormData.kmStart) // 👈 este es el mínimo real según tu flujo
+        : undefined;
+
     const result = checkTripLogic(
       {
         timeWarning: tripFormData.timeWarning,
@@ -205,10 +212,12 @@ const MyWorkday = () => {
         kmEnd: Number(tripFormData.kmEnd),
       },
       wasCancelled,
+      minKmStart,
     );
+
     setDraftError(result.error || "");
     setBadField(result.badField);
-  }, [tripFormData, wasCancelled]);
+  }, [tripFormData, wasCancelled, anschlussActive, previousTripFormData]);;
 
   useEffect(() => {
     const fetchAmbulances = async () => {
