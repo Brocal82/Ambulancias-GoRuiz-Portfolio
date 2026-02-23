@@ -1,3 +1,10 @@
 // Workday UI components (barrel)
-// Step-by-step: iremos exportando aquí cuando migremos componentes.
-export {};
+export { default as AdminSummariesMonthGrid } from './AdminSummariesMonthGrid';
+export { default as AdminSummaryGroupModal } from './AdminSummaryGroupModal';
+export { default as DaySummariesModal } from './DaySummariesModal';
+export { default as FinalReviewModal } from './FinalReviewModal';
+export { default as IssueReportModal } from './IssueReportModal';
+export { default as PartialReviewModal } from './PartialReviewModal';
+export { default as ReviewSummary } from './ReviewSummary';
+export { default as WorkdayTripEntry } from './WorkdayTripEntry';
+export { default as WorkdayTripsSummary } from './WorkdayTripsSummary';
