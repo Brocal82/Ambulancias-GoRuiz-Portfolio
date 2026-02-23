@@ -1,11 +1,11 @@
-// frontend/src/components/workday/WorkdayTripEntry.tsx
+// frontend/src/modules/workday/components/WorkdayTripEntry.tsx
 
 import React from "react";
 import { useEffect } from "react";
 import type { Ambulance } from "../../../types/ambulance";
 import type { TripData } from "../../../types/trip";
 import type { AssignedDayFull } from "../../../modules/diensts";
-import type { TripDraft } from "../../../utils/tripValidators";
+import type { TripDraft } from "../utils/tripValidators";
 import { getCurrentTimeString } from "../../../utils/timeUtils";
 import { useTranslation } from "react-i18next";
 import SaveIconButton from "../../../components/common/actions/SaveIconButton";
