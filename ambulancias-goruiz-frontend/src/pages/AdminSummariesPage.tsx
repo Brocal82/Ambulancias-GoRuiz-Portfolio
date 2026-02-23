@@ -4,9 +4,11 @@ import { getAllSummaries, markSummaryReviewed } from "../api/workdaySummary";
 import type { WorkdaySummary } from "../types/workdaySummary";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import AdminSummariesMonthGrid from "../components/workday/AdminSummariesMonthGrid";
-import DaySummariesModal from "../components/workday/DaySummariesModal";
-import AdminSummaryGroupModal from "../components/workday/AdminSummaryGroupModal";
+import {
+  AdminSummariesMonthGrid,
+  DaySummariesModal,
+  AdminSummaryGroupModal,
+} from "../modules/workday";
 
 const ADMIN_SUMMARIES_CHANGED_EVENT = "admin-summaries-changed";
 const notifySummariesChanged = () =>
@@ -154,10 +156,10 @@ const AdminSummariesPage = () => {
     () =>
       selectedDate
         ? summaries
-            .filter((s) => s.date === selectedDate)
-            .sort(
-              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-            )
+          .filter((s) => s.date === selectedDate)
+          .sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+          )
         : [],
     [summaries, selectedDate],
   );
