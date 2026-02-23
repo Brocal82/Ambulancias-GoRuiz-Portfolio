@@ -624,10 +624,10 @@ const WorkdayTripEntry: React.FC<Props> = ({
                             <button
                                 type="button"
                                 onClick={anschlussActive ? onCancelAnschluss : onAddAnschluss}
-                                className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold transition
-                  ${anschlussActive
-                                        ? "bg-red-500 hover:bg-red-600"
-                                        : "bg-orange-500 hover:bg-orange-600"
+                                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition
+    ${anschlussActive
+                                        ? "bg-rose-100 text-rose-600 hover:bg-rose-200"
+                                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                                     }`}
                                 title={
                                     anschlussActive
@@ -635,7 +635,7 @@ const WorkdayTripEntry: React.FC<Props> = ({
                                         : t("pages.workday.anschluss.addTitle")
                                 }
                             >
-                                {anschlussActive ? "✖" : "+"}
+                                {anschlussActive ? "✖" : "🔗"}
                             </button>
                             <span className="text-sm text-slate-700">
                                 {anschlussActive
