@@ -6,18 +6,23 @@ import { toastT } from "../utils/toast";
 import type { Trip, TripData } from "../types/trip";
 import TripModal from "../components/trips/TripModal";
 import { useNavigate } from "react-router-dom";
-import WorkdayTripEntry from "../components/workday/WorkdayTripEntry";
-import FinalReviewModal from "../components/workday/FinalReviewModal";
-import PartialReviewModal from "../components/workday/PartialReviewModal";
-import WorkdayTripsSummary from "../components/workday/WorkdayTripsSummary";
+import {
+  WorkdayTripEntry,
+  FinalReviewModal,
+  PartialReviewModal,
+  WorkdayTripsSummary,
+} from "../modules/workday";
 import { sendPartialClosure, sendFinalClosure } from "../api/workdaySummary";
 import {
   buildFinalSummaryPayload,
   buildPartialSummaryPayload,
-} from "../utils/workday/summaryPayload";
-import { useWorkdayTrips } from "../hooks/workday/useWorkdayTrips";
-import { useWorkdayAssignment, canStartTripNow } from "../hooks/workday/useWorkdayAssignment";
-import { checkTripLogic, type TripDraft } from "../utils/tripValidators";
+} from "../modules/workday";
+import {
+  useWorkdayTrips,
+  useWorkdayAssignment,
+  canStartTripNow,
+} from "../modules/workday";
+import { checkTripLogic, type TripDraft } from "../modules/workday";
 import {
   getCurrentTimeString,
   formatYYYYMMDDToDDMMYYYY,
@@ -27,7 +32,7 @@ import {
   loadAmbulanceData,
   clearAmbulanceData,
   confirmedAmbulanceKey,
-} from "../utils/workdayKey.ts";
+} from "../modules/workday";
 import { getAllAmbulances } from "../api/ambulances";
 import type { Ambulance } from "../types/ambulance";
 import { useTranslation } from "react-i18next";
