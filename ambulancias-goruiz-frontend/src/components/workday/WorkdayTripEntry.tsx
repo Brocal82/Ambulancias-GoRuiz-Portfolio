@@ -1,6 +1,7 @@
 // frontend/src/components/workday/WorkdayTripEntry.tsx
 
 import React from "react";
+import { useEffect } from "react";
 import type { Ambulance } from "../../types/ambulance";
 import type { TripData } from "../../types/trip";
 import type { AssignedDayFull } from "../../modules/diensts";
@@ -118,6 +119,26 @@ const WorkdayTripEntry: React.FC<Props> = ({
         Boolean(ambulanceId) && Boolean(initialAmbulanceKm);
 
     const [showReports, setShowReports] = React.useState(false);
+
+    // ✅ Si se borra el AuftragNumber, ocultamos acciones y limpiamos estados secundarios
+    useEffect(() => {
+        const hasAuftrag = Boolean(tripFormData.auftragNumber?.trim());
+
+        if (!hasAuftrag) {
+            // Cerrar notas si estaban abiertas
+            setShowReports(false);
+
+            // Resetear Storno si estaba activo
+            if (wasCancelled) {
+                setWasCancelled(false);
+            }
+
+            // Volver a +1 por defecto (tu valor estándar)
+            if (countsTrip !== 1) {
+                setCountsTrip(1);
+            }
+        }
+    }, [tripFormData.auftragNumber, wasCancelled, countsTrip, setWasCancelled, setCountsTrip]);
 
     return (
         <div className="bg-white p-5 rounded-2xl shadow-sm ring-1 ring-slate-200 mb-6 space-y-4">
@@ -647,101 +668,98 @@ const WorkdayTripEntry: React.FC<Props> = ({
 
                     {/* Acciones: Notas + Storno izquierda / Save derecha */}
                     <div className="flex items-start justify-between mt-3">
+                        {tripFormData.auftragNumber?.trim() && (
+                            <>
+                                {/* IZQUIERDA */}
+                                <div className="flex items-start gap-4">
+                                    {/* BOTÓN NOTAS */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowReports((prev) => !prev)}
+                                        aria-label={t("pages.workday.reports.label")}
+                                        title={t("pages.workday.reports.label")}
+                                        className={`h-[36px] w-[36px] flex items-center justify-center rounded-lg ring-1 transition-colors duration-200
+            ${reports
+                                                ? "bg-blue-50 ring-blue-200 text-blue-600"
+                                                : "bg-white ring-slate-300 text-slate-600 hover:bg-slate-50 hover:text-blue-600"
+                                            }`}
+                                    >
+                                        📝
+                                    </button>
 
-                        {/* IZQUIERDA */}
-                        <div className="flex items-start gap-4">
-
-                            {/* BOTÓN NOTAS */}
-                            <button
-                                type="button"
-                                onClick={() => setShowReports((prev) => !prev)}
-                                aria-label={t("pages.workday.reports.label")}
-                                title={t("pages.workday.reports.label")}
-                                className={`h-[36px] w-[36px] flex items-center justify-center rounded-lg ring-1 transition-colors duration-200
-        ${reports
-                                        ? "bg-blue-50 ring-blue-200 text-blue-600"
-                                        : "bg-white ring-slate-300 text-slate-600 hover:bg-slate-50 hover:text-blue-600"
-                                    }`}
-                            >
-                                📝
-                            </button>
-
-                            {/* STORNO + +1 / 0 en línea */}
-                            <div className="flex items-center gap-3">
-
-                                {/* Botón STORNO */}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setWasCancelled(!wasCancelled);
-                                        if (wasCancelled) setCountsTrip(1);
-                                    }}
-                                    aria-label={t("pages.workday.storno.label")}
-                                    title={t("pages.workday.storno.label")}
-                                    className={`h-[36px] w-[36px] flex items-center justify-center
-      transition-all duration-150 ease-out
-      ${wasCancelled
-                                            ? "text-rose-600 scale-105"
-                                            : "text-slate-400 hover:text-rose-500 hover:scale-110 active:scale-95"
-                                        }`}
-                                >
-                                    🛑
-                                </button>
-
-                                {/* +1 / 0 SOLO si está cancelado */}
-                                {wasCancelled && (
-                                    <div className="flex items-center gap-2">
-
-                                        {/* +1 */}
+                                    {/* STORNO + +1 / 0 en línea */}
+                                    <div className="flex items-center gap-3">
+                                        {/* Botón STORNO */}
                                         <button
                                             type="button"
-                                            onClick={() => setCountsTrip(1)}
-                                            aria-label={t("pages.workday.storno.counts.yes")}
-                                            title={t("pages.workday.storno.counts.yes")}
-                                            className={`h-[28px] min-w-[36px] px-2 text-xs font-semibold rounded-md
-          transition-all duration-150
-          border
-          ${countsTrip === 1
-                                                    ? "border-emerald-400 text-emerald-600 bg-emerald-50"
-                                                    : "border-slate-300 text-slate-500 hover:border-emerald-300 hover:text-emerald-600"
+                                            onClick={() => {
+                                                setWasCancelled(!wasCancelled);
+                                                if (wasCancelled) setCountsTrip(1);
+                                            }}
+                                            aria-label={t("pages.workday.storno.label")}
+                                            title={t("pages.workday.storno.label")}
+                                            className={`h-[36px] w-[36px] flex items-center justify-center
+              transition-all duration-150 ease-out
+              ${wasCancelled
+                                                    ? "text-rose-600 scale-105"
+                                                    : "text-slate-400 hover:text-rose-500 hover:scale-110 active:scale-95"
                                                 }`}
                                         >
-                                            +1
+                                            🛑
                                         </button>
 
-                                        {/* 0 */}
-                                        <button
-                                            type="button"
-                                            onClick={() => setCountsTrip(0)}
-                                            aria-label={t("pages.workday.storno.counts.no")}
-                                            title={t("pages.workday.storno.counts.no")}
-                                            className={`h-[28px] min-w-[36px] px-2 text-xs font-semibold rounded-md
-          transition-all duration-150
-          border
-          ${countsTrip === 0
-                                                    ? "border-rose-400 text-rose-600 bg-rose-50"
-                                                    : "border-slate-300 text-slate-500 hover:border-rose-300 hover:text-rose-600"
-                                                }`}
-                                        >
-                                            0
-                                        </button>
+                                        {/* +1 / 0 SOLO si está cancelado */}
+                                        {wasCancelled && (
+                                            <div className="flex items-center gap-2">
+                                                {/* +1 */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCountsTrip(1)}
+                                                    aria-label={t("pages.workday.storno.counts.yes")}
+                                                    title={t("pages.workday.storno.counts.yes")}
+                                                    className={`h-[28px] min-w-[36px] px-2 text-xs font-semibold rounded-md
+                  transition-all duration-150
+                  border
+                  ${countsTrip === 1
+                                                            ? "border-emerald-400 text-emerald-600 bg-emerald-50"
+                                                            : "border-slate-300 text-slate-500 hover:border-emerald-300 hover:text-emerald-600"
+                                                        }`}
+                                                >
+                                                    +1
+                                                </button>
 
+                                                {/* 0 */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCountsTrip(0)}
+                                                    aria-label={t("pages.workday.storno.counts.no")}
+                                                    title={t("pages.workday.storno.counts.no")}
+                                                    className={`h-[28px] min-w-[36px] px-2 text-xs font-semibold rounded-md
+                  transition-all duration-150
+                  border
+                  ${countsTrip === 0
+                                                            ? "border-rose-400 text-rose-600 bg-rose-50"
+                                                            : "border-slate-300 text-slate-500 hover:border-rose-300 hover:text-rose-600"
+                                                        }`}
+                                                >
+                                                    0
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
+                                </div>
 
-                            </div>
-
-                        </div>
-
-                        {/* DERECHA — SAVE */}
-                        <SaveIconButton
-                            type="button"
-                            onClick={onSaveTrip}
-                            disabled={Boolean(draftError)}
-                            title={t("pages.workday.saveTrip")}
-                            aria-label={t("pages.workday.saveTrip")}
-                            className="w-[36px] h-[36px] text-xl"
-                        />
+                                {/* DERECHA — SAVE */}
+                                <SaveIconButton
+                                    type="button"
+                                    onClick={onSaveTrip}
+                                    disabled={Boolean(draftError)}
+                                    title={t("pages.workday.saveTrip")}
+                                    aria-label={t("pages.workday.saveTrip")}
+                                    className="w-[36px] h-[36px] text-xl"
+                                />
+                            </>
+                        )}
                     </div>
 
                     {/* Textarea */}
