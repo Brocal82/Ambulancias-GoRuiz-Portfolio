@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import {
-  getOpenAppointments, // 👈 usamos la nueva función
+  getOpenAppointments,
   getCalendarAppointments,
-} from "../api/appointments";
+} from "../modules/appointments";
 import type { Appointment } from "../types/appointment";
 import { toastT } from "../utils/toast";
 import { useTranslation } from "react-i18next";
 
-// Componentes ya creados
-import AdminProposeSlotsModal from "../components/appointments/AdminProposeSlotsModal";
-import AdminAppointmentMonthGrid from "../components/appointments/AdminAppointmentMonthGrid";
-import AdminMonthCalendar from "../components/appointments/AdminMonthCalendar";
-import AdminAppointmentDetail from "../components/appointments/AdminAppointmentDetail";
+import {
+  AdminProposeSlotsModal,
+  AdminAppointmentMonthGrid,
+  AdminMonthCalendar,
+  AdminAppointmentDetail,
+} from "../modules/appointments";
+
 import StatusBadge from "../components/common/StatusBadge";
 import { toneForAppointmentStatus } from "../utils/status/appointmentTone";
 

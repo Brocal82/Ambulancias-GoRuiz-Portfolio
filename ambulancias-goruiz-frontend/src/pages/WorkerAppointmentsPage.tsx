@@ -1,13 +1,15 @@
 // frontend/src/pages/WorkerAppointmentsPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
+
 import {
   getMyAppointments,
   deleteMyAppointment as apiDeleteMyAppointment,
-} from "../api/appointments";
+  RequestAppointmentModal,
+  ChooseSlotModal,
+} from "../modules/appointments";
+
 import type { Appointment } from "../types/appointment";
-import RequestAppointmentModal from "../components/appointments/RequestAppointmentModal";
-import ChooseSlotModal from "../components/appointments/ChooseSlotModal";
 import { toastT } from "../utils/toast";
 import { APP_TZ } from "../config/app";
 import { useTranslation } from "react-i18next";
