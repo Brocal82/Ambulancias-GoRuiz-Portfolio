@@ -1,11 +1,7 @@
-// frontend/src/components/appointments/AdminMonthCalendar.tsx
+// frontend/src/modules/Appointments/components/AdminMonthCalendar.tsx
 import React, { useMemo, useState } from "react";
 import type { Appointment } from "../../../types/appointment";
-import {
-  getMonthMatrix,
-  groupAppointmentsByDay,
-  ymd,
-} from "../../../utils/appointmentMonthUtils";
+import { getMonthMatrix, groupAppointmentsByDay, ymd } from "../utils";
 import { useTranslation } from "react-i18next";
 import DayAppointmentsModal from "./DayAppointmentsModal";
 

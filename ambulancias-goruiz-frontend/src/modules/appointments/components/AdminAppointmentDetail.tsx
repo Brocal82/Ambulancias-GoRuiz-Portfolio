@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Appointment } from "../../../types/appointment";
 import { useAuth } from "../../../hooks/useAuth";
-import { cancelAppointment, updateAppointment } from "../../../api/appointments";
+import { cancelAppointment, updateAppointment } from "../domain";
 import { toastT } from "../../../utils/toast";
 import { APP_TZ } from "../../../config/app";
 import { partsFromISO, localDateTimeToUtcISO } from "../../../utils/tz";

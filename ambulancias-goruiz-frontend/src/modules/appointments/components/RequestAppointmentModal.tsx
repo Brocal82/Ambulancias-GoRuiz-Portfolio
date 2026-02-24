@@ -1,6 +1,6 @@
-// frontend/src/components/appointments/RequestAppointmentModal.tsx
+// frontend/src/modules/appointments/components/RequestAppointmentModal.tsx
 import { useState, useEffect } from "react";
-import { requestAppointment } from "../../../api/appointments";
+import { requestAppointment } from "../domain";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";

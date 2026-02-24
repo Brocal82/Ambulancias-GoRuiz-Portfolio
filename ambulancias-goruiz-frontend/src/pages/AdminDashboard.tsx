@@ -5,8 +5,7 @@ import { useTranslation } from "react-i18next";
 // ✅ Hook para contador de pendientes de Vacaciones
 import useAdminVacationsPendingCount from "../hooks/vacation/useAdminVacationsPendingCount";
 import useAdminSummariesPendingCount from "../hooks/useAdminSummariesPendingCount";
-import { useAdminAppointmentsPendingCount } from "../hooks/useAdminAppointmentsPendingCount";
-import { useAdminIssuesOpenCount } from "../hooks/useAdminIssuesOpenCount";
+import { useAdminAppointmentsPendingCount } from "../modules/appointments"; import { useAdminIssuesOpenCount } from "../hooks/useAdminIssuesOpenCount";
 import useAdminSickLeavesPendingCount from "../hooks/useAdminSickLeavesPendingCount";
 
 const AdminDashboard = () => {

@@ -1,7 +1,7 @@
-// frontend/src/components/appointments/ChooseSlotModal.tsx
+// frontend/src/modules/appointments/components/ChooseSlotModal.tsx
 import { useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
-import { selectSlot } from "../../../api/appointments";
+import { selectSlot } from "../domain";
 import type { TimeSlot } from "../../../types/appointment";
 import { toastT } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";

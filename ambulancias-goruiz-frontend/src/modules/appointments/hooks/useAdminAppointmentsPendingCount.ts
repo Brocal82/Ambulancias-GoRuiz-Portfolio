@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "../../../hooks/useAuth";
-import { getAppointmentsPendingCount } from "../../../api/appointments";
-
+import { getAppointmentsPendingCount } from "../domain";
 /** Evento global para forzar refresco tras cambios (proponer/confirmar/cancelar) */
 export const ADMIN_APPOINTMENTS_CHANGED_EVENT = "admin-appointments-changed";
 

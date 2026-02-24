@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { proposeSlots } from "../../../api/appointments";
+import { proposeSlots } from "../domain";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
 import { APP_TZ } from "../../../config/app";
