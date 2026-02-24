@@ -18,10 +18,12 @@ import WorkerHospitalsPage from "./pages/WorkerHospitalsPage";
 import WorkerPraemienPage from "./pages/WorkerPraemienPage";
 import WorkerVacationsPage from "./pages/WorkerVacationsPage";
 import WorkerMessagesPage from "./pages/WorkerMessagesPage";
-import WorkerAppointmentsPage from "./pages/WorkerAppointmentsPage";
 import WorkerSickLeavesPage from "./pages/WorkerSickLeavesPage";
 import MyWorkday from "./pages/MyWorkDay";
-
+import {
+  AdminAppointmentsPage,
+  WorkerAppointmentsPage,
+} from "./modules/appointments";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminDienstsPage from "./pages/AdminDienstsPage";
@@ -34,7 +36,6 @@ import AdminMechanicsPage from "./pages/AdminMechanicsPage";
 import AdminUserDetailDashboard from "./pages/AdminUserDetailDashboard";
 import AdminMessagesPage from "./pages/AdminMessagesPage";
 import AdminSentMessages from "./pages/AdminSentMessages";
-import AdminAppointmentsPage from "./pages/AdminAppointmentsPage";
 import AdminTeamsPage from "./pages/AdminTeamsPage";
 import AdminSickLeavesPage from "./pages/AdminSickLeavesPage";
 
