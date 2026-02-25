@@ -9,7 +9,7 @@ import { sendPartialClosure, sendFinalClosure } from "../domain";
 
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
-import { notifyAdminIssuesChanged } from "../../../hooks/useAdminIssuesOpenCount";
+import { notifyAdminIssuesChanged } from "../hooks";
 import { notifyAdminSummariesChanged } from "../../../hooks/useAdminSummariesPendingCount";
 
 import type { Trip, TripData } from "../../../types/trip";

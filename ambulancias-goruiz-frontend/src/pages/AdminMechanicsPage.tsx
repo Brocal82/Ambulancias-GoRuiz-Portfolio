@@ -16,7 +16,7 @@ import { toastT } from "../utils/toast";
 import { getAllAmbulances } from "../api/ambulances";
 import type { Ambulance } from "../types/ambulance";
 import { useTranslation } from "react-i18next";
-import { notifyAdminIssuesChanged } from "../hooks/useAdminIssuesOpenCount";
+import { notifyAdminIssuesChanged } from "../modules/workday";
 import { normalizeIssues } from "../utils/mechanics/normalizeIssue";
 import { sortIssuesByDateDesc } from "../utils/mechanics/sortIssuesByDateDesc";
 import DeleteIconButton from "../components/common/actions/DeleteIconButton";
