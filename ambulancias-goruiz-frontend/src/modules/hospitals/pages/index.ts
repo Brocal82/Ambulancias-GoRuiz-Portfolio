@@ -1,3 +1,2 @@
-export { default as AdminHospitalsPage } from '../../../pages/AdminHospitalsPage';
-export { default as WorkerHospitalsPage } from '../../../pages/WorkerHospitalsPage';
-
+export { default as AdminHospitalsPage } from "./AdminHospitalsPage";
+export { default as WorkerHospitalsPage } from "./WorkerHospitalsPage";
