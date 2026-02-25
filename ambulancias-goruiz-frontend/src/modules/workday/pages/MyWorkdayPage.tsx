@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-import { createTrip } from "../../../api/trips";
+import { createTrip } from "../domain";
 import { getAllAmbulances } from "../../../api/ambulances";
 import { sendPartialClosure, sendFinalClosure } from "../domain";
 

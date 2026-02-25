@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { getTripsByDate } from "../../../api/trips";
+import { getTripsByDate } from "../domain";
 import type { Trip } from "../../../types/trip";
 import { toastT } from "../../../utils/toast";
 
