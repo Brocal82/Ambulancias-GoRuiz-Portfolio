@@ -1,5 +1,4 @@
 //src/modules/workday/domain/payloads.ts
-// frontend/src/utils/workday/summaryPayload.ts
 
 import type { Trip } from "../../../types/trip";
 import type { AssignedDayFull } from "../../../modules/diensts";

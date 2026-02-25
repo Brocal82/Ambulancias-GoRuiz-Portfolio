@@ -1,10 +1,10 @@
-import axios from "./axios";
+import axios from "../../../api/axios";
 import type {
   PartialSummaryPayload,
   FinalSummaryPayload,
   WorkdaySummary,
-} from "../types/workdaySummary";
-import type { WorkdayIssue } from "../types/workdayIssue";
+} from "../../../types/workdaySummary";
+import type { WorkdayIssue } from "../../../types/workdayIssue";
 
 /* =========================
    EXISTENTES

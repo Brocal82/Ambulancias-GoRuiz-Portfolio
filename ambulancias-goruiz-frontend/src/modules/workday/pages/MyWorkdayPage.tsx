@@ -1,44 +1,53 @@
-// frontend/src/pages/MyWorkday.tsx
+// frontend/src/modules/workday/pages/MyWorkday.tsx
 import { useState, useEffect, useRef } from "react";
-import { createTrip } from "../api/trips";
-import { useAuth } from "../hooks/useAuth";
-import { toastT } from "../utils/toast";
-import type { Trip, TripData } from "../types/trip";
-import TripModal from "../components/trips/TripModal";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+
+import { createTrip } from "../../../api/trips";
+import { getAllAmbulances } from "../../../api/ambulances";
+import { sendPartialClosure, sendFinalClosure } from "../domain";
+
+import { useAuth } from "../../../hooks/useAuth";
+import { toastT } from "../../../utils/toast";
+import { notifyAdminIssuesChanged } from "../../../hooks/useAdminIssuesOpenCount";
+import { notifyAdminSummariesChanged } from "../../../hooks/useAdminSummariesPendingCount";
+
+import type { Trip, TripData } from "../../../types/trip";
+import type { Ambulance } from "../../../types/ambulance";
+
+import TripModal from "../../../components/trips/TripModal";
+
 import {
   WorkdayTripEntry,
   FinalReviewModal,
   PartialReviewModal,
   WorkdayTripsSummary,
-} from "../modules/workday";
-import { sendPartialClosure, sendFinalClosure } from "../api/workdaySummary";
+} from "../components";
+
+import { useWorkdayTrips, useWorkdayAssignment, canStartTripNow } from "../hooks";
+
+// Dominio (payloads)
 import {
   buildFinalSummaryPayload,
   buildPartialSummaryPayload,
-} from "../modules/workday";
+} from "../domain";
+
+// Utils
 import {
-  useWorkdayTrips,
-  useWorkdayAssignment,
-  canStartTripNow,
-} from "../modules/workday";
-import { checkTripLogic, type TripDraft } from "../modules/workday";
-import {
-  getCurrentTimeString,
-  formatYYYYMMDDToDDMMYYYY,
-} from "../utils/timeUtils";
-import {
+  checkTripLogic,
+  type TripDraft,
   saveAmbulanceData,
   loadAmbulanceData,
   clearAmbulanceData,
   confirmedAmbulanceKey,
-} from "../modules/workday";
-import { getAllAmbulances } from "../api/ambulances";
-import type { Ambulance } from "../types/ambulance";
-import { useTranslation } from "react-i18next";
-import { notifyAdminIssuesChanged } from "../hooks/useAdminIssuesOpenCount";
-import { notifyAdminSummariesChanged } from "../hooks/useAdminSummariesPendingCount";
-import { todayBerlinDayKey } from "../utils/dates/dayKey";
+} from "../utils";
+
+import {
+  getCurrentTimeString,
+  formatYYYYMMDDToDDMMYYYY,
+} from "../../../utils/timeUtils";
+
+import { todayBerlinDayKey } from "../../../utils/dates/dayKey";
 
 
 const MyWorkday = () => {

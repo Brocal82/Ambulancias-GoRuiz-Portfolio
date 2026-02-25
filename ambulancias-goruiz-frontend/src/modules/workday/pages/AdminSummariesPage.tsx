@@ -1,14 +1,17 @@
-// frontend/src/pages/AdminSummariesPage.tsx
+// src/modules/workday/pages/AdminSummariesPage.tsx
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { getAllSummaries, markSummaryReviewed } from "../api/workdaySummary";
-import type { WorkdaySummary } from "../types/workdaySummary";
-import { useAuth } from "../hooks/useAuth";
+
+import { getAllSummaries, markSummaryReviewed } from "../domain";
+import type { WorkdaySummary } from "../../../types/workdaySummary";
+
+import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
+
 import {
   AdminSummariesMonthGrid,
   DaySummariesModal,
   AdminSummaryGroupModal,
-} from "../modules/workday";
+} from "../components";
 
 const ADMIN_SUMMARIES_CHANGED_EVENT = "admin-summaries-changed";
 const notifySummariesChanged = () =>

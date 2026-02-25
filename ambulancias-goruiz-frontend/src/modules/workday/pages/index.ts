@@ -1,2 +1,2 @@
-export { default as MyWorkDayPage } from "../../../pages/MyWorkDay";
-export { default as AdminSummariesPage } from "../../../pages/AdminSummariesPage";
+export { default as MyWorkdayPage } from "./MyWorkdayPage";
+export { default as AdminSummariesPage } from "./AdminSummariesPage";

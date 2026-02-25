@@ -18,7 +18,7 @@ import WorkerPraemienPage from "./pages/WorkerPraemienPage";
 import WorkerVacationsPage from "./pages/WorkerVacationsPage";
 import WorkerMessagesPage from "./pages/WorkerMessagesPage";
 import WorkerSickLeavesPage from "./pages/WorkerSickLeavesPage";
-import MyWorkday from "./pages/MyWorkDay";
+import { MyWorkdayPage, AdminSummariesPage } from "./modules/workday";
 import {
   AdminHospitalsPage,
   WorkerHospitalsPage,
@@ -32,7 +32,6 @@ import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminDienstsPage from "./pages/AdminDienstsPage";
 import AdminDienstTemplatesPage from "./pages/AdminDienstTemplatesPage";
 import AdminVacationsPage from "./pages/AdminVacationsPage";
-import AdminSummariesPage from "./pages/AdminSummariesPage";
 import AdminAmbulancesPage from "./pages/AdminAmbulancesPage";
 import AdminMechanicsPage from "./pages/AdminMechanicsPage";
 import AdminUserDetailDashboard from "./pages/AdminUserDetailDashboard";
@@ -64,7 +63,7 @@ export default function App() {
               <Route path="/worker/vacations" element={<WorkerVacationsPage />} />
               <Route path="/worker/sick-leaves" element={<WorkerSickLeavesPage />} />
               <Route path="/worker/messages" element={<WorkerMessagesPage />} />
-              <Route path="/my-workday" element={<MyWorkday />} />
+              <Route path="/my-workday" element={<MyWorkdayPage />} />
               <Route path="/worker/appointments" element={<WorkerAppointmentsPage />} />
 
               {/* Admin */}

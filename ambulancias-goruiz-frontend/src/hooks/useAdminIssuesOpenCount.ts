@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "../hooks/useAuth";
-import { getIssuesOpenCount } from "../api/workdaySummary";
+import { getIssuesOpenCount } from "../modules/workday";
 
 /** Evento global para forzar refresco tras cambios en averías (crear, cerrar, borrar, marcar vistas, etc.) */
 export const ADMIN_ISSUES_CHANGED_EVENT = "admin-issues-changed";
