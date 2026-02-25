@@ -1,6 +1,6 @@
 // frontend/src/hooks/useAdminSummariesPendingCount.ts
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getSummariesPendingCount } from "../api/workdaySummary";
+import { getSummariesPendingCount } from "../modules/workday";
 import { useAuth } from "../hooks/useAuth"; // named export
 
 type Options = {

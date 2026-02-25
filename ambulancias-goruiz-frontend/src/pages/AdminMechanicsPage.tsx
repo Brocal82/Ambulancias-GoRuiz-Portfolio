@@ -9,7 +9,7 @@ import {
   getAllIssueReports,
   deleteIssueReport,
   markIssueSeen,
-} from "../api/workdaySummary";
+} from "../modules/workday";
 import type { WorkdayIssue } from "../types/workdayIssue";
 import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
