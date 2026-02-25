@@ -1,7 +1,7 @@
-// frontend/src/hooks/useAdminSummariesPendingCount.ts
+// frontend/src/modules/workday/hooks/useAdminSummariesPendingCount.ts
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getSummariesPendingCount } from "../modules/workday";
-import { useAuth } from "../hooks/useAuth"; // named export
+import { getSummariesPendingCount } from "../../../modules/workday";
+import { useAuth } from "../../../hooks/useAuth"; // named export
 
 type Options = {
   /** Intervalo de refresco en ms. 0 = sin polling (por defecto). */
