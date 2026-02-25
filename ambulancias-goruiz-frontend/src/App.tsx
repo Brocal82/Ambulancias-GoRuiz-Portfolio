@@ -14,12 +14,15 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import WorkerDashboard from "./pages/WorkerDashboard";
 import WorkerDienstsPage from "./pages/WorkerDienstsPage";
-import WorkerHospitalsPage from "./pages/WorkerHospitalsPage";
 import WorkerPraemienPage from "./pages/WorkerPraemienPage";
 import WorkerVacationsPage from "./pages/WorkerVacationsPage";
 import WorkerMessagesPage from "./pages/WorkerMessagesPage";
 import WorkerSickLeavesPage from "./pages/WorkerSickLeavesPage";
 import MyWorkday from "./pages/MyWorkDay";
+import {
+  AdminHospitalsPage,
+  WorkerHospitalsPage,
+} from "./modules/hospitals";
 import {
   AdminAppointmentsPage,
   WorkerAppointmentsPage,
@@ -28,7 +31,6 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminDienstsPage from "./pages/AdminDienstsPage";
 import AdminDienstTemplatesPage from "./pages/AdminDienstTemplatesPage";
-import AdminHospitalsPage from "./pages/AdminHospitalsPage";
 import AdminVacationsPage from "./pages/AdminVacationsPage";
 import AdminSummariesPage from "./pages/AdminSummariesPage";
 import AdminAmbulancesPage from "./pages/AdminAmbulancesPage";
