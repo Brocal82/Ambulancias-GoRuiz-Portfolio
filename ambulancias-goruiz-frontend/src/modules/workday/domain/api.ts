@@ -3,7 +3,7 @@ import type {
   PartialSummaryPayload,
   FinalSummaryPayload,
   WorkdaySummary,
-} from "../../../types/workdaySummary";
+} from "./types/workdaySummary";;
 import type { WorkdayIssue } from "./types/workdayIssue";
 /* =========================
    EXISTENTES
