@@ -1,6 +1,6 @@
 // src/components/workday/AdminSummaryGroupModal.tsx
 import React from "react";
-import type { WorkdaySummary } from "../../../types/workdaySummary";
+import type { WorkdaySummary } from "../domain";
 import type { AssignedDayFull } from "../../../modules/diensts";
 import ReviewSummary from "./ReviewSummary";
 import { useTranslation } from "react-i18next";

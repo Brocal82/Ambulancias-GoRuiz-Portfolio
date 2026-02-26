@@ -4,8 +4,7 @@ import type {
   FinalSummaryPayload,
   WorkdaySummary,
 } from "../../../types/workdaySummary";
-import type { WorkdayIssue } from "../../../types/workdayIssue";
-
+import type { WorkdayIssue } from "./types/workdayIssue";
 /* =========================
    EXISTENTES
    ========================= */

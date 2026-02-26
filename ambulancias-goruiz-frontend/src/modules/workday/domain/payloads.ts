@@ -2,7 +2,7 @@
 
 import type { Trip } from "../../../types/trip";
 import type { AssignedDayFull } from "../../../modules/diensts";
-import type { FinalSummaryPayload, PartialSummaryPayload } from "../../../types/workdaySummary";
+import type { FinalSummaryPayload, PartialSummaryPayload } from "./types/workdaySummary";
 
 export const sanitizeTripsForSummary = (trips: Trip[]): Trip[] => {
   return trips.map((t) => ({

@@ -1,12 +1,9 @@
 // src/modules/workday/pages/AdminSummariesPage.tsx
 import { useEffect, useState, useCallback, useMemo } from "react";
-
 import { getAllSummaries, markSummaryReviewed } from "../domain";
-import type { WorkdaySummary } from "../../../types/workdaySummary";
-
+import type { WorkdaySummary } from "../domain";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
-
 import {
   AdminSummariesMonthGrid,
   DaySummariesModal,

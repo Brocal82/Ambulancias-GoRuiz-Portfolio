@@ -1,6 +1,6 @@
 // frontend/src/components/workday/DaySummariesModal.tsx
 import React from "react";
-import type { WorkdaySummary } from "../../../types/workdaySummary";
+import type { WorkdaySummary } from "../domain";
 import { useTranslation } from "react-i18next";
 import { formatYYYYMMDDToDDMMYYYY } from "../../../utils/timeUtils";
 
@@ -121,8 +121,8 @@ const DaySummariesModal: React.FC<DaySummariesModalProps> = ({
                                         type="button"
                                         onClick={() => onSelectSummaryGroup(group)}
                                         className={`flex flex-col rounded-xl border p-3 text-left text-xs transition hover:shadow-sm ${hasUnread
-                                                ? "border-amber-300 bg-amber-50/70"
-                                                : "border-slate-200 bg-slate-50"
+                                            ? "border-amber-300 bg-amber-50/70"
+                                            : "border-slate-200 bg-slate-50"
                                             }`}
                                     >
                                         {/* Línea superior: número de Dienst + badges de estado */}
