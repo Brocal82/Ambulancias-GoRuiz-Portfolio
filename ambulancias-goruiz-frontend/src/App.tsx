@@ -29,8 +29,7 @@ import {
 } from "./modules/appointments";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsersPage from "./pages/AdminUsersPage";
-import AdminDienstsPage from "./pages/AdminDienstsPage";
-import AdminDienstTemplatesPage from "./pages/AdminDienstTemplatesPage";
+import AdminDienstsPage from "./modules/diensts/pages/AdminDienstsPage"; import AdminDienstTemplatesPage from "./pages/AdminDienstTemplatesPage";
 import AdminVacationsPage from "./pages/AdminVacationsPage";
 import AdminAmbulancesPage from "./pages/AdminAmbulancesPage";
 import AdminMechanicsPage from "./pages/AdminMechanicsPage";
