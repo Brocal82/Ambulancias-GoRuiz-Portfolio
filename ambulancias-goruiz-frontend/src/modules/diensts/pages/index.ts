@@ -1,3 +1,2 @@
-// frontend/src/modules/diensts/pages/index.ts
-// FASE 1: placeholder
-export {};
+// src/modules/diensts/pages/index.ts
+export { default as AdminDienstsPage } from "./AdminDienstsPage";
