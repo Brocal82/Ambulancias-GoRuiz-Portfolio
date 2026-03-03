@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Profile from "./Profile";
-import AdminUserDienstsTab from "./AdminUserDienstsTab";
+import AdminUserDienstsTab from "../modules/diensts/components/AdminUserDienstsTab";
 import AdminUserPraemienTab from "./AdminUserPraemienTab";
 import AdminUserVacationsTab from "./AdminUserVacationsTab";
 import AdminUserSickLeavesTab from "./AdminUserSickLeavesTab";
