@@ -13,7 +13,7 @@ import Register from "./pages/Register";
 // Páginas privadas
 import Profile from "./pages/Profile";
 import WorkerDashboard from "./pages/WorkerDashboard";
-import WorkerDienstsPage from "./pages/WorkerDienstsPage";
+import WorkerDienstsPage from "./modules/diensts/pages/WorkerDienstsPage";
 import WorkerPraemienPage from "./pages/WorkerPraemienPage";
 import WorkerVacationsPage from "./pages/WorkerVacationsPage";
 import WorkerMessagesPage from "./pages/WorkerMessagesPage";
