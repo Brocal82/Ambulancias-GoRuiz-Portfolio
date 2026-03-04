@@ -11,7 +11,7 @@ import {
   clearPeopleForWeek,
 } from "../index";
 
-import AssignmentModal from "../../../components/assignmentModal/AssignmentModal";
+import AssignmentModal from "../components/assignmentModal/AssignmentModal";
 import TeamAssignModal from "../components/TeamAssignModal";
 import UserAssignModal from "../components/UserAssignModal";
 import {
