@@ -1,1 +1,0 @@
-export * from "../../modules/diensts/components/assignmentModal/buildUpdateAssignment";
