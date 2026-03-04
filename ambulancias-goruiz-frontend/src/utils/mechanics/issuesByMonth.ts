@@ -1,5 +1,5 @@
 // src/utils/mechanics/issuesByMonth.ts
-import type { WorkdayIssue } from "../../types/workdayIssue";
+import type { WorkdayIssue } from "../../modules/workday/domain/types/workdayIssue";
 
 export type IssueMonthCounts = {
   total: number;

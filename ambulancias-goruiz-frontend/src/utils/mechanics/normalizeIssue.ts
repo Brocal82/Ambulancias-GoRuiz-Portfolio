@@ -1,6 +1,5 @@
 // src/utils/mechanics/normalizeIssue.ts
-import type { WorkdayIssue } from "../../types/workdayIssue";
-
+import type { WorkdayIssue } from "../../modules/workday/domain/types/workdayIssue";
 /**
  * Normaliza un issue para asegurar defaults
  * cuando el backend aún no envía ciertos campos.

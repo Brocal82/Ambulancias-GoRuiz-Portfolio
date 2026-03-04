@@ -1,6 +1,5 @@
 // src/utils/mechanics/sortIssuesByDateDesc.ts
-import type { WorkdayIssue } from "../../types/workdayIssue";
-
+import type { WorkdayIssue } from "../../modules/workday/domain/types/workdayIssue";
 /**
  * Ordena averías por timestamp descendente (más recientes primero).
  * Helper puro, sin efectos secundarios.
