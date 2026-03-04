@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { UsersApi, type User } from "../../../../users";
 import type { UserRef } from "../../../domain/types";
 import type { FlexibleAssignment } from "../../../../../types/assignment";
-import { mergeWithAssigned } from "../../../../../utils/mergeWithAssigned";
-import { ensureSelectedPresent } from "../ensureSelectedPresent";
+import { mergeWithAssigned } from "../../../utils/mergeWithAssigned";import { ensureSelectedPresent } from "../ensureSelectedPresent";
 import { toastT } from "../../../../../utils/toast";
 
 const toUserRefList = (users: User[]): UserRef[] =>
