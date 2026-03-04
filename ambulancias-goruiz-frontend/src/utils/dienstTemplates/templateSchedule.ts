@@ -1,6 +1,5 @@
 // frontend/src/utils/dienstTemplates/templateSchedule.ts
-import type { DienstTemplate, DaySchedule } from "../../modules/diensts";
-
+import type { DienstTemplate, DaySchedule } from "../../modules/diensts/domain/types";
 
 /**
  * Labels en español tal como los usas hoy.
