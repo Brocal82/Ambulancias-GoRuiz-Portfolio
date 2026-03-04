@@ -10,7 +10,7 @@ import {
   getNameClass,
   getNameTitle,
 } from "./presenters";
-import AssignmentModalReadOnly from "./AssingmentModalReadOnly";
+import AssignmentModalReadOnly from "./AssignmentModalReadOnly";
 import AssignmentModalAdminForm from "./AssignmentModalAdminForm";
 import { useAvailableUsersForAssignment } from "./hooks/useAvailableUsersForAssignment";
 import { useAmbulances } from "./hooks/useAmbulances";
