@@ -8,8 +8,7 @@ import type { Dienst } from "../index";
 import type { FlexibleAssignment } from "../../../types/assignment";
 
 import AssignmentModal from "../components/assignmentModal/AssignmentModal";
-import { isPartialAssignment } from "../../../utils/assignmentUtils";
-
+import { isPartialAssignment } from "../utils/assignmentUtils";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 

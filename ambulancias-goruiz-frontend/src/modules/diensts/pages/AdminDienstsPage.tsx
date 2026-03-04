@@ -25,8 +25,7 @@ import {
 
 import { dayKeyToLocalDate, toBerlinDayKey } from "../../../utils/dates/dayKey";
 import { isPastDay } from "../../../utils/dates/isPastDay";
-import { isTeamIncomplete } from "../../../utils/assignmentUtils";
-
+import { isTeamIncomplete } from "../utils/assignmentUtils";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
