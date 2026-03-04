@@ -9,3 +9,5 @@ export { default as UserAssignModal } from "./UserAssignModal";
 export * from "./DienstDayCell";
 export * from "./WeekBlock";
 
+export * from "./assignmentModal";
+
