@@ -69,6 +69,3 @@ export interface AssignedDayFull {
   driver: UserRef;
   medic: UserRef;
 }
-
-// ✅ dienstTemplates types viven en su módulo; dejamos puente aquí para compatibilidad
-export type { DaySchedule, DienstTemplate } from "../../dienstTemplates/domain/types";
