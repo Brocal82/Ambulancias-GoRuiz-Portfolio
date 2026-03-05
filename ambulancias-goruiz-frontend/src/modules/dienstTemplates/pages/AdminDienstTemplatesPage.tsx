@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
-import type { DienstTemplate } from "../../diensts";
-
+import type { DienstTemplate } from "../domain/types";
 import {
   getDienstTemplates,
   deleteDienstTemplate,
