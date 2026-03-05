@@ -1,5 +1,20 @@
 // src/modules/dienstTemplates/domain/types.ts
-// Puente seguro: por ahora los tipos viven en modules/diensts.
-// En una fase futura (si se decide), se podrán mover aquí como source of truth.
 
-export type { DaySchedule, DienstTemplate } from "../../diensts/domain/types";
+// 🗓️ Horario por día de la semana para una plantilla
+export interface DaySchedule {
+  dayIndex: number; // 0=domingo...6=sábado
+  startTime?: string;
+  endTime?: string;
+  isOff: boolean;
+}
+
+// 📌 Plantilla de Dienst
+export interface DienstTemplate {
+  _id: string;
+  dienstNumber: number;
+  startTime: string;
+  endTime: string;
+  daysOff: number[];
+  isActive: boolean;
+  perDaySchedule?: DaySchedule[];
+}
