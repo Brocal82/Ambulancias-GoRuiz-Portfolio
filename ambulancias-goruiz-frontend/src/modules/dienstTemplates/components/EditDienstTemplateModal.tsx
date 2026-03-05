@@ -5,7 +5,7 @@ import type { DienstTemplate } from "../../diensts";
 import {
   updateDienstTemplate,
   type DienstTemplateInput,
-} from "../../../api/dienstTemplates";
+} from "../domain/api";
 
 import CancelButton from "../../../components/common/actions/CancelButton";
 import SaveIconButton from "../../../components/common/actions/SaveIconButton";

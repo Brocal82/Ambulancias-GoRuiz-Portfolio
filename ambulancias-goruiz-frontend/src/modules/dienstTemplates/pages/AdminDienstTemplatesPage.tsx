@@ -5,7 +5,7 @@ import type { DienstTemplate } from "../../diensts";
 import {
   getDienstTemplates,
   deleteDienstTemplate,
-} from "../../../api/dienstTemplates";
+} from "../domain/api";
 
 import { useAuth } from "../../../hooks/useAuth";
 
