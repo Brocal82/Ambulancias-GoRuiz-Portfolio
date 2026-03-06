@@ -1,1 +1,1 @@
-export {};
+export { default as TeamCreateModal } from './TeamCreateModal';
