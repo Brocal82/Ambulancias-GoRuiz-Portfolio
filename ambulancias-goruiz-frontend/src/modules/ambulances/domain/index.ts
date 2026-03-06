@@ -1,2 +1,1 @@
-// Barrel del feature "ambulances" - domain
-export {};
+export * from "./api";
