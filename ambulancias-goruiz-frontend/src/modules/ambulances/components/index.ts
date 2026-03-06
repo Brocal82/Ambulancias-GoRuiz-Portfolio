@@ -1,2 +1,1 @@
-// Barrel del feature "ambulances" - components
-export {};
+export { default as AmbulanceForm } from "./AmbulanceForm";
