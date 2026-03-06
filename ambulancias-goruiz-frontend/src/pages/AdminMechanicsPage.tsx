@@ -13,8 +13,8 @@ import {
 import type { WorkdayIssue } from "../modules/workday/domain/types/workdayIssue";
 import { useAuth } from "../hooks/useAuth";
 import { toastT } from "../utils/toast";
-import { getAllAmbulances } from "../api/ambulances";
-import type { Ambulance } from "../types/ambulance";
+import { getAllAmbulances } from "../modules/ambulances/domain/api";
+import type { Ambulance } from "../modules/ambulances/domain/types";
 import { useTranslation } from "react-i18next";
 import { notifyAdminIssuesChanged } from "../modules/workday";
 import { normalizeIssues } from "../utils/mechanics/normalizeIssue";
