@@ -1,2 +1,1 @@
-// Barrel del feature "ambulances" - pages
-export {};
+export { default as AdminAmbulancesPage } from "./AdminAmbulancesPage";
