@@ -31,7 +31,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminDienstsPage from "./modules/diensts/pages/AdminDienstsPage"; import AdminDienstTemplatesPage from "./modules/dienstTemplates/pages/AdminDienstTemplatesPage";
 import AdminVacationsPage from "./pages/AdminVacationsPage";
-import AdminAmbulancesPage from "./pages/AdminAmbulancesPage";
+import AdminAmbulancesPage from "./modules/ambulances/pages/AdminAmbulancesPage";
 import AdminMechanicsPage from "./pages/AdminMechanicsPage";
 import AdminUserDetailDashboard from "./pages/AdminUserDetailDashboard";
 import AdminMessagesPage from "./pages/AdminMessagesPage";
