@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { createTrip } from "../domain";
-import { getAllAmbulances } from "../../../api/ambulances";
+import { getAllAmbulances } from "../../ambulances/domain/api";
 import { sendPartialClosure, sendFinalClosure } from "../domain";
 
 import { useAuth } from "../../../hooks/useAuth";
@@ -13,8 +13,7 @@ import { notifyAdminIssuesChanged } from "../hooks";
 import { notifyAdminSummariesChanged } from "../hooks";
 
 import type { Trip, TripData } from "../../../types/trip";
-import type { Ambulance } from "../../../types/ambulance";
-
+import type { Ambulance } from "../../ambulances/domain/types";
 import TripModal from "../../../components/trips/TripModal";
 
 import {
