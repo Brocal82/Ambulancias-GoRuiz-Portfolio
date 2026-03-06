@@ -1,6 +1,5 @@
 import axios from "../../../api/axios";
-import type { Ambulance } from "../../../types/ambulance";
-
+import type { Ambulance } from "./types";
 // ✅ GET todas las ambulancias (admin)
 export const getAllAmbulances = async (token: string): Promise<Ambulance[]> => {
   const { data } = await axios.get("/ambulances", {

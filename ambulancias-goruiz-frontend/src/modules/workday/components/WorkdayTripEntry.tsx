@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useEffect } from "react";
-import type { Ambulance } from "../../../types/ambulance";
+import type { Ambulance } from "../../ambulances/domain/types";
 import type { TripData } from "../../../types/trip";
 import type { AssignedDayFull } from "../../../modules/diensts";
 import type { TripDraft } from "../utils/tripValidators";

@@ -1,6 +1,5 @@
 // frontend/src/modules/diensts/domain/types.ts
-import type { Ambulance } from "../../../types/ambulance";
-
+import type { Ambulance } from "../../ambulances/domain/types";
 /**
  * Domain types (source of truth)
  */
