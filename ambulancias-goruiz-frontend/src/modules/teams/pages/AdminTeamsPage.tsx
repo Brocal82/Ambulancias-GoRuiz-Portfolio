@@ -3,8 +3,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 
-import { getTeams, createTeam, updateTeam, deleteTeam } from "../../../api/teams";
-import type { Team, UpdateTeamPayload } from "../../../api/teams";
+import { getTeams, createTeam, updateTeam, deleteTeam } from "../domain";
+import type { Team, UpdateTeamPayload } from "../domain";
 
 import TeamCreateModal from "../components/TeamCreateModal";
 import TeamEditModal from "../components/TeamEditModal";

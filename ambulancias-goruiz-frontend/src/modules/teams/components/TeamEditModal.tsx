@@ -7,8 +7,7 @@ import type { TeamPickerValue } from "../../../components/common/TeamPicker";
 
 import { useAuth } from "../../../hooks/useAuth";
 
-import type { Team, UpdateTeamPayload } from "../../../api/teams";
-
+import type { Team, UpdateTeamPayload } from "../domain";
 import CancelButton from "../../../components/common/actions/CancelButton";
 import SaveIconButton from "../../../components/common/actions/SaveIconButton";
 

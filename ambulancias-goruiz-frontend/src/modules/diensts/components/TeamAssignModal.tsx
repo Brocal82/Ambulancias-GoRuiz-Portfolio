@@ -2,8 +2,7 @@ import { useEffect, useState, useId, useMemo } from "react";
 
 import { useAuth } from "../../../hooks/useAuth";
 
-import { getTeams, type Team, getUsedTeamsForWeek } from "../../../api/teams";
-
+import { getTeams, type Team, getUsedTeamsForWeek } from "../../teams/domain";
 import { toastT } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
 
