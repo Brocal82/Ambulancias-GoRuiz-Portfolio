@@ -36,7 +36,7 @@ import AdminMechanicsPage from "./pages/AdminMechanicsPage";
 import AdminUserDetailDashboard from "./pages/AdminUserDetailDashboard";
 import AdminMessagesPage from "./pages/AdminMessagesPage";
 import AdminSentMessages from "./pages/AdminSentMessages";
-import AdminTeamsPage from "./pages/AdminTeamsPage";
+import AdminTeamsPage from "./modules/teams/pages/AdminTeamsPage";
 import AdminSickLeavesPage from "./pages/AdminSickLeavesPage";
 
 export default function App() {
