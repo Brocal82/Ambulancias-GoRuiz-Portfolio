@@ -1,13 +1,11 @@
 // src/modules/teams/components/TeamEditModal.tsx
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import TeamPicker from "../../../components/common/TeamPicker";
-import type { TeamPickerValue } from "../../../components/common/TeamPicker";
-
-import { useAuth } from "../../../hooks/useAuth";
 
 import type { Team, UpdateTeamPayload } from "../domain";
+import { useTeamForm } from "../hooks";
+
 import CancelButton from "../../../components/common/actions/CancelButton";
 import SaveIconButton from "../../../components/common/actions/SaveIconButton";
 
@@ -21,11 +19,6 @@ interface TeamEditModalProps {
   ) => Promise<void> | void;
 }
 
-type AmbulanceLite = {
-  _id: string;
-  ambulanceNumber: string;
-};
-
 export default function TeamEditModal({
   isOpen,
   team,
@@ -33,96 +26,29 @@ export default function TeamEditModal({
   onConfirm,
 }: TeamEditModalProps) {
   const { t } = useTranslation();
-  const { token } = useAuth();
 
-  // 👤 Selección de personas
-  const [value, setValue] = useState<TeamPickerValue>({
-    driver: team.driver?._id || "",
-    medic: team.medic?._id || "",
+  const {
+    value,
+    setValue,
+    rotationMode,
+    setRotationMode,
+    fixedDienstNumber,
+    setFixedDienstNumber,
+    ambulanceId,
+    setAmbulanceId,
+    ambulances,
+    loadingAmbulances,
+    submitting,
+    setSubmitting,
+    samePerson,
+    isFixed,
+    fixedValid,
+  } = useTeamForm({
+    isOpen,
+    team,
   });
 
-  // 🔁 Configuración de rotación
-  const [rotationMode, setRotationMode] = useState<
-    "rotating" | "fixed" | "none"
-  >(team.rotationMode ?? "rotating");
-  const [fixedDienstNumber, setFixedDienstNumber] = useState<number | "">(
-    team.rotationMode === "fixed" && team.fixedDienstNumber != null
-      ? team.fixedDienstNumber
-      : "",
-  );
-
-  // 🚑 Ambulancia fija opcional
-  const [ambulances, setAmbulances] = useState<AmbulanceLite[]>([]);
-  const [ambulanceId, setAmbulanceId] = useState<string>(
-    (team.ambulanceId as any)?._id || "",
-  );
-  const [loadingAmbulances, setLoadingAmbulances] = useState(false);
-
-  const [submitting, setSubmitting] = useState(false);
-
-  // Sincronizar estado cuando cambie el team (por si se reabre con otro)
-  useEffect(() => {
-    setValue({
-      driver: team.driver?._id || "",
-      medic: team.medic?._id || "",
-    });
-
-    setRotationMode(team.rotationMode ?? "rotating");
-    setFixedDienstNumber(
-      team.rotationMode === "fixed" && team.fixedDienstNumber != null
-        ? team.fixedDienstNumber
-        : "",
-    );
-    setAmbulanceId((team.ambulanceId as any)?._id || "");
-  }, [team]);
-
-  // 🔁 Cargar ambulancias cuando se abra el modal
-  useEffect(() => {
-    if (!isOpen || !token) return;
-
-    let cancelled = false;
-
-    (async () => {
-      try {
-        setLoadingAmbulances(true);
-        const res = await fetch("/api/ambulances", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) {
-          console.error("❌ Error HTTP al cargar ambulancias:", res.status);
-          return;
-        }
-        const data = (await res.json()) as AmbulanceLite[];
-        if (!cancelled) {
-          setAmbulances(
-            Array.isArray(data)
-              ? data.sort((a, b) =>
-                (a.ambulanceNumber || "").localeCompare(
-                  b.ambulanceNumber || "",
-                  "es",
-                ),
-              )
-              : [],
-          );
-        }
-      } catch (e) {
-        console.error("❌ Error al cargar ambulancias en TeamEditModal:", e);
-      } finally {
-        if (!cancelled) setLoadingAmbulances(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, token]);
-
   if (!isOpen) return null;
-
-  const samePerson = !!value.driver && value.driver === value.medic;
-  const isFixed = rotationMode === "fixed";
-  const fixedValid =
-    !isFixed || (fixedDienstNumber !== "" && Number(fixedDienstNumber) > 0);
 
   const canSave = !!value.driver && !!value.medic && !samePerson && fixedValid;
 
