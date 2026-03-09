@@ -129,11 +129,13 @@ export default function TeamPicker({
 
   return (
     <div className="space-y-3">
-      {loading && (
-        <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200">
-          {t("common.loading", "Cargando...")}
-        </div>
-      )}
+      <div className="min-h-[20px]">
+        {loading && (
+          <p className="text-xs text-slate-500">
+            {t("common.loading", "Cargando...")}
+          </p>
+        )}
+      </div>
 
       {/* DRIVER */}
       <div className="space-y-1">
