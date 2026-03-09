@@ -1,11 +1,9 @@
 // src/modules/teams/components/TeamCreateModal.tsx
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import TeamPicker from "../../../components/common/TeamPicker";
-import type { TeamPickerValue } from "../../../components/common/TeamPicker";
-
-import { useAuth } from "../../../hooks/useAuth";
+import type { CreateTeamPayload } from "../domain";
+import { useTeamForm } from "../hooks";
 
 import CancelButton from "../../../components/common/actions/CancelButton";
 import SaveIconButton from "../../../components/common/actions/SaveIconButton";
@@ -19,85 +17,35 @@ interface TeamCreateModalProps {
   }) => Promise<void> | void;
 }
 
-type AmbulanceLite = {
-  _id: string;
-  ambulanceNumber: string;
-};
-
 export default function TeamCreateModal({
   isOpen,
   onClose,
   onConfirm,
 }: TeamCreateModalProps) {
   const { t } = useTranslation();
-  const { token } = useAuth();
 
-  // 👤 Selección de personas (como antes)
-  const [value, setValue] = useState<TeamPickerValue>({
-    driver: "",
-    medic: "",
+  const {
+    value,
+    setValue,
+    rotationMode,
+    setRotationMode,
+    fixedDienstNumber,
+    setFixedDienstNumber,
+    ambulanceId,
+    setAmbulanceId,
+    ambulances,
+    loadingAmbulances,
+    submitting,
+    setSubmitting,
+    samePerson,
+    isFixed,
+    fixedValid,
+  } = useTeamForm({
+    isOpen,
   });
-
-  // 🔁 Configuración de rotación
-  const [rotationMode, setRotationMode] = useState<
-    "rotating" | "fixed" | "none"
-  >("rotating");
-  const [fixedDienstNumber, setFixedDienstNumber] = useState<number | "">("");
-
-  // 🚑 Ambulancia fija opcional
-  const [ambulances, setAmbulances] = useState<AmbulanceLite[]>([]);
-  const [ambulanceId, setAmbulanceId] = useState<string>("");
-  const [loadingAmbulances, setLoadingAmbulances] = useState(false);
-
-  const [submitting, setSubmitting] = useState(false);
-
-  // 🔁 Cargar ambulancias cuando se abra el modal
-  useEffect(() => {
-    if (!isOpen || !token) return;
-
-    let cancelled = false;
-
-    (async () => {
-      try {
-        setLoadingAmbulances(true);
-        const res = await fetch("/api/ambulances", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) {
-          console.error("❌ Error HTTP al cargar ambulancias:", res.status);
-          return;
-        }
-        const data = (await res.json()) as AmbulanceLite[];
-        if (!cancelled) {
-          setAmbulances(
-            Array.isArray(data)
-              ? data.sort((a, b) =>
-                (a.ambulanceNumber || "").localeCompare(
-                  b.ambulanceNumber || "",
-                  "es",
-                ),
-              )
-              : [],
-          );
-        }
-      } catch (e) {
-        console.error("❌ Error al cargar ambulancias en TeamCreateModal:", e);
-      } finally {
-        if (!cancelled) setLoadingAmbulances(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, token]);
 
   if (!isOpen) return null;
 
-  const samePerson = !!value.driver && value.driver === value.medic;
-  const isFixed = rotationMode === "fixed";
-  const fixedValid =
-    !isFixed || (fixedDienstNumber !== "" && Number(fixedDienstNumber) > 0);
 
   // 🚫 La ambulancia NO entra en la validación: sigue siendo opcional
   const canCreate =
@@ -108,8 +56,7 @@ export default function TeamCreateModal({
     try {
       setSubmitting(true);
 
-      // ⚠️ Tipamos como any para incluir rotationMode/fixedDienstNumber/ambulanceId
-      const payload: any = {
+      const payload: CreateTeamPayload = {
         driver: value.driver,
         medic: value.medic,
         rotationMode,
