@@ -5,8 +5,7 @@ import AdminUserDienstsTab from "../modules/diensts/components/AdminUserDienstsT
 import AdminUserPraemienTab from "./AdminUserPraemienTab";
 import AdminUserVacationsTab from "./AdminUserVacationsTab";
 import AdminUserSickLeavesTab from "./AdminUserSickLeavesTab";
-import AdminUserMessageTab from "./AdminUserMessageTab";
-import { useAuth } from "../hooks/useAuth";
+import AdminUserMessageTab from "../modules/messages/components/AdminUserMessageTab"; import { useAuth } from "../hooks/useAuth";
 import { UsersApi } from "../modules/users";
 import type { User } from "../types/user";
 import { useTranslation } from "react-i18next";
