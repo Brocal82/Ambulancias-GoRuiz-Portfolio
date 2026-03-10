@@ -14,7 +14,7 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import WorkerDashboard from "./pages/WorkerDashboard";
 import WorkerDienstsPage from "./modules/diensts/pages/WorkerDienstsPage";
-import WorkerPraemienPage from "./pages/WorkerPraemienPage";
+import WorkerPraemienPage from "./modules/praemien/pages/WorkerPraemienPage";
 import WorkerVacationsPage from "./pages/WorkerVacationsPage";
 import WorkerMessagesPage from "./modules/messages/pages/WorkerMessagesPage";
 import WorkerSickLeavesPage from "./pages/WorkerSickLeavesPage";
