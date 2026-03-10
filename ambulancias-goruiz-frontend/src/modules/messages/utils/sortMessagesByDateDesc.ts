@@ -1,5 +1,5 @@
-// frontend/src/utils/messages/sortMessagesByDateDesc.ts
-import type { Message } from "../../types/message";
+// src/modules/messages/utils/sortMessagesByDateDesc.ts
+import type { Message } from "../domain/types";
 
 export const sortMessagesByDateDesc = (messages: Message[]): Message[] => {
   return [...messages].sort(

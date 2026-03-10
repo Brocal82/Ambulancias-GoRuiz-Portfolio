@@ -1,7 +1,6 @@
-// frontend/src/api/messages.ts
-import axios from "./axios";
-import type { Message } from "../types/message";
-
+// src/modules/messages/domain/api.ts
+import axios from "../../../api/axios";
+import type { Message } from "./types";
 // ✅ Obtener mensajes del trabajador autenticado
 //    - unreadOnly: true (por defecto) → solo no leídos
 //    - unreadOnly: false → TODOS (leídos + no leídos)

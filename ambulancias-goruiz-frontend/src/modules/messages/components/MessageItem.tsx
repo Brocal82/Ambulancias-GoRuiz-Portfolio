@@ -1,8 +1,9 @@
-import type { Message } from "../../types/message";
+//src/modules/messages/components/MessageItem.tsx
+import type { Message } from "../domain/types";
 import { format } from "date-fns";
-import { buildAttachmentUrl } from "../../utils/messages/buildAttachmentUrl";
+import { buildAttachmentUrl } from "../utils/buildAttachmentUrl";
 import { useTranslation } from "react-i18next";
-import DeleteIconButton from "../common/actions/DeleteIconButton";
+import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 
 interface Props {
     message: Message;

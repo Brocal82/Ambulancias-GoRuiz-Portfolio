@@ -1,17 +1,15 @@
-// frontend/src/pages/AdminUserMessageTab.tsx
 import { useState, useEffect, useMemo } from "react";
-import { useAuth } from "../hooks/useAuth";
-import { toastT } from "../utils/toast";
+import { useAuth } from "../../../hooks/useAuth";
+import { toastT } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
-import { getMessagesForUserAsAdmin } from "../api/messages";
-import type { Message } from "../types/message";
-import MessageAttachmentsPicker from "../components/messages/MessageAttachmentsPicker";
+import { getMessagesForUserAsAdmin } from "../domain/api";
+import type { Message } from "../domain/types";
+import MessageAttachmentsPicker from "./MessageAttachmentsPicker";
 import { useMessageExpansion } from "../hooks/useMessageExpansion";
 import { useSendMessage } from "../hooks/useSendMessage";
-import { sortMessagesByDateDesc } from "../utils/messages/sortMessagesByDateDesc";
-import MessagesMonthPickerModal from "../components/messages/MessagesMonthPickerModal";
-import SendMessageButton from "../components/common/actions/SendMessageButton";
-
+import { sortMessagesByDateDesc } from "../utils/sortMessagesByDateDesc";
+import MessagesMonthPickerModal from "./MessagesMonthPickerModal";
+import SendMessageButton from "../../../components/common/actions/SendMessageButton";
 interface Props {
   userId: string;
   userFullName?: string; // p.ej. "García, Juan"
@@ -108,7 +106,7 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
 
     try {
       // ✅ borra en BD (admin)
-      const { deleteMessage } = await import("../api/messages");
+      const { deleteMessage } = await import("../domain/api");
       await deleteMessage(messageId, token);
 
       // ✅ quita del estado local (sin refetch obligatorio)

@@ -1,6 +1,6 @@
-// frontend/src/components/messages/MessageList.tsx
+// src/modules/messages/components/MessageList.tsx
 import type { ReactNode } from "react";
-import type { Message } from "../../types/message";
+import type { Message } from "../domain/types";
 import MessageItem from "./MessageItem";
 
 type Props = {

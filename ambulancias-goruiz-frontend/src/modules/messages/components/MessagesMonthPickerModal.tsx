@@ -1,15 +1,14 @@
-// frontend/src/components/messages/MessagesMonthPickerModal.tsx
+//src/modules/messages/components/MessagesMonthPickerModal.tsx
 import React, { useMemo } from "react";
-import type { Message } from "../../types/message";
+import type { Message } from "../domain/types";
 import MessageList from "./MessageList";
 import MessagesYearGrid from "./MessagesYearGrid";
-import { sortMessagesByDateDesc } from "../../utils/messages/sortMessagesByDateDesc";
+import { sortMessagesByDateDesc } from "../utils/sortMessagesByDateDesc";
 import {
     buildCountsByMonthForYear,
     filterMessagesByYearMonth,
-} from "../../utils/messages/messagesByMonth";
+} from "../utils/messagesByMonth";
 import { useTranslation } from "react-i18next";
-
 type Props = {
     isOpen: boolean;
     onClose: () => void;

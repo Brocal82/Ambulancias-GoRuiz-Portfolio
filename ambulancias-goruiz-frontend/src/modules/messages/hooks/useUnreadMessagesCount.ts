@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { getMyMessages } from "../api/messages";
-import { useAuth } from "../hooks/useAuth";
+import { getMyMessages } from "../domain/api";
+import { useAuth } from "../../../hooks/useAuth";
 
 type Options = {
   pollMs?: number; // intervalo de refresco (0 = sin polling)

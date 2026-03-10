@@ -1,4 +1,4 @@
-// frontend/src/hooks/useMessageExpansion.ts
+// src/modules/messages/hooks/useMessageExpansion.ts
 import { useCallback, useState } from "react";
 
 export const useMessageExpansion = () => {

@@ -1,7 +1,8 @@
+//src/modules/messages/hooks/useSendMessage.ts
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toastT } from "../utils/toast";
-import { sendMessage, sendMessageMultipart } from "../api/messages";
+import { toastT } from "../../../utils/toast";
+import { sendMessage, sendMessageMultipart } from "../domain/api";
 
 export type SendMessageArgs = {
   token: string;

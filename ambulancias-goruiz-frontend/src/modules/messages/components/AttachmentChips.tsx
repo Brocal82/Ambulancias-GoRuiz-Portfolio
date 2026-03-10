@@ -1,4 +1,4 @@
-// frontend/src/components/messages/AttachmentChips.tsx
+// src/modules/messages/components/AttachmentChips.tsx
 import React from "react";
 
 type FileChip = {

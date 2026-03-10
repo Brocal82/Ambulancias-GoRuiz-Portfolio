@@ -1,7 +1,7 @@
+// src/modules/messages/components/MessageAttachmentsPicker.tsx
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import FileUpload from "../common/FileUpload";
-
+import FileUpload from "../../../components/common/FileUpload";
 type Props = {
     id: string;
     files: File[];

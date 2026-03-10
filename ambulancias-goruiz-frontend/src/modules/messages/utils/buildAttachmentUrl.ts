@@ -1,6 +1,6 @@
-// frontend/src/utils/messages/buildAttachmentUrl.ts
-import { getPublicUrl } from "../url";
-import type { MessageAttachment } from "../../types/message";
+// src/modules/messages/utils/buildAttachmentUrl.ts
+import { getPublicUrl } from "../../../utils/url";
+import type { MessageAttachment } from "../domain/types";
 
 /**
  * Construye la URL pública de un adjunto con cache-busting

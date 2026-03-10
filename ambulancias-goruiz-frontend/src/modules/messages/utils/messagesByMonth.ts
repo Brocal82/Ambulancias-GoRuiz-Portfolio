@@ -1,5 +1,5 @@
-// frontend/src/utils/messages/messagesByMonth.ts
-import type { Message } from "../../types/message";
+// src/modules/messages/utils/messagesByMonth.ts
+import type { Message } from "../domain/types";
 
 /**
  * Devuelve true si msg.sentAt cae dentro del año/mes (monthIndex: 0..11)

@@ -1,20 +1,20 @@
-// frontend/src/pages/AdminMessagesPage.tsx
+// src/modules/messages/pages/AdminMessagesPage.tsx
 import { useEffect, useState, useMemo } from "react";
-import { UsersApi } from "../modules/users";
+import { UsersApi } from "../../users";
 import { useSendMessage } from "../hooks/useSendMessage";
-import type { User } from "../types/user";
-import { useAuth } from "../hooks/useAuth";
-import { toastT } from "../utils/toast";
+import type { User } from "../../../types/user";
+import { useAuth } from "../../../hooks/useAuth";
+import { toastT } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
-import MessageAttachmentsPicker from "../components/messages/MessageAttachmentsPicker";
+import MessageAttachmentsPicker from "../components/MessageAttachmentsPicker";
 
-import { getSentMessages, deleteMessage } from "../api/messages";
-import type { Message } from "../types/message";
+import { getSentMessages, deleteMessage } from "../domain/api";
+import type { Message } from "../domain/types";
 import { useMessageExpansion } from "../hooks/useMessageExpansion";
-import { sortMessagesByDateDesc } from "../utils/messages/sortMessagesByDateDesc";
-import MessagesMonthPickerModal from "../components/messages/MessagesMonthPickerModal";
-import RecipientsPicker from "../components/messages/RecipientsPicker";
-import SendMessageButton from "../components/common/actions/SendMessageButton";
+import { sortMessagesByDateDesc } from "../utils/sortMessagesByDateDesc";
+import MessagesMonthPickerModal from "../components/MessagesMonthPickerModal";
+import RecipientsPicker from "../components/RecipientsPicker";
+import SendMessageButton from "../../../components/common/actions/SendMessageButton";
 
 const AdminMessagesPage = () => {
   const { token } = useAuth();

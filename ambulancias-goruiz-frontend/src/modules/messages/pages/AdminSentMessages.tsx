@@ -1,19 +1,19 @@
-// frontend/src/pages/AdminSentMessages.tsx
+// src/modules/messages/pages/AdminSentMessages.tsx
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "../hooks/useAuth";
-import { getSentMessages, deleteMessage } from "../api/messages";
-import type { Message } from "../types/message";
+import { useAuth } from "../../../hooks/useAuth";
+import { getSentMessages, deleteMessage } from "../domain/api";
+import type { Message } from "../domain/types";
 import { useNavigate } from "react-router-dom";
-import { toastT } from "../utils/toast";
+import { toastT } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
-import MessageList from "../components/messages/MessageList";
+import MessageList from "../components/MessageList";
 import { useMessageExpansion } from "../hooks/useMessageExpansion";
-import { sortMessagesByDateDesc } from "../utils/messages/sortMessagesByDateDesc";
-import MessagesYearGrid from "../components/messages/MessagesYearGrid";
+import { sortMessagesByDateDesc } from "../utils/sortMessagesByDateDesc";
+import MessagesYearGrid from "../components/MessagesYearGrid";
 import {
   filterMessagesByYearMonth,
   buildCountsByMonthForYear,
-} from "../utils/messages/messagesByMonth";
+} from "../utils/messagesByMonth";
 
 const AdminSentMessages = () => {
   const { token } = useAuth();

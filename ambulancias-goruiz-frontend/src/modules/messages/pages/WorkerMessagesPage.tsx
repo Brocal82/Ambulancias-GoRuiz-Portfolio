@@ -1,23 +1,22 @@
-// frontend/src/pages/WorkerMessagesPage.tsx
+// src/modules/messages/pages/WorkerMessagesPage.tsx
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
   getMyMessages,
   deleteMessageForUser,
   markMessageAsRead,
-} from "../api/messages";
-import type { Message } from "../types/message";
-import { useAuth } from "../hooks/useAuth";
-import { toastT } from "../utils/toast";
+} from "../domain/api";
+import type { Message } from "../domain/types";
+import { useAuth } from "../../../hooks/useAuth";
+import { toastT } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
-import { notifyUnreadMessagesChanged } from "../hooks/useUnreadMessagesCount";
-import MessageList from "../components/messages/MessageList";
+import { notifyUnreadMessagesChanged } from "../hooks/useUnreadMessagesCount"; import MessageList from "../components/MessageList";
 import { useMessageExpansion } from "../hooks/useMessageExpansion";
-import { sortMessagesByDateDesc } from "../utils/messages/sortMessagesByDateDesc";
-import MessagesYearGrid from "../components/messages/MessagesYearGrid";
+import { sortMessagesByDateDesc } from "../utils/sortMessagesByDateDesc";
+import MessagesYearGrid from "../components/MessagesYearGrid";
 import {
   buildCountsByMonthForYear,
   filterMessagesByYearMonth,
-} from "../utils/messages/messagesByMonth";
+} from "../utils/messagesByMonth";
 
 const WorkerMessagesPage = () => {
   const { token, user } = useAuth();

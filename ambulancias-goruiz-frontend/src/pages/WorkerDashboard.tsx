@@ -2,8 +2,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-import { useUnreadMessagesCount } from "../hooks/useUnreadMessagesCount";
-
+import { useUnreadMessagesCount } from "../modules/messages/hooks/useUnreadMessagesCount";
 const WorkerDashboard = () => {
   const { t } = useTranslation();
   const { count: unreadMessages } = useUnreadMessagesCount({ pollMs: 30000 });
@@ -70,9 +69,8 @@ const WorkerDashboard = () => {
         {/* MENSAJES con borde + contador (sin campana) */}
         <Link
           to="/worker/messages"
-          className={`${centeredCardRelative} ${
-            unreadMessages > 0 ? "ring-2 ring-orange-300" : ""
-          }`}
+          className={`${centeredCardRelative} ${unreadMessages > 0 ? "ring-2 ring-orange-300" : ""
+            }`}
           aria-label={
             unreadMessages > 0
               ? `${t("pages.workerDashboard.messages.title")} (${unreadMessages} sin leer)`

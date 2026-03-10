@@ -1,4 +1,4 @@
-// frontend/src/types/message.ts
+// src/modules/messages/domain/types.ts
 
 export interface MessageAttachment {
   originalName: string;

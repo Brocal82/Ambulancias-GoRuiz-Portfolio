@@ -1,8 +1,8 @@
-// frontend/src/components/messages/RecipientsPicker.tsx
+// src/modules/messages/components/RecipientsPicker.tsx
 import { useMemo, useRef } from "react";
-import type { User } from "../../types/user";
+import type { User } from "../../../types/user";
 import { useTranslation } from "react-i18next";
-import DeleteIconButton from "../common/actions/DeleteIconButton";
+import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 
 type Props = {
     users: User[];

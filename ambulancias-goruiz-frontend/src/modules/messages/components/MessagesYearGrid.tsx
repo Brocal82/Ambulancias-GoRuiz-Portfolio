@@ -1,4 +1,4 @@
-// frontend/src/components/messages/MessagesYearGrid.tsx
+// src/modules/messages/components/MessagesYearGrid.tsx
 import React from "react";
 import { useTranslation } from "react-i18next";
 
