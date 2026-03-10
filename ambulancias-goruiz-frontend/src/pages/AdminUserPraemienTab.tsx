@@ -1,14 +1,13 @@
 // src/pages/AdminUserPraemienTab.tsx
 import { useEffect, useState } from "react";
-import { getMonthlyPraemienSummary } from "../api/praemien";
-import type { MonthlyPraemienDay } from "../api/praemien";
-import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 
-import PraemieProgressBars from "../components/praemien/PraemieProgressBars";
-import MonthlyMiniCalendar from "../components/praemien/MonthlyMiniCalendar";
-import WorkerPraemienHistory from "../components/praemien/WorkerPraemienHistory";
-
+import { getMonthlyPraemienSummary } from "../modules/praemien/domain/api";
+import type { MonthlyPraemienDay } from "../modules/praemien/domain/api";
+import MonthlyMiniCalendar from "../modules/praemien/components/MonthlyMiniCalendar";
+import PraemieProgressBars from "../modules/praemien/components/PraemieProgressBars";
+import WorkerPraemienHistory from "../modules/praemien/components/WorkerPraemienHistory";
+import { useAuth } from "../hooks/useAuth";
 interface Props {
   userId: string;
 }
