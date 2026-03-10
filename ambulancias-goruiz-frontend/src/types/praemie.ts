@@ -1,1 +1,0 @@
-export * from '../modules/praemien/domain/types';
