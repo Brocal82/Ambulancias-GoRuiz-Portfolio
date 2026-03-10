@@ -16,7 +16,7 @@ import WorkerDashboard from "./pages/WorkerDashboard";
 import WorkerDienstsPage from "./modules/diensts/pages/WorkerDienstsPage";
 import WorkerPraemienPage from "./pages/WorkerPraemienPage";
 import WorkerVacationsPage from "./pages/WorkerVacationsPage";
-import WorkerMessagesPage from "./pages/WorkerMessagesPage";
+import WorkerMessagesPage from "./modules/messages/pages/WorkerMessagesPage";
 import WorkerSickLeavesPage from "./pages/WorkerSickLeavesPage";
 import { MyWorkdayPage, AdminSummariesPage } from "./modules/workday";
 import {
@@ -34,8 +34,8 @@ import AdminVacationsPage from "./pages/AdminVacationsPage";
 import AdminAmbulancesPage from "./modules/ambulances/pages/AdminAmbulancesPage";
 import AdminMechanicsPage from "./pages/AdminMechanicsPage";
 import AdminUserDetailDashboard from "./pages/AdminUserDetailDashboard";
-import AdminMessagesPage from "./pages/AdminMessagesPage";
-import AdminSentMessages from "./pages/AdminSentMessages";
+import AdminMessagesPage from "./modules/messages/pages/AdminMessagesPage";
+import AdminSentMessages from "./modules/messages/pages/AdminSentMessages";
 import AdminTeamsPage from "./pages/AdminTeamsPage";
 import AdminSickLeavesPage from "./pages/AdminSickLeavesPage";
 
