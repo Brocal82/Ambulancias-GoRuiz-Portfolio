@@ -3,7 +3,8 @@ import { toastT } from "../../../utils/toast";
 import ReviewSummary from "./ReviewSummary";
 import type { Trip } from "../../../types/trip";
 import type { AssignedDayFull } from "../../../modules/diensts";
-import { calculateEffectivePatients } from "../../praemien/utils/calculateEffectivePatients"; import IssueReportModal from "./IssueReportModal";
+import { calculateEffectivePatients } from "../../praemien/utils/calculateEffectivePatients";
+import IssueReportModal from "./IssueReportModal";
 import { useTranslation } from "react-i18next";
 
 interface FinalReviewModalProps {
