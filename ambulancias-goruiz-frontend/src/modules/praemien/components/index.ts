@@ -1,1 +1,3 @@
-export {};
+export { default as MonthlyMiniCalendar } from './MonthlyMiniCalendar';
+export { default as PraemieProgressBars } from './PraemieProgressBars';
+export { default as WorkerPraemienHistory } from './WorkerPraemienHistory';
