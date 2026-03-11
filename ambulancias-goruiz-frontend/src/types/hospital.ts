@@ -1,1 +1,0 @@
-export type { Hospital } from "../modules/hospitals/domain/types";
