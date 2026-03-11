@@ -1,9 +1,1 @@
-//src/types/hospital.ts
-export interface Hospital {
-  _id: string;
-  name: string;
-  address: string;
-  phone: string;
-  specialties: string[];
-  isOpen: boolean;
-}
+export type { Hospital } from "../modules/hospitals/domain/types";
