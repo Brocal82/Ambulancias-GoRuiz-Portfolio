@@ -8,7 +8,7 @@ import CancelButton from "../../../components/common/actions/CancelButton";
 import {
     mergeUniqueSpecialties,
     parseSpecialtiesInput,
-} from "../../../utils/hospitals/specialties";
+} from "../utils/specialties";
 
 
 

@@ -1,12 +1,13 @@
 // src/modules/hospitals/components/HospitalEditModal.tsx
-import type { Hospital } from "../../../types/hospital";
+
 import { useEffect, useMemo, useRef, useState, useId } from "react";
 import { useTranslation } from "react-i18next";
-import { toLocalHospitalStatus } from "../../../utils/hospitals/status";
+import type { Hospital } from "../domain/types";
+import { toLocalHospitalStatus } from "../utils/status";
 import {
   mergeUniqueSpecialties,
   parseSpecialtiesInput,
-} from "../../../utils/hospitals/specialties";
+} from "../utils/specialties";
 import CancelButton from "../../../components/common/actions/CancelButton";
 import SaveIconButton from "../../../components/common/actions/SaveIconButton";
 

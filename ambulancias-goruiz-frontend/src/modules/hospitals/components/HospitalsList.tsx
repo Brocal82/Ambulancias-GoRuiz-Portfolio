@@ -1,8 +1,7 @@
 // src/modules/hospitals/components/HospitalsList.tsx
-import type { Hospital } from "../../../types/hospital";
+import type { Hospital } from "../domain/types";
+import { getHospitalIsOpen } from "../utils/status";
 import { useTranslation } from "react-i18next";
-import { getHospitalIsOpen } from "../../../utils/hospitals/status";
-
 import EditIconButton from "../../../components/common/actions/EditIconButton";
 import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 type Mode = "admin" | "worker";

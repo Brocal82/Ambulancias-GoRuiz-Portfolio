@@ -1,8 +1,9 @@
 // src/modules/hospitals/components/HospitalDetailsModal.tsx
-import type { Hospital } from "../../../types/hospital";
+import type { Hospital } from "../domain/types";
+import { getHospitalIsOpen } from "../utils/status";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { getHospitalIsOpen } from "../../../utils/hospitals/status";
+
 
 
 interface Props {
