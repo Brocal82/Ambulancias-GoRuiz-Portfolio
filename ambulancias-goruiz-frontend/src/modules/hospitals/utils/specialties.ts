@@ -1,4 +1,4 @@
-// src/utils/hospitals/specialties.ts
+// src/modules/hospitals/utils/specialties.ts
 
 /**
  * Divide una entrada tipo "Cardio, Neuro" en partes limpias.
