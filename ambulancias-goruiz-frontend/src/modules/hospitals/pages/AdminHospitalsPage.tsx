@@ -1,8 +1,6 @@
 // src/modules/hospitals/pages/AdminHospitalsPage.tsx
 import { useEffect, useMemo, useState } from "react";
-
-import type { Hospital } from "../types";
-
+import type { Hospital } from "../domain/types";
 import {
   hospitalsApi,
   hospitalsComponents,
