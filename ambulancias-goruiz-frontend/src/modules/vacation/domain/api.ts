@@ -1,16 +1,16 @@
 // frontend/src/api/vacation.ts
-import axiosInstance from "./axios";
-import type { IVacationRequest } from "../types/vacationRequest";
+import axiosInstance from "../../../api/axios";
+import type { IVacationRequest } from "./types";
 import {
   emitAvailabilityInvalidated,
   emitVacationRequestsUpdated,
-} from "../utils/vacation/vacationEvents";
+} from "../utils/vacationEvents";
 import {
   getCachedAvailability,
   setCachedAvailability,
   deleteCachedAvailability
-} from "../utils/vacation/vacationAvailabilityCache";
-import { invalidateAvailabilityByRangeBerlin } from "../utils/vacation/invalidateAvailabilityByRangeBerlin";
+} from "../utils/vacationAvailabilityCache";
+import { invalidateAvailabilityByRangeBerlin } from "../utils/invalidateAvailabilityByRangeBerlin";
 
 
 
@@ -348,6 +348,7 @@ export function invalidateThisAndNextMonth(year: number, month1: number) {
 export function invalidateAvailabilityByRange(startISO: string, endISO: string) {
   invalidateAvailabilityByRangeBerlin(startISO, endISO);
 }
+
 
 
 

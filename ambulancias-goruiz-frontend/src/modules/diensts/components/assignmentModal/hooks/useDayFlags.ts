@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { getVacationFlagsInRange, type VacFlag } from "../../../../../api/vacation";
+import { getVacationFlagsInRange, type VacFlag } from "../../../../../modules/vacation/domain/api";
 import { getSickFlagsInRange, type SickFlag } from "../../../../../api/sickLeaves";
 
 export const useDayFlags = (params: {
@@ -71,3 +71,4 @@ export const useDayFlags = (params: {
 
   return { vacationFlags, sickFlags, flagsLoading };
 };
+

@@ -12,7 +12,7 @@ import TeamEditModal from "../components/TeamEditModal";
 import { toastT } from "../../../utils/toast";
 import { getPscheinInfo } from "../../../utils/pscheinUtils";
 
-import { getVacationFlagsInRange, type VacFlag } from "../../../api/vacation";
+import { getVacationFlagsInRange, type VacFlag } from "../../vacation/domain/api";
 import { getSickFlagsInRange, type SickFlag } from "../../../api/sickLeaves";
 
 import { fmtDDMM } from "../../../utils/timeUtils";
@@ -512,3 +512,4 @@ export default function AdminTeamsPage() {
     </div>
   );
 }
+

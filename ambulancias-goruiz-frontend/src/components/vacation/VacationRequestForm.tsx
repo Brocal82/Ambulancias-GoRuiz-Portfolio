@@ -17,13 +17,13 @@ import {
   createVacationRequest,
   getVacationAvailability,
   type VacationAvailabilityResponse,
-} from "../../api/vacation";
+} from "../../modules/vacation/domain/api";
 import { useTranslation } from "react-i18next";
 import { es as dfEs, de as dfDe, enGB as dfEnGB } from "date-fns/locale";
 import {
   emitVacationRequestsUpdated,
   emitAvailabilityInvalidated,
-} from "../../utils/vacation/vacationEvents";
+} from "../../modules/vacation/utils/vacationEvents";
 
 
 interface VacationRequestFormProps {
@@ -351,3 +351,4 @@ const VacationRequestForm: React.FC<VacationRequestFormProps> = ({
 };
 
 export default memo(VacationRequestForm);
+

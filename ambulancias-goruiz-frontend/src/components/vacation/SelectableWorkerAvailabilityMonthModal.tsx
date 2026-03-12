@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 import {
     getVacationAvailability,
     type VacationAvailabilityResponse,
-} from "../../api/vacation";
+} from "../../modules/vacation/domain/api";
 import { monthLabel as fmtMonth } from "../../utils/intl";
 import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
 import { toBerlinDayKey, todayBerlinDayKey } from "../../utils/dates/dayKey";
-import { isPastLocalDay } from "../../utils/vacation/isPastLocalDay";
-import type { IVacationRequest } from "../../types/vacationRequest";
+import { isPastLocalDay } from "../../modules/vacation/utils/isPastLocalDay";
+import type { IVacationRequest } from "../../modules/vacation/domain/types";
 import WorkerMonthRequests from "./WorkerMonthRequests";
 
 type DayState = "green" | "yellow" | "red";
@@ -764,3 +764,4 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
 };
 
 export default SelectableWorkerAvailabilityMonthModal;
+

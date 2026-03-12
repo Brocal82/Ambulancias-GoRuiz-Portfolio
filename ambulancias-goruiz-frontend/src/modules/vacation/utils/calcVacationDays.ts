@@ -1,6 +1,5 @@
 // frontend/src/utils/vacation/calcVacationDays.ts
-import { dayKeyToLocalDate, toBerlinDayKey } from "../dates/dayKey";
-
+import { dayKeyToLocalDate, toBerlinDayKey } from "../../../utils/dates/dayKey";
 /**
  * Calcula número de días naturales entre dos fechas ISO (inclusive),
  * anclado a día calendario en Europe/Berlin.
@@ -30,3 +29,4 @@ export function calcVacationDays(
 
   return Number.isNaN(diff) ? "—" : Math.max(diff, 1);
 }
+

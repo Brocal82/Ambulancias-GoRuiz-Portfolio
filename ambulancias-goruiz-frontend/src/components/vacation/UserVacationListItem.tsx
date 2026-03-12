@@ -1,8 +1,8 @@
 //src/components/vacation/UserVacationListItem.tsx
 import React from "react";
-import type { IVacationRequest } from "../../types/vacationRequest";
+import type { IVacationRequest } from "../../modules/vacation/domain/types";
 import { useTranslation } from "react-i18next";
-import { getRequestRangeBerlin } from "../../utils/vacation/getRequestRangeBerlin";
+import { getRequestRangeBerlin } from "../../modules/vacation/utils/getRequestRangeBerlin";
 import StatusBadge from "../common/StatusBadge";
 import { vacationRequestTone } from "../../utils/status/vacationRequestTone";
 
@@ -107,3 +107,4 @@ const UserVacationListItem: React.FC<Props> = ({
 };
 
 export default UserVacationListItem;
+

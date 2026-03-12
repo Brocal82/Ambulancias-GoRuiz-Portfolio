@@ -1,9 +1,9 @@
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import type { IVacationRequest } from "../../types/vacationRequest";
+import type { IVacationRequest } from "../../modules/vacation/domain/types";
 import UserVacationList from "./UserVacationList";
 import { toBerlinDayKey } from "../../utils/dates/dayKey";
-import { getRequestRangeBerlin } from "../../utils/vacation/getRequestRangeBerlin";
+import { getRequestRangeBerlin } from "../../modules/vacation/utils/getRequestRangeBerlin";
 
 type Props = {
     /** Solicitudes activas (o las que tú le pases) */
@@ -83,3 +83,4 @@ const WorkerMonthRequests: React.FC<Props> = ({
 };
 
 export default WorkerMonthRequests;
+

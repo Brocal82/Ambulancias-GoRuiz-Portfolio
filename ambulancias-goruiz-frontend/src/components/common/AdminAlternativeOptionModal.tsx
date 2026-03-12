@@ -4,10 +4,10 @@ import { useTranslation } from "react-i18next";
 import {
     getVacationAvailability,
     type VacationAvailabilityResponse,
-} from "../../api/vacation";
+} from "../../modules/vacation/domain/api";
 import { monthLabel as fmtMonth } from "../../utils/intl";
 import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
-import { isPastLocalDay } from "../../utils/vacation/isPastLocalDay";
+import { isPastLocalDay } from "../../modules/vacation/utils/isPastLocalDay";
 
 type DayState = "green" | "red";
 
@@ -617,3 +617,4 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
 };
 
 export default AdminAlternativeOptionModal;
+

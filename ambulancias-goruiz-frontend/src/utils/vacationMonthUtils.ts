@@ -1,7 +1,7 @@
 // src/utils/vacationMonthUtils.ts
-import type { IVacationRequest } from "../types/vacationRequest";
+import type { IVacationRequest } from "../modules/vacation/domain/types";
 import { toBerlinDayKey } from "./dates/dayKey";
-import { getRequestRangeBerlin } from "./vacation/getRequestRangeBerlin";
+import { getRequestRangeBerlin } from "../modules/vacation/utils/getRequestRangeBerlin";
 
 export type MonthInfo = {
   monthIndex: number; // 0..11
@@ -174,3 +174,4 @@ export function monthsForRange(start: Date, end: Date) {
   const e = { y: end.getFullYear(), m1: end.getMonth() + 1 };
   return s.y === e.y && s.m1 === e.m1 ? [s] : [s, e];
 }
+

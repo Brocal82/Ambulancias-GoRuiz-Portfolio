@@ -1,7 +1,6 @@
 // frontend/src/utils/vacation/getRequestRangeBerlin.ts
-import type { IVacationRequest } from "../../types/vacationRequest";
-import { dayKeyToLocalDate, toBerlinDayKey } from "../dates/dayKey";
-
+import type { IVacationRequest } from "../domain/types";
+import { dayKeyToLocalDate, toBerlinDayKey } from "../../../utils/dates/dayKey";
 /**
  * Devuelve un rango Date anclado a "día calendario" en Europe/Berlin:
  * - start: 00:00 local del día start
@@ -46,3 +45,4 @@ export function getRequestRangeBerlin(req: IVacationRequest): {
 
   return { start, end };
 }
+

@@ -7,7 +7,7 @@ import { toastT } from "../utils/toast";
 import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { getVacationFlagsInRange, type VacFlag } from "../api/vacation";
+import { getVacationFlagsInRange, type VacFlag } from "../modules/vacation/domain/api";
 import { getSickFlagsInRange, type SickFlag } from "../api/sickLeaves";
 import { fmtDDMM } from "../utils/timeUtils";
 
@@ -533,3 +533,4 @@ const AdminUsersPage = () => {
 };
 
 export default AdminUsersPage;
+

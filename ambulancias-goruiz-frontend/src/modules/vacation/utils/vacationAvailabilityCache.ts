@@ -1,5 +1,5 @@
 // frontend/src/utils/vacation/vacationAvailabilityCache.ts
-import type { VacationAvailabilityResponse } from "../../api/vacation";
+import type { VacationAvailabilityResponse } from "../domain/api";
 
 /**
  * Caché en memoria para disponibilidad mensual de vacaciones.
@@ -38,3 +38,4 @@ export function setCachedAvailability(
 export function deleteCachedAvailability(year: number, month: number) {
   availabilityCache.delete(toMonthKey(year, month));
 }
+

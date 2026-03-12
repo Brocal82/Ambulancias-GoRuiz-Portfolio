@@ -2,7 +2,7 @@
 import {
   getVacationAvailability,
   type VacationAvailabilityResponse,
-} from "../api/vacation";
+} from "../modules/vacation/domain/api";
 
 /** Carga disponibilidad de varios meses y devuelve un mapa YYYY-MM -> Availability */
 export async function preloadAvailabilityMonths(
@@ -35,3 +35,4 @@ export function buildIsDateDisabled(
     return rec?.state === "red";
   };
 }
+

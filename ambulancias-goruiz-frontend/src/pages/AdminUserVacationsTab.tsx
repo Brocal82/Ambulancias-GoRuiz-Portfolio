@@ -1,15 +1,15 @@
 // src/pages/AdminUserVacationsTab.tsx
 import { useEffect, useState } from "react";
-import type { IVacationRequest } from "../types/vacationRequest";
-import { getVacationRequests, deleteVacationRequest } from "../api/vacation";
+import type { IVacationRequest } from "../modules/vacation/domain/types";
+import { getVacationRequests, deleteVacationRequest } from "../modules/vacation/domain/api";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
-import { emitVacationRequestsUpdated } from "../utils/vacation/vacationEvents";
-import { invalidateAvailabilityForRange } from "../utils/vacation/invalidateAvailabilityForRange";
+import { emitVacationRequestsUpdated } from "../modules/vacation/utils/vacationEvents";
+import { invalidateAvailabilityForRange } from "../modules/vacation/utils/invalidateAvailabilityForRange";
 
 import { formatISOToDDMMYYYY } from "../utils/timeUtils";
-import { calcVacationDays } from "../utils/vacation/calcVacationDays";
+import { calcVacationDays } from "../modules/vacation/utils/calcVacationDays";
 import StatusBadge from "../components/common/StatusBadge";
 import { vacationRequestTone } from "../utils/status/vacationRequestTone";
 
@@ -219,3 +219,4 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
 };
 
 export default AdminUserVacationsTab;
+

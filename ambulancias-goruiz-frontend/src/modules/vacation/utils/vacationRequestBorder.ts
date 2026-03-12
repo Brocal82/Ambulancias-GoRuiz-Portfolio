@@ -1,5 +1,5 @@
 // frontend/src/utils/status/vacationRequestBorder.ts
-import type { IVacationRequest } from "../../types/vacationRequest";
+import type { IVacationRequest } from "../domain/types";
 
 export type VacationRequestStatusKey =
   | "option_sent"
@@ -50,3 +50,4 @@ export function vacationRequestBorderClass(status: VacationRequestStatusKey) {
   if (status === "cancelled") return "border-rose-300 ring-2 ring-rose-100";
   return "border-slate-200";
 }
+

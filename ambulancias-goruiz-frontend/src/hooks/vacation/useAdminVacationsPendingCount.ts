@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getVacationPendingCount } from "../../api/vacation";
+import { getVacationPendingCount } from "../../modules/vacation/domain/api";
 import { useAuth } from "../useAuth"; // named export
 
 type Options = {
@@ -130,3 +130,4 @@ export default function useAdminVacationsPendingCount(options: Options = {}) {
     refresh,
   };
 }
+

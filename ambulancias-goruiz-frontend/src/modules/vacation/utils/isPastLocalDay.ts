@@ -1,6 +1,5 @@
 // frontend/src/utils/vacation/isPastLocalDay.ts
-import { toBerlinDayKey, todayBerlinDayKey } from "../dates/dayKey";
-
+import { toBerlinDayKey, todayBerlinDayKey } from "../../../utils/dates/dayKey";
 /**
  * Devuelve true si `date` es anterior a "hoy" en TZ Europe/Berlin,
  * comparando por DayKey (YYYY-MM-DD).

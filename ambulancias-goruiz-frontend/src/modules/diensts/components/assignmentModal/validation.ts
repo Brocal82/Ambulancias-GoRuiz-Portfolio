@@ -1,4 +1,4 @@
-import type { VacFlag } from "../../../../api/vacation";
+import type { VacFlag } from "../../../../modules/vacation/domain/api";
 import type { SickFlag } from "../../../../api/sickLeaves";
 
 export const validateAssignmentSave = (params: {
@@ -50,3 +50,4 @@ export const validateAssignmentSave = (params: {
 
   return null;
 };
+

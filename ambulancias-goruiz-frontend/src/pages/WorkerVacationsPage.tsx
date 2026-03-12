@@ -5,7 +5,7 @@ import {
   respondToAlternativeDate,
   getVacationAvailability,
   cancelMyVacationRequest,
-} from "../api/vacation";
+} from "../modules/vacation/domain/api";
 
 import { useAuth } from "../hooks/useAuth";
 import UserVacationList from "../components/vacation/UserVacationList";
@@ -18,8 +18,8 @@ import SelectableWorkerAvailabilityMonthModal from "../components/vacation/Selec
 // Prefetch/caché compartida
 import { useVacationRequestsSync } from "../hooks/vacation/useVacationRequestSync";
 
-import { emitVacationRequestsUpdated } from "../utils/vacation/vacationEvents";
-import { invalidateAvailabilityForRange } from "../utils/vacation/invalidateAvailabilityForRange";
+import { emitVacationRequestsUpdated } from "../modules/vacation/utils/vacationEvents";
+import { invalidateAvailabilityForRange } from "../modules/vacation/utils/invalidateAvailabilityForRange";
 import { toBerlinDayKey } from "../utils/dates/dayKey";
 
 import PageShell from "../components/common/PageShell";
@@ -329,3 +329,4 @@ const WorkerVacationsPage = () => {
 };
 
 export default WorkerVacationsPage;
+
