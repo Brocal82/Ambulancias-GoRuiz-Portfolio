@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { toastT } from "../utils/toast";
-import { buildImageUrl } from "../utils/apiOrigins";
-import { displayFileNameFromUrl } from "../utils/fileName";
+import { toastT } from "../../../utils/toast";
+import { buildImageUrl } from "../../../utils/apiOrigins";
+import { displayFileNameFromUrl } from "../../../utils/fileName";
 import {
   adminListSickLeaves,
   adminAcceptSickLeave,
   adminRejectSickLeave,
   type SickLeave,
   type SickLeaveStatus,
-} from "../api/sickLeaves";
-import { getYearMonths, rangesOverlap } from "../utils/vacationMonthUtils";
-import AdminSickMonthGrid from "../modules/sick/components/AdminSickMonthGrid";
-import StatusBadge from "../components/common/StatusBadge";
-import { sickLeaveTone } from "../modules/sick/utils/sickLeavesTone";
+} from "../../../api/sickLeaves";
+import { getYearMonths, rangesOverlap } from "../../../utils/vacationMonthUtils";
+import AdminSickMonthGrid from "../components/AdminSickMonthGrid";
+import StatusBadge from "../../../components/common/StatusBadge";
+import { sickLeaveTone } from "../utils/sickLeavesTone";
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return "—";
@@ -526,4 +526,5 @@ export default function AdminSickLeavesPage() {
     </div>
   );
 }
+
 

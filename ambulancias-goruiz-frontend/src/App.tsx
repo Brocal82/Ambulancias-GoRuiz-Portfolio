@@ -17,7 +17,7 @@ import WorkerDienstsPage from "./modules/diensts/pages/WorkerDienstsPage";
 import WorkerPraemienPage from "./modules/praemien/pages/WorkerPraemienPage";
 import WorkerVacationsPage from "./modules/vacation/pages/WorkerVacationsPage";
 import WorkerMessagesPage from "./modules/messages/pages/WorkerMessagesPage";
-import WorkerSickLeavesPage from "./pages/WorkerSickLeavesPage";
+import WorkerSickLeavesPage from "./modules/sick/pages/WorkerSickLeavesPage";
 import { MyWorkdayPage, AdminSummariesPage } from "./modules/workday";
 import {
   AdminHospitalsPage,
@@ -38,7 +38,7 @@ import AdminUserDetailDashboard from "./pages/AdminUserDetailDashboard";
 import AdminMessagesPage from "./modules/messages/pages/AdminMessagesPage";
 import AdminSentMessages from "./modules/messages/pages/AdminSentMessages";
 import AdminTeamsPage from "./modules/teams/pages/AdminTeamsPage";
-import AdminSickLeavesPage from "./pages/AdminSickLeavesPage";
+import AdminSickLeavesPage from "./modules/sick/pages/AdminSickLeavesPage";
 
 export default function App() {
   return (
@@ -91,4 +91,5 @@ export default function App() {
     </AuthProvider>
   );
 }
+
 

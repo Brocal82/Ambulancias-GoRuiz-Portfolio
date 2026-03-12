@@ -1,22 +1,22 @@
 // frontend/src/pages/WorkerSickLeavesPage.tsx
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { toastT } from "../utils/toast";
+import { toastT } from "../../../utils/toast";
 import {
   createSickLeave,
   listMySickLeaves,
   attachSickDocumentFile, // ← asegúrate de tener esta función en api/sickLeaves.ts
   type SickLeave,
-} from "../api/sickLeaves";
-import FileUpload from "../components/common/FileUpload";
-import { buildImageUrl } from "../utils/apiOrigins";
-import { displayFileNameFromUrl } from "../utils/fileName";
-import SickLeaveRequestForm from "../modules/sick/components/SickLeaveRequestForm";
-import StatusBadge from "../components/common/StatusBadge";
-import { sickLeaveTone } from "../modules/sick/utils/sickLeavesTone";
-import CreateIconButton from "../components/common/actions/CreateIconButton";
-import CancelButton from "../components/common/actions/CancelButton";
+} from "../../../api/sickLeaves";
+import FileUpload from "../../../components/common/FileUpload";
+import { buildImageUrl } from "../../../utils/apiOrigins";
+import { displayFileNameFromUrl } from "../../../utils/fileName";
+import SickLeaveRequestForm from "../components/SickLeaveRequestForm";
+import StatusBadge from "../../../components/common/StatusBadge";
+import { sickLeaveTone } from "../utils/sickLeavesTone";
+import CreateIconButton from "../../../components/common/actions/CreateIconButton";
+import CancelButton from "../../../components/common/actions/CancelButton";
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return "—";
@@ -614,4 +614,5 @@ export default function WorkerSickLeavesPage() {
     </div>
   );
 }
+
 
