@@ -4,7 +4,6 @@ import type {
   FinalSummaryPayload,
   WorkdaySummary,
 } from "./types/workdaySummary";;
-import type { WorkdayIssue } from "../../mechanics/domain/types";
 /* =========================
    EXISTENTES
    ========================= */
@@ -37,52 +36,6 @@ export const getAllSummaries = async (
   });
   return res.data;
 };
-
-export const getAllIssueReports = async (
-  token: string,
-): Promise<WorkdayIssue[]> => {
-  // Mantengo fetch como lo tienes para no romper nada
-  const res = await fetch("/api/workday-summary/issues", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!res.ok) throw new Error("Error al obtener reportes tÃ©cnicos");
-  return res.json();
-};
-
-// Borrar reporte
-export const deleteIssueReport = async (
-  token: string,
-  id: string,
-): Promise<void> => {
-  await axios.delete(`/workday-summary/issues/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-};
-
-/* =========================
-   NUEVO: marcar AVERÃA como vista
-   ========================= */
-
-/**
- * Marca una averÃ­a como vista (isSeen=true, seenAt=now).
- * PATCH /workday-summary/issues/:id/seen
- */
-export const markIssueSeen = async (
-  token: string,
-  id: string,
-): Promise<WorkdayIssue> => {
-  const res = await axios.patch(`/workday-summary/issues/${id}/seen`, null, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data as WorkdayIssue;
-};
-
-/* =========================
-   Contadores
-   ========================= */
 
 interface SummariesCountResponse {
   count: number;
@@ -124,51 +77,6 @@ export const markSummaryReviewed = async (
       err?.response?.data?.message ||
       err?.message ||
       "Error al marcar el resumen como revisado";
-    throw new Error(msg);
-  }
-};
-
-interface IssuesCountResponse {
-  count: number;
-}
-
-export const getIssuesOpenCount = async (token: string): Promise<number> => {
-  try {
-    const res = await axios.get<IssuesCountResponse>(
-      "/workday-summary/issues/count",
-      {
-        params: { status: "open" },
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    );
-    return typeof res.data?.count === "number" ? res.data.count : 0;
-  } catch (err: any) {
-    const msg =
-      err?.response?.data?.message ||
-      err?.message ||
-      "Error al obtener el contador de averÃ­as abiertas";
-    throw new Error(msg);
-  }
-};
-
-export const getIssuesCountByStatus = async (
-  token: string,
-  status: string,
-): Promise<number> => {
-  try {
-    const res = await axios.get<IssuesCountResponse>(
-      "/workday-summary/issues/count",
-      {
-        params: { status },
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    );
-    return typeof res.data?.count === "number" ? res.data.count : 0;
-  } catch (err: any) {
-    const msg =
-      err?.response?.data?.message ||
-      err?.message ||
-      "Error al obtener el contador de averÃ­as";
     throw new Error(msg);
   }
 };

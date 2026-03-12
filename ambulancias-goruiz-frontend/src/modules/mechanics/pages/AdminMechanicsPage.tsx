@@ -9,7 +9,7 @@ import {
   getAllIssueReports,
   deleteIssueReport,
   markIssueSeen,
-} from "../../workday";
+} from "../domain";
 import type { WorkdayIssue } from "../domain/types";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
@@ -30,7 +30,7 @@ const AdminMechanicsPage = () => {
   const [loading, setLoading] = useState(true);
   const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  // Ã¢Å“â€¦ Grid aÃƒÂ±o/mes (igual patrÃƒÂ³n que otros mÃƒÂ³dulos)
+  // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Grid aÃƒÆ’Ã‚Â±o/mes (igual patrÃƒÆ’Ã‚Â³n que otros mÃƒÆ’Ã‚Â³dulos)
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [openMonth, setOpenMonth] = useState<number | null>(null);
 
@@ -61,7 +61,7 @@ const AdminMechanicsPage = () => {
         const ambulancesData = await getAllAmbulances(token);
         setAmbulances(ambulancesData);
       } catch (err) {
-        console.error("Ã¢ÂÅ’ Error al cargar reportes o ambulancias:", err);
+        console.error("ÃƒÂ¢Ã‚ÂÃ…â€™ Error al cargar reportes o ambulancias:", err);
         toastT.error(["toasts.mechanics.loadError"]);
       } finally {
         setLoading(false);
@@ -76,7 +76,7 @@ const AdminMechanicsPage = () => {
 
     const confirmed = window.confirm(
       (t("pages.mechanics.adminPage.confirmDelete") as string) ||
-      "Ã‚Â¿Seguro que quieres eliminar este reporte? Esta acciÃƒÂ³n no se puede deshacer.",
+      "Ãƒâ€šÃ‚Â¿Seguro que quieres eliminar este reporte? Esta acciÃƒÆ’Ã‚Â³n no se puede deshacer.",
     );
     if (!confirmed) return;
 
@@ -87,10 +87,10 @@ const AdminMechanicsPage = () => {
     try {
       await deleteIssueReport(token, id);
       toastT.success(["toasts.mechanics.deleteSuccess"]);
-      // Si se borra una no vista, el contador tambiÃƒÂ©n baja. Emitimos evento por si acaso.
+      // Si se borra una no vista, el contador tambiÃƒÆ’Ã‚Â©n baja. Emitimos evento por si acaso.
       notifyAdminIssuesChanged();
     } catch (err) {
-      console.error("Ã¢ÂÅ’ Error al borrar reporte:", err);
+      console.error("ÃƒÂ¢Ã‚ÂÃ…â€™ Error al borrar reporte:", err);
       setIssues(prev); // rollback
       toastT.error(["toasts.mechanics.deleteError"]);
     }
@@ -100,7 +100,7 @@ const AdminMechanicsPage = () => {
     async (issue: WorkdayIssue) => {
       if (!token) return;
 
-      // Ã¢Å“â€¦ Calculamos esto ANTES del setState (sin estado desfasado)
+      // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Calculamos esto ANTES del setState (sin estado desfasado)
       const isCurrentlyExpanded = expanded.has(issue._id);
       const shouldMarkSeen = !isCurrentlyExpanded && issue.isSeen !== true;
 
@@ -115,7 +115,7 @@ const AdminMechanicsPage = () => {
         return next;
       });
 
-      // Marcar como visto solo si se estÃƒÂ¡ abriendo por primera vez y era no visto
+      // Marcar como visto solo si se estÃƒÆ’Ã‚Â¡ abriendo por primera vez y era no visto
       if (shouldMarkSeen) {
         try {
           const updated = await markIssueSeen(token, issue._id);
@@ -134,7 +134,7 @@ const AdminMechanicsPage = () => {
 
           notifyAdminIssuesChanged();
         } catch (err) {
-          console.error("Ã¢ÂÅ’ Error al marcar averÃƒÂ­a como vista:", err);
+          console.error("ÃƒÂ¢Ã‚ÂÃ…â€™ Error al marcar averÃƒÆ’Ã‚Â­a como vista:", err);
         }
       }
     },
@@ -151,7 +151,7 @@ const AdminMechanicsPage = () => {
             {t("pages.mechanics.adminPage.title")}
           </h1>
 
-          {/* Ã¢Å“â€¦ Grid de meses (siempre visible) */}
+          {/* ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Grid de meses (siempre visible) */}
           <div className="mb-5">
             <MechanicsYearGrid
               year={year}
@@ -183,7 +183,7 @@ const AdminMechanicsPage = () => {
             />
           </div>
 
-          {/* Ã¢Å“â€¦ Estado de carga / vacÃƒÂ­o (sin ocultar el grid) */}
+          {/* ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Estado de carga / vacÃƒÆ’Ã‚Â­o (sin ocultar el grid) */}
           {loading ? (
             <p className="text-sm text-slate-600">
               {t("pages.mechanics.adminPage.loading")}
@@ -194,7 +194,7 @@ const AdminMechanicsPage = () => {
             </p>
           ) : null}
 
-          {/* Ã¢Å“â€¦ Lista SOLO si hay un mes abierto */}
+          {/* ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Lista SOLO si hay un mes abierto */}
           {openMonth !== null && !loading && (
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               {monthIssues.length === 0 ? (
@@ -264,7 +264,7 @@ const AdminMechanicsPage = () => {
                             ].join(" ")}
                             aria-hidden="true"
                           >
-                            â–¾                          </span>
+                            Ã¢â€“Â¾                          </span>
                         </button>
 
                         <div
@@ -286,7 +286,7 @@ const AdminMechanicsPage = () => {
                           <div className="mb-3 flex flex-wrap items-center gap-2">
                             <StatusBadge
                               tone="slate"
-                              label={`Ã°Å¸â€œâ€¦ ${new Date(issue.timestamp).toLocaleString()}`}
+                              label={`ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¦ ${new Date(issue.timestamp).toLocaleString()}`}
                               className="px-2.5 py-1"
                             />
 
