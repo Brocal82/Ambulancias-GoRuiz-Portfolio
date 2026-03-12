@@ -7,7 +7,7 @@ import useAdminVacationsPendingCount from "../modules/vacation/hooks/useAdminVac
 import useAdminSummariesPendingCount from "../modules/workday/hooks/useAdminSummariesPendingCount";
 import { useAdminAppointmentsPendingCount } from "../modules/appointments";
 import { useAdminIssuesOpenCount } from "../modules/workday";
-import useAdminSickLeavesPendingCount from "../hooks/useAdminSickLeavesPendingCount";
+import useAdminSickLeavesPendingCount from "../modules/sick/hooks/useAdminSickLeavesPendingCount";
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -264,4 +264,5 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
 

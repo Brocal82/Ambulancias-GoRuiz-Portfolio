@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getSickLeavesPendingCount } from "../api/sickLeaves";
-import { useAuth } from "../hooks/useAuth";
+import { getSickLeavesPendingCount } from "../../../api/sickLeaves";
+import { useAuth } from "../../../hooks/useAuth";
 
 type Options = {
   /** Intervalo de refresco en ms. 0 = sin polling (por defecto). */
@@ -131,3 +131,4 @@ export default function useAdminSickLeavesPendingCount(options: Options = {}) {
     refresh,
   };
 }
+
