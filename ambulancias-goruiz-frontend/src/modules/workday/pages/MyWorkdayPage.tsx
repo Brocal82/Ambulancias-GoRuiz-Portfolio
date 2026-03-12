@@ -151,7 +151,7 @@ const MyWorkday = () => {
     }
     if (!assignedDay) return;
 
-    // obtener nÃºmero real y usarlo al guardar (evita estado desfasado)
+    // obtener número real y usarlo al guardar (evita estado desfasado)
     const selectedAmbulance = ambulances.find((a) => a._id === ambulanceId);
     const ambulanceNum = selectedAmbulance?.ambulanceNumber || "??";
     setAmbulanceNumber(ambulanceNum);
@@ -162,7 +162,7 @@ const MyWorkday = () => {
     saveAmbulanceData(
       assignedDay.assignmentId,
       ambulanceId,
-      ambulanceNum, // <â€” usar el valor real, no el state aÃºn sincrÃ³nico
+      ambulanceNum, // < usar el valor real, no el state aún sincrónico
       initialAmbulanceKm,
     );
 
@@ -207,11 +207,11 @@ const MyWorkday = () => {
   }, [ambulanceId, ambulanceNumber, initialAmbulanceKm, assignedDay]);
 
   useEffect(() => {
-    // âœ… En Anschluss: el kmStart del paciente 2 NO puede ser menor
+    // ? En Anschluss: el kmStart del paciente 2 NO puede ser menor
     // que el kmStart del paciente 1 (guardado en previousTripFormData)
     const minKmStart =
       anschlussActive && previousTripFormData
-        ? Number(previousTripFormData.kmStart) // ðŸ‘ˆ este es el mÃ­nimo real segÃºn tu flujo
+        ? Number(previousTripFormData.kmStart) //  este es el mínimo real según tu flujo
         : undefined;
 
     const result = checkTripLogic(
@@ -239,7 +239,7 @@ const MyWorkday = () => {
         const data = await getAllAmbulances(token);
         setAmbulances(data);
       } catch (err) {
-        console.error("âŒ Error al cargar ambulancias:", err);
+        console.error(" Error al cargar ambulancias:", err);
       }
     };
     fetchAmbulances();
@@ -354,7 +354,7 @@ const MyWorkday = () => {
       setCountsTrip(1);
       setReports("");
     } catch (err) {
-      console.error("âŒ Error al crear trip:", err);
+      console.error(" Error al crear trip:", err);
       toastT.error(["toasts.workday.tripSaveError"]);
     }
   };
@@ -368,13 +368,13 @@ const MyWorkday = () => {
         assignmentId: assignedDay.assignmentId,
         driver: assignedDay.driver._id,
         medic: assignedDay.medic._id,
-        timeEnd: "ðŸ”— Anschluss",
+        timeEnd: "?? Anschluss",
       };
       const createdTrip = await createTrip(newTrip);
       toastT.success(["toasts.workday.anschlussSaved"]);
       setTrips((prev) => [...prev, createdTrip]);
     } catch (err) {
-      console.error("âŒ Error al guardar paciente 1:", err);
+      console.error(" Error al guardar paciente 1:", err);
       toastT.error(["toasts.workday.anschlussSaveError"]);
     }
   };
@@ -387,7 +387,7 @@ const MyWorkday = () => {
 
     if (!token || !assignedDay || !user?._id) return;
 
-    // âœ… exige datos confirmados de vehÃ­culo
+    //  exige datos confirmados de vehículo
     if (
       !vehicleConfirmed ||
       !ambulanceId ||
@@ -441,7 +441,7 @@ const MyWorkday = () => {
       clearAmbulanceData(assignedDay.assignmentId);
       navigate("/worker");
     } catch (err: any) {
-      console.error("âŒ Error al cerrar el dÃ­a:", {
+      console.error(" Error al cerrar el día:", {
         status: err?.response?.status,
         message: err?.response?.data?.message,
         data: err?.response?.data,
@@ -473,9 +473,9 @@ const MyWorkday = () => {
       return;
     }
 
-    // âœ… NUEVO: exige ambulancia confirmada e ID presente
+    // ? NUEVO: exige ambulancia confirmada e ID presente
     if (!vehicleConfirmed || !ambulanceId) {
-      toastT.warn(["toasts.workday.needInitialData"]); // o crea un texto: "Confirma vehÃ­culo y km iniciales"
+      toastT.warn(["toasts.workday.needInitialData"]); // o crea un texto: "Confirma vehículo y km iniciales"
       return;
     }
     if (!ambulanceNumber) {
@@ -501,7 +501,7 @@ const MyWorkday = () => {
 
       notifyAdminSummariesChanged();
 
-      // Si vino una averÃ­a en el parcial, notifica para refrescar el badge
+      // Si vino una avería en el parcial, notifica para refrescar el badge
       if (issueData) {
         notifyAdminIssuesChanged();
       }
@@ -526,7 +526,7 @@ const MyWorkday = () => {
 
       navigate("/worker");
     } catch (err: any) {
-      console.error("âŒ Error al enviar cierre parcial:", {
+      console.error(" Error al enviar cierre parcial:", {
         status: err?.response?.status,
         message: err?.response?.data?.message,
         data: err?.response?.data,
@@ -547,7 +547,7 @@ const MyWorkday = () => {
 
     setTripFormData({
       date: today,
-      assignmentId: assignedDay.assignmentId, // <â€” FIX: antes usaba dienstId
+      assignmentId: assignedDay.assignmentId, // < FIX: antes usaba dienstId
       driver: assignedDay.driver._id,
       medic: assignedDay.medic._id,
       auftragNumber: "",
@@ -594,14 +594,14 @@ const MyWorkday = () => {
         {assignedDay && (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-base font-semibold text-slate-900">
-              <span aria-hidden="true">ðŸ•’</span>
+              <span aria-hidden="true">??</span>
               <span>
-                {assignedDay.startTime}â€“{assignedDay.endTime}
+                {assignedDay.startTime}{assignedDay.endTime}
               </span>
             </div>
 
             <div className="text-sm text-slate-500 capitalize">
-              {weekday} Â· {todayFormatted}
+              {weekday} · {todayFormatted}
             </div>
           </div>
         )}

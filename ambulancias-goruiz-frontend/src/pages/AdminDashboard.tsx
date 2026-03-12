@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-// âœ… Hook para contador de pendientes de Vacaciones
+// ? Hook para contador de pendientes de Vacaciones
 import useAdminVacationsPendingCount from "../modules/vacation/hooks/useAdminVacationsPendingCount";
 import useAdminSummariesPendingCount from "../modules/workday/hooks/useAdminSummariesPendingCount";
 import { useAdminAppointmentsPendingCount } from "../modules/appointments";
@@ -12,12 +12,12 @@ import useAdminSickLeavesPendingCount from "../modules/sick/hooks/useAdminSickLe
 const AdminDashboard = () => {
   const { t } = useTranslation();
 
-  // âœ… Contador de solicitudes de vacaciones pendientes
+  // ? Contador de solicitudes de vacaciones pendientes
   const { count: vacationsPendingCount, isLoading: vacationsLoading } =
     useAdminVacationsPendingCount();
   const vacationsHasPending = !vacationsLoading && vacationsPendingCount > 0;
 
-  // âœ… Contador de resÃºmenes pendientes
+  //  Contador de resúmenes pendientes
   const { count: summariesPendingCount, isLoading: summariesLoading } =
     useAdminSummariesPendingCount();
   const summariesHasPending = !summariesLoading && summariesPendingCount > 0;

@@ -1,7 +1,7 @@
 // src/utils/mechanics/sortIssuesByDateDesc.ts
 import type { WorkdayIssue } from "../domain/types";
 /**
- * Ordena averÃƒÂ­as por timestamp descendente (mÃƒÂ¡s recientes primero).
+ * Ordena aver­as por timestamp descendente (m¡s recientes primero).
  * Helper puro, sin efectos secundarios.
  */
 export function sortIssuesByDateDesc(

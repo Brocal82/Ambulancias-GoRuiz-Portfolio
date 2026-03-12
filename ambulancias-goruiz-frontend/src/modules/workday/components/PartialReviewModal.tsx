@@ -120,7 +120,7 @@ const PartialReviewModal: React.FC<Props> = ({
                     className="w-full border border-slate-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-200"
                 />
 
-                {/* BotÃ³n AverÃ­a */}
+                {/* Botón Avería */}
                 <div className="pt-1 flex justify-end">
                     <button
                         type="button"
@@ -141,11 +141,11 @@ const PartialReviewModal: React.FC<Props> = ({
                                 : "border-slate-300 bg-white text-slate-700 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700",
                         ].join(" ")}
                     >
-                        âš ï¸ {t("pages.workday.partial.issue.button")}
+                        ️ {t("pages.workday.partial.issue.button")}
                     </button>
                 </div>
 
-                {/* Modal tÃ©cnico */}
+                {/* Modal técnico */}
                 {showIssueModal && (
                     <IssueReportModal
                         isOpen={true}

@@ -11,7 +11,7 @@ export const getAllIssueReports = async (
     },
   });
 
-  if (!res.ok) throw new Error("Error al obtener reportes tÃ©cnicos");
+  if (!res.ok) throw new Error("Error al obtener reportes técnicos");
   return res.json();
 };
 
@@ -26,11 +26,11 @@ export const deleteIssueReport = async (
 };
 
 /* =========================
-   NUEVO: marcar AVERÃA como vista
+   NUEVO: marcar AVERÍA como vista
    ========================= */
 
 /**
- * Marca una averÃ­a como vista (isSeen=true, seenAt=now).
+ * Marca una avería como vista (isSeen=true, seenAt=now).
  * PATCH /workday-summary/issues/:id/seen
  */
 export const markIssueSeen = async (
@@ -61,7 +61,7 @@ export const getIssuesOpenCount = async (token: string): Promise<number> => {
     const msg =
       err?.response?.data?.message ||
       err?.message ||
-      "Error al obtener el contador de averÃ­as abiertas";
+      "Error al obtener el contador de averías abiertas";
     throw new Error(msg);
   }
 };
@@ -83,7 +83,7 @@ export const getIssuesCountByStatus = async (
     const msg =
       err?.response?.data?.message ||
       err?.message ||
-      "Error al obtener el contador de averÃ­as";
+      "Error al obtener el contador de averías";
     throw new Error(msg);
   }
 };

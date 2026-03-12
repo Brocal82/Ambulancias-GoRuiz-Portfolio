@@ -38,7 +38,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
     );
     const [hasIssue, setHasIssue] = useState(false);
     const [showIssueModal, setShowIssueModal] = useState(false);
-    const [issueData, setIssueData] = useState<any | null>(null); // guardamos la averÃ­a sin auto-enviar
+    const [issueData, setIssueData] = useState<any | null>(null); // guardamos la avería sin auto-enviar
     const [isSending, setIsSending] = useState(false);
 
     const parsedInitialKm = Number(initialKm);
@@ -50,7 +50,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
 
     if (!isOpen) return null;
 
-    // ValidaciÃ³n usando tus toasts existentes
+    // Validación usando tus toasts existentes
     const ensureValidFinalKm = (): boolean => {
         if (finalKmLocal === "" || isNaN(Number(finalKmLocal))) {
             toastT.warn(["toasts.workday.final.finalKmRequired"]);
@@ -117,7 +117,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
                     className="w-full border border-slate-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-200"
                 />
 
-                {/* BotÃ³n AverÃ­a */}
+                {/* Botón Avería */}
                 <div className="pt-1 flex justify-end">
                     <button
                         type="button"
@@ -128,7 +128,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
                             setHasIssue(next);
 
                             if (!next) {
-                                // si desmarca, limpiamos datos de averÃ­a
+                                // si desmarca, limpiamos datos de avería
                                 setIssueData(null);
                                 return;
                             }
@@ -142,11 +142,11 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
                                 : "border-slate-300 bg-white text-slate-700 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700",
                         ].join(" ")}
                     >
-                        âš ï¸ {t("pages.workday.final.issue.button")}
+                        ️ {t("pages.workday.final.issue.button")}
                     </button>
                 </div>
 
-                {/* Modal tÃ©cnico (independiente del envÃ­o del sumario) */}
+                {/* Modal técnico (independiente del envío del sumario) */}
                 {showIssueModal && (
                     <IssueReportModal
                         isOpen={true}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { getIssuesOpenCount } from "../domain";
 
-/** Evento global para forzar refresco tras cambios en averÃƒÂ­as (crear, cerrar, borrar, marcar vistas, etc.) */
+/** Evento global para forzar refresco tras cambios en aver­as (crear, cerrar, borrar, marcar vistas, etc.) */
 export const ADMIN_ISSUES_CHANGED_EVENT = "admin-issues-changed";
 
 type Options = {
@@ -11,7 +11,7 @@ type Options = {
 };
 
 /**
- * Hook para contar averÃƒÂ­as "abiertas" (admin).
+ * Hook para contar aver­as "abiertas" (admin).
  * - Llama a GET /workday-summary/issues/count?status=open
  * - Refresca en focus/visibilitychange y al emitir el evento global 'admin-issues-changed'
  * - Polling opcional con pollMs
@@ -33,7 +33,7 @@ export function useAdminIssuesOpenCount({ pollMs = 0 }: Options = {}) {
       // eslint-disable-next-line no-console
       console.warn("[useAdminIssuesOpenCount] fetch error:", e);
       if (mountedRef.current)
-        setError("Error al cargar el contador de averÃƒÂ­as");
+        setError("Error al cargar el contador de aver­as");
     } finally {
       if (mountedRef.current) setLoading(false);
     }

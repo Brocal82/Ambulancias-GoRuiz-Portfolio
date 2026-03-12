@@ -5,12 +5,12 @@ import RequireAuth from "./components/RequireAuth";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// PÃ¡ginas pÃºblicas
+// Páginas públicas
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
-// PÃ¡ginas privadas
+// Páginas privadas
 import Profile from "./pages/Profile";
 import WorkerDashboard from "./pages/WorkerDashboard";
 import WorkerDienstsPage from "./modules/diensts/pages/WorkerDienstsPage";
@@ -45,14 +45,14 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Rutas pÃºblicas */}
+          {/* Rutas públicas */}
           <Route path="/" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
           {/* Rutas protegidas */}
           <Route element={<RequireAuth />}>
-            {/* âœ… AppLayout montado una sola vez */}
+            {/* ? AppLayout montado una sola vez */}
             <Route element={<AppLayout />}>
               {/* Trabajador */}
               <Route path="/profile" element={<Profile />} />

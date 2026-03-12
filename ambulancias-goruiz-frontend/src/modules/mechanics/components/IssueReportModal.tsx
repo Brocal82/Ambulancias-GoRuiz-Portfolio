@@ -86,7 +86,7 @@ const IssueReportModal: React.FC<Props> = ({
             onClose();
             setIsSending(false);
         } catch (err) {
-            console.error("Error al reportar averÃ­a:", err);
+            console.error("Error al reportar avería:", err);
             toastT.error(["toasts.mechanics.reportError"]);
             setIsSending(false);
         }
@@ -159,7 +159,7 @@ const IssueReportModal: React.FC<Props> = ({
                         />
                     </div>
 
-                    {/* DescripciÃ³n */}
+                    {/* Descripción */}
                     <textarea
                         placeholder={t("pages.mechanics.issueModal.descriptionPlaceholder")}
                         value={description}
