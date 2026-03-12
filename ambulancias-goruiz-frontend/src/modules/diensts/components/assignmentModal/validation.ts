@@ -1,5 +1,5 @@
 import type { VacFlag } from "../../../../modules/vacation/domain/api";
-import type { SickFlag } from "../../../../api/sickLeaves";
+import type { SickFlag } from "../../../sick/domain";
 
 export const validateAssignmentSave = (params: {
   dienstId: string;
@@ -50,4 +50,5 @@ export const validateAssignmentSave = (params: {
 
   return null;
 };
+
 

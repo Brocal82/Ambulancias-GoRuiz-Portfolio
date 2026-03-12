@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getSickLeavesPendingCount } from "../../../api/sickLeaves";
+import { getSickLeavesPendingCount } from "../domain";
 import { useAuth } from "../../../hooks/useAuth";
 
 type Options = {
@@ -131,4 +131,5 @@ export default function useAdminSickLeavesPendingCount(options: Options = {}) {
     refresh,
   };
 }
+
 

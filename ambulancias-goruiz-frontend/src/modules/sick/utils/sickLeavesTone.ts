@@ -1,5 +1,5 @@
 // src/utils/status/sickLeaveTone.ts
-import type { SickLeaveStatus } from "../../../api/sickLeaves";
+import type { SickLeaveStatus } from "../domain";
 
 export const sickLeaveTone = (
   status: SickLeaveStatus,
@@ -14,4 +14,5 @@ export const sickLeaveTone = (
       return "rose";
   }
 };
+
 

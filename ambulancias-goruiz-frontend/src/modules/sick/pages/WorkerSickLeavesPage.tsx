@@ -8,7 +8,7 @@ import {
   listMySickLeaves,
   attachSickDocumentFile, // ← asegúrate de tener esta función en api/sickLeaves.ts
   type SickLeave,
-} from "../../../api/sickLeaves";
+} from "../domain";
 import FileUpload from "../../../components/common/FileUpload";
 import { buildImageUrl } from "../../../utils/apiOrigins";
 import { displayFileNameFromUrl } from "../../../utils/fileName";
@@ -614,5 +614,6 @@ export default function WorkerSickLeavesPage() {
     </div>
   );
 }
+
 
 

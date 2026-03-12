@@ -7,7 +7,7 @@ import { displayFileNameFromUrl } from "../../../utils/fileName";
 import {
   adminListSickLeaves,
   type SickLeave,
-} from "../../../api/sickLeaves";
+} from "../domain";
 import StatusBadge from "../../../components/common/StatusBadge";
 import { sickLeaveTone } from "../utils/sickLeavesTone";
 
@@ -222,4 +222,5 @@ export default function AdminUserSickLeavesTab({ userId }: Props) {
     </div>
   );
 }
+
 

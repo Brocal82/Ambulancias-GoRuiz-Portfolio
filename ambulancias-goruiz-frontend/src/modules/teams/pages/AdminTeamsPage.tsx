@@ -13,7 +13,7 @@ import { toastT } from "../../../utils/toast";
 import { getPscheinInfo } from "../../../utils/pscheinUtils";
 
 import { getVacationFlagsInRange, type VacFlag } from "../../vacation/domain/api";
-import { getSickFlagsInRange, type SickFlag } from "../../../api/sickLeaves";
+import { getSickFlagsInRange, type SickFlag } from "../../sick/domain";
 
 import { fmtDDMM } from "../../../utils/timeUtils";
 import { getBerlinWeekRangeISO } from "../utils";
@@ -512,4 +512,5 @@ export default function AdminTeamsPage() {
     </div>
   );
 }
+
 

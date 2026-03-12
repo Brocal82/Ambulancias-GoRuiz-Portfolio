@@ -5,7 +5,7 @@ import type { UserRef } from "../../domain/types";
 
 import type { TFunction } from "i18next";
 
-import type { SickFlag } from "../../../../api/sickLeaves";
+import type { SickFlag } from "../../../sick/domain";
 import type { VacFlag } from "../../../../modules/vacation/domain/api";
 export const mergeClasses = (...classes: (string | false | null | undefined)[]) =>
   classes.filter(Boolean).join(" ");
@@ -87,4 +87,5 @@ export const userSickInfo = (
 
   return { has: true, title };
 };
+
 

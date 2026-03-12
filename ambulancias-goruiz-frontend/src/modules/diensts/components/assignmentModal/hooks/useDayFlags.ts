@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { getVacationFlagsInRange, type VacFlag } from "../../../../../modules/vacation/domain/api";
-import { getSickFlagsInRange, type SickFlag } from "../../../../../api/sickLeaves";
+import { getSickFlagsInRange, type SickFlag } from "../../../../sick/domain";
 
 export const useDayFlags = (params: {
   isOpen: boolean;
@@ -71,4 +71,5 @@ export const useDayFlags = (params: {
 
   return { vacationFlags, sickFlags, flagsLoading };
 };
+
 

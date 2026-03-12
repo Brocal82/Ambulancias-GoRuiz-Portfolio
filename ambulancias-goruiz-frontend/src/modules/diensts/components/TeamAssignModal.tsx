@@ -12,7 +12,7 @@ import {
 } from "../../../utils/pscheinUtils";
 
 import { getVacationFlagsInRange, type VacFlag } from "../../vacation/domain/api";
-import { getSickFlagsInRange, type SickFlag } from "../../../api/sickLeaves";
+import { getSickFlagsInRange, type SickFlag } from "../../sick/domain";
 
 import { fmtDDMM } from "../../../utils/timeUtils";
 
@@ -752,4 +752,5 @@ export default function TeamAssignModal({
     </div>
   );
 }
+
 

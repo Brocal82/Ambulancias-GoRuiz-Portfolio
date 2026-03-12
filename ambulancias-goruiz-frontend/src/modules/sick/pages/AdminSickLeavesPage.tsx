@@ -10,7 +10,7 @@ import {
   adminRejectSickLeave,
   type SickLeave,
   type SickLeaveStatus,
-} from "../../../api/sickLeaves";
+} from "../domain";
 import { getYearMonths, rangesOverlap } from "../../../utils/vacationMonthUtils";
 import AdminSickMonthGrid from "../components/AdminSickMonthGrid";
 import StatusBadge from "../../../components/common/StatusBadge";
@@ -526,5 +526,6 @@ export default function AdminSickLeavesPage() {
     </div>
   );
 }
+
 
 
