@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 // ✅ Hook para contador de pendientes de Vacaciones
-import useAdminVacationsPendingCount from "../hooks/vacation/useAdminVacationsPendingCount";
+import useAdminVacationsPendingCount from "../modules/vacation/hooks/useAdminVacationsPendingCount";
 import useAdminSummariesPendingCount from "../modules/workday/hooks/useAdminSummariesPendingCount";
 import { useAdminAppointmentsPendingCount } from "../modules/appointments";
 import { useAdminIssuesOpenCount } from "../modules/workday";
@@ -264,3 +264,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

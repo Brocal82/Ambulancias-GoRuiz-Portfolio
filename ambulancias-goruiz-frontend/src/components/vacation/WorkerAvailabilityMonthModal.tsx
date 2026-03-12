@@ -6,7 +6,7 @@ import {
   type VacationAvailabilityResponse,
 } from "../../modules/vacation/domain/api";
 import { monthLabel as fmtMonth } from "../../utils/intl";
-import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
+import { useVacationAvailabilityInvalidation } from "../../modules/vacation/hooks/useVacationAvailabilityInvalidation";
 
 type DayState = "green" | "yellow" | "red";
 
@@ -300,4 +300,5 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
 };
 
 export default WorkerAvailabilityMonthModal;
+
 

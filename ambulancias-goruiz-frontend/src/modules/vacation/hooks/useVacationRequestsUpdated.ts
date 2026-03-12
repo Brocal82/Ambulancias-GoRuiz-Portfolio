@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import {
   subscribeVacationRequestsUpdated,
   type VacationRequestsUpdatedDetail,
-} from "../../modules/vacation/utils/vacationEvents";
+} from "../utils/vacationEvents";
 
 /**
  * Hook de infraestructura:
@@ -26,4 +26,5 @@ export function useVacationRequestsUpdated(
     });
   }, []);
 }
+
 

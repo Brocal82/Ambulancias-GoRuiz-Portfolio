@@ -5,7 +5,7 @@ import {
     type VacationAvailabilityResponse,
 } from "../../modules/vacation/domain/api";
 import { monthLabel as fmtMonth } from "../../utils/intl";
-import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
+import { useVacationAvailabilityInvalidation } from "../../modules/vacation/hooks/useVacationAvailabilityInvalidation";
 import { toBerlinDayKey, todayBerlinDayKey } from "../../utils/dates/dayKey";
 import { isPastLocalDay } from "../../modules/vacation/utils/isPastLocalDay";
 import type { IVacationRequest } from "../../modules/vacation/domain/types";
@@ -764,4 +764,5 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
 };
 
 export default SelectableWorkerAvailabilityMonthModal;
+
 

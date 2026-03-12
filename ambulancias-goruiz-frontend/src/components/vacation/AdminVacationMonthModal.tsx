@@ -15,7 +15,7 @@ import {
   type VacationAvailabilityResponse,
 } from "../../modules/vacation/domain/api";
 import { emitVacationRequestsUpdated } from "../../modules/vacation/utils/vacationEvents";
-import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
+import { useVacationAvailabilityInvalidation } from "../../modules/vacation/hooks/useVacationAvailabilityInvalidation";
 import AdminVacationRequestsTable from "./AdminVacationRequestsTable";
 import { toBerlinDayKey } from "../../utils/dates/dayKey";
 import { vacationRequestFilterPillClass } from "../../utils/status/vacationRequestUi";
@@ -841,4 +841,5 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 };
 
 export default AdminVacationMonthModal;
+
 

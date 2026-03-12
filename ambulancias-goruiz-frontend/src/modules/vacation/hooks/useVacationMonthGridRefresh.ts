@@ -1,6 +1,6 @@
 // src/hooks/vacation/useVacationMonthGridRefresh.ts
 import { useCallback, useState } from "react";
-import { getVacationAvailability } from "../../modules/vacation/domain/api";
+import { getVacationAvailability } from "../domain/api";
 import { useVacationAvailabilityInvalidation } from "./useVacationAvailabilityInvalidation";
 
 type Options = {
@@ -48,4 +48,5 @@ export function useVacationMonthGridRefresh(options: Options = {}) {
     forceRefreshMonth,
   };
 }
+
 

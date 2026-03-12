@@ -11,11 +11,11 @@ import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
 import { invalidateAvailabilityForRange } from "../modules/vacation/utils/invalidateAvailabilityForRange";
-import { useVacationRequestsSync } from "../hooks/vacation/useVacationRequestSync";
+import { useVacationRequestsSync } from "../modules/vacation/hooks/useVacationRequestSync";
 import { emitVacationRequestsUpdated } from "../modules/vacation/utils/vacationEvents";
 import PageShell from "../components/common/PageShell";
 import AdminActionableVacationRequestsTable from "../components/vacation/AdminActionableVacationRequestsTable";
-import { useVacationMonthGridRefresh } from "../hooks/vacation/useVacationMonthGridRefresh";
+import { useVacationMonthGridRefresh } from "../modules/vacation/hooks/useVacationMonthGridRefresh";
 
 
 // Nombre del evento global para refrescar el badge del Dashboard
@@ -408,4 +408,5 @@ const AdminVacationRequests = () => {
 };
 
 export default AdminVacationRequests;
+
 

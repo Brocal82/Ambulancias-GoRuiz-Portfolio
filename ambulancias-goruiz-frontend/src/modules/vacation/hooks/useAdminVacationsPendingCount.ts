@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getVacationPendingCount } from "../../modules/vacation/domain/api";
-import { useAuth } from "../useAuth"; // named export
+import { getVacationPendingCount } from "../domain/api";
+import { useAuth } from "../../../hooks/useAuth"; // named export
 
 type Options = {
   /** Intervalo de refresco en ms. 0 = sin polling (por defecto). */
@@ -130,4 +130,5 @@ export default function useAdminVacationsPendingCount(options: Options = {}) {
     refresh,
   };
 }
+
 

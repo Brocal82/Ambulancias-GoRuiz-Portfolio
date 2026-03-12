@@ -5,7 +5,7 @@ import {
   getYearMonths,
   countRequestsByMonth,
 } from "../../utils/vacationMonthUtils";
-import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
+import { useVacationAvailabilityInvalidation } from "../../modules/vacation/hooks/useVacationAvailabilityInvalidation";
 import { useTranslation } from "react-i18next";
 
 // API disponibilidad
@@ -381,4 +381,5 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
 };
 
 export default AdminVacationMonthGrid;
+
 

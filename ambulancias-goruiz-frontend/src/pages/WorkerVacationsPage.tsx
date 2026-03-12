@@ -16,14 +16,14 @@ import AdminVacationMonthGrid from "../components/vacation/AdminVacationMonthGri
 import SelectableWorkerAvailabilityMonthModal from "../components/vacation/SelectableWorkerAvailabilityMonthModal";
 
 // Prefetch/caché compartida
-import { useVacationRequestsSync } from "../hooks/vacation/useVacationRequestSync";
+import { useVacationRequestsSync } from "../modules/vacation/hooks/useVacationRequestSync";
 
 import { emitVacationRequestsUpdated } from "../modules/vacation/utils/vacationEvents";
 import { invalidateAvailabilityForRange } from "../modules/vacation/utils/invalidateAvailabilityForRange";
 import { toBerlinDayKey } from "../utils/dates/dayKey";
 
 import PageShell from "../components/common/PageShell";
-import { useVacationMonthGridRefresh } from "../hooks/vacation/useVacationMonthGridRefresh";
+import { useVacationMonthGridRefresh } from "../modules/vacation/hooks/useVacationMonthGridRefresh";
 
 const WorkerVacationsPage = () => {
   const { token } = useAuth();
@@ -329,4 +329,5 @@ const WorkerVacationsPage = () => {
 };
 
 export default WorkerVacationsPage;
+
 

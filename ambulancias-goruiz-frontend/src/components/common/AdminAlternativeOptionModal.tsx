@@ -6,7 +6,7 @@ import {
     type VacationAvailabilityResponse,
 } from "../../modules/vacation/domain/api";
 import { monthLabel as fmtMonth } from "../../utils/intl";
-import { useVacationAvailabilityInvalidation } from "../../hooks/vacation/useVacationAvailabilityInvalidation";
+import { useVacationAvailabilityInvalidation } from "../../modules/vacation/hooks/useVacationAvailabilityInvalidation";
 import { isPastLocalDay } from "../../modules/vacation/utils/isPastLocalDay";
 
 type DayState = "green" | "red";
@@ -617,4 +617,5 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
 };
 
 export default AdminAlternativeOptionModal;
+
 

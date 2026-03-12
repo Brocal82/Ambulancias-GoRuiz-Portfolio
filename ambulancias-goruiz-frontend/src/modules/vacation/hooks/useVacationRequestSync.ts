@@ -1,9 +1,9 @@
 // frontend/src/hooks/vacation/useVacationRequestsSync.ts
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { IVacationRequest } from "../../modules/vacation/domain/types";
+import type { IVacationRequest } from "../domain/types";
 import { useVacationRequestsUpdated } from "./useVacationRequestsUpdated";
-import type { VacationRequestsUpdatedDetail } from "../../modules/vacation/utils/vacationEvents";
-import { toastT } from "../../utils/toast";
+import type { VacationRequestsUpdatedDetail } from "../utils/vacationEvents";
+import { toastT } from "../../../utils/toast";
 
 type UseVacationRequestsSyncParams = {
   token: string | null | undefined;
@@ -172,4 +172,5 @@ export function useVacationRequestsSync(
     refetch: doFetch,
   };
 }
+
 
