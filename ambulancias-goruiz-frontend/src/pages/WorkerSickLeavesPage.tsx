@@ -12,9 +12,9 @@ import {
 import FileUpload from "../components/common/FileUpload";
 import { buildImageUrl } from "../utils/apiOrigins";
 import { displayFileNameFromUrl } from "../utils/fileName";
-import SickLeaveRequestForm from "../components/sick/SickLeaveRequestForm";
+import SickLeaveRequestForm from "../modules/sick/components/SickLeaveRequestForm";
 import StatusBadge from "../components/common/StatusBadge";
-import { sickLeaveTone } from "../utils/status/sickLeavesTone";
+import { sickLeaveTone } from "../modules/sick/utils/sickLeavesTone";
 import CreateIconButton from "../components/common/actions/CreateIconButton";
 import CancelButton from "../components/common/actions/CancelButton";
 
@@ -614,3 +614,4 @@ export default function WorkerSickLeavesPage() {
     </div>
   );
 }
+

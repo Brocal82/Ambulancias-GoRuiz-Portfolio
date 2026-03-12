@@ -4,7 +4,7 @@ import Profile from "./Profile";
 import AdminUserDienstsTab from "../modules/diensts/components/AdminUserDienstsTab";
 import AdminUserPraemienTab from "./AdminUserPraemienTab";
 import AdminUserVacationsTab from "../modules/vacation/components/AdminUserVacationsTab";
-import AdminUserSickLeavesTab from "./AdminUserSickLeavesTab";
+import AdminUserSickLeavesTab from "../modules/sick/components/AdminUserSickLeavesTab";
 import AdminUserMessageTab from "../modules/messages/components/AdminUserMessageTab"; import { useAuth } from "../hooks/useAuth";
 import { UsersApi } from "../modules/users";
 import type { User } from "../types/user";
@@ -124,4 +124,5 @@ const AdminUserDetailDashboard = () => {
 };
 
 export default AdminUserDetailDashboard;
+
 

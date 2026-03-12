@@ -12,9 +12,9 @@ import {
   type SickLeaveStatus,
 } from "../api/sickLeaves";
 import { getYearMonths, rangesOverlap } from "../utils/vacationMonthUtils";
-import AdminSickMonthGrid from "../components/sick/AdminSickMonthGrid";
+import AdminSickMonthGrid from "../modules/sick/components/AdminSickMonthGrid";
 import StatusBadge from "../components/common/StatusBadge";
-import { sickLeaveTone } from "../utils/status/sickLeavesTone";
+import { sickLeaveTone } from "../modules/sick/utils/sickLeavesTone";
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return "—";
@@ -526,3 +526,4 @@ export default function AdminSickLeavesPage() {
     </div>
   );
 }
+

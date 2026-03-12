@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { toastT } from "../utils/toast";
-import { buildImageUrl } from "../utils/apiOrigins";
-import { displayFileNameFromUrl } from "../utils/fileName";
+import { toastT } from "../../../utils/toast";
+import { buildImageUrl } from "../../../utils/apiOrigins";
+import { displayFileNameFromUrl } from "../../../utils/fileName";
 import {
   adminListSickLeaves,
   type SickLeave,
-} from "../api/sickLeaves";
-import StatusBadge from "../components/common/StatusBadge";
-import { sickLeaveTone } from "../utils/status/sickLeavesTone";
+} from "../../../api/sickLeaves";
+import StatusBadge from "../../../components/common/StatusBadge";
+import { sickLeaveTone } from "../utils/sickLeavesTone";
 
 type Props = {
   userId: string;
@@ -222,3 +222,4 @@ export default function AdminUserSickLeavesTab({ userId }: Props) {
     </div>
   );
 }
+
