@@ -14,7 +14,7 @@ import { useMessageExpansion } from "../hooks/useMessageExpansion";
 import { sortMessagesByDateDesc } from "../utils/sortMessagesByDateDesc";
 import MessagesMonthPickerModal from "../components/MessagesMonthPickerModal";
 import RecipientsPicker from "../components/RecipientsPicker";
-import SendMessageButton from "../../../components/common/actions/SendMessageButton";
+import SendMessageButton from "../components/SendMessageButton";
 
 const AdminMessagesPage = () => {
   const { token } = useAuth();

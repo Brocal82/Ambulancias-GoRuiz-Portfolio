@@ -9,7 +9,7 @@ import { useMessageExpansion } from "../hooks/useMessageExpansion";
 import { useSendMessage } from "../hooks/useSendMessage";
 import { sortMessagesByDateDesc } from "../utils/sortMessagesByDateDesc";
 import MessagesMonthPickerModal from "./MessagesMonthPickerModal";
-import SendMessageButton from "../../../components/common/actions/SendMessageButton";
+import SendMessageButton from "./SendMessageButton";
 interface Props {
   userId: string;
   userFullName?: string; // p.ej. "García, Juan"
