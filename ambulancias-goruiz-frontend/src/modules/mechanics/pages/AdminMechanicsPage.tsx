@@ -1,26 +1,26 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import MechanicsYearGrid from "../components/mechanics/MechanicsYearGrid";
+import MechanicsYearGrid from "../components/MechanicsYearGrid";
 import {
   buildIssueCountsByMonthForYear,
   filterIssuesByYearMonth,
-} from "../utils/mechanics/issuesByMonth";
+} from "../utils/issuesByMonth";
 
 import {
   getAllIssueReports,
   deleteIssueReport,
   markIssueSeen,
-} from "../modules/workday";
-import type { WorkdayIssue } from "../modules/workday/domain/types/workdayIssue";
-import { useAuth } from "../hooks/useAuth";
-import { toastT } from "../utils/toast";
-import { getAllAmbulances } from "../modules/ambulances/domain/api";
-import type { Ambulance } from "../modules/ambulances/domain/types";
+} from "../../workday";
+import type { WorkdayIssue } from "../../workday/domain/types/workdayIssue";
+import { useAuth } from "../../../hooks/useAuth";
+import { toastT } from "../../../utils/toast";
+import { getAllAmbulances } from "../../ambulances/domain/api";
+import type { Ambulance } from "../../ambulances/domain/types";
 import { useTranslation } from "react-i18next";
-import { notifyAdminIssuesChanged } from "../modules/workday";
-import { normalizeIssues } from "../utils/mechanics/normalizeIssue";
-import { sortIssuesByDateDesc } from "../utils/mechanics/sortIssuesByDateDesc";
-import DeleteIconButton from "../components/common/actions/DeleteIconButton";
-import StatusBadge from "../components/common/StatusBadge";
+import { notifyAdminIssuesChanged } from "../../workday";
+import { normalizeIssues } from "../utils/normalizeIssue";
+import { sortIssuesByDateDesc } from "../utils/sortIssuesByDateDesc";
+import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
+import StatusBadge from "../../../components/common/StatusBadge";
 
 
 const AdminMechanicsPage = () => {
@@ -30,7 +30,7 @@ const AdminMechanicsPage = () => {
   const [loading, setLoading] = useState(true);
   const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  // ✅ Grid año/mes (igual patrón que otros módulos)
+  // âœ… Grid aÃ±o/mes (igual patrÃ³n que otros mÃ³dulos)
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [openMonth, setOpenMonth] = useState<number | null>(null);
 
@@ -61,7 +61,7 @@ const AdminMechanicsPage = () => {
         const ambulancesData = await getAllAmbulances(token);
         setAmbulances(ambulancesData);
       } catch (err) {
-        console.error("❌ Error al cargar reportes o ambulancias:", err);
+        console.error("âŒ Error al cargar reportes o ambulancias:", err);
         toastT.error(["toasts.mechanics.loadError"]);
       } finally {
         setLoading(false);
@@ -76,7 +76,7 @@ const AdminMechanicsPage = () => {
 
     const confirmed = window.confirm(
       (t("pages.mechanics.adminPage.confirmDelete") as string) ||
-      "¿Seguro que quieres eliminar este reporte? Esta acción no se puede deshacer.",
+      "Â¿Seguro que quieres eliminar este reporte? Esta acciÃ³n no se puede deshacer.",
     );
     if (!confirmed) return;
 
@@ -87,10 +87,10 @@ const AdminMechanicsPage = () => {
     try {
       await deleteIssueReport(token, id);
       toastT.success(["toasts.mechanics.deleteSuccess"]);
-      // Si se borra una no vista, el contador también baja. Emitimos evento por si acaso.
+      // Si se borra una no vista, el contador tambiÃ©n baja. Emitimos evento por si acaso.
       notifyAdminIssuesChanged();
     } catch (err) {
-      console.error("❌ Error al borrar reporte:", err);
+      console.error("âŒ Error al borrar reporte:", err);
       setIssues(prev); // rollback
       toastT.error(["toasts.mechanics.deleteError"]);
     }
@@ -100,7 +100,7 @@ const AdminMechanicsPage = () => {
     async (issue: WorkdayIssue) => {
       if (!token) return;
 
-      // ✅ Calculamos esto ANTES del setState (sin estado desfasado)
+      // âœ… Calculamos esto ANTES del setState (sin estado desfasado)
       const isCurrentlyExpanded = expanded.has(issue._id);
       const shouldMarkSeen = !isCurrentlyExpanded && issue.isSeen !== true;
 
@@ -115,7 +115,7 @@ const AdminMechanicsPage = () => {
         return next;
       });
 
-      // Marcar como visto solo si se está abriendo por primera vez y era no visto
+      // Marcar como visto solo si se estÃ¡ abriendo por primera vez y era no visto
       if (shouldMarkSeen) {
         try {
           const updated = await markIssueSeen(token, issue._id);
@@ -134,7 +134,7 @@ const AdminMechanicsPage = () => {
 
           notifyAdminIssuesChanged();
         } catch (err) {
-          console.error("❌ Error al marcar avería como vista:", err);
+          console.error("âŒ Error al marcar averÃ­a como vista:", err);
         }
       }
     },
@@ -151,7 +151,7 @@ const AdminMechanicsPage = () => {
             {t("pages.mechanics.adminPage.title")}
           </h1>
 
-          {/* ✅ Grid de meses (siempre visible) */}
+          {/* âœ… Grid de meses (siempre visible) */}
           <div className="mb-5">
             <MechanicsYearGrid
               year={year}
@@ -183,7 +183,7 @@ const AdminMechanicsPage = () => {
             />
           </div>
 
-          {/* ✅ Estado de carga / vacío (sin ocultar el grid) */}
+          {/* âœ… Estado de carga / vacÃ­o (sin ocultar el grid) */}
           {loading ? (
             <p className="text-sm text-slate-600">
               {t("pages.mechanics.adminPage.loading")}
@@ -194,7 +194,7 @@ const AdminMechanicsPage = () => {
             </p>
           ) : null}
 
-          {/* ✅ Lista SOLO si hay un mes abierto */}
+          {/* âœ… Lista SOLO si hay un mes abierto */}
           {openMonth !== null && !loading && (
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               {monthIssues.length === 0 ? (
@@ -264,8 +264,7 @@ const AdminMechanicsPage = () => {
                             ].join(" ")}
                             aria-hidden="true"
                           >
-                            ▾
-                          </span>
+                            ▾                          </span>
                         </button>
 
                         <div
@@ -287,7 +286,7 @@ const AdminMechanicsPage = () => {
                           <div className="mb-3 flex flex-wrap items-center gap-2">
                             <StatusBadge
                               tone="slate"
-                              label={`📅 ${new Date(issue.timestamp).toLocaleString()}`}
+                              label={`ðŸ“… ${new Date(issue.timestamp).toLocaleString()}`}
                               className="px-2.5 py-1"
                             />
 

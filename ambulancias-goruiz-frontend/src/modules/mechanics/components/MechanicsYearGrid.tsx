@@ -1,7 +1,7 @@
 // src/components/mechanics/MechanicsYearGrid.tsx
 import React from "react";
 import { useTranslation } from "react-i18next";
-import type { IssueCountsByMonth } from "../../utils/mechanics/issuesByMonth";
+import type { IssueCountsByMonth } from "../utils/issuesByMonth";
 
 interface Props {
     year: number;
@@ -41,7 +41,7 @@ const MechanicsYearGrid: React.FC<Props> = ({
     const thisYear = now.getFullYear();
     const thisMonth = now.getMonth();
 
-    // ✅ No permitir navegar al futuro (mismo patrón que MessagesYearGrid)
+    // âœ… No permitir navegar al futuro (mismo patrÃ³n que MessagesYearGrid)
     const maxYear = thisYear;
     const canGoNext = year < maxYear;
 
@@ -49,14 +49,14 @@ const MechanicsYearGrid: React.FC<Props> = ({
 
     return (
         <div className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm">
-            {/* Header año + navegación */}
+            {/* Header aÃ±o + navegaciÃ³n */}
             <div className="mb-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
                         onClick={onPrevYear}
                         className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 text-lg hover:bg-slate-50 active:scale-95 transition"
-                        aria-label={t("common.prevYear", "Año anterior")}
+                        aria-label={t("common.prevYear", "AÃ±o anterior")}
                     >
                         ‹
                     </button>
@@ -65,8 +65,8 @@ const MechanicsYearGrid: React.FC<Props> = ({
                         type="button"
                         onClick={onThisYear}
                         className="px-3 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 active:scale-95 transition"
-                        aria-label={t("common.thisYear", "Ir al año actual")}
-                        title={t("common.thisYear", "Ir al año actual")}
+                        aria-label={t("common.thisYear", "Ir al aÃ±o actual")}
+                        title={t("common.thisYear", "Ir al aÃ±o actual")}
                     >
                         {thisYear}
                     </button>
@@ -79,10 +79,9 @@ const MechanicsYearGrid: React.FC<Props> = ({
                             "flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 text-lg transition",
                             canGoNext ? "hover:bg-slate-50 active:scale-95" : "invisible pointer-events-none",
                         ].join(" ")}
-                        aria-label={t("common.nextYear", "Año siguiente")}
+                        aria-label={t("common.nextYear", "AÃ±o siguiente")}
                     >
-                        ›
-                    </button>
+                        ›                    </button>
                 </div>
 
                 <h3 className="text-lg font-semibold text-slate-800">{yearLabel}</h3>

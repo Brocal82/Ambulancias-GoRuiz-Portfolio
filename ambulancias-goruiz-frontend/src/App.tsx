@@ -5,12 +5,12 @@ import RequireAuth from "./components/RequireAuth";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// Páginas públicas
+// PÃ¡ginas pÃºblicas
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
-// Páginas privadas
+// PÃ¡ginas privadas
 import Profile from "./pages/Profile";
 import WorkerDashboard from "./pages/WorkerDashboard";
 import WorkerDienstsPage from "./modules/diensts/pages/WorkerDienstsPage";
@@ -33,7 +33,7 @@ import AdminDienstsPage from "./modules/diensts/pages/AdminDienstsPage";
 import AdminDienstTemplatesPage from "./modules/dienstTemplates/pages/AdminDienstTemplatesPage";
 import AdminVacationsPage from "./modules/vacation/pages/AdminVacationsPage";
 import AdminAmbulancesPage from "./modules/ambulances/pages/AdminAmbulancesPage";
-import AdminMechanicsPage from "./pages/AdminMechanicsPage";
+import { AdminMechanicsPage } from "./modules/mechanics";
 import AdminUserDetailDashboard from "./pages/AdminUserDetailDashboard";
 import AdminMessagesPage from "./modules/messages/pages/AdminMessagesPage";
 import AdminSentMessages from "./modules/messages/pages/AdminSentMessages";
@@ -45,14 +45,14 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Rutas públicas */}
+          {/* Rutas pÃºblicas */}
           <Route path="/" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
           {/* Rutas protegidas */}
           <Route element={<RequireAuth />}>
-            {/* ✅ AppLayout montado una sola vez */}
+            {/* âœ… AppLayout montado una sola vez */}
             <Route element={<AppLayout />}>
               {/* Trabajador */}
               <Route path="/profile" element={<Profile />} />
