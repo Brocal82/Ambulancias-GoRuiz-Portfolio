@@ -4,7 +4,7 @@ import type { IVacationRequest } from "../domain/types";
 import { useTranslation } from "react-i18next";
 import { getRequestRangeBerlin } from "../utils/getRequestRangeBerlin";
 import StatusBadge from "../../../components/common/StatusBadge";
-import { vacationRequestTone } from "../../../utils/status/vacationRequestTone";
+import { vacationRequestTone } from "../utils/vacationRequestTone";
 
 type Props = {
   request: IVacationRequest;
@@ -107,5 +107,6 @@ const UserVacationListItem: React.FC<Props> = ({
 };
 
 export default UserVacationListItem;
+
 
 

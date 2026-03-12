@@ -1,7 +1,7 @@
 // frontend/src/components/vacation/AdminVacationMonthModal.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { IVacationRequest } from "../domain/types";
-import type { VacationStatus } from "../../../types/vacation";
+import type { VacationStatus } from "../domain/vacation";
 import { filterRequestsByMonth } from "../../../utils/vacationMonthUtils";
 import { updateVacationRequest, deleteVacationRequest } from "../domain/api";
 import { invalidateAvailabilityForRange } from "../utils/invalidateAvailabilityForRange";
@@ -18,7 +18,7 @@ import { emitVacationRequestsUpdated } from "../utils/vacationEvents";
 import { useVacationAvailabilityInvalidation } from "../hooks/useVacationAvailabilityInvalidation";
 import AdminVacationRequestsTable from "./AdminVacationRequestsTable";
 import { toBerlinDayKey } from "../../../utils/dates/dayKey";
-import { vacationRequestFilterPillClass } from "../../../utils/status/vacationRequestUi";
+import { vacationRequestFilterPillClass } from "../utils/vacationRequestUi";
 
 interface Props {
   isOpen: boolean;
@@ -841,6 +841,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 };
 
 export default AdminVacationMonthModal;
+
 
 
 

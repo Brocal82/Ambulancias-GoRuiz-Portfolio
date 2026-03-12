@@ -1,6 +1,6 @@
 // frontend/src/utils/status/vacationRequestUi.ts
-import type { VacationStatus } from "../../types/vacation";
-import type { StatusTone } from "../../components/common/StatusBadge";
+import type { VacationStatus } from "../domain/vacation";
+import type { StatusTone } from "../../../components/common/StatusBadge";
 
 export function vacationRequestTone(status: VacationStatus): StatusTone {
   if (status === "pending") return "amber";
@@ -52,3 +52,4 @@ export function vacationRequestFilterPillClass(
       : "border-blue-300 text-slate-700 hover:bg-blue-100",
   ].join(" ");
 }
+

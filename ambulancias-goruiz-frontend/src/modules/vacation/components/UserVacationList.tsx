@@ -6,7 +6,7 @@ import { calcVacationDays } from "../utils/calcVacationDays";
 import { getRequestRangeBerlin } from "../utils/getRequestRangeBerlin";
 import { toBerlinDayKey } from "../../../utils/dates/dayKey";
 import StatusBadge from "../../../components/common/StatusBadge";
-import { vacationRequestTone } from "../../../utils/status/vacationRequestTone";
+import { vacationRequestTone } from "../utils/vacationRequestTone";
 
 
 
@@ -372,5 +372,6 @@ const UserVacationList: React.FC<Props> = ({
 };
 
 export default UserVacationList;
+
 
 

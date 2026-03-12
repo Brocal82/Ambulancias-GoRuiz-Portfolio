@@ -6,7 +6,7 @@ import StatusBadge from "../../../components/common/StatusBadge";
 import { calcVacationDays } from "../utils/calcVacationDays";
 import { getRequestRangeBerlin } from "../utils/getRequestRangeBerlin";
 import { toBerlinDayKey } from "../../../utils/dates/dayKey";
-import { vacationRequestTone } from "../../../utils/status/vacationRequestTone";
+import { vacationRequestTone } from "../utils/vacationRequestTone";
 
 
 type Props = {
@@ -215,5 +215,6 @@ const AdminActionableVacationRequestsTable: React.FC<Props> = ({
 };
 
 export default AdminActionableVacationRequestsTable;
+
 
 

@@ -1,6 +1,7 @@
 // frontend/src/types/vacation.ts
 
-import type { IVacationRequest } from "../modules/vacation/domain/types";
+import type { IVacationRequest } from "./types";
 
 export type VacationStatus = IVacationRequest["status"];
+
 

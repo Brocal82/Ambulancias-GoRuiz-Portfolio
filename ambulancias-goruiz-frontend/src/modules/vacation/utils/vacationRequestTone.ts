@@ -1,5 +1,5 @@
 // frontend/src/utils/status/vacationRequestTone.ts
-import type { StatusTone } from "../../components/common/StatusBadge";
+import type { StatusTone } from "../../../components/common/StatusBadge";
 
 export type VacationRequestStatus =
   | "pending"
@@ -25,3 +25,4 @@ export const vacationRequestTone = (
       return "slate";
   }
 };
+

@@ -11,7 +11,7 @@ import { invalidateAvailabilityForRange } from "../utils/invalidateAvailabilityF
 import { formatISOToDDMMYYYY } from "../../../utils/timeUtils";
 import { calcVacationDays } from "../utils/calcVacationDays";
 import StatusBadge from "../../../components/common/StatusBadge";
-import { vacationRequestTone } from "../../../utils/status/vacationRequestTone";
+import { vacationRequestTone } from "../utils/vacationRequestTone";
 
 interface Props {
   userId: string;
@@ -219,5 +219,6 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
 };
 
 export default AdminUserVacationsTab;
+
 
 
