@@ -3,19 +3,19 @@ import { useState } from "react";
 import {
   getVacationRequests,
   updateVacationRequest,
-} from "../modules/vacation/domain/api";
-import AdminAlternativeOptionModal from "../modules/vacation/components/AdminAlternativeOptionModal";
-import AdminVacationMonthGrid from "../modules/vacation/components/AdminVacationMonthGrid";
-import AdminVacationMonthModal from "../modules/vacation/components/AdminVacationMonthModal";
-import { useAuth } from "../hooks/useAuth";
+} from "../domain/api";
+import AdminAlternativeOptionModal from "../components/AdminAlternativeOptionModal";
+import AdminVacationMonthGrid from "../components/AdminVacationMonthGrid";
+import AdminVacationMonthModal from "../components/AdminVacationMonthModal";
+import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { toastT } from "../utils/toast";
-import { invalidateAvailabilityForRange } from "../modules/vacation/utils/invalidateAvailabilityForRange";
-import { useVacationRequestsSync } from "../modules/vacation/hooks/useVacationRequestSync";
-import { emitVacationRequestsUpdated } from "../modules/vacation/utils/vacationEvents";
-import PageShell from "../components/common/PageShell";
-import AdminActionableVacationRequestsTable from "../modules/vacation/components/AdminActionableVacationRequestsTable";
-import { useVacationMonthGridRefresh } from "../modules/vacation/hooks/useVacationMonthGridRefresh";
+import { toastT } from "../../../utils/toast";
+import { invalidateAvailabilityForRange } from "../utils/invalidateAvailabilityForRange";
+import { useVacationRequestsSync } from "../hooks/useVacationRequestSync";
+import { emitVacationRequestsUpdated } from "../utils/vacationEvents";
+import PageShell from "../../../components/common/PageShell";
+import AdminActionableVacationRequestsTable from "../components/AdminActionableVacationRequestsTable";
+import { useVacationMonthGridRefresh } from "../hooks/useVacationMonthGridRefresh";
 
 
 // Nombre del evento global para refrescar el badge del Dashboard
@@ -408,6 +408,7 @@ const AdminVacationRequests = () => {
 };
 
 export default AdminVacationRequests;
+
 
 
 

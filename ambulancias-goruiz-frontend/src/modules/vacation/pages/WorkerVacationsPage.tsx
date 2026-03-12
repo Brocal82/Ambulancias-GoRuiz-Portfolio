@@ -5,25 +5,25 @@ import {
   respondToAlternativeDate,
   getVacationAvailability,
   cancelMyVacationRequest,
-} from "../modules/vacation/domain/api";
+} from "../domain/api";
 
-import { useAuth } from "../hooks/useAuth";
-import UserVacationList from "../modules/vacation/components/UserVacationList";
+import { useAuth } from "../../../hooks/useAuth";
+import UserVacationList from "../components/UserVacationList";
 import { useTranslation } from "react-i18next";
-import { toastT } from "../utils/toast";
+import { toastT } from "../../../utils/toast";
 
-import AdminVacationMonthGrid from "../modules/vacation/components/AdminVacationMonthGrid";
-import SelectableWorkerAvailabilityMonthModal from "../modules/vacation/components/SelectableWorkerAvailabilityMonthModal";
+import AdminVacationMonthGrid from "../components/AdminVacationMonthGrid";
+import SelectableWorkerAvailabilityMonthModal from "../components/SelectableWorkerAvailabilityMonthModal";
 
 // Prefetch/caché compartida
-import { useVacationRequestsSync } from "../modules/vacation/hooks/useVacationRequestSync";
+import { useVacationRequestsSync } from "../hooks/useVacationRequestSync";
 
-import { emitVacationRequestsUpdated } from "../modules/vacation/utils/vacationEvents";
-import { invalidateAvailabilityForRange } from "../modules/vacation/utils/invalidateAvailabilityForRange";
-import { toBerlinDayKey } from "../utils/dates/dayKey";
+import { emitVacationRequestsUpdated } from "../utils/vacationEvents";
+import { invalidateAvailabilityForRange } from "../utils/invalidateAvailabilityForRange";
+import { toBerlinDayKey } from "../../../utils/dates/dayKey";
 
-import PageShell from "../components/common/PageShell";
-import { useVacationMonthGridRefresh } from "../modules/vacation/hooks/useVacationMonthGridRefresh";
+import PageShell from "../../../components/common/PageShell";
+import { useVacationMonthGridRefresh } from "../hooks/useVacationMonthGridRefresh";
 
 const WorkerVacationsPage = () => {
   const { token } = useAuth();
@@ -329,6 +329,7 @@ const WorkerVacationsPage = () => {
 };
 
 export default WorkerVacationsPage;
+
 
 
 

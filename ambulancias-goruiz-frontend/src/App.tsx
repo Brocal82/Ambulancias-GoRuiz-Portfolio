@@ -15,7 +15,7 @@ import Profile from "./pages/Profile";
 import WorkerDashboard from "./pages/WorkerDashboard";
 import WorkerDienstsPage from "./modules/diensts/pages/WorkerDienstsPage";
 import WorkerPraemienPage from "./modules/praemien/pages/WorkerPraemienPage";
-import WorkerVacationsPage from "./pages/WorkerVacationsPage";
+import WorkerVacationsPage from "./modules/vacation/pages/WorkerVacationsPage";
 import WorkerMessagesPage from "./modules/messages/pages/WorkerMessagesPage";
 import WorkerSickLeavesPage from "./pages/WorkerSickLeavesPage";
 import { MyWorkdayPage, AdminSummariesPage } from "./modules/workday";
@@ -31,7 +31,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminDienstsPage from "./modules/diensts/pages/AdminDienstsPage";
 import AdminDienstTemplatesPage from "./modules/dienstTemplates/pages/AdminDienstTemplatesPage";
-import AdminVacationsPage from "./pages/AdminVacationsPage";
+import AdminVacationsPage from "./modules/vacation/pages/AdminVacationsPage";
 import AdminAmbulancesPage from "./modules/ambulances/pages/AdminAmbulancesPage";
 import AdminMechanicsPage from "./pages/AdminMechanicsPage";
 import AdminUserDetailDashboard from "./pages/AdminUserDetailDashboard";
@@ -91,3 +91,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+
