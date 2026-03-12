@@ -4,9 +4,9 @@ import {
   getVacationRequests,
   updateVacationRequest,
 } from "../modules/vacation/domain/api";
-import AdminAlternativeOptionModal from "../components/common/AdminAlternativeOptionModal";
-import AdminVacationMonthGrid from "../components/vacation/AdminVacationMonthGrid";
-import AdminVacationMonthModal from "../components/vacation/AdminVacationMonthModal";
+import AdminAlternativeOptionModal from "../modules/vacation/components/AdminAlternativeOptionModal";
+import AdminVacationMonthGrid from "../modules/vacation/components/AdminVacationMonthGrid";
+import AdminVacationMonthModal from "../modules/vacation/components/AdminVacationMonthModal";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
@@ -14,7 +14,7 @@ import { invalidateAvailabilityForRange } from "../modules/vacation/utils/invali
 import { useVacationRequestsSync } from "../modules/vacation/hooks/useVacationRequestSync";
 import { emitVacationRequestsUpdated } from "../modules/vacation/utils/vacationEvents";
 import PageShell from "../components/common/PageShell";
-import AdminActionableVacationRequestsTable from "../components/vacation/AdminActionableVacationRequestsTable";
+import AdminActionableVacationRequestsTable from "../modules/vacation/components/AdminActionableVacationRequestsTable";
 import { useVacationMonthGridRefresh } from "../modules/vacation/hooks/useVacationMonthGridRefresh";
 
 
@@ -408,5 +408,6 @@ const AdminVacationRequests = () => {
 };
 
 export default AdminVacationRequests;
+
 
 

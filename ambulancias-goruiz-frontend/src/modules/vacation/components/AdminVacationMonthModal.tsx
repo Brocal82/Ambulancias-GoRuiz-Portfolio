@@ -1,24 +1,24 @@
 // frontend/src/components/vacation/AdminVacationMonthModal.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import type { IVacationRequest } from "../../modules/vacation/domain/types";
-import type { VacationStatus } from "../../types/vacation";
-import { filterRequestsByMonth } from "../../utils/vacationMonthUtils";
-import { updateVacationRequest, deleteVacationRequest } from "../../modules/vacation/domain/api";
-import { invalidateAvailabilityForRange } from "../../modules/vacation/utils/invalidateAvailabilityForRange";
-import AdminAlternativeOptionModal from "../common/AdminAlternativeOptionModal";
-import { useAuth } from "../../hooks/useAuth";
-import { toastT } from "../../utils/toast";
+import type { IVacationRequest } from "../domain/types";
+import type { VacationStatus } from "../../../types/vacation";
+import { filterRequestsByMonth } from "../../../utils/vacationMonthUtils";
+import { updateVacationRequest, deleteVacationRequest } from "../domain/api";
+import { invalidateAvailabilityForRange } from "../utils/invalidateAvailabilityForRange";
+import AdminAlternativeOptionModal from "./AdminAlternativeOptionModal";
+import { useAuth } from "../../../hooks/useAuth";
+import { toastT } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
-import { monthLabel as fmtMonth } from "../../utils/intl";
+import { monthLabel as fmtMonth } from "../../../utils/intl";
 import {
   getVacationAvailability,
   type VacationAvailabilityResponse,
-} from "../../modules/vacation/domain/api";
-import { emitVacationRequestsUpdated } from "../../modules/vacation/utils/vacationEvents";
-import { useVacationAvailabilityInvalidation } from "../../modules/vacation/hooks/useVacationAvailabilityInvalidation";
-import AdminVacationRequestsTable from "./AdminVacationRequestsTable";
-import { toBerlinDayKey } from "../../utils/dates/dayKey";
-import { vacationRequestFilterPillClass } from "../../utils/status/vacationRequestUi";
+} from "../domain/api";
+import { emitVacationRequestsUpdated } from "../utils/vacationEvents";
+import { useVacationAvailabilityInvalidation } from "../hooks/useVacationAvailabilityInvalidation";
+import AdminVacationRequestsTable from "../../../components/vacation/AdminVacationRequestsTable";
+import { toBerlinDayKey } from "../../../utils/dates/dayKey";
+import { vacationRequestFilterPillClass } from "../../../utils/status/vacationRequestUi";
 
 interface Props {
   isOpen: boolean;
@@ -841,5 +841,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 };
 
 export default AdminVacationMonthModal;
+
 
 

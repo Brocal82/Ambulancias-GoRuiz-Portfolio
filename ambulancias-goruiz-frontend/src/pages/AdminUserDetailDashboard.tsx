@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import Profile from "./Profile";
 import AdminUserDienstsTab from "../modules/diensts/components/AdminUserDienstsTab";
 import AdminUserPraemienTab from "./AdminUserPraemienTab";
-import AdminUserVacationsTab from "./AdminUserVacationsTab";
+import AdminUserVacationsTab from "../modules/vacation/components/AdminUserVacationsTab";
 import AdminUserSickLeavesTab from "./AdminUserSickLeavesTab";
 import AdminUserMessageTab from "../modules/messages/components/AdminUserMessageTab"; import { useAuth } from "../hooks/useAuth";
 import { UsersApi } from "../modules/users";
@@ -124,3 +124,4 @@ const AdminUserDetailDashboard = () => {
 };
 
 export default AdminUserDetailDashboard;
+

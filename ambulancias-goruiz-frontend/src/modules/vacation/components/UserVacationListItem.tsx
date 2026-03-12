@@ -1,10 +1,10 @@
 //src/components/vacation/UserVacationListItem.tsx
 import React from "react";
-import type { IVacationRequest } from "../../modules/vacation/domain/types";
+import type { IVacationRequest } from "../domain/types";
 import { useTranslation } from "react-i18next";
-import { getRequestRangeBerlin } from "../../modules/vacation/utils/getRequestRangeBerlin";
-import StatusBadge from "../common/StatusBadge";
-import { vacationRequestTone } from "../../utils/status/vacationRequestTone";
+import { getRequestRangeBerlin } from "../utils/getRequestRangeBerlin";
+import StatusBadge from "../../../components/common/StatusBadge";
+import { vacationRequestTone } from "../../../utils/status/vacationRequestTone";
 
 type Props = {
   request: IVacationRequest;
@@ -107,4 +107,5 @@ const UserVacationListItem: React.FC<Props> = ({
 };
 
 export default UserVacationListItem;
+
 

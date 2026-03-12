@@ -1,17 +1,17 @@
 // src/pages/AdminUserVacationsTab.tsx
 import { useEffect, useState } from "react";
-import type { IVacationRequest } from "../modules/vacation/domain/types";
-import { getVacationRequests, deleteVacationRequest } from "../modules/vacation/domain/api";
-import { useAuth } from "../hooks/useAuth";
+import type { IVacationRequest } from "../domain/types";
+import { getVacationRequests, deleteVacationRequest } from "../domain/api";
+import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { toastT } from "../utils/toast";
-import { emitVacationRequestsUpdated } from "../modules/vacation/utils/vacationEvents";
-import { invalidateAvailabilityForRange } from "../modules/vacation/utils/invalidateAvailabilityForRange";
+import { toastT } from "../../../utils/toast";
+import { emitVacationRequestsUpdated } from "../utils/vacationEvents";
+import { invalidateAvailabilityForRange } from "../utils/invalidateAvailabilityForRange";
 
-import { formatISOToDDMMYYYY } from "../utils/timeUtils";
-import { calcVacationDays } from "../modules/vacation/utils/calcVacationDays";
-import StatusBadge from "../components/common/StatusBadge";
-import { vacationRequestTone } from "../utils/status/vacationRequestTone";
+import { formatISOToDDMMYYYY } from "../../../utils/timeUtils";
+import { calcVacationDays } from "../utils/calcVacationDays";
+import StatusBadge from "../../../components/common/StatusBadge";
+import { vacationRequestTone } from "../../../utils/status/vacationRequestTone";
 
 interface Props {
   userId: string;
@@ -219,4 +219,5 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
 };
 
 export default AdminUserVacationsTab;
+
 

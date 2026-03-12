@@ -1,22 +1,22 @@
 // frontend/src/components/vacation/AdminVacationMonthGrid.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import type { IVacationRequest } from "../../modules/vacation/domain/types";
+import type { IVacationRequest } from "../domain/types";
 import {
   getYearMonths,
   countRequestsByMonth,
-} from "../../utils/vacationMonthUtils";
-import { useVacationAvailabilityInvalidation } from "../../modules/vacation/hooks/useVacationAvailabilityInvalidation";
+} from "../../../utils/vacationMonthUtils";
+import { useVacationAvailabilityInvalidation } from "../hooks/useVacationAvailabilityInvalidation";
 import { useTranslation } from "react-i18next";
 
 // API disponibilidad
 import {
   getVacationAvailability,
   type VacationAvailabilityResponse,
-} from "../../modules/vacation/domain/api";
+} from "../domain/api";
 import {
   vacationMonthBorderPriority,
   vacationRequestBorderClass,
-} from "../../modules/vacation/utils/vacationRequestBorder";
+} from "../utils/vacationRequestBorder";
 
 
 type Props = {
@@ -381,5 +381,6 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
 };
 
 export default AdminVacationMonthGrid;
+
 
 

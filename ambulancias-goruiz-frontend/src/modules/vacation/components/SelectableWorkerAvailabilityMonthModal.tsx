@@ -1,61 +1,74 @@
-// frontend/src/components/vacation/AdminAlternativeOptionModal.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
     getVacationAvailability,
     type VacationAvailabilityResponse,
-} from "../../modules/vacation/domain/api";
-import { monthLabel as fmtMonth } from "../../utils/intl";
-import { useVacationAvailabilityInvalidation } from "../../modules/vacation/hooks/useVacationAvailabilityInvalidation";
-import { isPastLocalDay } from "../../modules/vacation/utils/isPastLocalDay";
+} from "../domain/api";
+import { monthLabel as fmtMonth } from "../../../utils/intl";
+import { useVacationAvailabilityInvalidation } from "../hooks/useVacationAvailabilityInvalidation";
+import { toBerlinDayKey, todayBerlinDayKey } from "../../../utils/dates/dayKey";
+import { isPastLocalDay } from "../utils/isPastLocalDay";
+import type { IVacationRequest } from "../domain/types";
+import WorkerMonthRequests from "./WorkerMonthRequests";
 
-type DayState = "green" | "red";
+type DayState = "green" | "yellow" | "red";
+type AcceptedRange = { startISO: string; endISO: string };
 
 type Props = {
     isOpen: boolean;
-    monthIndex: number | null; // 0..11
+    monthIndex: number | null;
     year: number;
-
     onClose: () => void;
-
-    /** Navegación mes (flechas) */
-    onNavigateMonth?: (next: { year: number; monthIndex: number }) => void;
-
-    /** Submit final (rango + nota) */
-    onSubmit: (p: { startISO: string; endISO: string; adminNote: string; days: number }) => void;
-
-    /** Bloquear días rojos */
+    acceptedRanges?: AcceptedRange[];
+    pendingRanges?: AcceptedRange[];
+    onRequestRange: (p: { startISO: string; endISO: string; days: number }) => void;
     blockRedDays?: boolean;
 
-    /** Inicial (opcional) para abrir ya con un rango */
-    initialStartDate?: Date;
-    initialEndDate?: Date;
+    // ✅ Navegación de mes desde el modal (flechas)
+    onNavigateMonth?: (next: { year: number; monthIndex: number }) => void;
+
+    /** ✅ M-1: solo cableado (aún no se usa dentro del modal) */
+    monthRequests?: IVacationRequest[];
+    onCancelRequest?: (id: string) => void;
+    onRespondAlternative?: (id: string, accept: boolean) => void;
 };
 
-const AdminAlternativeOptionModal: React.FC<Props> = ({
+const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
     isOpen,
     monthIndex,
     year,
     onClose,
-    onNavigateMonth,
-    onSubmit,
+    acceptedRanges = [],
+    pendingRanges = [],
+    onRequestRange,
     blockRedDays = true,
-    initialStartDate,
-    initialEndDate,
+    onNavigateMonth,
+
+    /** ✅ M-1: solo cableado (aún no se usa dentro del modal) */
+    monthRequests = [],
+    onCancelRequest,
+    onRespondAlternative,
 }) => {
     const { t, i18n } = useTranslation();
 
     const locale =
-        i18n.language === "de" ? "de-DE" : i18n.language === "en" ? "en-US" : "es-ES";
+        i18n.language === "de"
+            ? "de-DE"
+            : i18n.language === "en"
+                ? "en-US"
+                : "es-ES";
 
     const formatShortDate = (d: Date) => {
+        // Ej: 28 ene (es-ES) / 28. Jan (de-DE) / Jan 28 (en-US)
         return d.toLocaleDateString(locale, { day: "2-digit", month: "short" });
     };
 
-    const [availability, setAvailability] = useState<VacationAvailabilityResponse | null>(null);
+    const [availability, setAvailability] =
+        useState<VacationAvailabilityResponse | null>(null);
     const [availLoading, setAvailLoading] = useState(false);
     const [availError, setAvailError] = useState<string | null>(null);
 
+    // Control de carreras
     const inFlightKeyRef = useRef<string | null>(null);
     const refreshTimerRef = useRef<number | null>(null);
 
@@ -63,23 +76,12 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
     const [rangeStartDate, setRangeStartDate] = useState<Date | null>(null);
     const [rangeEndDate, setRangeEndDate] = useState<Date | null>(null);
 
-    const [adminNote, setAdminNote] = useState("");
-
-    // Reset al abrir/cerrar
+    // Reset de selección SOLO al abrir/cerrar (para permitir navegar meses sin perder start)
     useEffect(() => {
         if (!isOpen) return;
-
-        // si vienen iniciales, precargamos selección (mismo comportamiento “proponer alternativa desde rango original”)
-        if (initialStartDate && initialEndDate) {
-            setRangeStartDate(new Date(initialStartDate));
-            setRangeEndDate(new Date(initialEndDate));
-        } else {
-            setRangeStartDate(null);
-            setRangeEndDate(null);
-        }
-
-        setAdminNote("");
-    }, [isOpen, initialStartDate, initialEndDate]);
+        setRangeStartDate(null);
+        setRangeEndDate(null);
+    }, [isOpen]);
 
     // Cabeceras LUN-DOM
     const weekdayHeaders = useMemo(() => {
@@ -96,13 +98,57 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
         if (monthIndex === null) return Array(42).fill(null);
         const first = new Date(year, monthIndex, 1);
         const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-        const jsFirstDow = first.getDay();
-        const mondayBased = (jsFirstDow + 6) % 7;
+        const jsFirstDow = first.getDay(); // 0-dom..6-sáb
+        const mondayBased = (jsFirstDow + 6) % 7; // 0-lun
         const leading = Array.from({ length: mondayBased }, () => null);
         const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
         const base = [...leading, ...days];
-        return base.concat(Array.from({ length: Math.max(0, 42 - base.length) }, () => null));
+        return base.concat(
+            Array.from({ length: Math.max(0, 42 - base.length) }, () => null),
+        );
     }, [monthIndex, year]);
+
+    const acceptedDaysSet = useMemo(() => {
+        if (monthIndex === null || acceptedRanges.length === 0) return new Set<number>();
+
+        const days = new Set<number>();
+        for (const r of acceptedRanges) {
+            const start = new Date(r.startISO);
+            const end = new Date(r.endISO);
+
+            const monthStart = new Date(year, monthIndex, 1);
+            const monthEnd = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
+
+            if (end < monthStart || start > monthEnd) continue;
+
+            const s = start < monthStart ? monthStart : start;
+            const e = end > monthEnd ? monthEnd : end;
+
+            for (let d = s.getDate(); d <= e.getDate(); d++) days.add(d);
+        }
+        return days;
+    }, [acceptedRanges, monthIndex, year]);
+
+    const pendingDaysSet = useMemo(() => {
+        if (monthIndex === null || pendingRanges.length === 0) return new Set<number>();
+
+        const days = new Set<number>();
+        for (const r of pendingRanges) {
+            const start = new Date(r.startISO);
+            const end = new Date(r.endISO);
+
+            const monthStart = new Date(year, monthIndex, 1);
+            const monthEnd = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
+
+            if (end < monthStart || start > monthEnd) continue;
+
+            const s = start < monthStart ? monthStart : start;
+            const e = end > monthEnd ? monthEnd : end;
+
+            for (let d = s.getDate(); d <= e.getDate(); d++) days.add(d);
+        }
+        return days;
+    }, [pendingRanges, monthIndex, year]);
 
     const loadAvailability = async (y: number, m1: number, force = false) => {
         const key = `${y}-${String(m1).padStart(2, "0")}`;
@@ -121,7 +167,7 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
         }
     };
 
-    // Fetch al abrir/cambiar mes
+    // Primer fetch al abrir/cambiar mes
     useEffect(() => {
         if (!isOpen || monthIndex === null) return;
         const m1 = monthIndex + 1;
@@ -153,6 +199,7 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
         if (!availability || day === null) return null;
         const rec = availability.days.find((d) => d.day === day);
         const state = rec ? rec.state : "green";
+        // Worker NO ve amarillo global (solo rojo bloquea)
         return state === "red" ? "red" : "green";
     };
 
@@ -175,44 +222,88 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
         const a = rangeStartDate < end ? rangeStartDate : end;
         const b = rangeStartDate < end ? end : rangeStartDate;
 
+        // días inclusive (robusto cruzando meses)
         const msPerDay = 24 * 60 * 60 * 1000;
         const startUTC = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
         const endUTC = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
         const days = Math.floor((endUTC - startUTC) / msPerDay) + 1;
 
+        const startISO = toBerlinDayKey(a);
+        const endISO = toBerlinDayKey(b);
+
+        if (!startISO || !endISO) return null;
+
         return {
+            a: a.getDate(),
+            b: b.getDate(),
             days,
-            startISO: a.toISOString(),
-            endISO: b.toISOString(),
-            a,
-            b,
+            startISO,
+            endISO,
         };
+
+
     }, [rangeStartDate, rangeEndDate]);
 
     const selectedLabel = useMemo(() => {
         if (!rangeStartDate) return null;
 
         const end = rangeEndDate ?? rangeStartDate;
+
         const a = rangeStartDate < end ? rangeStartDate : end;
         const b = rangeStartDate < end ? end : rangeStartDate;
 
         return `${formatShortDate(a)} – ${formatShortDate(b)}`;
     }, [rangeStartDate, rangeEndDate, locale]);
 
+
+    const selectionHasRed = useMemo(() => {
+        // ✅ Validación roja solo dentro del mes visible (sin romper tu lógica)
+        if (!availability || !rangeStartDate || monthIndex === null) return false;
+
+        const end = rangeEndDate ?? rangeStartDate;
+        const a = rangeStartDate < end ? rangeStartDate : end;
+        const b = rangeStartDate < end ? end : rangeStartDate;
+
+        // Recorremos día por día usando fechas reales
+        const cursor = new Date(a.getFullYear(), a.getMonth(), a.getDate(), 0, 0, 0, 0);
+        const last = new Date(b.getFullYear(), b.getMonth(), b.getDate(), 0, 0, 0, 0);
+
+        while (cursor <= last) {
+            // Solo chequeamos si el cursor está en el mes visible del modal
+            if (cursor.getFullYear() === year && cursor.getMonth() === monthIndex) {
+                const dayNumber = cursor.getDate();
+                const st = getDayState(dayNumber);
+                if (st === "red") return true;
+            }
+
+            cursor.setDate(cursor.getDate() + 1);
+        }
+
+        return false;
+    }, [availability, rangeStartDate, rangeEndDate, monthIndex, year]);
+
+
     const isBlockedDay = (day: number) => {
         if (monthIndex === null) return true;
 
-        if (isPastLocalDay(new Date(year, monthIndex, day, 0, 0, 0, 0))) return true;
+        // pasado (anclado a Europe/Berlin con DayKey)
+        const cellKey = toBerlinDayKey(new Date(year, monthIndex, day, 12, 0, 0, 0));
+        if (cellKey && cellKey < todayBerlinDayKey()) return true;
 
+
+        // ya es mío
+        if (acceptedDaysSet.has(day) || pendingDaysSet.has(day)) return true;
+
+        // rojo
         const st = getDayState(day);
         if (blockRedDays && st === "red") return true;
 
         return false;
     };
 
-    const rangeHasBlockedDaysInThisMonth = (aDay: number, bDay: number) => {
-        const start = Math.min(aDay, bDay);
-        const end = Math.max(aDay, bDay);
+    const rangeHasBlockedDays = (a: number, b: number) => {
+        const start = Math.min(a, b);
+        const end = Math.max(a, b);
         for (let d = start; d <= end; d++) {
             if (isBlockedDay(d)) return true;
         }
@@ -225,27 +316,34 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
 
         const clickedDate = new Date(year, monthIndex, day, 0, 0, 0, 0);
 
+        // 1) Primer click: start
         if (!rangeStartDate) {
             setRangeStartDate(clickedDate);
             setRangeEndDate(null);
             return;
         }
 
+        // 2) Si ya hay start y NO hay end aún:
         if (!rangeEndDate) {
+            // ✅ Solo hacia delante:
+            // Si el usuario clickea un día ANTERIOR al start => reiniciamos start en ese día
             if (clickedDate < rangeStartDate) {
                 setRangeStartDate(clickedDate);
                 setRangeEndDate(null);
                 return;
             }
 
+            // ✅ Si haces click otra vez en el MISMO día (start) => deseleccionar
             if (clickedDate.getTime() === rangeStartDate.getTime()) {
                 setRangeStartDate(null);
                 setRangeEndDate(null);
                 return;
             }
 
-            // validación mínima dentro del mes visible (mismo patrón que tu worker modal)
-            if (rangeHasBlockedDaysInThisMonth(rangeStartDate.getDate(), day)) {
+            // Si es posterior => intentamos fijar end
+            // (Validación mínima dentro del mes visible: se mantiene tu lógica actual)
+            if (rangeHasBlockedDays(rangeStartDate.getDate(), day)) {
+                // si el rango dentro del mes visible pasa por bloqueados, reiniciamos start
                 setRangeStartDate(clickedDate);
                 setRangeEndDate(null);
                 return;
@@ -255,45 +353,51 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
             return;
         }
 
+        // 3) Si ya hay ambos (start y end): reinicia con nuevo start
         setRangeStartDate(clickedDate);
         setRangeEndDate(null);
     };
 
     const selectionHasPast = useMemo(() => {
-        if (!selectedSummary || monthIndex === null) return false;
+        // ✅ Validamos "pasado" con fechas reales (robusto cruzando meses)
+        if (!rangeStartDate || monthIndex === null) return false;
 
-        // validación mínima dentro del mes visible (igual patrón)
-        const startDay =
-            selectedSummary.a.getFullYear() === year && selectedSummary.a.getMonth() === monthIndex
-                ? selectedSummary.a.getDate()
-                : null;
+        const end = rangeEndDate ?? rangeStartDate;
+        const a = rangeStartDate < end ? rangeStartDate : end;
+        const b = rangeStartDate < end ? end : rangeStartDate;
 
-        const endDay =
-            selectedSummary.b.getFullYear() === year && selectedSummary.b.getMonth() === monthIndex
-                ? selectedSummary.b.getDate()
-                : null;
+        const cursor = new Date(a.getFullYear(), a.getMonth(), a.getDate(), 0, 0, 0, 0);
+        const last = new Date(b.getFullYear(), b.getMonth(), b.getDate(), 0, 0, 0, 0);
 
-        if (startDay === null) return false;
-        const a = Math.min(startDay, endDay ?? startDay);
-        const b = Math.max(startDay, endDay ?? startDay);
+        while (cursor <= last) {
+            // Solo comprobamos el mes visible (igual que tu lógica actual)
+            if (cursor.getFullYear() === year && cursor.getMonth() === monthIndex) {
+                if (isPastLocalDay(cursor)) return true;
+            }
 
-        for (let d = a; d <= b; d++) {
-            if (isPastLocalDay(new Date(year, monthIndex, d, 0, 0, 0, 0))) return true;
+            cursor.setDate(cursor.getDate() + 1);
         }
-        return false;
-    }, [selectedSummary, monthIndex, year]);
 
-    const canSubmit =
+        return false;
+    }, [rangeStartDate, rangeEndDate, monthIndex, year]);
+
+
+    const canRequest =
         !!selectedSummary &&
+        !!onRequestRange &&
         !availLoading &&
         !availError &&
+        !(blockRedDays && selectionHasRed) &&
         !selectionHasPast;
 
-    // Flechas (mismo patrón que tu worker modal)
+    // ✅ Flechas: visibles desde que existe START (aunque ya haya END)
     const showNavArrows = !!rangeStartDate;
+
+    // ✅ Mes/año del START (para saber cuándo permitir volver)
     const startMonthIndex = rangeStartDate?.getMonth() ?? null;
     const startYear = rangeStartDate?.getFullYear() ?? null;
 
+    // ✅ Solo mostramos "volver" si estamos fuera del mes/año donde se eligió el START
     const canGoPrev =
         showNavArrows &&
         startMonthIndex !== null &&
@@ -314,14 +418,6 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
         onNavigateMonth?.({ year: nextYear, monthIndex: nextMonthIndex });
     };
 
-    const closeBtnRef = useRef<HTMLButtonElement | null>(null);
-    useEffect(() => {
-        if (!isOpen) return;
-        closeBtnRef.current?.focus();
-        const onKeyDown = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-        window.addEventListener("keydown", onKeyDown);
-        return () => window.removeEventListener("keydown", onKeyDown);
-    }, [isOpen, onClose]);
 
     if (!isOpen || monthIndex === null) return null;
 
@@ -333,21 +429,19 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
                 className="relative z-10 w-full max-w-4xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 flex flex-col max-h-[90vh]"
                 role="dialog"
                 aria-modal="true"
-                aria-labelledby="admin-alt-month-title"
+                aria-labelledby="worker-availability-month-title"
             >
                 {/* Header */}
                 <div className="sticky top-0 z-10 bg-white border-b border-slate-200 p-3">
                     <div className="flex items-center gap-2">
                         <h3
-                            id="admin-alt-month-title"
+                            id="worker-availability-month-title"
                             className="text-base font-semibold text-slate-900 truncate"
                         >
-                            {String(t("pages.vacations.altModal.title", { defaultValue: "Proponer alternativa" }))} ·{" "}
                             {`${fmtMonth(year, monthIndex)} · ${year}`}
                         </h3>
 
                         <button
-                            ref={closeBtnRef}
                             aria-label={t("pages.vacations.monthModal.close")}
                             onClick={onClose}
                             className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:scale-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
@@ -360,21 +454,44 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
                     <div className="rounded-xl ring-1 ring-slate-200 bg-white p-2">
-                        {/* Leyenda (misma que worker, sin “mis pendientes/aceptadas”) */}
+                        {/* Leyenda */}
                         <div className="mb-2 flex items-center gap-2 text-[11px] text-slate-600 flex-wrap">
                             <span className="inline-flex items-center gap-2">
-                                <span className="h-3 w-3 rounded border-2 border-emerald-300" />
+                                <span className="h-3 w-3 rounded border-2 border-emerald-300 bg-emerald-50" />
                                 {String(
-                                    t("pages.vacations.monthGrid.legend.available", { defaultValue: "Disponible" }),
+                                    t("pages.vacations.monthGrid.legend.available", {
+                                        defaultValue: "Disponible",
+                                    }),
                                 )}
                             </span>
 
                             <span className="inline-flex items-center gap-2">
-                                <span className="h-3 w-3 rounded border-2 border-rose-300" />
+                                <span className="h-3 w-3 rounded border-2 border-amber-300 bg-amber-100" />
                                 {String(
-                                    t("pages.vacations.monthGrid.legend.full", { defaultValue: "Sin disponibilidad" }),
+                                    t("pages.vacations.monthGrid.legend.myPending", {
+                                        defaultValue: "Mis pendientes",
+                                    }),
                                 )}
                             </span>
+
+                            <span className="inline-flex items-center gap-2">
+                                <span className="h-3 w-3 rounded border-2 border-sky-500 bg-sky-300" />
+                                {String(
+                                    t("pages.vacations.monthGrid.legend.myAccepted", {
+                                        defaultValue: "Aceptadas",
+                                    }),
+                                )}
+                            </span>
+
+                            <span className="inline-flex items-center gap-2">
+                                <span className="h-3 w-3 rounded border-2 border-rose-300 bg-rose-50" />
+                                {String(
+                                    t("pages.vacations.monthGrid.legend.full", {
+                                        defaultValue: "Sin disponibilidad",
+                                    }),
+                                )}
+                            </span>
+
 
                             {availability && (
                                 <span className="ml-auto text-slate-500">
@@ -397,7 +514,7 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
                             ))}
                         </div>
 
-                        {/* Calendar (misma UI que worker) */}
+                        {/* Calendar */}
                         <div className="grid grid-cols-7 gap-0">
                             {availLoading &&
                                 Array.from({ length: 42 }).map((_, i) => (
@@ -419,7 +536,9 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
                                     }
 
                                     const state = getDayState(cell);
+                                    const isAccepted = acceptedDaysSet.has(cell);
                                     const isSelected = isInSelectedRange(cell);
+                                    const isPendingMine = pendingDaysSet.has(cell);
                                     const isBlocked = isBlockedDay(cell);
 
                                     const baseColor =
@@ -427,7 +546,18 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
                                             ? "bg-rose-50 text-slate-800 border-2 border-rose-300"
                                             : "bg-emerald-50 text-slate-800 border-2 border-emerald-300";
 
-                                    // selección conectada (igual patrón que worker modal)
+                                    const acceptedCls = isAccepted
+                                        ? "!bg-sky-300 !border-sky-500 !text-slate-900 font-semibold"
+                                        : "";
+
+
+
+                                    const pendingFillCls =
+                                        !isAccepted && isPendingMine
+                                            ? "!bg-amber-100 !border-amber-300 !text-slate-900 font-semibold"
+                                            : "";
+
+                                    // selección visual conectada (dentro del mes visible)
                                     const startDayInThisMonth =
                                         !!rangeStartDate &&
                                             rangeStartDate.getFullYear() === year &&
@@ -453,13 +583,17 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
                                             : null;
 
                                     const isRangeSingle =
-                                        startDayInThisMonth !== null && endDayInThisMonth === null && cell === startDayInThisMonth;
+                                        startDayInThisMonth !== null &&
+                                        endDayInThisMonth === null &&
+                                        cell === startDayInThisMonth;
 
                                     const isRangeStart = a !== null && cell === a;
                                     const isRangeEnd = b !== null && cell === b;
 
                                     const selectionFillCls =
-                                        isSelected ? "!bg-amber-50 !border-amber-200 !text-slate-900" : "";
+                                        isSelected && !isAccepted && !isPendingMine
+                                            ? "!bg-amber-50 !border-amber-200 !text-slate-900"
+                                            : "";
 
                                     const selectionShapeCls =
                                         isSelected && a !== null && b !== null
@@ -485,6 +619,8 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
                                             className={[
                                                 "h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none transition",
                                                 baseColor,
+                                                acceptedCls,
+                                                pendingFillCls,
                                                 selectionFillCls,
                                                 selectionShapeCls,
                                                 blockedCls,
@@ -505,11 +641,13 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
                             </p>
                         )}
 
-                        {/* Resumen + flechas + botón (igual patrón worker) */}
+                        {/* ✅ Resumen centrado + flechas a la derecha + botón abajo derecha */}
                         <div className="mt-3">
+                            {/* 1) Línea centrada SOLO si hay selección */}
                             {selectedSummary && (
                                 <div className="flex justify-center">
                                     <div className="inline-flex items-center gap-2">
+                                        {/* Flecha volver (izquierda) */}
                                         {showNavArrows && canGoPrev && (
                                             <button
                                                 type="button"
@@ -519,9 +657,11 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
                                                 title={t("common.prevMonth", "Mes anterior")}
                                             >
                                                 <span className="text-lg leading-none">‹</span>
+
                                             </button>
                                         )}
 
+                                        {/* Texto centrado */}
                                         <div className="flex items-center gap-2 whitespace-nowrap">
                                             <span className="text-xs font-medium text-slate-800">
                                                 {selectedLabel ?? ""}
@@ -529,12 +669,12 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
 
                                             <span className="rounded-full border border-slate-200 px-2 py-0.5 text-[11px] text-slate-600">
                                                 {selectedSummary.days}{" "}
-                                                {String(
-                                                    t("pages.vacations.workerPage.days", { defaultValue: "días" }),
-                                                )}
+                                                {String(t("pages.vacations.workerPage.days", { defaultValue: "días" }))}
                                             </span>
                                         </div>
 
+
+                                        {/* Flecha siguiente (derecha) */}
                                         {showNavArrows && (
                                             <button
                                                 type="button"
@@ -544,65 +684,72 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
                                                 title={t("common.nextMonth", "Mes siguiente")}
                                             >
                                                 <span className="text-lg leading-none">›</span>
+
                                             </button>
                                         )}
                                     </div>
                                 </div>
+
+                            )}
+
+                            {/* 2) Mensajes de error se quedan, pero sin “caja gris” */}
+                            {selectedSummary && blockRedDays && selectionHasRed && (
+                                <p className="mt-1 text-[11px] text-rose-700 text-center">
+                                    {t(
+                                        "pages.vacations.requestForm.rangeBlocked",
+                                        "El rango contiene días sin disponibilidad.",
+                                    )}
+                                </p>
                             )}
 
                             {selectedSummary && selectionHasPast && (
                                 <p className="mt-1 text-[11px] text-rose-700 text-center">
                                     {String(
                                         t("pages.vacations.workerPage.pastDaysBlocked", {
-                                            defaultValue: "No puedes seleccionar días pasados.",
+                                            defaultValue: "No puedes solicitar vacaciones en días pasados.",
                                         }),
                                     )}
                                 </p>
                             )}
 
-                            {/* Nota (admin) */}
-                            {selectedSummary && (
-                                <div className="mt-3">
-                                    <textarea
-                                        placeholder={String(
-                                            t("pages.vacations.altModal.notePlaceholder", {
-                                                defaultValue: "Nota para el trabajador…",
-                                            }),
-                                        )}
-                                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs shadow-sm resize-none focus:outline-none focus:ring-4 focus:ring-blue-100"
-                                        value={adminNote}
-                                        onChange={(e) => setAdminNote(e.target.value)}
-                                        rows={3}
-                                    />
-                                </div>
-                            )}
-
-                            {/* CTA abajo derecha */}
+                            {/* 3) Botón separado abajo a la derecha */}
                             {selectedSummary && (
                                 <div className="mt-2 flex justify-end">
                                     <button
                                         type="button"
-                                        disabled={!canSubmit}
+                                        disabled={!canRequest}
                                         onClick={() => {
                                             if (!selectedSummary) return;
-                                            onSubmit({
+                                            onRequestRange?.({
                                                 startISO: selectedSummary.startISO,
                                                 endISO: selectedSummary.endISO,
-                                                adminNote,
                                                 days: selectedSummary.days,
                                             });
                                         }}
                                         className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-xs font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50"
                                     >
-                                        {String(t("pages.vacations.altModal.send", { defaultValue: "Enviar" }))}
+                                        {String(
+                                            t("pages.vacations.workerPage.requestFromGrid", {
+                                                defaultValue: "Solicitar",
+                                            }),
+                                        )}
                                     </button>
                                 </div>
                             )}
                         </div>
+
                     </div>
                 </div>
 
-                {/* Footer (Paso B): solo “Cerrar” */}
+                <WorkerMonthRequests
+                    requests={monthRequests}
+                    monthIndex={monthIndex}
+                    year={year}
+                    onCancelRequest={onCancelRequest}
+                    onRespondAlternative={onRespondAlternative}
+                />
+
+                {/* Footer */}
                 <div className="sticky bottom-0 bg-white border-t border-slate-200 p-3 flex items-center justify-end">
                     <button
                         onClick={onClose}
@@ -616,6 +763,7 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
     );
 };
 
-export default AdminAlternativeOptionModal;
+export default SelectableWorkerAvailabilityMonthModal;
+
 
 

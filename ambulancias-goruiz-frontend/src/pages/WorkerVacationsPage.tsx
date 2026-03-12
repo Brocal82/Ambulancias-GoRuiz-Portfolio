@@ -8,12 +8,12 @@ import {
 } from "../modules/vacation/domain/api";
 
 import { useAuth } from "../hooks/useAuth";
-import UserVacationList from "../components/vacation/UserVacationList";
+import UserVacationList from "../modules/vacation/components/UserVacationList";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../utils/toast";
 
-import AdminVacationMonthGrid from "../components/vacation/AdminVacationMonthGrid";
-import SelectableWorkerAvailabilityMonthModal from "../components/vacation/SelectableWorkerAvailabilityMonthModal";
+import AdminVacationMonthGrid from "../modules/vacation/components/AdminVacationMonthGrid";
+import SelectableWorkerAvailabilityMonthModal from "../modules/vacation/components/SelectableWorkerAvailabilityMonthModal";
 
 // Prefetch/caché compartida
 import { useVacationRequestsSync } from "../modules/vacation/hooks/useVacationRequestSync";
@@ -329,5 +329,6 @@ const WorkerVacationsPage = () => {
 };
 
 export default WorkerVacationsPage;
+
 
 
