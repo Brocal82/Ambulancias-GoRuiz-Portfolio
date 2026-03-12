@@ -4,7 +4,7 @@ import ReviewSummary from "./ReviewSummary";
 import type { Trip } from "../../../types/trip";
 import type { AssignedDayFull } from "../../../modules/diensts";
 import { calculateEffectivePatients } from "../../praemien/utils/calculateEffectivePatients";
-import IssueReportModal from "./IssueReportModal";
+import { IssueReportModal } from "../../mechanics";
 import { useTranslation } from "react-i18next";
 
 interface FinalReviewModalProps {
@@ -38,7 +38,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
     );
     const [hasIssue, setHasIssue] = useState(false);
     const [showIssueModal, setShowIssueModal] = useState(false);
-    const [issueData, setIssueData] = useState<any | null>(null); // guardamos la avería sin auto-enviar
+    const [issueData, setIssueData] = useState<any | null>(null); // guardamos la averÃ­a sin auto-enviar
     const [isSending, setIsSending] = useState(false);
 
     const parsedInitialKm = Number(initialKm);
@@ -50,7 +50,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
 
     if (!isOpen) return null;
 
-    // Validación usando tus toasts existentes
+    // ValidaciÃ³n usando tus toasts existentes
     const ensureValidFinalKm = (): boolean => {
         if (finalKmLocal === "" || isNaN(Number(finalKmLocal))) {
             toastT.warn(["toasts.workday.final.finalKmRequired"]);
@@ -117,7 +117,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
                     className="w-full border border-slate-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-200"
                 />
 
-                {/* Botón Avería */}
+                {/* BotÃ³n AverÃ­a */}
                 <div className="pt-1 flex justify-end">
                     <button
                         type="button"
@@ -128,7 +128,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
                             setHasIssue(next);
 
                             if (!next) {
-                                // si desmarca, limpiamos datos de avería
+                                // si desmarca, limpiamos datos de averÃ­a
                                 setIssueData(null);
                                 return;
                             }
@@ -142,11 +142,11 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
                                 : "border-slate-300 bg-white text-slate-700 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700",
                         ].join(" ")}
                     >
-                        ⚠️ {t("pages.workday.final.issue.button")}
+                        âš ï¸ {t("pages.workday.final.issue.button")}
                     </button>
                 </div>
 
-                {/* Modal técnico (independiente del envío del sumario) */}
+                {/* Modal tÃ©cnico (independiente del envÃ­o del sumario) */}
                 {showIssueModal && (
                     <IssueReportModal
                         isOpen={true}

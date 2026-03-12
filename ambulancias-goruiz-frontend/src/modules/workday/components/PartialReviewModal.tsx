@@ -4,7 +4,7 @@ import type { AssignedDayFull } from "../../../modules/diensts";
 import ReviewSummary from "./ReviewSummary";
 import { toastT } from "../../../utils/toast";
 import { calculateEffectivePatients } from "../../praemien/utils/calculateEffectivePatients";
-import IssueReportModal from "./IssueReportModal";
+import { IssueReportModal } from "../../mechanics";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -120,7 +120,7 @@ const PartialReviewModal: React.FC<Props> = ({
                     className="w-full border border-slate-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-200"
                 />
 
-                {/* Botón Avería */}
+                {/* BotÃ³n AverÃ­a */}
                 <div className="pt-1 flex justify-end">
                     <button
                         type="button"
@@ -141,11 +141,11 @@ const PartialReviewModal: React.FC<Props> = ({
                                 : "border-slate-300 bg-white text-slate-700 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700",
                         ].join(" ")}
                     >
-                        ⚠️ {t("pages.workday.partial.issue.button")}
+                        âš ï¸ {t("pages.workday.partial.issue.button")}
                     </button>
                 </div>
 
-                {/* Modal técnico */}
+                {/* Modal tÃ©cnico */}
                 {showIssueModal && (
                     <IssueReportModal
                         isOpen={true}

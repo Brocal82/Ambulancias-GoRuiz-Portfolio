@@ -1,5 +1,4 @@
 // Workday hooks (barrel)
 export * from './useWorkdayAssignment';
 export * from './useWorkdayTrips';
-export * from "./useAdminIssuesOpenCount";
-export * from "./useAdminSummariesPendingCount";
+export * from './useAdminSummariesPendingCount';

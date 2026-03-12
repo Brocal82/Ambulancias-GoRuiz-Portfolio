@@ -2,22 +2,22 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-// ✅ Hook para contador de pendientes de Vacaciones
+// âœ… Hook para contador de pendientes de Vacaciones
 import useAdminVacationsPendingCount from "../modules/vacation/hooks/useAdminVacationsPendingCount";
 import useAdminSummariesPendingCount from "../modules/workday/hooks/useAdminSummariesPendingCount";
 import { useAdminAppointmentsPendingCount } from "../modules/appointments";
-import { useAdminIssuesOpenCount } from "../modules/workday";
+import { useAdminIssuesOpenCount } from "../modules/mechanics";
 import useAdminSickLeavesPendingCount from "../modules/sick/hooks/useAdminSickLeavesPendingCount";
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
 
-  // ✅ Contador de solicitudes de vacaciones pendientes
+  // âœ… Contador de solicitudes de vacaciones pendientes
   const { count: vacationsPendingCount, isLoading: vacationsLoading } =
     useAdminVacationsPendingCount();
   const vacationsHasPending = !vacationsLoading && vacationsPendingCount > 0;
 
-  // ✅ Contador de resúmenes pendientes
+  // âœ… Contador de resÃºmenes pendientes
   const { count: summariesPendingCount, isLoading: summariesLoading } =
     useAdminSummariesPendingCount();
   const summariesHasPending = !summariesLoading && summariesPendingCount > 0;

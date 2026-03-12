@@ -4,7 +4,7 @@ import type {
   FinalSummaryPayload,
   WorkdaySummary,
 } from "./types/workdaySummary";;
-import type { WorkdayIssue } from "./types/workdayIssue";
+import type { WorkdayIssue } from "../../mechanics/domain/types";
 /* =========================
    EXISTENTES
    ========================= */
@@ -48,7 +48,7 @@ export const getAllIssueReports = async (
     },
   });
 
-  if (!res.ok) throw new Error("Error al obtener reportes técnicos");
+  if (!res.ok) throw new Error("Error al obtener reportes tÃ©cnicos");
   return res.json();
 };
 
@@ -63,11 +63,11 @@ export const deleteIssueReport = async (
 };
 
 /* =========================
-   NUEVO: marcar AVERÍA como vista
+   NUEVO: marcar AVERÃA como vista
    ========================= */
 
 /**
- * Marca una avería como vista (isSeen=true, seenAt=now).
+ * Marca una averÃ­a como vista (isSeen=true, seenAt=now).
  * PATCH /workday-summary/issues/:id/seen
  */
 export const markIssueSeen = async (
@@ -146,7 +146,7 @@ export const getIssuesOpenCount = async (token: string): Promise<number> => {
     const msg =
       err?.response?.data?.message ||
       err?.message ||
-      "Error al obtener el contador de averías abiertas";
+      "Error al obtener el contador de averÃ­as abiertas";
     throw new Error(msg);
   }
 };
@@ -168,7 +168,7 @@ export const getIssuesCountByStatus = async (
     const msg =
       err?.response?.data?.message ||
       err?.message ||
-      "Error al obtener el contador de averías";
+      "Error al obtener el contador de averÃ­as";
     throw new Error(msg);
   }
 };
