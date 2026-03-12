@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Profile from "./Profile";
 import AdminUserDienstsTab from "../modules/diensts/components/AdminUserDienstsTab";
-import AdminUserPraemienTab from "./AdminUserPraemienTab";
+import AdminUserPraemienTab from "../modules/praemien/components/AdminUserPraemienTab";
 import AdminUserVacationsTab from "../modules/vacation/components/AdminUserVacationsTab";
 import AdminUserSickLeavesTab from "../modules/sick/components/AdminUserSickLeavesTab";
 import AdminUserMessageTab from "../modules/messages/components/AdminUserMessageTab"; import { useAuth } from "../hooks/useAuth";

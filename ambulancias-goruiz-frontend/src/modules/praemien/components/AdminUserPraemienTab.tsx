@@ -2,12 +2,12 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { getMonthlyPraemienSummary } from "../modules/praemien/domain/api";
-import type { MonthlyPraemienDay } from "../modules/praemien/domain/api";
-import MonthlyMiniCalendar from "../modules/praemien/components/MonthlyMiniCalendar";
-import PraemieProgressBars from "../modules/praemien/components/PraemieProgressBars";
-import WorkerPraemienHistory from "../modules/praemien/components/WorkerPraemienHistory";
-import { useAuth } from "../hooks/useAuth";
+import { getMonthlyPraemienSummary } from "../domain/api";
+import type { MonthlyPraemienDay } from "../domain/api";
+import MonthlyMiniCalendar from "./MonthlyMiniCalendar";
+import PraemieProgressBars from "./PraemieProgressBars";
+import WorkerPraemienHistory from "./WorkerPraemienHistory";
+import { useAuth } from "../../../hooks/useAuth";
 interface Props {
   userId: string;
 }
