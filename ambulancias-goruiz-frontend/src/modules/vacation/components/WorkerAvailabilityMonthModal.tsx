@@ -4,9 +4,9 @@ import { useTranslation } from "react-i18next";
 import {
   getVacationAvailability,
   type VacationAvailabilityResponse,
-} from "../../modules/vacation/domain/api";
-import { monthLabel as fmtMonth } from "../../utils/intl";
-import { useVacationAvailabilityInvalidation } from "../../modules/vacation/hooks/useVacationAvailabilityInvalidation";
+} from "../domain/api";
+import { monthLabel as fmtMonth } from "../../../utils/intl";
+import { useVacationAvailabilityInvalidation } from "../hooks/useVacationAvailabilityInvalidation";
 
 type DayState = "green" | "yellow" | "red";
 
@@ -300,5 +300,6 @@ const WorkerAvailabilityMonthModal: React.FC<Props> = ({
 };
 
 export default WorkerAvailabilityMonthModal;
+
 
 

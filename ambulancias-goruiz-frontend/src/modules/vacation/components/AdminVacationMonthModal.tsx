@@ -16,7 +16,7 @@ import {
 } from "../domain/api";
 import { emitVacationRequestsUpdated } from "../utils/vacationEvents";
 import { useVacationAvailabilityInvalidation } from "../hooks/useVacationAvailabilityInvalidation";
-import AdminVacationRequestsTable from "../../../components/vacation/AdminVacationRequestsTable";
+import AdminVacationRequestsTable from "./AdminVacationRequestsTable";
 import { toBerlinDayKey } from "../../../utils/dates/dayKey";
 import { vacationRequestFilterPillClass } from "../../../utils/status/vacationRequestUi";
 
@@ -841,6 +841,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 };
 
 export default AdminVacationMonthModal;
+
 
 
 

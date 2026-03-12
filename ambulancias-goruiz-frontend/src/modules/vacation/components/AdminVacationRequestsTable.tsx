@@ -1,12 +1,12 @@
 // src/components/vacation/AdminVacationRequestsTable.tsx
 import React from "react";
 import type { TFunction } from "i18next";
-import type { IVacationRequest } from "../../modules/vacation/domain/types";
-import { calcVacationDays } from "../../modules/vacation/utils/calcVacationDays";
-import { getRequestRangeBerlin } from "../../modules/vacation/utils/getRequestRangeBerlin";
-import { toBerlinDayKey } from "../../utils/dates/dayKey";
-import StatusBadge from "../common/StatusBadge";
-import { vacationRequestTone } from "../../utils/status/vacationRequestTone";
+import type { IVacationRequest } from "../domain/types";
+import { calcVacationDays } from "../utils/calcVacationDays";
+import { getRequestRangeBerlin } from "../utils/getRequestRangeBerlin";
+import { toBerlinDayKey } from "../../../utils/dates/dayKey";
+import StatusBadge from "../../../components/common/StatusBadge";
+import { vacationRequestTone } from "../../../utils/status/vacationRequestTone";
 
 
 
@@ -320,4 +320,5 @@ const AdminVacationRequestsTable: React.FC<Props> = ({
 };
 
 export default AdminVacationRequestsTable;
+
 

@@ -12,18 +12,18 @@ import type { RangeKeyDict } from "react-date-range";
 import { startOfDay } from "date-fns";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../../hooks/useAuth";
 import {
   createVacationRequest,
   getVacationAvailability,
   type VacationAvailabilityResponse,
-} from "../../modules/vacation/domain/api";
+} from "../domain/api";
 import { useTranslation } from "react-i18next";
 import { es as dfEs, de as dfDe, enGB as dfEnGB } from "date-fns/locale";
 import {
   emitVacationRequestsUpdated,
   emitAvailabilityInvalidated,
-} from "../../modules/vacation/utils/vacationEvents";
+} from "../utils/vacationEvents";
 
 
 interface VacationRequestFormProps {
@@ -351,4 +351,5 @@ const VacationRequestForm: React.FC<VacationRequestFormProps> = ({
 };
 
 export default memo(VacationRequestForm);
+
 
