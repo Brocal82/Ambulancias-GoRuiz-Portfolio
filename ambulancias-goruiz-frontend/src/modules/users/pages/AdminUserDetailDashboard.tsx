@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { ProfilePage } from "../modules/users";
-import AdminUserDienstsTab from "../modules/diensts/components/AdminUserDienstsTab";
-import AdminUserPraemienTab from "../modules/praemien/components/AdminUserPraemienTab";
-import AdminUserVacationsTab from "../modules/vacation/components/AdminUserVacationsTab";
-import AdminUserSickLeavesTab from "../modules/sick/components/AdminUserSickLeavesTab";
-import AdminUserMessageTab from "../modules/messages/components/AdminUserMessageTab"; import { useAuth } from "../hooks/useAuth";
-import { UsersApi } from "../modules/users";
-import type { User } from "../modules/users";
+import { ProfilePage } from ".";
+import AdminUserDienstsTab from "../../diensts/components/AdminUserDienstsTab";
+import AdminUserPraemienTab from "../../praemien/components/AdminUserPraemienTab";
+import AdminUserVacationsTab from "../../vacation/components/AdminUserVacationsTab";
+import AdminUserSickLeavesTab from "../../sick/components/AdminUserSickLeavesTab";
+import AdminUserMessageTab from "../../messages/components/AdminUserMessageTab"; import { useAuth } from "../../../hooks/useAuth";
+import { UsersApi } from "..";
+import type { User } from "..";
 import { useTranslation } from "react-i18next";
 
 const TAB_KEYS = [
@@ -91,12 +91,12 @@ const AdminUserDetailDashboard = () => {
       {/* Content container (unificado) */}
       <section className="w-full rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 min-h-[400px]">
         {isDiensts ? (
-          // ✅ Diensts SIN padding para no reducir ancho útil (breakpoints/7 cols)
+          // âœ… Diensts SIN padding para no reducir ancho Ãºtil (breakpoints/7 cols)
           <div className="p-0">
             {userId && <AdminUserDienstsTab userId={userId} />}
           </div>
         ) : (
-          // ✅ Resto de tabs CON padding consistente
+          // âœ… Resto de tabs CON padding consistente
           <div className="p-6">
             {activeTab === "profile" && userId && <ProfilePage userId={userId} />}
             {activeTab === "praemien" && userId && (
@@ -124,5 +124,3 @@ const AdminUserDetailDashboard = () => {
 };
 
 export default AdminUserDetailDashboard;
-
-
