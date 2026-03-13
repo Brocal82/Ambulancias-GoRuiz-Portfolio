@@ -7,3 +7,4 @@ export { default as PartialReviewModal } from './PartialReviewModal';
 export { default as ReviewSummary } from './ReviewSummary';
 export { default as WorkdayTripEntry } from './WorkdayTripEntry';
 export { default as WorkdayTripsSummary } from './WorkdayTripsSummary';
+export { default as TripModal } from "./TripModal";

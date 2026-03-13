@@ -1,6 +1,6 @@
 // frontend/src/components/trips/TripModal.tsx
 import React from "react";
-import type { Trip } from "../../types/trip";
+import type { Trip } from "../../../types/trip";
 import { useTranslation } from "react-i18next";
 
 interface TripModalProps {
@@ -149,3 +149,4 @@ const TripModal: React.FC<TripModalProps> = ({ trip, onClose }) => {
 };
 
 export default TripModal;
+

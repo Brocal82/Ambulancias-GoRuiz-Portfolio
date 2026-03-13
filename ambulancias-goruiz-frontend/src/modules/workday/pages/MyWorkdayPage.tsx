@@ -14,7 +14,7 @@ import { notifyAdminSummariesChanged } from "../hooks";
 
 import type { Trip, TripData } from "../../../types/trip";
 import type { Ambulance } from "../../ambulances/domain/types";
-import TripModal from "../../../components/trips/TripModal";
+import TripModal from "../components/TripModal";
 
 import {
   WorkdayTripEntry,
