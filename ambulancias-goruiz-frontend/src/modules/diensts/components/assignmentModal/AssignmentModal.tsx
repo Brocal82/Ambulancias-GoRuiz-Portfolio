@@ -3,7 +3,7 @@ import { useState, useEffect, useId, useMemo } from "react";
 
 import { useAuth } from "../../../../hooks/useAuth";
 
-import { updateDienstPartial, removeAssignment } from "../../api";
+import { updateDienstPartial, removeAssignment } from "../../domain/api";
 import type { UserRef } from "../../domain/types";
 
 import { toastT } from "../../../../utils/toast";

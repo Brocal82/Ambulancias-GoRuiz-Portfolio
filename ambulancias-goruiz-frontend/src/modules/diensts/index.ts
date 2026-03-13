@@ -2,7 +2,6 @@
 export * as DienstsApi from "./domain/api";
 
 export * from "./domain"; // types + payloads
-export * from "./api";
 export * from "./assignments";
 
 export * as DienstsDomain from "./domain";
