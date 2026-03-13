@@ -1,15 +1,15 @@
 // frontend/src/pages/AdminUsersPage.tsx
 import { useEffect, useState, useCallback } from "react";
-import { UsersApi } from "../modules/users";
-import { useAuth } from "../hooks/useAuth";
-import type { User } from "../modules/users";
-import { toastT } from "../utils/toast";
-import { getPscheinInfo, getPscheinWarningTitle } from "../utils/pscheinUtils";
+import { UsersApi } from "..";
+import { useAuth } from "../../../hooks/useAuth";
+import type { User } from "..";
+import { toastT } from "../../../utils/toast";
+import { getPscheinInfo, getPscheinWarningTitle } from "../../../utils/pscheinUtils";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { getVacationFlagsInRange, type VacFlag } from "../modules/vacation/domain/api";
-import { getSickFlagsInRange, type SickFlag } from "../modules/sick/domain";
-import { fmtDDMM } from "../utils/timeUtils";
+import { getVacationFlagsInRange, type VacFlag } from "../../vacation/domain/api";
+import { getSickFlagsInRange, type SickFlag } from "../../sick/domain";
+import { fmtDDMM } from "../../../utils/timeUtils";
 
 
 // Mapeo de estilos de la píldora de rol (no cambia lógica)
@@ -533,5 +533,3 @@ const AdminUsersPage = () => {
 };
 
 export default AdminUsersPage;
-
-

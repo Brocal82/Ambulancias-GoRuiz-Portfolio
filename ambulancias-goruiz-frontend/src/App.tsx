@@ -28,7 +28,7 @@ import {
   WorkerAppointmentsPage,
 } from "./modules/appointments";
 import AdminDashboard from "./pages/AdminDashboard";
-import AdminUsersPage from "./pages/AdminUsersPage";
+import { AdminUsersPage } from "./modules/users";
 import AdminDienstsPage from "./modules/diensts/pages/AdminDienstsPage";
 import AdminDienstTemplatesPage from "./modules/dienstTemplates/pages/AdminDienstTemplatesPage";
 import AdminVacationsPage from "./modules/vacation/pages/AdminVacationsPage";
