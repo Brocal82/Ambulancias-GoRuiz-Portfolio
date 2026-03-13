@@ -1,9 +1,8 @@
 // src/components/modals/UserEditModal.tsx
 import { useState, useEffect } from "react";
-import type { User } from "../../modules/users";
-import { getPscheinInfo } from "../../utils/pscheinUtils";
-import type { UpdateUserPayload } from "../../modules/users/domain/payloads";
-
+import type { User } from "..";
+import { getPscheinInfo } from "../../../utils/pscheinUtils";
+import type { UpdateUserPayload } from "../domain/payloads";
 
 interface UserEditModalProps {
   user: User;
@@ -48,7 +47,6 @@ export default function UserEditModal({
 
     onSave(payload);
   };
-
 
   const handleDelete = () => {
     onDelete(user._id);
@@ -101,7 +99,7 @@ export default function UserEditModal({
               htmlFor="email"
               className="block text-sm font-medium text-gray-700"
             >
-              Correo electrónico
+              Correo electrÃ³nico
             </label>
             <input
               id="email"
@@ -109,7 +107,7 @@ export default function UserEditModal({
               value={formData.email}
               onChange={handleChange}
               placeholder="Correo"
-              title="Correo electrónico"
+              title="Correo electrÃ³nico"
               className="w-full border rounded p-2"
             />
           </div>
@@ -119,15 +117,15 @@ export default function UserEditModal({
               htmlFor="address"
               className="block text-sm font-medium text-gray-700"
             >
-              Dirección
+              DirecciÃ³n
             </label>
             <input
               id="address"
               name="address"
               value={formData.address || ""}
               onChange={handleChange}
-              placeholder="Dirección"
-              title="Dirección"
+              placeholder="DirecciÃ³n"
+              title="DirecciÃ³n"
               className="w-full border rounded p-2"
             />
           </div>
@@ -137,15 +135,15 @@ export default function UserEditModal({
               htmlFor="phone"
               className="block text-sm font-medium text-gray-700"
             >
-              Teléfono
+              TelÃ©fono
             </label>
             <input
               id="phone"
               name="phone"
               value={formData.phone || ""}
               onChange={handleChange}
-              placeholder="Teléfono"
-              title="Teléfono"
+              placeholder="TelÃ©fono"
+              title="TelÃ©fono"
               className="w-full border rounded p-2"
             />
           </div>
@@ -155,7 +153,7 @@ export default function UserEditModal({
               htmlFor="emergencyPhone"
               className="block text-sm font-medium text-gray-700"
             >
-              Teléfono emergencia
+              TelÃ©fono emergencia
             </label>
             <input
               id="emergencyPhone"
@@ -163,7 +161,7 @@ export default function UserEditModal({
               value={formData.emergencyPhone || ""}
               onChange={handleChange}
               placeholder="Emergencia"
-              title="Teléfono de emergencia"
+              title="TelÃ©fono de emergencia"
               className="w-full border rounded p-2"
             />
           </div>
@@ -197,13 +195,13 @@ export default function UserEditModal({
 
                   {pschein.status === "expired" && (
                     <p className="text-red-600 text-sm mt-1">
-                      ❌ El P-Schein está caducado
+                      âŒ El P-Schein estÃ¡ caducado
                     </p>
                   )}
 
                   {pschein.status === "warning" && (
                     <p className="text-orange-600 text-sm mt-1">
-                      ⚠️ El P-Schein caduca en {pschein.monthsLeft ?? 0}{" "}
+                      âš ï¸ El P-Schein caduca en {pschein.monthsLeft ?? 0}{" "}
                       {pschein.monthsLeft === 1 ? "mes" : "meses"}
                     </p>
                   )}
@@ -246,9 +244,9 @@ export default function UserEditModal({
               className="w-full border rounded p-2"
             >
               <option value="">Seleccionar</option>
-              <option value="driver">🚑 Conductor</option>
-              <option value="medic">🩺 Sanitario</option>
-              <option value="both">🟰 Ambos</option>
+              <option value="driver">ðŸš‘ Conductor</option>
+              <option value="medic">ðŸ©º Sanitario</option>
+              <option value="both">ðŸŸ° Ambos</option>
             </select>
           </div>
 
