@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { UsersApi, type User } from "../../../../users";
 import type { UserRef } from "../../../domain/types";
-import type { FlexibleAssignment } from "../../../../../types/assignment";
+import type { FlexibleAssignment } from "../../../domain/types/flexibleAssignment";
 import { mergeWithAssigned } from "../../../utils/mergeWithAssigned";import { ensureSelectedPresent } from "../ensureSelectedPresent";
 import { toastT } from "../../../../../utils/toast";
 

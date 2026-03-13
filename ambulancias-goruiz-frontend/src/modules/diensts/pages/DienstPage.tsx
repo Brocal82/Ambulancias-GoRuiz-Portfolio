@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getDienstByUser } from "../index";
 import type { Dienst } from "../index";
 
-import type { FlexibleAssignment } from "../../../types/assignment";
+import type { FlexibleAssignment } from "../domain/types/flexibleAssignment";
 
 import AssignmentModal from "../components/assignmentModal/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";

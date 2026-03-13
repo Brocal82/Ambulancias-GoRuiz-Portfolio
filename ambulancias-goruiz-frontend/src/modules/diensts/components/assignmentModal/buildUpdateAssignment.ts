@@ -1,5 +1,5 @@
 import type { UpdateAssignment } from "../../domain/types";
-import type { FlexibleAssignment } from "../../../../types/assignment";
+import type { FlexibleAssignment } from "../../domain/types/flexibleAssignment";
 
 export const buildUpdateAssignment = (params: {
   date: string;

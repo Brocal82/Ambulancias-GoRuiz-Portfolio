@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { FlexibleAssignment } from "../../../../types/assignment";
+import type { FlexibleAssignment } from "../../domain/types/flexibleAssignment";
 
 import { toUserRefOrNull } from "../../assignments";
 import { formatAmbulanceLabel, formatPersonLabel } from "../../utils";

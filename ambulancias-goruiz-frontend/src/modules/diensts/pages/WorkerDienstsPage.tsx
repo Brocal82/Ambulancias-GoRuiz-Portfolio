@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getAssignedDaysForUser } from "../index";
 import type { AssignedDay } from "../index";
 
-import AssignmentModal from "../components/assignmentModal/AssignmentModal"; import type { FlexibleAssignment } from "../../../types/assignment";
+import AssignmentModal from "../components/assignmentModal/AssignmentModal"; import type { FlexibleAssignment } from "../domain/types/flexibleAssignment";
 
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";

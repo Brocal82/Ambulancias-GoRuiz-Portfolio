@@ -1,6 +1,6 @@
 // src/modules/diensts/utils/mergeWithAssigned.ts
 import type { UserRef, AssignedDay } from "../domain/types";
-import type { FlexibleAssignment } from "../../../types/assignment";
+import type { FlexibleAssignment } from "../domain/types/flexibleAssignment";
 /**
  * Fusiona usuarios disponibles con el asignado actual, evitando duplicados.
  * Si un usuario ya está asignado en el otro rol y no tiene rol "both", no se vuelve a añadir.

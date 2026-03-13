@@ -7,7 +7,7 @@ import {
 } from "../index";
 import AssignmentModal from "./assignmentModal/AssignmentModal";
 import type { AssignedDay, Dienst } from "../index";
-import type { FlexibleAssignment } from "../../../types/assignment";
+import type { FlexibleAssignment } from "../domain/types/flexibleAssignment";
 import { isPastDay } from "../../../utils/dates/isPastDay";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";

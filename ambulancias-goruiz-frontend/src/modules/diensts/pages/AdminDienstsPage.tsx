@@ -31,7 +31,7 @@ import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
 import { getPscheinInfo, getPscheinWarningTitle } from "../../../utils/pscheinUtils";
 
-import type { FlexibleAssignment } from "../../../types/assignment";
+import type { FlexibleAssignment } from "../domain/types/flexibleAssignment";
 
 import { DienstDayCell, WeekBlock, WEEK_GRID_CLASS } from "../components";
 import { toFlexibleFromDienstAssignment } from "../assignments";

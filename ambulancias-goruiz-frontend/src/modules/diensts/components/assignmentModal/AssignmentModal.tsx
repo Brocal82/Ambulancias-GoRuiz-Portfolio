@@ -24,7 +24,7 @@ import { useDayFlags } from "./hooks/useDayFlags";
 
 import { buildUpdateAssignment } from "./buildUpdateAssignment";
 
-import type { FlexibleAssignment } from "../../../../types/assignment";
+import type { FlexibleAssignment } from "../../domain/types/flexibleAssignment";
 
 import { useTranslation } from "react-i18next";
 
