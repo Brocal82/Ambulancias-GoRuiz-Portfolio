@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "../../../hooks/useAuth";
 import type { Team } from "../domain";
-import type { TeamPickerValue } from "../../../components/common/TeamPicker";
+import type { TeamPickerValue } from "../components/TeamPicker";
 
 type RotationMode = "rotating" | "fixed" | "none";
 

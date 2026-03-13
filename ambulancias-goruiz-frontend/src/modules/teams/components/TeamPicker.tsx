@@ -1,9 +1,9 @@
 //frontend/src/components/common/TeamPicker.tsx
 import { useEffect, useMemo, useState, useId } from "react";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { UsersApi } from "../../modules/users";
-import { getPscheinInfo } from "../../utils/pscheinUtils";
+import { UsersApi } from "../../users";
+import { getPscheinInfo } from "../../../utils/pscheinUtils";
 
 export type TeamPickerValue = { driver: string; medic: string };
 

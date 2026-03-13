@@ -1,5 +1,5 @@
-import TeamPicker from "../../../components/common/TeamPicker";
-import type { TeamPickerValue } from "../../../components/common/TeamPicker";
+import TeamPicker from "./TeamPicker";
+import type { TeamPickerValue } from "./TeamPicker";
 import { useTranslation } from "react-i18next";
 
 import type { AmbulanceLite } from "../hooks";
