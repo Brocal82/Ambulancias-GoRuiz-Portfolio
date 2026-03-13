@@ -7,7 +7,7 @@ import AdminUserVacationsTab from "../modules/vacation/components/AdminUserVacat
 import AdminUserSickLeavesTab from "../modules/sick/components/AdminUserSickLeavesTab";
 import AdminUserMessageTab from "../modules/messages/components/AdminUserMessageTab"; import { useAuth } from "../hooks/useAuth";
 import { UsersApi } from "../modules/users";
-import type { User } from "../types/user";
+import type { User } from "../modules/users";
 import { useTranslation } from "react-i18next";
 
 const TAB_KEYS = [

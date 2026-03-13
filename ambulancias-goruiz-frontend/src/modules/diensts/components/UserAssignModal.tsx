@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import { UsersApi } from "../../users";
 
-import type { AmbulanceRole, User } from "../../../types/user";
+import type { AmbulanceRole, User } from "../../users";
 
 import {
   getPscheinInfo,

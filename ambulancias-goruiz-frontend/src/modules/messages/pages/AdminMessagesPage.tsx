@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { UsersApi } from "../../users";
 import { useSendMessage } from "../hooks/useSendMessage";
-import type { User } from "../../../types/user";
+import type { User } from "../../users";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";

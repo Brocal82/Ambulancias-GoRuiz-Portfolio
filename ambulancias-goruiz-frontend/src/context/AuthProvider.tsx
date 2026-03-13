@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { AuthContext } from "./AuthContext";
-import type { User } from "../types/user";
+import type { User } from "../modules/users";
 import { getTokenExpiration } from "../utils/jwtUtils";
 import { toastT } from "../utils/toast";
 

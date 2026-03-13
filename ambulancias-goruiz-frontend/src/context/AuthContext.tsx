@@ -1,6 +1,6 @@
 // src/context/AuthContext.ts
 import { createContext } from "react";
-import type { User } from "../types/user";
+import type { User } from "../modules/users";
 
 export interface AuthContextType {
   token: string | null;

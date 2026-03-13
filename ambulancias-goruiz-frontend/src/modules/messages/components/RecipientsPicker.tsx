@@ -1,6 +1,6 @@
 // src/modules/messages/components/RecipientsPicker.tsx
 import { useMemo, useRef } from "react";
-import type { User } from "../../../types/user";
+import type { User } from "../../users";
 import { useTranslation } from "react-i18next";
 import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 

@@ -1,5 +1,5 @@
 // frontend/src/types/appointment.ts
-import type { User } from "./user";
+import type { User } from "../modules/users";
 
 export type AppointmentStatus =
   | "pending"
