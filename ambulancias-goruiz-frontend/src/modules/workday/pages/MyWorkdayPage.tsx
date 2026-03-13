@@ -12,7 +12,7 @@ import { toastT } from "../../../utils/toast";
 import { notifyAdminIssuesChanged } from "../../mechanics";
 import { notifyAdminSummariesChanged } from "../hooks";
 
-import type { Trip, TripData } from "../../../types/trip";
+import type { Trip, TripData } from "../domain/types/trip";
 import type { Ambulance } from "../../ambulances/domain/types";
 import TripModal from "../components/TripModal";
 

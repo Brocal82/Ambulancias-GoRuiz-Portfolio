@@ -1,6 +1,6 @@
 // src/components/workday/ReviewSummary.tsx
 import React from "react";
-import type { Trip } from "../../../types/trip";
+import type { Trip } from "../domain/types/trip";
 import type { AssignedDayFull } from "../../../modules/diensts";
 import { formatYYYYMMDDToDDMMYYYY } from "../../../utils/timeUtils";
 import { useTranslation } from "react-i18next";

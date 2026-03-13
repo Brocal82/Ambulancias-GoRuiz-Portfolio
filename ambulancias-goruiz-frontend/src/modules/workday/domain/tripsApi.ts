@@ -1,7 +1,7 @@
 // frontend/src/modules/workday/domain/tripsApi.ts
 import axiosInstance from "../../../api/axios";
 import axios, { AxiosError } from "axios";
-import type { Trip, TripData } from "../../../types/trip";
+import type { Trip, TripData } from "./types/trip";
 
 interface ValidationError {
   message: string;

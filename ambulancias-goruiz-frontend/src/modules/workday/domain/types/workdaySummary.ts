@@ -1,6 +1,6 @@
 // src/modules/workday/domain/types/workdaySummary.ts
 
-import type { Trip } from '../../../../types/trip';
+import type { Trip } from './trip';
 
 export interface PopulatedUser {
   _id: string;

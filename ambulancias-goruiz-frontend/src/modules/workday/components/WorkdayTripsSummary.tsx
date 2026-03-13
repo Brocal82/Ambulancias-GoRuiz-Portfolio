@@ -1,5 +1,5 @@
 // frontend/src/components/workday/WorkdayTripsSummary.tsx
-import type { Trip } from "../../../types/trip";
+import type { Trip } from "../domain/types/trip";
 import type { AssignedDayFull } from "../../diensts";
 import { useTranslation } from "react-i18next";
 

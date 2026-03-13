@@ -1,5 +1,5 @@
 //src/modules/praemien/utils/calculateEffectivePatients.ts
-import type { Trip } from "../../../types/trip";
+import type { Trip } from "../../workday/domain/types/trip";
 export function calculateEffectivePatients(
   trips: Trip[],
   dienstDate: string,

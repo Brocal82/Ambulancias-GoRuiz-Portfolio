@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { getTripsByDate } from "../domain";
-import type { Trip } from "../../../types/trip";
+import type { Trip } from "../domain/types/trip";
 import { toastT } from "../../../utils/toast";
 
 const getClosedDayKeyByDate = (date: string, uid?: string) =>

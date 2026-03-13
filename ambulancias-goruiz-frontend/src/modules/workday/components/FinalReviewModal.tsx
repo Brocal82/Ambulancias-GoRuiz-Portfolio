@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { toastT } from "../../../utils/toast";
 import ReviewSummary from "./ReviewSummary";
-import type { Trip } from "../../../types/trip";
+import type { Trip } from "../domain/types/trip";
 import type { AssignedDayFull } from "../../../modules/diensts";
 import { calculateEffectivePatients } from "../../praemien/utils/calculateEffectivePatients";
 import { IssueReportModal } from "../../mechanics";

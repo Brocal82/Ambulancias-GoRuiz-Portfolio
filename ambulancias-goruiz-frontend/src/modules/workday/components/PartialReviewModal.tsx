@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { Trip } from "../../../types/trip";
+import type { Trip } from "../domain/types/trip";
 import type { AssignedDayFull } from "../../../modules/diensts";
 import ReviewSummary from "./ReviewSummary";
 import { toastT } from "../../../utils/toast";

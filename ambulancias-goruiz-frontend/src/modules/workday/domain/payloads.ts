@@ -1,6 +1,6 @@
 //src/modules/workday/domain/payloads.ts
 
-import type { Trip } from "../../../types/trip";
+import type { Trip } from "./types/trip";
 import type { AssignedDayFull } from "../../../modules/diensts";
 import type { FinalSummaryPayload, PartialSummaryPayload } from "./types/workdaySummary";
 
