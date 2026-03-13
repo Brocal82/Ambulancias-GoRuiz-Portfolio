@@ -1,10 +1,8 @@
 // frontend/src/components/vacation/AdminVacationMonthGrid.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { IVacationRequest } from "../domain/types";
-import {
-  getYearMonths,
-  countRequestsByMonth,
-} from "../../../utils/vacationMonthUtils";
+import { getYearMonths } from "../../../utils/calendarMonthUtils";
+import { countRequestsByMonth } from "../utils/vacationMonthUtils";
 import { useVacationAvailabilityInvalidation } from "../hooks/useVacationAvailabilityInvalidation";
 import { useTranslation } from "react-i18next";
 

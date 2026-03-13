@@ -11,7 +11,7 @@ import {
   type SickLeave,
   type SickLeaveStatus,
 } from "../domain";
-import { getYearMonths, rangesOverlap } from "../../../utils/vacationMonthUtils";
+import { getYearMonths, rangesOverlap } from "../../../utils/calendarMonthUtils";
 import AdminSickMonthGrid from "../components/AdminSickMonthGrid";
 import StatusBadge from "../../../components/common/StatusBadge";
 import { sickLeaveTone } from "../utils/sickLeavesTone";

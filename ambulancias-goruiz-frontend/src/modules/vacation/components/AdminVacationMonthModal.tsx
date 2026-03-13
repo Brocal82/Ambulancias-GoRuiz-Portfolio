@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { IVacationRequest } from "../domain/types";
 import type { VacationStatus } from "../domain/vacation";
-import { filterRequestsByMonth } from "../../../utils/vacationMonthUtils";
+import { filterRequestsByMonth } from "../utils/vacationMonthUtils";
 import { updateVacationRequest, deleteVacationRequest } from "../domain/api";
 import { invalidateAvailabilityForRange } from "../utils/invalidateAvailabilityForRange";
 import AdminAlternativeOptionModal from "./AdminAlternativeOptionModal";

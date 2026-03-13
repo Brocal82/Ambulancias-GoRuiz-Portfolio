@@ -1,7 +1,7 @@
 // frontend/src/components/sick/AdminSickMonthGrid.tsx
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import type { MonthInfo } from "../../../utils/vacationMonthUtils";
+import type { MonthInfo } from "../../../utils/calendarMonthUtils";
 
 type Props = {
   year: number;
