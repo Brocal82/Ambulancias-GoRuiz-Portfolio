@@ -1,21 +1,21 @@
 // frontend/src/pages/Profile.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { toastT } from "../utils/toast";
-import { useAuth } from "../hooks/useAuth";
-import { UsersApi } from "../modules/users";
+import { toastT } from "../../../utils/toast";
+import { useAuth } from "../../../hooks/useAuth";
+import { UsersApi } from "..";
 
-import { getPscheinInfo } from "../utils/pscheinUtils";
-import type { User, AmbulanceRole } from "../modules/users";
+import { getPscheinInfo } from "../../../utils/pscheinUtils";
+import type { User, AmbulanceRole } from "..";
 
 import { useTranslation } from "react-i18next";
-import { buildImageUrl } from "../utils/apiOrigins";
-import FileUpload from "../components/common/FileUpload";
-import SaveIconButton from "../components/common/actions/SaveIconButton";
-import DangerDeleteButton from "../components/common/actions/DangerDeleteButton";
-import DeleteIconButton from "../components/common/actions/DeleteIconButton";
-import { displayFileNameFromUrl } from "../utils/fileName";
-import type { UpdateUserPayload } from "../modules/users/domain/payloads";
+import { buildImageUrl } from "../../../utils/apiOrigins";
+import FileUpload from "../../../components/common/FileUpload";
+import SaveIconButton from "../../../components/common/actions/SaveIconButton";
+import DangerDeleteButton from "../../../components/common/actions/DangerDeleteButton";
+import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
+import { displayFileNameFromUrl } from "../../../utils/fileName";
+import type { UpdateUserPayload } from "../domain/payloads";
 
 
 

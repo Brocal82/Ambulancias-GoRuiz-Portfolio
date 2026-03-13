@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import Profile from "./Profile";
+import { ProfilePage } from "../modules/users";
 import AdminUserDienstsTab from "../modules/diensts/components/AdminUserDienstsTab";
 import AdminUserPraemienTab from "../modules/praemien/components/AdminUserPraemienTab";
 import AdminUserVacationsTab from "../modules/vacation/components/AdminUserVacationsTab";
@@ -98,7 +98,7 @@ const AdminUserDetailDashboard = () => {
         ) : (
           // ✅ Resto de tabs CON padding consistente
           <div className="p-6">
-            {activeTab === "profile" && userId && <Profile userId={userId} />}
+            {activeTab === "profile" && userId && <ProfilePage userId={userId} />}
             {activeTab === "praemien" && userId && (
               <AdminUserPraemienTab userId={userId} />
             )}

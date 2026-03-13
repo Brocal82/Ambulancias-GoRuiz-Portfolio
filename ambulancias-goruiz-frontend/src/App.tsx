@@ -11,7 +11,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 
 // Páginas privadas
-import Profile from "./pages/Profile";
+import { ProfilePage } from "./modules/users";
 import WorkerDashboard from "./pages/WorkerDashboard";
 import WorkerDienstsPage from "./modules/diensts/pages/WorkerDienstsPage";
 import WorkerPraemienPage from "./modules/praemien/pages/WorkerPraemienPage";
@@ -55,7 +55,7 @@ export default function App() {
             {/* ? AppLayout montado una sola vez */}
             <Route element={<AppLayout />}>
               {/* Trabajador */}
-              <Route path="/profile" element={<Profile />} />
+              <Route path="/profile" element={<ProfilePage />} />
               <Route path="/worker" element={<WorkerDashboard />} />
               <Route path="/dienst" element={<WorkerDienstsPage />} />
               <Route path="/worker/hospitals" element={<WorkerHospitalsPage />} />
