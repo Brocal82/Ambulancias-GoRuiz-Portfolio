@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Appointment } from "../../../types/appointment";
+import type { Appointment } from "../domain/types";
 import { useAuth } from "../../../hooks/useAuth";
 import { cancelAppointment, updateAppointment } from "../domain";
 import { toastT } from "../../../utils/toast";

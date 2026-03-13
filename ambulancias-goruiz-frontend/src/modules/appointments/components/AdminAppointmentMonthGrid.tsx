@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Appointment } from "../../../types/appointment";
+import type { Appointment } from "../domain/types";
 import { getYearMonths } from "../utils";
 import { useTranslation } from "react-i18next";
 import StatusBadge from "../../../components/common/StatusBadge";

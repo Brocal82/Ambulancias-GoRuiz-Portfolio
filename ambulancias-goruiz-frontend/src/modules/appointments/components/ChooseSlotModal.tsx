@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { selectSlot } from "../domain";
-import type { TimeSlot } from "../../../types/appointment";
+import type { TimeSlot } from "../domain/types";
 import { toastT } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
 

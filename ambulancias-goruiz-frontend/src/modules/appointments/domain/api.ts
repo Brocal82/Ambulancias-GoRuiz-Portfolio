@@ -6,7 +6,7 @@ import type {
   ProposeSlotsPayload,
   SelectSlotPayload,
   UpdateAppointmentPayload,
-} from "../../../types/appointment";
+} from "./types";
 
 // Worker: crear solicitud
 export const requestAppointment = async (

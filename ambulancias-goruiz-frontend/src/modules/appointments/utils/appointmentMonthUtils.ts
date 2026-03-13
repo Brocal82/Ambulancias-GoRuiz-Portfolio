@@ -1,5 +1,5 @@
 // frontend/src/modules/appointments/utils/appointmentMonthUtils.ts
-import type { Appointment } from "../../../types/appointment";
+import type { Appointment } from "../domain/types";
 
 export type DayKey = string; // 'YYYY-MM-DD'
 

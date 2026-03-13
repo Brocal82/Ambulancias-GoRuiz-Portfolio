@@ -5,7 +5,7 @@ import { toastT } from "../../../utils/toast";
 import { APP_TZ } from "../../../config/app";
 import { localDateTimeToUtcISO } from "../../../utils/tz";
 import { useTranslation } from "react-i18next";
-import type { Appointment } from "../../../types/appointment";
+import type { Appointment } from "../domain/types";
 
 interface Props {
   appointmentId: string;

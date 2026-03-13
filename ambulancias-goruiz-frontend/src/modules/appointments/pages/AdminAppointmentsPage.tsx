@@ -6,7 +6,7 @@ import {
     getCalendarAppointments,
 } from "../domain";
 
-import type { Appointment } from "../../../types/appointment";
+import type { Appointment } from "../domain/types";
 import { toastT } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
 

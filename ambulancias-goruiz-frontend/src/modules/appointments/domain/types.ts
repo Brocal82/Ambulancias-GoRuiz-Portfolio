@@ -1,5 +1,5 @@
 // frontend/src/types/appointment.ts
-import type { User } from "../modules/users";
+import type { User } from "../../users";
 
 export type AppointmentStatus =
   | "pending"
@@ -26,19 +26,21 @@ export interface Appointment {
   updatedAt: string;
 }
 
-// Payloads
 export interface RequestAppointmentPayload {
   reason: string;
   details: string;
 }
+
 export interface ProposeSlotsPayload {
   proposedSlots: TimeSlot[];
 }
+
 export interface SelectSlotPayload {
   selectedSlot: TimeSlot;
 }
+
 export interface UpdateAppointmentPayload {
   reason?: string;
   details?: string;
-  selectedSlot?: TimeSlot; // reprogramación
+  selectedSlot?: TimeSlot; // reprogramacion
 }
