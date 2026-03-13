@@ -17,7 +17,7 @@ import { toastT } from "../../../utils/toast";
 import { APP_TZ } from "../../../config/app";
 import { useTranslation } from "react-i18next";
 import StatusBadge from "../../../components/common/StatusBadge";
-import { toneForAppointmentStatus } from "../../../utils/status/appointmentTone";
+import { toneForAppointmentStatus } from "../utils/appointmentTone";
 import CreateIconButton from "../../../components/common/actions/CreateIconButton";
 
 /** Util: formato corto fecha/hora en la TZ de la app */

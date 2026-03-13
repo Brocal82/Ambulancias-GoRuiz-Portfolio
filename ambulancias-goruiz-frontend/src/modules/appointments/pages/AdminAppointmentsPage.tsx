@@ -18,7 +18,7 @@ import {
 } from "../components";
 
 import StatusBadge from "../../../components/common/StatusBadge";
-import { toneForAppointmentStatus } from "../../../utils/status/appointmentTone";
+import { toneForAppointmentStatus } from "../utils/appointmentTone";
 
 
 // Utils locales

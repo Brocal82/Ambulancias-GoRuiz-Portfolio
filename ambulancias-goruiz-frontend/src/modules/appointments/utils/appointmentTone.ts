@@ -1,6 +1,6 @@
-// src/utils/status/appointments.ts
-import type { Appointment } from "../../types/appointment";
-import type { StatusTone } from "../../components/common/StatusBadge";
+
+import type { Appointment } from "../../../types/appointment";
+import type { StatusTone } from "../../../components/common/StatusBadge";
 
 export const toneForAppointmentStatus = (
   s: Appointment["status"],
@@ -15,3 +15,4 @@ export const toneForAppointmentStatus = (
           ? "rose"
           : "slate";
 };
+

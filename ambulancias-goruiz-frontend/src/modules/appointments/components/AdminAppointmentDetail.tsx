@@ -7,7 +7,7 @@ import { APP_TZ } from "../../../config/app";
 import { partsFromISO, localDateTimeToUtcISO } from "../../../utils/tz";
 import { useTranslation } from "react-i18next";
 import StatusBadge from "../../../components/common/StatusBadge";
-import { toneForAppointmentStatus } from "../../../utils/status/appointmentTone";
+import { toneForAppointmentStatus } from "../utils/appointmentTone";
 
 type Props = {
   isOpen: boolean;
