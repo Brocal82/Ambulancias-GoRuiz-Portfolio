@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import VacationRequest from "../../../models/vacationRequest";
-import { findOverCapacityDays } from "../../../utils/vacationCapacity";
+import { findOverCapacityDays } from "../utils/vacation-capacity";
 import { clearUserFromDienstsInRange } from "../../../utils/dienstClearUtils";
 
 export const VACATION_UPDATE_ABORT = "__ABORT__";
