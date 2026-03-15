@@ -6,15 +6,14 @@ import { findOverCapacityDays } from "../utils/vacationCapacity";
 import { DateTime } from "luxon";
 import mongoose from "mongoose";
 import { clearUserFromDienstsInRange } from "../utils/dienstClearUtils";
-
-// ======================================================
-// Config mensual embebida (NO se crea archivo nuevo)
-// ======================================================
 import {
-  Schema as MongooseSchema,
-  model as mongooseModel,
-  models as mongooseModels,
-} from "mongoose";
+  DEFAULT_MAX_PER_DAY,
+  findMonthConfig,
+  getMaxPerDayForDate,
+  getMonthConfigOrDefault,
+  toMonthKey,
+  upsertMonthConfigRecord,
+} from "../modules/vacation";
 
 const ZONE = "Europe/Berlin";
 
@@ -27,38 +26,6 @@ function isVacationStatus(x: unknown): x is VacationStatus {
     x === "cancelled" ||
     x === "option_sent"
   );
-}
-
-interface IVacationMonthConfig {
-  monthKey: string; // "YYYY-MM"
-  maxPerDay: number; // capacidad del mes
-  blackouts: { startDate: Date; endDate: Date }[]; // rangos bloqueados por admin
-}
-
-// Evitar recompilar el modelo en hot-reload
-const VacationMonthConfig =
-  (mongooseModels.VacationMonthConfig as mongoose.Model<IVacationMonthConfig>) ||
-  mongooseModel<IVacationMonthConfig>(
-    "VacationMonthConfig",
-    new MongooseSchema<IVacationMonthConfig>(
-      {
-        monthKey: { type: String, required: true, unique: true, index: true },
-        maxPerDay: { type: Number, required: true, default: 2 },
-        blackouts: [
-          {
-            startDate: { type: Date, required: true },
-            endDate: { type: Date, required: true },
-          },
-        ],
-      },
-      { timestamps: true },
-    ),
-  );
-
-const DEFAULT_MAX_PER_DAY = Number(process.env.MAX_VACATIONS_PER_DAY ?? 2);
-
-function toMonthKey(year: number, month1to12: number) {
-  return `${year}-${String(month1to12).padStart(2, "0")}`;
 }
 function dayStart(d: Date) {
   const x = new Date(d);
@@ -73,15 +40,6 @@ function dayEnd(d: Date) {
 function isInRange(d: Date, start: Date, end: Date) {
   const t = d.getTime();
   return t >= dayStart(start).getTime() && t <= dayEnd(end).getTime();
-}
-
-// Lee la capacidad para el mes de una fecha dada (si no hay config, usa DEFAULT_MAX_PER_DAY)
-async function getMaxPerDayForDate(date: Date): Promise<number> {
-  const y = date.getFullYear();
-  const m1 = date.getMonth() + 1;
-  const key = toMonthKey(y, m1);
-  const cfg = await VacationMonthConfig.findOne({ monthKey: key }).lean();
-  return cfg?.maxPerDay ?? DEFAULT_MAX_PER_DAY;
 }
 
 // ======================================================
@@ -640,7 +598,7 @@ export const getAvailability = async (
     const monthKey = toMonthKey(year, month);
     const monthStart = dayStart(new Date(year, month - 1, 1));
     const monthEnd = dayEnd(new Date(year, month, 0));
-    const cfg = await VacationMonthConfig.findOne({ monthKey }).lean();
+    const cfg = await findMonthConfig(monthKey);
 
     const maxPerDay = cfg?.maxPerDay ?? DEFAULT_MAX_PER_DAY;
     const blackouts = cfg?.blackouts ?? [];
@@ -730,14 +688,8 @@ export const getMonthConfig = async (
         .json({ message: 'monthKey inválido. Formato "YYYY-MM".' });
       return;
     }
-    const cfg = await VacationMonthConfig.findOne({ monthKey }).lean();
-    res.status(200).json(
-      cfg ?? {
-        monthKey,
-        maxPerDay: DEFAULT_MAX_PER_DAY,
-        blackouts: [],
-      },
-    );
+    const cfg = await getMonthConfigOrDefault(monthKey);
+    res.status(200).json(cfg);
   } catch (error) {
     console.error("Error al obtener config mensual:", error);
     res.status(500).json({ message: "Error interno del servidor" });
@@ -763,21 +715,11 @@ export const upsertMonthConfig = async (
       return;
     }
 
-    const payload: Partial<IVacationMonthConfig> = { monthKey };
-    if (typeof maxPerDay === "number" && maxPerDay >= 0)
-      payload.maxPerDay = maxPerDay;
-    if (Array.isArray(blackouts)) {
-      payload.blackouts = blackouts.map((r) => ({
-        startDate: new Date(r.startDate),
-        endDate: new Date(r.endDate),
-      }));
-    }
-
-    const updated = await VacationMonthConfig.findOneAndUpdate(
-      { monthKey },
-      payload,
-      { upsert: true, new: true, setDefaultsOnInsert: true },
-    );
+    const updated = await upsertMonthConfigRecord({
+      monthKey,
+      maxPerDay,
+      blackouts,
+    });
 
     res.status(200).json(updated);
   } catch (error) {
