@@ -1,8 +1,8 @@
 // frontend/src/pages/AdminUsersPage.tsx
 import { useEffect, useState, useCallback } from "react";
-import { UsersApi } from "..";
+import * as UsersApi from "../domain/api";
 import { useAuth } from "../../../hooks/useAuth";
-import type { User } from "..";
+import type { User } from "../domain/types";
 import { toastT } from "../../../utils/toast";
 import { getPscheinInfo, getPscheinWarningTitle } from "../../../utils/pscheinUtils";
 import { useNavigate } from "react-router-dom";

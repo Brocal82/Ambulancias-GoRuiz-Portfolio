@@ -3,10 +3,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toastT } from "../../../utils/toast";
 import { useAuth } from "../../../hooks/useAuth";
-import { UsersApi } from "..";
+import * as UsersApi from "../domain/api";
 
 import { getPscheinInfo } from "../../../utils/pscheinUtils";
-import type { User, AmbulanceRole } from "..";
+import type { User, AmbulanceRole } from "../domain/types";
 
 import { useTranslation } from "react-i18next";
 import { buildImageUrl } from "../../../utils/apiOrigins";

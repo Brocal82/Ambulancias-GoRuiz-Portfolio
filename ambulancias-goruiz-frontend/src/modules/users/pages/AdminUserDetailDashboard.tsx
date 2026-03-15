@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { ProfilePage } from ".";
+import ProfilePage from "./ProfilePage";
 import AdminUserDienstsTab from "../../diensts/components/AdminUserDienstsTab";
 import AdminUserPraemienTab from "../../praemien/components/AdminUserPraemienTab";
 import AdminUserVacationsTab from "../../vacation/components/AdminUserVacationsTab";
 import AdminUserSickLeavesTab from "../../sick/components/AdminUserSickLeavesTab";
 import AdminUserMessageTab from "../../messages/components/AdminUserMessageTab"; import { useAuth } from "../../../hooks/useAuth";
-import { UsersApi } from "..";
-import type { User } from "..";
+import * as UsersApi from "../domain/api";
+import type { User } from "../domain/types";
 import { useTranslation } from "react-i18next";
 
 const TAB_KEYS = [

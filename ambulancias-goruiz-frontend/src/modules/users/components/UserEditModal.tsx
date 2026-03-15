@@ -1,6 +1,6 @@
 // src/components/modals/UserEditModal.tsx
 import { useState, useEffect } from "react";
-import type { User } from "..";
+import type { User } from "../domain/types";
 import { getPscheinInfo } from "../../../utils/pscheinUtils";
 import type { UpdateUserPayload } from "../domain/payloads";
 
