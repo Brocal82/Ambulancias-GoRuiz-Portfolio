@@ -9,6 +9,7 @@ import { clearUserFromDienstsInRange } from "../utils/dienstClearUtils";
 import { getMaxPerDayForDate } from "../modules/vacation";
 import {
   getAvailability as getAvailabilityHandler,
+  checkVacationsInRange as checkVacationsInRangeHandler,
   getMonthConfig as getMonthConfigHandler,
   getVacationPendingCount as getVacationPendingCountHandler,
   getVacationRequests as getVacationRequestsHandler,
@@ -402,131 +403,7 @@ export const checkVacationsInRange = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  try {
-    // Helper local para 'YYYY-MM-DD' en Europe/Berlin
-    const fmtYmdBerlin = (d: DateTime): string =>
-      d.setZone(ZONE).toFormat("yyyy-LL-dd");
-
-    const { userIds, fromISO, toISO } = req.body as {
-      userIds?: string[];
-      fromISO?: string;
-      toISO?: string;
-    };
-
-    if (!Array.isArray(userIds) || userIds.length === 0 || !fromISO || !toISO) {
-      res
-        .status(400)
-        .json({
-          message:
-            "Parámetros inválidos. Se requieren userIds[], fromISO y toISO.",
-        });
-      return;
-    }
-
-    // Normalizamos el rango en zona Berlín [00:00..23:59]
-    const fromDT = DateTime.fromISO(fromISO, { zone: ZONE }).startOf("day");
-    const toDT = DateTime.fromISO(toISO, { zone: ZONE }).endOf("day");
-
-    if (!fromDT.isValid || !toDT.isValid || fromDT > toDT) {
-      res.status(400).json({ message: "Rango de fechas inválido." });
-      return;
-    }
-
-    const userObjectIds = userIds.map((id) => new mongoose.Types.ObjectId(id));
-
-    // Solo solicitudes ACCEPTED que SOLAPEN el rango
-    const requests = await VacationRequest.find({
-      status: "accepted",
-      user: { $in: userObjectIds },
-      startDate: { $lte: toDT.toJSDate() },
-      endDate: { $gte: fromDT.toJSDate() },
-    })
-      .select("user startDate endDate")
-      .lean();
-
-    type Flags = {
-      hasVacationInRange: boolean;
-      vacationStartInRange?: string; // recortado a la semana
-      vacationUntilInRange?: string;
-      vacationStartFull?: string; // rango real completo
-      vacationUntilFull?: string;
-    };
-
-    const result: Record<string, Flags> = {};
-    for (const id of userIds) {
-      result[id] = { hasVacationInRange: false };
-    }
-
-    // Reducimos por usuario: mantenemos tanto el rango en la semana (overlap)
-    // como el rango FULL real que pisa esa semana (para tooltip correcto)
-    for (const r of requests) {
-      const uid = String(r.user);
-
-      const reqStart = DateTime.fromJSDate(r.startDate as Date, {
-        zone: ZONE,
-      }).startOf("day");
-      const reqEnd = DateTime.fromJSDate(r.endDate as Date, {
-        zone: ZONE,
-      }).endOf("day");
-
-      // Rango solapado con la semana (para palmera/apagado)
-      const overlapStart = reqStart < fromDT ? fromDT : reqStart;
-      const overlapEnd = reqEnd > toDT ? toDT : reqEnd;
-      if (overlapStart > overlapEnd) continue;
-
-      const prev = result[uid];
-
-      if (!prev || !prev.hasVacationInRange) {
-        result[uid] = {
-          hasVacationInRange: true,
-          vacationStartInRange: fmtYmdBerlin(overlapStart),
-          vacationUntilInRange: fmtYmdBerlin(overlapEnd),
-          vacationStartFull: fmtYmdBerlin(reqStart),
-          vacationUntilFull: fmtYmdBerlin(reqEnd),
-        };
-      } else {
-        // Unimos: min/max para IN-RANGE y para FULL
-        const prevInStart = DateTime.fromISO(prev.vacationStartInRange!, {
-          zone: ZONE,
-        }).startOf("day");
-        const prevInEnd = DateTime.fromISO(prev.vacationUntilInRange!, {
-          zone: ZONE,
-        }).endOf("day");
-
-        const newInStart =
-          prevInStart < overlapStart ? prevInStart : overlapStart;
-        const newInEnd = prevInEnd > overlapEnd ? prevInEnd : overlapEnd;
-
-        const prevFullStart = prev.vacationStartFull
-          ? DateTime.fromISO(prev.vacationStartFull, { zone: ZONE }).startOf(
-              "day",
-            )
-          : reqStart;
-        const prevFullEnd = prev.vacationUntilFull
-          ? DateTime.fromISO(prev.vacationUntilFull, { zone: ZONE }).endOf(
-              "day",
-            )
-          : reqEnd;
-
-        const newFullStart =
-          prevFullStart < reqStart ? prevFullStart : reqStart;
-        const newFullEnd = prevFullEnd > reqEnd ? prevFullEnd : reqEnd;
-
-        result[uid] = {
-          hasVacationInRange: true,
-          vacationStartInRange: fmtYmdBerlin(newInStart),
-          vacationUntilInRange: fmtYmdBerlin(newInEnd),
-          vacationStartFull: fmtYmdBerlin(newFullStart),
-          vacationUntilFull: fmtYmdBerlin(newFullEnd),
-        };
-      }
-    }
-
-    res.status(200).json(result);
-  } catch (error) {
-    console.error("Error en checkVacationsInRange:", error);
-    res.status(500).json({ message: "Error interno del servidor" });
-  }
+  return checkVacationsInRangeHandler(req, res);
 };
 
 // ======================================================

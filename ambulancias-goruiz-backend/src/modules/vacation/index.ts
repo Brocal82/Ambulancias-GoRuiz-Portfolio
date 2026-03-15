@@ -5,6 +5,7 @@ export {
   upsertMonthConfig,
 } from "./month-config.controller";
 export { getAvailability } from "./vacation-availability.controller";
+export { checkVacationsInRange } from "./vacation-range.controller";
 export {
   getVacationPendingCount,
   getVacationRequests,
@@ -19,6 +20,7 @@ export {
   upsertMonthConfigRecord,
 } from "./month-config.service";
 export { getVacationAvailability } from "./vacation-availability.service";
+export { checkVacationsInRangeService } from "./vacation-range.service";
 export {
   countVacationRequestsByStatus,
   getAllVacationRequests,
