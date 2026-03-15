@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "../../../hooks/useAuth";
-import { getIssuesOpenCount } from "../domain";
+import { getIssuesOpenCount } from "../domain/api";
 
 /** Evento global para forzar refresco tras cambios en aver­as (crear, cerrar, borrar, marcar vistas, etc.) */
 export const ADMIN_ISSUES_CHANGED_EVENT = "admin-issues-changed";
