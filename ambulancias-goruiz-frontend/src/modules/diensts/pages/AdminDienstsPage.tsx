@@ -29,7 +29,8 @@ import { isTeamIncomplete } from "../utils/assignmentUtils";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
-import { getPscheinInfo, getPscheinWarningTitle } from "../../../utils/pscheinUtils";
+import { getPscheinInfo } from "../../../utils/pscheinUtils";
+import { getPscheinWarningTitle } from "../utils/pscheinWarningTitle";
 
 import type { FlexibleAssignment } from "../domain/types/flexibleAssignment";
 

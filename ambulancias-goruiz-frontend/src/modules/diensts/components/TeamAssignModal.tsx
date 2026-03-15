@@ -8,8 +8,8 @@ import { useTranslation } from "react-i18next";
 
 import {
   getPscheinInfo,
-  getPscheinWarningTitle,
 } from "../../../utils/pscheinUtils";
+import { getPscheinWarningTitle } from "../utils/pscheinWarningTitle";
 
 import { getVacationFlagsInRange, type VacFlag } from "../../vacation/domain/api";
 import { getSickFlagsInRange, type SickFlag } from "../../sick/domain";

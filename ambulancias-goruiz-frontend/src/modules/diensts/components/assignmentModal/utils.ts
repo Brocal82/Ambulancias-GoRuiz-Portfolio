@@ -1,4 +1,5 @@
-import { getPscheinInfo, getPscheinWarningTitle } from "../../../../utils/pscheinUtils";
+import { getPscheinInfo } from "../../../../utils/pscheinUtils";
+import { getPscheinWarningTitle } from "../../utils/pscheinWarningTitle";
 import { fmtDDMM } from "../../../../utils/timeUtils";
 
 import type { UserRef } from "../../domain/types";

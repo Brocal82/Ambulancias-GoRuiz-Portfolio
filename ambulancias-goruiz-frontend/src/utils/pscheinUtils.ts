@@ -3,7 +3,7 @@ export type PscheinStatus = "valid" | "warning" | "expired" | "no-date";
 
 export function getPscheinInfo(date?: string): {
   status: PscheinStatus;
-  monthsLeft?: number; // puede ser negativo si ya caducó
+  monthsLeft?: number; // puede ser negativo si ya caducÃ³
   daysLeft?: number; // idem
 } {
   if (!date) return { status: "no-date" };
@@ -29,11 +29,11 @@ export function getPscheinInfo(date?: string): {
 }
 
 /**
- * Devuelve el título del tooltip para P-Schein warning o expirado.
- * Usa la traducción con conteo de meses.
+ * Devuelve el tÃ­tulo del tooltip para P-Schein warning o expirado.
+ * Usa la traducciÃ³n con conteo de meses.
  *
  * @param pscheinExpiry ISO string (YYYY-MM-DD)
- * @param t función de traducción i18n
+ * @param t funciÃ³n de traducciÃ³n i18n
  */
 export function getPscheinWarningTitle(
   pscheinExpiry?: string,
