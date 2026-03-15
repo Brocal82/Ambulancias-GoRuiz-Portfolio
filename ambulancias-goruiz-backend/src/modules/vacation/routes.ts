@@ -12,7 +12,7 @@ import {
   getMonthConfig,
   upsertMonthConfig,
   checkVacationsInRange,
-} from "../../controllers/vacationController";
+} from "./index";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
 
