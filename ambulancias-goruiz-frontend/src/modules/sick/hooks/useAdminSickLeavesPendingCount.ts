@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getSickLeavesPendingCount } from "../domain";
+import { getSickLeavesPendingCount } from "../domain/api";
 import { useAuth } from "../../../hooks/useAuth";
 
 type Options = {
