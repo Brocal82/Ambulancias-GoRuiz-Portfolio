@@ -1,5 +1,5 @@
 import { Schema, model, models, type HydratedDocument, type Model } from "mongoose";
-import type { IVacationRequest } from "../../../types/vacationRequest";
+import type { IVacationRequest } from "../types/vacation-request.types";
 
 export type IVacationRequestModel = HydratedDocument<IVacationRequest>;
 
