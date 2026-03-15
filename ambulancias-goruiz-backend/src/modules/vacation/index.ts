@@ -12,6 +12,16 @@ export {
   getUserVacationRequests,
 } from "./vacation-requests-read.controller";
 export {
+  cancelOwnVacationRequest,
+  createVacationRequestRecord,
+  deleteVacationRequestRecord,
+} from "./vacation-requests-write.service";
+export {
+  cancelMyVacationRequest,
+  createVacationRequest,
+  deleteVacationRequest,
+} from "./vacation-requests-write.controller";
+export {
   DEFAULT_MAX_PER_DAY,
   findMonthConfig,
   getMaxPerDayForDate,

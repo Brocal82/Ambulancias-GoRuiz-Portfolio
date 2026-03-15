@@ -8,6 +8,9 @@ import mongoose from "mongoose";
 import { clearUserFromDienstsInRange } from "../utils/dienstClearUtils";
 import { getMaxPerDayForDate } from "../modules/vacation";
 import {
+  cancelMyVacationRequest as cancelMyVacationRequestHandler,
+  createVacationRequest as createVacationRequestHandler,
+  deleteVacationRequest as deleteVacationRequestHandler,
   getAvailability as getAvailabilityHandler,
   checkVacationsInRange as checkVacationsInRangeHandler,
   getMonthConfig as getMonthConfigHandler,
@@ -47,68 +50,12 @@ export const createVacationRequest = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  try {
-    const userId = (req as any).userId; // del token
-    const { startDate, endDate } = req.body;
-
-    if (!startDate || !endDate) {
-      res
-        .status(400)
-        .json({ message: "Las fechas de inicio y fin son obligatorias" });
-      return;
-    }
-
-    const newRequest = new VacationRequest({
-      user: new mongoose.Types.ObjectId(userId),
-      startDate,
-      endDate,
-      status: "pending",
-      requestedAt: new Date(),
-    });
-
-    await newRequest.save();
-
-    res.status(201).json(newRequest);
-  } catch (error) {
-    console.error("Error al crear solicitud de vacaciones:", error);
-    res.status(500).json({ message: "Error interno del servidor" });
-  }
+  return createVacationRequestHandler(req, res);
 };
 
 // Worker cancela su propia solicitud (solo pending / option_sent)
 export const cancelMyVacationRequest = async (req: any, res: any) => {
-  try {
-    const userId = req.user?.id;
-    const { id } = req.params;
-
-    if (!userId) {
-      return res.status(401).json({ message: "No autorizado" });
-    }
-
-    const request = await VacationRequest.findById(id);
-    if (!request) {
-      return res.status(404).json({ message: "Solicitud no encontrada" });
-    }
-
-    // ✅ Seguridad: solo el dueño puede cancelar
-    if (String(request.user) !== String(userId)) {
-      return res.status(403).json({ message: "No puedes cancelar esta solicitud" });
-    }
-
-    // ✅ Solo permitir cancelar si está pendiente (y opcionalmente option_sent)
-    const status = String(request.status);
-    if (status !== "pending" && status !== "option_sent") {
-      return res.status(400).json({ message: "Solo puedes cancelar solicitudes pendientes" });
-    }
-
-    request.status = "cancelled";
-    await request.save();
-
-    return res.status(200).json(request);
-  } catch (err) {
-    console.error("❌ cancelMyVacationRequest error:", err);
-    return res.status(500).json({ message: "Error al cancelar la solicitud" });
-  }
+  return cancelMyVacationRequestHandler(req, res);
 };
 
 
@@ -358,22 +305,7 @@ export const deleteVacationRequest = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const request = await VacationRequest.findById(id);
-
-    if (!request) {
-      res.status(404).json({ message: "Solicitud no encontrada" });
-      return;
-    }
-
-    await request.deleteOne();
-
-    res.status(200).json({ message: "Solicitud eliminada correctamente" });
-  } catch (error) {
-    console.error("Error al eliminar solicitud de vacaciones:", error);
-    res.status(500).json({ message: "Error interno del servidor" });
-  }
+  return deleteVacationRequestHandler(req, res);
 };
 
 /**
