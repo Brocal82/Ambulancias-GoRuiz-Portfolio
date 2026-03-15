@@ -1,7 +1,7 @@
-import { Schema, model, models, Document } from "mongoose";
+import { Schema, model, models, type HydratedDocument, type Model } from "mongoose";
 import type { IVacationRequest } from "../../../types/vacationRequest";
 
-export interface IVacationRequestModel extends IVacationRequest, Document {}
+export type IVacationRequestModel = HydratedDocument<IVacationRequest>;
 
 const VacationRequestSchema = new Schema<IVacationRequest>({
   user: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -19,6 +19,8 @@ const VacationRequestSchema = new Schema<IVacationRequest>({
   userResponse: { type: String, enum: ["accepted", "cancelled"] },
 });
 
-export default (
-  models.VacationRequest || model<IVacationRequest>("VacationRequest", VacationRequestSchema)
-);
+const VacationRequest: Model<IVacationRequest> =
+  (models.VacationRequest as Model<IVacationRequest>) ||
+  model<IVacationRequest>("VacationRequest", VacationRequestSchema);
+
+export default VacationRequest;
