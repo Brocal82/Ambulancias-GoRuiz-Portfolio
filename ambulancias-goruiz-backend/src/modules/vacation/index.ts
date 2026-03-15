@@ -7,6 +7,7 @@ export {
 export { getAvailability } from "./vacation-availability.controller";
 export { checkVacationsInRange } from "./vacation-range.controller";
 export { respondToAlternativeDate } from "./vacation-alternative-response.controller";
+export { updateVacationRequest } from "./vacation-update-request.controller";
 export {
   getVacationPendingCount,
   getVacationRequests,
@@ -32,6 +33,14 @@ export {
 } from "./month-config.service";
 export { getVacationAvailability } from "./vacation-availability.service";
 export { checkVacationsInRangeService } from "./vacation-range.service";
+export {
+  checkVacationAcceptanceCapacity,
+  cleanupAcceptedVacationAssignments,
+  createVacationUpdateAbortError,
+  getVacationRequestForAdminUpdate,
+  isVacationUpdateAbortError,
+  VACATION_UPDATE_ABORT,
+} from "./vacation-update-request.service";
 export {
   applyAlternativeResponseWorkflow,
   canRespondToAlternativeDate,
