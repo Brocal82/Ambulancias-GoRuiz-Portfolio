@@ -1,6 +1,6 @@
 import VacationMonthConfig, {
   IVacationMonthConfig,
-} from "./month-config.model";
+} from "../models/month-config.model";
 
 export const DEFAULT_MAX_PER_DAY = Number(
   process.env.MAX_VACATIONS_PER_DAY ?? 2,

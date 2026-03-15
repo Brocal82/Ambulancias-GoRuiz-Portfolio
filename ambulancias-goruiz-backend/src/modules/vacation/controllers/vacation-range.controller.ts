@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { DateTime } from "luxon";
-import { checkVacationsInRangeService } from "./vacation-range.service";
+import { checkVacationsInRangeService } from "../services/vacation-range.service";
 
 const ZONE = "Europe/Berlin";
 

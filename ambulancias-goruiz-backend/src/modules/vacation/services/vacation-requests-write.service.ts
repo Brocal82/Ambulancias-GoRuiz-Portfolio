@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import VacationRequest from "../../models/vacationRequest";
+import VacationRequest from "../../../models/vacationRequest";
 
 export async function createVacationRequestRecord(input: {
   userId: string;

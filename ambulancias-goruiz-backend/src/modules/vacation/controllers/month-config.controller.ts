@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import {
   getMonthConfigOrDefault,
   upsertMonthConfigRecord,
-} from "./month-config.service";
+} from "../services/month-config.service";
 
 export const getMonthConfig = async (
   req: Request,

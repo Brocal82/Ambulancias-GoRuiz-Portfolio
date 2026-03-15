@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import mongoose from "mongoose";
-import VacationRequest from "../../models/vacationRequest";
+import VacationRequest from "../../../models/vacationRequest";
 
 const ZONE = "Europe/Berlin";
 

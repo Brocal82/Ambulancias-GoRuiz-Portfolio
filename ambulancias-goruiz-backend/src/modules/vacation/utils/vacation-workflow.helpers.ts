@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { Request } from "express";
-import type { IVacationRequestModel } from "../../models/vacationRequest";
+import type { IVacationRequestModel } from "../../../models/vacationRequest";
 
 const ZONE = "Europe/Berlin";
 

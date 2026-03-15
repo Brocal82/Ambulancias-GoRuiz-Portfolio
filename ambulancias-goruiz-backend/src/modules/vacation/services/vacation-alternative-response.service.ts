@@ -1,6 +1,6 @@
-import type { IVacationRequestModel } from "../../models/vacationRequest";
-import VacationRequest from "../../models/vacationRequest";
-import { applyAlternativeDateResponse } from "./vacation-workflow.helpers";
+import type { IVacationRequestModel } from "../../../models/vacationRequest";
+import VacationRequest from "../../../models/vacationRequest";
+import { applyAlternativeDateResponse } from "../utils/vacation-workflow.helpers";
 
 export async function getVacationRequestById(id: string) {
   return (await VacationRequest.findById(id)) as IVacationRequestModel | null;

@@ -5,15 +5,15 @@ import {
   buildAcceptedVacationRange,
   isVacationStatus,
   parseVacationUpdateAuthorization,
-} from "./vacation-workflow.helpers";
-import { getMaxPerDayForDate } from "./month-config.service";
+} from "../utils/vacation-workflow.helpers";
+import { getMaxPerDayForDate } from "../services/month-config.service";
 import {
   checkVacationAcceptanceCapacity,
   cleanupAcceptedVacationAssignments,
   createVacationUpdateAbortError,
   getVacationRequestForAdminUpdate,
   isVacationUpdateAbortError,
-} from "./vacation-update-request.service";
+} from "../services/vacation-update-request.service";
 
 export const updateVacationRequest = async (
   req: Request,
@@ -63,8 +63,7 @@ export const updateVacationRequest = async (
         if (overDays.length > 0) {
           res.status(409).json({
             code: "capacity_exceeded",
-            message:
-              "Capacidad diaria alcanzada para uno o m\u00e1s d\u00edas del rango.",
+            message: "Capacidad diaria alcanzada para uno o más días del rango.",
             days: overDays,
           });
           throw createVacationUpdateAbortError();
@@ -73,7 +72,7 @@ export const updateVacationRequest = async (
 
       if (status === "accepted" && canForceAccept) {
         console.warn(
-          `\u26a0\ufe0f Admin forz\u00f3 aceptaci\u00f3n por encima de capacidad. requestId=${id}`,
+          `⚠️ Admin forzó aceptación por encima de capacidad. requestId=${id}`,
         );
       }
 
@@ -86,7 +85,7 @@ export const updateVacationRequest = async (
             adminNote,
           });
         } else {
-          res.status(400).json({ message: "Estado inv\u00e1lido" });
+          res.status(400).json({ message: "Estado inválido" });
           throw createVacationUpdateAbortError();
         }
       } else {
@@ -111,7 +110,7 @@ export const updateVacationRequest = async (
         await cleanupAcceptedVacationAssignments(acceptedRange);
       } catch (clearErr) {
         console.error(
-          "\u26a0\ufe0f Error al desasignar usuario de Diensts tras aceptar vacaciones:",
+          "⚠️ Error al desasignar usuario de Diensts tras aceptar vacaciones:",
           clearErr,
         );
       }
@@ -121,7 +120,7 @@ export const updateVacationRequest = async (
       return;
     }
 
-    console.error("\u274c Error al actualizar solicitud de vacaciones:", err);
+    console.error("❌ Error al actualizar solicitud de vacaciones:", err);
     if (!res.headersSent) {
       res.status(500).json({ message: "Error interno del servidor" });
     }

@@ -1,4 +1,4 @@
-import VacationRequest from "../../models/vacationRequest";
+import VacationRequest from "../../../models/vacationRequest";
 import {
   DEFAULT_MAX_PER_DAY,
   findMonthConfig,

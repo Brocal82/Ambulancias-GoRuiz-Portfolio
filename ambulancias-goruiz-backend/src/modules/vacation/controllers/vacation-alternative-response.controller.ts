@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
-import { clearUserFromDienstsInRange } from "../../utils/dienstClearUtils";
+import { clearUserFromDienstsInRange } from "../../../utils/dienstClearUtils";
 import {
   applyAlternativeResponseWorkflow,
   canRespondToAlternativeDate,
   getVacationRequestById,
-} from "./vacation-alternative-response.service";
+} from "../services/vacation-alternative-response.service";
 
 export const respondToAlternativeDate = async (
   req: Request,

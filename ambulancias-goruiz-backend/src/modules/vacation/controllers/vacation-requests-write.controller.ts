@@ -3,7 +3,7 @@ import {
   cancelOwnVacationRequest,
   createVacationRequestRecord,
   deleteVacationRequestRecord,
-} from "./vacation-requests-write.service";
+} from "../services/vacation-requests-write.service";
 
 export const createVacationRequest = async (
   req: Request,

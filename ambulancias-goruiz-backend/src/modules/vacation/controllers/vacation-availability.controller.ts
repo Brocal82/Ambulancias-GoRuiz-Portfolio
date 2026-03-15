@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getVacationAvailability } from "./vacation-availability.service";
+import { getVacationAvailability } from "../services/vacation-availability.service";
 
 export const getAvailability = async (
   req: Request,

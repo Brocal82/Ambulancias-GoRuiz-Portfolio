@@ -3,7 +3,7 @@ import {
   countVacationRequestsByStatus,
   getAllVacationRequests,
   getVacationRequestsForUser,
-} from "./vacation-requests-read.service";
+} from "../services/vacation-requests-read.service";
 
 export const getVacationRequests = async (
   _req: Request,
