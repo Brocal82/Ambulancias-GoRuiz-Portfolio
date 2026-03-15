@@ -1,10 +1,9 @@
 // src/modules/hospitals/pages/WorkerHospitalsPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import type { Hospital } from "../domain/types";
-import {
-  hospitalsComponents,
-  hospitalsUtils,
-} from "..";
+import { fetchHospitals } from "../domain/fetch";
+import * as hospitalsComponents from "../components";
+import { filterAndSortHospitals, getUniqueSpecialties } from "../utils/hospitalsFilters";
 
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -27,7 +26,7 @@ const WorkerHospitalsPage = () => {
       try {
         if (!token) return;
 
-        const data = await hospitalsUtils.fetchHospitals(token);
+        const data = await fetchHospitals(token);
         setHospitals(data);
       } catch (error) {
         console.error("Error al cargar hospitales:", error);
@@ -39,13 +38,13 @@ const WorkerHospitalsPage = () => {
   }, [token]);
 
   const specialties = useMemo(
-    () => hospitalsUtils.getUniqueSpecialties(hospitals),
+    () => getUniqueSpecialties(hospitals),
     [hospitals],
   );
 
   const sortedHospitals = useMemo(
     () =>
-      hospitalsUtils.filterAndSortHospitals(
+      filterAndSortHospitals(
         hospitals,
         selectedSpecialty,
         searchName,

@@ -1,11 +1,18 @@
 // src/modules/hospitals/pages/AdminHospitalsPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import type { Hospital } from "../domain/types";
+import * as hospitalsApi from "../domain/api";
+import { fetchHospitals } from "../domain/fetch";
+import * as hospitalsComponents from "../components";
 import {
-  hospitalsApi,
-  hospitalsComponents,
-  hospitalsUtils,
-} from "..";
+  buildCreateHospitalPayload,
+  buildUpdateHospitalPayload,
+} from "../utils/payload";
+import { filterAndSortHospitals, getUniqueSpecialties } from "../utils/hospitalsFilters";
+import {
+  fromLocalHospitalStatus,
+  getHospitalIsOpen,
+} from "../utils/status";
 
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
@@ -31,7 +38,7 @@ const AdminHospitalsPage = () => {
       try {
         if (!token) return;
 
-        const data = await hospitalsUtils.fetchHospitals(token);
+        const data = await fetchHospitals(token);
         setHospitals(data);
       } catch (error) {
         console.error(error);
@@ -44,14 +51,14 @@ const AdminHospitalsPage = () => {
 
   // 2) Especialidades únicas (memo para evitar recalcular cada render)
   const specialties = useMemo(
-    () => hospitalsUtils.getUniqueSpecialties(hospitals),
+    () => getUniqueSpecialties(hospitals),
     [hospitals],
   );
 
   // 3) Lista filtrada + ordenada (memo)
   const sortedHospitals = useMemo(
     () =>
-      hospitalsUtils.filterAndSortHospitals(
+      filterAndSortHospitals(
         hospitals,
         selectedSpecialty,
         searchName,
@@ -64,12 +71,12 @@ const AdminHospitalsPage = () => {
     try {
       if (!token) return;
 
-      const currentIsOpen = hospitalsUtils.getHospitalIsOpen(hospital);
+      const currentIsOpen = getHospitalIsOpen(hospital);
       const nextIsOpen = !(currentIsOpen === true);
 
       const updated = await hospitalsApi.updateHospital(
         hospital._id,
-        hospitalsUtils.fromLocalHospitalStatus(hospital, nextIsOpen),
+        fromLocalHospitalStatus(hospital, nextIsOpen),
         token,
       );
 
@@ -131,7 +138,7 @@ const AdminHospitalsPage = () => {
 
             try {
               const newHospital = await hospitalsApi.createHospital(
-                hospitalsUtils.buildCreateHospitalPayload(data),
+                buildCreateHospitalPayload(data),
                 token,
               );
 
@@ -166,7 +173,7 @@ const AdminHospitalsPage = () => {
             if (!token) return;
 
             try {
-              const payload = hospitalsUtils.buildUpdateHospitalPayload(
+              const payload = buildUpdateHospitalPayload(
                 editingHospital,
                 updated,
               );
