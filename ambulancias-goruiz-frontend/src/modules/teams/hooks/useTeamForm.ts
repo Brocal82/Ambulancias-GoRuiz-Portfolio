@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "../../../hooks/useAuth";
+import { getAllAmbulances } from "../../ambulances/domain/api";
 import type { Team } from "../domain";
 import type { TeamPickerValue } from "../components/TeamPicker";
 
@@ -93,16 +94,7 @@ export function useTeamForm({
       try {
         setLoadingAmbulances(true);
 
-        const res = await fetch("/api/ambulances", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!res.ok) {
-          console.error("❌ Error HTTP al cargar ambulancias:", res.status);
-          return;
-        }
-
-        const data = (await res.json()) as AmbulanceLite[];
+        const data = (await getAllAmbulances(token)) as AmbulanceLite[];
 
         if (!cancelled) {
           setAmbulances(
@@ -117,7 +109,7 @@ export function useTeamForm({
           );
         }
       } catch (e) {
-        console.error("❌ Error al cargar ambulancias en useTeamForm:", e);
+        console.error("Error al cargar ambulancias en useTeamForm:", e);
       } finally {
         if (!cancelled) {
           setLoadingAmbulances(false);

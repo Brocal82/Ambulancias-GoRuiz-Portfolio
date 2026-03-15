@@ -2,9 +2,11 @@ import TeamPicker from "./TeamPicker";
 import type { TeamPickerValue } from "./TeamPicker";
 import { useTranslation } from "react-i18next";
 
-import type { AmbulanceLite } from "../hooks";
-
 type RotationMode = "rotating" | "fixed" | "none";
+type AmbulanceLite = {
+    _id: string;
+    ambulanceNumber: string;
+};
 
 interface TeamFormFieldsProps {
     value: TeamPickerValue;
