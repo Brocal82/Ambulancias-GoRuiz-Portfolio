@@ -1,13 +1,5 @@
 // frontend/src/utils/status/vacationRequestUi.ts
 import type { VacationStatus } from "../domain/vacation";
-import type { StatusTone } from "../../../components/common/StatusBadge";
-
-export function vacationRequestTone(status: VacationStatus): StatusTone {
-  if (status === "pending") return "amber";
-  if (status === "accepted") return "emerald";
-  if (status === "option_sent") return "sky";
-  return "rose"; // cancelled
-}
 
 // Para pills/botones de filtro (bordes + ring + hover)
 export function vacationRequestFilterPillClass(
