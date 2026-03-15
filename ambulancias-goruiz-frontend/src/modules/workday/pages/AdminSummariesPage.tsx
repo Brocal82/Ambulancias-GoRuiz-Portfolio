@@ -9,10 +9,10 @@ import {
   DaySummariesModal,
   AdminSummaryGroupModal,
 } from "../components";
-
-const ADMIN_SUMMARIES_CHANGED_EVENT = "admin-summaries-changed";
-const notifySummariesChanged = () =>
-  window.dispatchEvent(new Event(ADMIN_SUMMARIES_CHANGED_EVENT));
+import {
+  ADMIN_SUMMARIES_CHANGED_EVENT,
+  notifyAdminSummariesChanged,
+} from "../hooks/useAdminSummariesPendingCount";
 
 // Helper ISO yyyy-mm-dd
 const toISODate = (d: Date) =>
@@ -187,7 +187,7 @@ const AdminSummariesPage = () => {
         );
 
         // 2) refrescar contadores/cambios globales (si lo usas en badges)
-        notifySummariesChanged();
+        notifyAdminSummariesChanged();
 
         // 3) actualizar state local para que desaparezca el naranja sin recargar
         const reviewedAt = new Date().toISOString();
