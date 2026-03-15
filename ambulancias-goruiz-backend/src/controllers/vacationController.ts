@@ -10,6 +10,9 @@ import { getMaxPerDayForDate } from "../modules/vacation";
 import {
   getAvailability as getAvailabilityHandler,
   getMonthConfig as getMonthConfigHandler,
+  getVacationPendingCount as getVacationPendingCountHandler,
+  getVacationRequests as getVacationRequestsHandler,
+  getUserVacationRequests as getUserVacationRequestsHandler,
   upsertMonthConfig as upsertMonthConfigHandler,
 } from "../modules/vacation";
 
@@ -35,16 +38,7 @@ export const getVacationRequests = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  try {
-    const requests = await VacationRequest.find().populate(
-      "user",
-      "name lastName email",
-    );
-    res.status(200).json(requests);
-  } catch (error) {
-    console.error("Error al obtener solicitudes de vacaciones:", error);
-    res.status(500).json({ message: "Error interno del servidor" });
-  }
+  return getVacationRequestsHandler(req, res);
 };
 
 // Crear nueva solicitud (trabajador)
@@ -356,17 +350,7 @@ export const getUserVacationRequests = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  try {
-    const userId = (req as any).userId; // obtener id desde el token (middleware authenticateToken)
-    const requests = await VacationRequest.find({ user: userId }).populate(
-      "user",
-      "name lastName email",
-    );
-    res.status(200).json(requests);
-  } catch (error) {
-    console.error("Error al obtener solicitudes del usuario:", error);
-    res.status(500).json({ message: "Error interno del servidor" });
-  }
+  return getUserVacationRequestsHandler(req, res);
 };
 
 export const deleteVacationRequest = async (
@@ -401,17 +385,7 @@ export const getVacationPendingCount = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  try {
-    const rawStatus =
-      typeof req.query.status === "string" ? req.query.status : "pending";
-    const status = rawStatus.toLowerCase();
-
-    const count = await VacationRequest.countDocuments({ status });
-    res.status(200).json({ count });
-  } catch (error) {
-    console.error("Error al contar solicitudes de vacaciones:", error);
-    res.status(500).json({ message: "Error interno del servidor" });
-  }
+  return getVacationPendingCountHandler(req, res);
 };
 
 // ======================================================
