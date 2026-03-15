@@ -4,6 +4,7 @@ export {
   getMonthConfig,
   upsertMonthConfig,
 } from "./month-config.controller";
+export { getAvailability } from "./vacation-availability.controller";
 export {
   DEFAULT_MAX_PER_DAY,
   findMonthConfig,
@@ -12,3 +13,4 @@ export {
   toMonthKey,
   upsertMonthConfigRecord,
 } from "./month-config.service";
+export { getVacationAvailability } from "./vacation-availability.service";

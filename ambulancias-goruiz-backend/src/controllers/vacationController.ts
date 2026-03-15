@@ -6,13 +6,9 @@ import { findOverCapacityDays } from "../utils/vacationCapacity";
 import { DateTime } from "luxon";
 import mongoose from "mongoose";
 import { clearUserFromDienstsInRange } from "../utils/dienstClearUtils";
+import { getMaxPerDayForDate } from "../modules/vacation";
 import {
-  DEFAULT_MAX_PER_DAY,
-  findMonthConfig,
-  getMaxPerDayForDate,
-  toMonthKey,
-} from "../modules/vacation";
-import {
+  getAvailability as getAvailabilityHandler,
   getMonthConfig as getMonthConfigHandler,
   upsertMonthConfig as upsertMonthConfigHandler,
 } from "../modules/vacation";
@@ -28,20 +24,6 @@ function isVacationStatus(x: unknown): x is VacationStatus {
     x === "cancelled" ||
     x === "option_sent"
   );
-}
-function dayStart(d: Date) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
-function dayEnd(d: Date) {
-  const x = new Date(d);
-  x.setHours(23, 59, 59, 999);
-  return x;
-}
-function isInRange(d: Date, start: Date, end: Date) {
-  const t = d.getTime();
-  return t >= dayStart(start).getTime() && t <= dayEnd(end).getTime();
 }
 
 // ======================================================
@@ -584,93 +566,7 @@ export const getAvailability = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  try {
-    const year = Number(req.query.year);
-    const month = Number(req.query.month); // 1..12
-
-    if (!year || !month || month < 1 || month > 12) {
-      res
-        .status(400)
-        .json({
-          message: "Parámetros inválidos: year y month (1..12) son requeridos",
-        });
-      return;
-    }
-
-    const monthKey = toMonthKey(year, month);
-    const monthStart = dayStart(new Date(year, month - 1, 1));
-    const monthEnd = dayEnd(new Date(year, month, 0));
-    const cfg = await findMonthConfig(monthKey);
-
-    const maxPerDay = cfg?.maxPerDay ?? DEFAULT_MAX_PER_DAY;
-    const blackouts = cfg?.blackouts ?? [];
-
-    // Trae solicitudes que solapan el mes y que afectan a la disponibilidad visual
-    const requests = await VacationRequest.find({
-      status: { $in: ["pending", "accepted"] }, // 'option_sent' la puedes añadir si la consideras "pendiente"
-      startDate: { $lte: monthEnd },
-      endDate: { $gte: monthStart },
-    })
-      .select("startDate endDate status user")
-      .lean();
-
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const days: {
-      day: number;
-      approvedCount: number;
-      pendingCount: number;
-      remaining: number; // restante en base a ACEPTADAS (nuevo significado)
-      state: "green" | "yellow" | "red";
-    }[] = [];
-
-    for (let d = 1; d <= daysInMonth; d++) {
-      const current = new Date(year, month - 1, d);
-
-      // Blackout → enmascarar como capacidad llena
-      const isBlackout = blackouts.some((r) =>
-        isInRange(current, r.startDate, r.endDate),
-      );
-      if (isBlackout) {
-        days.push({
-          day: d,
-          approvedCount: maxPerDay,
-          pendingCount: 0,
-          remaining: 0,
-          state: "red",
-        });
-        continue;
-      }
-
-      // Conteos por día
-      let approvedCount = 0;
-      let pendingCount = 0;
-
-      for (const r of requests) {
-        if (isInRange(current, r.startDate as Date, r.endDate as Date)) {
-          if (r.status === "accepted") approvedCount += 1;
-          else if (r.status === "pending") pendingCount += 1;
-        }
-      }
-
-      // 🔴 NUEVO: remaining basado SOLO en aceptadas
-      const remaining = Math.max(0, maxPerDay - approvedCount);
-
-      // 🔴 NUEVAS reglas de color
-      const state: "green" | "yellow" | "red" =
-        approvedCount >= maxPerDay
-          ? "red"
-          : pendingCount > 0
-            ? "yellow"
-            : "green";
-
-      days.push({ day: d, approvedCount, pendingCount, remaining, state });
-    }
-
-    res.status(200).json({ year, month, maxPerDay, days });
-  } catch (error) {
-    console.error("Error al calcular disponibilidad:", error);
-    res.status(500).json({ message: "Error interno del servidor" });
-  }
+  return getAvailabilityHandler(req, res);
 };
 
 // ======================================================
