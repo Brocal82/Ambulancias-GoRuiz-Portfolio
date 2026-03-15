@@ -1,6 +1,6 @@
 // frontend/src/modules/diensts/domain/adapters/assignmentAdapter.ts
 
-import type { AssignedDay, DienstAssignment, UserRef } from "../..";
+import type { AssignedDay, DienstAssignment, UserRef } from "../types";
 import type { FlexibleAssignment } from "../types/flexibleAssignment";
 
 /**

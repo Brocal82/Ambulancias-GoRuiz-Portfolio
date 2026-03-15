@@ -1,8 +1,8 @@
 // src/modules/diensts/components/assignmentModal/presenters.ts
 import type { TFunction } from "i18next";
 import type { UserRef } from "../../domain/types";
+import { mergeClasses } from "../../utils/classNames";
 import {
-  mergeClasses,
   dimClass,
   driverClass,
   driverPscheinTitle,
