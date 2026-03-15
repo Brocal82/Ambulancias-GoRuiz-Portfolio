@@ -15,7 +15,7 @@ import hospitalRoutes from "./routes/hospitalRoutes";
 import tripRoutes from "./routes/tripRoutes";
 import workdaySummaryRoutes from "./routes/workdaySummaryRoutes";
 import praemienRoutes from "./routes/praemienRoutes";
-import vacationRoutes from "./routes/vacationRoutes";
+import vacationRoutes from "./modules/vacation/routes";
 import ambulanceRoutes from "./routes/ambulanceRoutes";
 import messageRoutes from "./routes/messageRoutes";
 import appointmentRoutes from "./routes/appointmentRoutes";
