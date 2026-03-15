@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import VacationRequest from "../../../models/vacationRequest";
+import VacationRequest from "../models/vacation-request.model";
 import { findOverCapacityDays } from "../utils/vacation-capacity";
 import { clearUserFromDienstsInRange } from "../../../utils/dienstClearUtils";
 

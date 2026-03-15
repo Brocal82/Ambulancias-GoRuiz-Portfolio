@@ -1,4 +1,4 @@
-import VacationRequest from "../../../models/vacationRequest";
+import VacationRequest from "../models/vacation-request.model";
 
 export async function getAllVacationRequests() {
   return VacationRequest.find().populate("user", "name lastName email");
