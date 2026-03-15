@@ -6,7 +6,14 @@ import { findOverCapacityDays } from "../utils/vacationCapacity";
 import { DateTime } from "luxon";
 import mongoose from "mongoose";
 import { clearUserFromDienstsInRange } from "../utils/dienstClearUtils";
-import { getMaxPerDayForDate } from "../modules/vacation";
+import {
+  applyAdminVacationUpdateFields,
+  applyAlternativeDateResponse,
+  buildAcceptedVacationRange,
+  getMaxPerDayForDate,
+  isVacationStatus,
+  parseVacationUpdateAuthorization,
+} from "../modules/vacation";
 import {
   cancelMyVacationRequest as cancelMyVacationRequestHandler,
   createVacationRequest as createVacationRequestHandler,
@@ -21,17 +28,6 @@ import {
 } from "../modules/vacation";
 
 const ZONE = "Europe/Berlin";
-
-// ✅ Añade aquí el tipo y el type guard (justo debajo de los imports de mongoose)
-type VacationStatus = "pending" | "accepted" | "cancelled" | "option_sent";
-function isVacationStatus(x: unknown): x is VacationStatus {
-  return (
-    x === "pending" ||
-    x === "accepted" ||
-    x === "cancelled" ||
-    x === "option_sent"
-  );
-}
 
 // ======================================================
 // Controladores existentes
@@ -66,21 +62,9 @@ export const updateVacationRequest = async (
 ): Promise<void> => {
 const { id } = req.params;
 
-// Permitir "force" por query o body, pero SOLO admin podrá usarlo realmente
-const forceRaw = (req.query.force ?? req.body?.force ?? req.body?.canForceAccept) as unknown;
-
-const force =
-  forceRaw === true ||
-  forceRaw === "true" ||
-  forceRaw === 1 ||
-  forceRaw === "1";
-
-const roleFromMiddleware = (req as any).userRole as string | undefined;
-const roleFromReqUser = req.user?.role;
-const isAdmin = roleFromMiddleware === "admin" || roleFromReqUser === "admin";
-const canForceAccept = force && isAdmin;
-
 const { status, adminOptionStartDate, adminOptionEndDate, adminNote } = req.body;
+const { forceRaw, force, isAdmin, canForceAccept } =
+  parseVacationUpdateAuthorization(req, req.body);
 
 // 🔎 DEBUG temporal (borra luego)
 console.log("FORCE DEBUG:", {
@@ -145,21 +129,22 @@ console.log("FORCE DEBUG:", {
       // 3) Actualizar campos permitidos
       if (typeof status !== "undefined") {
         if (isVacationStatus(status)) {
-          request.status = status;
+          applyAdminVacationUpdateFields(request, {
+            status,
+            adminOptionStartDate,
+            adminOptionEndDate,
+            adminNote,
+          });
         } else {
           res.status(400).json({ message: "Estado inválido" });
           throw new Error("__ABORT__");
         }
-      }
-
-      if (adminOptionStartDate) {
-        request.adminOptionStartDate = new Date(adminOptionStartDate);
-      }
-      if (adminOptionEndDate) {
-        request.adminOptionEndDate = new Date(adminOptionEndDate);
-      }
-      if (typeof adminNote === "string") {
-        request.adminNote = adminNote;
+      } else {
+        applyAdminVacationUpdateFields(request, {
+          adminOptionStartDate,
+          adminOptionEndDate,
+          adminNote,
+        });
       }
 
       // 4) Guardar dentro de la transacción
@@ -167,14 +152,7 @@ console.log("FORCE DEBUG:", {
 
       // 5) Si el estado final es 'accepted', preparamos el rango para limpiar Diensts
       if (request.status === "accepted") {
-        const userIdStr = String(request.user);
-        const startISO = DateTime.fromJSDate(request.startDate, {
-          zone: ZONE,
-        }).toISODate()!;
-        const endISO = DateTime.fromJSDate(request.endDate, {
-          zone: ZONE,
-        }).toISODate()!;
-        acceptedRange = { userId: userIdStr, startISO, endISO };
+        acceptedRange = buildAcceptedVacationRange(request);
       }
 
       // 6) Responder OK con el doc actualizado
@@ -238,36 +216,8 @@ export const respondToAlternativeDate = async (
       endISO: string;
     } | null = null;
 
-    if (accept) {
-      // Usuario acepta la alternativa → actualizar fechas y estado
-      if (request.adminOptionStartDate)
-        request.startDate = request.adminOptionStartDate;
-      if (request.adminOptionEndDate)
-        request.endDate = request.adminOptionEndDate;
-      request.status = "accepted";
-      request.adminOptionStartDate = undefined;
-      request.adminOptionEndDate = undefined;
-      request.adminNote = undefined;
-
-      // Preparar rango para limpiar Diensts
-      const startISO = DateTime.fromJSDate(request.startDate, {
-        zone: ZONE,
-      }).toISODate()!;
-      const endISO = DateTime.fromJSDate(request.endDate, {
-        zone: ZONE,
-      }).toISODate()!;
-      acceptedRange = {
-        userId: String(request.user),
-        startISO,
-        endISO,
-      };
-    } else {
-      // Usuario rechaza → cancelar
-      request.status = "cancelled";
-      request.adminOptionStartDate = undefined;
-      request.adminOptionEndDate = undefined;
-      request.adminNote = undefined;
-    }
+    const workflowResult = applyAlternativeDateResponse(request, !!accept);
+    acceptedRange = workflowResult.acceptedRange;
 
     await request.save();
 

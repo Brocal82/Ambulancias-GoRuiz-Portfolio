@@ -32,6 +32,13 @@ export {
 export { getVacationAvailability } from "./vacation-availability.service";
 export { checkVacationsInRangeService } from "./vacation-range.service";
 export {
+  applyAdminVacationUpdateFields,
+  applyAlternativeDateResponse,
+  buildAcceptedVacationRange,
+  isVacationStatus,
+  parseVacationUpdateAuthorization,
+} from "./vacation-workflow.helpers";
+export {
   countVacationRequestsByStatus,
   getAllVacationRequests,
   getVacationRequestsForUser,
