@@ -1,7 +1,7 @@
 // backend/src/utils/dienstValidation.ts
 import mongoose from "mongoose";
 import Dienst from "../models/Dienst";
-import VacationRequest from "../models/vacationRequest";
+import VacationRequest from "../modules/vacation/models/vacation-request.model";
 import { buildWeekDateStrings } from "./time";
 import { getPscheinStatus } from "./pscheinUtils"; // ⚠️ Ya existe en backend/utils
 import { DateTime } from "luxon";

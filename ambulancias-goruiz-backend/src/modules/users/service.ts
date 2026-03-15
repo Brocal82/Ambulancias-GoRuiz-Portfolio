@@ -3,7 +3,7 @@ import User from "../../models/User";
 import Dienst from "../../models/Dienst";
 import { DateTime } from "luxon";
 import mongoose from "mongoose";
-import VacationRequest from "../../models/vacationRequest";
+import VacationRequest from "../vacation/models/vacation-request.model";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import type { CreateUserDTO, LoginDTO, LoginResponseDTO } from "./payloads";

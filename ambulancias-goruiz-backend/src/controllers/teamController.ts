@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import Team from "../models/Team";
 import User from "../models/User";
 import Dienst from "../models/Dienst";
-import VacationRequest from "../models/vacationRequest";
+import VacationRequest from "../modules/vacation/models/vacation-request.model";
 import { DateTime } from "luxon";
 import { isOnVacationDay } from "../utils/dienstValidation";
 import { computeTeamAssignmentsForWeek } from "../utils/teamRotation";
