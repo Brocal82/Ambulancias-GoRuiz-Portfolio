@@ -12,6 +12,15 @@ export {
   getSickLeaves,
 } from "./services/sick-leaves-read.service";
 export {
+  createSickLeaveRecord,
+  getSickLeaveById,
+  rejectSickLeaveRecord,
+} from "./services/sick-leaves-write.service";
+export {
+  attachDocumentToSickLeave,
+  getSickLeaveDocumentTarget,
+} from "./services/sick-documents.service";
+export {
   checkSickInRangeService,
   findOverlappingSickLeaveQuery,
   isOnSickDayQuery,

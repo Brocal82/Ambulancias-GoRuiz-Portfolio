@@ -7,11 +7,16 @@ import SickLeave from "../models/SickLeave";
 import Dienst from "../models/Dienst";
 import { clearUserFromDienstsInRange } from "../utils/dienstClearUtils";
 import {
+  attachDocumentToSickLeave,
   checkSickInRangeService,
   calculateSickDocumentRequirements,
+  createSickLeaveRecord,
   getAuthUserId,
   getMySickLeaves,
+  getSickLeaveById,
+  getSickLeaveDocumentTarget,
   getSickLeaves,
+  rejectSickLeaveRecord,
   toBerlinDay,
   toBerlinEndOfDay,
   toBerlinStartOfDay,
@@ -62,11 +67,10 @@ export async function createSickLeave(req: Request, res: Response) {
       return;
     }
 
-    const doc = await SickLeave.create({
-      user: new mongoose.Types.ObjectId(userId),
+    const doc = await createSickLeaveRecord({
+      userId,
       startDate: start,
       endDate: end,
-      status: "pending",
       note: parsed.note,
       documentUrl: parsed.documentUrl,
       // ⚠️ Dejamos los campos de documento con sus defaults.
@@ -217,7 +221,7 @@ export async function rejectSickLeave(req: Request, res: Response) {
       return;
     }
 
-    const sick = await SickLeave.findById(id);
+    const sick = await getSickLeaveById(id);
     if (!sick) {
       res.status(404).json({ message: "Baja no encontrada" });
       return;
@@ -229,8 +233,7 @@ export async function rejectSickLeave(req: Request, res: Response) {
     }
 
     // Si ya estaba aceptada, por ahora no revertimos desasignaciones
-    sick.status = "rejected";
-    await sick.save();
+    await rejectSickLeaveRecord(sick);
 
     res.status(200).json({
       message: "Baja rechazada",
@@ -270,7 +273,7 @@ export async function attachSickDocument(req: Request, res: Response) {
     const isAdmin =
       (req as any)?.user?.role === "admin" || (req as any)?.role === "admin";
 
-    const sick = await SickLeave.findById(id);
+    const sick = await getSickLeaveDocumentTarget(id);
     if (!sick) {
       res.status(404).json({ message: "Baja no encontrada" });
       return;
@@ -285,20 +288,12 @@ export async function attachSickDocument(req: Request, res: Response) {
     }
 
     // Asegurar array de documentos y acumular URL
-    if (!Array.isArray((sick as any).documents)) {
-      (sick as any).documents = [];
-    }
-    (sick as any).documents.push(documentUrl);
+    await attachDocumentToSickLeave({ sick, documentUrl });
 
     // Mantener compatibilidad: documentUrl = último
-    sick.documentUrl = documentUrl;
 
     // Si requería doc y estaba pendiente -> recibido
-    if (sick.requiresDocument && sick.verificationStatus === "pending") {
-      sick.verificationStatus = "received";
-    }
 
-    await sick.save();
 
     res.status(200).json({
       message: "Documento (URL) adjuntado correctamente",
@@ -370,7 +365,7 @@ export async function attachSickDocumentFile(req: Request, res: Response) {
     const isAdmin =
       (req as any)?.user?.role === "admin" || (req as any)?.role === "admin";
 
-    const sick = await SickLeave.findById(id);
+    const sick = await getSickLeaveDocumentTarget(id);
     if (!sick) {
       res.status(404).json({ message: "Baja no encontrada" });
       return;
@@ -384,20 +379,14 @@ export async function attachSickDocumentFile(req: Request, res: Response) {
     }
 
     // Asegurar array de documentos
-    if (!Array.isArray((sick as any).documents)) {
-      (sick as any).documents = [];
-    }
-
-    // Acumular y mantener compatibilidad
-    (sick as any).documents.push(documentUrl.replace(/\\/g, "/"));
-    sick.documentUrl = documentUrl.replace(/\\/g, "/");
+    const normalizedDocumentUrl = documentUrl.replace(/\\/g, "/");
+    await attachDocumentToSickLeave({
+      sick,
+      documentUrl: normalizedDocumentUrl,
+    });
 
     // Si requería doc y estaba pendiente -> recibido
-    if (sick.requiresDocument && sick.verificationStatus === "pending") {
-      sick.verificationStatus = "received";
-    }
 
-    await sick.save();
 
     res.status(200).json({
       message: "Documento (archivo) adjuntado correctamente",
