@@ -26,6 +26,20 @@ export {
   findOverlappingSickLeaveQuery,
   isOnSickDayQuery,
 } from "./services/sick-range.service";
+export {
+  checkSickInRange,
+  listMySickLeaves,
+  listSickLeaves,
+} from "./controllers/sick-leaves-read.controller";
+export {
+  acceptSickLeave,
+  createSickLeave,
+  rejectSickLeave,
+} from "./controllers/sick-leaves-write.controller";
+export {
+  attachSickDocument,
+  attachSickDocumentFile,
+} from "./controllers/sick-documents.controller";
 export type {
   SickDocumentRequirementResult,
   SickRangeFlags,
