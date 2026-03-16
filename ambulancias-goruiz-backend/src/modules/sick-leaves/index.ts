@@ -40,6 +40,7 @@ export {
   attachSickDocument,
   attachSickDocumentFile,
 } from "./controllers/sick-documents.controller";
+export { default as sickLeavesRoutes } from "./routes";
 export type {
   SickDocumentRequirementResult,
   SickRangeFlags,
