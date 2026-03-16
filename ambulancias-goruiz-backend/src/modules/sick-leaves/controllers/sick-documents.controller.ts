@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
+import { getAuthUserId } from "../utils/sick-auth.helpers";
 import {
   attachDocumentToSickLeave,
   getSickLeaveDocumentTarget,
@@ -19,7 +20,7 @@ export async function attachSickDocument(req: Request, res: Response) {
       return;
     }
 
-    const authId = (req as any)?.user?.id || (req as any)?.userId;
+    const authId = getAuthUserId(req);
     const isAdmin =
       (req as any)?.user?.role === "admin" || (req as any)?.role === "admin";
 
@@ -90,7 +91,7 @@ export async function attachSickDocumentFile(req: Request, res: Response) {
       return;
     }
 
-    const authId = (req as any)?.user?.id || (req as any)?.userId;
+    const authId = getAuthUserId(req);
     const isAdmin =
       (req as any)?.user?.role === "admin" || (req as any)?.role === "admin";
 
