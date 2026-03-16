@@ -11,7 +11,7 @@ import cron from "node-cron";
 // Rutas
 import userRoutes from "./routes/userRoutes";
 import dienstRoutes from "./routes/dienstRoutes";
-import hospitalRoutes from "./routes/hospitalRoutes";
+import hospitalRoutes from "./modules/hospitals/routes";
 import tripRoutes from "./routes/tripRoutes";
 import workdaySummaryRoutes from "./routes/workdaySummaryRoutes";
 import praemienRoutes from "./routes/praemienRoutes";
