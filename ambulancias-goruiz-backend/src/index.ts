@@ -21,7 +21,7 @@ import messageRoutes from "./routes/messageRoutes";
 import appointmentRoutes from "./routes/appointmentRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import teamRoutes from "./routes/teamRoutes";
-import sickLeaveRoutes from "./routes/sickLeaveRoutes";
+import sickLeaveRoutes from "./modules/sick-leaves/routes";
 
 // Utils
 import cleanupOldDiensts from "./utils/cleanupOldDiensts";
