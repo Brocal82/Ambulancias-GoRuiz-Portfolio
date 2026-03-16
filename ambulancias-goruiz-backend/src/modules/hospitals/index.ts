@@ -11,4 +11,5 @@ export * as hospitalsService from "./service";
 export * as hospitalsValidators from "./validators";
 export { Hospital } from "./model";
 export type { IHospital } from "./model";
+export type { HospitalCreateInput } from "./validators";
 

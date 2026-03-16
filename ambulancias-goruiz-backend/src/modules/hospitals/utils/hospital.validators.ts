@@ -1,10 +1,6 @@
-export type HospitalCreateInput = {
-  name: unknown;
-  address: unknown;
-  phone: unknown;
-  specialties: unknown;
-  isOpen?: unknown;
-};
+import type { HospitalCreateInput } from "../types/hospital.types";
+
+export type { HospitalCreateInput } from "../types/hospital.types";
 
 export const normalizeSpecialties = (specialties: unknown): string[] => {
   if (!Array.isArray(specialties)) return [];
