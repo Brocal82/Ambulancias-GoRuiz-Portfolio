@@ -1,11 +1,15 @@
 // backend/src/utils/dienstValidation.ts
 import mongoose from "mongoose";
 import Dienst from "../models/Dienst";
+import {
+  findOverlappingSickLeaveQuery as findOverlappingSickLeave,
+  isOnSickDayQuery as isOnSickDay,
+} from "../modules/sick-leaves";
 import VacationRequest from "../modules/vacation/models/vacation-request.model";
 import { buildWeekDateStrings } from "./time";
 import { getPscheinStatus } from "./pscheinUtils"; // ⚠️ Ya existe en backend/utils
 import { DateTime } from "luxon";
-export { isOnSickDay, findOverlappingSickLeave } from "./sickUtils";
+export { isOnSickDay, findOverlappingSickLeave };
 
 const ZONE = "Europe/Berlin";
 
