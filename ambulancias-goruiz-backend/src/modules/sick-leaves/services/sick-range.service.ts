@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { DateTime } from "luxon";
-import SickLeave from "../../../models/SickLeave";
+import SickLeave from "../models/sick-leave.model";
 import { formatBerlinYmd } from "../utils/sick-date.helpers";
 import type { SickRangeFlags } from "../types/sick-leave.types";
 

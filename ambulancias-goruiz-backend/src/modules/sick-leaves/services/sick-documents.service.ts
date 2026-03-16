@@ -1,4 +1,4 @@
-import SickLeave from "../../../models/SickLeave";
+import SickLeave from "../models/sick-leave.model";
 
 export async function getSickLeaveDocumentTarget(id: string) {
   return SickLeave.findById(id);

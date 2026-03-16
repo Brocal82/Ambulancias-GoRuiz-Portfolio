@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { z, ZodError } from "zod";
-import SickLeave from "../../../models/SickLeave";
+import SickLeave from "../models/sick-leave.model";
 import { getAuthUserId } from "../utils/sick-auth.helpers";
 import { toBerlinDay } from "../utils/sick-date.helpers";
 import { acceptSickLeaveWorkflow } from "../services/sick-acceptance.service";

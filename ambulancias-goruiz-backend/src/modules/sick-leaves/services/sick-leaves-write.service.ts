@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import SickLeave from "../../../models/SickLeave";
+import SickLeave from "../models/sick-leave.model";
 
 export async function createSickLeaveRecord(input: {
   userId: string;

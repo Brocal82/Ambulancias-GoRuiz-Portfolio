@@ -41,6 +41,12 @@ export {
   attachSickDocumentFile,
 } from "./controllers/sick-documents.controller";
 export { default as sickLeavesRoutes } from "./routes";
+export { default as SickLeave } from "./models/sick-leave.model";
+export type {
+  ISickLeave,
+  SickLeaveStatus,
+  SickVerificationStatus as SickLeaveModelVerificationStatus,
+} from "./models/sick-leave.model";
 export type {
   SickDocumentRequirementResult,
   SickRangeFlags,
