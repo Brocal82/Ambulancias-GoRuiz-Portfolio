@@ -3,6 +3,8 @@ export {
   getPraemienMonthlyHistory,
 } from "./controllers/praemien-read.controller";
 export { saveMonthlyPraemie } from "./controllers/praemien-write.controller";
+export { default as MonthlyPraemie } from "./models/monthly-praemie.model";
+export type { IMonthlyPraemie } from "./models/monthly-praemie.model";
 export { getMonthlySummaryForUser } from "./services/get-monthly-summary.service";
 export { getMonthlyHistoryForUser } from "./services/get-monthly-history.service";
 export { saveMonthlyPraemieForUser } from "./services/save-monthly-praemie.service";

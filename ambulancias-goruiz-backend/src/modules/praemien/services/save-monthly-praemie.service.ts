@@ -1,5 +1,5 @@
 import { endOfMonth, startOfMonth } from "date-fns";
-import MonthlyPraemie from "../../../models/MonthlyPraemie";
+import MonthlyPraemie from "../models/monthly-praemie.model";
 import WorkdaySummary from "../../../models/workdaySummary";
 
 function getPremieLevel(averagePatients: number): string {
