@@ -6,24 +6,22 @@ import { DateTime } from "luxon";
 import SickLeave from "../models/SickLeave";
 import Dienst from "../models/Dienst";
 import { clearUserFromDienstsInRange } from "../utils/dienstClearUtils";
+import {
+  calculateSickDocumentRequirements,
+  formatBerlinYmd,
+  getAuthUserId,
+  toBerlinDay,
+  toBerlinEndOfDay,
+  toBerlinStartOfDay,
+} from "../modules/sick-leaves";
 
 const ZONE = "Europe/Berlin";
 
 // Util para convertir 'YYYY-MM-DD' → Date (inicio/fin del día en TZ Berlin)
-function toBerlinDay(dateISO: string, endOfDay = false): Date {
-  const dt = DateTime.fromISO(dateISO, { zone: ZONE });
-  return (endOfDay ? dt.endOf("day") : dt.startOf("day")).toJSDate();
-}
 
 // Formatea un Date a 'YYYY-MM-DD' en la zona Europe/Berlin
-function fmtYmdBerlin(d: Date): string {
-  return DateTime.fromJSDate(d, { zone: ZONE }).toFormat("yyyy-LL-dd");
-}
 
 // ⚠️ Ajusta si tu middleware de auth usa otro campo (req.user.id, req.userId, etc.)
-function getAuthUserId(req: Request): string | undefined {
-  return (req as any)?.user?.id || (req as any)?.userId;
-}
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /* Validaciones                                                               */
@@ -158,12 +156,8 @@ export async function acceptSickLeave(req: Request, res: Response) {
     }
 
     // 2) Calcular reglas del documento (≥ 3 días naturales, inclusivo, en TZ Berlin)
-    const startDt = DateTime.fromJSDate(sick.startDate, { zone: ZONE }).startOf(
-      "day",
-    );
-    const endDt = DateTime.fromJSDate(sick.endDate, { zone: ZONE }).endOf(
-      "day",
-    );
+    const startDt = toBerlinStartOfDay(sick.startDate);
+    const endDt = toBerlinEndOfDay(sick.endDate);
 
     if (endDt < startDt) {
       res
@@ -172,22 +166,14 @@ export async function acceptSickLeave(req: Request, res: Response) {
       return;
     }
 
-    const durationDays = Math.floor(endDt.diff(startDt, "days").days) + 1; // inclusivo
-    const requiresDocument = durationDays >= 3;
+    const { requiresDocument, verificationStatus, documentDueAt } =
+      calculateSickDocumentRequirements({
+        startDate: sick.startDate,
+        endDate: sick.endDate,
+        createdAt: sick.createdAt,
+      });
 
     // Deadline: 3 días desde la creación de la solicitud (inclusive) en TZ Berlin
-    let verificationStatus:
-      | "not_required"
-      | "pending"
-      | "received"
-      | "overdue" = "not_required";
-    let documentDueAt: Date | undefined = undefined;
-
-    if (requiresDocument) {
-      verificationStatus = "pending";
-      const created = DateTime.fromJSDate(sick.createdAt, { zone: ZONE });
-      documentDueAt = created.plus({ days: 3 }).endOf("day").toJSDate();
-    }
 
     // 3) Marcar aceptada + set de campos de documento
     sick.status = "accepted";
@@ -574,13 +560,13 @@ export async function checkSickInRange(
 
       if (inRangeMin && inRangeMax) {
         result[uid].hasSickInRange = true;
-        result[uid].sickStartInRange = fmtYmdBerlin(inRangeMin);
-        result[uid].sickUntilInRange = fmtYmdBerlin(inRangeMax);
+        result[uid].sickStartInRange = formatBerlinYmd(inRangeMin);
+        result[uid].sickUntilInRange = formatBerlinYmd(inRangeMax);
       }
 
       if (includeFullSpan && fullMin && fullMax) {
-        result[uid].sickStartFull = fmtYmdBerlin(fullMin);
-        result[uid].sickUntilFull = fmtYmdBerlin(fullMax);
+        result[uid].sickStartFull = formatBerlinYmd(fullMin);
+        result[uid].sickUntilFull = formatBerlinYmd(fullMax);
       }
     }
 
