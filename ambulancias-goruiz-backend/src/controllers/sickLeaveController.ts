@@ -5,11 +5,10 @@ import { z, ZodError } from "zod";
 import { DateTime } from "luxon";
 import SickLeave from "../models/SickLeave";
 import Dienst from "../models/Dienst";
-import { clearUserFromDienstsInRange } from "../utils/dienstClearUtils";
 import {
+  acceptSickLeaveWorkflow,
   attachDocumentToSickLeave,
   checkSickInRangeService,
-  calculateSickDocumentRequirements,
   createSickLeaveRecord,
   getAuthUserId,
   getMySickLeaves,
@@ -18,8 +17,6 @@ import {
   getSickLeaves,
   rejectSickLeaveRecord,
   toBerlinDay,
-  toBerlinEndOfDay,
-  toBerlinStartOfDay,
 } from "../modules/sick-leaves";
 
 const ZONE = "Europe/Berlin";
@@ -129,7 +126,7 @@ export async function acceptSickLeave(req: Request, res: Response) {
   try {
     const { id } = req.params;
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-      res.status(400).json({ message: "ID inválido" });
+      res.status(400).json({ message: "ID inv\u00E1lido" });
       return;
     }
 
@@ -140,79 +137,25 @@ export async function acceptSickLeave(req: Request, res: Response) {
       return;
     }
     if (sick.status === "accepted") {
-      res.status(409).json({ message: "La baja ya está aceptada" });
+      res.status(409).json({ message: "La baja ya est\u00E1 aceptada" });
       return;
     }
 
-    // 2) Calcular reglas del documento (≥ 3 días naturales, inclusivo, en TZ Berlin)
-    const startDt = toBerlinStartOfDay(sick.startDate);
-    const endDt = toBerlinEndOfDay(sick.endDate);
-
-    if (endDt < startDt) {
+    const result = await acceptSickLeaveWorkflow(sick);
+    if (result.kind === "invalid_range") {
       res
         .status(400)
-        .json({ message: "El rango de fechas de la baja es inválido" });
+        .json({ message: "El rango de fechas de la baja es inv\u00E1lido" });
       return;
     }
 
-    const { requiresDocument, verificationStatus, documentDueAt } =
-      calculateSickDocumentRequirements({
-        startDate: sick.startDate,
-        endDate: sick.endDate,
-        createdAt: sick.createdAt,
-      });
-
-    // Deadline: 3 días desde la creación de la solicitud (inclusive) en TZ Berlin
-
-    // 3) Marcar aceptada + set de campos de documento
-    sick.status = "accepted";
-    sick.requiresDocument = requiresDocument;
-    sick.verificationStatus = verificationStatus;
-    sick.documentDueAt = documentDueAt;
-    await sick.save();
-
-    // 4) Limpiar Diensts usando el helper reutilizable
-    const userIdStr = String(sick.user);
-    const startISO = startDt.toISODate()!; // 'YYYY-MM-DD'
-    const endISO = endDt.toISODate()!; // 'YYYY-MM-DD'
-
-    try {
-      await clearUserFromDienstsInRange({
-        userId: userIdStr,
-        startISO,
-        endISO,
-      });
-    } catch (clearErr) {
-      console.error(
-        "⚠️ Error al desasignar usuario de Diensts tras aceptar baja:",
-        clearErr,
-      );
-      // No rompemos la respuesta al usuario aunque falle la limpieza
-    }
-
-    // 5) Respuesta
-    res.status(200).json({
-      message: "Baja aceptada y desasignación aplicada",
-      sickLeaveId: sick._id,
-      requiresDocument,
-      verificationStatus,
-      documentDueAt,
-      stats: {
-        range: {
-          startISO,
-          endISO,
-        },
-      },
-    });
+    res.status(200).json(result.response);
   } catch (err) {
-    console.error("❌ acceptSickLeave error:", err);
+    console.error("\u274C acceptSickLeave error:", err);
     res.status(500).json({ message: "Error al aceptar la baja" });
   }
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// Rechazar una solicitud de baja (no desasigna nada)
-// ────────────────────────────────────────────────────────────────────────────
 export async function rejectSickLeave(req: Request, res: Response) {
   try {
     const { id } = req.params;

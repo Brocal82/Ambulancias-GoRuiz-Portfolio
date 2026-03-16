@@ -20,6 +20,7 @@ export {
   attachDocumentToSickLeave,
   getSickLeaveDocumentTarget,
 } from "./services/sick-documents.service";
+export { acceptSickLeaveWorkflow } from "./services/sick-acceptance.service";
 export {
   checkSickInRangeService,
   findOverlappingSickLeaveQuery,
