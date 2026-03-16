@@ -9,3 +9,11 @@ export interface SickDocumentRequirementResult {
   verificationStatus: SickVerificationStatus;
   documentDueAt?: Date;
 }
+
+export interface SickRangeFlags {
+  hasSickInRange: boolean;
+  sickStartInRange?: string;
+  sickUntilInRange?: string;
+  sickStartFull?: string;
+  sickUntilFull?: string;
+}
