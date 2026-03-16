@@ -5,11 +5,11 @@ export {
   deleteHospital,
   getAllHospitals,
   updateHospital,
-} from "./controller";
-export * as hospitalsController from "./controller";
-export * as hospitalsService from "./service";
-export * as hospitalsValidators from "./validators";
-export { Hospital } from "./model";
-export type { IHospital } from "./model";
-export type { HospitalCreateInput } from "./validators";
+} from "./controllers/hospitals.controller";
+export * as hospitalsController from "./controllers/hospitals.controller";
+export * as hospitalsService from "./services/hospitals.service";
+export * as hospitalsValidators from "./utils/hospital.validators";
+export { Hospital } from "./models/hospital.model";
+export type { IHospital } from "./models/hospital.model";
+export type { HospitalCreateInput } from "./utils/hospital.validators";
 

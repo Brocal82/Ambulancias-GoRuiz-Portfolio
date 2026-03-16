@@ -4,7 +4,7 @@ import {
   createHospital,
   updateHospital,
   deleteHospital,
-} from "./controller";
+} from "./controllers/hospitals.controller";
 
 const router = express.Router();
 
