@@ -9,7 +9,7 @@ import path from "path";
 import cron from "node-cron";
 
 // Rutas
-import userRoutes from "./routes/userRoutes";
+import userRoutes from "./modules/users/routes";
 import dienstRoutes from "./routes/dienstRoutes";
 import hospitalRoutes from "./modules/hospitals/routes";
 import tripRoutes from "./routes/tripRoutes";
