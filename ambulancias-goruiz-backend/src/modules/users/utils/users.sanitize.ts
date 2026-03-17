@@ -1,4 +1,4 @@
-import type { IUser } from "../../../types/User";
+import type { IUser } from "../types/user.types";
 
 /**
  * Devuelve una versión segura del usuario para enviar al frontend.
