@@ -1,4 +1,4 @@
-import User from "../../../models/User";
+import User from "../models/user.model";
 import Dienst from "../../../models/Dienst";
 import { DateTime } from "luxon";
 import mongoose from "mongoose";
@@ -9,8 +9,8 @@ import type {
   CreateUserDTO,
   LoginDTO,
   LoginResponseDTO,
-} from "../payloads";
-import { validateEmail } from "../validators";
+} from "../utils/users.payloads";
+import { validateEmail } from "../utils/users.validators";
 
 const ZONE = "Europe/Berlin";
 

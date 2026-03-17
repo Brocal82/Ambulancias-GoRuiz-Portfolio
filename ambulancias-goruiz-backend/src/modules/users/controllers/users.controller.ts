@@ -1,11 +1,11 @@
 import { Request, Response, RequestHandler } from "express";
-import User from "../../../models/User";
-import { IUser } from "../../../types/User";
+import User from "../models/user.model";
+import { IUser } from "../models/user.model";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import Dienst from "../../../models/Dienst";
 import mongoose from "mongoose";
-import { sanitizeUser, sanitizeUsers } from "../sanitize";
+import { sanitizeUser, sanitizeUsers } from "../utils/users.sanitize";
 import {
   getAvailableUsersForDateService,
   getUsersWithTodayVacationInfo,
@@ -14,8 +14,11 @@ import {
   createUserService,
   loginUserService,
   deleteUserService,
-} from "../service";
-import { parseUpdateUserDTO, parseCreateUserDTO } from "../parsers";
+} from "../services/users.service";
+import {
+  parseUpdateUserDTO,
+  parseCreateUserDTO,
+} from "../utils/users.parsers";
 
 const ZONE = "Europe/Berlin";
 

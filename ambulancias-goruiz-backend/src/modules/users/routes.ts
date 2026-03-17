@@ -10,8 +10,7 @@ import {
   getAvailableUsersForDate,
   uploadUserFiles,
   deleteUserDocument,
-} from "./controller";
-
+} from "./controllers/users.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import {
   authorizeRole,
