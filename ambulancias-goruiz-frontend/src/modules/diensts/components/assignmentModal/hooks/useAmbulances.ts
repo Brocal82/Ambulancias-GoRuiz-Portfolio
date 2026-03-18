@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "../../../../../api/axios";
 import { toastT } from "../../../../../utils/toast";
 
 export interface AmbulanceRef {
@@ -18,10 +19,10 @@ export const useAmbulances = (params: {
       if (!token) return;
 
       try {
-        const response = await fetch("/api/ambulances", {
+        const response = await axios.get<AmbulanceRef[]>("/api/ambulances", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await response.json();
+        const data = response.data;
         setAmbulances(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("❌ Error al cargar ambulancias:", error);
