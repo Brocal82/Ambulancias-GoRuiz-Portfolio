@@ -3,21 +3,21 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface DaySchedule {
   /**
-   * 0 = domingo, 1 = lunes, ... 6 = sÃ¡bado
+   * 0 = domingo, 1 = lunes, ... 6 = sábado
    */
   dayIndex: number;
   /**
    * Hora de inicio en formato "HH:mm".
-   * Puede omitirse si es dÃ­a libre (isOff = true).
+   * Puede omitirse si es día libre (isOff = true).
    */
   startTime?: string;
   /**
    * Hora de fin en formato "HH:mm".
-   * Puede omitirse si es dÃ­a libre (isOff = true).
+   * Puede omitirse si es día libre (isOff = true).
    */
   endTime?: string;
   /**
-   * Indica si el dÃ­a es libre.
+   * Indica si el día es libre.
    */
   isOff: boolean;
 }
@@ -26,13 +26,13 @@ export interface IDienstTemplate extends Document {
   dienstNumber: number;
   startTime: string; // formato "HH:mm", igual que en Dienst.assignments
   endTime: string; // formato "HH:mm"
-  daysOff: number[]; // 0=domingo, ..., 6=sÃ¡bado
+  daysOff: number[]; // 0=domingo, ..., 6=sábado
   isActive: boolean;
   /**
-   * Horario por dÃ­a de la semana.
-   * Si estÃ¡ definido, mÃ¡s adelante lo usaremos para generar los Diensts
-   * con horarios especÃ­ficos por dÃ­a.
-   * Si no estÃ¡ definido, se seguirÃ¡ usando startTime/endTime/daysOff.
+   * Horario por día de la semana.
+   * Si está definido, más adelante lo usaremos para generar los Diensts
+   * con horarios específicos por día.
+   * Si no está definido, se seguirá usando startTime/endTime/daysOff.
    */
   perDaySchedule?: DaySchedule[];
 }
@@ -47,11 +47,11 @@ const DayScheduleSchema = new Schema<DaySchedule>(
     },
     startTime: {
       type: String,
-      // NO required: puede faltar si es dÃ­a libre
+      // NO required: puede faltar si es día libre
     },
     endTime: {
       type: String,
-      // NO required: puede faltar si es dÃ­a libre
+      // NO required: puede faltar si es día libre
     },
     isOff: {
       type: Boolean,
@@ -60,7 +60,7 @@ const DayScheduleSchema = new Schema<DaySchedule>(
     },
   },
   {
-    _id: false, // No necesitamos _id para cada entrada de dÃ­a
+    _id: false, // No necesitamos _id para cada entrada de día
   },
 );
 
@@ -68,8 +68,8 @@ const DienstTemplateSchema = new Schema<IDienstTemplate>({
   dienstNumber: {
     type: Number,
     required: true,
-    // Asumimos una plantilla por nÃºmero de Dienst.
-    // Si mÃ¡s adelante quieres permitir varias plantillas con el mismo nÃºmero, borramos esta lÃ­nea:
+    // Asumimos una plantilla por número de Dienst.
+    // Si más adelante quieres permitir varias plantillas con el mismo número, borramos esta línea:
     unique: true,
   },
   startTime: {
@@ -96,7 +96,7 @@ const DienstTemplateSchema = new Schema<IDienstTemplate>({
   },
   perDaySchedule: {
     type: [DayScheduleSchema],
-    // No required -> las plantillas existentes siguen siendo vÃ¡lidas.
+    // No required -> las plantillas existentes siguen siendo válidas.
   },
 });
 

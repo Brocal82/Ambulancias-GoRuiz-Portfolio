@@ -18,7 +18,7 @@ export const getDienstTemplates = async (
     });
     res.status(200).json(templates);
   } catch (error) {
-    console.error("âŒ Error al obtener plantillas de Dienst:", error);
+    console.error("Error al obtener plantillas de Dienst:", error);
     res
       .status(500)
       .json({ message: "Error al obtener las plantillas de Dienst" });
@@ -55,12 +55,12 @@ export const createDienstTemplate = async (
       return;
     }
 
-    // Si viene perDaySchedule, comprobamos que sea un array bÃ¡sico.
+    // Si viene perDaySchedule, comprobamos que sea un array básico.
     let perDayScheduleToSave = undefined;
     if (perDaySchedule !== undefined) {
       if (!Array.isArray(perDaySchedule)) {
         res.status(400).json({
-          message: "perDaySchedule debe ser un array si se envÃ­a",
+          message: "perDaySchedule debe ser un array si se envía",
         });
         return;
       }
@@ -79,12 +79,12 @@ export const createDienstTemplate = async (
     const saved = await newTemplate.save();
     res.status(201).json(saved);
   } catch (error: any) {
-    console.error("âŒ Error al crear plantilla de Dienst:", error);
+    console.error("Error al crear plantilla de Dienst:", error);
 
     if (error.code === 11000) {
       // conflicto por unique index (dienstNumber)
       res.status(409).json({
-        message: "Ya existe una plantilla con ese nÃºmero de Dienst",
+        message: "Ya existe una plantilla con ese número de Dienst",
       });
       return;
     }
@@ -112,12 +112,12 @@ export const updateDienstTemplate = async (
       perDaySchedule,
     } = req.body;
 
-    // Igual que en create: solo validaciÃ³n bÃ¡sica de perDaySchedule si viene
+    // Igual que en create: solo validación básica de perDaySchedule si viene
     let perDayScheduleToSave = undefined;
     if (perDaySchedule !== undefined) {
       if (!Array.isArray(perDaySchedule)) {
         res.status(400).json({
-          message: "perDaySchedule debe ser un array si se envÃ­a",
+          message: "perDaySchedule debe ser un array si se envía",
         });
         return;
       }
@@ -147,11 +147,11 @@ export const updateDienstTemplate = async (
 
     res.status(200).json(updated);
   } catch (error: any) {
-    console.error("âŒ Error al actualizar plantilla de Dienst:", error);
+    console.error("Error al actualizar plantilla de Dienst:", error);
 
     if (error.code === 11000) {
       res.status(409).json({
-        message: "Ya existe otra plantilla con ese nÃºmero de Dienst",
+        message: "Ya existe otra plantilla con ese número de Dienst",
       });
       return;
     }
@@ -184,7 +184,7 @@ export const deleteDienstTemplate = async (
       .status(200)
       .json({ message: "Plantilla de Dienst eliminada correctamente" });
   } catch (error) {
-    console.error("âŒ Error al eliminar plantilla de Dienst:", error);
+    console.error("Error al eliminar plantilla de Dienst:", error);
     res
       .status(500)
       .json({ message: "Error al eliminar la plantilla de Dienst" });

@@ -107,7 +107,7 @@ export async function getAvailableUsersForDateService(
   return available;
 }
 
-// ðŸ”Ž Helper: devuelve si el usuario estÃ¡ de vacaciones HOY y hasta cuÃ¡ndo
+// Helper: devuelve si el usuario está de vacaciones HOY y hasta cuándo
 async function getTodayVacationInfo(userId?: string) {
   if (!userId || !mongoose.Types.ObjectId.isValid(String(userId))) {
     return {
@@ -185,12 +185,12 @@ export async function updateUserService(
   }
 
   if (!validateEmail(email)) {
-    throw new Error("El formato del email no es vÃ¡lido");
+    throw new Error("El formato del email no es válido");
   }
 
   const updates: Record<string, any> = { ...data };
 
-  // âš ï¸ Control explÃ­cito de profileImage
+  // Control explícito de profileImage
   if (data.profileImage === "") {
     updates.profileImage = "";
   } else if (data.profileImage === undefined) {
@@ -211,7 +211,7 @@ export async function updateUserService(
 
 export async function getUserByIdService(userId: string) {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
-    throw new Error("ID de usuario no vÃ¡lido");
+    throw new Error("ID de usuario no válido");
   }
 
   const user = await User.findById(userId);
@@ -232,16 +232,16 @@ export async function createUserService(data: CreateUserDTO) {
 
   if (!password || password.length < 6) {
     throw new Error(
-      "La contraseÃ±a es obligatoria y debe tener al menos 6 caracteres",
+      "La contraseña es obligatoria y debe tener al menos 6 caracteres",
     );
   }
 
   if (!validateEmail(email)) {
-    throw new Error("El formato del email no es vÃ¡lido");
+    throw new Error("El formato del email no es válido");
   }
 
   if (role !== "admin" && role !== "worker") {
-    throw new Error('Rol no vÃ¡lido. Debe ser "admin" o "worker"');
+    throw new Error('Rol no válido. Debe ser "admin" o "worker"');
   }
 
   const existingUser = await User.findOne({ email });
@@ -269,7 +269,7 @@ export async function loginUserService(
   const { email, password } = data;
 
   if (!email || !password) {
-    throw new Error("Email y contraseÃ±a son obligatorios");
+    throw new Error("Email y contraseña son obligatorios");
   }
 
   const user = await User.findOne({ email });
@@ -279,7 +279,7 @@ export async function loginUserService(
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    throw new Error("ContraseÃ±a incorrecta");
+    throw new Error("Contraseña incorrecta");
   }
 
   const token = jwt.sign(

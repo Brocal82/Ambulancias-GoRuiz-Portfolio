@@ -22,7 +22,7 @@ import {
 
 const ZONE = "Europe/Berlin";
 
-// FunciÃ³n para validar el formato del email
+// Función para validar el formato del email
 const validateEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
@@ -36,7 +36,7 @@ export const createUser = async (
 
   try {
     const newUser = await createUserService(dto);
-    console.log("âœ… Usuario guardado:", newUser);
+    console.log("Usuario guardado:", newUser);
     res.status(201).json(sanitizeUser(newUser));
   } catch (error: any) {
     const msg = String(error?.message || "");
@@ -44,16 +44,16 @@ export const createUser = async (
     // 400 para validaciones/duplicado/rol, igual que antes
     if (
       msg.includes("obligatorios") ||
-      msg.includes("contraseÃ±a") ||
+      msg.includes("contraseña") ||
       msg.includes("email") ||
-      msg.includes("Rol no vÃ¡lido") ||
+      msg.includes("Rol no válido") ||
       msg.includes("Ya existe un usuario")
     ) {
       res.status(400).json({ message: msg });
       return;
     }
 
-    console.error("âŒ Error al crear usuario:", error);
+    console.error("Error al crear usuario:", error);
     res.status(500).json({ message: "Error al crear el usuario" });
   }
 };
@@ -63,7 +63,7 @@ export const getUsers = async (_req: Request, res: Response): Promise<void> => {
     const users = await getUsersWithTodayVacationInfo();
     res.status(200).json(sanitizeUsers(users as any[]));
   } catch (error) {
-    console.error("âŒ Error al obtener usuarios:", error);
+    console.error("Error al obtener usuarios:", error);
     res.status(500).json({ message: "Error al obtener usuarios" });
   }
 };
@@ -80,7 +80,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     const dto = parseUpdateUserDTO(req.body);
     const updatedUser = await updateUserService(userId, dto as any);
 
-    console.log("âœ… Usuario actualizado:", updatedUser);
+    console.log("Usuario actualizado:", updatedUser);
     res.status(200).json(sanitizeUser(updatedUser));
   } catch (error: any) {
     const msg = String(error?.message || "");
@@ -89,7 +89,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     if (
       msg.includes("no proporcionado") ||
       msg.includes("obligatorios") ||
-      msg.includes("no es vÃ¡lido")
+      msg.includes("no es válido")
     ) {
       res.status(400).json({ message: msg });
       return;
@@ -100,7 +100,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    console.error("âŒ Error al actualizar usuario:", error);
+    console.error("Error al actualizar usuario:", error);
     res.status(500).json({ message: "Error al actualizar el usuario" });
   }
 };
@@ -117,7 +117,7 @@ export const getUserById = async (
   } catch (error: any) {
     const msg = String(error?.message || "");
 
-    if (msg.includes("no vÃ¡lido")) {
+    if (msg.includes("no válido")) {
       res.status(400).json({ message: msg });
       return;
     }
@@ -127,7 +127,7 @@ export const getUserById = async (
       return;
     }
 
-    console.error("âŒ Error al obtener usuario:", error);
+    console.error("Error al obtener usuario:", error);
     res.status(500).json({ message: "Error al obtener el usuario" });
   }
 };
@@ -149,7 +149,7 @@ export const deleteUser = async (
       return;
     }
 
-    console.error("âŒ Error al eliminar usuario:", error);
+    console.error("Error al eliminar usuario:", error);
     res.status(500).json({ message: "Error al eliminar el usuario" });
   }
 };
@@ -176,12 +176,12 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    console.error("âŒ Error en login:", error);
-    res.status(500).json({ message: "Error al iniciar sesiÃ³n" });
+    console.error("Error en login:", error);
+    res.status(500).json({ message: "Error al iniciar sesión" });
   }
 };
 
-// âœ… Obtener todos los Diensts (solo para admin)
+// Obtener todos los Diensts (solo para admin)
 export const getAllUsersDienst = async (
   _req: Request,
   res: Response,
@@ -192,7 +192,7 @@ export const getAllUsersDienst = async (
     );
     res.status(200).json(diensts);
   } catch (error) {
-    console.error("âŒ Error al obtener diensts:", error);
+    console.error("Error al obtener diensts:", error);
     res.status(500).json({ message: "Error al obtener diensts" });
   }
 };
@@ -211,7 +211,7 @@ export const getAvailableUsersForDate: RequestHandler = async (
     };
 
   if (!date || typeof date !== "string") {
-    res.status(400).json({ message: "Fecha invÃ¡lida" });
+    res.status(400).json({ message: "Fecha inválida" });
     return;
   }
 
@@ -246,12 +246,12 @@ export const uploadUserFiles = async (
 
     const updates: Record<string, any> = {};
 
-    // âœ… Actualiza SOLO la nueva imagen, reemplazando la anterior
+    // Actualiza SOLO la nueva imagen, reemplazando la anterior
     if (files?.profileImage?.[0]) {
       updates.profileImage = `/uploads/${files.profileImage[0].filename}`;
     }
 
-    // âœ… Si hay documentos nuevos, los acumulamos con los anteriores
+    // Si hay documentos nuevos, los acumulamos con los anteriores
     if (files?.documents?.length) {
       const existingUser = await User.findById(userId);
       const currentDocuments = existingUser?.documents || [];
@@ -274,7 +274,7 @@ export const uploadUserFiles = async (
 
     res.status(200).json(updatedUser);
   } catch (error) {
-    console.error("âŒ Error al subir archivos:", error);
+    console.error("Error al subir archivos:", error);
     res.status(500).json({ message: "Error al subir archivos" });
   }
 };
@@ -307,7 +307,7 @@ export const deleteUserDocument = async (
       documents: user.documents,
     });
   } catch (error) {
-    console.error("âŒ Error al eliminar documento:", error);
+    console.error("Error al eliminar documento:", error);
     res.status(500).json({ message: "Error al eliminar documento" });
   }
 };
