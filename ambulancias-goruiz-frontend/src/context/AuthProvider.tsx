@@ -5,6 +5,7 @@ import { AuthContext } from "./AuthContext";
 import type { User } from "../modules/users";
 import { getTokenExpiration } from "../utils/jwtUtils";
 import { toastT } from "../utils/toast";
+import axios from "../api/axios";
 
 interface Props {
   children: ReactNode;
@@ -60,13 +61,11 @@ export const AuthProvider = ({ children }: Props) => {
    */
   const refreshUser = async (id: string, tkn: string) => {
     try {
-      const res = await fetch(`/api/users/${id}`, {
+      const res = await axios.get<User>(`/users/${id}`, {
         headers: { Authorization: `Bearer ${tkn}` },
       });
 
-      if (!res.ok) throw new Error("No se pudo obtener el usuario");
-
-      const freshUser: User = await res.json();
+      const freshUser: User = res.data;
       setUser(freshUser);
       sessionStorage.setItem("user", JSON.stringify(freshUser));
     } catch (error) {
