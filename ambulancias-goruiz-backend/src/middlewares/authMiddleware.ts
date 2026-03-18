@@ -1,9 +1,10 @@
 //backend/src/middlewares/authMiddleware.ts
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { env } from "../config/env";
 
-// Cargar la clave secreta desde las variables de entorno (.env)
-const JWT_SECRET = process.env.JWT_SECRET || "default_secret"; // 'default_secret' es un valor por defecto si no se encuentra en el .env
+// JWT_SECRET es obligatorio y se valida en config/env.ts
+const JWT_SECRET = env.JWT_SECRET;
 
 interface JwtPayload {
   userId: string;

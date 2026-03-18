@@ -1,12 +1,9 @@
-// src/index.ts
-import dotenv from "dotenv";
-dotenv.config();
-
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import path from "path";
 import cron from "node-cron";
+import { env } from "./config/env";
 
 // Rutas
 import userRoutes from "./modules/users/routes";
@@ -31,16 +28,9 @@ const app = express();
 // ----------------------------------------------------------------------------
 // Configuración base
 // ----------------------------------------------------------------------------
-const PORT = Number(process.env.PORT) || 5000;
-const MONGODB_URI = process.env.MONGODB_URI;
+const PORT = env.PORT;
+const MONGODB_URI = env.MONGODB_URI;
 const TZ = "Europe/Berlin";
-
-if (!MONGODB_URI) {
-  console.error(
-    "❌ Error: MONGODB_URI no está definida en las variables de entorno",
-  );
-  process.exit(1);
-}
 
 // ----------------------------------------------------------------------------
 /**
@@ -52,7 +42,7 @@ const allowedFromEnv = (process.env.ALLOWED_ORIGINS || "")
   .map((s) => s.trim())
   .filter(Boolean);
 
-const FRONTEND_URL = process.env.FRONTEND_URL?.trim();
+const FRONTEND_URL = env.FRONTEND_URL?.trim();
 if (FRONTEND_URL && !allowedFromEnv.includes(FRONTEND_URL)) {
   allowedFromEnv.push(FRONTEND_URL);
 }

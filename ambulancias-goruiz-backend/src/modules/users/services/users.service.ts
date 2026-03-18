@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import VacationRequest from "../../vacation/models/vacation-request.model";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { env } from "../../../config/env";
 import type {
   CreateUserDTO,
   LoginDTO,
@@ -284,7 +285,7 @@ export async function loginUserService(
 
   const token = jwt.sign(
     { userId: user._id, email: user.email, role: user.role },
-    process.env.JWT_SECRET as string,
+    env.JWT_SECRET,
     { expiresIn: "1h" },
   );
 
