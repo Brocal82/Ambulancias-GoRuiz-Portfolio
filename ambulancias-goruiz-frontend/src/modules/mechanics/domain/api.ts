@@ -4,15 +4,17 @@ import type { WorkdayIssue } from "./types";
 export const getAllIssueReports = async (
   token: string,
 ): Promise<WorkdayIssue[]> => {
-  // Mantengo fetch como lo tienes para no romper nada
-  const res = await fetch("/api/workday-summary/issues", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!res.ok) throw new Error("Error al obtener reportes técnicos");
-  return res.json();
+  try {
+    const res = await axios.get<WorkdayIssue[]>("/workday-summary/issues", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return res.data;
+  } catch {
+    // Mantener el mismo mensaje de error que con fetch (!res.ok)
+    throw new Error("Error al obtener reportes técnicos");
+  }
 };
 
 // Borrar reporte
