@@ -38,8 +38,6 @@ export const getTripsByDate = async (
   date: string,
   token: string,
 ): Promise<Trip[]> => {
-  const response = await axiosInstance.get<Trip[]>(`/trips/date/${date}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await axiosInstance.get<Trip[]>(`/trips/date/${date}`);
   return response.data;
 };
