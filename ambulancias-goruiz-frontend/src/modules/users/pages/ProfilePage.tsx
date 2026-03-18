@@ -123,10 +123,6 @@ const Profile = ({ userId }: ProfileProps) => {
       }
 
       toastT.success("toasts.profile.saveSuccess");
-
-      setTimeout(() => {
-        navigate(role === "admin" ? "/admin" : "/worker");
-      }, 100);
     } catch (error) {
       console.error(error);
       toastT.error("toasts.profile.saveError");
