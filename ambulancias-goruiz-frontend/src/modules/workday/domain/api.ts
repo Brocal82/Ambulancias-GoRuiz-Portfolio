@@ -8,25 +8,17 @@ import type {
    EXISTENTES
    ========================= */
 
-export const sendPartialClosure = async (
-  data: PartialSummaryPayload,
-  token: string,
-) => {
+export const sendPartialClosure = async (data: PartialSummaryPayload) => {
   const res = await axios.post("/workday-summary/partial", data);
   return res.data;
 };
 
-export const sendFinalClosure = async (
-  data: FinalSummaryPayload,
-  token: string,
-) => {
+export const sendFinalClosure = async (data: FinalSummaryPayload) => {
   const res = await axios.post("/workday-summary", data);
   return res.data;
 };
 
-export const getAllSummaries = async (
-  token: string,
-): Promise<WorkdaySummary[]> => {
+export const getAllSummaries = async (): Promise<WorkdaySummary[]> => {
   const res = await axios.get("/workday-summary");
   return res.data;
 };
@@ -36,7 +28,6 @@ interface SummariesCountResponse {
 }
 
 export const getSummariesPendingCount = async (
-  token: string,
   status: string = "pending",
 ): Promise<number> => {
   try {
@@ -57,7 +48,6 @@ export const getSummariesPendingCount = async (
 };
 
 export const markSummaryReviewed = async (
-  token: string,
   id: string,
 ): Promise<WorkdaySummary> => {
   try {

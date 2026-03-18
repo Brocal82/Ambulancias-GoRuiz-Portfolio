@@ -47,7 +47,7 @@ const AdminSummariesPage = () => {
   const fetchSummaries = useCallback(async () => {
     if (!token) return;
     try {
-      const data = await getAllSummaries(token);
+      const data = await getAllSummaries();
       setSummaries(data);
     } catch (error) {
       console.error("❌ Error al obtener resúmenes:", error);
@@ -183,7 +183,7 @@ const AdminSummariesPage = () => {
       try {
         // 1) backend: marcar todos como leídos
         await Promise.all(
-          unreadIds.map((id) => markSummaryReviewed(token, id)),
+          unreadIds.map((id) => markSummaryReviewed(id)),
         );
 
         // 2) refrescar contadores/cambios globales (si lo usas en badges)

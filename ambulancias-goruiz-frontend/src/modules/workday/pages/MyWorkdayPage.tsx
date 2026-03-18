@@ -426,7 +426,7 @@ const MyWorkday = () => {
       // Opcional: log para depurar si volviese a fallar
       // console.log("[final-closure] payload:", summaryData);
 
-      await sendFinalClosure(summaryData, token);
+      await sendFinalClosure(summaryData);
 
       notifyAdminSummariesChanged();
 
@@ -497,7 +497,7 @@ const MyWorkday = () => {
       });
 
 
-      await sendPartialClosure(payload, token);
+      await sendPartialClosure(payload);
 
       notifyAdminSummariesChanged();
 

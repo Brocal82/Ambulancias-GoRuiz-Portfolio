@@ -47,7 +47,7 @@ export default function useAdminSummariesPendingCount(options: Options = {}) {
     // Loading discreto: sólo mostramos loading si aún no tenemos dato
     setState((s) => ({ ...s, isLoading: s.count === 0 }));
     try {
-      const count = await getSummariesPendingCount(token, "pending");
+      const count = await getSummariesPendingCount("pending");
       if (!mountedRef.current) return;
       setState({ count, isLoading: false, isError: false, error: undefined });
     } catch (err: any) {
