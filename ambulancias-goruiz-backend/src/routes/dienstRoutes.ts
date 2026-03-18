@@ -6,7 +6,7 @@ import {
   DienstCalendar,
   DienstTemplates,
 } from "../modules/diensts";
-import dienstTemplateRoutes from "../modules/dienst-templates/routes";
+import { dienstTemplateRoutes } from "../modules/dienst-templates";
 
 import { authenticateToken } from "../middlewares/authMiddleware";
 import { authorizeRole } from "../middlewares/roleMiddleware";
