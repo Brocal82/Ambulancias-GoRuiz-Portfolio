@@ -19,7 +19,6 @@ export const getAvailableUsersForDate = async (
   opts?: { startTime?: string; endTime?: string; includeExpired?: boolean },
 ): Promise<User[]> => {
   const response = await api.get<User[]>("/users/available", {
-    headers: { Authorization: `Bearer ${token}` },
     params: {
       date,
       desiredRole,
@@ -45,9 +44,7 @@ export const updateUserProfile = async (
   token: string,
 ): Promise<User> => {
 
-  const response = await api.patch<User>(`/users/${userId}`, updatedData, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await api.patch<User>(`/users/${userId}`, updatedData);
   return response.data;
 };
 
