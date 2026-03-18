@@ -2,9 +2,7 @@ import axios from "../../../api/axios";
 import type { Ambulance } from "./types";
 // ✅ GET todas las ambulancias (admin)
 export const getAllAmbulances = async (token: string): Promise<Ambulance[]> => {
-  const { data } = await axios.get("/ambulances", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const { data } = await axios.get("/ambulances");
   return data;
 };
 
@@ -13,9 +11,7 @@ export const getAmbulanceById = async (
   id: string,
   token: string,
 ): Promise<Ambulance> => {
-  const { data } = await axios.get(`/ambulances/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const { data } = await axios.get(`/ambulances/${id}`);
   return data;
 };
 
@@ -24,9 +20,7 @@ export const createAmbulance = async (
   ambulance: Omit<Ambulance, "_id">,
   token: string,
 ): Promise<Ambulance> => {
-  const { data } = await axios.post("/ambulances", ambulance, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const { data } = await axios.post("/ambulances", ambulance);
   return data;
 };
 
@@ -36,9 +30,7 @@ export const updateAmbulance = async (
   ambulance: Partial<Ambulance>,
   token: string,
 ): Promise<Ambulance> => {
-  const { data } = await axios.put(`/ambulances/${id}`, ambulance, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const { data } = await axios.put(`/ambulances/${id}`, ambulance);
   return data;
 };
 
@@ -47,7 +39,5 @@ export const deleteAmbulance = async (
   id: string,
   token: string,
 ): Promise<void> => {
-  await axios.delete(`/ambulances/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  await axios.delete(`/ambulances/${id}`);
 };
