@@ -19,7 +19,7 @@ export const useAmbulances = (params: {
       if (!token) return;
 
       try {
-        const response = await axios.get<AmbulanceRef[]>("/api/ambulances", {
+        const response = await axios.get<AmbulanceRef[]>("/ambulances", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = response.data;
