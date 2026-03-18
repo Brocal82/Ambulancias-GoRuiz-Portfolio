@@ -60,7 +60,6 @@ export const deleteUserDocument = async (
   token: string,
 ): Promise<{ documents: string[] }> => {
   const response = await api.delete("/users/me/document", {
-    headers: { Authorization: `Bearer ${token}` },
     data: { filePath },
   });
   return response.data;
@@ -81,9 +80,7 @@ export const uploadUserFiles = async (
     docsArray.forEach((doc) => form.append("documents", doc));
   }
 
-  const response = await api.post("/users/me/upload", form, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await api.post("/users/me/upload", form);
 
   return response.data;
 };
@@ -105,9 +102,7 @@ export const uploadUserFilesForUser = async (
     docsArray.forEach((doc) => form.append("documents", doc));
   }
 
-  const response = await api.post(`/users/${userId}/upload`, form, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await api.post(`/users/${userId}/upload`, form);
 
   return response.data;
 };
