@@ -6,13 +6,7 @@ import {
   DienstCalendar,
   DienstTemplates,
 } from "../modules/diensts";
-
-import {
-  getDienstTemplates,
-  createDienstTemplate,
-  updateDienstTemplate,
-  deleteDienstTemplate,
-} from "../modules/dienst-templates/controllers";
+import dienstTemplateRoutes from "../modules/dienst-templates/routes";
 
 import { authenticateToken } from "../middlewares/authMiddleware";
 import { authorizeRole } from "../middlewares/roleMiddleware";
@@ -46,33 +40,7 @@ router.post(
 );
 
 // 📌 Rutas para plantillas de Dienst (solo admin) — las dejamos legacy por ahora
-router.get(
-  "/templates",
-  authenticateToken,
-  authorizeRole("admin"),
-  getDienstTemplates,
-);
-
-router.post(
-  "/templates",
-  authenticateToken,
-  authorizeRole("admin"),
-  createDienstTemplate,
-);
-
-router.put(
-  "/templates/:id",
-  authenticateToken,
-  authorizeRole("admin"),
-  updateDienstTemplate,
-);
-
-router.delete(
-  "/templates/:id",
-  authenticateToken,
-  authorizeRole("admin"),
-  deleteDienstTemplate,
-);
+router.use("/templates", dienstTemplateRoutes);
 
 // 👇 Acceso según permisos
 router.get("/:id", authenticateToken, DienstCalendar.getDienstById);
