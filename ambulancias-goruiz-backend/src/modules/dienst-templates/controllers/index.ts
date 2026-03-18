@@ -6,4 +6,4 @@ export {
   createDienstTemplate,
   updateDienstTemplate,
   deleteDienstTemplate,
-} from "../../../controllers/dienstTemplateController";
+} from "./dienstTemplateController";
