@@ -37,7 +37,7 @@ const TZ = "Europe/Berlin";
  * CORS: permitir localhost en dev y Netlify en prod sin hardcodear
  * Define una var ALLOWED_ORIGINS="http://localhost:5173,https://tu-app.netlify.app"
  */
-const allowedFromEnv = (process.env.ALLOWED_ORIGINS || "")
+const allowedFromEnv = (env.ALLOWED_ORIGINS || "")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
