@@ -139,6 +139,12 @@ const Profile = ({ userId }: ProfileProps) => {
     const idToUpdate = userId || userIdFromAuthContext;
     if (!idToUpdate) return;
 
+    if (
+      !window.confirm("¿Estás seguro de que quieres eliminar este documento?")
+    ) {
+      return;
+    }
+
     try {
       const result =
         idToUpdate === userIdFromAuthContext
