@@ -7,9 +7,7 @@ import type { UpdateUserPayload, UploadUserFilesPayload } from "./payloads";
 
 // ✅ Obtener todos los usuarios completos (para Admin)
 export const getAllUsers = async (token: string): Promise<User[]> => {
-  const response = await api.get<User[]>("/users", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await api.get<User[]>("/users");
   return response.data;
 };
 
@@ -37,9 +35,7 @@ export const getUserById = async (
   token: string,
   userId: string,
 ): Promise<User> => {
-  const response = await api.get<User>(`/users/${userId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await api.get<User>(`/users/${userId}`);
   return response.data;
 };
 
@@ -59,9 +55,7 @@ export const deleteUser = async (
   userId: string,
   token: string,
 ): Promise<void> => {
-  await api.delete(`/users/${userId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  await api.delete(`/users/${userId}`);
 };
 
 export const deleteUserDocument = async (
