@@ -46,7 +46,7 @@ const AdminMessagesPage = () => {
     const fetchUsers = async () => {
       if (!token) return;
       try {
-        const data = await UsersApi.getAllUsers(token);
+        const data = await UsersApi.getAllUsers();
         const workersOnly = data.filter((user) => user.role === "worker");
         setUsers(workersOnly);
       } catch (error) {

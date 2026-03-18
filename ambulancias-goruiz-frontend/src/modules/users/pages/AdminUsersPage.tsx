@@ -103,7 +103,7 @@ const AdminUsersPage = () => {
   const fetchUsers = useCallback(async () => {
     try {
       if (!token) return;
-      const data = await UsersApi.getAllUsers(token);
+      const data = await UsersApi.getAllUsers();
 
       const sortedUsers = data.sort((a, b) => {
         const aLast = a.lastName || "";

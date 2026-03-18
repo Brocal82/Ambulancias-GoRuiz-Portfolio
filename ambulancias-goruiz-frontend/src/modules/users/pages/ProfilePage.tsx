@@ -44,7 +44,7 @@ const Profile = ({ userId }: ProfileProps) => {
       if (!idToFetch) return;
 
       try {
-        const fetchedUser = await UsersApi.getUserById(token, idToFetch);
+        const fetchedUser = await UsersApi.getUserById(idToFetch);
         setFormData(fetchedUser);
       } catch (error) {
         console.error(error);
@@ -73,11 +73,11 @@ const Profile = ({ userId }: ProfileProps) => {
       if (profileImageFile || documentsFiles) {
         const uploadData =
           idToUpdate === userIdFromAuthContext
-            ? await UsersApi.uploadUserFiles(token, {
+            ? await UsersApi.uploadUserFiles({
                 profileImage: profileImageFile,
                 documents: documentsFiles,
               })
-            : await UsersApi.uploadUserFilesForUser(idToUpdate, token, {
+            : await UsersApi.uploadUserFilesForUser(idToUpdate, {
                 profileImage: profileImageFile,
                 documents: documentsFiles,
               });
@@ -105,11 +105,11 @@ const Profile = ({ userId }: ProfileProps) => {
         return;
       }
 
-      await UsersApi.updateUserProfile(idToUpdate, payload, token);
+      await UsersApi.updateUserProfile(idToUpdate, payload);
 
 
       // Refrescamos datos
-      const updatedUser = await UsersApi.getUserById(token, idToUpdate);
+      const updatedUser = await UsersApi.getUserById(idToUpdate);
 
       setFormData(updatedUser);
 
@@ -144,12 +144,8 @@ const Profile = ({ userId }: ProfileProps) => {
     try {
       const result =
         idToUpdate === userIdFromAuthContext
-          ? await UsersApi.deleteUserDocument(filePath, token)
-          : await UsersApi.deleteUserDocumentForUser(
-              idToUpdate,
-              filePath,
-              token,
-            );
+          ? await UsersApi.deleteUserDocument(filePath)
+          : await UsersApi.deleteUserDocumentForUser(idToUpdate, filePath);
 
       toastT.success("toasts.profile.docDeleted");
       setFormData((prev) => ({
@@ -189,7 +185,6 @@ const Profile = ({ userId }: ProfileProps) => {
           pscheinExpiry: formData.pscheinExpiry,
           profileImage: "",
         },
-        token,
       );
 
       setFormData(updatedUser);
@@ -224,7 +219,7 @@ const Profile = ({ userId }: ProfileProps) => {
     if (!confirmed) return;
 
     try {
-      await UsersApi.deleteUser(targetId, token);
+      await UsersApi.deleteUser(targetId);
       toastT.success("toasts.profile.deleteSuccess");
       navigate("/admin");
     } catch (error) {

@@ -81,14 +81,12 @@ export default function UserAssignModal({
           const data = await UsersApi.getAvailableUsersForDate(
             date,
             role, // rol deseado actual
-            token,
             { startTime, endTime },
           );
           setUsers(data);
           setUserId(""); // reset selección al cambiar role/date/horas
         } else {
-          const all = await UsersApi.getAllUsers(token)
-            ;
+          const all = await UsersApi.getAllUsers();
           setUsers(all);
         }
       } catch (e) {

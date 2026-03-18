@@ -45,7 +45,7 @@ export default function TeamPicker({
     (async () => {
       try {
         setLoading(true);
-        const all = await UsersApi.getAllUsers(token);
+        const all = await UsersApi.getAllUsers();
         const sorted = [...(all as UserLite[])].sort((a, b) =>
           (a.lastName || "").localeCompare(b.lastName || "", "es"),
         );

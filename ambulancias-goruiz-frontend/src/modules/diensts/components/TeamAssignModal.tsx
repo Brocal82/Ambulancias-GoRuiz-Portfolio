@@ -156,8 +156,8 @@ export default function TeamAssignModal({
         setAvailabilityLoading(true);
         const opts = { startTime, endTime };
         const [drivers, medics] = await Promise.all([
-          UsersApi.getAvailableUsersForDate(date, "driver", token, opts),
-          UsersApi.getAvailableUsersForDate(date, "medic", token, opts),
+          UsersApi.getAvailableUsersForDate(date, "driver", opts),
+          UsersApi.getAvailableUsersForDate(date, "medic", opts),
         ]);
 
         if (cancelled) return;

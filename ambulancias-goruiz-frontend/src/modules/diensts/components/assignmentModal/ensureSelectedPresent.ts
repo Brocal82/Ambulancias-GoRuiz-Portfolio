@@ -14,7 +14,7 @@ export const ensureSelectedPresent = async (
   if (list.some((u) => u._id === selectedId)) return list;
 
   try {
-    const u = await UsersApi.getUserById(token, selectedId);
+    const u = await UsersApi.getUserById(selectedId);
     const asRef: UserRef = {
       _id: u._id,
       name: u.name,

@@ -6,7 +6,7 @@ import type { UpdateUserPayload, UploadUserFilesPayload } from "./payloads";
 
 
 // ✅ Obtener todos los usuarios completos (para Admin)
-export const getAllUsers = async (token: string): Promise<User[]> => {
+export const getAllUsers = async (): Promise<User[]> => {
   const response = await api.get<User[]>("/users");
   return response.data;
 };
@@ -15,7 +15,6 @@ export const getAllUsers = async (token: string): Promise<User[]> => {
 export const getAvailableUsersForDate = async (
   date: string,
   desiredRole: "driver" | "medic" | "both",
-  token: string,
   opts?: { startTime?: string; endTime?: string; includeExpired?: boolean },
 ): Promise<User[]> => {
   const response = await api.get<User[]>("/users/available", {
@@ -30,10 +29,7 @@ export const getAvailableUsersForDate = async (
   return response.data;
 };
 
-export const getUserById = async (
-  token: string,
-  userId: string,
-): Promise<User> => {
+export const getUserById = async (userId: string): Promise<User> => {
   const response = await api.get<User>(`/users/${userId}`);
   return response.data;
 };
@@ -41,23 +37,18 @@ export const getUserById = async (
 export const updateUserProfile = async (
   userId: string,
   updatedData: UpdateUserPayload,
-  token: string,
 ): Promise<User> => {
 
   const response = await api.patch<User>(`/users/${userId}`, updatedData);
   return response.data;
 };
 
-export const deleteUser = async (
-  userId: string,
-  token: string,
-): Promise<void> => {
+export const deleteUser = async (userId: string): Promise<void> => {
   await api.delete(`/users/${userId}`);
 };
 
 export const deleteUserDocument = async (
   filePath: string,
-  token: string,
 ): Promise<{ documents: string[] }> => {
   const response = await api.delete("/users/me/document", {
     data: { filePath },
@@ -69,7 +60,6 @@ export const deleteUserDocument = async (
 export const deleteUserDocumentForUser = async (
   userId: string,
   filePath: string,
-  token: string,
 ): Promise<{ documents: string[] }> => {
   const response = await api.delete(`/users/${userId}/document`, {
     data: { filePath },
@@ -78,7 +68,6 @@ export const deleteUserDocumentForUser = async (
 };
 
 export const uploadUserFiles = async (
-  token: string,
   files: UploadUserFilesPayload,
 ): Promise<{ profileImage?: string; documents?: string[] }> => {
   const form = new FormData();
@@ -100,7 +89,6 @@ export const uploadUserFiles = async (
 /** Admin sube archivos para otro usuario (evita mezclar con perfil del admin) */
 export const uploadUserFilesForUser = async (
   userId: string,
-  token: string,
   files: UploadUserFilesPayload,
 ): Promise<{ profileImage?: string; documents?: string[] }> => {
   const form = new FormData();

@@ -46,8 +46,8 @@ export const useAvailableUsersForAssignment = (params: {
         const commonOpts = { startTime, endTime, includeExpired: true };
 
         const [drivers, medics] = await Promise.all([
-          UsersApi.getAvailableUsersForDate(date, "driver", token, commonOpts),
-          UsersApi.getAvailableUsersForDate(date, "medic", token, {
+          UsersApi.getAvailableUsersForDate(date, "driver", commonOpts),
+          UsersApi.getAvailableUsersForDate(date, "medic", {
             startTime,
             endTime,
           }),

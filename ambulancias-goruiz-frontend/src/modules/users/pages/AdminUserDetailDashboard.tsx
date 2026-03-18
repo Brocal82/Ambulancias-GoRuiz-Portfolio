@@ -34,7 +34,7 @@ const AdminUserDetailDashboard = () => {
     if (!token || !userId) return;
 
     setLoadingUser(true);
-    UsersApi.getUserById(token, userId)
+    UsersApi.getUserById(userId)
       .then(setUser)
       .catch(console.error)
       .finally(() => setLoadingUser(false));
