@@ -5,11 +5,7 @@ export const getAllIssueReports = async (
   token: string,
 ): Promise<WorkdayIssue[]> => {
   try {
-    const res = await axios.get<WorkdayIssue[]>("/workday-summary/issues", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await axios.get<WorkdayIssue[]>("/workday-summary/issues");
     return res.data;
   } catch {
     // Mantener el mismo mensaje de error que con fetch (!res.ok)
@@ -22,9 +18,7 @@ export const deleteIssueReport = async (
   token: string,
   id: string,
 ): Promise<void> => {
-  await axios.delete(`/workday-summary/issues/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  await axios.delete(`/workday-summary/issues/${id}`);
 };
 
 /* =========================
@@ -39,9 +33,7 @@ export const markIssueSeen = async (
   token: string,
   id: string,
 ): Promise<WorkdayIssue> => {
-  const res = await axios.patch(`/workday-summary/issues/${id}/seen`, null, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await axios.patch(`/workday-summary/issues/${id}/seen`, null);
   return res.data as WorkdayIssue;
 };
 
@@ -55,7 +47,6 @@ export const getIssuesOpenCount = async (token: string): Promise<number> => {
       "/workday-summary/issues/count",
       {
         params: { status: "open" },
-        headers: { Authorization: `Bearer ${token}` },
       },
     );
     return typeof res.data?.count === "number" ? res.data.count : 0;
@@ -77,7 +68,6 @@ export const getIssuesCountByStatus = async (
       "/workday-summary/issues/count",
       {
         params: { status },
-        headers: { Authorization: `Bearer ${token}` },
       },
     );
     return typeof res.data?.count === "number" ? res.data.count : 0;
