@@ -25,10 +25,7 @@ export async function getMonthlyPraemienSummary(
   const params = userId ? { userId } : undefined;
   const response = await axios.get<MonthlyPraemienResponse>(
     "/praemien/monthly-summary",
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      params,
-    },
+    { params },
   );
   return response.data;
 }
@@ -41,10 +38,7 @@ export async function getPraemienMonthlyHistory(
   const params = userId ? { userId } : undefined;
   const response = await axios.get<MonthlyPraemieHistoryItem[]>(
     "/praemien/monthly-history",
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      params,
-    },
+    { params },
   );
   return response.data;
 }
