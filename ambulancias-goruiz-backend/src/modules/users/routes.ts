@@ -11,6 +11,7 @@ import {
   uploadUserFiles,
   uploadUserFilesForUser,
   deleteUserDocument,
+  deleteUserDocumentForUser,
 } from "./controllers/users.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import {
@@ -63,6 +64,12 @@ router.post(
     { name: "documents", maxCount: 5 },
   ]),
   uploadUserFilesForUser,
+);
+router.delete(
+  "/:userId/document",
+  authenticateToken,
+  authorizeRole("admin"),
+  deleteUserDocumentForUser,
 );
 router.get("/:id", authenticateToken, authorizeSelfOrAdmin, getUserById);
 router.put("/:id", authenticateToken, authorizeSelfOrAdmin, updateUser);

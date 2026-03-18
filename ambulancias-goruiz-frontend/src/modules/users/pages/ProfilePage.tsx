@@ -136,8 +136,18 @@ const Profile = ({ userId }: ProfileProps) => {
   const handleDeleteDocument = async (filePath: string) => {
     if (!token) return;
 
+    const idToUpdate = userId || userIdFromAuthContext;
+    if (!idToUpdate) return;
+
     try {
-      const result = await UsersApi.deleteUserDocument(filePath, token);
+      const result =
+        idToUpdate === userIdFromAuthContext
+          ? await UsersApi.deleteUserDocument(filePath, token)
+          : await UsersApi.deleteUserDocumentForUser(
+              idToUpdate,
+              filePath,
+              token,
+            );
 
       toastT.success("toasts.profile.docDeleted");
       setFormData((prev) => ({

@@ -321,6 +321,20 @@ export const uploadUserFilesForUser = async (
   }
 };
 
+/** Lógica compartida: elimina documento del usuario indicado */
+async function removeDocumentFromUser(
+  targetUserId: string,
+  filePath: string,
+): Promise<{ documents: string[] } | null> {
+  const user = await User.findById(targetUserId);
+  if (!user) return null;
+
+  user.documents = (user.documents || []).filter((doc) => doc !== filePath);
+  await user.save();
+
+  return { documents: user.documents };
+}
+
 export const deleteUserDocument = async (
   req: Request,
   res: Response,
@@ -334,19 +348,49 @@ export const deleteUserDocument = async (
       return;
     }
 
-    const user = await User.findById(userId);
-    if (!user) {
+    const result = await removeDocumentFromUser(userId, filePath);
+    if (!result) {
       res.status(404).json({ message: "Usuario no encontrado" });
       return;
     }
 
-    // Filtrar documentos que no coinciden con el que se quiere eliminar
-    user.documents = (user.documents || []).filter((doc) => doc !== filePath);
-    await user.save();
+    res.status(200).json({
+      message: "Documento eliminado correctamente",
+      documents: result.documents,
+    });
+  } catch (error) {
+    console.error("Error al eliminar documento:", error);
+    res.status(500).json({ message: "Error al eliminar documento" });
+  }
+};
+
+/** Admin elimina documento de otro usuario */
+export const deleteUserDocumentForUser = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const targetUserId = req.params.userId;
+    const { filePath } = req.body;
+
+    if (!targetUserId) {
+      res.status(400).json({ message: "ID de usuario no proporcionado" });
+      return;
+    }
+    if (!filePath) {
+      res.status(400).json({ message: "Ruta de documento no proporcionada" });
+      return;
+    }
+
+    const result = await removeDocumentFromUser(targetUserId, filePath);
+    if (!result) {
+      res.status(404).json({ message: "Usuario no encontrado" });
+      return;
+    }
 
     res.status(200).json({
       message: "Documento eliminado correctamente",
-      documents: user.documents,
+      documents: result.documents,
     });
   } catch (error) {
     console.error("Error al eliminar documento:", error);

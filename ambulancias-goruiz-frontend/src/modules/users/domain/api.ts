@@ -65,6 +65,18 @@ export const deleteUserDocument = async (
   return response.data;
 };
 
+/** Admin elimina documento de otro usuario */
+export const deleteUserDocumentForUser = async (
+  userId: string,
+  filePath: string,
+  token: string,
+): Promise<{ documents: string[] }> => {
+  const response = await api.delete(`/users/${userId}/document`, {
+    data: { filePath },
+  });
+  return response.data;
+};
+
 export const uploadUserFiles = async (
   token: string,
   files: UploadUserFilesPayload,
