@@ -88,3 +88,27 @@ export const uploadUserFiles = async (
   return response.data;
 };
 
+/** Admin sube archivos para otro usuario (evita mezclar con perfil del admin) */
+export const uploadUserFilesForUser = async (
+  userId: string,
+  token: string,
+  files: UploadUserFilesPayload,
+): Promise<{ profileImage?: string; documents?: string[] }> => {
+  const form = new FormData();
+
+  if (files.profileImage) form.append("profileImage", files.profileImage);
+
+  if (files.documents) {
+    const docsArray = Array.isArray(files.documents)
+      ? files.documents
+      : Array.from(files.documents);
+    docsArray.forEach((doc) => form.append("documents", doc));
+  }
+
+  const response = await api.post(`/users/${userId}/upload`, form, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return response.data;
+};
+

@@ -71,10 +71,16 @@ const Profile = ({ userId }: ProfileProps) => {
       let uploadedProfileImage: string | undefined;
 
       if (profileImageFile || documentsFiles) {
-        const uploadData = await UsersApi.uploadUserFiles(token, {
-          profileImage: profileImageFile,
-          documents: documentsFiles,
-        });
+        const uploadData =
+          idToUpdate === userIdFromAuthContext
+            ? await UsersApi.uploadUserFiles(token, {
+                profileImage: profileImageFile,
+                documents: documentsFiles,
+              })
+            : await UsersApi.uploadUserFilesForUser(idToUpdate, token, {
+                profileImage: profileImageFile,
+                documents: documentsFiles,
+              });
 
         if (uploadData?.profileImage) {
           uploadedProfileImage = uploadData.profileImage;
