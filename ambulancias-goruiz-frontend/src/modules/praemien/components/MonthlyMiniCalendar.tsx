@@ -64,8 +64,9 @@ export default function MonthlyMiniCalendar({ days }: Props) {
                     continue;
                 }
 
-                const d = new Date(year, month0, dayNum);
-                const key = d.toISOString().slice(0, 10);
+                const monthStr = String(month0 + 1).padStart(2, "0");
+                const dayStr = String(dayNum).padStart(2, "0");
+                const key = `${year}-${monthStr}-${dayStr}`;
 
                 result.push({
                     type: "day",
@@ -123,8 +124,9 @@ export default function MonthlyMiniCalendar({ days }: Props) {
                 continue;
             }
 
-            const d = new Date(year, month0, dayNum);
-            const key = d.toISOString().slice(0, 10); // YYYY-MM-DD
+            const monthStr = String(month0 + 1).padStart(2, "0");
+            const dayStr = String(dayNum).padStart(2, "0");
+            const key = `${year}-${monthStr}-${dayStr}`; // YYYY-MM-DD "lógico"
             const value = map.get(key);
 
             result.push({
