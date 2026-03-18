@@ -12,7 +12,7 @@ import {
   createDienstTemplate,
   updateDienstTemplate,
   deleteDienstTemplate,
-} from "../controllers/dienstTemplateController";
+} from "../modules/dienst-templates/controllers";
 
 import { authenticateToken } from "../middlewares/authMiddleware";
 import { authorizeRole } from "../middlewares/roleMiddleware";
