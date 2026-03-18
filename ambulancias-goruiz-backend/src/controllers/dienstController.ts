@@ -1,8 +1,10 @@
 //src/controllers/dienstController.ts
 import { Request, Response } from "express";
 import Dienst from "../models/Dienst";
-import DienstTemplate from "../models/DienstTemplate";
-import type { DaySchedule } from "../models/DienstTemplate";
+import {
+  DienstTemplate,
+  type DaySchedule,
+} from "../modules/dienst-templates/models";
 import Ambulance from "../models/Ambulance"; // ✅ Nuevo import
 import { dienstSchema } from "../schemas/dienstSchema";
 import { dienstQuerySchema } from "../schemas/dienstQuerySchema";
