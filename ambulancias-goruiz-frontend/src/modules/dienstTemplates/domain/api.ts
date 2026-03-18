@@ -24,11 +24,7 @@ export interface DienstTemplateInput {
 export const getDienstTemplates = async (
   token: string,
 ): Promise<DienstTemplate[]> => {
-  const response = await api.get<DienstTemplate[]>("/diensts/templates", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const response = await api.get<DienstTemplate[]>("/diensts/templates");
   return response.data;
 };
 
@@ -40,11 +36,7 @@ export const createDienstTemplate = async (
   data: DienstTemplateInput,
   token: string,
 ): Promise<DienstTemplate> => {
-  const response = await api.post<DienstTemplate>("/diensts/templates", data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const response = await api.post<DienstTemplate>("/diensts/templates", data);
   return response.data;
 };
 
@@ -57,15 +49,7 @@ export const updateDienstTemplate = async (
   data: DienstTemplateInput,
   token: string,
 ): Promise<DienstTemplate> => {
-  const response = await api.put<DienstTemplate>(
-    `/diensts/templates/${id}`,
-    data,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
+  const response = await api.put<DienstTemplate>(`/diensts/templates/${id}`, data);
   return response.data;
 };
 
@@ -77,9 +61,5 @@ export const deleteDienstTemplate = async (
   id: string,
   token: string,
 ): Promise<void> => {
-  await api.delete(`/diensts/templates/${id}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  await api.delete(`/diensts/templates/${id}`);
 };
