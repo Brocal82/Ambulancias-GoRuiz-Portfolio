@@ -10,7 +10,6 @@ export const getMyMessages = async (
 ): Promise<Message[]> => {
   const unreadOnly = opts?.unreadOnly ?? true;
   const response = await axios.get<Message[]>("/messages", {
-    headers: { Authorization: `Bearer ${token}` },
     params: { unreadOnly: String(unreadOnly) },
   });
   return response.data;
@@ -26,9 +25,7 @@ export const sendMessage = async (
     toAllWorkers?: boolean; // ← ✅ nuevo campo opcional
   },
 ): Promise<Message> => {
-  const response = await axios.post("/messages", messageData, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await axios.post("/messages", messageData);
   return response.data;
 };
 
@@ -36,20 +33,14 @@ export const sendMessageMultipart = async (
   token: string,
   formData: FormData,
 ) => {
-  const res = await axios.post("/messages", formData, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      // OJO: NO pongas 'Content-Type' manualmente; el navegador añade el boundary.
-    },
-  });
+  // OJO: NO pongas 'Content-Type' manualmente; el navegador añade el boundary.
+  const res = await axios.post("/messages", formData);
   return res.data;
 };
 
 // ✅ Obtener mensajes enviados por el admin (solo mensajes masivos)
 export const getSentMessages = async (token: string): Promise<Message[]> => {
-  const response = await axios.get("/messages/sent", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await axios.get("/messages/sent");
   return response.data;
 };
 
@@ -58,9 +49,7 @@ export const getMessagesForUserAsAdmin = async (
   token: string,
   userId: string,
 ): Promise<Message[]> => {
-  const res = await axios.get<Message[]>(`/messages/user/${userId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await axios.get<Message[]>(`/messages/user/${userId}`);
   return res.data;
 };
 
@@ -69,15 +58,11 @@ export const deleteMessageForUser = async (
   token: string,
   messageId: string,
 ): Promise<void> => {
-  await axios.patch(`/messages/${messageId}/remove`, null, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  await axios.patch(`/messages/${messageId}/remove`, null);
 };
 
 export const deleteMessage = async (id: string, token: string) => {
-  const res = await axios.delete(`/messages/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await axios.delete(`/messages/${id}`);
   return res.data;
 };
 
@@ -85,7 +70,5 @@ export const markMessageAsRead = async (
   token: string,
   messageId: string,
 ): Promise<void> => {
-  await axios.patch(`/messages/${messageId}/read`, null, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  await axios.patch(`/messages/${messageId}/read`, null);
 };
