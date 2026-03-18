@@ -4,6 +4,7 @@
 
 export * as DienstTemplateControllers from "./controllers";
 export * as DienstTemplateModels from "./models";
+export { default as dienstTemplateRoutes } from "./routes";
 export * as DienstTemplateServices from "./services";
 export * as DienstTemplateTypes from "./types";
 export * as DienstTemplateUtils from "./utils";
