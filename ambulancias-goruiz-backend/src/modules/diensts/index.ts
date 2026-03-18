@@ -4,6 +4,5 @@
 export * as DienstAssignments from "./assignments";
 export * as DienstCalendar from "./calendar";
 export * as DienstTemplates from "./templates";
-export * as DienstTemplateCrud from "./templates-crud";
 
 
