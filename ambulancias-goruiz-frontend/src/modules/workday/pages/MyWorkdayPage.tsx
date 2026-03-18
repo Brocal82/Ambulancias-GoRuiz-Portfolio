@@ -368,7 +368,7 @@ const MyWorkday = () => {
         assignmentId: assignedDay.assignmentId,
         driver: assignedDay.driver._id,
         medic: assignedDay.medic._id,
-        timeEnd: "?? Anschluss",
+        timeEnd: "🔗 Anschluss",
       };
       const createdTrip = await createTrip(newTrip);
       toastT.success(["toasts.workday.anschlussSaved"]);
