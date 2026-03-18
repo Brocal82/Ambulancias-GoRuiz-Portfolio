@@ -234,6 +234,39 @@ export const getAvailableUsersForDate: RequestHandler = async (
   }
 };
 
+/** Lógica compartida: sube archivos y actualiza el usuario indicado */
+function applyUploadToUser(
+  targetUserId: string,
+  files: { [fieldname: string]: Express.Multer.File[] },
+): Promise<any> {
+  const updates: Record<string, any> = {};
+
+  if (files?.profileImage?.[0]) {
+    updates.profileImage = `/uploads/${files.profileImage[0].filename}`;
+  }
+
+  if (files?.documents?.length) {
+    return User.findById(targetUserId).then((existingUser) => {
+      const currentDocuments = existingUser?.documents || [];
+      const newDocs = files.documents!.map(
+        (file) => `/uploads/${file.filename}`,
+      );
+      updates.documents = [...currentDocuments, ...newDocs];
+      return User.findByIdAndUpdate(
+        targetUserId,
+        { $set: updates },
+        { new: true, runValidators: true },
+      );
+    });
+  }
+
+  return User.findByIdAndUpdate(
+    targetUserId,
+    { $set: updates },
+    { new: true, runValidators: true },
+  );
+}
+
 export const uploadUserFiles = async (
   req: Request,
   res: Response,
@@ -244,28 +277,37 @@ export const uploadUserFiles = async (
       [fieldname: string]: Express.Multer.File[];
     };
 
-    const updates: Record<string, any> = {};
+    const updatedUser = await applyUploadToUser(userId, files);
 
-    // Actualiza SOLO la nueva imagen, reemplazando la anterior
-    if (files?.profileImage?.[0]) {
-      updates.profileImage = `/uploads/${files.profileImage[0].filename}`;
+    if (!updatedUser) {
+      res.status(404).json({ message: "Usuario no encontrado" });
+      return;
     }
 
-    // Si hay documentos nuevos, los acumulamos con los anteriores
-    if (files?.documents?.length) {
-      const existingUser = await User.findById(userId);
-      const currentDocuments = existingUser?.documents || [];
-      const newDocs = files.documents.map(
-        (file) => `/uploads/${file.filename}`,
-      );
-      updates.documents = [...currentDocuments, ...newDocs];
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error("Error al subir archivos:", error);
+    res.status(500).json({ message: "Error al subir archivos" });
+  }
+};
+
+/** Admin sube archivos para otro usuario (evita mezclar con perfil del admin) */
+export const uploadUserFilesForUser = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const targetUserId = req.params.userId;
+    if (!targetUserId) {
+      res.status(400).json({ message: "ID de usuario no proporcionado" });
+      return;
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { $set: updates },
-      { new: true, runValidators: true },
-    );
+    const files = req.files as {
+      [fieldname: string]: Express.Multer.File[];
+    };
+
+    const updatedUser = await applyUploadToUser(targetUserId, files);
 
     if (!updatedUser) {
       res.status(404).json({ message: "Usuario no encontrado" });

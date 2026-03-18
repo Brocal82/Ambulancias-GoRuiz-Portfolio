@@ -9,6 +9,7 @@ import {
   getAllUsersDienst,
   getAvailableUsersForDate,
   uploadUserFiles,
+  uploadUserFilesForUser,
   deleteUserDocument,
 } from "./controllers/users.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
@@ -53,6 +54,16 @@ router.delete("/me/document", authenticateToken, deleteUserDocument);
 
 // Rutas protegidas para usuarios
 router.get("/", authenticateToken, authorizeRole("admin"), getUsers);
+router.post(
+  "/:userId/upload",
+  authenticateToken,
+  authorizeRole("admin"),
+  upload.fields([
+    { name: "profileImage", maxCount: 1 },
+    { name: "documents", maxCount: 5 },
+  ]),
+  uploadUserFilesForUser,
+);
 router.get("/:id", authenticateToken, authorizeSelfOrAdmin, getUserById);
 router.put("/:id", authenticateToken, authorizeSelfOrAdmin, updateUser);
 router.patch("/:id", authenticateToken, authorizeSelfOrAdmin, updateUser);
