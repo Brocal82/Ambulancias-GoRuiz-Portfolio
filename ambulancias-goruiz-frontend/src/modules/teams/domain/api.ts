@@ -27,7 +27,6 @@ export const getUsedTeamsForWeek = async (
       weekStartDate: params.weekStartDate,
       dienstNumber: params.dienstNumber,
     },
-    headers: { Authorization: `Bearer ${token}` },
   });
 
   return res.data.usedTeamIds ?? [];
@@ -39,9 +38,7 @@ export const getUsedTeamsForWeek = async (
 
 // GET /api/teams
 export const getTeams = async (token: string): Promise<Team[]> => {
-  const res = await api.get<Team[]>("/teams", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await api.get<Team[]>("/teams");
   return res.data;
 };
 
@@ -50,9 +47,7 @@ export const createTeam = async (
   payload: CreateTeamPayload,
   token: string,
 ): Promise<Team> => {
-  const res = await api.post<Team>("/teams", payload, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await api.post<Team>("/teams", payload);
   return res.data;
 };
 
@@ -62,9 +57,7 @@ export const updateTeam = async (
   payload: UpdateTeamPayload,
   token: string,
 ): Promise<Team> => {
-  const res = await api.patch<Team>(`/teams/${teamId}`, payload, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await api.patch<Team>(`/teams/${teamId}`, payload);
   return res.data;
 };
 
@@ -73,7 +66,5 @@ export const deleteTeam = async (
   teamId: string,
   token: string,
 ): Promise<void> => {
-  await api.delete(`/teams/${teamId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  await api.delete(`/teams/${teamId}`);
 };
