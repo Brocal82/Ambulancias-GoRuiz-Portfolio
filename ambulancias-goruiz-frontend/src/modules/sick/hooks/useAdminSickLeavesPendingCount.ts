@@ -47,7 +47,7 @@ export default function useAdminSickLeavesPendingCount(options: Options = {}) {
 
     try {
       // 👇 Ajusta los parámetros si tu API usa otro filtro distinto a 'pending'
-      const count = await getSickLeavesPendingCount(token, "pending");
+      const count = await getSickLeavesPendingCount("pending");
       if (!mountedRef.current) return;
 
       setState({ count, isLoading: false, isError: false, error: undefined });

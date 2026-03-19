@@ -236,7 +236,7 @@ const MyWorkday = () => {
     const fetchAmbulances = async () => {
       try {
         if (!token) return;
-        const data = await getAllAmbulances(token);
+        const data = await getAllAmbulances();
         setAmbulances(data);
       } catch (err) {
         console.error(" Error al cargar ambulancias:", err);

@@ -24,7 +24,7 @@ const AdminUserPraemienTab = ({ userId }: Props) => {
     if (!token || !userId) return;
     setLoading(true);
 
-    getMonthlyPraemienSummary(token, userId)
+    getMonthlyPraemienSummary(userId)
       .then((data) => {
         setSummaries(data.monthlyData || []);
         setAveragePatients(data.averagePatients ?? 0);

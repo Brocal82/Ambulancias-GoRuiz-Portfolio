@@ -41,7 +41,7 @@ export default function AdminTeamsPage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await getTeams(token);
+      const data = await getTeams();
       setTeams(data);
     } catch (e: any) {
       console.error(e);
@@ -123,7 +123,7 @@ export default function AdminTeamsPage() {
   const handleCreate = async (payload: { driver: string; medic: string }) => {
     if (!token) return;
     try {
-      await createTeam(payload, token);
+      await createTeam(payload);
       toastT.success(["pages.adminTeams.created"]);
       await load();
     } catch (e: any) {
@@ -145,7 +145,7 @@ export default function AdminTeamsPage() {
     if (!token) return;
 
     try {
-      await updateTeam(teamId, payload, token);
+      await updateTeam(teamId, payload);
       toastT.success(["pages.adminTeams.updated"]);
       await load();
       setEditingTeam(null);
@@ -165,7 +165,7 @@ export default function AdminTeamsPage() {
     if (!confirmed) return;
 
     try {
-      await deleteTeam(teamId, token);
+      await deleteTeam(teamId);
       toastT.success(["pages.adminTeams.deleted"]);
       await load();
     } catch (e: any) {

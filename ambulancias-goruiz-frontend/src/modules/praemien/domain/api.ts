@@ -19,7 +19,6 @@ export interface MonthlyPraemieHistoryItem {
 
 // Obtener resumen mensual (actual)
 export async function getMonthlyPraemienSummary(
-  token: string,
   userId?: string,
 ): Promise<MonthlyPraemienResponse> {
   const params = userId ? { userId } : undefined;
@@ -32,7 +31,6 @@ export async function getMonthlyPraemienSummary(
 
 // Obtener historial mensual (prämien anteriores)
 export async function getPraemienMonthlyHistory(
-  token: string,
   userId?: string,
 ): Promise<MonthlyPraemieHistoryItem[]> {
   const params = userId ? { userId } : undefined;

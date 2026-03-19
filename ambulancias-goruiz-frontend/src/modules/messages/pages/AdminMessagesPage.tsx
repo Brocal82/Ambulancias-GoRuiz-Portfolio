@@ -90,7 +90,7 @@ const AdminMessagesPage = () => {
   const fetchSentMessages = async () => {
     if (!token) return;
     try {
-      const data = await getSentMessages(token);
+      const data = await getSentMessages();
       setSentMessages(data);
     } catch (error) {
       console.error("❌ Error al cargar mensajes enviados:", error);
@@ -123,7 +123,7 @@ const AdminMessagesPage = () => {
     }
 
     try {
-      await deleteMessage(id, token);
+      await deleteMessage(id);
 
       setSentMessages((prev) => prev.filter((m) => m._id !== id));
 

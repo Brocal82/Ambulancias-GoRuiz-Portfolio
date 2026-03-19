@@ -24,7 +24,7 @@ export function useUnreadMessagesCount({ pollMs = 30000 }: Options = {}) {
       }
       setLoading(true);
       setError(null);
-      const msgs = await getMyMessages(token); // tu API ya retorna solo no leídos
+      const msgs = await getMyMessages(); // tu API ya retorna solo no leídos
       setCount(Array.isArray(msgs) ? msgs.length : 0);
     } catch (e: any) {
       setError(e?.message ?? "Error obteniendo mensajes no leídos");

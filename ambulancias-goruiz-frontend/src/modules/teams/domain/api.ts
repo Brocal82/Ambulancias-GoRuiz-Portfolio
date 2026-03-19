@@ -19,7 +19,6 @@ export type { Team, CreateTeamPayload, UpdateTeamPayload } from "./types";
  * Devuelve IDs de equipos ya asignados en esa semana/dienst.
  */
 export const getUsedTeamsForWeek = async (
-  token: string,
   params: { weekStartDate: string; dienstNumber: number },
 ): Promise<string[]> => {
   const res = await api.get<UsedTeamsForWeekResponse>("/teams/used-for-week", {
@@ -37,16 +36,13 @@ export const getUsedTeamsForWeek = async (
 ----------------------------------------------------------- */
 
 // GET /api/teams
-export const getTeams = async (token: string): Promise<Team[]> => {
+export const getTeams = async (): Promise<Team[]> => {
   const res = await api.get<Team[]>("/teams");
   return res.data;
 };
 
 // POST /api/teams
-export const createTeam = async (
-  payload: CreateTeamPayload,
-  token: string,
-): Promise<Team> => {
+export const createTeam = async (payload: CreateTeamPayload): Promise<Team> => {
   const res = await api.post<Team>("/teams", payload);
   return res.data;
 };
@@ -55,16 +51,12 @@ export const createTeam = async (
 export const updateTeam = async (
   teamId: string,
   payload: UpdateTeamPayload,
-  token: string,
 ): Promise<Team> => {
   const res = await api.patch<Team>(`/teams/${teamId}`, payload);
   return res.data;
 };
 
 // DELETE /api/teams/:id
-export const deleteTeam = async (
-  teamId: string,
-  token: string,
-): Promise<void> => {
+export const deleteTeam = async (teamId: string): Promise<void> => {
   await api.delete(`/teams/${teamId}`);
 };

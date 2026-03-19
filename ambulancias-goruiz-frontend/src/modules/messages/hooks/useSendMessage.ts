@@ -51,9 +51,9 @@ export const useSendMessage = (config?: UseSendMessageConfig) => {
           formData.append("attachment", file, file.name);
         });
 
-        await sendMessageMultipart(token, formData);
+        await sendMessageMultipart(formData);
       } else {
-        await sendMessage(token, {
+        await sendMessage({
           subject: args.subject,
           body: args.body,
           recipients: args.recipients,

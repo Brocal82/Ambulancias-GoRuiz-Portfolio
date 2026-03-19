@@ -8,7 +8,6 @@ import { UsersApi } from "../../../users";
 export const ensureSelectedPresent = async (
   list: UserRef[],
   selectedId: string | undefined,
-  token: string,
 ): Promise<UserRef[]> => {
   if (!selectedId) return list;
   if (list.some((u) => u._id === selectedId)) return list;

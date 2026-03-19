@@ -98,7 +98,7 @@ export default function TeamAssignModal({
       if (!isOpen || !token) return;
       try {
         setLoading(true);
-        const data = await getTeams(token);
+        const data = await getTeams();
         setTeams(data);
       } catch (e) {
         console.error(e);
@@ -121,7 +121,7 @@ export default function TeamAssignModal({
 
     (async () => {
       try {
-        const ids = await getUsedTeamsForWeek(token, {
+        const ids = await getUsedTeamsForWeek({
           weekStartDate: weekStartISO,
           dienstNumber,
         });

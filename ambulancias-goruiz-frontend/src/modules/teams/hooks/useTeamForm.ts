@@ -94,7 +94,7 @@ export function useTeamForm({
       try {
         setLoadingAmbulances(true);
 
-        const data = (await getAllAmbulances(token)) as AmbulanceLite[];
+        const data = (await getAllAmbulances()) as AmbulanceLite[];
 
         if (!cancelled) {
           setAmbulances(

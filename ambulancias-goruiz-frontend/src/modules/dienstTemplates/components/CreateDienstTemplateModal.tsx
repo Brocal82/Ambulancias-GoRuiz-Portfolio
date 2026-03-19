@@ -22,14 +22,12 @@ import DienstTemplateScheduleGrid from "./DienstTemplateScheduleGrid";
 interface CreateDienstTemplateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  token: string;
   onCreated: (tpl: DienstTemplate) => void;
 }
 
 const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
   isOpen,
   onClose,
-  token,
   onCreated,
 }) => {
   const [dienstNumber, setDienstNumber] = useState<number | "">("");
@@ -76,11 +74,6 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!token) {
-      setError("No hay token de autenticación. Inicia sesión de nuevo.");
-      return;
-    }
-
     if (dienstNumber === "" || dienstNumber <= 0) {
       setError("Debes indicar un número de Dienst válido.");
       return;
@@ -105,7 +98,7 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
       });
 
 
-      const created = await createDienstTemplate(payload, token);
+      const created = await createDienstTemplate(payload);
 
       onCreated(created);
 

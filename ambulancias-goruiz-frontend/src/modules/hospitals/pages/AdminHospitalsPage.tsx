@@ -77,7 +77,6 @@ const AdminHospitalsPage = () => {
       const updated = await hospitalsApi.updateHospital(
         hospital._id,
         fromLocalHospitalStatus(hospital, nextIsOpen),
-        token,
       );
 
       setHospitals((prev) =>
@@ -99,7 +98,7 @@ const AdminHospitalsPage = () => {
     if (!ok) return;
 
     try {
-      await hospitalsApi.deleteHospital(id, token);
+      await hospitalsApi.deleteHospital(id);
       setHospitals((prev) => prev.filter((h) => h._id !== id));
       toastT.success(["toasts.hospitals.deleteSuccess"]);
     } catch (error) {
@@ -139,7 +138,6 @@ const AdminHospitalsPage = () => {
             try {
               const newHospital = await hospitalsApi.createHospital(
                 buildCreateHospitalPayload(data),
-                token,
               );
 
               setHospitals((prev) => [...prev, newHospital]);
@@ -181,7 +179,6 @@ const AdminHospitalsPage = () => {
               const saved = await hospitalsApi.updateHospital(
                 updated._id,
                 payload,
-                token,
               );
 
               setHospitals((prev) =>

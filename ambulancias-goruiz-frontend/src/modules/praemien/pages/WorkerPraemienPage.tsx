@@ -26,7 +26,7 @@ const WorkerPraemienPage = () => {
     setLoading(true);
     setError("");
 
-    getMonthlyPraemienSummary(token)
+    getMonthlyPraemienSummary()
       .then((data) => {
         setSummaries(data.monthlyData);
         setMedia(data.averagePatients);

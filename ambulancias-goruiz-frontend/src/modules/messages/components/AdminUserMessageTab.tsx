@@ -54,7 +54,7 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
   const fetchMessages = async () => {
     if (!token || !userId) return;
     try {
-      const data = await getMessagesForUserAsAdmin(token, userId);
+      const data = await getMessagesForUserAsAdmin(userId);
       setMessages(data);
     } catch (error) {
       console.error("❌ Error al cargar mensajes de este usuario:", error);
@@ -107,7 +107,7 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
     try {
       // ✅ borra en BD (admin)
       const { deleteMessage } = await import("../domain/api");
-      await deleteMessage(messageId, token);
+      await deleteMessage(messageId);
 
       // ✅ quita del estado local (sin refetch obligatorio)
       setMessages((prev) => prev.filter((m) => m._id !== messageId));

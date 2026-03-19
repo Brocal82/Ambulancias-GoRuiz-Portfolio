@@ -1,9 +1,7 @@
 import axios from "../../../api/axios";
 import type { WorkdayIssue } from "./types";
 
-export const getAllIssueReports = async (
-  token: string,
-): Promise<WorkdayIssue[]> => {
+export const getAllIssueReports = async (): Promise<WorkdayIssue[]> => {
   try {
     const res = await axios.get<WorkdayIssue[]>("/workday-summary/issues");
     return res.data;
@@ -14,10 +12,7 @@ export const getAllIssueReports = async (
 };
 
 // Borrar reporte
-export const deleteIssueReport = async (
-  token: string,
-  id: string,
-): Promise<void> => {
+export const deleteIssueReport = async (id: string): Promise<void> => {
   await axios.delete(`/workday-summary/issues/${id}`);
 };
 
@@ -29,10 +24,7 @@ export const deleteIssueReport = async (
  * Marca una avería como vista (isSeen=true, seenAt=now).
  * PATCH /workday-summary/issues/:id/seen
  */
-export const markIssueSeen = async (
-  token: string,
-  id: string,
-): Promise<WorkdayIssue> => {
+export const markIssueSeen = async (id: string): Promise<WorkdayIssue> => {
   const res = await axios.patch(`/workday-summary/issues/${id}/seen`, null);
   return res.data as WorkdayIssue;
 };
@@ -41,7 +33,7 @@ interface IssuesCountResponse {
   count: number;
 }
 
-export const getIssuesOpenCount = async (token: string): Promise<number> => {
+export const getIssuesOpenCount = async (): Promise<number> => {
   try {
     const res = await axios.get<IssuesCountResponse>(
       "/workday-summary/issues/count",
@@ -60,7 +52,6 @@ export const getIssuesOpenCount = async (token: string): Promise<number> => {
 };
 
 export const getIssuesCountByStatus = async (
-  token: string,
   status: string,
 ): Promise<number> => {
   try {

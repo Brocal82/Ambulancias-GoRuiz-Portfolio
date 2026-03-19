@@ -57,7 +57,7 @@ const WorkerMessagesPage = () => {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const data = await getMyMessages(token!, { unreadOnly: false });
+        const data = await getMyMessages({ unreadOnly: false });
         setMessages(data);
       } catch (error) {
         console.error("❌ Error al cargar mensajes:", error);
@@ -71,7 +71,7 @@ const WorkerMessagesPage = () => {
   const handleDelete = async (messageId: string) => {
     if (!token) return;
     try {
-      await deleteMessageForUser(token, messageId);
+      await deleteMessageForUser(messageId);
       setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
       setExpanded((prev) => {
         const next = new Set(prev);
@@ -95,7 +95,7 @@ const WorkerMessagesPage = () => {
       const wasExpanded = expanded.has(id);
       if (!wasExpanded && token && meId && isUnread(msg)) {
         try {
-          await markMessageAsRead(token, id);
+          await markMessageAsRead(id);
           markedAnyAsReadRef.current = true;
           notifyUnreadMessagesChanged();
           // actualizar estado local: añadir mi id a readBy

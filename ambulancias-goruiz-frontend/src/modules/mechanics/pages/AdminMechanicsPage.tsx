@@ -54,11 +54,11 @@ const AdminMechanicsPage = () => {
       try {
         if (!token) return;
 
-        const issuesData = await getAllIssueReports(token);
+        const issuesData = await getAllIssueReports();
         setIssues(normalizeIssues(issuesData));
 
 
-        const ambulancesData = await getAllAmbulances(token);
+        const ambulancesData = await getAllAmbulances();
         setAmbulances(ambulancesData);
       } catch (err) {
         console.error("¢ Error al cargar reportes o ambulancias:", err);
@@ -85,7 +85,7 @@ const AdminMechanicsPage = () => {
     setIssues((cur) => cur.filter((x) => x._id !== id));
 
     try {
-      await deleteIssueReport(token, id);
+      await deleteIssueReport(id);
       toastT.success(["toasts.mechanics.deleteSuccess"]);
       // Si se borra una no vista, el contador tambi©n baja. Emitimos evento por si acaso.
       notifyAdminIssuesChanged();
@@ -118,7 +118,7 @@ const AdminMechanicsPage = () => {
       // Marcar como visto solo si se est¡ abriendo por primera vez y era no visto
       if (shouldMarkSeen) {
         try {
-          const updated = await markIssueSeen(token, issue._id);
+          const updated = await markIssueSeen(issue._id);
 
           setIssues((cur) =>
             cur.map((it) =>

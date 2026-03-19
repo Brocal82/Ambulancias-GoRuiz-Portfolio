@@ -65,12 +65,10 @@ let med = mergeWithAssigned(toUserRefList(medics), assignment, "medic");
         drv = await ensureSelectedPresent(
           drv,
           driverIdFromAssignment ?? selectedDriverId,
-          token,
         );
         med = await ensureSelectedPresent(
           med,
           medicIdFromAssignment ?? selectedMedicId,
-          token,
         );
 
         setAvailableDrivers(drv);

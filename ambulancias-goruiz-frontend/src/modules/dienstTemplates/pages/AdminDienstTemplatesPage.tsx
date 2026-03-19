@@ -40,7 +40,7 @@ const AdminDienstTemplatesPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await getDienstTemplates(token);
+        const data = await getDienstTemplates();
         const sorted = [...data].sort(
           (a, b) => a.dienstNumber - b.dienstNumber,
         );
@@ -249,7 +249,7 @@ const AdminDienstTemplatesPage: React.FC = () => {
                             if (!confirmDelete) return;
 
                             try {
-                              await deleteDienstTemplate(tpl._id, token);
+                              await deleteDienstTemplate(tpl._id);
                               setTemplates((prev) =>
                                 prev.filter((t) => t._id !== tpl._id),
                               );
@@ -281,7 +281,6 @@ const AdminDienstTemplatesPage: React.FC = () => {
         <CreateDienstTemplateModal
           isOpen={isCreateOpen}
           onClose={() => setIsCreateOpen(false)}
-          token={token}
           onCreated={handleCreatedTemplate}
         />
       )}
@@ -291,7 +290,6 @@ const AdminDienstTemplatesPage: React.FC = () => {
         <EditDienstTemplateModal
           isOpen={isEditOpen}
           template={editingTemplate}
-          token={token}
           onClose={() => {
             setIsEditOpen(false);
             setEditingTemplate(null);

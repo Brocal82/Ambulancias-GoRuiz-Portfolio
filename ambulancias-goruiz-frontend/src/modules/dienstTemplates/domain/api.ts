@@ -21,9 +21,7 @@ export interface DienstTemplateInput {
  * GET /diensts/templates
  * Lista todas las plantillas de Dienst
  */
-export const getDienstTemplates = async (
-  token: string,
-): Promise<DienstTemplate[]> => {
+export const getDienstTemplates = async (): Promise<DienstTemplate[]> => {
   const response = await api.get<DienstTemplate[]>("/diensts/templates");
   return response.data;
 };
@@ -34,7 +32,6 @@ export const getDienstTemplates = async (
  */
 export const createDienstTemplate = async (
   data: DienstTemplateInput,
-  token: string,
 ): Promise<DienstTemplate> => {
   const response = await api.post<DienstTemplate>("/diensts/templates", data);
   return response.data;
@@ -47,7 +44,6 @@ export const createDienstTemplate = async (
 export const updateDienstTemplate = async (
   id: string,
   data: DienstTemplateInput,
-  token: string,
 ): Promise<DienstTemplate> => {
   const response = await api.put<DienstTemplate>(`/diensts/templates/${id}`, data);
   return response.data;
@@ -57,9 +53,6 @@ export const updateDienstTemplate = async (
  * DELETE /diensts/templates/:id
  * Elimina una plantilla de Dienst
  */
-export const deleteDienstTemplate = async (
-  id: string,
-  token: string,
-): Promise<void> => {
+export const deleteDienstTemplate = async (id: string): Promise<void> => {
   await api.delete(`/diensts/templates/${id}`);
 };

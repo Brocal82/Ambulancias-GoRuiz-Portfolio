@@ -7,5 +7,5 @@ import type { Hospital } from "./types";
  */
 export const fetchHospitals = async (token?: string): Promise<Hospital[]> => {
   if (!token) return [];
-  return await getAllHospitals(token);
+  return await getAllHospitals();
 };

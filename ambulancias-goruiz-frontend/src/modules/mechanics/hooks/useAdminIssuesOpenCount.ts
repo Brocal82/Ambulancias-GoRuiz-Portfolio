@@ -27,7 +27,7 @@ export function useAdminIssuesOpenCount({ pollMs = 0 }: Options = {}) {
     if (!token) return;
     try {
       setError(null);
-      const c = await getIssuesOpenCount(token);
+      const c = await getIssuesOpenCount();
       if (mountedRef.current) setCount(c);
     } catch (e) {
       // eslint-disable-next-line no-console

@@ -36,7 +36,7 @@ const AdminSentMessages = () => {
   const fetchMessages = async () => {
     if (!token) return;
     try {
-      const sentMessages = await getSentMessages(token);
+      const sentMessages = await getSentMessages();
       setMessages(sentMessages);
     } catch (error) {
       console.error("❌ Error al cargar mensajes enviados:", error);
@@ -77,7 +77,7 @@ const AdminSentMessages = () => {
     }
 
     try {
-      await deleteMessage(id, token);
+      await deleteMessage(id);
       setMessages((prev) => prev.filter((m) => m._id !== id));
       setExpanded((prev) => {
         const next = new Set(prev);

@@ -22,7 +22,6 @@ import DienstTemplateScheduleGrid from "./DienstTemplateScheduleGrid";
 interface Props {
   isOpen: boolean;
   template: DienstTemplate;
-  token: string;
   onClose: () => void;
   onSaved: (updated: DienstTemplate) => void;
 }
@@ -30,7 +29,6 @@ interface Props {
 const EditDienstTemplateModal: React.FC<Props> = ({
   isOpen,
   template,
-  token,
   onClose,
   onSaved,
 }) => {
@@ -124,7 +122,7 @@ const EditDienstTemplateModal: React.FC<Props> = ({
       });
 
 
-      const updated = await updateDienstTemplate(template._id, payload, token);
+      const updated = await updateDienstTemplate(template._id, payload);
       onSaved(updated);
       onClose();
     } catch (err: any) {

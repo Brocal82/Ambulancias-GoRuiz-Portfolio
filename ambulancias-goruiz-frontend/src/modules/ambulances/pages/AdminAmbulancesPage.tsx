@@ -36,7 +36,7 @@ const AdminAmbulancesPage: React.FC = () => {
     if (!token) return;
     setLoading(true);
     try {
-      const data = await getAllAmbulances(token);
+      const data = await getAllAmbulances();
       setAmbulances(data);
       setError(null);
     } catch {
@@ -65,7 +65,7 @@ const AdminAmbulancesPage: React.FC = () => {
     if (!window.confirm(t("pages.ambulances.adminPage.confirmDelete"))) return;
 
     try {
-      await deleteAmbulance(id, token);
+      await deleteAmbulance(id);
       fetchAmbulances();
     } catch {
       toastT.error(["pages.ambulances.adminPage.alerts.deleteError"]);
@@ -83,9 +83,9 @@ const AdminAmbulancesPage: React.FC = () => {
 
     try {
       if (id) {
-        await updateAmbulance(id, ambulanceData, token);
+        await updateAmbulance(id, ambulanceData);
       } else {
-        await createAmbulance(ambulanceData, token);
+        await createAmbulance(ambulanceData);
       }
       setIsCreateOpen(false);
       setAmbulanceToEdit(null);

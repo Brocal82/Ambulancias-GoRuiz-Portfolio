@@ -36,7 +36,6 @@ export const createTrip = async (tripData: TripData): Promise<Trip> => {
 
 export const getTripsByDate = async (
   date: string,
-  token: string,
 ): Promise<Trip[]> => {
   const response = await axiosInstance.get<Trip[]>(`/trips/date/${date}`);
   return response.data;

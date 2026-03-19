@@ -94,11 +94,8 @@ export async function getSickFlagsInRange(params: {
 }
 
 export async function getSickLeavesPendingCount(
-  token: string,
   status: SickLeaveStatus | "all" = "pending",
 ): Promise<number> {
-  void token;
-
   if (status === "all") {
     const all = await adminListSickLeaves();
     return all.length;

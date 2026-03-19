@@ -34,7 +34,7 @@ const WorkerPraemienHistory = ({ userId }: Props) => {
   useEffect(() => {
     if (!token) return;
     setLoading(true);
-    getPraemienMonthlyHistory(token, userId)
+    getPraemienMonthlyHistory(userId)
       .then(setHistory)
       .catch(console.error)
       .finally(() => setLoading(false));

@@ -28,7 +28,7 @@ export const useWorkdayTrips = (args: {
     }
 
     try {
-      const data = await getTripsByDate(date, token);
+      const data = await getTripsByDate(date);
       const pending = data.filter((t) => !t.sentInSummary);
       const mine = pending.filter((t) => t.driver === userId || t.medic === userId);
       setTrips(mine);
