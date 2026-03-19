@@ -12,6 +12,7 @@ const API = "/api";
 describe("API - Rutas críticas", () => {
   let adminToken: string;
   let workerToken: string;
+  let workerId: string;
 
   beforeAll(async () => {
     await mongoose.connect(process.env.MONGODB_URI!);
@@ -44,6 +45,7 @@ describe("API - Rutas críticas", () => {
       .send({ email: workerEmail, password: "password123" });
     adminToken = adminRes.body.token;
     workerToken = workerRes.body.token;
+    workerId = workerRes.body.user?._id ?? "";
   });
 
   afterAll(async () => {
@@ -114,6 +116,71 @@ describe("API - Rutas críticas", () => {
         .expect(400);
       expect(res.body).toHaveProperty("message");
       expect(res.body.message).toBe("ID inválido");
+    });
+  });
+
+  describe("Dienst - searchDienst", () => {
+    it("GET /api/diensts/search sin token devuelve 401", async () => {
+      const res = await request(app)
+        .get(`${API}/diensts/search`)
+        .expect(401);
+      expect(res.body).toHaveProperty("message");
+    });
+
+    it("GET /api/diensts/search con token worker devuelve 403", async () => {
+      const res = await request(app)
+        .get(`${API}/diensts/search`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .expect(403);
+      expect(res.body).toHaveProperty("message");
+    });
+
+    it("GET /api/diensts/search con token admin devuelve 200 y array", async () => {
+      const res = await request(app)
+        .get(`${API}/diensts/search`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+      expect(Array.isArray(res.body)).toBe(true);
+    });
+
+    it("GET /api/diensts/search con dienstNumber devuelve 200", async () => {
+      const res = await request(app)
+        .get(`${API}/diensts/search?dienstNumber=1`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+      expect(Array.isArray(res.body)).toBe(true);
+    });
+  });
+
+  describe("Dienst - getAssignedDaysForUser", () => {
+    it("GET /api/diensts/assigned-days/:userId sin token devuelve 401", async () => {
+      await request(app)
+        .get(`${API}/diensts/assigned-days/${workerId}`)
+        .expect(401);
+    });
+
+    it("GET /api/diensts/assigned-days/:userId con userId inválido devuelve 400", async () => {
+      const res = await request(app)
+        .get(`${API}/diensts/assigned-days/id-invalido-xyz`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(400);
+      expect(res.body).toHaveProperty("message");
+      expect(res.body.message).toBe("ID inválido");
+    });
+
+    it("GET /api/diensts/assigned-days/:userId con userId válido devuelve 200 y array", async () => {
+      const res = await request(app)
+        .get(`${API}/diensts/assigned-days/${workerId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      if (res.body.length > 0) {
+        expect(res.body[0]).toHaveProperty("dienstId");
+        expect(res.body[0]).toHaveProperty("assignmentId");
+        expect(res.body[0]).toHaveProperty("date");
+        expect(res.body[0]).toHaveProperty("startTime");
+        expect(res.body[0]).toHaveProperty("endTime");
+      }
     });
   });
 });
