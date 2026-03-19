@@ -23,6 +23,7 @@ import {
   isOnSickDay,
 } from "../utils/dienstValidation";
 import { buildDienstSearchQuery } from "../utils/dienstQueryBuilder";
+import { mapAssignmentToAssignedDay } from "../utils/dienstMappers";
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
   message: "ID no válido",
@@ -393,51 +394,8 @@ export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
 
     diensts.forEach((dienst) => {
       dienst.assignments.forEach((assignment: any) => {
-        // saltar si este assignment no corresponde al usuario
-        const isDriver = assignment?.driver?._id?.toString() === userId;
-        const isMedic = assignment?.medic?._id?.toString() === userId;
-        if (!isDriver && !isMedic) return;
-
-        const ambulanceData = assignment?.ambulanceId ?? null;
-
-        const ambulanceId =
-          ambulanceData && typeof ambulanceData === "object"
-            ? ambulanceData._id?.toString()
-            : typeof ambulanceData === "string"
-              ? ambulanceData
-              : undefined;
-
-        const ambulanceNumber =
-          ambulanceData && typeof ambulanceData === "object"
-            ? ambulanceData.ambulanceNumber
-            : undefined;
-
-        assignedDays.push({
-          dienstId: dienst._id.toString(),
-          dienstNumber: dienst.dienstNumber,
-          assignmentId: assignment?._id?.toString(),
-          date: assignment?.date,
-          startTime: assignment?.startTime,
-          endTime: assignment?.endTime,
-          ambulanceId,
-          ambulanceNumber,
-          driver: assignment?.driver?._id
-            ? {
-                _id: assignment.driver._id.toString(),
-                name: assignment.driver.name,
-                lastName: assignment.driver.lastName,
-                pscheinExpiry: assignment.driver.pscheinExpiry,
-              }
-            : assignment?.driver || null,
-          medic: assignment?.medic?._id
-            ? {
-                _id: assignment.medic._id.toString(),
-                name: assignment.medic.name,
-                lastName: assignment.medic.lastName,
-                pscheinExpiry: assignment.medic.pscheinExpiry,
-              }
-            : assignment?.medic || null,
-        });
+        const mapped = mapAssignmentToAssignedDay(assignment, dienst, userId);
+        if (mapped) assignedDays.push(mapped);
       });
     });
 
