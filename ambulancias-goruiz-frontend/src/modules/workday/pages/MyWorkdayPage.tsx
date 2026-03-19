@@ -45,6 +45,7 @@ import {
   clearAmbulanceData,
   confirmedAmbulanceKey,
   validateClosureData,
+  getWorkdayViewState,
 } from "../utils";
 
 import {
@@ -160,6 +161,12 @@ const MyWorkday = () => {
 
   const [issueData, setIssueData] = useState<any | null>(null);
   const navigate = useNavigate();
+
+  const viewState = getWorkdayViewState({
+    isClosingDay,
+    assignedDay,
+    canStartWork,
+  });
 
   const handleConfirmAmbulanceData = () => {
     if (!ambulanceId || !initialAmbulanceKm) {
@@ -581,19 +588,22 @@ const MyWorkday = () => {
         )}
       </div>
 
-      {isClosingDay ? (
+      {viewState === "closed" && (
         <div className="mb-6 rounded-xl bg-red-50 text-red-700 ring-1 ring-red-200 p-4">
           {t("pages.workday.closedDay")}
         </div>
-      ) : !assignedDay ? (
+      )}
+      {viewState === "no_assignment" && (
         <div className="mb-6 rounded-xl bg-yellow-50 text-yellow-800 ring-1 ring-yellow-200 p-4">
           {t("pages.workday.noAssignment")}
         </div>
-      ) : !canStartWork ? (
+      )}
+      {viewState === "cant_start" && assignedDay && (
         <div className="mb-6 rounded-xl bg-blue-50 text-blue-800 ring-1 ring-blue-200 p-4">
           {t("pages.workday.cantStart", { start: assignedDay.startTime })}
         </div>
-      ) : (
+      )}
+      {viewState === "ready" && (
         <>
           {assignedDay && (
             <WorkdayTripEntry
