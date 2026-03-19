@@ -1,5 +1,5 @@
 // frontend/src/pages/AdminVacationsPage.tsx
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   getVacationRequests,
   updateVacationRequest,
@@ -16,7 +16,7 @@ import { emitVacationRequestsUpdated } from "../utils/vacationEvents";
 import PageShell from "../../../components/common/PageShell";
 import AdminActionableVacationRequestsTable from "../components/AdminActionableVacationRequestsTable";
 import { useVacationMonthGridRefresh } from "../hooks/useVacationMonthGridRefresh";
-
+import { useAdminAlternativeModal } from "../hooks/useAdminAlternativeModal";
 
 // Nombre del evento global para refrescar el badge del Dashboard
 const ADMIN_VACATIONS_CHANGED_EVENT = "admin-vacations-changed";
@@ -35,19 +35,6 @@ const AdminVacationRequests = () => {
   // ====== Estado del modal del mes (abrir con mes + año correctos) ======
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null); // 0..11
   const [selectedYear, setSelectedYear] = useState<number>(gridYear);
-
-
-  // ====== Estado para modal de opción alternativa (admin) ======
-  const [isAltModalOpen, setIsAltModalOpen] = useState(false);
-  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
-
-  // mes/año visible del modal (para flechas)
-  const [altMonthIndex, setAltMonthIndex] = useState<number | null>(null);
-  const [altYear, setAltYear] = useState<number>(new Date().getFullYear());
-
-  // inicial del rango (para abrir preseleccionado)
-  const [altInitialStart, setAltInitialStart] = useState<Date | undefined>(undefined);
-  const [altInitialEnd, setAltInitialEnd] = useState<Date | undefined>(undefined);
 
   const [cancelingRequestId, setCancelingRequestId] = useState<string | null>(
     null,
@@ -81,6 +68,51 @@ const AdminVacationRequests = () => {
   const actionableRequests = requests.filter(
     (r) => r.status === "pending" || r.status === "option_sent",
   );
+
+  const handleSendAlternativeOption = useCallback(
+    async (
+      id: string,
+      adminOptionStartDate: string,
+      adminOptionEndDate: string,
+      adminNote: string,
+    ) => {
+      if (!token) return;
+
+      await toastT.promise(
+        updateVacationRequest(id, {
+          status: "option_sent",
+          adminOptionStartDate,
+          adminOptionEndDate,
+          adminNote,
+        }),
+        {
+          pending: ["toasts.vacations.admin.sendingAlt"],
+          success: ["toasts.vacations.admin.altSent"],
+          error: ["toasts.vacations.admin.error"],
+        },
+      );
+
+      const req = requests.find((r) => r._id === id);
+      if (req) {
+        invalidateAvailabilityForRange(req.startDate, req.endDate);
+      }
+      invalidateAvailabilityForRange(adminOptionStartDate, adminOptionEndDate);
+
+      emitVacationRequestsUpdated({
+        type: "updated",
+        id,
+        status: "option_sent",
+      });
+      notifyVacationsChanged();
+      fetchRequests();
+    },
+    [token, requests, fetchRequests],
+  );
+
+  const { openAlternativeModal, modalProps: alternativeModalProps } =
+    useAdminAlternativeModal({
+      onSendAlternative: handleSendAlternativeOption,
+    });
 
   const handleUpdateStatus = async (id: string, status: VacationStatus) => {
     if (!token) return;
@@ -193,56 +225,6 @@ const AdminVacationRequests = () => {
     }
   };
 
-  const handleSendAlternativeOption = async (
-    id: string,
-    adminOptionStartDate: string,
-    adminOptionEndDate: string,
-    adminNote: string,
-  ) => {
-    if (!token) return;
-
-    try {
-      await toastT.promise(
-        updateVacationRequest(id, {
-          status: "option_sent",
-          adminOptionStartDate,
-          adminOptionEndDate,
-          adminNote,
-        }),
-        {
-          pending: ["toasts.vacations.admin.sendingAlt"],
-          success: ["toasts.vacations.admin.altSent"],
-          error: ["toasts.vacations.admin.error"],
-        },
-      );
-
-      // 🟢 Invalidar disponibilidad:
-      // - rango original (por estado/bordes)
-      // - rango propuesto (por capacidad/bloqueos si tu availability lo considera)
-      const req = requests.find((r) => r._id === id);
-      if (req) {
-        invalidateAvailabilityForRange(req.startDate, req.endDate);
-      }
-      invalidateAvailabilityForRange(adminOptionStartDate, adminOptionEndDate);
-
-      // 🔔 Sync Worker + otras pestañas (evento global)
-      emitVacationRequestsUpdated({
-        type: "updated",
-        id,
-        status: "option_sent",
-      });
-
-      // 🔔 Notificar al Dashboard
-      notifyVacationsChanged();
-
-      // 🔄 Refrescar lista del Admin
-      fetchRequests();
-
-    } catch {
-      // el error ya se muestra por toast
-    }
-  };
-
   const handleConfirmCancel = async (id: string) => {
     if (!token) return;
     setIsSendingCancel(true);
@@ -285,28 +267,6 @@ const AdminVacationRequests = () => {
       setIsSendingCancel(false);
     }
   };
-
-  const openAlternativeModal = async (
-    reqId: string,
-    startDate: string,
-    endDate: string,
-  ) => {
-    setCurrentRequestId(reqId);
-
-    const s = new Date(startDate);
-    const e = new Date(endDate);
-
-    // abrir en el mes del start (como UX natural)
-    setAltMonthIndex(s.getMonth());
-    setAltYear(s.getFullYear());
-
-    // preselección del rango original
-    setAltInitialStart(s);
-    setAltInitialEnd(e);
-
-    setIsAltModalOpen(true);
-  };
-
 
   return (
     <PageShell
@@ -382,25 +342,7 @@ const AdminVacationRequests = () => {
         )}
 
 
-        {/* AdminAlternativeOptionModal (mismo estilo que tus modales) */}
-        <AdminAlternativeOptionModal
-          isOpen={isAltModalOpen}
-          monthIndex={altMonthIndex}
-          year={altYear}
-          onClose={() => setIsAltModalOpen(false)}
-          initialStartDate={altInitialStart}
-          initialEndDate={altInitialEnd}
-          onNavigateMonth={(next) => {
-            setAltYear(next.year);
-            setAltMonthIndex(next.monthIndex);
-          }}
-          onSubmit={({ startISO, endISO, adminNote }) => {
-            if (currentRequestId) {
-              handleSendAlternativeOption(currentRequestId, startISO, endISO, adminNote);
-            }
-            setIsAltModalOpen(false);
-          }}
-        />
+        <AdminAlternativeOptionModal {...alternativeModalProps} />
 
       </div>
     </PageShell>

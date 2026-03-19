@@ -1,3 +1,4 @@
+export { useAdminAlternativeModal } from "./useAdminAlternativeModal";
 export { default as useAdminVacationsPendingCount } from "./useAdminVacationsPendingCount";
 export * from "./useVacationAvailabilityInvalidation";
 export * from "./useVacationMonthGridRefresh";
