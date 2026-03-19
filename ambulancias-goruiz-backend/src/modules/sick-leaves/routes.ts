@@ -2,11 +2,13 @@ import express from "express";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
 import { upload } from "../../middlewares/uploadMiddleware";
+import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import {
   createSickLeave,
   acceptSickLeave,
   rejectSickLeave,
+  sickLeaveCreateSchema,
 } from "./controllers/sick-leaves-write.controller";
 import {
   attachSickDocument,
@@ -20,7 +22,7 @@ import {
 
 const router = express.Router();
 
-router.post("/", authenticateToken, createSickLeave);
+router.post("/", authenticateToken, validateBody(sickLeaveCreateSchema), createSickLeave);
 
 router.get("/", authenticateToken, authorizeRole("admin"), listSickLeaves);
 

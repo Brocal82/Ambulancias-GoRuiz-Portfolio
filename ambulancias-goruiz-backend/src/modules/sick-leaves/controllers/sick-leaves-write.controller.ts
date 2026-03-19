@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import { z, ZodError } from "zod";
+import { z } from "zod";
 import SickLeave from "../models/sick-leave.model";
 import { toBerlinDay } from "../utils/sick-date.helpers";
 import { acceptSickLeaveWorkflow } from "../services/sick-acceptance.service";
@@ -15,13 +15,15 @@ const createSchema = z.object({
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   note: z.string().max(1000).optional(),
   documentUrl: z.string().url().optional(),
+  user: z.string().optional(), // admin creando para otro usuario
 });
+
+export const sickLeaveCreateSchema = createSchema;
 
 export async function createSickLeave(req: Request, res: Response) {
   try {
-    const parsed = createSchema.parse(req.body);
-
-    const userId = req.userId || (req.body.user as string | undefined);
+    const parsed = req.body as z.infer<typeof createSchema>;
+    const userId = req.userId || parsed.user;
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       res.status(400).json({ message: "Usuario no v\u00E1lido" });
       return;
@@ -49,10 +51,6 @@ export async function createSickLeave(req: Request, res: Response) {
 
     res.status(201).json(doc);
   } catch (err) {
-    if (err instanceof ZodError) {
-      res.status(400).json({ message: "Datos inv\u00E1lidos", errors: err.errors });
-      return;
-    }
     console.error("\u274C createSickLeave error:", err);
     res.status(500).json({ message: "Error al crear la baja" });
   }
