@@ -1,4 +1,42 @@
-import { mapAssignmentToAssignedDay } from "../utils/dienstMappers";
+import {
+  extractValidDatesFromAssignments,
+  mapAssignmentToAssignedDay,
+} from "../utils/dienstMappers";
+
+describe("extractValidDatesFromAssignments", () => {
+  it("returns empty array when assignments is null or undefined", () => {
+    expect(extractValidDatesFromAssignments(null)).toEqual([]);
+    expect(extractValidDatesFromAssignments(undefined)).toEqual([]);
+  });
+
+  it("returns empty array when assignments is empty", () => {
+    expect(extractValidDatesFromAssignments([])).toEqual([]);
+  });
+
+  it("returns unique dates for valid assignments", () => {
+    const assignments = [
+      { date: "2024-01-15", startTime: "08:00", endTime: "16:00" },
+      { date: "2024-01-16", startTime: "08:00", endTime: "16:00" },
+      { date: "2024-01-15", startTime: "09:00", endTime: "17:00" },
+    ];
+    expect(extractValidDatesFromAssignments(assignments)).toEqual([
+      "2024-01-15",
+      "2024-01-16",
+    ]);
+  });
+
+  it("filters out assignments missing date, startTime or endTime", () => {
+    const assignments = [
+      { date: "2024-01-15", startTime: "08:00", endTime: "16:00" },
+      { date: "2024-01-16", startTime: "08:00" },
+      { date: "2024-01-17", endTime: "16:00" },
+      { startTime: "08:00", endTime: "16:00" },
+    ];
+    expect(extractValidDatesFromAssignments(assignments)).toEqual([
+      "2024-01-15",
+    ]);
+  });
+});
 
 describe("mapAssignmentToAssignedDay", () => {
   const dienst = {

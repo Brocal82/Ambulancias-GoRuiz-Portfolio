@@ -23,7 +23,10 @@ import {
   isOnSickDay,
 } from "../utils/dienstValidation";
 import { buildDienstSearchQuery } from "../utils/dienstQueryBuilder";
-import { mapAssignmentToAssignedDay } from "../utils/dienstMappers";
+import {
+  extractValidDatesFromAssignments,
+  mapAssignmentToAssignedDay,
+} from "../utils/dienstMappers";
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
   message: "ID no válido",
@@ -1032,13 +1035,7 @@ export const assignTeamToWeek = async (
     }
 
     // ✅ Si NO hay conflictos, aplicamos (parcial solo por vacaciones)
-    const dates = Array.from(
-      new Set(
-        (dienst.assignments || [])
-          .filter((a) => a?.date && a?.startTime && a?.endTime)
-          .map((a) => a.date),
-      ),
-    );
+    const dates = extractValidDatesFromAssignments(dienst.assignments);
 
     // 🩺 Bloqueos por día: vacaciones o baja (sick)
     const dayBlockMap = await computeDayBlockMapForTeam({
@@ -1202,13 +1199,7 @@ export const assignUserToWeek = async (
     }
 
     // 📅 Días válidos (tienen date/start/end)
-    const dates = Array.from(
-      new Set(
-        (dienst.assignments || [])
-          .filter((a) => a?.date && a?.startTime && a?.endTime)
-          .map((a) => a.date),
-      ),
-    );
+    const dates = extractValidDatesFromAssignments(dienst.assignments);
 
     // 🗓️ Mapas separados para distinguir vacaciones vs baja
     const vacationMap: Record<string, boolean> = {};

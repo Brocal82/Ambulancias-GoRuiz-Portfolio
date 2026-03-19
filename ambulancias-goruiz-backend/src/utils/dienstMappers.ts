@@ -1,6 +1,22 @@
 import type { AssignedDay } from "../types/Dienst";
 
 /**
+ * Extrae fechas únicas (YYYY-MM-DD) de assignments que tienen date, startTime y endTime.
+ */
+export function extractValidDatesFromAssignments(
+  assignments: Array<{ date?: unknown; startTime?: unknown; endTime?: unknown }> | null | undefined,
+): string[] {
+  const list = assignments ?? [];
+  return Array.from(
+    new Set(
+      list
+        .filter((a) => a?.date && a?.startTime && a?.endTime)
+        .map((a) => a.date as string),
+    ),
+  );
+}
+
+/**
  * Convierte un assignment poblado + dienst en AssignedDay si el usuario
  * coincide como driver o medic. Si no coincide, retorna null.
  */
