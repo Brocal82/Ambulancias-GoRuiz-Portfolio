@@ -14,7 +14,8 @@ if (!fs.existsSync(envPath)) {
   console.error("Los tests requieren un entorno de pruebas explícito.");
   console.error("Copia .env.test.example a .env.test y configura MONGODB_URI y JWT_SECRET.");
   console.error("");
-  console.error("  cp .env.test.example .env.test");
+  console.error("  macOS/Linux:  cp .env.test.example .env.test");
+  console.error("  PowerShell:   Copy-Item .env.test.example .env.test");
   console.error("");
   process.exit(1);
 }
