@@ -4,7 +4,7 @@ import express from "express";
 import {
   DienstAssignments,
   DienstCalendar,
-  DienstTemplates,
+  DienstLifecycle,
 } from "../modules/diensts";
 import { dienstTemplateRoutes } from "../modules/dienst-templates";
 
@@ -15,7 +15,7 @@ import { validateObjectId } from "../middlewares/validateObjectId";
 const router = express.Router();
 
 // 👮‍♂️ Rutas protegidas
-router.post("/", authenticateToken, authorizeRole("admin"), DienstTemplates.createDienst);
+router.post("/", authenticateToken, authorizeRole("admin"), DienstLifecycle.createDienst);
 router.get("/", authenticateToken, authorizeRole("admin"), DienstCalendar.getAllDiensts);
 router.get("/search", authenticateToken, authorizeRole("admin"), DienstCalendar.searchDienst);
 router.get(
@@ -37,13 +37,13 @@ router.post(
   "/generate-week",
   authenticateToken,
   authorizeRole("admin"),
-  DienstTemplates.generateDienstTemplatesForWeek,
+  DienstLifecycle.generateDienstTemplatesForWeek,
 );
 router.post(
   "/delete-week",
   authenticateToken,
   authorizeRole("admin"),
-  DienstTemplates.deleteDienstsForWeek,
+  DienstLifecycle.deleteDienstsForWeek,
 );
 
 // 📌 Rutas para plantillas de Dienst (solo admin) — las dejamos legacy por ahora
@@ -56,7 +56,7 @@ router.put(
   authenticateToken,
   authorizeRole("admin"),
   validateObjectId("id"),
-  DienstTemplates.updateDienst,
+  DienstLifecycle.updateDienst,
 );
 
 // ✅ Nueva ruta para eliminar un assignment específico
@@ -80,7 +80,7 @@ router.delete(
   authenticateToken,
   authorizeRole("admin"),
   validateObjectId("id"),
-  DienstTemplates.deleteDienst,
+  DienstLifecycle.deleteDienst,
 );
 
 // Asignar un Team completo a todos los días de una semana (solo admin)

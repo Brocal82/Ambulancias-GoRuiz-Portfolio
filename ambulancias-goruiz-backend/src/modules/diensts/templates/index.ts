@@ -1,16 +1,8 @@
 // backend/src/modules/diensts/templates/index.ts
 /**
- * TEMPORARY compatibility layer for the diensts module.
- *
- * This slice no longer represents DienstTemplate CRUD ownership.
- * Real template definition and CRUD ownership now lives in the
- * `dienst-templates` module.
- *
- * For now, this folder only re-exports legacy Dienst lifecycle and
- * week-generation behavior that is still owned by `diensts`.
- *
- * It should be refactored or removed in a future migration of the
- * `diensts` module.
+ * Ciclo de vida de instancias Dienst (create, update, delete, generate-week, delete-week).
+ * NO son plantillas: las plantillas reales (DienstTemplate) viven en `dienst-templates`.
+ * Carpeta "templates" se mantiene por compatibilidad; el export público es DienstLifecycle.
  */
 
 export { deleteDienstsForWeek } from "./controllers/delete-diensts-for-week.controller";
