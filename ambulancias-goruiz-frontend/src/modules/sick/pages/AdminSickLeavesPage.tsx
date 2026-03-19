@@ -142,11 +142,9 @@ export default function AdminSickLeavesPage() {
       await adminAcceptSickLeave(id);
       toastT.success(["pages.sick.admin.acceptOk"]);
       setRefreshKey((k) => k + 1);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toastT.error([
-        err?.response?.data?.message || "pages.sick.admin.acceptErr",
-      ]);
+      toastT.apiError(err, ["pages.sick.admin.acceptErr"]);
     }
   };
 
@@ -160,11 +158,9 @@ export default function AdminSickLeavesPage() {
       await adminRejectSickLeave(id);
       toastT.success(["pages.sick.admin.rejectOk"]);
       setRefreshKey((k) => k + 1);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toastT.error([
-        err?.response?.data?.message || "pages.sick.admin.rejectErr",
-      ]);
+      toastT.apiError(err, ["pages.sick.admin.rejectErr"]);
     }
   };
 

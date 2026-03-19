@@ -42,7 +42,7 @@ const AdminHospitalsPage = () => {
         setHospitals(data);
       } catch (error) {
         console.error(error);
-        toastT.error(["toasts.hospitals.loadError"]);
+        toastT.apiError(error, ["toasts.hospitals.loadError"]);
       }
     };
 
@@ -86,7 +86,7 @@ const AdminHospitalsPage = () => {
       toastT.success(["toasts.hospitals.stateUpdated"]);
     } catch (error) {
       console.error(error);
-      toastT.error(["toasts.hospitals.stateUpdateError"]);
+      toastT.apiError(error, ["toasts.hospitals.stateUpdateError"]);
     }
   };
 
@@ -103,7 +103,7 @@ const AdminHospitalsPage = () => {
       toastT.success(["toasts.hospitals.deleteSuccess"]);
     } catch (error) {
       console.error(error);
-      toastT.error(["toasts.hospitals.deleteError"]);
+      toastT.apiError(error, ["toasts.hospitals.deleteError"]);
     }
   };
 
@@ -145,7 +145,7 @@ const AdminHospitalsPage = () => {
               setShowForm(false);
             } catch (error) {
               console.error(error);
-              toastT.error(["toasts.hospitals.addError"]);
+              toastT.apiError(error, ["toasts.hospitals.addError"]);
             }
           }}
         />
@@ -189,7 +189,7 @@ const AdminHospitalsPage = () => {
               toastT.success(["toasts.hospitals.updateOk"]);
             } catch (error) {
               console.error("❌ Error al actualizar hospital:", error);
-              toastT.error(["toasts.hospitals.updateErr"]);
+              toastT.apiError(error, ["toasts.hospitals.updateErr"]);
             }
           }}
         />

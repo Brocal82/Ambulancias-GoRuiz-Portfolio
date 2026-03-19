@@ -30,7 +30,7 @@ const WorkerHospitalsPage = () => {
         setHospitals(data);
       } catch (error) {
         console.error("Error al cargar hospitales:", error);
-        toastT.error(["toasts.hospitals.loadError"]);
+        toastT.apiError(error, ["toasts.hospitals.loadError"]);
       }
     };
 

@@ -41,11 +41,9 @@ export default function AdminUserSickLeavesTab({ userId }: Props) {
         return uid === userId;
       });
       setItems(filtered);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toastT.error([
-        err?.response?.data?.message || "pages.sick.admin.listError",
-      ]);
+      toastT.apiError(err, ["pages.sick.admin.listError"]);
     } finally {
       setLoading(false);
     }

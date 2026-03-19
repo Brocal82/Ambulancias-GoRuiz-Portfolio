@@ -120,10 +120,9 @@ export default function WorkerSickLeavesPage() {
 
       // 5) Refrescar listado
       await loadList();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      const msg = err?.response?.data?.message || "pages.sick.create.error";
-      toastT.error([msg]);
+      toastT.apiError(err, ["pages.sick.create.error"]);
     } finally {
       setIsCreatingUpload(false);
       setLoading(false);
@@ -147,11 +146,9 @@ export default function WorkerSickLeavesPage() {
       });
       toastT.success(["pages.sick.attachDoc.ok"]);
       await loadList();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toastT.error([
-        err?.response?.data?.message || "pages.sick.attachDoc.error",
-      ]);
+      toastT.apiError(err, ["pages.sick.attachDoc.error"]);
     } finally {
       setUploadingIds((prev) => {
         const next = new Set(prev);
