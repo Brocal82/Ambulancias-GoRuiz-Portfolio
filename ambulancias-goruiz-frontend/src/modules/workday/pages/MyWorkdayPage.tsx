@@ -430,15 +430,9 @@ const MyWorkday = () => {
       closeReviewModal();
       clearAmbulanceData(assignedDay.assignmentId);
       navigate("/worker");
-    } catch (err: any) {
-      console.error(" Error al cerrar el día:", {
-        status: err?.response?.status,
-        message: err?.response?.data?.message,
-        data: err?.response?.data,
-      });
-      toastT.error([
-        err?.response?.data?.message || "toasts.workday.dayCloseError",
-      ]);
+    } catch (err: unknown) {
+      console.error(" Error al cerrar el día:", err);
+      toastT.apiError(err, ["toasts.workday.dayCloseError"]);
     }
   };
 
@@ -506,15 +500,9 @@ const MyWorkday = () => {
       setVehicleConfirmed(false);
 
       navigate("/worker");
-    } catch (err: any) {
-      console.error(" Error al enviar cierre parcial:", {
-        status: err?.response?.status,
-        message: err?.response?.data?.message,
-        data: err?.response?.data,
-      });
-      toastT.error([
-        err?.response?.data?.message || "toasts.workday.partialSendError",
-      ]);
+    } catch (err: unknown) {
+      console.error(" Error al enviar cierre parcial:", err);
+      toastT.apiError(err, ["toasts.workday.partialSendError"]);
     }
   };
 
