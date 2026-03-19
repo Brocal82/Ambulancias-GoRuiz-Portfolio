@@ -13,10 +13,10 @@
  * `diensts` module.
  */
 
+export { deleteDienstsForWeek } from "./controllers/delete-diensts-for-week.controller";
 export {
   createDienst,
   updateDienst,
   deleteDienst,
   generateDienstTemplatesForWeek,
-  deleteDienstsForWeek,
 } from "../../../controllers/dienstController";
