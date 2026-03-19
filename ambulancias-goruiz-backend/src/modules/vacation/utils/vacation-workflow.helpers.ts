@@ -32,7 +32,7 @@ export function parseVacationUpdateAuthorization(
     forceRaw === 1 ||
     forceRaw === "1";
 
-  const roleFromMiddleware = (req as any).userRole as string | undefined;
+  const roleFromMiddleware = req.userRole;
   const roleFromReqUser = req.user?.role;
   const isAdmin = roleFromMiddleware === "admin" || roleFromReqUser === "admin";
   const canForceAccept = force && isAdmin;

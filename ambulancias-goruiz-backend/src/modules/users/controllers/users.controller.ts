@@ -272,7 +272,11 @@ export const uploadUserFiles = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ message: "No autorizado" });
+      return;
+    }
     const files = req.files as {
       [fieldname: string]: Express.Multer.File[];
     };
@@ -340,7 +344,11 @@ export const deleteUserDocument = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ message: "No autorizado" });
+      return;
+    }
     const { filePath } = req.body;
 
     if (!filePath) {

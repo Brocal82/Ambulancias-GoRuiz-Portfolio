@@ -40,7 +40,7 @@ export const requestAppointment = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const workerId = (req as any).userId as string;
+    const workerId = req.userId as string;
     const { reason, details } = req.body as {
       reason?: string;
       details?: string;
@@ -75,7 +75,7 @@ export const getMyAppointments = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const workerId = (req as any).userId as string;
+    const workerId = req.userId as string;
 
     const items = await Appointment.find({ workerId }).sort({ createdAt: -1 });
 
@@ -131,7 +131,7 @@ export const proposeSlots = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const adminId = (req as any).userId as string;
+    const adminId = req.userId as string;
     const { id } = req.params;
     const { proposedSlots } = req.body as {
       proposedSlots: { start: string; end: string }[];
@@ -180,7 +180,7 @@ export const selectSlot = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const workerId = (req as any).userId as string;
+    const workerId = req.userId as string;
     const { id } = req.params;
     const { selectedSlot } = req.body as {
       selectedSlot: { start: string; end: string };
@@ -279,7 +279,7 @@ export const updateAppointment = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const adminId = (req as any).userId as string;
+    const adminId = req.userId as string;
     const { id } = req.params;
     const { reason, details, selectedSlot } = req.body as {
       reason?: string;
@@ -332,7 +332,7 @@ export const cancelAppointment = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const adminId = (req as any).userId as string;
+    const adminId = req.userId as string;
     const { id } = req.params;
 
     const appointment = await Appointment.findById(id);
@@ -357,7 +357,7 @@ export const deleteMyAppointment = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const workerId = (req as any).userId as string;
+    const workerId = req.userId as string;
     const { id } = req.params;
 
     const appointment = await Appointment.findById(id);

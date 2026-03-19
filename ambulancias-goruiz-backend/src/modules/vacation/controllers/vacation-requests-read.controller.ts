@@ -23,7 +23,11 @@ export const getUserVacationRequests = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ message: "No autorizado" });
+      return;
+    }
     const requests = await getVacationRequestsForUser(userId);
     res.status(200).json(requests);
   } catch (error) {

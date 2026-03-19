@@ -22,7 +22,7 @@ export async function attachSickDocument(req: Request, res: Response) {
 
     const authId = getAuthUserId(req);
     const isAdmin =
-      (req as any)?.user?.role === "admin" || (req as any)?.role === "admin";
+      req.user?.role === "admin" || req.userRole === "admin";
 
     const sick = await getSickLeaveDocumentTarget(id);
     if (!sick) {
@@ -93,7 +93,7 @@ export async function attachSickDocumentFile(req: Request, res: Response) {
 
     const authId = getAuthUserId(req);
     const isAdmin =
-      (req as any)?.user?.role === "admin" || (req as any)?.role === "admin";
+      req.user?.role === "admin" || req.userRole === "admin";
 
     const sick = await getSickLeaveDocumentTarget(id);
     if (!sick) {

@@ -8,7 +8,7 @@ export const getMonthlyPraemienSummary = async (
 ): Promise<void> => {
   try {
     const userIdFromQuery = req.query.userId as string | undefined;
-    const userId = userIdFromQuery || (req as any).userId;
+    const userId = userIdFromQuery || req.userId;
 
     if (!userId) {
       res.status(401).json({ message: "No autorizado" });
@@ -29,7 +29,7 @@ export const getPraemienMonthlyHistory = async (
 ): Promise<void> => {
   try {
     const userIdFromQuery = req.query.userId as string | undefined;
-    const userId = userIdFromQuery || (req as any).userId;
+    const userId = userIdFromQuery || req.userId;
 
     if (!userId) {
       res.status(401).json({ message: "No autorizado" });

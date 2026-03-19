@@ -11,7 +11,11 @@ export const respondToAlternativeDate = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ message: "No autorizado" });
+      return;
+    }
     const { id } = req.params;
     const { accept } = req.body;
 

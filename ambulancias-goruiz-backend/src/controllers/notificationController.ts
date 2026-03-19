@@ -18,8 +18,8 @@ export const getNotifications = async (
 ): Promise<void> => {
   try {
     // Tu middleware guarda en req.userId y req.userRole
-    const authUserId = (req as any).userId as string | undefined;
-    const authUserRole = (req as any).userRole as Role | undefined;
+    const authUserId = req.userId;
+    const authUserRole = req.userRole as Role | undefined;
 
     const queryUserId = (req.query.userId as string) || authUserId;
     const queryRole = (req.query.role as Role) || authUserRole;
@@ -131,8 +131,8 @@ export const patchNotificationRead = async (
       return;
     }
 
-    const userId = (req as any).userId as string | undefined;
-    const userRole = (req as any).userRole as Role | undefined;
+    const userId = req.userId;
+    const userRole = req.userRole as Role | undefined;
 
     const filter: any = { _id: new mongoose.Types.ObjectId(id) };
     if (userId && mongoose.Types.ObjectId.isValid(userId)) {

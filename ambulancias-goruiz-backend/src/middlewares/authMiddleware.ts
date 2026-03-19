@@ -27,10 +27,10 @@ export const authenticateToken = (
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
 
-    (req as any).userId = decoded.userId;
-    (req as any).userRole = decoded.role;
+    req.userId = decoded.userId;
+    req.userRole = decoded.role;
 
-    // ✅ Compatibilidad: además de userId/userRole, rellenamos req.user
+    // Compatibilidad: además de userId/userRole, rellenamos req.user
     req.user = {
       id: decoded.userId,
       email: "",

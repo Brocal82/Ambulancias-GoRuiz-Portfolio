@@ -12,7 +12,7 @@ export const createMessage = async (
   res: Response,
 ): Promise<void> => {
   const { subject, body } = req.body;
-  const senderId = (req as any).userId;
+  const senderId = req.userId;
 
   // 🔹 Normalizar toAllWorkers: puede venir como boolean (JSON) o string (multipart)
   const rawToAll = (req.body as any).toAllWorkers;
@@ -143,7 +143,7 @@ export const getMyMessages = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  const userId = new mongoose.Types.ObjectId((req as any).userId as string);
+  const userId = new mongoose.Types.ObjectId(req.userId as string);
   // default: true → solo no leídos (comportamiento previo)
   const unreadOnly =
     (req.query.unreadOnly as string | undefined)?.toLowerCase() === "false"
@@ -179,7 +179,7 @@ export const getSentMessages = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  const adminId = (req as any).userId;
+  const adminId = req.userId;
 
   try {
     const messages = await Message.find({
@@ -201,7 +201,7 @@ export const getMessagesForUserAsAdmin = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  const adminId = (req as any).userId as string;
+  const adminId = req.userId as string;
   const { id } = req.params; // 👈 usamos "id" porque la ruta es /user/:id
 
   try {
@@ -226,7 +226,7 @@ export const deleteMessageForUser = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  const userId = new mongoose.Types.ObjectId((req as any).userId as string);
+  const userId = new mongoose.Types.ObjectId(req.userId as string);
   const messageId = req.params.id;
 
   try {
@@ -263,7 +263,7 @@ export const deleteMessageByAdmin = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  const adminId = (req as any).userId as string;
+  const adminId = req.userId as string;
   const { id } = req.params;
 
   try {
@@ -295,7 +295,7 @@ export const markMessageAsRead = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  const userId = new mongoose.Types.ObjectId((req as any).userId as string);
+  const userId = new mongoose.Types.ObjectId(req.userId as string);
   const { id } = req.params;
 
   try {
