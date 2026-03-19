@@ -68,11 +68,7 @@ export const useSendMessage = (config?: UseSendMessageConfig) => {
       return { ok: true };
     } catch (error) {
       console.error("❌ Error al enviar mensaje:", error);
-      const msg =
-        (error as any)?.response?.data?.message ||
-        (t("toasts.messages.error") as string) ||
-        "Error sending the message";
-      toastT.error(msg);
+      toastT.apiError(error, t("toasts.messages.error") || "Error al enviar mensaje");
       return { ok: false, error };
     } finally {
       setLoading(false);

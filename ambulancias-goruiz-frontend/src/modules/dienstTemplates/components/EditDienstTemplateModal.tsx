@@ -6,6 +6,7 @@ import {
   type DienstTemplateInput,
 } from "../domain/api";
 
+import { getApiErrorMessage } from "../../../utils/toast";
 import CancelButton from "../../../components/common/actions/CancelButton";
 import SaveIconButton from "../../../components/common/actions/SaveIconButton";
 
@@ -125,12 +126,11 @@ const EditDienstTemplateModal: React.FC<Props> = ({
       const updated = await updateDienstTemplate(template._id, payload);
       onSaved(updated);
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error al actualizar plantilla de Dienst:", err);
-      const msg =
-        err?.response?.data?.message ||
-        "Error al actualizar la plantilla de Dienst";
-      setError(msg);
+      setError(
+        getApiErrorMessage(err, "Error al actualizar la plantilla de Dienst"),
+      );
     } finally {
       setSaving(false);
     }

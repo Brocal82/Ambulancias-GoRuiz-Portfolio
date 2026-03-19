@@ -6,6 +6,7 @@ import {
   type DienstTemplateInput,
 } from "../domain/api";
 
+import { getApiErrorMessage } from "../../../utils/toast";
 import CancelButton from "../../../components/common/actions/CancelButton";
 import SaveIconButton from "../../../components/common/actions/SaveIconButton";
 
@@ -110,11 +111,9 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
       setPerDaySchedule(buildDefaultPerDayRows("06:00", "14:00"));
 
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error al crear plantilla de Dienst:", err);
-      const msg =
-        err?.response?.data?.message || "Error al crear la plantilla de Dienst";
-      setError(msg);
+      setError(getApiErrorMessage(err, "Error al crear la plantilla de Dienst"));
     } finally {
       setSaving(false);
     }

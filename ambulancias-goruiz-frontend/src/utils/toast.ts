@@ -37,18 +37,33 @@ const withDefaults = (opts?: ToastOptions): ToastOptions => ({
   ...(opts ?? {}),
 });
 
-// Normaliza errores desconocidos a un string presentable
-function normalizeErrorMessage(
+/**
+ * Extrae mensaje de error de forma consistente.
+ * Soporta: axios (response.data.message), Error.message, objetos con message/error.
+ * Reutilizable en catch blocks y para setError en formularios.
+ */
+export function getApiErrorMessage(
   err: unknown,
-  fallback: Msg = k("toasts.common.error"),
+  fallback: Msg = "Ha ocurrido un error",
 ): string {
   if (typeof err === "string") return err;
   if (err && typeof err === "object") {
+    const ax = err as { response?: { data?: { message?: unknown } } };
+    if (typeof ax?.response?.data?.message === "string")
+      return ax.response.data.message;
     const anyErr = err as { message?: unknown; error?: unknown };
     if (typeof anyErr.message === "string") return anyErr.message;
     if (typeof anyErr.error === "string") return anyErr.error;
   }
   return resolveMessage(fallback);
+}
+
+// Normaliza errores desconocidos a un string presentable (usa getApiErrorMessage)
+function normalizeErrorMessage(
+  err: unknown,
+  fallback: Msg = "Ha ocurrido un error",
+): string {
+  return getApiErrorMessage(err, fallback);
 }
 
 export const toastT = {
@@ -87,4 +102,14 @@ export const toastT = {
   // Facilita toastear errores desconocidos (try/catch)
   fromError: (err: unknown, opts?: ToastOptions) =>
     rawToast.error(normalizeErrorMessage(err), withDefaults(opts)),
+
+  /**
+   * Toast de error a partir de un error de API.
+   * Muestra response.data.message si existe, sino el fallback (i18n o string).
+   */
+  apiError: (err: unknown, fallback?: Msg, opts?: ToastOptions) =>
+    rawToast.error(
+      getApiErrorMessage(err, fallback ?? "Ha ocurrido un error"),
+      withDefaults(opts),
+    ),
 };
