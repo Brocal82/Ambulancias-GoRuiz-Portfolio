@@ -21,6 +21,7 @@ import {
   isOnVacationDay,
   isOnSickDay,
 } from "../utils/dienstValidation";
+import { buildDienstSearchQuery } from "../utils/dienstQueryBuilder";
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
   message: "ID no válido",
@@ -324,28 +325,7 @@ export const deleteDienst = async (req: Request, res: Response) => {
 export const searchDienst = async (req: Request, res: Response) => {
   try {
     const parsedQuery = dienstQuerySchema.parse(req.query);
-    const query: any = {};
-
-    if (parsedQuery.dienstNumber) {
-      const num = parseInt(parsedQuery.dienstNumber, 10);
-      if (!isNaN(num)) query.dienstNumber = num;
-    }
-
-    if (parsedQuery.weekStartDate) {
-      query.weekStartDate = parsedQuery.weekStartDate;
-    }
-
-    if (parsedQuery.date) {
-      query["assignments.date"] = parsedQuery.date;
-    }
-
-    if (parsedQuery.driver) {
-      query["assignments.driver"] = parsedQuery.driver;
-    }
-
-    if (parsedQuery.medic) {
-      query["assignments.medic"] = parsedQuery.medic;
-    }
+    const query = buildDienstSearchQuery(parsedQuery);
 
     const dienste = await Dienst.find(query).populate(
       "assignments.driver assignments.medic",
