@@ -24,6 +24,7 @@ import sickLeaveRoutes from "./modules/sick-leaves/routes";
 import cleanupOldDiensts from "./utils/cleanupOldDiensts";
 import { errorHandler } from "./middlewares/errorHandler";
 import { notFoundHandler } from "./middlewares/notFoundHandler";
+import { rateLimitLogin, rateLimitReportIssue } from "./middlewares/rateLimit";
 
 const app = express();
 
@@ -86,10 +87,12 @@ app.get("/health", (_req, res) => {
 // ----------------------------------------------------------------------------
 // Rutas API
 // ----------------------------------------------------------------------------
+app.use("/api/users/login", rateLimitLogin);
 app.use("/api/users", userRoutes);
 app.use("/api/diensts", dienstRoutes);
 app.use("/api/hospitals", hospitalRoutes);
 app.use("/api/trips", tripRoutes);
+app.use("/api/workday-summary/report-issue", rateLimitReportIssue);
 app.use("/api/workday-summary", workdaySummaryRoutes);
 app.use("/api/praemien", praemienRoutes);
 app.use("/api/vacations", vacationRoutes);
