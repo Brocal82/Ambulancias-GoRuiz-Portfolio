@@ -1,11 +1,11 @@
 // backend/src/modules/diensts/assignments/index.ts
-// FASE 1: capa de compatibilidad -> re-export de legacy (NO refactor aún)
+// FASE 1: getAssignedDaysForUser modularizado; resto legacy
 
+export { getAssignedDaysForUser } from "./controllers/assigned-days.controller";
 export {
   updateDienstPartial,
   removeAssignment,
-  getAssignedDaysForUser,
   assignTeamToWeek,
   assignUserToWeek,
-  clearPeopleForWeek
+  clearPeopleForWeek,
 } from "../../../controllers/dienstController";

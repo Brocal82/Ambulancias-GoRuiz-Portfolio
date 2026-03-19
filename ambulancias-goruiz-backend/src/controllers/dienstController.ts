@@ -7,11 +7,9 @@ import {
 } from "../modules/dienst-templates/models";
 import Ambulance from "../models/Ambulance"; // ✅ Nuevo import
 import { dienstSchema } from "../schemas/dienstSchema";
-import { dienstQuerySchema } from "../schemas/dienstQuerySchema";
 import { ZodError, z } from "zod";
 import mongoose from "mongoose";
 import { RequestHandler } from "express";
-import { AssignedDay } from "../types/Dienst";
 import Team from "../models/Team";
 import User from "../models/User";
 import { getPscheinStatus } from "../utils/pscheinUtils";
@@ -22,11 +20,7 @@ import {
   isOnVacationDay,
   isOnSickDay,
 } from "../utils/dienstValidation";
-import { buildDienstSearchQuery } from "../utils/dienstQueryBuilder";
-import {
-  extractValidDatesFromAssignments,
-  mapAssignmentToAssignedDay,
-} from "../utils/dienstMappers";
+import { extractValidDatesFromAssignments } from "../utils/dienstMappers";
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
   message: "ID no válido",
@@ -45,49 +39,6 @@ export const createDienst = async (req: Request, res: Response) => {
         .json({ message: "Datos inválidos", errors: error.errors });
     } else {
       res.status(500).json({ message: "Error al crear Dienst", error });
-    }
-  }
-};
-
-export const getAllDiensts: RequestHandler = async (req, res) => {
-  try {
-    const diensts = await Dienst.find()
-      .populate(
-        "assignments.driver",
-        "name lastName pscheinExpiry ambulanceRole",
-      )
-      .populate(
-        "assignments.medic",
-        "name lastName pscheinExpiry ambulanceRole",
-      )
-      .populate(
-        "assignments.ambulanceId",
-        "ambulanceNumber brand modelName licensePlate",
-      )
-      .lean(); // 👈 opcional pero recomendable para front
-    res.status(200).json(diensts);
-  } catch (error) {
-    console.error("Error al obtener los Diensts:", error);
-    res.status(500).json({ message: "Error al obtener los Diensts" });
-  }
-};
-
-export const getDienstById = async (req: Request, res: Response) => {
-  try {
-    const parsedId = idSchema.parse(req.params.id);
-    const dienst = await Dienst.findById(parsedId).populate(
-      "assignments.driver assignments.medic assignments.ambulanceId",
-    );
-    if (!dienst) {
-      res.status(404).json({ message: "Dienst no encontrado" });
-      return;
-    }
-    res.status(200).json(dienst);
-  } catch (error) {
-    if (error instanceof ZodError) {
-      res.status(400).json({ message: "ID inválido", errors: error.errors });
-    } else {
-      res.status(500).json({ message: "Error al obtener el Dienst", error });
     }
   }
 };
@@ -324,88 +275,6 @@ export const deleteDienst = async (req: Request, res: Response) => {
     } else {
       res.status(500).json({ message: "Error al eliminar el Dienst", error });
     }
-  }
-};
-
-export const searchDienst = async (req: Request, res: Response) => {
-  try {
-    const parsedQuery = dienstQuerySchema.parse(req.query);
-    const query = buildDienstSearchQuery(parsedQuery);
-
-    const dienste = await Dienst.find(query).populate(
-      "assignments.driver assignments.medic",
-    );
-    res.status(200).json(dienste);
-    return;
-  } catch (error) {
-    if (error instanceof ZodError) {
-      res
-        .status(400)
-        .json({ message: "Parámetros inválidos", errors: error.errors });
-      return;
-    }
-    res.status(500).json({ message: "Error al buscar Diensts", error });
-    return;
-  }
-};
-
-export const getDienstsByUser = async (req: Request, res: Response) => {
-  const { userId } = req.params;
-
-  try {
-    const diensts = await Dienst.find({
-      assignments: {
-        $elemMatch: {
-          $or: [
-            { driver: new mongoose.Types.ObjectId(userId) },
-            { medic: new mongoose.Types.ObjectId(userId) },
-          ],
-        },
-      },
-    })
-      .populate("assignments.driver", "name lastName")
-      .populate("assignments.medic", "name lastName");
-
-    res.status(200).json(diensts);
-  } catch (error) {
-    console.error("Error fetching diensts:", error);
-    res.status(500).json({ message: "Error fetching diensts", error });
-  }
-};
-
-export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
-  const { userId } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    res.status(400).json({ message: "ID de usuario no válido" });
-    return;
-  }
-
-  try {
-    const diensts = await Dienst.find({
-      $or: [
-        { "assignments.driver": new mongoose.Types.ObjectId(userId) },
-        { "assignments.medic": new mongoose.Types.ObjectId(userId) },
-      ],
-    })
-      .populate("assignments.driver", "name lastName pscheinExpiry")
-      .populate("assignments.medic", "name lastName pscheinExpiry")
-      .populate("assignments.ambulanceId", "ambulanceNumber") // puede venir null
-      .lean();
-
-    const assignedDays: AssignedDay[] = [];
-
-    diensts.forEach((dienst) => {
-      dienst.assignments.forEach((assignment: any) => {
-        const mapped = mapAssignmentToAssignedDay(assignment, dienst, userId);
-        if (mapped) assignedDays.push(mapped);
-      });
-    });
-
-    res.status(200).json(assignedDays);
-  } catch (error) {
-    console.error("❌ Error al obtener días asignados:", error);
-    res.status(500).json({ message: "Error al obtener días asignados" });
   }
 };
 
