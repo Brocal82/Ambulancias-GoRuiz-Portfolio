@@ -28,6 +28,7 @@ import {
   useWorkdayAssignment,
   canStartTripNow,
   useTripDraftValidation,
+  useCloseDayModal,
 } from "../hooks";
 
 // Dominio (payloads)
@@ -102,9 +103,16 @@ const MyWorkday = () => {
 
   const [showTripsList, setShowTripsList] = useState(false);
 
-  const [showCloseQuestion, setShowCloseQuestion] = useState(false);
-  const [isFinalClosure, setIsFinalClosure] = useState<boolean | null>(null);
-  const [showReviewModal, setShowReviewModal] = useState(false);
+  const {
+    showCloseQuestion,
+    isFinalClosure,
+    showReviewModal,
+    openCloseQuestion,
+    selectFinalClosure,
+    selectPartialClosure,
+    cancelCloseQuestion,
+    closeReviewModal,
+  } = useCloseDayModal();
 
   const timeWarningRef = useRef<HTMLInputElement>(null);
   const timeAtHomeRef = useRef<HTMLInputElement>(null);
@@ -419,7 +427,7 @@ const MyWorkday = () => {
 
 
       setTrips([]);
-      setShowReviewModal(false);
+      closeReviewModal();
       clearAmbulanceData(assignedDay.assignmentId);
       navigate("/worker");
     } catch (err: any) {
@@ -500,7 +508,7 @@ const MyWorkday = () => {
       setTrips([]);
       setWasCancelled(false);
       setCountsTrip(1);
-      setShowReviewModal(false);
+      closeReviewModal();
       setAmbulanceNumber("");
       setInitialAmbulanceKm("");
       setFinalAmbulanceKm("");
@@ -651,7 +659,7 @@ const MyWorkday = () => {
               onOpenTrip={(trip) => setSelectedTrip(trip)}
               vehicleConfirmed={vehicleConfirmed}
               isClosingDay={isClosingDay}
-              onCloseAndSend={() => setShowCloseQuestion(true)}
+              onCloseAndSend={openCloseQuestion}
               isOpen={showTripsList}
               onToggleOpen={() => setShowTripsList((prev) => !prev)}
             />
@@ -667,29 +675,21 @@ const MyWorkday = () => {
 
                 <div className="space-y-2">
                   <button
-                    onClick={() => {
-                      setIsFinalClosure(true);
-                      setShowCloseQuestion(false);
-                      setShowReviewModal(true);
-                    }}
+                    onClick={selectFinalClosure}
                     className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg"
                   >
                     {t("pages.workday.closeQuestion.yes")}
                   </button>
 
                   <button
-                    onClick={() => {
-                      setIsFinalClosure(false);
-                      setShowCloseQuestion(false);
-                      setShowReviewModal(true);
-                    }}
+                    onClick={selectPartialClosure}
                     className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg"
                   >
                     {t("pages.workday.closeQuestion.partial")}
                   </button>
 
                   <button
-                    onClick={() => setShowCloseQuestion(false)}
+                    onClick={cancelCloseQuestion}
                     className="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 py-2 rounded-lg"
                   >
                     {t("pages.workday.closeQuestion.cancel")}
@@ -713,7 +713,7 @@ const MyWorkday = () => {
           ambulanceNumber={ambulanceNumber}
           initialKm={initialAmbulanceKm}
           finalKm={finalAmbulanceKm}
-          onClose={() => setShowReviewModal(false)}
+          onClose={closeReviewModal}
           onSend={async (reason, finalKmValue, _totalEffectivePatients, issue) => {
             setIssueData(issue || null);
             await handleSendPartialClosure(reason, finalKmValue);
@@ -725,7 +725,7 @@ const MyWorkday = () => {
       {showReviewModal && isFinalClosure === true && assignedDay && (
         <FinalReviewModal
           isOpen={true}
-          onClose={() => setShowReviewModal(false)}
+          onClose={closeReviewModal}
           trips={trips}
           assignedDay={assignedDay}
           ambulanceId={ambulanceId}
