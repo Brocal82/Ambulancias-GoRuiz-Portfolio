@@ -362,4 +362,90 @@ describe("API - Rutas críticas", () => {
       expect(res.body.assignments.length).toBeGreaterThanOrEqual(1);
     });
   });
+
+  describe("Dienst - assignUserToWeek", () => {
+    let dienstIdForAssignUser: string;
+
+    beforeAll(async () => {
+      const createRes = await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 1,
+          weekStartDate: "2030-03-01",
+          weekEndDate: "2030-03-07",
+          assignments: [
+            {
+              date: "2030-03-01",
+              startTime: "08:00",
+              endTime: "16:00",
+              ambulanceId: "507f1f77bcf86cd799439011",
+              driver: adminId,
+              medic: workerId,
+            },
+          ],
+        });
+      if (createRes.status === 201) {
+        dienstIdForAssignUser = createRes.body._id ?? createRes.body.id;
+      }
+    });
+
+    it("POST /api/diensts/assign-user-to-week sin token devuelve 401", async () => {
+      await request(app)
+        .post(`${API}/diensts/assign-user-to-week`)
+        .send({
+          dienstNumber: 1,
+          weekStartDate: "2030-03-01",
+          userId: workerId,
+          role: "medic",
+        })
+        .expect(401);
+    });
+
+    it("POST /api/diensts/assign-user-to-week con token worker devuelve 403", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts/assign-user-to-week`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .send({
+          dienstNumber: 1,
+          weekStartDate: "2030-03-01",
+          userId: workerId,
+          role: "medic",
+        })
+        .expect(403);
+      expect(res.body).toHaveProperty("message");
+    });
+
+    it("POST /api/diensts/assign-user-to-week con Dienst inexistente devuelve 404", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts/assign-user-to-week`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 1,
+          weekStartDate: "2099-06-01",
+          userId: workerId,
+          role: "medic",
+        })
+        .expect(404);
+      expect(res.body).toHaveProperty("message");
+      expect(res.body.message).toContain("No existe Dienst");
+    });
+
+    it("POST /api/diensts/assign-user-to-week happy path devuelve 200", async () => {
+      expect(dienstIdForAssignUser).toBeDefined();
+      const res = await request(app)
+        .post(`${API}/diensts/assign-user-to-week`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 1,
+          weekStartDate: "2030-03-01",
+          userId: workerId,
+          role: "medic",
+        })
+        .expect(200);
+      expect(res.body).toHaveProperty("updatedCount");
+      expect(res.body).toHaveProperty("dienstId");
+      expect(typeof res.body.updatedCount).toBe("number");
+    });
+  });
 });
