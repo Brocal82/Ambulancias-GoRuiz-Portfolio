@@ -44,6 +44,7 @@ import {
   loadAmbulanceData,
   clearAmbulanceData,
   confirmedAmbulanceKey,
+  validateClosureData,
 } from "../utils";
 
 import {
@@ -377,24 +378,16 @@ const MyWorkday = () => {
 
     if (!token || !assignedDay || !user?._id) return;
 
-    //  exige datos confirmados de vehículo
-    if (
-      !vehicleConfirmed ||
-      !ambulanceId ||
-      !ambulanceNumber ||
-      !initialAmbulanceKm
-    ) {
-      toastT.warn(["toasts.workday.enterAmbulanceAndKm"]);
-      return;
-    }
-    if (isNaN(finalKmFromModal)) {
-      toastT.warn(["toasts.workday.enterFinalKmInModal"]);
-      return;
-    }
-
-    const initialKmNumber = Number(initialAmbulanceKm);
-    if (finalKmFromModal < initialKmNumber) {
-      toastT.error(["toasts.workday.finalKmLessThanInitial"]);
+    const validation = validateClosureData({
+      vehicleConfirmed,
+      ambulanceId,
+      ambulanceNumber,
+      initialKm: initialAmbulanceKm,
+      finalKm: finalKmFromModal,
+      isPartial: false,
+    });
+    if (!validation.valid) {
+      toastT[validation.severity]([validation.toastKey]);
       return;
     }
 
@@ -448,30 +441,21 @@ const MyWorkday = () => {
   ) => {
     if (!token || !assignedDay) return;
 
+    const validation = validateClosureData({
+      vehicleConfirmed,
+      ambulanceId,
+      ambulanceNumber,
+      initialKm: initialAmbulanceKm,
+      finalKm: Number(finalKmValue),
+      isPartial: true,
+      partialReason: reason,
+    });
+    if (!validation.valid) {
+      toastT[validation.severity]([validation.toastKey]);
+      return;
+    }
+
     const reasonTrimmed = (reason ?? "").trim();
-    if (!reasonTrimmed) {
-      toastT.warn(["toasts.workday.partialReasonRequired"]);
-      return;
-    }
-
-    if (isNaN(finalKmValue)) {
-      toastT.warn(["toasts.workday.enterFinalKmInModal"]);
-      return;
-    }
-    if (Number(finalKmValue) < Number(initialAmbulanceKm)) {
-      toastT.warn(["toasts.workday.finalKmLessThanInitial"]);
-      return;
-    }
-
-    // ? NUEVO: exige ambulancia confirmada e ID presente
-    if (!vehicleConfirmed || !ambulanceId) {
-      toastT.warn(["toasts.workday.needInitialData"]); // o crea un texto: "Confirma vehículo y km iniciales"
-      return;
-    }
-    if (!ambulanceNumber) {
-      toastT.warn(["toasts.workday.enterAmbulanceAndKm"]);
-      return;
-    }
 
     try {
       const payload = buildPartialSummaryPayload({
