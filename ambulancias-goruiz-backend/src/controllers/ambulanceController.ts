@@ -1,9 +1,5 @@
 import { Request, Response } from "express";
 import Ambulance from "../models/Ambulance";
-import {
-  createAmbulanceSchema,
-  updateAmbulanceSchema,
-} from "../schemas/ambulanceSchema";
 
 // Obtener todas las ambulancias
 export const getAllAmbulances = async (req: Request, res: Response) => {
@@ -34,19 +30,7 @@ export const getAmbulanceById = async (req: Request, res: Response) => {
 // Crear una nueva ambulancia
 export const createAmbulance = async (req: Request, res: Response) => {
   try {
-    const parsed = createAmbulanceSchema.safeParse(req.body);
-
-    if (!parsed.success) {
-      const firstError = parsed.error.errors[0];
-      const message =
-        firstError?.path?.length > 0
-          ? `${firstError.path.join(".")}: ${firstError.message}`
-          : firstError?.message ?? "Datos inválidos";
-      res.status(400).json({ message });
-      return;
-    }
-
-    const newAmbulance = new Ambulance(parsed.data);
+    const newAmbulance = new Ambulance(req.body);
     await newAmbulance.save();
     res.status(201).json(newAmbulance);
   } catch (error: unknown) {
@@ -64,21 +48,9 @@ export const createAmbulance = async (req: Request, res: Response) => {
 // Actualizar una ambulancia existente
 export const updateAmbulance = async (req: Request, res: Response) => {
   try {
-    const parsed = updateAmbulanceSchema.safeParse(req.body);
-
-    if (!parsed.success) {
-      const firstError = parsed.error.errors[0];
-      const message =
-        firstError?.path?.length > 0
-          ? `${firstError.path.join(".")}: ${firstError.message}`
-          : firstError?.message ?? "Datos inválidos";
-      res.status(400).json({ message });
-      return;
-    }
-
     const updated = await Ambulance.findByIdAndUpdate(
       req.params.id,
-      parsed.data,
+      req.body,
       { new: true },
     );
     if (!updated) {

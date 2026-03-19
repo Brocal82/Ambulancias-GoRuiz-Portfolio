@@ -9,7 +9,12 @@ import {
 
 import { authenticateToken } from "../middlewares/authMiddleware";
 import { authorizeRole } from "../middlewares/roleMiddleware";
+import { validateBody } from "../middlewares/validateBody";
 import { validateObjectId } from "../middlewares/validateObjectId";
+import {
+  createAmbulanceSchema,
+  updateAmbulanceSchema,
+} from "../schemas/ambulanceSchema";
 
 const router = Router();
 
@@ -18,12 +23,19 @@ router.get("/", authenticateToken, getAllAmbulances);
 router.get("/:id", authenticateToken, validateObjectId("id"), getAmbulanceById);
 
 // 🔒 Rutas protegidas para ADMIN únicamente
-router.post("/", authenticateToken, authorizeRole("admin"), createAmbulance);
+router.post(
+  "/",
+  authenticateToken,
+  authorizeRole("admin"),
+  validateBody(createAmbulanceSchema),
+  createAmbulance,
+);
 router.put(
   "/:id",
   authenticateToken,
   authorizeRole("admin"),
   validateObjectId("id"),
+  validateBody(updateAmbulanceSchema),
   updateAmbulance,
 );
 router.delete(

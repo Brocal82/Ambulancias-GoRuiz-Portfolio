@@ -2,30 +2,13 @@
 
 import { Request, Response } from "express";
 import Trip from "../models/Trip";
-import { tripSchema } from "../schemas/tripSchema";
-import { ZodError } from "zod";
 
 // POST /api/trips → Crear un viaje
 export const createTrip = async (req: Request, res: Response) => {
   try {
-    const parsed = tripSchema.safeParse(req.body);
-
-    if (!parsed.success) {
-      console.warn("Validation errors:", parsed.error.errors);
-      res.status(400).json({
-        message: "Errores de validación",
-        errors: parsed.error.errors.map((err) => ({
-          field: err.path[0],
-          message: err.message,
-        })),
-      });
-      return;
-    }
-
     const data = {
-      ...parsed.data,
-      countsTrip:
-        parsed.data.countsTrip === undefined ? 1 : parsed.data.countsTrip,
+      ...req.body,
+      countsTrip: req.body.countsTrip === undefined ? 1 : req.body.countsTrip,
     };
 
     // 👇 Lógica segura para calcular totalKm
