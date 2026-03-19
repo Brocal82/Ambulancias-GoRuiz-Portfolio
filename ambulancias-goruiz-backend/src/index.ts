@@ -22,6 +22,7 @@ import sickLeaveRoutes from "./modules/sick-leaves/routes";
 
 // Utils
 import cleanupOldDiensts from "./utils/cleanupOldDiensts";
+import { errorHandler } from "./middlewares/errorHandler";
 
 const app = express();
 
@@ -97,6 +98,11 @@ app.use("/api/appointments", appointmentRoutes);
 app.use("/api", notificationRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/sick-leaves", sickLeaveRoutes);
+
+// ----------------------------------------------------------------------------
+// Middleware global de errores (debe ir después de todas las rutas)
+// ----------------------------------------------------------------------------
+app.use(errorHandler);
 
 // ----------------------------------------------------------------------------
 // Conexión a DB y arranque
