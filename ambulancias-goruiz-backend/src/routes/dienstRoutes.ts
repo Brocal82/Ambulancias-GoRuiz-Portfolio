@@ -25,7 +25,6 @@ router.get(
   DienstCalendar.getDienstsByUser,
 );
 
-// ✅ NUEVA RUTA - antes de las que usan :id
 router.get(
   "/assigned-days/:userId",
   authenticateToken,
@@ -46,7 +45,7 @@ router.post(
   DienstLifecycle.deleteDienstsForWeek,
 );
 
-// 📌 Rutas para plantillas de Dienst (solo admin) — las dejamos legacy por ahora
+// CRUD de plantillas DienstTemplate (solo admin)
 router.use("/templates", dienstTemplateRoutes);
 
 // 👇 Acceso según permisos

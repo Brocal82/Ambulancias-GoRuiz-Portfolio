@@ -1,5 +1,5 @@
 // backend/src/modules/diensts/calendar/index.ts
-// FASE 1: handlers de lectura modularizados
+// Handlers de lectura (listado, búsqueda, por usuario)
 
 export {
   getAllDiensts,

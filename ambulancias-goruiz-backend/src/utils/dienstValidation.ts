@@ -6,8 +6,7 @@ import {
   isOnSickDayQuery as isOnSickDay,
 } from "../modules/sick-leaves";
 import VacationRequest from "../modules/vacation/models/vacation-request.model";
-import { buildWeekDateStrings } from "./time";
-import { getPscheinStatus } from "./pscheinUtils"; // ⚠️ Ya existe en backend/utils
+import { getPscheinStatus } from "./pscheinUtils";
 import { DateTime } from "luxon";
 export { isOnSickDay, findOverlappingSickLeave };
 
@@ -57,37 +56,6 @@ export async function computeDayBlockMapForTeam(params: {
   }
 
   return result;
-}
-
-/**
- * Devuelve true si el usuario (driver o medic) ya está asignado
- * en algún Dienst esa semana (cualquier número), para cualquiera
- * de los 7 días.
- */
-export async function isUserAssignedThatWeek(params: {
-  userId: string;
-  weekStartISO: string;
-}): Promise<boolean> {
-  const { userId, weekStartISO } = params;
-  if (!mongoose.Types.ObjectId.isValid(userId)) return false;
-
-  const weekDays = buildWeekDateStrings(weekStartISO);
-
-  const dienste = await Dienst.find({
-    "assignments.date": { $in: weekDays },
-    $or: [{ "assignments.driver": userId }, { "assignments.medic": userId }],
-  })
-    .select("_id assignments.date assignments.driver assignments.medic")
-    .lean();
-
-  return dienste.some((d) =>
-    (d.assignments || []).some(
-      (a: any) =>
-        weekDays.includes(a?.date) &&
-        (a?.driver?.toString?.() === userId ||
-          a?.medic?.toString?.() === userId),
-    ),
-  );
 }
 
 /**
