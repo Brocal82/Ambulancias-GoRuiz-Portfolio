@@ -11,4 +11,4 @@ export {
   updateDienst,
   deleteDienst,
 } from "./controllers/dienst-crud.controller";
-export { generateDienstTemplatesForWeek } from "../../../controllers/dienstController";
+export { generateDienstTemplatesForWeek } from "./controllers/generate-diensts-for-week.controller";

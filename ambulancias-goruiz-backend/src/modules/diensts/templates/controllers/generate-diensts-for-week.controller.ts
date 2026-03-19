@@ -1,37 +1,12 @@
-//src/controllers/dienstController.ts
-import { Request, Response } from "express";
-import Dienst from "../models/Dienst";
+import { RequestHandler } from "express";
+import mongoose from "mongoose";
+import Dienst from "../../../../models/Dienst";
+import Team from "../../../../models/Team";
 import {
   DienstTemplate,
   type DaySchedule,
-} from "../modules/dienst-templates/models";
-import Ambulance from "../models/Ambulance"; // ✅ Nuevo import
-import mongoose from "mongoose";
-import { RequestHandler } from "express";
-import Team from "../models/Team";
-import {
-  computeDayBlockMapForTeam,
-  findWeeklyConflicts,
-  getDriverPscheinState,
-  isOnVacationDay,
-  isOnSickDay,
-} from "../utils/dienstValidation";
-import { extractValidDatesFromAssignments } from "../utils/dienstMappers";
-
-// 🗓️ Calcula un índice de semana estable a partir de una fecha (para rotar equipos entre semanas)
-function getWeekIndexFromDate(date: Date): number {
-  // Normalizamos la fecha a medianoche UTC para evitar líos de zona horaria
-  const utc = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-
-  // Fecha base arbitraria pero fija (1 enero 2024)
-  const base = Date.UTC(2024, 0, 1);
-
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const diffDays = Math.floor((utc - base) / msPerDay);
-
-  // Índice de semana (puede ser negativo si la fecha es anterior a la base, pero nos sirve igualmente)
-  return Math.floor(diffDays / 7);
-}
+} from "../../../../modules/dienst-templates/models";
+import { computeDayBlockMapForTeam } from "../../../../utils/dienstValidation";
 
 export const generateDienstTemplatesForWeek: RequestHandler = async (
   req,

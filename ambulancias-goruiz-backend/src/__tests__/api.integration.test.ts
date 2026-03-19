@@ -197,6 +197,134 @@ describe("API - Rutas críticas", () => {
     });
   });
 
+  describe("Dienst - generate-week", () => {
+    beforeAll(async () => {
+      const db = mongoose.connection.db;
+      if (db) {
+        await db.collection("diensttemplates").deleteMany({});
+      }
+    });
+
+    it("POST /api/diensts/generate-week sin token devuelve 401", async () => {
+      await request(app)
+        .post(`${API}/diensts/generate-week`)
+        .send({ weekStartDate: "2040-01-06" })
+        .expect(401);
+    });
+
+    it("POST /api/diensts/generate-week con token worker devuelve 403", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts/generate-week`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .send({ weekStartDate: "2040-01-06" })
+        .expect(403);
+      expect(res.body).toHaveProperty("message");
+    });
+
+    it("POST /api/diensts/generate-week sin weekStartDate devuelve 400", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts/generate-week`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({})
+        .expect(400);
+      expect(res.body).toHaveProperty("message");
+      expect(res.body.message).toContain("Fecha de inicio requerida");
+    });
+
+    it("POST /api/diensts/generate-week con weekStartDate inválida devuelve 400", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts/generate-week`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ weekStartDate: "fecha-invalida" })
+        .expect(400);
+      expect(res.body).toHaveProperty("message");
+      expect(res.body.message).toContain("inválida");
+    });
+
+    it("POST /api/diensts/generate-week si no hay plantillas activas devuelve 400", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts/generate-week`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ weekStartDate: "2040-02-03" })
+        .expect(400);
+      expect(res.body).toHaveProperty("message");
+      expect(res.body.message).toContain("plantillas");
+    });
+
+    it("POST /api/diensts/generate-week si ya existen Diensts para esa semana devuelve 400", async () => {
+      await request(app)
+        .post(`${API}/diensts/templates`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 1,
+          startTime: "08:00",
+          endTime: "16:00",
+          daysOff: [],
+          isActive: true,
+        });
+
+      const createRes = await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 1,
+          weekStartDate: "2040-01-06",
+          weekEndDate: "2040-01-12",
+          assignments: [
+            {
+              date: "2040-01-06",
+              startTime: "08:00",
+              endTime: "16:00",
+              ambulanceId: "507f1f77bcf86cd799439011",
+              driver: adminId,
+              medic: workerId,
+            },
+          ],
+        });
+      expect(createRes.status).toBe(201);
+
+      const res = await request(app)
+        .post(`${API}/diensts/generate-week`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ weekStartDate: "2040-01-06" })
+        .expect(400);
+      expect(res.body).toHaveProperty("message");
+      expect(res.body.message).toContain("Ya existen");
+    });
+
+    it("POST /api/diensts/generate-week happy path devuelve 201 e inserta Diensts", async () => {
+      const targetWeek = "2040-03-03";
+      const start = new Date(targetWeek);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+
+      const Dienst = mongoose.model("Dienst");
+      await Dienst.deleteMany({
+        weekStartDate: { $gte: start, $lte: end },
+      });
+
+      const res = await request(app)
+        .post(`${API}/diensts/generate-week`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ weekStartDate: targetWeek })
+        .expect(201);
+      expect(res.body).toHaveProperty("count");
+      expect(res.body.count).toBeGreaterThanOrEqual(1);
+      expect(res.body).toHaveProperty("message");
+
+      const listRes = await request(app)
+        .get(`${API}/diensts`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+      const diensts = listRes.body;
+      const weekDiensts = diensts.filter(
+        (d: { weekStartDate?: string }) =>
+          d.weekStartDate && String(d.weekStartDate).startsWith("2040-03"),
+      );
+      expect(weekDiensts.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
   describe("Dienst - assignTeamToWeek", () => {
     it("POST /api/diensts/assign-team-to-week sin token devuelve 401", async () => {
       await request(app)
