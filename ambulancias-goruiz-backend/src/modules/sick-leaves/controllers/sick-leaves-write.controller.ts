@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { z, ZodError } from "zod";
 import SickLeave from "../models/sick-leave.model";
-import { getAuthUserId } from "../utils/sick-auth.helpers";
 import { toBerlinDay } from "../utils/sick-date.helpers";
 import { acceptSickLeaveWorkflow } from "../services/sick-acceptance.service";
 import {
@@ -22,7 +21,7 @@ export async function createSickLeave(req: Request, res: Response) {
   try {
     const parsed = createSchema.parse(req.body);
 
-    const userId = getAuthUserId(req) || (req.body.user as string | undefined);
+    const userId = req.userId || (req.body.user as string | undefined);
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       res.status(400).json({ message: "Usuario no v\u00E1lido" });
       return;

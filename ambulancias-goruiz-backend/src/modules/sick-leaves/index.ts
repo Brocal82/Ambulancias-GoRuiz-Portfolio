@@ -1,4 +1,3 @@
-export { getAuthUserId } from "./utils/sick-auth.helpers";
 export {
   formatBerlinYmd,
   toBerlinDateTime,

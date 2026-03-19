@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { DateTime } from "luxon";
-import { getAuthUserId } from "../utils/sick-auth.helpers";
 import { getMySickLeaves, getSickLeaves } from "../services/sick-leaves-read.service";
 import { checkSickInRangeService } from "../services/sick-range.service";
 
@@ -21,7 +20,7 @@ export async function listSickLeaves(req: Request, res: Response) {
 
 export async function listMySickLeaves(req: Request, res: Response) {
   try {
-    const authId = getAuthUserId(req);
+    const authId = req.userId;
     if (!authId || !mongoose.Types.ObjectId.isValid(authId)) {
       res.status(401).json({ message: "No autenticado" });
       return;
