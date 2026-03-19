@@ -267,12 +267,99 @@ describe("API - Rutas críticas", () => {
         .set("Authorization", `Bearer ${adminToken}`)
         .send({
           dienstNumber: 1,
-          weekStartDate: "2030-01-06",
+          weekStartDate: "2099-06-01",
           teamId,
         })
         .expect(404);
       expect(res.body).toHaveProperty("message");
       expect(res.body.message).toContain("No existe Dienst");
+    });
+  });
+
+  describe("Dienst - PATCH /:id (updateDienstPartial)", () => {
+    let dienstIdForPatch: string;
+
+    beforeAll(async () => {
+      const createRes = await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 99,
+          weekStartDate: "2030-02-01",
+          weekEndDate: "2030-02-07",
+          assignments: [
+            {
+              date: "2030-02-01",
+              startTime: "08:00",
+              endTime: "16:00",
+              ambulanceId: "507f1f77bcf86cd799439011",
+              driver: adminId,
+              medic: workerId,
+            },
+          ],
+        });
+      if (createRes.status === 201) {
+        dienstIdForPatch = createRes.body._id ?? createRes.body.id;
+      }
+    });
+
+    it("PATCH /api/diensts/:id sin token devuelve 401", async () => {
+      await request(app)
+        .patch(`${API}/diensts/507f1f77bcf86cd799439011`)
+        .send({
+          assignments: [
+            { date: "2030-01-06", startTime: "08:00", endTime: "16:00" },
+          ],
+        })
+        .expect(401);
+    });
+
+    it("PATCH /api/diensts/:id con token worker devuelve 403", async () => {
+      const res = await request(app)
+        .patch(`${API}/diensts/507f1f77bcf86cd799439011`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .send({
+          assignments: [
+            { date: "2030-01-06", startTime: "08:00", endTime: "16:00" },
+          ],
+        })
+        .expect(403);
+      expect(res.body).toHaveProperty("message");
+    });
+
+    it("PATCH /api/diensts/:id con Dienst inexistente devuelve 404", async () => {
+      const res = await request(app)
+        .patch(`${API}/diensts/507f1f77bcf86cd799439011`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          assignments: [
+            { date: "2030-01-06", startTime: "08:00", endTime: "16:00" },
+          ],
+        })
+        .expect(404);
+      expect(res.body).toHaveProperty("message");
+      expect(res.body.message).toContain("Dienst no encontrado");
+    });
+
+    it("PATCH /api/diensts/:id happy path merge devuelve 200", async () => {
+      expect(dienstIdForPatch).toBeDefined();
+      const res = await request(app)
+        .patch(`${API}/diensts/${dienstIdForPatch}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          assignments: [
+            {
+              date: "2030-02-01",
+              startTime: "08:00",
+              endTime: "16:00",
+              driver: adminId,
+            },
+          ],
+        })
+        .expect(200);
+      expect(res.body).toHaveProperty("assignments");
+      expect(Array.isArray(res.body.assignments)).toBe(true);
+      expect(res.body.assignments.length).toBeGreaterThanOrEqual(1);
     });
   });
 });
