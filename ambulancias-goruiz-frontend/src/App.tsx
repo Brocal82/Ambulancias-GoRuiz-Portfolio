@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout";
 import { AuthProvider } from "./context/AuthProvider";
 import RequireAuth from "./components/RequireAuth";
+import RequireRole from "./components/RequireRole";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -66,22 +67,24 @@ export default function App() {
               <Route path="/my-workday" element={<MyWorkdayPage />} />
               <Route path="/worker/appointments" element={<WorkerAppointmentsPage />} />
 
-              {/* Admin */}
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/users" element={<AdminUsersPage />} />
-              <Route path="/admin/diensts" element={<AdminDienstsPage />} />
-              <Route path="/admin/dienst-templates" element={<AdminDienstTemplatesPage />} />
-              <Route path="/admin/hospitals" element={<AdminHospitalsPage />} />
-              <Route path="/admin/vacations" element={<AdminVacationsPage />} />
-              <Route path="/admin/messages" element={<AdminMessagesPage />} />
-              <Route path="/admin/messages/sent" element={<AdminSentMessages />} />
-              <Route path="/admin/summaries" element={<AdminSummariesPage />} />
-              <Route path="/admin/ambulances" element={<AdminAmbulancesPage />} />
-              <Route path="/admin/user/:userId" element={<AdminUserDetailDashboard />} />
-              <Route path="/admin/mechanics" element={<AdminMechanicsPage />} />
-              <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
-              <Route path="/admin/teams" element={<AdminTeamsPage />} />
-              <Route path="/admin/sick-leaves" element={<AdminSickLeavesPage />} />
+              {/* Admin: protegido por rol */}
+              <Route element={<RequireRole role="admin" />}>
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/users" element={<AdminUsersPage />} />
+                <Route path="/admin/diensts" element={<AdminDienstsPage />} />
+                <Route path="/admin/dienst-templates" element={<AdminDienstTemplatesPage />} />
+                <Route path="/admin/hospitals" element={<AdminHospitalsPage />} />
+                <Route path="/admin/vacations" element={<AdminVacationsPage />} />
+                <Route path="/admin/messages" element={<AdminMessagesPage />} />
+                <Route path="/admin/messages/sent" element={<AdminSentMessages />} />
+                <Route path="/admin/summaries" element={<AdminSummariesPage />} />
+                <Route path="/admin/ambulances" element={<AdminAmbulancesPage />} />
+                <Route path="/admin/user/:userId" element={<AdminUserDetailDashboard />} />
+                <Route path="/admin/mechanics" element={<AdminMechanicsPage />} />
+                <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
+                <Route path="/admin/teams" element={<AdminTeamsPage />} />
+                <Route path="/admin/sick-leaves" element={<AdminSickLeavesPage />} />
+              </Route>
             </Route>
           </Route>
         </Routes>
