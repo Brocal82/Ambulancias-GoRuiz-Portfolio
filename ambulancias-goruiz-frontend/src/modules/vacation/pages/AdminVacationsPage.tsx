@@ -88,7 +88,7 @@ const AdminVacationRequests = () => {
     // Para 'accepted' hacemos manejo manual para interceptar 409 (capacidad)
     if (status === "accepted") {
       try {
-        await updateVacationRequest(token, id, { status });
+        await updateVacationRequest(id, { status });
 
         // 🟢 Invalidar disponibilidad en vivo (cambia capacidad)
         const req = requests.find((r) => r._id === id);
@@ -123,7 +123,7 @@ const AdminVacationRequests = () => {
           if (!wantForce) return;
 
           try {
-            await updateVacationRequest(token, id, { status: "accepted", force: true });
+            await updateVacationRequest(id, { status: "accepted", force: true });
 
             // 🟢 Invalidar disponibilidad en vivo (cambia capacidad)
             const req = requests.find((r) => r._id === id);
@@ -167,7 +167,7 @@ const AdminVacationRequests = () => {
         : (["toasts.vacations.admin.updated"] as const);
 
     try {
-      await toastT.promise(updateVacationRequest(token, id, { status }), {
+      await toastT.promise(updateVacationRequest(id, { status }), {
         pending: ["toasts.vacations.admin.updating"],
         success: successMsg,
         error: ["toasts.vacations.admin.error"],
@@ -203,7 +203,7 @@ const AdminVacationRequests = () => {
 
     try {
       await toastT.promise(
-        updateVacationRequest(token, id, {
+        updateVacationRequest(id, {
           status: "option_sent",
           adminOptionStartDate,
           adminOptionEndDate,
@@ -248,7 +248,7 @@ const AdminVacationRequests = () => {
     setIsSendingCancel(true);
     try {
       await toastT.promise(
-        updateVacationRequest(token, id, {
+        updateVacationRequest(id, {
           status: "cancelled",
           adminNote: cancelMessage,
         }),

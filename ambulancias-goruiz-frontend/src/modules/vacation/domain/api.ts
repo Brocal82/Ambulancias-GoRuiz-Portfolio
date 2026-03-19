@@ -70,13 +70,8 @@ export type VacationRangeFlagsByUser = VacationFlagsByUser;
    ========================= */
 
 // Crear nueva solicitud
-export const createVacationRequest = async (
-  token: string,
-  data: VacationRequestPayload,
-) => {
-  const response = await axiosInstance.post("/vacations", data, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export const createVacationRequest = async (data: VacationRequestPayload) => {
+  const response = await axiosInstance.post("/vacations", data);
 
   // 🔔 Invalidar disponibilidad de los meses afectados para que Worker vea amarillo al instante
   try {
@@ -104,23 +99,18 @@ try {
 };
 
 // Obtener todas las solicitudes (solo admin)
-export const getVacationRequests = async (token: string) => {
-  const response = await axiosInstance.get("/vacations", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export const getVacationRequests = async () => {
+  const response = await axiosInstance.get("/vacations");
   return response.data;
 };
 
 // Actualizar una solicitud (solo admin)
 export const updateVacationRequest = async (
-  token: string,
   id: string,
   data: UpdateVacationPayload,
 ) => {
   try {
-    const response = await axiosInstance.patch(`/vacations/${id}`, data, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await axiosInstance.patch(`/vacations/${id}`, data);
     return response.data;
   } catch (e: any) {
     // Normalizar el error para que los callers puedan hacer e.status / e.body
@@ -137,43 +127,29 @@ export const updateVacationRequest = async (
 };
 
 // Obtener solicitudes del trabajador logueado
-export const getUserVacationRequests = async (token: string) => {
-  const response = await axiosInstance.get("/vacations/user", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export const getUserVacationRequests = async () => {
+  const response = await axiosInstance.get("/vacations/user");
   return response.data;
 };
 
 // Responder a opción alternativa (aceptar o rechazar)
 export const respondToAlternativeDate = async (
-  token: string,
   id: string,
   data: RespondAlternativePayload,
 ) => {
-  const response = await axiosInstance.post(`/vacations/${id}/respond`, data, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await axiosInstance.post(`/vacations/${id}/respond`, data);
   return response.data;
 };
 
 // Eliminar solicitud (solo admin)
-export const deleteVacationRequest = async (token: string, id: string) => {
-  const response = await axiosInstance.delete(`/vacations/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export const deleteVacationRequest = async (id: string) => {
+  const response = await axiosInstance.delete(`/vacations/${id}`);
   return response.data;
 };
 
 // Cancelar solicitud propia (worker, solo si está pending / option_sent)
-export const cancelMyVacationRequest = async (token: string, id: string) => {
-  const response = await axiosInstance.patch(
-    `/vacations/${id}/cancel`,
-    {},
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    },
-  );
-
+export const cancelMyVacationRequest = async (id: string) => {
+  const response = await axiosInstance.patch(`/vacations/${id}/cancel`, {});
   return response.data;
 };
 
@@ -184,16 +160,12 @@ export const cancelMyVacationRequest = async (token: string, id: string) => {
    ========================= */
 
 export const getVacationPendingCount = async (
-  token: string,
   status: VacationStatusCount = "pending",
 ): Promise<number> => {
   try {
     const response = await axiosInstance.get<VacationCountResponse>(
       "/vacations/count",
-      {
-        params: { status },
-        headers: { Authorization: `Bearer ${token}` },
-      },
+      { params: { status } },
     );
     return typeof response.data?.count === "number" ? response.data.count : 0;
   } catch (error: any) {
@@ -276,33 +248,26 @@ export async function upsertVacationMonthConfig(payload: VacationMonthConfig) {
  * Devuelve flags de vacaciones por usuario para un rango.
  * POST /vacations/check-range
  *
- * @param token   JWT del usuario autenticado
- * @param userIds IDs de usuarios a consultar
+ * @param params.userIds IDs de usuarios a consultar
  * @param fromISO ISO 'YYYY-MM-DD' inclusive (inicio de semana)
  * @param toISO   ISO 'YYYY-MM-DD' inclusive (fin de semana -> start + 6)
  * @param includeFullSpan si true, el backend devolverá (si lo soporta) vacationStartFull/vacationUntilFull
  *
  * Respuesta: Record<userId, VacFlag>
  */
-export async function getVacationFlagsInRange(
-  token: string,
-  params: {
-    userIds: string[];
-    fromISO: string;
-    toISO: string;
-    includeFullSpan?: boolean;
-  },
-): Promise<VacationFlagsByUser> {
+export async function getVacationFlagsInRange(params: {
+  userIds: string[];
+  fromISO: string;
+  toISO: string;
+  includeFullSpan?: boolean;
+}): Promise<VacationFlagsByUser> {
   const { data } = await axiosInstance.post<VacationFlagsByUser>(
     "/vacations/check-range",
     {
       userIds: params.userIds,
       fromISO: params.fromISO,
       toISO: params.toISO,
-      includeFullSpan: params.includeFullSpan, // ⬅️ si el backend lo usa, perfecto; si no, lo ignora
-    },
-    {
-      headers: { Authorization: `Bearer ${token}` },
+      includeFullSpan: params.includeFullSpan,
     },
   );
   return data;

@@ -30,7 +30,7 @@ export const useDayFlags = (params: {
       try {
         setFlagsLoading(true);
 
-        const vacPromise = getVacationFlagsInRange(token, {
+        const vacPromise = getVacationFlagsInRange({
           userIds,
           fromISO: date,
           toISO: date,

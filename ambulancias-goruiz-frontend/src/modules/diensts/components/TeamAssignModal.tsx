@@ -211,7 +211,7 @@ export default function TeamAssignModal({
     (async () => {
       try {
         setFlagsLoading(true);
-        const vacPromise = getVacationFlagsInRange(token, {
+        const vacPromise = getVacationFlagsInRange({
           userIds,
           fromISO: weekStartISO,
           toISO: weekEndISO,

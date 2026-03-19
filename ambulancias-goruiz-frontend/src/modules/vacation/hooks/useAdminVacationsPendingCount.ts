@@ -47,7 +47,7 @@ export default function useAdminVacationsPendingCount(options: Options = {}) {
     // Loading discreto: solo spinner si aún no tenemos dato (count===0)
     setState((s) => ({ ...s, isLoading: s.count === 0 }));
     try {
-      const count = await getVacationPendingCount(token, "pending");
+      const count = await getVacationPendingCount("pending");
       if (!mountedRef.current) return;
       setState({ count, isLoading: false, isError: false, error: undefined });
     } catch (err: any) {

@@ -31,7 +31,7 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
 
     try {
       setLoading(true);
-      const allVacations = await getVacationRequests(token);
+      const allVacations = await getVacationRequests();
 
       // Mantengo tu lógica: solo vacaciones aceptadas de ese usuario
       const acceptedVacations = allVacations.filter(
@@ -61,7 +61,7 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
     if (!window.confirm(t("pages.vacations.adminUserTab.confirmDelete"))) return;
 
     try {
-      await deleteVacationRequest(token, id);
+      await deleteVacationRequest(id);
 
       // ✅ Actualiza UI local inmediata
       setVacations((prev) => prev.filter((v) => v._id !== id));

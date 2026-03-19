@@ -12,7 +12,7 @@ type UseVacationRequestsSyncParams = {
    * Función que obtiene las requests (Admin o Worker).
    * La pasamos desde la page para no acoplar el hook a un endpoint concreto.
    */
-  fetcher: (token: string) => Promise<IVacationRequest[]>;
+  fetcher: () => Promise<IVacationRequest[]>;
 
   /**
    * Si estás en una pantalla donde no quieres cargar todavía (por ejemplo sin token),
@@ -122,7 +122,7 @@ export function useVacationRequestsSync(
     setError(null);
 
     try {
-      const data = await fetcher(token);
+      const data = await fetcher();
       setRequests(data);
       onAfterFetchRef.current?.(data);
     } catch {

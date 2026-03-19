@@ -245,7 +245,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     const req = requests.find((r) => r._id === id);
 
     try {
-      await updateVacationRequest(token, id, { status: "accepted" });
+      await updateVacationRequest(id, { status: "accepted" });
 
       emitVacationRequestsUpdated({ type: "updated", id, status: "accepted" });
 
@@ -271,7 +271,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
         if (!wantForce) return;
 
         try {
-          await updateVacationRequest(token, id, {
+          await updateVacationRequest(id, {
             status: "accepted",
             force: true,
           });
@@ -332,7 +332,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     if (!token || !currentRequestId || monthIndex === null) return;
 
     try {
-      await updateVacationRequest(token, currentRequestId, {
+      await updateVacationRequest(currentRequestId, {
         status: "option_sent",
         adminOptionStartDate: altStartISO,
         adminOptionEndDate: altEndISO,
@@ -367,7 +367,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     if (!token || monthIndex === null) return;
     setIsSendingCancel(true);
     try {
-      await updateVacationRequest(token, id, {
+      await updateVacationRequest(id, {
         status: "cancelled",
         adminNote: cancelMessage,
       });
@@ -399,7 +399,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       const startISO = req?.startDate;
       const endISO = req?.endDate;
 
-      await deleteVacationRequest(token, id);
+      await deleteVacationRequest(id);
 
       emitVacationRequestsUpdated({ type: "deleted", id });
 

@@ -123,7 +123,7 @@ export default function UserAssignModal({
     (async () => {
       try {
         setFlagsLoading(true);
-        const vacPromise = getVacationFlagsInRange(token, {
+        const vacPromise = getVacationFlagsInRange({
           userIds: ids,
           fromISO: weekStartISO,
           toISO: weekEndISO,

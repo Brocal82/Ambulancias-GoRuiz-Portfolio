@@ -139,7 +139,7 @@ const AdminUsersPage = () => {
 
     (async () => {
       try {
-        const flags = await getVacationFlagsInRange(token, {
+        const flags = await getVacationFlagsInRange({
           userIds,
           fromISO: weekStartISO,
           toISO: weekEndISO,

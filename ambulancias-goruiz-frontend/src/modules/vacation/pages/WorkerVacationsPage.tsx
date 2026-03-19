@@ -69,7 +69,7 @@ const WorkerVacationsPage = () => {
     const endISO = req?.endDate;
 
     try {
-      await toastT.promise(respondToAlternativeDate(token, id, { accept }), {
+      await toastT.promise(respondToAlternativeDate(id, { accept }), {
         pending: ["toasts.vacations.worker.respondPending"],
         success: ["toasts.vacations.worker.respondSuccess"],
         error: ["toasts.vacations.worker.error"],
@@ -115,7 +115,7 @@ const WorkerVacationsPage = () => {
     const endISO = req.endDate;
 
     try {
-      await toastT.promise(cancelMyVacationRequest(token, id), {
+      await toastT.promise(cancelMyVacationRequest(id), {
         pending: ["toasts.vacations.worker.cancelPending"],
         success: ["toasts.vacations.worker.cancelSuccess"],
         error: ["toasts.vacations.worker.error"],
@@ -150,7 +150,7 @@ const WorkerVacationsPage = () => {
 
     try {
       await toastT.promise(
-        createVacationRequest(token, {
+        createVacationRequest({
           startDate: toBerlinDayKey(p.startISO) ?? p.startISO,
           endDate: toBerlinDayKey(p.endISO) ?? p.endISO,
         }),

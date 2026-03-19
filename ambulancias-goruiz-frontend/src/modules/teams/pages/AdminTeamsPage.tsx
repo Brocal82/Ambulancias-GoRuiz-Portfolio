@@ -85,7 +85,7 @@ export default function AdminTeamsPage() {
 
     (async () => {
       try {
-        const vacPromise = getVacationFlagsInRange(token, {
+        const vacPromise = getVacationFlagsInRange({
           userIds,
           fromISO: weekStartISO,
           toISO: weekEndISO,

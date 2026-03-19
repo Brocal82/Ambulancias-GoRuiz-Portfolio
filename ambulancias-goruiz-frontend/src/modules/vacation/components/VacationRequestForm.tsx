@@ -250,7 +250,7 @@ const VacationRequestForm: React.FC<VacationRequestFormProps> = ({
       }
 
       // ✅ Crear request
-      const created = await createVacationRequest(token, {
+      const created = await createVacationRequest({
         startDate: selectionRange.startDate.toISOString(),
         endDate: selectionRange.endDate.toISOString(),
       });
