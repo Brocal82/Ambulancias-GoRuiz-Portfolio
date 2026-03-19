@@ -13,6 +13,8 @@ describe("API - Rutas críticas", () => {
   let adminToken: string;
   let workerToken: string;
   let workerId: string;
+  let adminId: string;
+  let teamId: string;
 
   beforeAll(async () => {
     await mongoose.connect(process.env.MONGODB_URI!);
@@ -46,6 +48,17 @@ describe("API - Rutas críticas", () => {
     adminToken = adminRes.body.token;
     workerToken = workerRes.body.token;
     workerId = workerRes.body.user?._id ?? "";
+    adminId = adminRes.body.user?._id ?? "";
+
+    const teamRes = await request(app)
+      .post(`${API}/teams`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        driver: adminId,
+        medic: workerId,
+        rotationMode: "none",
+      });
+    teamId = teamRes.body?._id ?? teamRes.body?.id ?? "";
   });
 
   afterAll(async () => {
@@ -181,6 +194,85 @@ describe("API - Rutas críticas", () => {
         expect(res.body[0]).toHaveProperty("startTime");
         expect(res.body[0]).toHaveProperty("endTime");
       }
+    });
+  });
+
+  describe("Dienst - assignTeamToWeek", () => {
+    it("POST /api/diensts/assign-team-to-week sin token devuelve 401", async () => {
+      await request(app)
+        .post(`${API}/diensts/assign-team-to-week`)
+        .send({
+          dienstNumber: 1,
+          weekStartDate: "2030-01-06",
+          teamId: "507f1f77bcf86cd799439011",
+        })
+        .expect(401);
+    });
+
+    it("POST /api/diensts/assign-team-to-week con token worker devuelve 403", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts/assign-team-to-week`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .send({
+          dienstNumber: 1,
+          weekStartDate: "2030-01-06",
+          teamId: "507f1f77bcf86cd799439011",
+        })
+        .expect(403);
+      expect(res.body).toHaveProperty("message");
+    });
+
+    it("POST /api/diensts/assign-team-to-week sin params obligatorios devuelve 400", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts/assign-team-to-week`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({})
+        .expect(400);
+      expect(res.body).toHaveProperty("message");
+      expect(res.body.message).toContain("Faltan parámetros");
+    });
+
+    it("POST /api/diensts/assign-team-to-week con teamId inválido devuelve 400", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts/assign-team-to-week`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 1,
+          weekStartDate: "2030-01-06",
+          teamId: "id-invalido",
+        })
+        .expect(400);
+      expect(res.body).toHaveProperty("message");
+      expect(res.body.message).toContain("teamId inválido");
+    });
+
+    it("POST /api/diensts/assign-team-to-week con team inexistente devuelve 404", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts/assign-team-to-week`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 1,
+          weekStartDate: "2030-01-06",
+          teamId: "507f1f77bcf86cd799439011",
+        })
+        .expect(404);
+      expect(res.body).toHaveProperty("message");
+      expect(res.body.message).toContain("Team no encontrado");
+    });
+
+    it("POST /api/diensts/assign-team-to-week con Dienst inexistente devuelve 404", async () => {
+      if (!teamId) return;
+      const res = await request(app)
+        .post(`${API}/diensts/assign-team-to-week`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 1,
+          weekStartDate: "2030-01-06",
+          teamId,
+        })
+        .expect(404);
+      expect(res.body).toHaveProperty("message");
+      expect(res.body.message).toContain("No existe Dienst");
     });
   });
 });
