@@ -23,7 +23,12 @@ import {
   WorkdayTripsSummary,
 } from "../components";
 
-import { useWorkdayTrips, useWorkdayAssignment, canStartTripNow } from "../hooks";
+import {
+  useWorkdayTrips,
+  useWorkdayAssignment,
+  canStartTripNow,
+  useTripDraftValidation,
+} from "../hooks";
 
 // Dominio (payloads)
 import {
@@ -34,7 +39,6 @@ import {
 // Utils
 import {
   checkTripLogic,
-  type TripDraft,
   saveAmbulanceData,
   loadAmbulanceData,
   clearAmbulanceData,
@@ -102,9 +106,6 @@ const MyWorkday = () => {
   const [isFinalClosure, setIsFinalClosure] = useState<boolean | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
 
-  const [draftError, setDraftError] = useState<string>("");
-  const [badField, setBadField] = useState<keyof TripDraft | null>(null);
-
   const timeWarningRef = useRef<HTMLInputElement>(null);
   const timeAtHomeRef = useRef<HTMLInputElement>(null);
   const timePickupRef = useRef<HTMLInputElement>(null);
@@ -140,6 +141,13 @@ const MyWorkday = () => {
     reports: "",
     countsForSummary: true,
   });
+
+  const { draftError, badField } = useTripDraftValidation(
+    tripFormData,
+    wasCancelled,
+    anschlussActive,
+    previousTripFormData,
+  );
 
   const [issueData, setIssueData] = useState<any | null>(null);
   const navigate = useNavigate();
@@ -205,32 +213,6 @@ const MyWorkday = () => {
       );
     }
   }, [ambulanceId, ambulanceNumber, initialAmbulanceKm, assignedDay]);
-
-  useEffect(() => {
-    // ? En Anschluss: el kmStart del paciente 2 NO puede ser menor
-    // que el kmStart del paciente 1 (guardado en previousTripFormData)
-    const minKmStart =
-      anschlussActive && previousTripFormData
-        ? Number(previousTripFormData.kmStart) //  este es el mínimo real según tu flujo
-        : undefined;
-
-    const result = checkTripLogic(
-      {
-        timeWarning: tripFormData.timeWarning,
-        timeAtHome: tripFormData.timeAtHome,
-        timePickup: tripFormData.timePickup,
-        timeArrival: tripFormData.timeArrival,
-        timeEnd: tripFormData.timeEnd,
-        kmStart: Number(tripFormData.kmStart),
-        kmEnd: Number(tripFormData.kmEnd),
-      },
-      wasCancelled,
-      minKmStart,
-    );
-
-    setDraftError(result.error || "");
-    setBadField(result.badField);
-  }, [tripFormData, wasCancelled, anschlussActive, previousTripFormData]);;
 
   useEffect(() => {
     const fetchAmbulances = async () => {
