@@ -52,8 +52,12 @@ router.patch(
 );
 
 router.get("/", authenticateToken, getAllWorkdaySummaries);
-router.post("/report-issue", reportIssue);
-router.get("/issues", getAllIssueReports);
+
+// 🟠 Reportar avería: cualquier usuario autenticado (worker durante cierre de jornada)
+router.post("/report-issue", authenticateToken, reportIssue);
+
+// 🟠 Listar averías: solo admin (AdminMechanicsPage)
+router.get("/issues", authenticateToken, authorizeRole("admin"), getAllIssueReports);
 router.delete(
   "/issues/:id",
   authenticateToken,
