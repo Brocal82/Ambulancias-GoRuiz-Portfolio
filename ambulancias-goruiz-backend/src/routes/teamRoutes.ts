@@ -2,6 +2,7 @@
 import { Router } from "express";
 import { authenticateToken } from "../middlewares/authMiddleware";
 import { authorizeRole } from "../middlewares/roleMiddleware";
+import { validateObjectId } from "../middlewares/validateObjectId";
 import {
   listTeams,
   createTeam,
@@ -25,9 +26,9 @@ router.get("/used-for-week", getUsedTeamsForWeek);
 router.post("/", createTeam);
 
 // ✏️ Actualizar equipo
-router.patch("/:id", updateTeam);
+router.patch("/:id", validateObjectId("id"), updateTeam);
 
 // ❌ Eliminar equipo
-router.delete("/:id", deleteTeam);
+router.delete("/:id", validateObjectId("id"), deleteTeam);
 
 export default router;

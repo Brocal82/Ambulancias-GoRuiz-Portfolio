@@ -19,6 +19,7 @@ import {
   authorizeSelfOrAdmin,
 } from "../../middlewares/roleMiddleware";
 import { upload } from "../../middlewares/uploadMiddleware";
+import { validateObjectId } from "../../middlewares/validateObjectId";
 
 const router = Router();
 
@@ -59,6 +60,7 @@ router.post(
   "/:userId/upload",
   authenticateToken,
   authorizeRole("admin"),
+  validateObjectId("userId"),
   upload.fields([
     { name: "profileImage", maxCount: 1 },
     { name: "documents", maxCount: 5 },
@@ -69,12 +71,37 @@ router.delete(
   "/:userId/document",
   authenticateToken,
   authorizeRole("admin"),
+  validateObjectId("userId"),
   deleteUserDocumentForUser,
 );
-router.get("/:id", authenticateToken, authorizeSelfOrAdmin, getUserById);
-router.put("/:id", authenticateToken, authorizeSelfOrAdmin, updateUser);
-router.patch("/:id", authenticateToken, authorizeSelfOrAdmin, updateUser);
+router.get(
+  "/:id",
+  authenticateToken,
+  validateObjectId("id"),
+  authorizeSelfOrAdmin,
+  getUserById,
+);
+router.put(
+  "/:id",
+  authenticateToken,
+  validateObjectId("id"),
+  authorizeSelfOrAdmin,
+  updateUser,
+);
+router.patch(
+  "/:id",
+  authenticateToken,
+  validateObjectId("id"),
+  authorizeSelfOrAdmin,
+  updateUser,
+);
 
-router.delete("/:id", authenticateToken, authorizeSelfOrAdmin, deleteUser);
+router.delete(
+  "/:id",
+  authenticateToken,
+  validateObjectId("id"),
+  authorizeSelfOrAdmin,
+  deleteUser,
+);
 
 export default router;

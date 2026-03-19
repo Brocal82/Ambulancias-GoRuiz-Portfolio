@@ -13,6 +13,7 @@ import {
 } from "../controllers/workdaySummaryController";
 import { authenticateToken } from "../middlewares/authMiddleware";
 import { authorizeRole } from "../middlewares/roleMiddleware";
+import { validateObjectId } from "../middlewares/validateObjectId";
 
 const router = express.Router();
 
@@ -40,6 +41,7 @@ router.patch(
   "/issues/:id/seen",
   authenticateToken,
   authorizeRole("admin"),
+  validateObjectId("id"),
   markIssueSeen,
 );
 
@@ -48,6 +50,7 @@ router.patch(
   "/:id/review",
   authenticateToken,
   authorizeRole("admin"),
+  validateObjectId("id"),
   markSummaryReviewed,
 );
 
@@ -62,6 +65,7 @@ router.delete(
   "/issues/:id",
   authenticateToken,
   authorizeRole("admin"),
+  validateObjectId("id"),
   deleteIssueReport,
 );
 

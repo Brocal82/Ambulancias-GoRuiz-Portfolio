@@ -5,6 +5,7 @@ import {
   patchNotificationRead,
 } from "../controllers/notificationController";
 import { authenticateToken } from "../middlewares/authMiddleware";
+import { validateObjectId } from "../middlewares/validateObjectId";
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.post("/notifications", authenticateToken, postNotification);
 router.patch(
   "/notifications/:id/read",
   authenticateToken,
+  validateObjectId("id"),
   patchNotificationRead,
 );
 

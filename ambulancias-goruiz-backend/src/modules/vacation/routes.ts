@@ -15,6 +15,7 @@ import {
 } from "./index";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { validateObjectId } from "../../middlewares/validateObjectId";
 
 const router = Router();
 
@@ -37,7 +38,12 @@ router.post(
 
 router.post("/", authenticateToken, createVacationRequest);
 
-router.patch("/:id/cancel", authenticateToken, cancelMyVacationRequest);
+router.patch(
+  "/:id/cancel",
+  authenticateToken,
+  validateObjectId("id"),
+  cancelMyVacationRequest,
+);
 
 router.get("/", authenticateToken, authorizeRole("admin"), getVacationRequests);
 
@@ -52,10 +58,16 @@ router.patch(
   "/:id",
   authenticateToken,
   authorizeRole("admin"),
+  validateObjectId("id"),
   updateVacationRequest,
 );
 
-router.post("/:id/respond", authenticateToken, respondToAlternativeDate);
+router.post(
+  "/:id/respond",
+  authenticateToken,
+  validateObjectId("id"),
+  respondToAlternativeDate,
+);
 
 router.get("/user", authenticateToken, getUserVacationRequests);
 
@@ -63,6 +75,7 @@ router.delete(
   "/:id",
   authenticateToken,
   authorizeRole("admin"),
+  validateObjectId("id"),
   deleteVacationRequest,
 );
 

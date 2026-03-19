@@ -2,6 +2,7 @@
 import { Router } from "express";
 import { authenticateToken } from "../middlewares/authMiddleware";
 import { authorizeRole } from "../middlewares/roleMiddleware";
+import { validateObjectId } from "../middlewares/validateObjectId";
 import {
   requestAppointment,
   getMyAppointments,
@@ -63,6 +64,7 @@ router.post(
   "/:id/select",
   authenticateToken,
   authorizeRole("worker"),
+  validateObjectId("id"),
   selectSlot,
 );
 
@@ -71,6 +73,7 @@ router.post(
   "/:id/propose",
   authenticateToken,
   authorizeRole("admin"),
+  validateObjectId("id"),
   proposeSlots,
 );
 
@@ -87,6 +90,7 @@ router.patch(
   "/:id",
   authenticateToken,
   authorizeRole("admin"),
+  validateObjectId("id"),
   updateAppointment,
 );
 
@@ -95,6 +99,7 @@ router.delete(
   "/:id/my",
   authenticateToken,
   authorizeRole("worker"),
+  validateObjectId("id"),
   deleteMyAppointment,
 );
 
@@ -103,6 +108,7 @@ router.delete(
   "/:id",
   authenticateToken,
   authorizeRole("admin"),
+  validateObjectId("id"),
   cancelAppointment,
 );
 

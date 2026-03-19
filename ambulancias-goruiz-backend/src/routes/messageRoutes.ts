@@ -13,6 +13,7 @@ import {
 import { authenticateToken } from "../middlewares/authMiddleware";
 import { authorizeRole } from "../middlewares/roleMiddleware";
 import { upload } from "../middlewares/uploadMiddleware";
+import { validateObjectId } from "../middlewares/validateObjectId";
 import type { ErrorRequestHandler } from "express";
 
 const router = Router();
@@ -37,6 +38,7 @@ router.get(
   "/user/:id",
   authenticateToken,
   authorizeRole("admin"),
+  validateObjectId("id"),
   getMessagesForUserAsAdmin,
 );
 
@@ -45,6 +47,7 @@ router.patch(
   "/:id/read",
   authenticateToken,
   authorizeRole("worker"),
+  validateObjectId("id"),
   markMessageAsRead,
 );
 
@@ -53,6 +56,7 @@ router.patch(
   "/:id/remove",
   authenticateToken,
   authorizeRole("worker"),
+  validateObjectId("id"),
   deleteMessageForUser,
 );
 
@@ -61,6 +65,7 @@ router.delete(
   "/:id",
   authenticateToken,
   authorizeRole("admin"),
+  validateObjectId("id"),
   deleteMessageByAdmin,
 );
 
