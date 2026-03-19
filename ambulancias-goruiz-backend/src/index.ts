@@ -23,6 +23,7 @@ import sickLeaveRoutes from "./modules/sick-leaves/routes";
 // Utils
 import cleanupOldDiensts from "./utils/cleanupOldDiensts";
 import { errorHandler } from "./middlewares/errorHandler";
+import { notFoundHandler } from "./middlewares/notFoundHandler";
 
 const app = express();
 
@@ -98,6 +99,11 @@ app.use("/api/appointments", appointmentRoutes);
 app.use("/api", notificationRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/sick-leaves", sickLeaveRoutes);
+
+// ----------------------------------------------------------------------------
+// 404: rutas no encontradas (antes del errorHandler)
+// ----------------------------------------------------------------------------
+app.use(notFoundHandler);
 
 // ----------------------------------------------------------------------------
 // Middleware global de errores (debe ir después de todas las rutas)
