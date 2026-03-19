@@ -7,6 +7,10 @@ build/
 
 # Environment files
 .env
+.env.test
+
+# Coverage
+coverage/
 
 # Logs
 npm-debug.log*
