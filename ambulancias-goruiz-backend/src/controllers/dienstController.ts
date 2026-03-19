@@ -16,6 +16,7 @@ import Team from "../models/Team";
 import User from "../models/User";
 import { getPscheinStatus } from "../utils/pscheinUtils";
 import {
+  computeDayBlockMapForTeam,
   findWeeklyConflicts,
   getDriverPscheinState,
   isOnVacationDay,
@@ -714,38 +715,16 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (
             : undefined;
 
         // Pre-calculamos por día si driver/medic están bloqueados por vacaciones/baja
-        const dayBlockMap: Record<string, { driver: boolean; medic: boolean }> =
-          {};
-
-        for (let j = 0; j < 7; j++) {
+        const weekDates = Array.from({ length: 7 }, (_, j) => {
           const day = new Date(startDate);
           day.setDate(startDate.getDate() + j);
-          const dateISO = day.toISOString().split("T")[0];
-
-          if (driverId || medicId) {
-            const [drvVac, medVac, drvSick, medSick] = await Promise.all([
-              driverId
-                ? isOnVacationDay({ userId: driverId.toString(), dateISO })
-                : Promise.resolve(false),
-              medicId
-                ? isOnVacationDay({ userId: medicId.toString(), dateISO })
-                : Promise.resolve(false),
-              driverId
-                ? isOnSickDay({ userId: driverId.toString(), dateISO })
-                : Promise.resolve(false),
-              medicId
-                ? isOnSickDay({ userId: medicId.toString(), dateISO })
-                : Promise.resolve(false),
-            ]);
-
-            dayBlockMap[dateISO] = {
-              driver: Boolean(drvVac || drvSick),
-              medic: Boolean(medVac || medSick),
-            };
-          } else {
-            dayBlockMap[dateISO] = { driver: false, medic: false };
-          }
-        }
+          return day.toISOString().split("T")[0];
+        });
+        const dayBlockMap = await computeDayBlockMapForTeam({
+          driverId: driverId?.toString(),
+          medicId: medicId?.toString(),
+          dates: weekDates,
+        });
 
         for (let j = 0; j < 7; j++) {
           const day = new Date(startDate);
@@ -1104,22 +1083,11 @@ export const assignTeamToWeek = async (
     );
 
     // 🩺 Bloqueos por día: vacaciones o baja (sick)
-    const dayBlockMap: Record<string, { driver: boolean; medic: boolean }> = {};
-    await Promise.all(
-      dates.map(async (dateISO) => {
-        const [drvVac, medVac, drvSick, medSick] = await Promise.all([
-          isOnVacationDay({ userId: driverId, dateISO }),
-          isOnVacationDay({ userId: medicId, dateISO }),
-          isOnSickDay({ userId: driverId, dateISO }),
-          isOnSickDay({ userId: medicId, dateISO }),
-        ]);
-
-        dayBlockMap[dateISO] = {
-          driver: Boolean(drvVac || drvSick),
-          medic: Boolean(medVac || medSick),
-        };
-      }),
-    );
+    const dayBlockMap = await computeDayBlockMapForTeam({
+      driverId,
+      medicId,
+      dates,
+    });
 
     let updatedCount = 0;
     // mantenemos el mismo array por compatibilidad con el front

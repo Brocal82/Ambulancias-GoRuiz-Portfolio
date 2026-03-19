@@ -13,6 +13,52 @@ export { isOnSickDay, findOverlappingSickLeave };
 
 const ZONE = "Europe/Berlin";
 
+export type DayBlockMap = Record<string, { driver: boolean; medic: boolean }>;
+
+/**
+ * Calcula por cada fecha si driver y medic están bloqueados (vacaciones o baja).
+ * Usado en generateDienstTemplatesForWeek y assignTeamToWeek.
+ */
+export async function computeDayBlockMapForTeam(params: {
+  driverId: string | undefined;
+  medicId: string | undefined;
+  dates: string[];
+}): Promise<DayBlockMap> {
+  const { driverId, medicId, dates } = params;
+  const result: DayBlockMap = {};
+
+  if (dates.length === 0) return result;
+
+  for (const dateISO of dates) {
+    if (!driverId && !medicId) {
+      result[dateISO] = { driver: false, medic: false };
+      continue;
+    }
+
+    const [drvVac, medVac, drvSick, medSick] = await Promise.all([
+      driverId
+        ? isOnVacationDay({ userId: driverId, dateISO })
+        : Promise.resolve(false),
+      medicId
+        ? isOnVacationDay({ userId: medicId, dateISO })
+        : Promise.resolve(false),
+      driverId
+        ? isOnSickDay({ userId: driverId, dateISO })
+        : Promise.resolve(false),
+      medicId
+        ? isOnSickDay({ userId: medicId, dateISO })
+        : Promise.resolve(false),
+    ]);
+
+    result[dateISO] = {
+      driver: Boolean(drvVac || drvSick),
+      medic: Boolean(medVac || medSick),
+    };
+  }
+
+  return result;
+}
+
 /**
  * Devuelve true si el usuario (driver o medic) ya está asignado
  * en algún Dienst esa semana (cualquier número), para cualquiera
