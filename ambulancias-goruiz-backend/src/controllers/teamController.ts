@@ -3,10 +3,10 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Team from "../models/Team";
 import User from "../models/User";
-import Dienst from "../models/Dienst";
+import { Dienst } from "../modules/diensts";
 import VacationRequest from "../modules/vacation/models/vacation-request.model";
 import { DateTime } from "luxon";
-import { isOnVacationDay } from "../utils/dienstValidation";
+import { isOnVacationDay } from "../modules/diensts/utils/dienstValidation";
 import { computeTeamAssignmentsForWeek } from "../utils/teamRotation";
 import Ambulance from "../models/Ambulance";
 

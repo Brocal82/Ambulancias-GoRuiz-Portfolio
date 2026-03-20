@@ -3,7 +3,7 @@ import User from "../models/user.model";
 import { IUser } from "../models/user.model";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import Dienst from "../../../models/Dienst";
+import { Dienst } from "../../diensts";
 import mongoose from "mongoose";
 import { sanitizeUser, sanitizeUsers } from "../utils/users.sanitize";
 import {

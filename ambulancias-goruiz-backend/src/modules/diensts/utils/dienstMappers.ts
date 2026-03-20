@@ -1,4 +1,4 @@
-import type { AssignedDay } from "../../../types/Dienst";
+import type { AssignedDay } from "../types/dienst.types";
 
 /**
  * Extrae fechas únicas (YYYY-MM-DD) de assignments que tienen date, startTime y endTime.

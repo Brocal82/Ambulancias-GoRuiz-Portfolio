@@ -1,7 +1,7 @@
 // backend/src/utils/dienstClearUtils.ts
 import mongoose from "mongoose";
 import { DateTime } from "luxon";
-import Dienst from "../models/Dienst";
+import { Dienst } from "../modules/diensts";
 
 const ZONE = "Europe/Berlin";
 

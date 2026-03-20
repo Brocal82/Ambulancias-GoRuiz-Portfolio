@@ -1,13 +1,14 @@
-// backend/src/utils/dienstValidation.ts
+// modules/diensts/utils/dienstValidation.ts
 import mongoose from "mongoose";
-import Dienst from "../models/Dienst";
+import Dienst from "../models/dienst.model";
 import {
   findOverlappingSickLeaveQuery as findOverlappingSickLeave,
   isOnSickDayQuery as isOnSickDay,
-} from "../modules/sick-leaves";
-import VacationRequest from "../modules/vacation/models/vacation-request.model";
-import { getPscheinStatus } from "./pscheinUtils";
+} from "../../sick-leaves";
+import VacationRequest from "../../vacation/models/vacation-request.model";
+import { getPscheinStatus } from "../../../utils/pscheinUtils";
 import { DateTime } from "luxon";
+
 export { isOnSickDay, findOverlappingSickLeave };
 
 const ZONE = "Europe/Berlin";
@@ -16,7 +17,6 @@ export type DayBlockMap = Record<string, { driver: boolean; medic: boolean }>;
 
 /**
  * Calcula por cada fecha si driver y medic están bloqueados (vacaciones o baja).
- * Usado en generateDienstTemplatesForWeek y assignTeamToWeek.
  */
 export async function computeDayBlockMapForTeam(params: {
   driverId: string | undefined;
@@ -63,7 +63,7 @@ export async function computeDayBlockMapForTeam(params: {
  */
 export async function isOnVacationDay(params: {
   userId: string;
-  dateISO: string; // 'YYYY-MM-DD'
+  dateISO: string;
 }): Promise<boolean> {
   const { userId, dateISO } = params;
   if (
@@ -73,7 +73,6 @@ export async function isOnVacationDay(params: {
     return false;
   }
 
-  // Límites del día en zona Berlin (corrige problemas de DST/off-by-one)
   const startBER = DateTime.fromISO(dateISO, { zone: ZONE }).startOf("day");
   const endBER = DateTime.fromISO(dateISO, { zone: ZONE }).endOf("day");
 
@@ -89,21 +88,20 @@ export async function isOnVacationDay(params: {
 
 /**
  * Normaliza el estado del P-Schein de un conductor.
- * - 'expired' → no asignable
- * - 'warning' → asignable pero conviene avisar (lo usarás en UI si quieres)
- * - 'valid' | 'no-date' → asignable (según tu política)
  */
 export function getDriverPscheinState(
   pscheinExpiry?: string,
 ): "expired" | "warning" | "valid" | "no-date" {
-  const st = getPscheinStatus(pscheinExpiry); // reutiliza tu backend/utils/pscheinUtils
+  const st = getPscheinStatus(pscheinExpiry);
   if (st === "expired") return "expired";
   if (st === "warning") return "warning";
   if (st === "valid") return "valid";
   return "no-date";
 }
 
-// 🔎 Busca asignaciones de ese usuario en cualquier Dienst de la misma semana
+/**
+ * Busca asignaciones de ese usuario en cualquier Dienst de la misma semana.
+ */
 export async function findWeeklyConflicts(
   userId: mongoose.Types.ObjectId,
   weekStart: Date,

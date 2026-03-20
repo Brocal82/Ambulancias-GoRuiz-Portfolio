@@ -2,7 +2,7 @@
 
 import { DateTime } from "luxon";
 import mongoose from "mongoose";
-import Dienst from "../models/Dienst";
+import { Dienst } from "../modules/diensts";
 
 // Zona horaria oficial del servicio
 const ZONE = "Europe/Berlin";

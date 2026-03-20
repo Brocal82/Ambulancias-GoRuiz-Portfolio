@@ -1,4 +1,4 @@
-//backend/src/models/Dienst.ts
+// modules/diensts/models/dienst.model.ts
 import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface IDienstAssignment {
@@ -7,8 +7,8 @@ export interface IDienstAssignment {
   ambulanceId?: Types.ObjectId;
   startTime: string;
   endTime: string;
-  driver?: Types.ObjectId; // ahora es opcional
-  medic?: Types.ObjectId; // ahora es opcional
+  driver?: Types.ObjectId;
+  medic?: Types.ObjectId;
 }
 
 export interface IDienst extends Document {
@@ -16,8 +16,6 @@ export interface IDienst extends Document {
   weekStartDate: Date;
   weekEndDate: Date;
   assignments: IDienstAssignment[];
-
-  // ✅ Ancla semanal del Team (para rotación robusta)
   weekTeamId?: Types.ObjectId | null;
 }
 
@@ -34,7 +32,7 @@ const AssignmentSchema = new Schema<IDienstAssignment>(
     driver: { type: Schema.Types.ObjectId, ref: "User", required: false },
     medic: { type: Schema.Types.ObjectId, ref: "User", required: false },
   },
-  { _id: true }, // 👈 explícitamente indicamos que cada assignment debe tener su _id
+  { _id: true },
 );
 
 const DienstSchema = new Schema<IDienst>({
@@ -42,8 +40,6 @@ const DienstSchema = new Schema<IDienst>({
   weekStartDate: { type: Date, required: false },
   weekEndDate: { type: Date, required: false },
   assignments: [AssignmentSchema],
-
-  // ✅ Ancla semanal del Team (para rotación robusta)
   weekTeamId: {
     type: Schema.Types.ObjectId,
     ref: "Team",

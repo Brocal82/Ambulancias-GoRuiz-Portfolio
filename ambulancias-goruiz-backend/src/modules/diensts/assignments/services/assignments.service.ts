@@ -1,15 +1,15 @@
 import mongoose from "mongoose";
-import Dienst from "../../../../models/Dienst";
+import Dienst from "../../models/dienst.model";
 import Team from "../../../../models/Team";
-import type { AssignedDay } from "../../../../types/Dienst";
+import type { AssignedDay } from "../../types/dienst.types";
 import {
   findWeeklyConflicts,
   getDriverPscheinState,
   isOnVacationDay,
   isOnSickDay,
-} from "../../../../utils/dienstValidation";
+  computeDayBlockMapForTeam,
+} from "../../utils/dienstValidation";
 import { extractValidDatesFromAssignments, mapAssignmentToAssignedDay } from "../../utils/dienstMappers";
-import { computeDayBlockMapForTeam } from "../../../../utils/dienstValidation";
 import { DienstAssignmentError } from "./assignment-errors";
 
 export async function getAssignedDaysForUser(userId: string): Promise<AssignedDay[]> {

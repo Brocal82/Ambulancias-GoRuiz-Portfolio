@@ -1,4 +1,5 @@
-// backend/src/types/Dienst.ts
+// modules/diensts/types/dienst.types.ts
+
 export interface UserRef {
   _id: string;
   name: string;
@@ -14,7 +15,7 @@ export interface AssignedDay {
   startTime: string;
   endTime: string;
   ambulanceId?: string;
-  ambulanceNumber?: string; // ✅ ← AÑADE esta línea
+  ambulanceNumber?: string;
   driver?: string | UserRef;
   medic?: string | UserRef;
 }

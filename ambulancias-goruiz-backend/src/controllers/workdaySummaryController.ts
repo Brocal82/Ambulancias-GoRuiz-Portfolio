@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import Dienst from "../models/Dienst";
+import { Dienst } from "../modules/diensts";
 import Trip from "../models/Trip";
 import WorkdaySummary from "../models/workdaySummary";
 import WorkdayIssue from "../models/WorkdayIssue";

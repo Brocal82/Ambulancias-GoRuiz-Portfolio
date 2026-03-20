@@ -1,5 +1,5 @@
 import User from "../models/user.model";
-import Dienst from "../../../models/Dienst";
+import { Dienst } from "../../diensts";
 import { DateTime } from "luxon";
 import mongoose from "mongoose";
 import VacationRequest from "../../vacation/models/vacation-request.model";

@@ -1,11 +1,11 @@
 import mongoose from "mongoose";
-import Dienst from "../../../../models/Dienst";
+import Dienst from "../../models/dienst.model";
 import Team from "../../../../models/Team";
 import {
   DienstTemplate,
   type DaySchedule,
 } from "../../../dienst-templates/models";
-import { computeDayBlockMapForTeam } from "../../../../utils/dienstValidation";
+import { computeDayBlockMapForTeam } from "../../utils/dienstValidation";
 import type { z } from "zod";
 import type { dienstSchema } from "../../schemas/dienstSchema";
 

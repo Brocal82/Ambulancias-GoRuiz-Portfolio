@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Dienst from "../../../../models/Dienst";
+import Dienst from "../../models/dienst.model";
 import { buildDienstSearchQuery } from "../../utils/dienstQueryBuilder";
 import type { z } from "zod";
 import type { dienstQuerySchema } from "../../schemas/dienstQuerySchema";

@@ -1,7 +1,7 @@
 import {
   computeDayBlockMapForTeam,
   type DayBlockMap,
-} from "../utils/dienstValidation";
+} from "../modules/diensts/utils/dienstValidation";
 
 describe("computeDayBlockMapForTeam", () => {
   it("returns empty object when dates is empty", async () => {
