@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import Dienst from "../../../../models/Dienst";
+import * as assignmentsService from "../services/assignments.service";
+import { DienstAssignmentError } from "../services/assignment-errors";
 
-// ✅ Limpiar driver/medic/ambulancia de TODA la semana del Dienst (mantiene horas)
 export const clearPeopleForWeek = async (
   req: Request,
   res: Response,
@@ -9,7 +9,7 @@ export const clearPeopleForWeek = async (
   try {
     const { dienstNumber, weekStartDate } = req.body as {
       dienstNumber?: number;
-      weekStartDate?: string; // 'YYYY-MM-DD'
+      weekStartDate?: string;
     };
 
     if (!dienstNumber || !weekStartDate) {
@@ -25,49 +25,22 @@ export const clearPeopleForWeek = async (
       return;
     }
 
-    // Buscar Dienst por número y día exacto de inicio de semana
-    const dienst = await Dienst.findOne({
+    const result = await assignmentsService.clearPeopleForWeek({
       dienstNumber,
-      weekStartDate: {
-        $gte: start,
-        $lt: new Date(start.getTime() + 24 * 60 * 60 * 1000),
-      },
-    });
-
-    if (!dienst) {
-      res
-        .status(404)
-        .json({ message: "No existe Dienst para esa semana y número" });
-      return;
-    }
-
-    let clearedCount = 0;
-
-    dienst.assignments = dienst.assignments.map((a) => {
-      if (!a?.date || !a?.startTime || !a?.endTime) return a;
-      const hadSomething = !!a.driver || !!a.medic || !!a.ambulanceId;
-      if (hadSomething) clearedCount += 1;
-
-      return {
-        ...a,
-        driver: undefined,
-        medic: undefined,
-        ambulanceId: undefined, // 👈 ahora también se limpia la ambulancia
-      } as any;
-    });
-
-    // ✅ Al limpiar personas, también limpiamos el ancla semanal
-    (dienst as any).weekTeamId = null;
-
-    await dienst.save();
-
-    res.status(200).json({
-      message: `Asignaciones (driver/medic/ambulancia) limpiadas para Dienst #${dienstNumber} (${weekStartDate}).`,
-      clearedCount,
-      dienstId: dienst.id,
       weekStartDate,
     });
+
+    res.status(200).json(result);
   } catch (error) {
+    if (error instanceof DienstAssignmentError) {
+      const body: Record<string, unknown> = {
+        code: error.code,
+        message: error.message,
+      };
+      if (error.details !== undefined) body.details = error.details;
+      res.status(error.statusCode).json(body);
+      return;
+    }
     console.error("❌ Error en clearPeopleForWeek:", error);
     res
       .status(500)

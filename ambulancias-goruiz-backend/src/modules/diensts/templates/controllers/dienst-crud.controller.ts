@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { ZodError, z } from "zod";
-import Dienst from "../../../../models/Dienst";
 import { dienstSchema } from "../../schemas/dienstSchema";
+import * as lifecycleService from "../services/lifecycle.service";
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
   message: "ID no válido",
@@ -10,8 +10,7 @@ const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
 export const createDienst = async (req: Request, res: Response) => {
   try {
     const parsedData = dienstSchema.parse(req.body);
-    const newDienst = new Dienst(parsedData);
-    const savedDienst = await newDienst.save();
+    const savedDienst = await lifecycleService.createDienst(parsedData);
     res.status(201).json(savedDienst);
   } catch (error) {
     if (error instanceof ZodError) {
@@ -28,9 +27,7 @@ export const updateDienst = async (req: Request, res: Response) => {
   try {
     const parsedId = idSchema.parse(req.params.id);
     const parsedData = dienstSchema.partial().parse(req.body);
-    const updatedDienst = await Dienst.findByIdAndUpdate(parsedId, parsedData, {
-      new: true,
-    }).populate("assignments.driver assignments.medic assignments.ambulanceId");
+    const updatedDienst = await lifecycleService.updateDienst(parsedId, parsedData);
     if (!updatedDienst) {
       res.status(404).json({ message: "Dienst no encontrado" });
       return;
@@ -50,7 +47,7 @@ export const updateDienst = async (req: Request, res: Response) => {
 export const deleteDienst = async (req: Request, res: Response) => {
   try {
     const parsedId = idSchema.parse(req.params.id);
-    const deletedDienst = await Dienst.findByIdAndDelete(parsedId);
+    const deletedDienst = await lifecycleService.deleteDienst(parsedId);
     if (!deletedDienst) {
       res.status(404).json({ message: "Dienst no encontrado" });
       return;

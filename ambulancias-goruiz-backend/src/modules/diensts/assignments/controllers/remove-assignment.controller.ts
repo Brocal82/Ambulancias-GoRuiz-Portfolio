@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import Dienst from "../../../../models/Dienst";
+import * as assignmentsService from "../services/assignments.service";
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
   message: "ID no válido",
@@ -8,21 +8,9 @@ const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
 
 export const removeAssignment = async (req: Request, res: Response) => {
   const { date } = req.body;
-  const parsedId = idSchema.parse(req.params.id);
-
   try {
-    const updatedDienst = await Dienst.findByIdAndUpdate(
-      parsedId,
-      { $pull: { assignments: { date } } },
-      { new: true },
-    )
-      .populate("assignments.driver", "name lastName pscheinExpiry")
-      .populate("assignments.medic", "name lastName pscheinExpiry")
-      .populate(
-        "assignments.ambulanceId",
-        "ambulanceNumber brand modelName licensePlate",
-      );
-
+    const parsedId = idSchema.parse(req.params.id);
+    const updatedDienst = await assignmentsService.removeAssignment(parsedId, date);
     res.status(200).json(updatedDienst);
   } catch (error) {
     res.status(500).json({ message: "Error al eliminar el assignment", error });

@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import Dienst from "../../../../models/Dienst";
+import * as lifecycleService from "../services/lifecycle.service";
 
 export const deleteDienstsForWeek: RequestHandler = async (req, res) => {
   const { weekStartDate } = req.body;
@@ -10,20 +10,10 @@ export const deleteDienstsForWeek: RequestHandler = async (req, res) => {
   }
 
   try {
-    const start = new Date(weekStartDate);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-
-    const deleted = await Dienst.deleteMany({
-      weekStartDate: {
-        $gte: start,
-        $lte: end,
-      },
-    });
-
+    const { deletedCount } = await lifecycleService.deleteDienstsForWeek(weekStartDate);
     res
       .status(200)
-      .json({ message: "Diensts eliminados", count: deleted.deletedCount });
+      .json({ message: "Diensts eliminados", count: deletedCount });
   } catch (error) {
     console.error("Error al eliminar Diensts:", error);
     res.status(500).json({ message: "Error interno del servidor" });

@@ -1,31 +1,16 @@
 import { Request, Response } from "express";
 import { RequestHandler } from "express";
-import mongoose from "mongoose";
 import { ZodError, z } from "zod";
-import Dienst from "../../../../models/Dienst";
 import { dienstQuerySchema } from "../../schemas/dienstQuerySchema";
-import { buildDienstSearchQuery } from "../../utils/dienstQueryBuilder";
+import * as calendarService from "../services/calendar.service";
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
   message: "ID no válido",
 });
 
-export const getAllDiensts: RequestHandler = async (req, res) => {
+export const getAllDiensts: RequestHandler = async (_req, res) => {
   try {
-    const diensts = await Dienst.find()
-      .populate(
-        "assignments.driver",
-        "name lastName pscheinExpiry ambulanceRole",
-      )
-      .populate(
-        "assignments.medic",
-        "name lastName pscheinExpiry ambulanceRole",
-      )
-      .populate(
-        "assignments.ambulanceId",
-        "ambulanceNumber brand modelName licensePlate",
-      )
-      .lean();
+    const diensts = await calendarService.getAllDiensts();
     res.status(200).json(diensts);
   } catch (error) {
     console.error("Error al obtener los Diensts:", error);
@@ -36,9 +21,7 @@ export const getAllDiensts: RequestHandler = async (req, res) => {
 export const getDienstById = async (req: Request, res: Response) => {
   try {
     const parsedId = idSchema.parse(req.params.id);
-    const dienst = await Dienst.findById(parsedId).populate(
-      "assignments.driver assignments.medic assignments.ambulanceId",
-    );
+    const dienst = await calendarService.getDienstById(parsedId);
     if (!dienst) {
       res.status(404).json({ message: "Dienst no encontrado" });
       return;
@@ -56,13 +39,8 @@ export const getDienstById = async (req: Request, res: Response) => {
 export const searchDienst = async (req: Request, res: Response) => {
   try {
     const parsedQuery = dienstQuerySchema.parse(req.query);
-    const query = buildDienstSearchQuery(parsedQuery);
-
-    const dienste = await Dienst.find(query).populate(
-      "assignments.driver assignments.medic",
-    );
+    const dienste = await calendarService.searchDienst(parsedQuery);
     res.status(200).json(dienste);
-    return;
   } catch (error) {
     if (error instanceof ZodError) {
       res
@@ -79,19 +57,7 @@ export const getDienstsByUser = async (req: Request, res: Response) => {
   const { userId } = req.params;
 
   try {
-    const diensts = await Dienst.find({
-      assignments: {
-        $elemMatch: {
-          $or: [
-            { driver: new mongoose.Types.ObjectId(userId) },
-            { medic: new mongoose.Types.ObjectId(userId) },
-          ],
-        },
-      },
-    })
-      .populate("assignments.driver", "name lastName")
-      .populate("assignments.medic", "name lastName");
-
+    const diensts = await calendarService.getDienstsByUser(userId);
     res.status(200).json(diensts);
   } catch (error) {
     console.error("Error fetching diensts:", error);
