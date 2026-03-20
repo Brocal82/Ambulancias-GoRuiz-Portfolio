@@ -1,16 +1,16 @@
-//src/routes/dienstRoutes.ts
+// modules/diensts/routes.ts
 import express from "express";
 
 import {
   DienstAssignments,
   DienstCalendar,
   DienstLifecycle,
-} from "../modules/diensts";
-import { dienstTemplateRoutes } from "../modules/dienst-templates";
+} from "./index";
+import { dienstTemplateRoutes } from "../dienst-templates";
 
-import { authenticateToken } from "../middlewares/authMiddleware";
-import { authorizeRole } from "../middlewares/roleMiddleware";
-import { validateObjectId } from "../middlewares/validateObjectId";
+import { authenticateToken } from "../../middlewares/authMiddleware";
+import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { validateObjectId } from "../../middlewares/validateObjectId";
 
 const router = express.Router();
 

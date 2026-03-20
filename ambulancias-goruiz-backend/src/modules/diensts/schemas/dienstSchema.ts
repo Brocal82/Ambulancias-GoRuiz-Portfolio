@@ -1,4 +1,4 @@
-//src/schemas/dienstSchema.ts
+// modules/diensts/schemas/dienstSchema.ts
 import { z } from "zod";
 
 // Validar que es un ObjectId válido de MongoDB

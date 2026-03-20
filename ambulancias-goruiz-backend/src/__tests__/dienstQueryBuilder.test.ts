@@ -1,5 +1,5 @@
-import { buildDienstSearchQuery } from "../utils/dienstQueryBuilder";
-import type { DienstQueryParams } from "../utils/dienstQueryBuilder";
+import { buildDienstSearchQuery } from "../modules/diensts/utils/dienstQueryBuilder";
+import type { DienstQueryParams } from "../modules/diensts/utils/dienstQueryBuilder";
 
 describe("buildDienstSearchQuery", () => {
   it("returns empty object when no params", () => {

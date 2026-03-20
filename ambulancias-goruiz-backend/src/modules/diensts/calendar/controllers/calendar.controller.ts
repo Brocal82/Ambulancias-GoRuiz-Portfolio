@@ -3,8 +3,8 @@ import { RequestHandler } from "express";
 import mongoose from "mongoose";
 import { ZodError, z } from "zod";
 import Dienst from "../../../../models/Dienst";
-import { dienstQuerySchema } from "../../../../schemas/dienstQuerySchema";
-import { buildDienstSearchQuery } from "../../../../utils/dienstQueryBuilder";
+import { dienstQuerySchema } from "../../schemas/dienstQuerySchema";
+import { buildDienstSearchQuery } from "../../utils/dienstQueryBuilder";
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
   message: "ID no válido",

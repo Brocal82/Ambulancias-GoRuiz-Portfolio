@@ -1,7 +1,7 @@
 import {
   extractValidDatesFromAssignments,
   mapAssignmentToAssignedDay,
-} from "../utils/dienstMappers";
+} from "../modules/diensts/utils/dienstMappers";
 
 describe("extractValidDatesFromAssignments", () => {
   it("returns empty array when assignments is null or undefined", () => {

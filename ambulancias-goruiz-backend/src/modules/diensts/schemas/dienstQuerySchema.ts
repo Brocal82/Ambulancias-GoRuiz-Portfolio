@@ -1,4 +1,4 @@
-//src/schemas/dienstQuerySchema.ts
+// modules/diensts/schemas/dienstQuerySchema.ts
 import { z } from "zod";
 
 export const dienstQuerySchema = z.object({

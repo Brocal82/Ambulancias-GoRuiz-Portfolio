@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { ZodError, z } from "zod";
 import Dienst from "../../../../models/Dienst";
-import { dienstSchema } from "../../../../schemas/dienstSchema";
+import { dienstSchema } from "../../schemas/dienstSchema";
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
   message: "ID no válido",

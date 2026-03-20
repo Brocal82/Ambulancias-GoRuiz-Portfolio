@@ -7,7 +7,7 @@ import {
   findWeeklyConflicts,
   getDriverPscheinState,
 } from "../../../../utils/dienstValidation";
-import { extractValidDatesFromAssignments } from "../../../../utils/dienstMappers";
+import { extractValidDatesFromAssignments } from "../../utils/dienstMappers";
 
 // ✅ Asignar TEAM a la semana:
 //    - Si hay CUALQUIER conflicto semanal (driver o medic en otro Dienst): ABORTAR (409).

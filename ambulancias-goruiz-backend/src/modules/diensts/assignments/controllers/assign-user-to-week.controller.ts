@@ -7,7 +7,7 @@ import {
   isOnVacationDay,
   isOnSickDay,
 } from "../../../../utils/dienstValidation";
-import { extractValidDatesFromAssignments } from "../../../../utils/dienstMappers";
+import { extractValidDatesFromAssignments } from "../../utils/dienstMappers";
 
 // ✅ Asignar UN USUARIO (driver o medic) a TODA la semana de un Dienst
 export const assignUserToWeek = async (

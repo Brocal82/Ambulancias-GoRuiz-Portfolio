@@ -2,7 +2,7 @@ import { RequestHandler } from "express";
 import mongoose from "mongoose";
 import Dienst from "../../../../models/Dienst";
 import { AssignedDay } from "../../../../types/Dienst";
-import { mapAssignmentToAssignedDay } from "../../../../utils/dienstMappers";
+import { mapAssignmentToAssignedDay } from "../../utils/dienstMappers";
 
 export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
   const { userId } = req.params;
