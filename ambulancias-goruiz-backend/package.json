@@ -20,6 +20,7 @@
     "create:ambulances": "ts-node scripts/createAmbulances.ts",
     "delete:ambulances": "ts-node scripts/deleteAllAmbulances.ts",
     "delete:uploads": "ts-node scripts/deleteUnusedUploads.ts",
+    "cleanup:test-data": "ts-node scripts/cleanupTestDataFromDev.ts",
     "test": "jest",
     "test:watch": "jest --watch"
   },
