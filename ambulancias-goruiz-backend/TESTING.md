@@ -16,8 +16,10 @@ Copia `.env.test.example` a `.env.test`:
 
 Edita `.env.test` y configura:
 
-- `MONGODB_URI`: Base de datos **dedicada para tests** (ej: `ambulancias_test`). No uses la DB de desarrollo ni producción.
-- `JWT_SECRET`: Secret para firmar tokens en tests.
+- **`MONGODB_URI_TEST`** (obligatorio): Base de datos **dedicada para tests** (ej: `mongodb://localhost:27017/ambulancias_test`). Nunca uses la DB de desarrollo ni producción.
+- **`JWT_SECRET`**: Secret para firmar tokens en tests.
+
+> **Importante:** Se usa `MONGODB_URI_TEST` (no `MONGODB_URI`) para garantizar que los tests nunca toquen la DB de desarrollo. Cuando `NODE_ENV=test`, el backend usa exclusivamente `MONGODB_URI_TEST`.
 
 ### Ejecución
 
@@ -25,6 +27,6 @@ Edita `.env.test` y configura:
 npm test
 ```
 
-### Si falta .env.test
+### Si falta .env.test o MONGODB_URI_TEST
 
-Si ejecutas `npm test` sin `.env.test`, el proceso fallará con un mensaje claro. No se usa `.env` como fallback para evitar ejecuciones accidentales contra la DB incorrecta.
+Si ejecutas `npm test` sin `.env.test`, o sin `MONGODB_URI_TEST` en `.env.test`, el proceso fallará con un mensaje claro. No se usa `.env` como fallback para evitar ejecuciones accidentales contra la DB incorrecta.

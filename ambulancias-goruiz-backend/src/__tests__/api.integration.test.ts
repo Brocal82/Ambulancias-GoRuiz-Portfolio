@@ -1,11 +1,12 @@
 /**
  * Tests de integración para rutas críticas.
- * Requiere .env.test con MONGODB_URI y JWT_SECRET.
- * Usa una DB real (recomendado: ambulancias_test).
+ * Requiere .env.test con MONGODB_URI_TEST y JWT_SECRET.
+ * Usa una DB real dedicada para tests (ej: ambulancias_test).
  */
 import request from "supertest";
 import mongoose from "mongoose";
 import { app } from "../app";
+import { env } from "../config/env";
 
 const API = "/api";
 
@@ -17,7 +18,7 @@ describe("API - Rutas críticas", () => {
   let teamId: string;
 
   beforeAll(async () => {
-    await mongoose.connect(process.env.MONGODB_URI!);
+    await mongoose.connect(env.MONGODB_URI);
     const suffix = Date.now();
     const adminEmail = `admin-test-${suffix}@example.com`;
     const workerEmail = `worker-test-${suffix}@example.com`;

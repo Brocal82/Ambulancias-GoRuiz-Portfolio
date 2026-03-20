@@ -1,14 +1,19 @@
 import dotenv from "dotenv";
 import { z } from "zod";
 
-// Cargar .env UNA sola vez, lo antes posible
-dotenv.config();
+// En test: NUNCA cargar .env (evita contaminar con DB de desarrollo).
+// jest.setup.js ya cargó .env.test antes de importar este módulo.
+if (process.env.NODE_ENV !== "test") {
+  dotenv.config();
+}
 
 const nonEmpty = z.string().trim().min(1);
 
 const envSchema = z.object({
   // Críticas (fail-fast)
-  MONGODB_URI: nonEmpty,
+  // En test: MONGODB_URI_TEST es obligatorio; MONGODB_URI se ignora.
+  MONGODB_URI: nonEmpty.optional(),
+  MONGODB_URI_TEST: nonEmpty.optional(),
   JWT_SECRET: nonEmpty,
 
   // Opcionales / con defaults
@@ -62,12 +67,34 @@ const envSchema = z.object({
 export const env = (() => {
   const parsed = envSchema.safeParse(process.env);
   if (!parsed.success) {
-    // Mensaje legible para despliegues (Render, etc.)
     const formatted = parsed.error.flatten().fieldErrors;
-    // eslint-disable-next-line no-console
     console.error("❌ Variables de entorno inválidas o faltantes:", formatted);
     process.exit(1);
   }
-  return parsed.data;
+
+  const data = parsed.data;
+  const isTest = process.env.NODE_ENV === "test";
+
+  // En test: MONGODB_URI_TEST es obligatorio (DB aislada).
+  if (isTest) {
+    if (!data.MONGODB_URI_TEST) {
+      console.error("❌ En NODE_ENV=test se requiere MONGODB_URI_TEST en .env.test");
+      console.error("   Usa una DB dedicada para tests (ej: mongodb://localhost/ambulancias_test)");
+      process.exit(1);
+    }
+  } else {
+    // Desarrollo/producción: MONGODB_URI es obligatorio.
+    if (!data.MONGODB_URI) {
+      console.error("❌ MONGODB_URI es obligatorio en desarrollo y producción");
+      process.exit(1);
+    }
+  }
+
+  const MONGODB_URI = isTest ? data.MONGODB_URI_TEST! : data.MONGODB_URI!;
+
+  return {
+    ...data,
+    MONGODB_URI,
+  };
 })();
 
