@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { getIssuesOpenCount } from "../domain/api";
-
-/** Evento global para forzar refresco tras cambios en aver­as (crear, cerrar, borrar, marcar vistas, etc.) */
-export const ADMIN_ISSUES_CHANGED_EVENT = "admin-issues-changed";
+import { emitMechanicsIssuesChanged } from "../utils/mechanicsEvents";
+import { useMechanicsIssuesChanged } from "./useMechanicsIssuesChanged";
 
 type Options = {
   /** Intervalo de refresco en ms. 0 = sin polling (default). */
@@ -55,28 +54,20 @@ export function useAdminIssuesOpenCount({ pollMs = 0 }: Options = {}) {
     };
   }, [token, fetchCount]);
 
-  // Refrescar al volver el foco / visibilidad y por evento global
+  // Sincronización cross-tab (CustomEvent + BroadcastChannel + storage)
+  useMechanicsIssuesChanged(fetchCount);
+
+  // Refrescar al volver el foco / visibilidad
   useEffect(() => {
     const onFocus = () => fetchCount();
     const onVisibility = () => {
       if (document.visibilityState === "visible") fetchCount();
     };
-    const onChanged = () => fetchCount();
-
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener(
-      ADMIN_ISSUES_CHANGED_EVENT as any,
-      onChanged as EventListener,
-    );
-
     return () => {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener(
-        ADMIN_ISSUES_CHANGED_EVENT as any,
-        onChanged as EventListener,
-      );
     };
   }, [fetchCount]);
 
@@ -98,7 +89,7 @@ export function useAdminIssuesOpenCount({ pollMs = 0 }: Options = {}) {
   };
 }
 
-/** Helper para emitir el evento global tras acciones que cambien el conteo (crear/cerrar/borrar/marcar visto) */
+/** Helper para emitir tras cambios en averías (crear/cerrar/borrar/marcar visto). Cross-tab via CustomEvent + BroadcastChannel + storage. */
 export function notifyAdminIssuesChanged() {
-  window.dispatchEvent(new Event(ADMIN_ISSUES_CHANGED_EVENT));
+  emitMechanicsIssuesChanged();
 }

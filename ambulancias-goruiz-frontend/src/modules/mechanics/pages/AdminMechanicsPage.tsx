@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import MechanicsYearGrid from "../components/MechanicsYearGrid";
 import {
   buildIssueCountsByMonthForYear,
@@ -17,6 +17,7 @@ import { getAllAmbulances } from "../../ambulances/domain/api";
 import type { Ambulance } from "../../ambulances/domain/types";
 import { useTranslation } from "react-i18next";
 import { notifyAdminIssuesChanged } from "../hooks/useAdminIssuesOpenCount";
+import { useMechanicsIssuesChanged } from "../hooks/useMechanicsIssuesChanged";
 import { normalizeIssues } from "../utils/normalizeIssue";
 import { sortIssuesByDateDesc } from "../utils/sortIssuesByDateDesc";
 import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
@@ -49,27 +50,30 @@ const AdminMechanicsPage = () => {
   }, [issues, year, openMonth]);
 
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (!token) return;
-
-        const issuesData = await getAllIssueReports();
-        setIssues(normalizeIssues(issuesData));
-
-
-        const ambulancesData = await getAllAmbulances();
-        setAmbulances(ambulancesData);
+  const fetchData = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const issuesData = await getAllIssueReports();
+      setIssues(normalizeIssues(issuesData));
+      const ambulancesData = await getAllAmbulances();
+      setAmbulances(ambulancesData);
       } catch (err) {
         console.error("¢ Error al cargar reportes o ambulancias:", err);
-        toastT.error(["toasts.mechanics.loadError"]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+      toastT.error(["toasts.mechanics.loadError"]);
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
+
+  const fetchDataRef = useRef(fetchData);
+  fetchDataRef.current = fetchData;
+
+  useMechanicsIssuesChanged(() => void fetchDataRef.current?.());
+
+  useEffect(() => {
+    void fetchData();
+  }, [fetchData]);
 
   const handleDelete = async (id: string) => {
     if (!token) return;

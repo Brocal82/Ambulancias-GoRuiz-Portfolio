@@ -5,6 +5,7 @@ import { toastT } from "../../../utils/toast";
 import type { AssignedDayFull } from "../../../modules/diensts";
 import { formatYYYYMMDDToDDMMYYYY } from "../../../utils/timeUtils";
 import { useTranslation } from "react-i18next";
+import { notifyAdminIssuesChanged } from "../hooks/useAdminIssuesOpenCount";
 
 interface Props {
     isOpen: boolean;
@@ -76,6 +77,7 @@ const IssueReportModal: React.FC<Props> = ({
         try {
             await axios.post("/workday-summary/report-issue", payload);
 
+            notifyAdminIssuesChanged();
             toastT.success(["toasts.mechanics.reportSent"]);
             onSubmit({ issueText: description.trim() });
             onClose();
