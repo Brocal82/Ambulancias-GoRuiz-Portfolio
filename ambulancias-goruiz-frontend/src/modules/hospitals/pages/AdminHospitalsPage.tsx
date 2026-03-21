@@ -1,5 +1,5 @@
 // src/modules/hospitals/pages/AdminHospitalsPage.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Hospital } from "../domain/types";
 import * as hospitalsApi from "../domain/api";
 import { fetchHospitals } from "../domain/fetch";
@@ -13,6 +13,8 @@ import {
   fromLocalHospitalStatus,
   getHospitalIsOpen,
 } from "../utils/status";
+import { emitHospitalStatusChanged } from "../utils/hospitalEvents";
+import { useHospitalStatusChanged } from "../hooks/useHospitalStatusChanged";
 
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
@@ -32,22 +34,25 @@ const AdminHospitalsPage = () => {
   const [searchName, setSearchName] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
 
-  // 1) Fetch hospitales
-  useEffect(() => {
-    const loadHospitals = async () => {
-      try {
-        if (!token) return;
-
-        const data = await fetchHospitals(token);
-        setHospitals(data);
-      } catch (error) {
-        console.error(error);
-        toastT.apiError(error, ["toasts.hospitals.loadError"]);
-      }
-    };
-
-    loadHospitals();
+  const loadHospitals = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = await fetchHospitals(token);
+      setHospitals(data);
+    } catch (error) {
+      console.error(error);
+      toastT.apiError(error, ["toasts.hospitals.loadError"]);
+    }
   }, [token]);
+
+  const loadHospitalsRef = useRef(loadHospitals);
+  loadHospitalsRef.current = loadHospitals;
+
+  useHospitalStatusChanged(() => void loadHospitalsRef.current?.());
+
+  useEffect(() => {
+    void loadHospitals();
+  }, [loadHospitals]);
 
   // 2) Especialidades únicas (memo para evitar recalcular cada render)
   const specialties = useMemo(
@@ -82,7 +87,7 @@ const AdminHospitalsPage = () => {
       setHospitals((prev) =>
         prev.map((h) => (h._id === updated._id ? updated : h)),
       );
-
+      emitHospitalStatusChanged();
       toastT.success(["toasts.hospitals.stateUpdated"]);
     } catch (error) {
       console.error(error);
@@ -184,7 +189,12 @@ const AdminHospitalsPage = () => {
               setHospitals((prev) =>
                 prev.map((h) => (h._id === saved._id ? saved : h)),
               );
-
+              if (
+                typeof updated.isOpen === "boolean" &&
+                updated.isOpen !== getHospitalIsOpen(editingHospital)
+              ) {
+                emitHospitalStatusChanged();
+              }
               setEditingHospital(null);
               toastT.success(["toasts.hospitals.updateOk"]);
             } catch (error) {

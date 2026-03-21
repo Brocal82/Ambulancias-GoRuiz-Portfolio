@@ -1,9 +1,11 @@
 // src/modules/hospitals/pages/WorkerHospitalsPage.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Hospital } from "../domain/types";
 import { fetchHospitals } from "../domain/fetch";
 import * as hospitalsComponents from "../components";
 import { filterAndSortHospitals, getUniqueSpecialties } from "../utils/hospitalsFilters";
+
+import { useHospitalStatusChanged } from "../hooks/useHospitalStatusChanged";
 
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -21,21 +23,25 @@ const WorkerHospitalsPage = () => {
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>("all");
   const [searchName, setSearchName] = useState<string>("");
 
-  useEffect(() => {
-    const loadHospitals = async () => {
-      try {
-        if (!token) return;
-
-        const data = await fetchHospitals(token);
-        setHospitals(data);
-      } catch (error) {
-        console.error("Error al cargar hospitales:", error);
-        toastT.apiError(error, ["toasts.hospitals.loadError"]);
-      }
-    };
-
-    loadHospitals();
+  const loadHospitals = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = await fetchHospitals(token);
+      setHospitals(data);
+    } catch (error) {
+      console.error("Error al cargar hospitales:", error);
+      toastT.apiError(error, ["toasts.hospitals.loadError"]);
+    }
   }, [token]);
+
+  const loadHospitalsRef = useRef(loadHospitals);
+  loadHospitalsRef.current = loadHospitals;
+
+  useHospitalStatusChanged(() => void loadHospitalsRef.current?.());
+
+  useEffect(() => {
+    void loadHospitals();
+  }, [loadHospitals]);
 
   const specialties = useMemo(
     () => getUniqueSpecialties(hospitals),
