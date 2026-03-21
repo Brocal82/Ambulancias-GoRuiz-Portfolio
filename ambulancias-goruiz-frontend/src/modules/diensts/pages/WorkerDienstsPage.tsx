@@ -113,6 +113,7 @@ const WorkerDienstsPage = () => {
                         dayISO={dateStr}
                         statusClass={cls}
                         isPast={isPast}
+                        isPartial={status === "partial"}
                         isDisabled={Boolean(
                           assignment &&
                           (

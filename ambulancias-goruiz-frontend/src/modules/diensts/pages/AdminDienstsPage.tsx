@@ -428,6 +428,7 @@ const AdminPage = () => {
                                   statusClass={cls}
                                   incompleteBorderClass={incompleteBorderClass}
                                   isPast={isPast}
+                                  isPartial={status === "partial"}
                                   onOpen={() => {
                                     setSelectedAssignment({
                                       date: day,

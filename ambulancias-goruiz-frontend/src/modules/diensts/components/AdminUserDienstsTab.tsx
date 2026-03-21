@@ -158,6 +158,7 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                         dayISO={dateStr}
                         statusClass={cls}
                         isPast={isPast}
+                        isPartial={status === "partial"}
                         lines={buildDienstDayCellLines({
                           isoDay: dateStr,
                           lang: i18n.language,

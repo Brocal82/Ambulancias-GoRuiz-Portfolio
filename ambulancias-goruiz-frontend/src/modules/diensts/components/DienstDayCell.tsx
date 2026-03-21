@@ -1,4 +1,9 @@
 import React from "react";
+import {
+  INCOMPLETE_BG_RING,
+  INCOMPLETE_BORDER,
+  INCOMPLETE_TEXT,
+} from "../utils/dienstStatusStyles";
 
 export type DienstDayCellLines = {
     dateLine?: React.ReactNode;
@@ -14,6 +19,8 @@ export interface DienstDayCellProps {
     incompleteBorderClass?: string;
     isPast: boolean;
     isDisabled?: boolean;
+    /** Cuando true, usa text-slate-900 para unificar admin/worker en estado incompleto */
+    isPartial?: boolean;
     lines?: DienstDayCellLines;
     onOpen: () => void;
 };
@@ -23,10 +30,13 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
     incompleteBorderClass,
     isPast,
     isDisabled,
+    isPartial,
     lines,
     onOpen,
 }) => {
     const disabled = Boolean(isPast || isDisabled);
+    const isIncomplete = Boolean(isDisabled && !isPast);
+    const useIncompleteText = Boolean(isPartial || isIncomplete);
 
     // 🌴 Día libre = solo hay ambulanceLine
     const isFreeDay =
@@ -36,17 +46,25 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
         !lines?.medicLine;
 
     // 🔒 UNA sola línea, sin saltos, con …
-    const lineCls =
-        "text-xs text-slate-700 flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis";
+    const lineCls = useIncompleteText
+        ? `text-xs ${INCOMPLETE_TEXT} flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis`
+        : "text-xs text-slate-700 flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis";
 
     /**
      * 🎯 Regla clara de UI:
      * - Si el día es pasado → border neutro (no estado)
+     * - Si incompleto (disabled pero no pasado) → amarillo activo
      * - Si no → border normal (incompleto / estado)
      */
     const finalBorderClass = isPast
         ? "border border-slate-200"
-        : incompleteBorderClass ?? "border border-transparent";
+        : isIncomplete
+            ? INCOMPLETE_BORDER
+            : incompleteBorderClass ?? "border border-transparent";
+
+    const disabledStyle = isIncomplete
+        ? `${INCOMPLETE_BG_RING} ${INCOMPLETE_TEXT} cursor-not-allowed disabled:opacity-100`
+        : "bg-slate-50 text-slate-400 opacity-70 grayscale-[40%] cursor-not-allowed";
 
     return (
         <button
@@ -62,16 +80,16 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
         flex flex-col min-h-[116px]
         ${statusClass}
         ${finalBorderClass}
-        ${disabled
-                    ? // ⬇️ un poco MÁS apagado que antes, pero legible
-                    "bg-slate-50 text-slate-400 opacity-70 grayscale-[40%] cursor-not-allowed"
-                    : "hover:shadow-sm hover:-translate-y-0.5"
-                }
+        ${disabled ? disabledStyle : "hover:shadow-sm hover:-translate-y-0.5"}
       `}
         >
             {/* 📅 Fecha — siempre arriba */}
             {lines?.dateLine && (
-                <div className="text-xs font-semibold text-slate-800 text-center mb-2">
+                <div
+                    className={`text-xs font-semibold text-center mb-2 ${
+                        useIncompleteText ? INCOMPLETE_TEXT : "text-slate-800"
+                    }`}
+                >
                     {lines.dateLine}
                 </div>
             )}
