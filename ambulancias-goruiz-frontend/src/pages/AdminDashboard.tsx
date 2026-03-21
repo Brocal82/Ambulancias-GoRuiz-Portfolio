@@ -39,7 +39,7 @@ const AdminDashboard = () => {
     "bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition flex flex-col items-center text-center";
   const centeredCardRelative = `relative ${centeredCard}`;
   const centeredCardDisabled =
-    "bg-white p-6 rounded shadow opacity-50 cursor-not-allowed flex flex-col items-center text-center";
+    "bg-slate-100 p-6 rounded shadow-sm opacity-75 cursor-not-allowed pointer-events-none select-none flex flex-col items-center text-center border border-slate-200";
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -233,28 +233,37 @@ const AdminDashboard = () => {
         </Link>
 
         <div className={centeredCardDisabled}>
-          <h2 className="text-lg font-semibold mb-2">
+          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+            {t("common.comingSoon")}
+          </span>
+          <h2 className="text-lg font-semibold mb-2 text-slate-600">
             {t("pages.adminDashboard.payrollDocs.title")}
           </h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-slate-500">
             {t("pages.adminDashboard.payrollDocs.desc")}
           </p>
         </div>
 
         <div className={centeredCardDisabled}>
-          <h2 className="text-lg font-semibold mb-2">
+          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+            {t("common.comingSoon")}
+          </span>
+          <h2 className="text-lg font-semibold mb-2 text-slate-600">
             {t("pages.adminDashboard.clothes.title")}
           </h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-slate-500">
             {t("pages.adminDashboard.clothes.desc")}
           </p>
         </div>
 
         <div className={centeredCardDisabled}>
-          <h2 className="text-lg font-semibold mb-2">
+          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+            {t("common.comingSoon")}
+          </span>
+          <h2 className="text-lg font-semibold mb-2 text-slate-600">
             {t("pages.adminDashboard.formation.title")}
           </h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-slate-500">
             {t("pages.adminDashboard.formation.desc")}
           </p>
         </div>

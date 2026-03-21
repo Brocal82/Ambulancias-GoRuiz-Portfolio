@@ -1149,6 +1149,7 @@
     },
     "common": {
         "loading": "Loading...",
+        "comingSoon": "Coming soon",
         "select": "Select",
         "saving": "Saving...",
         "create": "Create",
