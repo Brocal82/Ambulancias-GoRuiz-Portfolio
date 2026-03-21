@@ -3,6 +3,7 @@ import type { Appointment } from "../domain/types";
 import { useAuth } from "../../../hooks/useAuth";
 import { cancelAppointment, updateAppointment } from "../domain";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
+import { confirmAction } from "../../../utils/confirm";
 import { APP_TZ } from "../../../config/app";
 import { partsFromISO, localDateTimeToUtcISO } from "../../../utils/tz";
 import { useTranslation } from "react-i18next";
@@ -64,7 +65,7 @@ const AdminAppointmentDetail: React.FC<Props> = ({
 
   const handleCancelAppointment = async () => {
     if (!item?._id) return;
-    const ok = window.confirm(t("pages.appointments.detail.confirmCancel"));
+    const ok = await confirmAction(t("pages.appointments.detail.confirmCancel"));
     if (!ok) return;
     try {
       setLoading(true);

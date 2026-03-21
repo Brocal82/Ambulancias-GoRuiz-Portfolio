@@ -10,6 +10,7 @@ import TeamCreateModal from "../components/TeamCreateModal";
 import TeamEditModal from "../components/TeamEditModal";
 
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
+import { confirmAction } from "../../../utils/confirm";
 import { getPscheinInfo } from "../../../utils/pscheinUtils";
 
 import { getVacationFlagsInRange, type VacFlag } from "../../vacation/domain/api";
@@ -154,7 +155,7 @@ export default function AdminTeamsPage() {
 
   const handleDelete = async (teamId: string) => {
     if (!token) return;
-    const confirmed = confirm(
+    const confirmed = await confirmAction(
       t("pages.adminTeams.confirmDelete", "¿Eliminar este equipo?"),
     );
     if (!confirmed) return;

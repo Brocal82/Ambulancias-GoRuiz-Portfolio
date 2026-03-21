@@ -13,6 +13,7 @@ import EditAmbulanceModal from "../components/EditAmbulanceModal";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
+import { confirmAction } from "../../../utils/confirm";
 import CreateIconButton from "../../../components/common/actions/CreateIconButton";
 import EditIconButton from "../../../components/common/actions/EditIconButton";
 import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
@@ -62,7 +63,7 @@ const AdminAmbulancesPage: React.FC = () => {
       return;
     }
 
-    if (!window.confirm(t("pages.ambulances.adminPage.confirmDelete"))) return;
+    if (!(await confirmAction(t("pages.ambulances.adminPage.confirmDelete")))) return;
 
     try {
       await deleteAmbulance(id);
