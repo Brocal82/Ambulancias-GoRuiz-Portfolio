@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Appointment } from "../domain/types";
 import { useAuth } from "../../../hooks/useAuth";
 import { cancelAppointment, updateAppointment } from "../domain";
-import { toastT } from "../../../utils/toast";
+import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { APP_TZ } from "../../../config/app";
 import { partsFromISO, localDateTimeToUtcISO } from "../../../utils/tz";
 import { useTranslation } from "react-i18next";
@@ -72,10 +72,8 @@ const AdminAppointmentDetail: React.FC<Props> = ({
       toastT.success(["toasts.appointments.cancelSuccess"]);
       onClose();
       onChanged?.();
-    } catch (e: any) {
-      toastT.error(
-        e?.response?.data?.message ?? ["toasts.appointments.cancelError"],
-      );
+    } catch (e: unknown) {
+      toastT.error(getApiErrorMessage(e, ["toasts.appointments.cancelError"]));
     } finally {
       setLoading(false);
     }
@@ -108,10 +106,8 @@ const AdminAppointmentDetail: React.FC<Props> = ({
       setEditMode(false);
       onClose();
       onChanged?.();
-    } catch (e: any) {
-      toastT.error(
-        e?.response?.data?.message ?? ["toasts.appointments.rescheduleError"],
-      );
+    } catch (e: unknown) {
+      toastT.error(getApiErrorMessage(e, ["toasts.appointments.rescheduleError"]));
     } finally {
       setLoading(false);
     }

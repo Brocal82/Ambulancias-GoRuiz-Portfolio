@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { requestAppointment } from "../domain";
 import { useAuth } from "../../../hooks/useAuth";
-import { toastT } from "../../../utils/toast";
+import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -51,10 +51,8 @@ export default function RequestAppointmentModal({
       setDetails("");
       onClose();
       onSuccess?.();
-    } catch (e: any) {
-      toastT.error(
-        e?.response?.data?.message ?? ["toasts.appointments.requestError"],
-      );
+    } catch (e: unknown) {
+      toastT.error(getApiErrorMessage(e, ["toasts.appointments.requestError"]));
     } finally {
       setLoading(false);
     }

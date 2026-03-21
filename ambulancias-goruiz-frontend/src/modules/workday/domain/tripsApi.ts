@@ -1,6 +1,7 @@
 // frontend/src/modules/workday/domain/tripsApi.ts
 import axiosInstance from "../../../api/axios";
 import axios, { AxiosError } from "axios";
+import { getApiErrorMessage } from "../../../utils/toast";
 import type { Trip, TripData } from "./types/trip";
 
 interface ValidationError {
@@ -24,13 +25,11 @@ export const createTrip = async (tripData: TripData): Promise<Trip> => {
       if (axiosError.response?.data?.errors) {
         throw axiosError.response.data.errors;
       }
-
-      if (axiosError.response?.data?.message) {
-        throw new Error(axiosError.response.data.message);
-      }
     }
 
-    throw new Error("Error desconocido al crear el viaje");
+    throw new Error(
+      getApiErrorMessage(error, "Error desconocido al crear el viaje"),
+    );
   }
 };
 

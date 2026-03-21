@@ -7,7 +7,7 @@ import {
 } from "../domain";
 
 import type { Appointment } from "../domain/types";
-import { toastT } from "../../../utils/toast";
+import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -82,10 +82,8 @@ export default function AdminAppointmentsPage() {
                     setPending(p);
                     setConfirmedYear(c);
                 }
-            } catch (e: any) {
-                toastT.error(
-                    e?.response?.data?.message ?? ["toasts.appointments.loadError"],
-                );
+            } catch (e: unknown) {
+                toastT.error(getApiErrorMessage(e, ["toasts.appointments.loadError"]));
             } finally {
                 if (mounted) {
                     setLoadingPending(false);
@@ -104,12 +102,8 @@ export default function AdminAppointmentsPage() {
         try {
             const p = await getOpenAppointments(token!); // 👈 también aquí
             setPending(p);
-        } catch (e: any) {
-            toastT.error(
-                e?.response?.data?.message ?? [
-                    "toasts.appointments.reloadPendingError",
-                ],
-            );
+        } catch (e: unknown) {
+            toastT.error(getApiErrorMessage(e, ["toasts.appointments.reloadPendingError"]));
         } finally {
             setLoadingPending(false);
         }
@@ -120,12 +114,8 @@ export default function AdminAppointmentsPage() {
         try {
             const c = await getCalendarAppointments(fromISO, toISO, token!);
             setConfirmedYear(c);
-        } catch (e: any) {
-            toastT.error(
-                e?.response?.data?.message ?? [
-                    "toasts.appointments.reloadConfirmedError",
-                ],
-            );
+        } catch (e: unknown) {
+            toastT.error(getApiErrorMessage(e, ["toasts.appointments.reloadConfirmedError"]));
         } finally {
             setLoadingConfirmed(false);
         }

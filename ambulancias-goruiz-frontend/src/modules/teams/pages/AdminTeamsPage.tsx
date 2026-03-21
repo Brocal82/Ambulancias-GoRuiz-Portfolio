@@ -9,7 +9,7 @@ import type { Team, UpdateTeamPayload } from "../domain";
 import TeamCreateModal from "../components/TeamCreateModal";
 import TeamEditModal from "../components/TeamEditModal";
 
-import { toastT } from "../../../utils/toast";
+import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { getPscheinInfo } from "../../../utils/pscheinUtils";
 
 import { getVacationFlagsInRange, type VacFlag } from "../../vacation/domain/api";
@@ -43,11 +43,10 @@ export default function AdminTeamsPage() {
       setError(null);
       const data = await getTeams();
       setTeams(data);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
       setError(
-        e?.response?.data?.message ??
-        t("pages.adminTeams.loadError", "No se pudieron cargar los equipos"),
+        getApiErrorMessage(e, t("pages.adminTeams.loadError", "No se pudieron cargar los equipos")),
       );
     } finally {
       setLoading(false);
@@ -126,11 +125,9 @@ export default function AdminTeamsPage() {
       await createTeam(payload);
       toastT.success(["pages.adminTeams.created"]);
       await load();
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      toastT.error([
-        e?.response?.data?.message || "pages.adminTeams.createError",
-      ]);
+      toastT.error(getApiErrorMessage(e, ["pages.adminTeams.createError"]));
     }
   };
 
@@ -149,11 +146,9 @@ export default function AdminTeamsPage() {
       toastT.success(["pages.adminTeams.updated"]);
       await load();
       setEditingTeam(null);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      toastT.error([
-        e?.response?.data?.message || "pages.adminTeams.updateError",
-      ]);
+      toastT.error(getApiErrorMessage(e, ["pages.adminTeams.updateError"]));
     }
   };
 
@@ -168,11 +163,9 @@ export default function AdminTeamsPage() {
       await deleteTeam(teamId);
       toastT.success(["pages.adminTeams.deleted"]);
       await load();
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      toastT.error([
-        e?.response?.data?.message || "pages.adminTeams.deleteError",
-      ]);
+      toastT.error(getApiErrorMessage(e, ["pages.adminTeams.deleteError"]));
     }
   };
 

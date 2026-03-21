@@ -1,4 +1,5 @@
 import axios from "../../../api/axios";
+import { getApiErrorMessage } from "../../../utils/toast";
 import type { WorkdayIssue } from "./types";
 
 export const getAllIssueReports = async (): Promise<WorkdayIssue[]> => {
@@ -42,12 +43,10 @@ export const getIssuesOpenCount = async (): Promise<number> => {
       },
     );
     return typeof res.data?.count === "number" ? res.data.count : 0;
-  } catch (err: any) {
-    const msg =
-      err?.response?.data?.message ||
-      err?.message ||
-      "Error al obtener el contador de averías abiertas";
-    throw new Error(msg);
+  } catch (err: unknown) {
+    throw new Error(
+      getApiErrorMessage(err, "Error al obtener el contador de averías abiertas"),
+    );
   }
 };
 
@@ -62,11 +61,9 @@ export const getIssuesCountByStatus = async (
       },
     );
     return typeof res.data?.count === "number" ? res.data.count : 0;
-  } catch (err: any) {
-    const msg =
-      err?.response?.data?.message ||
-      err?.message ||
-      "Error al obtener el contador de averías";
-    throw new Error(msg);
+  } catch (err: unknown) {
+    throw new Error(
+      getApiErrorMessage(err, "Error al obtener el contador de averías"),
+    );
   }
 };

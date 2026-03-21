@@ -1,8 +1,8 @@
 import { useState } from "react";
 import axios from "../api/axios";
 import { useNavigate } from "react-router-dom";
-import { AxiosError } from "axios";
 import { useTranslation } from "react-i18next";
+import { getApiErrorMessage } from "../utils/toast";
 import PublicLayout from "../layouts/PublicLayout";
 
 const Register = () => {
@@ -32,10 +32,7 @@ const Register = () => {
       setSuccess(t("pages.register.success"));
       setTimeout(() => navigate("/login"), 2000);
     } catch (err: unknown) {
-      const axiosError = err as AxiosError<{ message: string }>;
-      setError(
-        axiosError.response?.data?.message || t("pages.register.genericError"),
-      );
+      setError(getApiErrorMessage(err, t("pages.register.genericError")));
     }
   };
 

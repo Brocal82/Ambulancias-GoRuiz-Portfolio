@@ -1,4 +1,5 @@
 import axios from "../../../api/axios";
+import { getApiErrorMessage } from "../../../utils/toast";
 import type {
   PartialSummaryPayload,
   FinalSummaryPayload,
@@ -38,12 +39,10 @@ export const getSummariesPendingCount = async (
       },
     );
     return typeof res.data?.count === "number" ? res.data.count : 0;
-  } catch (err: any) {
-    const msg =
-      err?.response?.data?.message ||
-      err?.message ||
-      "Error al obtener el contador de summaries pendientes";
-    throw new Error(msg);
+  } catch (err: unknown) {
+    throw new Error(
+      getApiErrorMessage(err, "Error al obtener el contador de summaries pendientes"),
+    );
   }
 };
 
@@ -53,11 +52,9 @@ export const markSummaryReviewed = async (
   try {
     const res = await axios.patch(`/workday-summary/${id}/review`, null);
     return res.data as WorkdaySummary;
-  } catch (err: any) {
-    const msg =
-      err?.response?.data?.message ||
-      err?.message ||
-      "Error al marcar el resumen como revisado";
-    throw new Error(msg);
+  } catch (err: unknown) {
+    throw new Error(
+      getApiErrorMessage(err, "Error al marcar el resumen como revisado"),
+    );
   }
 };

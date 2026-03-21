@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { selectSlot } from "../domain";
 import type { TimeSlot } from "../domain/types";
-import { toastT } from "../../../utils/toast";
+import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -50,10 +50,8 @@ export default function ChooseSlotModal({
       toastT.success(["toasts.appointments.confirmSuccess"]);
       onClose();
       onSuccess?.();
-    } catch (e: any) {
-      toastT.error(
-        e?.response?.data?.message ?? ["toasts.appointments.confirmError"],
-      );
+    } catch (e: unknown) {
+      toastT.error(getApiErrorMessage(e, ["toasts.appointments.confirmError"]));
     } finally {
       setLoading(false);
     }

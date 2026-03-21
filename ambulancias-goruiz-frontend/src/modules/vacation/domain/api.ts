@@ -1,5 +1,6 @@
 // frontend/src/api/vacation.ts
 import axiosInstance from "../../../api/axios";
+import { getApiErrorMessage } from "../../../utils/toast";
 import type { IVacationRequest } from "./types";
 import {
   emitAvailabilityInvalidated,
@@ -168,12 +169,13 @@ export const getVacationPendingCount = async (
       { params: { status } },
     );
     return typeof response.data?.count === "number" ? response.data.count : 0;
-  } catch (error: any) {
-    const message =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Error al obtener el contador de solicitudes de vacaciones";
-    throw new Error(message);
+  } catch (error: unknown) {
+    throw new Error(
+      getApiErrorMessage(
+        error,
+        "Error al obtener el contador de solicitudes de vacaciones",
+      ),
+    );
   }
 };
 

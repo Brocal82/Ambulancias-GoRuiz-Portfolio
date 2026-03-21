@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { proposeSlots } from "../domain";
 import { useAuth } from "../../../hooks/useAuth";
-import { toastT } from "../../../utils/toast";
+import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { APP_TZ } from "../../../config/app";
 import { localDateTimeToUtcISO } from "../../../utils/tz";
 import { useTranslation } from "react-i18next";
@@ -106,11 +106,8 @@ export default function AdminProposeSlotsModal({
       toastT.success(["toasts.appointments.proposeSuccess"]);
       onClose();
       onSuccess?.(updated);
-    } catch (e: any) {
-      toastT.error(
-        e?.response?.data?.message ??
-        e?.message ?? ["toasts.appointments.proposeError"],
-      );
+    } catch (e: unknown) {
+      toastT.error(getApiErrorMessage(e, ["toasts.appointments.proposeError"]));
     } finally {
       setLoading(false);
     }

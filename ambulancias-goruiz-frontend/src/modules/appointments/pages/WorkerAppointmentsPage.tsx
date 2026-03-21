@@ -13,7 +13,7 @@ import {
 } from "../components";
 
 import type { Appointment } from "../domain/types";
-import { toastT } from "../../../utils/toast";
+import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { APP_TZ } from "../../../config/app";
 import { useTranslation } from "react-i18next";
 import StatusBadge from "../../../components/common/StatusBadge";
@@ -67,10 +67,8 @@ export default function WorkerAppointmentsPage() {
         try {
             const data = await getMyAppointments(token!);
             setItems(data);
-        } catch (e: any) {
-            toastT.error(
-                e?.response?.data?.message ?? ["toasts.appointments.loadError"],
-            );
+        } catch (e: unknown) {
+            toastT.error(getApiErrorMessage(e, ["toasts.appointments.loadError"]));
         }
     };
 
@@ -80,10 +78,8 @@ export default function WorkerAppointmentsPage() {
             try {
                 const data = await getMyAppointments(token!);
                 if (mounted) setItems(data);
-            } catch (e: any) {
-                toastT.error(
-                    e?.response?.data?.message ?? ["toasts.appointments.loadError"],
-                );
+            } catch (e: unknown) {
+                toastT.error(getApiErrorMessage(e, ["toasts.appointments.loadError"]));
             } finally {
                 if (mounted) setLoading(false);
             }
@@ -172,10 +168,8 @@ export default function WorkerAppointmentsPage() {
             await apiDeleteMyAppointment(id, token!);
             await refresh();
             toastT.success(["toasts.appointments.deleteSuccess"]);
-        } catch (e: any) {
-            toastT.error(
-                e?.response?.data?.message ?? ["toasts.appointments.deleteError"],
-            );
+        } catch (e: unknown) {
+            toastT.error(getApiErrorMessage(e, ["toasts.appointments.deleteError"]));
         }
     };
 
