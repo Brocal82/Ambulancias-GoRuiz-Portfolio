@@ -1,10 +1,11 @@
 // src/modules/diensts/components/AdminUserDienstsTab.tsx
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getDienstByUser,
   getAssignedDaysForUser,
   getAllDiensts,
 } from "../index";
+import { useDienstsChanged } from "../hooks/useDienstsChanged";
 import AssignmentModal from "./assignmentModal/AssignmentModal";
 import type { AssignedDay, Dienst } from "../index";
 import type { FlexibleAssignment } from "../domain/types/flexibleAssignment";
@@ -72,6 +73,11 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
       setLoading(false);
     }
   }, [userId, token]);
+
+  const fetchDataRef = useRef(fetchData);
+  fetchDataRef.current = fetchData;
+
+  useDienstsChanged(() => void fetchDataRef.current?.());
 
   useEffect(() => {
     fetchData();

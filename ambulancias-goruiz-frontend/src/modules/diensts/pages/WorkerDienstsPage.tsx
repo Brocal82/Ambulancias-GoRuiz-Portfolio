@@ -1,7 +1,8 @@
 // src/modules/diensts/pages/WorkerDienstsPage.tsx
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getAssignedDaysForUser } from "../index";
+import { useDienstsChanged } from "../hooks/useDienstsChanged";
 import type { AssignedDay } from "../index";
 
 import AssignmentModal from "../components/assignmentModal/AssignmentModal"; import type { FlexibleAssignment } from "../domain/types/flexibleAssignment";
@@ -57,6 +58,11 @@ const WorkerDienstsPage = () => {
       setLoading(false);
     }
   }, [userId, token]);
+
+  const fetchAssignedDaysRef = useRef(fetchAssignedDays);
+  fetchAssignedDaysRef.current = fetchAssignedDays;
+
+  useDienstsChanged(() => void fetchAssignedDaysRef.current?.());
 
   useEffect(() => {
     fetchAssignedDays();

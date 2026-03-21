@@ -1,5 +1,5 @@
 // src/modules/diensts/pages/AdminDienstsPage.tsx
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { Dienst } from "../index";
 import {
@@ -31,6 +31,8 @@ import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
 import { getPscheinInfo } from "../../../utils/pscheinUtils";
 import { getPscheinWarningTitle } from "../utils/pscheinWarningTitle";
+import { emitDienstsChanged } from "../utils/dienstEvents";
+import { useDienstsChanged } from "../hooks/useDienstsChanged";
 
 import type { FlexibleAssignment } from "../domain/types/flexibleAssignment";
 
@@ -99,6 +101,11 @@ const AdminPage = () => {
       setIsInitialLoading(false);
     }
   }, [token]);
+
+  const fetchDienstsRef = useRef(fetchDiensts);
+  fetchDienstsRef.current = fetchDiensts;
+
+  useDienstsChanged(() => void fetchDienstsRef.current?.());
 
   useEffect(() => {
     fetchDiensts();
@@ -499,6 +506,7 @@ const AdminPage = () => {
               }
 
               setWeekTeamModal(null);
+              emitDienstsChanged();
               fetchDiensts();
             } catch (err: any) {
               const code = err?.response?.data?.code as string | undefined;
@@ -582,6 +590,7 @@ const AdminPage = () => {
 
               toastT.success(["pages.diensts.adminPage.assignUserWeekOk"]);
               setWeekUserModal(null);
+              emitDienstsChanged();
               fetchDiensts();
             } catch (err: any) {
               console.error("❌ Error al asignar usuario a la semana:", err);

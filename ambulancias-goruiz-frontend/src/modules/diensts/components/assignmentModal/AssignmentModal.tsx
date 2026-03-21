@@ -4,6 +4,7 @@ import { useState, useEffect, useId, useMemo } from "react";
 import { useAuth } from "../../../../hooks/useAuth";
 
 import { updateDienstPartial, removeAssignment } from "../../domain/api";
+import { emitDienstsChanged } from "../../utils/dienstEvents";
 import type { UserRef } from "../../domain/types";
 
 import { toastT } from "../../../../utils/toast";
@@ -189,6 +190,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
             });
 
             await updateDienstPartial(dienstId, { assignments: [updatedAssignment] }, token);
+            emitDienstsChanged();
             toastT.success(["toasts.assignments.saveSuccess"]);
             onClose();
             onUpdate();
@@ -207,6 +209,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         setIsLoading(true);
         try {
             await removeAssignment(dienstId, assignment.date, token);
+            emitDienstsChanged();
             toastT.success(["toasts.assignments.deleteSuccess"]);
             onClose();
             onUpdate();
