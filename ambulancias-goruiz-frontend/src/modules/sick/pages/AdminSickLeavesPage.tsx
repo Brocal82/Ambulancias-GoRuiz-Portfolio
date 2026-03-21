@@ -1,14 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
 import { buildImageUrl } from "../../../utils/apiOrigins";
 import { displayFileNameFromUrl } from "../../../utils/fileName";
 import {
-  adminListSickLeaves,
   adminAcceptSickLeave,
   adminRejectSickLeave,
-  type SickLeave,
   type SickLeaveStatus,
 } from "../domain";
 import { getYearMonths, rangesOverlap } from "../../../utils/calendarMonthUtils";
@@ -16,7 +14,7 @@ import AdminSickMonthGrid from "../components/AdminSickMonthGrid";
 import StatusBadge from "../../../components/common/StatusBadge";
 import { sickLeaveTone } from "../utils/sickLeavesTone";
 import { emitSickLeavesChanged } from "../utils/sickEvents";
-import { useSickLeavesChanged } from "../hooks/useSickLeavesChanged";
+import { useAdminSickLeavesSync } from "../hooks/useAdminSickLeavesSync";
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return "—";
@@ -29,85 +27,51 @@ export default function AdminSickLeavesPage() {
   const { token } = useAuth();
   const { t, i18n } = useTranslation();
 
-  const [refreshKey, setRefreshKey] = useState(0);
+  const { allItems } = useAdminSickLeavesSync({ token });
+
   const [openDocsId, setOpenDocsId] = useState<string | null>(null);
-
-  // === Datos para grid + detalle (todas las bajas) ===
-  const [allItemsForCounts, setAllItemsForCounts] = useState<SickLeave[]>([]);
-
-  // === Año / Mes seleccionado ===
   const nowYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(nowYear);
-
-
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(
     null,
   );
 
   const decYear = () => {
-    setSelectedMonthIndex(null); // UX: al cambiar año, vuelves al grid
+    setSelectedMonthIndex(null);
     setSelectedYear((y) => y - 1);
   };
-
   const incYear = () => {
     setSelectedMonthIndex(null);
     setSelectedYear((y) => y + 1);
   };
-
   const goThisYear = () => {
     setSelectedMonthIndex(null);
     setSelectedYear(nowYear);
   };
-
-
 
   const months = useMemo(
     () => getYearMonths(selectedYear, i18n.language || "es", "Europe/Berlin"),
     [selectedYear, i18n.language],
   );
 
-  // Carga todas (para bordes y detalle del mes)
-  const loadAllForCounts = async () => {
-    if (!token) return;
-    try {
-      const data = await adminListSickLeaves({});
-      setAllItemsForCounts(data);
-    } catch (err: any) {
-      console.error(err);
-    }
-  };
-  const loadAllForCountsRef = useRef(loadAllForCounts);
-  loadAllForCountsRef.current = loadAllForCounts;
-
-  // Sincronización reactiva cross-tab (CustomEvent + BroadcastChannel + storage)
-  useSickLeavesChanged(() => void loadAllForCountsRef.current?.());
-
-  useEffect(() => {
-    loadAllForCounts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, refreshKey]);
-
-  // === Conteos por mes (para chip "n bajas") ===
   const monthlyCounts = useMemo(() => {
-    if (!allItemsForCounts || allItemsForCounts.length === 0)
-      return Array(12).fill(0);
+    if (!allItems || allItems.length === 0) return Array(12).fill(0);
     return months.map(({ start, end }) => {
-      return allItemsForCounts.filter((sl) => {
+      return allItems.filter((sl) => {
         const s = new Date(sl.startDate);
         const e = new Date(sl.endDate || sl.startDate);
         return rangesOverlap(s, e, start, end);
       }).length;
     });
-  }, [allItemsForCounts, months]);
+  }, [allItems, months]);
 
-  // === Bordes por mes (prioridad: pending > accepted > rejected > none) ===
   const monthBorderPriority = useMemo(() => {
     return months.map(({ start, end }) => {
       let hasPending = false;
       let hasAccepted = false;
       let hasRejected = false;
 
-      for (const sl of allItemsForCounts) {
+      for (const sl of allItems) {
         const s = new Date(sl.startDate);
         const e = new Date(sl.endDate || sl.startDate);
         if (!rangesOverlap(s, e, start, end)) continue;
@@ -122,18 +86,17 @@ export default function AdminSickLeavesPage() {
       if (hasRejected) return "rejected" as const;
       return "none" as const;
     });
-  }, [allItemsForCounts, months]);
+  }, [allItems, months]);
 
-  // === Detalle del mes seleccionado (todas las bajas que tocan ese mes) ===
   const monthDetailToShow = useMemo(() => {
     if (selectedMonthIndex === null) return [];
     const { start, end } = months[selectedMonthIndex];
-    return allItemsForCounts.filter((sl) => {
+    return allItems.filter((sl) => {
       const s = new Date(sl.startDate);
       const e = new Date(sl.endDate || sl.startDate);
       return rangesOverlap(s, e, start, end);
     });
-  }, [allItemsForCounts, months, selectedMonthIndex]);
+  }, [allItems, months, selectedMonthIndex]);
 
   const onAccept = async (id: string) => {
     if (!token) return;
@@ -148,7 +111,6 @@ export default function AdminSickLeavesPage() {
       await adminAcceptSickLeave(id);
       toastT.success(["pages.sick.admin.acceptOk"]);
       emitSickLeavesChanged();
-      setRefreshKey((k) => k + 1);
     } catch (err: unknown) {
       console.error(err);
       toastT.apiError(err, ["pages.sick.admin.acceptErr"]);
@@ -165,7 +127,6 @@ export default function AdminSickLeavesPage() {
       await adminRejectSickLeave(id);
       toastT.success(["pages.sick.admin.rejectOk"]);
       emitSickLeavesChanged();
-      setRefreshKey((k) => k + 1);
     } catch (err: unknown) {
       console.error(err);
       toastT.apiError(err, ["pages.sick.admin.rejectErr"]);
