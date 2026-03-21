@@ -15,17 +15,22 @@ export function useUnreadMessagesCount({ pollMs = 30000 }: Options = {}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<number | null>(null);
+  const hasFetchedSuccessRef = useRef(false);
 
   const fetchCount = useCallback(async () => {
     try {
       if (!token) {
         setCount(0);
+        hasFetchedSuccessRef.current = false;
         return;
       }
-      setLoading(true);
+      // Solo loading en primera carga; polls/refetches no activan loading si ya hay dato
+      setLoading(!hasFetchedSuccessRef.current);
       setError(null);
       const msgs = await getMyMessages(); // tu API ya retorna solo no leídos
-      setCount(Array.isArray(msgs) ? msgs.length : 0);
+      const newCount = Array.isArray(msgs) ? msgs.length : 0;
+      hasFetchedSuccessRef.current = true;
+      setCount(newCount);
     } catch (e: any) {
       setError(e?.message ?? "Error obteniendo mensajes no leídos");
     } finally {
