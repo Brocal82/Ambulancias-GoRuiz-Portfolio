@@ -1,13 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
-
-import {
-    getOpenAppointments,
-    getCalendarAppointments,
-} from "../domain";
-
 import type { Appointment } from "../domain/types";
-import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -16,7 +9,7 @@ import {
     AdminMonthCalendar,
     AdminAppointmentDetail,
 } from "../components";
-import { useAppointmentsChanged } from "../hooks/useAppointmentsChanged";
+import { useAdminAppointmentsSync } from "../hooks/useAdminAppointmentsSync";
 
 import StatusBadge from "../../../components/common/StatusBadge";
 import { toneForAppointmentStatus } from "../utils/appointmentTone";
@@ -38,126 +31,26 @@ export default function AdminAppointmentsPage() {
     const { token } = useAuth();
     const { t } = useTranslation("common");
 
-    // --- helpers ---
-    const statusLabel = (s: Appointment["status"]) =>
-        t(`pages.appointments.statusLabel.${s}`);
-
-    // --- Estado de pendientes (pending + proposed) ---
-    const [pending, setPending] = useState<Appointment[]>([]);
-    const [loadingPending, setLoadingPending] = useState(true);
-
-    // --- Estado de confirmadas/reprogramadas del año ---
-    const [confirmedYear, setConfirmedYear] = useState<Appointment[]>([]);
-    const [loadingConfirmed, setLoadingConfirmed] = useState(true);
-
-    const hasPendingRef = useRef(false);
-    const hasConfirmedRef = useRef(false);
-
-    // --- Modal para proponer ---
-    const [openPropose, setOpenPropose] = useState(false);
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-
-    // --- Modal de detalle ---
-    const [detailOpen, setDetailOpen] = useState(false);
-    const [detailItem, setDetailItem] = useState<Appointment | null>(null);
-
-    // --- Año actual y mes seleccionado ---
     const year = useMemo(() => new Date().getFullYear(), []);
     const currentMonthIndex = useMemo(() => new Date().getMonth(), []);
+
+    const {
+        pending,
+        confirmedYear,
+        loadingPending,
+        loadingConfirmed,
+        refetch,
+        upsertPending,
+    } = useAdminAppointmentsSync({ token, year });
+
+    const [openPropose, setOpenPropose] = useState(false);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [detailOpen, setDetailOpen] = useState(false);
+    const [detailItem, setDetailItem] = useState<Appointment | null>(null);
     const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
-    // --- Rango de TODO el año ---
-    const { fromISO, toISO } = useMemo(() => {
-        const from = new Date(year, 0, 1, 0, 0, 0, 0);
-        const to = new Date(year, 11, 31, 23, 59, 59, 999);
-        return { fromISO: from.toISOString(), toISO: to.toISOString() };
-    }, [year]);
-
-    // --- Cargas iniciales ---
-    useEffect(() => {
-        let mounted = true;
-        (async () => {
-            try {
-                const [p, c] = await Promise.all([
-                    getOpenAppointments(token!), // 👈 ahora usamos la nueva función
-                    getCalendarAppointments(fromISO, toISO, token!),
-                ]);
-                if (mounted) {
-                    setPending(p);
-                    setConfirmedYear(c);
-                    hasPendingRef.current = true;
-                    hasConfirmedRef.current = true;
-                }
-            } catch (e: unknown) {
-                toastT.error(getApiErrorMessage(e, ["toasts.appointments.loadError"]));
-            } finally {
-                if (mounted) {
-                    setLoadingPending(false);
-                    setLoadingConfirmed(false);
-                }
-            }
-        })();
-        return () => {
-            mounted = false;
-        };
-    }, [token, fromISO, toISO]);
-
-    // --- Refrescos (loading solo en primera carga; refetches en background) ---
-    const refreshPending = async () => {
-        setLoadingPending((prev) => (!hasPendingRef.current ? true : prev));
-        try {
-            const p = await getOpenAppointments(token!);
-            setPending(p);
-            hasPendingRef.current = true;
-        } catch (e: unknown) {
-            toastT.error(getApiErrorMessage(e, ["toasts.appointments.reloadPendingError"]));
-        } finally {
-            setLoadingPending(false);
-        }
-    };
-
-    const refreshConfirmed = async () => {
-        setLoadingConfirmed((prev) => (!hasConfirmedRef.current ? true : prev));
-        try {
-            const c = await getCalendarAppointments(fromISO, toISO, token!);
-            setConfirmedYear(c);
-            hasConfirmedRef.current = true;
-        } catch (e: unknown) {
-            toastT.error(getApiErrorMessage(e, ["toasts.appointments.reloadConfirmedError"]));
-        } finally {
-            setLoadingConfirmed(false);
-        }
-    };
-
-    const refreshAll = async () => {
-        await Promise.all([refreshPending(), refreshConfirmed()]);
-    };
-    const refreshAllRef = useRef(refreshAll);
-    refreshAllRef.current = refreshAll;
-
-    // Sincronización reactiva cross-tab (CustomEvent + BroadcastChannel + storage)
-    useAppointmentsChanged(() => void refreshAllRef.current?.());
-
-    // --- Helper: actualizar o añadir en la lista de pendientes
-    const upsertPending = (next: Appointment) => {
-        setPending((prev) => {
-            const idx = prev.findIndex((p) => p._id === next._id);
-
-            if (idx !== -1) {
-                const old = prev[idx];
-                const merged: Appointment = {
-                    ...next,
-                    workerId:
-                        typeof next.workerId === "string" ? old.workerId : next.workerId,
-                };
-                const copy = [...prev];
-                copy[idx] = merged;
-                return copy;
-            }
-
-            return [next, ...prev];
-        });
-    };
+    const statusLabel = (s: Appointment["status"]) =>
+        t(`pages.appointments.statusLabel.${s}`);
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -169,7 +62,7 @@ export default function AdminAppointmentsPage() {
                             {t("pages.appointments.admin.title")}
                         </h1>
                         <button
-                            onClick={refreshAll}
+                            onClick={() => void refetch()}
                             className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100"
                         >
                             {t("pages.appointments.actions.refresh")}
@@ -320,7 +213,7 @@ export default function AdminAppointmentsPage() {
                         }}
                         onSuccess={async (updated) => {
                             upsertPending(updated);
-                            await Promise.all([refreshPending(), refreshConfirmed()]);
+                            await refetch();
                         }}
                         defaultDurationMinutes={30}
                     />
@@ -331,7 +224,7 @@ export default function AdminAppointmentsPage() {
                         onClose={() => setDetailOpen(false)}
                         item={detailItem}
                         onChanged={async () => {
-                            await Promise.all([refreshConfirmed(), refreshPending()]);
+                            await refetch();
                         }}
                     />
                 </div>
