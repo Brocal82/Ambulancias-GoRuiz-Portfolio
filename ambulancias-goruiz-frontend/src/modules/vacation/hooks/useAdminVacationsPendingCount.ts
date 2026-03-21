@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getVacationPendingCount } from "../domain/api";
 import { useAuth } from "../../../hooks/useAuth"; // named export
+import { useVacationRequestsUpdated } from "./useVacationRequestsUpdated";
 
 type Options = {
   /** Intervalo de refresco en ms. 0 = sin polling (por defecto). */
@@ -13,8 +14,6 @@ type State = {
   isError: boolean;
   error?: string;
 };
-
-const ADMIN_VACATIONS_CHANGED_EVENT = "admin-vacations-changed";
 
 export default function useAdminVacationsPendingCount(options: Options = {}) {
   const { pollMs = 0 } = options;
@@ -95,20 +94,8 @@ export default function useAdminVacationsPendingCount(options: Options = {}) {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [refresh]);
 
-  // Refresco por evento global: window.dispatchEvent(new Event('admin-vacations-changed'))
-  useEffect(() => {
-    const onChanged = () => refresh();
-    // Cast a any para evitar que TS se queje por tipo de evento custom
-    window.addEventListener(
-      ADMIN_VACATIONS_CHANGED_EVENT as any,
-      onChanged as EventListener,
-    );
-    return () =>
-      window.removeEventListener(
-        ADMIN_VACATIONS_CHANGED_EVENT as any,
-        onChanged as EventListener,
-      );
-  }, [refresh]);
+  // Sincronización cross-tab (CustomEvent + BroadcastChannel + storage)
+  useVacationRequestsUpdated(() => refresh());
 
   // Polling opcional
   useEffect(() => {

@@ -34,6 +34,7 @@ const WorkerMessagesPage = () => {
   const [openMonth, setOpenMonth] = useState<number | null>(now.getMonth());
 
   const markedAnyAsReadRef = useRef(false);
+  const hasFetchedSuccessRef = useRef(false);
 
   const meId = user?._id ? String(user._id) : null;
 
@@ -58,9 +59,10 @@ const WorkerMessagesPage = () => {
   const fetchMessages = useCallback(async () => {
     if (!token) return;
     try {
-      setLoading(true);
+      setLoading(!hasFetchedSuccessRef.current);
       const data = await getMyMessages({ unreadOnly: false });
       setMessages(data);
+      hasFetchedSuccessRef.current = true;
     } catch (error) {
       console.error("❌ Error al cargar mensajes:", error);
     } finally {

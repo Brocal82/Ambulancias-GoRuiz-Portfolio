@@ -50,6 +50,9 @@ export default function AdminAppointmentsPage() {
     const [confirmedYear, setConfirmedYear] = useState<Appointment[]>([]);
     const [loadingConfirmed, setLoadingConfirmed] = useState(true);
 
+    const hasPendingRef = useRef(false);
+    const hasConfirmedRef = useRef(false);
+
     // --- Modal para proponer ---
     const [openPropose, setOpenPropose] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -82,6 +85,8 @@ export default function AdminAppointmentsPage() {
                 if (mounted) {
                     setPending(p);
                     setConfirmedYear(c);
+                    hasPendingRef.current = true;
+                    hasConfirmedRef.current = true;
                 }
             } catch (e: unknown) {
                 toastT.error(getApiErrorMessage(e, ["toasts.appointments.loadError"]));
@@ -97,12 +102,13 @@ export default function AdminAppointmentsPage() {
         };
     }, [token, fromISO, toISO]);
 
-    // --- Refrescos ---
+    // --- Refrescos (loading solo en primera carga; refetches en background) ---
     const refreshPending = async () => {
-        setLoadingPending(true);
+        setLoadingPending((prev) => (!hasPendingRef.current ? true : prev));
         try {
-            const p = await getOpenAppointments(token!); // 👈 también aquí
+            const p = await getOpenAppointments(token!);
             setPending(p);
+            hasPendingRef.current = true;
         } catch (e: unknown) {
             toastT.error(getApiErrorMessage(e, ["toasts.appointments.reloadPendingError"]));
         } finally {
@@ -111,10 +117,11 @@ export default function AdminAppointmentsPage() {
     };
 
     const refreshConfirmed = async () => {
-        setLoadingConfirmed(true);
+        setLoadingConfirmed((prev) => (!hasConfirmedRef.current ? true : prev));
         try {
             const c = await getCalendarAppointments(fromISO, toISO, token!);
             setConfirmedYear(c);
+            hasConfirmedRef.current = true;
         } catch (e: unknown) {
             toastT.error(getApiErrorMessage(e, ["toasts.appointments.reloadConfirmedError"]));
         } finally {
