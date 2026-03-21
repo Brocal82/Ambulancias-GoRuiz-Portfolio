@@ -1,5 +1,5 @@
 // src/modules/workday/pages/AdminSummariesPage.tsx
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { getAllSummaries, markSummaryReviewed } from "../domain";
 import type { WorkdaySummary } from "../domain";
 import { useAuth } from "../../../hooks/useAuth";
@@ -9,10 +9,8 @@ import {
   DaySummariesModal,
   AdminSummaryGroupModal,
 } from "../components";
-import {
-  ADMIN_SUMMARIES_CHANGED_EVENT,
-  notifyAdminSummariesChanged,
-} from "../hooks/useAdminSummariesPendingCount";
+import { emitWorkdaySummariesChanged } from "../utils/workdayEvents";
+import { useWorkdaySummariesChanged } from "../hooks/useWorkdaySummariesChanged";
 
 // Helper ISO yyyy-mm-dd
 const toISODate = (d: Date) =>
@@ -56,34 +54,29 @@ const AdminSummariesPage = () => {
     }
   }, [token]);
 
+  const fetchSummariesRef = useRef(fetchSummaries);
+  fetchSummariesRef.current = fetchSummaries;
+
+  // Sincronización cross-tab (CustomEvent + BroadcastChannel + storage)
+  useWorkdaySummariesChanged(() => void fetchSummariesRef.current?.());
+
   useEffect(() => {
     if (!token) return;
     setLoading(true);
     void fetchSummaries();
   }, [token, fetchSummaries]);
 
-  // 🔄 Refrescar al recuperar foco/visibilidad y por evento global
+  // Refrescar al recuperar foco/visibilidad
   useEffect(() => {
     const onFocus = () => fetchSummaries();
     const onVisibility = () => {
       if (document.visibilityState === "visible") fetchSummaries();
     };
-    const onChanged = () => fetchSummaries();
-
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener(
-      ADMIN_SUMMARIES_CHANGED_EVENT as any,
-      onChanged as EventListener,
-    );
-
     return () => {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener(
-        ADMIN_SUMMARIES_CHANGED_EVENT as any,
-        onChanged as EventListener,
-      );
     };
   }, [fetchSummaries]);
 
@@ -187,7 +180,7 @@ const AdminSummariesPage = () => {
         );
 
         // 2) refrescar contadores/cambios globales (si lo usas en badges)
-        notifyAdminSummariesChanged();
+        emitWorkdaySummariesChanged();
 
         // 3) actualizar state local para que desaparezca el naranja sin recargar
         const reviewedAt = new Date().toISOString();

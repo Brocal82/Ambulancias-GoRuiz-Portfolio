@@ -2,5 +2,6 @@
 export * from './useWorkdayAssignment';
 export * from './useWorkdayTrips';
 export * from './useAdminSummariesPendingCount';
+export * from './useWorkdaySummariesChanged';
 export * from './useTripDraftValidation';
 export * from './useCloseDayModal';

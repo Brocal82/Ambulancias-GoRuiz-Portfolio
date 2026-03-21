@@ -1,7 +1,8 @@
 // frontend/src/modules/workday/hooks/useAdminSummariesPendingCount.ts
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSummariesPendingCount } from "../domain/api";
-import { useAuth } from "../../../hooks/useAuth"; // named export
+import { useAuth } from "../../../hooks/useAuth";
+import { useWorkdaySummariesChanged } from "./useWorkdaySummariesChanged";
 
 type Options = {
   /** Intervalo de refresco en ms. 0 = sin polling (por defecto). */
@@ -14,9 +15,6 @@ type State = {
   isError: boolean;
   error?: string;
 };
-
-// 🔔 Exporta el nombre del evento para poder reutilizarlo donde quieras
-export const ADMIN_SUMMARIES_CHANGED_EVENT = "admin-summaries-changed";
 
 export default function useAdminSummariesPendingCount(options: Options = {}) {
   const { pollMs = 0 } = options;
@@ -94,19 +92,8 @@ export default function useAdminSummariesPendingCount(options: Options = {}) {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [refresh]);
 
-  // Refresco por evento global: window.dispatchEvent(new Event('admin-summaries-changed'))
-  useEffect(() => {
-    const onChanged = () => refresh();
-    window.addEventListener(
-      ADMIN_SUMMARIES_CHANGED_EVENT as any,
-      onChanged as EventListener,
-    );
-    return () =>
-      window.removeEventListener(
-        ADMIN_SUMMARIES_CHANGED_EVENT as any,
-        onChanged as EventListener,
-      );
-  }, [refresh]);
+  // Sincronización cross-tab (CustomEvent + BroadcastChannel + storage)
+  useWorkdaySummariesChanged(refresh);
 
   // Polling opcional
   useEffect(() => {
@@ -127,9 +114,4 @@ export default function useAdminSummariesPendingCount(options: Options = {}) {
     ...state, // count, isLoading, isError, error
     refresh,
   };
-}
-
-/** Helper para emitir el evento global desde cualquier sitio (páginas, modales, etc.) */
-export function notifyAdminSummariesChanged() {
-  window.dispatchEvent(new Event(ADMIN_SUMMARIES_CHANGED_EVENT));
 }

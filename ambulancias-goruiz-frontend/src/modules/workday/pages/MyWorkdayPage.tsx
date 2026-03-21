@@ -10,7 +10,7 @@ import { sendPartialClosure, sendFinalClosure } from "../domain";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
 import { notifyAdminIssuesChanged } from "../../mechanics";
-import { notifyAdminSummariesChanged } from "../hooks";
+import { emitWorkdaySummariesChanged } from "../utils/workdayEvents";
 
 import type { Trip, TripData } from "../domain/types/trip";
 import type { Ambulance } from "../../ambulances/domain/types";
@@ -418,7 +418,7 @@ const MyWorkday = () => {
 
       await sendFinalClosure(summaryData);
 
-      notifyAdminSummariesChanged();
+      emitWorkdaySummariesChanged();
 
       toastT.success(["toasts.workday.dayClosedSuccess"]);
 
@@ -474,7 +474,7 @@ const MyWorkday = () => {
 
       await sendPartialClosure(payload);
 
-      notifyAdminSummariesChanged();
+      emitWorkdaySummariesChanged();
 
       // Si vino una avería en el parcial, notifica para refrescar el badge
       if (issueData) {
