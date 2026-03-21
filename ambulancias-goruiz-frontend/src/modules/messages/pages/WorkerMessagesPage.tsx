@@ -26,11 +26,10 @@ const WorkerMessagesPage = () => {
   const [loading, setLoading] = useState(true);
   const { expanded, toggleById, setExpanded } = useMessageExpansion();
 
-  // ✅ Grid year/month inline
-  const [year, setYear] = useState<number>(new Date().getFullYear());
-
-  // ✅ Ningún mes abierto por defecto (lista oculta)
-  const [openMonth, setOpenMonth] = useState<number | null>(null);
+  // ✅ Grid year/month inline - año y mes actual por defecto
+  const now = new Date();
+  const [year, setYear] = useState<number>(now.getFullYear());
+  const [openMonth, setOpenMonth] = useState<number | null>(now.getMonth());
 
   const markedAnyAsReadRef = useRef(false);
 
