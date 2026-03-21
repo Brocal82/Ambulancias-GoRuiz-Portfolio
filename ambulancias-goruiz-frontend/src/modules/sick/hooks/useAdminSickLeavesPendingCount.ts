@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSickLeavesPendingCount } from "../domain/api";
 import { useAuth } from "../../../hooks/useAuth";
+import { useSickLeavesChanged } from "./useSickLeavesChanged";
 
 type Options = {
   /** Intervalo de refresco en ms. 0 = sin polling (por defecto). */
@@ -13,8 +14,6 @@ type State = {
   isError: boolean;
   error?: string;
 };
-
-const ADMIN_SICK_LEAVES_CHANGED_EVENT = "admin-sick-leaves-changed";
 
 export default function useAdminSickLeavesPendingCount(options: Options = {}) {
   const { pollMs = 0 } = options;
@@ -96,19 +95,8 @@ export default function useAdminSickLeavesPendingCount(options: Options = {}) {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [refresh]);
 
-  // Refresco por evento global: window.dispatchEvent(new Event('admin-sick-leaves-changed'))
-  useEffect(() => {
-    const onChanged = () => refresh();
-    window.addEventListener(
-      ADMIN_SICK_LEAVES_CHANGED_EVENT as any,
-      onChanged as EventListener,
-    );
-    return () =>
-      window.removeEventListener(
-        ADMIN_SICK_LEAVES_CHANGED_EVENT as any,
-        onChanged as EventListener,
-      );
-  }, [refresh]);
+  // Sincronización cross-tab (CustomEvent + BroadcastChannel + storage)
+  useSickLeavesChanged(refresh);
 
   // Polling opcional
   useEffect(() => {

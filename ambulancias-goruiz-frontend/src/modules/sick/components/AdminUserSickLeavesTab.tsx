@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
@@ -10,6 +10,7 @@ import {
 } from "../domain";
 import StatusBadge from "../../../components/common/StatusBadge";
 import { sickLeaveTone } from "../utils/sickLeavesTone";
+import { useSickLeavesChanged } from "../hooks/useSickLeavesChanged";
 
 type Props = {
   userId: string;
@@ -48,6 +49,11 @@ export default function AdminUserSickLeavesTab({ userId }: Props) {
       setLoading(false);
     }
   };
+  const loadRef = useRef(load);
+  loadRef.current = load;
+
+  // Sincronización cross-tab (CustomEvent + BroadcastChannel + storage)
+  useSickLeavesChanged(() => void loadRef.current?.());
 
   useEffect(() => {
     load();

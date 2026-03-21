@@ -1,5 +1,5 @@
 // frontend/src/pages/WorkerSickLeavesPage.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
@@ -17,6 +17,8 @@ import StatusBadge from "../../../components/common/StatusBadge";
 import { sickLeaveTone } from "../utils/sickLeavesTone";
 import CreateIconButton from "../../../components/common/actions/CreateIconButton";
 import CancelButton from "../../../components/common/actions/CancelButton";
+import { emitSickLeavesChanged } from "../utils/sickEvents";
+import { useSickLeavesChanged } from "../hooks/useSickLeavesChanged";
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return "—";
@@ -69,6 +71,11 @@ export default function WorkerSickLeavesPage() {
       setIsLoadingList(false);
     }
   };
+  const loadListRef = useRef(loadList);
+  loadListRef.current = loadList;
+
+  // Sincronización reactiva cross-tab (CustomEvent + BroadcastChannel + storage)
+  useSickLeavesChanged(() => void loadListRef.current?.());
 
   useEffect(() => {
     loadList();
@@ -103,6 +110,7 @@ export default function WorkerSickLeavesPage() {
       }
 
       toastT.success(["pages.sick.create.ok"]);
+      emitSickLeavesChanged();
 
       // 3) Reset de formulario y lista
       setStartDate("");
@@ -145,6 +153,7 @@ export default function WorkerSickLeavesPage() {
         return { ...prev, [sickLeaveId]: list };
       });
       toastT.success(["pages.sick.attachDoc.ok"]);
+      emitSickLeavesChanged();
       await loadList();
     } catch (err: unknown) {
       console.error(err);

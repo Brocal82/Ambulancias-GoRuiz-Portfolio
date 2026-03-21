@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
@@ -15,6 +15,8 @@ import { getYearMonths, rangesOverlap } from "../../../utils/calendarMonthUtils"
 import AdminSickMonthGrid from "../components/AdminSickMonthGrid";
 import StatusBadge from "../../../components/common/StatusBadge";
 import { sickLeaveTone } from "../utils/sickLeavesTone";
+import { emitSickLeavesChanged } from "../utils/sickEvents";
+import { useSickLeavesChanged } from "../hooks/useSickLeavesChanged";
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return "—";
@@ -74,7 +76,11 @@ export default function AdminSickLeavesPage() {
       console.error(err);
     }
   };
+  const loadAllForCountsRef = useRef(loadAllForCounts);
+  loadAllForCountsRef.current = loadAllForCounts;
 
+  // Sincronización reactiva cross-tab (CustomEvent + BroadcastChannel + storage)
+  useSickLeavesChanged(() => void loadAllForCountsRef.current?.());
 
   useEffect(() => {
     loadAllForCounts();
@@ -141,6 +147,7 @@ export default function AdminSickLeavesPage() {
     try {
       await adminAcceptSickLeave(id);
       toastT.success(["pages.sick.admin.acceptOk"]);
+      emitSickLeavesChanged();
       setRefreshKey((k) => k + 1);
     } catch (err: unknown) {
       console.error(err);
@@ -157,6 +164,7 @@ export default function AdminSickLeavesPage() {
     try {
       await adminRejectSickLeave(id);
       toastT.success(["pages.sick.admin.rejectOk"]);
+      emitSickLeavesChanged();
       setRefreshKey((k) => k + 1);
     } catch (err: unknown) {
       console.error(err);
