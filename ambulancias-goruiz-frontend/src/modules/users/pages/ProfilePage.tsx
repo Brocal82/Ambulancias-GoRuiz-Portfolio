@@ -48,7 +48,7 @@ const Profile = ({ userId }: ProfileProps) => {
         setFormData(fetchedUser);
       } catch (error) {
         console.error(error);
-        toastT.error("pages.profile.messages.loadError");
+        toastT.error(["pages.profile.messages.loadError"]);
       } finally {
         setLoading(false);
       }
@@ -101,7 +101,7 @@ const Profile = ({ userId }: ProfileProps) => {
 
       // ✅ Validación mínima (evita mandar strings vacíos)
       if (!payload.name || !payload.lastName || !payload.email) {
-        toastT.error("toasts.profile.missingRequired");
+        toastT.error(["pages.profile.messages.missingRequired"]);
         return;
       }
 
@@ -125,7 +125,7 @@ const Profile = ({ userId }: ProfileProps) => {
       toastT.success("toasts.profile.saveSuccess");
     } catch (error) {
       console.error(error);
-      toastT.error("toasts.profile.saveError");
+      toastT.error(["toasts.profile.saveError"]);
     }
   };
 
@@ -154,7 +154,7 @@ const Profile = ({ userId }: ProfileProps) => {
       }));
     } catch (error) {
       console.error(error);
-      toastT.error("toasts.profile.docDeleteError");
+      toastT.error(["toasts.profile.docDeleteError"]);
     }
   };
 
@@ -193,7 +193,7 @@ const Profile = ({ userId }: ProfileProps) => {
       toastT.success("toasts.profile.imageDeleted");
     } catch (error) {
       console.error("❌ Error al eliminar imagen de perfil:", error);
-      toastT.error("toasts.profile.imageDeleteError");
+      toastT.error(["toasts.profile.imageDeleteError"]);
     }
   };
 
@@ -205,7 +205,7 @@ const Profile = ({ userId }: ProfileProps) => {
     if (!token || !role || !targetId) return;
 
     if (targetId === userIdFromAuthContext) {
-      toastT.error("toasts.profile.cannotDeleteSelf");
+      toastT.error(["pages.profile.messages.cannotDeleteSelf"]);
       return;
     }
 
@@ -224,7 +224,7 @@ const Profile = ({ userId }: ProfileProps) => {
       navigate("/admin");
     } catch (error) {
       console.error(error);
-      toastT.error("toasts.profile.deleteError");
+      toastT.error(["toasts.profile.deleteError"]);
     }
   };
 

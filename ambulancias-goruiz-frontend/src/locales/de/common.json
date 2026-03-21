@@ -938,6 +938,7 @@
         },
         "adminUserDetail": {
             "title": "Mitarbeiterdetails",
+            "backToUsers": "Zurück zu Mitarbeitern",
             "loading": "Mitarbeiterdaten werden geladen...",
             "nameLabel": "Name:",
             "tabs": {

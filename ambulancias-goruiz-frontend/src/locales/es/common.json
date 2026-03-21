@@ -938,6 +938,7 @@
         },
         "adminUserDetail": {
             "title": "Detalle del Trabajador",
+            "backToUsers": "Volver a usuarios",
             "loading": "Cargando datos del trabajador...",
             "nameLabel": "Nombre:",
             "tabs": {

@@ -563,9 +563,8 @@ const MyWorkday = () => {
         {assignedDay && (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-base font-semibold text-slate-900">
-              <span aria-hidden="true">??</span>
               <span>
-                {assignedDay.startTime}{assignedDay.endTime}
+                {assignedDay.startTime} – {assignedDay.endTime}
               </span>
             </div>
 

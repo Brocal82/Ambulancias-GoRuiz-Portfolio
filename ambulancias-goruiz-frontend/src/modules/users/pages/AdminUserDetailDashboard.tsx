@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import ProfilePage from "./ProfilePage";
 import AdminUserDienstsTab from "../../diensts/components/AdminUserDienstsTab";
 import AdminUserPraemienTab from "../../praemien/components/AdminUserPraemienTab";
@@ -44,6 +44,15 @@ const AdminUserDetailDashboard = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
+
+      {/* Volver a usuarios */}
+      <Link
+        to="/admin/users"
+        className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+      >
+        <span aria-hidden="true">←</span>
+        {t("pages.adminUserDetail.backToUsers")}
+      </Link>
 
       {/* Header */}
       <div className="mb-6 flex flex-col gap-1">
