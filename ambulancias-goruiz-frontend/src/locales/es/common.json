@@ -974,7 +974,9 @@
         "workday": {
             "title": "📋 Mi jornada de hoy: {{date}}",
             "closedDay": "✅ Día cerrado. No hay Dienst activo para hoy.",
-            "noAssignment": "🚫 Hoy no tienes un Dienst asignado.",
+            "noAssignment": "No tienes turno asignado hoy.",
+            "noAssignmentHint": "Si crees que es un error, contacta con tu supervisor.",
+            "backToDashboard": "Volver al panel",
             "cantStart": "⏳ Podrás registrar viajes a partir de 30 minutos antes de tu Dienst. Hora de inicio: {{start}}",
             "dienstTimeLabel": "⏰ Dienst:",
             "teamLabel": "Team:",

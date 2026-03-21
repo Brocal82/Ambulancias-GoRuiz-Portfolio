@@ -1,6 +1,6 @@
 // frontend/src/modules/workday/pages/MyWorkday.tsx
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { createTrip } from "../domain";
@@ -581,8 +581,18 @@ const MyWorkday = () => {
         </div>
       )}
       {viewState === "no_assignment" && (
-        <div className="mb-6 rounded-xl bg-yellow-50 text-yellow-800 ring-1 ring-yellow-200 p-4">
-          {t("pages.workday.noAssignment")}
+        <div className="mb-6 rounded-xl bg-yellow-50 text-yellow-800 ring-1 ring-yellow-200 p-6 flex flex-col gap-4">
+          <p className="font-medium">{t("pages.workday.noAssignment")}</p>
+          <p className="text-sm text-yellow-700">
+            {t("pages.workday.noAssignmentHint")}
+          </p>
+          <Link
+            to="/worker"
+            className="inline-flex items-center gap-2 self-start rounded-lg bg-yellow-600 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-1 transition-colors"
+          >
+            <span aria-hidden="true">←</span>
+            {t("pages.workday.backToDashboard")}
+          </Link>
         </div>
       )}
       {viewState === "cant_start" && assignedDay && (

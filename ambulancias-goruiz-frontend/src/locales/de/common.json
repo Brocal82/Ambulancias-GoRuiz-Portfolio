@@ -974,7 +974,9 @@
         "workday": {
             "title": "📋 Mein heutiger Arbeitstag: {{date}}",
             "closedDay": "✅ Tag geschlossen. Heute ist kein Dienst aktiv.",
-            "noAssignment": "🚫 Du hast heute keinen Dienst zugewiesen.",
+            "noAssignment": "Du hast heute keinen Dienst zugewiesen.",
+            "noAssignmentHint": "Wenn du glaubst, das ist ein Fehler, kontaktiere deinen Vorgesetzten.",
+            "backToDashboard": "Zurück zum Dashboard",
             "cantStart": "⏳ Du kannst Fahrten ab 30 Minuten vor Dienstbeginn erfassen. Startzeit: {{start}}",
             "dienstTimeLabel": "⏰ Dienst:",
             "teamLabel": "Team:",

@@ -974,7 +974,9 @@
         "workday": {
             "title": "📋 My Working Day: {{date}}",
             "closedDay": "✅ Day closed. No active shift today.",
-            "noAssignment": "🚫 You don't have a shift assigned today.",
+            "noAssignment": "You have no shift assigned today.",
+            "noAssignmentHint": "If you think this is an error, contact your supervisor.",
+            "backToDashboard": "Back to dashboard",
             "cantStart": "⏳ You can record trips starting 30 minutes before your shift. Start time: {{start}}",
             "dienstTimeLabel": "⏰ Shift:",
             "teamLabel": "Team:",
