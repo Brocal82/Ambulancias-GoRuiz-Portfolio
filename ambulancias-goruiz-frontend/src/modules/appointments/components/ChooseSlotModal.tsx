@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { selectSlot } from "../domain";
+import { emitAppointmentsChanged } from "../utils/appointmentEvents";
 import type { TimeSlot } from "../domain/types";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
@@ -48,6 +49,7 @@ export default function ChooseSlotModal({
       const sel = proposedSlots[selectedIndex];
       await selectSlot(appointmentId, { selectedSlot: sel }, token!);
       toastT.success(["toasts.appointments.confirmSuccess"]);
+      emitAppointmentsChanged();
       onClose();
       onSuccess?.();
     } catch (e: unknown) {

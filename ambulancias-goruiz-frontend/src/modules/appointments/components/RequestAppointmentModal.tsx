@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { requestAppointment } from "../domain";
 import { useAuth } from "../../../hooks/useAuth";
+import { emitAppointmentsChanged } from "../utils/appointmentEvents";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
 
@@ -46,6 +47,7 @@ export default function RequestAppointmentModal({
         token!,
       );
       toastT.success(["toasts.appointments.requestSuccess"]);
+      emitAppointmentsChanged();
       // 🔑 Resetear tras enviar
       setReason("");
       setDetails("");

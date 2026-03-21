@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { proposeSlots } from "../domain";
 import { useAuth } from "../../../hooks/useAuth";
+import { emitAppointmentsChanged } from "../utils/appointmentEvents";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { APP_TZ } from "../../../config/app";
 import { localDateTimeToUtcISO } from "../../../utils/tz";
@@ -104,6 +105,7 @@ export default function AdminProposeSlotsModal({
           : (resp as Appointment);
 
       toastT.success(["toasts.appointments.proposeSuccess"]);
+      emitAppointmentsChanged();
       onClose();
       onSuccess?.(updated);
     } catch (e: unknown) {

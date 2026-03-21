@@ -1,5 +1,5 @@
 // frontend/src/modules/appointments/pages/WorkerAppointmentsPage.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 
 import {
@@ -11,6 +11,8 @@ import {
     RequestAppointmentModal,
     ChooseSlotModal,
 } from "../components";
+import { emitAppointmentsChanged } from "../utils/appointmentEvents";
+import { useAppointmentsChanged } from "../hooks/useAppointmentsChanged";
 
 import type { Appointment } from "../domain/types";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
@@ -71,6 +73,8 @@ export default function WorkerAppointmentsPage() {
             toastT.error(getApiErrorMessage(e, ["toasts.appointments.loadError"]));
         }
     };
+    const refreshRef = useRef(refresh);
+    refreshRef.current = refresh;
 
     useEffect(() => {
         let mounted = true;
@@ -88,6 +92,9 @@ export default function WorkerAppointmentsPage() {
             mounted = false;
         };
     }, [token]);
+
+    // Sincronización reactiva cross-tab (CustomEvent + BroadcastChannel + storage)
+    useAppointmentsChanged(() => void refreshRef.current?.());
 
     // Traducción de estado
     const statusLabel = (s: Appointment["status"]) =>
@@ -166,6 +173,7 @@ export default function WorkerAppointmentsPage() {
         if (!ok) return;
         try {
             await apiDeleteMyAppointment(id, token!);
+            emitAppointmentsChanged();
             await refresh();
             toastT.success(["toasts.appointments.deleteSuccess"]);
         } catch (e: unknown) {

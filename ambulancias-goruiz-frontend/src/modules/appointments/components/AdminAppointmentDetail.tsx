@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Appointment } from "../domain/types";
 import { useAuth } from "../../../hooks/useAuth";
 import { cancelAppointment, updateAppointment } from "../domain";
+import { emitAppointmentsChanged } from "../utils/appointmentEvents";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { confirmAction } from "../../../utils/confirm";
 import { APP_TZ } from "../../../config/app";
@@ -71,6 +72,7 @@ const AdminAppointmentDetail: React.FC<Props> = ({
       setLoading(true);
       await cancelAppointment(item._id, token!);
       toastT.success(["toasts.appointments.cancelSuccess"]);
+      emitAppointmentsChanged();
       onClose();
       onChanged?.();
     } catch (e: unknown) {
@@ -104,6 +106,7 @@ const AdminAppointmentDetail: React.FC<Props> = ({
         token!,
       );
       toastT.success(["toasts.appointments.rescheduleSuccess"]);
+      emitAppointmentsChanged();
       setEditMode(false);
       onClose();
       onChanged?.();

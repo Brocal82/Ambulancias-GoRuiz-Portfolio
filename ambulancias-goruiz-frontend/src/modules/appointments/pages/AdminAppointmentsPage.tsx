@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 
 import {
@@ -16,6 +16,7 @@ import {
     AdminMonthCalendar,
     AdminAppointmentDetail,
 } from "../components";
+import { useAppointmentsChanged } from "../hooks/useAppointmentsChanged";
 
 import StatusBadge from "../../../components/common/StatusBadge";
 import { toneForAppointmentStatus } from "../utils/appointmentTone";
@@ -124,6 +125,11 @@ export default function AdminAppointmentsPage() {
     const refreshAll = async () => {
         await Promise.all([refreshPending(), refreshConfirmed()]);
     };
+    const refreshAllRef = useRef(refreshAll);
+    refreshAllRef.current = refreshAll;
+
+    // Sincronización reactiva cross-tab (CustomEvent + BroadcastChannel + storage)
+    useAppointmentsChanged(() => void refreshAllRef.current?.());
 
     // --- Helper: actualizar o añadir en la lista de pendientes
     const upsertPending = (next: Appointment) => {

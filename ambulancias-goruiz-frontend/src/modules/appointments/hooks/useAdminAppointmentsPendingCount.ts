@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { getAppointmentsPendingCount } from "../domain/api";
-/** Evento global para forzar refresco tras cambios (proponer/confirmar/cancelar) */
-export const ADMIN_APPOINTMENTS_CHANGED_EVENT = "admin-appointments-changed";
+import { useAppointmentsChanged } from "./useAppointmentsChanged";
 
 type Options = {
   /** Intervalo de refresco en ms. 0 = sin polling (default). */
@@ -12,7 +11,7 @@ type Options = {
 /**
  * Hook para contar citas pendientes (admin).
  * - Llama a GET /appointments/count?status=pending
- * - Refresca en focus/visibilitychange y al emitir el evento global 'admin-appointments-changed'
+ * - Refresca en focus/visibilitychange y por sincronización cross-tab (appointments-changed)
  * - Opcionalmente hace polling con pollMs
  */
 export function useAdminAppointmentsPendingCount({ pollMs = 0 }: Options = {}) {
@@ -56,30 +55,24 @@ export function useAdminAppointmentsPendingCount({ pollMs = 0 }: Options = {}) {
     };
   }, [token, fetchCount]);
 
-  // Refrescar al volver el foco / visibilidad y por evento global
+  // Refrescar al volver el foco / visibilidad
   useEffect(() => {
     const onFocus = () => fetchCount();
     const onVisibility = () => {
       if (document.visibilityState === "visible") fetchCount();
     };
-    const onChanged = () => fetchCount();
 
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener(
-      ADMIN_APPOINTMENTS_CHANGED_EVENT as any,
-      onChanged as EventListener,
-    );
 
     return () => {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener(
-        ADMIN_APPOINTMENTS_CHANGED_EVENT as any,
-        onChanged as EventListener,
-      );
     };
   }, [fetchCount]);
+
+  // Sincronización cross-tab (CustomEvent + BroadcastChannel + storage)
+  useAppointmentsChanged(fetchCount);
 
   // Polling opcional
   useEffect(() => {
@@ -98,9 +91,4 @@ export function useAdminAppointmentsPendingCount({ pollMs = 0 }: Options = {}) {
     /** Permite refrescar manualmente desde la UI si lo necesitas */
     refresh: fetchCount,
   };
-}
-
-/** Helper para emitir el evento global tras acciones que cambien el conteo */
-export function notifyAdminAppointmentsChanged() {
-  window.dispatchEvent(new Event(ADMIN_APPOINTMENTS_CHANGED_EVENT));
 }
