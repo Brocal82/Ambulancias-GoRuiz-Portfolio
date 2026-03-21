@@ -1,5 +1,5 @@
 // src/modules/teams/pages/AdminTeamsPage.tsx
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 
@@ -37,12 +37,16 @@ export default function AdminTeamsPage() {
   );
   const [sickFlags, setSickFlags] = useState<Record<string, SickFlag>>({});
 
+  const hasLoadedSuccessRef = useRef(false);
+
   const load = useCallback(async () => {
     if (!token) return;
     try {
-      setLoading(true);
+      // Solo loading en carga inicial; refetches tras create/update/delete no vacían la UI
+      setLoading(!hasLoadedSuccessRef.current);
       setError(null);
       const data = await getTeams();
+      hasLoadedSuccessRef.current = true;
       setTeams(data);
     } catch (e: unknown) {
       console.error(e);
