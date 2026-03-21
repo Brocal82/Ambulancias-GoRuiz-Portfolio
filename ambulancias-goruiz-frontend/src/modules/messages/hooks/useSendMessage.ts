@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
 import { sendMessage, sendMessageMultipart } from "../domain/api";
+import { emitMessagesChanged } from "../utils/messageEvents";
 
 export type SendMessageArgs = {
   token: string;
@@ -62,6 +63,7 @@ export const useSendMessage = (config?: UseSendMessageConfig) => {
       }
 
       toastT.success(["toasts.messages.sent"]);
+      emitMessagesChanged();
 
       if (config?.onSuccess) await config.onSuccess();
 

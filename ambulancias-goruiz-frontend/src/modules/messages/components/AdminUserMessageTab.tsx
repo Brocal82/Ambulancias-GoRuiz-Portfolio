@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
@@ -10,6 +10,8 @@ import { useSendMessage } from "../hooks/useSendMessage";
 import { sortMessagesByDateDesc } from "../utils/sortMessagesByDateDesc";
 import MessagesMonthPickerModal from "./MessagesMonthPickerModal";
 import SendMessageButton from "./SendMessageButton";
+import { useMessagesChanged } from "../hooks/useMessagesChanged";
+import { emitMessagesChanged } from "../utils/messageEvents";
 interface Props {
   userId: string;
   userFullName?: string; // p.ej. "García, Juan"
@@ -60,6 +62,11 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
       console.error("❌ Error al cargar mensajes de este usuario:", error);
     }
   };
+  const fetchMessagesRef = useRef(fetchMessages);
+  fetchMessagesRef.current = fetchMessages;
+
+  // Sincronización cross-tab (CustomEvent + BroadcastChannel + storage)
+  useMessagesChanged(() => void fetchMessagesRef.current?.());
 
   useEffect(() => {
     void fetchMessages();
@@ -108,6 +115,7 @@ const AdminUserMessageTab = ({ userId, userFullName }: Props) => {
       // ✅ borra en BD (admin)
       const { deleteMessage } = await import("../domain/api");
       await deleteMessage(messageId);
+      emitMessagesChanged();
 
       // ✅ quita del estado local (sin refetch obligatorio)
       setMessages((prev) => prev.filter((m) => m._id !== messageId));

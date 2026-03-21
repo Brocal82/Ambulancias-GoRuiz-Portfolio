@@ -1,5 +1,5 @@
 // src/modules/messages/pages/AdminSentMessages.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { getSentMessages, deleteMessage } from "../domain/api";
 import type { Message } from "../domain/types";
@@ -14,6 +14,8 @@ import {
   filterMessagesByYearMonth,
   buildCountsByMonthForYear,
 } from "../utils/messagesByMonth";
+import { useMessagesChanged } from "../hooks/useMessagesChanged";
+import { emitMessagesChanged } from "../utils/messageEvents";
 
 const AdminSentMessages = () => {
   const { token } = useAuth();
@@ -42,6 +44,11 @@ const AdminSentMessages = () => {
       console.error("❌ Error al cargar mensajes enviados:", error);
     }
   };
+  const fetchMessagesRef = useRef(fetchMessages);
+  fetchMessagesRef.current = fetchMessages;
+
+  // Sincronización cross-tab (CustomEvent + BroadcastChannel + storage)
+  useMessagesChanged(() => void fetchMessagesRef.current?.());
 
   useEffect(() => {
     void fetchMessages();
@@ -78,6 +85,7 @@ const AdminSentMessages = () => {
 
     try {
       await deleteMessage(id);
+      emitMessagesChanged();
       setMessages((prev) => prev.filter((m) => m._id !== id));
       setExpanded((prev) => {
         const next = new Set(prev);

@@ -9,7 +9,9 @@ import type { Message } from "../domain/types";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
-import { notifyUnreadMessagesChanged } from "../hooks/useUnreadMessagesCount"; import MessageList from "../components/MessageList";
+import { emitMessagesChanged } from "../utils/messageEvents";
+import { useMessagesChanged } from "../hooks/useMessagesChanged";
+import MessageList from "../components/MessageList";
 import { useMessageExpansion } from "../hooks/useMessageExpansion";
 import { sortMessagesByDateDesc } from "../utils/sortMessagesByDateDesc";
 import MessagesYearGrid from "../components/MessagesYearGrid";
@@ -53,19 +55,25 @@ const WorkerMessagesPage = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const data = await getMyMessages({ unreadOnly: false });
-        setMessages(data);
-      } catch (error) {
-        console.error("❌ Error al cargar mensajes:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (token) void fetchMessages();
+  const fetchMessages = useCallback(async () => {
+    if (!token) return;
+    try {
+      setLoading(true);
+      const data = await getMyMessages({ unreadOnly: false });
+      setMessages(data);
+    } catch (error) {
+      console.error("❌ Error al cargar mensajes:", error);
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
+
+  useEffect(() => {
+    if (token) void fetchMessages();
+  }, [token, fetchMessages]);
+
+  // Sincronización cross-tab (CustomEvent + BroadcastChannel + storage)
+  useMessagesChanged(() => void fetchMessages());
 
   const handleDelete = async (messageId: string) => {
     if (!token) return;
@@ -77,7 +85,7 @@ const WorkerMessagesPage = () => {
         next.delete(messageId);
         return next;
       });
-      notifyUnreadMessagesChanged();
+      emitMessagesChanged();
     } catch (error) {
       console.error("❌ Error al borrar mensaje:", error);
       toastT.error(["toasts.messages.deleteError"]);
@@ -96,7 +104,7 @@ const WorkerMessagesPage = () => {
         try {
           await markMessageAsRead(id);
           markedAnyAsReadRef.current = true;
-          notifyUnreadMessagesChanged();
+          emitMessagesChanged();
           // actualizar estado local: añadir mi id a readBy
           setMessages((prev) =>
             prev.map((m) =>
@@ -124,7 +132,7 @@ const WorkerMessagesPage = () => {
   // al salir de la página, por si hubo varias lecturas rápidas
   useEffect(() => {
     return () => {
-      if (markedAnyAsReadRef.current) notifyUnreadMessagesChanged();
+      if (markedAnyAsReadRef.current) emitMessagesChanged();
     };
   }, []);
 

@@ -1,5 +1,5 @@
 // src/modules/messages/pages/AdminMessagesPage.tsx
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { UsersApi } from "../../users";
 import { useSendMessage } from "../hooks/useSendMessage";
 import type { User } from "../../users";
@@ -15,6 +15,8 @@ import { sortMessagesByDateDesc } from "../utils/sortMessagesByDateDesc";
 import MessagesMonthPickerModal from "../components/MessagesMonthPickerModal";
 import RecipientsPicker from "../components/RecipientsPicker";
 import SendMessageButton from "../components/SendMessageButton";
+import { useMessagesChanged } from "../hooks/useMessagesChanged";
+import { emitMessagesChanged } from "../utils/messageEvents";
 
 const AdminMessagesPage = () => {
   const { token } = useAuth();
@@ -96,6 +98,11 @@ const AdminMessagesPage = () => {
       console.error("❌ Error al cargar mensajes enviados:", error);
     }
   };
+  const fetchSentMessagesRef = useRef(fetchSentMessages);
+  fetchSentMessagesRef.current = fetchSentMessages;
+
+  // Sincronización cross-tab (CustomEvent + BroadcastChannel + storage)
+  useMessagesChanged(() => void fetchSentMessagesRef.current?.());
 
   const openSentModal = async () => {
     setSentMonth(null);      // ✅ abre sin mes seleccionado
@@ -124,6 +131,7 @@ const AdminMessagesPage = () => {
 
     try {
       await deleteMessage(id);
+      emitMessagesChanged();
 
       setSentMessages((prev) => prev.filter((m) => m._id !== id));
 
