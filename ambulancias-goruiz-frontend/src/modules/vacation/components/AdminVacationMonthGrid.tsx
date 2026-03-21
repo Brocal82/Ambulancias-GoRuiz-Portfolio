@@ -177,7 +177,7 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
       }
     }
 
-    setAvailabilityByMonth({}); // limpia al cambiar de año
+    // No vaciar: mantener datos actuales visibles hasta que loadAll termine
     loadAll();
 
     return () => {

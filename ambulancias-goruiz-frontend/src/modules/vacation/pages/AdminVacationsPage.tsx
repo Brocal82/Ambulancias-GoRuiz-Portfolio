@@ -27,7 +27,7 @@ const AdminVacationRequests = () => {
   const { token } = useAuth();
   const { t, i18n } = useTranslation();
 
-  const { gridYear, setGridYear, gridRefreshTick } = useVacationMonthGridRefresh({
+  const { gridYear, setGridYear } = useVacationMonthGridRefresh({
     initialYear: new Date().getFullYear(),
     onlyWhenYearMatchesVisible: true,
   });
@@ -280,7 +280,7 @@ const AdminVacationRequests = () => {
         {/* Bloque con borde (selector año + leyenda + grid) */}
         <div className="rounded-xl ring-1 ring-slate-200 bg-white p-3 sm:p-4 mb-6">
           <AdminVacationMonthGrid
-            key={`${gridYear}-${gridRefreshTick}`} // ✅ fuerza rerender cuando cambie la disponibilidad
+            key={gridYear}
             requests={requests}
             year={gridYear}
             onYearChange={(y) => setGridYear(y)}

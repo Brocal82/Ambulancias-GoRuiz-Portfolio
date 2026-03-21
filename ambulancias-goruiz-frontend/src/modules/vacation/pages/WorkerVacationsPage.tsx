@@ -29,7 +29,7 @@ const WorkerVacationsPage = () => {
   const { token } = useAuth();
   const { t } = useTranslation();
 
-  const { gridYear, setGridYear, gridRefreshTick } = useVacationMonthGridRefresh({
+  const { gridYear, setGridYear } = useVacationMonthGridRefresh({
     initialYear: new Date().getFullYear(),
   });
 
@@ -239,7 +239,7 @@ const WorkerVacationsPage = () => {
       {/* Grid de 12 meses con navegación de año integrada */}
       <div className="mb-4">
         <AdminVacationMonthGrid
-          key={`${gridYear}-${gridRefreshTick}`}
+          key={gridYear}
           requests={requests}
           year={gridYear}
           onYearChange={(y) => setGridYear(y)}

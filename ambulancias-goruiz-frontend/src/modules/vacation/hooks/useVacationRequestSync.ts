@@ -90,6 +90,7 @@ export function useVacationRequestsSync(
   const [error, setError] = useState<string | null>(null);
 
   const refetchTimerRef = useRef<number | null>(null);
+  const hasFetchedSuccessRef = useRef(false);
 
   // ✅ Helper interno: limpia el timer pendiente (si existe)
   // No cambia comportamiento: es exactamente el mismo cleanup que ya hacíamos.
@@ -118,11 +119,13 @@ export function useVacationRequestsSync(
     // ✅ Narrowing de TS: a partir de aquí token es string seguro
     if (!token) return;
 
-    setLoading(true);
+    // Solo loading en carga inicial; refetches en background no vacían la UI
+    setLoading(!hasFetchedSuccessRef.current);
     setError(null);
 
     try {
       const data = await fetcher();
+      hasFetchedSuccessRef.current = true;
       setRequests(data);
       onAfterFetchRef.current?.(data);
     } catch {
