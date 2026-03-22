@@ -1,37 +1,12 @@
 import { Request, Response } from "express";
-import { DateTime } from "luxon";
 import { checkVacationsInRangeService } from "../services/vacation-range.service";
-
-const ZONE = "Europe/Berlin";
 
 export const checkVacationsInRange = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const { userIds, fromISO, toISO } = req.body as {
-      userIds?: string[];
-      fromISO?: string;
-      toISO?: string;
-    };
-
-    if (!Array.isArray(userIds) || userIds.length === 0 || !fromISO || !toISO) {
-      res
-        .status(400)
-        .json({
-          message:
-            "Parámetros inválidos. Se requieren userIds[], fromISO y toISO.",
-        });
-      return;
-    }
-
-    const fromDT = DateTime.fromISO(fromISO, { zone: ZONE }).startOf("day");
-    const toDT = DateTime.fromISO(toISO, { zone: ZONE }).endOf("day");
-
-    if (!fromDT.isValid || !toDT.isValid || fromDT > toDT) {
-      res.status(400).json({ message: "Rango de fechas inválido." });
-      return;
-    }
+    const { userIds, fromISO, toISO } = req.body;
 
     const result = await checkVacationsInRangeService({
       userIds,

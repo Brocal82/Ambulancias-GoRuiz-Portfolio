@@ -30,18 +30,7 @@ export const upsertMonthConfig = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { monthKey, maxPerDay, blackouts } = req.body as {
-      monthKey: string;
-      maxPerDay?: number;
-      blackouts?: { startDate: string | Date; endDate: string | Date }[];
-    };
-
-    if (!monthKey || !/^\d{4}-\d{2}$/.test(monthKey)) {
-      res
-        .status(400)
-        .json({ message: 'monthKey inválido. Formato "YYYY-MM".' });
-      return;
-    }
+    const { monthKey, maxPerDay, blackouts } = req.body;
 
     const updated = await upsertMonthConfigRecord({
       monthKey,

@@ -17,13 +17,6 @@ export const createVacationRequest = async (
     }
     const { startDate, endDate } = req.body;
 
-    if (!startDate || !endDate) {
-      res
-        .status(400)
-        .json({ message: "Las fechas de inicio y fin son obligatorias" });
-      return;
-    }
-
     const newRequest = await createVacationRequestRecord({
       userId,
       startDate,
