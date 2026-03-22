@@ -7,7 +7,7 @@ export interface IMessage extends Document {
   recipients: mongoose.Types.ObjectId[];
   sentAt: Date;
   readBy: mongoose.Types.ObjectId[];
-  removedBy: mongoose.Types.ObjectId[]; // 👈 NUEVO: oculto para estos usuarios
+  removedBy: mongoose.Types.ObjectId[];
   toAllWorkers?: boolean;
   attachments?: {
     originalName: string;
@@ -18,14 +18,13 @@ export interface IMessage extends Document {
   }[];
 }
 
-// Subesquema para adjuntos (sin _id)
 const attachmentSchema = new Schema(
   {
     originalName: { type: String, required: true },
     filename: { type: String, required: true },
     mimetype: { type: String, required: true },
     size: { type: Number, required: true },
-    url: { type: String, required: true }, // p.ej. /uploads/<filename>
+    url: { type: String, required: true },
   },
   { _id: false },
 );
@@ -63,7 +62,6 @@ const messageSchema = new Schema<IMessage>({
     },
   ],
   removedBy: [
-    // 👈 NUEVO: quién lo ha “eliminado” de su vista
     {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -74,17 +72,14 @@ const messageSchema = new Schema<IMessage>({
     type: Boolean,
     default: false,
   },
-  // Lista de adjuntos (vacía por defecto)
   attachments: {
     type: [attachmentSchema],
     default: [],
   },
 });
 
-// Índices útiles
-messageSchema.index({ recipients: 1, sentAt: -1 }); // ✅ array + escalar (OK)
-messageSchema.index({ readBy: 1 }); // ✅ un solo array (OK)
-messageSchema.index({ removedBy: 1 }); // ✅ un solo array (OK)
+messageSchema.index({ recipients: 1, sentAt: -1 });
+messageSchema.index({ readBy: 1 });
+messageSchema.index({ removedBy: 1 });
 
-const Message = mongoose.model<IMessage>("Message", messageSchema);
-export default Message;
+export const Message = mongoose.model<IMessage>("Message", messageSchema);
