@@ -3,10 +3,8 @@ import { Request, Response } from "express";
 import Message from "../models/Message";
 import User from "../models/User";
 import mongoose from "mongoose";
-import { Notification } from "../models/Notifications";
 
 // 📨 Crear un nuevo mensaje (soporta 1 adjunto opcional en campo "attachment")
-// + Crea notificaciones para cada destinatario (worker)
 export const createMessage = async (
   req: Request,
   res: Response,
@@ -98,35 +96,14 @@ export const createMessage = async (
       ];
     }
 
-    // 1) Crear el mensaje
     const newMessage = await Message.create({
       subject,
       body,
       sender: senderId,
       recipients: finalRecipients,
-      toAllWorkers, // 👈 ahora es un boolean real ya normalizado
+      toAllWorkers,
       attachments,
     });
-
-    // 2) Crear notificaciones para cada destinatario (worker)
-    try {
-      const docs = finalRecipients.map((uid: string) => ({
-        title: subject || "Nuevo mensaje",
-        message: body?.slice(0, 200) || "Tienes un nuevo mensaje.",
-        recipientId: new mongoose.Types.ObjectId(uid),
-        role: "worker" as const,
-        type: "message" as const,
-      }));
-      if (docs.length > 0) {
-        await Notification.insertMany(docs);
-      }
-    } catch (nerr) {
-      // No romper el envío del mensaje si fallan las notificaciones
-      console.error(
-        "⚠️ No se pudieron crear notificaciones para el mensaje:",
-        nerr,
-      );
-    }
 
     res.status(201).json(newMessage);
     return;

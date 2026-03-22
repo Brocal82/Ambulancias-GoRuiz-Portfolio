@@ -14,7 +14,6 @@ import vacationRoutes from "./modules/vacation/routes";
 import { ambulancesRoutes } from "./modules/ambulances";
 import messageRoutes from "./routes/messageRoutes";
 import appointmentRoutes from "./routes/appointmentRoutes";
-import notificationRoutes from "./routes/notificationRoutes";
 import teamRoutes from "./routes/teamRoutes";
 import sickLeaveRoutes from "./modules/sick-leaves/routes";
 
@@ -72,7 +71,6 @@ app.use("/api/vacations", vacationRoutes);
 app.use("/api/ambulances", ambulancesRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/appointments", appointmentRoutes);
-app.use("/api", notificationRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/sick-leaves", sickLeaveRoutes);
 
