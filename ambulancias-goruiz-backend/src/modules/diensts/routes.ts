@@ -10,7 +10,9 @@ import { dienstTemplateRoutes } from "../dienst-templates";
 
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
+import { updateDienstPartialSchema } from "./assignments/schemas/update-dienst-partial.schema";
 
 const router = express.Router();
 
@@ -72,6 +74,7 @@ router.patch(
   authenticateToken,
   authorizeRole("admin"),
   validateObjectId("id"),
+  validateBody(updateDienstPartialSchema),
   DienstAssignments.updateDienstPartial,
 );
 router.delete(

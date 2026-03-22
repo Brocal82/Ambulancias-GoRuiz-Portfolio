@@ -5,13 +5,6 @@ export const updateDienstPartial: RequestHandler = async (req, res) => {
   const { id } = req.params;
   const { assignments } = req.body;
 
-  if (!assignments || !Array.isArray(assignments)) {
-    res
-      .status(400)
-      .json({ message: "No se proporcionaron assignments válidos." });
-    return;
-  }
-
   try {
     const dienst = await assignmentsService.updateDienstPartial(id, assignments);
     if (!dienst) {
