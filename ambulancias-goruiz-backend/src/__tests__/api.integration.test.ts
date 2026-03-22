@@ -781,12 +781,13 @@ describe("API - Rutas críticas", () => {
       expect(res.body.averagePatients).toBe(10);
     });
 
-    it("admin con ?userId inválido devuelve 500 (sin validación explícita)", async () => {
+    it("admin con ?userId inválido devuelve 400", async () => {
       const res = await request(app)
         .get(`${API}/praemien/monthly-summary?userId=id-invalido`)
         .set("Authorization", `Bearer ${adminToken}`)
-        .expect(500);
+        .expect(400);
       expect(res.body).toHaveProperty("message");
+      expect(res.body.message).toBe("userId inválido");
     });
 
     it("GET /api/praemien/monthly-history worker con ?userId=adminId ignora query (IDOR fix)", async () => {
