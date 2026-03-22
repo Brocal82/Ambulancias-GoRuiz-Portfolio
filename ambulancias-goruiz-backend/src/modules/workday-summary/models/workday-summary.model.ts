@@ -99,12 +99,6 @@ const workdaySummarySchema = new Schema<IWorkdaySummary>({
   reviewedAt: { type: Date },
 });
 
-// (Opcional, rendimiento): índice simple por isReviewed
-// workdaySummarySchema.index({ isReviewed: 1 });
-
-/* ─────────────────────────────────────────────
- * 4. Export del modelo
- * ───────────────────────────────────────────── */
 const WorkdaySummary =
   mongoose.models.WorkdaySummary ||
   mongoose.model<IWorkdaySummary>("WorkdaySummary", workdaySummarySchema);

@@ -1,6 +1,6 @@
 import { endOfMonth, startOfMonth } from "date-fns";
 import MonthlyPraemie from "../models/monthly-praemie.model";
-import WorkdaySummary from "../../../models/workdaySummary";
+import { WorkdaySummary } from "../../workday-summary";
 
 function getPremieLevel(averagePatients: number): string {
   let premieLevel = "\u274c No alcanza m\u00ednimo";

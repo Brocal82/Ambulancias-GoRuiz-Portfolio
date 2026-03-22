@@ -9,11 +9,11 @@ import {
   getSummariesCountByStatus,
   markSummaryReviewed,
   getIssuesCount,
-  markIssueSeen, // 👈 NUEVO import
-} from "../controllers/workdaySummaryController";
-import { authenticateToken } from "../middlewares/authMiddleware";
-import { authorizeRole } from "../middlewares/roleMiddleware";
-import { validateObjectId } from "../middlewares/validateObjectId";
+  markIssueSeen,
+} from "./controllers/workday-summary.controller";
+import { authenticateToken } from "../../middlewares/authMiddleware";
+import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { validateObjectId } from "../../middlewares/validateObjectId";
 
 const router = express.Router();
 

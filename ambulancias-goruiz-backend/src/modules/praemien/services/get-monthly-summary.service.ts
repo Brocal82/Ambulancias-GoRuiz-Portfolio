@@ -1,6 +1,6 @@
 import { endOfMonth, startOfMonth } from "date-fns";
 import mongoose from "mongoose";
-import WorkdaySummary from "../../../models/workdaySummary";
+import { WorkdaySummary } from "../../workday-summary";
 import { MonthlyPraemienSummaryResponse } from "../types/praemien.types";
 
 export async function getMonthlySummaryForUser(

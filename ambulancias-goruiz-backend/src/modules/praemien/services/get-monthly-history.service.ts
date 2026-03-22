@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import WorkdaySummary from "../../../models/workdaySummary";
+import { WorkdaySummary } from "../../workday-summary";
 import { PraemienMonthlyHistoryItem } from "../types/praemien.types";
 
 export async function getMonthlyHistoryForUser(

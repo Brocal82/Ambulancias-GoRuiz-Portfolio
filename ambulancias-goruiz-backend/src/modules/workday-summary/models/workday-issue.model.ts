@@ -22,4 +22,8 @@ const WorkdayIssueSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-export default mongoose.model("WorkdayIssue", WorkdayIssueSchema);
+const WorkdayIssue =
+  (mongoose.models.WorkdayIssue as mongoose.Model<unknown>) ||
+  mongoose.model("WorkdayIssue", WorkdayIssueSchema);
+
+export default WorkdayIssue;

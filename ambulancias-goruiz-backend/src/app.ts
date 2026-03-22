@@ -8,7 +8,7 @@ import userRoutes from "./modules/users/routes";
 import dienstRoutes from "./modules/diensts/routes";
 import hospitalRoutes from "./modules/hospitals/routes";
 import { tripsRoutes } from "./modules/trips";
-import workdaySummaryRoutes from "./routes/workdaySummaryRoutes";
+import { workdaySummaryRoutes } from "./modules/workday-summary";
 import praemienRoutes from "./modules/praemien/routes";
 import vacationRoutes from "./modules/vacation/routes";
 import { ambulancesRoutes } from "./modules/ambulances";
