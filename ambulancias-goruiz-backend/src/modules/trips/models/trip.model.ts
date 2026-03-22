@@ -1,4 +1,3 @@
-// backend/src/models/Trip.ts
 import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface ITrip extends Document {
@@ -35,7 +34,7 @@ const TripSchema = new Schema<ITrip>({
   fromAddress: { type: String, required: true },
   toAddress: { type: String, required: true },
 
-  timeWarning: { type: String, required: true }, // ⏰ Siempre requerido
+  timeWarning: { type: String, required: true },
   timeAtHome: { type: String, required: false },
   timePickup: { type: String, required: false },
   timeArrival: { type: String, required: false },
@@ -58,4 +57,4 @@ const TripSchema = new Schema<ITrip>({
   sentInSummary: { type: Boolean, default: false },
 });
 
-export default mongoose.model<ITrip>("Trip", TripSchema);
+export const Trip = mongoose.model<ITrip>("Trip", TripSchema);
