@@ -1,8 +1,8 @@
-// backend/src/routes/appointmentRoutes.ts
+// backend/src/modules/appointments/routes.ts
 import { Router } from "express";
-import { authenticateToken } from "../middlewares/authMiddleware";
-import { authorizeRole } from "../middlewares/roleMiddleware";
-import { validateObjectId } from "../middlewares/validateObjectId";
+import { authenticateToken } from "../../middlewares/authMiddleware";
+import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { validateObjectId } from "../../middlewares/validateObjectId";
 import {
   requestAppointment,
   getMyAppointments,
@@ -15,7 +15,7 @@ import {
   deleteMyAppointment,
   getAppointmentsCount,
   getOpenAppointments,
-} from "../controllers/appointmentController";
+} from "./controllers/appointments.controller";
 
 const router = Router();
 
@@ -51,7 +51,7 @@ router.get(
   getOpenAppointments,
 );
 
-// ✅ Admin: contar por estado (derivado). Por defecto status=pending
+// Admin: contar por estado (derivado). Por defecto status=pending
 router.get(
   "/count",
   authenticateToken,

@@ -1,10 +1,10 @@
-// backend/src/models/Appointment.ts
+// backend/src/modules/appointments/models/appointment.model.ts
 import mongoose, { Schema, Model, Document } from "mongoose";
 import {
   IAppointment,
   AppointmentStatus,
   TimeSlot,
-} from "../types/Appointment";
+} from "../../../types/Appointment";
 
 interface AppointmentDoc extends Omit<IAppointment, "_id">, Document {}
 

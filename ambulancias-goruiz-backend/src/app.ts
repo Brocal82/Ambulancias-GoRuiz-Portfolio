@@ -13,7 +13,7 @@ import praemienRoutes from "./modules/praemien/routes";
 import vacationRoutes from "./modules/vacation/routes";
 import { ambulancesRoutes } from "./modules/ambulances";
 import { messagesRoutes } from "./modules/messages";
-import appointmentRoutes from "./routes/appointmentRoutes";
+import { appointmentsRoutes } from "./modules/appointments";
 import teamRoutes from "./routes/teamRoutes";
 import sickLeaveRoutes from "./modules/sick-leaves/routes";
 
@@ -70,7 +70,7 @@ app.use("/api/praemien", praemienRoutes);
 app.use("/api/vacations", vacationRoutes);
 app.use("/api/ambulances", ambulancesRoutes);
 app.use("/api/messages", messagesRoutes);
-app.use("/api/appointments", appointmentRoutes);
+app.use("/api/appointments", appointmentsRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/sick-leaves", sickLeaveRoutes);
 
