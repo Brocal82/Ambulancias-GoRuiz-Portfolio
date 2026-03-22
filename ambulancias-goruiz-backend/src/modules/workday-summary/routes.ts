@@ -13,7 +13,9 @@ import {
 } from "./controllers/workday-summary.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
+import { reportIssueSchema } from "./schemas/workday-summary.schema";
 
 const router = express.Router();
 
@@ -57,7 +59,12 @@ router.patch(
 router.get("/", authenticateToken, getAllWorkdaySummaries);
 
 // 🟠 Reportar avería: cualquier usuario autenticado (worker durante cierre de jornada)
-router.post("/report-issue", authenticateToken, reportIssue);
+router.post(
+  "/report-issue",
+  authenticateToken,
+  validateBody(reportIssueSchema),
+  reportIssue,
+);
 
 // 🟠 Listar averías: solo admin (AdminMechanicsPage)
 router.get("/issues", authenticateToken, authorizeRole("admin"), getAllIssueReports);
