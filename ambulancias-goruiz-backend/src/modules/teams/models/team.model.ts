@@ -1,5 +1,5 @@
-// src/models/Team.ts
-import { Schema, model, Types, Document } from "mongoose";
+// src/modules/teams/models/team.model.ts
+import mongoose, { Schema, model, Types, Document, Model } from "mongoose";
 
 export interface ITeamModel extends Document {
   driver: Types.ObjectId;
@@ -38,7 +38,7 @@ const TeamSchema = new Schema<ITeamModel>(
       type: String,
       enum: ["rotating", "fixed", "none"],
       required: true,
-      default: "none", // por defecto no hacemos rotación automática
+      default: "none",
     },
 
     fixedDienstNumber: {
@@ -47,7 +47,6 @@ const TeamSchema = new Schema<ITeamModel>(
       default: null,
     },
 
-    // 🚑 NUEVO: ambulancia fija del equipo (opcional)
     ambulanceId: {
       type: Schema.Types.ObjectId,
       ref: "Ambulance",
@@ -58,7 +57,8 @@ const TeamSchema = new Schema<ITeamModel>(
   { timestamps: true },
 );
 
-// ❗ Evitar duplicados exactos de pareja
 TeamSchema.index({ driver: 1, medic: 1 }, { unique: true });
 
-export default model<ITeamModel>("Team", TeamSchema);
+export const Team: Model<ITeamModel> =
+  (mongoose.models.Team as Model<ITeamModel>) ||
+  model<ITeamModel>("Team", TeamSchema);

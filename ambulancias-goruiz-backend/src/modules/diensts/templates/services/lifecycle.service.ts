@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import Dienst from "../../models/dienst.model";
-import Team from "../../../../models/Team";
+import { Team } from "../../../teams";
 import {
   DienstTemplate,
   type DaySchedule,
