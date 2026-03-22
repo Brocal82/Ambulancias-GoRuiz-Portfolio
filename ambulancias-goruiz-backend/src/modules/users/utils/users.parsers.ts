@@ -7,21 +7,27 @@ function asString(v: unknown): string | undefined {
 
 /**
  * Extrae SOLO campos permitidos para UpdateUser.
- * No valida reglas (eso lo hace el service), aquí solo limpiamos shape.
+ * Solo incluye campos presentes en el request.
+ * - Ausente → no se incluye (PATCH parcial)
+ * - profileImage: "" → borrar; undefined → no tocar
  */
 export function parseUpdateUserDTO(body: any): Partial<UpdateUserDTO> {
-  return {
-    name: asString(body?.name) ?? "",
-    lastName: asString(body?.lastName),
-    email: asString(body?.email) ?? "",
+  const result: Partial<UpdateUserDTO> = {};
 
-    ambulanceRole: asString(body?.ambulanceRole) as any,
-    address: asString(body?.address),
-    phone: asString(body?.phone),
-    emergencyPhone: asString(body?.emergencyPhone),
-    pscheinExpiry: asString(body?.pscheinExpiry),
-    profileImage: asString(body?.profileImage),
-  };
+  if (body?.name !== undefined) result.name = asString(body.name) ?? "";
+  if (body?.lastName !== undefined) result.lastName = asString(body.lastName);
+  if (body?.email !== undefined) result.email = asString(body.email) ?? "";
+
+  if (body?.ambulanceRole !== undefined)
+    result.ambulanceRole = asString(body.ambulanceRole) as UpdateUserDTO["ambulanceRole"];
+  if (body?.address !== undefined) result.address = asString(body.address);
+  if (body?.phone !== undefined) result.phone = asString(body.phone);
+  if (body?.emergencyPhone !== undefined)
+    result.emergencyPhone = asString(body.emergencyPhone);
+  if (body?.pscheinExpiry !== undefined) result.pscheinExpiry = asString(body.pscheinExpiry);
+  if (body?.profileImage !== undefined) result.profileImage = asString(body.profileImage) ?? "";
+
+  return result;
 }
 
 export function parseCreateUserDTO(body: any): CreateUserDTO {

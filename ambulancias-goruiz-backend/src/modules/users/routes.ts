@@ -18,14 +18,20 @@ import {
   authorizeRole,
   authorizeSelfOrAdmin,
 } from "../../middlewares/roleMiddleware";
+import { validateBody } from "../../middlewares/validateBody";
 import { upload } from "../../middlewares/uploadMiddleware";
 import { validateObjectId } from "../../middlewares/validateObjectId";
+import {
+  registerUserSchema,
+  loginUserSchema,
+  updateUserSchema,
+} from "./schemas/user.schema";
 
 const router = Router();
 
 // Rutas públicas
-router.post("/register", createUser);
-router.post("/login", loginUser);
+router.post("/register", validateBody(registerUserSchema), createUser);
+router.post("/login", validateBody(loginUserSchema), loginUser);
 
 // ⚠️ Rutas personalizadas antes de `/:id`
 router.get(
@@ -42,7 +48,7 @@ router.get(
 ); // ✅ nueva ruta
 
 // Ruta para actualizar el perfil del usuario autenticado
-router.patch("/me", authenticateToken, updateUser);
+router.patch("/me", authenticateToken, validateBody(updateUserSchema), updateUser);
 router.post(
   "/me/upload",
   authenticateToken,
@@ -86,6 +92,7 @@ router.put(
   authenticateToken,
   validateObjectId("id"),
   authorizeSelfOrAdmin,
+  validateBody(updateUserSchema),
   updateUser,
 );
 router.patch(
@@ -93,6 +100,7 @@ router.patch(
   authenticateToken,
   validateObjectId("id"),
   authorizeSelfOrAdmin,
+  validateBody(updateUserSchema),
   updateUser,
 );
 

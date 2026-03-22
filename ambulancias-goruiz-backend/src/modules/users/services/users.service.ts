@@ -160,9 +160,9 @@ export async function getUsersWithTodayVacationInfo() {
 }
 
 interface UpdateUserInput {
-  name: string;
+  name?: string;
   lastName?: string;
-  email: string;
+  email?: string;
   ambulanceRole?: "driver" | "medic" | "both";
   address?: string;
   phone?: string;
@@ -179,14 +179,19 @@ export async function updateUserService(
     throw new Error("ID de usuario no proporcionado");
   }
 
-  const { name, email } = data;
-
-  if (!name || !email) {
-    throw new Error("El nombre y el email son obligatorios");
+  // Solo validar campos que vienen en el update (PATCH parcial)
+  if (data.name !== undefined) {
+    if (!data.name || !data.name.trim()) {
+      throw new Error("El nombre es obligatorio cuando se envía");
+    }
   }
-
-  if (!validateEmail(email)) {
-    throw new Error("El formato del email no es válido");
+  if (data.email !== undefined) {
+    if (!data.email || !data.email.trim()) {
+      throw new Error("El email es obligatorio cuando se envía");
+    }
+    if (!validateEmail(data.email)) {
+      throw new Error("El formato del email no es válido");
+    }
   }
 
   const updates: Record<string, any> = { ...data };
