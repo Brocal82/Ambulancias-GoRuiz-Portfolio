@@ -2,6 +2,7 @@
 import { Router } from "express";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import {
   requestAppointment,
@@ -16,6 +17,12 @@ import {
   getAppointmentsCount,
   getOpenAppointments,
 } from "./controllers/appointments.controller";
+import {
+  requestAppointmentSchema,
+  proposeSlotsSchema,
+  selectSlotSchema,
+  updateAppointmentSchema,
+} from "./schemas/appointment.schema";
 
 const router = Router();
 
@@ -24,6 +31,7 @@ router.post(
   "/requests",
   authenticateToken,
   authorizeRole("worker"),
+  validateBody(requestAppointmentSchema),
   requestAppointment,
 );
 
@@ -65,6 +73,7 @@ router.post(
   authenticateToken,
   authorizeRole("worker"),
   validateObjectId("id"),
+  validateBody(selectSlotSchema),
   selectSlot,
 );
 
@@ -74,6 +83,7 @@ router.post(
   authenticateToken,
   authorizeRole("admin"),
   validateObjectId("id"),
+  validateBody(proposeSlotsSchema),
   proposeSlots,
 );
 
@@ -91,6 +101,7 @@ router.patch(
   authenticateToken,
   authorizeRole("admin"),
   validateObjectId("id"),
+  validateBody(updateAppointmentSchema),
   updateAppointment,
 );
 

@@ -11,8 +11,10 @@ import {
 } from "./controllers/messages.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { validateBody } from "../../middlewares/validateBody";
 import { upload } from "../../middlewares/uploadMiddleware";
 import { validateObjectId } from "../../middlewares/validateObjectId";
+import { messageSchema } from "./schemas/message.schema";
 import type { ErrorRequestHandler } from "express";
 
 const router = Router();
@@ -22,6 +24,7 @@ router.post(
   authenticateToken,
   authorizeRole("admin"),
   upload.array("attachment", 5),
+  validateBody(messageSchema),
   createMessage,
 );
 
