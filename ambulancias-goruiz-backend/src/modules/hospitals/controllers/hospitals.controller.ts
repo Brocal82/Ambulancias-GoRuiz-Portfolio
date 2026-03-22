@@ -1,9 +1,7 @@
 import { Request, Response } from "express";
 import * as hospitalsService from "../services/hospitals.service";
-import {
-  normalizeUpdateHospital,
-  validateCreateHospital,
-} from "../utils/hospital.validators";
+import { validateCreateHospital } from "../utils/hospital.validators";
+import type { UpdateHospitalInput } from "../schemas/hospital.schema";
 
 export const getAllHospitals = async (_req: Request, res: Response) => {
   try {
@@ -33,10 +31,8 @@ export const createHospital = async (req: Request, res: Response): Promise<void>
 
 export const updateHospital = async (req: Request, res: Response) => {
   try {
-    const updatedFields = normalizeUpdateHospital(req.body);
-    console.log("🔧 Campos recibidos para actualizar:", updatedFields);
-
-    const updated = await hospitalsService.updateHospital(req.params.id, updatedFields);
+    const updateData = req.body as UpdateHospitalInput;
+    const updated = await hospitalsService.updateHospital(req.params.id, updateData);
 
     if (!updated) {
       res.status(404).json({ message: "Hospital no encontrado" });

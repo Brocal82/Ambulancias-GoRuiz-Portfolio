@@ -7,7 +7,9 @@ import {
 } from "./controllers/hospitals.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
+import { updateHospitalSchema } from "./schemas/hospital.schema";
 
 const router = express.Router();
 
@@ -21,6 +23,7 @@ router.put(
   authenticateToken,
   authorizeRole("admin"),
   validateObjectId("id"),
+  validateBody(updateHospitalSchema),
   updateHospital,
 );
 router.patch(
@@ -28,6 +31,7 @@ router.patch(
   authenticateToken,
   authorizeRole("admin"),
   validateObjectId("id"),
+  validateBody(updateHospitalSchema),
   updateHospital,
 );
 router.delete(

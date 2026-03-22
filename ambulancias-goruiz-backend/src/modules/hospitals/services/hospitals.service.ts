@@ -1,4 +1,5 @@
 import { Hospital } from "../models/hospital.model";
+import type { UpdateHospitalInput } from "../schemas/hospital.schema";
 
 export const getAllHospitals = async () => {
   return await Hospital.find();
@@ -22,8 +23,8 @@ export const createHospital = async (data: {
   return await hospital.save();
 };
 
-export const updateHospital = async (id: string, updatedFields: Record<string, unknown>) => {
-  return await Hospital.findByIdAndUpdate(id, updatedFields, { new: true });
+export const updateHospital = async (id: string, updateData: UpdateHospitalInput) => {
+  return await Hospital.findByIdAndUpdate(id, updateData, { new: true });
 };
 
 export const deleteHospital = async (id: string) => {

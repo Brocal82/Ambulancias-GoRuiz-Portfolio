@@ -47,16 +47,3 @@ export const validateCreateHospital = (
   };
 };
 
-export const normalizeUpdateHospital = (body: unknown): Record<string, unknown> => {
-  const updatedFields: Record<string, unknown> =
-    body && typeof body === "object" ? { ...(body as Record<string, unknown>) } : {};
-
-  // Limpiar especialidades si vienen
-  if (Array.isArray(updatedFields.specialties)) {
-    updatedFields.specialties = (updatedFields.specialties as unknown[]).map((s) =>
-      String(s).trim(),
-    );
-  }
-
-  return updatedFields;
-};
