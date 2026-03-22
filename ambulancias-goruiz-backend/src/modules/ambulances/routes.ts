@@ -5,30 +5,27 @@ import {
   createAmbulance,
   updateAmbulance,
   deleteAmbulance,
-} from "../controllers/ambulanceController";
-
-import { authenticateToken } from "../middlewares/authMiddleware";
-import { authorizeRole } from "../middlewares/roleMiddleware";
-import { validateBody } from "../middlewares/validateBody";
-import { validateObjectId } from "../middlewares/validateObjectId";
+} from "./controllers/ambulances.controller";
+import { authenticateToken } from "../../middlewares/authMiddleware";
+import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { validateBody } from "../../middlewares/validateBody";
+import { validateObjectId } from "../../middlewares/validateObjectId";
 import {
   createAmbulanceSchema,
   updateAmbulanceSchema,
-} from "../schemas/ambulanceSchema";
+} from "../../schemas/ambulanceSchema";
 
 const router = Router();
 
-// 🟢 Rutas accesibles para cualquier usuario autenticado
 router.get("/", authenticateToken, getAllAmbulances);
 router.get("/:id", authenticateToken, validateObjectId("id"), getAmbulanceById);
 
-// 🔒 Rutas protegidas para ADMIN únicamente
 router.post(
   "/",
   authenticateToken,
   authorizeRole("admin"),
   validateBody(createAmbulanceSchema),
-  createAmbulance,
+  createAmbulance
 );
 router.put(
   "/:id",
@@ -36,14 +33,14 @@ router.put(
   authorizeRole("admin"),
   validateObjectId("id"),
   validateBody(updateAmbulanceSchema),
-  updateAmbulance,
+  updateAmbulance
 );
 router.delete(
   "/:id",
   authenticateToken,
   authorizeRole("admin"),
   validateObjectId("id"),
-  deleteAmbulance,
+  deleteAmbulance
 );
 
 export default router;

@@ -1,7 +1,7 @@
 // scripts/deleteAllAmbulances.ts
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import Ambulance from "../src/models/Ambulance";
+import { Ambulance } from "../src/modules/ambulances";
 
 dotenv.config();
 

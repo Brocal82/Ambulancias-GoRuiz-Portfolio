@@ -8,7 +8,7 @@ import VacationRequest from "../modules/vacation/models/vacation-request.model";
 import { DateTime } from "luxon";
 import { isOnVacationDay } from "../modules/diensts/utils/dienstValidation";
 import { computeTeamAssignmentsForWeek } from "../utils/teamRotation";
-import Ambulance from "../models/Ambulance";
+import { Ambulance } from "../modules/ambulances";
 
 const ZONE = "Europe/Berlin";
 
