@@ -1,5 +1,3 @@
-// backend/src/types/Trip.ts
-
 import { Types } from "mongoose";
 
 export interface Trip {

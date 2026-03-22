@@ -1,4 +1,3 @@
-// backend/src/schemas/tripSchema.ts
 import { z } from "zod";
 
 // Validación de ObjectId

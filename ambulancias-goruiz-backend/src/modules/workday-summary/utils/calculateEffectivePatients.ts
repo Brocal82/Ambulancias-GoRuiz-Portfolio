@@ -1,5 +1,4 @@
-// backend/src/utils/calculateEffectivePatients.ts
-import { Trip } from "../../types/Trip";
+import { Trip } from "../types/trip.types";
 
 export function calculateEffectivePatients(
   trips: Trip[],

@@ -13,7 +13,7 @@ import { validateObjectId } from "../../middlewares/validateObjectId";
 import {
   createAmbulanceSchema,
   updateAmbulanceSchema,
-} from "../../schemas/ambulanceSchema";
+} from "./schemas/ambulance.schema";
 
 const router = Router();
 

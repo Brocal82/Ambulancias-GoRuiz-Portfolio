@@ -1,4 +1,3 @@
-// backend/src/schemas/ambulanceSchema.ts
 import { z } from "zod";
 
 const nonEmptyString = z

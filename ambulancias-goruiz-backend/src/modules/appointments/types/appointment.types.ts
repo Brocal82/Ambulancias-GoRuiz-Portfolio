@@ -1,4 +1,3 @@
-// backend/src/types/Appointment.ts
 import { Types } from "mongoose";
 
 export type AppointmentStatus =

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { Appointment } from "../models/appointment.model";
-import { IAppointment, TimeSlot } from "../../../types/Appointment";
+import { IAppointment, TimeSlot } from "../types/appointment.types";
 
 /** Error con código HTTP para mapeo en controller */
 export class AppointmentError extends Error {

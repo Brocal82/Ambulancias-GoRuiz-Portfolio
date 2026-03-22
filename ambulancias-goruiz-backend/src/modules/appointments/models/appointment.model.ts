@@ -4,7 +4,7 @@ import {
   IAppointment,
   AppointmentStatus,
   TimeSlot,
-} from "../../../types/Appointment";
+} from "../types/appointment.types";
 
 interface AppointmentDoc extends Omit<IAppointment, "_id">, Document {}
 

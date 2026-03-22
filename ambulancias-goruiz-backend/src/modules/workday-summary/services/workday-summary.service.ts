@@ -3,7 +3,7 @@ import { Dienst } from "../../diensts";
 import { Trip } from "../../trips";
 import WorkdaySummary from "../models/workday-summary.model";
 import WorkdayIssue from "../models/workday-issue.model";
-import { calculateEffectivePatients } from "../../../utils/praemien/calculateEffectivePatients";
+import { calculateEffectivePatients } from "../utils/calculateEffectivePatients";
 
 /** Error con código HTTP para mapeo en controller */
 export class WorkdaySummaryError extends Error {
