@@ -14,6 +14,16 @@ export async function getAllDiensts() {
     .lean();
 }
 
+/**
+ * Lista todos los Diensts con populate básico (driver/medic).
+ * Usado por GET /api/users/diensts para mantener contrato de respuesta.
+ */
+export async function getAllDienstsWithBasicPopulate() {
+  return Dienst.find().populate(
+    "assignments.driver assignments.medic",
+  );
+}
+
 export async function getDienstById(id: string) {
   return Dienst.findById(id).populate(
     "assignments.driver assignments.medic assignments.ambulanceId",

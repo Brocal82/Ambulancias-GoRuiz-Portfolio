@@ -3,7 +3,7 @@ import User from "../models/user.model";
 import { IUser } from "../models/user.model";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { Dienst } from "../../diensts";
+import { getAllDienstsWithBasicPopulate } from "../../diensts";
 import mongoose from "mongoose";
 import { sanitizeUser, sanitizeUsers } from "../utils/users.sanitize";
 import {
@@ -187,9 +187,7 @@ export const getAllUsersDienst = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const diensts = await Dienst.find().populate(
-      "assignments.driver assignments.medic",
-    );
+    const diensts = await getAllDienstsWithBasicPopulate();
     res.status(200).json(diensts);
   } catch (error) {
     console.error("Error al obtener diensts:", error);
