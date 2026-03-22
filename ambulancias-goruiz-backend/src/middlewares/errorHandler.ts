@@ -39,9 +39,13 @@ export function errorHandler(
 
   // Error estándar con mensaje
   if (err instanceof Error) {
-    const status = "status" in err && typeof (err as { status?: number }).status === "number"
-      ? (err as { status: number }).status
-      : 500;
+    const errWithStatus = err as { status?: number; statusCode?: number };
+    const status =
+      typeof errWithStatus.statusCode === "number"
+        ? errWithStatus.statusCode
+        : typeof errWithStatus.status === "number"
+          ? errWithStatus.status
+          : 500;
     res.status(status).json({ message: err.message || "Error interno del servidor" });
     return;
   }

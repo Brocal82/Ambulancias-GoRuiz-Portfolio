@@ -34,24 +34,6 @@ export const createTeam = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-export const previewTeamRotationForWeek = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { weekStartDate } = req.query as { weekStartDate?: string };
-    const result = await teamsService.previewTeamRotationForWeek(weekStartDate);
-    res.status(200).json(result);
-  } catch (err: unknown) {
-    if (err instanceof TeamError) {
-      res.status(err.statusCode).json({ message: err.message });
-      return;
-    }
-    console.error("❌ Error en previewTeamRotationForWeek:", err);
-    res.status(500).json({ message: "Error al calcular la rotación de equipos" });
-  }
-};
-
 export const getUsedTeamsForWeek = async (
   req: Request,
   res: Response,

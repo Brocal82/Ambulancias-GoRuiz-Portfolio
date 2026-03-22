@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { Message } from "../models/message.model";
-import User from "../../../models/User";
+import User from "../../users/models/user.model";
 
 export type CreateMessageInput = {
   subject: string;

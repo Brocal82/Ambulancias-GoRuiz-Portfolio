@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import { Hospital } from "../src/models/Hospital";
+import { Hospital } from "../src/modules/hospitals/models/hospital.model";
 
 dotenv.config();
 

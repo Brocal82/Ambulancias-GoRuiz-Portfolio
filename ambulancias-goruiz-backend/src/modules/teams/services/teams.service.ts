@@ -1,10 +1,9 @@
 import mongoose from "mongoose";
 import { Team } from "../models/team.model";
-import User from "../../../models/User";
+import User from "../../users/models/user.model";
 import Dienst from "../../diensts/models/dienst.model";
 import VacationRequest from "../../vacation/models/vacation-request.model";
 import { DateTime } from "luxon";
-import { computeTeamAssignmentsForWeek } from "../../../utils/teamRotation";
 import { Ambulance } from "../../ambulances";
 
 /** Error con código HTTP para mapeo en controller */
@@ -175,63 +174,6 @@ export async function createTeam(body: {
     .populate("driver", "name lastName ambulanceRole pscheinExpiry")
     .populate("medic", "name lastName ambulanceRole pscheinExpiry")
     .populate("ambulanceId", "ambulanceNumber brand modelName licensePlate");
-}
-
-export async function previewTeamRotationForWeek(weekStartDate?: string) {
-  if (!weekStartDate) {
-    throw new TeamError(
-      "Parámetro weekStartDate (YYYY-MM-DD) requerido",
-      400,
-    );
-  }
-
-  const start = new Date(weekStartDate);
-  if (isNaN(start.getTime())) {
-    throw new TeamError("weekStartDate inválida", 400);
-  }
-
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-
-  const dienste = await Dienst.find({
-    weekStartDate: { $gte: start, $lte: end },
-  })
-    .select("dienstNumber")
-    .lean();
-
-  const dienstNumbers = Array.from(
-    new Set(
-      dienste.map((d) => d.dienstNumber).filter((n) => typeof n === "number"),
-    ),
-  ).sort((a, b) => a - b);
-
-  if (dienstNumbers.length === 0) {
-    return { message: "No hay Diensts para esa semana, nada que rotar.", assignments: [] };
-  }
-
-  const teams = await Team.find(
-    {},
-    { rotationMode: 1, fixedDienstNumber: 1 },
-  ).lean();
-
-  const rotationInput = {
-    dienstNumbers,
-    teams: teams.map((t: any) => ({
-      teamId: t._id as mongoose.Types.ObjectId,
-      rotationMode:
-        (t.rotationMode as "rotating" | "fixed" | "none") ?? "rotating",
-      fixedDienstNumber:
-        typeof t.fixedDienstNumber === "number" ? t.fixedDienstNumber : null,
-    })),
-  };
-
-  const result = computeTeamAssignmentsForWeek(rotationInput);
-
-  return {
-    message: "Preview de rotación calculado correctamente",
-    dienstNumbers,
-    assignments: result.assignments,
-  };
 }
 
 export async function getUsedTeamsForWeek(weekStartDate?: string) {

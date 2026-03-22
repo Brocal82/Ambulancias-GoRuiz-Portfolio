@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Dienst from "../../models/dienst.model";
+import User from "../../../users/models/user.model";
 import { Team } from "../../../teams";
 import type { AssignedDay } from "../../types/dienst.types";
 import {
@@ -240,7 +241,6 @@ export async function assignUserToWeek(params: {
   const start = new Date(weekStartDate);
 
   if (role === "driver") {
-    const User = mongoose.model("User");
     const u = await User.findById(userId).select("pscheinExpiry").lean();
     if (!u) {
       throw new DienstAssignmentError(404, "user_not_found", "Usuario no encontrado");
