@@ -27,6 +27,18 @@ export const getDienstById = async (req: Request, res: Response) => {
       res.status(404).json({ message: "Dienst no encontrado" });
       return;
     }
+
+    const isAdmin = req.userRole === "admin";
+    const isParticipant = dienst.assignments.some(
+      (a) =>
+        String(a.driver?._id ?? a.driver) === req.userId ||
+        String(a.medic?._id ?? a.medic) === req.userId,
+    );
+    if (!isAdmin && !isParticipant) {
+      res.status(403).json({ message: "No autorizado" });
+      return;
+    }
+
     res.status(200).json(dienst);
   } catch (error) {
     if (error instanceof ZodError) {

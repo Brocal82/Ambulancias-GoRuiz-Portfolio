@@ -559,6 +559,102 @@ describe("API - Rutas críticas", () => {
     });
   });
 
+  describe("Dienst - getDienstById (GET /:id) - IDOR fix", () => {
+    let dienstIdConWorker: string;
+    let dienstIdSinWorker: string;
+
+    beforeAll(async () => {
+      const ambulanceId = new mongoose.Types.ObjectId().toString();
+      const createRes1 = await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 89,
+          weekStartDate: "2031-07-01",
+          weekEndDate: "2031-07-07",
+          assignments: [
+            {
+              date: "2031-07-02",
+              startTime: "08:00",
+              endTime: "16:00",
+              ambulanceId,
+              driver: adminId,
+              medic: workerId,
+            },
+          ],
+        })
+        .expect(201);
+      dienstIdConWorker = createRes1.body._id ?? createRes1.body.id;
+
+      const createRes2 = await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 90,
+          weekStartDate: "2031-07-08",
+          weekEndDate: "2031-07-14",
+          assignments: [
+            {
+              date: "2031-07-09",
+              startTime: "08:00",
+              endTime: "16:00",
+              ambulanceId,
+              driver: adminId,
+              medic: adminId,
+            },
+          ],
+        })
+        .expect(201);
+      dienstIdSinWorker = createRes2.body._id ?? createRes2.body.id;
+    });
+
+    it("GET /api/diensts/:id sin token devuelve 401", async () => {
+      await request(app)
+        .get(`${API}/diensts/${dienstIdConWorker}`)
+        .expect(401);
+    });
+
+    it("GET /api/diensts/:id admin puede acceder a cualquier Dienst", async () => {
+      const resConWorker = await request(app)
+        .get(`${API}/diensts/${dienstIdConWorker}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+      expect(resConWorker.body).toHaveProperty("dienstNumber", 89);
+
+      const resSinWorker = await request(app)
+        .get(`${API}/diensts/${dienstIdSinWorker}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+      expect(resSinWorker.body).toHaveProperty("dienstNumber", 90);
+    });
+
+    it("GET /api/diensts/:id worker accede a Dienst donde participa", async () => {
+      const res = await request(app)
+        .get(`${API}/diensts/${dienstIdConWorker}`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .expect(200);
+      expect(res.body).toHaveProperty("dienstNumber", 89);
+      expect(res.body).toHaveProperty("assignments");
+    });
+
+    it("GET /api/diensts/:id worker con Dienst ajeno devuelve 403 (IDOR fix)", async () => {
+      const res = await request(app)
+        .get(`${API}/diensts/${dienstIdSinWorker}`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .expect(403);
+      expect(res.body).toHaveProperty("message", "No autorizado");
+    });
+
+    it("GET /api/diensts/:id con Dienst inexistente devuelve 404", async () => {
+      const fakeId = new mongoose.Types.ObjectId().toString();
+      const res = await request(app)
+        .get(`${API}/diensts/${fakeId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(404);
+      expect(res.body).toHaveProperty("message", "Dienst no encontrado");
+    });
+  });
+
   describe("Dienst - generate-week", () => {
     beforeAll(async () => {
       const db = mongoose.connection.db;
