@@ -4,13 +4,19 @@ import {
   getAllVacationRequests,
   getVacationRequestsForUser,
 } from "../services/vacation-requests-read.service";
+import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 
 export const getVacationRequests = async (
-  _req: Request,
+  req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const requests = await getAllVacationRequests();
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const requests = await getAllVacationRequests(companyResult.companyId);
     res.status(200).json(requests);
   } catch (error) {
     console.error("Error al obtener solicitudes de vacaciones:", error);
@@ -41,11 +47,19 @@ export const getVacationPendingCount = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const rawStatus =
       typeof req.query.status === "string" ? req.query.status : "pending";
     const status = rawStatus.toLowerCase();
 
-    const count = await countVacationRequestsByStatus(status);
+    const count = await countVacationRequestsByStatus(
+      status,
+      companyResult.companyId,
+    );
     res.status(200).json({ count });
   } catch (error) {
     console.error("Error al contar solicitudes de vacaciones:", error);

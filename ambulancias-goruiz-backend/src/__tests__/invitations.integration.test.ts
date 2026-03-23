@@ -252,6 +252,27 @@ describe("Invitations - flujo base", () => {
       expect(res.body.message).toContain("utilizada");
     });
 
+    it("rechaza contraseña con menos de 8 caracteres", async () => {
+      const email = `short-pwd-${Date.now()}@example.com`;
+      const createRes = await request(app)
+        .post(`${API}/invitations`)
+        .set("Authorization", `Bearer ${sharedAdminToken}`)
+        .send({ email, role: "worker" })
+        .expect(201);
+
+      const res = await request(app)
+        .post(`${API}/invitations/accept`)
+        .send({
+          token: createRes.body.token,
+          name: "Short",
+          lastName: "Password",
+          password: "short7",
+        })
+        .expect(400);
+
+      expect(res.body.message).toMatch(/8|caracteres|contraseña/i);
+    });
+
     it("rechaza si email ya existe", async () => {
       const email = `existing-${Date.now()}@example.com`;
       await createTestWorkerUser(email);

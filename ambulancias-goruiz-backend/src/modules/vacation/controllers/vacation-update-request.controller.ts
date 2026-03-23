@@ -6,6 +6,8 @@ import {
   isVacationStatus,
   parseVacationUpdateAuthorization,
 } from "../utils/vacation-workflow.helpers";
+import { requireCompanyForAdmin, isSameCompany } from "../../../utils/requireCompany";
+import User from "../../users/models/user.model";
 import { getMaxPerDayForDate } from "../services/month-config.service";
 import {
   checkVacationAcceptanceCapacity,
@@ -19,6 +21,12 @@ export const updateVacationRequest = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  const companyResult = requireCompanyForAdmin(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
+
   const { id } = req.params;
 
   const { status, adminOptionStartDate, adminOptionEndDate, adminNote } =
@@ -49,6 +57,14 @@ export const updateVacationRequest = async (
       const request = await getVacationRequestForAdminUpdate(session, id);
       if (!request) {
         res.status(404).json({ message: "Solicitud no encontrada" });
+        throw createVacationUpdateAbortError();
+      }
+      const userDoc = await User.findById(request.user)
+        .select("companyId")
+        .lean();
+      const userCompanyId = userDoc ? (userDoc as { companyId?: unknown }).companyId : null;
+      if (!isSameCompany(userCompanyId, companyResult.companyId)) {
+        res.status(403).json({ message: "No tienes permiso para modificar esta solicitud" });
         throw createVacationUpdateAbortError();
       }
 

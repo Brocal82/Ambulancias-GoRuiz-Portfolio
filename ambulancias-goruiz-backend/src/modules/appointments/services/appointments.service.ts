@@ -1,6 +1,16 @@
 import mongoose from "mongoose";
 import { Appointment } from "../models/appointment.model";
+import User from "../../users/models/user.model";
 import { IAppointment, TimeSlot } from "../types/appointment.types";
+
+async function getWorkerIdsForCompany(companyId: string): Promise<mongoose.Types.ObjectId[]> {
+  const users = await User.find({
+    companyId: new mongoose.Types.ObjectId(companyId),
+  })
+    .select("_id")
+    .lean();
+  return users.map((u) => (u as unknown as { _id: mongoose.Types.ObjectId })._id);
+}
 
 /** Error con código HTTP para mapeo en controller */
 export class AppointmentError extends Error {
@@ -78,16 +88,28 @@ export async function getMyAppointments(workerId: string) {
   return await Appointment.find({ workerId }).sort({ createdAt: -1 });
 }
 
-export async function getPendingAppointments() {
-  return await Appointment.find({ status: "pending" })
+export async function getPendingAppointments(companyId?: string | null) {
+  const filter: Record<string, unknown> = { status: "pending" };
+  if (companyId && companyId.trim() !== "") {
+    const workerIds = await getWorkerIdsForCompany(companyId);
+    if (workerIds.length === 0) return [];
+    filter.workerId = { $in: workerIds };
+  }
+  return await Appointment.find(filter)
     .populate("workerId", "name lastName email")
     .sort({ createdAt: -1 });
 }
 
-export async function getOpenAppointments() {
-  return await Appointment.find({
+export async function getOpenAppointments(companyId?: string | null) {
+  const filter: Record<string, unknown> = {
     status: { $in: ["pending", "proposed"] },
-  })
+  };
+  if (companyId && companyId.trim() !== "") {
+    const workerIds = await getWorkerIdsForCompany(companyId);
+    if (workerIds.length === 0) return [];
+    filter.workerId = { $in: workerIds };
+  }
+  return await Appointment.find(filter)
     .populate("workerId", "name lastName email")
     .sort({ createdAt: -1 })
     .select("+proposedSlots");
@@ -97,10 +119,19 @@ export async function proposeSlots(
   adminId: string,
   id: string,
   body: { proposedSlots?: { start: string; end: string }[] },
+  companyId?: string | null,
 ) {
   const appointment = await Appointment.findById(id);
   if (!appointment) {
     throw new AppointmentError("Cita no encontrada.", 404);
+  }
+  if (companyId && companyId.trim() !== "") {
+    const worker = await User.findById(appointment.workerId).select("companyId").lean();
+    const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
+    const match = workerCo && String(workerCo) === String(companyId);
+    if (!match) {
+      throw new AppointmentError("No tienes permiso para modificar esta cita.", 403);
+    }
   }
   if (appointment.status !== "pending" && appointment.status !== "proposed") {
     throw new AppointmentError(
@@ -174,7 +205,10 @@ export async function selectSlot(
   return await appointment.save();
 }
 
-export async function getCalendarAppointments(query: { from?: string; to?: string }) {
+export async function getCalendarAppointments(
+  query: { from?: string; to?: string },
+  companyId?: string | null,
+) {
   const { from, to } = query;
   if (!from || !to) {
     throw new AppointmentError(
@@ -186,10 +220,17 @@ export async function getCalendarAppointments(query: { from?: string; to?: strin
   const fromDate = new Date(from);
   const toDate = new Date(to);
 
-  return await Appointment.find({
+  const filter: Record<string, unknown> = {
     status: { $in: ["confirmed", "rescheduled"] },
     "selectedSlot.start": { $gte: fromDate, $lte: toDate },
-  })
+  };
+  if (companyId && companyId.trim() !== "") {
+    const workerIds = await getWorkerIdsForCompany(companyId);
+    if (workerIds.length === 0) return [];
+    filter.workerId = { $in: workerIds };
+  }
+
+  return await Appointment.find(filter)
     .populate("workerId", "name lastName email")
     .populate("adminId", "name lastName email")
     .sort({ "selectedSlot.start": 1 });
@@ -203,10 +244,19 @@ export async function updateAppointment(
     details?: string;
     selectedSlot?: { start: string; end: string };
   },
+  companyId?: string | null,
 ) {
   const appointment = await Appointment.findById(id);
   if (!appointment) {
     throw new AppointmentError("Cita no encontrada.", 404);
+  }
+  if (companyId && companyId.trim() !== "") {
+    const worker = await User.findById(appointment.workerId).select("companyId").lean();
+    const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
+    const match = workerCo && String(workerCo) === String(companyId);
+    if (!match) {
+      throw new AppointmentError("No tienes permiso para modificar esta cita.", 403);
+    }
   }
 
   let status = appointment.status;
@@ -235,10 +285,22 @@ export async function updateAppointment(
   return await appointment.save();
 }
 
-export async function cancelAppointment(adminId: string, id: string) {
+export async function cancelAppointment(
+  adminId: string,
+  id: string,
+  companyId?: string | null,
+) {
   const appointment = await Appointment.findById(id);
   if (!appointment) {
     throw new AppointmentError("Cita no encontrada.", 404);
+  }
+  if (companyId && companyId.trim() !== "") {
+    const worker = await User.findById(appointment.workerId).select("companyId").lean();
+    const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
+    const match = workerCo && String(workerCo) === String(companyId);
+    if (!match) {
+      throw new AppointmentError("No tienes permiso para cancelar esta cita.", 403);
+    }
   }
 
   appointment.status = "cancelled";
@@ -281,9 +343,18 @@ export async function deleteMyAppointment(workerId: string, id: string) {
   await appointment.deleteOne();
 }
 
-export async function getAppointmentsCount(status?: string) {
+export async function getAppointmentsCount(
+  status?: string,
+  companyId?: string | null,
+) {
   const rawStatus = typeof status === "string" ? status : "pending";
   const normalizedStatus = rawStatus.toLowerCase();
-  const count = await Appointment.countDocuments({ status: normalizedStatus });
+  const filter: Record<string, unknown> = { status: normalizedStatus };
+  if (companyId && companyId.trim() !== "") {
+    const workerIds = await getWorkerIdsForCompany(companyId);
+    if (workerIds.length === 0) return { count: 0 };
+    filter.workerId = { $in: workerIds };
+  }
+  const count = await Appointment.countDocuments(filter);
   return { count };
 }

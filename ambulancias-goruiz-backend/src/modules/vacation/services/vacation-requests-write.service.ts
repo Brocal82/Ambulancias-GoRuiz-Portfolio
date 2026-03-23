@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import VacationRequest from "../models/vacation-request.model";
+import User from "../../users/models/user.model";
+import { isSameCompany } from "../../../utils/requireCompany";
 
 export async function createVacationRequestRecord(input: {
   userId: string;
@@ -46,12 +48,23 @@ export async function cancelOwnVacationRequest(input: {
   return { kind: "ok" as const, request };
 }
 
-export async function deleteVacationRequestRecord(id: string) {
-  const request = await VacationRequest.findById(id);
+export async function deleteVacationRequestRecord(
+  id: string,
+  companyId?: string | null,
+) {
+  const request = await VacationRequest.findById(id)
+    .populate("user", "companyId")
+    .lean();
   if (!request) {
     return { kind: "not_found" as const };
   }
+  if (companyId && companyId.trim() !== "") {
+    const user = request.user as { companyId?: unknown };
+    if (!isSameCompany(user?.companyId, companyId)) {
+      return { kind: "forbidden" as const };
+    }
+  }
 
-  await request.deleteOne();
+  await VacationRequest.findByIdAndDelete(id);
   return { kind: "ok" as const };
 }

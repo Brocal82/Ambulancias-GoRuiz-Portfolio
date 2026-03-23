@@ -109,7 +109,7 @@ export const acceptInvitation = async (req: Request, res: Response): Promise<voi
       msg.includes("obligatorio") ||
       msg.includes("requerido") ||
       msg.includes("contraseña") ||
-      msg.includes("al menos 6")
+      msg.includes("al menos 8")
     ) {
       res.status(400).json({ message: msg });
       return;

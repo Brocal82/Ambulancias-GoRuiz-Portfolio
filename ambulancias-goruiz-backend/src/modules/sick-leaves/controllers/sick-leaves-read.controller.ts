@@ -3,13 +3,24 @@ import mongoose from "mongoose";
 import { DateTime } from "luxon";
 import { getMySickLeaves, getSickLeaves } from "../services/sick-leaves-read.service";
 import { checkSickInRangeService } from "../services/sick-range.service";
+import { requireCompanyForAdmin } from "../../../utils/requireCompany";
+import User from "../../users/models/user.model";
 
 const ZONE = "Europe/Berlin";
 
 export async function listSickLeaves(req: Request, res: Response) {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const { status, user } = req.query as { status?: string; user?: string };
-    const items = await getSickLeaves({ status, user });
+    const items = await getSickLeaves({
+      status,
+      user,
+      companyId: companyResult.companyId,
+    });
 
     res.status(200).json(items);
   } catch (err) {
@@ -40,6 +51,11 @@ export async function checkSickInRange(
   res: Response,
 ): Promise<void> {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const { userIds, fromISO, toISO, includeFullSpan } = req.body as {
       userIds?: string[];
       fromISO?: string;
@@ -62,6 +78,21 @@ export async function checkSickInRange(
     if (!fromStart.isValid || !toEnd.isValid || toEnd < fromStart) {
       res.status(400).json({ message: "Rango de fechas inv\u00E1lido." });
       return;
+    }
+
+    const validIds = userIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
+    if (validIds.length > 0) {
+      const users = await User.find({ _id: { $in: validIds } })
+        .select("companyId")
+        .lean();
+      const companyObjId = new mongoose.Types.ObjectId(companyResult.companyId);
+      for (const u of users) {
+        const uCo = (u as { companyId?: mongoose.Types.ObjectId }).companyId;
+        if (!uCo || !uCo.equals(companyObjId)) {
+          res.status(403).json({ message: "Algunos usuarios no pertenecen a tu empresa." });
+          return;
+        }
+      }
     }
 
     const result = await checkSickInRangeService({

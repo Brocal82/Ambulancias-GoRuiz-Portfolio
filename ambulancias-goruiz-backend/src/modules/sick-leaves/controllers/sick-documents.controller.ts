@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
+import User from "../../users/models/user.model";
 import {
   attachDocumentToSickLeave,
   getSickLeaveDocumentTarget,
 } from "../services/sick-documents.service";
+import { requireCompanyForAdmin, isSameCompany } from "../../../utils/requireCompany";
 
 export async function attachSickDocument(req: Request, res: Response) {
   try {
@@ -34,6 +36,19 @@ export async function attachSickDocument(req: Request, res: Response) {
         .status(403)
         .json({ message: "No autorizado para adjuntar documento a esta baja" });
       return;
+    }
+    if (isAdmin) {
+      const companyResult = requireCompanyForAdmin(req);
+      if (!companyResult.ok) {
+        res.status(companyResult.statusCode).json({ message: companyResult.message });
+        return;
+      }
+      const userDoc = await User.findById(sick.user).select("companyId").lean();
+      const userCo = userDoc ? (userDoc as { companyId?: unknown }).companyId : null;
+      if (!isSameCompany(userCo, companyResult.companyId)) {
+        res.status(403).json({ message: "No tienes permiso para adjuntar documento a esta baja" });
+        return;
+      }
     }
 
     await attachDocumentToSickLeave({ sick, documentUrl });
@@ -105,6 +120,19 @@ export async function attachSickDocumentFile(req: Request, res: Response) {
         .status(403)
         .json({ message: "No autorizado para adjuntar documento a esta baja" });
       return;
+    }
+    if (isAdmin) {
+      const companyResult = requireCompanyForAdmin(req);
+      if (!companyResult.ok) {
+        res.status(companyResult.statusCode).json({ message: companyResult.message });
+        return;
+      }
+      const userDoc = await User.findById(sick.user).select("companyId").lean();
+      const userCo = userDoc ? (userDoc as { companyId?: unknown }).companyId : null;
+      if (!isSameCompany(userCo, companyResult.companyId)) {
+        res.status(403).json({ message: "No tienes permiso para adjuntar documento a esta baja" });
+        return;
+      }
     }
 
     const normalizedDocumentUrl = documentUrl.replace(/\\/g, "/");

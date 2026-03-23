@@ -22,5 +22,5 @@ export const acceptInvitationSchema = z.object({
     .string()
     .transform((s) => s.trim())
     .pipe(z.string().min(1, "Apellidos requeridos")),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
 });

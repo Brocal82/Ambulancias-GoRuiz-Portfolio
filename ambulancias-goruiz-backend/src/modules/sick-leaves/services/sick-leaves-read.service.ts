@@ -1,14 +1,36 @@
 import mongoose from "mongoose";
 import SickLeave from "../models/sick-leave.model";
+import User from "../../users/models/user.model";
 
-export async function getSickLeaves(input: { status?: string; user?: string }) {
-  const { status, user } = input;
+export async function getSickLeaves(input: {
+  status?: string;
+  user?: string;
+  companyId?: string | null;
+}) {
+  const { status, user, companyId } = input;
 
   const q: any = {};
   if (status && ["pending", "accepted", "rejected"].includes(status)) {
     q.status = status;
   }
-  if (user && mongoose.Types.ObjectId.isValid(user)) {
+  if (companyId && companyId.trim() !== "") {
+    const userIds = await User.find({
+      companyId: new mongoose.Types.ObjectId(companyId),
+    })
+      .select("_id")
+      .lean();
+    const ids = userIds.map((u) => (u as unknown as { _id: mongoose.Types.ObjectId })._id);
+    if (ids.length === 0) return [];
+    if (user && mongoose.Types.ObjectId.isValid(user)) {
+      const userObjId = new mongoose.Types.ObjectId(user);
+      if (!ids.some((id: mongoose.Types.ObjectId) => id.equals(userObjId))) {
+        return [];
+      }
+      q.user = userObjId;
+    } else {
+      q.user = { $in: ids };
+    }
+  } else if (user && mongoose.Types.ObjectId.isValid(user)) {
     q.user = new mongoose.Types.ObjectId(user);
   }
 

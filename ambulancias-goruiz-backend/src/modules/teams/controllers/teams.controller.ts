@@ -3,9 +3,14 @@ import * as teamsService from "../services/teams.service";
 import { TeamError } from "../services/teams.service";
 import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 
-export const listTeams = async (_req: Request, res: Response): Promise<void> => {
+export const listTeams = async (req: Request, res: Response): Promise<void> => {
   try {
-    const teams = await teamsService.listTeams();
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const teams = await teamsService.listTeams(companyResult.companyId);
     res.status(200).json(teams);
   } catch (err: unknown) {
     if (err instanceof TeamError) {
@@ -45,8 +50,16 @@ export const getUsedTeamsForWeek = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const { weekStartDate } = req.query as { weekStartDate?: string };
-    const result = await teamsService.getUsedTeamsForWeek(weekStartDate);
+    const result = await teamsService.getUsedTeamsForWeek(
+      weekStartDate,
+      companyResult.companyId,
+    );
     res.status(200).json(result);
   } catch (err: unknown) {
     if (err instanceof TeamError) {
@@ -60,8 +73,17 @@ export const getUsedTeamsForWeek = async (
 
 export const updateTeam = async (req: Request, res: Response): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const { id } = req.params;
-    const updated = await teamsService.updateTeam(id, req.body, req.companyId ?? undefined);
+    const updated = await teamsService.updateTeam(
+      id,
+      req.body,
+      companyResult.companyId,
+    );
     res.status(200).json(updated);
   } catch (err: unknown) {
     if (err instanceof TeamError) {
@@ -75,8 +97,13 @@ export const updateTeam = async (req: Request, res: Response): Promise<void> => 
 
 export const deleteTeam = async (req: Request, res: Response): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const { id } = req.params;
-    const result = await teamsService.deleteTeam(id);
+    const result = await teamsService.deleteTeam(id, companyResult.companyId);
     res.status(200).json(result);
   } catch (err: unknown) {
     if (err instanceof TeamError) {

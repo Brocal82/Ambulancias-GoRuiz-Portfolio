@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { z } from "zod";
 import SickLeave from "../models/sick-leave.model";
+import User from "../../users/models/user.model";
 import { toBerlinDay } from "../utils/sick-date.helpers";
 import { acceptSickLeaveWorkflow } from "../services/sick-acceptance.service";
 import {
@@ -9,6 +10,7 @@ import {
   getSickLeaveById,
   rejectSickLeaveRecord,
 } from "../services/sick-leaves-write.service";
+import { requireCompanyForAdmin, isSameCompany } from "../../../utils/requireCompany";
 
 const createSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -27,6 +29,19 @@ export async function createSickLeave(req: Request, res: Response) {
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       res.status(400).json({ message: "Usuario no v\u00E1lido" });
       return;
+    }
+    if (parsed.user && req.userRole === "admin") {
+      const companyResult = requireCompanyForAdmin(req);
+      if (!companyResult.ok) {
+        res.status(companyResult.statusCode).json({ message: companyResult.message });
+        return;
+      }
+      const targetUser = await User.findById(parsed.user).select("companyId").lean();
+      const userCo = targetUser ? (targetUser as { companyId?: unknown }).companyId : null;
+      if (!isSameCompany(userCo, companyResult.companyId)) {
+        res.status(403).json({ message: "No puedes crear baja para un usuario de otra empresa" });
+        return;
+      }
     }
 
     const start = toBerlinDay(parsed.startDate, false);
@@ -58,15 +73,25 @@ export async function createSickLeave(req: Request, res: Response) {
 
 export async function acceptSickLeave(req: Request, res: Response) {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const { id } = req.params;
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       res.status(400).json({ message: "ID inv\u00E1lido" });
       return;
     }
 
-    const sick = await SickLeave.findById(id);
+    const sick = await SickLeave.findById(id).populate("user", "companyId");
     if (!sick) {
       res.status(404).json({ message: "Baja no encontrada" });
+      return;
+    }
+    const userCo = (sick.user as { companyId?: unknown })?.companyId;
+    if (!isSameCompany(userCo, companyResult.companyId)) {
+      res.status(403).json({ message: "No tienes permiso para aceptar esta baja" });
       return;
     }
     if (sick.status === "accepted") {
@@ -91,6 +116,11 @@ export async function acceptSickLeave(req: Request, res: Response) {
 
 export async function rejectSickLeave(req: Request, res: Response) {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const { id } = req.params;
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       res.status(400).json({ message: "ID inv\u00E1lido" });
@@ -100,6 +130,12 @@ export async function rejectSickLeave(req: Request, res: Response) {
     const sick = await getSickLeaveById(id);
     if (!sick) {
       res.status(404).json({ message: "Baja no encontrada" });
+      return;
+    }
+    const userDoc = await User.findById(sick.user).select("companyId").lean();
+    const userCo = userDoc ? (userDoc as { companyId?: unknown }).companyId : null;
+    if (!isSameCompany(userCo, companyResult.companyId)) {
+      res.status(403).json({ message: "No tienes permiso para rechazar esta baja" });
       return;
     }
 

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import * as appointmentsService from "../services/appointments.service";
 import { AppointmentError } from "../services/appointments.service";
+import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 
 export const requestAppointment = async (
   req: Request,
@@ -41,11 +42,18 @@ export const getMyAppointments = async (
 };
 
 export const getPendingAppointments = async (
-  _req: Request,
+  req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const items = await appointmentsService.getPendingAppointments();
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const items = await appointmentsService.getPendingAppointments(
+      companyResult.companyId,
+    );
     res.status(200).json(items);
   } catch (err: unknown) {
     if (err instanceof AppointmentError) {
@@ -58,11 +66,18 @@ export const getPendingAppointments = async (
 };
 
 export const getOpenAppointments = async (
-  _req: Request,
+  req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const items = await appointmentsService.getOpenAppointments();
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const items = await appointmentsService.getOpenAppointments(
+      companyResult.companyId,
+    );
     res.status(200).json(items);
   } catch (err: unknown) {
     if (err instanceof AppointmentError) {
@@ -76,9 +91,19 @@ export const getOpenAppointments = async (
 
 export const proposeSlots = async (req: Request, res: Response): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const adminId = req.userId as string;
     const { id } = req.params;
-    const saved = await appointmentsService.proposeSlots(adminId, id, req.body);
+    const saved = await appointmentsService.proposeSlots(
+      adminId,
+      id,
+      req.body,
+      companyResult.companyId,
+    );
     res.status(200).json(saved);
   } catch (err: unknown) {
     if (err instanceof AppointmentError) {
@@ -115,8 +140,16 @@ export const getCalendarAppointments = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const { from, to } = req.query as { from?: string; to?: string };
-    const items = await appointmentsService.getCalendarAppointments({ from, to });
+    const items = await appointmentsService.getCalendarAppointments(
+      { from, to },
+      companyResult.companyId,
+    );
     res.status(200).json(items);
   } catch (err: unknown) {
     if (err instanceof AppointmentError) {
@@ -133,12 +166,18 @@ export const updateAppointment = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const adminId = req.userId as string;
     const { id } = req.params;
     const saved = await appointmentsService.updateAppointment(
       adminId,
       id,
       req.body,
+      companyResult.companyId,
     );
     res.status(200).json(saved);
   } catch (err: unknown) {
@@ -158,9 +197,18 @@ export const cancelAppointment = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const adminId = req.userId as string;
     const { id } = req.params;
-    const saved = await appointmentsService.cancelAppointment(adminId, id);
+    const saved = await appointmentsService.cancelAppointment(
+      adminId,
+      id,
+      companyResult.companyId,
+    );
     res.status(200).json(saved);
   } catch (err: unknown) {
     if (err instanceof AppointmentError) {
@@ -196,9 +244,17 @@ export const getAppointmentsCount = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const rawStatus =
       typeof req.query.status === "string" ? req.query.status : "pending";
-    const result = await appointmentsService.getAppointmentsCount(rawStatus);
+    const result = await appointmentsService.getAppointmentsCount(
+      rawStatus,
+      companyResult.companyId,
+    );
     res.status(200).json(result);
   } catch (err: unknown) {
     if (err instanceof AppointmentError) {

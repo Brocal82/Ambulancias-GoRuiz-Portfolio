@@ -4,6 +4,7 @@ import {
   createVacationRequestRecord,
   deleteVacationRequestRecord,
 } from "../services/vacation-requests-write.service";
+import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 
 export const createVacationRequest = async (
   req: Request,
@@ -69,11 +70,23 @@ export const deleteVacationRequest = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const { id } = req.params;
-    const result = await deleteVacationRequestRecord(id);
+    const result = await deleteVacationRequestRecord(
+      id,
+      companyResult.companyId,
+    );
 
     if (result.kind === "not_found") {
       res.status(404).json({ message: "Solicitud no encontrada" });
+      return;
+    }
+    if (result.kind === "forbidden") {
+      res.status(403).json({ message: "No tienes permiso para eliminar esta solicitud" });
       return;
     }
 
