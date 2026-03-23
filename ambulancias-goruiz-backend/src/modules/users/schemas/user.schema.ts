@@ -15,7 +15,7 @@ export const registerUserSchema = z.object({
   lastName: z.string().transform((s) => s.trim()).pipe(z.string().min(1, "Apellidos requeridos")),
   email: z.string().transform((s) => s.trim()).pipe(emailSchema),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-  role: z.enum(["admin", "worker"]).optional(),
+  // role no se acepta: registro público siempre crea workers. Admins vía seed/script.
 });
 
 /* ─────────────────────────────────────────────────────────────────────────────

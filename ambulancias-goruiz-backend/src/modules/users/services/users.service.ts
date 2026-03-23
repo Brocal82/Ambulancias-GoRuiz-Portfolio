@@ -230,7 +230,8 @@ export async function getUserByIdService(userId: string) {
 }
 
 export async function createUserService(data: CreateUserDTO) {
-  const { name, lastName, email, password, role = "worker" } = data;
+  const { name, lastName, email, password } = data;
+  const role = "worker"; // Siempre worker en registro público. Nunca leer role del cliente.
 
   if (!name || !lastName || !email) {
     throw new Error("Nombre, apellidos y email son obligatorios");
@@ -244,10 +245,6 @@ export async function createUserService(data: CreateUserDTO) {
 
   if (!validateEmail(email)) {
     throw new Error("El formato del email no es válido");
-  }
-
-  if (role !== "admin" && role !== "worker") {
-    throw new Error('Rol no válido. Debe ser "admin" o "worker"');
   }
 
   const existingUser = await User.findOne({ email });

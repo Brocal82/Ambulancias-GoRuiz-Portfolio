@@ -36,9 +36,6 @@ export function parseCreateUserDTO(body: any): CreateUserDTO {
     lastName: (typeof body?.lastName === "string" ? body.lastName : "").trim(),
     email: (typeof body?.email === "string" ? body.email : "").trim(),
     password: typeof body?.password === "string" ? body.password : "",
-    role:
-      body?.role === "admin" || body?.role === "worker"
-        ? body.role
-        : undefined,
+    role: "worker", // Ignorar cualquier role enviado por el cliente. Seguridad.
   };
 }

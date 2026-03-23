@@ -1,0 +1,52 @@
+/**
+ * Helpers para tests de integración.
+ * El registro público SIEMPRE crea workers. Los admins se crean vía seed/script (DB directa).
+ */
+import bcrypt from "bcrypt";
+import request from "supertest";
+import { app } from "../app";
+import User from "../modules/users/models/user.model";
+
+const API = "/api";
+
+export async function createTestAdminUser(email: string, password: string) {
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const user = await User.create({
+    name: "Admin",
+    lastName: "Test",
+    email,
+    password: hashedPassword,
+    role: "admin",
+  });
+  return user;
+}
+
+export async function createTestUsers() {
+  const suffix = Date.now();
+  const adminEmail = `admin-test-${suffix}@example.com`;
+  const workerEmail = `worker-test-${suffix}@example.com`;
+  const password = "password123";
+
+  const adminUser = await createTestAdminUser(adminEmail, password);
+
+  await request(app).post(`${API}/users/register`).send({
+    name: "Worker",
+    lastName: "Test",
+    email: workerEmail,
+    password,
+  });
+
+  const adminRes = await request(app)
+    .post(`${API}/users/login`)
+    .send({ email: adminEmail, password });
+  const workerRes = await request(app)
+    .post(`${API}/users/login`)
+    .send({ email: workerEmail, password });
+
+  return {
+    adminId: String(adminUser._id),
+    workerId: workerRes.body.user?._id ?? "",
+    adminToken: adminRes.body.token,
+    workerToken: workerRes.body.token,
+  };
+}

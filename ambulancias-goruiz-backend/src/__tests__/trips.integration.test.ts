@@ -7,6 +7,7 @@ import request from "supertest";
 import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
+import { createTestUsers } from "./test-helpers";
 
 const API = "/api";
 
@@ -48,37 +49,12 @@ describe("Trips - ownership y filtrado (seguridad)", () => {
 
   beforeAll(async () => {
     await mongoose.connect(env.MONGODB_URI);
-    const suffix = Date.now();
-    const adminEmail = `admin-test-${suffix}@example.com`;
-    const workerEmail = `worker-test-${suffix}@example.com`;
-    await request(app)
-      .post(`${API}/users/register`)
-      .send({
-        name: "Admin",
-        lastName: "Test",
-        email: adminEmail,
-        password: "password123",
-        role: "admin",
-      });
-    await request(app)
-      .post(`${API}/users/register`)
-      .send({
-        name: "Worker",
-        lastName: "Test",
-        email: workerEmail,
-        password: "password123",
-        role: "worker",
-      });
-    const adminRes = await request(app)
-      .post(`${API}/users/login`)
-      .send({ email: adminEmail, password: "password123" });
-    const workerRes = await request(app)
-      .post(`${API}/users/login`)
-      .send({ email: workerEmail, password: "password123" });
-    adminToken = adminRes.body.token;
-    workerToken = workerRes.body.token;
-    workerId = workerRes.body.user?._id ?? "";
-    adminId = adminRes.body.user?._id ?? "";
+    const { adminId: aid, workerId: wid, adminToken: aTok, workerToken: wTok } =
+      await createTestUsers();
+    adminId = aid;
+    workerId = wid;
+    adminToken = aTok;
+    workerToken = wTok;
 
     const ambulanceId = new mongoose.Types.ObjectId().toString();
     const createRes1 = await request(app)
