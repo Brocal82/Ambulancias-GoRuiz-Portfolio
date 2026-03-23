@@ -1,5 +1,18 @@
 import { Request, Response } from "express";
 import * as messagesService from "../services/messages.service";
+import { Message } from "../models/message.model";
+
+function assertUserCanAccessMessage(
+  message: { recipients: unknown[] },
+  userId: string,
+  userRole: string,
+): boolean {
+  const isAdmin = userRole === "admin";
+  const isRecipient = message.recipients.some(
+    (r) => String(r) === userId,
+  );
+  return isAdmin || isRecipient;
+}
 
 function parseToAllWorkers(raw: unknown): boolean {
   return (
@@ -158,6 +171,18 @@ export const deleteMessageForUser = async (
   try {
     const userId = req.userId as string;
     const messageId = req.params.id;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      res.status(404).json({ message: "Mensaje no encontrado" });
+      return;
+    }
+
+    if (!assertUserCanAccessMessage(message, userId, req.userRole ?? "")) {
+      res.status(403).json({ message: "No autorizado" });
+      return;
+    }
+
     const result = await messagesService.deleteMessageForUser(
       userId,
       messageId,
@@ -212,6 +237,18 @@ export const markMessageAsRead = async (
   try {
     const userId = req.userId as string;
     const messageId = req.params.id;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      res.status(404).json({ message: "Mensaje no encontrado" });
+      return;
+    }
+
+    if (!assertUserCanAccessMessage(message, userId, req.userRole ?? "")) {
+      res.status(403).json({ message: "No autorizado" });
+      return;
+    }
+
     const result = await messagesService.markMessageAsRead(userId, messageId);
 
     if (!result) {
