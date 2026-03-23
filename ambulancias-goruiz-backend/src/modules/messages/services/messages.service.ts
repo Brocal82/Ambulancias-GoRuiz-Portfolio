@@ -6,6 +6,7 @@ export type CreateMessageInput = {
   subject: string;
   body: string;
   senderId: string;
+  senderCompanyId: string;
   toAllWorkers: boolean;
   recipients: string[];
   attachments: {
@@ -19,12 +20,27 @@ export type CreateMessageInput = {
 
 export async function createMessage(input: CreateMessageInput) {
   let finalRecipients = input.recipients ?? [];
+  const companyIdObj = new mongoose.Types.ObjectId(input.senderCompanyId);
 
   if (input.toAllWorkers) {
-    const workers = await User.find({ role: "worker" }).select("_id").lean();
+    const workers = await User.find({
+      role: "worker",
+      companyId: companyIdObj,
+    })
+      .select("_id")
+      .lean();
     const allWorkerIds = workers.map((w) => w._id.toString());
     const set = new Set<string>([...finalRecipients, ...allWorkerIds]);
     finalRecipients = Array.from(set);
+  } else {
+    const recipientsFromCompany = await User.find({
+      _id: { $in: finalRecipients.map((id) => new mongoose.Types.ObjectId(id)) },
+      companyId: companyIdObj,
+    })
+      .select("_id")
+      .lean();
+    const validIds = new Set(recipientsFromCompany.map((u) => u._id.toString()));
+    finalRecipients = finalRecipients.filter((id) => validIds.has(id));
   }
 
   if (
@@ -48,7 +64,11 @@ export async function createMessage(input: CreateMessageInput) {
   return newMessage;
 }
 
-export async function getMyMessages(userId: string, unreadOnly: boolean) {
+export async function getMyMessages(
+  userId: string,
+  unreadOnly: boolean,
+  userCompanyId?: string | null,
+) {
   const userIdObj = new mongoose.Types.ObjectId(userId);
   const filter: Record<string, unknown> = {
     recipients: userIdObj,
@@ -58,9 +78,20 @@ export async function getMyMessages(userId: string, unreadOnly: boolean) {
     filter.readBy = { $ne: userIdObj };
   }
 
-  return await Message.find(filter)
+  const messages = await Message.find(filter)
     .sort({ sentAt: -1 })
-    .populate("sender", "name lastName");
+    .populate("sender", "name lastName companyId");
+
+  if (userCompanyId) {
+    return messages.filter((m: any) => {
+      const sender = m.sender;
+      return sender?.companyId && String(sender.companyId) === String(userCompanyId);
+    });
+  }
+  return messages.filter((m: any) => {
+    const sender = m.sender;
+    return !sender?.companyId;
+  });
 }
 
 export async function getSentMessages(adminId: string) {

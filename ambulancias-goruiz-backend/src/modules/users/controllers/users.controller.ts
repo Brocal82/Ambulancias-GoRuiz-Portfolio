@@ -19,6 +19,10 @@ import {
   parseUpdateUserDTO,
   parseCreateUserDTO,
 } from "../utils/users.parsers";
+import {
+  requireCompanyForAdmin,
+  isSameCompany,
+} from "../../../utils/requireCompany";
 
 const ZONE = "Europe/Berlin";
 
@@ -58,9 +62,14 @@ export const createUser = async (
   }
 };
 
-export const getUsers = async (_req: Request, res: Response): Promise<void> => {
+export const getUsers = async (req: Request, res: Response): Promise<void> => {
+  const companyResult = requireCompanyForAdmin(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
   try {
-    const users = await getUsersWithTodayVacationInfo();
+    const users = await getUsersWithTodayVacationInfo(companyResult.companyId);
     res.status(200).json(sanitizeUsers(users as any[]));
   } catch (error) {
     console.error("Error al obtener usuarios:", error);
@@ -74,6 +83,19 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
   if (!userId) {
     res.status(400).json({ message: "ID de usuario no proporcionado" });
     return;
+  }
+
+  if (req.userRole === "admin" && userId !== req.userId) {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const targetUser = await User.findById(userId).select("companyId").lean();
+    if (!targetUser || !isSameCompany(targetUser.companyId, companyResult.companyId)) {
+      res.status(403).json({ message: "No tienes permiso para editar este usuario" });
+      return;
+    }
   }
 
   try {
@@ -111,6 +133,19 @@ export const getUserById = async (
 ): Promise<void> => {
   const { id } = req.params;
 
+  if (req.userRole === "admin" && id !== req.userId) {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const targetUser = await User.findById(id).select("companyId").lean();
+    if (!targetUser || !isSameCompany(targetUser.companyId, companyResult.companyId)) {
+      res.status(403).json({ message: "No tienes permiso para ver este usuario" });
+      return;
+    }
+  }
+
   try {
     const user = await getUserByIdService(id);
     res.status(200).json(sanitizeUser(user));
@@ -137,6 +172,19 @@ export const deleteUser = async (
   res: Response,
 ): Promise<void> => {
   const { id } = req.params;
+
+  if (req.userRole === "admin" && id !== req.userId) {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const targetUser = await User.findById(id).select("companyId").lean();
+    if (!targetUser || !isSameCompany(targetUser.companyId, companyResult.companyId)) {
+      res.status(403).json({ message: "No tienes permiso para eliminar este usuario" });
+      return;
+    }
+  }
 
   try {
     await deleteUserService(id);
@@ -298,13 +346,24 @@ export const uploadUserFilesForUser = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  try {
-    const targetUserId = req.params.userId;
-    if (!targetUserId) {
-      res.status(400).json({ message: "ID de usuario no proporcionado" });
-      return;
-    }
+  const targetUserId = req.params.userId;
+  if (!targetUserId) {
+    res.status(400).json({ message: "ID de usuario no proporcionado" });
+    return;
+  }
 
+  const companyResult = requireCompanyForAdmin(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
+  const targetUser = await User.findById(targetUserId).select("companyId").lean();
+  if (!targetUser || !isSameCompany(targetUser.companyId, companyResult.companyId)) {
+    res.status(403).json({ message: "No tienes permiso para editar este usuario" });
+    return;
+  }
+
+  try {
     const files = req.files as {
       [fieldname: string]: Express.Multer.File[];
     };
@@ -375,19 +434,30 @@ export const deleteUserDocumentForUser = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  const targetUserId = req.params.userId;
+  const { filePath } = req.body;
+
+  if (!targetUserId) {
+    res.status(400).json({ message: "ID de usuario no proporcionado" });
+    return;
+  }
+  if (!filePath) {
+    res.status(400).json({ message: "Ruta de documento no proporcionada" });
+    return;
+  }
+
+  const companyResult = requireCompanyForAdmin(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
+  const targetUser = await User.findById(targetUserId).select("companyId").lean();
+  if (!targetUser || !isSameCompany(targetUser.companyId, companyResult.companyId)) {
+    res.status(403).json({ message: "No tienes permiso para editar este usuario" });
+    return;
+  }
+
   try {
-    const targetUserId = req.params.userId;
-    const { filePath } = req.body;
-
-    if (!targetUserId) {
-      res.status(400).json({ message: "ID de usuario no proporcionado" });
-      return;
-    }
-    if (!filePath) {
-      res.status(400).json({ message: "Ruta de documento no proporcionada" });
-      return;
-    }
-
     const result = await removeDocumentFromUser(targetUserId, filePath);
     if (!result) {
       res.status(404).json({ message: "Usuario no encontrado" });

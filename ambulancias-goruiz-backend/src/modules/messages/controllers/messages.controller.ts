@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
 import * as messagesService from "../services/messages.service";
 import { Message } from "../models/message.model";
+import User from "../../users/models/user.model";
+import {
+  requireCompanyForAdmin,
+  isSameCompany,
+} from "../../../utils/requireCompany";
 
 function assertUserCanAccessMessage(
   message: { recipients: unknown[] },
@@ -76,6 +81,12 @@ export const createMessage = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  const companyResult = requireCompanyForAdmin(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
+
   try {
     const { subject, body } = req.body;
     const senderId = req.userId as string;
@@ -90,6 +101,7 @@ export const createMessage = async (
       subject,
       body,
       senderId,
+      senderCompanyId: companyResult.companyId,
       toAllWorkers,
       recipients,
       attachments,
@@ -120,7 +132,11 @@ export const getMyMessages = async (
         ? false
         : true;
 
-    const messages = await messagesService.getMyMessages(userId, unreadOnly);
+    const messages = await messagesService.getMyMessages(
+      userId,
+      unreadOnly,
+      req.companyId,
+    );
     res.status(200).json(messages);
   } catch (error) {
     console.error("❌ Error al obtener mensajes:", error);
@@ -132,6 +148,12 @@ export const getSentMessages = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  const companyResult = requireCompanyForAdmin(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
+
   try {
     const adminId = req.userId as string;
     const messages = await messagesService.getSentMessages(adminId);
@@ -148,9 +170,23 @@ export const getMessagesForUserAsAdmin = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  const companyResult = requireCompanyForAdmin(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
+
   try {
     const adminId = req.userId as string;
     const userId = req.params.id;
+    const targetUser = await User.findById(userId).select("companyId").lean();
+    if (
+      !targetUser ||
+      !isSameCompany(targetUser.companyId, companyResult.companyId)
+    ) {
+      res.status(403).json({ message: "No tienes permiso para ver mensajes de este usuario" });
+      return;
+    }
     const messages = await messagesService.getMessagesForUserAsAdmin(
       adminId,
       userId,
@@ -172,13 +208,25 @@ export const deleteMessageForUser = async (
     const userId = req.userId as string;
     const messageId = req.params.id;
 
-    const message = await Message.findById(messageId);
+    const message = await Message.findById(messageId).populate("sender", "companyId");
     if (!message) {
       res.status(404).json({ message: "Mensaje no encontrado" });
       return;
     }
 
     if (!assertUserCanAccessMessage(message, userId, req.userRole ?? "")) {
+      res.status(403).json({ message: "No autorizado" });
+      return;
+    }
+
+    const sender = message.sender as any;
+    const userCompanyId = req.companyId;
+    if (userCompanyId) {
+      if (!sender?.companyId || String(sender.companyId) !== String(userCompanyId)) {
+        res.status(403).json({ message: "No autorizado" });
+        return;
+      }
+    } else if (sender?.companyId) {
       res.status(403).json({ message: "No autorizado" });
       return;
     }
@@ -204,6 +252,12 @@ export const deleteMessageByAdmin = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  const companyResult = requireCompanyForAdmin(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
+
   try {
     const adminId = req.userId as string;
     const messageId = req.params.id;
@@ -238,13 +292,25 @@ export const markMessageAsRead = async (
     const userId = req.userId as string;
     const messageId = req.params.id;
 
-    const message = await Message.findById(messageId);
+    const message = await Message.findById(messageId).populate("sender", "companyId");
     if (!message) {
       res.status(404).json({ message: "Mensaje no encontrado" });
       return;
     }
 
     if (!assertUserCanAccessMessage(message, userId, req.userRole ?? "")) {
+      res.status(403).json({ message: "No autorizado" });
+      return;
+    }
+
+    const sender = message.sender as any;
+    const userCompanyId = req.companyId;
+    if (userCompanyId) {
+      if (!sender?.companyId || String(sender.companyId) !== String(userCompanyId)) {
+        res.status(403).json({ message: "No autorizado" });
+        return;
+      }
+    } else if (sender?.companyId) {
       res.status(403).json({ message: "No autorizado" });
       return;
     }

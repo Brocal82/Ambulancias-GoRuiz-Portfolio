@@ -142,9 +142,13 @@ async function getTodayVacationInfo(userId?: string) {
 
 /**
  * Devuelve usuarios ordenados + flags de vacaciones HOY (no cambia el shape).
+ * Si companyId se proporciona, filtra solo usuarios de esa empresa.
  */
-export async function getUsersWithTodayVacationInfo() {
-  const users = await User.find().sort({ lastName: 1 }).lean();
+export async function getUsersWithTodayVacationInfo(companyId?: string) {
+  const filter = companyId
+    ? { companyId: new mongoose.Types.ObjectId(companyId) }
+    : {};
+  const users = await User.find(filter).sort({ lastName: 1 }).lean();
 
   await Promise.all(
     (users as any[]).map(async (u) => {

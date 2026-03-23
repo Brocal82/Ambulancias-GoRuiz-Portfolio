@@ -3,6 +3,7 @@
  * El registro público SIEMPRE crea workers. Los admins se crean vía seed/script (DB directa).
  */
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
 import request from "supertest";
 import { app } from "../app";
 import User from "../modules/users/models/user.model";
@@ -77,4 +78,26 @@ export async function createTestAdminWithCompany(password: string = "password123
     adminToken: loginRes.body.token,
     company,
   };
+}
+
+/**
+ * Crea un worker directamente en la DB asociado a una empresa.
+ * Útil para tests de aislamiento sin pasar por el flujo de invitaciones.
+ */
+export async function createTestWorkerInCompany(
+  companyId: mongoose.Types.ObjectId,
+  suffix?: number,
+) {
+  const s = suffix ?? Date.now();
+  const email = `worker-company-${s}@example.com`;
+  const hashedPassword = await bcrypt.hash("password123", 10);
+  const worker = await User.create({
+    name: "Worker",
+    lastName: "Company",
+    email,
+    password: hashedPassword,
+    role: "worker",
+    companyId,
+  });
+  return worker;
 }
