@@ -9,6 +9,7 @@ const JWT_SECRET = env.JWT_SECRET;
 interface JwtPayload {
   userId: string;
   role: string;
+  companyId?: string;
 }
 
 export const authenticateToken = (
@@ -29,12 +30,16 @@ export const authenticateToken = (
 
     req.userId = decoded.userId;
     req.userRole = decoded.role;
+    if (decoded.companyId) {
+      req.companyId = decoded.companyId;
+    }
 
     // Compatibilidad: además de userId/userRole, rellenamos req.user
     req.user = {
       id: decoded.userId,
       email: "",
       role: decoded.role,
+      ...(decoded.companyId && { companyId: decoded.companyId }),
     };
 
     next();

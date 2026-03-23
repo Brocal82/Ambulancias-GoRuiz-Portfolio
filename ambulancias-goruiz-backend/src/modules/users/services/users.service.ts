@@ -285,28 +285,38 @@ export async function loginUserService(
     throw new Error("Contraseña incorrecta");
   }
 
-  const token = jwt.sign(
-    { userId: user._id, email: user.email, role: user.role },
-    env.JWT_SECRET,
-    { expiresIn: "1h" },
-  );
+  const payload: Record<string, unknown> = {
+    userId: user._id,
+    email: user.email,
+    role: user.role,
+  };
+  if (user.companyId) {
+    payload.companyId = String(user.companyId);
+  }
+
+  const token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: "1h" });
+
+  const userResponse: LoginResponseDTO["user"] = {
+    _id: String(user._id),
+    name: user.name,
+    lastName: user.lastName,
+    email: user.email,
+    role: user.role,
+    ambulanceRole: user.ambulanceRole,
+    pscheinExpiry: user.pscheinExpiry,
+    address: user.address,
+    phone: user.phone,
+    emergencyPhone: user.emergencyPhone,
+    profileImage: user.profileImage,
+  };
+  if (user.companyId) {
+    userResponse.companyId = String(user.companyId);
+  }
 
   return {
     message: "Login exitoso",
     token,
-    user: {
-      _id: String(user._id),
-      name: user.name,
-      lastName: user.lastName,
-      email: user.email,
-      role: user.role,
-      ambulanceRole: user.ambulanceRole,
-      pscheinExpiry: user.pscheinExpiry,
-      address: user.address,
-      phone: user.phone,
-      emergencyPhone: user.emergencyPhone,
-      profileImage: user.profileImage,
-    },
+    user: userResponse,
   };
 }
 

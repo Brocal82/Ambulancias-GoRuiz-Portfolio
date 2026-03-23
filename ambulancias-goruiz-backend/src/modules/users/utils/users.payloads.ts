@@ -50,5 +50,6 @@ export interface LoginResponseDTO {
     phone?: string;
     emergencyPhone?: string;
     profileImage?: string;
+    companyId?: string;
   };
 }
