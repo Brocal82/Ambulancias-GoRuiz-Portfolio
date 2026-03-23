@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema, Types } from "mongoose";
 
 export interface IUser extends Document {
   name: string;
@@ -15,6 +15,9 @@ export interface IUser extends Document {
   documents?: string[]; // Lista de archivos subidos (PDF, etc.)
   rotationMode?: "rotating" | "fixed" | "none";
   fixedDienstNumber?: number | null;
+  companyId?: Types.ObjectId;
+  employeeNumber?: string;
+  invitationId?: Types.ObjectId;
 }
 
 const userSchema = new Schema<IUser>({
@@ -66,6 +69,21 @@ const userSchema = new Schema<IUser>({
     type: Number,
     required: false,
     default: null,
+  },
+  companyId: {
+    type: Schema.Types.ObjectId,
+    ref: "Company",
+    required: false,
+  },
+  employeeNumber: {
+    type: String,
+    required: false,
+    trim: true,
+  },
+  invitationId: {
+    type: Schema.Types.ObjectId,
+    ref: "Invitation",
+    required: false,
   },
 });
 
