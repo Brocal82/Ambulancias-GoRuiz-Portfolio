@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { Dienst } from "../../diensts";
+import type { IDienst, IDienstAssignment } from "../../diensts";
 import { Trip } from "../../trips";
 import WorkdaySummary from "../models/workday-summary.model";
 import WorkdayIssue from "../models/workday-issue.model";
@@ -16,10 +17,63 @@ export class WorkdaySummaryError extends Error {
   }
 }
 
+/** Resuelve el assignment por assignmentId. Lanza 404 si no existe. */
+async function resolveAssignmentByAssignmentId(assignmentId: string): Promise<{
+  dienst: IDienst;
+  assignment: IDienstAssignment;
+}> {
+  const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
+  const dienst = await Dienst.findOne({
+    "assignments._id": assignmentObjectId,
+  });
+
+  if (!dienst) {
+    throw new WorkdaySummaryError(
+      "Dienst no encontrado con ese assignmentId",
+      404,
+    );
+  }
+
+  const assignment = dienst.assignments.find(
+    (a) => a._id?.toString() === assignmentObjectId.toString(),
+  );
+  if (!assignment) {
+    throw new WorkdaySummaryError("Asignación no encontrada", 404);
+  }
+
+  return { dienst, assignment };
+}
+
+/** Verifica que el usuario pueda cerrar este assignment. Admin siempre. Worker solo si es driver o medic. */
+function assertUserCanCloseAssignment(
+  assignment: { driver?: mongoose.Types.ObjectId; medic?: mongoose.Types.ObjectId },
+  userId: string,
+  userRole: string,
+): void {
+  if (userRole === "admin") return;
+
+  const driverStr = assignment.driver?.toString();
+  const medicStr = assignment.medic?.toString();
+  const isParticipant =
+    driverStr === userId || medicStr === userId;
+
+  if (!isParticipant) {
+    throw new WorkdaySummaryError(
+      "No autorizado para cerrar este assignment",
+      403,
+    );
+  }
+}
+
 /* ─────────────────────────────
  * CIERRE COMPLETO DEL DÍA
+ * Admin: puede continuar. Worker: solo si participa (driver/medic).
  * ───────────────────────────── */
-export async function createWorkdaySummary(body: Record<string, unknown>) {
+export async function createWorkdaySummary(
+  body: Record<string, unknown>,
+  userId: string,
+  userRole: string,
+) {
   const {
     date,
     assignmentId,
@@ -59,24 +113,10 @@ export async function createWorkdaySummary(body: Record<string, unknown>) {
       typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
   }));
 
-  const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId as string);
-  const dienst = await Dienst.findOne({
-    "assignments._id": assignmentObjectId,
-  });
-
-  if (!dienst) {
-    throw new WorkdaySummaryError(
-      "Dienst no encontrado con ese assignmentId",
-      404,
-    );
-  }
-
-  const assignment = dienst.assignments.find(
-    (a) => a._id?.toString() === assignmentObjectId.toString(),
+  const { dienst, assignment } = await resolveAssignmentByAssignmentId(
+    assignmentId as string,
   );
-  if (!assignment) {
-    throw new WorkdaySummaryError("Asignación no encontrada", 404);
-  }
+  assertUserCanCloseAssignment(assignment, userId, userRole);
 
   const dienstNumber = dienst?.dienstNumber ?? null;
   const startTime = assignment?.startTime ?? null;
@@ -127,13 +167,17 @@ export async function createWorkdaySummary(body: Record<string, unknown>) {
 
 /* ─────────────────────────────
  * CIERRE PARCIAL DEL DÍA
+ * Admin: puede continuar. Worker: solo si participa (driver/medic).
+ * driver/medic se obtienen del assignment en BD, nunca del body.
  * ───────────────────────────── */
-export async function submitPartialClosure(body: Record<string, unknown>) {
+export async function submitPartialClosure(
+  body: Record<string, unknown>,
+  userId: string,
+  userRole: string,
+) {
   const {
     date,
     assignmentId,
-    driver,
-    medic,
     ambulanceId,
     ambulanceNumber,
     initialKm,
@@ -145,8 +189,6 @@ export async function submitPartialClosure(body: Record<string, unknown>) {
   const missing: string[] = [];
   if (!date) missing.push("date");
   if (!assignmentId) missing.push("assignmentId");
-  if (!driver) missing.push("driver");
-  if (!medic) missing.push("medic");
   if (!ambulanceId) missing.push("ambulanceId");
   if (initialKm === undefined) missing.push("initialKm");
   if (finalKm === undefined) missing.push("finalKm");
@@ -178,24 +220,15 @@ export async function submitPartialClosure(body: Record<string, unknown>) {
       typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
   }));
 
-  let dienstNumber: number | null = null;
-  let startTime: string | null = null;
-  let endTime: string | null = null;
+  const { dienst, assignment } = await resolveAssignmentByAssignmentId(
+    assignmentId as string,
+  );
+  assertUserCanCloseAssignment(assignment, userId, userRole);
 
-  try {
-    const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId as string);
-    const dienst = await Dienst.findOne({
-      "assignments._id": assignmentObjectId,
-    });
-    const assignment = dienst?.assignments.find(
-      (a) => a._id?.toString() === assignmentObjectId.toString(),
-    );
-    dienstNumber = dienst?.dienstNumber ?? null;
-    startTime = assignment?.startTime ?? null;
-    endTime = assignment?.endTime ?? null;
-  } catch {
-    // si no es ObjectId válido, seguimos sin bloquear
-  }
+  const dienstNumber = dienst?.dienstNumber ?? null;
+  const startTime = assignment?.startTime ?? null;
+  const endTime = assignment?.endTime ?? null;
+  const { driver, medic } = assignment;
 
   const totalEffectivePatients = calculateEffectivePatients(
     sanitizedTrips,

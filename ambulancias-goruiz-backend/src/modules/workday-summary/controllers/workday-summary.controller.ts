@@ -29,13 +29,22 @@ function handleError(
 
 /* ─────────────────────────────
  * CIERRE COMPLETO DEL DÍA
+ * Admin: puede continuar. Worker: solo si participa en el assignment.
  * ───────────────────────────── */
 export const createWorkdaySummary = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  if (req.userRole === "worker" && !req.userId) {
+    res.status(401).json({ message: "No autorizado" });
+    return;
+  }
   try {
-    const newSummary = await svcCreateWorkdaySummary(req.body);
+    const newSummary = await svcCreateWorkdaySummary(
+      req.body,
+      req.userId ?? "",
+      req.userRole ?? "",
+    );
     res.status(201).json(newSummary);
   } catch (error) {
     handleError(
@@ -49,13 +58,23 @@ export const createWorkdaySummary = async (
 
 /* ─────────────────────────────
  * CIERRE PARCIAL DEL DÍA
+ * Admin: puede continuar. Worker: solo si participa en el assignment.
+ * driver/medic se toman del assignment en BD, no del body.
  * ───────────────────────────── */
 export const submitPartialClosure = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  if (req.userRole === "worker" && !req.userId) {
+    res.status(401).json({ message: "No autorizado" });
+    return;
+  }
   try {
-    const result = await svcSubmitPartialClosure(req.body);
+    const result = await svcSubmitPartialClosure(
+      req.body,
+      req.userId ?? "",
+      req.userRole ?? "",
+    );
     res.status(201).json(result);
   } catch (error) {
     handleError(
