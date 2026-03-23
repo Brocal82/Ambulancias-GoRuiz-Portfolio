@@ -212,6 +212,67 @@ describe("API - Rutas críticas", () => {
     });
   });
 
+  describe("Dienst - getDienstsByUser (user/:userId) - IDOR fix", () => {
+    beforeAll(async () => {
+      const ambulanceId = new mongoose.Types.ObjectId().toString();
+      await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 79,
+          weekStartDate: "2030-06-01",
+          weekEndDate: "2030-06-07",
+          assignments: [
+            {
+              date: "2030-06-03",
+              startTime: "08:00",
+              endTime: "16:00",
+              ambulanceId,
+              driver: adminId,
+              medic: workerId,
+            },
+          ],
+        })
+        .expect(201);
+    });
+
+    it("GET /api/diensts/user/:userId sin token devuelve 401", async () => {
+      await request(app)
+        .get(`${API}/diensts/user/${workerId}`)
+        .expect(401);
+    });
+
+    it("GET /api/diensts/user/:userId admin con workerId devuelve 200", async () => {
+      const res = await request(app)
+        .get(`${API}/diensts/user/${workerId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+      expect(Array.isArray(res.body)).toBe(true);
+    });
+
+    it("GET /api/diensts/user/:userId worker con workerId devuelve 200", async () => {
+      const res = await request(app)
+        .get(`${API}/diensts/user/${workerId}`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .expect(200);
+      expect(Array.isArray(res.body)).toBe(true);
+    });
+
+    it("GET /api/diensts/user/:userId worker con adminId ignora param y recibe sus datos (IDOR fix)", async () => {
+      const resWorker = await request(app)
+        .get(`${API}/diensts/user/${workerId}`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .expect(200);
+
+      const resWorkerWithAdminId = await request(app)
+        .get(`${API}/diensts/user/${adminId}`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .expect(200);
+
+      expect(resWorkerWithAdminId.body).toEqual(resWorker.body);
+    });
+  });
+
   describe("Dienst - generate-week", () => {
     beforeAll(async () => {
       const db = mongoose.connection.db;
