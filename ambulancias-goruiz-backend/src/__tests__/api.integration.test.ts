@@ -208,6 +208,230 @@ describe("API - Rutas críticas", () => {
     });
   });
 
+  describe("Workday Summary - POST y POST /partial (ownership)", () => {
+    const DATE_FULL = "2030-11-10";
+    const DATE_PARTIAL = "2030-11-11";
+    const minimalTrip = {
+      auftragNumber: "WS-P-1",
+      patientName: "Paciente",
+      fromAddress: "A",
+      toAddress: "B",
+      timeWarning: "08:00",
+      wasCancelled: false,
+      countsTrip: 1 as const,
+    };
+    let ambulanceId: string;
+    let assignmentIdParticipant: string;
+    let assignmentIdNoParticipant: string;
+
+    beforeAll(async () => {
+      const ambRes = await request(app)
+        .post(`${API}/ambulances`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          brand: "Test",
+          modelName: "Model",
+          licensePlate: "WS-TEST-" + Date.now(),
+          ambulanceNumber: "WS-" + Date.now(),
+        })
+        .expect(201);
+      ambulanceId = ambRes.body._id ?? ambRes.body.id;
+
+      const ambForDienst = new mongoose.Types.ObjectId().toString();
+      const d1 = await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 90,
+          weekStartDate: "2030-11-07",
+          weekEndDate: "2030-11-13",
+          assignments: [
+            {
+              date: DATE_FULL,
+              startTime: "08:00",
+              endTime: "16:00",
+              ambulanceId: ambForDienst,
+              driver: adminId,
+              medic: workerId,
+            },
+          ],
+        })
+        .expect(201);
+      assignmentIdParticipant =
+        d1.body.assignments?.[0]?._id?.toString() ?? d1.body.assignments?.[0]?.id ?? "";
+
+      const d2 = await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 91,
+          weekStartDate: "2030-11-07",
+          weekEndDate: "2030-11-13",
+          assignments: [
+            {
+              date: DATE_FULL,
+              startTime: "08:00",
+              endTime: "16:00",
+              ambulanceId: ambForDienst,
+              driver: adminId,
+              medic: adminId,
+            },
+          ],
+        })
+        .expect(201);
+      assignmentIdNoParticipant =
+        d2.body.assignments?.[0]?._id?.toString() ?? d2.body.assignments?.[0]?.id ?? "";
+    });
+
+    const basePayloadFull = (assignmentId: string, date: string) => ({
+      date,
+      assignmentId,
+      ambulanceId,
+      ambulanceNumber: "1",
+      initialKm: 0,
+      finalKm: 10,
+      trips: [minimalTrip],
+      extraNote: "Test",
+    });
+
+    const basePayloadPartial = (assignmentId: string, date: string) => ({
+      ...basePayloadFull(assignmentId, date),
+      partialClosureReason: "Fin de turno anticipado",
+    });
+
+    describe("POST /api/workday-summary", () => {
+      it("sin token devuelve 401", async () => {
+        await request(app)
+          .post(`${API}/workday-summary`)
+          .send(basePayloadFull(assignmentIdParticipant, DATE_FULL))
+          .expect(401);
+      });
+
+      it("admin con assignment válido devuelve 201", async () => {
+        const res = await request(app)
+          .post(`${API}/workday-summary`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send(basePayloadFull(assignmentIdParticipant, DATE_FULL))
+          .expect(201);
+        expect(res.body).toHaveProperty("_id");
+        expect(res.body.date).toBe(DATE_FULL);
+      });
+
+      it("worker participante devuelve 201", async () => {
+        const res = await request(app)
+          .post(`${API}/workday-summary`)
+          .set("Authorization", `Bearer ${workerToken}`)
+          .send(basePayloadFull(assignmentIdParticipant, "2030-11-12"))
+          .expect(201);
+        expect(res.body).toHaveProperty("_id");
+      });
+
+      it("worker no participante devuelve 403", async () => {
+        const res = await request(app)
+          .post(`${API}/workday-summary`)
+          .set("Authorization", `Bearer ${workerToken}`)
+          .send(basePayloadFull(assignmentIdNoParticipant, DATE_FULL))
+          .expect(403);
+        expect(res.body).toHaveProperty("message");
+        expect(res.body.message).toContain("No autorizado");
+      });
+
+      it("assignment inexistente devuelve 404", async () => {
+        const fakeId = new mongoose.Types.ObjectId().toString();
+        const res = await request(app)
+          .post(`${API}/workday-summary`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send(basePayloadFull(fakeId, DATE_FULL))
+          .expect(404);
+        expect(res.body).toHaveProperty("message");
+      });
+    });
+
+    describe("POST /api/workday-summary/partial", () => {
+      it("sin token devuelve 401", async () => {
+        await request(app)
+          .post(`${API}/workday-summary/partial`)
+          .send(basePayloadPartial(assignmentIdParticipant, DATE_PARTIAL))
+          .expect(401);
+      });
+
+      it("admin con assignment válido devuelve 201", async () => {
+        const res = await request(app)
+          .post(`${API}/workday-summary/partial`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send(basePayloadPartial(assignmentIdParticipant, DATE_PARTIAL))
+          .expect(201);
+        expect(res.body).toHaveProperty("message");
+      });
+
+      it("worker participante devuelve 201", async () => {
+        const res = await request(app)
+          .post(`${API}/workday-summary/partial`)
+          .set("Authorization", `Bearer ${workerToken}`)
+          .send(basePayloadPartial(assignmentIdParticipant, "2030-11-13"))
+          .expect(201);
+        expect(res.body).toHaveProperty("message");
+      });
+
+      it("worker no participante devuelve 403", async () => {
+        const res = await request(app)
+          .post(`${API}/workday-summary/partial`)
+          .set("Authorization", `Bearer ${workerToken}`)
+          .send(basePayloadPartial(assignmentIdNoParticipant, DATE_PARTIAL))
+          .expect(403);
+        expect(res.body).toHaveProperty("message");
+        expect(res.body.message).toContain("No autorizado");
+      });
+
+      it("assignment inexistente devuelve 404", async () => {
+        const fakeId = new mongoose.Types.ObjectId().toString();
+        const res = await request(app)
+          .post(`${API}/workday-summary/partial`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send(basePayloadPartial(fakeId, DATE_PARTIAL))
+          .expect(404);
+        expect(res.body).toHaveProperty("message");
+      });
+
+      it("driver y medic falsos en body se ignoran; se usan los del assignment", async () => {
+        const fakeDriver = "507f1f77bcf86cd799439011";
+        const fakeMedic = "507f1f77bcf86cd799439012";
+        const dateDm = "2030-11-14";
+        const payload = {
+          ...basePayloadPartial(assignmentIdParticipant, dateDm),
+          driver: fakeDriver,
+          medic: fakeMedic,
+        };
+        await request(app)
+          .post(`${API}/workday-summary/partial`)
+          .set("Authorization", `Bearer ${workerToken}`)
+          .send(payload)
+          .expect(201);
+
+        const allRes = await request(app)
+          .get(`${API}/workday-summary`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .expect(200);
+        const found = allRes.body.find(
+          (s: { assignmentId?: string; isFinalClosure?: boolean; date?: string }) =>
+            s.assignmentId === assignmentIdParticipant &&
+            s.isFinalClosure === false &&
+            s.date === dateDm,
+        );
+        expect(found).toBeDefined();
+        const toIdStr = (v: unknown) => {
+          if (!v) return "";
+          if (typeof v === "string") return v;
+          const o = v as { _id?: unknown };
+          if (o._id) return (o._id as { toString?: () => string }).toString?.() ?? String(o._id);
+          return (v as { toString?: () => string }).toString?.() ?? "";
+        };
+        expect(toIdStr(found.driver)).toBe(adminId);
+        expect(toIdStr(found.medic)).toBe(workerId);
+      });
+    });
+  });
+
   describe("Validación ObjectId", () => {
     it("GET /api/users/:id con ObjectId inválido devuelve 400", async () => {
       const res = await request(app)
