@@ -17,6 +17,7 @@ import { messagesRoutes } from "./modules/messages";
 import { appointmentsRoutes } from "./modules/appointments";
 import { teamsRoutes } from "./modules/teams";
 import sickLeaveRoutes from "./modules/sick-leaves/routes";
+import invitationsRoutes from "./modules/invitations/routes";
 
 import { errorHandler } from "./middlewares/errorHandler";
 import { notFoundHandler } from "./middlewares/notFoundHandler";
@@ -80,6 +81,7 @@ app.use("/api/messages", messagesRoutes);
 app.use("/api/appointments", appointmentsRoutes);
 app.use("/api/teams", teamsRoutes);
 app.use("/api/sick-leaves", sickLeaveRoutes);
+app.use("/api/invitations", invitationsRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

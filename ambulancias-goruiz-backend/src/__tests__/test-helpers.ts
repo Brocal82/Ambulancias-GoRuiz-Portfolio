@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 import request from "supertest";
 import { app } from "../app";
 import User from "../modules/users/models/user.model";
+import Company from "../modules/companies/models/company.model";
 
 const API = "/api";
 
@@ -48,5 +49,32 @@ export async function createTestUsers() {
     workerId: workerRes.body.user?._id ?? "",
     adminToken: adminRes.body.token,
     workerToken: workerRes.body.token,
+  };
+}
+
+export async function createTestAdminWithCompany(password: string = "password123") {
+  const suffix = Date.now() + Math.floor(Math.random() * 1000);
+  const adminEmail = `admin-company-${suffix}@example.com`;
+
+  const company = await Company.create({ name: `Test Company ${suffix}`, isActive: true });
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const adminUser = await User.create({
+    name: "Admin",
+    lastName: "Company",
+    email: adminEmail,
+    password: hashedPassword,
+    role: "admin",
+    companyId: company._id,
+  });
+
+  const loginRes = await request(app)
+    .post(`${API}/users/login`)
+    .send({ email: adminEmail, password });
+
+  return {
+    adminId: String(adminUser._id),
+    companyId: String(company._id),
+    adminToken: loginRes.body.token,
+    company,
   };
 }
