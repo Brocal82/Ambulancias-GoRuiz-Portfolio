@@ -1,13 +1,28 @@
 import { Request, Response, NextFunction } from "express";
 import * as ambulancesService from "../services/ambulances.service";
+import { requireCompanyForAdmin } from "../../../utils/requireCompany";
+
+function resolveCompanyId(req: Request): { companyId: string | null; ok: boolean; statusCode?: number; message?: string } {
+  if (req.userRole === "admin") {
+    const result = requireCompanyForAdmin(req);
+    if (!result.ok) return { companyId: null, ok: false, statusCode: result.statusCode, message: result.message };
+    return { companyId: result.companyId, ok: true };
+  }
+  return { companyId: req.companyId ?? null, ok: true };
+}
 
 export const getAllAmbulances = async (
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const ambulances = await ambulancesService.getAllAmbulances();
+    const { companyId, ok, statusCode, message } = resolveCompanyId(req);
+    if (!ok) {
+      res.status(statusCode!).json({ message });
+      return;
+    }
+    const ambulances = await ambulancesService.getAllAmbulances(companyId);
     res.status(200).json(ambulances);
   } catch (error) {
     next(error);
@@ -20,7 +35,12 @@ export const getAmbulanceById = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const ambulance = await ambulancesService.getAmbulanceById(req.params.id);
+    const { companyId, ok, statusCode, message } = resolveCompanyId(req);
+    if (!ok) {
+      res.status(statusCode!).json({ message });
+      return;
+    }
+    const ambulance = await ambulancesService.getAmbulanceById(req.params.id, companyId);
     if (!ambulance) {
       res.status(404).json({ message: "Ambulance not found" });
       return;
@@ -37,7 +57,15 @@ export const createAmbulance = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const newAmbulance = await ambulancesService.createAmbulance(req.body);
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const newAmbulance = await ambulancesService.createAmbulance(
+      req.body,
+      companyResult.companyId
+    );
     res.status(201).json(newAmbulance);
   } catch (error) {
     next(error);
@@ -50,9 +78,15 @@ export const updateAmbulance = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const updated = await ambulancesService.updateAmbulance(
       req.params.id,
-      req.body
+      req.body,
+      companyResult.companyId
     );
     if (!updated) {
       res.status(404).json({ message: "Ambulance not found" });
@@ -70,7 +104,15 @@ export const deleteAmbulance = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const deleted = await ambulancesService.deleteAmbulance(req.params.id);
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const deleted = await ambulancesService.deleteAmbulance(
+      req.params.id,
+      companyResult.companyId
+    );
     if (!deleted) {
       res.status(404).json({ message: "Ambulance not found" });
       return;

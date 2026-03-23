@@ -53,3 +53,14 @@ export function isDienstFromCompany(
   if (!dienstCompanyId) return false;
   return String(dienstCompanyId) === String(companyId);
 }
+
+/**
+ * Comprueba si un recurso (ambulance, hospital, etc.) pertenece a la empresa indicada.
+ * Para legacy: recurso sin companyId solo coincide si companyId es null/undefined.
+ */
+export function isResourceFromCompany(
+  resourceCompanyId: unknown,
+  companyId: string | null | undefined,
+): boolean {
+  return isDienstFromCompany(resourceCompanyId, companyId);
+}

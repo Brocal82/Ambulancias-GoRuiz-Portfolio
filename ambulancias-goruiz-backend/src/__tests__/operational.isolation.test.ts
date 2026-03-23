@@ -441,4 +441,175 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
       expect(found).toBeUndefined();
     });
   });
+
+  describe("Ambulances - cross-company", () => {
+    let ambulanceIdA: string;
+    let ambulanceIdB: string;
+
+    beforeAll(async () => {
+      const createA = await request(app)
+        .post(`${API}/ambulances`)
+        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`)
+        .send({
+          brand: "BrandA",
+          modelName: "ModelA",
+          licensePlate: "AMB-A-" + Date.now(),
+          ambulanceNumber: "AMB-N-A-" + Date.now(),
+        });
+      expect(createA.status).toBe(201);
+      ambulanceIdA = createA.body._id ?? createA.body.id;
+
+      const createB = await request(app)
+        .post(`${API}/ambulances`)
+        .set("Authorization", `Bearer ${fixtures.dataB.adminToken}`)
+        .send({
+          brand: "BrandB",
+          modelName: "ModelB",
+          licensePlate: "AMB-B-" + Date.now(),
+          ambulanceNumber: "AMB-N-B-" + Date.now(),
+        });
+      expect(createB.status).toBe(201);
+      ambulanceIdB = createB.body._id ?? createB.body.id;
+    });
+
+    it("admin sin companyId recibe 403 en GET /ambulances", async () => {
+      const res = await request(app)
+        .get(`${API}/ambulances`)
+        .set("Authorization", `Bearer ${fixtures.adminNoCompany.token}`)
+        .expect(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
+    it("admin A no puede ver ambulancia de empresa B (GET /ambulances/:id)", async () => {
+      const res = await request(app)
+        .get(`${API}/ambulances/${ambulanceIdB}`)
+        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`);
+      expect([403, 404]).toContain(res.status);
+    });
+
+    it("admin A no puede editar ambulancia de empresa B (PUT)", async () => {
+      const res = await request(app)
+        .put(`${API}/ambulances/${ambulanceIdB}`)
+        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`)
+        .send({
+          brand: "Hacked",
+          modelName: "X",
+          licensePlate: "X",
+          ambulanceNumber: "X",
+        });
+      expect([403, 404]).toContain(res.status);
+    });
+
+    it("admin A no puede borrar ambulancia de empresa B (DELETE)", async () => {
+      const res = await request(app)
+        .delete(`${API}/ambulances/${ambulanceIdB}`)
+        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`);
+      expect([403, 404]).toContain(res.status);
+    });
+
+    it("admin A solo lista ambulancias de su empresa (GET /ambulances)", async () => {
+      const res = await request(app)
+        .get(`${API}/ambulances`)
+        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`)
+        .expect(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      for (const a of res.body) {
+        expect(a.companyId?.toString?.() ?? a.companyId).toBe(fixtures.dataA.companyId);
+      }
+      const ids = res.body.map((a: any) => a._id?.toString?.() ?? a._id);
+      expect(ids).toContain(ambulanceIdA);
+      expect(ids).not.toContain(ambulanceIdB);
+    });
+
+    it("worker A no ve ambulancias de empresa B (GET /ambulances)", async () => {
+      const res = await request(app)
+        .get(`${API}/ambulances`)
+        .set("Authorization", `Bearer ${fixtures.dataA.workerToken}`)
+        .expect(200);
+      const ids = res.body.map((a: any) => a._id?.toString?.() ?? a._id);
+      expect(ids).not.toContain(ambulanceIdB);
+    });
+  });
+
+  describe("Hospitals - cross-company", () => {
+    let hospitalIdA: string;
+    let hospitalIdB: string;
+
+    beforeAll(async () => {
+      const createA = await request(app)
+        .post(`${API}/hospitals`)
+        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`)
+        .send({
+          name: "Hospital A",
+          address: "Calle A 1",
+          phone: "+34 111",
+          specialties: ["Urgencias"],
+        });
+      expect(createA.status).toBe(201);
+      hospitalIdA = createA.body._id ?? createA.body.id;
+
+      const createB = await request(app)
+        .post(`${API}/hospitals`)
+        .set("Authorization", `Bearer ${fixtures.dataB.adminToken}`)
+        .send({
+          name: "Hospital B",
+          address: "Calle B 1",
+          phone: "+34 222",
+          specialties: ["Trauma"],
+        });
+      expect(createB.status).toBe(201);
+      hospitalIdB = createB.body._id ?? createB.body.id;
+    });
+
+    it("admin sin companyId recibe 403 en GET /hospitals", async () => {
+      const res = await request(app)
+        .get(`${API}/hospitals`)
+        .set("Authorization", `Bearer ${fixtures.adminNoCompany.token}`)
+        .expect(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
+    it("admin A no puede editar hospital de empresa B (PUT)", async () => {
+      const res = await request(app)
+        .put(`${API}/hospitals/${hospitalIdB}`)
+        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`)
+        .send({
+          name: "Hacked",
+          address: "X",
+          phone: "+34 999",
+          specialties: ["X"],
+        });
+      expect([403, 404]).toContain(res.status);
+    });
+
+    it("admin A no puede borrar hospital de empresa B (DELETE)", async () => {
+      const res = await request(app)
+        .delete(`${API}/hospitals/${hospitalIdB}`)
+        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`);
+      expect([403, 404]).toContain(res.status);
+    });
+
+    it("admin A solo lista hospitales de su empresa (GET /hospitals)", async () => {
+      const res = await request(app)
+        .get(`${API}/hospitals`)
+        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`)
+        .expect(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      for (const h of res.body) {
+        expect(h.companyId?.toString?.() ?? h.companyId).toBe(fixtures.dataA.companyId);
+      }
+      const ids = res.body.map((h: any) => h._id?.toString?.() ?? h._id);
+      expect(ids).toContain(hospitalIdA);
+      expect(ids).not.toContain(hospitalIdB);
+    });
+
+    it("worker B no ve hospitales de empresa A (GET /hospitals)", async () => {
+      const res = await request(app)
+        .get(`${API}/hospitals`)
+        .set("Authorization", `Bearer ${fixtures.dataB.workerToken}`)
+        .expect(200);
+      const ids = res.body.map((h: any) => h._id?.toString?.() ?? h._id);
+      expect(ids).not.toContain(hospitalIdA);
+    });
+  });
 });

@@ -2,10 +2,36 @@ import { Request, Response } from "express";
 import * as hospitalsService from "../services/hospitals.service";
 import { validateCreateHospital } from "../utils/hospital.validators";
 import type { UpdateHospitalInput } from "../schemas/hospital.schema";
+import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 
-export const getAllHospitals = async (_req: Request, res: Response) => {
+function resolveCompanyId(req: Request): {
+  companyId: string | null;
+  ok: boolean;
+  statusCode?: number;
+  message?: string;
+} {
+  if (req.userRole === "admin") {
+    const result = requireCompanyForAdmin(req);
+    if (!result.ok)
+      return {
+        companyId: null,
+        ok: false,
+        statusCode: result.statusCode,
+        message: result.message,
+      };
+    return { companyId: result.companyId, ok: true };
+  }
+  return { companyId: req.companyId ?? null, ok: true };
+}
+
+export const getAllHospitals = async (req: Request, res: Response) => {
   try {
-    const hospitals = await hospitalsService.getAllHospitals();
+    const { companyId, ok, statusCode, message } = resolveCompanyId(req);
+    if (!ok) {
+      res.status(statusCode!).json({ message });
+      return;
+    }
+    const hospitals = await hospitalsService.getAllHospitals(companyId);
     res.status(200).json(hospitals);
   } catch (error) {
     res.status(500).json({ message: "Error al obtener los hospitales" });
@@ -14,14 +40,20 @@ export const getAllHospitals = async (_req: Request, res: Response) => {
 
 export const createHospital = async (req: Request, res: Response): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const validated = validateCreateHospital(req.body);
-
     if (!validated.ok) {
       res.status(400).json({ message: validated.message });
       return;
     }
-
-    const saved = await hospitalsService.createHospital(validated.value);
+    const saved = await hospitalsService.createHospital(
+      validated.value,
+      companyResult.companyId,
+    );
     res.status(201).json(saved);
   } catch (error) {
     console.error("Error al crear hospital:", error);
@@ -31,14 +63,21 @@ export const createHospital = async (req: Request, res: Response): Promise<void>
 
 export const updateHospital = async (req: Request, res: Response) => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const updateData = req.body as UpdateHospitalInput;
-    const updated = await hospitalsService.updateHospital(req.params.id, updateData);
-
+    const updated = await hospitalsService.updateHospital(
+      req.params.id,
+      updateData,
+      companyResult.companyId,
+    );
     if (!updated) {
       res.status(404).json({ message: "Hospital no encontrado" });
       return;
     }
-
     res.status(200).json(updated);
   } catch (error) {
     console.error("❌ Error al actualizar hospital:", error);
@@ -48,7 +87,19 @@ export const updateHospital = async (req: Request, res: Response) => {
 
 export const deleteHospital = async (req: Request, res: Response) => {
   try {
-    await hospitalsService.deleteHospital(req.params.id);
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const deleted = await hospitalsService.deleteHospital(
+      req.params.id,
+      companyResult.companyId,
+    );
+    if (!deleted) {
+      res.status(404).json({ message: "Hospital no encontrado" });
+      return;
+    }
     res.status(200).json({ message: "Hospital eliminado" });
   } catch (error) {
     res.status(400).json({ message: "Error al eliminar el hospital" });

@@ -7,25 +7,23 @@ import request from "supertest";
 import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
-import { createTestUsers } from "./test-helpers";
+import { createTestAdminWithCompany, createTestUsers } from "./test-helpers";
 
 const API = "/api";
 
 describe("Hospitals - updateHospital (PUT/PATCH)", () => {
   let adminToken: string;
   let workerToken: string;
-  let workerId: string;
-  let adminId: string;
   let hospitalId: string;
 
   beforeAll(async () => {
     await mongoose.connect(env.MONGODB_URI);
-    const { adminId: aid, workerId: wid, adminToken: aTok, workerToken: wTok } =
-      await createTestUsers();
-    adminId = aid;
-    workerId = wid;
-    adminToken = aTok;
-    workerToken = wTok;
+    const [legacy, dataWithCompany] = await Promise.all([
+      createTestUsers(),
+      createTestAdminWithCompany(),
+    ]);
+    adminToken = dataWithCompany.adminToken;
+    workerToken = legacy.workerToken;
 
     const createRes = await request(app)
       .post(`${API}/hospitals`)

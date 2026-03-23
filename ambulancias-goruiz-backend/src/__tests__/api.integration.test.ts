@@ -201,17 +201,14 @@ describe("API - Rutas críticas", () => {
     let assignmentIdNoParticipant: string;
 
     beforeAll(async () => {
-      const ambRes = await request(app)
-        .post(`${API}/ambulances`)
-        .set("Authorization", `Bearer ${adminToken}`)
-        .send({
-          brand: "Test",
-          modelName: "Model",
-          licensePlate: "WS-TEST-" + Date.now(),
-          ambulanceNumber: "WS-" + Date.now(),
-        })
-        .expect(201);
-      ambulanceId = ambRes.body._id ?? ambRes.body.id;
+      const Ambulance = mongoose.model("Ambulance");
+      const ambDoc = await Ambulance.create({
+        brand: "Test",
+        modelName: "Model",
+        licensePlate: "WS-TEST-" + Date.now(),
+        ambulanceNumber: "WS-" + Date.now(),
+      });
+      ambulanceId = ambDoc._id.toString();
 
       const ambForDienst = new mongoose.Types.ObjectId().toString();
       const d1 = await request(app)
