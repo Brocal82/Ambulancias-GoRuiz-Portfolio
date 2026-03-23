@@ -30,11 +30,26 @@ export function requireCompanyForAdmin(req: Request): RequireCompanyResult {
 /**
  * Comprueba si un usuario pertenece a la misma empresa que el admin.
  * targetUser debe tener companyId que coincida con companyId.
+ * Ambos null/undefined = mismo "legacy" (true).
  */
 export function isSameCompany(
   targetUserCompanyId: unknown,
-  adminCompanyId: string,
+  adminCompanyId: string | null | undefined,
 ): boolean {
+  if (!adminCompanyId) return !targetUserCompanyId;
   if (!targetUserCompanyId) return false;
   return String(targetUserCompanyId) === String(adminCompanyId);
+}
+
+/**
+ * Comprueba si un dienst pertenece a la empresa indicada.
+ * Para legacy: dienst sin companyId solo coincide si companyId es null/undefined.
+ */
+export function isDienstFromCompany(
+  dienstCompanyId: unknown,
+  companyId: string | null | undefined,
+): boolean {
+  if (!companyId) return !dienstCompanyId;
+  if (!dienstCompanyId) return false;
+  return String(dienstCompanyId) === String(companyId);
 }

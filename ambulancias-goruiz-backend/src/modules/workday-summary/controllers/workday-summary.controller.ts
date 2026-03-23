@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 import {
   WorkdaySummaryError,
   createWorkdaySummary as svcCreateWorkdaySummary,
@@ -29,7 +30,8 @@ function handleError(
 
 /* ─────────────────────────────
  * CIERRE COMPLETO DEL DÍA
- * Admin: puede continuar. Worker: solo si participa en el assignment.
+ * Admin: puede si dienst misma empresa. Worker: solo si participa.
+ * Servicio valida companyId cuando aplica.
  * ───────────────────────────── */
 export const createWorkdaySummary = async (
   req: Request,
@@ -44,6 +46,7 @@ export const createWorkdaySummary = async (
       req.body,
       req.userId ?? "",
       req.userRole ?? "",
+      req.companyId ?? null,
     );
     res.status(201).json(newSummary);
   } catch (error) {
@@ -58,8 +61,7 @@ export const createWorkdaySummary = async (
 
 /* ─────────────────────────────
  * CIERRE PARCIAL DEL DÍA
- * Admin: puede continuar. Worker: solo si participa en el assignment.
- * driver/medic se toman del assignment en BD, no del body.
+ * Admin: puede si dienst misma empresa. Worker: solo si participa.
  * ───────────────────────────── */
 export const submitPartialClosure = async (
   req: Request,
@@ -74,6 +76,7 @@ export const submitPartialClosure = async (
       req.body,
       req.userId ?? "",
       req.userRole ?? "",
+      req.companyId ?? null,
     );
     res.status(201).json(result);
   } catch (error) {
@@ -88,12 +91,13 @@ export const submitPartialClosure = async (
 
 /* ─────────────────────────────
  * GET TODOS LOS RESÚMENES
- * Admin: todos. Worker: solo donde participa (driver/medic).
+ * Admin: filtra por companyId si tiene; legacy si no. Worker: solo donde participa.
  * ───────────────────────────── */
 export const getAllWorkdaySummaries = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  const companyId: string | null = req.companyId ?? null;
   const filterByUserId =
     req.userRole === "admin" ? undefined : (req.userId ?? undefined);
 
@@ -103,7 +107,7 @@ export const getAllWorkdaySummaries = async (
   }
 
   try {
-    const enriched = await svcGetAllWorkdaySummaries(filterByUserId);
+    const enriched = await svcGetAllWorkdaySummaries(filterByUserId, companyId);
     res.status(200).json(enriched);
   } catch (error) {
     handleError(
@@ -127,6 +131,7 @@ export const reportIssue = async (
       req.body,
       req.userId ?? "",
       req.userRole ?? "",
+      req.companyId ?? null,
     );
     res.status(201).json(newIssue);
   } catch (error) {
@@ -144,7 +149,7 @@ export const getAllIssueReports = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const issues = await svcGetAllIssueReports();
+    const issues = await svcGetAllIssueReports(req.companyId ?? null);
     res.status(200).json(issues);
   } catch (error) {
     handleError(
@@ -165,7 +170,7 @@ export const deleteIssueReport = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const result = await svcDeleteIssueReport(id);
+    const result = await svcDeleteIssueReport(id, req.companyId ?? null);
     res.status(200).json(result);
   } catch (error) {
     handleError(
@@ -186,7 +191,7 @@ export const markIssueSeen = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const updated = await svcMarkIssueSeen(id);
+    const updated = await svcMarkIssueSeen(id, req.companyId ?? null);
     res.status(200).json(updated);
   } catch (error) {
     handleError(
@@ -208,7 +213,7 @@ export const getIssuesCount = async (
   try {
     const status =
       typeof req.query.status === "string" ? req.query.status : undefined;
-    const result = await svcGetIssuesCount(status);
+    const result = await svcGetIssuesCount(status, req.companyId ?? null);
     res.status(200).json(result);
   } catch (error) {
     handleError(
@@ -230,7 +235,10 @@ export const getSummariesCountByStatus = async (
   try {
     const status =
       typeof req.query.status === "string" ? req.query.status : undefined;
-    const result = await svcGetSummariesCountByStatus(status);
+    const result = await svcGetSummariesCountByStatus(
+      status,
+      req.companyId ?? null,
+    );
     res.status(200).json(result);
   } catch (error) {
     handleError(
@@ -253,7 +261,7 @@ export const markSummaryReviewed = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const updated = await svcMarkSummaryReviewed(id);
+    const updated = await svcMarkSummaryReviewed(id, req.companyId ?? null);
     res.status(200).json(updated);
   } catch (error) {
     handleError(

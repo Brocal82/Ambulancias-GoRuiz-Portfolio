@@ -10,7 +10,11 @@ export const removeAssignment = async (req: Request, res: Response) => {
   const { date } = req.body;
   try {
     const parsedId = idSchema.parse(req.params.id);
-    const updatedDienst = await assignmentsService.removeAssignment(parsedId, date);
+    const updatedDienst = await assignmentsService.removeAssignment(
+      parsedId,
+      date,
+      req.companyId ?? undefined,
+    );
     res.status(200).json(updatedDienst);
   } catch (error) {
     res.status(500).json({ message: "Error al eliminar el assignment", error });

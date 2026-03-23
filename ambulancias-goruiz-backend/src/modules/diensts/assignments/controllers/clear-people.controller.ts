@@ -25,10 +25,10 @@ export const clearPeopleForWeek = async (
       return;
     }
 
-    const result = await assignmentsService.clearPeopleForWeek({
-      dienstNumber,
-      weekStartDate,
-    });
+    const result = await assignmentsService.clearPeopleForWeek(
+      { dienstNumber, weekStartDate },
+      req.companyId ?? undefined,
+    );
 
     res.status(200).json(result);
   } catch (error) {

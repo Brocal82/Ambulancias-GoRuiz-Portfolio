@@ -21,8 +21,7 @@ function handleError(
 
 /* ─────────────────────────────
  * POST /api/trips
- * Admin: puede crear. Worker: solo si participa (driver/medic) en el assignment.
- * driver/medic se ignoran del body y se usan los del assignment en BD.
+ * Admin: puede crear si dienst misma empresa. Worker: solo si participa.
  * ───────────────────────────── */
 export const createTrip = async (
   req: Request,
@@ -37,6 +36,7 @@ export const createTrip = async (
       req.body,
       req.userId ?? "",
       req.userRole ?? "",
+      req.companyId ?? null,
     );
     res.status(201).json(savedTrip);
   } catch (error) {
@@ -51,7 +51,7 @@ export const createTrip = async (
 
 /* ─────────────────────────────
  * GET /api/trips/date/:date
- * Admin: todos los trips de la fecha. Worker: solo donde participa (driver/medic).
+ * Admin: trips filtrados por empresa si tiene companyId. Worker: donde participa.
  * ───────────────────────────── */
 export const getTripsByDate = async (
   req: Request,
@@ -63,6 +63,7 @@ export const getTripsByDate = async (
       date,
       req.userId ?? undefined,
       req.userRole ?? undefined,
+      req.companyId ?? null,
     );
     res.status(200).json(trips);
   } catch (error) {

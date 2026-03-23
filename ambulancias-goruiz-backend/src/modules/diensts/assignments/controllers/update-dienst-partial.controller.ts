@@ -6,7 +6,11 @@ export const updateDienstPartial: RequestHandler = async (req, res) => {
   const { assignments } = req.body;
 
   try {
-    const dienst = await assignmentsService.updateDienstPartial(id, assignments);
+    const dienst = await assignmentsService.updateDienstPartial(
+      id,
+      assignments,
+      req.companyId ?? undefined,
+    );
     if (!dienst) {
       res.status(404).json({ message: "Dienst no encontrado." });
       return;

@@ -32,12 +32,15 @@ export const assignTeamToWeek = async (
       return;
     }
 
-    const result = await assignmentsService.assignTeamToWeek({
-      dienstNumber,
-      weekStartDate,
-      teamId,
-      resolvedRoles,
-    });
+    const result = await assignmentsService.assignTeamToWeek(
+      {
+        dienstNumber,
+        weekStartDate,
+        teamId,
+        resolvedRoles,
+      },
+      req.companyId ?? undefined,
+    );
 
     res.status(200).json(result);
   } catch (error) {

@@ -231,11 +231,11 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 
 // Obtener todos los Diensts (solo para admin)
 export const getAllUsersDienst = async (
-  _req: Request,
+  req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const diensts = await getAllDienstsWithBasicPopulate();
+    const diensts = await getAllDienstsWithBasicPopulate(req.companyId ?? null);
     res.status(200).json(diensts);
   } catch (error) {
     console.error("Error al obtener diensts:", error);
@@ -271,6 +271,7 @@ export const getAvailableUsersForDate: RequestHandler = async (
       startTime,
       endTime,
       includeExpired: includeExpiredBool,
+      companyId: req.companyId ?? null,
     });
 
     res.json(sanitizeUsers(available as any[]));

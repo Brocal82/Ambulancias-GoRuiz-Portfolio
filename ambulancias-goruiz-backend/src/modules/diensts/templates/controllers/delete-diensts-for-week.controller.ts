@@ -10,7 +10,10 @@ export const deleteDienstsForWeek: RequestHandler = async (req, res) => {
   }
 
   try {
-    const { deletedCount } = await lifecycleService.deleteDienstsForWeek(weekStartDate);
+    const { deletedCount } = await lifecycleService.deleteDienstsForWeek(
+      weekStartDate,
+      req.companyId ?? undefined,
+    );
     res
       .status(200)
       .json({ message: "Diensts eliminados", count: deletedCount });

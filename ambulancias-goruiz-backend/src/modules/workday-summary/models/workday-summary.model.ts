@@ -48,6 +48,7 @@ export interface IWorkdaySummary extends Document {
   driver: Types.ObjectId;
   medic: Types.ObjectId;
   ambulanceId: Types.ObjectId;
+  companyId?: Types.ObjectId | null;
   ambulanceNumber: string;
   dienstNumber?: number;
   startTime?: string;
@@ -97,6 +98,12 @@ const workdaySummarySchema = new Schema<IWorkdaySummary>({
   /** 👇 NUEVO: revisión */
   isReviewed: { type: Boolean, default: false },
   reviewedAt: { type: Date },
+  companyId: {
+    type: Schema.Types.ObjectId,
+    ref: "Company",
+    required: false,
+    default: null,
+  },
 });
 
 const WorkdaySummary =

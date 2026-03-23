@@ -23,6 +23,7 @@ export interface GetAvailableUsersParams {
   startTime?: string; // "HH:mm"
   endTime?: string; // "HH:mm"
   includeExpired?: boolean; // incluir P-Schein caducados en respuesta (driver)
+  companyId?: string | null; // filtrar users por empresa
 }
 
 function toMin(hhmm?: string): number | null {
@@ -47,7 +48,7 @@ function overlap(
 export async function getAvailableUsersForDateService(
   params: GetAvailableUsersParams,
 ) {
-  const { date, desiredRole, startTime, endTime, includeExpired } = params;
+  const { date, desiredRole, startTime, endTime, includeExpired, companyId } = params;
 
   const allowedRoles =
     desiredRole === "driver"
@@ -59,10 +60,13 @@ export async function getAvailableUsersForDateService(
   const sReq = toMin(startTime);
   const eReq = toMin(endTime);
 
-  const diensts = await Dienst.find(
-    { "assignments.date": date },
-    { assignments: 1 },
-  ).lean();
+  const dienstFilter: Record<string, unknown> = { "assignments.date": date };
+  if (companyId) {
+    dienstFilter.companyId = new mongoose.Types.ObjectId(companyId);
+  } else {
+    dienstFilter.$or = [{ companyId: null }, { companyId: { $exists: false } }];
+  }
+  const diensts = await Dienst.find(dienstFilter, { assignments: 1 }).lean();
 
   const busyUserIds = new Set<string>();
 
@@ -85,10 +89,19 @@ export async function getAvailableUsersForDateService(
     }
   }
 
-  const baseUsers = await User.find({
+  const userFilter: Record<string, unknown> = {
     _id: { $nin: Array.from(busyUserIds) },
     ambulanceRole: { $in: allowedRoles },
-  })
+  };
+  if (companyId) {
+    userFilter.companyId = new mongoose.Types.ObjectId(companyId);
+  } else {
+    userFilter.$or = [
+      { companyId: null },
+      { companyId: { $exists: false } },
+    ];
+  }
+  const baseUsers = await User.find(userFilter)
     .sort({ lastName: 1 })
     .lean();
 

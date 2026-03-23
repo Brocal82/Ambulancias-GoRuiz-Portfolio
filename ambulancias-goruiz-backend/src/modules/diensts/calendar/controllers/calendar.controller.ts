@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { RequestHandler } from "express";
 import { ZodError, z } from "zod";
 import { resolveAccessibleUserId } from "../../../../utils/resolveAccessibleUserId";
+import { requireCompanyForAdmin, isDienstFromCompany, isSameCompany } from "../../../../utils/requireCompany";
+import User from "../../../users/models/user.model";
 import { dienstQuerySchema } from "../../schemas/dienstQuerySchema";
 import * as calendarService from "../services/calendar.service";
 
@@ -9,9 +11,9 @@ const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
   message: "ID no válido",
 });
 
-export const getAllDiensts: RequestHandler = async (_req, res) => {
+export const getAllDiensts: RequestHandler = async (req, res) => {
   try {
-    const diensts = await calendarService.getAllDiensts();
+    const diensts = await calendarService.getAllDiensts(req.companyId ?? null);
     res.status(200).json(diensts);
   } catch (error) {
     console.error("Error al obtener los Diensts:", error);
@@ -29,14 +31,27 @@ export const getDienstById = async (req: Request, res: Response) => {
     }
 
     const isAdmin = req.userRole === "admin";
-    const isParticipant = dienst.assignments.some(
+    const isParticipant = (dienst.assignments as any[]).some(
       (a) =>
         String(a.driver?._id ?? a.driver) === req.userId ||
         String(a.medic?._id ?? a.medic) === req.userId,
     );
-    if (!isAdmin && !isParticipant) {
-      res.status(403).json({ message: "No autorizado" });
-      return;
+
+    if (isAdmin) {
+      if (!isDienstFromCompany((dienst as any).companyId, req.companyId ?? null)) {
+        res.status(403).json({ message: "No tienes permiso para ver este Dienst" });
+        return;
+      }
+    } else {
+      if (!isParticipant) {
+        res.status(403).json({ message: "No autorizado" });
+        return;
+      }
+      const userCompanyId = req.companyId ?? null;
+      if (!isDienstFromCompany((dienst as any).companyId, userCompanyId)) {
+        res.status(403).json({ message: "No tienes permiso para ver este Dienst" });
+        return;
+      }
     }
 
     res.status(200).json(dienst);
@@ -52,7 +67,10 @@ export const getDienstById = async (req: Request, res: Response) => {
 export const searchDienst = async (req: Request, res: Response) => {
   try {
     const parsedQuery = dienstQuerySchema.parse(req.query);
-    const dienste = await calendarService.searchDienst(parsedQuery);
+    const dienste = await calendarService.searchDienst(
+      parsedQuery,
+      req.companyId ?? null,
+    );
     res.status(200).json(dienste);
   } catch (error) {
     if (error instanceof ZodError) {
@@ -74,8 +92,18 @@ export const getDienstsByUser = async (req: Request, res: Response) => {
     return;
   }
 
+  let userCompanyId: string | null = req.companyId ?? null;
+  if (req.userRole === "admin" && req.params.userId && req.params.userId !== req.userId) {
+    const targetUser = await User.findById(result.userId).select("companyId").lean();
+    if (!targetUser || !isSameCompany(targetUser.companyId, req.companyId ?? null)) {
+      res.status(403).json({ message: "No tienes permiso para ver Diensts de este usuario" });
+      return;
+    }
+    userCompanyId = targetUser.companyId ? String(targetUser.companyId) : null;
+  }
+
   try {
-    const diensts = await calendarService.getDienstsByUser(result.userId);
+    const diensts = await calendarService.getDienstsByUser(result.userId, userCompanyId);
     res.status(200).json(diensts);
   } catch (error) {
     console.error("Error fetching diensts:", error);

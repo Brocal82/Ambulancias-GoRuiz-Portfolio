@@ -14,6 +14,12 @@ const WorkdayIssueSchema = new mongoose.Schema(
     issueText: { type: String, required: true },
     driver: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     medic: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      required: false,
+      default: null,
+    },
 
     // 👇 NUEVOS CAMPOS para marcado de "visto"
     isSeen: { type: Boolean, default: false },

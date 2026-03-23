@@ -38,19 +38,36 @@ async function resolveAssignmentByAssignmentId(assignmentId: string): Promise<{
   return { dienst, assignment };
 }
 
-/** Verifica que el usuario pueda crear trips en este assignment. Admin siempre. Worker solo si es driver o medic. */
+/** Verifica que el usuario pueda crear trips en este assignment. Admin: dienst mismo companyId. Worker: participante y mismo companyId. */
 function assertUserCanCreateTripInAssignment(
+  dienst: { companyId?: unknown },
   assignment: { driver?: mongoose.Types.ObjectId; medic?: mongoose.Types.ObjectId },
   userId: string,
   userRole: string,
+  userCompanyId?: string | null,
 ): void {
-  if (userRole === "admin") return;
+  const dienstCompanyStr = dienst.companyId ? String(dienst.companyId) : null;
+
+  if (userRole === "admin") {
+    if (userCompanyId && (!dienstCompanyStr || dienstCompanyStr !== String(userCompanyId))) {
+      throw new TripError("No autorizado para crear viajes en este assignment", 403);
+    }
+    if (!userCompanyId && dienstCompanyStr) {
+      throw new TripError("No autorizado para crear viajes en este assignment", 403);
+    }
+    return;
+  }
 
   const driverStr = assignment.driver?.toString();
   const medicStr = assignment.medic?.toString();
   const isParticipant = driverStr === userId || medicStr === userId;
-
   if (!isParticipant) {
+    throw new TripError("No autorizado para crear viajes en este assignment", 403);
+  }
+  if (userCompanyId && (!dienstCompanyStr || dienstCompanyStr !== String(userCompanyId))) {
+    throw new TripError("No autorizado para crear viajes en este assignment", 403);
+  }
+  if (!userCompanyId && dienstCompanyStr) {
     throw new TripError("No autorizado para crear viajes en este assignment", 403);
   }
 }
@@ -66,6 +83,7 @@ export async function createTrip(
   data: CreateTripInput,
   userId: string,
   userRole: string,
+  userCompanyId?: string | null,
 ) {
   const {
     date,
@@ -107,10 +125,16 @@ export async function createTrip(
     totalKm = 0;
   }
 
-  const { assignment } = await resolveAssignmentByAssignmentId(
+  const { dienst, assignment } = await resolveAssignmentByAssignmentId(
     assignmentId as string,
   );
-  assertUserCanCreateTripInAssignment(assignment, userId, userRole);
+  assertUserCanCreateTripInAssignment(
+    dienst as any,
+    assignment,
+    userId,
+    userRole,
+    userCompanyId,
+  );
 
   /* driver y medic del body se IGNORAN; usamos siempre los del assignment real */
   const driver = assignment.driver;
@@ -122,6 +146,8 @@ export async function createTrip(
       400,
     );
   }
+
+  const dienstCompanyId = (dienst as any).companyId;
 
   const newTrip = new Trip({
     date,
@@ -144,6 +170,7 @@ export async function createTrip(
     cancelledAtPickup,
     countsTrip: normalizedData.countsTrip,
     reports,
+    ...(dienstCompanyId && { companyId: dienstCompanyId }),
   });
 
   return await newTrip.save();
@@ -151,20 +178,26 @@ export async function createTrip(
 
 /* ─────────────────────────────
  * GET /api/trips/date/:date
- * Admin: todos los trips de la fecha. Worker: solo donde participa (driver/medic).
+ * Admin: trips de su empresa. Worker: solo donde participa y misma empresa.
  * ───────────────────────────── */
 export async function getTripsByDate(
   date: string,
   userId?: string,
   userRole?: string,
+  userCompanyId?: string | null,
 ) {
-  const baseQuery: mongoose.FilterQuery<{ date: string; sentInSummary: boolean }> = {
+  const companyFilter = userCompanyId
+    ? { companyId: new mongoose.Types.ObjectId(userCompanyId) }
+    : { $or: [{ companyId: null }, { companyId: { $exists: false } }] };
+
+  const filter: mongoose.FilterQuery<any> = {
     date,
     sentInSummary: false,
+    ...companyFilter,
   };
 
   if (userRole === "admin") {
-    return await Trip.find(baseQuery).sort({ timeWarning: 1 });
+    return await Trip.find(filter).sort({ timeWarning: 1 });
   }
 
   if (!userId) {
@@ -172,10 +205,12 @@ export async function getTripsByDate(
   }
 
   const objectUserId = new mongoose.Types.ObjectId(userId);
-  const filter = {
-    ...baseQuery,
-    $or: [{ driver: objectUserId }, { medic: objectUserId }],
+  const workerFilter: mongoose.FilterQuery<any> = {
+    date,
+    sentInSummary: false,
+    ...companyFilter,
+    $and: [{ $or: [{ driver: objectUserId }, { medic: objectUserId }] }],
   };
 
-  return await Trip.find(filter).sort({ timeWarning: 1 });
+  return await Trip.find(workerFilter).sort({ timeWarning: 1 });
 }

@@ -43,12 +43,15 @@ export const assignUserToWeek = async (
       return;
     }
 
-    const result = await assignmentsService.assignUserToWeek({
-      dienstNumber,
-      weekStartDate,
-      userId,
-      role,
-    });
+    const result = await assignmentsService.assignUserToWeek(
+      {
+        dienstNumber,
+        weekStartDate,
+        userId,
+        role,
+      },
+      req.companyId ?? undefined,
+    );
 
     res.status(200).json(result);
   } catch (error) {

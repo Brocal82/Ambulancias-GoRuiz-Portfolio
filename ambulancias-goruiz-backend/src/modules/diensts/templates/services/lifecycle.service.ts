@@ -12,51 +12,78 @@ import type { dienstSchema } from "../../schemas/dienstSchema";
 type DienstCreateInput = z.infer<typeof dienstSchema>;
 type DienstUpdateInput = Partial<DienstCreateInput>;
 
-export async function createDienst(data: DienstCreateInput) {
-  const newDienst = new Dienst(data);
+export async function createDienst(data: DienstCreateInput, companyId?: string | null) {
+  const payload = companyId
+    ? { ...data, companyId: new mongoose.Types.ObjectId(companyId) }
+    : data;
+  const newDienst = new Dienst(payload);
   return newDienst.save();
 }
 
-export async function updateDienst(id: string, data: DienstUpdateInput) {
+export async function updateDienst(
+  id: string,
+  data: DienstUpdateInput,
+  companyId?: string | null,
+) {
+  const existing = await Dienst.findById(id).select("companyId").lean();
+  if (!existing) return null;
+  const existingCompany = (existing as any).companyId;
+  if (existingCompany) {
+    if (!companyId || String(existingCompany) !== String(companyId)) {
+      return null;
+    }
+  }
   return Dienst.findByIdAndUpdate(id, data, {
     new: true,
   }).populate("assignments.driver assignments.medic assignments.ambulanceId");
 }
 
-export async function deleteDienst(id: string) {
+export async function deleteDienst(id: string, companyId?: string | null) {
+  const existing = await Dienst.findById(id).select("companyId").lean();
+  if (!existing) return null;
+  const existingCompany = (existing as any).companyId;
+  if (existingCompany) {
+    if (!companyId || String(existingCompany) !== String(companyId)) {
+      return null;
+    }
+  }
   return Dienst.findByIdAndDelete(id);
 }
 
-export async function deleteDienstsForWeek(weekStartDate: string): Promise<{
-  deletedCount: number;
-}> {
+export async function deleteDienstsForWeek(
+  weekStartDate: string,
+  companyId?: string | null,
+): Promise<{ deletedCount: number }> {
   const start = new Date(weekStartDate);
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
 
-  const deleted = await Dienst.deleteMany({
-    weekStartDate: {
-      $gte: start,
-      $lte: end,
-    },
-  });
+  const filter: Record<string, unknown> = {
+    weekStartDate: { $gte: start, $lte: end },
+  };
+  if (companyId) {
+    filter.companyId = new mongoose.Types.ObjectId(companyId);
+  }
 
+  const deleted = await Dienst.deleteMany(filter);
   return { deletedCount: deleted.deletedCount ?? 0 };
 }
 
-export async function generateDienstTemplatesForWeek(weekStartDate: string): Promise<{
-  count: number;
-}> {
+export async function generateDienstTemplatesForWeek(
+  weekStartDate: string,
+  companyId?: string | null,
+): Promise<{ count: number }> {
   const startDate = new Date(weekStartDate);
   const endDate = new Date(startDate);
   endDate.setDate(startDate.getDate() + 6);
 
-  const existing = await Dienst.find({
-    weekStartDate: {
-      $gte: startDate,
-      $lte: endDate,
-    },
-  });
+  const weekFilter: Record<string, unknown> = {
+    weekStartDate: { $gte: startDate, $lte: endDate },
+  };
+  if (companyId) {
+    weekFilter.companyId = new mongoose.Types.ObjectId(companyId);
+  }
+  const existing = await Dienst.find(weekFilter);
 
   if (existing.length > 0) {
     throw new Error("Ya existen Diensts para esa semana");
@@ -74,7 +101,7 @@ export async function generateDienstTemplatesForWeek(weekStartDate: string): Pro
 
   const dienstNumbers = templates.map((tpl) => tpl.dienstNumber);
 
-  const teams = await Team.find(
+  let teams = await Team.find(
     {},
     {
       driver: 1,
@@ -84,7 +111,19 @@ export async function generateDienstTemplatesForWeek(weekStartDate: string): Pro
       createdAt: 1,
       ambulanceId: 1,
     },
-  ).lean();
+  )
+    .populate("driver", "companyId")
+    .populate("medic", "companyId")
+    .lean();
+
+  if (companyId) {
+    const companyIdStr = String(companyId);
+    teams = teams.filter((t: any) => {
+      const drvCo = t.driver?.companyId ? String(t.driver.companyId) : null;
+      const medCo = t.medic?.companyId ? String(t.medic.companyId) : null;
+      return drvCo === companyIdStr && medCo === companyIdStr;
+    });
+  }
 
   const fixedMap = new Map<number, (typeof teams)[0]>();
   const rotatingTeams: (typeof teams)[0][] = [];
@@ -108,9 +147,13 @@ export async function generateDienstTemplatesForWeek(weekStartDate: string): Pro
     prevWeekStart.getTime() + 24 * 60 * 60 * 1000,
   );
 
-  const prevDiensts = await Dienst.find({
+  const prevWeekFilter: Record<string, unknown> = {
     weekStartDate: { $gte: prevWeekStart, $lt: prevWeekNextDay },
-  }).lean();
+  };
+  if (companyId) {
+    prevWeekFilter.companyId = new mongoose.Types.ObjectId(companyId);
+  }
+  const prevDiensts = await Dienst.find(prevWeekFilter).lean();
 
   const hasPreviousWeek = prevDiensts.length > 0;
 
@@ -322,7 +365,7 @@ export async function generateDienstTemplatesForWeek(weekStartDate: string): Pro
         assignments.push(baseAssignment);
       }
 
-      return {
+      const doc: Record<string, unknown> = {
         dienstNumber,
         weekStartDate: startDate,
         weekEndDate: endDate,
@@ -331,6 +374,10 @@ export async function generateDienstTemplatesForWeek(weekStartDate: string): Pro
           ? new mongoose.Types.ObjectId(String((assignedTeam as any)._id))
           : null,
       };
+      if (companyId) {
+        doc.companyId = new mongoose.Types.ObjectId(companyId);
+      }
+      return doc;
     }),
   );
 

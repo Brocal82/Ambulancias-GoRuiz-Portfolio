@@ -5,6 +5,7 @@ export interface ITrip extends Document {
   assignmentId: Types.ObjectId;
   driver: Types.ObjectId;
   medic: Types.ObjectId;
+  companyId?: Types.ObjectId | null;
   auftragNumber: string;
   patientName: string;
   fromAddress: string;
@@ -55,6 +56,12 @@ const TripSchema = new Schema<ITrip>({
 
   reports: { type: String, default: "" },
   sentInSummary: { type: Boolean, default: false },
+  companyId: {
+    type: Schema.Types.ObjectId,
+    ref: "Company",
+    required: false,
+    default: null,
+  },
 });
 
 export const Trip = mongoose.model<ITrip>("Trip", TripSchema);

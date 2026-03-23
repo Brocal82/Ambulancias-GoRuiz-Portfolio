@@ -19,7 +19,10 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (
       return;
     }
 
-    const { count } = await lifecycleService.generateDienstTemplatesForWeek(weekStartDate);
+    const { count } = await lifecycleService.generateDienstTemplatesForWeek(
+      weekStartDate,
+      req.companyId ?? undefined,
+    );
 
     res.status(201).json({
       message:

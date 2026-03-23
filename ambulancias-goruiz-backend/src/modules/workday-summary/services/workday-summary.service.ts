@@ -44,24 +44,37 @@ async function resolveAssignmentByAssignmentId(assignmentId: string): Promise<{
   return { dienst, assignment };
 }
 
-/** Verifica que el usuario pueda cerrar este assignment. Admin siempre. Worker solo si es driver o medic. */
+/** Verifica que el usuario pueda cerrar este assignment. Admin: mismo companyId. Worker: participante y mismo companyId. */
 function assertUserCanCloseAssignment(
+  dienst: { companyId?: unknown },
   assignment: { driver?: mongoose.Types.ObjectId; medic?: mongoose.Types.ObjectId },
   userId: string,
   userRole: string,
+  userCompanyId?: string | null,
 ): void {
-  if (userRole === "admin") return;
+  const dienstCompanyStr = dienst.companyId ? String(dienst.companyId) : null;
+
+  if (userRole === "admin") {
+    if (userCompanyId && (!dienstCompanyStr || dienstCompanyStr !== String(userCompanyId))) {
+      throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
+    }
+    if (!userCompanyId && dienstCompanyStr) {
+      throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
+    }
+    return;
+  }
 
   const driverStr = assignment.driver?.toString();
   const medicStr = assignment.medic?.toString();
-  const isParticipant =
-    driverStr === userId || medicStr === userId;
-
+  const isParticipant = driverStr === userId || medicStr === userId;
   if (!isParticipant) {
-    throw new WorkdaySummaryError(
-      "No autorizado para cerrar este assignment",
-      403,
-    );
+    throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
+  }
+  if (userCompanyId && (!dienstCompanyStr || dienstCompanyStr !== String(userCompanyId))) {
+    throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
+  }
+  if (!userCompanyId && dienstCompanyStr) {
+    throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
   }
 }
 
@@ -105,12 +118,13 @@ async function validateTripsBelongToAssignment(
 
 /* ─────────────────────────────
  * CIERRE COMPLETO DEL DÍA
- * Admin: puede continuar. Worker: solo si participa (driver/medic).
+ * Admin: puede continuar (mismo companyId). Worker: solo si participa.
  * ───────────────────────────── */
 export async function createWorkdaySummary(
   body: Record<string, unknown>,
   userId: string,
   userRole: string,
+  userCompanyId?: string | null,
 ) {
   const {
     date,
@@ -154,7 +168,7 @@ export async function createWorkdaySummary(
   const { dienst, assignment } = await resolveAssignmentByAssignmentId(
     assignmentId as string,
   );
-  assertUserCanCloseAssignment(assignment, userId, userRole);
+  assertUserCanCloseAssignment(dienst as any, assignment, userId, userRole, userCompanyId);
 
   const tripIds = sanitizedTrips.map((t: { _id?: unknown }) => t._id).filter(Boolean);
   const tripIdStrs = tripIds.map((id: unknown) => String(id));
@@ -164,6 +178,7 @@ export async function createWorkdaySummary(
   const startTime = assignment?.startTime ?? null;
   const endTime = assignment?.endTime ?? null;
   const { driver, medic } = assignment;
+  const dienstCompanyId = (dienst as any).companyId;
 
   const totalEffectivePatients = calculateEffectivePatients(
     sanitizedTrips,
@@ -192,6 +207,7 @@ export async function createWorkdaySummary(
     dienstNumber,
     startTime,
     endTime,
+    ...(dienstCompanyId && { companyId: dienstCompanyId }),
   });
 
   if (sanitizedTrips.length > 0) {
@@ -209,13 +225,13 @@ export async function createWorkdaySummary(
 
 /* ─────────────────────────────
  * CIERRE PARCIAL DEL DÍA
- * Admin: puede continuar. Worker: solo si participa (driver/medic).
- * driver/medic se obtienen del assignment en BD, nunca del body.
+ * Admin: puede continuar (mismo companyId). Worker: solo si participa.
  * ───────────────────────────── */
 export async function submitPartialClosure(
   body: Record<string, unknown>,
   userId: string,
   userRole: string,
+  userCompanyId?: string | null,
 ) {
   const {
     date,
@@ -265,7 +281,7 @@ export async function submitPartialClosure(
   const { dienst, assignment } = await resolveAssignmentByAssignmentId(
     assignmentId as string,
   );
-  assertUserCanCloseAssignment(assignment, userId, userRole);
+  assertUserCanCloseAssignment(dienst as any, assignment, userId, userRole, userCompanyId);
 
   const tripIds = sanitizedTrips.map((t: { _id?: unknown }) => t._id).filter(Boolean);
   const tripIdStrs = tripIds.map((id: unknown) => String(id));
@@ -275,6 +291,7 @@ export async function submitPartialClosure(
   const startTime = assignment?.startTime ?? null;
   const endTime = assignment?.endTime ?? null;
   const { driver, medic } = assignment;
+  const dienstCompanyId = (dienst as any).companyId;
 
   const totalEffectivePatients = calculateEffectivePatients(
     sanitizedTrips,
@@ -306,6 +323,7 @@ export async function submitPartialClosure(
     dienstNumber,
     startTime,
     endTime,
+    ...(dienstCompanyId && { companyId: dienstCompanyId }),
   });
 
   await summary.save();
@@ -326,16 +344,23 @@ export async function submitPartialClosure(
 /* ─────────────────────────────
  * GET TODOS LOS RESÚMENES
  * filterByUserId: si existe, filtra por driver o medic.
+ * companyId: filtra por empresa.
  * ───────────────────────────── */
-export async function getAllWorkdaySummaries(filterByUserId?: string) {
-  const filter: Record<string, unknown> = {};
+export async function getAllWorkdaySummaries(
+  filterByUserId?: string,
+  companyId?: string | null,
+) {
+  const parts: Record<string, unknown>[] = [];
   if (filterByUserId) {
     const userIdObj = new mongoose.Types.ObjectId(filterByUserId);
-    filter.$or = [
-      { driver: userIdObj },
-      { medic: userIdObj },
-    ];
+    parts.push({ $or: [{ driver: userIdObj }, { medic: userIdObj }] });
   }
+  if (companyId) {
+    parts.push({ companyId: new mongoose.Types.ObjectId(companyId) });
+  } else {
+    parts.push({ $or: [{ companyId: null }, { companyId: { $exists: false } }] });
+  }
+  const filter = parts.length > 1 ? { $and: parts } : parts[0] || {};
 
   const summaries = await WorkdaySummary.find(filter)
     .sort({ date: -1 })
@@ -381,6 +406,7 @@ export async function reportIssue(
   body: Record<string, unknown>,
   userId: string,
   userRole: string,
+  userCompanyId?: string | null,
 ) {
   const {
     assignmentId,
@@ -420,9 +446,10 @@ export async function reportIssue(
   const { dienst, assignment } = await resolveAssignmentByAssignmentId(
     assignmentId as string,
   );
-  assertUserCanCloseAssignment(assignment, userId, userRole);
+  assertUserCanCloseAssignment(dienst as any, assignment, userId, userRole, userCompanyId);
 
   const { driver, medic } = assignment;
+  const dienstCompanyId = (dienst as any).companyId;
 
   const newIssue = await WorkdayIssue.create({
     dienstNumber: dienst.dienstNumber,
@@ -437,20 +464,30 @@ export async function reportIssue(
     issueText,
     driver,
     medic,
+    ...(dienstCompanyId && { companyId: dienstCompanyId }),
   });
 
   return newIssue;
 }
 
-export async function getAllIssueReports() {
-  return await WorkdayIssue.find().sort({ timestamp: -1 });
+export async function getAllIssueReports(companyId?: string | null) {
+  const filter = companyId
+    ? { companyId: new mongoose.Types.ObjectId(companyId) }
+    : { $or: [{ companyId: null }, { companyId: { $exists: false } }] };
+  return await WorkdayIssue.find(filter).sort({ timestamp: -1 });
 }
 
-export async function deleteIssueReport(id: string) {
+export async function deleteIssueReport(id: string, companyId?: string | null) {
   if (!mongoose.isValidObjectId(id)) {
     throw new WorkdaySummaryError("ID inválido", 400);
   }
-
+  const issue = await WorkdayIssue.findById(id).select("companyId").lean();
+  if (companyId && issue) {
+    const ic = (issue as any).companyId;
+    if (ic && String(ic) !== String(companyId)) {
+      throw new WorkdaySummaryError("No tienes permiso para eliminar este reporte", 403);
+    }
+  }
   const deleted = await WorkdayIssue.findByIdAndDelete(id);
   if (!deleted) {
     throw new WorkdaySummaryError("Reporte no encontrado", 404);
@@ -459,11 +496,17 @@ export async function deleteIssueReport(id: string) {
   return { message: "Reporte eliminado correctamente" };
 }
 
-export async function markIssueSeen(id: string) {
+export async function markIssueSeen(id: string, companyId?: string | null) {
   if (!mongoose.isValidObjectId(id)) {
     throw new WorkdaySummaryError("ID inválido", 400);
   }
-
+  const issue = await WorkdayIssue.findById(id).select("companyId").lean();
+  if (companyId && issue) {
+    const ic = (issue as any).companyId;
+    if (ic && String(ic) !== String(companyId)) {
+      throw new WorkdaySummaryError("No tienes permiso para marcar este reporte", 403);
+    }
+  }
   const updated = await WorkdayIssue.findByIdAndUpdate(
     id,
     { $set: { isSeen: true, seenAt: new Date() } },
@@ -477,58 +520,80 @@ export async function markIssueSeen(id: string) {
   return updated;
 }
 
-export async function getIssuesCount(status?: string) {
+export async function getIssuesCount(status?: string, companyId?: string | null) {
   const rawStatus = typeof status === "string" ? status : "open";
   const normalizedStatus = rawStatus.toLowerCase();
 
-  let filter: Record<string, unknown> = {};
-
+  let statusFilter: Record<string, unknown> = {};
   if (normalizedStatus === "open") {
-    filter = { isSeen: { $ne: true } };
+    statusFilter = { isSeen: { $ne: true } };
   } else if (normalizedStatus === "seen" || normalizedStatus === "closed") {
-    filter = { isSeen: true };
-  } else {
-    filter = {};
+    statusFilter = { isSeen: true };
   }
+  const companyFilter = companyId
+    ? { companyId: new mongoose.Types.ObjectId(companyId) }
+    : { $or: [{ companyId: null }, { companyId: { $exists: false } }] };
+  const filter =
+    Object.keys(statusFilter).length > 0
+      ? { $and: [statusFilter, companyFilter] }
+      : companyFilter;
 
   const count = await WorkdayIssue.countDocuments(filter);
   return { count };
 }
 
-export async function getSummariesCountByStatus(status?: string) {
+export async function getSummariesCountByStatus(status?: string, companyId?: string | null) {
   const rawStatus = typeof status === "string" ? status : "pending";
   const normalizedStatus = rawStatus.toLowerCase();
+
+  const companyFilter = companyId
+    ? { companyId: new mongoose.Types.ObjectId(companyId) }
+    : { $or: [{ companyId: null }, { companyId: { $exists: false } }] };
 
   let count = 0;
 
   if (normalizedStatus === "pending") {
     count = await WorkdaySummary.countDocuments({
-      $or: [
-        { status: "pending" },
-        { reviewStatus: "pending" },
-        { isReviewed: false },
+      $and: [
+        companyFilter,
         {
-          $and: [
-            { reviewStatus: { $exists: false } },
-            { isReviewed: { $exists: false } },
+          $or: [
+            { status: "pending" },
+            { reviewStatus: "pending" },
+            { isReviewed: false },
+            {
+              $and: [
+                { reviewStatus: { $exists: false } },
+                { isReviewed: { $exists: false } },
+              ],
+            },
           ],
         },
       ],
     });
   } else {
     count = await WorkdaySummary.countDocuments({
-      $or: [{ status: normalizedStatus }, { reviewStatus: normalizedStatus }],
+      $and: [
+        companyFilter,
+        { $or: [{ status: normalizedStatus }, { reviewStatus: normalizedStatus }] },
+      ],
     });
   }
 
   return { count };
 }
 
-export async function markSummaryReviewed(id: string) {
+export async function markSummaryReviewed(id: string, companyId?: string | null) {
   if (!mongoose.isValidObjectId(id)) {
     throw new WorkdaySummaryError("ID inválido", 400);
   }
-
+  const summary = await WorkdaySummary.findById(id).select("companyId").lean();
+  if (companyId && summary) {
+    const sc = (summary as any).companyId;
+    if (sc && String(sc) !== String(companyId)) {
+      throw new WorkdaySummaryError("No tienes permiso para revisar este resumen", 403);
+    }
+  }
   const updated = await WorkdaySummary.findByIdAndUpdate(
     id,
     { $set: { isReviewed: true, reviewedAt: new Date() } },

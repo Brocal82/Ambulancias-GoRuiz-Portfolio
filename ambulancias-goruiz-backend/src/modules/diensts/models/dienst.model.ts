@@ -17,6 +17,7 @@ export interface IDienst extends Document {
   weekEndDate: Date;
   assignments: IDienstAssignment[];
   weekTeamId?: Types.ObjectId | null;
+  companyId?: Types.ObjectId | null;
 }
 
 const AssignmentSchema = new Schema<IDienstAssignment>(
@@ -43,6 +44,12 @@ const DienstSchema = new Schema<IDienst>({
   weekTeamId: {
     type: Schema.Types.ObjectId,
     ref: "Team",
+    required: false,
+    default: null,
+  },
+  companyId: {
+    type: Schema.Types.ObjectId,
+    ref: "Company",
     required: false,
     default: null,
   },

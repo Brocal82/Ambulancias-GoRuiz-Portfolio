@@ -13,13 +13,32 @@ import {
 import { extractValidDatesFromAssignments, mapAssignmentToAssignedDay } from "../../utils/dienstMappers";
 import { DienstAssignmentError } from "./assignment-errors";
 
-export async function getAssignedDaysForUser(userId: string): Promise<AssignedDay[]> {
-  const diensts = await Dienst.find({
+async function ensureDienstCompany(dienstId: string, companyId: string): Promise<void> {
+  const d = await Dienst.findById(dienstId).select("companyId").lean();
+  if (!d) return;
+  const dc = (d as any).companyId;
+  if (dc && String(dc) !== String(companyId)) {
+    throw new DienstAssignmentError(403, "forbidden", "No tienes permiso para modificar este Dienst");
+  }
+}
+
+function companyFilterForDienst(companyId?: string | null): Record<string, unknown> {
+  if (companyId) return { companyId: new mongoose.Types.ObjectId(companyId) };
+  return { $or: [{ companyId: null }, { companyId: { $exists: false } }] };
+}
+
+export async function getAssignedDaysForUser(
+  userId: string,
+  userCompanyId?: string | null,
+): Promise<AssignedDay[]> {
+  const baseFilter = {
     $or: [
       { "assignments.driver": new mongoose.Types.ObjectId(userId) },
       { "assignments.medic": new mongoose.Types.ObjectId(userId) },
     ],
-  })
+  };
+  const filter = { $and: [baseFilter, companyFilterForDienst(userCompanyId)] };
+  const diensts = await Dienst.find(filter)
     .populate("assignments.driver", "name lastName pscheinExpiry")
     .populate("assignments.medic", "name lastName pscheinExpiry")
     .populate("assignments.ambulanceId", "ambulanceNumber")
@@ -37,7 +56,12 @@ export async function getAssignedDaysForUser(userId: string): Promise<AssignedDa
   return assignedDays;
 }
 
-export async function removeAssignment(dienstId: string, date: string) {
+export async function removeAssignment(
+  dienstId: string,
+  date: string,
+  companyId?: string | null,
+) {
+  if (companyId) await ensureDienstCompany(dienstId, companyId);
   return Dienst.findByIdAndUpdate(
     dienstId,
     { $pull: { assignments: { date } } },
@@ -48,10 +72,13 @@ export async function removeAssignment(dienstId: string, date: string) {
     .populate("assignments.ambulanceId", "ambulanceNumber brand modelName licensePlate");
 }
 
-export async function clearPeopleForWeek(params: {
-  dienstNumber: number;
-  weekStartDate: string;
-}): Promise<{
+export async function clearPeopleForWeek(
+  params: {
+    dienstNumber: number;
+    weekStartDate: string;
+  },
+  companyId?: string | null,
+): Promise<{
   message: string;
   clearedCount: number;
   dienstId: string;
@@ -74,6 +101,13 @@ export async function clearPeopleForWeek(params: {
       "dienst_not_found",
       "No existe Dienst para esa semana y número",
     );
+  }
+
+  if (companyId) {
+    const dc = (dienst as any).companyId;
+    if (dc && String(dc) !== String(companyId)) {
+      throw new DienstAssignmentError(403, "forbidden", "No tienes permiso para modificar este Dienst");
+    }
   }
 
   let clearedCount = 0;
@@ -105,9 +139,17 @@ export async function clearPeopleForWeek(params: {
 export async function updateDienstPartial(
   dienstId: string,
   assignments: any[],
+  companyId?: string | null,
 ) {
   const dienst = await Dienst.findById(dienstId);
   if (!dienst) return null;
+
+  if (companyId) {
+    const dc = (dienst as any).companyId;
+    if (dc && String(dc) !== String(companyId)) {
+      return null;
+    }
+  }
 
   for (const incoming of assignments) {
     const updatedCopy: any = { ...incoming };
@@ -222,12 +264,15 @@ export async function updateDienstPartial(
     .populate("assignments.ambulanceId", "ambulanceNumber brand modelName licensePlate");
 }
 
-export async function assignUserToWeek(params: {
-  dienstNumber: number;
-  weekStartDate: string;
-  userId: string;
-  role: "driver" | "medic";
-}): Promise<{
+export async function assignUserToWeek(
+  params: {
+    dienstNumber: number;
+    weekStartDate: string;
+    userId: string;
+    role: "driver" | "medic";
+  },
+  companyId?: string | null,
+): Promise<{
   message: string;
   updatedCount: number;
   skippedByVacation: string[];
@@ -281,6 +326,17 @@ export async function assignUserToWeek(params: {
       "dienst_not_found",
       "No existe Dienst para esa semana y número",
     );
+  }
+
+  if (companyId) {
+    const dc = (dienst as any).companyId;
+    if (dc && String(dc) !== String(companyId)) {
+      throw new DienstAssignmentError(403, "forbidden", "No tienes permiso para modificar este Dienst");
+    }
+    const targetUser = await User.findById(userId).select("companyId").lean();
+    if (!targetUser || !targetUser.companyId || String(targetUser.companyId) !== String(companyId)) {
+      throw new DienstAssignmentError(403, "forbidden", "El usuario no pertenece a tu empresa");
+    }
   }
 
   const dates = extractValidDatesFromAssignments(dienst.assignments);
@@ -360,12 +416,15 @@ const toIdString = (v: any): string | undefined =>
       ? String(v._id)
       : undefined;
 
-export async function assignTeamToWeek(params: {
-  dienstNumber: number;
-  weekStartDate: string;
-  teamId: string;
-  resolvedRoles?: { driverId?: string; medicId?: string };
-}): Promise<{
+export async function assignTeamToWeek(
+  params: {
+    dienstNumber: number;
+    weekStartDate: string;
+    teamId: string;
+    resolvedRoles?: { driverId?: string; medicId?: string };
+  },
+  companyId?: string | null,
+): Promise<{
   message: string;
   updatedCount: number;
   skippedByVacation: Array<{ date: string; role: "driver" | "medic" }>;
@@ -376,12 +435,23 @@ export async function assignTeamToWeek(params: {
   const { dienstNumber, weekStartDate, teamId, resolvedRoles } = params;
 
   const team = await Team.findById(teamId)
-    .populate("driver", "pscheinExpiry ambulanceRole")
-    .populate("medic", "pscheinExpiry ambulanceRole")
+    .populate("driver", "pscheinExpiry ambulanceRole companyId")
+    .populate("medic", "pscheinExpiry ambulanceRole companyId")
     .lean();
 
   if (!team) {
     throw new DienstAssignmentError(404, "team_not_found", "Team no encontrado");
+  }
+
+  if (companyId) {
+    const drv = (team as any).driver;
+    const med = (team as any).medic;
+    const drvCo = drv?.companyId ? String(drv.companyId) : null;
+    const medCo = med?.companyId ? String(med.companyId) : null;
+    const companyStr = String(companyId);
+    if (drvCo !== companyStr || medCo !== companyStr) {
+      throw new DienstAssignmentError(403, "forbidden", "El equipo no pertenece a tu empresa");
+    }
   }
 
   const teamDriverId = toIdString((team as any).driver);
@@ -491,6 +561,13 @@ export async function assignTeamToWeek(params: {
       "dienst_not_found",
       "No existe Dienst para esa semana y número",
     );
+  }
+
+  if (companyId) {
+    const dc = (dienst as any).companyId;
+    if (dc && String(dc) !== String(companyId)) {
+      throw new DienstAssignmentError(403, "forbidden", "No tienes permiso para modificar este Dienst");
+    }
   }
 
   const [driverConf, medicConf] = await Promise.all([
