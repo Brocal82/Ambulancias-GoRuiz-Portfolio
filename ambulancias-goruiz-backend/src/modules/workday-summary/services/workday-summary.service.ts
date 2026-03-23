@@ -246,9 +246,19 @@ export async function submitPartialClosure(body: Record<string, unknown>) {
 
 /* ─────────────────────────────
  * GET TODOS LOS RESÚMENES
+ * filterByUserId: si existe, filtra por driver o medic.
  * ───────────────────────────── */
-export async function getAllWorkdaySummaries() {
-  const summaries = await WorkdaySummary.find()
+export async function getAllWorkdaySummaries(filterByUserId?: string) {
+  const filter: Record<string, unknown> = {};
+  if (filterByUserId) {
+    const userIdObj = new mongoose.Types.ObjectId(filterByUserId);
+    filter.$or = [
+      { driver: userIdObj },
+      { medic: userIdObj },
+    ];
+  }
+
+  const summaries = await WorkdaySummary.find(filter)
     .sort({ date: -1 })
     .populate("driver", "name lastName")
     .populate("medic", "name lastName")

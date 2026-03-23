@@ -69,13 +69,22 @@ export const submitPartialClosure = async (
 
 /* ─────────────────────────────
  * GET TODOS LOS RESÚMENES
+ * Admin: todos. Worker: solo donde participa (driver/medic).
  * ───────────────────────────── */
 export const getAllWorkdaySummaries = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  const filterByUserId =
+    req.userRole === "admin" ? undefined : (req.userId ?? undefined);
+
+  if (req.userRole === "worker" && !filterByUserId) {
+    res.status(401).json({ message: "No autorizado" });
+    return;
+  }
+
   try {
-    const enriched = await svcGetAllWorkdaySummaries();
+    const enriched = await svcGetAllWorkdaySummaries(filterByUserId);
     res.status(200).json(enriched);
   } catch (error) {
     handleError(
