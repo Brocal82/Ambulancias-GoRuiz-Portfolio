@@ -9,7 +9,7 @@ import { ZodError } from "zod";
  */
 export function errorHandler(
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ): void {
@@ -46,10 +46,29 @@ export function errorHandler(
         : typeof errWithStatus.status === "number"
           ? errWithStatus.status
           : 500;
+
+    // Loguear SIEMPRE errores 5xx (nunca exponer stack al cliente)
+    if (status >= 500) {
+      console.error("[ERROR 5xx]", {
+        message: err.message,
+        stack: err.stack ?? "(no stack)",
+        originalUrl: req.originalUrl,
+        method: req.method,
+        ...(req.userId && { userId: req.userId }),
+      });
+    }
+
     res.status(status).json({ message: err.message || "Error interno del servidor" });
     return;
   }
 
   // Fallback: error desconocido
+  console.error("[ERROR 5xx]", {
+    message: "Error desconocido",
+    originalUrl: req.originalUrl,
+    method: req.method,
+    ...(req.userId && { userId: req.userId }),
+    err,
+  });
   res.status(500).json({ message: "Error interno del servidor" });
 }
