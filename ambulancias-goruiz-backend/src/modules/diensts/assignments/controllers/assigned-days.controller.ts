@@ -1,17 +1,19 @@
 import { RequestHandler } from "express";
-import mongoose from "mongoose";
+import { resolveAccessibleUserId } from "../../../../utils/resolveAccessibleUserId";
 import * as assignmentsService from "../services/assignments.service";
 
 export const getAssignedDaysForUser: RequestHandler = async (req, res) => {
-  const { userId } = req.params;
+  const result = resolveAccessibleUserId(req, req.params.userId);
 
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    res.status(400).json({ message: "ID de usuario no válido" });
+  if (!result.ok) {
+    res.status(result.statusCode).json({ message: result.message });
     return;
   }
 
   try {
-    const assignedDays = await assignmentsService.getAssignedDaysForUser(userId);
+    const assignedDays = await assignmentsService.getAssignedDaysForUser(
+      result.userId,
+    );
     res.status(200).json(assignedDays);
   } catch (error) {
     console.error("❌ Error al obtener días asignados:", error);

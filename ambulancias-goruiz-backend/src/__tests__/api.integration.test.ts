@@ -173,13 +173,27 @@ describe("API - Rutas críticas", () => {
         .expect(401);
     });
 
-    it("GET /api/diensts/assigned-days/:userId con userId inválido devuelve 400", async () => {
+    it("GET /api/diensts/assigned-days/:userId con userId inválido (admin) devuelve 400", async () => {
       const res = await request(app)
         .get(`${API}/diensts/assigned-days/id-invalido-xyz`)
         .set("Authorization", `Bearer ${adminToken}`)
         .expect(400);
       expect(res.body).toHaveProperty("message");
-      expect(res.body.message).toBe("ID inválido");
+      expect(res.body.message).toBe("userId inválido");
+    });
+
+    it("GET /api/diensts/assigned-days/:userId worker con otro userId ignora param y recibe sus datos (IDOR fix)", async () => {
+      const resWorker = await request(app)
+        .get(`${API}/diensts/assigned-days/${workerId}`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .expect(200);
+
+      const resWorkerWithAdminId = await request(app)
+        .get(`${API}/diensts/assigned-days/${adminId}`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .expect(200);
+
+      expect(resWorkerWithAdminId.body).toEqual(resWorker.body);
     });
 
     it("GET /api/diensts/assigned-days/:userId con userId válido devuelve 200 y array", async () => {

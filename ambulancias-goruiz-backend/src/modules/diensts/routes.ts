@@ -20,17 +20,11 @@ const router = express.Router();
 router.post("/", authenticateToken, authorizeRole("admin"), DienstLifecycle.createDienst);
 router.get("/", authenticateToken, authorizeRole("admin"), DienstCalendar.getAllDiensts);
 router.get("/search", authenticateToken, authorizeRole("admin"), DienstCalendar.searchDienst);
-router.get(
-  "/user/:userId",
-  authenticateToken,
-  validateObjectId("userId"),
-  DienstCalendar.getDienstsByUser,
-);
+router.get("/user/:userId", authenticateToken, DienstCalendar.getDienstsByUser);
 
 router.get(
   "/assigned-days/:userId",
   authenticateToken,
-  validateObjectId("userId"),
   DienstAssignments.getAssignedDaysForUser,
 );
 

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { RequestHandler } from "express";
 import { ZodError, z } from "zod";
+import { resolveAccessibleUserId } from "../../../../utils/resolveAccessibleUserId";
 import { dienstQuerySchema } from "../../schemas/dienstQuerySchema";
 import * as calendarService from "../services/calendar.service";
 
@@ -54,10 +55,15 @@ export const searchDienst = async (req: Request, res: Response) => {
 };
 
 export const getDienstsByUser = async (req: Request, res: Response) => {
-  const { userId } = req.params;
+  const result = resolveAccessibleUserId(req, req.params.userId);
+
+  if (!result.ok) {
+    res.status(result.statusCode).json({ message: result.message });
+    return;
+  }
 
   try {
-    const diensts = await calendarService.getDienstsByUser(userId);
+    const diensts = await calendarService.getDienstsByUser(result.userId);
     res.status(200).json(diensts);
   } catch (error) {
     console.error("Error fetching diensts:", error);
