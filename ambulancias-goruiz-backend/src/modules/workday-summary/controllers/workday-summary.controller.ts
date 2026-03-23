@@ -123,7 +123,11 @@ export const reportIssue = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const newIssue = await svcReportIssue(req.body);
+    const newIssue = await svcReportIssue(
+      req.body,
+      req.userId ?? "",
+      req.userRole ?? "",
+    );
     res.status(201).json(newIssue);
   } catch (error) {
     handleError(

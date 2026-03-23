@@ -375,9 +375,15 @@ export async function getAllWorkdaySummaries(filterByUserId?: string) {
 
 /* ─────────────────────────────
  * AVERÍAS
+ * driver/medic se obtienen del assignment en BD, nunca del body.
  * ───────────────────────────── */
-export async function reportIssue(body: Record<string, unknown>) {
+export async function reportIssue(
+  body: Record<string, unknown>,
+  userId: string,
+  userRole: string,
+) {
   const {
+    assignmentId,
     dienstNumber,
     date,
     startTime,
@@ -388,11 +394,17 @@ export async function reportIssue(body: Record<string, unknown>) {
     finalKm,
     timestamp,
     issueText,
-    driver,
-    medic,
+    driver: _bodyDriver,
+    medic: _bodyMedic,
   } = body;
+  if (_bodyDriver !== undefined || _bodyMedic !== undefined) {
+    console.warn(
+      "[report-issue] driver/medic del body ignorados; se usan los del assignment",
+    );
+  }
 
   if (
+    !assignmentId ||
     !dienstNumber ||
     !ambulanceNumber ||
     !ambulanceId ||
@@ -405,16 +417,15 @@ export async function reportIssue(body: Record<string, unknown>) {
     );
   }
 
-  if (driver && !mongoose.isValidObjectId(driver as string)) {
-    throw new WorkdaySummaryError("driver no es un ObjectId válido", 400);
-  }
+  const { dienst, assignment } = await resolveAssignmentByAssignmentId(
+    assignmentId as string,
+  );
+  assertUserCanCloseAssignment(assignment, userId, userRole);
 
-  if (medic && !mongoose.isValidObjectId(medic as string)) {
-    throw new WorkdaySummaryError("medic no es un ObjectId válido", 400);
-  }
+  const { driver, medic } = assignment;
 
   const newIssue = await WorkdayIssue.create({
-    dienstNumber,
+    dienstNumber: dienst.dienstNumber,
     date,
     startTime,
     endTime,

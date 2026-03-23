@@ -16,6 +16,7 @@ const dateStringSchema = z.string().refine(
  * Shape según service y WorkdayIssue model
  * ───────────────────────────────────────────────────────────────────────────── */
 export const reportIssueSchema = z.object({
+  assignmentId: objectIdSchema,
   dienstNumber: z.number().int().positive(),
   date: dateStringSchema,
   startTime: z.string().optional(),
