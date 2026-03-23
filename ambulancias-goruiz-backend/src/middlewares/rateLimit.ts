@@ -27,3 +27,29 @@ export const rateLimitReportIssue = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+/**
+ * Rate limit para aceptar invitación. Protege contra abuso de creación de cuentas.
+ * 8 requests / 15 min por IP. Deshabilitado en test.
+ */
+export const rateLimitInvitationAccept = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 8,
+  message: jsonMessage("Demasiados intentos de registro. Intente más tarde."),
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === "test",
+});
+
+/**
+ * Rate limit para validar invitación. Evita enumeración/fuerza bruta de tokens.
+ * 25 requests / minuto por IP. Deshabilitado en test.
+ */
+export const rateLimitInvitationValidate = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 25,
+  message: jsonMessage("Demasiadas solicitudes de validación. Intente más tarde."),
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === "test",
+});

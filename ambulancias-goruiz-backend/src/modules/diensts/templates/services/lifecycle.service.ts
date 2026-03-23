@@ -215,7 +215,6 @@ export async function generateDienstTemplatesForWeek(
   }
 
   if (!hasPreviousWeek) {
-    console.log("📌 Semana base: no se auto-asignan equipos rotativos.");
   } else {
     const freeDienstNumbers = dienstNumbers
       .filter((num) => !fixedMap.has(num))

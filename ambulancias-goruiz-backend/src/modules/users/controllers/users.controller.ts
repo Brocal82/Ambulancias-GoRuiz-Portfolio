@@ -40,7 +40,6 @@ export const createUser = async (
 
   try {
     const newUser = await createUserService(dto);
-    console.log("Usuario guardado:", newUser);
     res.status(201).json(sanitizeUser(newUser));
   } catch (error: any) {
     const msg = String(error?.message || "");
@@ -101,8 +100,6 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
   try {
     const dto = parseUpdateUserDTO(req.body);
     const updatedUser = await updateUserService(userId, dto as any);
-
-    console.log("Usuario actualizado:", updatedUser);
     res.status(200).json(sanitizeUser(updatedUser));
   } catch (error: any) {
     const msg = String(error?.message || "");

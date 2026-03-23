@@ -39,11 +39,7 @@ export const respondToAlternativeDate = async (
 
     if (acceptedRange) {
       try {
-        const clearResult = await clearUserFromDienstsInRange(acceptedRange);
-        console.log(
-          "🧹 Vacaciones (alternativa) limpiadas en Diensts:",
-          clearResult,
-        );
+        await clearUserFromDienstsInRange(acceptedRange);
       } catch (err) {
         console.error(
           "❌ Error limpiando Diensts tras aceptar alternativa:",

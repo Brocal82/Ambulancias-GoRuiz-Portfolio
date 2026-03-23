@@ -34,16 +34,6 @@ export const updateVacationRequest = async (
   const { forceRaw, force, isAdmin, canForceAccept } =
     parseVacationUpdateAuthorization(req, req.body);
 
-  console.log("FORCE DEBUG:", {
-    id,
-    status,
-    forceRaw,
-    force,
-    isAdmin,
-    role: req.user?.role,
-    canForceAccept,
-  });
-
   let acceptedRange: {
     userId: string;
     startISO: string;
