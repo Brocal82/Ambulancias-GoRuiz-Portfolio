@@ -65,6 +65,44 @@ function assertUserCanCloseAssignment(
   }
 }
 
+/** Valida que todos los trips pertenecen al assignment. Lanza si no. */
+async function validateTripsBelongToAssignment(
+  tripIds: string[],
+  assignmentId: string,
+): Promise<void> {
+  if (!tripIds || tripIds.length === 0) return;
+
+  const assignmentObjId = new mongoose.Types.ObjectId(assignmentId);
+  const hex24 = /^[0-9a-fA-F]{24}$/;
+  const validIds = tripIds.filter(
+    (id) => typeof id === "string" && hex24.test(String(id).trim()),
+  );
+  if (validIds.length !== tripIds.length) {
+    throw new WorkdaySummaryError("Uno o más tripIds no son válidos", 400);
+  }
+
+  const objectIds = validIds.map((id) => new mongoose.Types.ObjectId(id));
+  const trips = await Trip.find({ _id: { $in: objectIds } })
+    .select("_id assignmentId")
+    .lean();
+
+  if (trips.length !== tripIds.length) {
+    throw new WorkdaySummaryError("Algún trip no existe", 404);
+  }
+
+  for (const trip of trips) {
+    const tripAssignmentId =
+      (trip.assignmentId as mongoose.Types.ObjectId)?.toString?.() ??
+      String(trip.assignmentId);
+    if (tripAssignmentId !== assignmentObjId.toString()) {
+      throw new WorkdaySummaryError(
+        `Trip ${trip._id} no pertenece a este assignment`,
+        403,
+      );
+    }
+  }
+}
+
 /* ─────────────────────────────
  * CIERRE COMPLETO DEL DÍA
  * Admin: puede continuar. Worker: solo si participa (driver/medic).
@@ -117,6 +155,10 @@ export async function createWorkdaySummary(
     assignmentId as string,
   );
   assertUserCanCloseAssignment(assignment, userId, userRole);
+
+  const tripIds = sanitizedTrips.map((t: { _id?: unknown }) => t._id).filter(Boolean);
+  const tripIdStrs = tripIds.map((id: unknown) => String(id));
+  await validateTripsBelongToAssignment(tripIdStrs, assignmentId as string);
 
   const dienstNumber = dienst?.dienstNumber ?? null;
   const startTime = assignment?.startTime ?? null;
@@ -224,6 +266,10 @@ export async function submitPartialClosure(
     assignmentId as string,
   );
   assertUserCanCloseAssignment(assignment, userId, userRole);
+
+  const tripIds = sanitizedTrips.map((t: { _id?: unknown }) => t._id).filter(Boolean);
+  const tripIdStrs = tripIds.map((id: unknown) => String(id));
+  await validateTripsBelongToAssignment(tripIdStrs, assignmentId as string);
 
   const dienstNumber = dienst?.dienstNumber ?? null;
   const startTime = assignment?.startTime ?? null;
