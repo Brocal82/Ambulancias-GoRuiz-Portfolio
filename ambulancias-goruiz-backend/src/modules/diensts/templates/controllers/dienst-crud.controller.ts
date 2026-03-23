@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { ZodError, z } from "zod";
 import { dienstSchema } from "../../schemas/dienstSchema";
 import * as lifecycleService from "../services/lifecycle.service";
+import { requireCompanyForAdmin, CompanyValidationError } from "../../../../utils/requireCompany";
 
 const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
   message: "ID no válido",
@@ -9,10 +10,15 @@ const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
 
 export const createDienst = async (req: Request, res: Response) => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const parsedData = dienstSchema.parse(req.body);
     const savedDienst = await lifecycleService.createDienst(
       parsedData,
-      req.companyId ?? undefined,
+      companyResult.companyId,
     );
     res.status(201).json(savedDienst);
   } catch (error) {
@@ -20,9 +26,13 @@ export const createDienst = async (req: Request, res: Response) => {
       res
         .status(400)
         .json({ message: "Datos inválidos", errors: error.errors });
-    } else {
-      res.status(500).json({ message: "Error al crear Dienst", error });
+      return;
     }
+    if (error instanceof CompanyValidationError) {
+      res.status(error.statusCode).json({ message: error.message });
+      return;
+    }
+    res.status(500).json({ message: "Error al crear Dienst", error });
   }
 };
 

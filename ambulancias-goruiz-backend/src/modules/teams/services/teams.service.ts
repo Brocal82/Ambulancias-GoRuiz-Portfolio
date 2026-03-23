@@ -5,6 +5,7 @@ import Dienst from "../../diensts/models/dienst.model";
 import VacationRequest from "../../vacation/models/vacation-request.model";
 import { DateTime } from "luxon";
 import { Ambulance } from "../../ambulances";
+import { entitiesBelongToSameCompany } from "../../../utils/requireCompany";
 
 /** Error con código HTTP para mapeo en controller */
 export class TeamError extends Error {
@@ -78,13 +79,16 @@ export async function listTeams() {
   return teams;
 }
 
-export async function createTeam(body: {
-  driver?: string;
-  medic?: string;
-  rotationMode?: "rotating" | "fixed" | "none";
-  fixedDienstNumber?: number | string | null;
-  ambulanceId?: string | null;
-}) {
+export async function createTeam(
+  body: {
+    driver?: string;
+    medic?: string;
+    rotationMode?: "rotating" | "fixed" | "none";
+    fixedDienstNumber?: number | string | null;
+    ambulanceId?: string | null;
+  },
+  companyId?: string | null,
+) {
   const { driver, medic, rotationMode, fixedDienstNumber, ambulanceId } = body;
 
   if (!isObjectId(driver) || !isObjectId(medic)) {
@@ -94,14 +98,37 @@ export async function createTeam(body: {
     throw new TeamError("driver y medic no pueden ser la misma persona", 400);
   }
 
+  const [driverUser, medicUser] = await Promise.all([
+    User.findById(driver).select("companyId").lean(),
+    User.findById(medic).select("companyId").lean(),
+  ]);
+  if (!driverUser || !medicUser) {
+    throw new TeamError("Usuario driver o medic inexistente", 400);
+  }
+  const drvCo = (driverUser as { companyId?: unknown }).companyId;
+  const medCo = (medicUser as { companyId?: unknown }).companyId;
+  if (!entitiesBelongToSameCompany(drvCo, medCo)) {
+    throw new TeamError("driver y medic deben pertenecer a la misma empresa", 403);
+  }
+  if (companyId && (companyId as string) !== "") {
+    const targetCo = String(companyId);
+    if (!entitiesBelongToSameCompany(drvCo, targetCo)) {
+      throw new TeamError("El equipo debe pertenecer a tu empresa", 403);
+    }
+  }
+
   let normalizedAmbulanceId: string | null = null;
   if (ambulanceId) {
     if (!isObjectId(ambulanceId)) {
       throw new TeamError("ambulanceId debe ser un ObjectId válido", 400);
     }
-    const amb = await Ambulance.findById(ambulanceId).lean();
+    const amb = await Ambulance.findById(ambulanceId).select("companyId").lean();
     if (!amb) {
       throw new TeamError("Ambulancia no encontrada", 400);
+    }
+    const ambCo = (amb as { companyId?: unknown }).companyId;
+    if (!entitiesBelongToSameCompany(ambCo, drvCo)) {
+      throw new TeamError("La ambulancia no pertenece a la misma empresa que el equipo", 403);
     }
     normalizedAmbulanceId = ambulanceId;
   }
@@ -129,14 +156,6 @@ export async function createTeam(body: {
       );
     }
     normalizedFixedDienst = num;
-  }
-
-  const [driverUser, medicUser] = await Promise.all([
-    User.findById(driver).lean(),
-    User.findById(medic).lean(),
-  ]);
-  if (!driverUser || !medicUser) {
-    throw new TeamError("Usuario driver o medic inexistente", 400);
   }
 
   const exists = await Team.findOne({ driver, medic }).lean();
@@ -247,6 +266,7 @@ export async function updateTeam(
     fixedDienstNumber?: number | string | null;
     ambulanceId?: string | null;
   },
+  companyId?: string | null,
 ) {
   if (!isObjectId(id)) {
     throw new TeamError("ID de team inválido", 400);
@@ -262,6 +282,25 @@ export async function updateTeam(
   }
   if (driver === medic) {
     throw new TeamError("driver y medic no pueden ser la misma persona", 400);
+  }
+
+  const [driverUser, medicUser] = await Promise.all([
+    User.findById(driver).select("companyId").lean(),
+    User.findById(medic).select("companyId").lean(),
+  ]);
+  if (!driverUser || !medicUser) {
+    throw new TeamError("Usuario driver o medic inexistente", 400);
+  }
+  const drvCo = (driverUser as { companyId?: unknown }).companyId;
+  const medCo = (medicUser as { companyId?: unknown }).companyId;
+  if (!entitiesBelongToSameCompany(drvCo, medCo)) {
+    throw new TeamError("driver y medic deben pertenecer a la misma empresa", 403);
+  }
+  if (companyId && String(companyId) !== "") {
+    const targetCo = String(companyId);
+    if (!entitiesBelongToSameCompany(drvCo, targetCo)) {
+      throw new TeamError("El equipo debe pertenecer a tu empresa", 403);
+    }
   }
 
   let normalizedRotation: "rotating" | "fixed" | "none" = "rotating";
@@ -287,14 +326,6 @@ export async function updateTeam(
       );
     }
     normalizedFixedDienst = num;
-  }
-
-  const [driverUser, medicUser] = await Promise.all([
-    User.findById(driver).lean(),
-    User.findById(medic).lean(),
-  ]);
-  if (!driverUser || !medicUser) {
-    throw new TeamError("Usuario driver o medic inexistente", 400);
   }
 
   const duplicated = await Team.findOne({
@@ -331,12 +362,20 @@ export async function updateTeam(
     );
   }
 
-  const normalizedAmbulance =
-    ambulanceId === undefined
-      ? undefined
-      : ambulanceId === null || ambulanceId === ""
-        ? null
-        : new mongoose.Types.ObjectId(ambulanceId);
+  let normalizedAmbulance: mongoose.Types.ObjectId | null | undefined;
+  if (ambulanceId === undefined) {
+    normalizedAmbulance = undefined;
+  } else if (ambulanceId === null || ambulanceId === "") {
+    normalizedAmbulance = null;
+  } else {
+    const amb = await Ambulance.findById(ambulanceId).select("companyId").lean();
+    if (!amb) throw new TeamError("Ambulancia no encontrada", 400);
+    const ambCo = (amb as { companyId?: unknown }).companyId;
+    if (!entitiesBelongToSameCompany(ambCo, drvCo)) {
+      throw new TeamError("La ambulancia no pertenece a la misma empresa que el equipo", 403);
+    }
+    normalizedAmbulance = new mongoose.Types.ObjectId(ambulanceId);
+  }
 
   const updateDoc: any = {
     driver,

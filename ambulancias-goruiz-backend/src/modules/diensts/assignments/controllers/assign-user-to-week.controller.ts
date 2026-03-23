@@ -2,12 +2,18 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import * as assignmentsService from "../services/assignments.service";
 import { DienstAssignmentError } from "../services/assignment-errors";
+import { requireCompanyForAdmin } from "../../../../utils/requireCompany";
 
 export const assignUserToWeek = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const { dienstNumber, weekStartDate, userId, role } = req.body as {
       dienstNumber?: number;
       weekStartDate?: string;
@@ -50,7 +56,7 @@ export const assignUserToWeek = async (
         userId,
         role,
       },
-      req.companyId ?? undefined,
+      companyResult.companyId,
     );
 
     res.status(200).json(result);

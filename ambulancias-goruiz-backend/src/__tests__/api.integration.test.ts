@@ -7,25 +7,54 @@ import request from "supertest";
 import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
-import { createTestUsers } from "./test-helpers";
+import {
+  createTestAdminWithCompany,
+  createTestWorkerInCompany,
+} from "./test-helpers";
 
 const API = "/api";
+
+async function loginWorker(email: string, password = "password123") {
+  const res = await request(app)
+    .post(`${API}/users/login`)
+    .send({ email, password });
+  return res.body.token;
+}
 
 describe("API - Rutas críticas", () => {
   let adminToken: string;
   let workerToken: string;
   let workerId: string;
   let adminId: string;
+  let companyId: string;
   let teamId: string;
+  let sharedAmbulanceId: string;
 
   beforeAll(async () => {
     await mongoose.connect(env.MONGODB_URI);
-    const { adminId: aid, workerId: wid, adminToken: aTok, workerToken: wTok } =
-      await createTestUsers();
-    adminId = aid;
-    workerId = wid;
-    adminToken = aTok;
-    workerToken = wTok;
+    const data = await createTestAdminWithCompany();
+    adminId = data.adminId;
+    adminToken = data.adminToken;
+    companyId = data.companyId;
+
+    const worker = await createTestWorkerInCompany(
+      new mongoose.Types.ObjectId(data.companyId),
+      Date.now(),
+    );
+    workerId = String(worker._id);
+    workerToken = await loginWorker(worker.email);
+
+    const ambRes = await request(app)
+      .post(`${API}/ambulances`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        brand: "Integration",
+        modelName: "X",
+        licensePlate: "INT-" + Date.now(),
+        ambulanceNumber: "INT-N-" + Date.now(),
+      })
+      .expect(201);
+    sharedAmbulanceId = ambRes.body._id ?? ambRes.body.id;
 
     const teamRes = await request(app)
       .post(`${API}/teams`)
@@ -128,6 +157,7 @@ describe("API - Rutas críticas", () => {
         trips: [minimalTrip],
         totalEffectivePatients: 1,
         totalRealTrips: 1,
+        companyId: companyId ? new mongoose.Types.ObjectId(companyId) : undefined,
       });
       summaryIdWorkerParticipates = s1._id.toString();
 
@@ -143,6 +173,7 @@ describe("API - Rutas críticas", () => {
         trips: [minimalTrip],
         totalEffectivePatients: 1,
         totalRealTrips: 1,
+        companyId: companyId ? new mongoose.Types.ObjectId(companyId) : undefined,
       });
       summaryIdWorkerNotParticipates = s2._id.toString();
     });
@@ -201,16 +232,8 @@ describe("API - Rutas críticas", () => {
     let assignmentIdNoParticipant: string;
 
     beforeAll(async () => {
-      const Ambulance = mongoose.model("Ambulance");
-      const ambDoc = await Ambulance.create({
-        brand: "Test",
-        modelName: "Model",
-        licensePlate: "WS-TEST-" + Date.now(),
-        ambulanceNumber: "WS-" + Date.now(),
-      });
-      ambulanceId = ambDoc._id.toString();
-
-      const ambForDienst = new mongoose.Types.ObjectId().toString();
+      ambulanceId = sharedAmbulanceId;
+      const ambForDienst = ambulanceId;
       const d1 = await request(app)
         .post(`${API}/diensts`)
         .set("Authorization", `Bearer ${adminToken}`)
@@ -497,7 +520,6 @@ describe("API - Rutas críticas", () => {
 
   describe("Dienst - getDienstsByUser (user/:userId) - IDOR fix", () => {
     beforeAll(async () => {
-      const ambulanceId = new mongoose.Types.ObjectId().toString();
       await request(app)
         .post(`${API}/diensts`)
         .set("Authorization", `Bearer ${adminToken}`)
@@ -510,7 +532,7 @@ describe("API - Rutas críticas", () => {
               date: "2030-06-03",
               startTime: "08:00",
               endTime: "16:00",
-              ambulanceId,
+              ambulanceId: sharedAmbulanceId,
               driver: adminId,
               medic: workerId,
             },
@@ -561,7 +583,6 @@ describe("API - Rutas críticas", () => {
     let dienstIdSinWorker: string;
 
     beforeAll(async () => {
-      const ambulanceId = new mongoose.Types.ObjectId().toString();
       const createRes1 = await request(app)
         .post(`${API}/diensts`)
         .set("Authorization", `Bearer ${adminToken}`)
@@ -574,7 +595,7 @@ describe("API - Rutas críticas", () => {
               date: "2031-07-02",
               startTime: "08:00",
               endTime: "16:00",
-              ambulanceId,
+              ambulanceId: sharedAmbulanceId,
               driver: adminId,
               medic: workerId,
             },
@@ -595,7 +616,7 @@ describe("API - Rutas críticas", () => {
               date: "2031-07-09",
               startTime: "08:00",
               endTime: "16:00",
-              ambulanceId,
+              ambulanceId: sharedAmbulanceId,
               driver: adminId,
               medic: adminId,
             },
@@ -730,7 +751,7 @@ describe("API - Rutas críticas", () => {
               date: "2040-01-06",
               startTime: "08:00",
               endTime: "16:00",
-              ambulanceId: "507f1f77bcf86cd799439011",
+              ambulanceId: sharedAmbulanceId,
               driver: adminId,
               medic: workerId,
             },
@@ -875,7 +896,7 @@ describe("API - Rutas críticas", () => {
               date: "2030-02-01",
               startTime: "08:00",
               endTime: "16:00",
-              ambulanceId: "507f1f77bcf86cd799439011",
+              ambulanceId: sharedAmbulanceId,
               driver: adminId,
               medic: workerId,
             },
@@ -962,7 +983,7 @@ describe("API - Rutas críticas", () => {
               date: "2030-03-01",
               startTime: "08:00",
               endTime: "16:00",
-              ambulanceId: "507f1f77bcf86cd799439011",
+              ambulanceId: sharedAmbulanceId,
               driver: adminId,
               medic: workerId,
             },

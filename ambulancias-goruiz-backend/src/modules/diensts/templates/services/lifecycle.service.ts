@@ -1,18 +1,61 @@
 import mongoose from "mongoose";
 import Dienst from "../../models/dienst.model";
 import { Team } from "../../../teams";
+import { Ambulance } from "../../../ambulances";
+import User from "../../../users/models/user.model";
 import {
   DienstTemplate,
   type DaySchedule,
 } from "../../../dienst-templates/models";
 import { computeDayBlockMapForTeam } from "../../utils/dienstValidation";
+import {
+  entitiesBelongToSameCompany,
+  CompanyValidationError,
+} from "../../../../utils/requireCompany";
 import type { z } from "zod";
 import type { dienstSchema } from "../../schemas/dienstSchema";
 
 type DienstCreateInput = z.infer<typeof dienstSchema>;
 type DienstUpdateInput = Partial<DienstCreateInput>;
 
+async function validateAssignmentCompanies(
+  assignments: Array<{ ambulanceId?: string; driver?: string; medic?: string }>,
+  dienstCompanyId: string | null,
+) {
+  for (const a of assignments || []) {
+    if (a.ambulanceId) {
+      const amb = await Ambulance.findById(a.ambulanceId).select("companyId").lean();
+      if (!amb) throw new CompanyValidationError("Ambulancia no encontrada");
+      const ambCo = (amb as { companyId?: unknown }).companyId;
+      if (!entitiesBelongToSameCompany(ambCo, dienstCompanyId)) {
+        throw new CompanyValidationError("La ambulancia no pertenece a tu empresa");
+      }
+    }
+    if (a.driver) {
+      const u = await User.findById(a.driver).select("companyId").lean();
+      if (!u) throw new CompanyValidationError("Conductor no encontrado");
+      const uCo = (u as { companyId?: unknown }).companyId;
+      if (!entitiesBelongToSameCompany(uCo, dienstCompanyId)) {
+        throw new CompanyValidationError("El conductor no pertenece a tu empresa");
+      }
+    }
+    if (a.medic) {
+      const u = await User.findById(a.medic).select("companyId").lean();
+      if (!u) throw new CompanyValidationError("Sanitario no encontrado");
+      const uCo = (u as { companyId?: unknown }).companyId;
+      if (!entitiesBelongToSameCompany(uCo, dienstCompanyId)) {
+        throw new CompanyValidationError("El sanitario no pertenece a tu empresa");
+      }
+    }
+  }
+}
+
 export async function createDienst(data: DienstCreateInput, companyId?: string | null) {
+  const dienstCompanyId = companyId != null && companyId !== "" ? String(companyId) : null;
+  await validateAssignmentCompanies(
+    (data.assignments || []) as Array<{ ambulanceId?: string; driver?: string; medic?: string }>,
+    dienstCompanyId,
+  );
   const payload = companyId
     ? { ...data, companyId: new mongoose.Types.ObjectId(companyId) }
     : data;
@@ -32,6 +75,12 @@ export async function updateDienst(
     if (!companyId || String(existingCompany) !== String(companyId)) {
       return null;
     }
+  }
+  const dienstCompanyId =
+    existingCompany != null ? String(existingCompany) : companyId != null && companyId !== "" ? String(companyId) : null;
+  if (data.assignments && data.assignments.length > 0) {
+    const assignList = data.assignments as Array<{ ambulanceId?: string; driver?: string; medic?: string }>;
+    await validateAssignmentCompanies(assignList, dienstCompanyId);
   }
   return Dienst.findByIdAndUpdate(id, data, {
     new: true,

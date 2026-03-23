@@ -17,8 +17,22 @@ const API = "/api";
 
 type Fixtures = {
   adminNoCompany: { token: string };
-  dataA: { adminToken: string; companyId: string; workerId: string; workerToken: string };
-  dataB: { adminToken: string; companyId: string; workerId: string; workerToken: string };
+  dataA: {
+    adminToken: string;
+    adminId: string;
+    companyId: string;
+    workerId: string;
+    workerToken: string;
+    ambulanceId: string;
+  };
+  dataB: {
+    adminToken: string;
+    adminId: string;
+    companyId: string;
+    workerId: string;
+    workerToken: string;
+    ambulanceId: string;
+  };
 };
 
 let fixtures: Fixtures;
@@ -61,19 +75,46 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
       loginWorker(workerB.email),
     ]);
 
+    const [ambA, ambB] = await Promise.all([
+      request(app)
+        .post(`${API}/ambulances`)
+        .set("Authorization", `Bearer ${dataA.adminToken}`)
+        .send({
+          brand: "BrandA",
+          modelName: "ModelA",
+          licensePlate: "AMB-A-" + Date.now(),
+          ambulanceNumber: "AMB-N-A-" + Date.now(),
+        }),
+      request(app)
+        .post(`${API}/ambulances`)
+        .set("Authorization", `Bearer ${dataB.adminToken}`)
+        .send({
+          brand: "BrandB",
+          modelName: "ModelB",
+          licensePlate: "AMB-B-" + Date.now(),
+          ambulanceNumber: "AMB-N-B-" + Date.now(),
+        }),
+    ]);
+    const ambulanceIdA = ambA.body._id ?? ambA.body.id;
+    const ambulanceIdB = ambB.body._id ?? ambB.body.id;
+
     fixtures = {
       adminNoCompany: { token: loginLegacy.body.token },
       dataA: {
         adminToken: dataA.adminToken,
+        adminId: dataA.adminId,
         companyId: dataA.companyId,
         workerId: String(workerA._id),
         workerToken: workerAToken,
+        ambulanceId: ambulanceIdA,
       },
       dataB: {
         adminToken: dataB.adminToken,
+        adminId: dataB.adminId,
         companyId: dataB.companyId,
         workerId: String(workerB._id),
         workerToken: workerBToken,
+        ambulanceId: ambulanceIdB,
       },
     };
   });
@@ -85,7 +126,6 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
   describe("Diensts - cross-company", () => {
     let dienstIdA: string;
     let dienstIdB: string;
-    const ambulanceId = new mongoose.Types.ObjectId().toString();
     const TRIP_DATE = "2035-08-15";
 
     beforeAll(async () => {
@@ -101,7 +141,7 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
               date: TRIP_DATE,
               startTime: "08:00",
               endTime: "16:00",
-              ambulanceId,
+              ambulanceId: fixtures.dataA.ambulanceId,
               driver: fixtures.dataA.workerId,
               medic: fixtures.dataA.workerId,
             },
@@ -122,7 +162,7 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
               date: TRIP_DATE,
               startTime: "08:00",
               endTime: "16:00",
-              ambulanceId,
+              ambulanceId: fixtures.dataB.ambulanceId,
               driver: fixtures.dataB.workerId,
               medic: fixtures.dataB.workerId,
             },
@@ -153,7 +193,7 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
               date: TRIP_DATE,
               startTime: "08:00",
               endTime: "18:00",
-              ambulanceId,
+              ambulanceId: fixtures.dataB.ambulanceId,
               driver: fixtures.dataB.workerId,
               medic: fixtures.dataB.workerId,
             },
@@ -209,6 +249,164 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
         expect(a.dienstId).toBeDefined();
       }
     });
+
+    it("no se puede asignar ambulancia de empresa B a dienst de empresa A", async () => {
+      const createRes = await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`)
+        .send({
+          dienstNumber: 199,
+          weekStartDate: "2035-09-01",
+          weekEndDate: "2035-09-07",
+          assignments: [
+            {
+              date: "2035-09-01",
+              startTime: "08:00",
+              endTime: "16:00",
+              ambulanceId: fixtures.dataB.ambulanceId,
+              driver: fixtures.dataA.workerId,
+              medic: fixtures.dataA.workerId,
+            },
+          ],
+        });
+      expect(createRes.status).toBe(403);
+      expect(createRes.body.message).toMatch(/ambulancia|empresa|pertenece/i);
+    });
+
+    it("no se puede asignar user de empresa B a dienst de empresa A", async () => {
+      const createRes = await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`)
+        .send({
+          dienstNumber: 198,
+          weekStartDate: "2035-09-08",
+          weekEndDate: "2035-09-14",
+          assignments: [
+            {
+              date: "2035-09-08",
+              startTime: "08:00",
+              endTime: "16:00",
+              ambulanceId: fixtures.dataA.ambulanceId,
+              driver: fixtures.dataB.workerId,
+              medic: fixtures.dataA.workerId,
+            },
+          ],
+        });
+      expect(createRes.status).toBe(403);
+      expect(createRes.body.message).toMatch(/conductor|empresa|pertenece/i);
+    });
+  });
+
+  describe("Admin sin companyId - no puede crear entidades", () => {
+    it("admin sin companyId no puede crear dienst", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${fixtures.adminNoCompany.token}`)
+        .send({
+          dienstNumber: 1,
+          weekStartDate: "2030-01-01",
+          weekEndDate: "2030-01-07",
+          assignments: [],
+        });
+      expect(res.status).toBe(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
+    it("admin sin companyId no puede crear ambulancia", async () => {
+      const res = await request(app)
+        .post(`${API}/ambulances`)
+        .set("Authorization", `Bearer ${fixtures.adminNoCompany.token}`)
+        .send({
+          brand: "X",
+          modelName: "X",
+          licensePlate: "X",
+          ambulanceNumber: "X",
+        });
+      expect(res.status).toBe(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
+    it("admin sin companyId no puede crear hospital", async () => {
+      const res = await request(app)
+        .post(`${API}/hospitals`)
+        .set("Authorization", `Bearer ${fixtures.adminNoCompany.token}`)
+        .send({
+          name: "X",
+          address: "X",
+          phone: "+34 0",
+          specialties: [],
+        });
+      expect(res.status).toBe(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
+    it("admin sin companyId no puede crear team", async () => {
+      const res = await request(app)
+        .post(`${API}/teams`)
+        .set("Authorization", `Bearer ${fixtures.adminNoCompany.token}`)
+        .send({
+          driver: fixtures.dataA.adminId,
+          medic: fixtures.dataA.workerId,
+          rotationMode: "none",
+        });
+      expect(res.status).toBe(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
+    it("admin sin companyId no puede usar assign-team-to-week", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts/assign-team-to-week`)
+        .set("Authorization", `Bearer ${fixtures.adminNoCompany.token}`)
+        .send({
+          dienstNumber: 100,
+          weekStartDate: "2035-08-11",
+          teamId: fixtures.dataA.workerId,
+        });
+      expect(res.status).toBe(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
+    it("admin sin companyId no puede usar assign-user-to-week", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts/assign-user-to-week`)
+        .set("Authorization", `Bearer ${fixtures.adminNoCompany.token}`)
+        .send({
+          dienstNumber: 100,
+          weekStartDate: "2035-08-11",
+          userId: fixtures.dataA.workerId,
+          role: "medic",
+        });
+      expect(res.status).toBe(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+  });
+
+  describe("Teams - cross-company", () => {
+    it("no se puede crear team con driver de empresa A y medic de empresa B", async () => {
+      const res = await request(app)
+        .post(`${API}/teams`)
+        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`)
+        .send({
+          driver: fixtures.dataA.workerId,
+          medic: fixtures.dataB.workerId,
+          rotationMode: "none",
+        });
+      expect(res.status).toBe(403);
+      expect(res.body.message).toMatch(/empresa|misma empresa|pertenece/i);
+    });
+
+    it("no se puede crear team con driver de empresa B cuando admin es de A", async () => {
+      const res = await request(app)
+        .post(`${API}/teams`)
+        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`)
+        .send({
+          driver: fixtures.dataB.workerId,
+          medic: fixtures.dataA.workerId,
+          rotationMode: "none",
+        });
+      expect(res.status).toBe(403);
+      expect(res.body.message).toMatch(/empresa|misma empresa|pertenece/i);
+    });
   });
 
   describe("Users available - filtrado por empresa", () => {
@@ -227,7 +425,6 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
   describe("Trips - cross-company", () => {
     const TRIP_DATE = "2035-08-15";
     let assignmentIdA: string;
-    const ambulanceId = new mongoose.Types.ObjectId().toString();
 
     beforeAll(async () => {
       const createA = await request(app)
@@ -242,7 +439,7 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
               date: TRIP_DATE,
               startTime: "08:00",
               endTime: "16:00",
-              ambulanceId,
+              ambulanceId: fixtures.dataA.ambulanceId,
               driver: fixtures.dataA.workerId,
               medic: fixtures.dataA.workerId,
             },
@@ -331,7 +528,6 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
     const WS_DATE = "2035-09-20";
     let assignmentIdA: string;
     let summaryIdA: string;
-    const ambulanceId = new mongoose.Types.ObjectId().toString();
 
     beforeAll(async () => {
       const createA = await request(app)
@@ -346,7 +542,7 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
               date: WS_DATE,
               startTime: "08:00",
               endTime: "16:00",
-              ambulanceId,
+              ambulanceId: fixtures.dataA.ambulanceId,
               driver: fixtures.dataA.workerId,
               medic: fixtures.dataA.workerId,
             },
@@ -361,7 +557,7 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
       const summaryPayload = {
         date: WS_DATE,
         assignmentId: assignmentIdA,
-        ambulanceId,
+        ambulanceId: fixtures.dataA.ambulanceId,
         ambulanceNumber: "1",
         initialKm: 0,
         finalKm: 10,
@@ -405,7 +601,7 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
       const payload = {
         date: "2035-09-21",
         assignmentId: assignmentIdA,
-        ambulanceId,
+        ambulanceId: fixtures.dataA.ambulanceId,
         ambulanceNumber: "1",
         initialKm: 0,
         finalKm: 10,
@@ -443,35 +639,6 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
   });
 
   describe("Ambulances - cross-company", () => {
-    let ambulanceIdA: string;
-    let ambulanceIdB: string;
-
-    beforeAll(async () => {
-      const createA = await request(app)
-        .post(`${API}/ambulances`)
-        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`)
-        .send({
-          brand: "BrandA",
-          modelName: "ModelA",
-          licensePlate: "AMB-A-" + Date.now(),
-          ambulanceNumber: "AMB-N-A-" + Date.now(),
-        });
-      expect(createA.status).toBe(201);
-      ambulanceIdA = createA.body._id ?? createA.body.id;
-
-      const createB = await request(app)
-        .post(`${API}/ambulances`)
-        .set("Authorization", `Bearer ${fixtures.dataB.adminToken}`)
-        .send({
-          brand: "BrandB",
-          modelName: "ModelB",
-          licensePlate: "AMB-B-" + Date.now(),
-          ambulanceNumber: "AMB-N-B-" + Date.now(),
-        });
-      expect(createB.status).toBe(201);
-      ambulanceIdB = createB.body._id ?? createB.body.id;
-    });
-
     it("admin sin companyId recibe 403 en GET /ambulances", async () => {
       const res = await request(app)
         .get(`${API}/ambulances`)
@@ -482,14 +649,14 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
 
     it("admin A no puede ver ambulancia de empresa B (GET /ambulances/:id)", async () => {
       const res = await request(app)
-        .get(`${API}/ambulances/${ambulanceIdB}`)
+        .get(`${API}/ambulances/${fixtures.dataB.ambulanceId}`)
         .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`);
       expect([403, 404]).toContain(res.status);
     });
 
     it("admin A no puede editar ambulancia de empresa B (PUT)", async () => {
       const res = await request(app)
-        .put(`${API}/ambulances/${ambulanceIdB}`)
+        .put(`${API}/ambulances/${fixtures.dataB.ambulanceId}`)
         .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`)
         .send({
           brand: "Hacked",
@@ -502,7 +669,7 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
 
     it("admin A no puede borrar ambulancia de empresa B (DELETE)", async () => {
       const res = await request(app)
-        .delete(`${API}/ambulances/${ambulanceIdB}`)
+        .delete(`${API}/ambulances/${fixtures.dataB.ambulanceId}`)
         .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`);
       expect([403, 404]).toContain(res.status);
     });
@@ -517,8 +684,8 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
         expect(a.companyId?.toString?.() ?? a.companyId).toBe(fixtures.dataA.companyId);
       }
       const ids = res.body.map((a: any) => a._id?.toString?.() ?? a._id);
-      expect(ids).toContain(ambulanceIdA);
-      expect(ids).not.toContain(ambulanceIdB);
+      expect(ids).toContain(fixtures.dataA.ambulanceId);
+      expect(ids).not.toContain(fixtures.dataB.ambulanceId);
     });
 
     it("worker A no ve ambulancias de empresa B (GET /ambulances)", async () => {
@@ -527,7 +694,7 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
         .set("Authorization", `Bearer ${fixtures.dataA.workerToken}`)
         .expect(200);
       const ids = res.body.map((a: any) => a._id?.toString?.() ?? a._id);
-      expect(ids).not.toContain(ambulanceIdB);
+      expect(ids).not.toContain(fixtures.dataB.ambulanceId);
     });
   });
 

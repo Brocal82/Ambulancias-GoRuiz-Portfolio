@@ -64,3 +64,26 @@ export function isResourceFromCompany(
 ): boolean {
   return isDienstFromCompany(resourceCompanyId, companyId);
 }
+
+/**
+ * Comprueba si dos entidades pertenecen a la misma empresa (ambas null = legacy = ok).
+ */
+export function entitiesBelongToSameCompany(
+  entityACo: unknown,
+  entityBCo: unknown,
+): boolean {
+  if (!entityACo && !entityBCo) return true;
+  if (!entityACo || !entityBCo) return false;
+  return String(entityACo) === String(entityBCo);
+}
+
+/** Error para validaciones cross-company (status 403) */
+export class CompanyValidationError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number = 403,
+  ) {
+    super(message);
+    this.name = "CompanyValidationError";
+  }
+}

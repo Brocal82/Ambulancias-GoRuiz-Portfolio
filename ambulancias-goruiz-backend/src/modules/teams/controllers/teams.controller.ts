@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import * as teamsService from "../services/teams.service";
 import { TeamError } from "../services/teams.service";
+import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 
 export const listTeams = async (_req: Request, res: Response): Promise<void> => {
   try {
@@ -18,7 +19,12 @@ export const listTeams = async (_req: Request, res: Response): Promise<void> => 
 
 export const createTeam = async (req: Request, res: Response): Promise<void> => {
   try {
-    const team = await teamsService.createTeam(req.body);
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const team = await teamsService.createTeam(req.body, companyResult.companyId);
     res.status(201).json(team);
   } catch (err: unknown) {
     if (err instanceof TeamError) {
@@ -55,7 +61,7 @@ export const getUsedTeamsForWeek = async (
 export const updateTeam = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const updated = await teamsService.updateTeam(id, req.body);
+    const updated = await teamsService.updateTeam(id, req.body, req.companyId ?? undefined);
     res.status(200).json(updated);
   } catch (err: unknown) {
     if (err instanceof TeamError) {

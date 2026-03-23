@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Dienst from "../../models/dienst.model";
 import User from "../../../users/models/user.model";
 import { Team } from "../../../teams";
+import { Ambulance } from "../../../ambulances";
 import type { AssignedDay } from "../../types/dienst.types";
 import {
   findWeeklyConflicts,
@@ -11,6 +12,7 @@ import {
   computeDayBlockMapForTeam,
 } from "../../utils/dienstValidation";
 import { extractValidDatesFromAssignments, mapAssignmentToAssignedDay } from "../../utils/dienstMappers";
+import { entitiesBelongToSameCompany } from "../../../../utils/requireCompany";
 import { DienstAssignmentError } from "./assignment-errors";
 
 async function ensureDienstCompany(dienstId: string, companyId: string): Promise<void> {
@@ -136,6 +138,41 @@ export async function clearPeopleForWeek(
   };
 }
 
+async function validateAssignmentEntities(
+  assignments: any[],
+  dienstCompanyId: string | null,
+) {
+  const toStr = (v: unknown) =>
+    v == null ? "" : typeof v === "string" ? v : String((v as { toString?: () => string })?.toString?.() ?? v);
+  for (const a of assignments || []) {
+    const ambId = toStr(a?.ambulanceId);
+    if (ambId && ambId !== "") {
+      const amb = await Ambulance.findById(ambId).select("companyId").lean();
+      if (!amb) throw new DienstAssignmentError(404, "ambulance_not_found", "Ambulancia no encontrada");
+      const ambCo = (amb as any).companyId;
+      if (!entitiesBelongToSameCompany(ambCo, dienstCompanyId)) {
+        throw new DienstAssignmentError(403, "forbidden", "La ambulancia no pertenece a tu empresa");
+      }
+    }
+    const drvId = toStr(a?.driver);
+    if (drvId && drvId !== "") {
+      const u = await User.findById(drvId).select("companyId").lean();
+      if (!u) throw new DienstAssignmentError(404, "user_not_found", "Conductor no encontrado");
+      if (!entitiesBelongToSameCompany((u as any).companyId, dienstCompanyId)) {
+        throw new DienstAssignmentError(403, "forbidden", "El conductor no pertenece a tu empresa");
+      }
+    }
+    const medId = toStr(a?.medic);
+    if (medId && medId !== "") {
+      const u = await User.findById(medId).select("companyId").lean();
+      if (!u) throw new DienstAssignmentError(404, "user_not_found", "Sanitario no encontrado");
+      if (!entitiesBelongToSameCompany((u as any).companyId, dienstCompanyId)) {
+        throw new DienstAssignmentError(403, "forbidden", "El sanitario no pertenece a tu empresa");
+      }
+    }
+  }
+}
+
 export async function updateDienstPartial(
   dienstId: string,
   assignments: any[],
@@ -144,12 +181,14 @@ export async function updateDienstPartial(
   const dienst = await Dienst.findById(dienstId);
   if (!dienst) return null;
 
+  const dc = (dienst as any).companyId;
   if (companyId) {
-    const dc = (dienst as any).companyId;
     if (dc && String(dc) !== String(companyId)) {
       return null;
     }
   }
+  const dienstCompanyId = dc != null ? String(dc) : (companyId != null && companyId !== "" ? String(companyId) : null);
+  await validateAssignmentEntities(assignments, dienstCompanyId);
 
   for (const incoming of assignments) {
     const updatedCopy: any = { ...incoming };
