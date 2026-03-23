@@ -7,9 +7,19 @@ import request from "supertest";
 import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
-import { createTestUsers } from "./test-helpers";
+import {
+  createTestAdminWithCompany,
+  createTestWorkerInCompany,
+} from "./test-helpers";
 
 const API = "/api";
+
+async function loginWorker(email: string, password = "password123") {
+  const res = await request(app)
+    .post(`${API}/users/login`)
+    .send({ email, password });
+  return res.body.token;
+}
 
 describe("Trips - ownership y filtrado (seguridad)", () => {
   let adminToken: string;
@@ -49,14 +59,29 @@ describe("Trips - ownership y filtrado (seguridad)", () => {
 
   beforeAll(async () => {
     await mongoose.connect(env.MONGODB_URI);
-    const { adminId: aid, workerId: wid, adminToken: aTok, workerToken: wTok } =
-      await createTestUsers();
-    adminId = aid;
-    workerId = wid;
-    adminToken = aTok;
-    workerToken = wTok;
+    const data = await createTestAdminWithCompany();
+    adminId = data.adminId;
+    adminToken = data.adminToken;
 
-    const ambulanceId = new mongoose.Types.ObjectId().toString();
+    const worker = await createTestWorkerInCompany(
+      new mongoose.Types.ObjectId(data.companyId),
+      Date.now(),
+    );
+    workerId = String(worker._id);
+    workerToken = await loginWorker(worker.email);
+
+    const ambRes = await request(app)
+      .post(`${API}/ambulances`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        brand: "TripTest",
+        modelName: "X",
+        licensePlate: "TRIP-" + Date.now(),
+        ambulanceNumber: "TRIP-N-" + Date.now(),
+      })
+      .expect(201);
+    const ambulanceId = ambRes.body._id ?? ambRes.body.id;
+
     const createRes1 = await request(app)
       .post(`${API}/diensts`)
       .set("Authorization", `Bearer ${adminToken}`)
