@@ -228,4 +228,53 @@ describe("Companies - gestión superadmin", () => {
       expect(Array.isArray(res.body)).toBe(true);
     });
   });
+
+  describe("Bootstrap superadmin (lógica equivalente al script)", () => {
+    it("crear superadmin directo en DB + login funciona", async () => {
+      const bcrypt = await import("bcrypt");
+      const User = (await import("../modules/users/models/user.model")).default;
+      const email = `bootstrap-${Date.now()}@example.com`;
+      const password = "securepass123";
+      const hashedPassword = await bcrypt.default.hash(password, 10);
+      await User.create({
+        name: "Bootstrap",
+        lastName: "Admin",
+        email,
+        password: hashedPassword,
+        role: "superadmin",
+      });
+      const loginRes = await request(app)
+        .post(`${API}/users/login`)
+        .send({ email, password })
+        .expect(200);
+      expect(loginRes.body.token).toBeDefined();
+      const companiesRes = await request(app)
+        .get(`${API}/companies`)
+        .set("Authorization", `Bearer ${loginRes.body.token}`)
+        .expect(200);
+      expect(Array.isArray(companiesRes.body)).toBe(true);
+    });
+
+    it("crear superadmin con email duplicado falla (como el script)", async () => {
+      const User = (await import("../modules/users/models/user.model")).default;
+      const existing = await User.findOne({ role: "superadmin" }).lean();
+      if (!existing || !existing.email) return;
+      const bcrypt = await import("bcrypt");
+      let threw = false;
+      try {
+        await User.create({
+          name: "Dup",
+          lastName: "Admin",
+          email: existing.email,
+          password: await bcrypt.default.hash("password123", 10),
+          role: "superadmin",
+        });
+      } catch (err: unknown) {
+        threw = true;
+        const e = err as { code?: number };
+        expect(e.code === 11000 || (e as Error).message?.toLowerCase().includes("duplicate")).toBe(true);
+      }
+      expect(threw).toBe(true);
+    });
+  });
 });

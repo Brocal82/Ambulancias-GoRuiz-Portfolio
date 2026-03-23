@@ -13,6 +13,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "create:users": "ts-node scripts/createUsers.ts",
+    "bootstrap:superadmin": "ts-node scripts/bootstrap-superadmin.ts",
     "delete:users": "ts-node scripts/deleteAllUsers.ts",
     "reset:users": "ts-node scripts/resetUsers.ts",
     "create:hospitals": "ts-node scripts/createHospitals.ts",
