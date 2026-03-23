@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
+import mongoose from "mongoose";
 import { env } from "./config/env";
 
 // Rutas
@@ -56,7 +57,13 @@ app.use("/uploads", express.static(uploadsDist));
 app.use("/uploads", express.static(uploadsRoot));
 
 app.get("/health", (_req, res) => {
-  res.status(200).json({ ok: true, uptime: process.uptime() });
+  const dbState = mongoose.connection.readyState === 1 ? "ok" : "down";
+  const status = dbState === "ok" ? "ok" : "down";
+  res.status(dbState === "ok" ? 200 : 503).json({
+    status,
+    uptime: process.uptime(),
+    db: dbState,
+  });
 });
 
 app.use("/api/users/login", rateLimitLogin);

@@ -1,3 +1,4 @@
+import http from "http";
 import mongoose from "mongoose";
 import cron from "node-cron";
 import { env } from "./config/env";
@@ -24,6 +25,40 @@ const PORT = env.PORT;
 const MONGODB_URI = env.MONGODB_URI;
 const TZ = "Europe/Berlin";
 
+let server: http.Server | null = null;
+let isShuttingDown = false;
+
+function shutdown(): void {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  console.log("Shutting down gracefully...");
+
+  const closeServer = (): Promise<void> =>
+    new Promise((resolve) => {
+      if (!server) {
+        resolve();
+        return;
+      }
+      server.close(() => {
+        resolve();
+      });
+    });
+
+  closeServer()
+    .then(() => mongoose.connection.close())
+    .then(() => {
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error("Shutdown error:", err);
+      process.exit(1);
+    });
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+
 mongoose
   .connect(MONGODB_URI)
   .then(async () => {
@@ -46,7 +81,7 @@ mongoose
       { timezone: TZ },
     );
 
-    app.listen(PORT, "0.0.0.0", () => {
+    server = app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Server listening on http://0.0.0.0:${PORT}`);
       console.log(`🕒 Cron activo: lunes 00:00 (${TZ})`);
     });
