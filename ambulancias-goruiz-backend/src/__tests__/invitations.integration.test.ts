@@ -6,7 +6,11 @@ import request from "supertest";
 import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
-import { createTestAdminWithCompany, createTestUsers } from "./test-helpers";
+import {
+  createTestAdminWithCompany,
+  createTestUsers,
+  createTestWorkerUser,
+} from "./test-helpers";
 import Invitation from "../modules/invitations/models/invitation.model";
 import User from "../modules/users/models/user.model";
 
@@ -188,6 +192,35 @@ describe("Invitations - flujo base", () => {
       expect(user?.invitationId).toBeDefined();
     });
 
+    it("usuario creado por invitación puede hacer login", async () => {
+      const email = `invite-login-${Date.now()}@example.com`;
+      const password = "securepass123";
+      const createRes = await request(app)
+        .post(`${API}/invitations`)
+        .set("Authorization", `Bearer ${sharedAdminToken}`)
+        .send({ email, role: "worker" })
+        .expect(201);
+
+      await request(app)
+        .post(`${API}/invitations/accept`)
+        .send({
+          token: createRes.body.token,
+          name: "Login",
+          lastName: "Test",
+          password,
+        })
+        .expect(201);
+
+      const loginRes = await request(app)
+        .post(`${API}/users/login`)
+        .send({ email: email.toLowerCase(), password })
+        .expect(200);
+
+      expect(loginRes.body.token).toBeDefined();
+      expect(loginRes.body.user?.role).toBe("worker");
+      expect(loginRes.body.user?.companyId).toBe(sharedCompanyId);
+    });
+
     it("rechaza reutilización de la misma invitación", async () => {
       const email = `accept-reuse-${Date.now()}@example.com`;
       const createRes = await request(app)
@@ -221,13 +254,7 @@ describe("Invitations - flujo base", () => {
 
     it("rechaza si email ya existe", async () => {
       const email = `existing-${Date.now()}@example.com`;
-
-      await request(app).post(`${API}/users/register`).send({
-        name: "Existing",
-        lastName: "User",
-        email,
-        password: "password123",
-      });
+      await createTestWorkerUser(email);
 
       const createRes = await request(app)
         .post(`${API}/invitations`)

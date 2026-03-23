@@ -7,7 +7,7 @@ import request from "supertest";
 import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
-import { createTestUsers } from "./test-helpers";
+import { createTestUsers, createTestWorkerUser } from "./test-helpers";
 import { Message } from "../modules/messages/models/message.model";
 
 const API = "/api";
@@ -31,17 +31,10 @@ describe("Messages - IDOR fix (read/remove)", () => {
     adminToken = aTok;
     workerAToken = waTok;
 
-    const suffix = Date.now();
-    const workerBEmail = `worker-b-${suffix}@example.com`;
-    await request(app).post(`${API}/users/register`).send({
-      name: "Worker",
-      lastName: "B",
-      email: workerBEmail,
-      password: "password123",
-    });
+    const workerBUser = await createTestWorkerUser(`worker-b-${Date.now()}@example.com`);
     const workerBRes = await request(app)
       .post(`${API}/users/login`)
-      .send({ email: workerBEmail, password: "password123" });
+      .send({ email: workerBUser.email, password: "password123" });
     workerBToken = workerBRes.body.token;
     workerBId = workerBRes.body.user?._id ?? "";
 

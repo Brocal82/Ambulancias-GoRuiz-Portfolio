@@ -1,6 +1,6 @@
 /**
  * Helpers para tests de integración.
- * El registro público SIEMPRE crea workers. Los admins se crean vía seed/script (DB directa).
+ * Register público desactivado (8B). Workers/admins se crean por DB o invitación.
  */
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
@@ -45,31 +45,40 @@ export async function createTestSuperadmin(email?: string, password = "password1
   };
 }
 
-export async function createTestUsers() {
+/**
+ * Crea un worker en DB sin company (legacy). No usa register.
+ */
+export async function createTestWorkerUser(email?: string, password = "password123") {
   const suffix = Date.now();
-  const adminEmail = `admin-test-${suffix}@example.com`;
-  const workerEmail = `worker-test-${suffix}@example.com`;
-  const password = "password123";
-
-  const adminUser = await createTestAdminUser(adminEmail, password);
-
-  await request(app).post(`${API}/users/register`).send({
+  const workerEmail = email ?? `worker-test-${suffix}@example.com`;
+  const hashedPassword = await bcrypt.hash(password, 10);
+  return await User.create({
     name: "Worker",
     lastName: "Test",
     email: workerEmail,
-    password,
+    password: hashedPassword,
+    role: "worker",
   });
+}
+
+export async function createTestUsers() {
+  const suffix = Date.now();
+  const adminEmail = `admin-test-${suffix}@example.com`;
+  const password = "password123";
+
+  const adminUser = await createTestAdminUser(adminEmail, password);
+  const workerUser = await createTestWorkerUser(`worker-test-${suffix}@example.com`, password);
 
   const adminRes = await request(app)
     .post(`${API}/users/login`)
     .send({ email: adminEmail, password });
   const workerRes = await request(app)
     .post(`${API}/users/login`)
-    .send({ email: workerEmail, password });
+    .send({ email: workerUser.email, password });
 
   return {
     adminId: String(adminUser._id),
-    workerId: workerRes.body.user?._id ?? "",
+    workerId: String(workerUser._id),
     adminToken: adminRes.body.token,
     workerToken: workerRes.body.token,
   };

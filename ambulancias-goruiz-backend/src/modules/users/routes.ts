@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  createUser,
   getUsers,
   updateUser,
   getUserById,
@@ -22,7 +21,6 @@ import { validateBody } from "../../middlewares/validateBody";
 import { upload } from "../../middlewares/uploadMiddleware";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import {
-  registerUserSchema,
   loginUserSchema,
   updateUserSchema,
 } from "./schemas/user.schema";
@@ -30,7 +28,11 @@ import {
 const router = Router();
 
 // Rutas públicas
-router.post("/register", validateBody(registerUserSchema), createUser);
+router.post("/register", (_req, res) => {
+  res.status(403).json({
+    message: "El registro público está deshabilitado. Se requiere invitación de un administrador de empresa.",
+  });
+});
 router.post("/login", validateBody(loginUserSchema), loginUser);
 
 // ⚠️ Rutas personalizadas antes de `/:id`
