@@ -122,6 +122,92 @@ describe("API - Rutas críticas", () => {
     });
   });
 
+  describe("Workday Summary - GET (ownership / filtrado)", () => {
+    const SUMMARY_DATE = "2030-09-10";
+    const minimalTrip = {
+      auftragNumber: "WS-T1",
+      patientName: "Paciente",
+      fromAddress: "A",
+      toAddress: "B",
+      timeWarning: "08:00",
+      wasCancelled: false,
+      countsTrip: 1 as const,
+    };
+    let summaryIdWorkerParticipates: string;
+    let summaryIdWorkerNotParticipates: string;
+
+    beforeAll(async () => {
+      const ambulanceId = new mongoose.Types.ObjectId();
+      const WorkdaySummary = mongoose.model("WorkdaySummary");
+
+      const s1 = await WorkdaySummary.create({
+        date: SUMMARY_DATE,
+        assignmentId: `assign-ws-owner-${Date.now()}`,
+        driver: adminId,
+        medic: workerId,
+        ambulanceId,
+        ambulanceNumber: "1",
+        initialKm: 0,
+        totalDienstKm: 10,
+        trips: [minimalTrip],
+        totalEffectivePatients: 1,
+        totalRealTrips: 1,
+      });
+      summaryIdWorkerParticipates = s1._id.toString();
+
+      const s2 = await WorkdaySummary.create({
+        date: SUMMARY_DATE,
+        assignmentId: `assign-ws-other-${Date.now()}`,
+        driver: adminId,
+        medic: adminId,
+        ambulanceId,
+        ambulanceNumber: "2",
+        initialKm: 0,
+        totalDienstKm: 5,
+        trips: [minimalTrip],
+        totalEffectivePatients: 1,
+        totalRealTrips: 1,
+      });
+      summaryIdWorkerNotParticipates = s2._id.toString();
+    });
+
+    it("GET /api/workday-summary sin token devuelve 401", async () => {
+      await request(app)
+        .get(`${API}/workday-summary`)
+        .expect(401);
+    });
+
+    it("GET /api/workday-summary admin devuelve 200 y array", async () => {
+      const res = await request(app)
+        .get(`${API}/workday-summary`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      const ids = res.body.map((s: { _id?: string }) => s._id?.toString?.() ?? s._id);
+      expect(ids).toContain(summaryIdWorkerParticipates);
+      expect(ids).toContain(summaryIdWorkerNotParticipates);
+    });
+
+    it("GET /api/workday-summary worker devuelve 200 y solo summaries donde participa", async () => {
+      const res = await request(app)
+        .get(`${API}/workday-summary`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .expect(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      const ids = res.body.map((s: { _id?: string }) => s._id?.toString?.() ?? s._id);
+      expect(ids).toContain(summaryIdWorkerParticipates);
+    });
+
+    it("GET /api/workday-summary worker no recibe summary ajeno", async () => {
+      const res = await request(app)
+        .get(`${API}/workday-summary`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .expect(200);
+      const ids = res.body.map((s: { _id?: string }) => s._id?.toString?.() ?? s._id);
+      expect(ids).not.toContain(summaryIdWorkerNotParticipates);
+    });
+  });
+
   describe("Validación ObjectId", () => {
     it("GET /api/users/:id con ObjectId inválido devuelve 400", async () => {
       const res = await request(app)
