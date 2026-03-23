@@ -43,7 +43,7 @@ export interface LoginResponseDTO {
     name: string;
     lastName: string;
     email: string;
-    role: "admin" | "worker";
+    role: "admin" | "worker" | "superadmin";
     ambulanceRole?: AmbulanceRole;
     pscheinExpiry?: string;
     address?: string;

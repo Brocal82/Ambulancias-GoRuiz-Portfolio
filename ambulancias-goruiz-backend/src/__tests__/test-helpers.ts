@@ -23,6 +23,28 @@ export async function createTestAdminUser(email: string, password: string) {
   return user;
 }
 
+/** Crea superadmin directamente en DB. Útil para tests de rutas exclusivas superadmin. */
+export async function createTestSuperadmin(email?: string, password = "password123") {
+  const suffix = Date.now() + Math.floor(Math.random() * 1000);
+  const superadminEmail = email ?? `superadmin-${suffix}@example.com`;
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const user = await User.create({
+    name: "Super",
+    lastName: "Admin",
+    email: superadminEmail,
+    password: hashedPassword,
+    role: "superadmin",
+  });
+  const loginRes = await request(app)
+    .post(`${API}/users/login`)
+    .send({ email: superadminEmail, password });
+  return {
+    superadminId: String(user._id),
+    superadminToken: loginRes.body.token,
+    email: superadminEmail,
+  };
+}
+
 export async function createTestUsers() {
   const suffix = Date.now();
   const adminEmail = `admin-test-${suffix}@example.com`;

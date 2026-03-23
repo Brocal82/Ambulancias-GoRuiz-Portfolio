@@ -14,6 +14,20 @@ export const authorizeRole = (requiredRole: "admin" | "worker") => {
   };
 };
 
+/** Middleware para rutas exclusivas de superadmin. No depende de companyId. */
+export const authorizeSuperadmin = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
+  const userRole = req.userRole ?? req.user?.role;
+  if (userRole === "superadmin") {
+    next();
+  } else {
+    res.status(403).json({ message: "Acceso denegado: se requiere rol superadmin" });
+  }
+};
+
 // Middleware para permitir acceso al propio usuario o a un admin
 export const authorizeSelfOrAdmin = (
   req: Request,
