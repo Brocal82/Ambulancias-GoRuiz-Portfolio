@@ -42,6 +42,9 @@ import AdminMessagesPage from "./modules/messages/pages/AdminMessagesPage";
 import AdminSentMessages from "./modules/messages/pages/AdminSentMessages";
 import AdminTeamsPage from "./modules/teams/pages/AdminTeamsPage";
 import AdminSickLeavesPage from "./modules/sick/pages/AdminSickLeavesPage";
+import SuperadminCompaniesList from "./modules/companies/pages/SuperadminCompaniesList";
+import SuperadminCompanyForm from "./modules/companies/pages/SuperadminCompanyForm";
+import SuperadminCreateAdmin from "./modules/companies/pages/SuperadminCreateAdmin";
 
 export default function App() {
   return (
@@ -72,6 +75,13 @@ export default function App() {
 
               <Route element={<RequireRole role="superadmin" />}>
                 <Route path="/superadmin" element={<SuperadminDashboard />} />
+                <Route path="/superadmin/companies" element={<SuperadminCompaniesList />} />
+                <Route path="/superadmin/companies/new" element={<SuperadminCompanyForm />} />
+                <Route
+                  path="/superadmin/companies/:id/admin"
+                  element={<SuperadminCreateAdmin />}
+                />
+                <Route path="/superadmin/companies/:id" element={<SuperadminCompanyForm />} />
               </Route>
 
               {/* Admin: protegido por rol */}
