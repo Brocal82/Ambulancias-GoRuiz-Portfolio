@@ -15,6 +15,10 @@ export const removeAssignment = async (req: Request, res: Response) => {
       date,
       req.companyId ?? undefined,
     );
+    if (!updatedDienst) {
+      res.status(404).json({ message: "Dienst no encontrado." });
+      return;
+    }
     res.status(200).json(updatedDienst);
   } catch (error) {
     res.status(500).json({ message: "Error al eliminar el assignment", error });
