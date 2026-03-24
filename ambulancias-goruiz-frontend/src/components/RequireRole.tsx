@@ -2,15 +2,21 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
-type AppRole = "admin" | "worker";
+type AppRole = "admin" | "worker" | "superadmin";
 
 interface RequireRoleProps {
   role: AppRole;
 }
 
+function homePathForRole(userRole: string | null): string {
+  if (userRole === "superadmin") return "/superadmin";
+  if (userRole === "admin") return "/admin";
+  return "/worker";
+}
+
 /**
  * Protege rutas por rol. Si el usuario no tiene el rol requerido, redirige
- * a su dashboard correspondiente (worker → /worker, admin → /admin).
+ * a su dashboard correspondiente (superadmin / admin / worker).
  */
 export default function RequireRole({ role }: RequireRoleProps) {
   const { role: userRole, isAuthReady } = useAuth();
@@ -20,7 +26,7 @@ export default function RequireRole({ role }: RequireRoleProps) {
   }
 
   if (userRole !== role) {
-    return <Navigate to={userRole === "admin" ? "/admin" : "/worker"} replace />;
+    return <Navigate to={homePathForRole(userRole)} replace />;
   }
 
   return <Outlet />;

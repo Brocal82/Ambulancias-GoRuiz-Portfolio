@@ -9,13 +9,12 @@ export default function AppLayout() {
   const { logout, role, user } = useAuth();
 
   const navigate = useNavigate();
-  const isWorker = role === "worker";
-  const isAdmin = role === "admin";
   const { t } = useTranslation();
 
   const goHome = () => {
-    if (isWorker) navigate("/worker");
-    if (isAdmin) navigate("/admin");
+    if (role === "superadmin") navigate("/superadmin");
+    else if (role === "admin") navigate("/admin");
+    else navigate("/worker");
   };
 
   return (

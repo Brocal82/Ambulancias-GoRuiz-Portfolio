@@ -7,7 +7,9 @@
         "welcome": {
             "title": "Ambulancias GORRUIZ",
             "login": "Iniciar Sesión",
-            "register": "Registrarse"
+            "register": "Registrarse",
+            "haveAccount": "Ya tengo cuenta",
+            "haveInvitation": "Tengo invitación"
         },
         "login": {
             "title": "Iniciar sesión",
@@ -26,7 +28,15 @@
             "password": "Contraseña",
             "submit": "Registrarse",
             "success": "Registro exitoso. Redirigiendo al login...",
-            "genericError": "Error al registrar"
+            "genericError": "Error al registrar",
+            "publicDisabled": "El registro público está deshabilitado. Necesitas una invitación.",
+            "goToLogin": "Ir a login"
+        },
+        "invitationAccept": {
+            "title": "Aceptar invitación",
+            "body": "Aquí podrás completar tu alta con el enlace de invitación. Disponible en la siguiente fase.",
+            "goLogin": "Ir a login",
+            "back": "⬅️ Volver a inicio"
         },
         "adminDashboard": {
             "title": "Panel del Administrador",

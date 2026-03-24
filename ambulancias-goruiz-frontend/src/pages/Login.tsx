@@ -25,8 +25,9 @@ const Login = () => {
 
       login(token, user._id, user.role, user);
 
-      // 🔁 Redirigir según el rol
-      if (user.role === "admin") {
+      if (user.role === "superadmin") {
+        navigate("/superadmin");
+      } else if (user.role === "admin") {
         navigate("/admin");
       } else {
         navigate("/worker");

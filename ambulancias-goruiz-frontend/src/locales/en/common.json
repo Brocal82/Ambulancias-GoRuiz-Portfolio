@@ -7,7 +7,9 @@
         "welcome": {
             "title": "GORRUIZ Ambulances",
             "login": "Login",
-            "register": "Register"
+            "register": "Register",
+            "haveAccount": "I already have an account",
+            "haveInvitation": "I have an invitation"
         },
         "login": {
             "title": "Login",
@@ -26,7 +28,15 @@
             "password": "Password",
             "submit": "Sign up",
             "success": "Registration successful. Redirecting to login...",
-            "genericError": "Registration failed"
+            "genericError": "Registration failed",
+            "publicDisabled": "Public registration is disabled. You need an invitation.",
+            "goToLogin": "Go to login"
+        },
+        "invitationAccept": {
+            "title": "Accept invitation",
+            "body": "You will be able to complete signup with your invitation link in the next phase.",
+            "goLogin": "Go to login",
+            "back": "⬅️ Back to home"
         },
         "adminDashboard": {
             "title": "Admin Dashboard",

@@ -20,16 +20,16 @@ export default function Welcome() {
                      hover:bg-blue-600 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200
                      transition-all duration-200 ease-in-out"
           >
-            {t("pages.welcome.login")}
+            {t("pages.welcome.haveAccount")}
           </button>
 
           <button
-            onClick={() => navigate("/register")}
+            onClick={() => navigate("/invitation/accept")}
             className="w-full rounded-xl border border-blue-400 bg-white/95 px-5 py-3 text-lg font-semibold text-blue-700
                      hover:bg-blue-50 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200
                      transition-all duration-200 ease-in-out"
           >
-            {t("pages.welcome.register")}
+            {t("pages.welcome.haveInvitation")}
           </button>
         </div>
       </div>

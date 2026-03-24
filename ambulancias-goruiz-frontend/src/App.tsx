@@ -10,6 +10,8 @@ import "react-toastify/dist/ReactToastify.css";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import SuperadminDashboard from "./pages/SuperadminDashboard";
+import InvitationAcceptPlaceholder from "./pages/InvitationAcceptPlaceholder";
 
 // Páginas privadas
 import { ProfilePage } from "./modules/users";
@@ -50,6 +52,7 @@ export default function App() {
           <Route path="/" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/invitation/accept" element={<InvitationAcceptPlaceholder />} />
 
           {/* Rutas protegidas */}
           <Route element={<RequireAuth />}>
@@ -66,6 +69,10 @@ export default function App() {
               <Route path="/worker/messages" element={<WorkerMessagesPage />} />
               <Route path="/my-workday" element={<MyWorkdayPage />} />
               <Route path="/worker/appointments" element={<WorkerAppointmentsPage />} />
+
+              <Route element={<RequireRole role="superadmin" />}>
+                <Route path="/superadmin" element={<SuperadminDashboard />} />
+              </Route>
 
               {/* Admin: protegido por rol */}
               <Route element={<RequireRole role="admin" />}>
