@@ -12,3 +12,15 @@ export interface AcceptInvitationInput {
   lastName: string;
   password: string;
 }
+
+export interface CreateInvitationPayload {
+  email: string;
+  role: "admin" | "worker";
+  expiresInDays?: number;
+}
+
+export interface CreateInvitationResponse {
+  invitationId: string;
+  token: string;
+  expiresAt: string;
+}

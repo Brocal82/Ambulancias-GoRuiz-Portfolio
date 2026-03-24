@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import SuperadminDashboard from "./pages/SuperadminDashboard";
 import AcceptInvitationPage from "./modules/invitations/pages/AcceptInvitationPage";
+import AdminInvitationsPage from "./modules/invitations/pages/AdminInvitationsPage";
 
 // Páginas privadas
 import { ProfilePage } from "./modules/users";
@@ -88,6 +89,7 @@ export default function App() {
               <Route element={<RequireRole role="admin" />}>
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/users" element={<AdminUsersPage />} />
+                <Route path="/admin/invitations" element={<AdminInvitationsPage />} />
                 <Route path="/admin/diensts" element={<AdminDienstsPage />} />
                 <Route path="/admin/dienst-templates" element={<AdminDienstTemplatesPage />} />
                 <Route path="/admin/hospitals" element={<AdminHospitalsPage />} />

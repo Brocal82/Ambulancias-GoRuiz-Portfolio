@@ -1,5 +1,5 @@
 //frontend/src/pages/AdminDashboard.tsx
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 // ? Hook para contador de pendientes de Vacaciones
@@ -11,6 +11,7 @@ import useAdminSickLeavesPendingCount from "../modules/sick/hooks/useAdminSickLe
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   // ? Contador de solicitudes de vacaciones pendientes
   const { count: vacationsPendingCount, isLoading: vacationsLoading } =
@@ -60,6 +61,17 @@ const AdminDashboard = () => {
             {t("pages.adminDashboard.users.desc")}
           </p>
         </Link>
+
+        <button
+          type="button"
+          onClick={() => navigate("/admin/invitations")}
+          className={centeredCard}
+        >
+          <h2 className="text-lg font-semibold mb-2">Invitaciones</h2>
+          <p className="text-sm text-gray-600">
+            Crear enlaces para invitar administradores o trabajadores
+          </p>
+        </button>
 
         <Link to="/admin/teams" className={centeredCard}>
           <h2 className="text-lg font-semibold mb-2">
