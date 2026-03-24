@@ -118,11 +118,25 @@ export async function clearPeopleForWeek(
     );
   }
 
-  if (companyId) {
-    const dc = (dienst as any).companyId;
-    if (dc && String(dc) !== String(companyId)) {
-      throw new DienstAssignmentError(403, "forbidden", "No tienes permiso para modificar este Dienst");
+  const dc = (dienst as any).companyId;
+  const callerHasCompany =
+    companyId != null && String(companyId).trim() !== "";
+  const hasDienstCompany = Boolean(dc);
+
+  if (!callerHasCompany) {
+    if (hasDienstCompany) {
+      throw new DienstAssignmentError(
+        403,
+        "forbidden",
+        "No tienes permiso para modificar este Dienst",
+      );
     }
+  } else if (hasDienstCompany && String(dc) !== String(companyId).trim()) {
+    throw new DienstAssignmentError(
+      403,
+      "forbidden",
+      "No tienes permiso para modificar este Dienst",
+    );
   }
 
   let clearedCount = 0;
