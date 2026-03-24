@@ -1,4 +1,9 @@
 import { Request, Response } from "express";
+import User from "../../users/models/user.model";
+import {
+  isSameCompany,
+  requireCompanyForAdmin,
+} from "../../../utils/requireCompany";
 import { checkVacationsInRangeService } from "../services/vacation-range.service";
 
 export const checkVacationsInRange = async (
@@ -17,7 +22,38 @@ export const checkVacationsInRange = async (
 
     let effectiveUserIds: string[];
     if (userRole === "admin") {
-      effectiveUserIds = userIds ?? [];
+      const companyResult = requireCompanyForAdmin(req);
+      if (!companyResult.ok) {
+        res
+          .status(companyResult.statusCode)
+          .json({ message: companyResult.message });
+        return;
+      }
+
+      const rawIds: string[] = Array.isArray(userIds) ? userIds : [];
+      const uniqueIds = [...new Set(rawIds)];
+
+      const found = await User.find({ _id: { $in: uniqueIds } })
+        .select("companyId")
+        .lean();
+
+      if (found.length !== uniqueIds.length) {
+        res.status(404).json({ message: "Usuario no encontrado" });
+        return;
+      }
+
+      for (const u of found) {
+        const co = (u as { companyId?: unknown }).companyId;
+        if (!isSameCompany(co, companyResult.companyId)) {
+          res.status(403).json({
+            message:
+              "No tienes permiso para consultar vacaciones de uno o más usuarios",
+          });
+          return;
+        }
+      }
+
+      effectiveUserIds = Array.isArray(userIds) ? userIds : [];
     } else {
       effectiveUserIds = userId ? [userId] : [];
     }
