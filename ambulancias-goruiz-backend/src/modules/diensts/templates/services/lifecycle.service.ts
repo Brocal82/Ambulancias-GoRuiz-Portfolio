@@ -107,12 +107,23 @@ export async function deleteDienstsForWeek(
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
 
-  const filter: Record<string, unknown> = {
-    weekStartDate: { $gte: start, $lte: end },
-  };
-  if (companyId) {
-    filter.companyId = new mongoose.Types.ObjectId(companyId);
-  }
+  const weekRange = { weekStartDate: { $gte: start, $lte: end } };
+  const callerHasCompany =
+    companyId != null && String(companyId).trim() !== "";
+
+  const filter: Record<string, unknown> = callerHasCompany
+    ? {
+        ...weekRange,
+        companyId: new mongoose.Types.ObjectId(String(companyId).trim()),
+      }
+    : {
+        $and: [
+          weekRange,
+          {
+            $or: [{ companyId: null }, { companyId: { $exists: false } }],
+          },
+        ],
+      };
 
   const deleted = await Dienst.deleteMany(filter);
   return { deletedCount: deleted.deletedCount ?? 0 };
