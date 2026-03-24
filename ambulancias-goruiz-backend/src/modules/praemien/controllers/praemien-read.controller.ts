@@ -1,17 +1,25 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
+import User from "../../users/models/user.model";
+import {
+  isSameCompany,
+  requireCompanyForAdmin,
+} from "../../../utils/requireCompany";
 import { getMonthlyHistoryForUser } from "../services/get-monthly-history.service";
 import { getMonthlySummaryForUser } from "../services/get-monthly-summary.service";
 
-type ResolvePraemienResult = string | null | { statusCode: 400; message: string };
+type ResolvePraemienResult =
+  | string
+  | null
+  | { statusCode: number; message: string };
 
 /**
  * Resuelve el userId autorizado para consultar praemien.
- * - Admin: puede usar ?userId=X para consultar cualquier usuario; si no lo pasa, usa el suyo.
- * - Worker: solo puede consultar sus propios datos (ignora query.userId).
- * Si admin pasa ?userId inválido, devuelve error 400.
+ * - Admin con ?userId=: solo si el objetivo pertenece a la misma empresa (JWT) que el admin.
+ * - Admin sin query: sus propios datos (req.userId).
+ * - Worker / superadmin: solo req.userId; query userId se ignora (igual que antes).
  */
-function resolvePraemienUserId(req: Request): ResolvePraemienResult {
+async function resolvePraemienUserId(req: Request): Promise<ResolvePraemienResult> {
   const isAdmin = req.userRole === "admin";
   const requestedUserId = req.query.userId as string | undefined;
 
@@ -19,14 +27,35 @@ function resolvePraemienUserId(req: Request): ResolvePraemienResult {
     if (!mongoose.Types.ObjectId.isValid(requestedUserId)) {
       return { statusCode: 400, message: "userId inválido" };
     }
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      return {
+        statusCode: companyResult.statusCode,
+        message: companyResult.message,
+      };
+    }
+    const targetUser = await User.findById(requestedUserId)
+      .select("companyId")
+      .lean();
+    if (!targetUser) {
+      return { statusCode: 404, message: "Usuario no encontrado" };
+    }
+    const userCo = (targetUser as { companyId?: unknown }).companyId;
+    if (!isSameCompany(userCo, companyResult.companyId)) {
+      return {
+        statusCode: 403,
+        message: "No tienes permiso para ver los datos de este usuario",
+      };
+    }
     return requestedUserId;
   }
+
   return req.userId ?? null;
 }
 
 function isErrorResult(
   r: ResolvePraemienResult,
-): r is { statusCode: 400; message: string } {
+): r is { statusCode: number; message: string } {
   return typeof r === "object" && r !== null && "statusCode" in r;
 }
 
@@ -35,7 +64,7 @@ export const getMonthlyPraemienSummary = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const result = resolvePraemienUserId(req);
+    const result = await resolvePraemienUserId(req);
     if (isErrorResult(result)) {
       res.status(result.statusCode).json({ message: result.message });
       return;
@@ -58,7 +87,7 @@ export const getPraemienMonthlyHistory = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const result = resolvePraemienUserId(req);
+    const result = await resolvePraemienUserId(req);
     if (isErrorResult(result)) {
       res.status(result.statusCode).json({ message: result.message });
       return;
