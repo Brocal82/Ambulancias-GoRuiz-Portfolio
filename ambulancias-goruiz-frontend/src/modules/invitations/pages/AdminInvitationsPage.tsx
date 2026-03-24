@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { createInvitation } from "../domain/api";
 import type { CreateInvitationResponse } from "../domain/types";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
 
 export default function AdminInvitationsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"admin" | "worker">("worker");
@@ -13,7 +15,7 @@ export default function AdminInvitationsPage() {
   const [result, setResult] = useState<CreateInvitationResponse | null>(null);
 
   const invitationLink = result?.token
-    ? `${window.location.origin}/invitation/accept?token=${result.token}`
+    ? `${window.location.origin}/invitation/accept?token=${encodeURIComponent(result.token)}`
     : "";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -34,13 +36,15 @@ export default function AdminInvitationsPage() {
           : {}),
       };
       const data = await createInvitation(payload);
-      toastT.success("Invitación creada correctamente");
+      toastT.success(t("pages.adminInvitations.toastCreateSuccess"));
       setEmail("");
       setRole("worker");
       setExpiresInDaysRaw("");
       setResult(data);
     } catch (err: unknown) {
-      toastT.error(getApiErrorMessage(err, "No se pudo crear la invitación"));
+      toastT.error(
+        getApiErrorMessage(err, t("pages.adminInvitations.errorCreateFallback")),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -50,9 +54,9 @@ export default function AdminInvitationsPage() {
     if (!invitationLink) return;
     try {
       await navigator.clipboard.writeText(invitationLink);
-      toastT.success("Link copiado");
+      toastT.success(t("pages.adminInvitations.toastCopySuccess"));
     } catch {
-      toastT.error("No se pudo copiar el enlace");
+      toastT.error(t("pages.adminInvitations.toastCopyError"));
     }
   };
 
@@ -64,14 +68,22 @@ export default function AdminInvitationsPage() {
           onClick={() => navigate("/admin")}
           className="text-sm text-blue-600 hover:underline"
         >
-          ← Volver al panel
+          {t("pages.adminInvitations.backToPanel")}
         </button>
       </div>
 
-      <h1 className="text-2xl font-bold text-slate-900 mb-2">Invitaciones</h1>
+      <h1 className="text-2xl font-bold text-slate-900 mb-2">
+        {t("pages.adminInvitations.title")}
+      </h1>
       <p className="text-sm text-slate-600 mb-6">
-        Genera un enlace para que un usuario complete su registro en tu empresa.
+        {t("pages.adminInvitations.intro")}
       </p>
+
+      {!result && (
+        <p className="text-sm text-slate-600 mb-4 rounded-lg border border-slate-200 bg-white/80 px-4 py-3">
+          {t("pages.adminInvitations.hintBeforeCreate")}
+        </p>
+      )}
 
       <form
         onSubmit={handleSubmit}
@@ -82,7 +94,7 @@ export default function AdminInvitationsPage() {
             htmlFor="inv-email"
             className="block text-sm font-medium text-slate-700 mb-1"
           >
-            Email
+            {t("pages.adminInvitations.email")}
           </label>
           <input
             id="inv-email"
@@ -100,7 +112,7 @@ export default function AdminInvitationsPage() {
             htmlFor="inv-role"
             className="block text-sm font-medium text-slate-700 mb-1"
           >
-            Rol
+            {t("pages.adminInvitations.role")}
           </label>
           <select
             id="inv-role"
@@ -110,8 +122,8 @@ export default function AdminInvitationsPage() {
             }
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
           >
-            <option value="worker">Trabajador</option>
-            <option value="admin">Administrador</option>
+            <option value="worker">{t("pages.adminInvitations.roleWorker")}</option>
+            <option value="admin">{t("pages.adminInvitations.roleAdmin")}</option>
           </select>
         </div>
 
@@ -120,19 +132,21 @@ export default function AdminInvitationsPage() {
             htmlFor="inv-expires"
             className="block text-sm font-medium text-slate-700 mb-1"
           >
-            Caduca en (días, opcional)
+            {t("pages.adminInvitations.expiresLabel")}
           </label>
           <input
             id="inv-expires"
             type="number"
             min={1}
             max={90}
-            placeholder="Por defecto 7"
+            placeholder={t("pages.adminInvitations.expiresPlaceholder")}
             value={expiresInDaysRaw}
             onChange={(e) => setExpiresInDaysRaw(e.target.value)}
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
           />
-          <p className="text-xs text-slate-500 mt-1">Entre 1 y 90 días.</p>
+          <p className="text-xs text-slate-500 mt-1">
+            {t("pages.adminInvitations.expiresHint")}
+          </p>
         </div>
 
         <button
@@ -140,25 +154,31 @@ export default function AdminInvitationsPage() {
           disabled={submitting}
           className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
         >
-          {submitting ? "Creando…" : "Crear invitación"}
+          {submitting
+            ? t("pages.adminInvitations.submitting")
+            : t("pages.adminInvitations.submit")}
         </button>
       </form>
 
       {result && (
         <div className="mt-6 bg-white rounded-lg shadow border border-slate-200 p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900">
-            Invitación generada
+            {t("pages.adminInvitations.resultTitle")}
           </h2>
 
           <div className="text-sm space-y-1">
             <p>
-              <span className="font-medium text-slate-700">Token:</span>{" "}
+              <span className="font-medium text-slate-700">
+                {t("pages.adminInvitations.tokenLabel")}
+              </span>{" "}
               <span className="text-slate-600 break-all font-mono text-xs">
                 {result.token}
               </span>
             </p>
             <p>
-              <span className="font-medium text-slate-700">Caduca:</span>{" "}
+              <span className="font-medium text-slate-700">
+                {t("pages.adminInvitations.expiresAtLabel")}
+              </span>{" "}
               <span className="text-slate-600">
                 {new Date(result.expiresAt).toLocaleString()}
               </span>
@@ -170,7 +190,7 @@ export default function AdminInvitationsPage() {
               htmlFor="invitation-link"
               className="block text-sm font-medium text-slate-700 mb-1"
             >
-              Enlace para el invitado
+              {t("pages.adminInvitations.linkLabel")}
             </label>
             <div className="flex flex-col sm:flex-row gap-2">
               <input
@@ -184,7 +204,7 @@ export default function AdminInvitationsPage() {
                 onClick={handleCopyLink}
                 className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 whitespace-nowrap"
               >
-                Copiar
+                {t("pages.adminInvitations.copy")}
               </button>
             </div>
           </div>
@@ -194,7 +214,7 @@ export default function AdminInvitationsPage() {
             onClick={() => setResult(null)}
             className="text-sm text-blue-600 hover:underline font-medium"
           >
-            Crear otra invitación
+            {t("pages.adminInvitations.createAnother")}
           </button>
         </div>
       )}

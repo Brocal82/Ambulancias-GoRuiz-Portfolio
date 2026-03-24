@@ -29,7 +29,7 @@
             "submit": "Sign up",
             "success": "Registration successful. Redirecting to login...",
             "genericError": "Registration failed",
-            "publicDisabled": "Public registration is disabled. You need an invitation.",
+            "publicDisabled": "Public registration is not available. To create your account you need an invitation link from a company administrator.",
             "goToLogin": "Go to login"
         },
         "invitationAccept": {
@@ -48,8 +48,8 @@
             "passwordHint": "At least 8 characters.",
             "submit": "Complete registration",
             "submitting": "Sending…",
-            "validateError": "Could not validate the invitation",
-            "acceptError": "Could not complete registration",
+            "validateError": "Could not validate the invitation.",
+            "acceptError": "Could not create your account with this invitation. Please try again.",
             "successToast": "Account created successfully",
             "successTitle": "All set!",
             "successBody": "Your account is ready. Redirecting you to sign in.",
@@ -58,11 +58,45 @@
             "noTokenTitle": "Incomplete link",
             "noTokenBody": "The invitation link is missing the token. Ask your administrator for a new link."
         },
+        "adminInvitations": {
+            "backToPanel": "← Back to dashboard",
+            "title": "Invitations",
+            "intro": "Generate a link so a user can complete signup with your company.",
+            "hintBeforeCreate": "Fill in the form and create an invitation. You can copy the link and send it by email or chat. No history is kept here—each invitation is separate.",
+            "email": "Email",
+            "role": "Role",
+            "roleWorker": "Worker",
+            "roleAdmin": "Administrator",
+            "expiresLabel": "Expires in (days, optional)",
+            "expiresPlaceholder": "Default 7",
+            "expiresHint": "Between 1 and 90 days.",
+            "submit": "Create invitation",
+            "submitting": "Creating…",
+            "resultTitle": "Invitation created",
+            "tokenLabel": "Token",
+            "expiresAtLabel": "Expires",
+            "linkLabel": "Link for the invitee",
+            "copy": "Copy",
+            "createAnother": "Create another invitation",
+            "toastCreateSuccess": "Invitation created successfully",
+            "toastCopySuccess": "Link copied",
+            "toastCopyError": "Could not copy the link",
+            "errorCreateFallback": "Could not create the invitation"
+        },
+        "superadminDashboard": {
+            "title": "Superadmin",
+            "subtitle": "Global management dashboard.",
+            "manageCompanies": "Manage companies"
+        },
         "adminDashboard": {
             "title": "Admin Dashboard",
             "users": {
                 "title": "👤 Workers",
                 "desc": "Manage user profiles"
+            },
+            "invitations": {
+                "title": "✉️ Invitations",
+                "desc": "Create links to invite administrators or workers to your company"
             },
             "teams": {
                 "title": "👥 Teams",

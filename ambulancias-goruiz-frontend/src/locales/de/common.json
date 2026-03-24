@@ -29,7 +29,7 @@
             "submit": "Registrieren",
             "success": "Erfolgreich registriert. Weiterleitung zum Login...",
             "genericError": "Fehler bei der Registrierung",
-            "publicDisabled": "Die öffentliche Registrierung ist deaktiviert. Du benötigst eine Einladung.",
+            "publicDisabled": "Die öffentliche Registrierung ist nicht verfügbar. Um ein Konto zu erstellen, benötigst du einen Einladungslink von einem Administrator deines Unternehmens.",
             "goToLogin": "Zum Login"
         },
         "invitationAccept": {
@@ -48,8 +48,8 @@
             "passwordHint": "Mindestens 8 Zeichen.",
             "submit": "Registrierung abschließen",
             "submitting": "Wird gesendet…",
-            "validateError": "Einladung konnte nicht geprüft werden",
-            "acceptError": "Registrierung konnte nicht abgeschlossen werden",
+            "validateError": "Die Einladung konnte nicht geprüft werden.",
+            "acceptError": "Dein Konto konnte mit dieser Einladung nicht erstellt werden. Bitte versuche es erneut.",
             "successToast": "Konto erfolgreich erstellt",
             "successTitle": "Fertig!",
             "successBody": "Dein Konto ist angelegt. Du wirst zur Anmeldung weitergeleitet.",
@@ -58,11 +58,45 @@
             "noTokenTitle": "Unvollständiger Link",
             "noTokenBody": "Im Einladungslink fehlt das Token. Bitte einen neuen Link beim Administrator anfordern."
         },
+        "adminInvitations": {
+            "backToPanel": "← Zurück zum Panel",
+            "title": "Einladungen",
+            "intro": "Erstelle einen Link, damit sich ein Benutzer bei deinem Unternehmen registrieren kann.",
+            "hintBeforeCreate": "Fülle das Formular aus und erstelle eine Einladung. Du kannst den Link kopieren und per E-Mail oder Chat senden. Hier wird kein Verlauf gespeichert – jede Einladung steht für sich.",
+            "email": "E-Mail",
+            "role": "Rolle",
+            "roleWorker": "Mitarbeiter",
+            "roleAdmin": "Administrator",
+            "expiresLabel": "Läuft ab in (Tagen, optional)",
+            "expiresPlaceholder": "Standard 7",
+            "expiresHint": "Zwischen 1 und 90 Tagen.",
+            "submit": "Einladung erstellen",
+            "submitting": "Wird erstellt…",
+            "resultTitle": "Einladung erstellt",
+            "tokenLabel": "Token",
+            "expiresAtLabel": "Läuft ab",
+            "linkLabel": "Link für die eingeladene Person",
+            "copy": "Kopieren",
+            "createAnother": "Weitere Einladung erstellen",
+            "toastCreateSuccess": "Einladung erfolgreich erstellt",
+            "toastCopySuccess": "Link kopiert",
+            "toastCopyError": "Link konnte nicht kopiert werden",
+            "errorCreateFallback": "Einladung konnte nicht erstellt werden"
+        },
+        "superadminDashboard": {
+            "title": "Superadmin",
+            "subtitle": "Globales Verwaltungspanel.",
+            "manageCompanies": "Unternehmen verwalten"
+        },
         "adminDashboard": {
             "title": "Administrator-Panel",
             "users": {
                 "title": "👤 Mitarbeitende",
                 "desc": "Verwalte Benutzerprofile"
+            },
+            "invitations": {
+                "title": "✉️ Einladungen",
+                "desc": "Links erstellen, um Administratoren oder Mitarbeitende in dein Unternehmen einzuladen"
             },
             "teams": {
                 "title": "👥 Teams",

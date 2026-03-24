@@ -29,7 +29,7 @@
             "submit": "Registrarse",
             "success": "Registro exitoso. Redirigiendo al login...",
             "genericError": "Error al registrar",
-            "publicDisabled": "El registro público está deshabilitado. Necesitas una invitación.",
+            "publicDisabled": "El registro público no está disponible. Para crear tu cuenta necesitas un enlace de invitación de un administrador de tu empresa.",
             "goToLogin": "Ir a login"
         },
         "invitationAccept": {
@@ -48,8 +48,8 @@
             "passwordHint": "Mínimo 8 caracteres.",
             "submit": "Completar registro",
             "submitting": "Enviando…",
-            "validateError": "No se pudo validar la invitación",
-            "acceptError": "No se pudo completar el registro",
+            "validateError": "No se pudo validar la invitación.",
+            "acceptError": "No se pudo crear tu cuenta con esta invitación. Inténtalo de nuevo.",
             "successToast": "Cuenta creada correctamente",
             "successTitle": "¡Listo!",
             "successBody": "Tu cuenta está creada. Te redirigimos al inicio de sesión.",
@@ -58,11 +58,45 @@
             "noTokenTitle": "Enlace incompleto",
             "noTokenBody": "Falta el token de invitación en el enlace. Pide un nuevo enlace al administrador."
         },
+        "adminInvitations": {
+            "backToPanel": "← Volver al panel",
+            "title": "Invitaciones",
+            "intro": "Genera un enlace para que un usuario complete su registro en tu empresa.",
+            "hintBeforeCreate": "Completa el formulario y crea una invitación. Podrás copiar el enlace y enviarlo por correo o chat. No se guarda historial aquí: cada invitación es independiente.",
+            "email": "Email",
+            "role": "Rol",
+            "roleWorker": "Trabajador",
+            "roleAdmin": "Administrador",
+            "expiresLabel": "Caduca en (días, opcional)",
+            "expiresPlaceholder": "Por defecto 7",
+            "expiresHint": "Entre 1 y 90 días.",
+            "submit": "Crear invitación",
+            "submitting": "Creando…",
+            "resultTitle": "Invitación generada",
+            "tokenLabel": "Token",
+            "expiresAtLabel": "Caduca",
+            "linkLabel": "Enlace para el invitado",
+            "copy": "Copiar",
+            "createAnother": "Crear otra invitación",
+            "toastCreateSuccess": "Invitación creada correctamente",
+            "toastCopySuccess": "Enlace copiado",
+            "toastCopyError": "No se pudo copiar el enlace",
+            "errorCreateFallback": "No se pudo crear la invitación"
+        },
+        "superadminDashboard": {
+            "title": "Superadmin",
+            "subtitle": "Panel de gestión global.",
+            "manageCompanies": "Gestionar empresas"
+        },
         "adminDashboard": {
             "title": "Panel del Administrador",
             "users": {
                 "title": "👤 Trabajadores",
                 "desc": "Gestiona los perfiles de usuario"
+            },
+            "invitations": {
+                "title": "✉️ Invitaciones",
+                "desc": "Crea enlaces para invitar administradores o trabajadores a tu empresa"
             },
             "teams": {
                 "title": "👥 Equipos",
