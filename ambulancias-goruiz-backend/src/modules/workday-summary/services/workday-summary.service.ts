@@ -470,6 +470,35 @@ export async function reportIssue(
   return newIssue;
 }
 
+/**
+ * Mutación por id (issues / summaries): aislamiento multiempresa.
+ * - Caller con companyId: permite mismo companyId o documento legacy (sin companyId).
+ * - Caller sin companyId (admin legacy): solo documentos legacy.
+ */
+function assertCanMutateWorkdayEntityByCompany(
+  documentCompanyId: unknown,
+  callerCompanyId: string | null | undefined,
+  forbiddenMessage: string,
+): void {
+  const docCoRaw = documentCompanyId != null ? String(documentCompanyId) : "";
+  const docCo = docCoRaw !== "" ? docCoRaw : null;
+
+  const callerHasCompany =
+    callerCompanyId != null && String(callerCompanyId).trim() !== "";
+
+  if (callerHasCompany) {
+    const callerCo = String(callerCompanyId);
+    if (docCo && docCo !== callerCo) {
+      throw new WorkdaySummaryError(forbiddenMessage, 403);
+    }
+    return;
+  }
+
+  if (docCo) {
+    throw new WorkdaySummaryError(forbiddenMessage, 403);
+  }
+}
+
 export async function getAllIssueReports(companyId?: string | null) {
   const filter = companyId
     ? { companyId: new mongoose.Types.ObjectId(companyId) }
@@ -482,11 +511,12 @@ export async function deleteIssueReport(id: string, companyId?: string | null) {
     throw new WorkdaySummaryError("ID inválido", 400);
   }
   const issue = await WorkdayIssue.findById(id).select("companyId").lean();
-  if (companyId && issue) {
-    const ic = (issue as any).companyId;
-    if (ic && String(ic) !== String(companyId)) {
-      throw new WorkdaySummaryError("No tienes permiso para eliminar este reporte", 403);
-    }
+  if (issue) {
+    assertCanMutateWorkdayEntityByCompany(
+      (issue as { companyId?: unknown }).companyId,
+      companyId,
+      "No tienes permiso para eliminar este reporte",
+    );
   }
   const deleted = await WorkdayIssue.findByIdAndDelete(id);
   if (!deleted) {
@@ -501,11 +531,12 @@ export async function markIssueSeen(id: string, companyId?: string | null) {
     throw new WorkdaySummaryError("ID inválido", 400);
   }
   const issue = await WorkdayIssue.findById(id).select("companyId").lean();
-  if (companyId && issue) {
-    const ic = (issue as any).companyId;
-    if (ic && String(ic) !== String(companyId)) {
-      throw new WorkdaySummaryError("No tienes permiso para marcar este reporte", 403);
-    }
+  if (issue) {
+    assertCanMutateWorkdayEntityByCompany(
+      (issue as { companyId?: unknown }).companyId,
+      companyId,
+      "No tienes permiso para marcar este reporte",
+    );
   }
   const updated = await WorkdayIssue.findByIdAndUpdate(
     id,
@@ -588,11 +619,12 @@ export async function markSummaryReviewed(id: string, companyId?: string | null)
     throw new WorkdaySummaryError("ID inválido", 400);
   }
   const summary = await WorkdaySummary.findById(id).select("companyId").lean();
-  if (companyId && summary) {
-    const sc = (summary as any).companyId;
-    if (sc && String(sc) !== String(companyId)) {
-      throw new WorkdaySummaryError("No tienes permiso para revisar este resumen", 403);
-    }
+  if (summary) {
+    assertCanMutateWorkdayEntityByCompany(
+      (summary as { companyId?: unknown }).companyId,
+      companyId,
+      "No tienes permiso para revisar este resumen",
+    );
   }
   const updated = await WorkdaySummary.findByIdAndUpdate(
     id,
