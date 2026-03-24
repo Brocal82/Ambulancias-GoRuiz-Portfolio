@@ -182,12 +182,22 @@ export async function updateDienstPartial(
   if (!dienst) return null;
 
   const dc = (dienst as any).companyId;
-  if (companyId) {
-    if (dc && String(dc) !== String(companyId)) {
-      return null;
-    }
+  const callerHasCompany =
+    companyId != null && String(companyId).trim() !== "";
+  const hasDienstCompany = Boolean(dc);
+
+  if (!callerHasCompany) {
+    if (hasDienstCompany) return null;
+  } else if (hasDienstCompany && String(dc) !== String(companyId).trim()) {
+    return null;
   }
-  const dienstCompanyId = dc != null ? String(dc) : (companyId != null && companyId !== "" ? String(companyId) : null);
+
+  const dienstCompanyId =
+    dc != null && String(dc) !== ""
+      ? String(dc)
+      : callerHasCompany
+        ? String(companyId).trim()
+        : null;
   await validateAssignmentEntities(assignments, dienstCompanyId);
 
   for (const incoming of assignments) {
