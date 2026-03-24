@@ -18,7 +18,16 @@ export const getAvailability = async (
       return;
     }
 
-    const availability = await getVacationAvailability({ year, month });
+    const companyId =
+      typeof req.companyId === "string" && req.companyId.trim() !== ""
+        ? req.companyId
+        : undefined;
+
+    const availability = await getVacationAvailability({
+      year,
+      month,
+      companyId,
+    });
     res.status(200).json(availability);
   } catch (error) {
     console.error("Error al calcular disponibilidad:", error);

@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+import User from "../../users/models/user.model";
 import VacationRequest from "../models/vacation-request.model";
 import {
   DEFAULT_MAX_PER_DAY,
@@ -25,8 +27,10 @@ function isInRange(d: Date, start: Date, end: Date) {
 export async function getVacationAvailability(params: {
   year: number;
   month: number;
+  /** Si viene definido y es ObjectId válido, solo solicitudes de usuarios de esa empresa. */
+  companyId?: string;
 }) {
-  const { year, month } = params;
+  const { year, month, companyId } = params;
 
   const monthKey = toMonthKey(year, month);
   const monthStart = dayStart(new Date(year, month - 1, 1));
@@ -36,13 +40,32 @@ export async function getVacationAvailability(params: {
   const maxPerDay = cfg?.maxPerDay ?? DEFAULT_MAX_PER_DAY;
   const blackouts = cfg?.blackouts ?? [];
 
-  const requests = await VacationRequest.find({
-    status: { $in: ["pending", "accepted"] },
+  const baseFilter = {
+    status: { $in: ["pending", "accepted"] as const },
     startDate: { $lte: monthEnd },
     endDate: { $gte: monthStart },
-  })
-    .select("startDate endDate status user")
-    .lean();
+  };
+
+  let requests;
+  if (companyId && mongoose.Types.ObjectId.isValid(companyId)) {
+    const members = await User.find({
+      companyId: new mongoose.Types.ObjectId(companyId),
+    })
+      .select("_id")
+      .lean();
+    const memberIds = members.map((u) => u._id);
+
+    requests = await VacationRequest.find({
+      ...baseFilter,
+      user: { $in: memberIds },
+    })
+      .select("startDate endDate status user")
+      .lean();
+  } else {
+    requests = await VacationRequest.find(baseFilter)
+      .select("startDate endDate status user")
+      .lean();
+  }
 
   const daysInMonth = new Date(year, month, 0).getDate();
   const days: {
