@@ -24,8 +24,7 @@ interface ProfileProps {
 }
 
 const Profile = ({ userId }: ProfileProps) => {
-  const { userId: userIdFromAuthContext, token, role, login, user } =
-    useAuth();
+  const { userId: userIdFromAuthContext, token, role, login } = useAuth();
   const [formData, setFormData] = useState<Partial<User>>({});
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [documentsFiles, setDocumentsFiles] = useState<FileList | null>(null);
@@ -246,11 +245,12 @@ const Profile = ({ userId }: ProfileProps) => {
           <h2 className="text-base sm:text-lg font-semibold tracking-tight text-white">
             {`${formData.lastName ?? ""}, ${formData.name ?? ""}`.trim() || "—"}
           </h2>
-          {role === "worker" && user?.employeeNumber && (
-            <span className="text-orange-400 font-bold text-base tracking-wide">
-              {user.employeeNumber}
-            </span>
-          )}
+          {formData.role === "worker" &&
+            formData.employeeNumber?.trim() && (
+              <span className="text-orange-400 font-bold text-base tracking-wide">
+                {formData.employeeNumber}
+              </span>
+            )}
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5">
