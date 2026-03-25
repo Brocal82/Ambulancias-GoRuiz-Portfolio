@@ -34,6 +34,8 @@ const Profile = ({ userId }: ProfileProps) => {
 
   const navigate = useNavigate();
 
+  const isAdminEditingOtherUser = role === "admin" && Boolean(userId);
+
   useEffect(() => {
     setLoading(true);
 
@@ -97,6 +99,9 @@ const Profile = ({ userId }: ProfileProps) => {
         emergencyPhone: formData.emergencyPhone,
         pscheinExpiry: formData.pscheinExpiry,
         profileImage: uploadedProfileImage || formData.profileImage,
+        ...(isAdminEditingOtherUser
+          ? { employeeNumber: (formData.employeeNumber ?? "").trim() }
+          : {}),
       };
 
       // ✅ Validación mínima (evita mandar strings vacíos)
@@ -394,6 +399,29 @@ const Profile = ({ userId }: ProfileProps) => {
                     title={t("pages.profile.image.emailLocked")}
                   />
                 </div>
+
+                {isAdminEditingOtherUser && (
+                  <div className="space-y-1 md:col-span-2">
+                    <label
+                      htmlFor="employeeNumber"
+                      className="block text-xs font-medium text-slate-700"
+                    >
+                      {t("pages.adminInvitations.employeeNumber")}
+                    </label>
+                    <input
+                      type="text"
+                      id="employeeNumber"
+                      name="employeeNumber"
+                      value={formData.employeeNumber ?? ""}
+                      onChange={handleChange}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400"
+                      placeholder={t(
+                        "pages.adminInvitations.employeeNumberPlaceholder",
+                      )}
+                      title={t("pages.adminInvitations.employeeNumberHint")}
+                    />
+                  </div>
+                )}
 
                 {/* Teléfono */}
                 <div className="space-y-1">

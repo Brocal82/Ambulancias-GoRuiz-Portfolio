@@ -44,4 +44,5 @@ export const updateUserSchema = z.object({
   emergencyPhone: z.string().transform((s) => s.trim()).optional(),
   pscheinExpiry: z.string().transform((s) => s.trim()).optional(),
   profileImage: z.string().optional(),
+  employeeNumber: z.string().transform((s) => s.trim()).optional(),
 });

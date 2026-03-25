@@ -13,6 +13,9 @@ export interface UpdateUserPayload {
 
   /** Cadena vacía "" significa eliminar imagen */
   profileImage?: string;
+
+  /** Solo lo envía el front en modo admin editando otro usuario; backend solo aplica si el requester es admin */
+  employeeNumber?: string;
 }
 
 export interface UploadUserFilesPayload {

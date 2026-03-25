@@ -99,6 +99,9 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
 
   try {
     const dto = parseUpdateUserDTO(req.body);
+    if (req.userRole !== "admin") {
+      delete dto.employeeNumber;
+    }
     const updatedUser = await updateUserService(userId, dto as any);
     res.status(200).json(sanitizeUser(updatedUser));
   } catch (error: any) {

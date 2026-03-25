@@ -26,6 +26,8 @@ export function parseUpdateUserDTO(body: any): Partial<UpdateUserDTO> {
     result.emergencyPhone = asString(body.emergencyPhone);
   if (body?.pscheinExpiry !== undefined) result.pscheinExpiry = asString(body.pscheinExpiry);
   if (body?.profileImage !== undefined) result.profileImage = asString(body.profileImage) ?? "";
+  if (body?.employeeNumber !== undefined)
+    result.employeeNumber = asString(body.employeeNumber) ?? "";
 
   return result;
 }

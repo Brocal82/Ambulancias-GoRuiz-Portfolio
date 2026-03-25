@@ -18,6 +18,8 @@ export interface UpdateUserDTO {
    */
   profileImage?: string;
 
+  employeeNumber?: string;
+
   // docs lo gestiona uploadUserFiles, no updateUser
   // documents?: string[];
 }

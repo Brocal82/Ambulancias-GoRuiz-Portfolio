@@ -186,6 +186,7 @@ interface UpdateUserInput {
   emergencyPhone?: string;
   pscheinExpiry?: string;
   profileImage?: string;
+  employeeNumber?: string;
 }
 
 export async function updateUserService(
