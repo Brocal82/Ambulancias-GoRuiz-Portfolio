@@ -3,6 +3,8 @@ export interface ValidateInvitationResponse {
   email?: string;
   role?: "admin" | "worker";
   companyName?: string;
+  /** From API when invitation is worker and has a stored employee number. */
+  employeeNumber?: string;
   reason?: string;
 }
 

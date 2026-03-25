@@ -42,6 +42,7 @@
             "validating": "Checking invitation…",
             "validForCompany": "Valid invitation for {{company}}",
             "roleLabel": "Role",
+            "employeeNumberLabel": "Employee number",
             "roleAdmin": "Administrator",
             "roleWorker": "Worker",
             "name": "First name",

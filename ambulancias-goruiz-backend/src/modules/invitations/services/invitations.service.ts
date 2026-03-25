@@ -74,6 +74,8 @@ export interface ValidateInvitationResult {
   email: string;
   role: "admin" | "worker";
   companyName: string;
+  /** Present only for worker invitations when stored on the document. */
+  employeeNumber?: string;
 }
 
 export async function validateInvitationService(
@@ -106,12 +108,19 @@ export async function validateInvitationService(
 
   const company = invitation.companyId as unknown as { name?: string } | null;
   const companyName = company?.name ?? "";
+  const role = invitation.role as "admin" | "worker";
+  const invDoc = invitation as { employeeNumber?: string };
+  const rawEmp =
+    typeof invDoc.employeeNumber === "string" ? invDoc.employeeNumber.trim() : "";
+  const employeeNumber =
+    role === "worker" && rawEmp.length > 0 ? rawEmp : undefined;
 
   return {
     valid: true,
     email: invitation.email,
-    role: invitation.role as "admin" | "worker",
+    role,
     companyName,
+    ...(employeeNumber !== undefined ? { employeeNumber } : {}),
   };
 }
 

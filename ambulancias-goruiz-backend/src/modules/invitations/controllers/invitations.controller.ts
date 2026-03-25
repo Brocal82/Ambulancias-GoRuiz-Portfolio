@@ -70,6 +70,7 @@ export const validateInvitation = async (req: Request, res: Response): Promise<v
       email: result.email,
       role: result.role,
       companyName: result.companyName,
+      ...(result.employeeNumber ? { employeeNumber: result.employeeNumber } : {}),
     });
   } catch (error) {
     console.error("Error al validar invitación:", error);

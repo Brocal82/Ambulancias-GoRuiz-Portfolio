@@ -42,6 +42,7 @@
             "validating": "Comprobando la invitación…",
             "validForCompany": "Invitación válida para {{company}}",
             "roleLabel": "Rol",
+            "employeeNumberLabel": "Número de empleado",
             "roleAdmin": "Administrador",
             "roleWorker": "Trabajador",
             "name": "Nombre",

@@ -42,6 +42,7 @@
             "validating": "Einladung wird geprüft…",
             "validForCompany": "Gültige Einladung für {{company}}",
             "roleLabel": "Rolle",
+            "employeeNumberLabel": "Mitarbeiternummer",
             "roleAdmin": "Administrator",
             "roleWorker": "Mitarbeiter",
             "name": "Vorname",

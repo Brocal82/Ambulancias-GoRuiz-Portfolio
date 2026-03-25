@@ -166,12 +166,18 @@ export default function AcceptInvitationPage() {
               </p>
             )}
             {roleLabel ? (
-              <p className="text-slate-400 text-xs mb-6 text-center">
+              <p className="text-slate-400 text-xs mb-1 text-center">
                 {t("pages.invitationAccept.roleLabel")}: {roleLabel}
               </p>
-            ) : (
-              <div className="mb-6" />
-            )}
+            ) : null}
+            {validation.role === "worker" &&
+              validation.employeeNumber?.trim() && (
+                <p className="text-slate-400 text-xs mb-1 text-center">
+                  {t("pages.invitationAccept.employeeNumberLabel")}:{" "}
+                  {validation.employeeNumber}
+                </p>
+              )}
+            <div className="mb-6" />
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
