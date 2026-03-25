@@ -99,9 +99,16 @@ export default function AppLayout() {
           >
             {user && (
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-slate-200">
-                  {user.lastName}, {user.name}
-                </span>
+                <div className="flex min-w-0 flex-col">
+                  <span className="text-sm font-medium text-slate-200">
+                    {user.lastName}, {user.name}
+                  </span>
+                  {role === "worker" && user.employeeNumber?.trim() ? (
+                    <span className="text-xs font-semibold text-orange-400 leading-tight">
+                      {user.employeeNumber}
+                    </span>
+                  ) : null}
+                </div>
 
                 <Link
                   to="/profile"
