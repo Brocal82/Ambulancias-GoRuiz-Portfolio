@@ -1,6 +1,7 @@
 {
     "layout": {
         "appName": "Krankentransport GORRUIZ",
+        "appNamePrefix": "Krankentransport",
         "logout": "Abmelden"
     },
     "pages": {

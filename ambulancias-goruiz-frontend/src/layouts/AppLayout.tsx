@@ -1,15 +1,49 @@
 // src/layouts/AppLayout.tsx
+import { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import LanguageSwitcher from "../components/ui/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 import { buildImageUrl } from "../utils/apiOrigins";
+import { getMyCompany } from "../modules/companies/domain/api";
 
 export default function AppLayout() {
-  const { logout, role, user } = useAuth();
+  const { logout, role, user, isAuthReady } = useAuth();
+  const [headerCompanyName, setHeaderCompanyName] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    if (
+      !isAuthReady ||
+      role === "superadmin" ||
+      !user?.companyId ||
+      !user?._id
+    ) {
+      setHeaderCompanyName(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const company = await getMyCompany();
+        if (!cancelled) {
+          setHeaderCompanyName(company?.name?.trim() || null);
+        }
+      } catch {
+        if (!cancelled) {
+          setHeaderCompanyName(null);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthReady, role, user?._id, user?.companyId]);
 
   const goHome = () => {
     if (role === "superadmin") navigate("/superadmin");
@@ -46,8 +80,10 @@ export default function AppLayout() {
                 d="M3 9.75L12 3l9 6.75M4.5 10.5V21h15v-10.5"
               />
             </svg>
-            <span className="text-lg sm:text-xl font-semibold tracking-tight text-slate-50">
-              {t("layout.appName")}
+            <span className="text-lg sm:text-xl font-semibold tracking-tight text-slate-50 max-w-[40vw] sm:max-w-md truncate">
+              {headerCompanyName
+                ? `${t("layout.appNamePrefix")} ${headerCompanyName.toUpperCase()}`
+                : t("layout.appName")}
             </span>
           </button>
 

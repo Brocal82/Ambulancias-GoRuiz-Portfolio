@@ -1,6 +1,7 @@
 {
     "layout": {
         "appName": "GORRUIZ Ambulances",
+        "appNamePrefix": "Ambulances",
         "logout": "Logout"
     },
     "pages": {
