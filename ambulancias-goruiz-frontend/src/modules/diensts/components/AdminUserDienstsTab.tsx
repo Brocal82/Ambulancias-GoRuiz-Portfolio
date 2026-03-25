@@ -15,12 +15,33 @@ import { useTranslation } from "react-i18next";
 import { DienstDayCell, WeekBlock } from "./index";
 import {
   getAssignmentStatus,
+  getOffDayStatusClass,
   getStatusClass,
   getWeekDays,
   getWeekStartsBerlin,
   buildDienstDayCellLines,
+  resolveUserAbsenceForFreeDay,
 } from "../utils";
 import { toFlexibleFromAssignedDay } from "../assignments";
+
+import { getVacationRequests } from "../../vacation/domain/api";
+import type { IVacationRequest } from "../../vacation/domain/types";
+import { adminListSickLeaves } from "../../sick/domain/api";
+import type { SickLeave } from "../../sick/domain/types";
+
+function vacationRequestForUser(
+  v: IVacationRequest,
+  targetUserId: string,
+): boolean {
+  const u = v.user as unknown;
+  const id =
+    typeof u === "string"
+      ? u
+      : u && typeof u === "object" && "_id" in (u as object)
+        ? String((u as { _id?: string })._id ?? "")
+        : "";
+  return Boolean(id) && id === String(targetUserId);
+}
 
 interface Props {
   userId: string;
@@ -33,6 +54,8 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
   const [userDiensts, setUserDiensts] = useState<Dienst[]>([]);
   const [allDiensts, setAllDiensts] = useState<Dienst[]>([]);
   const [assignedDays, setAssignedDays] = useState<AssignedDay[]>([]);
+  const [userVacations, setUserVacations] = useState<IVacationRequest[]>([]);
+  const [userSickLeaves, setUserSickLeaves] = useState<SickLeave[]>([]);
   const [loading, setLoading] = useState(true);
 
   const assignedByDate = useMemo(() => {
@@ -57,16 +80,26 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
     setLoading(true);
 
     try {
-      const [assignedDaysData, userDienstsData, allDienstsData] =
-        await Promise.all([
-          getAssignedDaysForUser(userId, token),
-          getDienstByUser(userId, token),
-          getAllDiensts(token),
-        ]);
+      const [
+        assignedDaysData,
+        userDienstsData,
+        allDienstsData,
+        allVacationRequests,
+        sickForUser,
+      ] = await Promise.all([
+        getAssignedDaysForUser(userId, token),
+        getDienstByUser(userId, token),
+        getAllDiensts(token),
+        getVacationRequests(),
+        adminListSickLeaves({ userId }),
+      ]);
 
       setAssignedDays(assignedDaysData);
       setUserDiensts(userDienstsData);
       setAllDiensts(allDienstsData);
+      const vacs = Array.isArray(allVacationRequests) ? allVacationRequests : [];
+      setUserVacations(vacs.filter((v) => vacationRequestForUser(v, userId)));
+      setUserSickLeaves(Array.isArray(sickForUser) ? sickForUser : []);
     } catch (e) {
       console.error("Error al cargar datos de diensts:", e);
     } finally {
@@ -148,7 +181,23 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                     const assignment = assignedByDate.get(dateStr);
 
                     const status = getAssignmentStatus(assignment);
-                    const cls = getStatusClass(status);
+                    const absence = assignment
+                      ? "none"
+                      : resolveUserAbsenceForFreeDay(
+                          dateStr,
+                          userVacations,
+                          userSickLeaves,
+                        );
+                    const cls = assignment
+                      ? getStatusClass(status)
+                      : getOffDayStatusClass(absence);
+
+                    const freeLabel =
+                      absence === "vacation"
+                        ? `🏖️ ${t("pages.diensts.workerPage.vacationDay")}`
+                        : absence === "sick"
+                          ? `🤒 ${t("pages.diensts.workerPage.sickDay")}`
+                          : `🌴 ${t("pages.diensts.adminPage.freeDay")}`;
 
                     const isPast = isPastDay(dateStr);
 
@@ -162,7 +211,7 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
                         lines={buildDienstDayCellLines({
                           isoDay: dateStr,
                           lang: i18n.language,
-                          freeLabel: `🌴 ${t("pages.diensts.adminPage.freeDay")}`,
+                          freeLabel,
                           assignment: assignment
                             ? {
                               startTime: assignment.startTime,
