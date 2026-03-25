@@ -9,6 +9,7 @@ export interface User {
   email: string;
   role: AppRole;
   companyId?: string;
+  employeeNumber?: string;
   ambulanceRole?: AmbulanceRole;
   pscheinExpiry?: string;
   address?: string;
