@@ -115,10 +115,16 @@ export const updateVacationRequest = async (
       try {
         await cleanupAcceptedVacationAssignments(acceptedRange);
       } catch (clearErr) {
-        console.error(
-          "⚠️ Error al desasignar usuario de Diensts tras aceptar vacaciones:",
-          clearErr,
-        );
+        console.error("[CLEARING_ERROR]", {
+          flow: "vacation_admin_accept",
+          entityId: id,
+          userId: acceptedRange.userId,
+          startISO: acceptedRange.startISO,
+          endISO: acceptedRange.endISO,
+          error:
+            clearErr instanceof Error ? clearErr.message : String(clearErr),
+          stack: clearErr instanceof Error ? clearErr.stack : undefined,
+        });
       }
     }
   } catch (err: any) {

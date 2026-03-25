@@ -41,10 +41,15 @@ export const respondToAlternativeDate = async (
       try {
         await clearUserFromDienstsInRange(acceptedRange);
       } catch (err) {
-        console.error(
-          "❌ Error limpiando Diensts tras aceptar alternativa:",
-          err,
-        );
+        console.error("[CLEARING_ERROR]", {
+          flow: "vacation_worker_alternative_accept",
+          entityId: id,
+          userId: acceptedRange.userId,
+          startISO: acceptedRange.startISO,
+          endISO: acceptedRange.endISO,
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+        });
       }
     }
 

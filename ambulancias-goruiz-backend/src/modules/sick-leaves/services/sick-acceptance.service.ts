@@ -54,10 +54,16 @@ export async function acceptSickLeaveWorkflow(sick: any) {
       });
     }
   } catch (clearErr) {
-    console.error(
-      "\u26A0\uFE0F Error al desasignar usuario de Diensts tras aceptar baja:",
-      clearErr,
-    );
+    console.error("[CLEARING_ERROR]", {
+      flow: "sick_admin_accept",
+      entityId: String(sick._id),
+      userId: userIdStr ?? "",
+      startISO,
+      endISO,
+      error:
+        clearErr instanceof Error ? clearErr.message : String(clearErr),
+      stack: clearErr instanceof Error ? clearErr.stack : undefined,
+    });
   }
 
   return {
