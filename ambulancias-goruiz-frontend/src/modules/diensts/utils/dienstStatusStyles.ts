@@ -1,5 +1,7 @@
 //src/modules/diensts/utils/dienstStatusStyles.ts
 import { isPartialAssignment } from "./assignmentUtils";
+import type { UserAbsenceKind } from "./userAbsence";
+
 export type AssignmentStatus = "off" | "partial" | "full";
 
 /** Referencia única para estado incompleto/parcial (todas las vistas) */
@@ -29,5 +31,12 @@ export const getAssignmentStatus = (
 export const getStatusClass = (status: AssignmentStatus): string => {
   if (status === "partial") return INCOMPLETE_BG_RING;
   if (status === "full") return "bg-blue-100 ring-blue-300";
+  return "bg-emerald-50 ring-emerald-200";
+};
+
+/** Styling for a free (unassigned) day on worker user views; `none` matches `getStatusClass("off")`. */
+export const getOffDayStatusClass = (absence: UserAbsenceKind): string => {
+  if (absence === "sick") return "bg-rose-50 ring-rose-200";
+  if (absence === "vacation") return "bg-sky-50 ring-sky-200";
   return "bg-emerald-50 ring-emerald-200";
 };

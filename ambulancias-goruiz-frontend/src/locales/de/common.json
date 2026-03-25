@@ -987,13 +987,17 @@
                 "title": "Deine zugewiesenen Tage",
                 "loading": "Zugewiesene Tage werden geladen...",
                 "weekRange": "Woche vom {{from}} bis {{to}}",
-                "freeDay": "Frei"
+                "freeDay": "Frei",
+                "vacationDay": "Urlaub",
+                "sickDay": "Krankmeldung"
             },
             "dienstPage": {
                 "title": "Deine Dienste",
                 "loading": "Dienste werden geladen...",
                 "range": "Von {{from}} bis {{to}}",
-                "freeDay": "Frei"
+                "freeDay": "Frei",
+                "vacationDay": "Urlaub",
+                "sickDay": "Krankmeldung"
             },
             "adminUserTab": {
                 "title": "Zugewiesene Dienste",

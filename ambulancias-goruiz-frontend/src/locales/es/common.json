@@ -987,13 +987,17 @@
                 "title": "Tus días asignados",
                 "loading": "Cargando días asignados...",
                 "weekRange": "Semana del {{from}} al {{to}}",
-                "freeDay": "Libre"
+                "freeDay": "Libre",
+                "vacationDay": "Vacaciones",
+                "sickDay": "Baja"
             },
             "dienstPage": {
                 "title": "Tus Diensts",
                 "loading": "Cargando diensts...",
                 "range": "Desde el {{from}} hasta el {{to}}",
-                "freeDay": "Libre"
+                "freeDay": "Libre",
+                "vacationDay": "Vacaciones",
+                "sickDay": "Baja"
             },
             "adminUserTab": {
                 "title": "Diensts asignados",

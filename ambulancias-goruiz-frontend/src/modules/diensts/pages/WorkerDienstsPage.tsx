@@ -5,10 +5,16 @@ import { getAssignedDaysForUser } from "../index";
 import { useDienstsChanged } from "../hooks/useDienstsChanged";
 import type { AssignedDay } from "../index";
 
-import AssignmentModal from "../components/assignmentModal/AssignmentModal"; import type { FlexibleAssignment } from "../domain/types/flexibleAssignment";
+import AssignmentModal from "../components/assignmentModal/AssignmentModal";
+import type { FlexibleAssignment } from "../domain/types/flexibleAssignment";
 
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
+
+import { getUserVacationRequests } from "../../vacation/domain/api";
+import type { IVacationRequest } from "../../vacation/domain/types";
+import { listMySickLeaves } from "../../sick/domain/api";
+import type { SickLeave } from "../../sick/domain/types";
 
 import { isPastDay } from "../../../utils/dates/isPastDay";
 
@@ -16,10 +22,12 @@ import { DienstDayCell, WeekBlock } from "../components";
 
 import {
   getAssignmentStatus,
+  getOffDayStatusClass,
   getStatusClass,
   getWeekDays,
   getWeekStartsBerlin,
   buildDienstDayCellLines,
+  resolveUserAbsenceForFreeDay,
 } from "../utils";
 
 import { toFlexibleFromAssignedDay } from "../assignments";
@@ -31,6 +39,10 @@ const WorkerDienstsPage = () => {
   const { t, i18n } = useTranslation();
 
   const [assignedDays, setAssignedDays] = useState<AssignedDay[]>([]);
+  const [vacationRequests, setVacationRequests] = useState<IVacationRequest[]>(
+    [],
+  );
+  const [sickLeaves, setSickLeaves] = useState<SickLeave[]>([]);
   const [loading, setLoading] = useState(true);
   const assignedByDate = useMemo(() => {
     const map = new Map<string, AssignedDay>();
@@ -50,8 +62,14 @@ const WorkerDienstsPage = () => {
     if (!userId || !token) return;
 
     try {
-      const data = await getAssignedDaysForUser(userId, token);
-      setAssignedDays(data);
+      const [days, vacs, sick] = await Promise.all([
+        getAssignedDaysForUser(userId, token),
+        getUserVacationRequests(),
+        listMySickLeaves(),
+      ]);
+      setAssignedDays(days);
+      setVacationRequests(Array.isArray(vacs) ? vacs : []);
+      setSickLeaves(Array.isArray(sick) ? sick : []);
     } catch (error) {
       console.error("Error al obtener los días asignados:", error);
     } finally {
@@ -103,7 +121,23 @@ const WorkerDienstsPage = () => {
                     const assignment = assignedByDate.get(dateStr);
 
                     const status = getAssignmentStatus(assignment);
-                    const cls = getStatusClass(status);
+                    const absence = assignment
+                      ? "none"
+                      : resolveUserAbsenceForFreeDay(
+                          dateStr,
+                          vacationRequests,
+                          sickLeaves,
+                        );
+                    const cls = assignment
+                      ? getStatusClass(status)
+                      : getOffDayStatusClass(absence);
+
+                    const freeLabel =
+                      absence === "vacation"
+                        ? `🏖️ ${t("pages.diensts.workerPage.vacationDay")}`
+                        : absence === "sick"
+                          ? `🤒 ${t("pages.diensts.workerPage.sickDay")}`
+                          : `🌴 ${t("pages.diensts.workerPage.freeDay")}`;
 
                     const isPast = isPastDay(dateStr);
 
@@ -127,7 +161,7 @@ const WorkerDienstsPage = () => {
                         lines={buildDienstDayCellLines({
                           isoDay: dateStr,
                           lang: i18n.language,
-                          freeLabel: `🌴 ${t("pages.diensts.workerPage.freeDay")}`,
+                          freeLabel,
                           assignment: assignment
                             ? {
                               startTime: assignment.startTime,

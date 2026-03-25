@@ -16,6 +16,12 @@ import { formatAmbulanceLabel } from "../utils";
 
 import { formatCellDateUnified } from "../../../utils/timeUtils";
 
+import { getUserVacationRequests } from "../../vacation/domain/api";
+import type { IVacationRequest } from "../../vacation/domain/types";
+import { listMySickLeaves } from "../../sick/domain/api";
+import type { SickLeave } from "../../sick/domain/types";
+import { resolveUserAbsenceForFreeDay } from "../utils";
+
 
 const DienstPage = () => {
   const { userId, token } = useAuth();
@@ -30,6 +36,10 @@ const DienstPage = () => {
 
 
   const [diensts, setDiensts] = useState<Dienst[]>([]);
+  const [vacationRequests, setVacationRequests] = useState<IVacationRequest[]>(
+    [],
+  );
+  const [sickLeaves, setSickLeaves] = useState<SickLeave[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<{
     date: string;
@@ -41,8 +51,14 @@ const DienstPage = () => {
   const fetchDiensts = useCallback(async () => {
     if (!userId || !token) return;
     try {
-      const data = await getDienstByUser(userId, token);
+      const [data, vacs, sick] = await Promise.all([
+        getDienstByUser(userId, token),
+        getUserVacationRequests(),
+        listMySickLeaves(),
+      ]);
       setDiensts(data);
+      setVacationRequests(Array.isArray(vacs) ? vacs : []);
+      setSickLeaves(Array.isArray(sick) ? sick : []);
     } catch (error) {
       console.error("Error al obtener los diensts:", error);
     } finally {
@@ -98,11 +114,36 @@ const DienstPage = () => {
                   const assignment = dienst.assignments.find(
                     (a) => a.date === day,
                   );
+                  const absence = assignment
+                    ? "none"
+                    : resolveUserAbsenceForFreeDay(
+                        day,
+                        vacationRequests,
+                        sickLeaves,
+                      );
                   const bgColor = assignment
                     ? isPartialAssignment(assignment)
                       ? "bg-yellow-100" // parcialmente asignado
                       : "bg-blue-100" // completamente asignado
-                    : "bg-green-100"; // día libre
+                    : absence === "sick"
+                      ? "bg-rose-100"
+                      : absence === "vacation"
+                        ? "bg-sky-100"
+                        : "bg-green-100"; // día libre habitual
+
+                  const freeLineClass =
+                    absence === "sick"
+                      ? "text-rose-900"
+                      : absence === "vacation"
+                        ? "text-sky-900"
+                        : "text-green-800";
+
+                  const freeLabel =
+                    absence === "vacation"
+                      ? `🏖️ ${t("pages.diensts.dienstPage.vacationDay")}`
+                      : absence === "sick"
+                        ? `🤒 ${t("pages.diensts.dienstPage.sickDay")}`
+                        : `🌴 ${t("pages.diensts.dienstPage.freeDay")}`;
 
                   return (
                     <div
@@ -129,8 +170,10 @@ const DienstPage = () => {
 
                         </>
                       ) : (
-                        <p className="text-xs text-green-800 font-medium mt-2">
-                          🌴 {t("pages.diensts.dienstPage.freeDay")}
+                        <p
+                          className={`text-xs ${freeLineClass} font-medium mt-2`}
+                        >
+                          {freeLabel}
                         </p>
                       )}
                     </div>
