@@ -165,9 +165,10 @@ const Profile = ({ userId }: ProfileProps) => {
 
   // Eliminar imagen de perfil
   const handleDeleteProfileImage = async () => {
+    const idToUpdate = userId || userIdFromAuthContext;
     if (
       !token ||
-      !userIdFromAuthContext ||
+      !idToUpdate ||
       !formData.name ||
       !formData.lastName ||
       !formData.email
@@ -177,23 +178,22 @@ const Profile = ({ userId }: ProfileProps) => {
     }
 
     try {
-      const updatedUser = await UsersApi.updateUserProfile(
-        userIdFromAuthContext,
-        {
-          name: formData.name,
-          lastName: formData.lastName,
-          email: formData.email,
-          ambulanceRole: formData.ambulanceRole,
-          address: formData.address,
-          phone: formData.phone,
-          emergencyPhone: formData.emergencyPhone,
-          pscheinExpiry: formData.pscheinExpiry,
-          profileImage: "",
-        },
-      );
+      const updatedUser = await UsersApi.updateUserProfile(idToUpdate, {
+        name: formData.name,
+        lastName: formData.lastName,
+        email: formData.email,
+        ambulanceRole: formData.ambulanceRole,
+        address: formData.address,
+        phone: formData.phone,
+        emergencyPhone: formData.emergencyPhone,
+        pscheinExpiry: formData.pscheinExpiry,
+        profileImage: "",
+      });
 
       setFormData(updatedUser);
-      login(token, userIdFromAuthContext, role || "worker", updatedUser);
+      if (idToUpdate === userIdFromAuthContext) {
+        login(token, idToUpdate, role || "worker", updatedUser);
+      }
 
       toastT.success("toasts.profile.imageDeleted");
     } catch (error) {
