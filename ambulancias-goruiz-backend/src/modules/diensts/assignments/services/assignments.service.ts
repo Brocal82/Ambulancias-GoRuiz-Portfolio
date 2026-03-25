@@ -687,6 +687,10 @@ export async function assignTeamToWeek(
       }
     } else {
       skippedByVacation.push({ date: dateISO, role: "driver" });
+      if (next.driver != null && next.driver !== "") {
+        delete next.driver;
+        changed = true;
+      }
     }
 
     if (!block.medic) {
@@ -697,6 +701,10 @@ export async function assignTeamToWeek(
       }
     } else {
       skippedByVacation.push({ date: dateISO, role: "medic" });
+      if (next.medic != null && next.medic !== "") {
+        delete next.medic;
+        changed = true;
+      }
     }
 
     if (teamAmbulanceId && !next.ambulanceId) {
