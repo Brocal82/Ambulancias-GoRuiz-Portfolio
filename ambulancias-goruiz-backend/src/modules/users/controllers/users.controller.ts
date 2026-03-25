@@ -173,6 +173,13 @@ export const deleteUser = async (
 ): Promise<void> => {
   const { id } = req.params;
 
+  if (id === req.userId) {
+    res
+      .status(403)
+      .json({ message: "No está permitido eliminar tu propia cuenta" });
+    return;
+  }
+
   if (req.userRole === "admin" && id !== req.userId) {
     const companyResult = requireCompanyForAdmin(req);
     if (!companyResult.ok) {
