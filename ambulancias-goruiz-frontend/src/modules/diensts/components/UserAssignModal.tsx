@@ -312,7 +312,12 @@ export default function UserAssignModal({
                               (selectedUser as any)?.pscheinExpiry,
                             )
                             : "";
-                        const dim = vac.has || sick.has ? dimClass : "";
+                        const dim =
+                          (role === "driver" &&
+                            isDriverExpired(selectedUser)) ||
+                          (!!date && (vac.has || sick.has))
+                            ? dimClass
+                            : "";
                         const title = driverPscheinTitle(selectedUser);
                         return (
                           <>
@@ -393,9 +398,12 @@ export default function UserAssignModal({
                           : "";
                       const expired =
                         role === "driver" ? isDriverExpired(u) : false;
-                      const isBlocked = vac.has || sick.has || expired;
+                      const vacSickBlocksSelection =
+                        !!date && (vac.has || sick.has);
+                      const isBlocked = expired || vacSickBlocksSelection;
 
-                      const dim = isBlocked ? dimClass : "";
+                      const dim =
+                        expired || vacSickBlocksSelection ? dimClass : "";
                       const title = driverPscheinTitle(u);
 
                       return (
