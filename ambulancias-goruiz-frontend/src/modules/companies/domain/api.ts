@@ -16,6 +16,11 @@ export const getCompanyById = async (id: string): Promise<Company> => {
   return res.data;
 };
 
+export const getMyCompany = async (): Promise<Company> => {
+  const res = await axios.get<Company>("/companies/me");
+  return res.data;
+};
+
 export const createCompany = async (data: CreateCompanyInput): Promise<Company> => {
   const res = await axios.post<Company>("/companies", data);
   return res.data;

@@ -6,10 +6,16 @@ const emailSchema = z
   .email("Formato de email inválido")
   .transform((s) => s.trim().toLowerCase());
 
+const optionalEmployeeNumber = z.preprocess(
+  (val) => (val === "" || val === null || val === undefined ? undefined : val),
+  z.string().trim().max(64).optional(),
+);
+
 export const createInvitationSchema = z.object({
   email: emailSchema,
   role: z.enum(["admin", "worker"]),
   expiresInDays: z.number().int().min(1).max(90).optional(),
+  employeeNumber: optionalEmployeeNumber,
 });
 
 export const acceptInvitationSchema = z.object({

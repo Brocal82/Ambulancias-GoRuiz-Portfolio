@@ -2,15 +2,18 @@ export interface Company {
   _id: string;
   name: string;
   isActive: boolean;
+  emailDomain?: string;
 }
 
 export interface CreateCompanyInput {
   name: string;
+  emailDomain?: string;
 }
 
 export interface UpdateCompanyInput {
   name?: string;
   isActive?: boolean;
+  emailDomain?: string | null;
 }
 
 export interface CreateAdminInput {

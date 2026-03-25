@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { getMyCompany } from "../../companies/domain/api";
+import type { Company } from "../../companies/domain/types";
 import { createInvitation } from "../domain/api";
 import type { CreateInvitationResponse } from "../domain/types";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
@@ -8,11 +10,38 @@ import { toastT, getApiErrorMessage } from "../../../utils/toast";
 export default function AdminInvitationsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [company, setCompany] = useState<Company | null>(null);
+  const [companyLoading, setCompanyLoading] = useState(true);
+  const [localPart, setLocalPart] = useState("");
+  const [fullEmail, setFullEmail] = useState("");
+  const [employeeNumber, setEmployeeNumber] = useState("");
   const [role, setRole] = useState<"admin" | "worker">("worker");
   const [expiresInDaysRaw, setExpiresInDaysRaw] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CreateInvitationResponse | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const c = await getMyCompany();
+        if (!cancelled) setCompany(c);
+      } catch (e: unknown) {
+        if (!cancelled) {
+          toastT.error(
+            getApiErrorMessage(e, t("pages.adminInvitations.errorCreateFallback")),
+          );
+        }
+      } finally {
+        if (!cancelled) setCompanyLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
+
+  const useDomain = Boolean(company?.emailDomain?.trim());
 
   const invitationLink = result?.token
     ? `${window.location.origin}/invitation/accept?token=${encodeURIComponent(result.token)}`
@@ -20,13 +49,21 @@ export default function AdminInvitationsPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const email = useDomain
+      ? `${localPart.trim()}${company!.emailDomain!}`
+      : fullEmail.trim();
+    if (!email) {
+      toastT.error(t("pages.adminInvitations.emailRequired"));
+      return;
+    }
     setSubmitting(true);
     try {
       const expiresParsed = expiresInDaysRaw.trim();
       const expiresNum =
         expiresParsed === "" ? undefined : Number.parseInt(expiresParsed, 10);
+      const empTrim = employeeNumber.trim();
       const payload = {
-        email: email.trim(),
+        email,
         role,
         ...(expiresNum != null &&
         !Number.isNaN(expiresNum) &&
@@ -34,10 +71,13 @@ export default function AdminInvitationsPage() {
         expiresNum <= 90
           ? { expiresInDays: expiresNum }
           : {}),
+        ...(empTrim ? { employeeNumber: empTrim } : {}),
       };
       const data = await createInvitation(payload);
       toastT.success(t("pages.adminInvitations.toastCreateSuccess"));
-      setEmail("");
+      setLocalPart("");
+      setFullEmail("");
+      setEmployeeNumber("");
       setRole("worker");
       setExpiresInDaysRaw("");
       setResult(data);
@@ -60,6 +100,14 @@ export default function AdminInvitationsPage() {
     }
   };
 
+  if (companyLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 p-6 max-w-2xl mx-auto">
+        <p className="text-slate-600">{t("pages.adminInvitations.loadingCompany")}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 p-6 max-w-2xl mx-auto">
       <div className="mb-6 flex items-center gap-4">
@@ -79,6 +127,12 @@ export default function AdminInvitationsPage() {
         {t("pages.adminInvitations.intro")}
       </p>
 
+      {!useDomain && (
+        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4">
+          {t("pages.adminInvitations.noEmailDomainHint")}
+        </p>
+      )}
+
       {!result && (
         <p className="text-sm text-slate-600 mb-4 rounded-lg border border-slate-200 bg-white/80 px-4 py-3">
           {t("pages.adminInvitations.hintBeforeCreate")}
@@ -89,22 +143,67 @@ export default function AdminInvitationsPage() {
         onSubmit={handleSubmit}
         className="bg-white rounded-lg shadow border border-slate-200 p-6 space-y-4"
       >
+        {useDomain ? (
+          <div>
+            <span className="block text-sm font-medium text-slate-700 mb-1">
+              {t("pages.adminInvitations.email")}
+            </span>
+            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+              <input
+                id="inv-email-local"
+                type="text"
+                value={localPart}
+                onChange={(e) => setLocalPart(e.target.value)}
+                className="flex-1 min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
+                required
+                autoComplete="off"
+                placeholder={t("pages.adminInvitations.localPartPlaceholder")}
+                aria-label={t("pages.adminInvitations.localPartAria")}
+              />
+              <span className="text-slate-600 text-sm sm:px-1 shrink-0 font-mono break-all">
+                {company!.emailDomain}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <label
+              htmlFor="inv-email"
+              className="block text-sm font-medium text-slate-700 mb-1"
+            >
+              {t("pages.adminInvitations.email")}
+            </label>
+            <input
+              id="inv-email"
+              type="email"
+              value={fullEmail}
+              onChange={(e) => setFullEmail(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
+              required
+              autoComplete="off"
+            />
+          </div>
+        )}
+
         <div>
           <label
-            htmlFor="inv-email"
+            htmlFor="inv-employee-number"
             className="block text-sm font-medium text-slate-700 mb-1"
           >
-            {t("pages.adminInvitations.email")}
+            {t("pages.adminInvitations.employeeNumber")}
           </label>
           <input
-            id="inv-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            id="inv-employee-number"
+            type="text"
+            value={employeeNumber}
+            onChange={(e) => setEmployeeNumber(e.target.value)}
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
-            required
             autoComplete="off"
+            placeholder={t("pages.adminInvitations.employeeNumberPlaceholder")}
           />
+          <p className="text-xs text-slate-500 mt-1">
+            {t("pages.adminInvitations.employeeNumberHint")}
+          </p>
         </div>
 
         <div>

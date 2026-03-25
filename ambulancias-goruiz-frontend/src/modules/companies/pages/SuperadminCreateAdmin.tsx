@@ -1,27 +1,61 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { createCompanyAdmin } from "../domain/api";
+import { createCompanyAdmin, getCompanyById } from "../domain/api";
+import type { Company } from "../domain/types";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
 
 export default function SuperadminCreateAdmin() {
   const { id: companyId } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  const [company, setCompany] = useState<Company | null>(null);
+  const [companyLoading, setCompanyLoading] = useState(true);
   const [name, setName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
+  const [localPart, setLocalPart] = useState("");
+  const [fullEmail, setFullEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!companyId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const c = await getCompanyById(companyId);
+        if (!cancelled) setCompany(c);
+      } catch (e: unknown) {
+        if (!cancelled) {
+          toastT.error(getApiErrorMessage(e, "No se pudo cargar la empresa"));
+          navigate("/superadmin/companies");
+        }
+      } finally {
+        if (!cancelled) setCompanyLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId, navigate]);
+
+  const useDomain = Boolean(company?.emailDomain?.trim());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyId) return;
+    const email = useDomain
+      ? `${localPart.trim()}${company!.emailDomain!}`
+      : fullEmail.trim();
+    if (!email) {
+      toastT.error("Indica un correo electrónico.");
+      return;
+    }
     setSubmitting(true);
     try {
       await createCompanyAdmin(companyId, {
         name: name.trim(),
         lastName: lastName.trim(),
-        email: email.trim(),
+        email,
         password,
       });
       toastT.success("Administrador de empresa creado correctamente");
@@ -41,6 +75,14 @@ export default function SuperadminCreateAdmin() {
     );
   }
 
+  if (companyLoading) {
+    return (
+      <div className="p-4 max-w-md mx-auto">
+        <p className="text-slate-600">Cargando empresa…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 max-w-md mx-auto">
       <h1 className="text-2xl font-bold text-slate-900 mb-2">
@@ -50,6 +92,12 @@ export default function SuperadminCreateAdmin() {
         Crea la cuenta del administrador de esta empresa. Podrá iniciar sesión y
         gestionar usuarios mediante invitaciones.
       </p>
+      {!useDomain && (
+        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+          Esta empresa no tiene dominio de correo configurado. Puedes indicar el
+          email completo o configurar el dominio al editar la empresa.
+        </p>
+      )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label
@@ -83,23 +131,47 @@ export default function SuperadminCreateAdmin() {
             autoComplete="family-name"
           />
         </div>
-        <div>
-          <label
-            htmlFor="admin-email"
-            className="block text-sm font-medium text-slate-700 mb-1"
-          >
-            Email
-          </label>
-          <input
-            id="admin-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
-            required
-            autoComplete="email"
-          />
-        </div>
+        {useDomain ? (
+          <div>
+            <span className="block text-sm font-medium text-slate-700 mb-1">
+              Email
+            </span>
+            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+              <input
+                id="admin-email-local"
+                type="text"
+                value={localPart}
+                onChange={(e) => setLocalPart(e.target.value)}
+                className="flex-1 min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
+                required
+                autoComplete="username"
+                placeholder="admin"
+                aria-label="Parte local del email"
+              />
+              <span className="text-slate-600 text-sm sm:px-1 shrink-0 font-mono break-all">
+                {company!.emailDomain}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <label
+              htmlFor="admin-email"
+              className="block text-sm font-medium text-slate-700 mb-1"
+            >
+              Email
+            </label>
+            <input
+              id="admin-email"
+              type="email"
+              value={fullEmail}
+              onChange={(e) => setFullEmail(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
+              required
+              autoComplete="email"
+            />
+          </div>
+        )}
         <div>
           <label
             htmlFor="admin-password"

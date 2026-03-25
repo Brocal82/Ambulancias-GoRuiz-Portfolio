@@ -13,6 +13,7 @@ export default function SuperadminCompanyForm() {
   const isCreate = !id;
 
   const [name, setName] = useState("");
+  const [emailDomain, setEmailDomain] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [loading, setLoading] = useState(!isCreate);
   const [submitting, setSubmitting] = useState(false);
@@ -25,6 +26,7 @@ export default function SuperadminCompanyForm() {
         const company = await getCompanyById(id);
         if (cancelled) return;
         setName(company.name);
+        setEmailDomain(company.emailDomain ?? "");
         setIsActive(company.isActive);
       } catch (e: unknown) {
         if (!cancelled) {
@@ -44,13 +46,18 @@ export default function SuperadminCompanyForm() {
     e.preventDefault();
     setSubmitting(true);
     try {
+      const domainTrim = emailDomain.trim();
       if (isCreate) {
-        await createCompany({ name: name.trim() });
+        await createCompany({
+          name: name.trim(),
+          ...(domainTrim ? { emailDomain: domainTrim.toLowerCase() } : {}),
+        });
         toastT.success("Empresa creada correctamente");
       } else if (id) {
         await updateCompany(id, {
           name: name.trim(),
           isActive,
+          emailDomain: domainTrim ? domainTrim.toLowerCase() : null,
         });
         toastT.success("Empresa actualizada correctamente");
       }
@@ -90,6 +97,24 @@ export default function SuperadminCompanyForm() {
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
             required
           />
+        </div>
+        <div>
+          <label
+            htmlFor="company-email-domain"
+            className="block text-sm font-medium text-slate-700 mb-1"
+          >
+            Dominio de correo (opcional)
+          </label>
+          <input
+            id="company-email-domain"
+            value={emailDomain}
+            onChange={(e) => setEmailDomain(e.target.value)}
+            placeholder="@empresa.com"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            Debe empezar por @. Se usa al crear administradores e invitaciones.
+          </p>
         </div>
         {!isCreate && (
           <label className="flex items-center gap-2 cursor-pointer">

@@ -19,12 +19,13 @@ export const createInvitation = async (req: Request, res: Response): Promise<voi
   }
 
   try {
-    const { email, role, expiresInDays } = req.body;
+    const { email, role, expiresInDays, employeeNumber } = req.body;
 
     const result = await createInvitationService({
       email,
       role,
       expiresInDays,
+      employeeNumber,
       companyId: new mongoose.Types.ObjectId(companyId),
       invitedBy: new mongoose.Types.ObjectId(invitedBy),
     });
@@ -33,7 +34,7 @@ export const createInvitation = async (req: Request, res: Response): Promise<voi
       invitationId: result.invitationId,
       token: result.token,
       expiresAt: result.expiresAt,
-      email: email.trim().toLowerCase(),
+      email,
       role,
     });
   } catch (error: any) {

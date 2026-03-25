@@ -4,6 +4,7 @@ export interface IInvitation extends Document {
   companyId: Types.ObjectId;
   email: string;
   role: "admin" | "worker";
+  employeeNumber?: string;
   tokenHash: string;
   expiresAt: Date;
   acceptedAt?: Date;
@@ -26,6 +27,7 @@ const invitationSchema = new Schema<IInvitation>(
       enum: ["admin", "worker"],
       required: true,
     },
+    employeeNumber: { type: String, required: false, trim: true },
     tokenHash: { type: String, required: true },
     expiresAt: { type: Date, required: true },
     acceptedAt: { type: Date, required: false },

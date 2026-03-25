@@ -23,6 +23,7 @@ export interface CreateInvitationInput {
   email: string;
   role: "admin" | "worker";
   expiresInDays?: number;
+  employeeNumber?: string;
   companyId: mongoose.Types.ObjectId;
   invitedBy: mongoose.Types.ObjectId;
 }
@@ -38,6 +39,12 @@ export async function createInvitationService(
 ): Promise<CreateInvitationResult> {
   const { email, role, companyId, invitedBy } = input;
   const expiresInDays = input.expiresInDays ?? DEFAULT_EXPIRES_DAYS;
+  const employeeNumber =
+    role === "worker" &&
+    typeof input.employeeNumber === "string" &&
+    input.employeeNumber.trim()
+      ? input.employeeNumber.trim()
+      : undefined;
 
   const normalizedEmail = normalizeEmail(email);
   const token = generateSecureToken();
@@ -49,6 +56,7 @@ export async function createInvitationService(
     companyId,
     email: normalizedEmail,
     role,
+    ...(employeeNumber ? { employeeNumber } : {}),
     tokenHash,
     expiresAt,
     invitedBy,
@@ -137,6 +145,12 @@ export async function acceptInvitationService(input: AcceptInvitationInput) {
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  const emp =
+    invitation.role === "worker" &&
+    typeof invitation.employeeNumber === "string"
+      ? invitation.employeeNumber.trim()
+      : "";
+
   const newUser = await User.create({
     name: name.trim(),
     lastName: lastName.trim(),
@@ -145,6 +159,7 @@ export async function acceptInvitationService(input: AcceptInvitationInput) {
     role: invitation.role,
     companyId: invitation.companyId,
     invitationId: invitation._id,
+    ...(emp ? { employeeNumber: emp } : {}),
   });
 
   invitation.acceptedAt = new Date();

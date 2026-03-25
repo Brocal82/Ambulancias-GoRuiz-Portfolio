@@ -17,10 +17,13 @@ export interface CreateInvitationPayload {
   email: string;
   role: "admin" | "worker";
   expiresInDays?: number;
+  employeeNumber?: string;
 }
 
 export interface CreateInvitationResponse {
   invitationId: string;
   token: string;
   expiresAt: string;
+  email: string;
+  role: "admin" | "worker";
 }
