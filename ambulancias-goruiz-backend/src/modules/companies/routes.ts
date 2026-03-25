@@ -3,6 +3,7 @@ import {
   createCompany,
   getAllCompanies,
   getCompanyById,
+  getMyCompany,
   updateCompany,
 } from "./controllers/companies.controller";
 import { createFirstAdmin } from "./controllers/company-admin.controller";
@@ -17,6 +18,8 @@ import {
 import { createCompanyAdminSchema } from "./schemas/create-admin.schema";
 
 const router = express.Router();
+
+router.get("/me", authenticateToken, getMyCompany);
 
 router.use(authenticateToken, authorizeSuperadmin);
 

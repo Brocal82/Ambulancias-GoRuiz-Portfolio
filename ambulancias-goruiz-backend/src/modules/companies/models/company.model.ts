@@ -3,6 +3,7 @@ import mongoose, { Document, Schema, Types } from "mongoose";
 export interface ICompany extends Document {
   name: string;
   isActive: boolean;
+  emailDomain?: string;
   createdBy?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -12,6 +13,19 @@ const companySchema = new Schema<ICompany>(
   {
     name: { type: String, required: true, trim: true },
     isActive: { type: Boolean, default: true },
+    emailDomain: {
+      type: String,
+      required: false,
+      trim: true,
+      lowercase: true,
+      validate: {
+        validator(v: string | undefined | null) {
+          if (v == null || v === "") return true;
+          return v.startsWith("@");
+        },
+        message: "emailDomain debe empezar por @",
+      },
+    },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: false },
   },
   { timestamps: true },

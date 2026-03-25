@@ -42,6 +42,26 @@ export const getCompanyById = async (req: Request, res: Response): Promise<void>
   }
 };
 
+export const getMyCompany = async (req: Request, res: Response): Promise<void> => {
+  const companyId = req.companyId;
+  if (!companyId) {
+    res.status(403).json({
+      message: "No perteneces a una empresa o falta companyId en la sesión.",
+    });
+    return;
+  }
+  try {
+    const company = await companiesService.getCompanyById(companyId);
+    if (!company) {
+      res.status(404).json({ message: "Empresa no encontrada" });
+      return;
+    }
+    res.status(200).json(company);
+  } catch {
+    res.status(500).json({ message: "Error al obtener empresa" });
+  }
+};
+
 export const updateCompany = async (req: Request, res: Response): Promise<void> => {
   try {
     const parsed = updateCompanySchema.parse(req.body);

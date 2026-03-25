@@ -10,6 +10,9 @@ export async function createCompany(
     name: data.name,
     isActive: data.isActive ?? true,
   };
+  if (data.emailDomain) {
+    doc.emailDomain = data.emailDomain;
+  }
   if (createdBy && mongoose.Types.ObjectId.isValid(createdBy)) {
     doc.createdBy = new mongoose.Types.ObjectId(createdBy);
   }
@@ -28,9 +31,23 @@ export async function getCompanyById(id: string) {
 
 export async function updateCompany(id: string, data: UpdateCompanyInput) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
-  return await Company.findByIdAndUpdate(
-    id,
-    { $set: data },
-    { new: true, runValidators: true },
-  ).lean();
+  const $set: Record<string, unknown> = {};
+  const $unset: Record<string, string> = {};
+  if (data.name !== undefined) $set.name = data.name;
+  if (data.isActive !== undefined) $set.isActive = data.isActive;
+  if (data.emailDomain === null) {
+    $unset.emailDomain = "";
+  } else if (data.emailDomain !== undefined) {
+    $set.emailDomain = data.emailDomain;
+  }
+  const update: Record<string, unknown> = {};
+  if (Object.keys($set).length) update.$set = $set;
+  if (Object.keys($unset).length) update.$unset = $unset;
+  if (Object.keys(update).length === 0) {
+    return await Company.findById(id).lean();
+  }
+  return await Company.findByIdAndUpdate(id, update, {
+    new: true,
+    runValidators: true,
+  }).lean();
 }
