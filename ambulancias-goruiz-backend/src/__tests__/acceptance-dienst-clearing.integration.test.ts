@@ -9,6 +9,7 @@ import {
 import Dienst from "../modules/diensts/models/dienst.model";
 import VacationRequest from "../modules/vacation/models/vacation-request.model";
 import { Ambulance } from "../modules/ambulances/models/ambulance.model";
+import SickLeave from "../modules/sick-leaves/models/sick-leave.model";
 
 const API = "/api";
 
@@ -53,6 +54,7 @@ describe("Acceptance clears Dienst assignments", () => {
 
   afterAll(async () => {
     await VacationRequest.deleteMany({ user: workerId });
+    await SickLeave.deleteMany({ user: workerId });
     await Dienst.deleteMany({
       companyId: new mongoose.Types.ObjectId(companyId),
     });
@@ -204,6 +206,75 @@ describe("Acceptance clears Dienst assignments", () => {
         ? new Date(vacDoc.endDate as Date).toISOString().slice(0, 10)
         : "",
     ).toBe(ALT_END);
+
+    const dienstGet = await request(app)
+      .get(`${API}/diensts/${dienstId}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .expect(200);
+
+    const assignments = dienstGet.body.assignments as Array<{
+      date: string;
+      driver?: { _id?: string } | string;
+      medic?: { _id?: string } | string;
+    }>;
+    const slot = assignments.find((a) => a.date === ASSIGNMENT_DATE);
+    expect(slot).toBeDefined();
+
+    const driverId =
+      slot!.driver == null
+        ? ""
+        : typeof slot!.driver === "object" && "_id" in slot!.driver
+          ? String((slot!.driver as { _id: string })._id)
+          : String(slot!.driver);
+
+    expect(driverId).not.toBe(workerId);
+  });
+
+  it("admin sick accept clears worker assignment on Dienst", async () => {
+    const SICK_START = "2042-03-10";
+    const SICK_END = "2042-03-20";
+    const ASSIGNMENT_DATE = "2042-03-15";
+    const WEEK_START = "2042-03-10";
+    const WEEK_END = "2042-03-16";
+
+    const sickRes = await request(app)
+      .post(`${API}/sick-leaves`)
+      .set("Authorization", `Bearer ${workerToken}`)
+      .send({
+        startDate: SICK_START,
+        endDate: SICK_END,
+      })
+      .expect(201);
+    const sickLeaveId = sickRes.body._id ?? sickRes.body.id;
+
+    const dienstRes = await request(app)
+      .post(`${API}/diensts`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        dienstNumber: Date.now(),
+        weekStartDate: WEEK_START,
+        weekEndDate: WEEK_END,
+        assignments: [
+          {
+            date: ASSIGNMENT_DATE,
+            startTime: "08:00",
+            endTime: "16:00",
+            ambulanceId: ambulanceId,
+            driver: workerId,
+            medic: adminId,
+          },
+        ],
+      })
+      .expect(201);
+    const dienstId = dienstRes.body._id ?? dienstRes.body.id;
+
+    await request(app)
+      .post(`${API}/sick-leaves/${sickLeaveId}/accept`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .expect(200);
+
+    const sickDoc = await SickLeave.findById(sickLeaveId).lean();
+    expect(sickDoc?.status).toBe("accepted");
 
     const dienstGet = await request(app)
       .get(`${API}/diensts/${dienstId}`)
