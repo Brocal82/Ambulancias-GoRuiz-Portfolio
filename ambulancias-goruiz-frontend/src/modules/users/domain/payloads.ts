@@ -3,7 +3,7 @@ import type { AmbulanceRole } from "./types";
 export interface UpdateUserPayload {
   name: string;
   lastName: string;
-  email: string;
+  email?: string;
 
   ambulanceRole?: AmbulanceRole;
   address?: string;

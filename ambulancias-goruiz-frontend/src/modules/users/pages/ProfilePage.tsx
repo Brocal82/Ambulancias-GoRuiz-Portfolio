@@ -92,7 +92,6 @@ const Profile = ({ userId }: ProfileProps) => {
       const payload: UpdateUserPayload = {
         name: formData.name || "",
         lastName: formData.lastName || "",
-        email: formData.email || "",
         ambulanceRole: formData.ambulanceRole,
         address: formData.address,
         phone: formData.phone,
@@ -104,8 +103,8 @@ const Profile = ({ userId }: ProfileProps) => {
           : {}),
       };
 
-      // ✅ Validación mínima (evita mandar strings vacíos)
-      if (!payload.name || !payload.lastName || !payload.email) {
+      // ✅ Validación mínima (evita mandar strings vacíos); email not sent on PATCH
+      if (!payload.name || !payload.lastName || !formData.email) {
         toastT.error(["pages.profile.messages.missingRequired"]);
         return;
       }
