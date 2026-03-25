@@ -381,14 +381,7 @@ export async function assignUserToWeek(
     start,
     dienstNumber,
   );
-  if (weeklyConf.length > 0) {
-    throw new DienstAssignmentError(
-      409,
-      "weekly_conflict",
-      "Este usuario ya está asignado a otro Dienst esta semana.",
-      weeklyConf,
-    );
-  }
+  const conflictDates = new Set(weeklyConf.map((c) => c.date));
 
   const nextDay = new Date(start.getTime() + 24 * 60 * 60 * 1000);
   const dienst = await Dienst.findOne({
@@ -445,6 +438,10 @@ export async function assignUserToWeek(
       if (isVac && isSick) skippedBreakdown.both += 1;
       else if (isSick) skippedBreakdown.sick += 1;
       else if (isVac) skippedBreakdown.vacation += 1;
+      return a;
+    }
+
+    if (conflictDates.has(a.date)) {
       return a;
     }
 
