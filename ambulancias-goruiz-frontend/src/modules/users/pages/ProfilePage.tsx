@@ -391,7 +391,7 @@ const Profile = ({ userId }: ProfileProps) => {
                         htmlFor="employeeNumber"
                         className="block text-xs font-medium text-slate-700"
                       >
-                        Número
+                        {t("pages.profile.employeeNumber")}
                       </label>
                       <input
                         type="text"
@@ -400,6 +400,10 @@ const Profile = ({ userId }: ProfileProps) => {
                         value={formData.employeeNumber ?? ""}
                         onChange={handleChange}
                         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400"
+                        placeholder={t(
+                          "pages.profile.employeeNumberPlaceholder",
+                        )}
+                        title={t("pages.profile.employeeNumberHint")}
                       />
                     </div>
                   )}

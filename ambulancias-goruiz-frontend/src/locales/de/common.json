@@ -300,6 +300,9 @@
                 "phone": "Telefonnummer",
                 "emergencyPhone": "Notfallkontakt"
             },
+            "employeeNumber": "Nummer",
+            "employeeNumberPlaceholder": "z. B. 12345",
+            "employeeNumberHint": "Mitarbeiternummer für Lohn und Dokumente. Nur Firmenadmins können dies bearbeiten.",
             "image": {
                 "alt": "Profilfoto",
                 "changeTitle": "Klicke, um das Profilbild zu ändern",

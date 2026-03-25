@@ -102,7 +102,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     if (req.userRole !== "admin") {
       delete dto.employeeNumber;
     }
-    const updatedUser = await updateUserService(userId, dto as any);
+    const updatedUser = await updateUserService(userId, dto);
     res.status(200).json(sanitizeUser(updatedUser));
   } catch (error: any) {
     const msg = String(error?.message || "");

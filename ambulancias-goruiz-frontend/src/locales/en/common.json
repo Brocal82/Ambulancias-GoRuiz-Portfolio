@@ -300,6 +300,9 @@
                 "phone": "Phone number",
                 "emergencyPhone": "Emergency contact number"
             },
+            "employeeNumber": "Number",
+            "employeeNumberPlaceholder": "e.g. 12345",
+            "employeeNumberHint": "Employee number for payroll and documents. Only company admins can edit this field.",
             "image": {
                 "alt": "Profile photo",
                 "changeTitle": "Click to change profile image",

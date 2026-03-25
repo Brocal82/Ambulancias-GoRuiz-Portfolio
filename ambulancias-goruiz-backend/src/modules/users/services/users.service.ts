@@ -10,6 +10,7 @@ import type {
   CreateUserDTO,
   LoginDTO,
   LoginResponseDTO,
+  UpdateUserDTO,
 } from "../utils/users.payloads";
 import { validateEmail } from "../utils/users.validators";
 
@@ -176,22 +177,9 @@ export async function getUsersWithTodayVacationInfo(companyId?: string) {
   return users;
 }
 
-interface UpdateUserInput {
-  name?: string;
-  lastName?: string;
-  email?: string;
-  ambulanceRole?: "driver" | "medic" | "both";
-  address?: string;
-  phone?: string;
-  emergencyPhone?: string;
-  pscheinExpiry?: string;
-  profileImage?: string;
-  employeeNumber?: string;
-}
-
 export async function updateUserService(
   userId: string,
-  data: UpdateUserInput,
+  data: Partial<UpdateUserDTO>,
 ) {
   if (!userId) {
     throw new Error("ID de usuario no proporcionado");
