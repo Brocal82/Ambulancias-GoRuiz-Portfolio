@@ -2,6 +2,7 @@
     "layout": {
         "appName": "Ambulancias GORRUIZ",
         "appNamePrefix": "Ambulancias",
+        "superadminTitle": "Gestor ARB",
         "logout": "Cerrar sesión"
     },
     "pages": {

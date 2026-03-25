@@ -2,6 +2,7 @@
     "layout": {
         "appName": "Krankentransport GORRUIZ",
         "appNamePrefix": "Krankentransport",
+        "superadminTitle": "ARB-Verwaltung",
         "logout": "Abmelden"
     },
     "pages": {

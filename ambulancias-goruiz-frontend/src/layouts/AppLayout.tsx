@@ -81,9 +81,11 @@ export default function AppLayout() {
               />
             </svg>
             <span className="text-lg sm:text-xl font-semibold tracking-tight text-slate-50 max-w-[40vw] sm:max-w-md truncate">
-              {headerCompanyName
-                ? `${t("layout.appNamePrefix")} ${headerCompanyName.toUpperCase()}`
-                : t("layout.appName")}
+              {role === "superadmin"
+                ? t("layout.superadminTitle")
+                : headerCompanyName
+                  ? `${t("layout.appNamePrefix")} ${headerCompanyName.toUpperCase()}`
+                  : t("layout.appName")}
             </span>
           </button>
 

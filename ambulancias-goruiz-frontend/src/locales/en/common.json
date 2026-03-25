@@ -2,6 +2,7 @@
     "layout": {
         "appName": "GORRUIZ Ambulances",
         "appNamePrefix": "Ambulances",
+        "superadminTitle": "ARB Manager",
         "logout": "Logout"
     },
     "pages": {
