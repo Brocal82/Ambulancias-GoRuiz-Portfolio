@@ -35,6 +35,7 @@ const Profile = ({ userId }: ProfileProps) => {
   const navigate = useNavigate();
 
   const isAdminEditingOtherUser = role === "admin" && Boolean(userId);
+  const isWorkerSelfProfile = role === "worker" && !userId;
 
   useEffect(() => {
     setLoading(true);
@@ -92,12 +93,16 @@ const Profile = ({ userId }: ProfileProps) => {
       const payload: UpdateUserPayload = {
         name: formData.name || "",
         lastName: formData.lastName || "",
-        ambulanceRole: formData.ambulanceRole,
         address: formData.address,
         phone: formData.phone,
         emergencyPhone: formData.emergencyPhone,
-        pscheinExpiry: formData.pscheinExpiry,
         profileImage: uploadedProfileImage || formData.profileImage,
+        ...(!isWorkerSelfProfile
+          ? {
+              ambulanceRole: formData.ambulanceRole,
+              pscheinExpiry: formData.pscheinExpiry,
+            }
+          : {}),
         ...(isAdminEditingOtherUser
           ? { employeeNumber: (formData.employeeNumber ?? "").trim() }
           : {}),
@@ -181,12 +186,16 @@ const Profile = ({ userId }: ProfileProps) => {
         name: formData.name,
         lastName: formData.lastName,
         email: formData.email,
-        ambulanceRole: formData.ambulanceRole,
         address: formData.address,
         phone: formData.phone,
         emergencyPhone: formData.emergencyPhone,
-        pscheinExpiry: formData.pscheinExpiry,
         profileImage: "",
+        ...(!isWorkerSelfProfile
+          ? {
+              ambulanceRole: formData.ambulanceRole,
+              pscheinExpiry: formData.pscheinExpiry,
+            }
+          : {}),
       });
 
       setFormData(updatedUser);
@@ -308,34 +317,61 @@ const Profile = ({ userId }: ProfileProps) => {
 
               {/* Roles */}
               <div className="w-full">
-                <p className="text-[11px] font-medium text-slate-700 text-center mb-1">
-                  {t("pages.profile.labels.ambulanceRole")}
-                </p>
-                <div className="flex items-center justify-center gap-2">
-                  {(["medic", "driver", "both"] as AmbulanceRole[]).map(
-                    (currentRole) => (
-                      <button
-                        key={currentRole}
-                        type="button"
-                        onClick={() =>
-                          setFormData({ ...formData, ambulanceRole: currentRole })
-                        }
-                        className={`px-2.5 py-1 text-[11px] rounded-full transition
+                {isWorkerSelfProfile ? (
+                  formData.ambulanceRole ? (
+                    <>
+                      <p className="text-[11px] font-medium text-slate-700 text-center mb-1">
+                        {t("pages.profile.labels.ambulanceRole")}
+                      </p>
+                      <div className="flex items-center justify-center gap-1 text-2xl leading-none">
+                        {formData.ambulanceRole === "driver" ? (
+                          <span>{t("pages.profile.roles.driver")}</span>
+                        ) : formData.ambulanceRole === "medic" ? (
+                          <span>{t("pages.profile.roles.medic")}</span>
+                        ) : (
+                          <>
+                            <span>{t("pages.profile.roles.medic")}</span>
+                            <span>{t("pages.profile.roles.driver")}</span>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  ) : null
+                ) : (
+                  <>
+                    <p className="text-[11px] font-medium text-slate-700 text-center mb-1">
+                      {t("pages.profile.labels.ambulanceRole")}
+                    </p>
+                    <div className="flex items-center justify-center gap-2">
+                      {(["medic", "driver", "both"] as AmbulanceRole[]).map(
+                        (currentRole) => (
+                          <button
+                            key={currentRole}
+                            type="button"
+                            onClick={() =>
+                              setFormData({
+                                ...formData,
+                                ambulanceRole: currentRole,
+                              })
+                            }
+                            className={`px-2.5 py-1 text-[11px] rounded-full transition
                           focus:outline-none focus:ring-2
                           ${formData.ambulanceRole === currentRole
                             ? "bg-orange-100 text-white shadow ring-2 ring-orange-500 focus:ring-orange-300"
                             : "bg-white text-slate-700 hover:bg-slate-50 ring-1 ring-slate-200 focus:ring-blue-100"
                           }`}
-                      >
-                        {currentRole === "driver"
-                          ? t("pages.profile.roles.driver")
-                          : currentRole === "medic"
-                            ? t("pages.profile.roles.medic")
-                            : t("pages.profile.roles.both")}
-                      </button>
-                    ),
-                  )}
-                </div>
+                          >
+                            {currentRole === "driver"
+                              ? t("pages.profile.roles.driver")
+                              : currentRole === "medic"
+                                ? t("pages.profile.roles.medic")
+                                : t("pages.profile.roles.both")}
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -531,19 +567,33 @@ const Profile = ({ userId }: ProfileProps) => {
                         {t("pages.profile.labels.pscheinExpiry")}
                       </label>
 
-                      <input
-                        type="date"
-                        id="pscheinExpiry"
-                        name="pscheinExpiry"
-                        value={formData.pscheinExpiry || ""}
-                        onChange={handleChange}
-                        className={`w-full rounded-lg px-2 py-1 text-xs shadow-sm focus:outline-none focus:ring-2 ${getPscheinInfo(formData.pscheinExpiry).status === "expired"
-                          ? "border border-red-500 focus:ring-red-100"
-                          : getPscheinInfo(formData.pscheinExpiry).status === "warning"
-                            ? "border border-orange-400 focus:ring-orange-100"
-                            : "border border-slate-300 focus:ring-blue-100 focus:border-blue-400"
-                          }`}
-                      />
+                      {isWorkerSelfProfile ? (
+                        <p
+                          className={`w-full rounded-lg px-2 py-1 text-xs text-center border bg-slate-50 ${getPscheinInfo(formData.pscheinExpiry).status === "expired"
+                            ? "border-red-500 text-red-800"
+                            : getPscheinInfo(formData.pscheinExpiry).status ===
+                                "warning"
+                              ? "border-orange-400 text-orange-900"
+                              : "border-slate-300 text-slate-800"
+                            }`}
+                        >
+                          {formData.pscheinExpiry || "—"}
+                        </p>
+                      ) : (
+                        <input
+                          type="date"
+                          id="pscheinExpiry"
+                          name="pscheinExpiry"
+                          value={formData.pscheinExpiry || ""}
+                          onChange={handleChange}
+                          className={`w-full rounded-lg px-2 py-1 text-xs shadow-sm focus:outline-none focus:ring-2 ${getPscheinInfo(formData.pscheinExpiry).status === "expired"
+                            ? "border border-red-500 focus:ring-red-100"
+                            : getPscheinInfo(formData.pscheinExpiry).status === "warning"
+                              ? "border border-orange-400 focus:ring-orange-100"
+                              : "border border-slate-300 focus:ring-blue-100 focus:border-blue-400"
+                            }`}
+                        />
+                      )}
 
                       {pschein.status === "expired" && (
                         <p className="text-red-600 text-[11px] mt-1 text-center">
