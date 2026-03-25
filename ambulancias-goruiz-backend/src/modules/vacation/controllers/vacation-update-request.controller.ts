@@ -38,7 +38,7 @@ export const updateVacationRequest = async (
     userId: string;
     startISO: string;
     endISO: string;
-  } | null = null;
+  } | null | undefined = undefined;
 
   const session = await mongoose.startSession();
 
@@ -111,16 +111,22 @@ export const updateVacationRequest = async (
       res.status(200).json(request);
     });
 
-    if (acceptedRange) {
+    if (acceptedRange != null) {
+      const range = acceptedRange as {
+        userId: string;
+        startISO: string;
+        endISO: string;
+      };
+
       try {
-        await cleanupAcceptedVacationAssignments(acceptedRange);
+        await cleanupAcceptedVacationAssignments(range);
       } catch (clearErr) {
         console.error("[CLEARING_ERROR]", {
           flow: "vacation_admin_accept",
           entityId: id,
-          userId: acceptedRange.userId,
-          startISO: acceptedRange.startISO,
-          endISO: acceptedRange.endISO,
+          userId: range.userId,
+          startISO: range.startISO,
+          endISO: range.endISO,
           error:
             clearErr instanceof Error ? clearErr.message : String(clearErr),
           stack: clearErr instanceof Error ? clearErr.stack : undefined,
