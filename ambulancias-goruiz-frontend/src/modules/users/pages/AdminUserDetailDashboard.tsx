@@ -5,7 +5,8 @@ import AdminUserDienstsTab from "../../diensts/components/AdminUserDienstsTab";
 import AdminUserPraemienTab from "../../praemien/components/AdminUserPraemienTab";
 import AdminUserVacationsTab from "../../vacation/components/AdminUserVacationsTab";
 import AdminUserSickLeavesTab from "../../sick/components/AdminUserSickLeavesTab";
-import AdminUserMessageTab from "../../messages/components/AdminUserMessageTab"; import { useAuth } from "../../../hooks/useAuth";
+import AdminUserMessageTab from "../../messages/components/AdminUserMessageTab";
+import { useAuth } from "../../../hooks/useAuth";
 import * as UsersApi from "../domain/api";
 import type { User } from "../domain/types";
 import { useTranslation } from "react-i18next";
@@ -55,26 +56,26 @@ const AdminUserDetailDashboard = () => {
       </Link>
 
       {/* Header */}
-      <div className="mb-6 flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-          {t("pages.adminUserDetail.title")}
-        </h1>
-
-        {loadingUser && (
+      {loadingUser && (
+        <div className="text-center mb-6">
           <p className="text-sm text-slate-600">
             {t("pages.adminUserDetail.loading")}
           </p>
-        )}
+        </div>
+      )}
+      {!loadingUser && user && (
+        <div className="flex items-baseline justify-center gap-3 mb-6">
+          <h2 className="text-xl sm:text-2xl font-semibold text-slate-900">
+            {user.name} {user.lastName}
+          </h2>
 
-        {!loadingUser && user && (
-          <p className="text-sm text-slate-700">
-            {t("pages.adminUserDetail.nameLabel")}{" "}
-            <span className="font-medium text-slate-900">
-              {user.name} {user.lastName}
+          {user.role === "worker" && user.employeeNumber && (
+            <span className="text-[0.95rem] font-semibold text-slate-600 tracking-wide">
+              {user.employeeNumber}
             </span>
-          </p>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Tabs nav */}
       <nav className="mb-6 rounded-2xl bg-white/70 backdrop-blur ring-1 ring-slate-200 shadow-sm p-2 flex justify-center">
