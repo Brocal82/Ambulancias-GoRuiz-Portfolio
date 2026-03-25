@@ -28,7 +28,8 @@ export const loginUserSchema = z.object({
 
 /* ─────────────────────────────────────────────────────────────────────────────
  * PATCH /api/users/me y PATCH /api/users/:id — Actualizar usuario (parcial)
- * Todos los campos opcionales; solo se validan los que vienen
+ * Todos los campos opcionales; solo se validan los que vienen.
+ * `email` no forma parte del esquema: se ignora en el body (no validación ni update).
  * ───────────────────────────────────────────────────────────────────────────── */
 export const updateUserSchema = z.object({
   name: z
@@ -37,7 +38,6 @@ export const updateUserSchema = z.object({
     .pipe(z.string().min(1, "Nombre no puede estar vacío"))
     .optional(),
   lastName: z.string().transform((s) => s.trim()).optional(),
-  email: z.string().transform((s) => s.trim()).pipe(emailSchema).optional(),
   ambulanceRole: ambulanceRoleSchema.optional(),
   address: z.string().transform((s) => s.trim()).optional(),
   phone: z.string().transform((s) => s.trim()).optional(),
