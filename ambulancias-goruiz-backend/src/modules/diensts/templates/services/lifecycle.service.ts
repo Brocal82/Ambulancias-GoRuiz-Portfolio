@@ -18,6 +18,25 @@ import type { dienstSchema } from "../../schemas/dienstSchema";
 type DienstCreateInput = z.infer<typeof dienstSchema>;
 type DienstUpdateInput = Partial<DienstCreateInput>;
 
+/** User ref from Team (ObjectId, id string, or populated { _id, ... }). */
+function teamMemberRefToIdString(v: unknown): string | undefined {
+  if (v == null) return undefined;
+  if (typeof v === "string") {
+    const s = v.trim();
+    return s !== "" ? s : undefined;
+  }
+  if (v instanceof mongoose.Types.ObjectId) return v.toString();
+  if (typeof v === "object" && "_id" in v && (v as { _id: unknown })._id != null) {
+    const id = (v as { _id: unknown })._id;
+    if (id instanceof mongoose.Types.ObjectId) return id.toString();
+    if (typeof id === "string") {
+      const s = id.trim();
+      return s !== "" ? s : undefined;
+    }
+  }
+  return undefined;
+}
+
 async function validateAssignmentCompanies(
   assignments: Array<{ ambulanceId?: string; driver?: string; medic?: string }>,
   dienstCompanyId: string | null,
@@ -339,12 +358,8 @@ export async function generateDienstTemplatesForWeek(
 
       const assignedTeam = dienstToTeam.get(dienstNumber);
 
-      const driverId = assignedTeam?.driver as
-        | mongoose.Types.ObjectId
-        | undefined;
-      const medicId = assignedTeam?.medic as
-        | mongoose.Types.ObjectId
-        | undefined;
+      const driverIdStr = teamMemberRefToIdString(assignedTeam?.driver);
+      const medicIdStr = teamMemberRefToIdString(assignedTeam?.medic);
 
       const teamAmbulanceId =
         assignedTeam && (assignedTeam as any).ambulanceId
@@ -359,8 +374,8 @@ export async function generateDienstTemplatesForWeek(
         return day.toISOString().split("T")[0];
       });
       const dayBlockMap = await computeDayBlockMapForTeam({
-        driverId: driverId?.toString(),
-        medicId: medicId?.toString(),
+        driverId: driverIdStr,
+        medicId: medicIdStr,
         dates: weekDates,
       });
 
@@ -409,12 +424,12 @@ export async function generateDienstTemplatesForWeek(
 
         const block = dayBlockMap[dateISO] || { driver: false, medic: false };
 
-        if (driverId && !block.driver) {
-          baseAssignment.driver = driverId;
+        if (driverIdStr && !block.driver) {
+          baseAssignment.driver = new mongoose.Types.ObjectId(driverIdStr);
         }
 
-        if (medicId && !block.medic) {
-          baseAssignment.medic = medicId;
+        if (medicIdStr && !block.medic) {
+          baseAssignment.medic = new mongoose.Types.ObjectId(medicIdStr);
         }
 
         if (teamAmbulanceId) {
