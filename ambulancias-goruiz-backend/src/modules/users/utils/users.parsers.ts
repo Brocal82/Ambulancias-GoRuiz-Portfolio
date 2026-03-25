@@ -10,13 +10,13 @@ function asString(v: unknown): string | undefined {
  * Solo incluye campos presentes en el request.
  * - Ausente → no se incluye (PATCH parcial)
  * - profileImage: "" → borrar; undefined → no tocar
+ * - email en body: ignorado (no se actualiza vía PATCH)
  */
 export function parseUpdateUserDTO(body: any): Partial<UpdateUserDTO> {
   const result: Partial<UpdateUserDTO> = {};
 
   if (body?.name !== undefined) result.name = asString(body.name) ?? "";
   if (body?.lastName !== undefined) result.lastName = asString(body.lastName);
-  if (body?.email !== undefined) result.email = asString(body.email) ?? "";
 
   if (body?.ambulanceRole !== undefined)
     result.ambulanceRole = asString(body.ambulanceRole) as UpdateUserDTO["ambulanceRole"];

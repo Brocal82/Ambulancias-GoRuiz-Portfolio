@@ -29,9 +29,9 @@ export const loginUserSchema = z.object({
 /* ─────────────────────────────────────────────────────────────────────────────
  * PATCH /api/users/me y PATCH /api/users/:id — Actualizar usuario (parcial)
  * Todos los campos opcionales; solo se validan los que vienen.
- * `email` no forma parte del esquema: se ignora en el body (no validación ni update).
+ * `email` se elimina del body antes de validar (nunca falla ni se persiste vía PATCH).
  * ───────────────────────────────────────────────────────────────────────────── */
-export const updateUserSchema = z.object({
+const updateUserFieldsSchema = z.object({
   name: z
     .string()
     .transform((s) => s.trim())
@@ -46,3 +46,11 @@ export const updateUserSchema = z.object({
   profileImage: z.string().optional(),
   employeeNumber: z.string().transform((s) => s.trim()).optional(),
 });
+
+export const updateUserSchema = z.preprocess((val) => {
+  if (val !== null && typeof val === "object" && !Array.isArray(val)) {
+    const { email: _ignored, ...rest } = val as Record<string, unknown>;
+    return rest;
+  }
+  return val;
+}, updateUserFieldsSchema);
