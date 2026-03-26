@@ -1,5 +1,6 @@
 import User from "../models/user.model";
 import { Dienst } from "../../diensts";
+import { isDriverEligibleForAssignmentDate } from "../../diensts/utils/dienstValidation";
 import { DateTime } from "luxon";
 import mongoose from "mongoose";
 import VacationRequest from "../../vacation/models/vacation-request.model";
@@ -49,7 +50,7 @@ function overlap(
 export async function getAvailableUsersForDateService(
   params: GetAvailableUsersParams,
 ) {
-  const { date, desiredRole, startTime, endTime, includeExpired, companyId } = params;
+  const { date, desiredRole, startTime, endTime, companyId } = params;
 
   const allowedRoles =
     desiredRole === "driver"
@@ -106,17 +107,14 @@ export async function getAvailableUsersForDateService(
     .sort({ lastName: 1 })
     .lean();
 
-  const dateObj = DateTime.fromISO(date, { zone: ZONE }).startOf("day");
-
   const available = (baseUsers as any[]).filter((u) => {
     if (desiredRole !== "driver") return true;
-    if (includeExpired) return true;
-
-    const exp = u.pscheinExpiry
-      ? DateTime.fromISO(u.pscheinExpiry, { zone: ZONE })
-      : null;
-
-    return !exp || exp.endOf("day") >= dateObj;
+    return isDriverEligibleForAssignmentDate({
+      ambulanceRole: u.ambulanceRole,
+      pscheinExpiry: u.pscheinExpiry,
+      pscheinConfirmedAt: u.pscheinConfirmedAt,
+      assignmentDateISO: date,
+    });
   });
 
   return available;

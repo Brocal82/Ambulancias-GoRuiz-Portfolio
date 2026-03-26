@@ -7,7 +7,7 @@ import type { AssignedDay } from "../../types/dienst.types";
 import {
   findWeeklyConflicts,
   isAmbulanceRoleValidForSlot,
-  isDriverPscheinValidOnAssignmentDate,
+  isDriverEligibleForAssignmentDate,
   isOnVacationDay,
   isOnSickDay,
   computeDayBlockMapForTeam,
@@ -185,7 +185,7 @@ async function validateAssignmentEntities(
     const drvId = toStr(a?.driver);
     if (drvId && drvId !== "") {
       const u = await User.findById(drvId)
-        .select("companyId ambulanceRole pscheinExpiry")
+        .select("companyId ambulanceRole pscheinExpiry pscheinConfirmedAt")
         .lean();
       if (!u) throw new DienstAssignmentError(404, "user_not_found", "Conductor no encontrado");
       if (!entitiesBelongToSameCompany((u as any).companyId, dienstCompanyId)) {
@@ -201,7 +201,14 @@ async function validateAssignmentEntities(
       }
       const dateISO = typeof a?.date === "string" ? a.date.trim() : "";
       if (dateISO && /^\d{4}-\d{2}-\d{2}$/.test(dateISO)) {
-        if (!isDriverPscheinValidOnAssignmentDate((u as any).pscheinExpiry, dateISO)) {
+        if (
+          !isDriverEligibleForAssignmentDate({
+            ambulanceRole: ar,
+            pscheinExpiry: (u as any).pscheinExpiry,
+            pscheinConfirmedAt: (u as any).pscheinConfirmedAt,
+            assignmentDateISO: dateISO,
+          })
+        ) {
           throw new DienstAssignmentError(
             409,
             "pschein_invalid_for_date",
@@ -391,7 +398,7 @@ export async function assignUserToWeek(
   const start = new Date(weekStartDate);
 
   const user = await User.findById(userId)
-    .select("pscheinExpiry ambulanceRole companyId")
+    .select("pscheinExpiry pscheinConfirmedAt ambulanceRole companyId")
     .lean();
   if (!user) {
     throw new DienstAssignmentError(404, "user_not_found", "Usuario no encontrado");
@@ -485,7 +492,12 @@ export async function assignUserToWeek(
 
     if (
       role === "driver" &&
-      !isDriverPscheinValidOnAssignmentDate((user as any).pscheinExpiry, a.date)
+      !isDriverEligibleForAssignmentDate({
+        ambulanceRole: (user as any).ambulanceRole,
+        pscheinExpiry: (user as any).pscheinExpiry,
+        pscheinConfirmedAt: (user as any).pscheinConfirmedAt,
+        assignmentDateISO: a.date,
+      })
     ) {
       return a;
     }
@@ -553,8 +565,8 @@ export async function assignTeamToWeek(
   const { dienstNumber, weekStartDate, teamId, resolvedRoles } = params;
 
   const team = await Team.findById(teamId)
-    .populate("driver", "pscheinExpiry ambulanceRole companyId")
-    .populate("medic", "pscheinExpiry ambulanceRole companyId")
+    .populate("driver", "pscheinExpiry pscheinConfirmedAt ambulanceRole companyId")
+    .populate("medic", "pscheinExpiry pscheinConfirmedAt ambulanceRole companyId")
     .lean();
 
   if (!team) {
@@ -685,28 +697,56 @@ export async function assignTeamToWeek(
 
   let driverExpiredButBothHint = false;
   if (dates.length > 0) {
-    const nominalDriver = rawDriverDoc as { pscheinExpiry?: string; ambulanceRole?: string };
-    const nominalMedic = rawMedicDoc as { pscheinExpiry?: string; ambulanceRole?: string };
+    const nominalDriver = rawDriverDoc as {
+      pscheinExpiry?: string;
+      pscheinConfirmedAt?: Date;
+      ambulanceRole?: string;
+    };
+    const nominalMedic = rawMedicDoc as {
+      pscheinExpiry?: string;
+      pscheinConfirmedAt?: Date;
+      ambulanceRole?: string;
+    };
 
     for (const d of dates) {
-      const nominalBad = !isDriverPscheinValidOnAssignmentDate(
-        nominalDriver?.pscheinExpiry,
-        d,
-      );
+      const nominalBad = !isDriverEligibleForAssignmentDate({
+        ambulanceRole: nominalDriver?.ambulanceRole as
+          | "driver"
+          | "medic"
+          | "both"
+          | undefined,
+        pscheinExpiry: nominalDriver?.pscheinExpiry,
+        pscheinConfirmedAt: nominalDriver?.pscheinConfirmedAt,
+        assignmentDateISO: d,
+      });
       const swapMedicCanDrive =
         nominalDriver?.ambulanceRole === "both" &&
-        isAmbulanceRoleValidForSlot(
-          nominalMedic?.ambulanceRole as "driver" | "medic" | "both" | undefined,
-          "driver",
-        ) &&
-        isDriverPscheinValidOnAssignmentDate(nominalMedic?.pscheinExpiry, d);
+        isDriverEligibleForAssignmentDate({
+          ambulanceRole: nominalMedic?.ambulanceRole as
+            | "driver"
+            | "medic"
+            | "both"
+            | undefined,
+          pscheinExpiry: nominalMedic?.pscheinExpiry,
+          pscheinConfirmedAt: nominalMedic?.pscheinConfirmedAt,
+          assignmentDateISO: d,
+        });
       if (nominalBad && swapMedicCanDrive) {
         driverExpiredButBothHint = true;
       }
     }
 
     const anyDayResolvedDriverOk = dates.some((d) =>
-      isDriverPscheinValidOnAssignmentDate(driverDoc?.pscheinExpiry, d),
+      isDriverEligibleForAssignmentDate({
+        ambulanceRole: driverDoc?.ambulanceRole as
+          | "driver"
+          | "medic"
+          | "both"
+          | undefined,
+        pscheinExpiry: driverDoc?.pscheinExpiry,
+        pscheinConfirmedAt: driverDoc?.pscheinConfirmedAt,
+        assignmentDateISO: d,
+      }),
     );
     if (!anyDayResolvedDriverOk && !driverExpiredButBothHint) {
       throw new DienstAssignmentError(
@@ -749,10 +789,16 @@ export async function assignTeamToWeek(
     let next = { ...a } as any;
     let changed = false;
 
-    const driverPscheinOk = isDriverPscheinValidOnAssignmentDate(
-      driverDoc?.pscheinExpiry,
-      dateISO,
-    );
+    const driverPscheinOk = isDriverEligibleForAssignmentDate({
+      ambulanceRole: driverDoc?.ambulanceRole as
+        | "driver"
+        | "medic"
+        | "both"
+        | undefined,
+      pscheinExpiry: driverDoc?.pscheinExpiry,
+      pscheinConfirmedAt: driverDoc?.pscheinConfirmedAt,
+      assignmentDateISO: dateISO,
+    });
     const cannotAssignDriver = block.driver || !driverPscheinOk;
 
     if (!cannotAssignDriver) {

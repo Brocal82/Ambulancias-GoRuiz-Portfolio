@@ -98,6 +98,8 @@ export async function createTestAdminWithCompany(password: string = "password123
     role: "admin",
     companyId: company._id,
     ambulanceRole: "both",
+    pscheinConfirmedAt: new Date("2025-01-01T12:00:00.000Z"),
+    pscheinExpiry: "2035-12-31",
   });
 
   const loginRes = await request(app)

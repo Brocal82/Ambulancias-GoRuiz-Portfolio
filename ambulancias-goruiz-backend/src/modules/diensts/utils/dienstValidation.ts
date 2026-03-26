@@ -112,8 +112,9 @@ export function isAmbulanceRoleValidForSlot(
 }
 
 /**
- * Misma regla que getAvailableUsersForDate (driver): sin fecha de P-Schein se permite;
- * con fecha, el fin de día de caducidad debe ser >= día del servicio.
+ * Comparación de fecha: con fecha de caducidad presente, el fin de día en Europe/Berlin
+ * debe ser >= día del servicio. Si `pscheinExpiry` está vacío, devuelve true (uso interno
+ * tras comprobar que el valor existe en `isDriverEligibleForAssignmentDate`).
  */
 export function isDriverPscheinValidOnAssignmentDate(
   pscheinExpiry: string | undefined,
@@ -128,6 +129,36 @@ export function isDriverPscheinValidOnAssignmentDate(
   const exp = DateTime.fromISO(trimmed, { zone: ZONE });
   if (!exp.isValid) return true;
   return exp.endOf("day") >= dateObj;
+}
+
+export type DriverEligibilityInputs = {
+  ambulanceRole: "driver" | "medic" | "both" | undefined;
+  pscheinExpiry: string | undefined;
+  pscheinConfirmedAt: Date | string | null | undefined;
+  assignmentDateISO: string;
+};
+
+/**
+ * Regla única de elegibilidad como conductor: rol driver/both, P-Schein confirmado,
+ * caducidad presente y válida para la fecha del servicio.
+ */
+export function isDriverEligibleForAssignmentDate(
+  params: DriverEligibilityInputs,
+): boolean {
+  const {
+    ambulanceRole,
+    pscheinExpiry,
+    pscheinConfirmedAt,
+    assignmentDateISO,
+  } = params;
+  if (!isAmbulanceRoleValidForSlot(ambulanceRole, "driver")) return false;
+  if (pscheinConfirmedAt == null) return false;
+  if (typeof pscheinConfirmedAt === "string" && !pscheinConfirmedAt.trim()) {
+    return false;
+  }
+  const trimmed = typeof pscheinExpiry === "string" ? pscheinExpiry.trim() : "";
+  if (!trimmed) return false;
+  return isDriverPscheinValidOnAssignmentDate(trimmed, assignmentDateISO);
 }
 
 /**
