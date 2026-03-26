@@ -55,6 +55,69 @@ function normalizeBlackoutsFromApi(
   }));
 }
 
+function dayInMonthToIsoDate(
+  year: number,
+  monthIndex: number,
+  dayOfMonth: number,
+): string {
+  const m = monthIndex + 1;
+  return `${year}-${String(m).padStart(2, "0")}-${String(dayOfMonth).padStart(2, "0")}`;
+}
+
+/** True if calendar day-of-month falls inside any blackout range (inclusive). */
+function isDayInBlackoutRangesForMonth(
+  year: number,
+  monthIndex: number,
+  dayOfMonth: number,
+  ranges: BlackoutRangeDraft[],
+): boolean {
+  if (ranges.length === 0) return false;
+  const dayIso = dayInMonthToIsoDate(year, monthIndex, dayOfMonth);
+  const t = new Date(`${dayIso}T12:00:00`).getTime();
+  return ranges.some((r) => {
+    const s = new Date(`${toIsoDateString(r.startDate)}T12:00:00`).getTime();
+    const e = new Date(`${toIsoDateString(r.endDate)}T12:00:00`).getTime();
+    return t >= s && t <= e;
+  });
+}
+
+/** True while choosing start/end on the calendar (before range is added to draft). */
+function isDayInActiveSelectionRange(
+  day: number,
+  selectMode: boolean,
+  anchor: number | null,
+  focus: number | null,
+): boolean {
+  if (!selectMode || anchor === null) return false;
+  if (focus === null) return day === anchor;
+  const lo = Math.min(anchor, focus);
+  const hi = Math.max(anchor, focus);
+  return day >= lo && day <= hi;
+}
+
+/** Strong lilac for in-progress anchor / hover range (full cell classes). */
+function getBlackoutSelectionOverlayClass(
+  day: number,
+  selectMode: boolean,
+  anchor: number | null,
+  focus: number | null,
+): string {
+  if (!selectMode || anchor === null) return "";
+  if (focus === null) {
+    return day === anchor
+      ? "bg-purple-200/95 text-slate-900 border-2 border-purple-500 ring-2 ring-purple-600 ring-inset z-[1]"
+      : "";
+  }
+  const lo = Math.min(anchor, focus);
+  const hi = Math.max(anchor, focus);
+  if (day < lo || day > hi) return "";
+  const base =
+    "bg-purple-300/80 text-slate-900 border-2 border-purple-400 ring-1 ring-inset ring-purple-500/90 z-[1]";
+  if (day === anchor) return `${base} ring-2 ring-purple-600`;
+  if (day === focus) return `${base} ring-2 ring-purple-500`;
+  return base;
+}
+
 const AdminVacationMonthModal: React.FC<Props> = ({
   isOpen,
   monthIndex,
@@ -86,10 +149,18 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   const [blackoutsDraft, setBlackoutsDraft] = useState<BlackoutRangeDraft[]>([]);
   const [blackoutsDirty, setBlackoutsDirty] = useState(false);
   const blackoutsDirtyRef = useRef(false);
-  const [newRangeStart, setNewRangeStart] = useState("");
-  const [newRangeEnd, setNewRangeEnd] = useState("");
   const [isSavingBlackouts, setIsSavingBlackouts] = useState(false);
   const [monthConfigLoading, setMonthConfigLoading] = useState(false);
+
+  const [blackoutSelectMode, setBlackoutSelectMode] = useState(false);
+  const [blackoutAnchorDay, setBlackoutAnchorDay] = useState<number | null>(
+    null,
+  );
+  const [blackoutFocusDay, setBlackoutFocusDay] = useState<number | null>(null);
+
+  /** Calendar range chosen but not yet merged into persisted list / API. */
+  const [pendingBlackoutRange, setPendingBlackoutRange] =
+    useState<BlackoutRangeDraft | null>(null);
 
   const inFlightKeyRef = useRef<string | null>(null);
   const refreshTimerRef = useRef<number | null>(null);
@@ -173,8 +244,11 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     setBlackoutsDirty(false);
     blackoutsDirtyRef.current = false;
     setBlackoutsDraft([]);
-    setNewRangeStart("");
-    setNewRangeEnd("");
+
+    setBlackoutSelectMode(false);
+    setBlackoutAnchorDay(null);
+    setBlackoutFocusDay(null);
+    setPendingBlackoutRange(null);
 
   }, [isOpen, monthIndex, year]);
 
@@ -575,6 +649,25 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     return buildBorderMapFromRange(s, e);
   }, [highlightRequestId, requests, monthIndex, year]);
 
+  /** Days in the visible month covered by the not-yet-saved calendar range only. */
+  const pendingBlackoutDaySet = useMemo(() => {
+    if (monthIndex === null || !pendingBlackoutRange) return new Set<number>();
+    const set = new Set<number>();
+    const dim = new Date(year, monthIndex + 1, 0).getDate();
+    for (let d = 1; d <= dim; d++) {
+      if (
+        isDayInBlackoutRangesForMonth(year, monthIndex, d, [pendingBlackoutRange])
+      ) {
+        set.add(d);
+      }
+    }
+    return set;
+  }, [pendingBlackoutRange, year, monthIndex]);
+
+  /** Pending calendar range or unsaved list edits — hidden when only selection mode with no changes. */
+  const showBlackoutsSaveButton =
+    pendingBlackoutRange !== null || blackoutsDirty;
+
   const handleSaveMonthConfig = async () => {
     if (monthIndex === null) return;
     const n = parseInt(maxPerDayDraft, 10);
@@ -614,44 +707,33 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     }
   };
 
-  const handleAddBlackout = () => {
-    const a = newRangeStart.trim();
-    const b = newRangeEnd.trim();
-    if (!a || !b) {
-      toastT.error(
-        t(
-          "pages.vacations.adminPage.blackoutDatesRequired",
-          "Indica inicio y fin del periodo.",
-        ),
-      );
-      return;
-    }
-    const ta = new Date(`${a}T12:00:00`);
-    const tb = new Date(`${b}T12:00:00`);
-    if (Number.isNaN(ta.getTime()) || Number.isNaN(tb.getTime())) {
-      toastT.error(
-        t("pages.vacations.adminPage.blackoutDatesInvalid", "Fechas no válidas."),
-      );
-      return;
-    }
-    if (ta.getTime() > tb.getTime()) {
-      toastT.error(
-        t(
-          "pages.vacations.adminPage.blackoutRangeOrder",
-          "La fecha de inicio debe ser anterior o igual al fin.",
-        ),
-      );
-      return;
-    }
-    setBlackoutsDirty(true);
-    setBlackoutsDraft((prev) => [...prev, { startDate: a, endDate: b }]);
-    setNewRangeStart("");
-    setNewRangeEnd("");
-  };
-
   const handleRemoveBlackout = (index: number) => {
     setBlackoutsDirty(true);
     setBlackoutsDraft((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const calendarBlackoutSelectEnabled =
+    blackoutSelectMode &&
+    !availLoading &&
+    !isSavingBlackouts &&
+    !isSavingMonthConfig &&
+    !monthConfigLoading;
+
+  const handleBlackoutCalendarDayClick = (day: number) => {
+    if (!calendarBlackoutSelectEnabled || monthIndex === null) return;
+    if (blackoutAnchorDay === null) {
+      setBlackoutAnchorDay(day);
+      setBlackoutFocusDay(null);
+      return;
+    }
+    const start = Math.min(blackoutAnchorDay, day);
+    const end = Math.max(blackoutAnchorDay, day);
+    const startDate = dayInMonthToIsoDate(year, monthIndex, start);
+    const endDate = dayInMonthToIsoDate(year, monthIndex, end);
+    setPendingBlackoutRange({ startDate, endDate });
+    setBlackoutsDirty(true);
+    setBlackoutAnchorDay(null);
+    setBlackoutFocusDay(null);
   };
 
   const handleSaveBlackouts = async () => {
@@ -661,14 +743,21 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     try {
       await toastT.promise(
         (async () => {
+          const blackoutsToPersist = pendingBlackoutRange
+            ? [...blackoutsDraft, pendingBlackoutRange]
+            : blackoutsDraft;
           const updated = await upsertVacationMonthConfig({
             monthKey,
-            blackouts: blackoutsDraft,
+            blackouts: blackoutsToPersist,
           });
           setBlackoutsDraft(normalizeBlackoutsFromApi(updated.blackouts));
           setBlackoutsDirty(false);
+          setPendingBlackoutRange(null);
           invalidateAvailability(year, m1);
           await loadAvailability(year, m1, true);
+          setBlackoutSelectMode(false);
+          setBlackoutAnchorDay(null);
+          setBlackoutFocusDay(null);
         })(),
         {
           pending: t(
@@ -807,126 +896,130 @@ const AdminVacationMonthModal: React.FC<Props> = ({
               </div>
 
               <div className="mt-2 border-t border-slate-200 pt-2">
-                <p className="mb-1.5 text-[11px] font-medium text-slate-700">
-                  {t(
-                    "pages.vacations.adminPage.blackoutsTitle",
-                    "Periodos bloqueados",
-                  )}
-                </p>
-
-                {monthConfigLoading ? (
-                  <p className="mb-2 text-[10px] text-slate-500">
-                    {t("common.loading", "Cargando...")}
-                  </p>
-                ) : blackoutsDraft.length === 0 ? (
-                  <p className="mb-2 text-[10px] text-slate-500">
-                    {t(
-                      "pages.vacations.adminPage.blackoutsEmpty",
-                      "Ningún periodo bloqueado.",
-                    )}
-                  </p>
-                ) : (
-                  <ul className="mb-2 max-h-28 space-y-1 overflow-y-auto pr-0.5">
-                    {blackoutsDraft.map((r, idx) => (
-                      <li
-                        key={`${r.startDate}-${r.endDate}-${idx}`}
-                        className="flex items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-1 text-[10px] text-slate-700"
-                      >
-                        <span className="min-w-0 truncate">
-                          {formatYYYYMMDDToDDMMYYYY(r.startDate)} →{" "}
-                          {formatYYYYMMDDToDDMMYYYY(r.endDate)}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveBlackout(idx)}
-                          disabled={isSavingBlackouts || isSavingMonthConfig}
-                          className="shrink-0 rounded p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:opacity-40"
-                          aria-label={t("common.delete", "Eliminar")}
-                        >
-                          ✕
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                <div className="flex flex-wrap items-end gap-2">
-                  <div className="flex min-w-0 flex-col gap-0.5">
-                    <label
-                      htmlFor="admin-blackout-start"
-                      className="text-[10px] text-slate-500"
-                    >
+                <div
+                  className={[
+                    "flex flex-wrap items-center gap-x-2 gap-y-1.5",
+                    blackoutSelectMode
+                      ? "mb-1.5 justify-between"
+                      : "justify-end",
+                  ].join(" ")}
+                >
+                  {blackoutSelectMode && (
+                    <p className="text-[11px] font-medium text-slate-700">
                       {t(
-                        "pages.vacations.adminPage.blackoutStart",
-                        "Inicio",
+                        "pages.vacations.adminPage.blackoutsTitle",
+                        "Periodos bloqueados",
                       )}
-                    </label>
-                    <input
-                      id="admin-blackout-start"
-                      type="date"
-                      value={newRangeStart}
-                      onChange={(e) => setNewRangeStart(e.target.value)}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+                    <button
+                      type="button"
+                      aria-pressed={blackoutSelectMode}
                       disabled={
-                        monthConfigLoading ||
+                        availLoading ||
                         isSavingBlackouts ||
-                        isSavingMonthConfig
+                        isSavingMonthConfig ||
+                        monthConfigLoading
                       }
-                      className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-900 disabled:bg-slate-100"
-                    />
-                  </div>
-                  <div className="flex min-w-0 flex-col gap-0.5">
-                    <label
-                      htmlFor="admin-blackout-end"
-                      className="text-[10px] text-slate-500"
+                      onClick={() => {
+                        setBlackoutSelectMode((v) => {
+                          const next = !v;
+                          if (!next) {
+                            setBlackoutAnchorDay(null);
+                            setBlackoutFocusDay(null);
+                          }
+                          return next;
+                        });
+                      }}
+                      className={[
+                        "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-slate-700 transition",
+                        blackoutSelectMode
+                          ? "border-violet-500 bg-violet-50 text-violet-800"
+                          : "border-slate-300 bg-white hover:bg-slate-50",
+                        "disabled:cursor-not-allowed disabled:opacity-50",
+                      ].join(" ")}
+                      title={t(
+                        "pages.vacations.adminPage.blackoutSelectModeToggle",
+                        "Seleccionar en el calendario",
+                      )}
+                      aria-label={t(
+                        "pages.vacations.adminPage.blackoutSelectModeToggle",
+                        "Seleccionar en el calendario",
+                      )}
                     >
-                      {t("pages.vacations.adminPage.blackoutEnd", "Fin")}
-                    </label>
-                    <input
-                      id="admin-blackout-end"
-                      type="date"
-                      value={newRangeEnd}
-                      onChange={(e) => setNewRangeEnd(e.target.value)}
-                      disabled={
-                        monthConfigLoading ||
-                        isSavingBlackouts ||
-                        isSavingMonthConfig
-                      }
-                      className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-900 disabled:bg-slate-100"
-                    />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="h-4 w-4"
+                        aria-hidden
+                      >
+                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                        <path d="M3 10h18M8 2v4M16 2v4" />
+                        <path d="M9 15h6" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                    {blackoutSelectMode && showBlackoutsSaveButton && (
+                      <button
+                        type="button"
+                        onClick={handleSaveBlackouts}
+                        disabled={
+                          monthConfigLoading ||
+                          isSavingBlackouts ||
+                          isSavingMonthConfig
+                        }
+                        className="inline-flex h-8 shrink-0 items-center rounded-md bg-slate-800 px-2.5 text-xs font-medium text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isSavingBlackouts
+                          ? t("common.loading", "Cargando...")
+                          : t(
+                              "pages.vacations.adminPage.blackoutsSave",
+                              "Guardar periodos",
+                            )}
+                      </button>
+                    )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleAddBlackout}
-                    disabled={
-                      monthConfigLoading ||
-                      isSavingBlackouts ||
-                      isSavingMonthConfig
-                    }
-                    className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {t("pages.vacations.adminPage.blackoutAdd", "Añadir")}
-                  </button>
                 </div>
 
-                <div className="mt-2 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={handleSaveBlackouts}
-                    disabled={
-                      monthConfigLoading ||
-                      isSavingBlackouts ||
-                      isSavingMonthConfig
-                    }
-                    className="rounded-md bg-slate-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isSavingBlackouts
-                      ? t("common.loading", "Cargando...")
-                      : t(
-                          "pages.vacations.adminPage.blackoutsSave",
-                          "Guardar periodos",
-                        )}
-                  </button>
-                </div>
+                {blackoutSelectMode &&
+                  (monthConfigLoading ? (
+                    <p className="mb-2 text-[10px] text-slate-500">
+                      {t("common.loading", "Cargando...")}
+                    </p>
+                  ) : blackoutsDraft.length === 0 ? (
+                    <p className="mb-2 text-[10px] text-slate-500">
+                      {t(
+                        "pages.vacations.adminPage.blackoutsEmpty",
+                        "Ningún periodo bloqueado.",
+                      )}
+                    </p>
+                  ) : (
+                    <ul className="mb-2 max-h-28 space-y-1 overflow-y-auto pr-0.5">
+                      {blackoutsDraft.map((r, idx) => (
+                        <li
+                          key={`${r.startDate}-${r.endDate}-${idx}`}
+                          className="flex items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-1 text-[10px] text-slate-700"
+                        >
+                          <span className="min-w-0 truncate">
+                            {formatYYYYMMDDToDDMMYYYY(r.startDate)} →{" "}
+                            {formatYYYYMMDDToDDMMYYYY(r.endDate)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveBlackout(idx)}
+                            disabled={isSavingBlackouts || isSavingMonthConfig}
+                            className="shrink-0 rounded p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:opacity-40"
+                            aria-label={t("common.delete", "Eliminar")}
+                          >
+                            ✕
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ))}
               </div>
 
               <div className="grid grid-cols-7 text-center text-[10px] uppercase tracking-wide text-slate-500 mb-0.5">
@@ -937,7 +1030,12 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                 ))}
               </div>
 
-              <div className="grid grid-cols-7 gap-0.5">
+              <div
+                className="grid grid-cols-7 gap-0.5"
+                onMouseLeave={() => {
+                  if (blackoutSelectMode) setBlackoutFocusDay(null);
+                }}
+              >
                 {availLoading &&
                   Array.from({ length: 42 }).map((_, i) => (
                     <div
@@ -958,33 +1056,94 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                     }
 
                     const state = getDayState(cell);
-                    const color =
-                      state === "red"
-                        ? "bg-rose-50 text-slate-800 border-2 border-rose-300"
-                        : state === "yellow"
-                          ? "bg-amber-50 text-slate-800 border-2 border-amber-300"
-                          : "bg-emerald-50 text-slate-800 border-2 border-emerald-300";
+                    const isPendingBlackoutDay = pendingBlackoutDaySet.has(cell);
+                    const inActiveSelection = isDayInActiveSelectionRange(
+                      cell,
+                      blackoutSelectMode,
+                      blackoutAnchorDay,
+                      blackoutFocusDay,
+                    );
+                    const activeSelectionClass =
+                      !isPendingBlackoutDay && inActiveSelection
+                        ? getBlackoutSelectionOverlayClass(
+                            cell,
+                            blackoutSelectMode,
+                            blackoutAnchorDay,
+                            blackoutFocusDay,
+                          )
+                        : "";
+
+                    let color: string;
+                    if (isPendingBlackoutDay) {
+                      color =
+                        "bg-purple-200/95 text-slate-900 border-2 border-purple-500";
+                    } else if (activeSelectionClass) {
+                      color = activeSelectionClass;
+                    } else if (state === "red") {
+                      color =
+                        "bg-rose-50 text-slate-800 border-2 border-rose-300";
+                    } else if (blackoutSelectMode) {
+                      color =
+                        state === "yellow"
+                          ? "bg-purple-50/40 text-slate-800 border-2 border-amber-300/90"
+                          : "bg-purple-50/40 text-slate-800 border-2 border-emerald-300/90";
+                    } else if (state === "yellow") {
+                      color =
+                        "bg-amber-50 text-slate-800 border-2 border-amber-300";
+                    } else {
+                      color =
+                        "bg-emerald-50 text-slate-800 border-2 border-emerald-300";
+                    }
 
                     const borderCls = borderMap[cell] ?? "";
+
+                    const titleAvail =
+                      availability
+                        ? `${cell} · ${availability.days.find((d) => d.day === cell)
+                            ?.approvedCount ?? 0
+                          } ${t(
+                            "pages.vacations.adminPage.badges.accepted",
+                            "aceptadas",
+                          )}`
+                        : `${cell}`;
+
+                    const cellClassName = [
+                      "relative h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none",
+                      color,
+                      borderCls,
+                      calendarBlackoutSelectEnabled
+                        ? "cursor-pointer"
+                        : "",
+                    ].join(" ");
+
+                    if (calendarBlackoutSelectEnabled) {
+                      return (
+                        <button
+                          key={`d-${cell}-${idx}`}
+                          type="button"
+                          onClick={() => handleBlackoutCalendarDayClick(cell)}
+                          onMouseEnter={() => {
+                            if (
+                              blackoutSelectMode &&
+                              blackoutAnchorDay !== null
+                            ) {
+                              setBlackoutFocusDay(cell);
+                            }
+                          }}
+                          className={cellClassName}
+                          title={titleAvail}
+                          aria-label={`${cell}${borderCls ? " · highlighted" : ""}${blackoutSelectMode ? " · blackout selection" : ""}`}
+                        >
+                          {cell}
+                        </button>
+                      );
+                    }
 
                     return (
                       <div
                         key={`d-${cell}-${idx}`}
-                        className={[
-                          "h-6 sm:h-7 md:h-8 rounded flex items-center justify-center text-[10px] font-medium select-none",
-                          color,
-                          borderCls,
-                        ].join(" ")}
-                        title={
-                          availability
-                            ? `${cell} · ${availability.days.find((d) => d.day === cell)
-                              ?.approvedCount ?? 0
-                            } ${t(
-                              "pages.vacations.adminPage.badges.accepted",
-                              "aceptadas",
-                            )}`
-                            : `${cell}`
-                        }
+                        className={cellClassName}
+                        title={titleAvail}
                         aria-label={`${cell}${borderCls ? " · highlighted" : ""}`}
                       >
                         {cell}
