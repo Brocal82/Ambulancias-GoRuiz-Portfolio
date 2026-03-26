@@ -6,7 +6,8 @@ import { Ambulance } from "../../../ambulances";
 import type { AssignedDay } from "../../types/dienst.types";
 import {
   findWeeklyConflicts,
-  getDriverPscheinState,
+  isAmbulanceRoleValidForSlot,
+  isDriverPscheinValidOnAssignmentDate,
   isOnVacationDay,
   isOnSickDay,
   computeDayBlockMapForTeam,
@@ -183,18 +184,46 @@ async function validateAssignmentEntities(
     }
     const drvId = toStr(a?.driver);
     if (drvId && drvId !== "") {
-      const u = await User.findById(drvId).select("companyId").lean();
+      const u = await User.findById(drvId)
+        .select("companyId ambulanceRole pscheinExpiry")
+        .lean();
       if (!u) throw new DienstAssignmentError(404, "user_not_found", "Conductor no encontrado");
       if (!entitiesBelongToSameCompany((u as any).companyId, dienstCompanyId)) {
         throw new DienstAssignmentError(403, "forbidden", "El conductor no pertenece a tu empresa");
       }
+      const ar = (u as any).ambulanceRole as "driver" | "medic" | "both" | undefined;
+      if (!isAmbulanceRoleValidForSlot(ar, "driver")) {
+        throw new DienstAssignmentError(
+          409,
+          "invalid_ambulance_role",
+          "El usuario no tiene rol de ambulancia válido para conductor.",
+        );
+      }
+      const dateISO = typeof a?.date === "string" ? a.date.trim() : "";
+      if (dateISO && /^\d{4}-\d{2}-\d{2}$/.test(dateISO)) {
+        if (!isDriverPscheinValidOnAssignmentDate((u as any).pscheinExpiry, dateISO)) {
+          throw new DienstAssignmentError(
+            409,
+            "pschein_invalid_for_date",
+            "El P-Schein del conductor no es válido para la fecha del servicio.",
+          );
+        }
+      }
     }
     const medId = toStr(a?.medic);
     if (medId && medId !== "") {
-      const u = await User.findById(medId).select("companyId").lean();
+      const u = await User.findById(medId).select("companyId ambulanceRole").lean();
       if (!u) throw new DienstAssignmentError(404, "user_not_found", "Sanitario no encontrado");
       if (!entitiesBelongToSameCompany((u as any).companyId, dienstCompanyId)) {
         throw new DienstAssignmentError(403, "forbidden", "El sanitario no pertenece a tu empresa");
+      }
+      const ar = (u as any).ambulanceRole as "driver" | "medic" | "both" | undefined;
+      if (!isAmbulanceRoleValidForSlot(ar, "medic")) {
+        throw new DienstAssignmentError(
+          409,
+          "invalid_ambulance_role",
+          "El usuario no tiene rol de ambulancia válido para sanitario.",
+        );
       }
     }
   }
@@ -361,17 +390,27 @@ export async function assignUserToWeek(
   const { dienstNumber, weekStartDate, userId, role } = params;
   const start = new Date(weekStartDate);
 
+  const user = await User.findById(userId)
+    .select("pscheinExpiry ambulanceRole companyId")
+    .lean();
+  if (!user) {
+    throw new DienstAssignmentError(404, "user_not_found", "Usuario no encontrado");
+  }
+
   if (role === "driver") {
-    const u = await User.findById(userId).select("pscheinExpiry").lean();
-    if (!u) {
-      throw new DienstAssignmentError(404, "user_not_found", "Usuario no encontrado");
-    }
-    const ps = getDriverPscheinState((u as any)?.pscheinExpiry);
-    if (ps === "expired") {
+    if (!isAmbulanceRoleValidForSlot((user as any).ambulanceRole, "driver")) {
       throw new DienstAssignmentError(
         409,
-        "pschein_expired",
-        "El P-Schein del conductor está caducado. No se puede asignar.",
+        "invalid_ambulance_role",
+        "El usuario no tiene rol de ambulancia válido para conductor.",
+      );
+    }
+  } else {
+    if (!isAmbulanceRoleValidForSlot((user as any).ambulanceRole, "medic")) {
+      throw new DienstAssignmentError(
+        409,
+        "invalid_ambulance_role",
+        "El usuario no tiene rol de ambulancia válido para sanitario.",
       );
     }
   }
@@ -402,8 +441,7 @@ export async function assignUserToWeek(
     if (dc && String(dc) !== String(companyId)) {
       throw new DienstAssignmentError(403, "forbidden", "No tienes permiso para modificar este Dienst");
     }
-    const targetUser = await User.findById(userId).select("companyId").lean();
-    if (!targetUser || !targetUser.companyId || String(targetUser.companyId) !== String(companyId)) {
+    if (!user.companyId || String(user.companyId) !== String(companyId)) {
       throw new DienstAssignmentError(403, "forbidden", "El usuario no pertenece a tu empresa");
     }
   }
@@ -442,6 +480,13 @@ export async function assignUserToWeek(
     }
 
     if (conflictDates.has(a.date)) {
+      return a;
+    }
+
+    if (
+      role === "driver" &&
+      !isDriverPscheinValidOnAssignmentDate((user as any).pscheinExpiry, a.date)
+    ) {
       return a;
     }
 
@@ -597,26 +642,19 @@ export async function assignTeamToWeek(
   const driverRole = driverDoc?.ambulanceRole as "driver" | "medic" | "both" | undefined;
   const medicRole = medicDoc?.ambulanceRole as "driver" | "medic" | "both" | undefined;
 
-  const driverPschein = getDriverPscheinState(driverDoc?.pscheinExpiry);
-  const medicPschein = getDriverPscheinState(medicDoc?.pscheinExpiry);
-
-  const medicCanDrive =
-    (medicRole === "driver" || medicRole === "both") &&
-    (medicPschein === "valid" || medicPschein === "warning");
-  const driverIsBoth = driverRole === "both";
-
-  let driverExpiredButBothHint = false;
-
-  if (driverPschein === "expired") {
-    if (driverIsBoth && medicCanDrive) {
-      driverExpiredButBothHint = true;
-    } else {
-      throw new DienstAssignmentError(
-        409,
-        "pschein_expired",
-        "El P-Schein del conductor está caducado. No se puede asignar el equipo.",
-      );
-    }
+  if (!isAmbulanceRoleValidForSlot(driverRole, "driver")) {
+    throw new DienstAssignmentError(
+      409,
+      "invalid_ambulance_role",
+      "El conductor del equipo no tiene rol de ambulancia válido.",
+    );
+  }
+  if (!isAmbulanceRoleValidForSlot(medicRole, "medic")) {
+    throw new DienstAssignmentError(
+      409,
+      "invalid_ambulance_role",
+      "El sanitario del equipo no tiene rol de ambulancia válido.",
+    );
   }
 
   const start = new Date(weekStartDate);
@@ -643,6 +681,42 @@ export async function assignTeamToWeek(
     }
   }
 
+  const dates = extractValidDatesFromAssignments(dienst.assignments);
+
+  let driverExpiredButBothHint = false;
+  if (dates.length > 0) {
+    const nominalDriver = rawDriverDoc as { pscheinExpiry?: string; ambulanceRole?: string };
+    const nominalMedic = rawMedicDoc as { pscheinExpiry?: string; ambulanceRole?: string };
+
+    for (const d of dates) {
+      const nominalBad = !isDriverPscheinValidOnAssignmentDate(
+        nominalDriver?.pscheinExpiry,
+        d,
+      );
+      const swapMedicCanDrive =
+        nominalDriver?.ambulanceRole === "both" &&
+        isAmbulanceRoleValidForSlot(
+          nominalMedic?.ambulanceRole as "driver" | "medic" | "both" | undefined,
+          "driver",
+        ) &&
+        isDriverPscheinValidOnAssignmentDate(nominalMedic?.pscheinExpiry, d);
+      if (nominalBad && swapMedicCanDrive) {
+        driverExpiredButBothHint = true;
+      }
+    }
+
+    const anyDayResolvedDriverOk = dates.some((d) =>
+      isDriverPscheinValidOnAssignmentDate(driverDoc?.pscheinExpiry, d),
+    );
+    if (!anyDayResolvedDriverOk && !driverExpiredButBothHint) {
+      throw new DienstAssignmentError(
+        409,
+        "pschein_invalid_for_date",
+        "El P-Schein del conductor no es válido para ninguna fecha del Dienst.",
+      );
+    }
+  }
+
   const [driverConf, medicConf] = await Promise.all([
     findWeeklyConflicts(new mongoose.Types.ObjectId(driverId), start, dienstNumber),
     findWeeklyConflicts(new mongoose.Types.ObjectId(medicId), start, dienstNumber),
@@ -657,7 +731,6 @@ export async function assignTeamToWeek(
     );
   }
 
-  const dates = extractValidDatesFromAssignments(dienst.assignments);
   const dayBlockMap = await computeDayBlockMapForTeam({
     driverId,
     medicId,
@@ -676,7 +749,13 @@ export async function assignTeamToWeek(
     let next = { ...a } as any;
     let changed = false;
 
-    if (!block.driver) {
+    const driverPscheinOk = isDriverPscheinValidOnAssignmentDate(
+      driverDoc?.pscheinExpiry,
+      dateISO,
+    );
+    const cannotAssignDriver = block.driver || !driverPscheinOk;
+
+    if (!cannotAssignDriver) {
       const newId = new mongoose.Types.ObjectId(driverId);
       if (!next.driver || String(next.driver) !== String(newId)) {
         next.driver = newId;
