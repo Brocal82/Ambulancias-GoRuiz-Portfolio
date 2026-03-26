@@ -924,7 +924,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
             {/* Calendario mini */}
             <div className="rounded-xl ring-1 ring-slate-200 p-2">
-              <div className="mb-1 flex flex-wrap items-center gap-3 text-[10px] text-slate-600">
+              <div className="mb-3 flex flex-wrap items-center gap-3 text-[10px] text-slate-600">
                 <span className="inline-flex items-center gap-1">
                   <span className="inline-block h-2.5 w-2.5 rounded border-2 border-emerald-300" />
                   {t("pages.vacations.monthGrid.legend.available")}
@@ -941,85 +941,10 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                 </span>
               </div>
 
-              <div className="mb-2 flex flex-wrap items-center justify-end gap-2 text-[11px] text-slate-600">
-                <label
-                  htmlFor="admin-month-max-per-day"
-                  className="whitespace-nowrap"
-                >
-                  {t("pages.vacations.adminPage.maxPerDayLabel", "Máx. por día")}
-                </label>
-                <input
-                  id="admin-month-max-per-day"
-                  type="number"
-                  min={0}
-                  max={31}
-                  inputMode="numeric"
-                  disabled={availLoading || isSavingMonthConfig || isSavingBlackouts}
-                  value={maxPerDayDraft}
-                  onChange={(e) => {
-                    setMaxPerDayDirty(true);
-                    setMaxPerDayDraft(e.target.value);
-                  }}
-                  className="w-16 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 tabular-nums disabled:bg-slate-100"
-                  aria-label={t(
-                    "pages.vacations.adminPage.maxPerDayLabel",
-                    "Máx. por día",
-                  )}
-                />
-                {hasMaxPerDayUnsavedChange && (
-                  <button
-                    type="button"
-                    onClick={handleSaveMonthConfig}
-                    disabled={
-                      availLoading ||
-                      isSavingMonthConfig ||
-                      isSavingBlackouts ||
-                      maxPerDayDraft.trim() === ""
-                    }
-                    aria-busy={isSavingMonthConfig}
-                    aria-label={
-                      isSavingMonthConfig
-                        ? t("common.loading", "Cargando...")
-                        : t(
-                            "pages.vacations.adminPage.maxPerDaySaveAria",
-                            "Guardar máximo por día",
-                          )
-                    }
-                    title={
-                      isSavingMonthConfig
-                        ? t("common.loading", "Cargando...")
-                        : t(
-                            "pages.vacations.adminPage.maxPerDaySaveAria",
-                            "Guardar máximo por día",
-                          )
-                    }
-                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-base leading-none text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <span aria-hidden>
-                      {isSavingMonthConfig ? "…" : "✅"}
-                    </span>
-                  </button>
-                )}
-              </div>
-
-              <div className="mt-2 border-t border-slate-200 pt-2">
-                <div
-                  className={[
-                    "flex flex-wrap items-center gap-x-2 gap-y-1.5",
-                    blackoutSelectMode
-                      ? "mb-1.5 justify-between"
-                      : "justify-end",
-                  ].join(" ")}
-                >
-                  {blackoutSelectMode && (
-                    <p className="text-[11px] font-medium text-slate-700">
-                      {t(
-                        "pages.vacations.adminPage.blackoutsTitle",
-                        "Periodos bloqueados",
-                      )}
-                    </p>
-                  )}
-                  <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+              {/* Zona de controles: izq. (icono + guardado bloqueos / lista) · der. (máx. por día) */}
+              <div className="mb-2 flex flex-wrap items-start justify-between gap-x-4 gap-y-3 text-[11px] text-slate-600">
+                <div className="min-w-0 flex-1 flex flex-col gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       aria-pressed={blackoutSelectMode}
@@ -1117,77 +1042,163 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                       </button>
                     )}
                   </div>
+
+                  {blackoutSelectMode &&
+                    (monthConfigLoading ? (
+                      <p className="text-[10px] text-slate-500">
+                        {t("common.loading", "Cargando...")}
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-[11px] font-medium text-slate-700">
+                          {t(
+                            "pages.vacations.adminPage.blackoutsTitle",
+                            "Periodos bloqueados",
+                          )}
+                        </p>
+                        {blackoutsDraft.length === 0 ? (
+                          <p className="text-[10px] text-slate-500">
+                            {t(
+                              "pages.vacations.adminPage.blackoutsEmpty",
+                              "Ningún periodo bloqueado.",
+                            )}
+                          </p>
+                        ) : (
+                          <ul className="max-h-28 space-y-1 overflow-y-auto pr-0.5">
+                            {blackoutsDraft.map((r, idx) => {
+                              const isPendingDeletion =
+                                blackoutPendingDeletionIndices.includes(idx);
+                              return (
+                                <li
+                                  key={`${r.startDate}-${r.endDate}-${idx}`}
+                                  className="flex w-fit max-w-full items-center gap-1.5 rounded-md bg-slate-50 px-2 py-0.5 text-[10px] text-slate-700"
+                                >
+                                  <span
+                                    className={`whitespace-nowrap ${
+                                      isPendingDeletion
+                                        ? "text-red-600 font-medium"
+                                        : ""
+                                    }`}
+                                  >
+                                    {formatYYYYMMDDToDDMMYYYY(r.startDate)} →{" "}
+                                    {formatYYYYMMDDToDDMMYYYY(r.endDate)}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleToggleBlackoutPendingDeletion(idx)
+                                    }
+                                    disabled={
+                                      isSavingBlackouts || isSavingMonthConfig
+                                    }
+                                    className="shrink-0 rounded px-0.5 py-0 leading-none text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:opacity-40"
+                                    aria-label={
+                                      isPendingDeletion
+                                        ? t(
+                                            "pages.vacations.adminPage.blackoutUndoCancel",
+                                            "Desmarcar eliminación",
+                                          )
+                                        : t("common.delete", "Eliminar")
+                                    }
+                                  >
+                                    ✕
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </>
+                    ))}
                 </div>
 
-                {blackoutSelectMode &&
-                  (monthConfigLoading ? (
-                    <p className="mb-2 text-[10px] text-slate-500">
-                      {t("common.loading", "Cargando...")}
-                    </p>
-                  ) : blackoutsDraft.length === 0 ? (
-                    <p className="mb-2 text-[10px] text-slate-500">
+                <div className="flex shrink-0 flex-col items-end">
+                  <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+                    <label
+                      htmlFor="admin-month-max-per-day"
+                      className="whitespace-nowrap"
+                    >
                       {t(
-                        "pages.vacations.adminPage.blackoutsEmpty",
-                        "Ningún periodo bloqueado.",
+                        "pages.vacations.adminPage.maxPerDayLabel",
+                        "Máx. por día",
                       )}
-                    </p>
-                  ) : (
-                    <ul className="mb-2 max-h-28 space-y-1 overflow-y-auto pr-0.5">
-                      {blackoutsDraft.map((r, idx) => {
-                        const isPendingDeletion =
-                          blackoutPendingDeletionIndices.includes(idx);
-                        return (
-                          <li
-                            key={`${r.startDate}-${r.endDate}-${idx}`}
-                            className="flex items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-1 text-[10px] text-slate-700"
-                          >
-                            <span
-                              className={`min-w-0 truncate ${
-                                isPendingDeletion ? "text-red-600 font-medium" : ""
-                              }`}
-                            >
-                              {formatYYYYMMDDToDDMMYYYY(r.startDate)} →{" "}
-                              {formatYYYYMMDDToDDMMYYYY(r.endDate)}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleToggleBlackoutPendingDeletion(idx)
-                              }
-                              disabled={isSavingBlackouts || isSavingMonthConfig}
-                              className="shrink-0 rounded p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:opacity-40"
-                              aria-label={
-                                isPendingDeletion
-                                  ? t(
-                                      "pages.vacations.adminPage.blackoutUndoCancel",
-                                      "Desmarcar eliminación",
-                                    )
-                                  : t("common.delete", "Eliminar")
-                              }
-                            >
-                              ✕
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ))}
-              </div>
-
-              <div className="grid grid-cols-7 text-center text-[10px] uppercase tracking-wide text-slate-500 mb-0.5">
-                {weekdayHeaders.map((w, i) => (
-                  <div key={i} className="py-0.5">
-                    {w}
+                    </label>
+                    <input
+                      id="admin-month-max-per-day"
+                      type="number"
+                      min={0}
+                      max={31}
+                      inputMode="numeric"
+                      disabled={
+                        availLoading || isSavingMonthConfig || isSavingBlackouts
+                      }
+                      value={maxPerDayDraft}
+                      onChange={(e) => {
+                        setMaxPerDayDirty(true);
+                        setMaxPerDayDraft(e.target.value);
+                      }}
+                      className="w-16 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 tabular-nums disabled:bg-slate-100"
+                      aria-label={t(
+                        "pages.vacations.adminPage.maxPerDayLabel",
+                        "Máx. por día",
+                      )}
+                    />
+                    <div className="inline-flex h-8 w-8 shrink-0 items-center justify-center">
+                      {hasMaxPerDayUnsavedChange && (
+                        <button
+                          type="button"
+                          onClick={handleSaveMonthConfig}
+                          disabled={
+                            availLoading ||
+                            isSavingMonthConfig ||
+                            isSavingBlackouts ||
+                            maxPerDayDraft.trim() === ""
+                          }
+                          aria-busy={isSavingMonthConfig}
+                          aria-label={
+                            isSavingMonthConfig
+                              ? t("common.loading", "Cargando...")
+                              : t(
+                                  "pages.vacations.adminPage.maxPerDaySaveAria",
+                                  "Guardar máximo por día",
+                                )
+                          }
+                          title={
+                            isSavingMonthConfig
+                              ? t("common.loading", "Cargando...")
+                              : t(
+                                  "pages.vacations.adminPage.maxPerDaySaveAria",
+                                  "Guardar máximo por día",
+                                )
+                          }
+                          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-base leading-none text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <span aria-hidden>
+                            {isSavingMonthConfig ? "…" : "✅"}
+                          </span>
+                        </button>
+                      )}
+                    </div>
                   </div>
-                ))}
+                </div>
               </div>
 
-              <div
-                className="grid grid-cols-7 gap-0.5"
-                onMouseLeave={() => {
-                  if (blackoutSelectMode) setBlackoutFocusDay(null);
-                }}
-              >
+              {/* Separador fijo: controles · calendario */}
+              <div className="mt-2 border-t border-slate-200 pt-2">
+                <div className="grid grid-cols-7 text-center text-[10px] uppercase tracking-wide text-slate-500 mb-0.5">
+                  {weekdayHeaders.map((w, i) => (
+                    <div key={i} className="py-0.5">
+                      {w}
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  className="grid grid-cols-7 gap-0.5"
+                  onMouseLeave={() => {
+                    if (blackoutSelectMode) setBlackoutFocusDay(null);
+                  }}
+                >
                 {availLoading &&
                   Array.from({ length: 42 }).map((_, i) => (
                     <div
@@ -1302,6 +1313,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                       </div>
                     );
                   })}
+                </div>
               </div>
 
               {availError && (
