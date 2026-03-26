@@ -704,6 +704,17 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   /** Pending calendar range or unsaved list edits — hidden when only selection mode with no changes. */
   const showBlackoutsSaveButton = hasBlackoutUnsavedChanges;
 
+  /** Borrador distinto del máximo persistido en disponibilidad del mes visible. */
+  const hasMaxPerDayUnsavedChange = useMemo(() => {
+    if (monthIndex === null || !availability) return false;
+    if (availability.year !== year || availability.month !== monthIndex + 1) {
+      return false;
+    }
+    const d = maxPerDayDraft.trim();
+    if (d === "") return false;
+    return d !== String(availability.maxPerDay);
+  }, [monthIndex, year, availability, maxPerDayDraft]);
+
   /** Lo que se persistirá al guardar (misma lógica que handleSaveBlackouts). */
   const blackoutsSavePreview = useMemo((): BlackoutRangeDraft[] => {
     const withoutPendingDeletions = blackoutsDraft.filter(
@@ -955,21 +966,40 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                     "Máx. por día",
                   )}
                 />
-                <button
-                  type="button"
-                  onClick={handleSaveMonthConfig}
-                  disabled={
-                    availLoading ||
-                    isSavingMonthConfig ||
-                    isSavingBlackouts ||
-                    maxPerDayDraft.trim() === ""
-                  }
-                  className="rounded-md bg-slate-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isSavingMonthConfig
-                    ? t("common.loading", "Cargando...")
-                    : t("common.save", "Guardar")}
-                </button>
+                {hasMaxPerDayUnsavedChange && (
+                  <button
+                    type="button"
+                    onClick={handleSaveMonthConfig}
+                    disabled={
+                      availLoading ||
+                      isSavingMonthConfig ||
+                      isSavingBlackouts ||
+                      maxPerDayDraft.trim() === ""
+                    }
+                    aria-busy={isSavingMonthConfig}
+                    aria-label={
+                      isSavingMonthConfig
+                        ? t("common.loading", "Cargando...")
+                        : t(
+                            "pages.vacations.adminPage.maxPerDaySaveAria",
+                            "Guardar máximo por día",
+                          )
+                    }
+                    title={
+                      isSavingMonthConfig
+                        ? t("common.loading", "Cargando...")
+                        : t(
+                            "pages.vacations.adminPage.maxPerDaySaveAria",
+                            "Guardar máximo por día",
+                          )
+                    }
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-base leading-none text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span aria-hidden>
+                      {isSavingMonthConfig ? "…" : "✅"}
+                    </span>
+                  </button>
+                )}
               </div>
 
               <div className="mt-2 border-t border-slate-200 pt-2">
