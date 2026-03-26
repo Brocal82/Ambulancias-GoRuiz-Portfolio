@@ -97,6 +97,7 @@ export async function createTestAdminWithCompany(password: string = "password123
     password: hashedPassword,
     role: "admin",
     companyId: company._id,
+    ambulanceRole: "both",
   });
 
   const loginRes = await request(app)
@@ -129,6 +130,7 @@ export async function createTestWorkerInCompany(
     password: hashedPassword,
     role: "worker",
     companyId,
+    ambulanceRole: "both",
   });
   return worker;
 }

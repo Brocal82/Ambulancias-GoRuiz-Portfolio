@@ -99,6 +99,37 @@ export function getDriverPscheinState(
   return "no-date";
 }
 
+/** Rol de ambulancia suficiente para cubrir el puesto driver o medic en un Dienst. */
+export function isAmbulanceRoleValidForSlot(
+  ambulanceRole: "driver" | "medic" | "both" | undefined,
+  slot: "driver" | "medic",
+): boolean {
+  if (!ambulanceRole) return false;
+  if (slot === "driver") {
+    return ambulanceRole === "driver" || ambulanceRole === "both";
+  }
+  return ambulanceRole === "medic" || ambulanceRole === "both";
+}
+
+/**
+ * Misma regla que getAvailableUsersForDate (driver): sin fecha de P-Schein se permite;
+ * con fecha, el fin de día de caducidad debe ser >= día del servicio.
+ */
+export function isDriverPscheinValidOnAssignmentDate(
+  pscheinExpiry: string | undefined,
+  assignmentDateISO: string,
+): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(assignmentDateISO)) return false;
+  const dateObj = DateTime.fromISO(assignmentDateISO, { zone: ZONE }).startOf(
+    "day",
+  );
+  const trimmed = typeof pscheinExpiry === "string" ? pscheinExpiry.trim() : "";
+  if (!trimmed) return true;
+  const exp = DateTime.fromISO(trimmed, { zone: ZONE });
+  if (!exp.isValid) return true;
+  return exp.endOf("day") >= dateObj;
+}
+
 /**
  * Busca asignaciones de ese usuario en cualquier Dienst de la misma semana.
  */
