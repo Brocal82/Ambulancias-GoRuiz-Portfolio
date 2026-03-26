@@ -325,7 +325,8 @@
             },
             "pschein": {
                 "expired": "❌ The P-Schein is expired",
-                "warning": "⚠️ The P-Schein expires in less than 6 months"
+                "warning": "⚠️ The P-Schein expires in less than 6 months",
+                "pendingAdminRegistration": "❓ Pending registration by administration"
             },
             "actions": {
                 "save": "Save changes",

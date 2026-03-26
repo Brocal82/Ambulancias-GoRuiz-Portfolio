@@ -325,7 +325,8 @@
             },
             "pschein": {
                 "expired": "❌ Der P-Schein ist abgelaufen",
-                "warning": "⚠️ Der P-Schein läuft in weniger als 6 Monaten ab"
+                "warning": "⚠️ Der P-Schein läuft in weniger als 6 Monaten ab",
+                "pendingAdminRegistration": "❓ Noch nicht von der Verwaltung erfasst"
             },
             "actions": {
                 "save": "Änderungen speichern",

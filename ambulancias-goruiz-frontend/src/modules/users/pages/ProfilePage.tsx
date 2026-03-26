@@ -599,7 +599,12 @@ const Profile = ({ userId }: ProfileProps) => {
                               : "border-slate-300 text-slate-800"
                             }`}
                         >
-                          {formData.pscheinExpiry || "—"}
+                          {formData.pscheinExpiry?.trim()
+                            ? formData.pscheinExpiry
+                            : t(
+                                "pages.profile.pschein.pendingAdminRegistration",
+                                "❓ Pendiente de registro por administración",
+                              )}
                         </p>
                       ) : (
                         <input
