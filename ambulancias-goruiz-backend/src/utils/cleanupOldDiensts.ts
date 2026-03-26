@@ -56,64 +56,91 @@ function getAssignmentEnd(
 }
 
 /**
+ * Misma lógica de limpieza que antes, acotada a un companyId.
+ */
+async function cleanupOldDienstsForCompany(
+  companyId: mongoose.Types.ObjectId,
+  nextMondayStart: DateTime,
+  nextMondayStartUTC: DateTime,
+): Promise<number> {
+  const candidates = await Dienst.find(
+    {
+      companyId,
+      weekEndDate: { $lt: nextMondayStartUTC.toJSDate() },
+    },
+    { assignments: 1 },
+  ).lean();
+
+  if (!candidates.length) {
+    return 0;
+  }
+
+  const deletableIds: mongoose.Types.ObjectId[] = [];
+
+  for (const d of candidates as any[]) {
+    if (!Array.isArray(d.assignments) || d.assignments.length === 0) {
+      deletableIds.push(d._id);
+      continue;
+    }
+
+    let maxEnd: DateTime | null = null;
+
+    for (const a of d.assignments) {
+      if (!a?.date || !a?.startTime || !a?.endTime) continue;
+      const end = getAssignmentEnd(a.date, a.startTime, a.endTime);
+      if (!maxEnd || end > maxEnd) maxEnd = end;
+    }
+
+    if (!maxEnd) continue;
+
+    if (maxEnd < nextMondayStart) {
+      deletableIds.push(d._id);
+    }
+  }
+
+  if (!deletableIds.length) {
+    return 0;
+  }
+
+  const result = await Dienst.deleteMany({
+    _id: { $in: deletableIds },
+    companyId,
+  });
+  return result.deletedCount ?? 0;
+}
+
+/**
  * Limpia Diensts ANTIGUOS cuyo último assignment haya terminado ANTES del próximo lunes 00:00 Berlin.
  * - No borra Diensts con turnos nocturnos del domingo que terminan la madrugada del lunes.
- * - Borrado por lotes seguro.
+ * - Ejecuta la misma lógica por cada companyId (multitenant).
  */
 const cleanupOldDiensts = async () => {
   try {
     const nextMondayStart = getNextMondayStart();
     const nextMondayStartUTC = nextMondayStart.toUTC();
 
-    // 1) Pre-filtrar por weekEndDate en Mongo para no traer toda la colección
-    const candidates = await Dienst.find(
-      { weekEndDate: { $lt: nextMondayStartUTC.toJSDate() } },
-      { assignments: 1 }, // solo necesitamos assignments para el cálculo
-    ).lean();
+    const rawIds = await Dienst.distinct("companyId");
+    const companyIds = rawIds.filter(
+      (id): id is mongoose.Types.ObjectId => id != null,
+    );
 
-    if (!candidates.length) {
-      console.log("🧹 No hay Diensts candidatos para limpiar.");
+    if (!companyIds.length) {
+      console.log("🧹 No hay Diensts con companyId para limpiar.");
       return;
     }
 
-    // 2) Filtrar en aplicación: calcular el fin REAL de la semana (máximo fin de sus assignments)
-    const deletableIds: mongoose.Types.ObjectId[] = [];
-
-    for (const d of candidates as any[]) {
-      if (!Array.isArray(d.assignments) || d.assignments.length === 0) {
-        // Si no hay assignments, se puede considerar viejo y borrable
-        deletableIds.push(d._id);
-        continue;
-      }
-
-      // Máximo fin real entre todos los assignments del Dienst
-      let maxEnd: DateTime | null = null;
-
-      for (const a of d.assignments) {
-        if (!a?.date || !a?.startTime || !a?.endTime) continue;
-        const end = getAssignmentEnd(a.date, a.startTime, a.endTime);
-        if (!maxEnd || end > maxEnd) maxEnd = end;
-      }
-
-      // Si por cualquier motivo no se pudo calcular, ser conservadores: NO borrar
-      if (!maxEnd) continue;
-
-      // Criterio de borrado: el último fin REAL < próximo lunes 00:00 Berlin
-      if (maxEnd < nextMondayStart) {
-        deletableIds.push(d._id);
-      }
-    }
-
-    if (!deletableIds.length) {
-      console.log(
-        "🧹 No hay Diensts para eliminar tras validar turnos nocturnos.",
+    let totalDeleted = 0;
+    for (const companyId of companyIds) {
+      const deleted = await cleanupOldDienstsForCompany(
+        companyId,
+        nextMondayStart,
+        nextMondayStartUTC,
       );
-      return;
+      totalDeleted += deleted;
     }
 
-    const result = await Dienst.deleteMany({ _id: { $in: deletableIds } });
     console.log(
-      `🧹 Diensts eliminados: ${result.deletedCount} (umbral próximo lunes 00:00 ${nextMondayStart.toISO()} / UTC ${nextMondayStartUTC.toISO()})`,
+      `🧹 Diensts eliminados: ${totalDeleted} (empresas: ${companyIds.length}; umbral próximo lunes 00:00 ${nextMondayStart.toISO()} / UTC ${nextMondayStartUTC.toISO()})`,
     );
   } catch (error) {
     console.error("❌ Error al eliminar Diensts antiguos:", error);
