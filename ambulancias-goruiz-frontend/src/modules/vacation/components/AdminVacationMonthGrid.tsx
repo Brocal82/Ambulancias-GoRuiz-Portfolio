@@ -314,9 +314,14 @@ const AdminVacationMonthGrid: React.FC<Props> = ({
                 disabledStyle,
               ].join(" ")}
             >
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-900">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium text-slate-900 inline-flex items-baseline gap-1.5 min-w-0 flex-wrap">
                   {label}
+                  {loaded && !avail.error && (
+                    <span className="text-xs font-normal text-slate-500 tabular-nums shrink-0">
+                      {avail.maxPerDay}
+                    </span>
+                  )}
                 </span>
 
                 <span
