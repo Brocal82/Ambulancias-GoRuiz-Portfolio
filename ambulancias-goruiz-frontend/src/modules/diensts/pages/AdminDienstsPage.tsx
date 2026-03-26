@@ -29,8 +29,8 @@ import { isTeamIncomplete } from "../utils/assignmentUtils";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
-import { getPscheinInfo } from "../../../utils/pscheinUtils";
-import { getPscheinWarningTitle } from "../utils/pscheinWarningTitle";
+import { getPscheinInfoAsOfDate } from "../../../utils/pscheinUtils";
+import { isDriverEligibleForAssignment } from "../utils/driverEligibility";
 import { emitDienstsChanged } from "../utils/dienstEvents";
 import { useDienstsChanged } from "../hooks/useDienstsChanged";
 
@@ -395,21 +395,41 @@ const AdminPage = () => {
                                     let drvTitle: string | undefined;
 
                                     if (typeof assignment.driver === "object" && assignment.driver) {
-                                      const info = getPscheinInfo(
-                                        (assignment.driver as any).pscheinExpiry,
+                                      const drv = assignment.driver as {
+                                        ambulanceRole?: string;
+                                        pscheinExpiry?: string | null;
+                                        pscheinConfirmedAt?: string | Date | null;
+                                      };
+                                      const eligible = isDriverEligibleForAssignment(
+                                        {
+                                          ambulanceRole: drv.ambulanceRole as any,
+                                          pscheinExpiry: drv.pscheinExpiry,
+                                          pscheinConfirmedAt: drv.pscheinConfirmedAt,
+                                        },
+                                        day,
                                       );
 
-                                      if (info.status === "expired") {
+                                      if (!eligible) {
                                         drvClass = "text-red-600 font-medium";
-                                      } else if (info.status === "warning") {
-                                        drvClass = "text-amber-600 font-medium";
+                                        drvTitle = t(
+                                          "pages.diensts.adminPage.driverPscheinExpired",
+                                          "P-Schein caducado",
+                                        );
+                                      } else {
+                                        const info = getPscheinInfoAsOfDate(
+                                          drv.pscheinExpiry ?? undefined,
+                                          day,
+                                        );
+                                        if (info.status === "warning") {
+                                          drvClass = "text-amber-600 font-medium";
+                                          drvTitle = t(
+                                            "pages.diensts.adminPage.driverPscheinWarning",
+                                            {
+                                              count: info.monthsLeft ?? 0,
+                                            },
+                                          );
+                                        }
                                       }
-
-                                      drvTitle =
-                                        getPscheinWarningTitle(
-                                          (assignment.driver as any).pscheinExpiry,
-                                          t as any,
-                                        ) || undefined;
                                     }
 
                                     return (

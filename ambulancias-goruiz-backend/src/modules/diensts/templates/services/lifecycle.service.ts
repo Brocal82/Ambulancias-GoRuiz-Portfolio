@@ -7,7 +7,10 @@ import {
   DienstTemplate,
   type DaySchedule,
 } from "../../../dienst-templates/models";
-import { computeDayBlockMapForTeam } from "../../utils/dienstValidation";
+import {
+  computeDayBlockMapForTeam,
+  isDriverEligibleForAssignmentDate,
+} from "../../utils/dienstValidation";
 import {
   entitiesBelongToSameCompany,
   CompanyValidationError,
@@ -191,7 +194,10 @@ export async function generateDienstTemplatesForWeek(
       ambulanceId: 1,
     },
   )
-    .populate("driver", "companyId")
+    .populate(
+      "driver",
+      "companyId ambulanceRole pscheinExpiry pscheinConfirmedAt",
+    )
     .populate("medic", "companyId")
     .lean();
 
@@ -425,7 +431,25 @@ export async function generateDienstTemplatesForWeek(
         const block = dayBlockMap[dateISO] || { driver: false, medic: false };
 
         if (driverIdStr && !block.driver) {
-          baseAssignment.driver = new mongoose.Types.ObjectId(driverIdStr);
+          const drvPop = assignedTeam?.driver as
+            | {
+                ambulanceRole?: "driver" | "medic" | "both";
+                pscheinExpiry?: string;
+                pscheinConfirmedAt?: Date | string | null;
+              }
+            | undefined;
+          const driverEligibleForDay =
+            typeof drvPop === "object" &&
+            drvPop != null &&
+            isDriverEligibleForAssignmentDate({
+              ambulanceRole: drvPop.ambulanceRole,
+              pscheinExpiry: drvPop.pscheinExpiry,
+              pscheinConfirmedAt: drvPop.pscheinConfirmedAt,
+              assignmentDateISO: dateISO,
+            });
+          if (driverEligibleForDay) {
+            baseAssignment.driver = new mongoose.Types.ObjectId(driverIdStr);
+          }
         }
 
         if (medicIdStr && !block.medic) {

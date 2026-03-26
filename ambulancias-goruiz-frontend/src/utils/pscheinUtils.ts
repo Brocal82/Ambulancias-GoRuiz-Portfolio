@@ -28,6 +28,44 @@ export function getPscheinInfo(date?: string): {
   return { status: "valid", monthsLeft, daysLeft };
 }
 
+/** UTC midnight for YYYY-MM-DD prefix — aligns with backend / driverEligibility calendar-day P-Schein validity. */
+function utcMsYMD(iso: string): number | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso.trim());
+  if (!m) return null;
+  return Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+/** Same as {@link getPscheinInfo} but validity/warning are evaluated against `asOfDateISO` (YYYY-MM-DD), not wall-clock now. */
+export function getPscheinInfoAsOfDate(
+  expiryDate?: string,
+  asOfDateISO?: string,
+): {
+  status: PscheinStatus;
+  monthsLeft?: number;
+  daysLeft?: number;
+} {
+  if (!expiryDate || !asOfDateISO?.trim()) return { status: "no-date" };
+
+  const expMs = utcMsYMD(expiryDate);
+  const asOfMs = utcMsYMD(asOfDateISO);
+  if (expMs == null || asOfMs == null) return { status: "no-date" };
+
+  const DAY = 86400000;
+  const daysLeft = Math.round((expMs - asOfMs) / DAY);
+  const monthsLeft = Math.round(daysLeft / 30.44);
+
+  // Expiry is valid through the whole expiry calendar day (same rule as Phase 3A / isPscheinExpiryValidOnAssignmentDate).
+  if (asOfMs > expMs) {
+    return { status: "expired", monthsLeft, daysLeft };
+  }
+
+  if (monthsLeft <= 6) {
+    return { status: "warning", monthsLeft, daysLeft };
+  }
+
+  return { status: "valid", monthsLeft, daysLeft };
+}
+
 /**
  * Devuelve el tÃ­tulo del tooltip para P-Schein warning o expirado.
  * Usa la traducciÃ³n con conteo de meses.
