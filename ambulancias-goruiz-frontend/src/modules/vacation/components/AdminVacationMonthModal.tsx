@@ -164,6 +164,8 @@ const AdminVacationMonthModal: React.FC<Props> = ({
 
   const inFlightKeyRef = useRef<string | null>(null);
   const refreshTimerRef = useRef<number | null>(null);
+  /** Evita doble refresh cuando ya hacemos load tras invalidate en el mismo flujo (save). */
+  const skipInvalidationRefreshRef = useRef(false);
 
   const weekdayHeaders = useMemo(() => {
     const baseMonday = new Date(Date.UTC(2023, 0, 2)); // lunes
@@ -197,11 +199,25 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     return `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
   }, [monthIndex, year]);
 
-  const loadAvailability = async (y: number, m1: number, force = false) => {
+  const loadAvailability = async (
+    y: number,
+    m1: number,
+    force = false,
+    silent = false,
+  ) => {
     const key = `${y}-${String(m1).padStart(2, "0")}`;
     inFlightKeyRef.current = key;
+    const canSilentRefresh =
+      silent &&
+      availability &&
+      availability.year === y &&
+      availability.month === m1;
+    let didSetAvailLoading = false;
     try {
-      setAvailLoading(true);
+      if (!canSilentRefresh) {
+        setAvailLoading(true);
+        didSetAvailLoading = true;
+      }
       setAvailError(null);
       const data = await getVacationAvailability(
         { year: y, month: m1 },
@@ -213,7 +229,9 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       if (inFlightKeyRef.current !== key) return;
       setAvailError("load_error");
     } finally {
-      if (inFlightKeyRef.current === key) setAvailLoading(false);
+      if (inFlightKeyRef.current === key && didSetAvailLoading) {
+        setAvailLoading(false);
+      }
     }
   };
 
@@ -310,9 +328,11 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     const myMonth = monthIndex + 1;
     if (y !== year || m1 !== myMonth) return;
 
+    if (skipInvalidationRefreshRef.current) return;
+
     if (refreshTimerRef.current) window.clearTimeout(refreshTimerRef.current);
     refreshTimerRef.current = window.setTimeout(() => {
-      loadAvailability(year, myMonth, true);
+      loadAvailability(year, myMonth, true, true);
     }, 200);
   });
 
@@ -418,7 +438,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       }
 
       const m1 = monthIndex + 1;
-      window.setTimeout(() => loadAvailability(year, m1, true), 200);
+      window.setTimeout(() => loadAvailability(year, m1, true, true), 200);
 
       onActionDone?.();
     } catch (e: any) {
@@ -451,7 +471,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
           }
 
           const m1 = monthIndex + 1;
-          window.setTimeout(() => loadAvailability(year, m1, true), 200);
+          window.setTimeout(() => loadAvailability(year, m1, true, true), 200);
 
           onActionDone?.();
 
@@ -544,7 +564,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       }
 
       const m1 = monthIndex + 1;
-      window.setTimeout(() => loadAvailability(year, m1, true), 200);
+      window.setTimeout(() => loadAvailability(year, m1, true, true), 200);
       setCancelingRequestId(null);
       setCancelMessage("");
       onActionDone?.();
@@ -572,7 +592,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       }
 
       const m1 = monthIndex + 1;
-      window.setTimeout(() => loadAvailability(year, m1, true), 200);
+      window.setTimeout(() => loadAvailability(year, m1, true, true), 200);
 
       onActionDone?.();
     } catch {
@@ -686,8 +706,13 @@ const AdminVacationMonthModal: React.FC<Props> = ({
       await toastT.promise(
         (async () => {
           await upsertVacationMonthConfig({ monthKey, maxPerDay: n });
-          invalidateAvailability(year, m1);
-          await loadAvailability(year, m1, true);
+          skipInvalidationRefreshRef.current = true;
+          try {
+            invalidateAvailability(year, m1);
+            await loadAvailability(year, m1, true, true);
+          } finally {
+            skipInvalidationRefreshRef.current = false;
+          }
           setMaxPerDayDirty(false);
         })(),
         {
@@ -753,8 +778,13 @@ const AdminVacationMonthModal: React.FC<Props> = ({
           setBlackoutsDraft(normalizeBlackoutsFromApi(updated.blackouts));
           setBlackoutsDirty(false);
           setPendingBlackoutRange(null);
-          invalidateAvailability(year, m1);
-          await loadAvailability(year, m1, true);
+          skipInvalidationRefreshRef.current = true;
+          try {
+            invalidateAvailability(year, m1);
+            await loadAvailability(year, m1, true, true);
+          } finally {
+            skipInvalidationRefreshRef.current = false;
+          }
           setBlackoutSelectMode(false);
           setBlackoutAnchorDay(null);
           setBlackoutFocusDay(null);
