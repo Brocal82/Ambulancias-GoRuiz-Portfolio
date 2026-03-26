@@ -1,5 +1,5 @@
 // backend/src/modules/dienst-templates/models/DienstTemplate.ts
-import mongoose, { Schema, Document, Model } from "mongoose";
+import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 export interface DaySchedule {
   /**
@@ -23,6 +23,7 @@ export interface DaySchedule {
 }
 
 export interface IDienstTemplate extends Document {
+  companyId: Types.ObjectId;
   dienstNumber: number;
   startTime: string; // formato "HH:mm", igual que en Dienst.assignments
   endTime: string; // formato "HH:mm"
@@ -65,12 +66,14 @@ const DayScheduleSchema = new Schema<DaySchedule>(
 );
 
 const DienstTemplateSchema = new Schema<IDienstTemplate>({
+  companyId: {
+    type: Schema.Types.ObjectId,
+    ref: "Company",
+    required: true,
+  },
   dienstNumber: {
     type: Number,
     required: true,
-    // Asumimos una plantilla por número de Dienst.
-    // Si más adelante quieres permitir varias plantillas con el mismo número, borramos esta línea:
-    unique: true,
   },
   startTime: {
     type: String,
@@ -99,6 +102,11 @@ const DienstTemplateSchema = new Schema<IDienstTemplate>({
     // No required -> las plantillas existentes siguen siendo válidas.
   },
 });
+
+DienstTemplateSchema.index(
+  { companyId: 1, dienstNumber: 1 },
+  { unique: true, name: "companyId_dienstNumber_unique" },
+);
 
 const DienstTemplate: Model<IDienstTemplate> =
   mongoose.models.DienstTemplate ||

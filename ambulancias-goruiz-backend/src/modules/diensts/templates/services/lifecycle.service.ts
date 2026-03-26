@@ -155,23 +155,33 @@ export async function generateDienstTemplatesForWeek(
   weekStartDate: string,
   companyId?: string | null,
 ): Promise<{ count: number }> {
+  const companyIdStr =
+    companyId != null && String(companyId).trim() !== ""
+      ? String(companyId).trim()
+      : null;
+  if (!companyIdStr) {
+    throw new Error("Se requiere pertenecer a una empresa.");
+  }
+  const companyOid = new mongoose.Types.ObjectId(companyIdStr);
+
   const startDate = new Date(weekStartDate);
   const endDate = new Date(startDate);
   endDate.setDate(startDate.getDate() + 6);
 
   const weekFilter: Record<string, unknown> = {
     weekStartDate: { $gte: startDate, $lte: endDate },
+    companyId: companyOid,
   };
-  if (companyId) {
-    weekFilter.companyId = new mongoose.Types.ObjectId(companyId);
-  }
   const existing = await Dienst.find(weekFilter);
 
   if (existing.length > 0) {
     throw new Error("Ya existen Diensts para esa semana");
   }
 
-  const templates = await DienstTemplate.find({ isActive: true })
+  const templates = await DienstTemplate.find({
+    companyId: companyOid,
+    isActive: true,
+  })
     .sort({ dienstNumber: 1 })
     .lean();
 
@@ -201,14 +211,11 @@ export async function generateDienstTemplatesForWeek(
     .populate("medic", "companyId")
     .lean();
 
-  if (companyId) {
-    const companyIdStr = String(companyId);
-    teams = teams.filter((t: any) => {
-      const drvCo = t.driver?.companyId ? String(t.driver.companyId) : null;
-      const medCo = t.medic?.companyId ? String(t.medic.companyId) : null;
-      return drvCo === companyIdStr && medCo === companyIdStr;
-    });
-  }
+  teams = teams.filter((t: any) => {
+    const drvCo = t.driver?.companyId ? String(t.driver.companyId) : null;
+    const medCo = t.medic?.companyId ? String(t.medic.companyId) : null;
+    return drvCo === companyIdStr && medCo === companyIdStr;
+  });
 
   const fixedMap = new Map<number, (typeof teams)[0]>();
   const rotatingTeams: (typeof teams)[0][] = [];
@@ -234,10 +241,8 @@ export async function generateDienstTemplatesForWeek(
 
   const prevWeekFilter: Record<string, unknown> = {
     weekStartDate: { $gte: prevWeekStart, $lt: prevWeekNextDay },
+    companyId: companyOid,
   };
-  if (companyId) {
-    prevWeekFilter.companyId = new mongoose.Types.ObjectId(companyId);
-  }
   const prevDiensts = await Dienst.find(prevWeekFilter).lean();
 
   const hasPreviousWeek = prevDiensts.length > 0;
@@ -472,9 +477,7 @@ export async function generateDienstTemplatesForWeek(
           ? new mongoose.Types.ObjectId(String((assignedTeam as any)._id))
           : null,
       };
-      if (companyId) {
-        doc.companyId = new mongoose.Types.ObjectId(companyId);
-      }
+      doc.companyId = companyOid;
       return doc;
     }),
   );

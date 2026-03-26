@@ -1,10 +1,17 @@
 import { RequestHandler } from "express";
 import * as lifecycleService from "../services/lifecycle.service";
+import { requireCompanyForAdmin } from "../../../../utils/requireCompany";
 
 export const generateDienstTemplatesForWeek: RequestHandler = async (
   req,
   res,
 ) => {
+  const companyResult = requireCompanyForAdmin(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
+
   const { weekStartDate } = req.body;
 
   if (!weekStartDate) {
@@ -21,7 +28,7 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (
 
     const { count } = await lifecycleService.generateDienstTemplatesForWeek(
       weekStartDate,
-      req.companyId ?? undefined,
+      companyResult.companyId,
     );
 
     res.status(201).json({

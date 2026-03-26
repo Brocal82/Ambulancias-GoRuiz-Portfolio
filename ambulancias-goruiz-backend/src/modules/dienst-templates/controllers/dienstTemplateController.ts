@@ -1,19 +1,29 @@
 // backend/src/modules/dienst-templates/controllers/dienstTemplateController.ts
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import DienstTemplate, {
   IDienstTemplate,
 } from "../models/DienstTemplate";
+import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 
 /**
  * GET /dienst-templates
- * Lista todas las plantillas de Dienst
+ * Lista plantillas de Dienst de la empresa del admin
  */
 export const getDienstTemplates = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const templates: IDienstTemplate[] = await DienstTemplate.find().sort({
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+
+    const templates: IDienstTemplate[] = await DienstTemplate.find({
+      companyId: new mongoose.Types.ObjectId(companyResult.companyId),
+    }).sort({
       dienstNumber: 1,
     });
     res.status(200).json(templates);
@@ -34,6 +44,12 @@ export const createDienstTemplate = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+
     const {
       dienstNumber,
       startTime,
@@ -55,7 +71,6 @@ export const createDienstTemplate = async (
       return;
     }
 
-    // Si viene perDaySchedule, comprobamos que sea un array básico.
     let perDayScheduleToSave = undefined;
     if (perDaySchedule !== undefined) {
       if (!Array.isArray(perDaySchedule)) {
@@ -68,6 +83,7 @@ export const createDienstTemplate = async (
     }
 
     const newTemplate = new DienstTemplate({
+      companyId: new mongoose.Types.ObjectId(companyResult.companyId),
       dienstNumber,
       startTime,
       endTime,
@@ -82,7 +98,6 @@ export const createDienstTemplate = async (
     console.error("Error al crear plantilla de Dienst:", error);
 
     if (error.code === 11000) {
-      // conflicto por unique index (dienstNumber)
       res.status(409).json({
         message: "Ya existe una plantilla con ese número de Dienst",
       });
@@ -102,6 +117,12 @@ export const updateDienstTemplate = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+
     const { id } = req.params;
     const {
       dienstNumber,
@@ -112,7 +133,6 @@ export const updateDienstTemplate = async (
       perDaySchedule,
     } = req.body;
 
-    // Igual que en create: solo validación básica de perDaySchedule si viene
     let perDayScheduleToSave = undefined;
     if (perDaySchedule !== undefined) {
       if (!Array.isArray(perDaySchedule)) {
@@ -124,8 +144,10 @@ export const updateDienstTemplate = async (
       perDayScheduleToSave = perDaySchedule;
     }
 
-    const updated = await DienstTemplate.findByIdAndUpdate(
-      id,
+    const co = new mongoose.Types.ObjectId(companyResult.companyId);
+
+    const updated = await DienstTemplate.findOneAndUpdate(
+      { _id: id, companyId: co },
       {
         dienstNumber,
         startTime,
@@ -171,9 +193,16 @@ export const deleteDienstTemplate = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
 
-    const deleted = await DienstTemplate.findByIdAndDelete(id);
+    const { id } = req.params;
+    const co = new mongoose.Types.ObjectId(companyResult.companyId);
+
+    const deleted = await DienstTemplate.findOneAndDelete({ _id: id, companyId: co });
 
     if (!deleted) {
       res.status(404).json({ message: "Plantilla de Dienst no encontrada" });
