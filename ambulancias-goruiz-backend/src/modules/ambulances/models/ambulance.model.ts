@@ -12,8 +12,8 @@ export interface IAmbulance extends Document {
 const ambulanceSchema = new Schema<IAmbulance>({
   brand: { type: String, required: true },
   modelName: { type: String, required: true },
-  licensePlate: { type: String, required: true, unique: true },
-  ambulanceNumber: { type: String, required: true, unique: true },
+  licensePlate: { type: String, required: true },
+  ambulanceNumber: { type: String, required: true },
   companyId: {
     type: Schema.Types.ObjectId,
     ref: "Company",
@@ -21,5 +21,14 @@ const ambulanceSchema = new Schema<IAmbulance>({
     default: null,
   },
 });
+
+ambulanceSchema.index(
+  { companyId: 1, licensePlate: 1 },
+  { unique: true, name: "companyId_licensePlate_unique" },
+);
+ambulanceSchema.index(
+  { companyId: 1, ambulanceNumber: 1 },
+  { unique: true, name: "companyId_ambulanceNumber_unique" },
+);
 
 export const Ambulance = mongoose.model<IAmbulance>("Ambulance", ambulanceSchema);

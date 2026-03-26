@@ -139,11 +139,8 @@ const AdminAmbulancesPage: React.FC = () => {
 
             <div className="overflow-x-auto rounded-xl ring-1 ring-slate-200">
               <table className="w-full table-auto text-sm border-collapse">
-                {/* 4 primeras columnas flexibles + Acciones con ancho fijo */}
-                <colgroup>
-                  <col span={4} />
-                  <col className="w-[16rem]" /> {/* Acciones: ~256px */}
-                </colgroup>
+                {/* 4 primeras columnas flexibles + Acciones con ancho fijo (~256px) */}
+                <colgroup><col span={4} /><col className="w-[16rem]" /></colgroup>
 
                 <thead className="bg-slate-100 text-slate-800 sticky top-0 z-10">
                   <tr>
