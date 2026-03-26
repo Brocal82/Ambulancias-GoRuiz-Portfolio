@@ -4,6 +4,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { UsersApi } from "../../users";
 import { getPscheinInfo } from "../../../utils/pscheinUtils";
+import { isDriverEligibleForAssignment } from "../../diensts/utils/driverEligibility";
 
 export type TeamPickerValue = { driver: string; medic: string };
 
@@ -12,7 +13,8 @@ type UserLite = {
   name: string;
   lastName: string;
   ambulanceRole?: "driver" | "medic" | "both";
-  pscheinExpiry?: string | null; // ⬅️ añadimos para poder aplicar la lógica
+  pscheinExpiry?: string | null;
+  pscheinConfirmedAt?: string | null;
 };
 
 interface TeamPickerProps {
@@ -77,7 +79,10 @@ export default function TeamPicker({
       let label = base;
       let isDisabled = false;
 
-      if (ps.status === "expired") {
+      if (!isDriverEligibleForAssignment(u, undefined)) {
+        label = `${base} — ${t("pages.diensts.adminPage.legendCantDrive", "No puede conducir")}`;
+        isDisabled = true;
+      } else if (ps.status === "expired") {
         label = `${base} — ${t("pages.diensts.adminPage.driverPscheinExpiredLabel", "P-Schein caducado")}`;
         isDisabled = true;
       } else if (ps.status === "warning") {

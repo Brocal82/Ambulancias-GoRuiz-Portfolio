@@ -29,6 +29,7 @@ export const toUserRefOrNull = (v: unknown): UserRef | null => {
         lastName: typeof anyV.lastName === "string" ? anyV.lastName : "",
         ambulanceRole: anyV.ambulanceRole,
         pscheinExpiry: anyV.pscheinExpiry,
+        pscheinConfirmedAt: anyV.pscheinConfirmedAt,
       };
     }
   }

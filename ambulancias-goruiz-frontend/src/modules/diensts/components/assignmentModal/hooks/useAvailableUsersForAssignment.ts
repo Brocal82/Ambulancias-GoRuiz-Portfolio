@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { UsersApi, type User } from "../../../../users";
 import type { UserRef } from "../../../domain/types";
 import type { FlexibleAssignment } from "../../../domain/types/flexibleAssignment";
-import { mergeWithAssigned } from "../../../utils/mergeWithAssigned";import { ensureSelectedPresent } from "../ensureSelectedPresent";
+import { mergeWithAssigned } from "../../../utils/mergeWithAssigned";
+import { ensureSelectedPresent } from "../ensureSelectedPresent";
 import { toastT } from "../../../../../utils/toast";
 
 const toUserRefList = (users: User[]): UserRef[] =>
@@ -12,6 +13,7 @@ const toUserRefList = (users: User[]): UserRef[] =>
     lastName: u.lastName,
     ambulanceRole: u.ambulanceRole,
     pscheinExpiry: u.pscheinExpiry,
+    pscheinConfirmedAt: u.pscheinConfirmedAt,
   }));
 
 export const useAvailableUsersForAssignment = (params: {
@@ -43,10 +45,10 @@ export const useAvailableUsersForAssignment = (params: {
       if (!token || !isAdmin || !date) return;
 
       try {
-        const commonOpts = { startTime, endTime, includeExpired: true };
+        const driverOpts = { startTime, endTime };
 
         const [drivers, medics] = await Promise.all([
-          UsersApi.getAvailableUsersForDate(date, "driver", commonOpts),
+          UsersApi.getAvailableUsersForDate(date, "driver", driverOpts),
           UsersApi.getAvailableUsersForDate(date, "medic", {
             startTime,
             endTime,
@@ -54,7 +56,7 @@ export const useAvailableUsersForAssignment = (params: {
         ]);
 
         let drv = mergeWithAssigned(toUserRefList(drivers), assignment, "driver");
-let med = mergeWithAssigned(toUserRefList(medics), assignment, "medic");
+        let med = mergeWithAssigned(toUserRefList(medics), assignment, "medic");
 
 
         const driverIdFromAssignment =

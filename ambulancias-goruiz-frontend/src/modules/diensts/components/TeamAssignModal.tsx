@@ -19,6 +19,8 @@ import { fmtDDMM } from "../../../utils/timeUtils";
 import { mergeClasses } from "../utils";
 
 import { UsersApi } from "../../users";
+import { isDriverEligibleForAssignment } from "../utils/driverEligibility";
+import { mergeTeamsWithUserDirectory } from "../utils/mergeTeamsWithUserDirectory";
 
 
 interface Props {
@@ -98,8 +100,11 @@ export default function TeamAssignModal({
       if (!isOpen || !token) return;
       try {
         setLoading(true);
-        const data = await getTeams();
-        setTeams(data);
+        const [data, allUsers] = await Promise.all([
+          getTeams(),
+          UsersApi.getAllUsers(),
+        ]);
+        setTeams(mergeTeamsWithUserDirectory(data, allUsers));
       } catch (e) {
         console.error(e);
         toastT.error(["toasts.teams.loadError"]);
@@ -251,19 +256,6 @@ export default function TeamAssignModal({
   // --- Compatibilidad de equipo con reglas de P-Schein y swap ---
   const selectedTeam = teams.find((t) => t._id === selectedId) || null;
 
-  const pscheinValidOnDate = (pschein?: string | null) => {
-    if (!pschein) return true;
-    const info = getPscheinInfo(pschein);
-    return info.status !== "expired";
-  };
-
-  const canDrive = (user: any) => {
-    const role = user?.ambulanceRole as "driver" | "medic" | "both" | undefined;
-    const hasRole = role === "driver" || role === "both";
-    if (!hasRole) return false;
-    return pscheinValidOnDate(user?.pscheinExpiry);
-  };
-
   // disponibilidad por rol (si no hay date, no filtramos por disponibilidad)
   const isAvailDriver = (uid?: string) =>
     !date || (uid ? availDriverIds.has(uid) : false);
@@ -288,7 +280,7 @@ export default function TeamAssignModal({
     const standardOk =
       !!drvId &&
       !!medId &&
-      canDrive(drv) &&
+      isDriverEligibleForAssignment(drv, date) &&
       isAvailDriver(drvId) &&
       isAvailMedic(medId);
 
@@ -300,17 +292,17 @@ export default function TeamAssignModal({
       };
     }
 
-    // 2) Caso swap: si el "driver" tiene P-Schein caducado pero su rol es 'both',
-    // y el "medic" SÍ puede conducir -> invertimos roles (medic = driver, driver = medic)
+    // 2) Caso swap: si el "driver" nominal no cumple elegibilidad pero su rol es 'both',
+    // y el "medic" SÍ cumple como conductor -> invertimos roles (medic = driver, driver = medic)
     const driverExpiredButBoth =
-      drv?.ambulanceRole === "both" && !pscheinValidOnDate(drv?.pscheinExpiry);
-    const medicCanDrive = canDrive(med);
+      drv?.ambulanceRole === "both" &&
+      !isDriverEligibleForAssignment(drv, date) &&
+      isDriverEligibleForAssignment(med, date);
 
     const swapOk =
       !!drvId &&
       !!medId &&
       driverExpiredButBoth &&
-      medicCanDrive &&
       isAvailDriver(medId) &&
       isAvailMedic(drvId);
 
@@ -335,7 +327,9 @@ export default function TeamAssignModal({
     }
 
     // Sin conductor válido en ninguna configuración
-    const noValidDriver = !canDrive(drv) && !canDrive(med);
+    const noValidDriver =
+      !isDriverEligibleForAssignment(drv, date) &&
+      !isDriverEligibleForAssignment(med, date);
 
     if (noValidDriver) {
       return {
@@ -350,9 +344,11 @@ export default function TeamAssignModal({
 
     // Fallo por disponibilidad (día/franja)
     if (date) {
-      const drvAsDriver = canDrive(drv) && !isAvailDriver(drvId);
+      const drvAsDriver =
+        isDriverEligibleForAssignment(drv, date) && !isAvailDriver(drvId);
       const medAsMedic = !isAvailMedic(medId);
-      const medAsDriver = canDrive(med) && !isAvailDriver(medId);
+      const medAsDriver =
+        isDriverEligibleForAssignment(med, date) && !isAvailDriver(medId);
       const drvAsMedic = !isAvailMedic(drvId);
 
       if (drvAsDriver || medAsMedic) {
@@ -366,7 +362,7 @@ export default function TeamAssignModal({
         };
       }
       if (driverExpiredButBoth && !medAsDriver && drvAsMedic) {
-        // driver caducado (both), medic puede conducir, pero falta disponibilidad en algún rol del swap
+        // driver nominal no elegible (both), medic puede conducir, pero falta disponibilidad en algún rol del swap
         return {
           compatible: false as const,
           reason: t(

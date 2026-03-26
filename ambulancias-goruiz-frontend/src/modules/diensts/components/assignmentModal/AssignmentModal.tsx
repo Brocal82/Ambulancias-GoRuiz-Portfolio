@@ -392,16 +392,16 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
                             isDriverDisabled={(u) => {
                                 const { vac, sick } = getUserFlagsMeta(u, { vacationFlags, sickFlags }, t);
-                                const expired = driverExpired(u);
-                                return expired || vac.has || sick.has;
+                                const ineligible = driverExpired(u, date);
+                                return ineligible || vac.has || sick.has;
                             }}
                             isMedicDisabled={(u) => {
                                 const { vac, sick } = getUserFlagsMeta(u, { vacationFlags, sickFlags }, t);
                                 return vac.has || sick.has;
                             }}
                             sortDrivers={(a, b) => {
-                                const da = driverExpired(a) ? 1 : 0;
-                                const db = driverExpired(b) ? 1 : 0;
+                                const da = driverExpired(a, date) ? 1 : 0;
+                                const db = driverExpired(b, date) ? 1 : 0;
                                 if (da !== db) return da - db;
 
                                 const ka = `${a.lastName || ""} ${a.name || ""}`.toLowerCase();

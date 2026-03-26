@@ -18,6 +18,7 @@ import { getSickFlagsInRange, type SickFlag } from "../../sick/domain";
 import { mergeClasses } from "../utils";
 
 import { fmtDDMM } from "../../../utils/timeUtils";
+import { isDriverEligibleForAssignment } from "../utils/driverEligibility";
 
 interface Props {
   isOpen: boolean;
@@ -100,12 +101,16 @@ export default function UserAssignModal({
 
   // Filtrar por rol de ambulancia solo si NO estamos usando /users/available (porque ese ya viene filtrado por desiredRole)
   const filteredByRole = useMemo(() => {
-    if (date) return users; // ya viene filtrado por rol desde el backend
+    if (date) return users; // ya viene filtrado por rol + elegibilidad conductor desde el backend
     const need: AmbulanceRole[] =
       role === "driver" ? ["driver", "both"] : ["medic", "both"];
-    return users.filter(
-      (u) => u.ambulanceRole && need.includes(u.ambulanceRole),
-    );
+    return users.filter((u) => {
+      if (!u.ambulanceRole || !need.includes(u.ambulanceRole)) return false;
+      if (role === "driver") {
+        return isDriverEligibleForAssignment(u, undefined);
+      }
+      return true;
+    });
   }, [users, role, date]);
 
   // Flags para usuarios visibles por rol
@@ -169,10 +174,9 @@ export default function UserAssignModal({
     return "";
   };
 
-  const isDriverExpired = (u: User) => {
+  const isDriverIneligible = (u: User) => {
     if (role !== "driver") return false;
-    const info = getPscheinInfo((u as any)?.pscheinExpiry);
-    return info.status === "expired";
+    return !isDriverEligibleForAssignment(u, date);
   };
 
   // Tooltip SOLO sobre el nombre cuando P-Schein warning/expired (rol driver)
@@ -314,7 +318,7 @@ export default function UserAssignModal({
                             : "";
                         const dim =
                           (role === "driver" &&
-                            isDriverExpired(selectedUser)) ||
+                            isDriverIneligible(selectedUser)) ||
                           (!!date && (vac.has || sick.has))
                             ? dimClass
                             : "";
@@ -380,8 +384,8 @@ export default function UserAssignModal({
                   {filteredByRole
                     .slice()
                     .sort((a, b) => {
-                      const da = isDriverExpired(a) ? 1 : 0;
-                      const db = isDriverExpired(b) ? 1 : 0;
+                      const da = isDriverIneligible(a) ? 1 : 0;
+                      const db = isDriverIneligible(b) ? 1 : 0;
                       if (da !== db) return da - db;
                       const ka =
                         `${a.lastName || ""} ${a.name || ""}`.toLowerCase();
@@ -396,14 +400,14 @@ export default function UserAssignModal({
                         role === "driver"
                           ? driverPscheinClass((u as any)?.pscheinExpiry)
                           : "";
-                      const expired =
-                        role === "driver" ? isDriverExpired(u) : false;
+                      const ineligible =
+                        role === "driver" ? isDriverIneligible(u) : false;
                       const vacSickBlocksSelection =
                         !!date && (vac.has || sick.has);
-                      const isBlocked = expired || vacSickBlocksSelection;
+                      const isBlocked = ineligible || vacSickBlocksSelection;
 
                       const dim =
-                        expired || vacSickBlocksSelection ? dimClass : "";
+                        ineligible || vacSickBlocksSelection ? dimClass : "";
                       const title = driverPscheinTitle(u);
 
                       return (

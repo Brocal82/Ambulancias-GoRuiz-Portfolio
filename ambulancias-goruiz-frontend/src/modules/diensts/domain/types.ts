@@ -10,6 +10,7 @@ export interface UserRef {
   lastName: string;
   ambulanceRole?: "driver" | "medic" | "both";
   pscheinExpiry?: string;
+  pscheinConfirmedAt?: string;
 }
 
 export interface DienstAssignment {

@@ -20,6 +20,7 @@ export const ensureSelectedPresent = async (
       lastName: u.lastName,
       ambulanceRole: u.ambulanceRole,
       pscheinExpiry: u.pscheinExpiry,
+      pscheinConfirmedAt: u.pscheinConfirmedAt,
     };
     return [asRef, ...list];
   } catch {

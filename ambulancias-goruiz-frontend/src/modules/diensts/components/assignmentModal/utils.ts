@@ -1,4 +1,5 @@
 import { getPscheinInfo } from "../../../../utils/pscheinUtils";
+import { isDriverEligibleForAssignment } from "../../utils/driverEligibility";
 import { getPscheinWarningTitle } from "../../utils/pscheinWarningTitle";
 import { fmtDDMM } from "../../../../utils/timeUtils";
 
@@ -20,10 +21,16 @@ export const driverClass = (pschein?: string | null) => {
   return "";
 };
 
-export const driverExpired = (u: UserRef) => {
-  const info = getPscheinInfo((u as any)?.pscheinExpiry);
-  return info.status === "expired";
-};
+/** True si el usuario no puede ser conductor para el slot (regla backend / disponibilidad). */
+export const driverExpired = (u: UserRef, assignmentDateISO?: string) =>
+  !isDriverEligibleForAssignment(
+    {
+      ambulanceRole: u.ambulanceRole,
+      pscheinExpiry: u.pscheinExpiry,
+      pscheinConfirmedAt: u.pscheinConfirmedAt,
+    },
+    assignmentDateISO,
+  );
 
 export const driverPscheinTitle = (u: UserRef | null | undefined, t: TFunction) => {
   if (!u) return undefined;
