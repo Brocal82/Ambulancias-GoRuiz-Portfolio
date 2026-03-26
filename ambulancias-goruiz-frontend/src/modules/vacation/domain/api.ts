@@ -203,6 +203,13 @@ export interface VacationMonthConfig {
   blackouts: { startDate: string; endDate: string }[];
 }
 
+/** POST body: backend allows partial updates (omit blackouts to leave unchanged). */
+export type UpsertVacationMonthConfigPayload = {
+  monthKey: string;
+  maxPerDay?: number;
+  blackouts?: { startDate: string; endDate: string }[];
+};
+
 export async function getVacationAvailability(
   params: { year: number; month: number }, // month 1..12
   opts?: { force?: boolean },
@@ -235,7 +242,9 @@ export async function getVacationMonthConfig(monthKey: string) {
   return data;
 }
 
-export async function upsertVacationMonthConfig(payload: VacationMonthConfig) {
+export async function upsertVacationMonthConfig(
+  payload: UpsertVacationMonthConfigPayload,
+) {
   const { data } = await axiosInstance.post<VacationMonthConfig>(
     "/vacations/month-config",
     payload,

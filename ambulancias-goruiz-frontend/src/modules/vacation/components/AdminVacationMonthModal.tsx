@@ -12,7 +12,9 @@ import { useTranslation } from "react-i18next";
 import { monthLabel as fmtMonth } from "../../../utils/intl";
 import {
   getVacationAvailability,
+  invalidateAvailability,
   type VacationAvailabilityResponse,
+  upsertVacationMonthConfig,
 } from "../domain/api";
 import { emitVacationRequestsUpdated } from "../utils/vacationEvents";
 import { useVacationAvailabilityInvalidation } from "../hooks/useVacationAvailabilityInvalidation";
@@ -53,6 +55,10 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   const [availLoading, setAvailLoading] = useState(false);
   const [availError, setAvailError] = useState<string | null>(null);
 
+  const [maxPerDayDraft, setMaxPerDayDraft] = useState("");
+  const [maxPerDayDirty, setMaxPerDayDirty] = useState(false);
+  const [isSavingMonthConfig, setIsSavingMonthConfig] = useState(false);
+
   const inFlightKeyRef = useRef<string | null>(null);
   const refreshTimerRef = useRef<number | null>(null);
 
@@ -81,6 +87,11 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     return base.concat(
       Array.from({ length: Math.max(0, 42 - base.length) }, () => null),
     );
+  }, [monthIndex, year]);
+
+  const monthKey = useMemo(() => {
+    if (monthIndex === null) return "";
+    return `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
   }, [monthIndex, year]);
 
   const loadAvailability = async (y: number, m1: number, force = false) => {
@@ -124,7 +135,17 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     setStatusFilter("");
     setSortAsc(true);
 
+    setMaxPerDayDirty(false);
+    setMaxPerDayDraft("");
+
   }, [isOpen, monthIndex, year]);
+
+  useEffect(() => {
+    if (!availability || maxPerDayDirty) return;
+    if (monthIndex === null) return;
+    if (availability.year !== year || availability.month !== monthIndex + 1) return;
+    setMaxPerDayDraft(String(availability.maxPerDay));
+  }, [availability, maxPerDayDirty, monthIndex, year]);
 
 
   useEffect(() => {
@@ -485,6 +506,45 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     return buildBorderMapFromRange(s, e);
   }, [highlightRequestId, requests, monthIndex, year]);
 
+  const handleSaveMonthConfig = async () => {
+    if (monthIndex === null) return;
+    const n = parseInt(maxPerDayDraft, 10);
+    if (!Number.isFinite(n) || n < 0 || n > 31) {
+      toastT.error(
+        t(
+          "pages.vacations.adminPage.monthConfigInvalid",
+          "Introduce un número entre 0 y 31.",
+        ),
+      );
+      return;
+    }
+    const m1 = monthIndex + 1;
+    setIsSavingMonthConfig(true);
+    try {
+      await toastT.promise(
+        (async () => {
+          await upsertVacationMonthConfig({ monthKey, maxPerDay: n });
+          invalidateAvailability(year, m1);
+          await loadAvailability(year, m1, true);
+          setMaxPerDayDirty(false);
+        })(),
+        {
+          pending: t(
+            "pages.vacations.adminPage.monthConfigSaving",
+            "Guardando límite…",
+          ),
+          success: t(
+            "pages.vacations.adminPage.monthConfigSaved",
+            "Límite mensual guardado.",
+          ),
+          error: ["toasts.vacations.admin.error"],
+        },
+      );
+    } finally {
+      setIsSavingMonthConfig(false);
+    }
+  };
+
   if (!isOpen || monthIndex === null) return null;
 
   return (
@@ -545,7 +605,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
             {/* Calendario mini */}
             <div className="rounded-xl ring-1 ring-slate-200 p-2">
-              <div className="mb-1 flex items-center gap-3 text-[10px] text-slate-600">
+              <div className="mb-1 flex flex-wrap items-center gap-3 text-[10px] text-slate-600">
                 <span className="inline-flex items-center gap-1">
                   <span className="inline-block h-2.5 w-2.5 rounded border-2 border-emerald-300" />
                   {t("pages.vacations.monthGrid.legend.available")}
@@ -560,14 +620,47 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                   <span className="inline-block h-2.5 w-2.5 rounded border-2 border-rose-300" />
                   {t("pages.vacations.monthGrid.legend.full")}
                 </span>
+              </div>
 
-                {availability && (
-                  <span className="ml-auto text-slate-500">
-                    {t("pages.vacations.adminPage.capacity", {
-                      count: availability.maxPerDay,
-                    })}
-                  </span>
-                )}
+              <div className="mb-2 flex flex-wrap items-center justify-end gap-2 text-[11px] text-slate-600">
+                <label
+                  htmlFor="admin-month-max-per-day"
+                  className="whitespace-nowrap"
+                >
+                  {t("pages.vacations.adminPage.maxPerDayLabel", "Máx. por día")}
+                </label>
+                <input
+                  id="admin-month-max-per-day"
+                  type="number"
+                  min={0}
+                  max={31}
+                  inputMode="numeric"
+                  disabled={availLoading || isSavingMonthConfig}
+                  value={maxPerDayDraft}
+                  onChange={(e) => {
+                    setMaxPerDayDirty(true);
+                    setMaxPerDayDraft(e.target.value);
+                  }}
+                  className="w-16 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 tabular-nums disabled:bg-slate-100"
+                  aria-label={t(
+                    "pages.vacations.adminPage.maxPerDayLabel",
+                    "Máx. por día",
+                  )}
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveMonthConfig}
+                  disabled={
+                    availLoading ||
+                    isSavingMonthConfig ||
+                    maxPerDayDraft.trim() === ""
+                  }
+                  className="rounded-md bg-slate-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSavingMonthConfig
+                    ? t("common.loading", "Cargando...")
+                    : t("common.save", "Guardar")}
+                </button>
               </div>
 
               <div className="grid grid-cols-7 text-center text-[10px] uppercase tracking-wide text-slate-500 mb-0.5">
