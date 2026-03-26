@@ -12,10 +12,12 @@ import { useTranslation } from "react-i18next";
 import { monthLabel as fmtMonth } from "../../../utils/intl";
 import {
   getVacationAvailability,
+  getVacationMonthConfig,
   invalidateAvailability,
   type VacationAvailabilityResponse,
   upsertVacationMonthConfig,
 } from "../domain/api";
+import { formatYYYYMMDDToDDMMYYYY } from "../../../utils/timeUtils";
 import { emitVacationRequestsUpdated } from "../utils/vacationEvents";
 import { useVacationAvailabilityInvalidation } from "../hooks/useVacationAvailabilityInvalidation";
 import AdminVacationRequestsTable from "./AdminVacationRequestsTable";
@@ -29,6 +31,28 @@ interface Props {
   year?: number;
   onClose: () => void;
   onActionDone?: () => void;
+}
+
+type BlackoutRangeDraft = { startDate: string; endDate: string };
+
+function toIsoDateString(d: string | Date): string {
+  if (typeof d === "string") {
+    const s = d.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const x = new Date(d);
+    if (!Number.isNaN(x.getTime())) return x.toISOString().slice(0, 10);
+    return s;
+  }
+  return new Date(d).toISOString().slice(0, 10);
+}
+
+function normalizeBlackoutsFromApi(
+  rows: { startDate: string | Date; endDate: string | Date }[],
+): BlackoutRangeDraft[] {
+  return rows.map((r) => ({
+    startDate: toIsoDateString(r.startDate),
+    endDate: toIsoDateString(r.endDate),
+  }));
 }
 
 const AdminVacationMonthModal: React.FC<Props> = ({
@@ -58,6 +82,14 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   const [maxPerDayDraft, setMaxPerDayDraft] = useState("");
   const [maxPerDayDirty, setMaxPerDayDirty] = useState(false);
   const [isSavingMonthConfig, setIsSavingMonthConfig] = useState(false);
+
+  const [blackoutsDraft, setBlackoutsDraft] = useState<BlackoutRangeDraft[]>([]);
+  const [blackoutsDirty, setBlackoutsDirty] = useState(false);
+  const blackoutsDirtyRef = useRef(false);
+  const [newRangeStart, setNewRangeStart] = useState("");
+  const [newRangeEnd, setNewRangeEnd] = useState("");
+  const [isSavingBlackouts, setIsSavingBlackouts] = useState(false);
+  const [monthConfigLoading, setMonthConfigLoading] = useState(false);
 
   const inFlightKeyRef = useRef<string | null>(null);
   const refreshTimerRef = useRef<number | null>(null);
@@ -138,7 +170,44 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     setMaxPerDayDirty(false);
     setMaxPerDayDraft("");
 
+    setBlackoutsDirty(false);
+    blackoutsDirtyRef.current = false;
+    setBlackoutsDraft([]);
+    setNewRangeStart("");
+    setNewRangeEnd("");
+
   }, [isOpen, monthIndex, year]);
+
+  useEffect(() => {
+    blackoutsDirtyRef.current = blackoutsDirty;
+  }, [blackoutsDirty]);
+
+  useEffect(() => {
+    if (!isOpen || monthIndex === null || !monthKey) return;
+
+    let cancelled = false;
+
+    async function loadMonthConfig() {
+      setMonthConfigLoading(true);
+      try {
+        const cfg = await getVacationMonthConfig(monthKey);
+        if (cancelled) return;
+        if (!blackoutsDirtyRef.current) {
+          setBlackoutsDraft(normalizeBlackoutsFromApi(cfg.blackouts));
+        }
+      } catch {
+        if (cancelled) return;
+        if (!blackoutsDirtyRef.current) setBlackoutsDraft([]);
+      } finally {
+        if (!cancelled) setMonthConfigLoading(false);
+      }
+    }
+
+    loadMonthConfig();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, monthIndex, year, monthKey]);
 
   useEffect(() => {
     if (!availability || maxPerDayDirty) return;
@@ -545,6 +614,79 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     }
   };
 
+  const handleAddBlackout = () => {
+    const a = newRangeStart.trim();
+    const b = newRangeEnd.trim();
+    if (!a || !b) {
+      toastT.error(
+        t(
+          "pages.vacations.adminPage.blackoutDatesRequired",
+          "Indica inicio y fin del periodo.",
+        ),
+      );
+      return;
+    }
+    const ta = new Date(`${a}T12:00:00`);
+    const tb = new Date(`${b}T12:00:00`);
+    if (Number.isNaN(ta.getTime()) || Number.isNaN(tb.getTime())) {
+      toastT.error(
+        t("pages.vacations.adminPage.blackoutDatesInvalid", "Fechas no válidas."),
+      );
+      return;
+    }
+    if (ta.getTime() > tb.getTime()) {
+      toastT.error(
+        t(
+          "pages.vacations.adminPage.blackoutRangeOrder",
+          "La fecha de inicio debe ser anterior o igual al fin.",
+        ),
+      );
+      return;
+    }
+    setBlackoutsDirty(true);
+    setBlackoutsDraft((prev) => [...prev, { startDate: a, endDate: b }]);
+    setNewRangeStart("");
+    setNewRangeEnd("");
+  };
+
+  const handleRemoveBlackout = (index: number) => {
+    setBlackoutsDirty(true);
+    setBlackoutsDraft((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveBlackouts = async () => {
+    if (monthIndex === null) return;
+    const m1 = monthIndex + 1;
+    setIsSavingBlackouts(true);
+    try {
+      await toastT.promise(
+        (async () => {
+          const updated = await upsertVacationMonthConfig({
+            monthKey,
+            blackouts: blackoutsDraft,
+          });
+          setBlackoutsDraft(normalizeBlackoutsFromApi(updated.blackouts));
+          setBlackoutsDirty(false);
+          invalidateAvailability(year, m1);
+          await loadAvailability(year, m1, true);
+        })(),
+        {
+          pending: t(
+            "pages.vacations.adminPage.blackoutsSaving",
+            "Guardando bloqueos…",
+          ),
+          success: t(
+            "pages.vacations.adminPage.blackoutsSaved",
+            "Periodos bloqueados guardados.",
+          ),
+          error: ["toasts.vacations.admin.error"],
+        },
+      );
+    } finally {
+      setIsSavingBlackouts(false);
+    }
+  };
+
   if (!isOpen || monthIndex === null) return null;
 
   return (
@@ -635,7 +777,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                   min={0}
                   max={31}
                   inputMode="numeric"
-                  disabled={availLoading || isSavingMonthConfig}
+                  disabled={availLoading || isSavingMonthConfig || isSavingBlackouts}
                   value={maxPerDayDraft}
                   onChange={(e) => {
                     setMaxPerDayDirty(true);
@@ -653,6 +795,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                   disabled={
                     availLoading ||
                     isSavingMonthConfig ||
+                    isSavingBlackouts ||
                     maxPerDayDraft.trim() === ""
                   }
                   className="rounded-md bg-slate-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
@@ -661,6 +804,129 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                     ? t("common.loading", "Cargando...")
                     : t("common.save", "Guardar")}
                 </button>
+              </div>
+
+              <div className="mt-2 border-t border-slate-200 pt-2">
+                <p className="mb-1.5 text-[11px] font-medium text-slate-700">
+                  {t(
+                    "pages.vacations.adminPage.blackoutsTitle",
+                    "Periodos bloqueados",
+                  )}
+                </p>
+
+                {monthConfigLoading ? (
+                  <p className="mb-2 text-[10px] text-slate-500">
+                    {t("common.loading", "Cargando...")}
+                  </p>
+                ) : blackoutsDraft.length === 0 ? (
+                  <p className="mb-2 text-[10px] text-slate-500">
+                    {t(
+                      "pages.vacations.adminPage.blackoutsEmpty",
+                      "Ningún periodo bloqueado.",
+                    )}
+                  </p>
+                ) : (
+                  <ul className="mb-2 max-h-28 space-y-1 overflow-y-auto pr-0.5">
+                    {blackoutsDraft.map((r, idx) => (
+                      <li
+                        key={`${r.startDate}-${r.endDate}-${idx}`}
+                        className="flex items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-1 text-[10px] text-slate-700"
+                      >
+                        <span className="min-w-0 truncate">
+                          {formatYYYYMMDDToDDMMYYYY(r.startDate)} →{" "}
+                          {formatYYYYMMDDToDDMMYYYY(r.endDate)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveBlackout(idx)}
+                          disabled={isSavingBlackouts || isSavingMonthConfig}
+                          className="shrink-0 rounded p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:opacity-40"
+                          aria-label={t("common.delete", "Eliminar")}
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <div className="flex flex-wrap items-end gap-2">
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <label
+                      htmlFor="admin-blackout-start"
+                      className="text-[10px] text-slate-500"
+                    >
+                      {t(
+                        "pages.vacations.adminPage.blackoutStart",
+                        "Inicio",
+                      )}
+                    </label>
+                    <input
+                      id="admin-blackout-start"
+                      type="date"
+                      value={newRangeStart}
+                      onChange={(e) => setNewRangeStart(e.target.value)}
+                      disabled={
+                        monthConfigLoading ||
+                        isSavingBlackouts ||
+                        isSavingMonthConfig
+                      }
+                      className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-900 disabled:bg-slate-100"
+                    />
+                  </div>
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <label
+                      htmlFor="admin-blackout-end"
+                      className="text-[10px] text-slate-500"
+                    >
+                      {t("pages.vacations.adminPage.blackoutEnd", "Fin")}
+                    </label>
+                    <input
+                      id="admin-blackout-end"
+                      type="date"
+                      value={newRangeEnd}
+                      onChange={(e) => setNewRangeEnd(e.target.value)}
+                      disabled={
+                        monthConfigLoading ||
+                        isSavingBlackouts ||
+                        isSavingMonthConfig
+                      }
+                      className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-900 disabled:bg-slate-100"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddBlackout}
+                    disabled={
+                      monthConfigLoading ||
+                      isSavingBlackouts ||
+                      isSavingMonthConfig
+                    }
+                    className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {t("pages.vacations.adminPage.blackoutAdd", "Añadir")}
+                  </button>
+                </div>
+
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleSaveBlackouts}
+                    disabled={
+                      monthConfigLoading ||
+                      isSavingBlackouts ||
+                      isSavingMonthConfig
+                    }
+                    className="rounded-md bg-slate-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSavingBlackouts
+                      ? t("common.loading", "Cargando...")
+                      : t(
+                          "pages.vacations.adminPage.blackoutsSave",
+                          "Guardar periodos",
+                        )}
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-7 text-center text-[10px] uppercase tracking-wide text-slate-500 mb-0.5">
