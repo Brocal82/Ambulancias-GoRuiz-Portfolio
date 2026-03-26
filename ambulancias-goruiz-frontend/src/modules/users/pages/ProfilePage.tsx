@@ -36,6 +36,10 @@ const Profile = ({ userId }: ProfileProps) => {
 
   const isAdminEditingOtherUser = role === "admin" && Boolean(userId);
   const isWorkerSelfProfile = role === "worker" && !userId;
+  const showWorkerEmployeeReadOnly =
+    isWorkerSelfProfile && Boolean(formData.employeeNumber?.trim());
+  const showEmployeeNumberColumn =
+    isAdminEditingOtherUser || showWorkerEmployeeReadOnly;
 
   useEffect(() => {
     setLoading(true);
@@ -266,12 +270,6 @@ const Profile = ({ userId }: ProfileProps) => {
           <h2 className="text-base sm:text-lg font-semibold tracking-tight text-white">
             {`${formData.lastName ?? ""}, ${formData.name ?? ""}`.trim() || "—"}
           </h2>
-          {formData.role === "worker" &&
-            formData.employeeNumber?.trim() && (
-              <span className="text-orange-400 font-bold text-base tracking-wide">
-                {formData.employeeNumber}
-              </span>
-            )}
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5">
@@ -388,7 +386,7 @@ const Profile = ({ userId }: ProfileProps) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Primera fila: Nombre + Apellidos (+ Número solo admin / otro usuario) */}
                 <div
-                  className={`grid grid-cols-1 gap-3 md:col-span-2 ${isAdminEditingOtherUser ? "md:grid-cols-3" : "md:grid-cols-2"}`}
+                  className={`grid grid-cols-1 gap-3 md:col-span-2 ${showEmployeeNumberColumn ? "md:grid-cols-3" : "md:grid-cols-2"}`}
                 >
                   {/* Nombre */}
                   <div className="space-y-1">
@@ -448,6 +446,19 @@ const Profile = ({ userId }: ProfileProps) => {
                         )}
                         title={t("pages.profile.employeeNumberHint")}
                       />
+                    </div>
+                  )}
+                  {showWorkerEmployeeReadOnly && (
+                    <div className="space-y-1">
+                      <span className="block text-xs font-medium text-slate-700">
+                        {t("pages.profile.employeeNumber")}
+                      </span>
+                      <p
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-800"
+                        title={t("pages.profile.employeeNumberHint")}
+                      >
+                        {formData.employeeNumber}
+                      </p>
                     </div>
                   )}
                 </div>
