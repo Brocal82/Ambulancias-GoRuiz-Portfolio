@@ -55,6 +55,10 @@ function normalizeBlackoutsFromApi(
   }));
 }
 
+function blackoutRangesEqual(a: BlackoutRangeDraft, b: BlackoutRangeDraft) {
+  return a.startDate === b.startDate && a.endDate === b.endDate;
+}
+
 function dayInMonthToIsoDate(
   year: number,
   monthIndex: number,
@@ -147,8 +151,12 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   const [isSavingMonthConfig, setIsSavingMonthConfig] = useState(false);
 
   const [blackoutsDraft, setBlackoutsDraft] = useState<BlackoutRangeDraft[]>([]);
-  const [blackoutsDirty, setBlackoutsDirty] = useState(false);
+  /** Índices en `blackoutsDraft` marcados para borrar al guardar (siguen visibles hasta guardar). */
+  const [blackoutPendingDeletionIndices, setBlackoutPendingDeletionIndices] =
+    useState<number[]>([]);
   const blackoutsDirtyRef = useRef(false);
+  /** Último estado persistido (API) para detectar eliminaciones pendientes de guardar. */
+  const blackoutsBaselineRef = useRef<BlackoutRangeDraft[]>([]);
   const [isSavingBlackouts, setIsSavingBlackouts] = useState(false);
   const [monthConfigLoading, setMonthConfigLoading] = useState(false);
 
@@ -243,6 +251,13 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   // ✅ Toggle: mostrar/ocultar solicitudes del mes (tabla)
   const [showMonthRequests, setShowMonthRequests] = useState(false);
 
+  const hasBlackoutUnsavedChanges =
+    pendingBlackoutRange !== null || blackoutPendingDeletionIndices.length > 0;
+
+  useEffect(() => {
+    blackoutsDirtyRef.current = hasBlackoutUnsavedChanges;
+  }, [hasBlackoutUnsavedChanges]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -259,9 +274,10 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     setMaxPerDayDirty(false);
     setMaxPerDayDraft("");
 
-    setBlackoutsDirty(false);
     blackoutsDirtyRef.current = false;
     setBlackoutsDraft([]);
+    blackoutsBaselineRef.current = [];
+    setBlackoutPendingDeletionIndices([]);
 
     setBlackoutSelectMode(false);
     setBlackoutAnchorDay(null);
@@ -269,10 +285,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     setPendingBlackoutRange(null);
 
   }, [isOpen, monthIndex, year]);
-
-  useEffect(() => {
-    blackoutsDirtyRef.current = blackoutsDirty;
-  }, [blackoutsDirty]);
 
   useEffect(() => {
     if (!isOpen || monthIndex === null || !monthKey) return;
@@ -285,11 +297,16 @@ const AdminVacationMonthModal: React.FC<Props> = ({
         const cfg = await getVacationMonthConfig(monthKey);
         if (cancelled) return;
         if (!blackoutsDirtyRef.current) {
-          setBlackoutsDraft(normalizeBlackoutsFromApi(cfg.blackouts));
+          const normalized = normalizeBlackoutsFromApi(cfg.blackouts);
+          setBlackoutsDraft(normalized);
+          blackoutsBaselineRef.current = normalized;
         }
       } catch {
         if (cancelled) return;
-        if (!blackoutsDirtyRef.current) setBlackoutsDraft([]);
+        if (!blackoutsDirtyRef.current) {
+          setBlackoutsDraft([]);
+          blackoutsBaselineRef.current = [];
+        }
       } finally {
         if (!cancelled) setMonthConfigLoading(false);
       }
@@ -685,8 +702,30 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   }, [pendingBlackoutRange, year, monthIndex]);
 
   /** Pending calendar range or unsaved list edits — hidden when only selection mode with no changes. */
-  const showBlackoutsSaveButton =
-    pendingBlackoutRange !== null || blackoutsDirty;
+  const showBlackoutsSaveButton = hasBlackoutUnsavedChanges;
+
+  /** Lo que se persistirá al guardar (misma lógica que handleSaveBlackouts). */
+  const blackoutsSavePreview = useMemo((): BlackoutRangeDraft[] => {
+    const withoutPendingDeletions = blackoutsDraft.filter(
+      (_, i) => !blackoutPendingDeletionIndices.includes(i),
+    );
+    if (pendingBlackoutRange) {
+      return [...withoutPendingDeletions, pendingBlackoutRange];
+    }
+    return withoutPendingDeletions;
+  }, [blackoutsDraft, pendingBlackoutRange, blackoutPendingDeletionIndices]);
+
+  /** Algún periodo que existía en el último estado guardado ya no está en el borrador. */
+  const hasRemovalPendingSave = useMemo(() => {
+    const baseline = blackoutsBaselineRef.current;
+    return baseline.some(
+      (b) =>
+        !blackoutsSavePreview.some((f) => blackoutRangesEqual(f, b)),
+    );
+  }, [blackoutsSavePreview]);
+
+  /** Prioridad: eliminación sobre alta nueva (ambos pueden coexistir). */
+  const blackoutSaveIsRemoval = hasRemovalPendingSave;
 
   const handleSaveMonthConfig = async () => {
     if (monthIndex === null) return;
@@ -732,9 +771,13 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     }
   };
 
-  const handleRemoveBlackout = (index: number) => {
-    setBlackoutsDirty(true);
-    setBlackoutsDraft((prev) => prev.filter((_, i) => i !== index));
+  const handleToggleBlackoutPendingDeletion = (index: number) => {
+    setBlackoutPendingDeletionIndices((prev) => {
+      if (prev.includes(index)) {
+        return prev.filter((i) => i !== index);
+      }
+      return [...prev, index].sort((a, b) => a - b);
+    });
   };
 
   const calendarBlackoutSelectEnabled =
@@ -756,7 +799,6 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     const startDate = dayInMonthToIsoDate(year, monthIndex, start);
     const endDate = dayInMonthToIsoDate(year, monthIndex, end);
     setPendingBlackoutRange({ startDate, endDate });
-    setBlackoutsDirty(true);
     setBlackoutAnchorDay(null);
     setBlackoutFocusDay(null);
   };
@@ -768,15 +810,20 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     try {
       await toastT.promise(
         (async () => {
+          const withoutPendingDeletions = blackoutsDraft.filter(
+            (_, i) => !blackoutPendingDeletionIndices.includes(i),
+          );
           const blackoutsToPersist = pendingBlackoutRange
-            ? [...blackoutsDraft, pendingBlackoutRange]
-            : blackoutsDraft;
+            ? [...withoutPendingDeletions, pendingBlackoutRange]
+            : withoutPendingDeletions;
           const updated = await upsertVacationMonthConfig({
             monthKey,
             blackouts: blackoutsToPersist,
           });
-          setBlackoutsDraft(normalizeBlackoutsFromApi(updated.blackouts));
-          setBlackoutsDirty(false);
+          const persisted = normalizeBlackoutsFromApi(updated.blackouts);
+          setBlackoutsDraft(persisted);
+          blackoutsBaselineRef.current = persisted;
+          setBlackoutPendingDeletionIndices([]);
           setPendingBlackoutRange(null);
           skipInvalidationRefreshRef.current = true;
           try {
@@ -1001,14 +1048,42 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                           isSavingBlackouts ||
                           isSavingMonthConfig
                         }
-                        className="inline-flex h-8 shrink-0 items-center rounded-md bg-slate-800 px-2.5 text-xs font-medium text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-busy={isSavingBlackouts}
+                        aria-label={
+                          isSavingBlackouts
+                            ? t("common.loading", "Cargando...")
+                            : blackoutSaveIsRemoval
+                              ? t(
+                                  "pages.vacations.adminPage.blackoutsSaveAriaRemove",
+                                  "Eliminar periodo bloqueado",
+                                )
+                              : t(
+                                  "pages.vacations.adminPage.blackoutsSaveAriaCreate",
+                                  "Guardar nuevo periodo",
+                                )
+                        }
+                        title={
+                          isSavingBlackouts
+                            ? t("common.loading", "Cargando...")
+                            : blackoutSaveIsRemoval
+                              ? t(
+                                  "pages.vacations.adminPage.blackoutsSaveAriaRemove",
+                                  "Eliminar periodo bloqueado",
+                                )
+                              : t(
+                                  "pages.vacations.adminPage.blackoutsSaveAriaCreate",
+                                  "Guardar nuevo periodo",
+                                )
+                        }
+                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-base leading-none text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {isSavingBlackouts
-                          ? t("common.loading", "Cargando...")
-                          : t(
-                              "pages.vacations.adminPage.blackoutsSave",
-                              "Guardar periodos",
-                            )}
+                        <span aria-hidden>
+                          {isSavingBlackouts
+                            ? "…"
+                            : blackoutSaveIsRemoval
+                              ? "❌"
+                              : "✅"}
+                        </span>
                       </button>
                     )}
                   </div>
@@ -1028,26 +1103,43 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                     </p>
                   ) : (
                     <ul className="mb-2 max-h-28 space-y-1 overflow-y-auto pr-0.5">
-                      {blackoutsDraft.map((r, idx) => (
-                        <li
-                          key={`${r.startDate}-${r.endDate}-${idx}`}
-                          className="flex items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-1 text-[10px] text-slate-700"
-                        >
-                          <span className="min-w-0 truncate">
-                            {formatYYYYMMDDToDDMMYYYY(r.startDate)} →{" "}
-                            {formatYYYYMMDDToDDMMYYYY(r.endDate)}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveBlackout(idx)}
-                            disabled={isSavingBlackouts || isSavingMonthConfig}
-                            className="shrink-0 rounded p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:opacity-40"
-                            aria-label={t("common.delete", "Eliminar")}
+                      {blackoutsDraft.map((r, idx) => {
+                        const isPendingDeletion =
+                          blackoutPendingDeletionIndices.includes(idx);
+                        return (
+                          <li
+                            key={`${r.startDate}-${r.endDate}-${idx}`}
+                            className="flex items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-1 text-[10px] text-slate-700"
                           >
-                            ✕
-                          </button>
-                        </li>
-                      ))}
+                            <span
+                              className={`min-w-0 truncate ${
+                                isPendingDeletion ? "text-red-600 font-medium" : ""
+                              }`}
+                            >
+                              {formatYYYYMMDDToDDMMYYYY(r.startDate)} →{" "}
+                              {formatYYYYMMDDToDDMMYYYY(r.endDate)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleToggleBlackoutPendingDeletion(idx)
+                              }
+                              disabled={isSavingBlackouts || isSavingMonthConfig}
+                              className="shrink-0 rounded p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:opacity-40"
+                              aria-label={
+                                isPendingDeletion
+                                  ? t(
+                                      "pages.vacations.adminPage.blackoutUndoCancel",
+                                      "Desmarcar eliminación",
+                                    )
+                                  : t("common.delete", "Eliminar")
+                              }
+                            >
+                              ✕
+                            </button>
+                          </li>
+                        );
+                      })}
                     </ul>
                   ))}
               </div>
