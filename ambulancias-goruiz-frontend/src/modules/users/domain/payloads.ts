@@ -11,6 +11,11 @@ export interface UpdateUserPayload {
   emergencyPhone?: string;
   pscheinExpiry?: string;
 
+  /** Solo admin editando otro usuario; confirmación P-Schein */
+  pscheinDocumentPath?: string | null;
+  pscheinConfirmedAt?: string | null;
+  pscheinConfirmedBy?: string | null;
+
   /** Cadena vacía "" significa eliminar imagen */
   profileImage?: string;
 

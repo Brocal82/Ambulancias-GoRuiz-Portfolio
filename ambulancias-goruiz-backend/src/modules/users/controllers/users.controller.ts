@@ -406,6 +406,14 @@ async function removeDocumentFromUser(
   if (!user) return null;
 
   user.documents = (user.documents || []).filter((doc) => doc !== filePath);
+
+  const pscheinPath = user.pscheinDocumentPath?.trim();
+  if (pscheinPath && pscheinPath === filePath.trim()) {
+    user.pscheinDocumentPath = undefined;
+    user.pscheinConfirmedAt = undefined;
+    user.pscheinConfirmedBy = undefined;
+  }
+
   await user.save();
 
   return { documents: user.documents };

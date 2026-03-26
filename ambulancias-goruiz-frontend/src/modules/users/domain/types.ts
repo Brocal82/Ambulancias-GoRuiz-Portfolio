@@ -12,6 +12,9 @@ export interface User {
   employeeNumber?: string;
   ambulanceRole?: AmbulanceRole;
   pscheinExpiry?: string;
+  pscheinConfirmedAt?: string;
+  pscheinConfirmedBy?: string;
+  pscheinDocumentPath?: string;
   address?: string;
   phone?: string;
   emergencyPhone?: string;

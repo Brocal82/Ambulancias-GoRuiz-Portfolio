@@ -1,5 +1,5 @@
 // frontend/src/pages/Profile.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toastT } from "../../../utils/toast";
 import { useAuth } from "../../../hooks/useAuth";
@@ -41,6 +41,12 @@ const Profile = ({ userId }: ProfileProps) => {
   const showEmployeeNumberColumn =
     isAdminEditingOtherUser || showWorkerEmployeeReadOnly;
 
+  /** Last server-backed P-Schein pair; only used for admin editing another user */
+  const pscheinSnapshotRef = useRef<{ expiry: string; docPath: string }>({
+    expiry: "",
+    docPath: "",
+  });
+
   useEffect(() => {
     setLoading(true);
 
@@ -53,6 +59,10 @@ const Profile = ({ userId }: ProfileProps) => {
       try {
         const fetchedUser = await UsersApi.getUserById(idToFetch);
         setFormData(fetchedUser);
+        pscheinSnapshotRef.current = {
+          expiry: (fetchedUser.pscheinExpiry ?? "").trim(),
+          docPath: (fetchedUser.pscheinDocumentPath ?? "").trim(),
+        };
       } catch (error) {
         console.error(error);
         toastT.error(["pages.profile.messages.loadError"]);
@@ -64,8 +74,18 @@ const Profile = ({ userId }: ProfileProps) => {
     fetchData();
   }, [userId, userIdFromAuthContext, token]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
+    if (name === "pscheinDocumentPath") {
+      setFormData({
+        ...formData,
+        pscheinDocumentPath: value === "" ? undefined : value,
+      });
+      return;
+    }
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,6 +132,22 @@ const Profile = ({ userId }: ProfileProps) => {
           : {}),
       };
 
+      if (isAdminEditingOtherUser && userIdFromAuthContext) {
+        const exp = (formData.pscheinExpiry ?? "").trim();
+        const docPath = (formData.pscheinDocumentPath ?? "").trim();
+        const snap = pscheinSnapshotRef.current;
+
+        if (!exp || !docPath) {
+          payload.pscheinDocumentPath = null;
+          payload.pscheinConfirmedAt = null;
+          payload.pscheinConfirmedBy = null;
+        } else if (exp !== snap.expiry || docPath !== snap.docPath) {
+          payload.pscheinDocumentPath = docPath;
+          payload.pscheinConfirmedAt = new Date().toISOString();
+          payload.pscheinConfirmedBy = userIdFromAuthContext;
+        }
+      }
+
       // ✅ Validación mínima (evita mandar strings vacíos); email not sent on PATCH
       if (!payload.name || !payload.lastName || !formData.email) {
         toastT.error(["pages.profile.messages.missingRequired"]);
@@ -125,6 +161,10 @@ const Profile = ({ userId }: ProfileProps) => {
       const updatedUser = await UsersApi.getUserById(idToUpdate);
 
       setFormData(updatedUser);
+      pscheinSnapshotRef.current = {
+        expiry: (updatedUser.pscheinExpiry ?? "").trim(),
+        docPath: (updatedUser.pscheinDocumentPath ?? "").trim(),
+      };
 
       // ✅ Limpiamos la selección local de documentos tras guardar
       setDocumentsFiles(null);
@@ -161,10 +201,31 @@ const Profile = ({ userId }: ProfileProps) => {
           : await UsersApi.deleteUserDocumentForUser(idToUpdate, filePath);
 
       toastT.success("toasts.profile.docDeleted");
-      setFormData((prev) => ({
-        ...prev,
-        documents: result.documents,
-      }));
+      setFormData((prev) => {
+        const wasPscheinDoc = prev.pscheinDocumentPath === filePath;
+        const next: Partial<User> = {
+          ...prev,
+          documents: result.documents,
+        };
+        if (wasPscheinDoc) {
+          next.pscheinDocumentPath = undefined;
+          next.pscheinConfirmedAt = undefined;
+          next.pscheinConfirmedBy = undefined;
+        } else {
+          next.pscheinDocumentPath =
+            prev.pscheinDocumentPath &&
+            result.documents.includes(prev.pscheinDocumentPath)
+              ? prev.pscheinDocumentPath
+              : undefined;
+        }
+        if (isAdminEditingOtherUser) {
+          pscheinSnapshotRef.current = {
+            expiry: (next.pscheinExpiry ?? "").trim(),
+            docPath: (next.pscheinDocumentPath ?? "").trim(),
+          };
+        }
+        return next;
+      });
     } catch (error) {
       console.error(error);
       toastT.error(["toasts.profile.docDeleteError"]);
@@ -715,6 +776,40 @@ const Profile = ({ userId }: ProfileProps) => {
                         {t("pages.profile.documents.none", "Sin documentos")}
                       </p>
                     )}
+
+                    {isAdminEditingOtherUser &&
+                      (formData.documents?.length ?? 0) > 0 && (
+                        <div className="mt-2 w-full text-left space-y-1">
+                          <label
+                            htmlFor="pscheinDocumentPath"
+                            className="block text-[11px] font-medium text-slate-700"
+                          >
+                            {t(
+                              "pages.profile.pschein.documentSelect",
+                              "P-Schein document",
+                            )}
+                          </label>
+                          <select
+                            id="pscheinDocumentPath"
+                            name="pscheinDocumentPath"
+                            value={formData.pscheinDocumentPath ?? ""}
+                            onChange={handleChange}
+                            className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
+                          >
+                            <option value="">
+                              {t(
+                                "pages.profile.pschein.documentSelectNone",
+                                "— None —",
+                              )}
+                            </option>
+                            {formData.documents!.map((docUrl) => (
+                              <option key={docUrl} value={docUrl}>
+                                {displayFileNameFromUrl(docUrl)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                   </div>
                 </div>
               </div>
