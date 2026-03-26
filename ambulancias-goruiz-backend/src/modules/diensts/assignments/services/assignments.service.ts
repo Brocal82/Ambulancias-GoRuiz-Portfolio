@@ -433,6 +433,7 @@ export async function assignUserToWeek(
   const dienst = await Dienst.findOne({
     dienstNumber,
     weekStartDate: { $gte: start, $lt: nextDay },
+    ...companyFilterForDienst(companyId),
   });
 
   if (!dienst) {
