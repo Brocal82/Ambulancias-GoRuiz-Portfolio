@@ -21,7 +21,7 @@ export const createTeamSchema = z
     driver: objectIdSchema,
     medic: objectIdSchema,
     rotationMode: rotationModeSchema.optional(),
-    fixedDienstNumber: fixedDienstNumberSchema.optional(),
+    fixedDienstNumber: fixedDienstNumberSchema.optional().nullable(),
     ambulanceId: z.union([objectIdSchema, z.null()]).optional(),
   })
   .refine((data) => data.driver !== data.medic, {
