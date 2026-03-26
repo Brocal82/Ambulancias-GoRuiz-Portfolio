@@ -677,6 +677,7 @@ export async function assignTeamToWeek(
       $gte: start,
       $lt: new Date(start.getTime() + 24 * 60 * 60 * 1000),
     },
+    ...companyFilterForDienst(companyId),
   });
 
   if (!dienst) {
