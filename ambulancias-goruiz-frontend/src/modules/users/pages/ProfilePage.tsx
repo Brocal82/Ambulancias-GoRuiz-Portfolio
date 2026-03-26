@@ -245,6 +245,14 @@ const Profile = ({ userId }: ProfileProps) => {
   const showPschein =
     formData.ambulanceRole === "driver" || formData.ambulanceRole === "both";
 
+  const hasAssignedAmbulanceRole =
+    formData.ambulanceRole === "medic" ||
+    formData.ambulanceRole === "driver" ||
+    formData.ambulanceRole === "both";
+
+  const hidePscheinColumnWorkerSelf =
+    isWorkerSelfProfile && !showPschein;
+
   // 📌 Documentos seleccionados (pendientes de guardar)
   // documentsFiles es FileList | null, lo convertimos a array para poder mapearlo en el render
   const pendingDocs = documentsFiles ? Array.from(documentsFiles) : [];
@@ -318,7 +326,7 @@ const Profile = ({ userId }: ProfileProps) => {
               {/* Roles */}
               <div className="w-full">
                 {isWorkerSelfProfile ? (
-                  formData.ambulanceRole ? (
+                  hasAssignedAmbulanceRole ? (
                     <>
                       <p className="text-[11px] font-medium text-slate-700 text-center mb-1">
                         {t("pages.profile.labels.ambulanceRole")}
@@ -525,7 +533,9 @@ const Profile = ({ userId }: ProfileProps) => {
 
           {/* ✅ Documentos + P-Schein + docs subidos: 3 columnas fijas y contenidos centrados */}
           <div className="rounded-2xl ring-1 ring-slate-200 bg-white p-3">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-stretch">
+            <div
+              className={`grid grid-cols-1 gap-3 items-stretch ${hidePscheinColumnWorkerSelf ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}
+            >
               {/* Columna 1 */}
               <div className="h-full grid grid-rows-[20px_1fr] gap-2 place-items-center text-center">
                 <div className="h-5 flex items-center justify-center">
@@ -552,7 +562,8 @@ const Profile = ({ userId }: ProfileProps) => {
                 </div>
               </div>
 
-              {/* Columna 2 */}
+              {/* Columna 2 — oculta en perfil trabajador si el rol no requiere P-Schein (p. ej. solo medic) */}
+              {!hidePscheinColumnWorkerSelf && (
               <div className="h-full grid grid-rows-[20px_1fr] gap-2 place-items-center text-center">
                 <div className="h-5 flex items-center justify-center">
                   <span className="text-[11px] font-medium text-slate-700">
@@ -631,6 +642,7 @@ const Profile = ({ userId }: ProfileProps) => {
                   )}
                 </div>
               </div>
+              )}
 
               {/* Columna 3 */}
               <div className="h-full grid grid-rows-[20px_1fr] gap-2 place-items-center text-center">
