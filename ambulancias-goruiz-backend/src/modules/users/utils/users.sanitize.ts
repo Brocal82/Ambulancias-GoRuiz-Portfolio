@@ -12,6 +12,17 @@ export function sanitizeUser(user: any) {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password, __v, ...safe } = u;
+
+  if (safe.pscheinConfirmedAt instanceof Date) {
+    (safe as Record<string, unknown>).pscheinConfirmedAt =
+      safe.pscheinConfirmedAt.toISOString();
+  }
+  if (safe.pscheinConfirmedBy != null) {
+    (safe as Record<string, unknown>).pscheinConfirmedBy = String(
+      safe.pscheinConfirmedBy,
+    );
+  }
+
   return safe;
 }
 

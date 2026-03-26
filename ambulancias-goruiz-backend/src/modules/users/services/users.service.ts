@@ -202,6 +202,15 @@ export async function updateUserService(
 
   const updates: Record<string, any> = { ...data };
 
+  if (
+    updates.pscheinConfirmedBy != null &&
+    typeof updates.pscheinConfirmedBy === "string"
+  ) {
+    updates.pscheinConfirmedBy = new mongoose.Types.ObjectId(
+      updates.pscheinConfirmedBy,
+    );
+  }
+
   // Control explícito de profileImage
   if (data.profileImage === "") {
     updates.profileImage = "";

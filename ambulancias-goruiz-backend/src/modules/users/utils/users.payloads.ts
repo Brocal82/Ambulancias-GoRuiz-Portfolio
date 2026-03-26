@@ -11,6 +11,10 @@ export interface UpdateUserDTO {
   emergencyPhone?: string;
   pscheinExpiry?: string;
 
+  pscheinConfirmedAt?: Date | null;
+  pscheinConfirmedBy?: string | null;
+  pscheinDocumentPath?: string;
+
   /**
    * - string normal: set
    * - "" : borrar

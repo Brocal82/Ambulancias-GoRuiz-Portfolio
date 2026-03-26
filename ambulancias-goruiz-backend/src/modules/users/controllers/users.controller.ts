@@ -101,6 +101,9 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     const dto = parseUpdateUserDTO(req.body);
     if (req.userRole !== "admin") {
       delete dto.employeeNumber;
+      delete dto.pscheinConfirmedAt;
+      delete dto.pscheinConfirmedBy;
+      delete dto.pscheinDocumentPath;
     }
     if (req.userRole === "worker") {
       delete dto.ambulanceRole;

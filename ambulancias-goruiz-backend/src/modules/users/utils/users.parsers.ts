@@ -1,8 +1,24 @@
 import type { UpdateUserDTO } from "./users.payloads";
 import type { CreateUserDTO } from "./users.payloads";
+import mongoose from "mongoose";
 
 function asString(v: unknown): string | undefined {
   return typeof v === "string" ? v : undefined;
+}
+
+function parseOptionalDate(v: unknown): Date | null | undefined {
+  if (v === undefined) return undefined;
+  if (v === null) return null;
+  if (v instanceof Date) {
+    return isNaN(v.getTime()) ? undefined : v;
+  }
+  if (typeof v === "string") {
+    const t = v.trim();
+    if (!t) return null;
+    const d = new Date(t);
+    return isNaN(d.getTime()) ? undefined : d;
+  }
+  return undefined;
 }
 
 /**
@@ -28,6 +44,19 @@ export function parseUpdateUserDTO(body: any): Partial<UpdateUserDTO> {
   if (body?.profileImage !== undefined) result.profileImage = asString(body.profileImage) ?? "";
   if (body?.employeeNumber !== undefined)
     result.employeeNumber = asString(body.employeeNumber) ?? "";
+
+  if (body?.pscheinDocumentPath !== undefined) {
+    const s = asString(body.pscheinDocumentPath);
+    result.pscheinDocumentPath = s === undefined ? undefined : s.trim();
+  }
+  if (body?.pscheinConfirmedBy !== undefined) {
+    const s = asString(body.pscheinConfirmedBy)?.trim();
+    if (!s) result.pscheinConfirmedBy = null;
+    else if (mongoose.Types.ObjectId.isValid(s)) result.pscheinConfirmedBy = s;
+  }
+  if (body?.pscheinConfirmedAt !== undefined) {
+    result.pscheinConfirmedAt = parseOptionalDate(body.pscheinConfirmedAt);
+  }
 
   return result;
 }

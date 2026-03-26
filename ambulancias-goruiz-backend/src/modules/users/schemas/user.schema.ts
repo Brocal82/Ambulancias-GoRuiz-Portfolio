@@ -43,6 +43,12 @@ const updateUserFieldsSchema = z.object({
   phone: z.string().transform((s) => s.trim()).optional(),
   emergencyPhone: z.string().transform((s) => s.trim()).optional(),
   pscheinExpiry: z.string().transform((s) => s.trim()).optional(),
+  pscheinDocumentPath: z.string().optional(),
+  pscheinConfirmedBy: z.union([z.string(), z.null()]).optional(),
+  pscheinConfirmedAt: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.union([z.string(), z.null()]).optional(),
+  ),
   profileImage: z.string().optional(),
   employeeNumber: z.string().transform((s) => s.trim()).optional(),
 });
