@@ -17,7 +17,10 @@ function companyFilter(companyId?: string | null): Record<string, unknown> {
 export async function getAllDiensts(companyId?: string | null) {
   const filter = companyFilter(companyId);
   return Dienst.find(filter)
-    .populate("assignments.driver", "name lastName pscheinExpiry ambulanceRole")
+    .populate(
+      "assignments.driver",
+      "name lastName pscheinExpiry ambulanceRole pscheinConfirmedAt",
+    )
     .populate("assignments.medic", "name lastName pscheinExpiry ambulanceRole")
     .populate("assignments.ambulanceId", "ambulanceNumber brand modelName licensePlate")
     .lean();
