@@ -354,6 +354,13 @@ const AdminUsersPage = () => {
               {t("pages.adminUsers.legend.warning")}
             </div>
             <div className="flex items-center gap-1.5">
+              <span className="text-slate-600">❓</span>{" "}
+              {t(
+                "pages.adminUsers.legend.noPscheinDate",
+                "No P-Schein date (driver / both)",
+              )}
+            </div>
+            <div className="flex items-center gap-1.5">
               <span className="text-green-600">🏖️ </span>{" "}
               {t(
                 "pages.adminUsers.legend.vacation",
@@ -409,6 +416,10 @@ const AdminUsersPage = () => {
               <tbody className="divide-y divide-slate-200 bg-white">
                 {filteredUsers.map((user, index) => {
                   const pschein = getPscheinInfo(user.pscheinExpiry);
+                  const showMissingPscheinDate =
+                    (user.ambulanceRole === "driver" ||
+                      user.ambulanceRole === "both") &&
+                    pschein.status === "no-date";
 
                   const firstCellBorder =
                     pschein.status === "expired"
@@ -500,6 +511,17 @@ const AdminUsersPage = () => {
                               )}
                             >
                               ⚠️
+                            </span>
+                          )}
+                          {showMissingPscheinDate && (
+                            <span
+                              className="align-middle text-slate-600 text-base leading-none"
+                              title={t(
+                                "pages.adminUsers.noPscheinDateTitle",
+                                "P-Schein expiry date not set",
+                              )}
+                            >
+                              ❓
                             </span>
                           )}
                           {onVac && (

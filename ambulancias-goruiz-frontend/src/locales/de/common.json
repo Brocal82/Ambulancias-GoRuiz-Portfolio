@@ -225,8 +225,10 @@
             },
             "legend": {
                 "expired": "P-Schein abgelaufen",
-                "warning": "P-Schein in 6 Monaten"
+                "warning": "P-Schein in 6 Monaten",
+                "noPscheinDate": "Kein P-Schein-Datum (Fahrer / beides)"
             },
+            "noPscheinDateTitle": "P-Schein-Ablaufdatum nicht gesetzt",
             "filters": {
                 "role": {
                     "label": "Nach Rolle filtern:",

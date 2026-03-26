@@ -225,8 +225,10 @@
             },
             "legend": {
                 "expired": "P-Schein caducado",
-                "warning": "P-Schein a 6 meses"
+                "warning": "P-Schein a 6 meses",
+                "noPscheinDate": "Sin fecha P-Schein (conductor / ambos)"
             },
+            "noPscheinDateTitle": "Fecha de caducidad P-Schein no indicada",
             "filters": {
                 "role": {
                     "label": "Filtrar por rol:",

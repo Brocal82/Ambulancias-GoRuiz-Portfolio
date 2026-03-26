@@ -225,8 +225,10 @@
             },
             "legend": {
                 "expired": "P-Schein expired",
-                "warning": "P-Schein within 6 months"
+                "warning": "P-Schein within 6 months",
+                "noPscheinDate": "No P-Schein date (driver / both)"
             },
+            "noPscheinDateTitle": "P-Schein expiry date not set",
             "filters": {
                 "role": {
                     "label": "Filter by role:",
