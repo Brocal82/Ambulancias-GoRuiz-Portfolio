@@ -18,7 +18,10 @@ import { getSickFlagsInRange, type SickFlag } from "../../sick/domain";
 import { mergeClasses } from "../utils";
 
 import { fmtDDMM } from "../../../utils/timeUtils";
-import { isDriverEligibleForAssignment } from "../utils/driverEligibility";
+import {
+  isDriverEligibleForAssignment,
+  isDriverEligibleForAssignmentWeek,
+} from "../utils/driverEligibility";
 
 interface Props {
   isOpen: boolean;
@@ -107,11 +110,11 @@ export default function UserAssignModal({
     return users.filter((u) => {
       if (!u.ambulanceRole || !need.includes(u.ambulanceRole)) return false;
       if (role === "driver") {
-        return isDriverEligibleForAssignment(u, undefined);
+        return isDriverEligibleForAssignmentWeek(u, weekStartISO);
       }
       return true;
     });
-  }, [users, role, date]);
+  }, [users, role, date, weekStartISO]);
 
   // Flags para usuarios visibles por rol
   useEffect(() => {
@@ -176,7 +179,8 @@ export default function UserAssignModal({
 
   const isDriverIneligible = (u: User) => {
     if (role !== "driver") return false;
-    return !isDriverEligibleForAssignment(u, date);
+    if (date) return !isDriverEligibleForAssignment(u, date);
+    return !isDriverEligibleForAssignmentWeek(u, weekStartISO);
   };
 
   // Tooltip SOLO sobre el nombre cuando P-Schein warning/expired (rol driver)

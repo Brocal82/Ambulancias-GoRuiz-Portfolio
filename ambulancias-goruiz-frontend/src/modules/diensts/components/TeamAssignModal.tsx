@@ -19,7 +19,10 @@ import { fmtDDMM } from "../../../utils/timeUtils";
 import { mergeClasses } from "../utils";
 
 import { UsersApi } from "../../users";
-import { isDriverEligibleForAssignment } from "../utils/driverEligibility";
+import {
+  isDriverEligibleForAssignment,
+  isDriverEligibleForAssignmentWeek,
+} from "../utils/driverEligibility";
 import { mergeTeamsWithUserDirectory } from "../utils/mergeTeamsWithUserDirectory";
 
 
@@ -276,11 +279,16 @@ export default function TeamAssignModal({
     const drvId = (drv?._id || drv) as string | undefined;
     const medId = (med?._id || med) as string | undefined;
 
+    const driverEligible = (u: typeof drv) =>
+      date
+        ? isDriverEligibleForAssignment(u, date)
+        : isDriverEligibleForAssignmentWeek(u, weekStartISO);
+
     // 1) Caso estándar: driver conduce (válido) y ambos disponibles por rol
     const standardOk =
       !!drvId &&
       !!medId &&
-      isDriverEligibleForAssignment(drv, date) &&
+      driverEligible(drv) &&
       isAvailDriver(drvId) &&
       isAvailMedic(medId);
 
@@ -296,8 +304,8 @@ export default function TeamAssignModal({
     // y el "medic" SÍ cumple como conductor -> invertimos roles (medic = driver, driver = medic)
     const driverExpiredButBoth =
       drv?.ambulanceRole === "both" &&
-      !isDriverEligibleForAssignment(drv, date) &&
-      isDriverEligibleForAssignment(med, date);
+      !driverEligible(drv) &&
+      driverEligible(med);
 
     const swapOk =
       !!drvId &&
@@ -327,9 +335,7 @@ export default function TeamAssignModal({
     }
 
     // Sin conductor válido en ninguna configuración
-    const noValidDriver =
-      !isDriverEligibleForAssignment(drv, date) &&
-      !isDriverEligibleForAssignment(med, date);
+    const noValidDriver = !driverEligible(drv) && !driverEligible(med);
 
     if (noValidDriver) {
       return {
@@ -345,10 +351,10 @@ export default function TeamAssignModal({
     // Fallo por disponibilidad (día/franja)
     if (date) {
       const drvAsDriver =
-        isDriverEligibleForAssignment(drv, date) && !isAvailDriver(drvId);
+        driverEligible(drv) && !isAvailDriver(drvId);
       const medAsMedic = !isAvailMedic(medId);
       const medAsDriver =
-        isDriverEligibleForAssignment(med, date) && !isAvailDriver(medId);
+        driverEligible(med) && !isAvailDriver(medId);
       const drvAsMedic = !isAvailMedic(drvId);
 
       if (drvAsDriver || medAsMedic) {
@@ -386,7 +392,7 @@ export default function TeamAssignModal({
 
   const compat = useMemo(
     () => computeCompatibility(selectedTeam),
-    [selectedTeam, availDriverIds, availMedicIds, date],
+    [selectedTeam, availDriverIds, availMedicIds, date, weekStartISO],
   );
 
   useEffect(() => {

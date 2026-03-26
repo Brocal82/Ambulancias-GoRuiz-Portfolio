@@ -56,8 +56,40 @@ function resolveAssignmentDateISO(
 }
 
 /**
+ * Last calendar day (YYYY-MM-DD) of a Dienst week: `weekStartISO` + 6 days.
+ * Same noon-anchor pattern as other week helpers to reduce TZ drift.
+ */
+export function lastDayOfDienstWeekISO(weekStartISO: string): string {
+  const trimmed = weekStartISO.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  const d = new Date(`${trimmed}T12:00:00`);
+  if (isNaN(d.getTime())) return trimmed;
+  d.setDate(d.getDate() + 6);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Phase 3A rule for assigning a driver across an entire Dienst week: same as single-day
+ * eligibility, but P-Schein must still be valid on the **last** day of that week (if valid
+ * then, it is valid on every earlier day in the same ISO week span).
+ */
+export function isDriverEligibleForAssignmentWeek(
+  user: DriverEligibilityUser | null | undefined,
+  weekStartISO: string,
+): boolean {
+  if (!isAmbulanceRoleDriverCapable(user?.ambulanceRole)) return false;
+  if (!hasTruthyConfirmation(user)) return false;
+  const exp =
+    typeof user?.pscheinExpiry === "string" ? user.pscheinExpiry.trim() : "";
+  if (!exp) return false;
+  const lastDay = lastDayOfDienstWeekISO(weekStartISO);
+  return isPscheinExpiryValidOnAssignmentDate(exp, lastDay);
+}
+
+/**
  * Full backend Phase 3A driver rule: driver/both, confirmed P-Schein, non-empty expiry,
- * expiry valid on the assignment date (or today's date when none is passed).
+ * expiry valid on the assignment date (or browser "today" when `assignmentDateISO` is omitted —
+ * used for flows without a slot date, e.g. team creation picker; not for weekly Dienst assign).
  */
 export function isDriverEligibleForAssignment(
   user: DriverEligibilityUser | null | undefined,
