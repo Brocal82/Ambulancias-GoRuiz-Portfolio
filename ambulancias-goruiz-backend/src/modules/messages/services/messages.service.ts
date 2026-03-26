@@ -78,20 +78,29 @@ export async function getMyMessages(
     filter.readBy = { $ne: userIdObj };
   }
 
-  const messages = await Message.find(filter)
+  const companyStr =
+    typeof userCompanyId === "string" ? userCompanyId.trim() : "";
+  if (!companyStr || !mongoose.Types.ObjectId.isValid(companyStr)) {
+    return [];
+  }
+
+  const companyOid = new mongoose.Types.ObjectId(companyStr);
+  const senderRows = await User.find({
+    companyId: companyOid,
+    role: "admin",
+  })
+    .select("_id")
+    .lean();
+  const senderIds = senderRows.map((u) => u._id);
+  if (senderIds.length === 0) {
+    return [];
+  }
+
+  Object.assign(filter, { sender: { $in: senderIds } });
+
+  return Message.find(filter)
     .sort({ sentAt: -1 })
     .populate("sender", "name lastName companyId");
-
-  if (userCompanyId) {
-    return messages.filter((m: any) => {
-      const sender = m.sender;
-      return sender?.companyId && String(sender.companyId) === String(userCompanyId);
-    });
-  }
-  return messages.filter((m: any) => {
-    const sender = m.sender;
-    return !sender?.companyId;
-  });
 }
 
 export async function getSentMessages(adminId: string) {
