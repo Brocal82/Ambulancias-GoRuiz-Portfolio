@@ -35,7 +35,11 @@ export async function getVacationAvailability(params: {
   const monthKey = toMonthKey(year, month);
   const monthStart = dayStart(new Date(year, month - 1, 1));
   const monthEnd = dayEnd(new Date(year, month, 0));
-  const cfg = await findMonthConfig(monthKey);
+
+  const cfg =
+    companyId && mongoose.Types.ObjectId.isValid(companyId)
+      ? await findMonthConfig(monthKey, companyId)
+      : null;
 
   const maxPerDay = cfg?.maxPerDay ?? DEFAULT_MAX_PER_DAY;
   const blackouts = cfg?.blackouts ?? [];

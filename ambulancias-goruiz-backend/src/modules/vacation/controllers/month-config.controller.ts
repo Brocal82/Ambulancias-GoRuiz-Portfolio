@@ -3,12 +3,19 @@ import {
   getMonthConfigOrDefault,
   upsertMonthConfigRecord,
 } from "../services/month-config.service";
+import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 
 export const getMonthConfig = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+
     const monthKey = String(req.query.monthKey || "");
     if (!monthKey || !/^\d{4}-\d{2}$/.test(monthKey)) {
       res
@@ -17,7 +24,7 @@ export const getMonthConfig = async (
       return;
     }
 
-    const cfg = await getMonthConfigOrDefault(monthKey);
+    const cfg = await getMonthConfigOrDefault(monthKey, companyResult.companyId);
     res.status(200).json(cfg);
   } catch (error) {
     console.error("Error al obtener config mensual:", error);
@@ -30,9 +37,16 @@ export const upsertMonthConfig = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+
     const { monthKey, maxPerDay, blackouts } = req.body;
 
     const updated = await upsertMonthConfigRecord({
+      companyId: companyResult.companyId,
       monthKey,
       maxPerDay,
       blackouts,

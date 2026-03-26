@@ -59,7 +59,10 @@ export const updateVacationRequest = async (
       }
 
       if (status === "accepted" && !canForceAccept) {
-        const maxPerDay = await getMaxPerDayForDate(new Date(request.startDate));
+        const maxPerDay = await getMaxPerDayForDate(
+          new Date(request.startDate),
+          companyResult.companyId,
+        );
 
         const overDays = await checkVacationAcceptanceCapacity({
           request,
