@@ -215,6 +215,146 @@ describe("API - Rutas críticas", () => {
     });
   });
 
+  describe("Workday Summary - admin mutations (company vs legacy document)", () => {
+    const minimalTrip = {
+      auftragNumber: "WS-MUT-1",
+      patientName: "Paciente",
+      fromAddress: "A",
+      toAddress: "B",
+      timeWarning: "08:00",
+      wasCancelled: false,
+      countsTrip: 1 as const,
+    };
+    let legacyIssueSeenId: string;
+    let legacyIssueDeleteId: string;
+    let legacySummaryReviewId: string;
+    let scopedIssueSeenId: string;
+    let scopedIssueDeleteId: string;
+    let scopedSummaryReviewId: string;
+
+    beforeAll(async () => {
+      const WorkdayIssue = mongoose.model("WorkdayIssue");
+      const WorkdaySummary = mongoose.model("WorkdaySummary");
+      const companyOid = new mongoose.Types.ObjectId(companyId);
+      const ambOid = new mongoose.Types.ObjectId();
+
+      const [li1, li2] = await Promise.all([
+        WorkdayIssue.create({
+          dienstNumber: 1,
+          date: "2030-03-01",
+          ambulanceNumber: "L1",
+          timestamp: new Date().toISOString(),
+          issueText: "legacy for seen",
+        }),
+        WorkdayIssue.create({
+          dienstNumber: 1,
+          date: "2030-03-02",
+          ambulanceNumber: "L2",
+          timestamp: new Date().toISOString(),
+          issueText: "legacy for delete",
+        }),
+      ]);
+      legacyIssueSeenId = li1._id.toString();
+      legacyIssueDeleteId = li2._id.toString();
+
+      const legacySummary = await WorkdaySummary.create({
+        date: "2030-03-03",
+        assignmentId: `legacy-assign-mut-${Date.now()}`,
+        driver: new mongoose.Types.ObjectId(adminId),
+        medic: new mongoose.Types.ObjectId(workerId),
+        ambulanceId: ambOid,
+        ambulanceNumber: "1",
+        initialKm: 0,
+        totalDienstKm: 1,
+        trips: [minimalTrip],
+        totalEffectivePatients: 1,
+        totalRealTrips: 1,
+        isFinalClosure: true,
+      });
+      legacySummaryReviewId = legacySummary._id.toString();
+
+      const [si1, si2] = await Promise.all([
+        WorkdayIssue.create({
+          dienstNumber: 2,
+          date: "2030-03-04",
+          ambulanceNumber: "S1",
+          timestamp: new Date().toISOString(),
+          issueText: "scoped for seen",
+          companyId: companyOid,
+        }),
+        WorkdayIssue.create({
+          dienstNumber: 2,
+          date: "2030-03-05",
+          ambulanceNumber: "S2",
+          timestamp: new Date().toISOString(),
+          issueText: "scoped for delete",
+          companyId: companyOid,
+        }),
+      ]);
+      scopedIssueSeenId = si1._id.toString();
+      scopedIssueDeleteId = si2._id.toString();
+
+      const scopedSummary = await WorkdaySummary.create({
+        date: "2030-03-06",
+        assignmentId: `scoped-assign-mut-${Date.now()}`,
+        driver: new mongoose.Types.ObjectId(adminId),
+        medic: new mongoose.Types.ObjectId(workerId),
+        ambulanceId: ambOid,
+        ambulanceNumber: "2",
+        initialKm: 0,
+        totalDienstKm: 1,
+        trips: [minimalTrip],
+        totalEffectivePatients: 1,
+        totalRealTrips: 1,
+        isFinalClosure: true,
+        companyId: companyOid,
+      });
+      scopedSummaryReviewId = scopedSummary._id.toString();
+    });
+
+    it("admin con empresa no puede marcar vista avería legacy sin companyId (403)", async () => {
+      await request(app)
+        .patch(`${API}/workday-summary/issues/${legacyIssueSeenId}/seen`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(403);
+    });
+
+    it("admin con empresa no puede borrar avería legacy sin companyId (403)", async () => {
+      await request(app)
+        .delete(`${API}/workday-summary/issues/${legacyIssueDeleteId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(403);
+    });
+
+    it("admin con empresa no puede revisar resumen legacy sin companyId (403)", async () => {
+      await request(app)
+        .patch(`${API}/workday-summary/${legacySummaryReviewId}/review`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(403);
+    });
+
+    it("admin con empresa puede marcar vista avería de su empresa (200)", async () => {
+      await request(app)
+        .patch(`${API}/workday-summary/issues/${scopedIssueSeenId}/seen`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+    });
+
+    it("admin con empresa puede borrar avería de su empresa (200)", async () => {
+      await request(app)
+        .delete(`${API}/workday-summary/issues/${scopedIssueDeleteId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+    });
+
+    it("admin con empresa puede revisar resumen de su empresa (200)", async () => {
+      await request(app)
+        .patch(`${API}/workday-summary/${scopedSummaryReviewId}/review`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+    });
+  });
+
   describe("Workday Summary - POST y POST /partial (ownership)", () => {
     const DATE_FULL = "2030-11-10";
     const DATE_PARTIAL = "2030-11-11";

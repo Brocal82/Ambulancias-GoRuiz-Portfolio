@@ -472,8 +472,8 @@ export async function reportIssue(
 
 /**
  * Mutación por id (issues / summaries): aislamiento multiempresa.
- * - Caller con companyId: permite mismo companyId o documento legacy (sin companyId).
- * - Caller sin companyId (admin legacy): solo documentos legacy.
+ * - Caller con companyId: solo si el documento tiene companyId y coincide con el caller.
+ * - Caller sin companyId (admin legacy): solo documentos legacy (sin companyId).
  */
 function assertCanMutateWorkdayEntityByCompany(
   documentCompanyId: unknown,
@@ -487,8 +487,8 @@ function assertCanMutateWorkdayEntityByCompany(
     callerCompanyId != null && String(callerCompanyId).trim() !== "";
 
   if (callerHasCompany) {
-    const callerCo = String(callerCompanyId);
-    if (docCo && docCo !== callerCo) {
+    const callerCo = String(callerCompanyId).trim();
+    if (!docCo || docCo !== callerCo) {
       throw new WorkdaySummaryError(forbiddenMessage, 403);
     }
     return;
