@@ -99,13 +99,13 @@ export async function updateDienst(
   const existing = await Dienst.findById(id).select("companyId").lean();
   if (!existing) return null;
   const existingCompany = (existing as any).companyId;
-  if (existingCompany) {
-    if (!companyId || String(existingCompany) !== String(companyId)) {
-      return null;
-    }
+  if (existingCompany == null) {
+    return null;
   }
-  const dienstCompanyId =
-    existingCompany != null ? String(existingCompany) : companyId != null && companyId !== "" ? String(companyId) : null;
+  if (!companyId || String(existingCompany) !== String(companyId)) {
+    return null;
+  }
+  const dienstCompanyId = String(existingCompany);
   if (data.assignments && data.assignments.length > 0) {
     const assignList = data.assignments as Array<{ ambulanceId?: string; driver?: string; medic?: string }>;
     await validateAssignmentCompanies(assignList, dienstCompanyId);
@@ -119,10 +119,11 @@ export async function deleteDienst(id: string, companyId?: string | null) {
   const existing = await Dienst.findById(id).select("companyId").lean();
   if (!existing) return null;
   const existingCompany = (existing as any).companyId;
-  if (existingCompany) {
-    if (!companyId || String(existingCompany) !== String(companyId)) {
-      return null;
-    }
+  if (existingCompany == null) {
+    return null;
+  }
+  if (!companyId || String(existingCompany) !== String(companyId)) {
+    return null;
   }
   return Dienst.findByIdAndDelete(id);
 }
