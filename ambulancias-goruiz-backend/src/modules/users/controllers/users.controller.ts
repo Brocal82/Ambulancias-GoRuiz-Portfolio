@@ -238,6 +238,11 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    if (msg.includes("no está asociada a una empresa")) {
+      res.status(403).json({ message: msg });
+      return;
+    }
+
     console.error("Error en login:", error);
     res.status(500).json({ message: "Error al iniciar sesión" });
   }

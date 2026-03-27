@@ -298,6 +298,15 @@ export async function loginUserService(
     throw new Error("Contraseña incorrecta");
   }
 
+  if (
+    (user.role === "admin" || user.role === "worker") &&
+    !user.companyId
+  ) {
+    throw new Error(
+      "No puedes iniciar sesión: la cuenta no está asociada a una empresa.",
+    );
+  }
+
   const payload: Record<string, unknown> = {
     userId: user._id,
     email: user.email,
