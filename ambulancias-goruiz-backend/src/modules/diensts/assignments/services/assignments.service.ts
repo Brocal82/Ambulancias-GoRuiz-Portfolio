@@ -34,13 +34,26 @@ export async function getAssignedDaysForUser(
   userId: string,
   userCompanyId?: string | null,
 ): Promise<AssignedDay[]> {
+  const callerCo =
+    userCompanyId != null && String(userCompanyId).trim() !== ""
+      ? String(userCompanyId).trim()
+      : null;
+  if (!callerCo) {
+    return [];
+  }
+
   const baseFilter = {
     $or: [
       { "assignments.driver": new mongoose.Types.ObjectId(userId) },
       { "assignments.medic": new mongoose.Types.ObjectId(userId) },
     ],
   };
-  const filter = { $and: [baseFilter, companyFilterForDienst(userCompanyId)] };
+  const filter = {
+    $and: [
+      baseFilter,
+      { companyId: new mongoose.Types.ObjectId(callerCo) },
+    ],
+  };
   const diensts = await Dienst.find(filter)
     .populate("assignments.driver", "name lastName pscheinExpiry")
     .populate("assignments.medic", "name lastName pscheinExpiry")
