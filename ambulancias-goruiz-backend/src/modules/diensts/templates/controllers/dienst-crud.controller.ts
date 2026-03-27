@@ -38,11 +38,16 @@ export const createDienst = async (req: Request, res: Response) => {
 
 export const updateDienst = async (req: Request, res: Response) => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const parsedId = idSchema.parse(req.params.id);
     const updatedDienst = await lifecycleService.updateDienst(
       parsedId,
       dienstSchema.partial().parse(req.body),
-      req.companyId ?? undefined,
+      companyResult.companyId,
     );
     if (!updatedDienst) {
       res.status(404).json({ message: "Dienst no encontrado" });
@@ -62,10 +67,15 @@ export const updateDienst = async (req: Request, res: Response) => {
 
 export const deleteDienst = async (req: Request, res: Response) => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const parsedId = idSchema.parse(req.params.id);
     const deletedDienst = await lifecycleService.deleteDienst(
       parsedId,
-      req.companyId ?? undefined,
+      companyResult.companyId,
     );
     if (!deletedDienst) {
       res.status(404).json({ message: "Dienst no encontrado" });

@@ -1,7 +1,14 @@
 import { RequestHandler } from "express";
 import * as lifecycleService from "../services/lifecycle.service";
+import { requireCompanyForAdmin } from "../../../../utils/requireCompany";
 
 export const deleteDienstsForWeek: RequestHandler = async (req, res) => {
+  const companyResult = requireCompanyForAdmin(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
+
   const { weekStartDate } = req.body;
 
   if (!weekStartDate) {
@@ -12,7 +19,7 @@ export const deleteDienstsForWeek: RequestHandler = async (req, res) => {
   try {
     const { deletedCount } = await lifecycleService.deleteDienstsForWeek(
       weekStartDate,
-      req.companyId ?? undefined,
+      companyResult.companyId,
     );
     res
       .status(200)

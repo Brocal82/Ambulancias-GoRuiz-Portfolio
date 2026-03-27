@@ -395,6 +395,105 @@ describe("API - Rutas críticas", () => {
     });
   });
 
+  describe("Dienst lifecycle - admin mutations require company (controller)", () => {
+    let jwtAdminWithoutCompany: string;
+    let lifecycleDienstId: string;
+
+    beforeAll(async () => {
+      jwtAdminWithoutCompany = jwt.sign(
+        { userId: adminId, role: "admin" },
+        env.JWT_SECRET,
+        { expiresIn: "1h" },
+      );
+      const createRes = await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 77,
+          weekStartDate: "2031-01-05",
+          weekEndDate: "2031-01-11",
+          assignments: [
+            {
+              date: "2031-01-06",
+              startTime: "08:00",
+              endTime: "16:00",
+              ambulanceId: sharedAmbulanceId,
+              driver: adminId,
+              medic: workerId,
+            },
+          ],
+        })
+        .expect(201);
+      lifecycleDienstId = createRes.body._id ?? createRes.body.id;
+    });
+
+    it("admin sin companyId recibe 403 en PUT /diensts/:id", async () => {
+      const res = await request(app)
+        .put(`${API}/diensts/${lifecycleDienstId}`)
+        .set("Authorization", `Bearer ${jwtAdminWithoutCompany}`)
+        .send({ dienstNumber: 77 })
+        .expect(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
+    it("admin sin companyId recibe 403 en DELETE /diensts/:id", async () => {
+      const res = await request(app)
+        .delete(`${API}/diensts/${lifecycleDienstId}`)
+        .set("Authorization", `Bearer ${jwtAdminWithoutCompany}`)
+        .expect(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
+    it("admin sin companyId recibe 403 en POST /diensts/delete-week", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts/delete-week`)
+        .set("Authorization", `Bearer ${jwtAdminWithoutCompany}`)
+        .send({ weekStartDate: "2031-01-05" })
+        .expect(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
+    it("admin con empresa puede PUT y DELETE dienst de su empresa", async () => {
+      const createRes = await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 78,
+          weekStartDate: "2031-02-02",
+          weekEndDate: "2031-02-08",
+          assignments: [
+            {
+              date: "2031-02-03",
+              startTime: "08:00",
+              endTime: "16:00",
+              ambulanceId: sharedAmbulanceId,
+              driver: adminId,
+              medic: workerId,
+            },
+          ],
+        })
+        .expect(201);
+      const id = createRes.body._id ?? createRes.body.id;
+      await request(app)
+        .put(`${API}/diensts/${id}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ dienstNumber: 78 })
+        .expect(200);
+      await request(app)
+        .delete(`${API}/diensts/${id}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+    });
+
+    it("admin con empresa puede POST /diensts/delete-week", async () => {
+      await request(app)
+        .post(`${API}/diensts/delete-week`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ weekStartDate: "2031-03-02" })
+        .expect(200);
+    });
+  });
+
   describe("Workday Summary - POST y POST /partial (ownership)", () => {
     const DATE_FULL = "2030-11-10";
     const DATE_PARTIAL = "2030-11-11";
