@@ -62,13 +62,21 @@ async function getUserIdsForCompany(companyId: string): Promise<mongoose.Types.O
   return users.map((u: any) => u._id);
 }
 
-export async function listTeams(companyId?: string | null) {
-  const filter: Record<string, unknown> = {};
-  if (companyId && companyId.trim() !== "") {
-    const userIds = await getUserIdsForCompany(companyId);
-    if (userIds.length === 0) return [];
-    filter.driver = { $in: userIds };
+/** Alineado con requireCompanyForAdmin: operaciones de teams requieren empresa. */
+function assertCompanyIdForTeamOps(companyId?: string | null): asserts companyId is string {
+  if (companyId == null || String(companyId).trim() === "") {
+    throw new TeamError(
+      "No tienes permiso. Se requiere pertenecer a una empresa.",
+      403,
+    );
   }
+}
+
+export async function listTeams(companyId?: string | null) {
+  assertCompanyIdForTeamOps(companyId);
+  const userIds = await getUserIdsForCompany(companyId);
+  if (userIds.length === 0) return [];
+  const filter = { driver: { $in: userIds } };
 
   const teams = await Team.find(filter)
     .populate("driver", "name lastName ambulanceRole pscheinExpiry")
@@ -104,6 +112,7 @@ export async function createTeam(
   },
   companyId?: string | null,
 ) {
+  assertCompanyIdForTeamOps(companyId);
   const { driver, medic, rotationMode, fixedDienstNumber, ambulanceId } = body;
 
   if (!isObjectId(driver) || !isObjectId(medic)) {
@@ -125,11 +134,9 @@ export async function createTeam(
   if (!entitiesBelongToSameCompany(drvCo, medCo)) {
     throw new TeamError("driver y medic deben pertenecer a la misma empresa", 403);
   }
-  if (companyId && (companyId as string) !== "") {
-    const targetCo = String(companyId);
-    if (!entitiesBelongToSameCompany(drvCo, targetCo)) {
-      throw new TeamError("El equipo debe pertenecer a tu empresa", 403);
-    }
+  const targetCo = String(companyId);
+  if (!entitiesBelongToSameCompany(drvCo, targetCo)) {
+    throw new TeamError("El equipo debe pertenecer a tu empresa", 403);
   }
 
   let normalizedAmbulanceId: string | null = null;
@@ -226,15 +233,14 @@ export async function getUsedTeamsForWeek(
     throw new TeamError("weekStartDate inválida", 400);
   }
 
+  assertCompanyIdForTeamOps(companyId);
+
   const endDate = new Date(startDate);
   endDate.setDate(startDate.getDate() + 6);
 
-  const teamFilter: Record<string, unknown> = {};
-  if (companyId && companyId.trim() !== "") {
-    const userIds = await getUserIdsForCompany(companyId);
-    if (userIds.length === 0) return { usedTeamIds: [] };
-    teamFilter.driver = { $in: userIds };
-  }
+  const userIds = await getUserIdsForCompany(companyId);
+  if (userIds.length === 0) return { usedTeamIds: [] };
+  const teamFilter = { driver: { $in: userIds } };
 
   const teams = await Team.find(teamFilter, { driver: 1, medic: 1 }).lean();
 
@@ -257,15 +263,8 @@ export async function getUsedTeamsForWeek(
 
   const dienstFilter: Record<string, unknown> = {
     weekStartDate: { $gte: startDate, $lte: endDate },
+    companyId: new mongoose.Types.ObjectId(companyId),
   };
-  if (companyId && companyId.trim() !== "") {
-    dienstFilter.companyId = new mongoose.Types.ObjectId(companyId);
-  } else {
-    dienstFilter.$or = [
-      { companyId: null },
-      { companyId: { $exists: false } },
-    ];
-  }
   const diensts = await Dienst.find(dienstFilter, { assignments: 1 }).lean();
 
   if (!diensts || diensts.length === 0) {
@@ -303,18 +302,20 @@ export async function updateTeam(
     throw new TeamError("ID de team inválido", 400);
   }
 
-  if (companyId && String(companyId) !== "") {
-    const existing = await Team.findById(id).select("driver").lean();
-    if (!existing) {
-      throw new TeamError("Team no encontrado", 404);
-    }
-    const driverUser = await User.findById((existing as any).driver)
-      .select("companyId")
-      .lean();
-    const drvCo = driverUser ? (driverUser as { companyId?: unknown }).companyId : null;
-    if (!entitiesBelongToSameCompany(drvCo, companyId)) {
-      throw new TeamError("No tienes permiso para editar este equipo", 403);
-    }
+  assertCompanyIdForTeamOps(companyId);
+
+  const existing = await Team.findById(id).select("driver").lean();
+  if (!existing) {
+    throw new TeamError("Team no encontrado", 404);
+  }
+  const existingDriverUser = await User.findById((existing as any).driver)
+    .select("companyId")
+    .lean();
+  const drvCoExisting = existingDriverUser
+    ? (existingDriverUser as { companyId?: unknown }).companyId
+    : null;
+  if (!entitiesBelongToSameCompany(drvCoExisting, companyId)) {
+    throw new TeamError("No tienes permiso para editar este equipo", 403);
   }
 
   const { driver, medic, rotationMode, fixedDienstNumber, ambulanceId } = body;
@@ -341,11 +342,9 @@ export async function updateTeam(
   if (!entitiesBelongToSameCompany(drvCo, medCo)) {
     throw new TeamError("driver y medic deben pertenecer a la misma empresa", 403);
   }
-  if (companyId && String(companyId) !== "") {
-    const targetCo = String(companyId);
-    if (!entitiesBelongToSameCompany(drvCo, targetCo)) {
-      throw new TeamError("El equipo debe pertenecer a tu empresa", 403);
-    }
+  const targetCo = String(companyId);
+  if (!entitiesBelongToSameCompany(drvCo, targetCo)) {
+    throw new TeamError("El equipo debe pertenecer a tu empresa", 403);
   }
 
   let normalizedRotation: "rotating" | "fixed" | "none" = "rotating";
@@ -451,18 +450,17 @@ export async function deleteTeam(id: string, companyId?: string | null) {
   if (!isObjectId(id)) {
     throw new TeamError("ID inválido", 400);
   }
+  assertCompanyIdForTeamOps(companyId);
   const existing = await Team.findById(id).select("driver").lean();
   if (!existing) {
     throw new TeamError("Team no encontrado", 404);
   }
-  if (companyId && String(companyId) !== "") {
-    const driverUser = await User.findById((existing as any).driver)
-      .select("companyId")
-      .lean();
-    const drvCo = driverUser ? (driverUser as { companyId?: unknown }).companyId : null;
-    if (!entitiesBelongToSameCompany(drvCo, companyId)) {
-      throw new TeamError("No tienes permiso para eliminar este equipo", 403);
-    }
+  const driverUser = await User.findById((existing as any).driver)
+    .select("companyId")
+    .lean();
+  const drvCo = driverUser ? (driverUser as { companyId?: unknown }).companyId : null;
+  if (!entitiesBelongToSameCompany(drvCo, companyId)) {
+    throw new TeamError("No tienes permiso para eliminar este equipo", 403);
   }
   await Team.findByIdAndDelete(id);
   return { message: "Team eliminado" };
