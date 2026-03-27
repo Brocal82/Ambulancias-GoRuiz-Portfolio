@@ -68,15 +68,24 @@ export const AuthProvider = ({ children }: Props) => {
       const freshUser: User = res.data;
       setUser(freshUser);
       sessionStorage.setItem("user", JSON.stringify(freshUser));
-    } catch (error) {
-      console.error("❌ Error al refrescar usuario:", error);
+    } catch (error: unknown) {
+      const status =
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        (error as { response?: { status?: number } }).response?.status;
 
-      // Limpiamos sesión sin recargar la SPA
-      setToken(null);
-      setUserId(null);
-      setRole(null);
-      setUser(null);
-      sessionStorage.clear();
+      if (status === 401 || status === 403) {
+        console.error("❌ Error al refrescar usuario:", error);
+        setToken(null);
+        setUserId(null);
+        setRole(null);
+        setUser(null);
+        sessionStorage.clear();
+        return;
+      }
+
+      console.error("❌ Error al refrescar usuario (sesión conservada):", error);
     }
   };
 
