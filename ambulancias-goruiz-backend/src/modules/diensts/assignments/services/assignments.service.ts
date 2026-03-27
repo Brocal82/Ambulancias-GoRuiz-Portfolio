@@ -16,11 +16,6 @@ import { extractValidDatesFromAssignments, mapAssignmentToAssignedDay } from "..
 import { entitiesBelongToSameCompany } from "../../../../utils/requireCompany";
 import { DienstAssignmentError } from "./assignment-errors";
 
-function companyFilterForDienst(companyId?: string | null): Record<string, unknown> {
-  if (companyId) return { companyId: new mongoose.Types.ObjectId(companyId) };
-  return { $or: [{ companyId: null }, { companyId: { $exists: false } }] };
-}
-
 export async function getAssignedDaysForUser(
   userId: string,
   userCompanyId?: string | null,
