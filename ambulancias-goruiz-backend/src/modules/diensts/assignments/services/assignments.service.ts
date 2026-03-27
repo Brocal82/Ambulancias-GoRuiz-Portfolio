@@ -274,12 +274,11 @@ export async function updateDienstPartial(
       !updatedCopy?.date || !updatedCopy?.startTime || !updatedCopy?.endTime;
 
     if (missingRequired) {
-      console.warn("Assignment incompleto ignorado (faltan obligatorios):", {
-        date: updatedCopy?.date,
-        startTime: updatedCopy?.startTime,
-        endTime: updatedCopy?.endTime,
-      });
-      continue;
+      throw new DienstAssignmentError(
+        400,
+        "assignment_incomplete",
+        "Faltan campos obligatorios en una fila de asignación (date, startTime, endTime).",
+      );
     }
 
     const idx = dienst.assignments.findIndex(
