@@ -223,6 +223,22 @@ async function validateAssignmentEntities(
         );
       }
     }
+    if (drvId && drvId !== "" && medId && medId !== "") {
+      const ds = String(drvId).trim();
+      const ms = String(medId).trim();
+      const same =
+        ds === ms ||
+        (mongoose.Types.ObjectId.isValid(ds) &&
+          mongoose.Types.ObjectId.isValid(ms) &&
+          new mongoose.Types.ObjectId(ds).equals(new mongoose.Types.ObjectId(ms)));
+      if (same) {
+        throw new DienstAssignmentError(
+          409,
+          "driver_medic_same_user",
+          "El conductor y el sanitario deben ser usuarios distintos.",
+        );
+      }
+    }
   }
 }
 
