@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 import {
   WorkdaySummaryError,
@@ -97,7 +98,15 @@ export const getAllWorkdaySummaries = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  const companyId: string | null = req.companyId ?? null;
+  const rawCompanyId =
+    typeof req.companyId === "string" ? req.companyId.trim() : "";
+  if (!rawCompanyId || !mongoose.Types.ObjectId.isValid(rawCompanyId)) {
+    res.status(403).json({
+      message: "No tienes permiso. Se requiere un contexto de empresa válido.",
+    });
+    return;
+  }
+
   const filterByUserId =
     req.userRole === "admin" ? undefined : (req.userId ?? undefined);
 
@@ -107,7 +116,7 @@ export const getAllWorkdaySummaries = async (
   }
 
   try {
-    const enriched = await svcGetAllWorkdaySummaries(filterByUserId, companyId);
+    const enriched = await svcGetAllWorkdaySummaries(filterByUserId, rawCompanyId);
     res.status(200).json(enriched);
   } catch (error) {
     handleError(
@@ -149,7 +158,19 @@ export const getAllIssueReports = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const issues = await svcGetAllIssueReports(req.companyId ?? null);
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const rawCompanyId = companyResult.companyId.trim();
+    if (!rawCompanyId || !mongoose.Types.ObjectId.isValid(rawCompanyId)) {
+      res.status(403).json({
+        message: "No tienes permiso. Se requiere un contexto de empresa válido.",
+      });
+      return;
+    }
+    const issues = await svcGetAllIssueReports(rawCompanyId);
     res.status(200).json(issues);
   } catch (error) {
     handleError(
@@ -211,9 +232,21 @@ export const getIssuesCount = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const rawCompanyId = companyResult.companyId.trim();
+    if (!rawCompanyId || !mongoose.Types.ObjectId.isValid(rawCompanyId)) {
+      res.status(403).json({
+        message: "No tienes permiso. Se requiere un contexto de empresa válido.",
+      });
+      return;
+    }
     const status =
       typeof req.query.status === "string" ? req.query.status : undefined;
-    const result = await svcGetIssuesCount(status, req.companyId ?? null);
+    const result = await svcGetIssuesCount(status, rawCompanyId);
     res.status(200).json(result);
   } catch (error) {
     handleError(
@@ -233,11 +266,23 @@ export const getSummariesCountByStatus = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const rawCompanyId = companyResult.companyId.trim();
+    if (!rawCompanyId || !mongoose.Types.ObjectId.isValid(rawCompanyId)) {
+      res.status(403).json({
+        message: "No tienes permiso. Se requiere un contexto de empresa válido.",
+      });
+      return;
+    }
     const status =
       typeof req.query.status === "string" ? req.query.status : undefined;
     const result = await svcGetSummariesCountByStatus(
       status,
-      req.companyId ?? null,
+      rawCompanyId,
     );
     res.status(200).json(result);
   } catch (error) {
