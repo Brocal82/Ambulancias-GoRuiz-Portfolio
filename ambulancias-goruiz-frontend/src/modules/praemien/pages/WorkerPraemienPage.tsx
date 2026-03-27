@@ -1,14 +1,12 @@
 // src/modules/praemien/pages/WorkerPraemienPage.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { getMonthlyPraemienSummary } from "../domain/api";
 import type { MonthlyPraemienDay } from "../domain/api";
-import { saveMonthlyPraemie } from "../domain/historyApi";
 import WorkerPraemienHistory from "../components/WorkerPraemienHistory";
 import MonthlyMiniCalendar from "../components/MonthlyMiniCalendar";
 import PraemieProgressBars from "../components/PraemieProgressBars";
-import { getPraemieI18nKey, getPraemieLevelFromAverage } from "../utils/praemienLevels";
 import { useAuth } from "../../../hooks/useAuth";
 
 const WorkerPraemienPage = () => {
@@ -38,34 +36,6 @@ const WorkerPraemienPage = () => {
         setLoading(false);
       });
   }, [token, t]);
-
-  // Label del nivel (lo seguimos calculando aquí SOLO para guardarlo en el historial mensual)
-  const premieLevelLabelForSaving = useMemo(() => {
-    const level = getPraemieLevelFromAverage(media);
-    return t(getPraemieI18nKey(level));
-  }, [media, t]);
-
-  // Guarda el resumen mensual (mantenemos la lógica; guardamos la etiqueta localizada actual)
-  useEffect(() => {
-    if (!token) return;
-    if (media === 0) return;
-
-    const now = new Date();
-    const monthString = now.toISOString().slice(0, 7); // 'YYYY-MM'
-
-    saveMonthlyPraemie(token, {
-      month: monthString,
-      averagePatients: media,
-      premieLevel: premieLevelLabelForSaving,
-    })
-      .then(() => {
-        // ok
-      })
-      .catch(() => {
-        // silent warning, como antes
-        console.warn("No se pudo guardar el resumen mensual.");
-      });
-  }, [media, premieLevelLabelForSaving, token]);
 
   if (loading)
     return (
