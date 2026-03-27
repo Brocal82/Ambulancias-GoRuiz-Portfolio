@@ -290,13 +290,14 @@ export async function loginUserService(
   }
 
   const user = await User.findOne({ email });
+  const genericAuthFailure = "Email o contraseña incorrectos.";
   if (!user) {
-    throw new Error("Usuario no encontrado");
+    throw new Error(genericAuthFailure);
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    throw new Error("Contraseña incorrecta");
+    throw new Error(genericAuthFailure);
   }
 
   if (

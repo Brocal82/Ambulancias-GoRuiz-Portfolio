@@ -65,7 +65,8 @@ export const getDienstById = async (req: Request, res: Response) => {
     if (error instanceof ZodError) {
       res.status(400).json({ message: "ID inválido", errors: error.errors });
     } else {
-      res.status(500).json({ message: "Error al obtener el Dienst", error });
+      console.error("Error al obtener el Dienst:", error);
+      res.status(500).json({ message: "Error al obtener el Dienst" });
     }
   }
 };
@@ -90,7 +91,8 @@ export const searchDienst = async (req: Request, res: Response) => {
         .json({ message: "Parámetros inválidos", errors: error.errors });
       return;
     }
-    res.status(500).json({ message: "Error al buscar Diensts", error });
+    console.error("Error al buscar Diensts:", error);
+    res.status(500).json({ message: "Error al buscar Diensts" });
     return;
   }
 };
@@ -126,6 +128,6 @@ export const getDienstsByUser = async (req: Request, res: Response) => {
     res.status(200).json(diensts);
   } catch (error) {
     console.error("Error fetching diensts:", error);
-    res.status(500).json({ message: "Error fetching diensts", error });
+    res.status(500).json({ message: "Error fetching diensts" });
   }
 };

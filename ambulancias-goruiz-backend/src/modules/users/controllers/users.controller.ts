@@ -228,13 +228,8 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    if (msg.includes("no encontrado")) {
-      res.status(404).json({ message: msg });
-      return;
-    }
-
-    if (msg.includes("incorrecta")) {
-      res.status(401).json({ message: msg });
+    if (msg.includes("Email o contraseña incorrectos")) {
+      res.status(401).json({ message: "Email o contraseña incorrectos." });
       return;
     }
 
