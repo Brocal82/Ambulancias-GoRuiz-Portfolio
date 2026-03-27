@@ -73,14 +73,20 @@ async function validateAssignmentCompanies(
 }
 
 export async function createDienst(data: DienstCreateInput, companyId?: string | null) {
-  const dienstCompanyId = companyId != null && companyId !== "" ? String(companyId) : null;
+  if (companyId == null || String(companyId).trim() === "") {
+    throw new CompanyValidationError(
+      "No tienes permiso. Se requiere pertenecer a una empresa.",
+    );
+  }
+  const companyIdStr = String(companyId).trim();
   await validateAssignmentCompanies(
     (data.assignments || []) as Array<{ ambulanceId?: string; driver?: string; medic?: string }>,
-    dienstCompanyId,
+    companyIdStr,
   );
-  const payload = companyId
-    ? { ...data, companyId: new mongoose.Types.ObjectId(companyId) }
-    : data;
+  const payload = {
+    ...data,
+    companyId: new mongoose.Types.ObjectId(companyIdStr),
+  };
   const newDienst = new Dienst(payload);
   return newDienst.save();
 }

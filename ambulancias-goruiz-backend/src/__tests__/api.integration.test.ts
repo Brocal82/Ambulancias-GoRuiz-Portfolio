@@ -427,6 +427,29 @@ describe("API - Rutas críticas", () => {
       lifecycleDienstId = createRes.body._id ?? createRes.body.id;
     });
 
+    it("admin sin companyId recibe 403 en POST /diensts", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${jwtAdminWithoutCompany}`)
+        .send({
+          dienstNumber: 79,
+          weekStartDate: "2031-04-06",
+          weekEndDate: "2031-04-12",
+          assignments: [
+            {
+              date: "2031-04-07",
+              startTime: "08:00",
+              endTime: "16:00",
+              ambulanceId: sharedAmbulanceId,
+              driver: adminId,
+              medic: workerId,
+            },
+          ],
+        })
+        .expect(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
     it("admin sin companyId recibe 403 en PUT /diensts/:id", async () => {
       const res = await request(app)
         .put(`${API}/diensts/${lifecycleDienstId}`)
