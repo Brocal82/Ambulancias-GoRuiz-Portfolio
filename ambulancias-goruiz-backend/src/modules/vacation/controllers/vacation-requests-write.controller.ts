@@ -33,7 +33,7 @@ export const createVacationRequest = async (
 
 export const cancelMyVacationRequest = async (req: any, res: any) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.userId;
     const { id } = req.params;
 
     if (!userId) {
