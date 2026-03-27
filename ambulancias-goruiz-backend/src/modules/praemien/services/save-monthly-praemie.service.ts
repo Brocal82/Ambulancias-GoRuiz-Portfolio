@@ -1,8 +1,6 @@
 import { endOfMonth, startOfMonth } from "date-fns";
-import mongoose from "mongoose";
 import MonthlyPraemie from "../models/monthly-praemie.model";
-import { WorkdaySummary } from "../../workday-summary";
-import { getCompanyObjectIdForPraemienUser } from "./resolvePraemienUserCompany";
+import { computeMonthlyPraemienStatsForUser } from "./get-monthly-summary.service";
 
 function getPremieLevel(averagePatients: number): string {
   let premieLevel = "\u274c No alcanza m\u00ednimo";
@@ -25,28 +23,16 @@ export async function saveMonthlyPraemieForUser(
   const monthStart = startOfMonth(new Date(year, month - 1));
   const monthEnd = endOfMonth(new Date(year, month - 1));
 
-  const companyOid = await getCompanyObjectIdForPraemienUser(userId);
-  const objectUserId = new mongoose.Types.ObjectId(userId);
+  const { monthlyData, averagePatients } = await computeMonthlyPraemienStatsForUser(
+    userId,
+    monthStart,
+    monthEnd,
+  );
 
-  const summaries = await WorkdaySummary.find({
-    date: {
-      $gte: monthStart.toISOString().split("T")[0],
-      $lte: monthEnd.toISOString().split("T")[0],
-    },
-    $or: [{ driver: objectUserId }, { medic: objectUserId }],
-    isFinalClosure: true,
-    companyId: companyOid,
-  }).select("totalEffectivePatients");
-
-  if (!summaries.length) {
+  if (!monthlyData.length) {
     return { hasData: false as const };
   }
 
-  const totalPatients = summaries.reduce(
-    (acc, summary) => acc + summary.totalEffectivePatients,
-    0,
-  );
-  const averagePatients = totalPatients / summaries.length;
   const premieLevel = getPremieLevel(averagePatients);
 
   const updated = await MonthlyPraemie.findOneAndUpdate(

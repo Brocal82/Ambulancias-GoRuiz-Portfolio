@@ -4,15 +4,17 @@ import { WorkdaySummary } from "../../workday-summary";
 import { MonthlyPraemienSummaryResponse } from "../types/praemien.types";
 import { getCompanyObjectIdForPraemienUser } from "./resolvePraemienUserCompany";
 
-export async function getMonthlySummaryForUser(
+/**
+ * Misma lógica que el GET mensual: suma por día (incluye parciales y finales),
+ * media = total / número de días con datos.
+ */
+export async function computeMonthlyPraemienStatsForUser(
   userId: string,
+  monthStart: Date,
+  monthEnd: Date,
 ): Promise<MonthlyPraemienSummaryResponse> {
   const objectUserId = new mongoose.Types.ObjectId(userId);
   const companyOid = await getCompanyObjectIdForPraemienUser(userId);
-
-  const now = new Date();
-  const monthStart = startOfMonth(now);
-  const monthEnd = endOfMonth(now);
 
   const summaries = await WorkdaySummary.find({
     date: {
@@ -55,4 +57,13 @@ export async function getMonthlySummaryForUser(
     monthlyData,
     averagePatients: Math.round(averagePatients * 2) / 2,
   };
+}
+
+export async function getMonthlySummaryForUser(
+  userId: string,
+): Promise<MonthlyPraemienSummaryResponse> {
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+  const monthEnd = endOfMonth(now);
+  return computeMonthlyPraemienStatsForUser(userId, monthStart, monthEnd);
 }
