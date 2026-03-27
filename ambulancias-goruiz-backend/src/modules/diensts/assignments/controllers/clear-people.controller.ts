@@ -1,12 +1,19 @@
 import { Request, Response } from "express";
 import * as assignmentsService from "../services/assignments.service";
 import { DienstAssignmentError } from "../services/assignment-errors";
+import { requireCompanyForAdmin } from "../../../../utils/requireCompany";
 
 export const clearPeopleForWeek = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+
     const { dienstNumber, weekStartDate } = req.body as {
       dienstNumber?: number;
       weekStartDate?: string;
@@ -27,7 +34,7 @@ export const clearPeopleForWeek = async (
 
     const result = await assignmentsService.clearPeopleForWeek(
       { dienstNumber, weekStartDate },
-      req.companyId ?? undefined,
+      companyResult.companyId,
     );
 
     res.status(200).json(result);

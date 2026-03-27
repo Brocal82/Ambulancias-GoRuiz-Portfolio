@@ -494,6 +494,125 @@ describe("API - Rutas críticas", () => {
     });
   });
 
+  describe("Dienst assignments - admin mutations require company (controller)", () => {
+    let jwtAdminWithoutCompany: string;
+    let assignmentDienstId: string;
+    const ASSIGN_WEEK_START = "2031-05-04";
+    const ASSIGN_DAY = "2031-05-06";
+    const ASSIGN_DIENST_NUM = 79;
+
+    const partialBody = {
+      assignments: [
+        {
+          date: ASSIGN_DAY,
+          startTime: "08:00",
+          endTime: "16:00",
+        },
+      ],
+    };
+
+    beforeAll(async () => {
+      jwtAdminWithoutCompany = jwt.sign(
+        { userId: adminId, role: "admin" },
+        env.JWT_SECRET,
+        { expiresIn: "1h" },
+      );
+      const createRes = await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: ASSIGN_DIENST_NUM,
+          weekStartDate: ASSIGN_WEEK_START,
+          weekEndDate: "2031-05-10",
+          assignments: [
+            {
+              date: ASSIGN_DAY,
+              startTime: "08:00",
+              endTime: "16:00",
+              ambulanceId: sharedAmbulanceId,
+              driver: adminId,
+              medic: workerId,
+            },
+          ],
+        })
+        .expect(201);
+      assignmentDienstId = createRes.body._id ?? createRes.body.id;
+    });
+
+    it("admin sin companyId recibe 403 en PATCH /diensts/:id (updateDienstPartial)", async () => {
+      const res = await request(app)
+        .patch(`${API}/diensts/${assignmentDienstId}`)
+        .set("Authorization", `Bearer ${jwtAdminWithoutCompany}`)
+        .send(partialBody)
+        .expect(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
+    it("admin sin companyId recibe 403 en PATCH /diensts/:id/remove-assignment", async () => {
+      const res = await request(app)
+        .patch(`${API}/diensts/${assignmentDienstId}/remove-assignment`)
+        .set("Authorization", `Bearer ${jwtAdminWithoutCompany}`)
+        .send({ date: ASSIGN_DAY })
+        .expect(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
+    it("admin sin companyId recibe 403 en POST /diensts/clear-week-people", async () => {
+      const res = await request(app)
+        .post(`${API}/diensts/clear-week-people`)
+        .set("Authorization", `Bearer ${jwtAdminWithoutCompany}`)
+        .send({ dienstNumber: ASSIGN_DIENST_NUM, weekStartDate: ASSIGN_WEEK_START })
+        .expect(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
+    it("admin con empresa puede PATCH partial, remove-assignment y clear-week-people", async () => {
+      const createRes = await request(app)
+        .post(`${API}/diensts`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          dienstNumber: 80,
+          weekStartDate: "2031-06-01",
+          weekEndDate: "2031-06-07",
+          assignments: [
+            {
+              date: "2031-06-02",
+              startTime: "08:00",
+              endTime: "16:00",
+              ambulanceId: sharedAmbulanceId,
+              driver: adminId,
+              medic: workerId,
+            },
+          ],
+        })
+        .expect(201);
+      const id = createRes.body._id ?? createRes.body.id;
+      await request(app)
+        .patch(`${API}/diensts/${id}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          assignments: [
+            {
+              date: "2031-06-02",
+              startTime: "08:00",
+              endTime: "16:00",
+            },
+          ],
+        })
+        .expect(200);
+      await request(app)
+        .patch(`${API}/diensts/${id}/remove-assignment`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ date: "2031-06-02" })
+        .expect(200);
+      await request(app)
+        .post(`${API}/diensts/clear-week-people`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ dienstNumber: 80, weekStartDate: "2031-06-01" })
+        .expect(200);
+    });
+  });
+
   describe("Workday Summary - POST y POST /partial (ownership)", () => {
     const DATE_FULL = "2030-11-10";
     const DATE_PARTIAL = "2030-11-11";
