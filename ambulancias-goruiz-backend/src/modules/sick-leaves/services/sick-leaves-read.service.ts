@@ -9,29 +9,30 @@ export async function getSickLeaves(input: {
 }) {
   const { status, user, companyId } = input;
 
+  const raw = typeof companyId === "string" ? companyId.trim() : "";
+  if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+    return [];
+  }
+
   const q: any = {};
   if (status && ["pending", "accepted", "rejected"].includes(status)) {
     q.status = status;
   }
-  if (companyId && companyId.trim() !== "") {
-    const userIds = await User.find({
-      companyId: new mongoose.Types.ObjectId(companyId),
-    })
-      .select("_id")
-      .lean();
-    const ids = userIds.map((u) => (u as unknown as { _id: mongoose.Types.ObjectId })._id);
-    if (ids.length === 0) return [];
-    if (user && mongoose.Types.ObjectId.isValid(user)) {
-      const userObjId = new mongoose.Types.ObjectId(user);
-      if (!ids.some((id: mongoose.Types.ObjectId) => id.equals(userObjId))) {
-        return [];
-      }
-      q.user = userObjId;
-    } else {
-      q.user = { $in: ids };
+  const userIds = await User.find({
+    companyId: new mongoose.Types.ObjectId(raw),
+  })
+    .select("_id")
+    .lean();
+  const ids = userIds.map((u) => (u as unknown as { _id: mongoose.Types.ObjectId })._id);
+  if (ids.length === 0) return [];
+  if (user && mongoose.Types.ObjectId.isValid(user)) {
+    const userObjId = new mongoose.Types.ObjectId(user);
+    if (!ids.some((id: mongoose.Types.ObjectId) => id.equals(userObjId))) {
+      return [];
     }
-  } else if (user && mongoose.Types.ObjectId.isValid(user)) {
-    q.user = new mongoose.Types.ObjectId(user);
+    q.user = userObjId;
+  } else {
+    q.user = { $in: ids };
   }
 
   return SickLeave.find(q)
