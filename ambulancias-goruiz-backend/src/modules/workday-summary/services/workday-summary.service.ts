@@ -3,8 +3,30 @@ import { Dienst } from "../../diensts";
 import type { IDienst, IDienstAssignment } from "../../diensts";
 import { Trip } from "../../trips";
 import WorkdaySummary from "../models/workday-summary.model";
+import type { IWorkdaySummary } from "../models/workday-summary.model";
 import WorkdayIssue from "../models/workday-issue.model";
 import { calculateEffectivePatients } from "../utils/calculateEffectivePatients";
+
+function isMongoDuplicateKeyError(err: unknown): boolean {
+  let e: unknown = err;
+  for (let i = 0; i < 5 && e; i++) {
+    if (
+      e !== null &&
+      typeof e === "object" &&
+      "code" in e &&
+      (e as { code?: number }).code === 11000
+    ) {
+      return true;
+    }
+    const next =
+      e !== null &&
+      typeof e === "object" &&
+      "cause" in e &&
+      (e as { cause?: unknown }).cause;
+    e = next;
+  }
+  return false;
+}
 
 /** Error con código HTTP para mapeo en controller */
 export class WorkdaySummaryError extends Error {
@@ -201,7 +223,7 @@ export async function createWorkdaySummary(
     (t: any) => !t.wasCancelled || t.cancelledAtPickup,
   ).length;
 
-  const newSummary = await WorkdaySummary.create({
+  const summaryDoc = {
     date,
     assignmentId,
     ambulanceId,
@@ -220,19 +242,36 @@ export async function createWorkdaySummary(
     startTime,
     endTime,
     ...(dienstCompanyId && { companyId: dienstCompanyId }),
-  });
+  };
 
-  if (sanitizedTrips.length > 0) {
-    const ids = sanitizedTrips.map((t: any) => t._id).filter(Boolean);
-    if (ids.length > 0) {
-      await Trip.updateMany(
-        { _id: { $in: ids } },
-        { $set: { sentInSummary: true } },
+  const session = await mongoose.startSession();
+  try {
+    return await session.withTransaction(async () => {
+      const created = await WorkdaySummary.create([summaryDoc], { session });
+      const newSummary = created[0] as IWorkdaySummary;
+      if (sanitizedTrips.length > 0) {
+        const ids = sanitizedTrips.map((t: any) => t._id).filter(Boolean);
+        if (ids.length > 0) {
+          await Trip.updateMany(
+            { _id: { $in: ids } },
+            { $set: { sentInSummary: true } },
+            { session },
+          );
+        }
+      }
+      return newSummary;
+    });
+  } catch (err: unknown) {
+    if (isMongoDuplicateKeyError(err)) {
+      throw new WorkdaySummaryError(
+        "Ya existe un cierre final para este día y asignación.",
+        409,
       );
     }
+    throw err;
+  } finally {
+    await session.endSession();
   }
-
-  return newSummary;
 }
 
 /* ─────────────────────────────
@@ -319,7 +358,7 @@ export async function submitPartialClosure(
     (t: any) => !t.wasCancelled || t.cancelledAtPickup,
   ).length;
 
-  const summary = new WorkdaySummary({
+  const summaryDoc = {
     date,
     assignmentId,
     driver,
@@ -341,18 +380,26 @@ export async function submitPartialClosure(
     startTime,
     endTime,
     ...(dienstCompanyId && { companyId: dienstCompanyId }),
-  });
+  };
 
-  await summary.save();
-
-  if (sanitizedTrips.length > 0) {
-    const ids = sanitizedTrips.map((t: any) => t._id).filter(Boolean);
-    if (ids.length > 0) {
-      await Trip.updateMany(
-        { _id: { $in: ids } },
-        { $set: { sentInSummary: true } },
-      );
-    }
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      const summary = new WorkdaySummary(summaryDoc);
+      await summary.save({ session });
+      if (sanitizedTrips.length > 0) {
+        const ids = sanitizedTrips.map((t: any) => t._id).filter(Boolean);
+        if (ids.length > 0) {
+          await Trip.updateMany(
+            { _id: { $in: ids } },
+            { $set: { sentInSummary: true } },
+            { session },
+          );
+        }
+      }
+    });
+  } finally {
+    await session.endSession();
   }
 
   return { message: "Cierre parcial guardado correctamente." };

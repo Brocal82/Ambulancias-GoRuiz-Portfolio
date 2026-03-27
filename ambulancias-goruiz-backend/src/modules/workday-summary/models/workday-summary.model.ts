@@ -106,6 +106,16 @@ const workdaySummarySchema = new Schema<IWorkdaySummary>({
   },
 });
 
+/** Un solo cierre final por assignment + día; los parciales no entran en el índice. */
+workdaySummarySchema.index(
+  { assignmentId: 1, date: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isFinalClosure: true },
+    name: "uniq_final_assignment_date",
+  },
+);
+
 const WorkdaySummary =
   mongoose.models.WorkdaySummary ||
   mongoose.model<IWorkdaySummary>("WorkdaySummary", workdaySummarySchema);
