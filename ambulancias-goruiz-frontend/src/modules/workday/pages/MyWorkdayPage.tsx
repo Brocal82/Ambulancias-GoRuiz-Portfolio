@@ -353,7 +353,7 @@ const MyWorkday = () => {
       setReports("");
     } catch (err) {
       console.error(" Error al crear trip:", err);
-      toastT.error(["toasts.workday.tripSaveError"]);
+      toastT.apiError(err, ["toasts.workday.tripSaveError"]);
     }
   };
 
@@ -373,7 +373,7 @@ const MyWorkday = () => {
       setTrips((prev) => [...prev, createdTrip]);
     } catch (err) {
       console.error(" Error al guardar paciente 1:", err);
-      toastT.error(["toasts.workday.anschlussSaveError"]);
+      toastT.apiError(err, ["toasts.workday.anschlussSaveError"]);
     }
   };
 

@@ -196,7 +196,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
             onUpdate();
         } catch (error) {
             console.error("Error al guardar cambios:", error);
-            toastT.error(["toasts.assignments.saveError"]);
+            toastT.apiError(error, ["toasts.assignments.saveError"]);
         }
     };
 
@@ -215,7 +215,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
             onUpdate();
         } catch (error) {
             console.error("Error al eliminar assignment:", error);
-            toastT.error(["toasts.assignments.deleteError"]);
+            toastT.apiError(error, ["toasts.assignments.deleteError"]);
         } finally {
             setIsLoading(false);
         }
