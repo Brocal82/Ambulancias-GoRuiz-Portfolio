@@ -59,6 +59,25 @@ function blackoutRangesEqual(a: BlackoutRangeDraft, b: BlackoutRangeDraft) {
   return a.startDate === b.startDate && a.endDate === b.endDate;
 }
 
+/** Inclusive containment using ISO YYYY-MM-DD ordering. */
+function rangeFullyContainedIn(
+  candidate: BlackoutRangeDraft,
+  outer: BlackoutRangeDraft,
+): boolean {
+  const s = toIsoDateString(candidate.startDate);
+  const e = toIsoDateString(candidate.endDate);
+  const os = toIsoDateString(outer.startDate);
+  const oe = toIsoDateString(outer.endDate);
+  return s >= os && e <= oe;
+}
+
+function isBlackoutRangeRedundant(
+  candidate: BlackoutRangeDraft,
+  existing: BlackoutRangeDraft[],
+): boolean {
+  return existing.some((r) => rangeFullyContainedIn(candidate, r));
+}
+
 function dayInMonthToIsoDate(
   year: number,
   monthIndex: number,
@@ -809,7 +828,28 @@ const AdminVacationMonthModal: React.FC<Props> = ({
     const end = Math.max(blackoutAnchorDay, day);
     const startDate = dayInMonthToIsoDate(year, monthIndex, start);
     const endDate = dayInMonthToIsoDate(year, monthIndex, end);
-    setPendingBlackoutRange({ startDate, endDate });
+    const candidate = { startDate, endDate };
+
+    const effectiveDraft = blackoutsDraft.filter(
+      (_, i) => !blackoutPendingDeletionIndices.includes(i),
+    );
+    const compareRanges: BlackoutRangeDraft[] = pendingBlackoutRange
+      ? [...effectiveDraft, pendingBlackoutRange]
+      : effectiveDraft;
+
+    if (isBlackoutRangeRedundant(candidate, compareRanges)) {
+      toastT.error(
+        t(
+          "pages.vacations.adminPage.blackoutDuplicateOrCovered",
+          "Este periodo ya está bloqueado o cubierto por un bloqueo existente.",
+        ),
+      );
+      setBlackoutAnchorDay(null);
+      setBlackoutFocusDay(null);
+      return;
+    }
+
+    setPendingBlackoutRange(candidate);
     setBlackoutAnchorDay(null);
     setBlackoutFocusDay(null);
   };
@@ -1239,7 +1279,7 @@ const AdminVacationMonthModal: React.FC<Props> = ({
                       color =
                         state === "yellow"
                           ? "bg-purple-50/40 text-slate-800 border-2 border-amber-300/90"
-                          : "bg-purple-50/40 text-slate-800 border-2 border-emerald-300/90";
+                          : "bg-purple-50/40 text-slate-800 border-2 border-purple-300/85";
                     } else if (state === "yellow") {
                       color =
                         "bg-amber-50 text-slate-800 border-2 border-amber-300";
