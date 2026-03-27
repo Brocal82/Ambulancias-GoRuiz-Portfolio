@@ -18,4 +18,4 @@ index.ts: Es el archivo principal que inicializa el servidor, establece la conex
 
 .env: Es un archivo de configuración para definir las variables de entorno, como las claves y las configuraciones sensibles que el proyecto necesita
 
-MongoDB username:ambulanciasgoruiz password:GoRuiz2025!
+MongoDB: credenciales solo en .env (p. ej. MONGODB_URI); no incluir usuarios ni contraseñas en documentación.
