@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import {
   TripError,
   createTrip as svcCreateTrip,
@@ -59,11 +60,19 @@ export const getTripsByDate = async (
 ): Promise<void> => {
   try {
     const { date } = req.params;
+    const rawCompanyId =
+      typeof req.companyId === "string" ? req.companyId.trim() : "";
+    if (!rawCompanyId || !mongoose.Types.ObjectId.isValid(rawCompanyId)) {
+      res.status(403).json({
+        message: "No tienes permiso. Se requiere un contexto de empresa válido.",
+      });
+      return;
+    }
     const trips = await svcGetTripsByDate(
       date,
       req.userId ?? undefined,
       req.userRole ?? undefined,
-      req.companyId ?? null,
+      rawCompanyId,
     );
     res.status(200).json(trips);
   } catch (error) {
