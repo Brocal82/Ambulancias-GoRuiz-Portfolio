@@ -190,8 +190,20 @@ export const deleteIssueReport = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const rawCompanyId = companyResult.companyId.trim();
+    if (!rawCompanyId || !mongoose.Types.ObjectId.isValid(rawCompanyId)) {
+      res.status(403).json({
+        message: "No tienes permiso. Se requiere un contexto de empresa válido.",
+      });
+      return;
+    }
     const { id } = req.params;
-    const result = await svcDeleteIssueReport(id, req.companyId ?? null);
+    const result = await svcDeleteIssueReport(id, rawCompanyId);
     res.status(200).json(result);
   } catch (error) {
     handleError(
@@ -211,8 +223,20 @@ export const markIssueSeen = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const rawCompanyId = companyResult.companyId.trim();
+    if (!rawCompanyId || !mongoose.Types.ObjectId.isValid(rawCompanyId)) {
+      res.status(403).json({
+        message: "No tienes permiso. Se requiere un contexto de empresa válido.",
+      });
+      return;
+    }
     const { id } = req.params;
-    const updated = await svcMarkIssueSeen(id, req.companyId ?? null);
+    const updated = await svcMarkIssueSeen(id, rawCompanyId);
     res.status(200).json(updated);
   } catch (error) {
     handleError(
@@ -305,8 +329,20 @@ export const markSummaryReviewed = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const rawCompanyId = companyResult.companyId.trim();
+    if (!rawCompanyId || !mongoose.Types.ObjectId.isValid(rawCompanyId)) {
+      res.status(403).json({
+        message: "No tienes permiso. Se requiere un contexto de empresa válido.",
+      });
+      return;
+    }
     const { id } = req.params;
-    const updated = await svcMarkSummaryReviewed(id, req.companyId ?? null);
+    const updated = await svcMarkSummaryReviewed(id, rawCompanyId);
     res.status(200).json(updated);
   } catch (error) {
     handleError(

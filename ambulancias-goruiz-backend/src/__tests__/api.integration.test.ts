@@ -4,6 +4,7 @@
  * Usa una DB real dedicada para tests (ej: ambulancias_test).
  */
 import request from "supertest";
+import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
@@ -352,6 +353,45 @@ describe("API - Rutas críticas", () => {
         .patch(`${API}/workday-summary/${scopedSummaryReviewId}/review`)
         .set("Authorization", `Bearer ${adminToken}`)
         .expect(200);
+    });
+  });
+
+  describe("Workday Summary - legacy admin blocked at controller (requireCompanyForAdmin)", () => {
+    /** JWT sin companyId: login real ya no permite admin sin empresa; el token simula el caso legacy en el payload. */
+    let jwtAdminWithoutCompany: string;
+
+    beforeAll(() => {
+      jwtAdminWithoutCompany = jwt.sign(
+        { userId: adminId, role: "admin" },
+        env.JWT_SECRET,
+        { expiresIn: "1h" },
+      );
+    });
+
+    const dummyId = () => new mongoose.Types.ObjectId().toString();
+
+    it("admin sin companyId recibe 403 en PATCH .../issues/:id/seen", async () => {
+      const res = await request(app)
+        .patch(`${API}/workday-summary/issues/${dummyId()}/seen`)
+        .set("Authorization", `Bearer ${jwtAdminWithoutCompany}`)
+        .expect(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
+    it("admin sin companyId recibe 403 en DELETE .../issues/:id", async () => {
+      const res = await request(app)
+        .delete(`${API}/workday-summary/issues/${dummyId()}`)
+        .set("Authorization", `Bearer ${jwtAdminWithoutCompany}`)
+        .expect(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
+    });
+
+    it("admin sin companyId recibe 403 en PATCH .../:id/review", async () => {
+      const res = await request(app)
+        .patch(`${API}/workday-summary/${dummyId()}/review`)
+        .set("Authorization", `Bearer ${jwtAdminWithoutCompany}`)
+        .expect(403);
+      expect(res.body.message).toMatch(/empresa|permiso/i);
     });
   });
 
