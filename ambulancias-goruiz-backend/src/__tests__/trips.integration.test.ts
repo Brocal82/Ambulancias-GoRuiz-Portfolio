@@ -11,6 +11,7 @@ import {
   createTestAdminWithCompany,
   createTestWorkerInCompany,
 } from "./test-helpers";
+import WorkdaySummary from "../modules/workday-summary/models/workday-summary.model";
 
 const API = "/api";
 
@@ -28,6 +29,8 @@ describe("Trips - ownership y filtrado (seguridad)", () => {
   let adminId: string;
   let assignmentIdParticipant: string;
   let assignmentIdNoParticipant: string;
+  let companyId: string;
+  let ambulanceId: string;
 
   const TRIPS_DATE = "2030-07-20";
 
@@ -61,6 +64,7 @@ describe("Trips - ownership y filtrado (seguridad)", () => {
     await mongoose.connect(env.MONGODB_URI);
     const data = await createTestAdminWithCompany();
     adminId = data.adminId;
+    companyId = data.companyId;
     adminToken = data.adminToken;
 
     const worker = await createTestWorkerInCompany(
@@ -80,7 +84,7 @@ describe("Trips - ownership y filtrado (seguridad)", () => {
         ambulanceNumber: "TRIP-N-" + Date.now(),
       })
       .expect(201);
-    const ambulanceId = ambRes.body._id ?? ambRes.body.id;
+    ambulanceId = ambRes.body._id ?? ambRes.body.id;
 
     const createRes1 = await request(app)
       .post(`${API}/diensts`)
@@ -94,7 +98,7 @@ describe("Trips - ownership y filtrado (seguridad)", () => {
             date: TRIPS_DATE,
             startTime: "08:00",
             endTime: "16:00",
-            ambulanceId,
+            ambulanceId: ambulanceId,
             driver: adminId,
             medic: workerId,
           },
@@ -118,7 +122,7 @@ describe("Trips - ownership y filtrado (seguridad)", () => {
             date: TRIPS_DATE,
             startTime: "08:00",
             endTime: "16:00",
-            ambulanceId,
+            ambulanceId: ambulanceId,
             driver: adminId,
             medic: adminId,
           },
@@ -281,5 +285,74 @@ describe("Trips - ownership y filtrado (seguridad)", () => {
     );
     expect(workerTrips.length).toBe(workerRes.body.length);
     expect(workerRes.body.length).toBeLessThan(adminRes.body.length);
+  });
+
+  it("POST /api/trips devuelve 409 si ya existe cierre final para assignment y fecha", async () => {
+    const closeDate = "2030-10-05";
+    const createRes = await request(app)
+      .post(`${API}/diensts`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        dienstNumber: 90,
+        weekStartDate: "2030-10-01",
+        weekEndDate: "2030-10-07",
+        assignments: [
+          {
+            date: closeDate,
+            startTime: "08:00",
+            endTime: "16:00",
+            ambulanceId,
+            driver: adminId,
+            medic: workerId,
+          },
+        ],
+      });
+    expect(createRes.status).toBe(201);
+    const aid =
+      createRes.body.assignments?.[0]?._id?.toString() ??
+      createRes.body.assignments?.[0]?.id?.toString() ??
+      "";
+    expect(aid).not.toBe("");
+
+    await WorkdaySummary.create({
+      date: closeDate,
+      assignmentId: new mongoose.Types.ObjectId(aid).toString(),
+      driver: new mongoose.Types.ObjectId(adminId),
+      medic: new mongoose.Types.ObjectId(workerId),
+      ambulanceId: new mongoose.Types.ObjectId(ambulanceId),
+      ambulanceNumber: "FIN-CL",
+      initialKm: 0,
+      finalKm: 0,
+      totalDienstKm: 0,
+      trips: [
+        {
+          auftragNumber: "FC1",
+          patientName: "P",
+          fromAddress: "A",
+          toAddress: "B",
+          timeWarning: "08:00",
+          wasCancelled: false,
+          cancelledAtPickup: false,
+          countsTrip: 1,
+          reports: "",
+        },
+      ],
+      isFinalClosure: true,
+      totalEffectivePatients: 0,
+      totalRealTrips: 0,
+      companyId: new mongoose.Types.ObjectId(companyId),
+    });
+
+    const payload = baseTripPayload(aid, adminId, workerId);
+    payload.date = closeDate;
+    payload.auftragNumber = "T-409-FINAL-" + Date.now();
+
+    const res = await request(app)
+      .post(`${API}/trips`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send(payload)
+      .expect(409);
+    expect(res.body).toHaveProperty("message");
+    expect(String(res.body.message)).toContain("cierre final");
   });
 });

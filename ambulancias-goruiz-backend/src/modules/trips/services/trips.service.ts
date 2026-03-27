@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Dienst } from "../../diensts";
 import type { IDienst, IDienstAssignment } from "../../diensts";
+import WorkdaySummary from "../../workday-summary/models/workday-summary.model";
 import { Trip } from "../models/trip.model";
 
 /** Error con código HTTP para mapeo en controller */
@@ -147,6 +148,31 @@ export async function createTrip(
     userRole,
     userCompanyId,
   );
+
+  const assignmentIdStr = new mongoose.Types.ObjectId(
+    assignmentId as string,
+  ).toString();
+  const dateStr = String(date);
+  const finalClosureFilter: mongoose.FilterQuery<Record<string, unknown>> = {
+    assignmentId: assignmentIdStr,
+    date: dateStr,
+    isFinalClosure: true,
+  };
+  const dienstCoForClosure = (dienst as { companyId?: unknown }).companyId;
+  if (dienstCoForClosure) {
+    finalClosureFilter.companyId = new mongoose.Types.ObjectId(
+      String(dienstCoForClosure),
+    );
+  }
+  const existingFinal = await WorkdaySummary.findOne(finalClosureFilter)
+    .select("_id")
+    .lean();
+  if (existingFinal) {
+    throw new TripError(
+      "Ya existe un cierre final para este día y asignación; no se pueden crear más viajes.",
+      409,
+    );
+  }
 
   /* driver y medic del body se IGNORAN; usamos siempre los del assignment real */
   const driver = assignment.driver;
