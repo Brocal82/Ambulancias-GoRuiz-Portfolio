@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { RequestHandler } from "express";
+import mongoose from "mongoose";
 import { ZodError, z } from "zod";
 import { resolveAccessibleUserId } from "../../../../utils/resolveAccessibleUserId";
 import { requireCompanyForAdmin, isDienstFromCompany, isSameCompany } from "../../../../utils/requireCompany";
@@ -13,7 +14,12 @@ const idSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, {
 
 export const getAllDiensts: RequestHandler = async (req, res) => {
   try {
-    const diensts = await calendarService.getAllDiensts(req.companyId ?? null);
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const diensts = await calendarService.getAllDiensts(companyResult.companyId);
     res.status(200).json(diensts);
   } catch (error) {
     console.error("Error al obtener los Diensts:", error);
@@ -66,10 +72,15 @@ export const getDienstById = async (req: Request, res: Response) => {
 
 export const searchDienst = async (req: Request, res: Response) => {
   try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
     const parsedQuery = dienstQuerySchema.parse(req.query);
     const dienste = await calendarService.searchDienst(
       parsedQuery,
-      req.companyId ?? null,
+      companyResult.companyId,
     );
     res.status(200).json(dienste);
   } catch (error) {
@@ -102,8 +113,16 @@ export const getDienstsByUser = async (req: Request, res: Response) => {
     userCompanyId = targetUser.companyId ? String(targetUser.companyId) : null;
   }
 
+  const rawCompanyId = userCompanyId != null ? String(userCompanyId).trim() : "";
+  if (!rawCompanyId || !mongoose.Types.ObjectId.isValid(rawCompanyId)) {
+    res.status(403).json({
+      message: "No tienes permiso. Se requiere un contexto de empresa válido.",
+    });
+    return;
+  }
+
   try {
-    const diensts = await calendarService.getDienstsByUser(result.userId, userCompanyId);
+    const diensts = await calendarService.getDienstsByUser(result.userId, rawCompanyId);
     res.status(200).json(diensts);
   } catch (error) {
     console.error("Error fetching diensts:", error);
