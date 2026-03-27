@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { getVacationAvailability } from "../services/vacation-availability.service";
 
 export const getAvailability = async (
@@ -18,15 +19,20 @@ export const getAvailability = async (
       return;
     }
 
-    const companyId =
-      typeof req.companyId === "string" && req.companyId.trim() !== ""
-        ? req.companyId
-        : undefined;
+    const rawCompanyId =
+      typeof req.companyId === "string" ? req.companyId.trim() : "";
+    if (!rawCompanyId || !mongoose.Types.ObjectId.isValid(rawCompanyId)) {
+      res.status(403).json({
+        message:
+          "No tienes permiso. Se requiere un contexto de empresa válido para consultar la disponibilidad.",
+      });
+      return;
+    }
 
     const availability = await getVacationAvailability({
       year,
       month,
-      companyId,
+      companyId: rawCompanyId,
     });
     res.status(200).json(availability);
   } catch (error) {
