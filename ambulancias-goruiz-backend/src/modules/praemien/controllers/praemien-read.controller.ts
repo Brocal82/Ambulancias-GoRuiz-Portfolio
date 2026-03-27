@@ -77,6 +77,11 @@ export const getMonthlyPraemienSummary = async (
     const summary = await getMonthlySummaryForUser(result);
     res.status(200).json(summary);
   } catch (error) {
+    const msg = String((error as Error)?.message ?? "");
+    if (msg.includes("no está asociado a una empresa")) {
+      res.status(403).json({ message: msg });
+      return;
+    }
     console.error("Error en getMonthlyPraemienSummary:", error);
     res.status(500).json({ message: "Error interno del servidor" });
   }
@@ -100,6 +105,11 @@ export const getPraemienMonthlyHistory = async (
     const history = await getMonthlyHistoryForUser(result);
     res.status(200).json(history);
   } catch (error) {
+    const msg = String((error as Error)?.message ?? "");
+    if (msg.includes("no está asociado a una empresa")) {
+      res.status(403).json({ message: msg });
+      return;
+    }
     console.error("Error en getPraemienMonthlyHistory:", error);
     res.status(500).json({ message: "Error interno del servidor" });
   }

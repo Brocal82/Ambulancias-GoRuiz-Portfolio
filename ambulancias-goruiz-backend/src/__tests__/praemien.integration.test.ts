@@ -7,7 +7,10 @@ import request from "supertest";
 import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
-import { createTestUsers } from "./test-helpers";
+import {
+  createTestAdminWithCompany,
+  createTestWorkerInCompany,
+} from "./test-helpers";
 
 const API = "/api";
 
@@ -30,12 +33,18 @@ describe("Praemien - monthly-summary / monthly-history (IDOR fix)", () => {
 
   beforeAll(async () => {
     await mongoose.connect(env.MONGODB_URI);
-    const { adminId: aid, workerId: wid, adminToken: aTok, workerToken: wTok } =
-      await createTestUsers();
+    const { adminId: aid, adminToken: aTok, company } =
+      await createTestAdminWithCompany();
     adminId = aid;
-    workerId = wid;
     adminToken = aTok;
-    workerToken = wTok;
+    const companyOid = company._id as mongoose.Types.ObjectId;
+
+    const worker = await createTestWorkerInCompany(companyOid);
+    workerId = String(worker._id);
+    const workerRes = await request(app)
+      .post(`${API}/users/login`)
+      .send({ email: worker.email, password: "password123" });
+    workerToken = workerRes.body.token;
 
     const now = new Date();
     const year = now.getFullYear();
@@ -55,6 +64,7 @@ describe("Praemien - monthly-summary / monthly-history (IDOR fix)", () => {
       trips: [minimalTrip],
       totalEffectivePatients: 10,
       totalRealTrips: 1,
+      companyId: companyOid,
     });
   });
 

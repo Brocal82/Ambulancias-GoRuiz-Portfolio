@@ -1,14 +1,17 @@
 import mongoose from "mongoose";
 import { WorkdaySummary } from "../../workday-summary";
 import { PraemienMonthlyHistoryItem } from "../types/praemien.types";
+import { getCompanyObjectIdForPraemienUser } from "./resolvePraemienUserCompany";
 
 export async function getMonthlyHistoryForUser(
   userId: string,
 ): Promise<PraemienMonthlyHistoryItem[]> {
   const objectUserId = new mongoose.Types.ObjectId(userId);
+  const companyOid = await getCompanyObjectIdForPraemienUser(userId);
 
   const summaries = await WorkdaySummary.find({
     $or: [{ driver: objectUserId }, { medic: objectUserId }],
+    companyId: companyOid,
   }).select("date totalEffectivePatients");
 
   if (!summaries.length) {

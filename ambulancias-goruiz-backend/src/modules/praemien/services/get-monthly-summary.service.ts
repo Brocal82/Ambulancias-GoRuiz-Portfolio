@@ -2,11 +2,13 @@ import { endOfMonth, startOfMonth } from "date-fns";
 import mongoose from "mongoose";
 import { WorkdaySummary } from "../../workday-summary";
 import { MonthlyPraemienSummaryResponse } from "../types/praemien.types";
+import { getCompanyObjectIdForPraemienUser } from "./resolvePraemienUserCompany";
 
 export async function getMonthlySummaryForUser(
   userId: string,
 ): Promise<MonthlyPraemienSummaryResponse> {
   const objectUserId = new mongoose.Types.ObjectId(userId);
+  const companyOid = await getCompanyObjectIdForPraemienUser(userId);
 
   const now = new Date();
   const monthStart = startOfMonth(now);
@@ -18,6 +20,7 @@ export async function getMonthlySummaryForUser(
       $lte: monthEnd.toISOString().split("T")[0],
     },
     $or: [{ driver: objectUserId }, { medic: objectUserId }],
+    companyId: companyOid,
   }).select("date totalEffectivePatients");
 
   if (!summaries.length) {
