@@ -64,19 +64,18 @@ export async function removeAssignment(
   date: string,
   companyId?: string | null,
 ) {
+  const callerCo =
+    companyId != null && String(companyId).trim() !== ""
+      ? String(companyId).trim()
+      : null;
+  if (!callerCo) return null;
+
   const dienst = await Dienst.findById(dienstId).select("companyId").lean();
   if (!dienst) return null;
 
   const dc = (dienst as any).companyId;
-  const callerHasCompany =
-    companyId != null && String(companyId).trim() !== "";
-  const hasDienstCompany = Boolean(dc);
-
-  if (!callerHasCompany) {
-    if (hasDienstCompany) return null;
-  } else if (hasDienstCompany && String(dc) !== String(companyId).trim()) {
-    return null;
-  }
+  if (!dc) return null;
+  if (String(dc) !== callerCo) return null;
 
   return Dienst.findByIdAndUpdate(
     dienstId,
