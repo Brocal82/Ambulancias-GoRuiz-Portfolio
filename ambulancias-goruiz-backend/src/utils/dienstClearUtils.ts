@@ -2,6 +2,7 @@
 import mongoose from "mongoose";
 import { DateTime } from "luxon";
 import { Dienst } from "../modules/diensts";
+import User from "../modules/users/models/user.model";
 
 const ZONE = "Europe/Berlin";
 
@@ -71,8 +72,26 @@ export async function clearUserFromDienstsInRange(params: {
     };
   }
 
-  // Buscar todos los Diensts que tengan assignments en cualquiera de esos días
+  const userDoc = await User.findById(userId).select("companyId").lean();
+  if (!userDoc) {
+    return {
+      diensteTouched: 0,
+      assignmentsTouched: 0,
+      range: { startISO, endISO },
+    };
+  }
+
+  const userCompanyId = (userDoc as { companyId?: unknown }).companyId;
+  if (!userCompanyId) {
+    return {
+      diensteTouched: 0,
+      assignmentsTouched: 0,
+      range: { startISO, endISO },
+    };
+  }
+
   const dienste = await Dienst.find({
+    companyId: new mongoose.Types.ObjectId(String(userCompanyId)),
     "assignments.date": { $in: daysISO },
   });
 
