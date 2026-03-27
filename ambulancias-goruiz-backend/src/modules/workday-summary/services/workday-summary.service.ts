@@ -17,14 +17,23 @@ export class WorkdaySummaryError extends Error {
   }
 }
 
-/** Resuelve el assignment por assignmentId. Lanza 404 si no existe. */
-async function resolveAssignmentByAssignmentId(assignmentId: string): Promise<{
+/** Resuelve el assignment por assignmentId dentro del tenant. Lanza 404 si no existe. */
+async function resolveAssignmentByAssignmentId(
+  assignmentId: string,
+  companyId: string,
+): Promise<{
   dienst: IDienst;
   assignment: IDienstAssignment;
 }> {
+  const raw = String(companyId).trim();
+  if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+    throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
+  }
   const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
+  const companyOid = new mongoose.Types.ObjectId(raw);
   const dienst = await Dienst.findOne({
     "assignments._id": assignmentObjectId,
+    companyId: companyOid,
   });
 
   if (!dienst) {
@@ -52,15 +61,19 @@ function assertUserCanCloseAssignment(
   userRole: string,
   userCompanyId?: string | null,
 ): void {
-  const dienstCompanyStr = dienst.companyId ? String(dienst.companyId) : null;
+  const callerCo =
+    userCompanyId != null && String(userCompanyId).trim() !== ""
+      ? String(userCompanyId).trim()
+      : "";
+  if (!callerCo || !mongoose.Types.ObjectId.isValid(callerCo)) {
+    throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
+  }
+  const dienstCompanyStr = dienst.companyId ? String(dienst.companyId) : "";
+  if (!dienstCompanyStr || dienstCompanyStr !== callerCo) {
+    throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
+  }
 
   if (userRole === "admin") {
-    if (userCompanyId && (!dienstCompanyStr || dienstCompanyStr !== String(userCompanyId))) {
-      throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
-    }
-    if (!userCompanyId && dienstCompanyStr) {
-      throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
-    }
     return;
   }
 
@@ -68,12 +81,6 @@ function assertUserCanCloseAssignment(
   const medicStr = assignment.medic?.toString();
   const isParticipant = driverStr === userId || medicStr === userId;
   if (!isParticipant) {
-    throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
-  }
-  if (userCompanyId && (!dienstCompanyStr || dienstCompanyStr !== String(userCompanyId))) {
-    throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
-  }
-  if (!userCompanyId && dienstCompanyStr) {
     throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
   }
 }
@@ -165,8 +172,13 @@ export async function createWorkdaySummary(
       typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
   }));
 
+  const scopeCo =
+    userCompanyId != null && String(userCompanyId).trim() !== ""
+      ? String(userCompanyId).trim()
+      : "";
   const { dienst, assignment } = await resolveAssignmentByAssignmentId(
     assignmentId as string,
+    scopeCo,
   );
   assertUserCanCloseAssignment(dienst as any, assignment, userId, userRole, userCompanyId);
 
@@ -278,8 +290,13 @@ export async function submitPartialClosure(
       typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
   }));
 
+  const scopeCo =
+    userCompanyId != null && String(userCompanyId).trim() !== ""
+      ? String(userCompanyId).trim()
+      : "";
   const { dienst, assignment } = await resolveAssignmentByAssignmentId(
     assignmentId as string,
+    scopeCo,
   );
   assertUserCanCloseAssignment(dienst as any, assignment, userId, userRole, userCompanyId);
 
@@ -350,16 +367,17 @@ export async function getAllWorkdaySummaries(
   filterByUserId?: string,
   companyId?: string | null,
 ) {
+  const raw = typeof companyId === "string" ? companyId.trim() : "";
+  if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+    return [];
+  }
+  const companyOid = new mongoose.Types.ObjectId(raw);
   const parts: Record<string, unknown>[] = [];
   if (filterByUserId) {
     const userIdObj = new mongoose.Types.ObjectId(filterByUserId);
     parts.push({ $or: [{ driver: userIdObj }, { medic: userIdObj }] });
   }
-  if (companyId) {
-    parts.push({ companyId: new mongoose.Types.ObjectId(companyId) });
-  } else {
-    parts.push({ $or: [{ companyId: null }, { companyId: { $exists: false } }] });
-  }
+  parts.push({ companyId: companyOid });
   const filter = parts.length > 1 ? { $and: parts } : parts[0] || {};
 
   const summaries = await WorkdaySummary.find(filter)
@@ -373,7 +391,7 @@ export async function getAllWorkdaySummaries(
     })
     .lean();
 
-  const diensts = await Dienst.find().lean();
+  const diensts = await Dienst.find({ companyId: companyOid }).lean();
 
   const enriched = summaries.map((s: any) => {
     const dienst = diensts.find((d) =>
@@ -443,8 +461,13 @@ export async function reportIssue(
     );
   }
 
+  const scopeCo =
+    userCompanyId != null && String(userCompanyId).trim() !== ""
+      ? String(userCompanyId).trim()
+      : "";
   const { dienst, assignment } = await resolveAssignmentByAssignmentId(
     assignmentId as string,
+    scopeCo,
   );
   assertUserCanCloseAssignment(dienst as any, assignment, userId, userRole, userCompanyId);
 
@@ -472,37 +495,32 @@ export async function reportIssue(
 
 /**
  * Mutación por id (issues / summaries): aislamiento multiempresa.
- * - Caller con companyId: solo si el documento tiene companyId y coincide con el caller.
- * - Caller sin companyId (admin legacy): solo documentos legacy (sin companyId).
  */
 function assertCanMutateWorkdayEntityByCompany(
   documentCompanyId: unknown,
   callerCompanyId: string | null | undefined,
   forbiddenMessage: string,
 ): void {
-  const docCoRaw = documentCompanyId != null ? String(documentCompanyId) : "";
-  const docCo = docCoRaw !== "" ? docCoRaw : null;
-
-  const callerHasCompany =
-    callerCompanyId != null && String(callerCompanyId).trim() !== "";
-
-  if (callerHasCompany) {
-    const callerCo = String(callerCompanyId).trim();
-    if (!docCo || docCo !== callerCo) {
-      throw new WorkdaySummaryError(forbiddenMessage, 403);
-    }
-    return;
+  const callerCo =
+    callerCompanyId != null && String(callerCompanyId).trim() !== ""
+      ? String(callerCompanyId).trim()
+      : "";
+  if (!callerCo || !mongoose.Types.ObjectId.isValid(callerCo)) {
+    throw new WorkdaySummaryError(forbiddenMessage, 403);
   }
-
-  if (docCo) {
+  const docCoRaw = documentCompanyId != null ? String(documentCompanyId) : "";
+  const docCo = docCoRaw !== "" ? docCoRaw : "";
+  if (!docCo || docCo !== callerCo) {
     throw new WorkdaySummaryError(forbiddenMessage, 403);
   }
 }
 
 export async function getAllIssueReports(companyId?: string | null) {
-  const filter = companyId
-    ? { companyId: new mongoose.Types.ObjectId(companyId) }
-    : { $or: [{ companyId: null }, { companyId: { $exists: false } }] };
+  const raw = typeof companyId === "string" ? companyId.trim() : "";
+  if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+    return [];
+  }
+  const filter = { companyId: new mongoose.Types.ObjectId(raw) };
   return await WorkdayIssue.find(filter).sort({ timestamp: -1 });
 }
 
@@ -561,9 +579,11 @@ export async function getIssuesCount(status?: string, companyId?: string | null)
   } else if (normalizedStatus === "seen" || normalizedStatus === "closed") {
     statusFilter = { isSeen: true };
   }
-  const companyFilter = companyId
-    ? { companyId: new mongoose.Types.ObjectId(companyId) }
-    : { $or: [{ companyId: null }, { companyId: { $exists: false } }] };
+  const rawCo = typeof companyId === "string" ? companyId.trim() : "";
+  if (!rawCo || !mongoose.Types.ObjectId.isValid(rawCo)) {
+    return { count: 0 };
+  }
+  const companyFilter = { companyId: new mongoose.Types.ObjectId(rawCo) };
   const filter =
     Object.keys(statusFilter).length > 0
       ? { $and: [statusFilter, companyFilter] }
@@ -577,9 +597,11 @@ export async function getSummariesCountByStatus(status?: string, companyId?: str
   const rawStatus = typeof status === "string" ? status : "pending";
   const normalizedStatus = rawStatus.toLowerCase();
 
-  const companyFilter = companyId
-    ? { companyId: new mongoose.Types.ObjectId(companyId) }
-    : { $or: [{ companyId: null }, { companyId: { $exists: false } }] };
+  const rawCo = typeof companyId === "string" ? companyId.trim() : "";
+  if (!rawCo || !mongoose.Types.ObjectId.isValid(rawCo)) {
+    return { count: 0 };
+  }
+  const companyFilter = { companyId: new mongoose.Types.ObjectId(rawCo) };
 
   let count = 0;
 

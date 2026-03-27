@@ -52,6 +52,11 @@ export async function getAvailableUsersForDateService(
 ) {
   const { date, desiredRole, startTime, endTime, companyId } = params;
 
+  const companyStr = typeof companyId === "string" ? companyId.trim() : "";
+  if (!companyStr || !mongoose.Types.ObjectId.isValid(companyStr)) {
+    return [];
+  }
+
   const allowedRoles =
     desiredRole === "driver"
       ? ["driver", "both"]
@@ -62,12 +67,10 @@ export async function getAvailableUsersForDateService(
   const sReq = toMin(startTime);
   const eReq = toMin(endTime);
 
-  const dienstFilter: Record<string, unknown> = { "assignments.date": date };
-  if (companyId) {
-    dienstFilter.companyId = new mongoose.Types.ObjectId(companyId);
-  } else {
-    dienstFilter.$or = [{ companyId: null }, { companyId: { $exists: false } }];
-  }
+  const dienstFilter: Record<string, unknown> = {
+    "assignments.date": date,
+    companyId: new mongoose.Types.ObjectId(companyStr),
+  };
   const diensts = await Dienst.find(dienstFilter, { assignments: 1 }).lean();
 
   const busyUserIds = new Set<string>();
@@ -94,15 +97,8 @@ export async function getAvailableUsersForDateService(
   const userFilter: Record<string, unknown> = {
     _id: { $nin: Array.from(busyUserIds) },
     ambulanceRole: { $in: allowedRoles },
+    companyId: new mongoose.Types.ObjectId(companyStr),
   };
-  if (companyId) {
-    userFilter.companyId = new mongoose.Types.ObjectId(companyId);
-  } else {
-    userFilter.$or = [
-      { companyId: null },
-      { companyId: { $exists: false } },
-    ];
-  }
   const baseUsers = await User.find(userFilter)
     .sort({ lastName: 1 })
     .lean();
@@ -157,10 +153,15 @@ async function getTodayVacationInfo(userId?: string) {
  * Si companyId se proporciona, filtra solo usuarios de esa empresa.
  */
 export async function getUsersWithTodayVacationInfo(companyId?: string) {
-  const filter = companyId
-    ? { companyId: new mongoose.Types.ObjectId(companyId) }
-    : {};
-  const users = await User.find(filter).sort({ lastName: 1 }).lean();
+  const raw = typeof companyId === "string" ? companyId.trim() : "";
+  if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+    return [];
+  }
+  const users = await User.find({
+    companyId: new mongoose.Types.ObjectId(raw),
+  })
+    .sort({ lastName: 1 })
+    .lean();
 
   await Promise.all(
     (users as any[]).map(async (u) => {

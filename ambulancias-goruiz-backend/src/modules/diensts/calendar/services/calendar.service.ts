@@ -7,11 +7,11 @@ import type { dienstQuerySchema } from "../../schemas/dienstQuerySchema";
 type DienstQueryParams = z.infer<typeof dienstQuerySchema>;
 
 function companyFilter(companyId?: string | null): Record<string, unknown> {
-  if (companyId) return { companyId: new mongoose.Types.ObjectId(companyId) };
-  if (companyId === null || companyId === undefined) {
-    return { $or: [{ companyId: null }, { companyId: { $exists: false } }] };
+  const raw = typeof companyId === "string" ? companyId.trim() : "";
+  if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+    return { _id: { $in: [] } };
   }
-  return {};
+  return { companyId: new mongoose.Types.ObjectId(raw) };
 }
 
 export async function getAllDiensts(companyId?: string | null) {

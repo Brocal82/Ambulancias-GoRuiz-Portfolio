@@ -58,11 +58,12 @@ export async function deleteVacationRequestRecord(
   if (!request) {
     return { kind: "not_found" as const };
   }
-  if (companyId && companyId.trim() !== "") {
-    const user = request.user as { companyId?: unknown };
-    if (!isSameCompany(user?.companyId, companyId)) {
-      return { kind: "forbidden" as const };
-    }
+  if (!companyId || String(companyId).trim() === "") {
+    return { kind: "forbidden" as const };
+  }
+  const user = request.user as { companyId?: unknown };
+  if (!isSameCompany(user?.companyId, companyId)) {
+    return { kind: "forbidden" as const };
   }
 
   await VacationRequest.findByIdAndDelete(id);

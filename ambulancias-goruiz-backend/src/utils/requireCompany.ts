@@ -6,7 +6,7 @@ export type RequireCompanyResult =
 
 /**
  * Exige que el admin tenga companyId. Usar en operaciones multiempresa.
- * Devuelve 403 si admin no tiene companyId (legacy admin).
+ * Devuelve 403 si admin no tiene companyId.
  */
 export function requireCompanyForAdmin(req: Request): RequireCompanyResult {
   if (req.userRole !== "admin") {
@@ -27,36 +27,42 @@ export function requireCompanyForAdmin(req: Request): RequireCompanyResult {
   return { ok: true, companyId };
 }
 
+function hasCompanyId(value: unknown): boolean {
+  if (value == null) return false;
+  const s = String(value).trim();
+  return s !== "";
+}
+
 /**
  * Comprueba si un usuario pertenece a la misma empresa que el admin.
- * targetUser debe tener companyId que coincida con companyId.
- * Ambos null/undefined = mismo "legacy" (true).
+ * Requiere companyId en ambos lados.
  */
 export function isSameCompany(
   targetUserCompanyId: unknown,
   adminCompanyId: string | null | undefined,
 ): boolean {
-  if (!adminCompanyId) return !targetUserCompanyId;
-  if (!targetUserCompanyId) return false;
+  if (!hasCompanyId(adminCompanyId) || !hasCompanyId(targetUserCompanyId)) {
+    return false;
+  }
   return String(targetUserCompanyId) === String(adminCompanyId);
 }
 
 /**
  * Comprueba si un dienst pertenece a la empresa indicada.
- * Para legacy: dienst sin companyId solo coincide si companyId es null/undefined.
+ * Requiere companyId en ambos lados.
  */
 export function isDienstFromCompany(
   dienstCompanyId: unknown,
   companyId: string | null | undefined,
 ): boolean {
-  if (!companyId) return !dienstCompanyId;
-  if (!dienstCompanyId) return false;
+  if (!hasCompanyId(companyId) || !hasCompanyId(dienstCompanyId)) {
+    return false;
+  }
   return String(dienstCompanyId) === String(companyId);
 }
 
 /**
  * Comprueba si un recurso (ambulance, hospital, etc.) pertenece a la empresa indicada.
- * Para legacy: recurso sin companyId solo coincide si companyId es null/undefined.
  */
 export function isResourceFromCompany(
   resourceCompanyId: unknown,
@@ -66,14 +72,16 @@ export function isResourceFromCompany(
 }
 
 /**
- * Comprueba si dos entidades pertenecen a la misma empresa (ambas null = legacy = ok).
+ * Comprueba si dos entidades pertenecen a la misma empresa.
+ * Requiere companyId en ambos lados.
  */
 export function entitiesBelongToSameCompany(
   entityACo: unknown,
   entityBCo: unknown,
 ): boolean {
-  if (!entityACo && !entityBCo) return true;
-  if (!entityACo || !entityBCo) return false;
+  if (!hasCompanyId(entityACo) || !hasCompanyId(entityBCo)) {
+    return false;
+  }
   return String(entityACo) === String(entityBCo);
 }
 

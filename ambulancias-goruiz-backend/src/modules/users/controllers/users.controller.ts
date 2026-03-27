@@ -253,8 +253,13 @@ export const getAllUsersDienst = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  const companyResult = requireCompanyForAdmin(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
   try {
-    const diensts = await getAllDienstsWithBasicPopulate(req.companyId ?? null);
+    const diensts = await getAllDienstsWithBasicPopulate(companyResult.companyId);
     res.status(200).json(diensts);
   } catch (error) {
     console.error("Error al obtener diensts:", error);
@@ -280,6 +285,12 @@ export const getAvailableUsersForDate: RequestHandler = async (
     return;
   }
 
+  const companyResult = requireCompanyForAdmin(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
+
   const role = desiredRole ?? "both";
   const includeExpiredBool = String(includeExpired).toLowerCase() === "true";
 
@@ -290,7 +301,7 @@ export const getAvailableUsersForDate: RequestHandler = async (
       startTime,
       endTime,
       includeExpired: includeExpiredBool,
-      companyId: req.companyId ?? null,
+      companyId: companyResult.companyId,
     });
 
     res.json(sanitizeUsers(available as any[]));

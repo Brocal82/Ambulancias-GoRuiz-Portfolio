@@ -89,26 +89,28 @@ export async function getMyAppointments(workerId: string) {
 }
 
 export async function getPendingAppointments(companyId?: string | null) {
-  const filter: Record<string, unknown> = { status: "pending" };
-  if (companyId && companyId.trim() !== "") {
-    const workerIds = await getWorkerIdsForCompany(companyId);
-    if (workerIds.length === 0) return [];
-    filter.workerId = { $in: workerIds };
+  if (!companyId || String(companyId).trim() === "") {
+    return [];
   }
+  const filter: Record<string, unknown> = { status: "pending" };
+  const workerIds = await getWorkerIdsForCompany(companyId);
+  if (workerIds.length === 0) return [];
+  filter.workerId = { $in: workerIds };
   return await Appointment.find(filter)
     .populate("workerId", "name lastName email")
     .sort({ createdAt: -1 });
 }
 
 export async function getOpenAppointments(companyId?: string | null) {
+  if (!companyId || String(companyId).trim() === "") {
+    return [];
+  }
   const filter: Record<string, unknown> = {
     status: { $in: ["pending", "proposed"] },
   };
-  if (companyId && companyId.trim() !== "") {
-    const workerIds = await getWorkerIdsForCompany(companyId);
-    if (workerIds.length === 0) return [];
-    filter.workerId = { $in: workerIds };
-  }
+  const workerIds = await getWorkerIdsForCompany(companyId);
+  if (workerIds.length === 0) return [];
+  filter.workerId = { $in: workerIds };
   return await Appointment.find(filter)
     .populate("workerId", "name lastName email")
     .sort({ createdAt: -1 })
@@ -125,13 +127,14 @@ export async function proposeSlots(
   if (!appointment) {
     throw new AppointmentError("Cita no encontrada.", 404);
   }
-  if (companyId && companyId.trim() !== "") {
-    const worker = await User.findById(appointment.workerId).select("companyId").lean();
-    const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
-    const match = workerCo && String(workerCo) === String(companyId);
-    if (!match) {
-      throw new AppointmentError("No tienes permiso para modificar esta cita.", 403);
-    }
+  if (!companyId || String(companyId).trim() === "") {
+    throw new AppointmentError("No tienes permiso para modificar esta cita.", 403);
+  }
+  const worker = await User.findById(appointment.workerId).select("companyId").lean();
+  const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
+  const match = workerCo && String(workerCo) === String(companyId);
+  if (!match) {
+    throw new AppointmentError("No tienes permiso para modificar esta cita.", 403);
   }
   if (appointment.status !== "pending" && appointment.status !== "proposed") {
     throw new AppointmentError(
@@ -220,15 +223,16 @@ export async function getCalendarAppointments(
   const fromDate = new Date(from);
   const toDate = new Date(to);
 
+  if (!companyId || String(companyId).trim() === "") {
+    return [];
+  }
   const filter: Record<string, unknown> = {
     status: { $in: ["confirmed", "rescheduled"] },
     "selectedSlot.start": { $gte: fromDate, $lte: toDate },
   };
-  if (companyId && companyId.trim() !== "") {
-    const workerIds = await getWorkerIdsForCompany(companyId);
-    if (workerIds.length === 0) return [];
-    filter.workerId = { $in: workerIds };
-  }
+  const workerIds = await getWorkerIdsForCompany(companyId);
+  if (workerIds.length === 0) return [];
+  filter.workerId = { $in: workerIds };
 
   return await Appointment.find(filter)
     .populate("workerId", "name lastName email")
@@ -250,13 +254,14 @@ export async function updateAppointment(
   if (!appointment) {
     throw new AppointmentError("Cita no encontrada.", 404);
   }
-  if (companyId && companyId.trim() !== "") {
-    const worker = await User.findById(appointment.workerId).select("companyId").lean();
-    const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
-    const match = workerCo && String(workerCo) === String(companyId);
-    if (!match) {
-      throw new AppointmentError("No tienes permiso para modificar esta cita.", 403);
-    }
+  if (!companyId || String(companyId).trim() === "") {
+    throw new AppointmentError("No tienes permiso para modificar esta cita.", 403);
+  }
+  const worker = await User.findById(appointment.workerId).select("companyId").lean();
+  const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
+  const match = workerCo && String(workerCo) === String(companyId);
+  if (!match) {
+    throw new AppointmentError("No tienes permiso para modificar esta cita.", 403);
   }
 
   let status = appointment.status;
@@ -294,13 +299,14 @@ export async function cancelAppointment(
   if (!appointment) {
     throw new AppointmentError("Cita no encontrada.", 404);
   }
-  if (companyId && companyId.trim() !== "") {
-    const worker = await User.findById(appointment.workerId).select("companyId").lean();
-    const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
-    const match = workerCo && String(workerCo) === String(companyId);
-    if (!match) {
-      throw new AppointmentError("No tienes permiso para cancelar esta cita.", 403);
-    }
+  if (!companyId || String(companyId).trim() === "") {
+    throw new AppointmentError("No tienes permiso para cancelar esta cita.", 403);
+  }
+  const worker = await User.findById(appointment.workerId).select("companyId").lean();
+  const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
+  const match = workerCo && String(workerCo) === String(companyId);
+  if (!match) {
+    throw new AppointmentError("No tienes permiso para cancelar esta cita.", 403);
   }
 
   appointment.status = "cancelled";
@@ -349,12 +355,13 @@ export async function getAppointmentsCount(
 ) {
   const rawStatus = typeof status === "string" ? status : "pending";
   const normalizedStatus = rawStatus.toLowerCase();
-  const filter: Record<string, unknown> = { status: normalizedStatus };
-  if (companyId && companyId.trim() !== "") {
-    const workerIds = await getWorkerIdsForCompany(companyId);
-    if (workerIds.length === 0) return { count: 0 };
-    filter.workerId = { $in: workerIds };
+  if (!companyId || String(companyId).trim() === "") {
+    return { count: 0 };
   }
+  const filter: Record<string, unknown> = { status: normalizedStatus };
+  const workerIds = await getWorkerIdsForCompany(companyId);
+  if (workerIds.length === 0) return { count: 0 };
+  filter.workerId = { $in: workerIds };
   const count = await Appointment.countDocuments(filter);
   return { count };
 }

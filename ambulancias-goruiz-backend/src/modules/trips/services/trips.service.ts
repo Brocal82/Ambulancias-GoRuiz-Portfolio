@@ -14,14 +14,23 @@ export class TripError extends Error {
   }
 }
 
-/** Resuelve el assignment por assignmentId. Lanza 404 si no existe. */
-async function resolveAssignmentByAssignmentId(assignmentId: string): Promise<{
+/** Resuelve el assignment por assignmentId dentro del tenant. Lanza 404 si no existe. */
+async function resolveAssignmentByAssignmentId(
+  assignmentId: string,
+  companyId: string,
+): Promise<{
   dienst: IDienst;
   assignment: IDienstAssignment;
 }> {
+  const raw = String(companyId).trim();
+  if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+    throw new TripError("No autorizado para crear viajes en este assignment", 403);
+  }
   const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
+  const companyOid = new mongoose.Types.ObjectId(raw);
   const dienst = await Dienst.findOne({
     "assignments._id": assignmentObjectId,
+    companyId: companyOid,
   });
 
   if (!dienst) {
@@ -46,15 +55,19 @@ function assertUserCanCreateTripInAssignment(
   userRole: string,
   userCompanyId?: string | null,
 ): void {
-  const dienstCompanyStr = dienst.companyId ? String(dienst.companyId) : null;
+  const callerCo =
+    userCompanyId != null && String(userCompanyId).trim() !== ""
+      ? String(userCompanyId).trim()
+      : "";
+  if (!callerCo || !mongoose.Types.ObjectId.isValid(callerCo)) {
+    throw new TripError("No autorizado para crear viajes en este assignment", 403);
+  }
+  const dienstCompanyStr = dienst.companyId ? String(dienst.companyId) : "";
+  if (!dienstCompanyStr || dienstCompanyStr !== callerCo) {
+    throw new TripError("No autorizado para crear viajes en este assignment", 403);
+  }
 
   if (userRole === "admin") {
-    if (userCompanyId && (!dienstCompanyStr || dienstCompanyStr !== String(userCompanyId))) {
-      throw new TripError("No autorizado para crear viajes en este assignment", 403);
-    }
-    if (!userCompanyId && dienstCompanyStr) {
-      throw new TripError("No autorizado para crear viajes en este assignment", 403);
-    }
     return;
   }
 
@@ -62,12 +75,6 @@ function assertUserCanCreateTripInAssignment(
   const medicStr = assignment.medic?.toString();
   const isParticipant = driverStr === userId || medicStr === userId;
   if (!isParticipant) {
-    throw new TripError("No autorizado para crear viajes en este assignment", 403);
-  }
-  if (userCompanyId && (!dienstCompanyStr || dienstCompanyStr !== String(userCompanyId))) {
-    throw new TripError("No autorizado para crear viajes en este assignment", 403);
-  }
-  if (!userCompanyId && dienstCompanyStr) {
     throw new TripError("No autorizado para crear viajes en este assignment", 403);
   }
 }
@@ -125,8 +132,13 @@ export async function createTrip(
     totalKm = 0;
   }
 
+  const scopeCo =
+    userCompanyId != null && String(userCompanyId).trim() !== ""
+      ? String(userCompanyId).trim()
+      : "";
   const { dienst, assignment } = await resolveAssignmentByAssignmentId(
     assignmentId as string,
+    scopeCo,
   );
   assertUserCanCreateTripInAssignment(
     dienst as any,
@@ -186,9 +198,11 @@ export async function getTripsByDate(
   userRole?: string,
   userCompanyId?: string | null,
 ) {
-  const companyFilter = userCompanyId
-    ? { companyId: new mongoose.Types.ObjectId(userCompanyId) }
-    : { $or: [{ companyId: null }, { companyId: { $exists: false } }] };
+  const raw = typeof userCompanyId === "string" ? userCompanyId.trim() : "";
+  if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+    return [];
+  }
+  const companyFilter = { companyId: new mongoose.Types.ObjectId(raw) };
 
   const filter: mongoose.FilterQuery<any> = {
     date,

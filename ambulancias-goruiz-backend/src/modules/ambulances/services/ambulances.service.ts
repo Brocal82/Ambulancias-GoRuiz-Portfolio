@@ -18,8 +18,11 @@ function throwDuplicateKeyError(): never {
 }
 
 function companyFilter(companyId?: string | null): Record<string, unknown> {
-  if (companyId) return { companyId: new mongoose.Types.ObjectId(companyId) };
-  return { $or: [{ companyId: null }, { companyId: { $exists: false } }] };
+  const raw = typeof companyId === "string" ? companyId.trim() : "";
+  if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+    return { _id: { $in: [] } };
+  }
+  return { companyId: new mongoose.Types.ObjectId(raw) };
 }
 
 export const getAllAmbulances = async (

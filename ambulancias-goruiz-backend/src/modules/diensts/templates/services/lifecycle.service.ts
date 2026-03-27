@@ -194,23 +194,31 @@ export async function generateDienstTemplatesForWeek(
 
   const dienstNumbers = templates.map((tpl) => tpl.dienstNumber);
 
-  let teams = await Team.find(
-    {},
-    {
-      driver: 1,
-      medic: 1,
-      rotationMode: 1,
-      fixedDienstNumber: 1,
-      createdAt: 1,
-      ambulanceId: 1,
-    },
-  )
-    .populate(
-      "driver",
-      "companyId ambulanceRole pscheinExpiry pscheinConfirmedAt",
-    )
-    .populate("medic", "companyId")
+  const companyUserDocs = await User.find({ companyId: companyOid })
+    .select("_id")
     .lean();
+  const companyUserIds = companyUserDocs.map((u) => u._id as mongoose.Types.ObjectId);
+
+  let teams =
+    companyUserIds.length === 0
+      ? []
+      : await Team.find(
+          { driver: { $in: companyUserIds } },
+          {
+            driver: 1,
+            medic: 1,
+            rotationMode: 1,
+            fixedDienstNumber: 1,
+            createdAt: 1,
+            ambulanceId: 1,
+          },
+        )
+          .populate(
+            "driver",
+            "companyId ambulanceRole pscheinExpiry pscheinConfirmedAt",
+          )
+          .populate("medic", "companyId")
+          .lean();
 
   teams = teams.filter((t: any) => {
     const drvCo = t.driver?.companyId ? String(t.driver.companyId) : null;

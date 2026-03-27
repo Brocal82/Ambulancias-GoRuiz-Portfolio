@@ -2,14 +2,12 @@ import mongoose from "mongoose";
 import { Hospital } from "../models/hospital.model";
 import type { UpdateHospitalInput } from "../schemas/hospital.schema";
 
-function companyFilter(companyId?: string | null): Record<string, unknown> {
-  if (companyId) return { companyId: new mongoose.Types.ObjectId(companyId) };
-  return { $or: [{ companyId: null }, { companyId: { $exists: false } }] };
-}
-
 export const getAllHospitals = async (companyId?: string | null) => {
-  const filter = companyFilter(companyId);
-  return await Hospital.find(filter);
+  const raw = typeof companyId === "string" ? companyId.trim() : "";
+  if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+    return [];
+  }
+  return await Hospital.find({ companyId: new mongoose.Types.ObjectId(raw) });
 };
 
 export const createHospital = async (
