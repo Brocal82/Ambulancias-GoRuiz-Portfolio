@@ -100,6 +100,18 @@ export async function clearPeopleForWeek(
   weekStartDate: string;
 }> {
   const { dienstNumber, weekStartDate } = params;
+  const callerCo =
+    companyId != null && String(companyId).trim() !== ""
+      ? String(companyId).trim()
+      : null;
+  if (!callerCo) {
+    throw new DienstAssignmentError(
+      403,
+      "forbidden",
+      "No tienes permiso para modificar este Dienst",
+    );
+  }
+
   const start = new Date(weekStartDate);
 
   const dienst = await Dienst.findOne({
@@ -108,7 +120,7 @@ export async function clearPeopleForWeek(
       $gte: start,
       $lt: new Date(start.getTime() + 24 * 60 * 60 * 1000),
     },
-    ...companyFilterForDienst(companyId),
+    ...companyFilterForDienst(callerCo),
   });
 
   if (!dienst) {
@@ -116,27 +128,6 @@ export async function clearPeopleForWeek(
       404,
       "dienst_not_found",
       "No existe Dienst para esa semana y número",
-    );
-  }
-
-  const dc = (dienst as any).companyId;
-  const callerHasCompany =
-    companyId != null && String(companyId).trim() !== "";
-  const hasDienstCompany = Boolean(dc);
-
-  if (!callerHasCompany) {
-    if (hasDienstCompany) {
-      throw new DienstAssignmentError(
-        403,
-        "forbidden",
-        "No tienes permiso para modificar este Dienst",
-      );
-    }
-  } else if (hasDienstCompany && String(dc) !== String(companyId).trim()) {
-    throw new DienstAssignmentError(
-      403,
-      "forbidden",
-      "No tienes permiso para modificar este Dienst",
     );
   }
 
@@ -241,26 +232,20 @@ export async function updateDienstPartial(
   assignments: any[],
   companyId?: string | null,
 ) {
+  const callerCo =
+    companyId != null && String(companyId).trim() !== ""
+      ? String(companyId).trim()
+      : null;
+  if (!callerCo) return null;
+
   const dienst = await Dienst.findById(dienstId);
   if (!dienst) return null;
 
   const dc = (dienst as any).companyId;
-  const callerHasCompany =
-    companyId != null && String(companyId).trim() !== "";
-  const hasDienstCompany = Boolean(dc);
+  if (!dc) return null;
+  if (String(dc) !== callerCo) return null;
 
-  if (!callerHasCompany) {
-    if (hasDienstCompany) return null;
-  } else if (hasDienstCompany && String(dc) !== String(companyId).trim()) {
-    return null;
-  }
-
-  const dienstCompanyId =
-    dc != null && String(dc) !== ""
-      ? String(dc)
-      : callerHasCompany
-        ? String(companyId).trim()
-        : null;
+  const dienstCompanyId = String(dc);
   await validateAssignmentEntities(assignments, dienstCompanyId);
 
   for (const incoming of assignments) {
@@ -395,6 +380,18 @@ export async function assignUserToWeek(
   userId: string;
 }> {
   const { dienstNumber, weekStartDate, userId, role } = params;
+  const callerCo =
+    companyId != null && String(companyId).trim() !== ""
+      ? String(companyId).trim()
+      : null;
+  if (!callerCo) {
+    throw new DienstAssignmentError(
+      403,
+      "forbidden",
+      "No tienes permiso para modificar este Dienst",
+    );
+  }
+
   const start = new Date(weekStartDate);
 
   const user = await User.findById(userId)
@@ -433,7 +430,7 @@ export async function assignUserToWeek(
   const dienst = await Dienst.findOne({
     dienstNumber,
     weekStartDate: { $gte: start, $lt: nextDay },
-    ...companyFilterForDienst(companyId),
+    ...companyFilterForDienst(callerCo),
   });
 
   if (!dienst) {
@@ -444,14 +441,12 @@ export async function assignUserToWeek(
     );
   }
 
-  if (companyId) {
-    const dc = (dienst as any).companyId;
-    if (dc && String(dc) !== String(companyId)) {
-      throw new DienstAssignmentError(403, "forbidden", "No tienes permiso para modificar este Dienst");
-    }
-    if (!user.companyId || String(user.companyId) !== String(companyId)) {
-      throw new DienstAssignmentError(403, "forbidden", "El usuario no pertenece a tu empresa");
-    }
+  const dc = (dienst as any).companyId;
+  if (!dc || String(dc) !== String(callerCo)) {
+    throw new DienstAssignmentError(403, "forbidden", "No tienes permiso para modificar este Dienst");
+  }
+  if (!user.companyId || String(user.companyId) !== String(callerCo)) {
+    throw new DienstAssignmentError(403, "forbidden", "El usuario no pertenece a tu empresa");
   }
 
   const dates = extractValidDatesFromAssignments(dienst.assignments);
@@ -564,6 +559,17 @@ export async function assignTeamToWeek(
   hints: { driverExpiredButBoth: boolean };
 }> {
   const { dienstNumber, weekStartDate, teamId, resolvedRoles } = params;
+  const callerCo =
+    companyId != null && String(companyId).trim() !== ""
+      ? String(companyId).trim()
+      : null;
+  if (!callerCo) {
+    throw new DienstAssignmentError(
+      403,
+      "forbidden",
+      "No tienes permiso para modificar este Dienst",
+    );
+  }
 
   const team = await Team.findById(teamId)
     .populate("driver", "pscheinExpiry pscheinConfirmedAt ambulanceRole companyId")
@@ -574,15 +580,13 @@ export async function assignTeamToWeek(
     throw new DienstAssignmentError(404, "team_not_found", "Team no encontrado");
   }
 
-  if (companyId) {
-    const drv = (team as any).driver;
-    const med = (team as any).medic;
-    const drvCo = drv?.companyId ? String(drv.companyId) : null;
-    const medCo = med?.companyId ? String(med.companyId) : null;
-    const companyStr = String(companyId);
-    if (drvCo !== companyStr || medCo !== companyStr) {
-      throw new DienstAssignmentError(403, "forbidden", "El equipo no pertenece a tu empresa");
-    }
+  const drv = (team as any).driver;
+  const med = (team as any).medic;
+  const drvCo = drv?.companyId ? String(drv.companyId) : null;
+  const medCo = med?.companyId ? String(med.companyId) : null;
+  const companyStr = String(callerCo);
+  if (drvCo !== companyStr || medCo !== companyStr) {
+    throw new DienstAssignmentError(403, "forbidden", "El equipo no pertenece a tu empresa");
   }
 
   const teamDriverId = toIdString((team as any).driver);
@@ -677,7 +681,7 @@ export async function assignTeamToWeek(
       $gte: start,
       $lt: new Date(start.getTime() + 24 * 60 * 60 * 1000),
     },
-    ...companyFilterForDienst(companyId),
+    ...companyFilterForDienst(callerCo),
   });
 
   if (!dienst) {
@@ -688,11 +692,9 @@ export async function assignTeamToWeek(
     );
   }
 
-  if (companyId) {
-    const dc = (dienst as any).companyId;
-    if (dc && String(dc) !== String(companyId)) {
-      throw new DienstAssignmentError(403, "forbidden", "No tienes permiso para modificar este Dienst");
-    }
+  const dc = (dienst as any).companyId;
+  if (!dc || String(dc) !== String(callerCo)) {
+    throw new DienstAssignmentError(403, "forbidden", "No tienes permiso para modificar este Dienst");
   }
 
   const dates = extractValidDatesFromAssignments(dienst.assignments);
