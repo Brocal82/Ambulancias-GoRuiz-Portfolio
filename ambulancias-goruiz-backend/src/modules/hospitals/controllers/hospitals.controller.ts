@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import * as hospitalsService from "../services/hospitals.service";
 import { validateCreateHospital } from "../utils/hospital.validators";
 import type { UpdateHospitalInput } from "../schemas/hospital.schema";
@@ -31,7 +32,14 @@ export const getAllHospitals = async (req: Request, res: Response) => {
       res.status(statusCode!).json({ message });
       return;
     }
-    const hospitals = await hospitalsService.getAllHospitals(companyId);
+    const rawCompanyId = companyId != null ? String(companyId).trim() : "";
+    if (!rawCompanyId || !mongoose.Types.ObjectId.isValid(rawCompanyId)) {
+      res.status(403).json({
+        message: "No tienes permiso. Se requiere un contexto de empresa válido.",
+      });
+      return;
+    }
+    const hospitals = await hospitalsService.getAllHospitals(rawCompanyId);
     res.status(200).json(hospitals);
   } catch (error) {
     res.status(500).json({ message: "Error al obtener los hospitales" });

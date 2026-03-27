@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import mongoose from "mongoose";
 import * as ambulancesService from "../services/ambulances.service";
 import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 
@@ -22,7 +23,14 @@ export const getAllAmbulances = async (
       res.status(statusCode!).json({ message });
       return;
     }
-    const ambulances = await ambulancesService.getAllAmbulances(companyId);
+    const rawCompanyId = companyId != null ? String(companyId).trim() : "";
+    if (!rawCompanyId || !mongoose.Types.ObjectId.isValid(rawCompanyId)) {
+      res.status(403).json({
+        message: "No tienes permiso. Se requiere un contexto de empresa válido.",
+      });
+      return;
+    }
+    const ambulances = await ambulancesService.getAllAmbulances(rawCompanyId);
     res.status(200).json(ambulances);
   } catch (error) {
     next(error);
@@ -40,7 +48,14 @@ export const getAmbulanceById = async (
       res.status(statusCode!).json({ message });
       return;
     }
-    const ambulance = await ambulancesService.getAmbulanceById(req.params.id, companyId);
+    const rawCompanyId = companyId != null ? String(companyId).trim() : "";
+    if (!rawCompanyId || !mongoose.Types.ObjectId.isValid(rawCompanyId)) {
+      res.status(403).json({
+        message: "No tienes permiso. Se requiere un contexto de empresa válido.",
+      });
+      return;
+    }
+    const ambulance = await ambulancesService.getAmbulanceById(req.params.id, rawCompanyId);
     if (!ambulance) {
       res.status(404).json({ message: "Ambulance not found" });
       return;
