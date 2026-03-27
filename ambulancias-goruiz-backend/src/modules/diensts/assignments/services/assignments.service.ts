@@ -16,15 +16,6 @@ import { extractValidDatesFromAssignments, mapAssignmentToAssignedDay } from "..
 import { entitiesBelongToSameCompany } from "../../../../utils/requireCompany";
 import { DienstAssignmentError } from "./assignment-errors";
 
-async function ensureDienstCompany(dienstId: string, companyId: string): Promise<void> {
-  const d = await Dienst.findById(dienstId).select("companyId").lean();
-  if (!d) return;
-  const dc = (d as any).companyId;
-  if (dc && String(dc) !== String(companyId)) {
-    throw new DienstAssignmentError(403, "forbidden", "No tienes permiso para modificar este Dienst");
-  }
-}
-
 function companyFilterForDienst(companyId?: string | null): Record<string, unknown> {
   if (companyId) return { companyId: new mongoose.Types.ObjectId(companyId) };
   return { $or: [{ companyId: null }, { companyId: { $exists: false } }] };
