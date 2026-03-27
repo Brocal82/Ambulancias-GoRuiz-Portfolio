@@ -124,7 +124,7 @@ export async function clearPeopleForWeek(
       $gte: start,
       $lt: new Date(start.getTime() + 24 * 60 * 60 * 1000),
     },
-    ...companyFilterForDienst(callerCo),
+    companyId: new mongoose.Types.ObjectId(callerCo),
   });
 
   if (!dienst) {
@@ -434,7 +434,7 @@ export async function assignUserToWeek(
   const dienst = await Dienst.findOne({
     dienstNumber,
     weekStartDate: { $gte: start, $lt: nextDay },
-    ...companyFilterForDienst(callerCo),
+    companyId: new mongoose.Types.ObjectId(callerCo),
   });
 
   if (!dienst) {
@@ -685,7 +685,7 @@ export async function assignTeamToWeek(
       $gte: start,
       $lt: new Date(start.getTime() + 24 * 60 * 60 * 1000),
     },
-    ...companyFilterForDienst(callerCo),
+    companyId: new mongoose.Types.ObjectId(callerCo),
   });
 
   if (!dienst) {
