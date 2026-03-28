@@ -13,6 +13,7 @@ import { authorizeRole } from "../../middlewares/roleMiddleware";
 import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import { updateDienstPartialSchema } from "./assignments/schemas/update-dienst-partial.schema";
+import { moveSlotSameWeekSchema } from "./assignments/schemas/move-slot-same-week.schema";
 
 const router = express.Router();
 
@@ -100,6 +101,14 @@ router.post(
   authenticateToken,
   authorizeRole("admin"),
   DienstAssignments.clearPeopleForWeek,
+);
+
+router.post(
+  "/move-slot-same-week",
+  authenticateToken,
+  authorizeRole("admin"),
+  validateBody(moveSlotSameWeekSchema),
+  DienstAssignments.moveSlotSameWeek,
 );
 
 export default router;

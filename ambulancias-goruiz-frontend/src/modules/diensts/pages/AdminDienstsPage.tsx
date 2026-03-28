@@ -1,7 +1,9 @@
 // src/modules/diensts/pages/AdminDienstsPage.tsx
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { DragEvent } from "react";
 
 import type { Dienst } from "../index";
+import type { DienstAssignment, UpdateAssignment } from "../domain/types";
 import {
   getAllDiensts,
   generateDienstsForWeek,
@@ -10,6 +12,8 @@ import {
   assignUserToWeek,
   clearPeopleForWeek,
 } from "../index";
+import { moveDienstSlotSameWeek, updateDienstPartial } from "../domain/api";
+import { buildUpdateAssignment } from "../components/assignmentModal/buildUpdateAssignment";
 
 import AssignmentModal from "../components/assignmentModal/AssignmentModal";
 import TeamAssignModal from "../components/TeamAssignModal";
@@ -37,10 +41,125 @@ import { useDienstsChanged } from "../hooks/useDienstsChanged";
 import type { FlexibleAssignment } from "../domain/types/flexibleAssignment";
 
 import { DienstDayCell, WeekBlock, WEEK_GRID_CLASS } from "../components";
-import { toFlexibleFromDienstAssignment } from "../assignments";
+import {
+  normalizeAmbulanceIdToString,
+  toFlexibleFromDienstAssignment,
+} from "../assignments";
 
 import PageShell from "../../../components/common/PageShell";
 
+const DND_MIME = "application/x-dienst-admin-dnd+json";
+
+type DienstAdminDndPayload = {
+  v: 1;
+  dienstId: string;
+  role: "driver" | "medic";
+  userId: string;
+  sourceDate: string;
+};
+
+function getUserIdFromAssignmentField(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") {
+    const s = v.trim();
+    return s.length ? s : null;
+  }
+  if (typeof v === "object" && v !== null && "_id" in v) {
+    const id = (v as { _id?: string })._id;
+    return typeof id === "string" && id.trim() ? id : null;
+  }
+  return null;
+}
+
+/** True iff that slot has an assigned user id (same rules as drag source). */
+function slotHasPerson(v: unknown): boolean {
+  return getUserIdFromAssignmentField(v) != null;
+}
+
+/** Compare assignment `date` strings that may be YYYY-MM-DD or ISO datetimes. */
+function assignmentDayKey(date: string): string {
+  const m = /^(\d{4}-\d{2}-\d{2})/.exec(date.trim());
+  if (m) return m[1]!;
+  return toBerlinDayKey(date);
+}
+
+/**
+ * Browsers often merge default drag text into `text/plain`, breaking JSON.parse(raw).
+ * Recover a JSON object substring when possible.
+ */
+function extractJsonObjectFromText(raw: string): string | null {
+  const t = raw.trim();
+  if (!t) return null;
+  if (t.startsWith("{") && t.endsWith("}")) return t;
+  const start = t.indexOf("{");
+  const end = t.lastIndexOf("}");
+  if (start >= 0 && end > start) return t.slice(start, end + 1);
+  return null;
+}
+
+function parseDndPayload(e: DragEvent): DienstAdminDndPayload | null {
+  const raw =
+    e.dataTransfer.getData(DND_MIME) || e.dataTransfer.getData("text/plain");
+  if (!raw?.trim()) return null;
+
+  let o: unknown;
+  try {
+    o = JSON.parse(raw);
+  } catch {
+    const extracted = extractJsonObjectFromText(raw);
+    if (!extracted) return null;
+    try {
+      o = JSON.parse(extracted);
+    } catch {
+      return null;
+    }
+  }
+
+  if (!o || typeof o !== "object") return null;
+  const p = o as Record<string, unknown>;
+  if (p.v !== 1) return null;
+  if (p.role !== "driver" && p.role !== "medic") return null;
+
+  const dienstId =
+    typeof p.dienstId === "string" && p.dienstId.trim()
+      ? p.dienstId.trim()
+      : null;
+  const userId =
+    typeof p.userId === "string" && p.userId.trim()
+      ? p.userId.trim()
+      : null;
+  const sourceDate =
+    typeof p.sourceDate === "string" && p.sourceDate.trim()
+      ? p.sourceDate.trim()
+      : null;
+
+  if (!dienstId || !userId || !sourceDate) return null;
+
+  return {
+    v: 1,
+    dienstId,
+    role: p.role as "driver" | "medic",
+    userId,
+    sourceDate,
+  };
+}
+
+function buildRowFromSlotIds(params: {
+  assignment: DienstAssignment;
+  driverId: string;
+  medicId: string;
+}): UpdateAssignment {
+  const { assignment, driverId, medicId } = params;
+  return buildUpdateAssignment({
+    date: assignment.date,
+    startTime: assignment.startTime,
+    endTime: assignment.endTime,
+    selectedDriverId: driverId,
+    selectedMedicId: medicId,
+    ambulanceId: normalizeAmbulanceIdToString(assignment.ambulanceId),
+    assignment: toFlexibleFromDienstAssignment(assignment),
+  });
+}
 
 const AdminPage = () => {
   const [diensts, setDiensts] = useState<Dienst[]>([]);
@@ -387,6 +506,170 @@ const AdminPage = () => {
 
                               const isPast = isPastDay(day);
 
+                              const driverUserId = assignment
+                                ? getUserIdFromAssignmentField(assignment.driver)
+                                : null;
+                              const medicUserId = assignment
+                                ? getUserIdFromAssignmentField(assignment.medic)
+                                : null;
+                              const canDndCell = !isPast && Boolean(assignment);
+                              const driverDraggable = canDndCell && Boolean(driverUserId);
+                              const medicDraggable = canDndCell && Boolean(medicUserId);
+                              const driverDropTarget =
+                                canDndCell && !slotHasPerson(assignment?.driver);
+                              const medicDropTarget =
+                                canDndCell && !slotHasPerson(assignment?.medic);
+
+                              const handleDropOnRole = async (
+                                targetRole: "driver" | "medic",
+                                e: DragEvent,
+                              ) => {
+                                const payload = parseDndPayload(e);
+                                const targetAssignment = assignment;
+                                if (!payload || !targetAssignment || !token) return;
+
+                                const sourceDienst = diensts.find(
+                                  (d) => String(d._id) === String(payload.dienstId),
+                                );
+                                if (!sourceDienst) return;
+
+                                if (
+                                  toBerlinDayKey(sourceDienst.weekStartDate) !==
+                                  toBerlinDayKey(dienst.weekStartDate)
+                                ) {
+                                  toastT.error(
+                                    "Solo se pueden mover asignaciones dentro de la misma semana.",
+                                  );
+                                  return;
+                                }
+
+                                if (payload.role !== targetRole) return;
+
+                                if (
+                                  String(payload.dienstId) === String(dienst._id) &&
+                                  assignmentDayKey(payload.sourceDate) ===
+                                    assignmentDayKey(day)
+                                ) {
+                                  return;
+                                }
+
+                                const sourceAssignment = sourceDienst.assignments.find(
+                                  (a) =>
+                                    assignmentDayKey(a.date) ===
+                                    assignmentDayKey(payload.sourceDate),
+                                );
+                                if (!sourceAssignment) return;
+                                if (
+                                  !sourceAssignment.startTime?.trim() ||
+                                  !sourceAssignment.endTime?.trim()
+                                ) {
+                                  return;
+                                }
+                                if (
+                                  !targetAssignment.startTime?.trim() ||
+                                  !targetAssignment.endTime?.trim()
+                                ) {
+                                  return;
+                                }
+
+                                const sourceSlotId =
+                                  payload.role === "driver"
+                                    ? getUserIdFromAssignmentField(sourceAssignment.driver)
+                                    : getUserIdFromAssignmentField(sourceAssignment.medic);
+                                if (!sourceSlotId || sourceSlotId !== payload.userId) return;
+
+                                if (targetRole === "driver" && slotHasPerson(targetAssignment.driver)) {
+                                  return;
+                                }
+                                if (targetRole === "medic" && slotHasPerson(targetAssignment.medic)) {
+                                  return;
+                                }
+
+                                const sd = getUserIdFromAssignmentField(sourceAssignment.driver) ?? "";
+                                const sm = getUserIdFromAssignmentField(sourceAssignment.medic) ?? "";
+                                const td = getUserIdFromAssignmentField(targetAssignment.driver) ?? "";
+                                const tm = getUserIdFromAssignmentField(targetAssignment.medic) ?? "";
+
+                                let sourceRow: UpdateAssignment;
+                                let targetRow: UpdateAssignment;
+
+                                if (payload.role === "driver") {
+                                  sourceRow = buildRowFromSlotIds({
+                                    assignment: sourceAssignment,
+                                    driverId: "",
+                                    medicId: sm,
+                                  });
+                                  targetRow = buildRowFromSlotIds({
+                                    assignment: targetAssignment,
+                                    driverId: payload.userId,
+                                    medicId: tm,
+                                  });
+                                } else {
+                                  sourceRow = buildRowFromSlotIds({
+                                    assignment: sourceAssignment,
+                                    driverId: sd,
+                                    medicId: "",
+                                  });
+                                  targetRow = buildRowFromSlotIds({
+                                    assignment: targetAssignment,
+                                    driverId: td,
+                                    medicId: payload.userId,
+                                  });
+                                }
+
+                                const crossDienst =
+                                  String(payload.dienstId) !== String(dienst._id);
+
+                                try {
+                                  if (crossDienst) {
+                                    await moveDienstSlotSameWeek(
+                                      {
+                                        sourceDienstId: String(payload.dienstId),
+                                        sourceDate: assignmentDayKey(
+                                          payload.sourceDate,
+                                        ),
+                                        targetDienstId: String(dienst._id),
+                                        targetDate: day,
+                                        role: payload.role,
+                                        userId: payload.userId,
+                                      },
+                                      token,
+                                    );
+                                  } else {
+                                    await updateDienstPartial(
+                                      dienst._id,
+                                      { assignments: [sourceRow, targetRow] },
+                                      token,
+                                    );
+                                  }
+                                  emitDienstsChanged();
+                                  toastT.success(["toasts.assignments.saveSuccess"]);
+                                  await fetchDiensts();
+                                } catch (error) {
+                                  console.error("Dienst DnD move:", error);
+                                  toastT.apiError(error, ["toasts.assignments.saveError"]);
+                                }
+                              };
+
+                              const makeDragStartHandler = (
+                                role: "driver" | "medic",
+                                userId: string,
+                              ) => {
+                                return (e: DragEvent) => {
+                                  const payload: DienstAdminDndPayload = {
+                                    v: 1,
+                                    dienstId: String(dienst._id),
+                                    role,
+                                    userId,
+                                    sourceDate: day,
+                                  };
+                                  const json = JSON.stringify(payload);
+                                  e.dataTransfer.setData(DND_MIME, json);
+                                  e.dataTransfer.setData("text/plain", json);
+                                  e.dataTransfer.effectAllowed = "move";
+                                };
+                              };
+
                               const driverLine = assignment ? (
                                 <>
                                   👨‍✈️{" "}
@@ -457,6 +740,22 @@ const AdminPage = () => {
                                       dienstId: dienst._id,
                                     });
                                   }}
+                                  adminDnd={{
+                                    driverDraggable,
+                                    medicDraggable,
+                                    driverDropTarget,
+                                    medicDropTarget,
+                                    onDragStartDriver:
+                                      driverUserId != null
+                                        ? makeDragStartHandler("driver", driverUserId)
+                                        : undefined,
+                                    onDragStartMedic:
+                                      medicUserId != null
+                                        ? makeDragStartHandler("medic", medicUserId)
+                                        : undefined,
+                                    onDropDriver: (e) => handleDropOnRole("driver", e),
+                                    onDropMedic: (e) => handleDropOnRole("medic", e),
+                                  }}
                                   lines={{
                                     ...buildDienstDayCellLines({
                                       isoDay: day,
@@ -497,7 +796,9 @@ const AdminPage = () => {
           date={selectedAssignment.date}
           assignment={selectedAssignment.assignment}
           dienstId={selectedAssignment.dienstId}
-          onClose={() => setSelectedAssignment(null)}
+          onClose={() => {
+            setSelectedAssignment(null);
+          }}
           onUpdate={fetchDiensts}
         />
       )}

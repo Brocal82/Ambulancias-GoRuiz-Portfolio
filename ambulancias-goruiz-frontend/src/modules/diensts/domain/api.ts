@@ -48,6 +48,23 @@ export const updateDienstPartial = async (
   return response.data;
 };
 
+/** Mueve un slot entre dos Dienst de la misma semana (atómico en servidor). */
+export const moveDienstSlotSameWeek = async (
+  body: {
+    sourceDienstId: string;
+    sourceDate: string;
+    targetDienstId: string;
+    targetDate: string;
+    role: "driver" | "medic";
+    userId: string;
+  },
+  token: string,
+): Promise<void> => {
+  await axios.post(`/diensts/move-slot-same-week`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
 // Eliminar una asignación de un día
 export const removeAssignment = async (
   dienstId: string,

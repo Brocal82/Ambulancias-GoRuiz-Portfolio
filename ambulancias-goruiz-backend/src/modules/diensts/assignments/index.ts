@@ -7,3 +7,4 @@ export { clearPeopleForWeek } from "./controllers/clear-people.controller";
 export { updateDienstPartial } from "./controllers/update-dienst-partial.controller";
 export { assignUserToWeek } from "./controllers/assign-user-to-week.controller";
 export { assignTeamToWeek } from "./controllers/assign-team-to-week.controller";
+export { moveSlotSameWeek } from "./controllers/move-slot-same-week.controller";

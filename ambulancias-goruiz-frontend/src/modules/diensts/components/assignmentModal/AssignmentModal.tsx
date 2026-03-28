@@ -136,24 +136,32 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
     // Precarga del assignment
     useEffect(() => {
-        if (!assignment) return;
+        if (!isOpen) return;
 
-        setStartTime(assignment.startTime || "");
-        setEndTime(assignment.endTime || "");
+        if (assignment) {
+            setStartTime(assignment.startTime || "");
+            setEndTime(assignment.endTime || "");
 
-        setAmbulanceId(normalizeAmbulanceIdToString(assignment.ambulanceId));
+            setAmbulanceId(normalizeAmbulanceIdToString(assignment.ambulanceId));
 
-        setSelectedDriverId(
-            typeof assignment.driver === "string"
-                ? assignment.driver
-                : assignment.driver?._id || "",
-        );
-        setSelectedMedicId(
-            typeof assignment.medic === "string"
-                ? assignment.medic
-                : assignment.medic?._id || "",
-        );
-    }, [assignment]);
+            setSelectedDriverId(
+                typeof assignment.driver === "string"
+                    ? assignment.driver
+                    : assignment.driver?._id || "",
+            );
+            setSelectedMedicId(
+                typeof assignment.medic === "string"
+                    ? assignment.medic
+                    : assignment.medic?._id || "",
+            );
+        } else {
+            setStartTime("");
+            setEndTime("");
+            setAmbulanceId("");
+            setSelectedDriverId("");
+            setSelectedMedicId("");
+        }
+    }, [isOpen, assignment]);
 
 
     if (!isOpen) return null;
