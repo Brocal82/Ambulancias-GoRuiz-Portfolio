@@ -270,6 +270,51 @@ async function validateAssignmentEntities(
   }
 }
 
+/**
+ * Reglas de planificación (misma semana / otro Dienst, vacaciones, baja) al asignar
+ * a alguien a un slot que antes no tenía ese ocupante. Alineado con moveSlotSameWeek
+ * (sin exclusión de slot origen: aquí solo aplica PATCH a un único Dienst).
+ */
+async function validateSchedulingForNewSlotOccupant(params: {
+  userId: string;
+  dateRaw: string;
+  weekStartDate: Date;
+  dienstNumber: number;
+}): Promise<void> {
+  const { userId, dateRaw, weekStartDate, dienstNumber } = params;
+  const tgtKey = normalizeDayKey(dateRaw);
+  if (!tgtKey) {
+    throw new DienstAssignmentError(400, "invalid_date", "Fecha inválida.");
+  }
+
+  const userOid = new mongoose.Types.ObjectId(userId);
+
+  const weeklyConf = await findWeeklyConflicts(
+    userOid,
+    weekStartDate,
+    dienstNumber,
+  );
+  if (weeklyConf.some((c) => normalizeDayKey(c.date) === tgtKey)) {
+    throw new DienstAssignmentError(
+      409,
+      "weekly_conflict",
+      "El usuario ya está asignado en otro Dienst ese día.",
+    );
+  }
+
+  const [vac, sick] = await Promise.all([
+    isOnVacationDay({ userId, dateISO: tgtKey }),
+    isOnSickDay({ userId, dateISO: tgtKey }),
+  ]);
+  if (vac || sick) {
+    throw new DienstAssignmentError(
+      409,
+      "target_day_blocked",
+      "El usuario no está disponible ese día (vacaciones o baja).",
+    );
+  }
+}
+
 export async function updateDienstPartial(
   dienstId: string,
   assignments: any[],
@@ -290,6 +335,70 @@ export async function updateDienstPartial(
 
   const dienstCompanyId = String(dc);
   await validateAssignmentEntities(assignments, dienstCompanyId);
+
+  let cachedWeekStart: Date | null = null;
+  const weekStartForScheduling = (): Date => {
+    if (cachedWeekStart) return cachedWeekStart;
+    const rawWs = (dienst as any).weekStartDate;
+    const d = rawWs instanceof Date ? rawWs : new Date(rawWs as string);
+    if (Number.isNaN(d.getTime())) {
+      throw new DienstAssignmentError(
+        400,
+        "invalid_week",
+        "Semana inválida en el Dienst.",
+      );
+    }
+    cachedWeekStart = d;
+    return d;
+  };
+
+  for (const incoming of assignments) {
+    const updatedCopy: any = { ...incoming };
+    if (updatedCopy?._id === "") delete updatedCopy._id;
+    if (updatedCopy?.driver === "") updatedCopy.driver = undefined;
+    if (updatedCopy?.medic === "") updatedCopy.medic = undefined;
+
+    const missingRequired =
+      !updatedCopy?.date || !updatedCopy?.startTime || !updatedCopy?.endTime;
+
+    if (missingRequired) {
+      throw new DienstAssignmentError(
+        400,
+        "assignment_incomplete",
+        "Faltan campos obligatorios en una fila de asignación (date, startTime, endTime).",
+      );
+    }
+
+    const idx = dienst.assignments.findIndex(
+      (a: any) => a.date === updatedCopy.date,
+    );
+    const prev = idx !== -1 ? dienst.assignments[idx] : null;
+
+    if (Object.prototype.hasOwnProperty.call(incoming, "driver")) {
+      const newId = oidStr(updatedCopy.driver);
+      const oldId = oidStr(prev?.driver);
+      if (newId && newId !== oldId) {
+        await validateSchedulingForNewSlotOccupant({
+          userId: newId,
+          dateRaw: updatedCopy.date,
+          weekStartDate: weekStartForScheduling(),
+          dienstNumber: (dienst as any).dienstNumber,
+        });
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "medic")) {
+      const newId = oidStr(updatedCopy.medic);
+      const oldId = oidStr(prev?.medic);
+      if (newId && newId !== oldId) {
+        await validateSchedulingForNewSlotOccupant({
+          userId: newId,
+          dateRaw: updatedCopy.date,
+          weekStartDate: weekStartForScheduling(),
+          dienstNumber: (dienst as any).dienstNumber,
+        });
+      }
+    }
+  }
 
   for (const incoming of assignments) {
     const updatedCopy: any = { ...incoming };
