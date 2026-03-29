@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import fs from "fs";
 import path from "path";
 import mongoose from "mongoose";
 import { env } from "./config/env";
@@ -22,6 +23,7 @@ import companiesRoutes from "./modules/companies/routes";
 
 import { errorHandler } from "./middlewares/errorHandler";
 import { notFoundHandler } from "./middlewares/notFoundHandler";
+import { authenticateToken } from "./middlewares/authMiddleware";
 import {
   rateLimitLogin,
   rateLimitReportIssue,
@@ -93,6 +95,20 @@ app.use("/api/invitations/accept", rateLimitInvitationAccept);
 app.use("/api/invitations/validate", rateLimitInvitationValidate);
 app.use("/api/invitations", invitationsRoutes);
 app.use("/api/companies", companiesRoutes);
+
+app.get("/api/files/:filename", authenticateToken, (req, res) => {
+  const filename = path.basename(req.params.filename);
+  const filePath = path.resolve(uploadsRoot, filename);
+  if (!fs.existsSync(filePath)) {
+    res.status(404).json({ message: "Archivo no encontrado" });
+    return;
+  }
+  res.sendFile(filePath, (err) => {
+    if (err && !res.headersSent) {
+      res.status(500).json({ message: "Error al enviar el archivo" });
+    }
+  });
+});
 
 app.use(notFoundHandler);
 app.use(errorHandler);

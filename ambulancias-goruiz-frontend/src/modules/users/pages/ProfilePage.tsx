@@ -10,6 +10,7 @@ import type { User, AmbulanceRole } from "../domain/types";
 
 import { useTranslation } from "react-i18next";
 import { buildImageUrl } from "../../../utils/apiOrigins";
+import { openSecureFile } from "../../../utils/openSecureFile";
 import FileUpload from "../../../components/common/FileUpload";
 import SaveIconButton from "../../../components/common/actions/SaveIconButton";
 import DangerDeleteButton from "../../../components/common/actions/DangerDeleteButton";
@@ -753,15 +754,14 @@ const Profile = ({ userId }: ProfileProps) => {
                         {formData.documents.map((docUrl, index) => (
                           <li key={index} className="flex justify-center">
                             <div className="inline-flex items-center gap-1 max-w-[220px]">
-                              <a
-                                href={buildImageUrl(docUrl)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="truncate text-blue-600 hover:text-blue-700 underline"
+                              <button
+                                type="button"
+                                onClick={() => openSecureFile(docUrl)}
+                                className="truncate text-blue-600 hover:text-blue-700 underline text-left"
                                 title={displayFileNameFromUrl(docUrl)}
                               >
                                 {displayFileNameFromUrl(docUrl)}
-                              </a>
+                              </button>
 
                               <DeleteIconButton
                                 title={t("pages.profile.documents.deleteTitle")}

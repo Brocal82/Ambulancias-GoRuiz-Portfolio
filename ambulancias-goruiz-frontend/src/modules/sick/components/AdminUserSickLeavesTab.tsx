@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
-import { buildImageUrl } from "../../../utils/apiOrigins";
+import { openSecureFile } from "../../../utils/openSecureFile";
 import { displayFileNameFromUrl } from "../../../utils/fileName";
 import {
   adminListSickLeaves,
@@ -199,14 +199,13 @@ export default function AdminUserSickLeavesTab({ userId }: Props) {
                                       <span aria-hidden="true" className="mr-1">
                                         📎
                                       </span>
-                                      <a
-                                        href={buildImageUrl(url)}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="truncate max-w-[180px] text-slate-700 hover:text-slate-900"
+                                      <button
+                                        type="button"
+                                        onClick={() => openSecureFile(url)}
+                                        className="truncate max-w-[180px] text-slate-700 hover:text-slate-900 text-left"
                                       >
                                         {label}
-                                      </a>
+                                      </button>
                                     </li>
                                   );
                                 })}

@@ -1,7 +1,7 @@
 //src/modules/messages/components/MessageItem.tsx
 import type { Message } from "../domain/types";
 import { format } from "date-fns";
-import { buildAttachmentUrl } from "../utils/buildAttachmentUrl";
+import { openSecureFile } from "../../../utils/openSecureFile";
 import { useTranslation } from "react-i18next";
 import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 
@@ -125,11 +125,9 @@ const MessageItem = ({
                         <ul className="mt-2 flex flex-wrap justify-start gap-2">
                             {message.attachments.map((att) => (
                                 <li key={att.filename} className="inline-flex items-center">
-                                    <a
-                                        href={buildAttachmentUrl(att, message.sentAt)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        download
+                                    <button
+                                        type="button"
+                                        onClick={() => openSecureFile(att.url, att.originalName)}
                                         className="group inline-flex items-center max-w-full rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-[11px] hover:bg-slate-100"
                                         title={att.originalName}
                                     >
@@ -139,7 +137,7 @@ const MessageItem = ({
                                         <span className="truncate max-w-[180px]">
                                             {att.originalName}
                                         </span>
-                                    </a>
+                                    </button>
                                 </li>
                             ))}
                         </ul>

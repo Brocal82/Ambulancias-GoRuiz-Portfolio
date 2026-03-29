@@ -10,7 +10,7 @@ import {
   type SickLeave,
 } from "../domain";
 import FileUpload from "../../../components/common/FileUpload";
-import { buildImageUrl } from "../../../utils/apiOrigins";
+import { openSecureFile } from "../../../utils/openSecureFile";
 import { displayFileNameFromUrl } from "../../../utils/fileName";
 import SickLeaveRequestForm from "../components/SickLeaveRequestForm";
 import StatusBadge from "../../../components/common/StatusBadge";
@@ -502,14 +502,13 @@ export default function WorkerSickLeavesPage() {
                                           <span aria-hidden="true" className="mr-1">
                                             📎
                                           </span>
-                                          <a
-                                            href={buildImageUrl(url)}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="truncate max-w-[180px] text-slate-700 hover:text-slate-900"
+                                          <button
+                                            type="button"
+                                            onClick={() => openSecureFile(url)}
+                                            className="truncate max-w-[180px] text-slate-700 hover:text-slate-900 text-left"
                                           >
                                             {label}
-                                          </a>
+                                          </button>
                                         </li>
                                       );
                                     })}
