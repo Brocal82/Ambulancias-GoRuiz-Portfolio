@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { Request, Response, RequestHandler } from "express";
 import User from "../models/user.model";
 import { IUser } from "../models/user.model";
@@ -430,16 +432,25 @@ async function removeDocumentFromUser(
   const user = await User.findById(targetUserId);
   if (!user) return null;
 
+  const wasInDocuments = (user.documents || []).includes(filePath);
   user.documents = (user.documents || []).filter((doc) => doc !== filePath);
 
   const pscheinPath = user.pscheinDocumentPath?.trim();
-  if (pscheinPath && pscheinPath === filePath.trim()) {
+  const wasInPschein = !!(pscheinPath && pscheinPath === filePath.trim());
+  if (wasInPschein) {
     user.pscheinDocumentPath = undefined;
     user.pscheinConfirmedAt = undefined;
     user.pscheinConfirmedBy = undefined;
   }
 
   await user.save();
+
+  if (wasInDocuments || wasInPschein) {
+    const uploadsDir = path.join(__dirname, "../../../../uploads");
+    const filename = path.basename(filePath);
+    const absolutePath = path.join(uploadsDir, filename);
+    await fs.promises.unlink(absolutePath).catch(() => {});
+  }
 
   return { documents: user.documents };
 }
