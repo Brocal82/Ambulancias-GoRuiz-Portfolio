@@ -25,6 +25,8 @@ export interface ITeamModel extends Document {
    */
   ambulanceId?: Types.ObjectId | null;
 
+  companyId?: Types.ObjectId | null;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,6 +54,14 @@ const TeamSchema = new Schema<ITeamModel>(
       ref: "Ambulance",
       required: false,
       default: null,
+    },
+
+    companyId: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
+      required: false,
+      default: null,
+      index: true,
     },
   },
   { timestamps: true },
