@@ -65,8 +65,16 @@ export async function deleteVacationRequestRecord(
   if (!companyId || String(companyId).trim() === "") {
     return { kind: "forbidden" as const };
   }
-  const user = request.user as { companyId?: unknown };
-  if (!isSameCompany(user?.companyId, companyId)) {
+  let match: boolean;
+  if (request.companyId) {
+    // New record (Phase 1+): direct check
+    match = String(request.companyId) === String(companyId);
+  } else {
+    // Legacy record (companyId null): existing indirect check, unchanged
+    const user = request.user as { companyId?: unknown };
+    match = isSameCompany(user?.companyId, companyId);
+  }
+  if (!match) {
     return { kind: "forbidden" as const };
   }
 

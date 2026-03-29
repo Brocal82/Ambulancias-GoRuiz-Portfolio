@@ -7,17 +7,15 @@ export async function getAllVacationRequests(companyId?: string | null) {
   if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
     return [];
   }
-  const userIds = await User.find({
-    companyId: new mongoose.Types.ObjectId(raw),
-  })
-    .select("_id")
-    .lean();
+  const companyOid = new mongoose.Types.ObjectId(raw);
+  const userIds = await User.find({ companyId: companyOid }).select("_id").lean();
   const ids = userIds.map((u) => (u as unknown as { _id: mongoose.Types.ObjectId })._id);
-  if (ids.length === 0) return [];
-  return VacationRequest.find({ user: { $in: ids } }).populate(
-    "user",
-    "name lastName email",
-  );
+  return VacationRequest.find({
+    $or: [
+      { companyId: companyOid },
+      { companyId: null, user: { $in: ids } },
+    ],
+  }).populate("user", "name lastName email");
 }
 
 export async function getVacationRequestsForUser(userId: string) {
@@ -35,12 +33,14 @@ export async function countVacationRequestsByStatus(
   if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
     return 0;
   }
-  const userIds = await User.find({
-    companyId: new mongoose.Types.ObjectId(raw),
-  })
-    .select("_id")
-    .lean();
+  const companyOid = new mongoose.Types.ObjectId(raw);
+  const userIds = await User.find({ companyId: companyOid }).select("_id").lean();
   const ids = userIds.map((u) => (u as unknown as { _id: mongoose.Types.ObjectId })._id);
-  if (ids.length === 0) return 0;
-  return VacationRequest.countDocuments({ status, user: { $in: ids } });
+  return VacationRequest.countDocuments({
+    status,
+    $or: [
+      { companyId: companyOid },
+      { companyId: null, user: { $in: ids } },
+    ],
+  });
 }

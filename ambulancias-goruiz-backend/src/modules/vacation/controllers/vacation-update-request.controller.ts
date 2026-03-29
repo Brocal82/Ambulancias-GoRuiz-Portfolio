@@ -49,11 +49,19 @@ export const updateVacationRequest = async (
         res.status(404).json({ message: "Solicitud no encontrada" });
         throw createVacationUpdateAbortError();
       }
-      const userDoc = await User.findById(request.user)
-        .select("companyId")
-        .lean();
-      const userCompanyId = userDoc ? (userDoc as { companyId?: unknown }).companyId : null;
-      if (!isSameCompany(userCompanyId, companyResult.companyId)) {
+      let matchUpdate: boolean;
+      if (request.companyId) {
+        // New record (Phase 1+): direct check, no extra DB query
+        matchUpdate = String(request.companyId) === String(companyResult.companyId);
+      } else {
+        // Legacy record (companyId null): existing indirect check, unchanged
+        const userDoc = await User.findById(request.user)
+          .select("companyId")
+          .lean();
+        const userCompanyId = userDoc ? (userDoc as { companyId?: unknown }).companyId : null;
+        matchUpdate = isSameCompany(userCompanyId, companyResult.companyId);
+      }
+      if (!matchUpdate) {
         res.status(403).json({ message: "No tienes permiso para modificar esta solicitud" });
         throw createVacationUpdateAbortError();
       }
