@@ -18,22 +18,20 @@ export async function getSickLeaves(input: {
   if (status && ["pending", "accepted", "rejected"].includes(status)) {
     q.status = status;
   }
+  const companyOid = new mongoose.Types.ObjectId(raw);
   const userIds = await User.find({
-    companyId: new mongoose.Types.ObjectId(raw),
+    companyId: companyOid,
   })
     .select("_id")
     .lean();
   const ids = userIds.map((u) => (u as unknown as { _id: mongoose.Types.ObjectId })._id);
-  if (ids.length === 0) return [];
   if (user && mongoose.Types.ObjectId.isValid(user)) {
-    const userObjId = new mongoose.Types.ObjectId(user);
-    if (!ids.some((id: mongoose.Types.ObjectId) => id.equals(userObjId))) {
-      return [];
-    }
-    q.user = userObjId;
-  } else {
-    q.user = { $in: ids };
+    q.user = new mongoose.Types.ObjectId(user);
   }
+  q.$or = [
+    { companyId: companyOid },
+    { companyId: null, user: { $in: ids } },
+  ];
 
   return SickLeave.find(q)
     .sort({ createdAt: -1 })

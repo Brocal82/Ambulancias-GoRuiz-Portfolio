@@ -43,9 +43,17 @@ export async function attachSickDocument(req: Request, res: Response) {
         res.status(companyResult.statusCode).json({ message: companyResult.message });
         return;
       }
-      const userDoc = await User.findById(sick.user).select("companyId").lean();
-      const userCo = userDoc ? (userDoc as { companyId?: unknown }).companyId : null;
-      if (!isSameCompany(userCo, companyResult.companyId)) {
+      let matchAttach: boolean;
+      if (sick.companyId) {
+        // New record (Phase 1+): direct check
+        matchAttach = String(sick.companyId) === String(companyResult.companyId);
+      } else {
+        // Legacy record (companyId null): existing indirect check, unchanged
+        const userDoc = await User.findById(sick.user).select("companyId").lean();
+        const userCo = userDoc ? (userDoc as { companyId?: unknown }).companyId : null;
+        matchAttach = isSameCompany(userCo, companyResult.companyId);
+      }
+      if (!matchAttach) {
         res.status(403).json({ message: "No tienes permiso para adjuntar documento a esta baja" });
         return;
       }
@@ -127,9 +135,17 @@ export async function attachSickDocumentFile(req: Request, res: Response) {
         res.status(companyResult.statusCode).json({ message: companyResult.message });
         return;
       }
-      const userDoc = await User.findById(sick.user).select("companyId").lean();
-      const userCo = userDoc ? (userDoc as { companyId?: unknown }).companyId : null;
-      if (!isSameCompany(userCo, companyResult.companyId)) {
+      let matchAttachFile: boolean;
+      if (sick.companyId) {
+        // New record (Phase 1+): direct check
+        matchAttachFile = String(sick.companyId) === String(companyResult.companyId);
+      } else {
+        // Legacy record (companyId null): existing indirect check, unchanged
+        const userDoc = await User.findById(sick.user).select("companyId").lean();
+        const userCo = userDoc ? (userDoc as { companyId?: unknown }).companyId : null;
+        matchAttachFile = isSameCompany(userCo, companyResult.companyId);
+      }
+      if (!matchAttachFile) {
         res.status(403).json({ message: "No tienes permiso para adjuntar documento a esta baja" });
         return;
       }

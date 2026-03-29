@@ -90,8 +90,16 @@ export async function acceptSickLeave(req: Request, res: Response) {
       res.status(404).json({ message: "Baja no encontrada" });
       return;
     }
-    const userCo = (sick.user as { companyId?: unknown })?.companyId;
-    if (!isSameCompany(userCo, companyResult.companyId)) {
+    let matchAccept: boolean;
+    if (sick.companyId) {
+      // New record (Phase 1+): direct check
+      matchAccept = String(sick.companyId) === String(companyResult.companyId);
+    } else {
+      // Legacy record (companyId null): existing indirect check, unchanged
+      const userCo = (sick.user as { companyId?: unknown })?.companyId;
+      matchAccept = isSameCompany(userCo, companyResult.companyId);
+    }
+    if (!matchAccept) {
       res.status(403).json({ message: "No tienes permiso para aceptar esta baja" });
       return;
     }
@@ -133,9 +141,17 @@ export async function rejectSickLeave(req: Request, res: Response) {
       res.status(404).json({ message: "Baja no encontrada" });
       return;
     }
-    const userDoc = await User.findById(sick.user).select("companyId").lean();
-    const userCo = userDoc ? (userDoc as { companyId?: unknown }).companyId : null;
-    if (!isSameCompany(userCo, companyResult.companyId)) {
+    let matchReject: boolean;
+    if (sick.companyId) {
+      // New record (Phase 1+): direct check
+      matchReject = String(sick.companyId) === String(companyResult.companyId);
+    } else {
+      // Legacy record (companyId null): existing indirect check, unchanged
+      const userDoc = await User.findById(sick.user).select("companyId").lean();
+      const userCo = userDoc ? (userDoc as { companyId?: unknown }).companyId : null;
+      matchReject = isSameCompany(userCo, companyResult.companyId);
+    }
+    if (!matchReject) {
       res.status(403).json({ message: "No tienes permiso para rechazar esta baja" });
       return;
     }
