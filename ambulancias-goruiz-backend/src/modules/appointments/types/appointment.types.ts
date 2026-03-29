@@ -22,6 +22,7 @@ export interface IAppointment {
   status: AppointmentStatus;
   proposedSlots: TimeSlot[]; // máx 3, ordenados asc por start
   selectedSlot?: TimeSlot | null; // debe pertenecer a proposedSlots al confirmar
+  companyId?: Types.ObjectId | null;
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -7,8 +7,9 @@ export async function createSickLeaveRecord(input: {
   endDate: Date;
   note?: string;
   documentUrl?: string;
+  companyId?: string;
 }) {
-  const { userId, startDate, endDate, note, documentUrl } = input;
+  const { userId, startDate, endDate, note, documentUrl, companyId } = input;
 
   return SickLeave.create({
     user: new mongoose.Types.ObjectId(userId),
@@ -17,6 +18,9 @@ export async function createSickLeaveRecord(input: {
     status: "pending",
     note,
     documentUrl,
+    ...(companyId && mongoose.Types.ObjectId.isValid(companyId) && {
+      companyId: new mongoose.Types.ObjectId(companyId),
+    }),
   });
 }
 

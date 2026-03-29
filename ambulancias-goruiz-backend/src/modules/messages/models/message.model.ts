@@ -9,6 +9,7 @@ export interface IMessage extends Document {
   readBy: mongoose.Types.ObjectId[];
   removedBy: mongoose.Types.ObjectId[];
   toAllWorkers?: boolean;
+  companyId?: mongoose.Types.ObjectId | null;
   attachments?: {
     originalName: string;
     filename: string;
@@ -71,6 +72,13 @@ const messageSchema = new Schema<IMessage>({
   toAllWorkers: {
     type: Boolean,
     default: false,
+  },
+  companyId: {
+    type: Schema.Types.ObjectId,
+    ref: "Company",
+    required: false,
+    default: null,
+    index: true,
   },
   attachments: {
     type: [attachmentSchema],

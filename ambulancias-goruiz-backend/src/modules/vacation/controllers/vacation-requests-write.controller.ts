@@ -22,6 +22,7 @@ export const createVacationRequest = async (
       userId,
       startDate,
       endDate,
+      companyId: req.companyId,
     });
 
     res.status(201).json(newRequest);

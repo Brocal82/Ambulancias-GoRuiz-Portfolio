@@ -26,6 +26,14 @@ const AppointmentSchema = new Schema<AppointmentDoc>(
     },
     adminId: { type: Schema.Types.ObjectId, ref: "User" },
 
+    companyId: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
+      required: false,
+      default: null,
+      index: true,
+    },
+
     reason: { type: String, required: true, trim: true, maxlength: 120 },
     details: { type: String, required: true, trim: true, maxlength: 5000 },
 

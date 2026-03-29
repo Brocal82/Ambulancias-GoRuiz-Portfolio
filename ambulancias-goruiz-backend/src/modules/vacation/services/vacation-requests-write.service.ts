@@ -7,8 +7,9 @@ export async function createVacationRequestRecord(input: {
   userId: string;
   startDate: string | Date;
   endDate: string | Date;
+  companyId?: string;
 }) {
-  const { userId, startDate, endDate } = input;
+  const { userId, startDate, endDate, companyId } = input;
 
   const newRequest = new VacationRequest({
     user: new mongoose.Types.ObjectId(userId),
@@ -16,6 +17,9 @@ export async function createVacationRequestRecord(input: {
     endDate,
     status: "pending",
     requestedAt: new Date(),
+    ...(companyId && mongoose.Types.ObjectId.isValid(companyId) && {
+      companyId: new mongoose.Types.ObjectId(companyId),
+    }),
   });
 
   await newRequest.save();

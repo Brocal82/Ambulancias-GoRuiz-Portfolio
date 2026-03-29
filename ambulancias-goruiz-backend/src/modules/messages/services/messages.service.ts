@@ -59,6 +59,7 @@ export async function createMessage(input: CreateMessageInput) {
     recipients: finalRecipients,
     toAllWorkers: input.toAllWorkers,
     attachments: input.attachments,
+    companyId: new mongoose.Types.ObjectId(input.senderCompanyId),
   });
 
   return newMessage;

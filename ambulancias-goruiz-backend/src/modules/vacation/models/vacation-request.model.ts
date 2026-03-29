@@ -5,6 +5,13 @@ export type IVacationRequestModel = HydratedDocument<IVacationRequest>;
 
 const VacationRequestSchema = new Schema<IVacationRequest>({
   user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  companyId: {
+    type: Schema.Types.ObjectId,
+    ref: "Company",
+    required: false,
+    default: null,
+    index: true,
+  },
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
   requestedAt: { type: Date, default: Date.now },

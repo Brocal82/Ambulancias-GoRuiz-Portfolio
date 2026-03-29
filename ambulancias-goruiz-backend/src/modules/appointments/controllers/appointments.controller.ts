@@ -9,7 +9,7 @@ export const requestAppointment = async (
 ): Promise<void> => {
   try {
     const workerId = req.userId as string;
-    const created = await appointmentsService.requestAppointment(workerId, req.body);
+    const created = await appointmentsService.requestAppointment(workerId, req.body, req.companyId);
     res.status(201).json(created);
   } catch (err: unknown) {
     if (err instanceof AppointmentError) {

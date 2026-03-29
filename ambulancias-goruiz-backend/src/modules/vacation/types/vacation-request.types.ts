@@ -10,4 +10,5 @@ export interface IVacationRequest {
   adminOptionEndDate?: Date;
   adminNote?: string;
   userResponse?: "accepted" | "cancelled";
+  companyId?: mongoose.Types.ObjectId | null;
 }

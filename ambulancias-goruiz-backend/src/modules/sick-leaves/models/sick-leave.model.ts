@@ -9,6 +9,7 @@ export type SickVerificationStatus =
 
 export interface ISickLeave extends Document {
   user: Types.ObjectId;
+  companyId?: Types.ObjectId | null;
   startDate: Date; // Inicio de la baja (zona lógica: Europe/Berlin)
   endDate: Date; // Fin de la baja (inclusive, zona lógica: Europe/Berlin)
   status: SickLeaveStatus; // pending | accepted | rejected
@@ -35,6 +36,13 @@ const SickLeaveSchema = new Schema<ISickLeave>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true,
+    },
+    companyId: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
+      required: false,
+      default: null,
       index: true,
     },
     startDate: { type: Date, required: true },

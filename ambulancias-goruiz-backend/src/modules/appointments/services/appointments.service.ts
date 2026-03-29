@@ -66,6 +66,7 @@ const validateSlots = (slots: TimeSlot[]) => {
 export async function requestAppointment(
   workerId: string,
   body: { reason?: string; details?: string },
+  companyId?: string,
 ) {
   const { reason, details } = body;
   if (!reason || !details) {
@@ -79,6 +80,9 @@ export async function requestAppointment(
     status: "pending",
     proposedSlots: [],
     selectedSlot: null,
+    ...(companyId && mongoose.Types.ObjectId.isValid(companyId) && {
+      companyId: new mongoose.Types.ObjectId(companyId),
+    }),
   };
 
   return await Appointment.create(appointment);

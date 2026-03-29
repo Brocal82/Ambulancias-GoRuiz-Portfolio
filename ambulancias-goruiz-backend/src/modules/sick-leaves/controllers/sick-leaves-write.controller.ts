@@ -62,6 +62,7 @@ export async function createSickLeave(req: Request, res: Response) {
       endDate: end,
       note: parsed.note,
       documentUrl: parsed.documentUrl,
+      companyId: req.companyId,
     });
 
     res.status(201).json(doc);
