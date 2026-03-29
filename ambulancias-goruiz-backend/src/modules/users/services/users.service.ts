@@ -14,6 +14,7 @@ import type {
   UpdateUserDTO,
 } from "../utils/users.payloads";
 import { validateEmail } from "../utils/users.validators";
+import { isSameCompany } from "../../../utils/requireCompany";
 
 const ZONE = "Europe/Berlin";
 
@@ -179,9 +180,17 @@ export async function getUsersWithTodayVacationInfo(companyId?: string) {
 export async function updateUserService(
   userId: string,
   data: Partial<UpdateUserDTO>,
+  adminCompanyId?: string,
 ) {
   if (!userId) {
     throw new Error("ID de usuario no proporcionado");
+  }
+
+  if (adminCompanyId) {
+    const target = await User.findById(userId).select("companyId").lean();
+    if (!target || !isSameCompany((target as any).companyId, adminCompanyId)) {
+      throw new Error("No tienes permiso para editar este usuario");
+    }
   }
 
   // Solo validar campos que vienen en el update (PATCH parcial)
@@ -344,7 +353,14 @@ export async function loginUserService(
   };
 }
 
-export async function deleteUserService(userId: string) {
+export async function deleteUserService(userId: string, adminCompanyId?: string) {
+  if (adminCompanyId) {
+    const target = await User.findById(userId).select("companyId").lean();
+    if (!target || !isSameCompany((target as any).companyId, adminCompanyId)) {
+      throw new Error("No tienes permiso para eliminar este usuario");
+    }
+  }
+
   const deletedUser = await User.findByIdAndDelete(userId);
 
   if (!deletedUser) {

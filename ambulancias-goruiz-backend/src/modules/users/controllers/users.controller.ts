@@ -84,6 +84,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     return;
   }
 
+  let adminCompanyId: string | undefined;
   if (req.userRole === "admin" && userId !== req.userId) {
     const companyResult = requireCompanyForAdmin(req);
     if (!companyResult.ok) {
@@ -95,6 +96,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       res.status(403).json({ message: "No tienes permiso para editar este usuario" });
       return;
     }
+    adminCompanyId = companyResult.companyId;
   }
 
   try {
@@ -109,7 +111,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       delete dto.ambulanceRole;
       delete dto.pscheinExpiry;
     }
-    const updatedUser = await updateUserService(userId, dto);
+    const updatedUser = await updateUserService(userId, dto, adminCompanyId);
     res.status(200).json(sanitizeUser(updatedUser));
   } catch (error: any) {
     const msg = String(error?.message || "");
@@ -126,6 +128,11 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
 
     if (msg.includes("no encontrado")) {
       res.status(404).json({ message: msg });
+      return;
+    }
+
+    if (msg.includes("permiso")) {
+      res.status(403).json({ message: msg });
       return;
     }
 
@@ -187,6 +194,7 @@ export const deleteUser = async (
     return;
   }
 
+  let adminCompanyId: string | undefined;
   if (req.userRole === "admin" && id !== req.userId) {
     const companyResult = requireCompanyForAdmin(req);
     if (!companyResult.ok) {
@@ -198,16 +206,22 @@ export const deleteUser = async (
       res.status(403).json({ message: "No tienes permiso para eliminar este usuario" });
       return;
     }
+    adminCompanyId = companyResult.companyId;
   }
 
   try {
-    await deleteUserService(id);
+    await deleteUserService(id, adminCompanyId);
     res.status(200).json({ message: "Usuario eliminado correctamente" });
   } catch (error: any) {
     const msg = String(error?.message || "");
 
     if (msg.includes("no encontrado")) {
       res.status(404).json({ message: msg });
+      return;
+    }
+
+    if (msg.includes("permiso")) {
+      res.status(403).json({ message: msg });
       return;
     }
 
