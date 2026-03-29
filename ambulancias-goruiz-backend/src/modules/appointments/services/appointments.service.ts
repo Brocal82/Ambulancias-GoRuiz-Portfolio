@@ -97,9 +97,12 @@ export async function getPendingAppointments(companyId?: string | null) {
     return [];
   }
   const filter: Record<string, unknown> = { status: "pending" };
+  const companyOid = new mongoose.Types.ObjectId(companyId);
   const workerIds = await getWorkerIdsForCompany(companyId);
-  if (workerIds.length === 0) return [];
-  filter.workerId = { $in: workerIds };
+  filter.$or = [
+    { companyId: companyOid },
+    { companyId: null, workerId: { $in: workerIds } },
+  ];
   return await Appointment.find(filter)
     .populate("workerId", "name lastName email")
     .sort({ createdAt: -1 });
@@ -112,9 +115,12 @@ export async function getOpenAppointments(companyId?: string | null) {
   const filter: Record<string, unknown> = {
     status: { $in: ["pending", "proposed"] },
   };
+  const companyOid = new mongoose.Types.ObjectId(companyId);
   const workerIds = await getWorkerIdsForCompany(companyId);
-  if (workerIds.length === 0) return [];
-  filter.workerId = { $in: workerIds };
+  filter.$or = [
+    { companyId: companyOid },
+    { companyId: null, workerId: { $in: workerIds } },
+  ];
   return await Appointment.find(filter)
     .populate("workerId", "name lastName email")
     .sort({ createdAt: -1 })
@@ -241,9 +247,12 @@ export async function getCalendarAppointments(
     status: { $in: ["confirmed", "rescheduled"] },
     "selectedSlot.start": { $gte: fromDate, $lte: toDate },
   };
+  const companyOid = new mongoose.Types.ObjectId(companyId);
   const workerIds = await getWorkerIdsForCompany(companyId);
-  if (workerIds.length === 0) return [];
-  filter.workerId = { $in: workerIds };
+  filter.$or = [
+    { companyId: companyOid },
+    { companyId: null, workerId: { $in: workerIds } },
+  ];
 
   return await Appointment.find(filter)
     .populate("workerId", "name lastName email")
@@ -384,9 +393,12 @@ export async function getAppointmentsCount(
     return { count: 0 };
   }
   const filter: Record<string, unknown> = { status: normalizedStatus };
+  const companyOid = new mongoose.Types.ObjectId(companyId);
   const workerIds = await getWorkerIdsForCompany(companyId);
-  if (workerIds.length === 0) return { count: 0 };
-  filter.workerId = { $in: workerIds };
+  filter.$or = [
+    { companyId: companyOid },
+    { companyId: null, workerId: { $in: workerIds } },
+  ];
   const count = await Appointment.countDocuments(filter);
   return { count };
 }
