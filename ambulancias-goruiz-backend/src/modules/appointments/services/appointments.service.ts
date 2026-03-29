@@ -134,10 +134,17 @@ export async function proposeSlots(
   if (!companyId || String(companyId).trim() === "") {
     throw new AppointmentError("No tienes permiso para modificar esta cita.", 403);
   }
-  const worker = await User.findById(appointment.workerId).select("companyId").lean();
-  const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
-  const match = workerCo && String(workerCo) === String(companyId);
-  if (!match) {
+  let matchPropose: boolean;
+  if (appointment.companyId) {
+    // New record (Phase 1+): direct check, no extra DB query
+    matchPropose = String(appointment.companyId) === String(companyId);
+  } else {
+    // Legacy record (companyId null): existing indirect check, unchanged
+    const worker = await User.findById(appointment.workerId).select("companyId").lean();
+    const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
+    matchPropose = !!(workerCo && String(workerCo) === String(companyId));
+  }
+  if (!matchPropose) {
     throw new AppointmentError("No tienes permiso para modificar esta cita.", 403);
   }
   if (appointment.status !== "pending" && appointment.status !== "proposed") {
@@ -261,10 +268,17 @@ export async function updateAppointment(
   if (!companyId || String(companyId).trim() === "") {
     throw new AppointmentError("No tienes permiso para modificar esta cita.", 403);
   }
-  const worker = await User.findById(appointment.workerId).select("companyId").lean();
-  const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
-  const match = workerCo && String(workerCo) === String(companyId);
-  if (!match) {
+  let matchUpdate: boolean;
+  if (appointment.companyId) {
+    // New record (Phase 1+): direct check, no extra DB query
+    matchUpdate = String(appointment.companyId) === String(companyId);
+  } else {
+    // Legacy record (companyId null): existing indirect check, unchanged
+    const worker = await User.findById(appointment.workerId).select("companyId").lean();
+    const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
+    matchUpdate = !!(workerCo && String(workerCo) === String(companyId));
+  }
+  if (!matchUpdate) {
     throw new AppointmentError("No tienes permiso para modificar esta cita.", 403);
   }
 
@@ -306,10 +320,17 @@ export async function cancelAppointment(
   if (!companyId || String(companyId).trim() === "") {
     throw new AppointmentError("No tienes permiso para cancelar esta cita.", 403);
   }
-  const worker = await User.findById(appointment.workerId).select("companyId").lean();
-  const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
-  const match = workerCo && String(workerCo) === String(companyId);
-  if (!match) {
+  let matchCancel: boolean;
+  if (appointment.companyId) {
+    // New record (Phase 1+): direct check, no extra DB query
+    matchCancel = String(appointment.companyId) === String(companyId);
+  } else {
+    // Legacy record (companyId null): existing indirect check, unchanged
+    const worker = await User.findById(appointment.workerId).select("companyId").lean();
+    const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
+    matchCancel = !!(workerCo && String(workerCo) === String(companyId));
+  }
+  if (!matchCancel) {
     throw new AppointmentError("No tienes permiso para cancelar esta cita.", 403);
   }
 
