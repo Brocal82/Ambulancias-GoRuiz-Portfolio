@@ -64,8 +64,21 @@ app.use(express.json());
 // En producción, conviene servir /uploads desde proxy reverso o CDN para mejor rendimiento y control
 const uploadsDist = path.join(__dirname, "./uploads");
 const uploadsRoot = path.join(__dirname, "../uploads");
-app.use("/uploads", express.static(uploadsDist));
-app.use("/uploads", express.static(uploadsRoot));
+
+// Phase 2: only allow public access to image files; all other types (e.g. PDF) must go through /api/files/:filename
+const ALLOWED_PUBLIC_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+
+const servePublicImages: express.RequestHandler = (req, res, next) => {
+  const ext = path.extname(req.path).toLowerCase();
+  if (!ALLOWED_PUBLIC_IMAGE_EXTENSIONS.has(ext)) {
+    res.status(403).json({ message: "Acceso no autorizado" });
+    return;
+  }
+  next();
+};
+
+app.use("/uploads", servePublicImages, express.static(uploadsDist));
+app.use("/uploads", servePublicImages, express.static(uploadsRoot));
 
 app.get("/health", (_req, res) => {
   const dbState = mongoose.connection.readyState === 1 ? "ok" : "down";
