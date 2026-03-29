@@ -104,11 +104,22 @@ export async function getMyMessages(
     .populate("sender", "name lastName companyId");
 }
 
-export async function getSentMessages(adminId: string) {
-  return await Message.find({
-    sender: adminId,
-    toAllWorkers: true,
-  })
+export async function getSentMessages(adminId: string, companyId?: string) {
+  const base = { sender: adminId, toAllWorkers: true };
+
+  if (companyId && mongoose.Types.ObjectId.isValid(companyId)) {
+    return await Message.find({
+      ...base,
+      $or: [
+        { companyId: new mongoose.Types.ObjectId(companyId) },
+        { companyId: null },
+      ],
+    })
+      .sort({ sentAt: -1 })
+      .select("subject body sentAt attachments");
+  }
+
+  return await Message.find(base)
     .sort({ sentAt: -1 })
     .select("subject body sentAt attachments");
 }
@@ -145,7 +156,11 @@ export async function deleteMessageForUser(userId: string, messageId: string) {
   return message;
 }
 
-export async function deleteMessageByAdmin(adminId: string, messageId: string) {
+export async function deleteMessageByAdmin(
+  adminId: string,
+  messageId: string,
+  companyId?: string,
+) {
   const message = await Message.findById(messageId);
 
   if (!message) {
@@ -154,6 +169,20 @@ export async function deleteMessageByAdmin(adminId: string, messageId: string) {
 
   if (message.sender.toString() !== adminId) {
     return { kind: "forbidden" as const };
+  }
+
+  if (companyId) {
+    if (message.companyId) {
+      if (String(message.companyId) !== String(companyId)) {
+        return { kind: "forbidden" as const };
+      }
+    } else {
+      const sender = await User.findById(adminId).select("companyId").lean();
+      const senderCompanyId = sender ? (sender as { companyId?: unknown }).companyId : null;
+      if (!senderCompanyId || String(senderCompanyId) !== String(companyId)) {
+        return { kind: "forbidden" as const };
+      }
+    }
   }
 
   await Message.deleteOne({ _id: messageId });

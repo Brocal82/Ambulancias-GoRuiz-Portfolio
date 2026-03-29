@@ -156,7 +156,7 @@ export const getSentMessages = async (
 
   try {
     const adminId = req.userId as string;
-    const messages = await messagesService.getSentMessages(adminId);
+    const messages = await messagesService.getSentMessages(adminId, companyResult.companyId);
     res.status(200).json(messages);
   } catch (error) {
     console.error("❌ Error al obtener mensajes enviados:", error);
@@ -264,6 +264,7 @@ export const deleteMessageByAdmin = async (
     const result = await messagesService.deleteMessageByAdmin(
       adminId,
       messageId,
+      companyResult.companyId,
     );
 
     if (result.kind === "not_found") {
