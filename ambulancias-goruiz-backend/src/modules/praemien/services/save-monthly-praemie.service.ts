@@ -1,6 +1,7 @@
 import { endOfMonth, startOfMonth } from "date-fns";
 import MonthlyPraemie from "../models/monthly-praemie.model";
 import { computeMonthlyPraemienStatsForUser } from "./get-monthly-summary.service";
+import { getCompanyObjectIdForPraemienUser } from "./resolvePraemienUserCompany";
 
 function getPremieLevel(averagePatients: number): string {
   let premieLevel = "\u274c No alcanza m\u00ednimo";
@@ -19,6 +20,8 @@ export async function saveMonthlyPraemieForUser(
 ) {
   const year = Number(yearQuery) || new Date().getFullYear();
   const month = Number(monthQuery) || new Date().getMonth() + 1;
+
+  const companyId = await getCompanyObjectIdForPraemienUser(userId);
 
   const monthStart = startOfMonth(new Date(year, month - 1));
   const monthEnd = endOfMonth(new Date(year, month - 1));
@@ -39,6 +42,7 @@ export async function saveMonthlyPraemieForUser(
     { userId, year, month },
     {
       userId,
+      companyId,
       year,
       month,
       averagePatients,
