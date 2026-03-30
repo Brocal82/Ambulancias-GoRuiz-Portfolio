@@ -3,6 +3,8 @@
  * Register público desactivado (8B). Workers/admins se crean por DB o invitación.
  */
 import bcrypt from "bcrypt";
+import fs from "fs";
+import path from "path";
 import mongoose from "mongoose";
 import request from "supertest";
 import { app } from "../app";
@@ -135,4 +137,36 @@ export async function createTestWorkerInCompany(
     ambulanceRole: "both",
   });
   return worker;
+}
+
+/** Misma carpeta física que `uploadsRoot` en `app.ts` (directorio `uploads` del backend). */
+export function getTestUploadsDir(): string {
+  return path.join(__dirname, "..", "..", "uploads");
+}
+
+/** Basename único para ficheros de prueba bajo `uploads/`. */
+export function uniqueUploadBasename(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.pdf`;
+}
+
+export async function writeTestUploadFile(
+  basename: string,
+  content: string = "test-bytes",
+): Promise<string> {
+  const dir = getTestUploadsDir();
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  const full = path.join(dir, basename);
+  await fs.promises.writeFile(full, content, "utf8");
+  return full;
+}
+
+export async function removeTestUploadFile(basename: string): Promise<void> {
+  const full = path.join(getTestUploadsDir(), basename);
+  try {
+    await fs.promises.unlink(full);
+  } catch {
+    // fichero ya ausente
+  }
 }
