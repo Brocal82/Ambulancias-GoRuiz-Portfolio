@@ -24,6 +24,7 @@ import companiesRoutes from "./modules/companies/routes";
 import { errorHandler } from "./middlewares/errorHandler";
 import { notFoundHandler } from "./middlewares/notFoundHandler";
 import { authenticateToken } from "./middlewares/authMiddleware";
+import { canAccessFile } from "./utils/fileOwnership";
 import {
   rateLimitLogin,
   rateLimitReportIssue,
@@ -109,13 +110,31 @@ app.use("/api/invitations/validate", rateLimitInvitationValidate);
 app.use("/api/invitations", invitationsRoutes);
 app.use("/api/companies", companiesRoutes);
 
-app.get("/api/files/:filename", authenticateToken, (req, res) => {
+app.get("/api/files/:filename", authenticateToken, async (req, res) => {
   const filename = path.basename(req.params.filename);
   const filePath = path.resolve(uploadsRoot, filename);
   if (!fs.existsSync(filePath)) {
     res.status(404).json({ message: "Archivo no encontrado" });
     return;
   }
+
+  try {
+    const allowed = await canAccessFile(
+      filename,
+      req.userId as string,
+      req.userRole as string,
+      req.companyId,
+    );
+    if (!allowed) {
+      res.status(403).json({ message: "Acceso no autorizado" });
+      return;
+    }
+  } catch (err) {
+    console.error("[fileOwnership] Error al verificar acceso:", err);
+    res.status(500).json({ message: "Error interno del servidor" });
+    return;
+  }
+
   res.sendFile(filePath, (err) => {
     if (err && !res.headersSent) {
       res.status(500).json({ message: "Error al enviar el archivo" });
