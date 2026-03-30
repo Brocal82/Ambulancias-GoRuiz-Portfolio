@@ -7,7 +7,8 @@ import request from "supertest";
 import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
-import { createTestAdminWithCompany, createTestUsers } from "./test-helpers";
+import { createTestAdminWithCompany, createTestWorkerInCompany } from "./test-helpers";
+import User from "../modules/users/models/user.model";
 
 const API = "/api";
 
@@ -15,15 +16,22 @@ describe("Hospitals - updateHospital (PUT/PATCH)", () => {
   let adminToken: string;
   let workerToken: string;
   let hospitalId: string;
+  let fixtureWorkerId: string;
 
   beforeAll(async () => {
     await mongoose.connect(env.MONGODB_URI);
-    const [legacy, dataWithCompany] = await Promise.all([
-      createTestUsers(),
-      createTestAdminWithCompany(),
-    ]);
+    const dataWithCompany = await createTestAdminWithCompany();
     adminToken = dataWithCompany.adminToken;
-    workerToken = legacy.workerToken;
+    const worker = await createTestWorkerInCompany(
+      new mongoose.Types.ObjectId(dataWithCompany.companyId),
+      Date.now(),
+    );
+    fixtureWorkerId = String(worker._id);
+    const wLogin = await request(app)
+      .post(`${API}/users/login`)
+      .send({ email: worker.email, password: "password123" });
+    expect(wLogin.status).toBe(200);
+    workerToken = wLogin.body.token as string;
 
     const createRes = await request(app)
       .post(`${API}/hospitals`)
@@ -39,6 +47,7 @@ describe("Hospitals - updateHospital (PUT/PATCH)", () => {
   });
 
   afterAll(async () => {
+    await User.deleteOne({ _id: fixtureWorkerId });
     await mongoose.disconnect();
   });
 

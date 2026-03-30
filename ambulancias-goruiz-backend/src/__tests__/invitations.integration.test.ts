@@ -7,9 +7,10 @@ import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
 import {
+  createTestAdminUser,
   createTestAdminWithCompany,
-  createTestUsers,
   createTestWorkerUser,
+  issueTestJwt,
 } from "./test-helpers";
 import Invitation from "../modules/invitations/models/invitation.model";
 import User from "../modules/users/models/user.model";
@@ -56,15 +57,23 @@ describe("Invitations - flujo base", () => {
     });
 
     it("rechaza crear invitación si falta companyId (admin sin empresa)", async () => {
-      const { adminToken } = await createTestUsers();
+      const admin = await createTestAdminUser(
+        `inv-admin-noco-${Date.now()}@example.com`,
+        "password123",
+      );
+      try {
+        const adminToken = issueTestJwt(String(admin._id), "admin");
 
-      const res = await request(app)
-        .post(`${API}/invitations`)
-        .set("Authorization", `Bearer ${adminToken}`)
-        .send({ email: "test@example.com", role: "worker" })
-        .expect(403);
+        const res = await request(app)
+          .post(`${API}/invitations`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ email: "test@example.com", role: "worker" })
+          .expect(403);
 
-      expect(res.body.message).toContain("empresa");
+        expect(res.body.message).toContain("empresa");
+      } finally {
+        await User.deleteOne({ _id: admin._id });
+      }
     });
 
     it("sin token devuelve 401", async () => {

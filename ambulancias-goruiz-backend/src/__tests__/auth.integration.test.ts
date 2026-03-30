@@ -7,6 +7,13 @@ import request from "supertest";
 import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
+import {
+  createTestAdminWithCompany,
+  createTestWorkerInCompany,
+  createTestWorkerUser,
+} from "./test-helpers";
+import User from "../modules/users/models/user.model";
+import Company from "../modules/companies/models/company.model";
 
 const API = "/api";
 
@@ -48,16 +55,38 @@ describe("Auth - register desactivado (8B)", () => {
     expect(res.body.message).toMatch(/deshabilitado|invitación/i);
   });
 
-  it("POST /api/users/login sigue funcionando para usuarios existentes", async () => {
-    const { createTestWorkerUser } = await import("./test-helpers");
-    const worker = await createTestWorkerUser(`login-test-${Date.now()}@example.com`);
+  it("POST /api/users/login succeeds for worker with companyId", async () => {
+    const data = await createTestAdminWithCompany();
+    const worker = await createTestWorkerInCompany(
+      new mongoose.Types.ObjectId(data.companyId),
+      Date.now(),
+    );
+    try {
+      const res = await request(app)
+        .post(`${API}/users/login`)
+        .send({ email: worker.email, password: "password123" })
+        .expect(200);
 
-    const res = await request(app)
-      .post(`${API}/users/login`)
-      .send({ email: worker.email, password: "password123" })
-      .expect(200);
+      expect(res.body.token).toBeDefined();
+      expect(res.body.user).toBeDefined();
+    } finally {
+      await User.deleteOne({ _id: worker._id });
+      await User.deleteOne({ _id: data.adminId });
+      await Company.deleteOne({ _id: data.companyId });
+    }
+  });
 
-    expect(res.body.token).toBeDefined();
-    expect(res.body.user).toBeDefined();
+  it("POST /api/users/login rejects worker without companyId", async () => {
+    const worker = await createTestWorkerUser(`login-noco-${Date.now()}@example.com`);
+    try {
+      const res = await request(app)
+        .post(`${API}/users/login`)
+        .send({ email: worker.email, password: "password123" })
+        .expect(403);
+
+      expect(res.body.message).toMatch(/empresa/i);
+    } finally {
+      await User.deleteOne({ _id: worker._id });
+    }
   });
 });

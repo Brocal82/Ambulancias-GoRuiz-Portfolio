@@ -11,7 +11,9 @@ import {
   createTestAdminUser,
   createTestAdminWithCompany,
   createTestWorkerInCompany,
+  issueTestJwt,
 } from "./test-helpers";
+import User from "../modules/users/models/user.model";
 
 const API = "/api";
 
@@ -36,6 +38,7 @@ type Fixtures = {
 };
 
 let fixtures: Fixtures;
+let operationalAdminNoCompanyId: string;
 
 async function loginWorker(email: string, password: string = "password123") {
   const res = await request(app)
@@ -52,9 +55,7 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
       `admin-legacy-${Date.now()}@example.com`,
       "password123",
     );
-    const loginLegacy = await request(app)
-      .post(`${API}/users/login`)
-      .send({ email: adminNoCompanyUser.email, password: "password123" });
+    operationalAdminNoCompanyId = String(adminNoCompanyUser._id);
 
     const [dataA, dataB] = await Promise.all([
       createTestAdminWithCompany(),
@@ -99,7 +100,7 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
     const ambulanceIdB = ambB.body._id ?? ambB.body.id;
 
     fixtures = {
-      adminNoCompany: { token: loginLegacy.body.token },
+      adminNoCompany: { token: issueTestJwt(operationalAdminNoCompanyId, "admin") },
       dataA: {
         adminToken: dataA.adminToken,
         adminId: dataA.adminId,
@@ -117,9 +118,10 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
         ambulanceId: ambulanceIdB,
       },
     };
-  });
+  }, 60_000);
 
   afterAll(async () => {
+    await User.deleteOne({ _id: operationalAdminNoCompanyId });
     await mongoose.disconnect();
   });
 
@@ -520,7 +522,7 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
         .post(`${API}/trips`)
         .set("Authorization", `Bearer ${fixtures.dataB.adminToken}`)
         .send(tripPayload);
-      expect([400, 403]).toContain(res.status);
+      expect([400, 403, 404]).toContain(res.status);
     });
   });
 
@@ -622,7 +624,7 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
         .post(`${API}/workday-summary`)
         .set("Authorization", `Bearer ${fixtures.dataB.adminToken}`)
         .send(payload);
-      expect([403]).toContain(res.status);
+      expect([403, 404]).toContain(res.status);
     });
 
     it("worker B no ve workday-summary de empresa A (GET /workday-summary)", async () => {

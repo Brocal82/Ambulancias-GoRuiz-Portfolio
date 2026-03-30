@@ -10,15 +10,18 @@ import {
   createTestSuperadmin,
   createTestAdminWithCompany,
   createTestAdminUser,
+  issueTestJwt,
 } from "./test-helpers";
+import User from "../modules/users/models/user.model";
 
 const API = "/api";
 
 describe("Companies - gestión superadmin", () => {
   let superadminToken: string;
   let adminToken: string;
-  let workerToken: string;
+  let adminNoCompanyToken: string;
   let companyId: string;
+  let legacyAdminId: string;
 
   beforeAll(async () => {
     await mongoose.connect(env.MONGODB_URI);
@@ -33,13 +36,12 @@ describe("Companies - gestión superadmin", () => {
       `legacy-${Date.now()}@example.com`,
       "password123",
     );
-    const legacyLogin = await request(app)
-      .post(`${API}/users/login`)
-      .send({ email: legacyAdmin.email, password: "password123" });
-    workerToken = legacyLogin.body.token;
+    legacyAdminId = String(legacyAdmin._id);
+    adminNoCompanyToken = issueTestJwt(legacyAdminId, "admin");
   });
 
   afterAll(async () => {
+    await User.deleteOne({ _id: legacyAdminId });
     await mongoose.disconnect();
   });
 
@@ -56,7 +58,7 @@ describe("Companies - gestión superadmin", () => {
     it("admin sin companyId no puede crear company", async () => {
       const res = await request(app)
         .post(`${API}/companies`)
-        .set("Authorization", `Bearer ${workerToken}`)
+        .set("Authorization", `Bearer ${adminNoCompanyToken}`)
         .send({ name: "Nueva Empresa" });
       expect(res.status).toBe(403);
     });

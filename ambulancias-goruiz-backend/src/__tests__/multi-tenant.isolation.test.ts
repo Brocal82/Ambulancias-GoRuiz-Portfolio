@@ -9,9 +9,10 @@ import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
 import {
+  createTestAdminUser,
   createTestAdminWithCompany,
-  createTestUsers,
   createTestWorkerInCompany,
+  issueTestJwt,
 } from "./test-helpers";
 import User from "../modules/users/models/user.model";
 
@@ -25,13 +26,19 @@ type TestFixtures = {
 };
 
 let fixtures: TestFixtures;
+let adminNoCompanyId: string;
 
 describe("Multi-tenant isolation", () => {
   beforeAll(async () => {
     await mongoose.connect(env.MONGODB_URI);
 
-    const [usersResult, dataA, dataB] = await Promise.all([
-      createTestUsers(),
+    const adminNoCo = await createTestAdminUser(
+      `mt-admin-noco-${Date.now()}@example.com`,
+      "password123",
+    );
+    adminNoCompanyId = String(adminNoCo._id);
+
+    const [dataA, dataB] = await Promise.all([
       createTestAdminWithCompany(),
       createTestAdminWithCompany(),
     ]);
@@ -48,7 +55,7 @@ describe("Multi-tenant isolation", () => {
     ]);
 
     fixtures = {
-      adminTokenNoCompany: usersResult.adminToken,
+      adminTokenNoCompany: issueTestJwt(adminNoCompanyId, "admin"),
       dataA: { adminToken: dataA.adminToken, companyId: dataA.companyId },
       dataB: { adminToken: dataB.adminToken, companyId: dataB.companyId },
       workerBId: String(workerB._id),
@@ -56,6 +63,7 @@ describe("Multi-tenant isolation", () => {
   });
 
   afterAll(async () => {
+    await User.deleteOne({ _id: adminNoCompanyId });
     await mongoose.disconnect();
   });
 

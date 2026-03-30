@@ -7,8 +7,10 @@ import request from "supertest";
 import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
-import { createTestUsers, createTestWorkerUser } from "./test-helpers";
+import { createTestAdminWithCompany, createTestWorkerInCompany } from "./test-helpers";
 import { Message } from "../modules/messages/models/message.model";
+import User from "../modules/users/models/user.model";
+import Company from "../modules/companies/models/company.model";
 
 const API = "/api";
 
@@ -17,6 +19,7 @@ describe("Messages - IDOR fix (read/remove)", () => {
   let workerAToken: string;
   let workerBToken: string;
   let adminId: string;
+  let companyId: string;
   let workerAId: string;
   let workerBId: string;
   let messageId: string;
@@ -24,19 +27,32 @@ describe("Messages - IDOR fix (read/remove)", () => {
   beforeAll(async () => {
     await mongoose.connect(env.MONGODB_URI);
 
-    const { adminId: aid, workerId: waId, adminToken: aTok, workerToken: waTok } =
-      await createTestUsers();
-    adminId = aid;
-    workerAId = waId;
-    adminToken = aTok;
-    workerAToken = waTok;
+    const data = await createTestAdminWithCompany();
+    adminId = data.adminId;
+    companyId = data.companyId;
+    adminToken = data.adminToken;
 
-    const workerBUser = await createTestWorkerUser(`worker-b-${Date.now()}@example.com`);
-    const workerBRes = await request(app)
+    const workerA = await createTestWorkerInCompany(
+      new mongoose.Types.ObjectId(companyId),
+      Date.now(),
+    );
+    const workerB = await createTestWorkerInCompany(
+      new mongoose.Types.ObjectId(companyId),
+      Date.now() + 1,
+    );
+    workerAId = String(workerA._id);
+    workerBId = String(workerB._id);
+
+    const loginA = await request(app)
       .post(`${API}/users/login`)
-      .send({ email: workerBUser.email, password: "password123" });
-    workerBToken = workerBRes.body.token;
-    workerBId = workerBRes.body.user?._id ?? "";
+      .send({ email: workerA.email, password: "password123" });
+    const loginB = await request(app)
+      .post(`${API}/users/login`)
+      .send({ email: workerB.email, password: "password123" });
+    expect(loginA.status).toBe(200);
+    expect(loginB.status).toBe(200);
+    workerAToken = loginA.body.token as string;
+    workerBToken = loginB.body.token as string;
 
     const message = await Message.create({
       subject: "Test message",
@@ -44,11 +60,23 @@ describe("Messages - IDOR fix (read/remove)", () => {
       sender: new mongoose.Types.ObjectId(adminId),
       recipients: [new mongoose.Types.ObjectId(workerAId)],
       toAllWorkers: false,
+      companyId: new mongoose.Types.ObjectId(companyId),
     });
     messageId = String(message._id);
-  });
+  }, 60_000);
 
   afterAll(async () => {
+    await Message.deleteOne({ _id: messageId });
+    await User.deleteMany({
+      _id: {
+        $in: [
+          new mongoose.Types.ObjectId(workerAId),
+          new mongoose.Types.ObjectId(workerBId),
+          new mongoose.Types.ObjectId(adminId),
+        ],
+      },
+    });
+    await Company.deleteOne({ _id: companyId });
     await mongoose.disconnect();
   });
 

@@ -4,14 +4,26 @@
  */
 import bcrypt from "bcrypt";
 import fs from "fs";
+import jwt from "jsonwebtoken";
 import path from "path";
 import mongoose from "mongoose";
 import request from "supertest";
 import { app } from "../app";
+import { env } from "../config/env";
 import User from "../modules/users/models/user.model";
 import Company from "../modules/companies/models/company.model";
 
 const API = "/api";
+
+/**
+ * JWT para tests cuando el actor no puede usar login real (p. ej. admin sin companyId).
+ * Payload alineado con `authenticateToken`.
+ */
+export function issueTestJwt(userId: string, role: string, companyId?: string): string {
+  const payload: Record<string, unknown> = { userId, role };
+  if (companyId) payload.companyId = companyId;
+  return jwt.sign(payload, env.JWT_SECRET, { expiresIn: "1h" });
+}
 
 export async function createTestAdminUser(email: string, password: string) {
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -63,6 +75,11 @@ export async function createTestWorkerUser(email?: string, password = "password1
   });
 }
 
+/**
+ * Crea admin + worker **sin** `companyId`. Con las reglas actuales de login **no** obtendrán
+ * tokens vía `POST /users/login`. Usar solo si se necesitan los IDs en BD; para peticiones
+ * autenticadas usar `issueTestJwt` (admin sin empresa) o `createTestAdminWithCompany` / `createTestWorkerInCompany` + login.
+ */
 export async function createTestUsers() {
   const suffix = Date.now();
   const adminEmail = `admin-test-${suffix}@example.com`;
