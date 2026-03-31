@@ -610,6 +610,7 @@ const Profile = ({ userId }: ProfileProps) => {
 
               {showPschein ? (
               <div className="mt-2 w-full min-w-0 pt-3 border-t border-slate-200">
+                {/* Certificado P-Schein (PDF): subida + caducidad + archivo (solo driver / both) */}
                 <div
                   className={`grid w-full min-w-0 grid-cols-1 gap-2 lg:gap-3 items-stretch lg:items-start ${pscheinBlockGridClass}`}
                 >
