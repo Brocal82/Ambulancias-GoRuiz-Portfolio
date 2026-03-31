@@ -316,6 +316,12 @@ const Profile = ({ userId }: ProfileProps) => {
 
   const displayedPscheinDocUrl = (formData.pscheinDocument ?? "").trim() || null;
 
+  const pscheinBlockGridClass = hidePscheinColumnWorkerSelf
+    ? "lg:grid-cols-2"
+    : displayedPscheinDocUrl
+      ? "lg:grid-cols-3"
+      : "lg:grid-cols-2";
+
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6">
       <div className="rounded-2xl bg-white shadow ring-1 ring-slate-200 overflow-hidden">
@@ -599,7 +605,7 @@ const Profile = ({ userId }: ProfileProps) => {
           {/* Certificado P-Schein (PDF): subida + caducidad + archivo actual (sin catálogo general) */}
           <div className="rounded-2xl ring-1 ring-slate-200 bg-white p-3">
             <div
-              className={`grid grid-cols-1 gap-3 items-stretch ${hidePscheinColumnWorkerSelf ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}
+              className={`grid grid-cols-1 gap-3 items-stretch ${pscheinBlockGridClass}`}
             >
               {/* Columna 1 — subir PDF del P-Schein */}
               <div
@@ -650,8 +656,8 @@ const Profile = ({ userId }: ProfileProps) => {
                 </div>
               </div>
 
-              {/* Columna 2 — oculta en perfil trabajador si el rol no requiere P-Schein (p. ej. solo medic) */}
-              {!hidePscheinColumnWorkerSelf && (
+              {/* Columna 2 — caducidad; solo si aplica rol P-Schein y ya hay PDF guardado en perfil */}
+              {!hidePscheinColumnWorkerSelf && displayedPscheinDocUrl && (
               <div className="h-full grid grid-rows-[20px_1fr] gap-2 place-items-center text-center">
                 <div className="h-5 flex items-center justify-center">
                   <span className="text-[11px] font-medium text-slate-700">
@@ -739,30 +745,15 @@ const Profile = ({ userId }: ProfileProps) => {
               </div>
               )}
 
-              {/* Columna 3 — archivo P-Schein guardado (vista única, no catálogo) */}
-              <div className="h-full grid grid-rows-[auto_1fr] gap-2 place-items-center text-center">
-                <div className="min-h-5 flex flex-col items-center justify-center gap-0.5 px-1">
-                  <span className="text-[11px] font-semibold text-slate-800">
-                    {t(
-                      "pages.profile.pschein.currentFileTitle",
-                      "Certificado guardado",
-                    )}
-                  </span>
-                  <span className="text-[10px] font-normal text-slate-500 leading-snug">
-                    {t(
-                      "pages.profile.pschein.currentFileSubtitle",
-                      "Visualizar o eliminar el PDF del P-Schein",
-                    )}
-                  </span>
-                </div>
-
+              {/* Columna 3 — documento P-Schein (solo acciones) */}
+              <div className="h-full flex flex-col items-center justify-center gap-2 text-center">
                 <div className="min-h-0 w-full flex justify-center">
                   <div className="w-full max-w-[220px]">
                     {pendingDocs.length > 0 && (
                       <div className="mb-2 rounded-lg border border-orange-200 bg-orange-50 p-2">
-                        <p className="text-[11px] font-medium text-orange-700 mb-1">
+                        <span className="mb-1 block text-[11px] font-medium text-orange-700">
                           {t("pages.profile.documents.pending", "Pendientes de guardar")}
-                        </p>
+                        </span>
 
                         <ul className="text-[11px] text-slate-700 space-y-1">
                           {pendingDocs.map((file) => (
@@ -776,14 +767,18 @@ const Profile = ({ userId }: ProfileProps) => {
 
                     {displayedPscheinDocUrl ? (
                       <div className="flex justify-center">
-                        <div className="inline-flex items-center gap-1 max-w-[220px]">
+                        <div className="inline-flex items-center gap-2 max-w-[220px]">
                           <button
                             type="button"
-                            onClick={() => openSecureFile(displayedPscheinDocUrl)}
-                            className="truncate text-blue-600 hover:text-blue-700 underline text-left text-[11px]"
-                            title={displayFileNameFromUrl(displayedPscheinDocUrl)}
+                            onClick={() =>
+                              openSecureFile(displayedPscheinDocUrl)
+                            }
+                            className="rounded-lg bg-amber-400 px-3 py-2 text-xs font-medium text-slate-900 shadow-sm transition hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:ring-offset-1"
+                            title={displayFileNameFromUrl(
+                              displayedPscheinDocUrl,
+                            )}
                           >
-                            {displayFileNameFromUrl(displayedPscheinDocUrl)}
+                            P-schein
                           </button>
 
                           <DeleteIconButton
@@ -794,14 +789,7 @@ const Profile = ({ userId }: ProfileProps) => {
                           />
                         </div>
                       </div>
-                    ) : (
-                      <p className="text-[11px] text-slate-500 text-center pt-1">
-                        {t(
-                          "pages.profile.pschein.noCertificateYet",
-                          "Aún no hay certificado guardado",
-                        )}
-                      </p>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>
