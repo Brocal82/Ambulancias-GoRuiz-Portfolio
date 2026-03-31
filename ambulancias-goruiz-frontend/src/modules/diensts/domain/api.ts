@@ -65,6 +65,23 @@ export const moveDienstSlotSameWeek = async (
   });
 };
 
+/** DnD admin cross-Dienst misma semana: hueco vacío o rebalanceo Both (validación en servidor). */
+export const dndMoveCrossDienstSameWeek = async (
+  body: {
+    sourceDienstId: string;
+    sourceDate: string;
+    targetDienstId: string;
+    targetDate: string;
+    role: "driver" | "medic";
+    userId: string;
+  },
+  token: string,
+): Promise<void> => {
+  await axios.post(`/diensts/dnd-cross-dienst-same-week`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
 // Eliminar una asignación de un día
 export const removeAssignment = async (
   dienstId: string,

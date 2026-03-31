@@ -1236,3 +1236,364 @@ export async function moveSlotSameWeek(
     await session.endSession();
   }
 }
+
+/**
+ * DnD admin entre dos Dienst distintos de la misma semana (Berlin).
+ * - Destino con hueco en el slot: equivalente a moveSlotSameWeek.
+ * - Destino parcial con incumbent "both" y conductor/sanitario solo: rebalanceo atómico.
+ * Mismo documento Dienst: error same_dienst_use_patch (PATCH en cliente).
+ */
+export async function dndCrossDienstSameWeek(
+  body: MoveSlotSameWeekBody,
+  companyId?: string | null,
+): Promise<void> {
+  const callerCo =
+    companyId != null && String(companyId).trim() !== ""
+      ? String(companyId).trim()
+      : null;
+  if (!callerCo) {
+    throw new DienstAssignmentError(
+      403,
+      "forbidden",
+      "No tienes permiso para modificar este Dienst",
+    );
+  }
+
+  const { sourceDienstId, sourceDate, targetDienstId, targetDate, role, userId } = body;
+
+  const srcKey = normalizeDayKey(sourceDate);
+  const tgtKey = normalizeDayKey(targetDate);
+  if (!srcKey || !tgtKey) {
+    throw new DienstAssignmentError(400, "invalid_date", "Fecha inválida.");
+  }
+
+  if (sourceDienstId === targetDienstId) {
+    throw new DienstAssignmentError(
+      400,
+      "same_dienst_use_patch",
+      "Para mover dentro del mismo Dienst, usa la actualización parcial habitual.",
+    );
+  }
+
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      const sourceDienst = await Dienst.findById(sourceDienstId).session(session);
+      const targetDienst = await Dienst.findById(targetDienstId).session(session);
+
+      if (!sourceDienst || !targetDienst) {
+        throw new DienstAssignmentError(404, "dienst_not_found", "Dienst no encontrado.");
+      }
+
+      const dcSrc = (sourceDienst as any).companyId;
+      const dcTgt = (targetDienst as any).companyId;
+      if (!dcSrc || !dcTgt || String(dcSrc) !== callerCo || String(dcTgt) !== callerCo) {
+        throw new DienstAssignmentError(
+          403,
+          "forbidden",
+          "No tienes permiso para modificar este Dienst",
+        );
+      }
+
+      const wSrc = weekStartMondayBerlin((sourceDienst as any).weekStartDate);
+      const wTgt = weekStartMondayBerlin((targetDienst as any).weekStartDate);
+      if (!wSrc || !wTgt || wSrc !== wTgt) {
+        throw new DienstAssignmentError(
+          400,
+          "cross_week_forbidden",
+          "Solo se permiten movimientos dentro de la misma semana.",
+        );
+      }
+
+      const rawWs = (sourceDienst as any).weekStartDate;
+      const weekStartDate =
+        rawWs instanceof Date ? rawWs : new Date(rawWs as string);
+      if (Number.isNaN(weekStartDate.getTime())) {
+        throw new DienstAssignmentError(400, "invalid_week", "Semana inválida en el Dienst.");
+      }
+
+      const sourceIdx = sourceDienst.assignments.findIndex(
+        (a: any) => a?.date && normalizeDayKey(a.date) === srcKey,
+      );
+      const targetIdx = targetDienst.assignments.findIndex(
+        (a: any) => a?.date && normalizeDayKey(a.date) === tgtKey,
+      );
+
+      if (sourceIdx === -1 || targetIdx === -1) {
+        throw new DienstAssignmentError(
+          404,
+          "assignment_not_found",
+          "No se encontró la asignación para la fecha indicada.",
+        );
+      }
+
+      const sourceAssignment = sourceDienst.assignments[sourceIdx] as any;
+      const targetAssignment = targetDienst.assignments[targetIdx] as any;
+
+      if (
+        !String(sourceAssignment?.startTime ?? "").trim() ||
+        !String(sourceAssignment?.endTime ?? "").trim() ||
+        !String(targetAssignment?.startTime ?? "").trim() ||
+        !String(targetAssignment?.endTime ?? "").trim()
+      ) {
+        throw new DienstAssignmentError(
+          400,
+          "assignment_incomplete",
+          "Faltan horas o fechas en la asignación.",
+        );
+      }
+
+      const sourceUserId =
+        role === "driver" ? oidStr(sourceAssignment.driver) : oidStr(sourceAssignment.medic);
+      if (!sourceUserId || sourceUserId !== String(userId).trim()) {
+        throw new DienstAssignmentError(
+          409,
+          "source_slot_mismatch",
+          "El usuario no coincide con el slot de origen.",
+        );
+      }
+
+      const td = oidStr(targetAssignment.driver);
+      const tm = oidStr(targetAssignment.medic);
+      if (td && tm) {
+        throw new DienstAssignmentError(
+          409,
+          "target_full",
+          "El destino ya tiene conductor y sanitario.",
+        );
+      }
+
+      const draggedUser = await User.findById(userId)
+        .select("companyId ambulanceRole")
+        .session(session)
+        .lean();
+      if (!draggedUser) {
+        throw new DienstAssignmentError(404, "user_not_found", "Usuario no encontrado.");
+      }
+      if (!entitiesBelongToSameCompany((draggedUser as any).companyId, callerCo)) {
+        throw new DienstAssignmentError(403, "forbidden", "El usuario no pertenece a tu empresa");
+      }
+      const draggedAr = (draggedUser as any).ambulanceRole as
+        | "driver"
+        | "medic"
+        | "both"
+        | undefined;
+
+      type DndMode = "simple" | "smart_driver" | "smart_medic";
+      let mode: DndMode;
+
+      if (role === "driver" && !td) {
+        mode = "simple";
+      } else if (role === "medic" && !tm) {
+        mode = "simple";
+      } else if (role === "driver" && td && !tm) {
+        const inc = await User.findById(td)
+          .select("ambulanceRole")
+          .session(session)
+          .lean();
+        if (!inc || String((inc as any).ambulanceRole) !== "both") {
+          throw new DienstAssignmentError(
+            409,
+            "target_slot_not_empty",
+            "No se puede soltar: el conductor ya está ocupado.",
+          );
+        }
+        if (draggedAr !== "driver") {
+          throw new DienstAssignmentError(
+            409,
+            "dragged_role_mismatch",
+            "Solo se puede reordenar arrastrando un conductor con rol driver.",
+          );
+        }
+        if (String(userId).trim() === String(td).trim()) {
+          throw new DienstAssignmentError(
+            409,
+            "driver_medic_same_user",
+            "El conductor y el sanitario deben ser usuarios distintos.",
+          );
+        }
+        mode = "smart_driver";
+      } else if (role === "medic" && tm && !td) {
+        const inc = await User.findById(tm)
+          .select("ambulanceRole")
+          .session(session)
+          .lean();
+        if (!inc || String((inc as any).ambulanceRole) !== "both") {
+          throw new DienstAssignmentError(
+            409,
+            "target_slot_not_empty",
+            "No se puede soltar: el sanitario ya está ocupado.",
+          );
+        }
+        if (draggedAr !== "medic") {
+          throw new DienstAssignmentError(
+            409,
+            "dragged_role_mismatch",
+            "Solo se puede reordenar arrastrando un sanitario con rol medic.",
+          );
+        }
+        if (String(userId).trim() === String(tm).trim()) {
+          throw new DienstAssignmentError(
+            409,
+            "driver_medic_same_user",
+            "El conductor y el sanitario deben ser usuarios distintos.",
+          );
+        }
+        mode = "smart_medic";
+      } else {
+        throw new DienstAssignmentError(
+          409,
+          "target_slot_not_empty",
+          "El destino no admite esta operación.",
+        );
+      }
+
+      const userOid = new mongoose.Types.ObjectId(userId);
+
+      const weeklyConf = await findWeeklyConflicts(
+        userOid,
+        weekStartDate,
+        (targetDienst as any).dienstNumber,
+      );
+      const filteredConf = weeklyConf.filter(
+        (c) =>
+          !(
+            c.dienstId === String(sourceDienstId) &&
+            normalizeDayKey(c.date) === srcKey &&
+            c.role === role
+          ),
+      );
+      if (filteredConf.some((c) => normalizeDayKey(c.date) === tgtKey)) {
+        throw new DienstAssignmentError(
+          409,
+          "weekly_conflict",
+          "El usuario ya está asignado en otro Dienst ese día.",
+        );
+      }
+
+      const [vac, sick] = await Promise.all([
+        isOnVacationDay({ userId, dateISO: tgtKey }),
+        isOnSickDay({ userId, dateISO: tgtKey }),
+      ]);
+      if (vac || sick) {
+        throw new DienstAssignmentError(
+          409,
+          "target_day_blocked",
+          "El usuario no está disponible ese día (vacaciones o baja).",
+        );
+      }
+
+      const sd = oidStr(sourceAssignment.driver);
+      const sm = oidStr(sourceAssignment.medic);
+
+      let sourceRow: Record<string, unknown>;
+      let targetRow: Record<string, unknown>;
+
+      if (mode === "simple") {
+        const targetOccupied =
+          role === "driver" ? td : tm;
+        if (targetOccupied) {
+          throw new DienstAssignmentError(
+            409,
+            "target_slot_not_empty",
+            "El destino debe estar vacío.",
+          );
+        }
+
+        if (role === "driver") {
+          sourceRow = {
+            date: sourceAssignment.date,
+            startTime: sourceAssignment.startTime,
+            endTime: sourceAssignment.endTime,
+            driver: "",
+            medic: sm || undefined,
+          };
+          targetRow = {
+            date: targetAssignment.date,
+            startTime: targetAssignment.startTime,
+            endTime: targetAssignment.endTime,
+            driver: userId,
+            medic: tm || undefined,
+          };
+        } else {
+          sourceRow = {
+            date: sourceAssignment.date,
+            startTime: sourceAssignment.startTime,
+            endTime: sourceAssignment.endTime,
+            driver: sd || undefined,
+            medic: "",
+          };
+          targetRow = {
+            date: targetAssignment.date,
+            startTime: targetAssignment.startTime,
+            endTime: targetAssignment.endTime,
+            driver: td || undefined,
+            medic: userId,
+          };
+        }
+      } else if (mode === "smart_driver") {
+        sourceRow = {
+          date: sourceAssignment.date,
+          startTime: sourceAssignment.startTime,
+          endTime: sourceAssignment.endTime,
+          driver: "",
+          medic: sm || undefined,
+        };
+        targetRow = {
+          date: targetAssignment.date,
+          startTime: targetAssignment.startTime,
+          endTime: targetAssignment.endTime,
+          driver: userId,
+          medic: td,
+        };
+      } else {
+        sourceRow = {
+          date: sourceAssignment.date,
+          startTime: sourceAssignment.startTime,
+          endTime: sourceAssignment.endTime,
+          driver: sd || undefined,
+          medic: "",
+        };
+        targetRow = {
+          date: targetAssignment.date,
+          startTime: targetAssignment.startTime,
+          endTime: targetAssignment.endTime,
+          driver: tm,
+          medic: userId,
+        };
+      }
+
+      await validateAssignmentEntities([sourceRow, targetRow] as any[], String(callerCo));
+
+      const srcA = sourceDienst.assignments[sourceIdx] as any;
+      const tgtA = targetDienst.assignments[targetIdx] as any;
+
+      if (mode === "simple") {
+        if (role === "driver") {
+          srcA.driver = undefined;
+          if ("driver" in srcA) delete srcA.driver;
+          tgtA.driver = new mongoose.Types.ObjectId(userId);
+        } else {
+          srcA.medic = undefined;
+          if ("medic" in srcA) delete srcA.medic;
+          tgtA.medic = new mongoose.Types.ObjectId(userId);
+        }
+      } else if (mode === "smart_driver") {
+        srcA.driver = undefined;
+        if ("driver" in srcA) delete srcA.driver;
+        tgtA.driver = new mongoose.Types.ObjectId(userId);
+        tgtA.medic = new mongoose.Types.ObjectId(td);
+      } else {
+        srcA.medic = undefined;
+        if ("medic" in srcA) delete srcA.medic;
+        tgtA.driver = new mongoose.Types.ObjectId(tm);
+        tgtA.medic = new mongoose.Types.ObjectId(userId);
+      }
+
+      await sourceDienst.save({ session });
+      await targetDienst.save({ session });
+    });
+  } finally {
+    await session.endSession();
+  }
+}

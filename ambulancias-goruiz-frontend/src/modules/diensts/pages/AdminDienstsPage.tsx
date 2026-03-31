@@ -12,7 +12,7 @@ import {
   assignUserToWeek,
   clearPeopleForWeek,
 } from "../index";
-import { moveDienstSlotSameWeek, updateDienstPartial } from "../domain/api";
+import { dndMoveCrossDienstSameWeek, updateDienstPartial } from "../domain/api";
 import { buildUpdateAssignment } from "../components/assignmentModal/buildUpdateAssignment";
 
 import AssignmentModal from "../components/assignmentModal/AssignmentModal";
@@ -74,6 +74,36 @@ function getUserIdFromAssignmentField(v: unknown): string | null {
 /** True iff that slot has an assigned user id (same rules as drag source). */
 function slotHasPerson(v: unknown): boolean {
   return getUserIdFromAssignmentField(v) != null;
+}
+
+function getAmbulanceRoleFromAssignmentField(
+  v: unknown,
+): "driver" | "medic" | "both" | undefined {
+  if (typeof v === "object" && v !== null && "ambulanceRole" in v) {
+    const r = (v as { ambulanceRole?: string }).ambulanceRole;
+    if (r === "driver" || r === "medic" || r === "both") return r;
+  }
+  return undefined;
+}
+
+function getDraggedUserAmbulanceRole(
+  sourceAssignment: DienstAssignment,
+  payload: DienstAdminDndPayload,
+): "driver" | "medic" | "both" | undefined {
+  if (payload.role === "driver") {
+    if (
+      getUserIdFromAssignmentField(sourceAssignment.driver) === payload.userId
+    ) {
+      return getAmbulanceRoleFromAssignmentField(sourceAssignment.driver);
+    }
+  } else {
+    if (
+      getUserIdFromAssignmentField(sourceAssignment.medic) === payload.userId
+    ) {
+      return getAmbulanceRoleFromAssignmentField(sourceAssignment.medic);
+    }
+  }
+  return undefined;
 }
 
 /** Compare assignment `date` strings that may be YYYY-MM-DD or ISO datetimes. */
@@ -515,10 +545,24 @@ const AdminPage = () => {
                               const canDndCell = !isPast && Boolean(assignment);
                               const driverDraggable = canDndCell && Boolean(driverUserId);
                               const medicDraggable = canDndCell && Boolean(medicUserId);
+                              const bothIncumbentDriverSwap =
+                                Boolean(driverUserId) &&
+                                !medicUserId &&
+                                getAmbulanceRoleFromAssignmentField(
+                                  assignment?.driver,
+                                ) === "both";
+                              const bothIncumbentMedicSwap =
+                                Boolean(medicUserId) &&
+                                !driverUserId &&
+                                getAmbulanceRoleFromAssignmentField(
+                                  assignment?.medic,
+                                ) === "both";
                               const driverDropTarget =
-                                canDndCell && !slotHasPerson(assignment?.driver);
+                                canDndCell &&
+                                (!driverUserId || bothIncumbentDriverSwap);
                               const medicDropTarget =
-                                canDndCell && !slotHasPerson(assignment?.medic);
+                                canDndCell &&
+                                (!medicUserId || bothIncumbentMedicSwap);
 
                               const handleDropOnRole = async (
                                 targetRole: "driver" | "medic",
@@ -578,17 +622,127 @@ const AdminPage = () => {
                                     : getUserIdFromAssignmentField(sourceAssignment.medic);
                                 if (!sourceSlotId || sourceSlotId !== payload.userId) return;
 
-                                if (targetRole === "driver" && slotHasPerson(targetAssignment.driver)) {
+                                const td = getUserIdFromAssignmentField(targetAssignment.driver) ?? "";
+                                const tm = getUserIdFromAssignmentField(targetAssignment.medic) ?? "";
+
+                                if (td && tm) {
+                                  toastT.error(
+                                    "El día destino ya tiene conductor y sanitario.",
+                                  );
                                   return;
                                 }
-                                if (targetRole === "medic" && slotHasPerson(targetAssignment.medic)) {
+
+                                const draggedAmbulanceRole =
+                                  getDraggedUserAmbulanceRole(
+                                    sourceAssignment,
+                                    payload,
+                                  );
+
+                                const structuralDriverSwap =
+                                  targetRole === "driver" &&
+                                  Boolean(td) &&
+                                  !tm &&
+                                  getAmbulanceRoleFromAssignmentField(
+                                    targetAssignment.driver,
+                                  ) === "both";
+                                const structuralMedicSwap =
+                                  targetRole === "medic" &&
+                                  Boolean(tm) &&
+                                  !td &&
+                                  getAmbulanceRoleFromAssignmentField(
+                                    targetAssignment.medic,
+                                  ) === "both";
+
+                                const smartDriverSwap =
+                                  structuralDriverSwap &&
+                                  draggedAmbulanceRole === "driver";
+                                const smartMedicSwap =
+                                  structuralMedicSwap &&
+                                  draggedAmbulanceRole === "medic";
+
+                                if (structuralDriverSwap && !smartDriverSwap) {
+                                  if (draggedAmbulanceRole === undefined) {
+                                    toastT.error(
+                                      "No se puede reordenar: falta el rol de ambulancia del usuario arrastrado.",
+                                    );
+                                    return;
+                                  }
+                                  if (draggedAmbulanceRole === "both") {
+                                    toastT.error(
+                                      "El reequilibrio automático no aplica si el usuario arrastrado es Both.",
+                                    );
+                                    return;
+                                  }
+                                  if (draggedAmbulanceRole === "medic") {
+                                    toastT.error(
+                                      "Solo se puede reordenar arrastrando un conductor con rol driver.",
+                                    );
+                                    return;
+                                  }
+                                }
+                                if (structuralMedicSwap && !smartMedicSwap) {
+                                  if (draggedAmbulanceRole === undefined) {
+                                    toastT.error(
+                                      "No se puede reordenar: falta el rol de ambulancia del usuario arrastrado.",
+                                    );
+                                    return;
+                                  }
+                                  if (draggedAmbulanceRole === "both") {
+                                    toastT.error(
+                                      "El reequilibrio automático no aplica si el usuario arrastrado es Both.",
+                                    );
+                                    return;
+                                  }
+                                  if (draggedAmbulanceRole === "driver") {
+                                    toastT.error(
+                                      "Solo se puede reordenar arrastrando un sanitario con rol medic.",
+                                    );
+                                    return;
+                                  }
+                                }
+
+                                if (
+                                  targetRole === "driver" &&
+                                  td &&
+                                  !smartDriverSwap
+                                ) {
+                                  toastT.error(
+                                    "No se puede soltar: el conductor ya está ocupado.",
+                                  );
+                                  return;
+                                }
+                                if (
+                                  targetRole === "medic" &&
+                                  tm &&
+                                  !smartMedicSwap
+                                ) {
+                                  toastT.error(
+                                    "No se puede soltar: el sanitario ya está ocupado.",
+                                  );
+                                  return;
+                                }
+
+                                if (
+                                  smartDriverSwap &&
+                                  payload.userId === td
+                                ) {
+                                  toastT.error(
+                                    "No se puede reasignar el mismo usuario en ambos puestos.",
+                                  );
+                                  return;
+                                }
+                                if (
+                                  smartMedicSwap &&
+                                  payload.userId === tm
+                                ) {
+                                  toastT.error(
+                                    "No se puede reasignar el mismo usuario en ambos puestos.",
+                                  );
                                   return;
                                 }
 
                                 const sd = getUserIdFromAssignmentField(sourceAssignment.driver) ?? "";
                                 const sm = getUserIdFromAssignmentField(sourceAssignment.medic) ?? "";
-                                const td = getUserIdFromAssignmentField(targetAssignment.driver) ?? "";
-                                const tm = getUserIdFromAssignmentField(targetAssignment.medic) ?? "";
 
                                 let sourceRow: UpdateAssignment;
                                 let targetRow: UpdateAssignment;
@@ -599,22 +753,48 @@ const AdminPage = () => {
                                     driverId: "",
                                     medicId: sm,
                                   });
-                                  targetRow = buildRowFromSlotIds({
-                                    assignment: targetAssignment,
-                                    driverId: payload.userId,
-                                    medicId: tm,
-                                  });
+                                  if (smartDriverSwap) {
+                                    targetRow = buildRowFromSlotIds({
+                                      assignment: targetAssignment,
+                                      driverId: payload.userId,
+                                      medicId: td,
+                                    });
+                                  } else {
+                                    targetRow = buildRowFromSlotIds({
+                                      assignment: targetAssignment,
+                                      driverId: payload.userId,
+                                      medicId: tm,
+                                    });
+                                  }
                                 } else {
                                   sourceRow = buildRowFromSlotIds({
                                     assignment: sourceAssignment,
                                     driverId: sd,
                                     medicId: "",
                                   });
-                                  targetRow = buildRowFromSlotIds({
-                                    assignment: targetAssignment,
-                                    driverId: td,
-                                    medicId: payload.userId,
-                                  });
+                                  if (smartMedicSwap) {
+                                    targetRow = buildRowFromSlotIds({
+                                      assignment: targetAssignment,
+                                      driverId: tm,
+                                      medicId: payload.userId,
+                                    });
+                                  } else {
+                                    targetRow = buildRowFromSlotIds({
+                                      assignment: targetAssignment,
+                                      driverId: td,
+                                      medicId: payload.userId,
+                                    });
+                                  }
+                                }
+
+                                if (smartDriverSwap || smartMedicSwap) {
+                                  const reorderMsg =
+                                    smartDriverSwap
+                                      ? "El conductor actual tiene rol Both y pasará al puesto de sanitario. El trabajador arrastrado quedará como conductor. ¿Confirmar?"
+                                      : "El sanitario actual tiene rol Both y pasará al puesto de conductor. El trabajador arrastrado quedará como sanitario. ¿Confirmar?";
+                                  if (!window.confirm(reorderMsg)) {
+                                    return;
+                                  }
                                 }
 
                                 const crossDienst =
@@ -622,7 +802,7 @@ const AdminPage = () => {
 
                                 try {
                                   if (crossDienst) {
-                                    await moveDienstSlotSameWeek(
+                                    await dndMoveCrossDienstSameWeek(
                                       {
                                         sourceDienstId: String(payload.dienstId),
                                         sourceDate: assignmentDayKey(

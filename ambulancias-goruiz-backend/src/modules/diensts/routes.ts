@@ -14,6 +14,7 @@ import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import { updateDienstPartialSchema } from "./assignments/schemas/update-dienst-partial.schema";
 import { moveSlotSameWeekSchema } from "./assignments/schemas/move-slot-same-week.schema";
+import { dndCrossDienstSameWeekSchema } from "./assignments/schemas/dnd-cross-dienst-same-week.schema";
 
 const router = express.Router();
 
@@ -109,6 +110,14 @@ router.post(
   authorizeRole("admin"),
   validateBody(moveSlotSameWeekSchema),
   DienstAssignments.moveSlotSameWeek,
+);
+
+router.post(
+  "/dnd-cross-dienst-same-week",
+  authenticateToken,
+  authorizeRole("admin"),
+  validateBody(dndCrossDienstSameWeekSchema),
+  DienstAssignments.dndCrossDienstSameWeek,
 );
 
 export default router;
