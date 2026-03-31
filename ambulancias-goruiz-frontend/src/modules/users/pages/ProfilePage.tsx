@@ -602,30 +602,38 @@ const Profile = ({ userId }: ProfileProps) => {
               className={`grid grid-cols-1 gap-3 items-stretch ${hidePscheinColumnWorkerSelf ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}
             >
               {/* Columna 1 — subir PDF del P-Schein */}
-              <div className="h-full grid grid-rows-[auto_1fr] gap-2 place-items-center text-center">
-                <div className="min-h-5 flex flex-col items-center justify-center gap-0.5 px-1">
-                  <span className="text-[11px] font-semibold text-slate-800">
-                    {t(
-                      "pages.profile.pschein.certificateUploadTitle",
-                      "Certificado P-Schein (PDF)",
-                    )}
-                  </span>
-                  <span className="text-[10px] font-normal text-slate-500 leading-snug">
-                    {t(
-                      "pages.profile.pschein.certificateUploadSubtitle",
-                      "Sube el PDF del certificado",
-                    )}
-                  </span>
-                </div>
+              <div
+                className={`h-full place-items-center text-center ${isWorkerSelfProfile ? "flex flex-col items-center justify-center gap-0" : "grid grid-rows-[auto_1fr] gap-2"}`}
+              >
+                {!isWorkerSelfProfile && (
+                  <div className="min-h-5 flex flex-col items-center justify-center gap-0.5 px-1">
+                    <span className="text-[11px] font-semibold text-slate-800">
+                      {t(
+                        "pages.profile.pschein.certificateUploadTitle",
+                        "Certificado P-Schein (PDF)",
+                      )}
+                    </span>
+                    <span className="text-[10px] font-normal text-slate-500 leading-snug">
+                      {t(
+                        "pages.profile.pschein.certificateUploadSubtitle",
+                        "Sube el PDF del certificado",
+                      )}
+                    </span>
+                  </div>
+                )}
 
                 <div className="min-h-0 w-full flex justify-center">
                   <div className="w-full max-w-[220px]">
                     <FileUpload
                       id="profile-docs"
-                      label={t(
-                        "pages.profile.pschein.uploadLabel",
-                        "Seleccionar PDF",
-                      )}
+                      label={
+                        isWorkerSelfProfile
+                          ? "Upload pschein"
+                          : t(
+                              "pages.profile.pschein.uploadLabel",
+                              "Seleccionar PDF",
+                            )
+                      }
                       hintWhenEmpty={t(
                         "pages.profile.pschein.uploadHint",
                         "Un archivo PDF (máx. 10 MB)",
