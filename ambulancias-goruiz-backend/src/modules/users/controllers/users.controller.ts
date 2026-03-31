@@ -470,6 +470,13 @@ export const deleteUserDocument = async (
       res.status(401).json({ message: "No autorizado" });
       return;
     }
+    if (req.userRole === "worker") {
+      res.status(403).json({
+        message:
+          "No tienes permiso para eliminar el certificado P-Schein desde tu perfil",
+      });
+      return;
+    }
     const { filePath } = req.body;
 
     if (!filePath) {

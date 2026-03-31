@@ -134,6 +134,15 @@ describe("User documents — upload + /api/files ownership (integration)", () =>
         });
       expect(res.status).toBe(403);
     });
+
+    it("worker no puede DELETE /users/me/document (P-Schein)", async () => {
+      const res = await request(app)
+        .delete(`${API}/users/me/document`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .send({ filePath: `/uploads/${basename}` });
+      expect(res.status).toBe(403);
+      expect(res.body.message).toContain("P-Schein");
+    });
   });
 
   describe("POST /api/users/:userId/upload (admin) + DELETE cruzado", () => {
