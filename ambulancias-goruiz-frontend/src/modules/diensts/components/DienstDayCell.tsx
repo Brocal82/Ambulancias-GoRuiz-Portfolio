@@ -13,7 +13,7 @@ export type DienstDayCellLines = {
     medicLine?: React.ReactNode;
 };
 
-/** Admin V1: drag worker to prefill modal only (same dienstId, same role, empty slot). */
+/** Admin Dienst: DnD mismo documento (vacío o swap both en la misma línea). */
 export type AdminDienstDndProps = {
     driverDraggable?: boolean;
     medicDraggable?: boolean;
@@ -38,7 +38,7 @@ export interface DienstDayCellProps {
     isPartial?: boolean;
     lines?: DienstDayCellLines;
     onOpen: () => void;
-    /** Solo admin Dienst: DnD para abrir modal con prefill (sin persistir en drop). */
+    /** Solo admin Dienst: DnD hacia PATCH (vacío o swap both en misma línea). */
     adminDnd?: AdminDienstDndProps;
 };
 
@@ -101,7 +101,41 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
 
     const wrapDriverLine = (node: React.ReactNode) => {
         if (!adminDnd) return node;
-        if (adminDnd.driverDraggable && adminDnd.onDragStartDriver) {
+        const dragDriver = Boolean(
+            adminDnd.driverDraggable && adminDnd.onDragStartDriver,
+        );
+        const dropDriver = Boolean(
+            adminDnd.driverDropTarget && adminDnd.onDropDriver,
+        );
+        if (dragDriver && dropDriver) {
+            return (
+                <span
+                    draggable
+                    className="cursor-grab active:cursor-grabbing block w-full min-h-[1.25em]"
+                    onDragStart={(e) => {
+                        adminDnd.onDragStartDriver?.(e);
+                    }}
+                    onDragEnd={() => {
+                        scheduleSuppressClickAfterDrag();
+                        adminDnd.onDragEnd?.();
+                    }}
+                    onDragOver={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.dataTransfer.dropEffect = "move";
+                        adminDnd.onDragOverDriver?.(e);
+                    }}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        adminDnd.onDropDriver?.(e);
+                    }}
+                >
+                    {node}
+                </span>
+            );
+        }
+        if (dragDriver) {
             return (
                 <span
                     draggable
@@ -143,7 +177,41 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
 
     const wrapMedicLine = (node: React.ReactNode) => {
         if (!adminDnd) return node;
-        if (adminDnd.medicDraggable && adminDnd.onDragStartMedic) {
+        const dragMedic = Boolean(
+            adminDnd.medicDraggable && adminDnd.onDragStartMedic,
+        );
+        const dropMedic = Boolean(
+            adminDnd.medicDropTarget && adminDnd.onDropMedic,
+        );
+        if (dragMedic && dropMedic) {
+            return (
+                <span
+                    draggable
+                    className="cursor-grab active:cursor-grabbing block w-full min-h-[1.25em]"
+                    onDragStart={(e) => {
+                        adminDnd.onDragStartMedic?.(e);
+                    }}
+                    onDragEnd={() => {
+                        scheduleSuppressClickAfterDrag();
+                        adminDnd.onDragEnd?.();
+                    }}
+                    onDragOver={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.dataTransfer.dropEffect = "move";
+                        adminDnd.onDragOverMedic?.(e);
+                    }}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        adminDnd.onDropMedic?.(e);
+                    }}
+                >
+                    {node}
+                </span>
+            );
+        }
+        if (dragMedic) {
             return (
                 <span
                     draggable
