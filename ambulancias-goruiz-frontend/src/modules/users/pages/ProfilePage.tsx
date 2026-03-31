@@ -316,11 +316,12 @@ const Profile = ({ userId }: ProfileProps) => {
 
   const displayedPscheinDocUrl = (formData.pscheinDocument ?? "").trim() || null;
 
-  const pscheinBlockGridClass = hidePscheinColumnWorkerSelf
-    ? "lg:grid-cols-2"
-    : displayedPscheinDocUrl
-      ? "lg:grid-cols-3"
-      : "lg:grid-cols-2";
+  /** Pista central solo si hay PDF y aplica columna fecha; si no, la col. 3 usa col-start-3. */
+  const showPscheinMiddleColumn =
+    !hidePscheinColumnWorkerSelf && Boolean(displayedPscheinDocUrl);
+
+  const pscheinBlockGridClass =
+    "lg:grid-cols-[minmax(0,auto)_minmax(0,1fr)_minmax(0,auto)]";
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6">
@@ -601,13 +602,13 @@ const Profile = ({ userId }: ProfileProps) => {
               </div>
 
               {/* Certificado P-Schein (PDF): subida + caducidad + archivo actual (sin catálogo general) */}
-              <div className="mt-2 pt-3 border-t border-slate-200">
+              <div className="mt-2 w-full min-w-0 pt-3 border-t border-slate-200">
                 <div
-                  className={`grid grid-cols-1 gap-2 items-stretch ${pscheinBlockGridClass}`}
+                  className={`grid w-full min-w-0 grid-cols-1 gap-2 lg:gap-3 items-stretch ${pscheinBlockGridClass}`}
                 >
               {/* Columna 1 — subir PDF del P-Schein */}
               <div
-                className={`h-full place-items-center text-center ${isWorkerSelfProfile ? "flex flex-col items-center justify-center gap-0" : "grid grid-rows-[auto_1fr] gap-1.5"}`}
+                className={`min-w-0 h-full justify-self-start ${isWorkerSelfProfile ? "flex flex-col items-start justify-center gap-0 text-left" : "grid grid-rows-[auto_1fr] gap-1.5 text-center"}`}
               >
                 {!isWorkerSelfProfile && (
                   <div className="min-h-5 flex flex-col items-center justify-center gap-0 px-1">
@@ -626,13 +627,16 @@ const Profile = ({ userId }: ProfileProps) => {
                   </div>
                 )}
 
-                <div className="min-h-0 w-full flex justify-center">
-                  <div className="w-full max-w-[220px]">
+                <div className="min-h-0 w-full flex justify-start">
+                  <div className="min-w-0 w-full max-w-full">
                     <FileUpload
                       id="profile-docs"
                       label={
                         isWorkerSelfProfile
-                          ? "Upload pschein"
+                          ? t(
+                              "pages.profile.pschein.uploadPscheinButton",
+                              "Subir P-Schein",
+                            )
                           : t(
                               "pages.profile.pschein.uploadLabel",
                               "Seleccionar PDF",
@@ -648,7 +652,8 @@ const Profile = ({ userId }: ProfileProps) => {
                       onChange={(files) => setDocumentsFiles(files)}
                       onError={(msg) => toastT.warn(msg)}
                       showSelectedList={false}
-                      className="flex flex-col items-center text-center"
+                      showAttachmentIcon={false}
+                      className="flex flex-col items-start text-left"
                     />
                   </div>
                 </div>
@@ -656,11 +661,11 @@ const Profile = ({ userId }: ProfileProps) => {
 
               {/* Columna 2 — caducidad; solo si aplica rol P-Schein y ya hay PDF guardado en perfil */}
               {!hidePscheinColumnWorkerSelf && displayedPscheinDocUrl && (
-              <div className="h-full flex flex-col items-center justify-center gap-1.5 text-center">
-                <div className="min-h-0 w-full flex justify-center">
-                  <div className="w-full max-w-[220px] flex flex-col items-center gap-1.5">
+              <div className="min-w-0 h-full w-full flex flex-col items-center justify-center gap-1.5 text-center justify-self-center">
+                <div className="min-h-0 w-full max-w-full flex justify-center">
+                  <div className="w-full min-w-0 max-w-full flex flex-col items-center justify-center gap-1.5">
                     {showPschein ? (
-                      <div className="w-full flex flex-col items-center">
+                      <div className="w-full max-w-full flex flex-col items-center">
                         <label htmlFor="pscheinExpiry" className="sr-only">
                           {t("pages.profile.labels.pscheinExpiry")}
                         </label>
@@ -669,7 +674,7 @@ const Profile = ({ userId }: ProfileProps) => {
                           <p
                             className={
                               !formData.pscheinExpiry?.trim()
-                                ? "w-full rounded-lg px-2 py-1.5 text-xs text-center border border-red-200 bg-red-100 text-red-900"
+                                ? "w-full rounded-lg px-2 py-1.5 text-xs text-center border border-rose-200/80 bg-white text-rose-700/85"
                                 : `w-full rounded-lg px-2 py-1 text-xs text-center border bg-slate-50 ${getPscheinInfo(formData.pscheinExpiry).status === "expired"
                                     ? "border-red-500 text-red-800"
                                     : getPscheinInfo(formData.pscheinExpiry).status ===
@@ -750,9 +755,11 @@ const Profile = ({ userId }: ProfileProps) => {
               )}
 
               {/* Columna 3 — documento P-Schein (solo acciones) */}
-              <div className="h-full flex flex-col items-center justify-center gap-1.5 text-center">
-                <div className="min-h-0 w-full flex justify-center">
-                  <div className="w-full max-w-[220px]">
+              <div
+                className={`min-w-0 h-full flex flex-col items-stretch justify-center gap-1.5 justify-self-end ${showPscheinMiddleColumn ? "" : "lg:col-start-3"}`}
+              >
+                <div className="min-h-0 w-full min-w-0">
+                  <div className="w-full min-w-0">
                     {pendingDocs.length > 0 && (
                       <div className="mb-1.5 rounded-lg border border-orange-200 bg-orange-50 p-1.5">
                         <span className="mb-1 block text-[11px] font-medium text-orange-700">
@@ -770,8 +777,8 @@ const Profile = ({ userId }: ProfileProps) => {
                     )}
 
                     {displayedPscheinDocUrl ? (
-                      <div className="flex justify-center">
-                        <div className="inline-flex items-center gap-2 max-w-[220px]">
+                      <div className="flex w-full justify-end">
+                        <div className="inline-flex items-center gap-2 max-w-full">
                           <button
                             type="button"
                             onClick={() =>

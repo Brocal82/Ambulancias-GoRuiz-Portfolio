@@ -14,6 +14,8 @@ type FileUploadProps = {
   className?: string; // estilos extra
   disabled?: boolean;
   showSelectedList?: boolean; // NUEVO: si false, no renderiza la lista interna
+  /** Si es false, no muestra el icono de adjunto (📎). Por defecto true (retrocompatible). */
+  showAttachmentIcon?: boolean;
 };
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -30,6 +32,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   className = "",
   disabled = false,
   showSelectedList = true,
+  showAttachmentIcon = true,
 }) => {
   const [files, setFiles] = React.useState<FileList | null>(null);
 
@@ -114,7 +117,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
       <label
         htmlFor={id}
         className={[
-          "inline-flex items-center gap-2 rounded-md border border-slate-300",
+          "inline-flex items-center rounded-md border border-slate-300",
+          showAttachmentIcon ? "gap-2" : "gap-0",
           "bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700",
           "shadow-sm transition-all duration-150",
           disabled
@@ -123,7 +127,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
           "focus:outline-none focus:ring-2 focus:ring-slate-200",
         ].join(" ")}
       >
-        <span aria-hidden="true">📎</span>
+        {showAttachmentIcon ? (
+          <span aria-hidden="true">📎</span>
+        ) : null}
         <span>{label}</span>
       </label>
 

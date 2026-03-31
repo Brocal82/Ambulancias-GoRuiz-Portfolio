@@ -324,6 +324,7 @@
                 "both": "🟰"
             },
             "pschein": {
+                "uploadPscheinButton": "P-Schein hochladen",
                 "expired": "❌ Der P-Schein ist abgelaufen",
                 "warning": "⚠️ Der P-Schein läuft in weniger als 6 Monaten ab",
                 "pendingAdminRegistration": "Ablaufdatum",

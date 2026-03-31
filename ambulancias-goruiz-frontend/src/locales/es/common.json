@@ -324,6 +324,7 @@
                 "both": "🟰"
             },
             "pschein": {
+                "uploadPscheinButton": "Subir P-Schein",
                 "expired": "❌ El P-Schein está caducado",
                 "warning": "⚠️ El P-Schein caduca en menos de 6 meses",
                 "pendingAdminRegistration": "Fecha de caducidad",
