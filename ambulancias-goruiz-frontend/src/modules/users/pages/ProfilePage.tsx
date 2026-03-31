@@ -24,6 +24,53 @@ interface ProfileProps {
   userId?: string;
 }
 
+/** Campos que influyen en PATCH / estado mostrado; mismo criterio para baseline vs form actual. */
+type ProfileDirtyBaseline = {
+  name: string;
+  lastName: string;
+  address: string;
+  phone: string;
+  emergencyPhone: string;
+  profileImage: string;
+  ambulanceRole: AmbulanceRole | undefined;
+  pscheinExpiry: string;
+  employeeNumber: string;
+  pscheinDocument: string;
+};
+
+function snapshotFromForm(u: Partial<User>): ProfileDirtyBaseline {
+  return {
+    name: (u.name ?? "").trim(),
+    lastName: (u.lastName ?? "").trim(),
+    address: (u.address ?? "").trim(),
+    phone: (u.phone ?? "").trim(),
+    emergencyPhone: (u.emergencyPhone ?? "").trim(),
+    profileImage: (u.profileImage ?? "").trim(),
+    ambulanceRole: u.ambulanceRole,
+    pscheinExpiry: (u.pscheinExpiry ?? "").trim(),
+    employeeNumber: (u.employeeNumber ?? "").trim(),
+    pscheinDocument: (u.pscheinDocument ?? "").trim(),
+  };
+}
+
+function differsFromBaseline(
+  a: ProfileDirtyBaseline,
+  b: ProfileDirtyBaseline,
+): boolean {
+  return (
+    a.name !== b.name ||
+    a.lastName !== b.lastName ||
+    a.address !== b.address ||
+    a.phone !== b.phone ||
+    a.emergencyPhone !== b.emergencyPhone ||
+    a.profileImage !== b.profileImage ||
+    a.ambulanceRole !== b.ambulanceRole ||
+    a.pscheinExpiry !== b.pscheinExpiry ||
+    a.employeeNumber !== b.employeeNumber ||
+    a.pscheinDocument !== b.pscheinDocument
+  );
+}
+
 const Profile = ({ userId }: ProfileProps) => {
   const { userId: userIdFromAuthContext, token, role, login } = useAuth();
   const [formData, setFormData] = useState<Partial<User>>({});
@@ -48,6 +95,9 @@ const Profile = ({ userId }: ProfileProps) => {
     docPath: "",
   });
 
+  /** Última versión servida / persistida del formulario (para Guardar solo si hay cambios). */
+  const profileBaselineRef = useRef<ProfileDirtyBaseline | null>(null);
+
   useEffect(() => {
     setLoading(true);
 
@@ -60,6 +110,7 @@ const Profile = ({ userId }: ProfileProps) => {
       try {
         const fetchedUser = await UsersApi.getUserById(idToFetch);
         setFormData(fetchedUser);
+        profileBaselineRef.current = snapshotFromForm(fetchedUser);
         pscheinSnapshotRef.current = {
           expiry: (fetchedUser.pscheinExpiry ?? "").trim(),
           docPath: (fetchedUser.pscheinDocument ?? "").trim(),
@@ -169,6 +220,7 @@ const Profile = ({ userId }: ProfileProps) => {
       const updatedUser = await UsersApi.getUserById(idToUpdate);
 
       setFormData(updatedUser);
+      profileBaselineRef.current = snapshotFromForm(updatedUser);
       pscheinSnapshotRef.current = {
         expiry: (updatedUser.pscheinExpiry ?? "").trim(),
         docPath: (updatedUser.pscheinDocument ?? "").trim(),
@@ -176,7 +228,8 @@ const Profile = ({ userId }: ProfileProps) => {
 
       // ✅ Limpiamos la selección local de documentos tras guardar
       setDocumentsFiles(null);
-
+      setProfileImageFile(null);
+      setPreviewImage(null);
 
       // Actualizamos contexto si es el propio usuario
       if (idToUpdate === userIdFromAuthContext) {
@@ -223,6 +276,7 @@ const Profile = ({ userId }: ProfileProps) => {
             docPath: (next.pscheinDocument ?? "").trim(),
           };
         }
+        profileBaselineRef.current = snapshotFromForm(next);
         return next;
       });
     } catch (error) {
@@ -263,6 +317,7 @@ const Profile = ({ userId }: ProfileProps) => {
       });
 
       setFormData(updatedUser);
+      profileBaselineRef.current = snapshotFromForm(updatedUser);
       if (idToUpdate === userIdFromAuthContext) {
         login(token, idToUpdate, role || "worker", updatedUser);
       }
@@ -273,6 +328,16 @@ const Profile = ({ userId }: ProfileProps) => {
       toastT.error(["toasts.profile.imageDeleteError"]);
     }
   };
+
+  const hasPendingFiles =
+    Boolean(profileImageFile) ||
+    Boolean(documentsFiles && documentsFiles.length > 0);
+  const profileFormBaseline = profileBaselineRef.current;
+  const isDirty =
+    !loading &&
+    profileFormBaseline !== null &&
+    (hasPendingFiles ||
+      differsFromBaseline(snapshotFromForm(formData), profileFormBaseline));
 
   if (loading) return <p className="p-4">{t("pages.profile.loading")}</p>;
 
@@ -830,7 +895,7 @@ const Profile = ({ userId }: ProfileProps) => {
             )}
 
             <div className="ml-auto">
-              <SaveIconButton />
+              <SaveIconButton disabled={!isDirty} />
             </div>
           </div>
         </form>
