@@ -224,4 +224,86 @@ describe("User documents — upload + /api/files ownership (integration)", () =>
       expect(res.status).toBe(403);
     });
   });
+
+  describe("DELETE P-Schein: limpia pscheinExpiry y nueva subida", () => {
+    let adminTokenW: string;
+    let adminIdW: string;
+    let companyWId: string;
+    let workerWId: string;
+    let firstPath: string;
+    let firstBasename: string;
+
+    beforeAll(async () => {
+      const data = await createTestAdminWithCompany();
+      adminTokenW = data.adminToken;
+      adminIdW = data.adminId;
+      companyWId = data.companyId;
+
+      const worker = await createTestWorkerInCompany(
+        new mongoose.Types.ObjectId(companyWId),
+        Date.now() + 99,
+      );
+      workerWId = String(worker._id);
+
+      const up = await request(app)
+        .post(`${API}/users/${workerWId}/upload`)
+        .set("Authorization", `Bearer ${adminTokenW}`)
+        .attach("documents", Buffer.from("%PDF-1.4 exp-test"), {
+          filename: "expiry-regression.pdf",
+          contentType: "application/pdf",
+        });
+      expect(up.status).toBe(200);
+      firstPath = up.body.pscheinDocument as string;
+      firstBasename = basenameFromStoredUrl(firstPath);
+
+      await User.updateOne(
+        { _id: new mongoose.Types.ObjectId(workerWId) },
+        { $set: { pscheinExpiry: "2031-05-15" } },
+      );
+    });
+
+    afterAll(async () => {
+      await removeTestUploadFile(firstBasename).catch(() => {});
+      await User.deleteMany({
+        _id: {
+          $in: [
+            new mongoose.Types.ObjectId(workerWId),
+            new mongoose.Types.ObjectId(adminIdW),
+          ],
+        },
+      });
+      await Company.deleteMany({
+        _id: { $in: [new mongoose.Types.ObjectId(companyWId)] },
+      });
+    });
+
+    it("borra documento y elimina pscheinExpiry en BD; nueva subida deja fecha vacía", async () => {
+      const del = await request(app)
+        .delete(`${API}/users/${workerWId}/document`)
+        .set("Authorization", `Bearer ${adminTokenW}`)
+        .send({ filePath: firstPath });
+      expect(del.status).toBe(200);
+      expect(del.body.pscheinExpiry).toBeNull();
+
+      let u = await User.findById(workerWId).lean();
+      expect(u?.pscheinDocument).toBeFalsy();
+      expect(u?.pscheinExpiry).toBeFalsy();
+
+      const up2 = await request(app)
+        .post(`${API}/users/${workerWId}/upload`)
+        .set("Authorization", `Bearer ${adminTokenW}`)
+        .attach("documents", Buffer.from("%PDF-1.4 exp-test2"), {
+          filename: "after-delete.pdf",
+          contentType: "application/pdf",
+        });
+      expect(up2.status).toBe(200);
+      const secondPath = up2.body.pscheinDocument as string;
+      expect(secondPath).toMatch(/^\/uploads\//);
+
+      u = await User.findById(workerWId).lean();
+      expect(u?.pscheinExpiry).toBeFalsy();
+
+      await removeTestUploadFile(basenameFromStoredUrl(secondPath));
+    });
+  });
 });

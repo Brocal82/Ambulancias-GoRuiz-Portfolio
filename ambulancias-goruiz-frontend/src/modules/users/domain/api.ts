@@ -49,7 +49,7 @@ export const deleteUser = async (userId: string): Promise<void> => {
 
 export const deleteUserDocument = async (
   filePath: string,
-): Promise<{ pscheinDocument?: string }> => {
+): Promise<{ pscheinDocument?: string | null; pscheinExpiry?: string | null }> => {
   const response = await api.delete("/users/me/document", {
     data: { filePath },
   });
@@ -60,7 +60,7 @@ export const deleteUserDocument = async (
 export const deleteUserDocumentForUser = async (
   userId: string,
   filePath: string,
-): Promise<{ pscheinDocument?: string }> => {
+): Promise<{ pscheinDocument?: string | null; pscheinExpiry?: string | null }> => {
   const response = await api.delete(`/users/${userId}/document`, {
     data: { filePath },
   });

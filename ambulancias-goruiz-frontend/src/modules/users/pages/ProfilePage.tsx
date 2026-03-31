@@ -112,7 +112,13 @@ const Profile = ({ userId }: ProfileProps) => {
             ? uploadData.pscheinDocument
             : undefined;
         if (docFromUpload) {
-          formAfterUpload = { ...formData, pscheinDocument: docFromUpload };
+          formAfterUpload = {
+            ...formData,
+            pscheinDocument: docFromUpload,
+            pscheinExpiry: undefined,
+            pscheinConfirmedAt: undefined,
+            pscheinConfirmedBy: undefined,
+          };
         }
       }
 
@@ -206,7 +212,8 @@ const Profile = ({ userId }: ProfileProps) => {
       setFormData((prev) => {
         const next: Partial<User> = {
           ...prev,
-          pscheinDocument: result.pscheinDocument,
+          pscheinDocument: result.pscheinDocument ?? undefined,
+          pscheinExpiry: undefined,
           pscheinConfirmedAt: undefined,
           pscheinConfirmedBy: undefined,
         };
