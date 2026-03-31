@@ -1,5 +1,5 @@
 /**
- * Documentos de usuario: rutas de subida + canAccessFile (rama User.documents / admin misma empresa).
+ * PDF P-Schein de usuario: rutas de subida + canAccessFile (User.pscheinDocument / admin misma empresa).
  * Complementa files.security.integration.test.ts (casos genéricos sin ruta de usuario).
  */
 import path from "path";
@@ -75,12 +75,10 @@ describe("User documents — upload + /api/files ownership (integration)", () =>
         });
 
       expect(up.status).toBe(200);
-      const docs = up.body.documents as string[] | undefined;
-      expect(Array.isArray(docs)).toBe(true);
-      expect(docs!.length).toBeGreaterThan(0);
-      const storedPath = docs![docs!.length - 1];
+      const storedPath = up.body.pscheinDocument as string | undefined;
+      expect(typeof storedPath).toBe("string");
       expect(storedPath).toMatch(/^\/uploads\//);
-      basename = basenameFromStoredUrl(storedPath);
+      basename = basenameFromStoredUrl(storedPath as string);
     });
 
     afterAll(async () => {
@@ -175,9 +173,8 @@ describe("User documents — upload + /api/files ownership (integration)", () =>
         });
 
       expect(up.status).toBe(200);
-      const docs = up.body.documents as string[] | undefined;
-      expect(docs!.length).toBeGreaterThan(0);
-      storedPath = docs![docs!.length - 1];
+      storedPath = up.body.pscheinDocument as string;
+      expect(storedPath).toMatch(/^\/uploads\//);
       basename = basenameFromStoredUrl(storedPath);
     });
 

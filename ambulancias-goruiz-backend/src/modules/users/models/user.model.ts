@@ -14,10 +14,9 @@ export interface IUser extends Document {
   /** Admin-confirmed P-Schein (minimal workflow; optional until Phase 2+) */
   pscheinConfirmedAt?: Date;
   pscheinConfirmedBy?: Types.ObjectId;
-  /** Path in documents[] that is the P-Schein file, e.g. /uploads/... */
-  pscheinDocumentPath?: string;
+  /** Único PDF del P-Schein en perfil, ej. /uploads/... */
+  pscheinDocument?: string;
   profileImage?: string; // URL o base64 si usas subida
-  documents?: string[]; // Lista de archivos subidos (PDF, etc.)
   rotationMode?: "rotating" | "fixed" | "none";
   fixedDienstNumber?: number | null;
   companyId?: Types.ObjectId;
@@ -66,17 +65,13 @@ const userSchema = new Schema<IUser>({
     ref: "User",
     required: false,
   },
-  pscheinDocumentPath: {
+  pscheinDocument: {
     type: String,
     required: false,
     trim: true,
   },
   profileImage: {
     type: String,
-    required: false,
-  },
-  documents: {
-    type: [String],
     required: false,
   },
   rotationMode: {

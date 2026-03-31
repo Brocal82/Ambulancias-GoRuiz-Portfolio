@@ -49,7 +49,7 @@ export const deleteUser = async (userId: string): Promise<void> => {
 
 export const deleteUserDocument = async (
   filePath: string,
-): Promise<{ documents: string[] }> => {
+): Promise<{ pscheinDocument?: string }> => {
   const response = await api.delete("/users/me/document", {
     data: { filePath },
   });
@@ -60,7 +60,7 @@ export const deleteUserDocument = async (
 export const deleteUserDocumentForUser = async (
   userId: string,
   filePath: string,
-): Promise<{ documents: string[] }> => {
+): Promise<{ pscheinDocument?: string }> => {
   const response = await api.delete(`/users/${userId}/document`, {
     data: { filePath },
   });
@@ -69,7 +69,7 @@ export const deleteUserDocumentForUser = async (
 
 export const uploadUserFiles = async (
   files: UploadUserFilesPayload,
-): Promise<{ profileImage?: string; documents?: string[] }> => {
+): Promise<{ profileImage?: string; pscheinDocument?: string } & Partial<User>> => {
   const form = new FormData();
 
   if (files.profileImage) form.append("profileImage", files.profileImage);
@@ -90,7 +90,7 @@ export const uploadUserFiles = async (
 export const uploadUserFilesForUser = async (
   userId: string,
   files: UploadUserFilesPayload,
-): Promise<{ profileImage?: string; documents?: string[] }> => {
+): Promise<{ profileImage?: string; pscheinDocument?: string } & Partial<User>> => {
   const form = new FormData();
 
   if (files.profileImage) form.append("profileImage", files.profileImage);

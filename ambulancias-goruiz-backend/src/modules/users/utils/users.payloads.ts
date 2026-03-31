@@ -13,7 +13,8 @@ export interface UpdateUserDTO {
 
   pscheinConfirmedAt?: Date | null;
   pscheinConfirmedBy?: string | null;
-  pscheinDocumentPath?: string;
+  /** Ruta del PDF P-Schein; null limpia el certificado en BD */
+  pscheinDocument?: string | null;
 
   /**
    * - string normal: set
@@ -23,9 +24,6 @@ export interface UpdateUserDTO {
   profileImage?: string;
 
   employeeNumber?: string;
-
-  // docs lo gestiona uploadUserFiles, no updateUser
-  // documents?: string[];
 }
 
 export interface CreateUserDTO {

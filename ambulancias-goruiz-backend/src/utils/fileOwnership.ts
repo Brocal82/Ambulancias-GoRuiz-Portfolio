@@ -8,7 +8,7 @@ import { isSameCompany } from "./requireCompany";
  * Returns true if the requesting user is authorized to access the given file.
  *
  * Authorization is checked per file category:
- *   - User.documents[] / pscheinDocumentPath: owner or admin of same company
+ *   - User.pscheinDocument: owner or admin of same company
  *   - SickLeave.documents[] / documentUrl:    owner or admin of same company
  *                                              (legacy companyId=null uses user fallback)
  *   - Message.attachments[].url:              sender or explicit recipient only
@@ -25,16 +25,16 @@ export async function canAccessFile(
   const storedPath = `/uploads/${filename}`;
   const userOid = new mongoose.Types.ObjectId(userId);
 
-  // ── 1. User.documents[] / pscheinDocumentPath — direct ownership ──────────
+  // ── 1. User.pscheinDocument — direct ownership ─────────────────────────────
   const ownUserDoc = await User.findOne({
     _id: userOid,
-    $or: [{ documents: storedPath }, { pscheinDocumentPath: storedPath }],
+    pscheinDocument: storedPath,
   })
     .select("_id")
     .lean();
   if (ownUserDoc) return true;
 
-  // ── 2. User.documents[] / pscheinDocumentPath — admin of same company ─────
+  // ── 2. User.pscheinDocument — admin of same company ───────────────────────
   if (
     userRole === "admin" &&
     companyId &&
@@ -43,7 +43,7 @@ export async function canAccessFile(
     const companyOid = new mongoose.Types.ObjectId(companyId);
     const adminUserDoc = await User.findOne({
       companyId: companyOid,
-      $or: [{ documents: storedPath }, { pscheinDocumentPath: storedPath }],
+      pscheinDocument: storedPath,
     })
       .select("_id")
       .lean();

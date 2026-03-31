@@ -14,9 +14,8 @@ export interface IUser {
   /** ISO string in API JSON */
   pscheinConfirmedAt?: string;
   pscheinConfirmedBy?: string;
-  pscheinDocumentPath?: string;
+  pscheinDocument?: string;
   profileImage?: string; // URL o base64 si se quiere subir
-  documents?: string[]; // Rutas a archivos subidos (ej. PDF)
   rotationMode?: "rotating" | "fixed" | "none";
   fixedDienstNumber?: number | null;
 }

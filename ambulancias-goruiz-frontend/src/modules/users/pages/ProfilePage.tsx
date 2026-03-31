@@ -62,7 +62,7 @@ const Profile = ({ userId }: ProfileProps) => {
         setFormData(fetchedUser);
         pscheinSnapshotRef.current = {
           expiry: (fetchedUser.pscheinExpiry ?? "").trim(),
-          docPath: (fetchedUser.pscheinDocumentPath ?? "").trim(),
+          docPath: (fetchedUser.pscheinDocument ?? "").trim(),
         };
       } catch (error) {
         console.error(error);
@@ -79,13 +79,6 @@ const Profile = ({ userId }: ProfileProps) => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    if (name === "pscheinDocumentPath") {
-      setFormData({
-        ...formData,
-        pscheinDocumentPath: value === "" ? undefined : value,
-      });
-      return;
-    }
     setFormData({ ...formData, [name]: value });
   };
 
@@ -97,6 +90,7 @@ const Profile = ({ userId }: ProfileProps) => {
 
     try {
       let uploadedProfileImage: string | undefined;
+      let formAfterUpload = formData;
 
       if (profileImageFile || documentsFiles) {
         const uploadData =
@@ -112,6 +106,13 @@ const Profile = ({ userId }: ProfileProps) => {
 
         if (uploadData?.profileImage) {
           uploadedProfileImage = uploadData.profileImage;
+        }
+        const docFromUpload =
+          typeof uploadData?.pscheinDocument === "string"
+            ? uploadData.pscheinDocument
+            : undefined;
+        if (docFromUpload) {
+          formAfterUpload = { ...formData, pscheinDocument: docFromUpload };
         }
       }
 
@@ -135,15 +136,15 @@ const Profile = ({ userId }: ProfileProps) => {
 
       if (isAdminEditingOtherUser && userIdFromAuthContext) {
         const exp = (formData.pscheinExpiry ?? "").trim();
-        const docPath = (formData.pscheinDocumentPath ?? "").trim();
+        const docPath = (formAfterUpload.pscheinDocument ?? "").trim();
         const snap = pscheinSnapshotRef.current;
 
         if (!exp || !docPath) {
-          payload.pscheinDocumentPath = null;
+          payload.pscheinDocument = null;
           payload.pscheinConfirmedAt = null;
           payload.pscheinConfirmedBy = null;
         } else if (exp !== snap.expiry || docPath !== snap.docPath) {
-          payload.pscheinDocumentPath = docPath;
+          payload.pscheinDocument = docPath;
           payload.pscheinConfirmedAt = new Date().toISOString();
           payload.pscheinConfirmedBy = userIdFromAuthContext;
         }
@@ -164,7 +165,7 @@ const Profile = ({ userId }: ProfileProps) => {
       setFormData(updatedUser);
       pscheinSnapshotRef.current = {
         expiry: (updatedUser.pscheinExpiry ?? "").trim(),
-        docPath: (updatedUser.pscheinDocumentPath ?? "").trim(),
+        docPath: (updatedUser.pscheinDocument ?? "").trim(),
       };
 
       // ✅ Limpiamos la selección local de documentos tras guardar
@@ -203,26 +204,16 @@ const Profile = ({ userId }: ProfileProps) => {
 
       toastT.success("toasts.profile.docDeleted");
       setFormData((prev) => {
-        const wasPscheinDoc = prev.pscheinDocumentPath === filePath;
         const next: Partial<User> = {
           ...prev,
-          documents: result.documents,
+          pscheinDocument: result.pscheinDocument,
+          pscheinConfirmedAt: undefined,
+          pscheinConfirmedBy: undefined,
         };
-        if (wasPscheinDoc) {
-          next.pscheinDocumentPath = undefined;
-          next.pscheinConfirmedAt = undefined;
-          next.pscheinConfirmedBy = undefined;
-        } else {
-          next.pscheinDocumentPath =
-            prev.pscheinDocumentPath &&
-            result.documents.includes(prev.pscheinDocumentPath)
-              ? prev.pscheinDocumentPath
-              : undefined;
-        }
         if (isAdminEditingOtherUser) {
           pscheinSnapshotRef.current = {
             expiry: (next.pscheinExpiry ?? "").trim(),
-            docPath: (next.pscheinDocumentPath ?? "").trim(),
+            docPath: (next.pscheinDocument ?? "").trim(),
           };
         }
         return next;
@@ -323,6 +314,7 @@ const Profile = ({ userId }: ProfileProps) => {
   // documentsFiles es FileList | null, lo convertimos a array para poder mapearlo en el render
   const pendingDocs = documentsFiles ? Array.from(documentsFiles) : [];
 
+  const displayedPscheinDocUrl = (formData.pscheinDocument ?? "").trim() || null;
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6">
@@ -604,16 +596,25 @@ const Profile = ({ userId }: ProfileProps) => {
             </div>
           </div>
 
-          {/* ✅ Documentos + P-Schein + docs subidos: 3 columnas fijas y contenidos centrados */}
+          {/* Certificado P-Schein (PDF): subida + caducidad + archivo actual (sin catálogo general) */}
           <div className="rounded-2xl ring-1 ring-slate-200 bg-white p-3">
             <div
               className={`grid grid-cols-1 gap-3 items-stretch ${hidePscheinColumnWorkerSelf ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}
             >
-              {/* Columna 1 */}
-              <div className="h-full grid grid-rows-[20px_1fr] gap-2 place-items-center text-center">
-                <div className="h-5 flex items-center justify-center">
-                  <span className="text-[11px] font-medium text-slate-700">
-                    {t("pages.profile.labels.documents")}
+              {/* Columna 1 — subir PDF del P-Schein */}
+              <div className="h-full grid grid-rows-[auto_1fr] gap-2 place-items-center text-center">
+                <div className="min-h-5 flex flex-col items-center justify-center gap-0.5 px-1">
+                  <span className="text-[11px] font-semibold text-slate-800">
+                    {t(
+                      "pages.profile.pschein.certificateUploadTitle",
+                      "Certificado P-Schein (PDF)",
+                    )}
+                  </span>
+                  <span className="text-[10px] font-normal text-slate-500 leading-snug">
+                    {t(
+                      "pages.profile.pschein.certificateUploadSubtitle",
+                      "Sube el PDF del certificado",
+                    )}
                   </span>
                 </div>
 
@@ -621,10 +622,16 @@ const Profile = ({ userId }: ProfileProps) => {
                   <div className="w-full max-w-[220px]">
                     <FileUpload
                       id="profile-docs"
-                      label={t("pages.profile.documents.upload")}
-                      hintWhenEmpty={t("pages.profile.documents.noneSelected")}
+                      label={t(
+                        "pages.profile.pschein.uploadLabel",
+                        "Seleccionar PDF",
+                      )}
+                      hintWhenEmpty={t(
+                        "pages.profile.pschein.uploadHint",
+                        "Un archivo PDF (máx. 10 MB)",
+                      )}
                       accept="application/pdf"
-                      multiple
+                      multiple={false}
                       maxSizeMB={10}
                       onChange={(files) => setDocumentsFiles(files)}
                       onError={(msg) => toastT.warn(msg)}
@@ -645,94 +652,104 @@ const Profile = ({ userId }: ProfileProps) => {
                 </div>
 
                 <div className="min-h-0 w-full flex justify-center">
-                  {showPschein ? (
-                    <div className="w-full max-w-[220px] flex flex-col items-center">
-                      <label htmlFor="pscheinExpiry" className="sr-only">
-                        {t("pages.profile.labels.pscheinExpiry")}
-                      </label>
+                  <div className="w-full max-w-[220px] flex flex-col items-center gap-2">
+                    {showPschein ? (
+                      <div className="w-full flex flex-col items-center">
+                        <label htmlFor="pscheinExpiry" className="sr-only">
+                          {t("pages.profile.labels.pscheinExpiry")}
+                        </label>
 
-                      {isWorkerSelfProfile ? (
-                        <p
-                          className={`w-full rounded-lg px-2 py-1 text-xs text-center border bg-slate-50 ${getPscheinInfo(formData.pscheinExpiry).status === "expired"
-                            ? "border-red-500 text-red-800"
-                            : getPscheinInfo(formData.pscheinExpiry).status ===
-                                "warning"
-                              ? "border-orange-400 text-orange-900"
-                              : "border-slate-300 text-slate-800"
-                            }`}
-                        >
-                          {formData.pscheinExpiry?.trim()
-                            ? formData.pscheinExpiry
-                            : t(
-                                "pages.profile.pschein.pendingAdminRegistration",
-                                "❓ Pendiente de registro por administración",
-                              )}
-                        </p>
-                      ) : (
-                        <input
-                          type="date"
-                          id="pscheinExpiry"
-                          name="pscheinExpiry"
-                          value={formData.pscheinExpiry || ""}
-                          onChange={handleChange}
-                          className={`w-full rounded-lg px-2 py-1 text-xs shadow-sm focus:outline-none focus:ring-2 ${getPscheinInfo(formData.pscheinExpiry).status === "expired"
-                            ? "border border-red-500 focus:ring-red-100"
-                            : getPscheinInfo(formData.pscheinExpiry).status === "warning"
-                              ? "border border-orange-400 focus:ring-orange-100"
-                              : "border border-slate-300 focus:ring-blue-100 focus:border-blue-400"
-                            }`}
-                        />
-                      )}
+                        {isWorkerSelfProfile ? (
+                          <p
+                            className={`w-full rounded-lg px-2 py-1 text-xs text-center border bg-slate-50 ${getPscheinInfo(formData.pscheinExpiry).status === "expired"
+                              ? "border-red-500 text-red-800"
+                              : getPscheinInfo(formData.pscheinExpiry).status ===
+                                  "warning"
+                                ? "border-orange-400 text-orange-900"
+                                : "border-slate-300 text-slate-800"
+                              }`}
+                          >
+                            {formData.pscheinExpiry?.trim()
+                              ? formData.pscheinExpiry
+                              : t(
+                                  "pages.profile.pschein.pendingAdminRegistration",
+                                  "❓ Pendiente de registro por administración",
+                                )}
+                          </p>
+                        ) : (
+                          <input
+                            type="date"
+                            id="pscheinExpiry"
+                            name="pscheinExpiry"
+                            value={formData.pscheinExpiry || ""}
+                            onChange={handleChange}
+                            className={`w-full rounded-lg px-2 py-1 text-xs shadow-sm focus:outline-none focus:ring-2 ${getPscheinInfo(formData.pscheinExpiry).status === "expired"
+                              ? "border border-red-500 focus:ring-red-100"
+                              : getPscheinInfo(formData.pscheinExpiry).status === "warning"
+                                ? "border border-orange-400 focus:ring-orange-100"
+                                : "border border-slate-300 focus:ring-blue-100 focus:border-blue-400"
+                              }`}
+                          />
+                        )}
 
-                      {pschein.status === "expired" && (
-                        <p className="text-red-600 text-[11px] mt-1 text-center">
-                          {t(
-                            "pages.profile.pschein.expiredDynamic",
-                            "❌ P-Schein caducado hace {{months}} meses",
-                            { months: Math.abs(pschein.monthsLeft ?? 0) },
-                          )}
-                        </p>
-                      )}
-                      {pschein.status === "warning" && (
-                        <p className="text-orange-600 text-[11px] mt-1 text-center">
-                          {t(
-                            "pages.profile.pschein.warningDynamic",
-                            "⚠️ Expira en {{months}} meses ({{days}} días)",
-                            {
-                              months: pschein.monthsLeft ?? 0,
-                              days: pschein.daysLeft ?? 0,
-                            },
-                          )}
-                        </p>
-                      )}
-                      {pschein.status === "valid" && (
-                        <p className="text-emerald-600 text-[11px] mt-1 text-center">
-                          {t(
-                            "pages.profile.pschein.validDynamic",
-                            "✅ Válido ({{months}} meses restantes)",
-                            { months: pschein.monthsLeft ?? 0 },
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="hidden lg:block" />
-                  )}
+                        {pschein.status === "expired" && (
+                          <p className="text-red-600 text-[11px] mt-1 text-center">
+                            {t(
+                              "pages.profile.pschein.expiredDynamic",
+                              "❌ P-Schein caducado hace {{months}} meses",
+                              { months: Math.abs(pschein.monthsLeft ?? 0) },
+                            )}
+                          </p>
+                        )}
+                        {pschein.status === "warning" && (
+                          <p className="text-orange-600 text-[11px] mt-1 text-center">
+                            {t(
+                              "pages.profile.pschein.warningDynamic",
+                              "⚠️ Expira en {{months}} meses ({{days}} días)",
+                              {
+                                months: pschein.monthsLeft ?? 0,
+                                days: pschein.daysLeft ?? 0,
+                              },
+                            )}
+                          </p>
+                        )}
+                        {pschein.status === "valid" && (
+                          <p className="text-emerald-600 text-[11px] mt-1 text-center">
+                            {t(
+                              "pages.profile.pschein.validDynamic",
+                              "✅ Válido ({{months}} meses restantes)",
+                              { months: pschein.monthsLeft ?? 0 },
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="hidden lg:block" />
+                    )}
+                  </div>
                 </div>
               </div>
               )}
 
-              {/* Columna 3 */}
-              <div className="h-full grid grid-rows-[20px_1fr] gap-2 place-items-center text-center">
-                <div className="h-5 flex items-center justify-center">
-                  <span className="text-[11px] font-medium text-slate-700">
-                    {t("pages.profile.documents.uploaded", "Documentos subidos")}
+              {/* Columna 3 — archivo P-Schein guardado (vista única, no catálogo) */}
+              <div className="h-full grid grid-rows-[auto_1fr] gap-2 place-items-center text-center">
+                <div className="min-h-5 flex flex-col items-center justify-center gap-0.5 px-1">
+                  <span className="text-[11px] font-semibold text-slate-800">
+                    {t(
+                      "pages.profile.pschein.currentFileTitle",
+                      "Certificado guardado",
+                    )}
+                  </span>
+                  <span className="text-[10px] font-normal text-slate-500 leading-snug">
+                    {t(
+                      "pages.profile.pschein.currentFileSubtitle",
+                      "Visualizar o eliminar el PDF del P-Schein",
+                    )}
                   </span>
                 </div>
 
                 <div className="min-h-0 w-full flex justify-center">
                   <div className="w-full max-w-[220px]">
-                    {/* ✅ Pendientes de guardar (seleccionados pero aún no guardados) */}
                     {pendingDocs.length > 0 && (
                       <div className="mb-2 rounded-lg border border-orange-200 bg-orange-50 p-2">
                         <p className="text-[11px] font-medium text-orange-700 mb-1">
@@ -749,67 +766,34 @@ const Profile = ({ userId }: ProfileProps) => {
                       </div>
                     )}
 
-                    {formData.documents && formData.documents.length > 0 ? (
-                      <ul className="text-[11px] text-slate-700 space-y-1">
-                        {formData.documents.map((docUrl, index) => (
-                          <li key={index} className="flex justify-center">
-                            <div className="inline-flex items-center gap-1 max-w-[220px]">
-                              <button
-                                type="button"
-                                onClick={() => openSecureFile(docUrl)}
-                                className="truncate text-blue-600 hover:text-blue-700 underline text-left"
-                                title={displayFileNameFromUrl(docUrl)}
-                              >
-                                {displayFileNameFromUrl(docUrl)}
-                              </button>
+                    {displayedPscheinDocUrl ? (
+                      <div className="flex justify-center">
+                        <div className="inline-flex items-center gap-1 max-w-[220px]">
+                          <button
+                            type="button"
+                            onClick={() => openSecureFile(displayedPscheinDocUrl)}
+                            className="truncate text-blue-600 hover:text-blue-700 underline text-left text-[11px]"
+                            title={displayFileNameFromUrl(displayedPscheinDocUrl)}
+                          >
+                            {displayFileNameFromUrl(displayedPscheinDocUrl)}
+                          </button>
 
-                              <DeleteIconButton
-                                title={t("pages.profile.documents.deleteTitle")}
-                                onClick={() => handleDeleteDocument(docUrl)}
-                              />
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+                          <DeleteIconButton
+                            title={t("pages.profile.documents.deleteTitle")}
+                            onClick={() =>
+                              handleDeleteDocument(displayedPscheinDocUrl)
+                            }
+                          />
+                        </div>
+                      </div>
                     ) : (
                       <p className="text-[11px] text-slate-500 text-center pt-1">
-                        {t("pages.profile.documents.none", "Sin documentos")}
+                        {t(
+                          "pages.profile.pschein.noCertificateYet",
+                          "Aún no hay certificado guardado",
+                        )}
                       </p>
                     )}
-
-                    {isAdminEditingOtherUser &&
-                      (formData.documents?.length ?? 0) > 0 && (
-                        <div className="mt-2 w-full text-left space-y-1">
-                          <label
-                            htmlFor="pscheinDocumentPath"
-                            className="block text-[11px] font-medium text-slate-700"
-                          >
-                            {t(
-                              "pages.profile.pschein.documentSelect",
-                              "P-Schein document",
-                            )}
-                          </label>
-                          <select
-                            id="pscheinDocumentPath"
-                            name="pscheinDocumentPath"
-                            value={formData.pscheinDocumentPath ?? ""}
-                            onChange={handleChange}
-                            className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
-                          >
-                            <option value="">
-                              {t(
-                                "pages.profile.pschein.documentSelectNone",
-                                "— None —",
-                              )}
-                            </option>
-                            {formData.documents!.map((docUrl) => (
-                              <option key={docUrl} value={docUrl}>
-                                {displayFileNameFromUrl(docUrl)}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
                   </div>
                 </div>
               </div>

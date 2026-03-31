@@ -11,8 +11,8 @@ export interface UpdateUserPayload {
   emergencyPhone?: string;
   pscheinExpiry?: string;
 
-  /** Solo admin editando otro usuario; confirmación P-Schein */
-  pscheinDocumentPath?: string | null;
+  /** Solo admin editando otro usuario; confirmación P-Schein (ruta del PDF) */
+  pscheinDocument?: string | null;
   pscheinConfirmedAt?: string | null;
   pscheinConfirmedBy?: string | null;
 

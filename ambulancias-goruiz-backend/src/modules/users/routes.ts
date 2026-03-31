@@ -56,7 +56,7 @@ router.post(
   authenticateToken,
   upload.fields([
     { name: "profileImage", maxCount: 1 },
-    { name: "documents", maxCount: 5 },
+    { name: "documents", maxCount: 1 },
   ]),
   uploadUserFiles,
 );
@@ -71,7 +71,7 @@ router.post(
   validateObjectId("userId"),
   upload.fields([
     { name: "profileImage", maxCount: 1 },
-    { name: "documents", maxCount: 5 },
+    { name: "documents", maxCount: 1 },
   ]),
   uploadUserFilesForUser,
 );

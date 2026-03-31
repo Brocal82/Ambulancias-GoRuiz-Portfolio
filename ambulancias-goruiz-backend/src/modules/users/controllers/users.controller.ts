@@ -107,7 +107,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       delete dto.employeeNumber;
       delete dto.pscheinConfirmedAt;
       delete dto.pscheinConfirmedBy;
-      delete dto.pscheinDocumentPath;
+      delete dto.pscheinDocument;
     }
     if (req.userRole === "worker") {
       delete dto.ambulanceRole;
@@ -323,7 +323,7 @@ export const getAvailableUsersForDate: RequestHandler = async (
 };
 
 /** Lógica compartida: sube archivos y actualiza el usuario indicado */
-function applyUploadToUser(
+async function applyUploadToUser(
   targetUserId: string,
   files: { [fieldname: string]: Express.Multer.File[] },
 ): Promise<any> {
@@ -334,18 +334,28 @@ function applyUploadToUser(
   }
 
   if (files?.documents?.length) {
-    return User.findById(targetUserId).then((existingUser) => {
-      const currentDocuments = existingUser?.documents || [];
-      const newDocs = files.documents!.map(
-        (file) => `/uploads/${file.filename}`,
-      );
-      updates.documents = [...currentDocuments, ...newDocs];
-      return User.findByIdAndUpdate(
-        targetUserId,
-        { $set: updates },
-        { new: true, runValidators: true },
-      );
-    });
+    const existingUser = await User.findById(targetUserId);
+    const newPath = `/uploads/${files.documents[0]!.filename}`;
+    const oldPath = existingUser?.pscheinDocument?.trim();
+    updates.pscheinDocument = newPath;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      targetUserId,
+      {
+        $set: updates,
+        $unset: { pscheinConfirmedAt: 1, pscheinConfirmedBy: 1 },
+      },
+      { new: true, runValidators: true },
+    );
+
+    if (oldPath && oldPath !== newPath) {
+      const uploadsDir = path.join(__dirname, "../../../../uploads");
+      const filename = path.basename(oldPath);
+      const absolutePath = path.join(uploadsDir, filename);
+      await fs.promises.unlink(absolutePath).catch(() => {});
+    }
+
+    return updatedUser;
   }
 
   return User.findByIdAndUpdate(
@@ -424,35 +434,30 @@ export const uploadUserFilesForUser = async (
   }
 };
 
-/** Lógica compartida: elimina documento del usuario indicado */
+/** Lógica compartida: elimina el PDF P-Schein del usuario indicado */
 async function removeDocumentFromUser(
   targetUserId: string,
   filePath: string,
-): Promise<{ documents: string[] } | null> {
+): Promise<{ pscheinDocument?: string } | null> {
   const user = await User.findById(targetUserId);
   if (!user) return null;
 
-  const wasInDocuments = (user.documents || []).includes(filePath);
-  user.documents = (user.documents || []).filter((doc) => doc !== filePath);
-
-  const pscheinPath = user.pscheinDocumentPath?.trim();
-  const wasInPschein = !!(pscheinPath && pscheinPath === filePath.trim());
-  if (wasInPschein) {
-    user.pscheinDocumentPath = undefined;
-    user.pscheinConfirmedAt = undefined;
-    user.pscheinConfirmedBy = undefined;
+  const current = user.pscheinDocument?.trim();
+  if (!current || current !== filePath.trim()) {
+    return null;
   }
 
+  user.pscheinDocument = undefined;
+  user.pscheinConfirmedAt = undefined;
+  user.pscheinConfirmedBy = undefined;
   await user.save();
 
-  if (wasInDocuments || wasInPschein) {
-    const uploadsDir = path.join(__dirname, "../../../../uploads");
-    const filename = path.basename(filePath);
-    const absolutePath = path.join(uploadsDir, filename);
-    await fs.promises.unlink(absolutePath).catch(() => {});
-  }
+  const uploadsDir = path.join(__dirname, "../../../../uploads");
+  const filename = path.basename(filePath);
+  const absolutePath = path.join(uploadsDir, filename);
+  await fs.promises.unlink(absolutePath).catch(() => {});
 
-  return { documents: user.documents };
+  return { pscheinDocument: user.pscheinDocument };
 }
 
 export const deleteUserDocument = async (
@@ -480,7 +485,7 @@ export const deleteUserDocument = async (
 
     res.status(200).json({
       message: "Documento eliminado correctamente",
-      documents: result.documents,
+      pscheinDocument: result.pscheinDocument,
     });
   } catch (error) {
     console.error("Error al eliminar documento:", error);
@@ -525,7 +530,7 @@ export const deleteUserDocumentForUser = async (
 
     res.status(200).json({
       message: "Documento eliminado correctamente",
-      documents: result.documents,
+      pscheinDocument: result.pscheinDocument,
     });
   } catch (error) {
     console.error("Error al eliminar documento:", error);

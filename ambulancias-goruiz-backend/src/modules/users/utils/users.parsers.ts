@@ -45,9 +45,13 @@ export function parseUpdateUserDTO(body: any): Partial<UpdateUserDTO> {
   if (body?.employeeNumber !== undefined)
     result.employeeNumber = asString(body.employeeNumber) ?? "";
 
-  if (body?.pscheinDocumentPath !== undefined) {
-    const s = asString(body.pscheinDocumentPath);
-    result.pscheinDocumentPath = s === undefined ? undefined : s.trim();
+  if (body?.pscheinDocument !== undefined) {
+    if (body.pscheinDocument === null) {
+      result.pscheinDocument = null;
+    } else {
+      const s = asString(body.pscheinDocument);
+      result.pscheinDocument = s === undefined ? undefined : s.trim();
+    }
   }
   if (body?.pscheinConfirmedBy !== undefined) {
     const s = asString(body.pscheinConfirmedBy)?.trim();

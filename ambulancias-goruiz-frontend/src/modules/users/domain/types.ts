@@ -14,12 +14,11 @@ export interface User {
   pscheinExpiry?: string;
   pscheinConfirmedAt?: string;
   pscheinConfirmedBy?: string;
-  pscheinDocumentPath?: string;
+  pscheinDocument?: string;
   address?: string;
   phone?: string;
   emergencyPhone?: string;
   profileImage?: string;
-  documents?: string[];
 
   onLeave?: boolean;
   onVacation?: boolean;

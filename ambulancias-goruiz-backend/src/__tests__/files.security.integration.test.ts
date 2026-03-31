@@ -96,11 +96,11 @@ describe("Files security (integration)", () => {
       }
     });
 
-    it("returns 200 when file exists and path is on the same user documents[]", async () => {
+    it("returns 200 when file exists and path is on the same user pscheinDocument", async () => {
       const basename = uniqueUploadBasename("owned");
       const storedPath = `/uploads/${basename}`;
       await writeTestUploadFile(basename);
-      await User.updateOne({ _id: baseWorkerId }, { $push: { documents: storedPath } });
+      await User.updateOne({ _id: baseWorkerId }, { $set: { pscheinDocument: storedPath } });
       try {
         const res = await request(app)
           .get(`${API}/files/${basename}`)
@@ -108,7 +108,7 @@ describe("Files security (integration)", () => {
         expect(res.status).toBe(200);
       } finally {
         await removeTestUploadFile(basename);
-        await User.updateOne({ _id: baseWorkerId }, { $pull: { documents: storedPath } });
+        await User.updateOne({ _id: baseWorkerId }, { $unset: { pscheinDocument: 1 } });
       }
     });
 
@@ -128,7 +128,7 @@ describe("Files security (integration)", () => {
       const basename = uniqueUploadBasename("cross");
       const storedPath = `/uploads/${basename}`;
       await writeTestUploadFile(basename);
-      await User.updateOne({ _id: workerB._id }, { $push: { documents: storedPath } });
+      await User.updateOne({ _id: workerB._id }, { $set: { pscheinDocument: storedPath } });
       const tokenA = issueTestJwt(String(workerA._id), "worker", dataA.companyId);
       try {
         const res = await request(app)
@@ -137,7 +137,7 @@ describe("Files security (integration)", () => {
         expect(res.status).toBe(403);
       } finally {
         await removeTestUploadFile(basename);
-        await User.updateOne({ _id: workerB._id }, { $pull: { documents: storedPath } });
+        await User.updateOne({ _id: workerB._id }, { $unset: { pscheinDocument: 1 } });
         await User.deleteMany({
           _id: {
             $in: [
