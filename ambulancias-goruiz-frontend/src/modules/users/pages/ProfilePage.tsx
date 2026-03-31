@@ -522,7 +522,7 @@ const Profile = ({ userId }: ProfileProps) => {
                         {t("pages.profile.employeeNumber")}
                       </span>
                       <p
-                        className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-800"
+                        className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm text-slate-700"
                         title={t("pages.profile.employeeNumberHint")}
                       >
                         {formData.employeeNumber}
@@ -682,8 +682,8 @@ const Profile = ({ userId }: ProfileProps) => {
                           <p
                             className={
                               !formData.pscheinExpiry?.trim()
-                                ? "w-full cursor-not-allowed rounded-lg px-2 py-1.5 text-xs text-center border border-rose-200/80 bg-white text-rose-700/85"
-                                : `w-full cursor-not-allowed rounded-lg px-2 py-1 text-xs text-center border bg-slate-50 ${getPscheinInfo(formData.pscheinExpiry).status === "expired"
+                                ? "w-full cursor-not-allowed rounded-lg border border-rose-200 bg-slate-100 px-2 py-1.5 text-center text-xs text-rose-800"
+                                : `w-full cursor-not-allowed rounded-lg border bg-slate-100 px-2 py-1.5 text-center text-xs ${getPscheinInfo(formData.pscheinExpiry).status === "expired"
                                     ? "border-red-500 text-red-800"
                                     : getPscheinInfo(formData.pscheinExpiry).status ===
                                         "warning"
