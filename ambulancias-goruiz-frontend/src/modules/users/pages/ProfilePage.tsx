@@ -16,6 +16,7 @@ import SaveIconButton from "../../../components/common/actions/SaveIconButton";
 import DangerDeleteButton from "../../../components/common/actions/DangerDeleteButton";
 import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 import { displayFileNameFromUrl } from "../../../utils/fileName";
+import { formatYYYYMMDDToDDMMYYYY } from "../../../utils/timeUtils";
 import type { UpdateUserPayload } from "../domain/payloads";
 
 
@@ -740,7 +741,9 @@ const Profile = ({ userId }: ProfileProps) => {
                             }
                           >
                             {formData.pscheinExpiry?.trim()
-                              ? formData.pscheinExpiry
+                              ? formatYYYYMMDDToDDMMYYYY(
+                                  formData.pscheinExpiry.trim(),
+                                )
                               : t(
                                   "pages.profile.pschein.pendingAdminRegistration",
                                   "Fecha de caducidad",
