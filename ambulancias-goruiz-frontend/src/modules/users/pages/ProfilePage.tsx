@@ -599,20 +599,18 @@ const Profile = ({ userId }: ProfileProps) => {
                   />
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Certificado P-Schein (PDF): subida + caducidad + archivo actual (sin catálogo general) */}
-          <div className="rounded-2xl ring-1 ring-slate-200 bg-white p-3">
-            <div
-              className={`grid grid-cols-1 gap-3 items-stretch ${pscheinBlockGridClass}`}
-            >
+              {/* Certificado P-Schein (PDF): subida + caducidad + archivo actual (sin catálogo general) */}
+              <div className="mt-2 pt-3 border-t border-slate-200">
+                <div
+                  className={`grid grid-cols-1 gap-2 items-stretch ${pscheinBlockGridClass}`}
+                >
               {/* Columna 1 — subir PDF del P-Schein */}
               <div
-                className={`h-full place-items-center text-center ${isWorkerSelfProfile ? "flex flex-col items-center justify-center gap-0" : "grid grid-rows-[auto_1fr] gap-2"}`}
+                className={`h-full place-items-center text-center ${isWorkerSelfProfile ? "flex flex-col items-center justify-center gap-0" : "grid grid-rows-[auto_1fr] gap-1.5"}`}
               >
                 {!isWorkerSelfProfile && (
-                  <div className="min-h-5 flex flex-col items-center justify-center gap-0.5 px-1">
+                  <div className="min-h-5 flex flex-col items-center justify-center gap-0 px-1">
                     <span className="text-[11px] font-semibold text-slate-800">
                       {t(
                         "pages.profile.pschein.certificateUploadTitle",
@@ -658,9 +656,9 @@ const Profile = ({ userId }: ProfileProps) => {
 
               {/* Columna 2 — caducidad; solo si aplica rol P-Schein y ya hay PDF guardado en perfil */}
               {!hidePscheinColumnWorkerSelf && displayedPscheinDocUrl && (
-              <div className="h-full flex flex-col items-center justify-center gap-2 text-center">
+              <div className="h-full flex flex-col items-center justify-center gap-1.5 text-center">
                 <div className="min-h-0 w-full flex justify-center">
-                  <div className="w-full max-w-[220px] flex flex-col items-center gap-2">
+                  <div className="w-full max-w-[220px] flex flex-col items-center gap-1.5">
                     {showPschein ? (
                       <div className="w-full flex flex-col items-center">
                         <label htmlFor="pscheinExpiry" className="sr-only">
@@ -740,11 +738,11 @@ const Profile = ({ userId }: ProfileProps) => {
               )}
 
               {/* Columna 3 — documento P-Schein (solo acciones) */}
-              <div className="h-full flex flex-col items-center justify-center gap-2 text-center">
+              <div className="h-full flex flex-col items-center justify-center gap-1.5 text-center">
                 <div className="min-h-0 w-full flex justify-center">
                   <div className="w-full max-w-[220px]">
                     {pendingDocs.length > 0 && (
-                      <div className="mb-2 rounded-lg border border-orange-200 bg-orange-50 p-2">
+                      <div className="mb-1.5 rounded-lg border border-orange-200 bg-orange-50 p-1.5">
                         <span className="mb-1 block text-[11px] font-medium text-orange-700">
                           {t("pages.profile.documents.pending", "Pendientes de guardar")}
                         </span>
@@ -767,7 +765,7 @@ const Profile = ({ userId }: ProfileProps) => {
                             onClick={() =>
                               openSecureFile(displayedPscheinDocUrl)
                             }
-                            className="rounded-lg bg-amber-400 px-3 py-2 text-xs font-medium text-slate-900 shadow-sm transition hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:ring-offset-1"
+                            className="rounded-lg bg-amber-400 px-2.5 py-1.5 text-xs font-medium text-slate-900 shadow-sm transition hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:ring-offset-1"
                             title={displayFileNameFromUrl(
                               displayedPscheinDocUrl,
                             )}
@@ -790,8 +788,9 @@ const Profile = ({ userId }: ProfileProps) => {
                 </div>
               </div>
             </div>
+              </div>
+            </div>
           </div>
-
 
           {/* Acciones */}
           <div className="pt-1 flex items-center gap-4">
