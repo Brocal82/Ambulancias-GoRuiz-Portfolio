@@ -73,6 +73,7 @@ export const dndMoveCrossDienstSameWeek = async (
     targetDienstId: string;
     targetDate: string;
     role: "driver" | "medic";
+    targetRole?: "driver" | "medic";
     userId: string;
   },
   token: string,

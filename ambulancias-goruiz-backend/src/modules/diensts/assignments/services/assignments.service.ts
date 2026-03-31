@@ -16,6 +16,7 @@ import {
 import { extractValidDatesFromAssignments, mapAssignmentToAssignedDay } from "../../utils/dienstMappers";
 import { entitiesBelongToSameCompany } from "../../../../utils/requireCompany";
 import { DienstAssignmentError } from "./assignment-errors";
+import type { DndCrossDienstSameWeekBody } from "../schemas/dnd-cross-dienst-same-week.schema";
 
 const BERLIN = "Europe/Berlin";
 
@@ -1244,7 +1245,7 @@ export async function moveSlotSameWeek(
  * Mismo documento Dienst: error same_dienst_use_patch (PATCH en cliente).
  */
 export async function dndCrossDienstSameWeek(
-  body: MoveSlotSameWeekBody,
+  body: DndCrossDienstSameWeekBody,
   companyId?: string | null,
 ): Promise<void> {
   const callerCo =
@@ -1260,6 +1261,8 @@ export async function dndCrossDienstSameWeek(
   }
 
   const { sourceDienstId, sourceDate, targetDienstId, targetDate, role, userId } = body;
+  const targetRole = body.targetRole ?? role;
+  const sourceRole = role;
 
   const srcKey = normalizeDayKey(sourceDate);
   const tgtKey = normalizeDayKey(targetDate);
@@ -1344,7 +1347,9 @@ export async function dndCrossDienstSameWeek(
       }
 
       const sourceUserId =
-        role === "driver" ? oidStr(sourceAssignment.driver) : oidStr(sourceAssignment.medic);
+        sourceRole === "driver"
+          ? oidStr(sourceAssignment.driver)
+          : oidStr(sourceAssignment.medic);
       if (!sourceUserId || sourceUserId !== String(userId).trim()) {
         throw new DienstAssignmentError(
           409,
@@ -1379,14 +1384,22 @@ export async function dndCrossDienstSameWeek(
         | "both"
         | undefined;
 
+      if (!isAmbulanceRoleValidForSlot(draggedAr, targetRole)) {
+        throw new DienstAssignmentError(
+          409,
+          "dragged_role_mismatch",
+          "El usuario no tiene rol de ambulancia válido para ese puesto en destino.",
+        );
+      }
+
       type DndMode = "simple" | "smart_driver" | "smart_medic";
       let mode: DndMode;
 
-      if (role === "driver" && !td) {
+      if (targetRole === "driver" && !td) {
         mode = "simple";
-      } else if (role === "medic" && !tm) {
+      } else if (targetRole === "medic" && !tm) {
         mode = "simple";
-      } else if (role === "driver" && td && !tm) {
+      } else if (targetRole === "driver" && td && !tm) {
         const inc = await User.findById(td)
           .select("ambulanceRole")
           .session(session)
@@ -1398,7 +1411,7 @@ export async function dndCrossDienstSameWeek(
             "No se puede soltar: el conductor ya está ocupado.",
           );
         }
-        if (draggedAr !== "driver") {
+        if (draggedAr !== "driver" && draggedAr !== "both") {
           throw new DienstAssignmentError(
             409,
             "dragged_role_mismatch",
@@ -1413,7 +1426,7 @@ export async function dndCrossDienstSameWeek(
           );
         }
         mode = "smart_driver";
-      } else if (role === "medic" && tm && !td) {
+      } else if (targetRole === "medic" && tm && !td) {
         const inc = await User.findById(tm)
           .select("ambulanceRole")
           .session(session)
@@ -1425,7 +1438,7 @@ export async function dndCrossDienstSameWeek(
             "No se puede soltar: el sanitario ya está ocupado.",
           );
         }
-        if (draggedAr !== "medic") {
+        if (draggedAr !== "medic" && draggedAr !== "both") {
           throw new DienstAssignmentError(
             409,
             "dragged_role_mismatch",
@@ -1460,7 +1473,7 @@ export async function dndCrossDienstSameWeek(
           !(
             c.dienstId === String(sourceDienstId) &&
             normalizeDayKey(c.date) === srcKey &&
-            c.role === role
+            c.role === sourceRole
           ),
       );
       if (filteredConf.some((c) => normalizeDayKey(c.date) === tgtKey)) {
@@ -1491,7 +1504,7 @@ export async function dndCrossDienstSameWeek(
 
       if (mode === "simple") {
         const targetOccupied =
-          role === "driver" ? td : tm;
+          targetRole === "driver" ? td : tm;
         if (targetOccupied) {
           throw new DienstAssignmentError(
             409,
@@ -1500,20 +1513,13 @@ export async function dndCrossDienstSameWeek(
           );
         }
 
-        if (role === "driver") {
+        if (sourceRole === "driver") {
           sourceRow = {
             date: sourceAssignment.date,
             startTime: sourceAssignment.startTime,
             endTime: sourceAssignment.endTime,
             driver: "",
             medic: sm || undefined,
-          };
-          targetRow = {
-            date: targetAssignment.date,
-            startTime: targetAssignment.startTime,
-            endTime: targetAssignment.endTime,
-            driver: userId,
-            medic: tm || undefined,
           };
         } else {
           sourceRow = {
@@ -1523,6 +1529,16 @@ export async function dndCrossDienstSameWeek(
             driver: sd || undefined,
             medic: "",
           };
+        }
+        if (targetRole === "driver") {
+          targetRow = {
+            date: targetAssignment.date,
+            startTime: targetAssignment.startTime,
+            endTime: targetAssignment.endTime,
+            driver: userId,
+            medic: tm || undefined,
+          };
+        } else {
           targetRow = {
             date: targetAssignment.date,
             startTime: targetAssignment.startTime,
@@ -1532,13 +1548,23 @@ export async function dndCrossDienstSameWeek(
           };
         }
       } else if (mode === "smart_driver") {
-        sourceRow = {
-          date: sourceAssignment.date,
-          startTime: sourceAssignment.startTime,
-          endTime: sourceAssignment.endTime,
-          driver: "",
-          medic: sm || undefined,
-        };
+        if (sourceRole === "driver") {
+          sourceRow = {
+            date: sourceAssignment.date,
+            startTime: sourceAssignment.startTime,
+            endTime: sourceAssignment.endTime,
+            driver: "",
+            medic: sm || undefined,
+          };
+        } else {
+          sourceRow = {
+            date: sourceAssignment.date,
+            startTime: sourceAssignment.startTime,
+            endTime: sourceAssignment.endTime,
+            driver: sd || undefined,
+            medic: "",
+          };
+        }
         targetRow = {
           date: targetAssignment.date,
           startTime: targetAssignment.startTime,
@@ -1547,13 +1573,23 @@ export async function dndCrossDienstSameWeek(
           medic: td,
         };
       } else {
-        sourceRow = {
-          date: sourceAssignment.date,
-          startTime: sourceAssignment.startTime,
-          endTime: sourceAssignment.endTime,
-          driver: sd || undefined,
-          medic: "",
-        };
+        if (sourceRole === "driver") {
+          sourceRow = {
+            date: sourceAssignment.date,
+            startTime: sourceAssignment.startTime,
+            endTime: sourceAssignment.endTime,
+            driver: "",
+            medic: sm || undefined,
+          };
+        } else {
+          sourceRow = {
+            date: sourceAssignment.date,
+            startTime: sourceAssignment.startTime,
+            endTime: sourceAssignment.endTime,
+            driver: sd || undefined,
+            medic: "",
+          };
+        }
         targetRow = {
           date: targetAssignment.date,
           startTime: targetAssignment.startTime,
@@ -1569,23 +1605,36 @@ export async function dndCrossDienstSameWeek(
       const tgtA = targetDienst.assignments[targetIdx] as any;
 
       if (mode === "simple") {
-        if (role === "driver") {
+        if (sourceRole === "driver") {
           srcA.driver = undefined;
           if ("driver" in srcA) delete srcA.driver;
-          tgtA.driver = new mongoose.Types.ObjectId(userId);
         } else {
           srcA.medic = undefined;
           if ("medic" in srcA) delete srcA.medic;
+        }
+        if (targetRole === "driver") {
+          tgtA.driver = new mongoose.Types.ObjectId(userId);
+        } else {
           tgtA.medic = new mongoose.Types.ObjectId(userId);
         }
       } else if (mode === "smart_driver") {
-        srcA.driver = undefined;
-        if ("driver" in srcA) delete srcA.driver;
+        if (sourceRole === "driver") {
+          srcA.driver = undefined;
+          if ("driver" in srcA) delete srcA.driver;
+        } else {
+          srcA.medic = undefined;
+          if ("medic" in srcA) delete srcA.medic;
+        }
         tgtA.driver = new mongoose.Types.ObjectId(userId);
         tgtA.medic = new mongoose.Types.ObjectId(td);
       } else {
-        srcA.medic = undefined;
-        if ("medic" in srcA) delete srcA.medic;
+        if (sourceRole === "driver") {
+          srcA.driver = undefined;
+          if ("driver" in srcA) delete srcA.driver;
+        } else {
+          srcA.medic = undefined;
+          if ("medic" in srcA) delete srcA.medic;
+        }
         tgtA.driver = new mongoose.Types.ObjectId(tm);
         tgtA.medic = new mongoose.Types.ObjectId(userId);
       }

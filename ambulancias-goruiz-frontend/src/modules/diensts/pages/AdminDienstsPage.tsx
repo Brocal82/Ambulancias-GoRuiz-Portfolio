@@ -86,6 +86,16 @@ function getAmbulanceRoleFromAssignmentField(
   return undefined;
 }
 
+/** Alineado con isAmbulanceRoleValidForSlot (backend): both cubre ambos slots. */
+function canDraggedFillTargetSlot(
+  ar: "driver" | "medic" | "both" | undefined,
+  slot: "driver" | "medic",
+): boolean {
+  if (!ar) return false;
+  if (ar === "both") return true;
+  return ar === slot;
+}
+
 function getDraggedUserAmbulanceRole(
   sourceAssignment: DienstAssignment,
   payload: DienstAdminDndPayload,
@@ -587,8 +597,6 @@ const AdminPage = () => {
                                   return;
                                 }
 
-                                if (payload.role !== targetRole) return;
-
                                 if (
                                   String(payload.dienstId) === String(dienst._id) &&
                                   assignmentDayKey(payload.sourceDate) ===
@@ -638,6 +646,19 @@ const AdminPage = () => {
                                     payload,
                                   );
 
+                                if (!canDraggedFillTargetSlot(draggedAmbulanceRole, targetRole)) {
+                                  if (draggedAmbulanceRole === undefined) {
+                                    toastT.error(
+                                      "No se puede asignar: falta el rol de ambulancia del usuario arrastrado.",
+                                    );
+                                  } else {
+                                    toastT.error(
+                                      "Este usuario no puede cubrir ese puesto en destino.",
+                                    );
+                                  }
+                                  return;
+                                }
+
                                 const structuralDriverSwap =
                                   targetRole === "driver" &&
                                   Boolean(td) &&
@@ -655,21 +676,17 @@ const AdminPage = () => {
 
                                 const smartDriverSwap =
                                   structuralDriverSwap &&
-                                  draggedAmbulanceRole === "driver";
+                                  (draggedAmbulanceRole === "driver" ||
+                                    draggedAmbulanceRole === "both");
                                 const smartMedicSwap =
                                   structuralMedicSwap &&
-                                  draggedAmbulanceRole === "medic";
+                                  (draggedAmbulanceRole === "medic" ||
+                                    draggedAmbulanceRole === "both");
 
                                 if (structuralDriverSwap && !smartDriverSwap) {
                                   if (draggedAmbulanceRole === undefined) {
                                     toastT.error(
                                       "No se puede reordenar: falta el rol de ambulancia del usuario arrastrado.",
-                                    );
-                                    return;
-                                  }
-                                  if (draggedAmbulanceRole === "both") {
-                                    toastT.error(
-                                      "El reequilibrio automático no aplica si el usuario arrastrado es Both.",
                                     );
                                     return;
                                   }
@@ -684,12 +701,6 @@ const AdminPage = () => {
                                   if (draggedAmbulanceRole === undefined) {
                                     toastT.error(
                                       "No se puede reordenar: falta el rol de ambulancia del usuario arrastrado.",
-                                    );
-                                    return;
-                                  }
-                                  if (draggedAmbulanceRole === "both") {
-                                    toastT.error(
-                                      "El reequilibrio automático no aplica si el usuario arrastrado es Both.",
                                     );
                                     return;
                                   }
@@ -753,38 +764,38 @@ const AdminPage = () => {
                                     driverId: "",
                                     medicId: sm,
                                   });
-                                  if (smartDriverSwap) {
-                                    targetRow = buildRowFromSlotIds({
-                                      assignment: targetAssignment,
-                                      driverId: payload.userId,
-                                      medicId: td,
-                                    });
-                                  } else {
-                                    targetRow = buildRowFromSlotIds({
-                                      assignment: targetAssignment,
-                                      driverId: payload.userId,
-                                      medicId: tm,
-                                    });
-                                  }
                                 } else {
                                   sourceRow = buildRowFromSlotIds({
                                     assignment: sourceAssignment,
                                     driverId: sd,
                                     medicId: "",
                                   });
-                                  if (smartMedicSwap) {
-                                    targetRow = buildRowFromSlotIds({
-                                      assignment: targetAssignment,
-                                      driverId: tm,
-                                      medicId: payload.userId,
-                                    });
-                                  } else {
-                                    targetRow = buildRowFromSlotIds({
-                                      assignment: targetAssignment,
-                                      driverId: td,
-                                      medicId: payload.userId,
-                                    });
-                                  }
+                                }
+
+                                if (smartDriverSwap) {
+                                  targetRow = buildRowFromSlotIds({
+                                    assignment: targetAssignment,
+                                    driverId: payload.userId,
+                                    medicId: td,
+                                  });
+                                } else if (smartMedicSwap) {
+                                  targetRow = buildRowFromSlotIds({
+                                    assignment: targetAssignment,
+                                    driverId: tm,
+                                    medicId: payload.userId,
+                                  });
+                                } else if (targetRole === "driver") {
+                                  targetRow = buildRowFromSlotIds({
+                                    assignment: targetAssignment,
+                                    driverId: payload.userId,
+                                    medicId: tm,
+                                  });
+                                } else {
+                                  targetRow = buildRowFromSlotIds({
+                                    assignment: targetAssignment,
+                                    driverId: td,
+                                    medicId: payload.userId,
+                                  });
                                 }
 
                                 if (smartDriverSwap || smartMedicSwap) {
@@ -811,6 +822,7 @@ const AdminPage = () => {
                                         targetDienstId: String(dienst._id),
                                         targetDate: day,
                                         role: payload.role,
+                                        targetRole,
                                         userId: payload.userId,
                                       },
                                       token,
