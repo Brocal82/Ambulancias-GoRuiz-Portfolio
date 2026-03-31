@@ -658,13 +658,7 @@ const Profile = ({ userId }: ProfileProps) => {
 
               {/* Columna 2 — caducidad; solo si aplica rol P-Schein y ya hay PDF guardado en perfil */}
               {!hidePscheinColumnWorkerSelf && displayedPscheinDocUrl && (
-              <div className="h-full grid grid-rows-[20px_1fr] gap-2 place-items-center text-center">
-                <div className="h-5 flex items-center justify-center">
-                  <span className="text-[11px] font-medium text-slate-700">
-                    {t("pages.profile.labels.pscheinExpiry")}
-                  </span>
-                </div>
-
+              <div className="h-full flex flex-col items-center justify-center gap-2 text-center">
                 <div className="min-h-0 w-full flex justify-center">
                   <div className="w-full max-w-[220px] flex flex-col items-center gap-2">
                     {showPschein ? (
@@ -687,7 +681,7 @@ const Profile = ({ userId }: ProfileProps) => {
                               ? formData.pscheinExpiry
                               : t(
                                   "pages.profile.pschein.pendingAdminRegistration",
-                                  "❓ Pendiente de registro por administración",
+                                  "Fecha de caducidad pendiente de confirmación",
                                 )}
                           </p>
                         ) : (
@@ -710,7 +704,7 @@ const Profile = ({ userId }: ProfileProps) => {
                           <p className="text-red-600 text-[11px] mt-1 text-center">
                             {t(
                               "pages.profile.pschein.expiredDynamic",
-                              "❌ P-Schein caducado hace {{months}} meses",
+                              "Caducado hace {{months}} meses",
                               { months: Math.abs(pschein.monthsLeft ?? 0) },
                             )}
                           </p>
@@ -719,7 +713,7 @@ const Profile = ({ userId }: ProfileProps) => {
                           <p className="text-orange-600 text-[11px] mt-1 text-center">
                             {t(
                               "pages.profile.pschein.warningDynamic",
-                              "⚠️ Expira en {{months}} meses ({{days}} días)",
+                              "Caduca en {{months}} meses ({{days}} días)",
                               {
                                 months: pschein.monthsLeft ?? 0,
                                 days: pschein.daysLeft ?? 0,
@@ -731,7 +725,7 @@ const Profile = ({ userId }: ProfileProps) => {
                           <p className="text-emerald-600 text-[11px] mt-1 text-center">
                             {t(
                               "pages.profile.pschein.validDynamic",
-                              "✅ Válido ({{months}} meses restantes)",
+                              "Válido ({{months}} meses restantes)",
                               { months: pschein.monthsLeft ?? 0 },
                             )}
                           </p>
