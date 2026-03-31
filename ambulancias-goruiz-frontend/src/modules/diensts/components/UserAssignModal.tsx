@@ -36,6 +36,10 @@ interface Props {
   date?: string; // 'YYYY-MM-DD'
   startTime?: string; // 'HH:mm'
   endTime?: string; // 'HH:mm'
+  /** IDs de usuarios ya asignados como medic en este Dienst/semana (no pueden ser driver) */
+  excludeAsDriver?: string[];
+  /** IDs de usuarios ya asignados como driver en este Dienst/semana (no pueden ser medic) */
+  excludeAsMedic?: string[];
 }
 
 export default function UserAssignModal({
@@ -46,6 +50,8 @@ export default function UserAssignModal({
   date,
   startTime,
   endTime,
+  excludeAsDriver,
+  excludeAsMedic,
 }: Props) {
   const { token } = useAuth();
   const { t } = useTranslation();
@@ -107,14 +113,17 @@ export default function UserAssignModal({
     if (date) return users; // ya viene filtrado por rol + elegibilidad conductor desde el backend
     const need: AmbulanceRole[] =
       role === "driver" ? ["driver", "both"] : ["medic", "both"];
+    // IDs que ya ocupan el slot contrario en este Dienst/semana → no pueden ocupar este slot
+    const excludeIds = role === "driver" ? (excludeAsDriver ?? []) : (excludeAsMedic ?? []);
     return users.filter((u) => {
       if (!u.ambulanceRole || !need.includes(u.ambulanceRole)) return false;
+      if (excludeIds.includes(u._id)) return false;
       if (role === "driver") {
         return isDriverEligibleForAssignmentWeek(u, weekStartISO);
       }
       return true;
     });
-  }, [users, role, date, weekStartISO]);
+  }, [users, role, date, weekStartISO, excludeAsDriver, excludeAsMedic]);
 
   // Flags para usuarios visibles por rol
   useEffect(() => {

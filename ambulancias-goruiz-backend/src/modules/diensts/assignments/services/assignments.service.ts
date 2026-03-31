@@ -638,6 +638,13 @@ export async function assignUserToWeek(
       return a;
     }
 
+    // Prevent same user from occupying both roles on the same day
+    const oppositeRole = role === "driver" ? "medic" : "driver";
+    const oppositeId = (a as any)[oppositeRole]?.toString?.();
+    if (oppositeId && oppositeId === userId) {
+      return a;
+    }
+
     if (
       role === "driver" &&
       !isDriverEligibleForAssignmentDate({

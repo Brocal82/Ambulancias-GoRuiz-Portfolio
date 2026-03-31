@@ -441,7 +441,7 @@ const AdminPage = () => {
                         >
                           {/* Sidebar: número de Dienst y acciones en vertical */}
                           <div className="w-8 shrink-0 flex flex-col items-center gap-2 pt-1">
-                            <span className="text-xs font-semibold text-slate-500">#{dienst.dienstNumber}</span>
+                            <span className="text-sm font-bold text-slate-700 leading-none">#{dienst.dienstNumber}</span>
 
                             {/* 👤 Asignar un trabajador (siempre visible) */}
                             <button
@@ -1142,6 +1142,38 @@ const AdminPage = () => {
             }
           }}
           weekStartISO={weekUserModal.weekStartISO}
+          excludeAsDriver={
+            // Users already assigned as medic in this Dienst/week cannot be driver
+            [...new Set(
+              (diensts.find(
+                (d) =>
+                  d.dienstNumber === weekUserModal.dienstNumber &&
+                  d.weekStartDate.slice(0, 10) === weekUserModal.weekStartISO,
+              )?.assignments ?? [])
+                .map((a) =>
+                  typeof a.medic === "string"
+                    ? a.medic
+                    : (a.medic as any)?._id,
+                )
+                .filter((id): id is string => !!id),
+            )]
+          }
+          excludeAsMedic={
+            // Users already assigned as driver in this Dienst/week cannot be medic
+            [...new Set(
+              (diensts.find(
+                (d) =>
+                  d.dienstNumber === weekUserModal.dienstNumber &&
+                  d.weekStartDate.slice(0, 10) === weekUserModal.weekStartISO,
+              )?.assignments ?? [])
+                .map((a) =>
+                  typeof a.driver === "string"
+                    ? a.driver
+                    : (a.driver as any)?._id,
+                )
+                .filter((id): id is string => !!id),
+            )]
+          }
         />
       )}
     </PageShell>
