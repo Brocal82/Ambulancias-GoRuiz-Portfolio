@@ -32,12 +32,12 @@ export const WeekBlock: React.FC<WeekBlockProps> = ({
     return (
         <div
             className={[
-                "rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4",
+                "rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-3",
                 className ?? "",
             ].join(" ")}
         >
             {showTitle && (
-                <p className="text-sm font-medium text-slate-700 mb-3">{title}</p>
+                <p className="text-sm font-medium text-slate-700 mb-2">{title}</p>
             )}
 
             {withGrid ? (

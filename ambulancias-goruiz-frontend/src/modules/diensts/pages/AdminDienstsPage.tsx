@@ -307,11 +307,11 @@ const AdminPage = () => {
               title={title}
               withGrid={false}
               showTitle={false}
-              className="mb-8"
+              className="mb-5"
             >
 
               {/* Header de semana */}
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
                 {hasWeekDiensts ? (
                   // Si hay Diensts: header clicable con flecha 🔼 / 🔽
                   <button
@@ -418,7 +418,7 @@ const AdminPage = () => {
                       return (
                         <div
                           key={`${weekStart.toISOString()}-${dienst.dienstNumber}`}
-                          className="mb-6"
+                          className="mb-4"
                         >
                           <div className="flex items-center justify-between mb-2">
                             <p className="font-medium text-slate-800">
