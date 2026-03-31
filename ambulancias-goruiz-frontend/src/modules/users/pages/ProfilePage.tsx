@@ -680,41 +680,15 @@ const Profile = ({ userId }: ProfileProps) => {
                   className={`grid w-full min-w-0 grid-cols-1 gap-2 lg:gap-3 items-stretch lg:items-start ${pscheinBlockGridClass}`}
                 >
               {/* Columna 1 — subir PDF del P-Schein */}
-              <div
-                className={`min-w-0 h-full justify-self-start ${isWorkerSelfProfile ? "flex flex-col items-start justify-start gap-0 text-left" : "grid grid-rows-[auto_1fr] gap-1.5 text-center"}`}
-              >
-                {!isWorkerSelfProfile && (
-                  <div className="min-h-5 flex flex-col items-center justify-center gap-0 px-1">
-                    <span className="text-[11px] font-semibold text-slate-800">
-                      {t(
-                        "pages.profile.pschein.certificateUploadTitle",
-                        "Certificado P-Schein (PDF)",
-                      )}
-                    </span>
-                    <span className="text-[10px] font-normal text-slate-500 leading-snug">
-                      {t(
-                        "pages.profile.pschein.certificateUploadSubtitle",
-                        "Sube el PDF del certificado",
-                      )}
-                    </span>
-                  </div>
-                )}
-
+              <div className="min-w-0 h-full justify-self-start flex flex-col items-start justify-start gap-0 text-left">
                 <div className="min-h-0 w-full flex justify-start">
                   <div className="min-w-0 w-full max-w-full">
                     <FileUpload
                       id="profile-docs"
-                      label={
-                        isWorkerSelfProfile
-                          ? t(
-                              "pages.profile.pschein.uploadPscheinButton",
-                              "Subir P-Schein",
-                            )
-                          : t(
-                              "pages.profile.pschein.uploadLabel",
-                              "Seleccionar PDF",
-                            )
-                      }
+                      label={t(
+                        "pages.profile.pschein.uploadPscheinButton",
+                        "Subir P-Schein",
+                      )}
                       hintWhenEmpty={t(
                         "pages.profile.pschein.uploadHint",
                         "Un archivo PDF (máx. 10 MB)",
