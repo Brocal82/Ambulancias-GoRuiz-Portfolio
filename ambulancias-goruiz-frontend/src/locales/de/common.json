@@ -326,7 +326,8 @@
             "pschein": {
                 "expired": "❌ Der P-Schein ist abgelaufen",
                 "warning": "⚠️ Der P-Schein läuft in weniger als 6 Monaten ab",
-                "pendingAdminRegistration": "Ablaufdatum ausstehend",
+                "pendingAdminRegistration": "Ablaufdatum",
+                "pendingAdminTooltip": "Ausstehende Bestätigung durch Administrator",
                 "documentSelect": "P-Schein-Dokument",
                 "documentSelectNone": "— Keines —"
             },

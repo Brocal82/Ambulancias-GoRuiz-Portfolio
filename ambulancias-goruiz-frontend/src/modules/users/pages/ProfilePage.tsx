@@ -667,19 +667,31 @@ const Profile = ({ userId }: ProfileProps) => {
 
                         {isWorkerSelfProfile ? (
                           <p
-                            className={`w-full rounded-lg px-2 py-1 text-xs text-center border bg-slate-50 ${getPscheinInfo(formData.pscheinExpiry).status === "expired"
-                              ? "border-red-500 text-red-800"
-                              : getPscheinInfo(formData.pscheinExpiry).status ===
-                                  "warning"
-                                ? "border-orange-400 text-orange-900"
-                                : "border-slate-300 text-slate-800"
-                              }`}
+                            className={
+                              !formData.pscheinExpiry?.trim()
+                                ? "w-full rounded-lg px-2 py-1.5 text-xs text-center border border-red-200 bg-red-100 text-red-900"
+                                : `w-full rounded-lg px-2 py-1 text-xs text-center border bg-slate-50 ${getPscheinInfo(formData.pscheinExpiry).status === "expired"
+                                    ? "border-red-500 text-red-800"
+                                    : getPscheinInfo(formData.pscheinExpiry).status ===
+                                        "warning"
+                                      ? "border-orange-400 text-orange-900"
+                                      : "border-slate-300 text-slate-800"
+                                    }`
+                            }
+                            title={
+                              !formData.pscheinExpiry?.trim()
+                                ? t(
+                                    "pages.profile.pschein.pendingAdminTooltip",
+                                    "Pendiente de confirmación por un administrador",
+                                  )
+                                : undefined
+                            }
                           >
                             {formData.pscheinExpiry?.trim()
                               ? formData.pscheinExpiry
                               : t(
                                   "pages.profile.pschein.pendingAdminRegistration",
-                                  "Fecha de caducidad pendiente",
+                                  "Fecha de caducidad",
                                 )}
                           </p>
                         ) : (

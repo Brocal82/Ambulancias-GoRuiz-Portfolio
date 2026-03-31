@@ -326,7 +326,8 @@
             "pschein": {
                 "expired": "❌ El P-Schein está caducado",
                 "warning": "⚠️ El P-Schein caduca en menos de 6 meses",
-                "pendingAdminRegistration": "Fecha de caducidad pendiente",
+                "pendingAdminRegistration": "Fecha de caducidad",
+                "pendingAdminTooltip": "Pendiente de confirmación por un administrador",
                 "documentSelect": "Documento P-Schein",
                 "documentSelectNone": "— Ninguno —"
             },

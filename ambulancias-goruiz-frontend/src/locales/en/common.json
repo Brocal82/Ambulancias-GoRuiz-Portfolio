@@ -326,7 +326,8 @@
             "pschein": {
                 "expired": "❌ The P-Schein is expired",
                 "warning": "⚠️ The P-Schein expires in less than 6 months",
-                "pendingAdminRegistration": "Expiry date pending",
+                "pendingAdminRegistration": "Expiry date",
+                "pendingAdminTooltip": "Pending admin confirmation",
                 "documentSelect": "P-Schein document",
                 "documentSelectNone": "— None —"
             },
