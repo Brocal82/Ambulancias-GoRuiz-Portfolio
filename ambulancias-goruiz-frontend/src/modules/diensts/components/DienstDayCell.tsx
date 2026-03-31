@@ -256,7 +256,7 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
             {/* 📅 Fecha — siempre arriba */}
             {lines?.dateLine && (
                 <div
-                    className={`text-xs font-semibold text-center mb-2 ${
+                    className={`text-xs font-semibold text-center mb-1 ${
                         useIncompleteText ? INCOMPLETE_TEXT : "text-slate-800"
                     }`}
                 >
@@ -290,8 +290,8 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
     );
 
     const shellClassName = `
-        rounded-xl p-3 ring-1 transition text-left
-        flex flex-col min-h-[116px]
+        rounded-xl p-2 ring-1 transition text-left
+        flex flex-col min-h-[96px]
         ${statusClass}
         ${finalBorderClass}
         ${disabled ? disabledStyle : "hover:shadow-sm hover:-translate-y-0.5"}
