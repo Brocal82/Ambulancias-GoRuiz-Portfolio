@@ -343,7 +343,11 @@ async function applyUploadToUser(
       targetUserId,
       {
         $set: updates,
-        $unset: { pscheinConfirmedAt: 1, pscheinConfirmedBy: 1 },
+        $unset: {
+          pscheinConfirmedAt: 1,
+          pscheinConfirmedBy: 1,
+          pscheinExpiry: 1,
+        },
       },
       { new: true, runValidators: true },
     );
@@ -438,7 +442,7 @@ export const uploadUserFilesForUser = async (
 async function removeDocumentFromUser(
   targetUserId: string,
   filePath: string,
-): Promise<{ pscheinDocument?: string } | null> {
+): Promise<{ pscheinDocument?: string; pscheinExpiry?: string } | null> {
   const user = await User.findById(targetUserId);
   if (!user) return null;
 
@@ -447,17 +451,21 @@ async function removeDocumentFromUser(
     return null;
   }
 
-  user.pscheinDocument = undefined;
-  user.pscheinConfirmedAt = undefined;
-  user.pscheinConfirmedBy = undefined;
-  await user.save();
+  await User.findByIdAndUpdate(targetUserId, {
+    $unset: {
+      pscheinDocument: 1,
+      pscheinExpiry: 1,
+      pscheinConfirmedAt: 1,
+      pscheinConfirmedBy: 1,
+    },
+  });
 
   const uploadsDir = path.join(__dirname, "../../../../uploads");
   const filename = path.basename(filePath);
   const absolutePath = path.join(uploadsDir, filename);
   await fs.promises.unlink(absolutePath).catch(() => {});
 
-  return { pscheinDocument: user.pscheinDocument };
+  return { pscheinDocument: undefined, pscheinExpiry: undefined };
 }
 
 export const deleteUserDocument = async (
@@ -492,7 +500,8 @@ export const deleteUserDocument = async (
 
     res.status(200).json({
       message: "Documento eliminado correctamente",
-      pscheinDocument: result.pscheinDocument,
+      pscheinDocument: null,
+      pscheinExpiry: null,
     });
   } catch (error) {
     console.error("Error al eliminar documento:", error);
@@ -537,7 +546,8 @@ export const deleteUserDocumentForUser = async (
 
     res.status(200).json({
       message: "Documento eliminado correctamente",
-      pscheinDocument: result.pscheinDocument,
+      pscheinDocument: null,
+      pscheinExpiry: null,
     });
   } catch (error) {
     console.error("Error al eliminar documento:", error);
