@@ -681,7 +681,7 @@ const Profile = ({ userId }: ProfileProps) => {
                               ? formData.pscheinExpiry
                               : t(
                                   "pages.profile.pschein.pendingAdminRegistration",
-                                  "Fecha de caducidad pendiente de confirmación",
+                                  "Fecha de caducidad pendiente",
                                 )}
                           </p>
                         ) : (
