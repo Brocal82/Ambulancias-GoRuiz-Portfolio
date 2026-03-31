@@ -608,7 +608,7 @@ const Profile = ({ userId }: ProfileProps) => {
                 </div>
               </div>
 
-              {/* Certificado P-Schein (PDF): subida + caducidad + archivo actual (sin catálogo general) */}
+              {showPschein ? (
               <div className="mt-2 w-full min-w-0 pt-3 border-t border-slate-200">
                 <div
                   className={`grid w-full min-w-0 grid-cols-1 gap-2 lg:gap-3 items-stretch lg:items-start ${pscheinBlockGridClass}`}
@@ -818,6 +818,7 @@ const Profile = ({ userId }: ProfileProps) => {
               </div>
             </div>
               </div>
+              ) : null}
             </div>
           </div>
 
