@@ -775,12 +775,14 @@ const Profile = ({ userId }: ProfileProps) => {
                             P-schein
                           </button>
 
-                          <DeleteIconButton
-                            title={t("pages.profile.documents.deleteTitle")}
-                            onClick={() =>
-                              handleDeleteDocument(displayedPscheinDocUrl)
-                            }
-                          />
+                          {!isWorkerSelfProfile && (
+                            <DeleteIconButton
+                              title={t("pages.profile.documents.deleteTitle")}
+                              onClick={() =>
+                                handleDeleteDocument(displayedPscheinDocUrl)
+                              }
+                            />
+                          )}
                         </div>
                       </div>
                     ) : null}
