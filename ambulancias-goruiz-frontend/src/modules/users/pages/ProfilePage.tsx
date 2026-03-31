@@ -604,11 +604,11 @@ const Profile = ({ userId }: ProfileProps) => {
               {/* Certificado P-Schein (PDF): subida + caducidad + archivo actual (sin catálogo general) */}
               <div className="mt-2 w-full min-w-0 pt-3 border-t border-slate-200">
                 <div
-                  className={`grid w-full min-w-0 grid-cols-1 gap-2 lg:gap-3 items-stretch ${pscheinBlockGridClass}`}
+                  className={`grid w-full min-w-0 grid-cols-1 gap-2 lg:gap-3 items-stretch lg:items-start ${pscheinBlockGridClass}`}
                 >
               {/* Columna 1 — subir PDF del P-Schein */}
               <div
-                className={`min-w-0 h-full justify-self-start ${isWorkerSelfProfile ? "flex flex-col items-start justify-center gap-0 text-left" : "grid grid-rows-[auto_1fr] gap-1.5 text-center"}`}
+                className={`min-w-0 h-full justify-self-start ${isWorkerSelfProfile ? "flex flex-col items-start justify-start gap-0 text-left" : "grid grid-rows-[auto_1fr] gap-1.5 text-center"}`}
               >
                 {!isWorkerSelfProfile && (
                   <div className="min-h-5 flex flex-col items-center justify-center gap-0 px-1">
@@ -661,11 +661,11 @@ const Profile = ({ userId }: ProfileProps) => {
 
               {/* Columna 2 — caducidad; solo si aplica rol P-Schein y ya hay PDF guardado en perfil */}
               {!hidePscheinColumnWorkerSelf && displayedPscheinDocUrl && (
-              <div className="min-w-0 h-full w-full flex flex-col items-center justify-center gap-1.5 text-center justify-self-center">
-                <div className="min-h-0 w-full max-w-full flex justify-center">
-                  <div className="w-full min-w-0 max-w-full flex flex-col items-center justify-center gap-1.5">
+              <div className="min-w-0 h-full w-full flex flex-col items-center justify-start gap-0 text-center justify-self-center">
+                <div className="flex w-full min-w-0 shrink-0 items-center justify-center">
+                  <div className="w-full min-w-0 max-w-full flex flex-col items-center">
                     {showPschein ? (
-                      <div className="w-full max-w-full flex flex-col items-center">
+                      <>
                         <label htmlFor="pscheinExpiry" className="sr-only">
                           {t("pages.profile.labels.pscheinExpiry")}
                         </label>
@@ -714,49 +714,52 @@ const Profile = ({ userId }: ProfileProps) => {
                               }`}
                           />
                         )}
-
-                        {pschein.status === "expired" && (
-                          <p className="text-red-600 text-[11px] mt-1 text-center">
-                            {t(
-                              "pages.profile.pschein.expiredDynamic",
-                              "Caducado hace {{months}} meses",
-                              { months: Math.abs(pschein.monthsLeft ?? 0) },
-                            )}
-                          </p>
-                        )}
-                        {pschein.status === "warning" && (
-                          <p className="text-orange-600 text-[11px] mt-1 text-center">
-                            {t(
-                              "pages.profile.pschein.warningDynamic",
-                              "Caduca en {{months}} meses ({{days}} días)",
-                              {
-                                months: pschein.monthsLeft ?? 0,
-                                days: pschein.daysLeft ?? 0,
-                              },
-                            )}
-                          </p>
-                        )}
-                        {pschein.status === "valid" && (
-                          <p className="text-emerald-600 text-[11px] mt-1 text-center">
-                            {t(
-                              "pages.profile.pschein.validDynamic",
-                              "Válido ({{months}} meses restantes)",
-                              { months: pschein.monthsLeft ?? 0 },
-                            )}
-                          </p>
-                        )}
-                      </div>
+                      </>
                     ) : (
                       <div className="hidden lg:block" />
                     )}
                   </div>
                 </div>
+                {showPschein ? (
+                  <div className="mt-1 flex w-full min-w-0 flex-col items-center">
+                    {pschein.status === "expired" && (
+                      <p className="text-red-600 text-[11px] text-center">
+                        {t(
+                          "pages.profile.pschein.expiredDynamic",
+                          "Caducado hace {{months}} meses",
+                          { months: Math.abs(pschein.monthsLeft ?? 0) },
+                        )}
+                      </p>
+                    )}
+                    {pschein.status === "warning" && (
+                      <p className="text-orange-600 text-[11px] text-center">
+                        {t(
+                          "pages.profile.pschein.warningDynamic",
+                          "Caduca en {{months}} meses ({{days}} días)",
+                          {
+                            months: pschein.monthsLeft ?? 0,
+                            days: pschein.daysLeft ?? 0,
+                          },
+                        )}
+                      </p>
+                    )}
+                    {pschein.status === "valid" && (
+                      <p className="text-emerald-600 text-[11px] text-center">
+                        {t(
+                          "pages.profile.pschein.validDynamic",
+                          "Válido ({{months}} meses restantes)",
+                          { months: pschein.monthsLeft ?? 0 },
+                        )}
+                      </p>
+                    )}
+                  </div>
+                ) : null}
               </div>
               )}
 
               {/* Columna 3 — documento P-Schein (solo acciones) */}
               <div
-                className={`min-w-0 h-full flex flex-col items-stretch justify-center gap-1.5 justify-self-end ${showPscheinMiddleColumn ? "" : "lg:col-start-3"}`}
+                className={`min-w-0 h-full flex flex-col items-stretch justify-start gap-1.5 justify-self-end ${showPscheinMiddleColumn ? "" : "lg:col-start-3"}`}
               >
                 <div className="min-h-0 w-full min-w-0">
                   <div className="w-full min-w-0">
