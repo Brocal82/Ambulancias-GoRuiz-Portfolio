@@ -35,6 +35,7 @@ import { isTeamIncomplete } from "../utils/assignmentUtils";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
+import { toastAmbulanceConflictOrApiError } from "../utils/ambulanceConflictToast";
 import { getPscheinInfoAsOfDate } from "../../../utils/pscheinUtils";
 import { isDriverEligibleForAssignment } from "../utils/driverEligibility";
 import { emitDienstsChanged } from "../utils/dienstEvents";
@@ -894,7 +895,9 @@ const AdminPage = () => {
                                   await fetchDiensts();
                                 } catch (error) {
                                   console.error("Dienst DnD move:", error);
-                                  toastT.apiError(error, ["toasts.assignments.saveError"]);
+                                  toastAmbulanceConflictOrApiError(error, [
+                                    "toasts.assignments.saveError",
+                                  ]);
                                 }
                               };
 
@@ -1241,7 +1244,9 @@ const AdminPage = () => {
               fetchDiensts();
             } catch (err: any) {
               console.error("❌ Error al asignar ambulancia a la semana:", err);
-              toastT.error(["pages.diensts.adminPage.assignAmbulanceWeekErr"]);
+              toastAmbulanceConflictOrApiError(err, [
+                "pages.diensts.adminPage.assignAmbulanceWeekErr",
+              ]);
             }
           }}
         />

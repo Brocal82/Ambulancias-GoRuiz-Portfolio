@@ -1276,6 +1276,7 @@
         "assignments": {
             "missingFields": "🚫 Startzeit, Endzeit und Fahrzeug ausfüllen.",
             "samePerson": "🚫 Dieselbe Person kann nicht Fahrer und Sanitäter sein.",
+            "ambulanceTimeConflict": "⚠️ Dieser Rettungswagen ist im Dienst #{{dienstNumber}} bereits am {{date}} von {{conflictingStart}} bis {{conflictingEnd}} zugewiesen. Die Zuweisung auf die neue Schicht {{incomingStart}}–{{incomingEnd}} ist nicht möglich, weil sich die Zeiten überschneiden.",
             "saveSuccess": "✅ Änderungen gespeichert",
             "saveError": "❌ Änderungen konnten nicht gespeichert werden",
             "deleteSuccess": "✅ Tag gelöscht",

@@ -1276,6 +1276,7 @@
         "assignments": {
             "missingFields": "🚫 Rellena hora de inicio, fin y ambulancia.",
             "samePerson": "🚫 No puedes asignar a la misma persona como conductor y sanitario.",
+            "ambulanceTimeConflict": "⚠️ La ambulancia ya está asignada en el Dienst #{{dienstNumber}} el {{date}} de {{conflictingStart}} a {{conflictingEnd}}. No puede asignarse al nuevo horario {{incomingStart}}–{{incomingEnd}} porque los horarios se solapan.",
             "saveSuccess": "✅ Cambios guardados",
             "saveError": "❌ Error al guardar cambios",
             "deleteSuccess": "✅ Día eliminado",

@@ -39,6 +39,7 @@ import { formatPersonLabel } from "../../utils";
 import { validateAssignmentSave } from "./validation";
 
 import { formatYYYYMMDDToDDMMYYYY } from "../../../../utils/timeUtils";
+import { toastAmbulanceConflictOrApiError } from "../../utils/ambulanceConflictToast";
 
 interface AssignmentModalProps {
     isOpen: boolean;
@@ -204,7 +205,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
             onUpdate();
         } catch (error) {
             console.error("Error al guardar cambios:", error);
-            toastT.apiError(error, ["toasts.assignments.saveError"]);
+            toastAmbulanceConflictOrApiError(error, ["toasts.assignments.saveError"]);
         }
     };
 

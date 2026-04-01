@@ -1276,6 +1276,7 @@
         "assignments": {
             "missingFields": "🚫 Fill start time, end time and ambulance.",
             "samePerson": "🚫 You cannot assign the same person as driver and medic.",
+            "ambulanceTimeConflict": "⚠️ The ambulance is already assigned to Dienst #{{dienstNumber}} on {{date}} from {{conflictingStart}} to {{conflictingEnd}}. It cannot be assigned to the new shift {{incomingStart}}–{{incomingEnd}} because the times overlap.",
             "saveSuccess": "✅ Changes saved",
             "saveError": "❌ Failed to save changes",
             "deleteSuccess": "✅ Day removed",
