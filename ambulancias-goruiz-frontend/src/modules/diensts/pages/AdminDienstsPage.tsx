@@ -10,6 +10,7 @@ import {
   deleteDienstsForWeek,
   assignTeamToWeek,
   assignUserToWeek,
+  assignAmbulanceToWeek,
   clearPeopleForWeek,
 } from "../index";
 import { dndMoveCrossDienstSameWeek, updateDienstPartial } from "../domain/api";
@@ -18,6 +19,7 @@ import { buildUpdateAssignment } from "../components/assignmentModal/buildUpdate
 import AssignmentModal from "../components/assignmentModal/AssignmentModal";
 import TeamAssignModal from "../components/TeamAssignModal";
 import UserAssignModal from "../components/UserAssignModal";
+import AmbulanceAssignModal from "../components/AmbulanceAssignModal";
 import {
   formatPersonLabel,
   getWeekStartsBerlin,
@@ -217,6 +219,12 @@ const AdminPage = () => {
     open: boolean;
     weekStartISO: string;
     dienstNumber: number;
+  } | null>(null);
+
+  const [weekAmbulanceModal, setWeekAmbulanceModal] = useState<{
+    open: boolean;
+    dienstNumber: number;
+    weekStartISO: string;
   } | null>(null);
 
   // Estado para colapsar/desplegar semanas (key = weekStartISO)
@@ -541,6 +549,35 @@ const AdminPage = () => {
                                 </span>
                                 <span className="sr-only">
                                   {t("pages.diensts.adminPage.assignTeamToWeek")}
+                                </span>
+                              </button>
+
+                              {/* 🚑 Asignar ambulancia (siempre visible) */}
+                              <button
+                                className="flex items-center justify-center w-5 h-5 text-slate-500 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
+                                title={t(
+                                  "pages.diensts.adminPage.assignAmbulanceToWeek",
+                                  "Asignar ambulancia a la semana",
+                                )}
+                                onClick={() =>
+                                  setWeekAmbulanceModal({
+                                    open: true,
+                                    dienstNumber: dienst.dienstNumber,
+                                    weekStartISO,
+                                  })
+                                }
+                              >
+                                <span
+                                  aria-hidden
+                                  className="block text-[14px] leading-none"
+                                >
+                                  🚑
+                                </span>
+                                <span className="sr-only">
+                                  {t(
+                                    "pages.diensts.adminPage.assignAmbulanceToWeek",
+                                    "Asignar ambulancia a la semana",
+                                  )}
                                 </span>
                               </button>
                             </div>
@@ -1178,6 +1215,34 @@ const AdminPage = () => {
                 .filter((id): id is string => !!id),
             )]
           }
+        />
+      )}
+
+      {/* Modal Ambulancia semana */}
+      {weekAmbulanceModal?.open && (
+        <AmbulanceAssignModal
+          isOpen={true}
+          onClose={() => setWeekAmbulanceModal(null)}
+          onConfirm={async (ambulanceId: string) => {
+            if (!token || !weekAmbulanceModal) return;
+            try {
+              await assignAmbulanceToWeek(
+                {
+                  dienstNumber: weekAmbulanceModal.dienstNumber,
+                  weekStartDate: weekAmbulanceModal.weekStartISO,
+                  ambulanceId,
+                },
+                token,
+              );
+              toastT.success(["pages.diensts.adminPage.assignAmbulanceWeekOk"]);
+              setWeekAmbulanceModal(null);
+              emitDienstsChanged();
+              fetchDiensts();
+            } catch (err: any) {
+              console.error("❌ Error al asignar ambulancia a la semana:", err);
+              toastT.error(["pages.diensts.adminPage.assignAmbulanceWeekErr"]);
+            }
+          }}
         />
       )}
     </PageShell>

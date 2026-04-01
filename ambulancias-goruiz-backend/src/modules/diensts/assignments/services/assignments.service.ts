@@ -1653,3 +1653,77 @@ export async function dndCrossDienstSameWeek(
     await session.endSession();
   }
 }
+
+export async function assignAmbulanceToWeek(
+  params: {
+    dienstNumber: number;
+    weekStartDate: string;
+    ambulanceId: string;
+  },
+  companyId?: string | null,
+): Promise<{
+  message: string;
+  updatedCount: number;
+  dienstId: string;
+  weekStartDate: string;
+}> {
+  const { dienstNumber, weekStartDate, ambulanceId } = params;
+
+  const callerCo =
+    companyId != null && String(companyId).trim() !== ""
+      ? String(companyId).trim()
+      : null;
+  if (!callerCo) {
+    throw new DienstAssignmentError(
+      403,
+      "forbidden",
+      "No tienes permiso para modificar este Dienst",
+    );
+  }
+
+  const start = new Date(weekStartDate);
+
+  const dienst = await Dienst.findOne({
+    dienstNumber,
+    weekStartDate: {
+      $gte: start,
+      $lt: new Date(start.getTime() + 24 * 60 * 60 * 1000),
+    },
+    companyId: new mongoose.Types.ObjectId(callerCo),
+  });
+
+  if (!dienst) {
+    throw new DienstAssignmentError(
+      404,
+      "dienst_not_found",
+      "No existe Dienst para esa semana y número",
+    );
+  }
+
+  const ambulance = await Ambulance.findById(ambulanceId).select("companyId").lean();
+  if (!ambulance) {
+    throw new DienstAssignmentError(404, "ambulance_not_found", "Ambulancia no encontrada");
+  }
+  if (!entitiesBelongToSameCompany((ambulance as any).companyId, callerCo)) {
+    throw new DienstAssignmentError(403, "forbidden", "La ambulancia no pertenece a tu empresa");
+  }
+
+  let updatedCount = 0;
+  const ambObjectId = new mongoose.Types.ObjectId(ambulanceId);
+
+  dienst.assignments = dienst.assignments.map((a) => {
+    if (!a?.date || !a?.startTime || !a?.endTime) return a;
+    updatedCount += 1;
+    (a as any).ambulanceId = ambObjectId;
+    return a;
+  });
+
+  await dienst.save();
+
+  return {
+    message: `Ambulancia asignada a Dienst #${dienstNumber} (${weekStartDate}). ${updatedCount} días actualizados.`,
+    updatedCount,
+    dienstId: dienst.id,
+    weekStartDate,
+  };
+}

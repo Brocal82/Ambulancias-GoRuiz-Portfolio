@@ -120,4 +120,12 @@ router.post(
   DienstAssignments.dndCrossDienstSameWeek,
 );
 
+// Asignar una ambulancia a todos los días de una semana (solo admin)
+router.post(
+  "/assign-ambulance-to-week",
+  authenticateToken,
+  authorizeRole("admin"),
+  DienstAssignments.assignAmbulanceToWeek,
+);
+
 export default router;

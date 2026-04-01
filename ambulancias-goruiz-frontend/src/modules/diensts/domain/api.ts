@@ -195,6 +195,26 @@ export const assignUserToWeek = async (
   return res.data;
 };
 
+// Asignar una ambulancia a toda la semana de un Dienst
+export const assignAmbulanceToWeek = async (
+  payload: {
+    dienstNumber: number;
+    weekStartDate: string;
+    ambulanceId: string;
+  },
+  token: string,
+): Promise<{
+  message: string;
+  updatedCount: number;
+  dienstId: string;
+  weekStartDate: string;
+}> => {
+  const res = await axios.post("/diensts/assign-ambulance-to-week", payload, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
 // Limpiar driver/medic de toda la semana de un Dienst
 export const clearPeopleForWeek = async (
   payload: { dienstNumber: number; weekStartDate: string },
