@@ -275,13 +275,24 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
             ) : (
                 /* 📄 Día con contenido */
                 <div className="space-y-0">
-                    {lines?.timeLine && lines?.ambulanceLine
-                        ? <p className={combinedLineCls}>{`${String(lines.timeLine).replace(/^🕒\s*/, '')} · ${String(lines.ambulanceLine)}`}</p>
-                        : <>
+                    {lines?.timeLine && lines?.ambulanceLine ? (
+                        /* Wide: icons + split corners | Narrow: no icons + split corners */
+                        <div className={`${combinedLineCls} justify-between`}>
+                            <span className="truncate min-w-0">
+                                <span className="hidden xl:inline">{"🕒 "}</span>
+                                {String(lines.timeLine).replace(/^🕒\s*/, "")}
+                            </span>
+                            <span className="shrink-0 pl-1">
+                                <span className="hidden xl:inline">{"🚑 "}</span>
+                                {String(lines.ambulanceLine).replace(/^🚑\s*/, "")}
+                            </span>
+                        </div>
+                    ) : (
+                        <>
                             {lines?.timeLine && <p className={lineCls}>{lines.timeLine}</p>}
                             {lines?.ambulanceLine && <p className={lineCls}>{lines.ambulanceLine}</p>}
                         </>
-                    }
+                    )}
                     {lines?.driverLine && (
                         <p className={`${lineCls} mt-2`}>{wrapDriverLine(lines.driverLine)}</p>
                     )}
