@@ -162,6 +162,122 @@ export function isDriverEligibleForAssignmentDate(
 }
 
 /**
+ * Convierte "HH:MM" a minutos desde medianoche.
+ * Devuelve 0 si el formato no es reconocible.
+ */
+function timeToMinutes(t: string): number {
+  const parts = t.split(":");
+  const h = parseInt(parts[0] ?? "0", 10);
+  const m = parseInt(parts[1] ?? "0", 10);
+  if (isNaN(h) || isNaN(m)) return 0;
+  return h * 60 + m;
+}
+
+/**
+ * Comprueba solapamiento de dos intervalos [start, end) usando minutos.
+ * Normaliza turnos nocturnos (endTime < startTime) sumando 1440 al extremo final.
+ *
+ * Limitación conocida: si un turno nocturno ocupa dos fechas distintas en la BD
+ * (p. ej. date=D con 22:00–06:00 vs date=D+1 con 00:00–08:00), esa comparación
+ * queda fuera del alcance de esta función porque el query filtra por fecha exacta.
+ */
+function timesOverlap(
+  aStart: string,
+  aEnd: string,
+  bStart: string,
+  bEnd: string,
+): boolean {
+  const aS = timeToMinutes(aStart);
+  let aE = timeToMinutes(aEnd);
+  const bS = timeToMinutes(bStart);
+  let bE = timeToMinutes(bEnd);
+
+  if (aE <= aS) aE += 1440; // turno nocturno: normalizar
+  if (bE <= bS) bE += 1440;
+
+  return aS < bE && bS < aE; // [start, end) overlap
+}
+
+/**
+ * Busca conflictos de tiempo para una ambulancia:
+ * misma ambulancia, misma fecha, rango horario solapado, en otro Dienst de la misma empresa.
+ *
+ * Usa intervalos semiabiertos [start, end), por lo que 06:00–14:00 y 14:00–22:00 NO solapan.
+ */
+export async function findAmbulanceTimeConflicts(params: {
+  ambulanceId: mongoose.Types.ObjectId;
+  currentDienstId: mongoose.Types.ObjectId;
+  assignments: Array<{ date: string; startTime: string; endTime: string }>;
+  companyId: string;
+}): Promise<
+  Array<{
+    dienstId: string;
+    dienstNumber: number;
+    date: string;
+    conflictingStart: string;
+    conflictingEnd: string;
+  }>
+> {
+  const { ambulanceId, currentDienstId, assignments, companyId } = params;
+
+  if (assignments.length === 0) return [];
+
+  const dates = [...new Set(assignments.map((a) => a.date))];
+
+  const candidates = await Dienst.find({
+    _id: { $ne: currentDienstId },
+    companyId: new mongoose.Types.ObjectId(companyId),
+    "assignments.ambulanceId": ambulanceId,
+    "assignments.date": { $in: dates },
+  })
+    .select(
+      "dienstNumber assignments.date assignments.startTime assignments.endTime assignments.ambulanceId",
+    )
+    .lean();
+
+  const out: Array<{
+    dienstId: string;
+    dienstNumber: number;
+    date: string;
+    conflictingStart: string;
+    conflictingEnd: string;
+  }> = [];
+
+  for (const otherDienst of candidates) {
+    for (const otherA of otherDienst.assignments ?? []) {
+      if (
+        !otherA.ambulanceId ||
+        otherA.ambulanceId.toString() !== ambulanceId.toString()
+      ) {
+        continue;
+      }
+
+      const incoming = assignments.find((a) => a.date === otherA.date);
+      if (!incoming) continue;
+
+      const aStart = incoming.startTime;
+      const aEnd = incoming.endTime;
+      const bStart = otherA.startTime;
+      const bEnd = otherA.endTime;
+
+      if (!aStart || !aEnd || !bStart || !bEnd) continue;
+
+      if (timesOverlap(aStart, aEnd, bStart, bEnd)) {
+        out.push({
+          dienstId: String((otherDienst as any)._id),
+          dienstNumber: otherDienst.dienstNumber,
+          date: otherA.date,
+          conflictingStart: bStart,
+          conflictingEnd: bEnd,
+        });
+      }
+    }
+  }
+
+  return out;
+}
+
+/**
  * Busca asignaciones de ese usuario en cualquier Dienst de la misma semana.
  */
 export async function findWeeklyConflicts(

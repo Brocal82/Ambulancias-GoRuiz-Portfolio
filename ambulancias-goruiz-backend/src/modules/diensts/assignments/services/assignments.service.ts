@@ -7,6 +7,7 @@ import { Ambulance } from "../../../ambulances";
 import type { AssignedDay } from "../../types/dienst.types";
 import {
   findWeeklyConflicts,
+  findAmbulanceTimeConflicts,
   isAmbulanceRoleValidForSlot,
   isDriverEligibleForAssignmentDate,
   isOnVacationDay,
@@ -397,6 +398,37 @@ export async function updateDienstPartial(
           weekStartDate: weekStartForScheduling(),
           dienstNumber: (dienst as any).dienstNumber,
         });
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "ambulanceId")) {
+      const newAmbId = oidStr((incoming as any).ambulanceId);
+      const oldAmbId = oidStr(prev?.ambulanceId);
+      if (
+        newAmbId &&
+        mongoose.Types.ObjectId.isValid(newAmbId) &&
+        newAmbId !== oldAmbId
+      ) {
+        const ambConflicts = await findAmbulanceTimeConflicts({
+          ambulanceId: new mongoose.Types.ObjectId(newAmbId),
+          currentDienstId: new mongoose.Types.ObjectId(dienstId),
+          assignments: [
+            {
+              date: updatedCopy.date,
+              startTime: updatedCopy.startTime,
+              endTime: updatedCopy.endTime,
+            },
+          ],
+          companyId: callerCo,
+        });
+        if (ambConflicts.length > 0) {
+          const first = ambConflicts[0];
+          throw new DienstAssignmentError(
+            409,
+            "ambulance_time_conflict",
+            `La ambulancia ya está asignada en Dienst #${first!.dienstNumber} el ${first!.date} (${first!.conflictingStart}–${first!.conflictingEnd}).`,
+            ambConflicts,
+          );
+        }
       }
     }
   }
@@ -1708,8 +1740,32 @@ export async function assignAmbulanceToWeek(
     throw new DienstAssignmentError(403, "forbidden", "La ambulancia no pertenece a tu empresa");
   }
 
-  let updatedCount = 0;
   const ambObjectId = new mongoose.Types.ObjectId(ambulanceId);
+
+  const assignmentsToCheck = dienst.assignments
+    .filter((a) => a?.date && a?.startTime && a?.endTime)
+    .map((a) => ({ date: a.date, startTime: a.startTime, endTime: a.endTime }));
+
+  if (assignmentsToCheck.length > 0) {
+    const conflicts = await findAmbulanceTimeConflicts({
+      ambulanceId: ambObjectId,
+      currentDienstId: dienst._id as mongoose.Types.ObjectId,
+      assignments: assignmentsToCheck,
+      companyId: callerCo,
+    });
+
+    if (conflicts.length > 0) {
+      const first = conflicts[0];
+      throw new DienstAssignmentError(
+        409,
+        "ambulance_time_conflict",
+        `La ambulancia ya está asignada en Dienst #${first!.dienstNumber} el ${first!.date} (${first!.conflictingStart}–${first!.conflictingEnd}).`,
+        conflicts,
+      );
+    }
+  }
+
+  let updatedCount = 0;
 
   dienst.assignments = dienst.assignments.map((a) => {
     if (!a?.date || !a?.startTime || !a?.endTime) return a;
