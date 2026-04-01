@@ -48,7 +48,6 @@ import {
   toFlexibleFromDienstAssignment,
 } from "../assignments";
 
-import PageShell from "../../../components/common/PageShell";
 
 const DND_MIME = "application/x-dienst-admin-dnd+json";
 
@@ -277,10 +276,10 @@ const AdminPage = () => {
   const weekStartKeys = getWeekStartsBerlin(3);
 
   return (
-    <PageShell
-      title={t("pages.diensts.adminPage.title")}
-      maxWidthClassName="max-w-7xl"
-    >
+    <div className="w-full">
+      <h2 className="text-2xl font-semibold tracking-tight text-slate-900 text-center mb-4">
+        {t("pages.diensts.adminPage.title")}
+      </h2>
 
       {isInitialLoading ? (
         <div className="mb-6 rounded-xl bg-white ring-1 ring-slate-200 p-4 text-sm text-slate-600">
@@ -444,11 +443,13 @@ const AdminPage = () => {
                           className="mb-4 flex gap-3 items-start"
                         >
                           {/* Sidebar: número de Dienst y acciones */}
-                          <div className="w-14 shrink-0 flex flex-col gap-2 pt-1">
+                          <div className="w-16 shrink-0 flex flex-col items-stretch gap-0">
 
-                            {/* Fila 1: número + limpiar */}
-                            <div className="flex items-center justify-between min-h-[20px]">
-                              <span className="text-sm font-bold text-slate-700 leading-none">#{dienst.dienstNumber}</span>
+                            {/* Grupo superior: identidad (#N + 🧽) — única zona con fondo */}
+                            <div className="grid w-full min-h-[26px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-1 rounded-md border border-slate-200/80 bg-slate-50/90 px-1.5 py-1 shadow-sm shadow-slate-900/[0.03]">
+                              <span className="text-sm font-bold tabular-nums text-slate-800 leading-none truncate">
+                                #{dienst.dienstNumber}
+                              </span>
 
                               {/* 🧽 Limpiar asignaciones (solo si hay alguien asignado) */}
                               {hasAnyPersonAssigned && (
@@ -500,8 +501,8 @@ const AdminPage = () => {
                               )}
                             </div>
 
-                            {/* Fila 2: asignar trabajador + pareja, lado a lado */}
-                            <div className="flex items-center gap-2 justify-center">
+                            {/* Grupo inferior: acciones — sin fondo de panel; separado por línea + espacio */}
+                            <div className="grid w-full min-h-[28px] grid-cols-3 place-items-center gap-x-0.5 border-t border-slate-200/60 pt-1.5">
                               {/* 👤 Asignar un trabajador (siempre visible) */}
                               <button
                                 className="flex items-center justify-center w-5 h-5 text-slate-500 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
@@ -1245,7 +1246,7 @@ const AdminPage = () => {
           }}
         />
       )}
-    </PageShell>
+    </div>
   );
 };
 

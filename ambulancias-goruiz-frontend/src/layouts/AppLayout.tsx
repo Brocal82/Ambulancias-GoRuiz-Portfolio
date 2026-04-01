@@ -153,7 +153,7 @@ export default function AppLayout() {
 
       {/* Main grows to push footer down */}
       <main role="main" className="flex-1">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 py-6">
           <div className="rounded-2xl bg-slate-50/90 ring-1 ring-slate-200 shadow-sm p-4 sm:p-6">
             {/* ✅ Aquí va la página actual */}
             <Outlet />
