@@ -19,12 +19,16 @@ export type AdminDienstDndProps = {
     medicDraggable?: boolean;
     driverDropTarget?: boolean;
     medicDropTarget?: boolean;
+    /** Zona amplia: toda la celda (misma semana / mismas reglas que líneas). */
+    cellDropTarget?: boolean;
     onDragStartDriver?: (e: React.DragEvent) => void;
     onDragStartMedic?: (e: React.DragEvent) => void;
     onDragOverDriver?: (e: React.DragEvent) => void;
     onDragOverMedic?: (e: React.DragEvent) => void;
+    onDragOverCell?: (e: React.DragEvent) => void;
     onDropDriver?: (e: React.DragEvent) => void;
     onDropMedic?: (e: React.DragEvent) => void;
+    onDropCell?: (e: React.DragEvent) => void;
     onDragEnd?: () => void;
 };
 
@@ -112,6 +116,7 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
         if (dragDriver && dropDriver) {
             return (
                 <span
+                    data-dienst-admin-slot="driver"
                     draggable
                     className="cursor-grab active:cursor-grabbing block w-full min-h-[1.25em]"
                     onDragStart={(e) => {
@@ -157,6 +162,7 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
         if (adminDnd.driverDropTarget) {
             return (
                 <span
+                    data-dienst-admin-slot="driver"
                     className="block w-full min-h-[1.25em]"
                     onDragOver={(e) => {
                         e.preventDefault();
@@ -188,6 +194,7 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
         if (dragMedic && dropMedic) {
             return (
                 <span
+                    data-dienst-admin-slot="medic"
                     draggable
                     className="cursor-grab active:cursor-grabbing block w-full min-h-[1.25em]"
                     onDragStart={(e) => {
@@ -233,6 +240,7 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
         if (adminDnd.medicDropTarget) {
             return (
                 <span
+                    data-dienst-admin-slot="medic"
                     className="block w-full min-h-[1.25em]"
                     onDragOver={(e) => {
                         e.preventDefault();
@@ -312,6 +320,9 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
         ${disabled ? disabledStyle : "hover:shadow-sm hover:-translate-y-0.5"}
       `;
 
+    const cellDrop =
+        Boolean(adminDnd?.cellDropTarget && adminDnd?.onDropCell);
+
     if (adminDnd) {
         return (
             <div
@@ -320,6 +331,27 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
                 aria-disabled={disabled}
                 className={shellClassName}
                 onClick={handleOpen}
+                onDragOverCapture={
+                    cellDrop
+                        ? (e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = "move";
+                            adminDnd.onDragOverCell?.(e);
+                        }
+                        : undefined
+                }
+                onDrop={
+                    cellDrop
+                        ? (e) => {
+                            const t = e.target as HTMLElement | null;
+                            if (t?.closest?.("[data-dienst-admin-slot]")) {
+                                return;
+                            }
+                            e.preventDefault();
+                            adminDnd.onDropCell?.(e);
+                        }
+                        : undefined
+                }
             >
                 {inner}
             </div>
