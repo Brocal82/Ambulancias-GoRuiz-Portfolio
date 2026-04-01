@@ -314,7 +314,7 @@ const AdminPage = () => {
             >
 
               {/* Header de semana */}
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-300 pb-2 mb-3">
                 {hasWeekDiensts ? (
                   // Si hay Diensts: header clicable con flecha 🔼 / 🔽
                   <button
@@ -655,7 +655,7 @@ const AdminPage = () => {
                                 if (
                                   String(payload.dienstId) === String(dienst._id) &&
                                   assignmentDayKey(payload.sourceDate) ===
-                                    assignmentDayKey(day)
+                                  assignmentDayKey(day)
                                 ) {
                                   return;
                                 }
