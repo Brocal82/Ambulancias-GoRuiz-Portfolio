@@ -398,7 +398,7 @@ const AdminPage = () => {
                   {hasWeekDiensts && (
                     <div className="flex gap-3 mb-2">
                       <div className="w-8 shrink-0" />
-                      <div className={`${WEEK_GRID_CLASS} flex-1`}>
+                      <div className="grid grid-cols-7 gap-2 flex-1">
                         {getWeekDays(weekStartISO).map((day) => {
                           const d = new Date(`${day}T12:00:00`);
                           const dayName = d.toLocaleDateString(i18n.language, { weekday: "short" });
@@ -544,7 +544,7 @@ const AdminPage = () => {
                           </div>
 
                           {/* Grid de 7 días */}
-                          <div className={`${WEEK_GRID_CLASS} flex-1`}>
+                          <div className="grid grid-cols-7 gap-2 flex-1">
                             {weekDates.map((day) => {
                               const assignment = dienst.assignments.find(
                                 (a) => a.date === day,

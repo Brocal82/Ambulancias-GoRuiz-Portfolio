@@ -1,8 +1,8 @@
 import React, { useRef } from "react";
 import {
-  INCOMPLETE_BG_RING,
-  INCOMPLETE_BORDER,
-  INCOMPLETE_TEXT,
+    INCOMPLETE_BG_RING,
+    INCOMPLETE_BORDER,
+    INCOMPLETE_TEXT,
 } from "../utils/dienstStatusStyles";
 
 export type DienstDayCellLines = {
@@ -65,8 +65,10 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
 
     // 🔒 UNA sola línea, sin saltos, con …
     const lineCls = useIncompleteText
-        ? `text-xs ${INCOMPLETE_TEXT} flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis`
-        : "text-xs text-slate-700 flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis";
+        ? `text-xs leading-tight ${INCOMPLETE_TEXT} flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis`
+        : "text-xs leading-tight text-slate-700 flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis";
+
+    const combinedLineCls = `${lineCls} font-semibold`;
 
     /**
      * 🎯 Regla clara de UI:
@@ -256,9 +258,8 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
             {/* 📅 Fecha — siempre arriba */}
             {lines?.dateLine && (
                 <div
-                    className={`text-xs font-semibold text-center mb-1 ${
-                        useIncompleteText ? INCOMPLETE_TEXT : "text-slate-800"
-                    }`}
+                    className={`text-xs font-semibold text-center mb-1 ${useIncompleteText ? INCOMPLETE_TEXT : "text-slate-800"
+                        }`}
                 >
                     {lines.dateLine}
                 </div>
@@ -273,13 +274,16 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
                 </div>
             ) : (
                 /* 📄 Día con contenido */
-                <div className="space-y-0.5 flex-1">
-                    {lines?.timeLine && <p className={lineCls}>{lines.timeLine}</p>}
-                    {lines?.ambulanceLine && (
-                        <p className={lineCls}>{lines.ambulanceLine}</p>
-                    )}
+                <div className="space-y-0">
+                    {lines?.timeLine && lines?.ambulanceLine
+                        ? <p className={combinedLineCls}>{`${String(lines.timeLine).replace(/^🕒\s*/, '')} · ${String(lines.ambulanceLine)}`}</p>
+                        : <>
+                            {lines?.timeLine && <p className={lineCls}>{lines.timeLine}</p>}
+                            {lines?.ambulanceLine && <p className={lineCls}>{lines.ambulanceLine}</p>}
+                        </>
+                    }
                     {lines?.driverLine && (
-                        <p className={lineCls}>{wrapDriverLine(lines.driverLine)}</p>
+                        <p className={`${lineCls} mt-2`}>{wrapDriverLine(lines.driverLine)}</p>
                     )}
                     {lines?.medicLine && (
                         <p className={lineCls}>{wrapMedicLine(lines.medicLine)}</p>
@@ -291,7 +295,7 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
 
     const shellClassName = `
         rounded-xl p-2 ring-1 transition text-left
-        flex flex-col min-h-[96px]
+        flex flex-col min-h-[72px]
         ${statusClass}
         ${finalBorderClass}
         ${disabled ? disabledStyle : "hover:shadow-sm hover:-translate-y-0.5"}
