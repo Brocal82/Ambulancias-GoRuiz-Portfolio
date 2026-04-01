@@ -221,6 +221,8 @@ type AdminDndPreparedCtx = {
   td: string;
   tm: string;
   draggedAmbulanceRole: "driver" | "medic" | "both" | undefined;
+  /** Mismo Dienst, mismo día (misma fila de asignación): movimiento o intercambio entre conductor/medic. */
+  intraCellSameAssignment: boolean;
 };
 
 type PrepareAdminDndResult =
@@ -260,13 +262,6 @@ function prepareAdminDndDrop(params: {
     };
   }
 
-  if (
-    String(payload.dienstId) === String(targetDienst._id) &&
-    assignmentDayKey(payload.sourceDate) === assignmentDayKey(day)
-  ) {
-    return { ok: false, kind: "silent" };
-  }
-
   const sourceAssignment = sourceDienst.assignments.find(
     (a) => assignmentDayKey(a.date) === assignmentDayKey(payload.sourceDate),
   );
@@ -300,6 +295,10 @@ function prepareAdminDndDrop(params: {
     payload,
   );
 
+  const intraCellSameAssignment =
+    String(sourceDienst._id) === String(targetDienst._id) &&
+    assignmentDayKey(payload.sourceDate) === assignmentDayKey(day);
+
   return {
     ok: true,
     ctx: {
@@ -310,6 +309,7 @@ function prepareAdminDndDrop(params: {
       td,
       tm,
       draggedAmbulanceRole,
+      intraCellSameAssignment,
     },
   };
 }
@@ -318,7 +318,41 @@ function validateAdminDndTargetRole(
   targetRole: "driver" | "medic",
   ctx: AdminDndPreparedCtx,
 ): string | null {
-  const { payload, targetAssignment, td, tm, draggedAmbulanceRole } = ctx;
+  const {
+    payload,
+    targetAssignment,
+    td,
+    tm,
+    draggedAmbulanceRole,
+    intraCellSameAssignment,
+  } = ctx;
+
+  if (intraCellSameAssignment && td && tm) {
+    if (payload.role === targetRole) {
+      return "No se puede soltar en el mismo puesto.";
+    }
+    const otherOccupantId =
+      targetRole === "driver" ? td : tm;
+    if (payload.userId === otherOccupantId) {
+      return "No se puede reasignar el mismo usuario en ambos puestos.";
+    }
+    const otherAr =
+      targetRole === "driver"
+        ? getAmbulanceRoleFromAssignmentField(targetAssignment.driver)
+        : getAmbulanceRoleFromAssignmentField(targetAssignment.medic);
+    if (!canDraggedFillTargetSlot(draggedAmbulanceRole, targetRole)) {
+      if (draggedAmbulanceRole === undefined) {
+        return "No se puede asignar: falta el rol de ambulancia del usuario arrastrado.";
+      }
+      return "Este usuario no puede cubrir ese puesto en destino.";
+    }
+    const otherNewRole =
+      targetRole === "driver" ? ("medic" as const) : ("driver" as const);
+    if (!canDraggedFillTargetSlot(otherAr, otherNewRole)) {
+      return "Este usuario no puede cubrir ese puesto en destino.";
+    }
+    return null;
+  }
 
   if (td && tm) {
     return "El día destino ya tiene conductor y sanitario.";
@@ -393,7 +427,70 @@ async function executeAdminDndDrop(params: {
 }): Promise<void> {
   const { ctx, targetRole, targetDienst, day, token, fetchDiensts } = params;
   const { payload, sourceAssignment, targetAssignment } = ctx;
-  const { td, tm, draggedAmbulanceRole } = ctx;
+  const { td, tm, draggedAmbulanceRole, intraCellSameAssignment } = ctx;
+
+  if (intraCellSameAssignment && td && tm) {
+    const mergedRow =
+      targetRole === "driver"
+        ? buildRowFromSlotIds({
+            assignment: targetAssignment,
+            driverId: payload.userId,
+            medicId: td,
+          })
+        : buildRowFromSlotIds({
+            assignment: targetAssignment,
+            driverId: tm,
+            medicId: payload.userId,
+          });
+    try {
+      await updateDienstPartial(
+        targetDienst._id,
+        { assignments: [mergedRow] },
+        token,
+      );
+      emitDienstsChanged();
+      toastT.success(["toasts.assignments.saveSuccess"]);
+      await fetchDiensts();
+    } catch (error) {
+      console.error("Dienst DnD move:", error);
+      toastAmbulanceConflictOrApiError(error, ["toasts.assignments.saveError"]);
+    }
+    return;
+  }
+
+  /**
+   * Mismo día/celda con un solo ocupante: mover a la otra plaza sin fila intermedia
+   * que repita el mismo userId en driver y medic (el path de dos filas reutilizaba
+   * td/tm iniciales y provocaba 409 driver_medic_same_user).
+   */
+  if (intraCellSameAssignment && !(td && tm)) {
+    const mergedRow =
+      targetRole === "driver"
+        ? buildRowFromSlotIds({
+            assignment: targetAssignment,
+            driverId: payload.userId,
+            medicId: "",
+          })
+        : buildRowFromSlotIds({
+            assignment: targetAssignment,
+            driverId: "",
+            medicId: payload.userId,
+          });
+    try {
+      await updateDienstPartial(
+        targetDienst._id,
+        { assignments: [mergedRow] },
+        token,
+      );
+      emitDienstsChanged();
+      toastT.success(["toasts.assignments.saveSuccess"]);
+      await fetchDiensts();
+    } catch (error) {
+      console.error("Dienst DnD move:", error);
+      toastAmbulanceConflictOrApiError(error, ["toasts.assignments.saveError"]);
+    }
+    return;
+  }
 
   const structuralDriverSwap =
     targetRole === "driver" &&
@@ -924,12 +1021,21 @@ const AdminPage = () => {
                                 getAmbulanceRoleFromAssignmentField(
                                   assignment?.medic,
                                 ) === "both";
+                              /** Intercambio mismo día/celda: ambas plazas ocupadas → hace falta zona de drop. */
+                              const bothSlotsOccupied =
+                                canDndCell &&
+                                Boolean(driverUserId) &&
+                                Boolean(medicUserId);
                               const driverDropTarget =
                                 canDndCell &&
-                                (!driverUserId || bothIncumbentDriverSwap);
+                                (!driverUserId ||
+                                  bothIncumbentDriverSwap ||
+                                  bothSlotsOccupied);
                               const medicDropTarget =
                                 canDndCell &&
-                                (!medicUserId || bothIncumbentMedicSwap);
+                                (!medicUserId ||
+                                  bothIncumbentMedicSwap ||
+                                  bothSlotsOccupied);
 
                               const cellDropTarget =
                                 canDndCell &&
@@ -958,6 +1064,12 @@ const AdminPage = () => {
                                   targetRole,
                                   ctx.draggedAmbulanceRole,
                                 );
+                                if (
+                                  ctx.intraCellSameAssignment &&
+                                  effectiveTargetRole === ctx.payload.role
+                                ) {
+                                  return;
+                                }
                                 const err = validateAdminDndTargetRole(
                                   effectiveTargetRole,
                                   ctx,
@@ -996,6 +1108,12 @@ const AdminPage = () => {
                                 const ar = ctx.draggedAmbulanceRole;
                                 if (ar === "driver" || ar === "medic") {
                                   const tr = ar === "driver" ? "driver" : "medic";
+                                  if (
+                                    ctx.intraCellSameAssignment &&
+                                    tr === ctx.payload.role
+                                  ) {
+                                    return;
+                                  }
                                   const err = validateAdminDndTargetRole(tr, ctx);
                                   if (err) {
                                     toastT.error(err);
@@ -1019,6 +1137,12 @@ const AdminPage = () => {
                                 let firstErr: string | null = null;
                                 let tried = false;
                                 for (const tr of order) {
+                                  if (
+                                    ctx.intraCellSameAssignment &&
+                                    tr === ctx.payload.role
+                                  ) {
+                                    continue;
+                                  }
                                   if (tr === "driver" && !driverDropTarget) {
                                     continue;
                                   }
