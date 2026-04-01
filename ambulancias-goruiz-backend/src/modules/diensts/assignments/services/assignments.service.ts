@@ -8,6 +8,7 @@ import type { AssignedDay } from "../../types/dienst.types";
 import {
   findWeeklyConflicts,
   findAmbulanceTimeConflicts,
+  formatAmbulanceConflictMessage,
   isAmbulanceRoleValidForSlot,
   isDriverEligibleForAssignmentDate,
   isOnVacationDay,
@@ -421,11 +422,10 @@ export async function updateDienstPartial(
           companyId: callerCo,
         });
         if (ambConflicts.length > 0) {
-          const first = ambConflicts[0];
           throw new DienstAssignmentError(
             409,
             "ambulance_time_conflict",
-            `La ambulancia ya está asignada en Dienst #${first!.dienstNumber} el ${first!.date} (${first!.conflictingStart}–${first!.conflictingEnd}).`,
+            formatAmbulanceConflictMessage(ambConflicts[0]!),
             ambConflicts,
           );
         }
@@ -1755,11 +1755,10 @@ export async function assignAmbulanceToWeek(
     });
 
     if (conflicts.length > 0) {
-      const first = conflicts[0];
       throw new DienstAssignmentError(
         409,
         "ambulance_time_conflict",
-        `La ambulancia ya está asignada en Dienst #${first!.dienstNumber} el ${first!.date} (${first!.conflictingStart}–${first!.conflictingEnd}).`,
+        formatAmbulanceConflictMessage(conflicts[0]!),
         conflicts,
       );
     }

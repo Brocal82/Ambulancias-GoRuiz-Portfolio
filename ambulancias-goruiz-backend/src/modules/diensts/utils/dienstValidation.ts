@@ -199,6 +199,39 @@ function timesOverlap(
 }
 
 /**
+ * Convierte "YYYY-MM-DD" a "DD/MM/YYYY" para mensajes de error legibles por el admin.
+ */
+function formatDateDMY(dateISO: string): string {
+  const parts = dateISO.split("-");
+  if (parts.length !== 3) return dateISO;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+export type AmbulanceTimeConflict = {
+  dienstId: string;
+  dienstNumber: number;
+  date: string;
+  conflictingStart: string;  // HH:MM del turno existente
+  conflictingEnd: string;
+  incomingStart: string;     // HH:MM del turno intentado
+  incomingEnd: string;
+};
+
+/**
+ * Genera un mensaje de error profesional a partir de un conflicto de ambulancia.
+ * Incluye el Dienst existente, la fecha, el turno en conflicto y el turno intentado.
+ */
+export function formatAmbulanceConflictMessage(c: AmbulanceTimeConflict): string {
+  const date = formatDateDMY(c.date);
+  return (
+    `La ambulancia ya está asignada en el Dienst #${c.dienstNumber} ` +
+    `el ${date} de ${c.conflictingStart} a ${c.conflictingEnd}. ` +
+    `No puede asignarse al nuevo horario ${c.incomingStart}–${c.incomingEnd} ` +
+    `porque los horarios se solapan.`
+  );
+}
+
+/**
  * Busca conflictos de tiempo para una ambulancia:
  * misma ambulancia, misma fecha, rango horario solapado, en otro Dienst de la misma empresa.
  *
@@ -209,15 +242,7 @@ export async function findAmbulanceTimeConflicts(params: {
   currentDienstId: mongoose.Types.ObjectId;
   assignments: Array<{ date: string; startTime: string; endTime: string }>;
   companyId: string;
-}): Promise<
-  Array<{
-    dienstId: string;
-    dienstNumber: number;
-    date: string;
-    conflictingStart: string;
-    conflictingEnd: string;
-  }>
-> {
+}): Promise<AmbulanceTimeConflict[]> {
   const { ambulanceId, currentDienstId, assignments, companyId } = params;
 
   if (assignments.length === 0) return [];
@@ -235,13 +260,7 @@ export async function findAmbulanceTimeConflicts(params: {
     )
     .lean();
 
-  const out: Array<{
-    dienstId: string;
-    dienstNumber: number;
-    date: string;
-    conflictingStart: string;
-    conflictingEnd: string;
-  }> = [];
+  const out: AmbulanceTimeConflict[] = [];
 
   for (const otherDienst of candidates) {
     for (const otherA of otherDienst.assignments ?? []) {
@@ -269,6 +288,8 @@ export async function findAmbulanceTimeConflicts(params: {
           date: otherA.date,
           conflictingStart: bStart,
           conflictingEnd: bEnd,
+          incomingStart: aStart,
+          incomingEnd: aEnd,
         });
       }
     }
