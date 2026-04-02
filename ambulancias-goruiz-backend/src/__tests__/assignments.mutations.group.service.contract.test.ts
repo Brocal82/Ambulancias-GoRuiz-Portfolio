@@ -1,6 +1,6 @@
 /**
  * Contrato mutaciones assignments (clearPeopleForWeek, updateDienstPartial,
- * moveSlotSameWeek, assignUserToWeek, assignTeamToWeek): exigen companyId de caller y Dienst con company.
+ * moveSlotSameWeek, dndCrossDienstSameWeek, assignUserToWeek, assignTeamToWeek): exigen companyId de caller y Dienst con company.
  */
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
@@ -12,6 +12,7 @@ import {
   clearPeopleForWeek,
   updateDienstPartial,
   moveSlotSameWeek,
+  dndCrossDienstSameWeek,
   assignUserToWeek,
   assignTeamToWeek,
 } from "../modules/diensts/assignments/services/assignments.service";
@@ -574,6 +575,239 @@ describe("assignments.service mutations group (company contract)", () => {
       });
 
       await Dienst.deleteMany({ dienstNumber: { $in: [94214, 94215] } });
+      await User.deleteMany({ _id: { $in: [uDriver._id, uMedic._id] } });
+    });
+  });
+
+  describe("dndCrossDienstSameWeek (descanso mínimo)", () => {
+    it("DnD sin minimumRestWarning cuando no hay vecino conflictivo", async () => {
+      const coOid = new mongoose.Types.ObjectId();
+      const co = coOid.toString();
+      const uDriver = await User.create({
+        name: "D",
+        lastName: "Nd",
+        email: `dnd-a-${Date.now()}@test.local`,
+        password: await hashPw(),
+        role: "worker",
+        ambulanceRole: "driver",
+        companyId: coOid,
+        pscheinExpiry: "2040-12-31",
+        pscheinConfirmedAt: new Date("2030-01-01"),
+      });
+      const uMedic = await User.create({
+        name: "M",
+        lastName: "Nd",
+        email: `dnd-a2-${Date.now()}@test.local`,
+        password: await hashPw(),
+        role: "worker",
+        ambulanceRole: "medic",
+        companyId: coOid,
+      });
+
+      const d1 = await Dienst.create({
+        dienstNumber: 94320,
+        weekStartDate: new Date("2035-01-07"),
+        weekEndDate: new Date("2035-01-13"),
+        companyId: coOid,
+        assignments: [
+          {
+            date: "2035-01-08",
+            startTime: "08:00",
+            endTime: "16:00",
+            driver: uDriver._id,
+            medic: uMedic._id,
+          },
+        ],
+      });
+      const d2 = await Dienst.create({
+        dienstNumber: 94321,
+        weekStartDate: new Date("2035-01-07"),
+        weekEndDate: new Date("2035-01-13"),
+        companyId: coOid,
+        assignments: [
+          {
+            date: "2035-01-08",
+            startTime: "08:00",
+            endTime: "16:00",
+            medic: uMedic._id,
+          },
+        ],
+      });
+
+      const out = await dndCrossDienstSameWeek(
+        {
+          sourceDienstId: String(d1._id),
+          sourceDate: "2035-01-08",
+          targetDienstId: String(d2._id),
+          targetDate: "2035-01-08",
+          role: "driver",
+          userId: String(uDriver._id),
+        },
+        co,
+      );
+      expect(out.minimumRestWarning).toBeUndefined();
+
+      await Dienst.deleteMany({ dienstNumber: { $in: [94320, 94321] } });
+      await User.deleteMany({ _id: { $in: [uDriver._id, uMedic._id] } });
+    });
+
+    it("DnD con aviso minimum_rest_soft (misma geometría que moveSlotSameWeek)", async () => {
+      const coOid = new mongoose.Types.ObjectId();
+      const co = coOid.toString();
+      const uDriver = await User.create({
+        name: "D",
+        lastName: "Ne",
+        email: `dnd-b-${Date.now()}@test.local`,
+        password: await hashPw(),
+        role: "worker",
+        ambulanceRole: "driver",
+        companyId: coOid,
+        pscheinExpiry: "2040-12-31",
+        pscheinConfirmedAt: new Date("2030-01-01"),
+      });
+      const uMedic = await User.create({
+        name: "M",
+        lastName: "Ne",
+        email: `dnd-b2-${Date.now()}@test.local`,
+        password: await hashPw(),
+        role: "worker",
+        ambulanceRole: "medic",
+        companyId: coOid,
+      });
+
+      const d1 = await Dienst.create({
+        dienstNumber: 94322,
+        weekStartDate: new Date("2035-01-07"),
+        weekEndDate: new Date("2035-01-13"),
+        companyId: coOid,
+        assignments: [
+          {
+            date: "2035-01-08",
+            startTime: "08:00",
+            endTime: "16:00",
+            driver: uDriver._id,
+            medic: uMedic._id,
+          },
+        ],
+      });
+      const d2 = await Dienst.create({
+        dienstNumber: 94323,
+        weekStartDate: new Date("2035-01-07"),
+        weekEndDate: new Date("2035-01-13"),
+        companyId: coOid,
+        assignments: [
+          {
+            date: "2035-01-07",
+            startTime: "22:00",
+            endTime: "06:00",
+            driver: uDriver._id,
+            medic: uMedic._id,
+          },
+          {
+            date: "2035-01-08",
+            startTime: "16:00",
+            endTime: "20:00",
+            medic: uMedic._id,
+          },
+        ],
+      });
+
+      const out = await dndCrossDienstSameWeek(
+        {
+          sourceDienstId: String(d1._id),
+          sourceDate: "2035-01-08",
+          targetDienstId: String(d2._id),
+          targetDate: "2035-01-08",
+          role: "driver",
+          userId: String(uDriver._id),
+        },
+        co,
+      );
+      expect(out.minimumRestWarning?.code).toBe("minimum_rest_soft");
+
+      await Dienst.deleteMany({ dienstNumber: { $in: [94322, 94323] } });
+      await User.deleteMany({ _id: { $in: [uDriver._id, uMedic._id] } });
+    });
+
+    it("DnD rechaza insufficient_rest con <10 h respecto al turno previo en destino", async () => {
+      const coOid = new mongoose.Types.ObjectId();
+      const co = coOid.toString();
+      const uDriver = await User.create({
+        name: "D",
+        lastName: "Nf",
+        email: `dnd-c-${Date.now()}@test.local`,
+        password: await hashPw(),
+        role: "worker",
+        ambulanceRole: "driver",
+        companyId: coOid,
+        pscheinExpiry: "2040-12-31",
+        pscheinConfirmedAt: new Date("2030-01-01"),
+      });
+      const uMedic = await User.create({
+        name: "M",
+        lastName: "Nf",
+        email: `dnd-c2-${Date.now()}@test.local`,
+        password: await hashPw(),
+        role: "worker",
+        ambulanceRole: "medic",
+        companyId: coOid,
+      });
+
+      const d1 = await Dienst.create({
+        dienstNumber: 94324,
+        weekStartDate: new Date("2035-01-07"),
+        weekEndDate: new Date("2035-01-13"),
+        companyId: coOid,
+        assignments: [
+          {
+            date: "2035-01-08",
+            startTime: "08:00",
+            endTime: "16:00",
+            driver: uDriver._id,
+            medic: uMedic._id,
+          },
+        ],
+      });
+      const d2 = await Dienst.create({
+        dienstNumber: 94325,
+        weekStartDate: new Date("2035-01-07"),
+        weekEndDate: new Date("2035-01-13"),
+        companyId: coOid,
+        assignments: [
+          {
+            date: "2035-01-07",
+            startTime: "22:00",
+            endTime: "06:00",
+            driver: uDriver._id,
+            medic: uMedic._id,
+          },
+          {
+            date: "2035-01-08",
+            startTime: "07:00",
+            endTime: "15:00",
+            medic: uMedic._id,
+          },
+        ],
+      });
+
+      await expect(
+        dndCrossDienstSameWeek(
+          {
+            sourceDienstId: String(d1._id),
+            sourceDate: "2035-01-08",
+            targetDienstId: String(d2._id),
+            targetDate: "2035-01-08",
+            role: "driver",
+            userId: String(uDriver._id),
+          },
+          co,
+        ),
+      ).rejects.toMatchObject({
+        statusCode: 409,
+        code: "insufficient_rest",
+      });
+
+      await Dienst.deleteMany({ dienstNumber: { $in: [94324, 94325] } });
       await User.deleteMany({ _id: { $in: [uDriver._id, uMedic._id] } });
     });
   });

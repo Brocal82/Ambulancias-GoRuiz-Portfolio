@@ -96,10 +96,14 @@ export const dndMoveCrossDienstSameWeek = async (
     userId: string;
   },
   token: string,
-): Promise<void> => {
-  await axios.post(`/diensts/dnd-cross-dienst-same-week`, body, {
+): Promise<{ ok: boolean; minimumRestWarning?: MinimumRestWarning }> => {
+  const response = await axios.post<{
+    ok: boolean;
+    minimumRestWarning?: MinimumRestWarning;
+  }>(`/diensts/dnd-cross-dienst-same-week`, body, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  return response.data;
 };
 
 // Eliminar una asignación de un día

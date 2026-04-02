@@ -1590,7 +1590,7 @@ export async function moveSlotSameWeek(
 export async function dndCrossDienstSameWeek(
   body: DndCrossDienstSameWeekBody,
   companyId?: string | null,
-): Promise<void> {
+): Promise<{ minimumRestWarning?: MinimumRestWarningPayload }> {
   const callerCo =
     companyId != null && String(companyId).trim() !== ""
       ? String(companyId).trim()
@@ -1620,6 +1620,8 @@ export async function dndCrossDienstSameWeek(
       "Para mover dentro del mismo Dienst, usa la actualización parcial habitual.",
     );
   }
+
+  let restResult: { minimumRestWarning?: MinimumRestWarningPayload } = {};
 
   const session = await mongoose.startSession();
   try {
@@ -1982,12 +1984,29 @@ export async function dndCrossDienstSameWeek(
         tgtA.medic = new mongoose.Types.ObjectId(userId);
       }
 
+      restResult = await runMinimumRestChecksForMergedDienstStates(
+        callerCo,
+        [
+          {
+            id: String(sourceDienst._id),
+            mergedAssignments: sourceDienst.assignments as unknown[],
+          },
+          {
+            id: String(targetDienst._id),
+            mergedAssignments: targetDienst.assignments as unknown[],
+          },
+        ],
+        [{ dienstId: String(targetDienst._id), date: tgtKey }],
+      );
+
       await sourceDienst.save({ session });
       await targetDienst.save({ session });
     });
   } finally {
     await session.endSession();
   }
+
+  return restResult;
 }
 
 export async function assignAmbulanceToWeek(
