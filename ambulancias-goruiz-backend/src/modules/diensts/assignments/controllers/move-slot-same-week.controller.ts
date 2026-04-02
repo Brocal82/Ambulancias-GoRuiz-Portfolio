@@ -11,8 +11,16 @@ export const moveSlotSameWeek: RequestHandler = async (req, res) => {
       return;
     }
 
-    await assignmentsService.moveSlotSameWeek(req.body, companyResult.companyId);
-    res.status(200).json({ ok: true });
+    const result = await assignmentsService.moveSlotSameWeek(
+      req.body,
+      companyResult.companyId,
+    );
+    res.status(200).json({
+      ok: true,
+      ...(result.minimumRestWarning
+        ? { minimumRestWarning: result.minimumRestWarning }
+        : {}),
+    });
   } catch (error) {
     if (error instanceof DienstAssignmentError) {
       const body: Record<string, unknown> = {

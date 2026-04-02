@@ -74,10 +74,14 @@ export const moveDienstSlotSameWeek = async (
     userId: string;
   },
   token: string,
-): Promise<void> => {
-  await axios.post(`/diensts/move-slot-same-week`, body, {
+): Promise<{ ok: boolean; minimumRestWarning?: MinimumRestWarning }> => {
+  const response = await axios.post<{
+    ok: boolean;
+    minimumRestWarning?: MinimumRestWarning;
+  }>(`/diensts/move-slot-same-week`, body, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  return response.data;
 };
 
 /** DnD admin cross-Dienst misma semana: hueco vacío o rebalanceo Both (validación en servidor). */

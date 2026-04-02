@@ -135,20 +135,20 @@ export type MinimumRestWarningPayload = {
 };
 
 /**
- * Mínimo descanso entre turnos (updateDienstPartial): <10h bloqueo; 10h–<11h aviso; ≥11h ok.
- * Estado ya fusionado en memoria en `mergedDienst`.
+ * Mínimo descanso entre turnos sobre uno o varios Dienst ya fusionados en memoria.
+ * companyId acota la consulta de vecinos; cada snapshot sustituye assignments del doc cargado.
  */
-async function runMinimumRestChecksForPartialUpdate(
-  currentDienstId: string,
-  incomingRows: any[],
-  mergedDienst: { assignments?: unknown[]; toObject?: () => unknown },
+async function runMinimumRestChecksForMergedDienstStates(
   companyId: string,
+  dienstSnapshots: Array<{ id: string; mergedAssignments: unknown[] }>,
+  rowsToCheck: Array<{ dienstId: string; date: string }>,
 ): Promise<{ minimumRestWarning?: MinimumRestWarningPayload }> {
   const datesNeedingCheck: string[] = [];
-  for (const inc of incomingRows) {
-    const dk = normalizeDayKey(inc?.date);
+  for (const { dienstId, date } of rowsToCheck) {
+    const dk = normalizeDayKey(date);
     if (!dk) continue;
-    const row = (mergedDienst.assignments ?? []).find(
+    const snap = dienstSnapshots.find((s) => String(s.id) === String(dienstId));
+    const row = (snap?.mergedAssignments ?? []).find(
       (a: any) => normalizeDayKey(a?.date) === dk,
     ) as { driver?: unknown; medic?: unknown } | undefined;
     if (oidStr(row?.driver) || oidStr(row?.medic)) {
@@ -164,18 +164,18 @@ async function runMinimumRestChecksForPartialUpdate(
   const maxD = sorted[sorted.length - 1]!;
 
   const fetched = await fetchDienstDocsForRestWindow(companyId, minD, maxD);
-  const mergedPlain = mergedDienst.toObject
-    ? (mergedDienst.toObject() as { _id?: unknown; assignments?: unknown[] })
-    : { assignments: mergedDienst.assignments };
 
-  const docs: Array<{ _id: unknown; assignments?: unknown[] }> = fetched.map((d) =>
-    String(d._id) === String(currentDienstId) ? { ...d, assignments: mergedPlain.assignments } : d,
-  );
-  if (!docs.some((d) => String(d._id) === String(currentDienstId))) {
-    docs.push({
-      _id: new mongoose.Types.ObjectId(currentDienstId),
-      assignments: mergedPlain.assignments,
-    });
+  const docs: Array<{ _id: unknown; assignments?: unknown[] }> = fetched.map((d) => {
+    const snap = dienstSnapshots.find((s) => String(s.id) === String(d._id));
+    return snap ? { ...d, assignments: snap.mergedAssignments } : d;
+  });
+  for (const snap of dienstSnapshots) {
+    if (!docs.some((d) => String(d._id) === String(snap.id))) {
+      docs.push({
+        _id: new mongoose.Types.ObjectId(String(snap.id)),
+        assignments: snap.mergedAssignments,
+      });
+    }
   }
 
   const allShifts: RestShiftInterval[] = [];
@@ -183,10 +183,11 @@ async function runMinimumRestChecksForPartialUpdate(
     allShifts.push(...flattenAssignmentsToRestShifts(d, String(d._id)));
   }
 
-  for (const inc of incomingRows) {
-    const dk = normalizeDayKey(inc?.date);
+  for (const { dienstId, date } of rowsToCheck) {
+    const dk = normalizeDayKey(date);
     if (!dk) continue;
-    const row = (mergedDienst.assignments ?? []).find(
+    const snap = dienstSnapshots.find((s) => String(s.id) === String(dienstId));
+    const row = (snap?.mergedAssignments ?? []).find(
       (a: any) => normalizeDayKey(a?.date) === dk,
     ) as {
       date?: string;
@@ -209,7 +210,7 @@ async function runMinimumRestChecksForPartialUpdate(
 
     for (const { uid } of roles) {
       const { prev, next } = findNeighborRestShifts(allShifts, uid, proposed, {
-        dienstId: currentDienstId,
+        dienstId: String(dienstId),
         date: dateKey,
         userId: uid,
       });
@@ -255,6 +256,33 @@ async function runMinimumRestChecksForPartialUpdate(
     }
   }
   return { minimumRestWarning };
+}
+
+/**
+ * Mínimo descanso (updateDienstPartial): <10h bloqueo; 10h–<11h aviso; ≥11h ok.
+ */
+async function runMinimumRestChecksForPartialUpdate(
+  currentDienstId: string,
+  incomingRows: any[],
+  mergedDienst: { assignments?: unknown[]; toObject?: () => unknown },
+  companyId: string,
+): Promise<{ minimumRestWarning?: MinimumRestWarningPayload }> {
+  const mergedPlain = mergedDienst.toObject
+    ? (mergedDienst.toObject() as { assignments?: unknown[] })
+    : { assignments: mergedDienst.assignments };
+
+  const rowsToCheck = incomingRows
+    .map((inc) => ({
+      dienstId: currentDienstId,
+      date: typeof inc?.date === "string" ? inc.date : "",
+    }))
+    .filter((r) => normalizeDayKey(r.date) !== "");
+
+  return runMinimumRestChecksForMergedDienstStates(
+    companyId,
+    [{ id: currentDienstId, mergedAssignments: mergedPlain.assignments ?? [] }],
+    rowsToCheck,
+  );
 }
 
 function normalizeDayKey(date: string): string {
@@ -1319,7 +1347,7 @@ export type MoveSlotSameWeekBody = {
 export async function moveSlotSameWeek(
   body: MoveSlotSameWeekBody,
   companyId?: string | null,
-): Promise<void> {
+): Promise<{ minimumRestWarning?: MinimumRestWarningPayload }> {
   const callerCo =
     companyId != null && String(companyId).trim() !== ""
       ? String(companyId).trim()
@@ -1347,6 +1375,8 @@ export async function moveSlotSameWeek(
       "Para mover dentro del mismo Dienst, usa la actualización parcial habitual.",
     );
   }
+
+  let restResult: { minimumRestWarning?: MinimumRestWarningPayload } = {};
 
   const session = await mongoose.startSession();
   try {
@@ -1526,12 +1556,29 @@ export async function moveSlotSameWeek(
         tgtA.medic = new mongoose.Types.ObjectId(userId);
       }
 
+      restResult = await runMinimumRestChecksForMergedDienstStates(
+        callerCo,
+        [
+          {
+            id: String(sourceDienst._id),
+            mergedAssignments: sourceDienst.assignments as unknown[],
+          },
+          {
+            id: String(targetDienst._id),
+            mergedAssignments: targetDienst.assignments as unknown[],
+          },
+        ],
+        [{ dienstId: String(targetDienst._id), date: tgtKey }],
+      );
+
       await sourceDienst.save({ session });
       await targetDienst.save({ session });
     });
   } finally {
     await session.endSession();
   }
+
+  return restResult;
 }
 
 /**
