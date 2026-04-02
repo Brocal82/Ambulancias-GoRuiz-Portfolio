@@ -1208,6 +1208,8 @@ describe("API - Rutas críticas", () => {
       expect(res.body).toHaveProperty("count");
       expect(res.body.count).toBeGreaterThanOrEqual(1);
       expect(res.body).toHaveProperty("message");
+      expect(res.body).toHaveProperty("dienstSummaries");
+      expect(Array.isArray(res.body.dienstSummaries)).toBe(true);
 
       const listRes = await request(app)
         .get(`${API}/diensts`)

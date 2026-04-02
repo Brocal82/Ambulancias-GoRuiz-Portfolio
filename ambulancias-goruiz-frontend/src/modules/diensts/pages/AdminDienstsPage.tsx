@@ -83,6 +83,121 @@ function shouldShowWeeklyUserSummary(
   return false;
 }
 
+/**
+ * After create-week, merge API `dienstSummaries[].skippedAbsences` (typed, same as assign-team)
+ * when present; otherwise derive partial-day signals from persisted assignments only.
+ */
+function deriveGeneratedWeekTeamSummaryData(
+  dienst: Dienst,
+  weekStartISO: string,
+  t: (key: string, defaultValue?: string) => string,
+  skippedAbsencesFromApi?: Array<{
+    date: string;
+    role: "driver" | "medic";
+    reason: "vacation" | "sick";
+  }>,
+): WeeklyAssignmentSummaryData | null {
+  const assignments = dienst.assignments ?? [];
+  if (assignments.length === 0) return null;
+
+  if (skippedAbsencesFromApi && skippedAbsencesFromApi.length > 0) {
+    let driverName = "—";
+    let medicName = "—";
+    for (const a of assignments) {
+      if (driverName === "—" && getUserIdFromAssignmentField(a.driver)) {
+        driverName = formatPersonLabel(a.driver);
+      }
+      if (medicName === "—" && getUserIdFromAssignmentField(a.medic)) {
+        medicName = formatPersonLabel(a.medic);
+      }
+      if (driverName !== "—" && medicName !== "—") break;
+    }
+
+    const syntheticApi = {
+      skippedAbsences: skippedAbsencesFromApi,
+    } as Awaited<ReturnType<typeof assignTeamToWeek>>;
+    if (!shouldShowWeeklyTeamSummary(syntheticApi)) return null;
+
+    return {
+      kind: "team",
+      dienstNumber: dienst.dienstNumber,
+      weekStartDate: weekStartISO,
+      driverName,
+      medicName,
+      message: t(
+        "pages.diensts.adminPage.generatedWeekSummaryMessage",
+        "Diensts creados para la semana; revisa las asignaciones con incidencias.",
+      ),
+      updatedCount: assignments.length,
+      skippedAbsences: skippedAbsencesFromApi,
+    };
+  }
+
+  /** Fully empty week: no team to attribute skips to (avoids false-positive vacation rows). */
+  const hasAnyPersonInWeek = assignments.some(
+    (a) =>
+      getUserIdFromAssignmentField(a.driver) ||
+      getUserIdFromAssignmentField(a.medic),
+  );
+  if (!hasAnyPersonInWeek) return null;
+
+  const skippedByVacation: Array<{ date: string; role: "driver" | "medic" }> =
+    [];
+  const daysAssignedDriverOnly: string[] = [];
+  const daysAssignedMedicOnly: string[] = [];
+
+  for (const a of assignments) {
+    const m = /^(\d{4}-\d{2}-\d{2})/.exec(String(a.date ?? "").trim());
+    const date = m ? m[1]! : toBerlinDayKey(String(a.date));
+    const hasDriver = Boolean(getUserIdFromAssignmentField(a.driver));
+    const hasMedic = Boolean(getUserIdFromAssignmentField(a.medic));
+
+    if (hasDriver && !hasMedic) {
+      daysAssignedDriverOnly.push(date);
+      skippedByVacation.push({ date, role: "medic" });
+    } else if (hasMedic && !hasDriver) {
+      daysAssignedMedicOnly.push(date);
+      skippedByVacation.push({ date, role: "driver" });
+    }
+  }
+
+  const synthetic = {
+    skippedByVacation,
+    daysAssignedDriverOnly,
+    daysAssignedMedicOnly,
+  } as Awaited<ReturnType<typeof assignTeamToWeek>>;
+
+  if (!shouldShowWeeklyTeamSummary(synthetic)) return null;
+
+  let driverName = "—";
+  let medicName = "—";
+  for (const a of assignments) {
+    if (driverName === "—" && getUserIdFromAssignmentField(a.driver)) {
+      driverName = formatPersonLabel(a.driver);
+    }
+    if (medicName === "—" && getUserIdFromAssignmentField(a.medic)) {
+      medicName = formatPersonLabel(a.medic);
+    }
+    if (driverName !== "—" && medicName !== "—") break;
+  }
+
+  return {
+    kind: "team",
+    dienstNumber: dienst.dienstNumber,
+    weekStartDate: weekStartISO,
+    driverName,
+    medicName,
+    message: t(
+      "pages.diensts.adminPage.generatedWeekSummaryMessage",
+      "Diensts creados para la semana; revisa las asignaciones con incidencias.",
+    ),
+    updatedCount: assignments.length,
+    daysAssignedDriverOnly,
+    daysAssignedMedicOnly,
+    skippedByVacation,
+  };
+}
+
 const DND_MIME = "application/x-dienst-admin-dnd+json";
 
 type DienstAdminDndPayload = {
@@ -670,9 +785,10 @@ const AdminPage = () => {
     weekStartISO: string;
   } | null>(null);
 
-  const [weeklyAssignmentSummary, setWeeklyAssignmentSummary] = useState<
-    WeeklyAssignmentSummaryData | null
-  >(null);
+  /** FIFO queue: same modal as manual assign; multiple entries after generate-week. */
+  const [weeklySummaryQueue, setWeeklySummaryQueue] = useState<
+    WeeklyAssignmentSummaryData[]
+  >([]);
 
   // Estado para colapsar/desplegar semanas (key = weekStartISO)
   const [collapsedWeeks, setCollapsedWeeks] = useState<Record<string, boolean>>(
@@ -793,11 +909,47 @@ const AdminPage = () => {
                         if (!confirmCreate || !token) return;
 
                         try {
-                          await generateDienstsForWeek(weekStartISO, token);
+                          const gen = await generateDienstsForWeek(
+                            weekStartISO,
+                            token,
+                          );
                           toastT.success([
                             "pages.diensts.adminPage.alerts.createOk",
                           ]);
-                          fetchDiensts();
+                          const data = await getAllDiensts(token);
+                          const normalized = data
+                            .filter(
+                              (d) =>
+                                typeof d.dienstNumber === "number" &&
+                                d.dienstNumber >= 1,
+                            )
+                            .sort((a, b) => a.dienstNumber - b.dienstNumber);
+                          setDiensts(normalized);
+
+                          const weekDiensts = normalized.filter(
+                            (d) =>
+                              d.weekStartDate &&
+                              toBerlinDayKey(d.weekStartDate) === weekStartISO,
+                          );
+                          const summaries: WeeklyAssignmentSummaryData[] = [];
+                          for (const d of weekDiensts) {
+                            const fromApi = gen.dienstSummaries?.find(
+                              (s) => s.dienstNumber === d.dienstNumber,
+                            );
+                            const s = deriveGeneratedWeekTeamSummaryData(
+                              d,
+                              weekStartISO,
+                              t,
+                              fromApi?.skippedAbsences,
+                            );
+                            if (s) summaries.push(s);
+                          }
+                          summaries.sort(
+                            (a, b) => a.dienstNumber - b.dienstNumber,
+                          );
+                          if (summaries.length > 0) {
+                            setWeeklySummaryQueue(summaries);
+                          }
                         } catch (err) {
                           console.error("Error al crear plantillas:", err);
                           toastT.error([
@@ -1404,25 +1556,27 @@ const AdminPage = () => {
               fetchDiensts();
 
               if (shouldShowWeeklyTeamSummary(resp)) {
-                setWeeklyAssignmentSummary({
-                  kind: "team",
-                  dienstNumber: weekTeamModal.dienstNumber,
-                  weekStartDate: weekTeamModal.weekStartISO,
-                  driverName: displayNames?.driverName ?? "—",
-                  medicName: displayNames?.medicName ?? "—",
-                  message: resp.message,
-                  updatedCount: resp.updatedCount,
-                  daysAssignedFull: resp.daysAssignedFull,
-                  daysAssignedDriverOnly: resp.daysAssignedDriverOnly,
-                  daysAssignedMedicOnly: resp.daysAssignedMedicOnly,
-                  skippedByMinimumRest: resp.skippedByMinimumRest,
-                  skippedByMinimumRestRoles: resp.skippedByMinimumRestRoles,
-                  skippedByWeeklyConflict: resp.skippedByWeeklyConflict,
-                  skippedByVacation: resp.skippedByVacation,
-                  skippedAbsences: resp.skippedAbsences,
-                  minimumRestWarning: resp.minimumRestWarning,
-                  hints: resp.hints,
-                });
+                setWeeklySummaryQueue([
+                  {
+                    kind: "team",
+                    dienstNumber: weekTeamModal.dienstNumber,
+                    weekStartDate: weekTeamModal.weekStartISO,
+                    driverName: displayNames?.driverName ?? "—",
+                    medicName: displayNames?.medicName ?? "—",
+                    message: resp.message,
+                    updatedCount: resp.updatedCount,
+                    daysAssignedFull: resp.daysAssignedFull,
+                    daysAssignedDriverOnly: resp.daysAssignedDriverOnly,
+                    daysAssignedMedicOnly: resp.daysAssignedMedicOnly,
+                    skippedByMinimumRest: resp.skippedByMinimumRest,
+                    skippedByMinimumRestRoles: resp.skippedByMinimumRestRoles,
+                    skippedByWeeklyConflict: resp.skippedByWeeklyConflict,
+                    skippedByVacation: resp.skippedByVacation,
+                    skippedAbsences: resp.skippedAbsences,
+                    minimumRestWarning: resp.minimumRestWarning,
+                    hints: resp.hints,
+                  },
+                ]);
               }
             } catch (err: any) {
               const code = err?.response?.data?.code as string | undefined;
@@ -1519,19 +1673,21 @@ const AdminPage = () => {
               fetchDiensts();
 
               if (shouldShowWeeklyUserSummary(auw)) {
-                setWeeklyAssignmentSummary({
-                  kind: "user",
-                  dienstNumber: weekUserModal.dienstNumber,
-                  weekStartDate: weekUserModal.weekStartISO,
-                  workerName,
-                  role,
-                  message: auw.message,
-                  updatedCount: auw.updatedCount,
-                  skippedByMinimumRest: auw.skippedByMinimumRest,
-                  skippedByVacation: auw.skippedByVacation,
-                  skippedBreakdown: auw.skippedBreakdown,
-                  minimumRestWarning: auw.minimumRestWarning,
-                });
+                setWeeklySummaryQueue([
+                  {
+                    kind: "user",
+                    dienstNumber: weekUserModal.dienstNumber,
+                    weekStartDate: weekUserModal.weekStartISO,
+                    workerName,
+                    role,
+                    message: auw.message,
+                    updatedCount: auw.updatedCount,
+                    skippedByMinimumRest: auw.skippedByMinimumRest,
+                    skippedByVacation: auw.skippedByVacation,
+                    skippedBreakdown: auw.skippedBreakdown,
+                    minimumRestWarning: auw.minimumRestWarning,
+                  },
+                ]);
               }
             } catch (err: any) {
               console.error("❌ Error al asignar usuario a la semana:", err);
@@ -1627,10 +1783,12 @@ const AdminPage = () => {
         />
       )}
 
-      {weeklyAssignmentSummary && (
+      {weeklySummaryQueue.length > 0 && (
         <WeeklyAssignmentSummaryModal
-          data={weeklyAssignmentSummary}
-          onClose={() => setWeeklyAssignmentSummary(null)}
+          data={weeklySummaryQueue[0]}
+          onClose={() =>
+            setWeeklySummaryQueue((q) => (q.length <= 1 ? [] : q.slice(1)))
+          }
         />
       )}
     </div>

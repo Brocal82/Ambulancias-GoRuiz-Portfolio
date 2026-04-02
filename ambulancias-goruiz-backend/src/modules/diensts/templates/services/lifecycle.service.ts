@@ -8,7 +8,7 @@ import {
   type DaySchedule,
 } from "../../../dienst-templates/models";
 import {
-  computeDayBlockMapForTeam,
+  computeTeamDayAbsenceData,
   isDriverEligibleForAssignmentDate,
 } from "../../utils/dienstValidation";
 import {
@@ -152,10 +152,19 @@ export async function deleteDienstsForWeek(
   return { deletedCount: deleted.deletedCount ?? 0 };
 }
 
+export type GenerateWeekDienstSummary = {
+  dienstNumber: number;
+  skippedAbsences: Array<{
+    date: string;
+    role: "driver" | "medic";
+    reason: "vacation" | "sick";
+  }>;
+};
+
 export async function generateDienstTemplatesForWeek(
   weekStartDate: string,
   companyId?: string | null,
-): Promise<{ count: number }> {
+): Promise<{ count: number; dienstSummaries: GenerateWeekDienstSummary[] }> {
   const companyIdStr =
     companyId != null && String(companyId).trim() !== ""
       ? String(companyId).trim()
@@ -349,7 +358,7 @@ export async function generateDienstTemplatesForWeek(
     }
   }
 
-  const dienstsToInsert = await Promise.all(
+  const built = await Promise.all(
     templates.map(async (tpl: any) => {
       const dienstNumber = tpl.dienstNumber;
       const templateStartTime = tpl.startTime;
@@ -393,11 +402,18 @@ export async function generateDienstTemplatesForWeek(
         day.setDate(startDate.getDate() + j);
         return day.toISOString().split("T")[0];
       });
-      const dayBlockMap = await computeDayBlockMapForTeam({
-        driverId: driverIdStr,
-        medicId: medicIdStr,
-        dates: weekDates,
-      });
+      const { blockMap: dayBlockMap, reasonByDate } =
+        await computeTeamDayAbsenceData({
+          driverId: driverIdStr,
+          medicId: medicIdStr,
+          dates: weekDates,
+        });
+
+      const skippedAbsences: Array<{
+        date: string;
+        role: "driver" | "medic";
+        reason: "vacation" | "sick";
+      }> = [];
 
       for (let j = 0; j < 7; j++) {
         const day = new Date(startDate);
@@ -427,7 +443,38 @@ export async function generateDienstTemplatesForWeek(
           endTimeForDay = templateEndTime;
         }
 
-        const dateISO = day.toISOString().split("T")[0];
+        const dateISO = weekDates[j];
+        const rf = reasonByDate[dateISO];
+        if (rf) {
+          if (rf.driver.vacation) {
+            skippedAbsences.push({
+              date: dateISO,
+              role: "driver",
+              reason: "vacation",
+            });
+          }
+          if (rf.driver.sick) {
+            skippedAbsences.push({
+              date: dateISO,
+              role: "driver",
+              reason: "sick",
+            });
+          }
+          if (rf.medic.vacation) {
+            skippedAbsences.push({
+              date: dateISO,
+              role: "medic",
+              reason: "vacation",
+            });
+          }
+          if (rf.medic.sick) {
+            skippedAbsences.push({
+              date: dateISO,
+              role: "medic",
+              reason: "sick",
+            });
+          }
+        }
 
         const baseAssignment: {
           date: string;
@@ -487,11 +534,21 @@ export async function generateDienstTemplatesForWeek(
           : null,
       };
       doc.companyId = companyOid;
-      return doc;
+      return {
+        doc,
+        dienstNumber,
+        skippedAbsences,
+      };
     }),
   );
 
-  await Dienst.insertMany(dienstsToInsert);
+  await Dienst.insertMany(built.map((b) => b.doc));
 
-  return { count: dienstsToInsert.length };
+  return {
+    count: built.length,
+    dienstSummaries: built.map((b) => ({
+      dienstNumber: b.dienstNumber,
+      skippedAbsences: b.skippedAbsences,
+    })),
+  };
 }

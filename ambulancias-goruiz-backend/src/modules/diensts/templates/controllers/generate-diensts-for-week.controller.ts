@@ -26,15 +26,17 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (
       return;
     }
 
-    const { count } = await lifecycleService.generateDienstTemplatesForWeek(
-      weekStartDate,
-      companyResult.companyId,
-    );
+    const { count, dienstSummaries } =
+      await lifecycleService.generateDienstTemplatesForWeek(
+        weekStartDate,
+        companyResult.companyId,
+      );
 
     res.status(201).json({
       message:
         "Diensts generados correctamente a partir de plantillas, con rotación de equipos aplicada (fijos, rotativos, vacaciones y bajas, respetando horarios por día si existen).",
       count,
+      dienstSummaries,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error al generar Diensts";

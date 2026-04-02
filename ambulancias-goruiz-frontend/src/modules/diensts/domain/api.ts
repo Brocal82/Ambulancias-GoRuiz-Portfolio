@@ -143,16 +143,35 @@ export const createDienst = async (
   return response.data;
 };
 
+/** Typed absences per Dienst (same shape as assign-team `skippedAbsences`). */
+export type GenerateWeekDienstSummary = {
+  dienstNumber: number;
+  skippedAbsences: Array<{
+    date: string;
+    role: "driver" | "medic";
+    reason: "vacation" | "sick";
+  }>;
+};
+
 // Generar Diensts para una semana
 export const generateDienstsForWeek = async (
   weekStartDate: string,
   token: string,
-): Promise<void> => {
-  await axios.post(
+): Promise<{
+  message: string;
+  count: number;
+  dienstSummaries: GenerateWeekDienstSummary[];
+}> => {
+  const res = await axios.post<{
+    message: string;
+    count: number;
+    dienstSummaries: GenerateWeekDienstSummary[];
+  }>(
     "/diensts/generate-week",
     { weekStartDate },
     { headers: { Authorization: `Bearer ${token}` } },
   );
+  return res.data;
 };
 
 // Eliminar Diensts de una semana
