@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
     INCOMPLETE_BG_RING,
     INCOMPLETE_BORDER,
@@ -91,6 +91,25 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
         : "bg-slate-50 text-slate-400 opacity-70 grayscale-[40%] cursor-not-allowed";
 
     const suppressClickAfterDragRef = useRef(false);
+    const [draggingSlot, setDraggingSlot] = useState<"driver" | "medic" | null>(
+        null,
+    );
+
+    const getDraggableSourceClass = (
+        slot: "driver" | "medic",
+        layoutCls: string,
+    ) => {
+        const isActive = draggingSlot === slot;
+        const layout =
+            layoutCls.trim().length > 0 ? layoutCls : "inline-block max-w-full";
+        return [
+            layout,
+            "transition-[transform,box-shadow] duration-150 ease-out",
+            isActive
+                ? "scale-[1.05] shadow-lg shadow-slate-900/18 ring-2 ring-sky-500/35 z-20 rounded-sm px-0.5 -mx-0.5 cursor-grabbing"
+                : "cursor-grab active:cursor-grabbing",
+        ].join(" ");
+    };
 
     const scheduleSuppressClickAfterDrag = () => {
         suppressClickAfterDragRef.current = true;
@@ -118,13 +137,18 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
                 <span
                     data-dienst-admin-slot="driver"
                     draggable
-                    className="cursor-grab active:cursor-grabbing block w-full min-h-[1.25em]"
+                    className={getDraggableSourceClass(
+                        "driver",
+                        "block w-full min-h-[1.25em]",
+                    )}
                     onDragStart={(e) => {
                         adminDnd.onDragStartDriver?.(e);
+                        setDraggingSlot("driver");
                     }}
                     onDragEnd={() => {
                         scheduleSuppressClickAfterDrag();
                         adminDnd.onDragEnd?.();
+                        setDraggingSlot(null);
                     }}
                     onDragOver={(e) => {
                         e.preventDefault();
@@ -146,13 +170,15 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
             return (
                 <span
                     draggable
-                    className="cursor-grab active:cursor-grabbing"
+                    className={getDraggableSourceClass("driver", "")}
                     onDragStart={(e) => {
                         adminDnd.onDragStartDriver?.(e);
+                        setDraggingSlot("driver");
                     }}
                     onDragEnd={() => {
                         scheduleSuppressClickAfterDrag();
                         adminDnd.onDragEnd?.();
+                        setDraggingSlot(null);
                     }}
                 >
                     {node}
@@ -196,13 +222,18 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
                 <span
                     data-dienst-admin-slot="medic"
                     draggable
-                    className="cursor-grab active:cursor-grabbing block w-full min-h-[1.25em]"
+                    className={getDraggableSourceClass(
+                        "medic",
+                        "block w-full min-h-[1.25em]",
+                    )}
                     onDragStart={(e) => {
                         adminDnd.onDragStartMedic?.(e);
+                        setDraggingSlot("medic");
                     }}
                     onDragEnd={() => {
                         scheduleSuppressClickAfterDrag();
                         adminDnd.onDragEnd?.();
+                        setDraggingSlot(null);
                     }}
                     onDragOver={(e) => {
                         e.preventDefault();
@@ -224,13 +255,15 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
             return (
                 <span
                     draggable
-                    className="cursor-grab active:cursor-grabbing"
+                    className={getDraggableSourceClass("medic", "")}
                     onDragStart={(e) => {
                         adminDnd.onDragStartMedic?.(e);
+                        setDraggingSlot("medic");
                     }}
                     onDragEnd={() => {
                         scheduleSuppressClickAfterDrag();
                         adminDnd.onDragEnd?.();
+                        setDraggingSlot(null);
                     }}
                 >
                     {node}
@@ -302,10 +335,26 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
                         </>
                     )}
                     {lines?.driverLine && (
-                        <p className={`${lineCls} mt-2`}>{wrapDriverLine(lines.driverLine)}</p>
+                        <p
+                            className={`${lineCls} mt-2${
+                                draggingSlot === "driver"
+                                    ? " overflow-visible relative z-30"
+                                    : ""
+                            }`}
+                        >
+                            {wrapDriverLine(lines.driverLine)}
+                        </p>
                     )}
                     {lines?.medicLine && (
-                        <p className={lineCls}>{wrapMedicLine(lines.medicLine)}</p>
+                        <p
+                            className={`${lineCls}${
+                                draggingSlot === "medic"
+                                    ? " overflow-visible relative z-30"
+                                    : ""
+                            }`}
+                        >
+                            {wrapMedicLine(lines.medicLine)}
+                        </p>
                     )}
                 </div>
             )}
