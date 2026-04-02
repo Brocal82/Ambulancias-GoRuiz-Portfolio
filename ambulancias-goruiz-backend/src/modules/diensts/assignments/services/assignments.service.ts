@@ -1155,9 +1155,14 @@ export async function assignTeamToWeek(
   message: string;
   updatedCount: number;
   skippedByVacation: Array<{ date: string; role: "driver" | "medic" }>;
+  /** Fechas (yyyy-MM-dd) con conflicto de otra guardia en la misma semana (miembro ya asignado en otro Dienst). */
+  skippedByWeeklyConflict: string[];
+  /** Fechas (yyyy-MM-dd) omitidas por descanso mínimo &lt; 10 h (día completo sin asignar). */
+  skippedByMinimumRest: string[];
   dienstId: string;
   weekStartDate: string;
   hints: { driverExpiredButBoth: boolean };
+  minimumRestWarning?: MinimumRestWarningPayload;
 }> {
   const { dienstNumber, weekStartDate, teamId, resolvedRoles } = params;
   const callerCo =
@@ -1367,14 +1372,16 @@ export async function assignTeamToWeek(
     findWeeklyConflicts(new mongoose.Types.ObjectId(medicId), start, dienstNumber),
   ]);
 
-  if ((driverConf?.length ?? 0) > 0 || (medicConf?.length ?? 0) > 0) {
-    throw new DienstAssignmentError(
-      409,
-      "weekly_conflict",
-      "Alguno de los miembros ya está asignado a otro Dienst esta semana.",
-      { driverConf, medicConf },
-    );
-  }
+  const driverConflictDates = new Set(
+    driverConf
+      .map((c) => normalizeDayKey(String(c.date)))
+      .filter((x): x is string => x !== ""),
+  );
+  const medicConflictDates = new Set(
+    medicConf
+      .map((c) => normalizeDayKey(String(c.date)))
+      .filter((x): x is string => x !== ""),
+  );
 
   const dayBlockMap = await computeDayBlockMapForTeam({
     driverId,
@@ -1382,17 +1389,36 @@ export async function assignTeamToWeek(
     dates,
   });
 
-  let updatedCount = 0;
-  const skippedByVacation: Array<{ date: string; role: "driver" | "medic" }> = [];
+  let working = (dienst.assignments || []).map((a) => {
+    const src = ((a as any)?.toObject?.() ?? a) as any;
+    const copy = { ...src };
+    const rawDate = src?.date;
+    if (rawDate != null) {
+      const dk = normalizeDayKey(String(rawDate));
+      if (dk) copy.date = dk;
+    }
+    return copy;
+  });
 
-  dienst.assignments = (dienst.assignments || []).map((a) => {
-    if (!a?.date || !a?.startTime || !a?.endTime) return a;
+  const skippedByVacation: Array<{ date: string; role: "driver" | "medic" }> = [];
+  const skippedByWeeklyConflictSet = new Set<string>();
+
+  const eligible: Array<{ idx: number; dateKey: string }> = [];
+
+  for (let idx = 0; idx < dienst.assignments.length; idx++) {
+    const a = dienst.assignments[idx] as any;
+    if (!a?.date || !a?.startTime || !a?.endTime) continue;
 
     const dateISO = a.date;
-    const block = dayBlockMap[dateISO] || { driver: false, medic: false };
+    const dk = normalizeDayKey(String(dateISO));
+    if (!dk) continue;
 
-    let next = { ...a } as any;
-    let changed = false;
+    const block = dayBlockMap[dateISO] || { driver: false, medic: false };
+    if (block.driver || block.medic) {
+      if (block.driver) skippedByVacation.push({ date: dateISO, role: "driver" });
+      if (block.medic) skippedByVacation.push({ date: dateISO, role: "medic" });
+      continue;
+    }
 
     const driverPscheinOk = isDriverEligibleForAssignmentDate({
       ambulanceRole: driverDoc?.ambulanceRole as
@@ -1404,55 +1430,134 @@ export async function assignTeamToWeek(
       pscheinConfirmedAt: driverDoc?.pscheinConfirmedAt,
       assignmentDateISO: dateISO,
     });
-    const cannotAssignDriver = block.driver || !driverPscheinOk;
+    if (!driverPscheinOk) continue;
 
-    if (!cannotAssignDriver) {
-      const newId = new mongoose.Types.ObjectId(driverId);
-      if (!next.driver || String(next.driver) !== String(newId)) {
-        next.driver = newId;
-        changed = true;
-      }
-    } else {
-      skippedByVacation.push({ date: dateISO, role: "driver" });
-      if (next.driver != null && next.driver !== "") {
-        delete next.driver;
-        changed = true;
-      }
+    if (driverConflictDates.has(dk) || medicConflictDates.has(dk)) {
+      skippedByWeeklyConflictSet.add(dk);
+      continue;
     }
 
-    if (!block.medic) {
-      const newId = new mongoose.Types.ObjectId(medicId);
-      if (!next.medic || String(next.medic) !== String(newId)) {
-        next.medic = newId;
-        changed = true;
-      }
-    } else {
-      skippedByVacation.push({ date: dateISO, role: "medic" });
-      if (next.medic != null && next.medic !== "") {
-        delete next.medic;
-        changed = true;
-      }
+    const oppMed = (a as any).medic?.toString?.();
+    const oppDrv = (a as any).driver?.toString?.();
+    if (oppMed && oppMed === driverId) continue;
+    if (oppDrv && oppDrv === medicId) continue;
+
+    eligible.push({ idx, dateKey: dk });
+  }
+
+  eligible.sort((x, y) => x.dateKey.localeCompare(y.dateKey));
+
+  if (eligible.length === 0) {
+    throw new DienstAssignmentError(
+      409,
+      "no_assignable_days",
+      "No se pudo asignar el equipo ningún día (vacaciones, conflictos u otros filtros).",
+      {
+        skippedByVacation,
+        skippedByWeeklyConflict: [...skippedByWeeklyConflictSet].sort(),
+      },
+    );
+  }
+
+  const driverOid = new mongoose.Types.ObjectId(driverId);
+  const medicOid = new mongoose.Types.ObjectId(medicId);
+  let assignedCount = 0;
+  const skippedByMinimumRest: string[] = [];
+  let minimumRestWarning: MinimumRestWarningPayload | undefined;
+
+  for (const { idx, dateKey } of eligible) {
+    const row = working[idx] as any;
+    const nextRow = {
+      ...row,
+      date: dateKey,
+      driver: driverOid,
+      medic: medicOid,
+    } as any;
+    if (teamAmbulanceId && !nextRow.ambulanceId) {
+      nextRow.ambulanceId = teamAmbulanceId;
     }
 
-    if (teamAmbulanceId && !next.ambulanceId) {
-      next.ambulanceId = teamAmbulanceId;
-      changed = true;
+    const mergedAssignments = working.map((x, j) =>
+      j === idx ? nextRow : x,
+    );
+
+    try {
+      const rr = await runMinimumRestChecksForMergedDienstStates(
+        callerCo,
+        [
+          {
+            id: String(dienst._id),
+            mergedAssignments: mergedAssignments as unknown[],
+          },
+        ],
+        [{ dienstId: String(dienst._id), date: dateKey }],
+      );
+      working = mergedAssignments;
+      assignedCount += 1;
+      if (rr.minimumRestWarning) minimumRestWarning = rr.minimumRestWarning;
+    } catch (e: unknown) {
+      const errCode =
+        e instanceof DienstAssignmentError
+          ? e.code
+          : typeof e === "object" &&
+              e !== null &&
+              "code" in e &&
+              typeof (e as { code?: unknown }).code === "string"
+            ? (e as { code: string }).code
+            : "";
+      if (errCode === "insufficient_rest") {
+        skippedByMinimumRest.push(dateKey);
+        continue;
+      }
+      throw e;
     }
+  }
 
-    if (changed) updatedCount += 1;
-    return next;
-  });
+  if (assignedCount === 0) {
+    throw new DienstAssignmentError(
+      409,
+      "no_assignable_days_minimum_rest",
+      "No se pudo asignar el equipo ningún día por descanso mínimo entre turnos.",
+      {
+        skippedByVacation,
+        skippedByWeeklyConflict: [...skippedByWeeklyConflictSet].sort(),
+        skippedByMinimumRest,
+      },
+    );
+  }
 
+  dienst.assignments = working as any;
   (dienst as any).weekTeamId = new mongoose.Types.ObjectId(teamId);
   await dienst.save();
 
+  const skippedByWeeklyConflict = [...skippedByWeeklyConflictSet].sort();
+  const parts: string[] = [];
+  if (skippedByMinimumRest.length > 0) {
+    parts.push(`descanso mínimo: ${skippedByMinimumRest.join(", ")}`);
+  }
+  if (skippedByWeeklyConflict.length > 0) {
+    parts.push(`conflicto otra guardia: ${skippedByWeeklyConflict.join(", ")}`);
+  }
+  if (skippedByVacation.length > 0) {
+    parts.push(
+      `vacaciones/baja: ${skippedByVacation.map((e) => `${e.date} (${e.role})`).join(", ")}`,
+    );
+  }
+  let message = `Team asignado a ${assignedCount} día(s) del Dienst #${dienstNumber} (${weekStartDate}).`;
+  if (parts.length > 0) {
+    message = `${message} Omitidos — ${parts.join("; ")}.`;
+  }
+
   return {
-    message: `Team asignado a ${updatedCount} días del Dienst #${dienstNumber} (${weekStartDate}).`,
-    updatedCount,
+    message,
+    updatedCount: assignedCount,
     skippedByVacation,
+    skippedByWeeklyConflict,
+    skippedByMinimumRest,
     dienstId: dienst.id,
     weekStartDate,
     hints: { driverExpiredButBoth: !!driverExpiredButBothHint },
+    ...(minimumRestWarning ? { minimumRestWarning } : {}),
   };
 }
 

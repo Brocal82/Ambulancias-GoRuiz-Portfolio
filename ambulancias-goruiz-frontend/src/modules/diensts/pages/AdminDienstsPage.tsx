@@ -1360,10 +1360,22 @@ const AdminPage = () => {
                 token,
               );
 
+              if (resp.minimumRestWarning) {
+                toastT.warn(resp.minimumRestWarning.message);
+              }
+
               toastT.success(["pages.diensts.adminPage.assignWeekOk"]);
 
               if (resp?.hints?.driverExpiredButBoth) {
                 toastT.info(["pages.diensts.adminPage.considerSwap"]);
+              }
+
+              if (
+                (resp.skippedByMinimumRest?.length ?? 0) > 0 ||
+                (resp.skippedByWeeklyConflict?.length ?? 0) > 0 ||
+                (resp.skippedByVacation?.length ?? 0) > 0
+              ) {
+                toastT.warn(resp.message);
               }
 
               setWeekTeamModal(null);
@@ -1375,6 +1387,14 @@ const AdminPage = () => {
 
               if (code === "pschein_expired") {
                 toastT.error(["pages.diensts.adminPage.errors.pscheinExpired"]);
+              } else if (code === "no_assignable_days") {
+                toastT.error([
+                  "pages.diensts.adminPage.assignUserNoAssignableDays",
+                ]);
+              } else if (code === "no_assignable_days_minimum_rest") {
+                toastT.apiError(err, [
+                  "pages.diensts.adminPage.assignWeekErr",
+                ]);
               } else if (code === "weekly_conflict") {
                 let driverDates = "";
                 let medicDates = "";
