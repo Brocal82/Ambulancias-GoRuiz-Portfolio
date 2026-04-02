@@ -119,23 +119,6 @@ function rangeLabel(run: string[]): string {
   return `${fmtDDMM(run[0])} al ${fmtDDMM(run[run.length - 1])}`;
 }
 
-function countDaysWithSkips(data: WeeklyAssignmentSummaryData): number {
-  const dates = new Set<string>();
-  if (data.kind === "team") {
-    asDateArray(data.skippedByMinimumRest).forEach((d) => dates.add(d));
-    (data.skippedByMinimumRestRoles ?? []).forEach((r) => dates.add(r.date));
-    asDateArray(data.skippedByWeeklyConflict).forEach((d) => dates.add(d));
-    (data.skippedAbsences ?? []).forEach((a) => dates.add(a.date));
-    if (!(data.skippedAbsences?.length ?? 0)) {
-      (data.skippedByVacation ?? []).forEach((v) => dates.add(v.date));
-    }
-  } else {
-    asDateArray(data.skippedByMinimumRest).forEach((d) => dates.add(d));
-    asDateArray(data.skippedByVacation).forEach((d) => dates.add(d));
-  }
-  return dates.size;
-}
-
 function pushGroupedRows(params: {
   rows: AssignmentIssueRow[];
   dates: string[];
@@ -164,15 +147,6 @@ function buildUnifiedIssues(
   const rows: AssignmentIssueRow[] = [];
 
   if (data.kind === "team") {
-    const roleLabel = (role: "driver" | "medic") =>
-      role === "driver"
-        ? t("pages.diensts.adminPage.weeklySummary.roleDriver", {
-            defaultValue: "Conductor",
-          })
-        : t("pages.diensts.adminPage.weeklySummary.roleMedic", {
-            defaultValue: "Sanitario",
-          });
-
     const abs = data.skippedAbsences;
     if (abs && abs.length > 0) {
       const buckets = new Map<
@@ -202,19 +176,17 @@ function buildUnifiedIssues(
             b.reason === "vacation"
               ? t(
                   "pages.diensts.adminPage.weeklySummaryCompact.issueTeamVacationRange",
-                  "{{name}} ({{role}}) · {{range}} — vacaciones",
+                  "{{name}} · {{range}} — vacaciones",
                   {
                     name,
-                    role: roleLabel(b.role),
                     range: rangeLabel(run),
                   },
                 )
               : t(
                   "pages.diensts.adminPage.weeklySummaryCompact.issueTeamSickRange",
-                  "{{name}} ({{role}}) · {{range}} — baja",
+                  "{{name}} · {{range}} — baja",
                   {
                     name,
-                    role: roleLabel(b.role),
                     range: rangeLabel(run),
                   },
                 ),
@@ -241,10 +213,9 @@ function buildUnifiedIssues(
           labelForRun: (run) =>
             t(
               "pages.diensts.adminPage.weeklySummaryCompact.issueTeamAbsenceRange",
-              "{{name}} ({{role}}) · {{range}} — vacaciones o baja",
+              "{{name}} · {{range}} — vacaciones o baja",
               {
                 name,
-                role: roleLabel(role),
                 range: rangeLabel(run),
               },
             ),
@@ -317,15 +288,6 @@ function buildUnifiedIssues(
     });
   } else {
     const worker = data.workerName?.trim() || "—";
-    const roleLabel =
-      data.role === "driver"
-        ? t("pages.diensts.adminPage.weeklySummary.roleDriver", {
-            defaultValue: "Conductor",
-          })
-        : t("pages.diensts.adminPage.weeklySummary.roleMedic", {
-            defaultValue: "Sanitario",
-          });
-
     const mode = userAbsenceIconMode(data.skippedBreakdown);
     const vacIcon =
       mode === "vacation"
@@ -345,21 +307,21 @@ function buildUnifiedIssues(
         if (mode === "vacation") {
           return t(
             "pages.diensts.adminPage.weeklySummaryCompact.issueUserVacationRange",
-            "{{name}} ({{role}}) · {{range}} — vacaciones",
-            { name: worker, role: roleLabel, range },
+            "{{name}} · {{range}} — vacaciones",
+            { name: worker, range },
           );
         }
         if (mode === "sick") {
           return t(
             "pages.diensts.adminPage.weeklySummaryCompact.issueUserSickRange",
-            "{{name}} ({{role}}) · {{range}} — baja médica",
-            { name: worker, role: roleLabel, range },
+            "{{name}} · {{range}} — baja médica",
+            { name: worker, range },
           );
         }
         return t(
           "pages.diensts.adminPage.weeklySummaryCompact.issueUserAbsenceUndiffRange",
-          "{{name}} ({{role}}) · {{range}} — vacaciones o baja",
-          { name: worker, role: roleLabel, range },
+          "{{name}} · {{range}} — vacaciones o baja",
+          { name: worker, range },
         );
       },
     });
@@ -404,17 +366,6 @@ export default function WeeklyAssignmentSummaryModal({ data, onClose }: Props) {
   const weekEndISO = addDaysISO(data.weekStartDate, 6);
   const weekRangeLabel = `${formatYYYYMMDDToDDMMYYYY(data.weekStartDate)} al ${formatYYYYMMDDToDDMMYYYY(weekEndISO)}`;
   const issues = buildUnifiedIssues(data, t);
-  const skipDayCount = countDaysWithSkips(data);
-
-  const summaryLine = t(
-    "pages.diensts.adminPage.weeklySummaryCompact.statsLine",
-    {
-      defaultValue:
-        "{{assigned}} día(s) asignado(s), {{skipped}} día(s) con incidencias",
-      assigned: data.updatedCount,
-      skipped: skipDayCount,
-    },
-  );
 
   const hasIssues = issues.length > 0;
 
@@ -427,53 +378,53 @@ export default function WeeklyAssignmentSummaryModal({ data, onClose }: Props) {
         aria-modal="true"
         aria-labelledby="weekly-assignment-summary-title"
       >
-        <div className="border-b border-slate-100 px-4 py-3">
-          <h3
-            id="weekly-assignment-summary-title"
-            className="text-base font-semibold tracking-tight text-slate-900"
-          >
-            {t(
-              "pages.diensts.adminPage.weeklySummary.incidentsTitle",
-              "Incidencias Dienst #{{num}}",
-              { num: data.dienstNumber },
-            )}
-          </h3>
-          <p className="mt-1 text-xs text-slate-600">{weekRangeLabel}</p>
+        <div className="rounded-t-xl border-b border-slate-200/80 bg-slate-50/90 px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <h3
+              id="weekly-assignment-summary-title"
+              className="text-base font-semibold tracking-tight text-slate-900"
+            >
+              {t(
+                "pages.diensts.adminPage.weeklySummaryCompact.headerDienstLabel",
+                "Dienst #{{num}}",
+                { num: data.dienstNumber },
+              )}
+            </h3>
+            <p className="shrink-0 text-right text-xs text-slate-600">{weekRangeLabel}</p>
+          </div>
           {data.kind === "team" ? (
-            <p className="mt-2.5 text-sm text-slate-800">
+            <p className="mt-3 text-sm text-slate-800">
+              <span className="text-slate-500">
+                {t(
+                  "pages.diensts.adminPage.weeklySummaryCompact.teamLabel",
+                  "Team:",
+                )}{" "}
+              </span>
               <span className="font-medium">{data.driverName}</span>
               <span className="text-slate-400"> · </span>
               <span className="font-medium">{data.medicName}</span>
             </p>
           ) : (
-            <p className="mt-2.5 text-sm text-slate-800">
-              <span className="font-medium">{data.workerName ?? "—"}</span>
+            <p className="mt-3 text-sm text-slate-800">
               <span className="text-slate-500">
-                {" "}
-                (
-                {data.role === "driver"
-                  ? t(
-                      "pages.diensts.adminPage.weeklySummary.roleDriver",
-                      "Conductor",
-                    )
-                  : t(
-                      "pages.diensts.adminPage.weeklySummary.roleMedic",
-                      "Sanitario",
-                    )}
-                )
+                {t(
+                  "pages.diensts.adminPage.weeklySummaryCompact.userLabel",
+                  "Usuario:",
+                )}{" "}
               </span>
+              <span className="font-medium">{data.workerName ?? "—"}</span>
             </p>
           )}
-          <p className="mt-2 text-xs text-slate-500">{summaryLine}</p>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
           {hasIssues && (
             <>
-              <p className="mb-2 text-xs font-medium leading-snug text-red-600">
+              <p className="mb-2 text-sm font-medium text-red-600">
                 {t(
-                  "pages.diensts.adminPage.weeklySummary.issuesIntro",
-                  "Se detectaron las siguientes incidencias:",
+                  "pages.diensts.adminPage.weeklySummaryCompact.incidentCount",
+                  "{{count}} incidencias",
+                  { count: issues.length },
                 )}
               </p>
               <ul className="space-y-1.5">
