@@ -575,7 +575,7 @@ async function executeAdminDndDrop(params: {
 
   try {
     if (crossDienst) {
-      await dndMoveCrossDienstSameWeek(
+      const dndRes = await dndMoveCrossDienstSameWeek(
         {
           sourceDienstId: String(payload.dienstId),
           sourceDate: assignmentDayKey(payload.sourceDate),
@@ -587,6 +587,9 @@ async function executeAdminDndDrop(params: {
         },
         token,
       );
+      if (dndRes.minimumRestWarning) {
+        toastT.warn(dndRes.minimumRestWarning.message);
+      }
     } else {
       const saved = await updateDienstPartial(
         targetDienst._id,
