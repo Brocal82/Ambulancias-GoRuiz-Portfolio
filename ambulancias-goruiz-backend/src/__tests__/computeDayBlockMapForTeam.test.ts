@@ -1,5 +1,6 @@
 import {
   computeDayBlockMapForTeam,
+  computeTeamDayAbsenceData,
   type DayBlockMap,
 } from "../modules/diensts/utils/dienstValidation";
 
@@ -25,6 +26,18 @@ describe("computeDayBlockMapForTeam", () => {
       "2024-01-09": { driver: false, medic: false },
     };
     expect(result).toEqual(expected);
+  });
+
+  it("computeTeamDayAbsenceData exposes reason flags aligned with blockMap", async () => {
+    const dates = ["2024-01-08"];
+    const { blockMap, reasonByDate } = await computeTeamDayAbsenceData({
+      driverId: undefined,
+      medicId: undefined,
+      dates,
+    });
+    expect(blockMap["2024-01-08"].driver).toBe(false);
+    expect(reasonByDate["2024-01-08"].driver.vacation).toBe(false);
+    expect(reasonByDate["2024-01-08"].driver.sick).toBe(false);
   });
 
   it("does not mutate the input dates array", async () => {

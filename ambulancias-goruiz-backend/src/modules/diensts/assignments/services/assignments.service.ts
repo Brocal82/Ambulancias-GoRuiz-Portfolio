@@ -13,7 +13,7 @@ import {
   isDriverEligibleForAssignmentDate,
   isOnVacationDay,
   isOnSickDay,
-  computeDayBlockMapForTeam,
+  computeTeamDayAbsenceData,
 } from "../../utils/dienstValidation";
 import { extractValidDatesFromAssignments, mapAssignmentToAssignedDay } from "../../utils/dienstMappers";
 import { entitiesBelongToSameCompany } from "../../../../utils/requireCompany";
@@ -1159,6 +1159,17 @@ export async function assignTeamToWeek(
   skippedByWeeklyConflict: string[];
   /** Fechas (yyyy-MM-dd) donde no se pudo colocar ningún rol del team por descanso mínimo (habiendo rol elegible). */
   skippedByMinimumRest: string[];
+  /**
+   * Descanso mínimo por rol cuando otro rol sí quedó asignado (p. ej. solo conductor y el sanitario no pasa el check).
+   * No sustituye a {@link skippedByMinimumRest} para días totalmente sin asignación.
+   */
+  skippedByMinimumRestRoles: Array<{ date: string; role: "driver" | "medic" }>;
+  /** Ausencias con motivo real (vacaciones vs baja) por fecha y rol. */
+  skippedAbsences: Array<{
+    date: string;
+    role: "driver" | "medic";
+    reason: "vacation" | "sick";
+  }>;
   /** Fechas (yyyy-MM-dd) con conductor y sanitario del team asignados. */
   daysAssignedFull: string[];
   /** Fechas (yyyy-MM-dd) solo con conductor del team. */
@@ -1389,7 +1400,7 @@ export async function assignTeamToWeek(
       .filter((x): x is string => x !== ""),
   );
 
-  const dayBlockMap = await computeDayBlockMapForTeam({
+  const { blockMap: dayBlockMap, reasonByDate } = await computeTeamDayAbsenceData({
     driverId,
     medicId,
     dates,
@@ -1407,6 +1418,11 @@ export async function assignTeamToWeek(
   });
 
   const skippedByVacation: Array<{ date: string; role: "driver" | "medic" }> = [];
+  const skippedAbsences: Array<{
+    date: string;
+    role: "driver" | "medic";
+    reason: "vacation" | "sick";
+  }> = [];
   const skippedByWeeklyConflictSet = new Set<string>();
 
   const processableDays: Array<{ idx: number; dateKey: string; dateISO: string }> = [];
@@ -1428,6 +1444,24 @@ export async function assignTeamToWeek(
   for (const { idx, dateKey, dateISO } of processableDays) {
     const a = dienst.assignments[idx] as any;
     const block = dayBlockMap[dateISO] || { driver: false, medic: false };
+    const rf =
+      reasonByDate[dateISO] ??
+      reasonByDate[normalizeDayKey(String(dateISO))] ??
+      undefined;
+    if (rf) {
+      if (rf.driver.vacation) {
+        skippedAbsences.push({ date: dateISO, role: "driver", reason: "vacation" });
+      }
+      if (rf.driver.sick) {
+        skippedAbsences.push({ date: dateISO, role: "driver", reason: "sick" });
+      }
+      if (rf.medic.vacation) {
+        skippedAbsences.push({ date: dateISO, role: "medic", reason: "vacation" });
+      }
+      if (rf.medic.sick) {
+        skippedAbsences.push({ date: dateISO, role: "medic", reason: "sick" });
+      }
+    }
     if (block.driver) skippedByVacation.push({ date: dateISO, role: "driver" });
     if (block.medic) skippedByVacation.push({ date: dateISO, role: "medic" });
 
@@ -1469,6 +1503,7 @@ export async function assignTeamToWeek(
       "No se pudo asignar el equipo ningún día (vacaciones, conflictos u otros filtros).",
       {
         skippedByVacation,
+        skippedAbsences,
         skippedByWeeklyConflict: [...skippedByWeeklyConflictSet].sort(),
       },
     );
@@ -1481,6 +1516,8 @@ export async function assignTeamToWeek(
 
   let assignedCount = 0;
   const skippedByMinimumRest: string[] = [];
+  const skippedByMinimumRestRoles: Array<{ date: string; role: "driver" | "medic" }> =
+    [];
   const daysAssignedFull: string[] = [];
   const daysAssignedDriverOnly: string[] = [];
   const daysAssignedMedicOnly: string[] = [];
@@ -1598,6 +1635,7 @@ export async function assignTeamToWeek(
         applied = true;
       } catch (e: unknown) {
         if (resolveRestErr(e) !== "insufficient_rest") throw e;
+        skippedByMinimumRestRoles.push({ date: dateKey, role: "driver" });
       }
     }
 
@@ -1617,6 +1655,7 @@ export async function assignTeamToWeek(
         applied = true;
       } catch (e: unknown) {
         if (resolveRestErr(e) !== "insufficient_rest") throw e;
+        skippedByMinimumRestRoles.push({ date: dateKey, role: "medic" });
       }
     }
 
@@ -1645,8 +1684,10 @@ export async function assignTeamToWeek(
       "No se pudo asignar el equipo ningún día por descanso mínimo entre turnos.",
       {
         skippedByVacation,
+        skippedAbsences,
         skippedByWeeklyConflict: [...skippedByWeeklyConflictSet].sort(),
         skippedByMinimumRest,
+        skippedByMinimumRestRoles,
       },
     );
   }
@@ -1695,8 +1736,10 @@ export async function assignTeamToWeek(
     message,
     updatedCount: assignedCount,
     skippedByVacation,
+    skippedAbsences,
     skippedByWeeklyConflict,
     skippedByMinimumRest,
+    skippedByMinimumRestRoles,
     daysAssignedFull,
     daysAssignedDriverOnly,
     daysAssignedMedicOnly,

@@ -15,7 +15,7 @@ import { getPscheinWarningTitle } from "../utils/pscheinWarningTitle";
 import { getVacationFlagsInRange, type VacFlag } from "../../vacation/domain/api";
 import { getSickFlagsInRange, type SickFlag } from "../../sick/domain";
 
-import { mergeClasses } from "../utils";
+import { formatPersonLabel, mergeClasses } from "../utils";
 
 import { fmtDDMM } from "../../../utils/timeUtils";
 import {
@@ -29,6 +29,7 @@ interface Props {
   onConfirm: (params: {
     role: "driver" | "medic";
     userId: string;
+    workerName?: string;
   }) => Promise<void> | void;
   weekStartISO: string;
 
@@ -502,7 +503,12 @@ export default function UserAssignModal({
             disabled={!canAssign}
             onClick={async () => {
               if (!canAssign) return;
-              await onConfirm({ role, userId });
+              const selected = filteredByRole.find((u) => u._id === userId);
+              await onConfirm({
+                role,
+                userId,
+                workerName: selected ? formatPersonLabel(selected) : undefined,
+              });
             }}
           >
             {t("pages.diensts.assignUserModal.confirm", "Asignar")}

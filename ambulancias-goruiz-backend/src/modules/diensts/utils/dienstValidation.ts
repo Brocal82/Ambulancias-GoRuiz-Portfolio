@@ -15,22 +15,39 @@ const ZONE = "Europe/Berlin";
 
 export type DayBlockMap = Record<string, { driver: boolean; medic: boolean }>;
 
+/** Flags reales por rol (para resúmenes sin adivinar vacaciones vs baja). */
+export type TeamDayAbsenceReasons = {
+  driver: { vacation: boolean; sick: boolean };
+  medic: { vacation: boolean; sick: boolean };
+};
+
+export type TeamDayAbsenceData = {
+  blockMap: DayBlockMap;
+  /** Misma clave de fecha que en blockMap (entrada del array `dates`). */
+  reasonByDate: Record<string, TeamDayAbsenceReasons>;
+};
+
 /**
- * Calcula por cada fecha si driver y medic están bloqueados (vacaciones o baja).
+ * Vacaciones y baja por día y rol, más el mapa booleano usado por la lógica de asignación.
  */
-export async function computeDayBlockMapForTeam(params: {
+export async function computeTeamDayAbsenceData(params: {
   driverId: string | undefined;
   medicId: string | undefined;
   dates: string[];
-}): Promise<DayBlockMap> {
+}): Promise<TeamDayAbsenceData> {
   const { driverId, medicId, dates } = params;
-  const result: DayBlockMap = {};
+  const blockMap: DayBlockMap = {};
+  const reasonByDate: Record<string, TeamDayAbsenceReasons> = {};
 
-  if (dates.length === 0) return result;
+  if (dates.length === 0) return { blockMap, reasonByDate };
 
   for (const dateISO of dates) {
     if (!driverId && !medicId) {
-      result[dateISO] = { driver: false, medic: false };
+      blockMap[dateISO] = { driver: false, medic: false };
+      reasonByDate[dateISO] = {
+        driver: { vacation: false, sick: false },
+        medic: { vacation: false, sick: false },
+      };
       continue;
     }
 
@@ -49,13 +66,29 @@ export async function computeDayBlockMapForTeam(params: {
         : Promise.resolve(false),
     ]);
 
-    result[dateISO] = {
+    reasonByDate[dateISO] = {
+      driver: { vacation: Boolean(drvVac), sick: Boolean(drvSick) },
+      medic: { vacation: Boolean(medVac), sick: Boolean(medSick) },
+    };
+    blockMap[dateISO] = {
       driver: Boolean(drvVac || drvSick),
       medic: Boolean(medVac || medSick),
     };
   }
 
-  return result;
+  return { blockMap, reasonByDate };
+}
+
+/**
+ * Calcula por cada fecha si driver y medic están bloqueados (vacaciones o baja).
+ */
+export async function computeDayBlockMapForTeam(params: {
+  driverId: string | undefined;
+  medicId: string | undefined;
+  dates: string[];
+}): Promise<DayBlockMap> {
+  const { blockMap } = await computeTeamDayAbsenceData(params);
+  return blockMap;
 }
 
 /**

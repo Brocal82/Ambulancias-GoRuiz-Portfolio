@@ -185,8 +185,15 @@ export const assignTeamToWeek = async (
   dienstId: string;
   weekStartDate: string;
   skippedByVacation?: Array<{ date: string; role: "driver" | "medic" }>;
+  skippedAbsences?: Array<{
+    date: string;
+    role: "driver" | "medic";
+    reason: "vacation" | "sick";
+  }>;
   skippedByWeeklyConflict?: string[];
   skippedByMinimumRest?: string[];
+  /** Descanso mínimo por rol cuando el otro rol sí quedó asignado (solo team). */
+  skippedByMinimumRestRoles?: Array<{ date: string; role: "driver" | "medic" }>;
   daysAssignedFull?: string[];
   daysAssignedDriverOnly?: string[];
   daysAssignedMedicOnly?: string[];
@@ -217,6 +224,9 @@ export const assignUserToWeek = async (
   role: "driver" | "medic";
   userId: string;
   skippedByMinimumRest: string[];
+  /** Fechas omitidas por vacaciones/baja (según backend). */
+  skippedByVacation: string[];
+  skippedBreakdown: { sick: number; vacation: number; both: number };
   minimumRestWarning?: MinimumRestWarning;
 }> => {
   const res = await axios.post("/diensts/assign-user-to-week", payload, {

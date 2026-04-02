@@ -1588,6 +1588,11 @@ describe("assignments.service mutations group (company contract)", () => {
       );
       expect(out.updatedCount).toBeGreaterThanOrEqual(1);
       expect(out.daysAssignedDriverOnly).toContain("2035-01-08");
+      expect(
+        (out.skippedByMinimumRestRoles ?? []).some(
+          (r) => r.date === "2035-01-08" && r.role === "medic",
+        ),
+      ).toBe(true);
 
       await Dienst.deleteMany({ dienstNumber: 94512 });
       await Team.deleteOne({ _id: team._id });

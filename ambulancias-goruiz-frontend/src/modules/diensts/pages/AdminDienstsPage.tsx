@@ -20,6 +20,9 @@ import AssignmentModal from "../components/assignmentModal/AssignmentModal";
 import TeamAssignModal from "../components/TeamAssignModal";
 import UserAssignModal from "../components/UserAssignModal";
 import AmbulanceAssignModal from "../components/AmbulanceAssignModal";
+import WeeklyAssignmentSummaryModal, {
+  type WeeklyAssignmentSummaryData,
+} from "../components/WeeklyAssignmentSummaryModal";
 import {
   formatPersonLabel,
   getWeekStartsBerlin,
@@ -49,6 +52,35 @@ import {
   toFlexibleFromDienstAssignment,
 } from "../assignments";
 
+function shouldShowWeeklyTeamSummary(
+  resp: Awaited<ReturnType<typeof assignTeamToWeek>>,
+): boolean {
+  if (resp.minimumRestWarning) return true;
+  if (resp.hints?.driverExpiredButBoth) return true;
+  if ((resp.skippedByMinimumRest?.length ?? 0) > 0) return true;
+  if ((resp.skippedByMinimumRestRoles?.length ?? 0) > 0) return true;
+  if ((resp.skippedByWeeklyConflict?.length ?? 0) > 0) return true;
+  if ((resp.skippedByVacation?.length ?? 0) > 0) return true;
+  if ((resp.daysAssignedDriverOnly?.length ?? 0) > 0) return true;
+  if ((resp.daysAssignedMedicOnly?.length ?? 0) > 0) return true;
+  return false;
+}
+
+function shouldShowWeeklyUserSummary(
+  auw: Awaited<ReturnType<typeof assignUserToWeek>>,
+): boolean {
+  if (auw.minimumRestWarning) return true;
+  if ((auw.skippedByMinimumRest?.length ?? 0) > 0) return true;
+  if ((auw.skippedByVacation?.length ?? 0) > 0) return true;
+  if (
+    auw.skippedBreakdown &&
+    (auw.skippedBreakdown.sick > 0 ||
+      auw.skippedBreakdown.vacation > 0 ||
+      auw.skippedBreakdown.both > 0)
+  )
+    return true;
+  return false;
+}
 
 const DND_MIME = "application/x-dienst-admin-dnd+json";
 
@@ -636,6 +668,10 @@ const AdminPage = () => {
     dienstNumber: number;
     weekStartISO: string;
   } | null>(null);
+
+  const [weeklyAssignmentSummary, setWeeklyAssignmentSummary] = useState<
+    WeeklyAssignmentSummaryData | null
+  >(null);
 
   // Estado para colapsar/desplegar semanas (key = weekStartISO)
   const [collapsedWeeks, setCollapsedWeeks] = useState<Record<string, boolean>>(
@@ -1347,7 +1383,7 @@ const AdminPage = () => {
         <TeamAssignModal
           isOpen={true}
           onClose={() => setWeekTeamModal(null)}
-          onConfirm={async (teamId: string, resolvedRoles) => {
+          onConfirm={async (teamId: string, resolvedRoles, displayNames) => {
             if (!token || !weekTeamModal) return;
             try {
               const resp = await assignTeamToWeek(
@@ -1360,29 +1396,33 @@ const AdminPage = () => {
                 token,
               );
 
-              if (resp.minimumRestWarning) {
-                toastT.warn(resp.minimumRestWarning.message);
-              }
-
               toastT.success(["pages.diensts.adminPage.assignWeekOk"]);
-
-              if (resp?.hints?.driverExpiredButBoth) {
-                toastT.info(["pages.diensts.adminPage.considerSwap"]);
-              }
-
-              if (
-                (resp.skippedByMinimumRest?.length ?? 0) > 0 ||
-                (resp.skippedByWeeklyConflict?.length ?? 0) > 0 ||
-                (resp.skippedByVacation?.length ?? 0) > 0 ||
-                (resp.daysAssignedDriverOnly?.length ?? 0) > 0 ||
-                (resp.daysAssignedMedicOnly?.length ?? 0) > 0
-              ) {
-                toastT.warn(resp.message);
-              }
 
               setWeekTeamModal(null);
               emitDienstsChanged();
               fetchDiensts();
+
+              if (shouldShowWeeklyTeamSummary(resp)) {
+                setWeeklyAssignmentSummary({
+                  kind: "team",
+                  dienstNumber: weekTeamModal.dienstNumber,
+                  weekStartDate: weekTeamModal.weekStartISO,
+                  driverName: displayNames?.driverName ?? "—",
+                  medicName: displayNames?.medicName ?? "—",
+                  message: resp.message,
+                  updatedCount: resp.updatedCount,
+                  daysAssignedFull: resp.daysAssignedFull,
+                  daysAssignedDriverOnly: resp.daysAssignedDriverOnly,
+                  daysAssignedMedicOnly: resp.daysAssignedMedicOnly,
+                  skippedByMinimumRest: resp.skippedByMinimumRest,
+                  skippedByMinimumRestRoles: resp.skippedByMinimumRestRoles,
+                  skippedByWeeklyConflict: resp.skippedByWeeklyConflict,
+                  skippedByVacation: resp.skippedByVacation,
+                  skippedAbsences: resp.skippedAbsences,
+                  minimumRestWarning: resp.minimumRestWarning,
+                  hints: resp.hints,
+                });
+              }
             } catch (err: any) {
               const code = err?.response?.data?.code as string | undefined;
               const details = err?.response?.data?.details;
@@ -1457,7 +1497,7 @@ const AdminPage = () => {
         <UserAssignModal
           isOpen={true}
           onClose={() => setWeekUserModal(null)}
-          onConfirm={async ({ role, userId }) => {
+          onConfirm={async ({ role, userId, workerName }) => {
             if (!token || !weekUserModal) return;
 
             try {
@@ -1470,17 +1510,28 @@ const AdminPage = () => {
                 },
                 token,
               );
-              if (auw.minimumRestWarning) {
-                toastT.warn(auw.minimumRestWarning.message);
-              }
 
               toastT.success(["pages.diensts.adminPage.assignUserWeekOk"]);
-              if (auw.skippedByMinimumRest?.length) {
-                toastT.warn(auw.message);
-              }
+
               setWeekUserModal(null);
               emitDienstsChanged();
               fetchDiensts();
+
+              if (shouldShowWeeklyUserSummary(auw)) {
+                setWeeklyAssignmentSummary({
+                  kind: "user",
+                  dienstNumber: weekUserModal.dienstNumber,
+                  weekStartDate: weekUserModal.weekStartISO,
+                  workerName,
+                  role,
+                  message: auw.message,
+                  updatedCount: auw.updatedCount,
+                  skippedByMinimumRest: auw.skippedByMinimumRest,
+                  skippedByVacation: auw.skippedByVacation,
+                  skippedBreakdown: auw.skippedBreakdown,
+                  minimumRestWarning: auw.minimumRestWarning,
+                });
+              }
             } catch (err: any) {
               console.error("❌ Error al asignar usuario a la semana:", err);
 
@@ -1572,6 +1623,13 @@ const AdminPage = () => {
               ]);
             }
           }}
+        />
+      )}
+
+      {weeklyAssignmentSummary && (
+        <WeeklyAssignmentSummaryModal
+          data={weeklyAssignmentSummary}
+          onClose={() => setWeeklyAssignmentSummary(null)}
         />
       )}
     </div>

@@ -16,7 +16,7 @@ import { getSickFlagsInRange, type SickFlag } from "../../sick/domain";
 
 import { fmtDDMM } from "../../../utils/timeUtils";
 
-import { mergeClasses } from "../utils";
+import { formatPersonLabel, mergeClasses } from "../utils";
 
 import { UsersApi } from "../../users";
 import {
@@ -36,6 +36,7 @@ interface Props {
   onConfirm: (
     teamId: string,
     resolvedRoles?: { driverId: string; medicId: string },
+    displayNames?: { driverName: string; medicName: string },
   ) => Promise<void> | void;
   weekStartISO: string;
 
@@ -738,7 +739,24 @@ export default function TeamAssignModal({
             disabled={!canConfirm}
             onClick={async () => {
               if (!selectedId) return;
-              await onConfirm(selectedId, resolvedRoles ?? undefined);
+              const rr = resolvedRoles ?? compat.resolve;
+              let driverName = "—";
+              let medicName = "—";
+              if (selectedTeam && rr) {
+                const drv: any = selectedTeam.driver;
+                const med: any = selectedTeam.medic;
+                const nameForId = (id: string) => {
+                  if (String(drv?._id || drv) === id) return formatPersonLabel(drv);
+                  if (String(med?._id || med) === id) return formatPersonLabel(med);
+                  return "—";
+                };
+                driverName = nameForId(rr.driverId);
+                medicName = nameForId(rr.medicId);
+              }
+              await onConfirm(selectedId, rr ?? undefined, {
+                driverName,
+                medicName,
+              });
             }}
           >
             {t("pages.diensts.assignTeamModal.confirm")}
