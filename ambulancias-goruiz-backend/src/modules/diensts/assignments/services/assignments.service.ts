@@ -847,6 +847,7 @@ export async function assignUserToWeek(
   weekStartDate: string;
   role: string;
   userId: string;
+  minimumRestWarning?: MinimumRestWarningPayload;
 }> {
   const { dienstNumber, weekStartDate, userId, role } = params;
   const callerCo =
@@ -997,6 +998,31 @@ export async function assignUserToWeek(
     );
   }
 
+  const uidNorm = String(userId).trim();
+  const rowsToCheck = dienst.assignments
+    .filter((a: any) => {
+      if (!a?.date || !a?.startTime || !a?.endTime) return false;
+      const id =
+        role === "driver" ? oidStr(a.driver) : oidStr(a.medic);
+      return id === uidNorm;
+    })
+    .map((a: any) => ({
+      dienstId: String(dienst._id),
+      date: normalizeDayKey(a.date),
+    }))
+    .filter((r) => r.date !== "");
+
+  const restResult = await runMinimumRestChecksForMergedDienstStates(
+    callerCo,
+    [
+      {
+        id: String(dienst._id),
+        mergedAssignments: dienst.assignments as unknown[],
+      },
+    ],
+    rowsToCheck,
+  );
+
   await dienst.save();
 
   return {
@@ -1008,6 +1034,9 @@ export async function assignUserToWeek(
     weekStartDate,
     role,
     userId,
+    ...(restResult.minimumRestWarning
+      ? { minimumRestWarning: restResult.minimumRestWarning }
+      : {}),
   };
 }
 

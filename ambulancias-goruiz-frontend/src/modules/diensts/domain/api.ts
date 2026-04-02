@@ -211,6 +211,7 @@ export const assignUserToWeek = async (
   weekStartDate: string;
   role: "driver" | "medic";
   userId: string;
+  minimumRestWarning?: MinimumRestWarning;
 }> => {
   const res = await axios.post("/diensts/assign-user-to-week", payload, {
     headers: { Authorization: `Bearer ${token}` },
