@@ -61,6 +61,7 @@ function shouldShowWeeklyTeamSummary(
   if ((resp.skippedByMinimumRestRoles?.length ?? 0) > 0) return true;
   if ((resp.skippedByWeeklyConflict?.length ?? 0) > 0) return true;
   if ((resp.skippedByVacation?.length ?? 0) > 0) return true;
+  if ((resp.skippedAbsences?.length ?? 0) > 0) return true;
   if ((resp.daysAssignedDriverOnly?.length ?? 0) > 0) return true;
   if ((resp.daysAssignedMedicOnly?.length ?? 0) > 0) return true;
   return false;
