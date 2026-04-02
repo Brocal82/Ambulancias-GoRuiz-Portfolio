@@ -30,7 +30,10 @@ export const getAllDiensts: RequestHandler = async (req, res) => {
 export const getDienstById = async (req: Request, res: Response) => {
   try {
     const parsedId = idSchema.parse(req.params.id);
-    const dienst = await calendarService.getDienstById(parsedId);
+    const dienst = await calendarService.getDienstById(
+      parsedId,
+      req.companyId ?? null,
+    );
     if (!dienst) {
       res.status(404).json({ message: "Dienst no encontrado" });
       return;

@@ -37,8 +37,19 @@ export async function getAllDienstsWithBasicPopulate(companyId?: string | null) 
   );
 }
 
-export async function getDienstById(id: string) {
-  return Dienst.findById(id).populate(
+/**
+ * Carga un Dienst por id acotado a la empresa. No devuelve filas con `companyId` null
+ * ni de otro tenant.
+ */
+export async function getDienstById(id: string, companyId?: string | null) {
+  const raw = typeof companyId === "string" ? companyId.trim() : "";
+  if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+    return null;
+  }
+  return Dienst.findOne({
+    _id: new mongoose.Types.ObjectId(id),
+    companyId: new mongoose.Types.ObjectId(raw),
+  }).populate(
     "assignments.driver assignments.medic assignments.ambulanceId",
   );
 }
