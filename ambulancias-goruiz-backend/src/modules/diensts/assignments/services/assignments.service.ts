@@ -96,6 +96,15 @@ function findNeighborRestShifts(
 }
 
 /**
+ * Lunes 00:00 de la semana ISO en Europe/Berlin (Luxon weekday 1 = lunes).
+ * Evita startOf("week"), que depende del locale del sistema.
+ */
+function isoWeekMondayStartBerlin(dt: DateTime): DateTime {
+  const d = dt.setZone(ZONE).startOf("day");
+  return d.minus({ days: d.weekday - 1 }).startOf("day");
+}
+
+/**
  * Carga Dienst de la empresa en ventana de semanas alrededor de las fechas dadas (límites de semana).
  */
 async function fetchDienstDocsForRestWindow(
@@ -107,8 +116,8 @@ async function fetchDienstDocsForRestWindow(
   const max = DateTime.fromISO(maxDateISO, { zone: ZONE }).startOf("day");
   if (!min.isValid || !max.isValid) return [];
 
-  const mondayMin = min.startOf("week");
-  const mondayMax = max.startOf("week");
+  const mondayMin = isoWeekMondayStartBerlin(min);
+  const mondayMax = isoWeekMondayStartBerlin(max);
   const rangeStart = mondayMin.minus({ days: 7 }).startOf("day");
   const rangeEnd = mondayMax.plus({ days: 7 }).endOf("day");
 

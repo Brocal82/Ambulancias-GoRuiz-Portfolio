@@ -257,6 +257,48 @@ describe("assignments.service mutations group (company contract)", () => {
       await Dienst.deleteOne({ _id: d._id });
     });
 
+    it("permite sin aviso si el descanso es >= 11 h (mismo escenario que soft)", async () => {
+      const co = new mongoose.Types.ObjectId().toString();
+      const uid = new mongoose.Types.ObjectId().toString();
+      const d = await Dienst.create({
+        dienstNumber: 93125,
+        weekStartDate: new Date("2035-01-07"),
+        weekEndDate: new Date("2035-01-13"),
+        assignments: [
+          {
+            date: "2035-01-07",
+            startTime: "22:00",
+            endTime: "06:00",
+            driver: new mongoose.Types.ObjectId(uid),
+          },
+          {
+            date: "2035-01-08",
+            startTime: "12:00",
+            endTime: "20:00",
+            driver: new mongoose.Types.ObjectId(uid),
+          },
+        ],
+        companyId: new mongoose.Types.ObjectId(co),
+      });
+
+      const out = await updateDienstPartial(
+        String(d._id),
+        [
+          {
+            date: "2035-01-08",
+            startTime: "17:00",
+            endTime: "20:00",
+          },
+        ],
+        co,
+      );
+      expect(out).not.toBeNull();
+      expect(out!.minimumRestWarning).toBeUndefined();
+      const doc = out!.dienst as unknown as { assignments: { startTime: string }[] };
+      expect(doc.assignments.some((a) => a.startTime === "17:00")).toBe(true);
+      await Dienst.deleteOne({ _id: d._id });
+    });
+
     it("rechaza descanso < 10 h entre turnos del mismo trabajador (insufficient_rest)", async () => {
       const co = new mongoose.Types.ObjectId().toString();
       const uid = new mongoose.Types.ObjectId().toString();
