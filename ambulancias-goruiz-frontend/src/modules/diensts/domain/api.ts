@@ -36,16 +36,31 @@ export const getAllDiensts = async (token: string): Promise<Dienst[]> => {
 };
 
 
+/** Aviso opcional PATCH /diensts/:id (descanso 10–<11 h entre turnos). */
+export type MinimumRestWarning = {
+  code: "minimum_rest_soft";
+  message: string;
+};
+
 // Actualizar un Dienst parcialmente
 export const updateDienstPartial = async (
   dienstId: string,
   updateData: { assignments: UpdateAssignment[] },
   token: string,
-): Promise<Dienst> => {
-  const response = await axios.patch<Dienst>(`/diensts/${dienstId}`, updateData, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
+): Promise<Dienst & { minimumRestWarning?: MinimumRestWarning }> => {
+  const response = await axios.patch<Dienst & { minimumRestWarning?: MinimumRestWarning }>(
+    `/diensts/${dienstId}`,
+    updateData,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  const data = response.data;
+  const normalized = normalizeDienst(data);
+  if (data.minimumRestWarning) {
+    return { ...normalized, minimumRestWarning: data.minimumRestWarning };
+  }
+  return normalized;
 };
 
 /** Mueve un slot entre dos Dienst de la misma semana (atómico en servidor). */

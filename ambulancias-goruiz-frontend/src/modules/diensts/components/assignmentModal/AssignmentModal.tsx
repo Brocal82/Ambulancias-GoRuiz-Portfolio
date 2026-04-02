@@ -198,7 +198,14 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 assignment,
             });
 
-            await updateDienstPartial(dienstId, { assignments: [updatedAssignment] }, token);
+            const saved = await updateDienstPartial(
+              dienstId,
+              { assignments: [updatedAssignment] },
+              token,
+            );
+            if (saved.minimumRestWarning) {
+              toastT.warn(saved.minimumRestWarning.message);
+            }
             emitDienstsChanged();
             toastT.success(["toasts.assignments.saveSuccess"]);
             onClose();

@@ -13,16 +13,25 @@ export const updateDienstPartial: RequestHandler = async (req, res) => {
       res.status(companyResult.statusCode).json({ message: companyResult.message });
       return;
     }
-    const dienst = await assignmentsService.updateDienstPartial(
+    const result = await assignmentsService.updateDienstPartial(
       id,
       assignments,
       companyResult.companyId,
     );
-    if (!dienst) {
+    if (!result?.dienst) {
       res.status(404).json({ message: "Dienst no encontrado." });
       return;
     }
-    res.json(dienst);
+    const plain =
+      typeof (result.dienst as { toJSON?: () => unknown }).toJSON === "function"
+        ? (result.dienst as { toJSON: () => Record<string, unknown> }).toJSON()
+        : (result.dienst as unknown as Record<string, unknown>);
+    res.json({
+      ...plain,
+      ...(result.minimumRestWarning
+        ? { minimumRestWarning: result.minimumRestWarning }
+        : {}),
+    });
   } catch (error) {
     if (error instanceof DienstAssignmentError) {
       const body: Record<string, unknown> = {

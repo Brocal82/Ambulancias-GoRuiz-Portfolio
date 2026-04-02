@@ -180,11 +180,8 @@ describe("assignments.service mutations group (company contract)", () => {
         co,
       );
       expect(out).not.toBeNull();
-      expect(
-        (out as { assignments: { startTime: string }[] }).assignments.some(
-          (a) => a.startTime === "09:00",
-        ),
-      ).toBe(true);
+      const doc = out!.dienst as unknown as { assignments: { startTime: string }[] };
+      expect(doc.assignments.some((a) => a.startTime === "09:00")).toBe(true);
       await Dienst.deleteOne({ _id: d._id });
     });
 
@@ -215,6 +212,48 @@ describe("assignments.service mutations group (company contract)", () => {
           coB,
         ),
       ).resolves.toBeNull();
+      await Dienst.deleteOne({ _id: d._id });
+    });
+
+    it("permite guardado con aviso si el descanso está entre 10 y 11 h (minimum_rest_soft)", async () => {
+      const co = new mongoose.Types.ObjectId().toString();
+      const uid = new mongoose.Types.ObjectId().toString();
+      const d = await Dienst.create({
+        dienstNumber: 93124,
+        weekStartDate: new Date("2035-01-07"),
+        weekEndDate: new Date("2035-01-13"),
+        assignments: [
+          {
+            date: "2035-01-07",
+            startTime: "22:00",
+            endTime: "06:00",
+            driver: new mongoose.Types.ObjectId(uid),
+          },
+          {
+            date: "2035-01-08",
+            startTime: "12:00",
+            endTime: "20:00",
+            driver: new mongoose.Types.ObjectId(uid),
+          },
+        ],
+        companyId: new mongoose.Types.ObjectId(co),
+      });
+
+      const out = await updateDienstPartial(
+        String(d._id),
+        [
+          {
+            date: "2035-01-08",
+            startTime: "16:00",
+            endTime: "20:00",
+          },
+        ],
+        co,
+      );
+      expect(out).not.toBeNull();
+      expect(out!.minimumRestWarning?.code).toBe("minimum_rest_soft");
+      const doc = out!.dienst as unknown as { assignments: { startTime: string }[] };
+      expect(doc.assignments.some((a) => a.startTime === "16:00")).toBe(true);
       await Dienst.deleteOne({ _id: d._id });
     });
 

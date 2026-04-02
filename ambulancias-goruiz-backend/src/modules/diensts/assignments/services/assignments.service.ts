@@ -25,6 +25,8 @@ const BERLIN = "Europe/Berlin";
 
 /** Descanso mínimo duro (batch 1): menos de esto => bloqueo en updateDienstPartial. */
 const MIN_REST_MINUTES_HARD = 600;
+/** Límite superior del aviso (batch 2): desde 10h hasta < 11h => éxito con aviso. */
+const MIN_REST_MINUTES_SOFT_MAX = 660;
 
 type RestShiftInterval = {
   dienstId: string;
@@ -118,16 +120,21 @@ async function fetchDienstDocsForRestWindow(
     .lean();
 }
 
+export type MinimumRestWarningPayload = {
+  code: "minimum_rest_soft";
+  message: string;
+};
+
 /**
- * Bloqueo duro si el descanso entre turnos consecutivos del mismo trabajador es < 10 h.
- * Solo para updateDienstPartial: estado ya fusionado en memoria en `mergedDienst`.
+ * Mínimo descanso entre turnos (updateDienstPartial): <10h bloqueo; 10h–<11h aviso; ≥11h ok.
+ * Estado ya fusionado en memoria en `mergedDienst`.
  */
-async function assertMinimumRestForPartialUpdate(
+async function runMinimumRestChecksForPartialUpdate(
   currentDienstId: string,
   incomingRows: any[],
   mergedDienst: { assignments?: unknown[]; toObject?: () => unknown },
   companyId: string,
-): Promise<void> {
+): Promise<{ minimumRestWarning?: MinimumRestWarningPayload }> {
   const datesNeedingCheck: string[] = [];
   for (const inc of incomingRows) {
     const dk = normalizeDayKey(inc?.date);
@@ -139,7 +146,9 @@ async function assertMinimumRestForPartialUpdate(
       datesNeedingCheck.push(dk);
     }
   }
-  if (datesNeedingCheck.length === 0) return;
+  if (datesNeedingCheck.length === 0) return {};
+
+  let minimumRestWarning: MinimumRestWarningPayload | undefined;
 
   const sorted = [...new Set(datesNeedingCheck)].sort();
   const minD = sorted[0]!;
@@ -195,22 +204,48 @@ async function assertMinimumRestForPartialUpdate(
         date: dateKey,
         userId: uid,
       });
-      if (prev && diffMinutes(prev.end, proposed.start) < MIN_REST_MINUTES_HARD) {
+      const gapPrev = prev ? diffMinutes(prev.end, proposed.start) : null;
+      const gapNext = next ? diffMinutes(proposed.end, next.start) : null;
+
+      if (gapPrev !== null && gapPrev < MIN_REST_MINUTES_HARD) {
         throw new DienstAssignmentError(
           409,
           "insufficient_rest",
           "Descanso insuficiente entre turnos (menos de 10 horas).",
         );
       }
-      if (next && diffMinutes(proposed.end, next.start) < MIN_REST_MINUTES_HARD) {
+      if (gapNext !== null && gapNext < MIN_REST_MINUTES_HARD) {
         throw new DienstAssignmentError(
           409,
           "insufficient_rest",
           "Descanso insuficiente entre turnos (menos de 10 horas).",
         );
+      }
+      if (
+        gapPrev !== null &&
+        gapPrev >= MIN_REST_MINUTES_HARD &&
+        gapPrev < MIN_REST_MINUTES_SOFT_MAX
+      ) {
+        minimumRestWarning = {
+          code: "minimum_rest_soft",
+          message:
+            "Descanso entre turnos entre 10 y 11 horas (revisar si el intervalo es aceptable).",
+        };
+      }
+      if (
+        gapNext !== null &&
+        gapNext >= MIN_REST_MINUTES_HARD &&
+        gapNext < MIN_REST_MINUTES_SOFT_MAX
+      ) {
+        minimumRestWarning = {
+          code: "minimum_rest_soft",
+          message:
+            "Descanso entre turnos entre 10 y 11 horas (revisar si el intervalo es aceptable).",
+        };
       }
     }
   }
+  return { minimumRestWarning };
 }
 
 function normalizeDayKey(date: string): string {
@@ -513,7 +548,13 @@ export async function updateDienstPartial(
   dienstId: string,
   assignments: any[],
   companyId?: string | null,
-) {
+): Promise<
+  | {
+      dienst: mongoose.Document;
+      minimumRestWarning?: MinimumRestWarningPayload;
+    }
+  | null
+> {
   const callerCo =
     companyId != null && String(companyId).trim() !== ""
       ? String(companyId).trim()
@@ -728,7 +769,7 @@ export async function updateDienstPartial(
     }
   }
 
-  await assertMinimumRestForPartialUpdate(
+  const restMeta = await runMinimumRestChecksForPartialUpdate(
     String(dienst._id),
     assignments,
     dienst,
@@ -737,10 +778,19 @@ export async function updateDienstPartial(
 
   await dienst.save();
 
-  return Dienst.findById(dienstId)
+  const populated = await Dienst.findById(dienstId)
     .populate("assignments.driver", "name lastName pscheinExpiry ambulanceRole")
     .populate("assignments.medic", "name lastName pscheinExpiry ambulanceRole")
     .populate("assignments.ambulanceId", "ambulanceNumber brand modelName licensePlate");
+
+  if (!populated) return null;
+
+  return {
+    dienst: populated,
+    ...(restMeta.minimumRestWarning
+      ? { minimumRestWarning: restMeta.minimumRestWarning }
+      : {}),
+  };
 }
 
 export async function assignUserToWeek(

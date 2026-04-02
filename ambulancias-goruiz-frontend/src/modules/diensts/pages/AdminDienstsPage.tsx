@@ -443,11 +443,14 @@ async function executeAdminDndDrop(params: {
             medicId: payload.userId,
           });
     try {
-      await updateDienstPartial(
+      const saved = await updateDienstPartial(
         targetDienst._id,
         { assignments: [mergedRow] },
         token,
       );
+      if (saved.minimumRestWarning) {
+        toastT.warn(saved.minimumRestWarning.message);
+      }
       emitDienstsChanged();
       toastT.success(["toasts.assignments.saveSuccess"]);
       await fetchDiensts();
@@ -477,11 +480,14 @@ async function executeAdminDndDrop(params: {
             medicId: payload.userId,
           });
     try {
-      await updateDienstPartial(
+      const saved = await updateDienstPartial(
         targetDienst._id,
         { assignments: [mergedRow] },
         token,
       );
+      if (saved.minimumRestWarning) {
+        toastT.warn(saved.minimumRestWarning.message);
+      }
       emitDienstsChanged();
       toastT.success(["toasts.assignments.saveSuccess"]);
       await fetchDiensts();
@@ -582,11 +588,14 @@ async function executeAdminDndDrop(params: {
         token,
       );
     } else {
-      await updateDienstPartial(
+      const saved = await updateDienstPartial(
         targetDienst._id,
         { assignments: [sourceRow, targetRow] },
         token,
       );
+      if (saved.minimumRestWarning) {
+        toastT.warn(saved.minimumRestWarning.message);
+      }
     }
     emitDienstsChanged();
     toastT.success(["toasts.assignments.saveSuccess"]);
