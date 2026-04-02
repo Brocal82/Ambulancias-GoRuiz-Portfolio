@@ -332,11 +332,13 @@ export async function findAmbulanceTimeConflicts(params: {
 }
 
 /**
- * Busca asignaciones de ese usuario en cualquier Dienst de la misma semana.
+ * Busca asignaciones de ese usuario en cualquier Dienst de la misma semana
+ * y de la misma empresa (`companyId`). No incluye Dienst con `companyId` null.
  */
 export async function findWeeklyConflicts(
   userId: mongoose.Types.ObjectId,
   weekStart: Date,
+  companyId: string,
   currentDienstNumber?: number,
 ): Promise<
   Array<{
@@ -350,6 +352,7 @@ export async function findWeeklyConflicts(
   weekEnd.setDate(weekStart.getDate() + 6);
 
   const dienste = await Dienst.find({
+    companyId: new mongoose.Types.ObjectId(companyId),
     weekStartDate: { $gte: weekStart, $lte: weekEnd },
   })
     .select(

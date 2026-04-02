@@ -584,8 +584,9 @@ async function validateSchedulingForNewSlotOccupant(params: {
   dateRaw: string;
   weekStartDate: Date;
   dienstNumber: number;
+  companyId: string;
 }): Promise<void> {
-  const { userId, dateRaw, weekStartDate, dienstNumber } = params;
+  const { userId, dateRaw, weekStartDate, dienstNumber, companyId } = params;
   const tgtKey = normalizeDayKey(dateRaw);
   if (!tgtKey) {
     throw new DienstAssignmentError(400, "invalid_date", "Fecha inválida.");
@@ -596,6 +597,7 @@ async function validateSchedulingForNewSlotOccupant(params: {
   const weeklyConf = await findWeeklyConflicts(
     userOid,
     weekStartDate,
+    companyId,
     dienstNumber,
   );
   if (weeklyConf.some((c) => normalizeDayKey(c.date) === tgtKey)) {
@@ -693,6 +695,7 @@ export async function updateDienstPartial(
           dateRaw: updatedCopy.date,
           weekStartDate: weekStartForScheduling(),
           dienstNumber: (dienst as any).dienstNumber,
+          companyId: dienstCompanyId,
         });
       }
     }
@@ -705,6 +708,7 @@ export async function updateDienstPartial(
           dateRaw: updatedCopy.date,
           weekStartDate: weekStartForScheduling(),
           dienstNumber: (dienst as any).dienstNumber,
+          companyId: dienstCompanyId,
         });
       }
     }
@@ -932,6 +936,7 @@ export async function assignUserToWeek(
   const weeklyConf = await findWeeklyConflicts(
     new mongoose.Types.ObjectId(userId),
     start,
+    callerCo,
     dienstNumber,
   );
   const conflictDates = new Set(weeklyConf.map((c) => c.date));
@@ -1385,8 +1390,8 @@ export async function assignTeamToWeek(
   }
 
   const [driverConf, medicConf] = await Promise.all([
-    findWeeklyConflicts(new mongoose.Types.ObjectId(driverId), start, dienstNumber),
-    findWeeklyConflicts(new mongoose.Types.ObjectId(medicId), start, dienstNumber),
+    findWeeklyConflicts(new mongoose.Types.ObjectId(driverId), start, callerCo, dienstNumber),
+    findWeeklyConflicts(new mongoose.Types.ObjectId(medicId), start, callerCo, dienstNumber),
   ]);
 
   const driverConflictDates = new Set(
@@ -1890,6 +1895,7 @@ export async function moveSlotSameWeek(
       const weeklyConf = await findWeeklyConflicts(
         userOid,
         weekStartDate,
+        callerCo,
         (targetDienst as any).dienstNumber,
       );
       const filteredConf = weeklyConf.filter(
@@ -2230,6 +2236,7 @@ export async function dndCrossDienstSameWeek(
       const weeklyConf = await findWeeklyConflicts(
         userOid,
         weekStartDate,
+        callerCo,
         (targetDienst as any).dienstNumber,
       );
       const filteredConf = weeklyConf.filter(

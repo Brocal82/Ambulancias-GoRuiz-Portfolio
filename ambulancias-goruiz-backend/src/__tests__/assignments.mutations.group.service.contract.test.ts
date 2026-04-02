@@ -17,6 +17,7 @@ import {
   assignTeamToWeek,
 } from "../modules/diensts/assignments/services/assignments.service";
 import { DienstAssignmentError } from "../modules/diensts/assignments/services/assignment-errors";
+import { findWeeklyConflicts } from "../modules/diensts/utils/dienstValidation";
 
 async function hashPw() {
   return bcrypt.hash("password123", 8);
@@ -1657,6 +1658,86 @@ describe("assignments.service mutations group (company contract)", () => {
       await Dienst.deleteMany({ dienstNumber: 94514 });
       await Team.deleteOne({ _id: team._id });
       await User.deleteMany({ _id: { $in: [uTeamDriver._id, uTeamMedic._id] } });
+    });
+  });
+
+  describe("findWeeklyConflicts (tenant scope)", () => {
+    it("no incluye Dienst de otra empresa en la misma semana", async () => {
+      const coA = new mongoose.Types.ObjectId().toString();
+      const coB = new mongoose.Types.ObjectId().toString();
+      const uB = await User.create({
+        name: "A",
+        lastName: "B",
+        email: `fwc-isol-${Date.now()}@test.local`,
+        password: await hashPw(),
+        role: "worker",
+        ambulanceRole: "driver",
+        companyId: new mongoose.Types.ObjectId(coB),
+        pscheinExpiry: "2040-12-31",
+        pscheinConfirmedAt: new Date("2030-01-01"),
+      });
+      const weekStart = new Date("2035-07-01");
+      await Dienst.create({
+        dienstNumber: 932001,
+        weekStartDate: weekStart,
+        weekEndDate: new Date("2035-07-07"),
+        companyId: new mongoose.Types.ObjectId(coB),
+        assignments: [
+          {
+            date: "2035-07-02",
+            startTime: "08:00",
+            endTime: "16:00",
+            driver: uB._id,
+          },
+        ],
+      });
+      const out = await findWeeklyConflicts(
+        new mongoose.Types.ObjectId(String(uB._id)),
+        weekStart,
+        coA,
+      );
+      expect(out).toEqual([]);
+      await Dienst.deleteMany({ dienstNumber: 932001 });
+      await User.deleteOne({ _id: uB._id });
+    });
+
+    it("excluye Dienst con companyId null", async () => {
+      const coOid = new mongoose.Types.ObjectId();
+      const coA = coOid.toString();
+      const u = await User.create({
+        name: "L",
+        lastName: "G",
+        email: `fwc-null-${Date.now()}@test.local`,
+        password: await hashPw(),
+        role: "worker",
+        ambulanceRole: "driver",
+        companyId: coOid,
+        pscheinExpiry: "2040-12-31",
+        pscheinConfirmedAt: new Date("2030-01-01"),
+      });
+      const weekStart = new Date("2035-08-05");
+      await Dienst.create({
+        dienstNumber: 932002,
+        weekStartDate: weekStart,
+        weekEndDate: new Date("2035-08-11"),
+        companyId: null,
+        assignments: [
+          {
+            date: "2035-08-06",
+            startTime: "08:00",
+            endTime: "16:00",
+            driver: u._id,
+          },
+        ],
+      });
+      const out = await findWeeklyConflicts(
+        new mongoose.Types.ObjectId(String(u._id)),
+        weekStart,
+        coA,
+      );
+      expect(out).toEqual([]);
+      await Dienst.deleteMany({ dienstNumber: 932002 });
+      await User.deleteOne({ _id: u._id });
     });
   });
 });
