@@ -1439,7 +1439,7 @@ const AdminPage = () => {
             if (!token || !weekUserModal) return;
 
             try {
-              await assignUserToWeek(
+              const auw = await assignUserToWeek(
                 {
                   dienstNumber: weekUserModal.dienstNumber,
                   weekStartDate: weekUserModal.weekStartISO,
@@ -1448,6 +1448,9 @@ const AdminPage = () => {
                 },
                 token,
               );
+              if (auw.minimumRestWarning) {
+                toastT.warn(auw.minimumRestWarning.message);
+              }
 
               toastT.success(["pages.diensts.adminPage.assignUserWeekOk"]);
               setWeekUserModal(null);
@@ -1469,7 +1472,9 @@ const AdminPage = () => {
                   "pages.diensts.adminPage.assignUserNoAssignableDays",
                 ]);
               } else {
-                toastT.error(["pages.diensts.adminPage.assignUserWeekErr"]);
+                toastT.apiError(err, [
+                  "pages.diensts.adminPage.assignUserWeekErr",
+                ]);
               }
             }
           }}
