@@ -1072,7 +1072,7 @@ describe("assignments.service mutations group (company contract)", () => {
       await User.deleteMany({ _id: { $in: [uDriver._id, uMedic._id] } });
     });
 
-    it("asignación semanal rechaza insufficient_rest con <10 h respecto al turno previo", async () => {
+    it("omite días con <10 h y asigna el resto (éxito parcial)", async () => {
       const coOid = new mongoose.Types.ObjectId();
       const co = coOid.toString();
       const uDriver = await User.create({
@@ -1118,10 +1118,83 @@ describe("assignments.service mutations group (company contract)", () => {
         ],
       });
 
+      const out = await assignUserToWeek(
+        {
+          dienstNumber: 94422,
+          weekStartDate: "2035-01-07",
+          userId: String(uDriver._id),
+          role: "driver",
+        },
+        co,
+      );
+      expect(out.updatedCount).toBe(1);
+      expect(out.skippedByMinimumRest).toContain("2035-01-08");
+
+      await Dienst.deleteMany({ dienstNumber: 94422 });
+      await User.deleteMany({ _id: { $in: [uDriver._id, uMedic._id] } });
+    });
+
+    it("no_assignable_days si el único día elegible incumple descanso mínimo", async () => {
+      const coOid = new mongoose.Types.ObjectId();
+      const co = coOid.toString();
+      const uDriver = await User.create({
+        name: "A",
+        lastName: "X1",
+        email: `auw-d-${Date.now()}@test.local`,
+        password: await hashPw(),
+        role: "worker",
+        ambulanceRole: "both",
+        companyId: coOid,
+        pscheinExpiry: "2040-12-31",
+        pscheinConfirmedAt: new Date("2030-01-01"),
+      });
+      const uOther = await User.create({
+        name: "A",
+        lastName: "X2",
+        email: `auw-d2-${Date.now()}@test.local`,
+        password: await hashPw(),
+        role: "worker",
+        ambulanceRole: "driver",
+        companyId: coOid,
+        pscheinExpiry: "2040-12-31",
+        pscheinConfirmedAt: new Date("2030-01-01"),
+      });
+      const uMedic = await User.create({
+        name: "A",
+        lastName: "X3",
+        email: `auw-d3-${Date.now()}@test.local`,
+        password: await hashPw(),
+        role: "worker",
+        ambulanceRole: "medic",
+        companyId: coOid,
+      });
+
+      await Dienst.create({
+        dienstNumber: 94423,
+        weekStartDate: new Date("2035-01-07"),
+        weekEndDate: new Date("2035-01-13"),
+        companyId: coOid,
+        assignments: [
+          {
+            date: "2035-01-07",
+            startTime: "22:00",
+            endTime: "06:00",
+            driver: uOther._id,
+            medic: uDriver._id,
+          },
+          {
+            date: "2035-01-08",
+            startTime: "07:00",
+            endTime: "15:00",
+            medic: uMedic._id,
+          },
+        ],
+      });
+
       await expect(
         assignUserToWeek(
           {
-            dienstNumber: 94422,
+            dienstNumber: 94423,
             weekStartDate: "2035-01-07",
             userId: String(uDriver._id),
             role: "driver",
@@ -1130,11 +1203,13 @@ describe("assignments.service mutations group (company contract)", () => {
         ),
       ).rejects.toMatchObject({
         statusCode: 409,
-        code: "insufficient_rest",
+        code: "no_assignable_days_minimum_rest",
       });
 
-      await Dienst.deleteMany({ dienstNumber: 94422 });
-      await User.deleteMany({ _id: { $in: [uDriver._id, uMedic._id] } });
+      await Dienst.deleteMany({ dienstNumber: 94423 });
+      await User.deleteMany({
+        _id: { $in: [uDriver._id, uOther._id, uMedic._id] },
+      });
     });
   });
 

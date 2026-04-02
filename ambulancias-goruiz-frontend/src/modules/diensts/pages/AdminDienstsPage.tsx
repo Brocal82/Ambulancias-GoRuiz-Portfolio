@@ -1453,6 +1453,9 @@ const AdminPage = () => {
               }
 
               toastT.success(["pages.diensts.adminPage.assignUserWeekOk"]);
+              if (auw.skippedByMinimumRest?.length) {
+                toastT.warn(auw.message);
+              }
               setWeekUserModal(null);
               emitDienstsChanged();
               fetchDiensts();
@@ -1470,6 +1473,12 @@ const AdminPage = () => {
               } else if (err?.response?.data?.code === "no_assignable_days") {
                 toastT.error([
                   "pages.diensts.adminPage.assignUserNoAssignableDays",
+                ]);
+              } else if (
+                err?.response?.data?.code === "no_assignable_days_minimum_rest"
+              ) {
+                toastT.apiError(err, [
+                  "pages.diensts.adminPage.assignUserWeekErr",
                 ]);
               } else {
                 toastT.apiError(err, [

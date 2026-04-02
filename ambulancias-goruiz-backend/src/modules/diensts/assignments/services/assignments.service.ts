@@ -65,6 +65,17 @@ function flattenAssignmentsToRestShifts(
   return out;
 }
 
+/** Comparación estable de ids de usuario (string / ObjectId) para vecinos de descanso. */
+function sameUserIdString(a: string, b: string): boolean {
+  const sa = String(a).trim();
+  const sb = String(b).trim();
+  if (sa === sb) return true;
+  if (!mongoose.Types.ObjectId.isValid(sa) || !mongoose.Types.ObjectId.isValid(sb)) {
+    return sa.toLowerCase() === sb.toLowerCase();
+  }
+  return String(new mongoose.Types.ObjectId(sa)) === String(new mongoose.Types.ObjectId(sb));
+}
+
 /**
  * Vecinos cronológicos para un turno propuesto: último fin estrictamente antes del inicio,
  * primer inicio estrictamente después del fin (Europe/Berlin, soporta cruces de medianoche).
@@ -75,13 +86,13 @@ function findNeighborRestShifts(
   proposed: { start: DateTime; end: DateTime },
   exclude: { dienstId: string; date: string; userId: string },
 ): { prev: RestShiftInterval | null; next: RestShiftInterval | null } {
-  const sameUser = shifts.filter((s) => s.userId === userId);
+  const sameUser = shifts.filter((s) => sameUserIdString(s.userId, userId));
   const without = sameUser.filter(
     (s) =>
       !(
         s.dienstId === exclude.dienstId &&
         s.date === exclude.date &&
-        s.userId === exclude.userId
+        sameUserIdString(s.userId, exclude.userId)
       ),
   );
   const before = without.filter((s) => s.end < proposed.start);
@@ -142,24 +153,20 @@ async function runMinimumRestChecksForMergedDienstStates(
   companyId: string,
   dienstSnapshots: Array<{ id: string; mergedAssignments: unknown[] }>,
   rowsToCheck: Array<{ dienstId: string; date: string }>,
+  options?: {
+    restrictUserId?: string;
+    /** Si se indica con restrictUserId, solo valida ese rol en la fila (assignUserToWeek). */
+    restrictRole?: "driver" | "medic";
+  },
 ): Promise<{ minimumRestWarning?: MinimumRestWarningPayload }> {
-  const datesNeedingCheck: string[] = [];
-  for (const { dienstId, date } of rowsToCheck) {
-    const dk = normalizeDayKey(date);
-    if (!dk) continue;
-    const snap = dienstSnapshots.find((s) => String(s.id) === String(dienstId));
-    const row = (snap?.mergedAssignments ?? []).find(
-      (a: any) => normalizeDayKey(a?.date) === dk,
-    ) as { driver?: unknown; medic?: unknown } | undefined;
-    if (oidStr(row?.driver) || oidStr(row?.medic)) {
-      datesNeedingCheck.push(dk);
-    }
-  }
-  if (datesNeedingCheck.length === 0) return {};
+  const rowDateKeys = rowsToCheck
+    .map((r) => normalizeDayKey(r.date))
+    .filter((r) => r !== "");
+  const sorted = [...new Set(rowDateKeys)].sort();
+  if (sorted.length === 0) return {};
 
   let minimumRestWarning: MinimumRestWarningPayload | undefined;
 
-  const sorted = [...new Set(datesNeedingCheck)].sort();
   const minD = sorted[0]!;
   const maxD = sorted[sorted.length - 1]!;
 
@@ -196,7 +203,14 @@ async function runMinimumRestChecksForMergedDienstStates(
       driver?: unknown;
       medic?: unknown;
     } | undefined;
-    if (!row?.startTime || !row?.endTime) continue;
+    if (!row) {
+      throw new DienstAssignmentError(
+        500,
+        "internal_rest_row_not_found",
+        `Fila no encontrada para descanso mínimo (dienstId=${dienstId}, date=${date}).`,
+      );
+    }
+    if (!row.startTime || !row.endTime) continue;
 
     const dateKey = normalizeDayKey(row.date ?? dk);
     if (!dateKey) continue;
@@ -208,7 +222,31 @@ async function runMinimumRestChecksForMergedDienstStates(
     if (dId) roles.push({ uid: dId });
     if (mId) roles.push({ uid: mId });
 
-    for (const { uid } of roles) {
+    const restrict = options?.restrictUserId?.trim();
+    const onlyRole = options?.restrictRole;
+    let rolesToValidate: Array<{ uid: string }>;
+    if (
+      restrict &&
+      restrict !== "" &&
+      (onlyRole === "driver" || onlyRole === "medic")
+    ) {
+      const slotId = onlyRole === "driver" ? dId : mId;
+      rolesToValidate = slotId ? [{ uid: slotId }] : [];
+      if (rolesToValidate.length === 0) {
+        rolesToValidate = roles;
+      }
+    } else if (restrict && restrict !== "") {
+      rolesToValidate = [];
+      if (dId && sameUserIdString(dId, restrict)) rolesToValidate.push({ uid: dId });
+      if (mId && sameUserIdString(mId, restrict)) rolesToValidate.push({ uid: mId });
+      if (rolesToValidate.length === 0) {
+        rolesToValidate = roles;
+      }
+    } else {
+      rolesToValidate = roles;
+    }
+
+    for (const { uid } of rolesToValidate) {
       const { prev, next } = findNeighborRestShifts(allShifts, uid, proposed, {
         dienstId: String(dienstId),
         date: dateKey,
@@ -843,6 +881,8 @@ export async function assignUserToWeek(
   updatedCount: number;
   skippedByVacation: string[];
   skippedBreakdown: { sick: number; vacation: number; both: number };
+  /** Fechas (yyyy-MM-dd) omitidas por descanso mínimo &lt; 10 h (solo assignUserToWeek). */
+  skippedByMinimumRest: string[];
   dienstId: string;
   weekStartDate: string;
   role: string;
@@ -934,12 +974,14 @@ export async function assignUserToWeek(
     }),
   );
 
-  let updatedCount = 0;
   const skippedByVacation: string[] = [];
   const skippedBreakdown = { sick: 0, vacation: 0, both: 0 };
 
-  dienst.assignments = dienst.assignments.map((a) => {
-    if (!a?.date || !a?.startTime || !a?.endTime) return a;
+  const eligible: Array<{ idx: number; dateKey: string }> = [];
+
+  for (let idx = 0; idx < dienst.assignments.length; idx++) {
+    const a = dienst.assignments[idx] as any;
+    if (!a?.date || !a?.startTime || !a?.endTime) continue;
 
     const isVac = !!vacationMap[a.date];
     const isSick = !!sickMap[a.date];
@@ -949,18 +991,17 @@ export async function assignUserToWeek(
       if (isVac && isSick) skippedBreakdown.both += 1;
       else if (isSick) skippedBreakdown.sick += 1;
       else if (isVac) skippedBreakdown.vacation += 1;
-      return a;
+      continue;
     }
 
     if (conflictDates.has(a.date)) {
-      return a;
+      continue;
     }
 
-    // Prevent same user from occupying both roles on the same day
     const oppositeRole = role === "driver" ? "medic" : "driver";
     const oppositeId = (a as any)[oppositeRole]?.toString?.();
     if (oppositeId && oppositeId === userId) {
-      return a;
+      continue;
     }
 
     if (
@@ -972,17 +1013,16 @@ export async function assignUserToWeek(
         assignmentDateISO: a.date,
       })
     ) {
-      return a;
+      continue;
     }
 
-    updatedCount += 1;
-    return {
-      ...a,
-      [role]: new mongoose.Types.ObjectId(userId),
-    } as any;
-  });
+    const dk = normalizeDayKey(a.date);
+    if (dk) eligible.push({ idx, dateKey: dk });
+  }
 
-  if (updatedCount === 0) {
+  eligible.sort((x, y) => x.dateKey.localeCompare(y.dateKey));
+
+  if (eligible.length === 0) {
     const onlySickBlocks =
       skippedBreakdown.sick > 0 &&
       skippedBreakdown.vacation === 0 &&
@@ -998,45 +1038,101 @@ export async function assignUserToWeek(
     );
   }
 
+  let working = dienst.assignments.map((a) => {
+    // Subdocumentos Mongoose: el spread puede omitir driver/medic/date; toObject() materializa campos.
+    const src = ((a as any)?.toObject?.() ?? a) as any;
+    const copy = { ...src };
+    const rawDate = src?.date;
+    if (rawDate != null) {
+      const dk = normalizeDayKey(String(rawDate));
+      if (dk) copy.date = dk;
+    }
+    return copy;
+  });
+  const skippedByMinimumRest: string[] = [];
+  let minimumRestWarning: MinimumRestWarningPayload | undefined;
   const uidNorm = String(userId).trim();
-  const rowsToCheck = dienst.assignments
-    .filter((a: any) => {
-      if (!a?.date || !a?.startTime || !a?.endTime) return false;
-      const id =
-        role === "driver" ? oidStr(a.driver) : oidStr(a.medic);
-      return id === uidNorm;
-    })
-    .map((a: any) => ({
-      dienstId: String(dienst._id),
-      date: normalizeDayKey(a.date),
-    }))
-    .filter((r) => r.date !== "");
+  const userOid = new mongoose.Types.ObjectId(userId);
+  let assignedCount = 0;
 
-  const restResult = await runMinimumRestChecksForMergedDienstStates(
-    callerCo,
-    [
+  for (const { idx, dateKey } of eligible) {
+    const row = working[idx] as any;
+    const nextRow = {
+      ...row,
+      date: dateKey,
+      [role]: userOid,
+    } as any;
+
+    const mergedAssignments = working.map((x, j) =>
+      j === idx ? nextRow : x,
+    );
+
+    try {
+      const rr = await runMinimumRestChecksForMergedDienstStates(
+        callerCo,
+        [
+          {
+            id: String(dienst._id),
+            mergedAssignments: mergedAssignments as unknown[],
+          },
+        ],
+        [{ dienstId: String(dienst._id), date: dateKey }],
+        { restrictUserId: uidNorm, restrictRole: role },
+      );
+      working = mergedAssignments;
+      assignedCount += 1;
+      if (rr.minimumRestWarning) minimumRestWarning = rr.minimumRestWarning;
+    } catch (e: unknown) {
+      const errCode =
+        e instanceof DienstAssignmentError
+          ? e.code
+          : typeof e === "object" &&
+              e !== null &&
+              "code" in e &&
+              typeof (e as { code?: unknown }).code === "string"
+            ? (e as { code: string }).code
+            : "";
+      if (errCode === "insufficient_rest") {
+        skippedByMinimumRest.push(dateKey);
+        continue;
+      }
+      throw e;
+    }
+  }
+
+  if (assignedCount === 0) {
+    throw new DienstAssignmentError(
+      409,
+      "no_assignable_days_minimum_rest",
+      "No se pudo asignar ningún día por descanso mínimo entre turnos.",
       {
-        id: String(dienst._id),
-        mergedAssignments: dienst.assignments as unknown[],
+        skippedByVacation,
+        skippedBreakdown,
+        skippedByMinimumRest,
       },
-    ],
-    rowsToCheck,
-  );
+    );
+  }
+
+  dienst.assignments = working as any;
 
   await dienst.save();
 
+  const partialMinRest = skippedByMinimumRest.length > 0;
+  const message = partialMinRest
+    ? `Usuario asignado como ${role} a ${assignedCount} día(s); omitido(s) ${skippedByMinimumRest.length} por descanso mínimo (${skippedByMinimumRest.join(", ")}).`
+    : `Usuario asignado como ${role} a ${assignedCount} días del Dienst #${dienstNumber} (${weekStartDate}).`;
+
   return {
-    message: `Usuario asignado como ${role} a ${updatedCount} días del Dienst #${dienstNumber} (${weekStartDate}).`,
-    updatedCount,
+    message,
+    updatedCount: assignedCount,
     skippedByVacation,
     skippedBreakdown,
+    skippedByMinimumRest,
     dienstId: dienst.id,
     weekStartDate,
     role,
     userId,
-    ...(restResult.minimumRestWarning
-      ? { minimumRestWarning: restResult.minimumRestWarning }
-      : {}),
+    ...(minimumRestWarning ? { minimumRestWarning } : {}),
   };
 }
 
