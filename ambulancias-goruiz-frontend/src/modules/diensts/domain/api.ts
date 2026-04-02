@@ -187,6 +187,9 @@ export const assignTeamToWeek = async (
   skippedByVacation?: Array<{ date: string; role: "driver" | "medic" }>;
   skippedByWeeklyConflict?: string[];
   skippedByMinimumRest?: string[];
+  daysAssignedFull?: string[];
+  daysAssignedDriverOnly?: string[];
+  daysAssignedMedicOnly?: string[];
   minimumRestWarning?: MinimumRestWarning;
   hints?: { driverExpiredButBoth?: boolean };
 }> => {

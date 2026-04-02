@@ -1157,8 +1157,14 @@ export async function assignTeamToWeek(
   skippedByVacation: Array<{ date: string; role: "driver" | "medic" }>;
   /** Fechas (yyyy-MM-dd) con conflicto de otra guardia en la misma semana (miembro ya asignado en otro Dienst). */
   skippedByWeeklyConflict: string[];
-  /** Fechas (yyyy-MM-dd) omitidas por descanso mínimo &lt; 10 h (día completo sin asignar). */
+  /** Fechas (yyyy-MM-dd) donde no se pudo colocar ningún rol del team por descanso mínimo (habiendo rol elegible). */
   skippedByMinimumRest: string[];
+  /** Fechas (yyyy-MM-dd) con conductor y sanitario del team asignados. */
+  daysAssignedFull: string[];
+  /** Fechas (yyyy-MM-dd) solo con conductor del team. */
+  daysAssignedDriverOnly: string[];
+  /** Fechas (yyyy-MM-dd) solo con sanitario del team. */
+  daysAssignedMedicOnly: string[];
   dienstId: string;
   weekStartDate: string;
   hints: { driverExpiredButBoth: boolean };
@@ -1403,7 +1409,7 @@ export async function assignTeamToWeek(
   const skippedByVacation: Array<{ date: string; role: "driver" | "medic" }> = [];
   const skippedByWeeklyConflictSet = new Set<string>();
 
-  const eligible: Array<{ idx: number; dateKey: string }> = [];
+  const processableDays: Array<{ idx: number; dateKey: string; dateISO: string }> = [];
 
   for (let idx = 0; idx < dienst.assignments.length; idx++) {
     const a = dienst.assignments[idx] as any;
@@ -1413,12 +1419,20 @@ export async function assignTeamToWeek(
     const dk = normalizeDayKey(String(dateISO));
     if (!dk) continue;
 
+    processableDays.push({ idx, dateKey: dk, dateISO });
+  }
+
+  processableDays.sort((x, y) => x.dateKey.localeCompare(y.dateKey));
+
+  let anyDayHasAssignableRole = false;
+  for (const { idx, dateKey, dateISO } of processableDays) {
+    const a = dienst.assignments[idx] as any;
     const block = dayBlockMap[dateISO] || { driver: false, medic: false };
-    if (block.driver || block.medic) {
-      if (block.driver) skippedByVacation.push({ date: dateISO, role: "driver" });
-      if (block.medic) skippedByVacation.push({ date: dateISO, role: "medic" });
-      continue;
-    }
+    if (block.driver) skippedByVacation.push({ date: dateISO, role: "driver" });
+    if (block.medic) skippedByVacation.push({ date: dateISO, role: "medic" });
+
+    if (driverConflictDates.has(dateKey)) skippedByWeeklyConflictSet.add(dateKey);
+    if (medicConflictDates.has(dateKey)) skippedByWeeklyConflictSet.add(dateKey);
 
     const driverPscheinOk = isDriverEligibleForAssignmentDate({
       ambulanceRole: driverDoc?.ambulanceRole as
@@ -1430,24 +1444,25 @@ export async function assignTeamToWeek(
       pscheinConfirmedAt: driverDoc?.pscheinConfirmedAt,
       assignmentDateISO: dateISO,
     });
-    if (!driverPscheinOk) continue;
-
-    if (driverConflictDates.has(dk) || medicConflictDates.has(dk)) {
-      skippedByWeeklyConflictSet.add(dk);
-      continue;
-    }
 
     const oppMed = (a as any).medic?.toString?.();
     const oppDrv = (a as any).driver?.toString?.();
-    if (oppMed && oppMed === driverId) continue;
-    if (oppDrv && oppDrv === medicId) continue;
 
-    eligible.push({ idx, dateKey: dk });
+    const driverOk =
+      !block.driver &&
+      driverPscheinOk &&
+      !driverConflictDates.has(dateKey) &&
+      !(oppMed && oppMed === driverId);
+
+    const medicOk =
+      !block.medic &&
+      !medicConflictDates.has(dateKey) &&
+      !(oppDrv && oppDrv === medicId);
+
+    if (driverOk || medicOk) anyDayHasAssignableRole = true;
   }
 
-  eligible.sort((x, y) => x.dateKey.localeCompare(y.dateKey));
-
-  if (eligible.length === 0) {
+  if (processableDays.length === 0 || !anyDayHasAssignableRole) {
     throw new DienstAssignmentError(
       409,
       "no_assignable_days",
@@ -1461,28 +1476,79 @@ export async function assignTeamToWeek(
 
   const driverOid = new mongoose.Types.ObjectId(driverId);
   const medicOid = new mongoose.Types.ObjectId(medicId);
+  const uidDrv = String(driverId).trim();
+  const uidMed = String(medicId).trim();
+
   let assignedCount = 0;
   const skippedByMinimumRest: string[] = [];
+  const daysAssignedFull: string[] = [];
+  const daysAssignedDriverOnly: string[] = [];
+  const daysAssignedMedicOnly: string[] = [];
   let minimumRestWarning: MinimumRestWarningPayload | undefined;
 
-  for (const { idx, dateKey } of eligible) {
-    const row = working[idx] as any;
-    const nextRow = {
-      ...row,
-      date: dateKey,
-      driver: driverOid,
-      medic: medicOid,
-    } as any;
-    if (teamAmbulanceId && !nextRow.ambulanceId) {
-      nextRow.ambulanceId = teamAmbulanceId;
+  const resolveRestErr = (e: unknown): string => {
+    if (e instanceof DienstAssignmentError) return e.code;
+    if (
+      typeof e === "object" &&
+      e !== null &&
+      "code" in e &&
+      typeof (e as { code?: unknown }).code === "string"
+    ) {
+      return (e as { code: string }).code;
     }
+    return "";
+  };
 
-    const mergedAssignments = working.map((x, j) =>
-      j === idx ? nextRow : x,
-    );
+  const rowHasTeamDriver = (r: any) => {
+    const d = oidStr(r?.driver);
+    return d !== "" && sameUserIdString(d, uidDrv);
+  };
+  const rowHasTeamMedic = (r: any) => {
+    const m = oidStr(r?.medic);
+    return m !== "" && sameUserIdString(m, uidMed);
+  };
 
-    try {
-      const rr = await runMinimumRestChecksForMergedDienstStates(
+  for (const { idx, dateKey, dateISO } of processableDays) {
+    const a = dienst.assignments[idx] as any;
+    const block = dayBlockMap[dateISO] || { driver: false, medic: false };
+
+    const driverPscheinOk = isDriverEligibleForAssignmentDate({
+      ambulanceRole: driverDoc?.ambulanceRole as
+        | "driver"
+        | "medic"
+        | "both"
+        | undefined,
+      pscheinExpiry: driverDoc?.pscheinExpiry,
+      pscheinConfirmedAt: driverDoc?.pscheinConfirmedAt,
+      assignmentDateISO: dateISO,
+    });
+
+    const oppMed = (a as any).medic?.toString?.();
+    const oppDrv = (a as any).driver?.toString?.();
+
+    const driverOk =
+      !block.driver &&
+      driverPscheinOk &&
+      !driverConflictDates.has(dateKey) &&
+      !(oppMed && oppMed === driverId);
+
+    const medicOk =
+      !block.medic &&
+      !medicConflictDates.has(dateKey) &&
+      !(oppDrv && oppDrv === medicId);
+
+    if (!driverOk && !medicOk) continue;
+
+    const rowStart = working[idx] as any;
+
+    const runRest = async (
+      nextRow: any,
+      restOpts?: { restrictUserId: string; restrictRole: "driver" | "medic" },
+    ) => {
+      const mergedAssignments = working.map((x, j) =>
+        j === idx ? nextRow : x,
+      );
+      return runMinimumRestChecksForMergedDienstStates(
         callerCo,
         [
           {
@@ -1491,25 +1557,84 @@ export async function assignTeamToWeek(
           },
         ],
         [{ dienstId: String(dienst._id), date: dateKey }],
+        restOpts,
       );
-      working = mergedAssignments;
-      assignedCount += 1;
-      if (rr.minimumRestWarning) minimumRestWarning = rr.minimumRestWarning;
-    } catch (e: unknown) {
-      const errCode =
-        e instanceof DienstAssignmentError
-          ? e.code
-          : typeof e === "object" &&
-              e !== null &&
-              "code" in e &&
-              typeof (e as { code?: unknown }).code === "string"
-            ? (e as { code: string }).code
-            : "";
-      if (errCode === "insufficient_rest") {
-        skippedByMinimumRest.push(dateKey);
-        continue;
+    };
+
+    let applied = false;
+
+    if (driverOk && medicOk) {
+      const nextBoth = {
+        ...rowStart,
+        date: dateKey,
+        driver: driverOid,
+        medic: medicOid,
+      } as any;
+      if (teamAmbulanceId && !nextBoth.ambulanceId) {
+        nextBoth.ambulanceId = teamAmbulanceId;
       }
-      throw e;
+      try {
+        const rr = await runRest(nextBoth);
+        working = working.map((x, j) => (j === idx ? nextBoth : x));
+        if (rr.minimumRestWarning) minimumRestWarning = rr.minimumRestWarning;
+        applied = true;
+      } catch (e: unknown) {
+        if (resolveRestErr(e) !== "insufficient_rest") throw e;
+      }
+    }
+
+    if (!applied && driverOk) {
+      const nextD = { ...rowStart, date: dateKey, driver: driverOid } as any;
+      if (teamAmbulanceId && !nextD.ambulanceId) {
+        nextD.ambulanceId = teamAmbulanceId;
+      }
+      try {
+        const rr = await runRest(nextD, {
+          restrictUserId: uidDrv,
+          restrictRole: "driver",
+        });
+        working = working.map((x, j) => (j === idx ? nextD : x));
+        if (rr.minimumRestWarning) minimumRestWarning = rr.minimumRestWarning;
+        applied = true;
+      } catch (e: unknown) {
+        if (resolveRestErr(e) !== "insufficient_rest") throw e;
+      }
+    }
+
+    if (medicOk && !rowHasTeamMedic(working[idx])) {
+      const rowNow = working[idx] as any;
+      const nextM = { ...rowNow, date: dateKey, medic: medicOid } as any;
+      if (teamAmbulanceId && !nextM.ambulanceId) {
+        nextM.ambulanceId = teamAmbulanceId;
+      }
+      try {
+        const rr = await runRest(nextM, {
+          restrictUserId: uidMed,
+          restrictRole: "medic",
+        });
+        working = working.map((x, j) => (j === idx ? nextM : x));
+        if (rr.minimumRestWarning) minimumRestWarning = rr.minimumRestWarning;
+        applied = true;
+      } catch (e: unknown) {
+        if (resolveRestErr(e) !== "insufficient_rest") throw e;
+      }
+    }
+
+    const rowEnd = working[idx] as any;
+    const hasD = rowHasTeamDriver(rowEnd);
+    const hasM = rowHasTeamMedic(rowEnd);
+
+    if (hasD && hasM) {
+      daysAssignedFull.push(dateKey);
+      assignedCount += 1;
+    } else if (hasD) {
+      daysAssignedDriverOnly.push(dateKey);
+      assignedCount += 1;
+    } else if (hasM) {
+      daysAssignedMedicOnly.push(dateKey);
+      assignedCount += 1;
+    } else if (driverOk || medicOk) {
+      skippedByMinimumRest.push(dateKey);
     }
   }
 
@@ -1531,21 +1656,39 @@ export async function assignTeamToWeek(
   await dienst.save();
 
   const skippedByWeeklyConflict = [...skippedByWeeklyConflictSet].sort();
+  const hasPartialRoles =
+    daysAssignedDriverOnly.length > 0 || daysAssignedMedicOnly.length > 0;
+  const hasSkipReasons =
+    skippedByMinimumRest.length > 0 ||
+    skippedByWeeklyConflict.length > 0 ||
+    skippedByVacation.length > 0;
+
   const parts: string[] = [];
-  if (skippedByMinimumRest.length > 0) {
-    parts.push(`descanso mínimo: ${skippedByMinimumRest.join(", ")}`);
+  if (hasPartialRoles || hasSkipReasons) {
+    if (daysAssignedFull.length > 0) {
+      parts.push(`equipo completo: ${daysAssignedFull.join(", ")}`);
+    }
+    if (daysAssignedDriverOnly.length > 0) {
+      parts.push(`solo conductor: ${daysAssignedDriverOnly.join(", ")}`);
+    }
+    if (daysAssignedMedicOnly.length > 0) {
+      parts.push(`solo sanitario: ${daysAssignedMedicOnly.join(", ")}`);
+    }
+    if (skippedByMinimumRest.length > 0) {
+      parts.push(`sin asignar por descanso mínimo: ${skippedByMinimumRest.join(", ")}`);
+    }
+    if (skippedByWeeklyConflict.length > 0) {
+      parts.push(`conflicto otra guardia: ${skippedByWeeklyConflict.join(", ")}`);
+    }
+    if (skippedByVacation.length > 0) {
+      parts.push(
+        `vacaciones/baja: ${skippedByVacation.map((e) => `${e.date} (${e.role})`).join(", ")}`,
+      );
+    }
   }
-  if (skippedByWeeklyConflict.length > 0) {
-    parts.push(`conflicto otra guardia: ${skippedByWeeklyConflict.join(", ")}`);
-  }
-  if (skippedByVacation.length > 0) {
-    parts.push(
-      `vacaciones/baja: ${skippedByVacation.map((e) => `${e.date} (${e.role})`).join(", ")}`,
-    );
-  }
-  let message = `Team asignado a ${assignedCount} día(s) del Dienst #${dienstNumber} (${weekStartDate}).`;
+  let message = `Team asignado en ${assignedCount} día(s) del Dienst #${dienstNumber} (${weekStartDate}).`;
   if (parts.length > 0) {
-    message = `${message} Omitidos — ${parts.join("; ")}.`;
+    message = `${message} Detalle — ${parts.join("; ")}.`;
   }
 
   return {
@@ -1554,6 +1697,9 @@ export async function assignTeamToWeek(
     skippedByVacation,
     skippedByWeeklyConflict,
     skippedByMinimumRest,
+    daysAssignedFull,
+    daysAssignedDriverOnly,
+    daysAssignedMedicOnly,
     dienstId: dienst.id,
     weekStartDate,
     hints: { driverExpiredButBoth: !!driverExpiredButBothHint },

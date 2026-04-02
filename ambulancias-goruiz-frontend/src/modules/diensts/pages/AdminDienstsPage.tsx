@@ -1373,7 +1373,9 @@ const AdminPage = () => {
               if (
                 (resp.skippedByMinimumRest?.length ?? 0) > 0 ||
                 (resp.skippedByWeeklyConflict?.length ?? 0) > 0 ||
-                (resp.skippedByVacation?.length ?? 0) > 0
+                (resp.skippedByVacation?.length ?? 0) > 0 ||
+                (resp.daysAssignedDriverOnly?.length ?? 0) > 0 ||
+                (resp.daysAssignedMedicOnly?.length ?? 0) > 0
               ) {
                 toastT.warn(resp.message);
               }

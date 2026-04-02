@@ -1,6 +1,6 @@
 /**
  * Contrato mutaciones assignments (clearPeopleForWeek, updateDienstPartial,
- * moveSlotSameWeek, dndCrossDienstSameWeek, assignUserToWeek (descanso mínimo), assignTeamToWeek (descanso mínimo día atómico)): exigen companyId de caller y Dienst con company.
+ * moveSlotSameWeek, dndCrossDienstSameWeek, assignUserToWeek (descanso mínimo), assignTeamToWeek (descanso mínimo, roles independientes)): exigen companyId de caller y Dienst con company.
  */
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
@@ -1388,7 +1388,7 @@ describe("assignments.service mutations group (company contract)", () => {
     });
   });
 
-  describe("assignTeamToWeek (descanso mínimo, día atómico)", () => {
+  describe("assignTeamToWeek (descanso mínimo, roles independientes)", () => {
     it("asigna todos los días elegibles sin aviso cuando no hay conflicto de descanso", async () => {
       const coOid = new mongoose.Types.ObjectId();
       const co = coOid.toString();
@@ -1444,6 +1444,7 @@ describe("assignments.service mutations group (company contract)", () => {
         co,
       );
       expect(out.updatedCount).toBe(2);
+      expect(out.daysAssignedFull?.length ?? 0).toBe(2);
       expect(out.skippedByMinimumRest?.length ?? 0).toBe(0);
       expect(out.minimumRestWarning).toBeUndefined();
 
@@ -1509,6 +1510,7 @@ describe("assignments.service mutations group (company contract)", () => {
         co,
       );
       expect(out.updatedCount).toBe(1);
+      expect(out.daysAssignedFull).toContain("2035-01-07");
       expect(out.skippedByMinimumRest).toContain("2035-01-08");
 
       await Dienst.deleteMany({ dienstNumber: 94511 });
@@ -1516,7 +1518,7 @@ describe("assignments.service mutations group (company contract)", () => {
       await User.deleteMany({ _id: { $in: [uDriver._id, uMedic._id] } });
     });
 
-    it("no_assignable_days_minimum_rest si un miembro incumple descanso aunque el otro podría pasar (día atómico)", async () => {
+    it("asigna solo conductor si el sanitario no puede por descanso (otro rol puede pasar)", async () => {
       const coOid = new mongoose.Types.ObjectId();
       const co = coOid.toString();
       const uOther = await User.create({
@@ -1576,25 +1578,80 @@ describe("assignments.service mutations group (company contract)", () => {
         ],
       });
 
-      await expect(
-        assignTeamToWeek(
-          {
-            dienstNumber: 94512,
-            weekStartDate: "2035-01-07",
-            teamId: String(team._id),
-          },
-          co,
-        ),
-      ).rejects.toMatchObject({
-        statusCode: 409,
-        code: "no_assignable_days_minimum_rest",
-      });
+      const out = await assignTeamToWeek(
+        {
+          dienstNumber: 94512,
+          weekStartDate: "2035-01-07",
+          teamId: String(team._id),
+        },
+        co,
+      );
+      expect(out.updatedCount).toBeGreaterThanOrEqual(1);
+      expect(out.daysAssignedDriverOnly).toContain("2035-01-08");
 
       await Dienst.deleteMany({ dienstNumber: 94512 });
       await Team.deleteOne({ _id: team._id });
       await User.deleteMany({
         _id: { $in: [uOther._id, uTeamDriver._id, uTeamMedic._id] },
       });
+    });
+
+    it("solo sanitario cuando el conductor está bloqueado por rol opuesto en la fila", async () => {
+      const coOid = new mongoose.Types.ObjectId();
+      const co = coOid.toString();
+      const uTeamDriver = await User.create({
+        name: "TD",
+        lastName: "Mo",
+        email: `atw-mo-${Date.now()}@test.local`,
+        password: await hashPw(),
+        role: "worker",
+        ambulanceRole: "driver",
+        companyId: coOid,
+        pscheinExpiry: "2040-12-31",
+        pscheinConfirmedAt: new Date("2030-01-01"),
+      });
+      const uTeamMedic = await User.create({
+        name: "TM",
+        lastName: "Mo",
+        email: `atw-mo2-${Date.now()}@test.local`,
+        password: await hashPw(),
+        role: "worker",
+        companyId: coOid,
+        ambulanceRole: "medic",
+      });
+      const team = await Team.create({
+        driver: uTeamDriver._id,
+        medic: uTeamMedic._id,
+        rotationMode: "none",
+      });
+      await Dienst.create({
+        dienstNumber: 94514,
+        weekStartDate: new Date("2035-03-04"),
+        weekEndDate: new Date("2035-03-10"),
+        companyId: coOid,
+        assignments: [
+          {
+            date: "2035-03-05",
+            startTime: "08:00",
+            endTime: "16:00",
+            medic: uTeamDriver._id,
+          },
+        ],
+      });
+      const out = await assignTeamToWeek(
+        {
+          dienstNumber: 94514,
+          weekStartDate: "2035-03-04",
+          teamId: String(team._id),
+        },
+        co,
+      );
+      expect(out.daysAssignedMedicOnly).toContain("2035-03-05");
+      expect(out.daysAssignedFull?.length ?? 0).toBe(0);
+
+      await Dienst.deleteMany({ dienstNumber: 94514 });
+      await Team.deleteOne({ _id: team._id });
+      await User.deleteMany({ _id: { $in: [uTeamDriver._id, uTeamMedic._id] } });
     });
   });
 });
