@@ -217,6 +217,50 @@ describe("assignments.service mutations group (company contract)", () => {
       ).resolves.toBeNull();
       await Dienst.deleteOne({ _id: d._id });
     });
+
+    it("rechaza descanso < 10 h entre turnos del mismo trabajador (insufficient_rest)", async () => {
+      const co = new mongoose.Types.ObjectId().toString();
+      const uid = new mongoose.Types.ObjectId().toString();
+      const d = await Dienst.create({
+        dienstNumber: 93123,
+        weekStartDate: new Date("2035-01-07"),
+        weekEndDate: new Date("2035-01-13"),
+        assignments: [
+          {
+            date: "2035-01-07",
+            startTime: "22:00",
+            endTime: "06:00",
+            driver: new mongoose.Types.ObjectId(uid),
+          },
+          {
+            date: "2035-01-08",
+            startTime: "12:00",
+            endTime: "20:00",
+            driver: new mongoose.Types.ObjectId(uid),
+          },
+        ],
+        companyId: new mongoose.Types.ObjectId(co),
+      });
+
+      await expect(
+        updateDienstPartial(
+          String(d._id),
+          [
+            {
+              date: "2035-01-08",
+              startTime: "08:00",
+              endTime: "16:00",
+            },
+          ],
+          co,
+        ),
+      ).rejects.toMatchObject({
+        statusCode: 409,
+        code: "insufficient_rest",
+      });
+
+      await Dienst.deleteOne({ _id: d._id });
+    });
   });
 
   describe("assignUserToWeek", () => {

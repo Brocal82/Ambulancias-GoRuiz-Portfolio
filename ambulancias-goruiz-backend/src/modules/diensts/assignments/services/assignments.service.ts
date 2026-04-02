@@ -17,10 +17,201 @@ import {
 } from "../../utils/dienstValidation";
 import { extractValidDatesFromAssignments, mapAssignmentToAssignedDay } from "../../utils/dienstMappers";
 import { entitiesBelongToSameCompany } from "../../../../utils/requireCompany";
+import { computeShiftBounds, diffMinutes, ZONE } from "../../../../utils/time";
 import { DienstAssignmentError } from "./assignment-errors";
 import type { DndCrossDienstSameWeekBody } from "../schemas/dnd-cross-dienst-same-week.schema";
 
 const BERLIN = "Europe/Berlin";
+
+/** Descanso mínimo duro (batch 1): menos de esto => bloqueo en updateDienstPartial. */
+const MIN_REST_MINUTES_HARD = 600;
+
+type RestShiftInterval = {
+  dienstId: string;
+  date: string;
+  userId: string;
+  start: DateTime;
+  end: DateTime;
+};
+
+function flattenAssignmentsToRestShifts(
+  dienstDoc: { _id?: unknown; assignments?: unknown[] },
+  dienstIdStr: string,
+): RestShiftInterval[] {
+  const out: RestShiftInterval[] = [];
+  for (const a of dienstDoc.assignments ?? []) {
+    const row = a as {
+      date?: string;
+      startTime?: string;
+      endTime?: string;
+      driver?: unknown;
+      medic?: unknown;
+    };
+    if (!row?.date || !row?.startTime || !row?.endTime) continue;
+    const dateKey = normalizeDayKey(row.date);
+    if (!dateKey) continue;
+    const { start, end } = computeShiftBounds(dateKey, row.startTime, row.endTime);
+    const drv = oidStr(row.driver);
+    const med = oidStr(row.medic);
+    if (drv) {
+      out.push({ dienstId: dienstIdStr, date: dateKey, userId: drv, start, end });
+    }
+    if (med) {
+      out.push({ dienstId: dienstIdStr, date: dateKey, userId: med, start, end });
+    }
+  }
+  return out;
+}
+
+/**
+ * Vecinos cronológicos para un turno propuesto: último fin estrictamente antes del inicio,
+ * primer inicio estrictamente después del fin (Europe/Berlin, soporta cruces de medianoche).
+ */
+function findNeighborRestShifts(
+  shifts: RestShiftInterval[],
+  userId: string,
+  proposed: { start: DateTime; end: DateTime },
+  exclude: { dienstId: string; date: string; userId: string },
+): { prev: RestShiftInterval | null; next: RestShiftInterval | null } {
+  const sameUser = shifts.filter((s) => s.userId === userId);
+  const without = sameUser.filter(
+    (s) =>
+      !(
+        s.dienstId === exclude.dienstId &&
+        s.date === exclude.date &&
+        s.userId === exclude.userId
+      ),
+  );
+  const before = without.filter((s) => s.end < proposed.start);
+  const prev = before.length
+    ? before.reduce((a, b) => (a.end > b.end ? a : b))
+    : null;
+  const after = without.filter((s) => s.start > proposed.end);
+  const next = after.length
+    ? after.reduce((a, b) => (a.start < b.start ? a : b))
+    : null;
+  return { prev, next };
+}
+
+/**
+ * Carga Dienst de la empresa en ventana de semanas alrededor de las fechas dadas (límites de semana).
+ */
+async function fetchDienstDocsForRestWindow(
+  companyId: string,
+  minDateISO: string,
+  maxDateISO: string,
+): Promise<Array<{ _id: unknown; assignments?: unknown[] }>> {
+  const min = DateTime.fromISO(minDateISO, { zone: ZONE }).startOf("day");
+  const max = DateTime.fromISO(maxDateISO, { zone: ZONE }).startOf("day");
+  if (!min.isValid || !max.isValid) return [];
+
+  const mondayMin = min.startOf("week");
+  const mondayMax = max.startOf("week");
+  const rangeStart = mondayMin.minus({ days: 7 }).startOf("day");
+  const rangeEnd = mondayMax.plus({ days: 7 }).endOf("day");
+
+  return Dienst.find({
+    companyId: new mongoose.Types.ObjectId(companyId),
+    weekStartDate: { $gte: rangeStart.toJSDate(), $lte: rangeEnd.toJSDate() },
+  })
+    .select("assignments weekStartDate")
+    .lean();
+}
+
+/**
+ * Bloqueo duro si el descanso entre turnos consecutivos del mismo trabajador es < 10 h.
+ * Solo para updateDienstPartial: estado ya fusionado en memoria en `mergedDienst`.
+ */
+async function assertMinimumRestForPartialUpdate(
+  currentDienstId: string,
+  incomingRows: any[],
+  mergedDienst: { assignments?: unknown[]; toObject?: () => unknown },
+  companyId: string,
+): Promise<void> {
+  const datesNeedingCheck: string[] = [];
+  for (const inc of incomingRows) {
+    const dk = normalizeDayKey(inc?.date);
+    if (!dk) continue;
+    const row = (mergedDienst.assignments ?? []).find(
+      (a: any) => normalizeDayKey(a?.date) === dk,
+    ) as { driver?: unknown; medic?: unknown } | undefined;
+    if (oidStr(row?.driver) || oidStr(row?.medic)) {
+      datesNeedingCheck.push(dk);
+    }
+  }
+  if (datesNeedingCheck.length === 0) return;
+
+  const sorted = [...new Set(datesNeedingCheck)].sort();
+  const minD = sorted[0]!;
+  const maxD = sorted[sorted.length - 1]!;
+
+  const fetched = await fetchDienstDocsForRestWindow(companyId, minD, maxD);
+  const mergedPlain = mergedDienst.toObject
+    ? (mergedDienst.toObject() as { _id?: unknown; assignments?: unknown[] })
+    : { assignments: mergedDienst.assignments };
+
+  const docs: Array<{ _id: unknown; assignments?: unknown[] }> = fetched.map((d) =>
+    String(d._id) === String(currentDienstId) ? { ...d, assignments: mergedPlain.assignments } : d,
+  );
+  if (!docs.some((d) => String(d._id) === String(currentDienstId))) {
+    docs.push({
+      _id: new mongoose.Types.ObjectId(currentDienstId),
+      assignments: mergedPlain.assignments,
+    });
+  }
+
+  const allShifts: RestShiftInterval[] = [];
+  for (const d of docs) {
+    allShifts.push(...flattenAssignmentsToRestShifts(d, String(d._id)));
+  }
+
+  for (const inc of incomingRows) {
+    const dk = normalizeDayKey(inc?.date);
+    if (!dk) continue;
+    const row = (mergedDienst.assignments ?? []).find(
+      (a: any) => normalizeDayKey(a?.date) === dk,
+    ) as {
+      date?: string;
+      startTime?: string;
+      endTime?: string;
+      driver?: unknown;
+      medic?: unknown;
+    } | undefined;
+    if (!row?.startTime || !row?.endTime) continue;
+
+    const dateKey = normalizeDayKey(row.date ?? dk);
+    if (!dateKey) continue;
+    const proposed = computeShiftBounds(dateKey, row.startTime, row.endTime);
+
+    const roles: Array<{ uid: string }> = [];
+    const dId = oidStr(row.driver);
+    const mId = oidStr(row.medic);
+    if (dId) roles.push({ uid: dId });
+    if (mId) roles.push({ uid: mId });
+
+    for (const { uid } of roles) {
+      const { prev, next } = findNeighborRestShifts(allShifts, uid, proposed, {
+        dienstId: currentDienstId,
+        date: dateKey,
+        userId: uid,
+      });
+      if (prev && diffMinutes(prev.end, proposed.start) < MIN_REST_MINUTES_HARD) {
+        throw new DienstAssignmentError(
+          409,
+          "insufficient_rest",
+          "Descanso insuficiente entre turnos (menos de 10 horas).",
+        );
+      }
+      if (next && diffMinutes(proposed.end, next.start) < MIN_REST_MINUTES_HARD) {
+        throw new DienstAssignmentError(
+          409,
+          "insufficient_rest",
+          "Descanso insuficiente entre turnos (menos de 10 horas).",
+        );
+      }
+    }
+  }
+}
 
 function normalizeDayKey(date: string): string {
   const s = String(date).trim();
@@ -536,6 +727,13 @@ export async function updateDienstPartial(
       dienst.assignments.push(toInsert);
     }
   }
+
+  await assertMinimumRestForPartialUpdate(
+    String(dienst._id),
+    assignments,
+    dienst,
+    callerCo,
+  );
 
   await dienst.save();
 
