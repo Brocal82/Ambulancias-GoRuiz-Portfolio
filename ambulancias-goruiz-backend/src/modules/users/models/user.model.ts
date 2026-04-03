@@ -22,6 +22,16 @@ export interface IUser extends Document {
   companyId?: Types.ObjectId;
   employeeNumber?: string;
   invitationId?: Types.ObjectId;
+  /**
+   * Whether this user is currently active (employed / enabled).
+   * Defaults to true for all new users.
+   * Deactivated users (isActive: false) cannot log in and are excluded from
+   * payroll coverage checks and auto-matching once Phase 7b is deployed.
+   *
+   * MIGRATION REQUIRED: run scripts/backfill-isActive.ts before deploying any
+   * code that filters on `isActive: true` outside of the login path.
+   */
+  isActive: boolean;
 }
 
 const userSchema = new Schema<IUser>({
@@ -98,6 +108,12 @@ const userSchema = new Schema<IUser>({
     type: Schema.Types.ObjectId,
     ref: "Invitation",
     required: false,
+  },
+  isActive: {
+    type: Boolean,
+    required: true,
+    default: true,
+    index: true,
   },
 });
 

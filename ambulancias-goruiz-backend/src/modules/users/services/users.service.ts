@@ -298,7 +298,11 @@ export async function loginUserService(
     throw new Error("Email y contraseña son obligatorios");
   }
 
-  const user = await User.findOne({ email });
+  // isActive: true filter requires the backfill migration (scripts/backfill-isActive.ts)
+  // to have been run before this code is deployed. Documents without the field
+  // in MongoDB do NOT match { isActive: true } and would produce a generic auth
+  // failure — identical to the response for unknown email, which is intentional.
+  const user = await User.findOne({ email, isActive: true });
   const genericAuthFailure = "Email o contraseña incorrectos.";
   if (!user) {
     throw new Error(genericAuthFailure);

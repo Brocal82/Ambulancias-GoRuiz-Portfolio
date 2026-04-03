@@ -24,6 +24,12 @@ export interface UpdateUserDTO {
   profileImage?: string;
 
   employeeNumber?: string;
+  /**
+   * Set to false to deactivate a worker (prevents login, excludes from
+   * payroll coverage and auto-matching after Phase 7b).
+   * Only admins of the same company can change this field.
+   */
+  isActive?: boolean;
 }
 
 export interface CreateUserDTO {
