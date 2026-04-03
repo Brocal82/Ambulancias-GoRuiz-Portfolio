@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import User from "../modules/users/models/user.model";
 import SickLeave from "../modules/sick-leaves/models/sick-leave.model";
 import { Message } from "../modules/messages/models/message.model";
+import PayrollDocument from "../modules/payroll/models/payroll-document.model";
 import { isSameCompany } from "./requireCompany";
 
 /**
@@ -12,6 +13,7 @@ import { isSameCompany } from "./requireCompany";
  *   - SickLeave.documents[] / documentUrl:    owner or admin of same company
  *                                              (legacy companyId=null uses user fallback)
  *   - Message.attachments[].url:              sender or explicit recipient only
+ *   - PayrollDocument.fileUrl:                worker who owns it, or admin of same company
  *
  * Same-company alone is NOT sufficient for workers — they may only access
  * files they directly own or are explicitly authorized to view.
@@ -99,6 +101,31 @@ export async function canAccessFile(
     .select("_id")
     .lean();
   if (messageMatch) return true;
+
+  // ── 6. PayrollDocument — worker direct ownership ──────────────────────────
+  const ownPayroll = await PayrollDocument.findOne({
+    workerId: userOid,
+    fileUrl: storedPath,
+  })
+    .select("_id")
+    .lean();
+  if (ownPayroll) return true;
+
+  // ── 6b. PayrollDocument — admin of same company ───────────────────────────
+  if (
+    userRole === "admin" &&
+    companyId &&
+    mongoose.Types.ObjectId.isValid(companyId)
+  ) {
+    const companyOid = new mongoose.Types.ObjectId(companyId);
+    const adminPayroll = await PayrollDocument.findOne({
+      companyId: companyOid,
+      fileUrl: storedPath,
+    })
+      .select("_id")
+      .lean();
+    if (adminPayroll) return true;
+  }
 
   return false;
 }
