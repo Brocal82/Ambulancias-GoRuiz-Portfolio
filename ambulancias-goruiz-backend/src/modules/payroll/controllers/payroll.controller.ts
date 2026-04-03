@@ -558,3 +558,137 @@ export async function listMyPayrollDocuments(
     res.status(500).json({ message: "Error al obtener tus nóminas" });
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/payroll/missing?year=YYYY&month=M
+// Admin only (Phase 6).
+//
+// Returns which workers in the admin's company have no confirmed payroll
+// document for the given period.
+//
+// "Confirmed" = matchStatus "manual" or "matched" with a non-null workerId.
+// Unmatched documents (workerId null) are NOT counted as coverage for any
+// worker; their count is surfaced separately as `unmatchedDocumentsForPeriod`
+// so the admin can correlate with the missing workers list.
+//
+// This endpoint makes no assumptions about employment lifecycle — there is no
+// active/inactive field in the current schema. All workers with
+// role "worker" and companyId === admin.companyId are in scope.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function checkPayrollCoverage(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res
+        .status(companyResult.statusCode)
+        .json({ message: companyResult.message });
+      return;
+    }
+    const adminCompanyId = companyResult.companyId;
+
+    const { year: yearParam, month: monthParam } = req.query as {
+      year?: string;
+      month?: string;
+    };
+
+    if (!yearParam || !monthParam) {
+      res.status(400).json({
+        message:
+          "Los parámetros 'year' y 'month' son obligatorios. Ejemplo: ?year=2025&month=1",
+      });
+      return;
+    }
+
+    const year = parseInt(yearParam, 10);
+    const month = parseInt(monthParam, 10);
+
+    if (isNaN(year) || year < 2000 || year > 2100) {
+      res
+        .status(400)
+        .json({ message: "year debe ser un número entre 2000 y 2100" });
+      return;
+    }
+    if (isNaN(month) || month < 1 || month > 12) {
+      res
+        .status(400)
+        .json({ message: "month debe ser un número entre 1 y 12" });
+      return;
+    }
+
+    const companyOid = new mongoose.Types.ObjectId(adminCompanyId);
+
+    // ── 1. All workers belonging to this company ──────────────────────────────
+    const workers = (await User.find({
+      companyId: companyOid,
+      role: "worker",
+    })
+      .select("_id name lastName email employeeNumber")
+      .lean()) as Array<{
+      _id: unknown;
+      name: string;
+      lastName: string;
+      email: string;
+      employeeNumber?: string;
+    }>;
+
+    // ── 2. Confirmed payroll documents for the exact period ───────────────────
+    // "Confirmed" = manual or matched, always has a non-null workerId.
+    const coveredDocs = (await PayrollDocument.find({
+      companyId: companyOid,
+      year,
+      month,
+      matchStatus: { $in: ["manual", "matched"] },
+      workerId: { $ne: null },
+    })
+      .select("workerId")
+      .lean()) as Array<{ workerId: unknown }>;
+
+    // Build a Set of workerIds that already have coverage — O(1) lookup.
+    const coveredWorkerIdSet = new Set(
+      coveredDocs.map((doc) => String(doc.workerId)),
+    );
+
+    // ── 3. Workers with no confirmed document for this period ─────────────────
+    const missingWorkers = workers.filter(
+      (w) => !coveredWorkerIdSet.has(String(w._id)),
+    );
+
+    // ── 4. Unmatched documents for this period (not assigned to any worker) ───
+    // Surfaced separately so the admin can correlate: if missingCount > 0 and
+    // unmatchedDocumentsForPeriod > 0, some workers may be covered once those
+    // unmatched documents are assigned.
+    const unmatchedDocumentsForPeriod = await PayrollDocument.countDocuments({
+      companyId: companyOid,
+      year,
+      month,
+      matchStatus: "unmatched",
+    });
+
+    // coveredCount derived from workers in scope (not from Set size) so that
+    // totalWorkers === coveredCount + missingCount is always an exact identity.
+    const coveredCount = workers.length - missingWorkers.length;
+
+    res.status(200).json({
+      period: { year, month },
+      totalWorkers: workers.length,
+      coveredCount,
+      missingCount: missingWorkers.length,
+      missingWorkers: missingWorkers.map((w) => ({
+        _id: w._id,
+        name: w.name,
+        lastName: w.lastName,
+        email: w.email,
+        employeeNumber: w.employeeNumber ?? null,
+      })),
+      unmatchedDocumentsForPeriod,
+    });
+  } catch (err) {
+    console.error("[payroll] checkPayrollCoverage error:", err);
+    res
+      .status(500)
+      .json({ message: "Error al verificar la cobertura de nóminas" });
+  }
+}

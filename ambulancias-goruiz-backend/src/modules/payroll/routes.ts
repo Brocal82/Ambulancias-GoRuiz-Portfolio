@@ -9,6 +9,7 @@ import {
   assignPayrollDocument,
   listPayrollDocumentsAdmin,
   listMyPayrollDocuments,
+  checkPayrollCoverage,
 } from "./controllers/payroll.controller";
 
 const router = express.Router();
@@ -45,6 +46,17 @@ router.patch(
   authorizeRole("admin"),
   validateObjectId("id"),
   assignPayrollDocument,
+);
+
+// Admin: coverage check — which workers have no confirmed payroll for a period
+// GET /api/payroll/missing?year=YYYY&month=M
+// Must be registered before GET / to be explicit (no dynamic segment conflict here,
+// but ordering makes intent clear).
+router.get(
+  "/missing",
+  authenticateToken,
+  authorizeRole("admin"),
+  checkPayrollCoverage,
 );
 
 // Admin: list all payroll documents scoped to their company
