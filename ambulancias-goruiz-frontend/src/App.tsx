@@ -43,6 +43,7 @@ import AdminMessagesPage from "./modules/messages/pages/AdminMessagesPage";
 import AdminSentMessages from "./modules/messages/pages/AdminSentMessages";
 import AdminTeamsPage from "./modules/teams/pages/AdminTeamsPage";
 import AdminSickLeavesPage from "./modules/sick/pages/AdminSickLeavesPage";
+import AdminPayrollPage from "./modules/payroll/pages/AdminPayrollPage";
 import SuperadminCompaniesList from "./modules/companies/pages/SuperadminCompaniesList";
 import SuperadminCompanyForm from "./modules/companies/pages/SuperadminCompanyForm";
 import SuperadminCreateAdmin from "./modules/companies/pages/SuperadminCreateAdmin";
@@ -103,6 +104,7 @@ export default function App() {
                 <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
                 <Route path="/admin/teams" element={<AdminTeamsPage />} />
                 <Route path="/admin/sick-leaves" element={<AdminSickLeavesPage />} />
+                <Route path="/admin/payroll" element={<AdminPayrollPage />} />
               </Route>
             </Route>
           </Route>
