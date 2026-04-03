@@ -46,3 +46,18 @@ export interface UploadPayrollPayload {
   year?: number;
   month?: number;
 }
+
+/**
+ * Payroll document as returned by GET /api/payroll/mine (worker).
+ * Only the fields the backend selects for the worker are present.
+ * fileUrl is intentionally absent — never sent by the backend.
+ */
+export interface WorkerPayrollDocument {
+  _id: string;
+  filename: string;
+  originalName: string;
+  year?: number;
+  month?: number;
+  matchStatus: PayrollMatchStatus;
+  createdAt: string;
+}

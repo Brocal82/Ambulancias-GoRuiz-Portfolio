@@ -120,17 +120,14 @@ const WorkerDashboard = () => {
           </p>
         </Link>
 
-        <div className={centeredCardDisabled}>
-          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
-            {t("common.comingSoon")}
-          </span>
-          <h2 className="text-lg font-semibold mb-2 text-slate-600">
+        <Link to="/worker/payroll" className={centeredCard}>
+          <h2 className="text-lg font-semibold mb-2">
             {t("pages.workerDashboard.payrollDocs.title")}
           </h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-gray-600">
             {t("pages.workerDashboard.payrollDocs.desc")}
           </p>
-        </div>
+        </Link>
 
         <div className={centeredCardDisabled}>
           <span className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">

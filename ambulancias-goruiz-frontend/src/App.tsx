@@ -44,6 +44,7 @@ import AdminSentMessages from "./modules/messages/pages/AdminSentMessages";
 import AdminTeamsPage from "./modules/teams/pages/AdminTeamsPage";
 import AdminSickLeavesPage from "./modules/sick/pages/AdminSickLeavesPage";
 import AdminPayrollPage from "./modules/payroll/pages/AdminPayrollPage";
+import WorkerPayrollPage from "./modules/payroll/pages/WorkerPayrollPage";
 import SuperadminCompaniesList from "./modules/companies/pages/SuperadminCompaniesList";
 import SuperadminCompanyForm from "./modules/companies/pages/SuperadminCompanyForm";
 import SuperadminCreateAdmin from "./modules/companies/pages/SuperadminCreateAdmin";
@@ -74,6 +75,7 @@ export default function App() {
               <Route path="/worker/messages" element={<WorkerMessagesPage />} />
               <Route path="/my-workday" element={<MyWorkdayPage />} />
               <Route path="/worker/appointments" element={<WorkerAppointmentsPage />} />
+              <Route path="/worker/payroll" element={<WorkerPayrollPage />} />
 
               <Route element={<RequireRole role="superadmin" />}>
                 <Route path="/superadmin" element={<SuperadminDashboard />} />

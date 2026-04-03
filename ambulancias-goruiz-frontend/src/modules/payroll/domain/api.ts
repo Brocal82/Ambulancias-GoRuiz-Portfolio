@@ -1,5 +1,9 @@
 import api from "../../../api/axios";
-import type { PayrollDocument, UploadPayrollPayload } from "./types";
+import type {
+  PayrollDocument,
+  UploadPayrollPayload,
+  WorkerPayrollDocument,
+} from "./types";
 
 /** Admin: list all payroll documents scoped to their company. */
 export const listPayrollDocuments = async (): Promise<PayrollDocument[]> => {
@@ -30,4 +34,12 @@ export const assignPayrollDocument = async (
   workerId: string,
 ): Promise<void> => {
   await api.patch(`/payroll/${id}/assign`, { workerId });
+};
+
+/** Worker: list own payroll documents (confirmed assigned only). */
+export const listMyPayrollDocuments = async (): Promise<
+  WorkerPayrollDocument[]
+> => {
+  const res = await api.get<WorkerPayrollDocument[]>("/payroll/mine");
+  return res.data;
 };
