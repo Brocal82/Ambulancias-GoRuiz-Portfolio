@@ -19,6 +19,7 @@
             "email": "Email",
             "password": "Password",
             "submit": "Sign in",
+            "submitting": "Signing in...",
             "genericError": "Login failed"
         },
         "register": {

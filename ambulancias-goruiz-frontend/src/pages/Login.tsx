@@ -14,10 +14,13 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setError("");
+    setIsSubmitting(true);
 
     try {
       const response = await axios.post("/users/login", { email, password });
@@ -34,6 +37,8 @@ const Login = () => {
       }
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, t("pages.login.genericError")));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -97,11 +102,12 @@ const Login = () => {
         {/* Botón */}
         <button
           type="submit"
+          disabled={isSubmitting}
           className="w-full rounded-lg bg-blue-500 px-4 py-2 font-semibold text-white shadow-sm
                      hover:bg-blue-600 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-200
-                     transition-all duration-200 ease-in-out"
+                     transition-all duration-200 ease-in-out disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {t("pages.login.submit")}
+          {isSubmitting ? t("pages.login.submitting") : t("pages.login.submit")}
         </button>
       </form>
     </PublicLayout>

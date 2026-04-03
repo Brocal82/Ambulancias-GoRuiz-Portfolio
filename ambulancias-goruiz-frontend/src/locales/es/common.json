@@ -19,6 +19,7 @@
             "email": "Correo",
             "password": "Contraseña",
             "submit": "Entrar",
+            "submitting": "Entrando...",
             "genericError": "Error al iniciar sesión"
         },
         "register": {

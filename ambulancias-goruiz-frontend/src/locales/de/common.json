@@ -19,6 +19,7 @@
             "email": "E-Mail",
             "password": "Passwort",
             "submit": "Einloggen",
+            "submitting": "Anmelden...",
             "genericError": "Fehler bei der Anmeldung"
         },
         "register": {
