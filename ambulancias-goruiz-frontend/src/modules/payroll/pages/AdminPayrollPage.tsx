@@ -837,10 +837,11 @@ export default function AdminPayrollPage() {
             Verificar cobertura del período
           </h2>
           <p className="text-xs text-slate-500 mb-4">
-            Muestra los trabajadores registrados en la empresa que no tienen
+            Muestra los trabajadores <span className="font-medium">activos</span> en la empresa que no tienen
             ningún documento de nómina confirmado para el período seleccionado.
-            No filtra por estado activo/inactivo — incluye todos los
-            trabajadores en el sistema.
+            Trabajadores inactivos no aparecen en esta lista. Los documentos
+            históricos de trabajadores inactivos siguen siendo accesibles en la
+            tabla de documentos.
           </p>
 
           <div className="flex flex-wrap gap-4 items-end">

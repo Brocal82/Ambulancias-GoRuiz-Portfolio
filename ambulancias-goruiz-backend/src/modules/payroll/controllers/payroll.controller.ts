@@ -100,10 +100,13 @@ export async function uploadPayrollDocument(
 
       const workerOid = new mongoose.Types.ObjectId(workerId);
 
+      // isActive: true — deactivated workers cannot receive new payroll documents
+      // (Phase 7b). Existing historical documents are unaffected.
       const workerDoc = await User.findOne({
         _id: workerOid,
         companyId: companyOid,
         role: "worker",
+        isActive: true,
       })
         .select("_id")
         .lean();
@@ -438,11 +441,15 @@ export async function assignPayrollDocument(
     const companyOid = new mongoose.Types.ObjectId(adminCompanyId);
     const workerOid = new mongoose.Types.ObjectId(workerId);
 
-    // Verify the target worker belongs to the admin's company
+    // Verify the target worker belongs to the admin's company and is active.
+    // isActive: true — deactivated workers cannot be assigned new payroll
+    // documents (Phase 7b). Historical assignments to deactivated workers
+    // remain in the database and are visible in the admin list.
     const workerDoc = await User.findOne({
       _id: workerOid,
       companyId: companyOid,
       role: "worker",
+      isActive: true,
     })
       .select("_id")
       .lean();
@@ -620,10 +627,15 @@ export async function checkPayrollCoverage(
 
     const companyOid = new mongoose.Types.ObjectId(adminCompanyId);
 
-    // ── 1. All workers belonging to this company ──────────────────────────────
+    // ── 1. Active workers belonging to this company (Phase 7b) ───────────────
+    // isActive: true excludes deactivated workers from the coverage check.
+    // "Missing" now means: active worker in the company system with no
+    // confirmed payroll document for the period. Deactivated workers are
+    // intentionally excluded — their historical documents remain intact.
     const workers = (await User.find({
       companyId: companyOid,
       role: "worker",
+      isActive: true,
     })
       .select("_id name lastName email employeeNumber")
       .lean()) as Array<{

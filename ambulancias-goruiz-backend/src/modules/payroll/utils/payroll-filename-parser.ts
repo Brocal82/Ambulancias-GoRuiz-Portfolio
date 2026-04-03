@@ -94,10 +94,14 @@ export async function matchWorkerFromFilename(
 
   const companyOid = new mongoose.Types.ObjectId(companyId);
 
-  // Only fetch workers with a non-empty employeeNumber in this company
+  // Only fetch active workers with a non-empty employeeNumber in this company.
+  // isActive: true ensures deactivated workers are never auto-matched to new
+  // payroll uploads (Phase 7b). Historical documents already assigned to
+  // deactivated workers are unaffected — this query only runs on new uploads.
   const workers = await User.find({
     companyId: companyOid,
     role: "worker",
+    isActive: true,
     employeeNumber: { $exists: true, $nin: [null, ""] },
   })
     .select("_id employeeNumber")
