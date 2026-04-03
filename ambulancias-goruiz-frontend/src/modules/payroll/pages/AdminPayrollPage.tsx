@@ -109,10 +109,17 @@ export default function AdminPayrollPage() {
   const [batchFolderMode, setBatchFolderMode] = useState(false);
   const batchFileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── inline assign state ────────────────────────────────────────────────────
+  // ── inline assign state (docs table) ──────────────────────────────────────
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [assignWorkerId, setAssignWorkerId] = useState("");
   const [assigning, setAssigning] = useState(false);
+
+  // ── inline assign state (batch results panel) ──────────────────────────────
+  const [batchAssigningPayrollId, setBatchAssigningPayrollId] = useState<
+    string | null
+  >(null);
+  const [batchAssignWorkerId, setBatchAssignWorkerId] = useState("");
+  const [batchAssigning, setBatchAssigning] = useState(false);
 
   // Keep webkitdirectory attribute in sync with batchFolderMode.
   // React's InputHTMLAttributes does not include webkitdirectory, so we apply
@@ -194,6 +201,8 @@ export default function AdminPayrollPage() {
     setBatchUploading(true);
     setBatchResults(null);
     setBatchResultsFilter("all");
+    setBatchAssigningPayrollId(null);
+    setBatchAssignWorkerId("");
     try {
       const response = await apiBatchUpload({ files: batchFiles, year, month });
       setBatchResults(response);
@@ -245,6 +254,44 @@ export default function AdminPayrollPage() {
       toastT.apiError(err, "Error al asignar la nómina");
     } finally {
       setAssigning(false);
+    }
+  };
+
+  // ── batch inline assign (batch results panel) ─────────────────────────────
+  const confirmBatchAssign = async (payrollId: string) => {
+    if (!batchAssignWorkerId) {
+      toastT.warn("Selecciona un trabajador");
+      return;
+    }
+    setBatchAssigning(true);
+    try {
+      await apiAssign(payrollId, batchAssignWorkerId);
+      toastT.success("Nómina asignada correctamente");
+      setBatchAssigningPayrollId(null);
+      setBatchAssignWorkerId("");
+      // Optimistically reflect the assignment in the batch results panel.
+      // The item flips to "matched" so filters and sort update immediately.
+      setBatchResults((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          summary: {
+            ...prev.summary,
+            unmatched: Math.max(0, prev.summary.unmatched - 1),
+            matched: prev.summary.matched + 1,
+          },
+          results: prev.results.map((item) =>
+            item.payrollId === payrollId
+              ? { ...item, status: "matched" as const, matchStatus: "manual" as const }
+              : item,
+          ),
+        };
+      });
+      await fetchDocs();
+    } catch (err) {
+      toastT.apiError(err, "Error al asignar la nómina");
+    } finally {
+      setBatchAssigning(false);
     }
   };
 
@@ -600,6 +647,9 @@ export default function AdminPayrollPage() {
                       <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-600">
                         Detalle
                       </th>
+                      <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-600">
+                        Acciones
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -662,6 +712,70 @@ export default function AdminPayrollPage() {
                               <span className="text-red-600">{item.error}</span>
                             )}
                           </td>
+
+                          {/* Inline assign — only for unmatched rows */}
+                          <td className="px-3 py-2 align-top">
+                            {item.status === "unmatched" && item.payrollId && (
+                              batchAssigningPayrollId === item.payrollId ? (
+                                <div className="flex flex-col gap-1.5 min-w-[160px]">
+                                  <select
+                                    aria-label="Seleccionar trabajador para asignar"
+                                    value={batchAssignWorkerId}
+                                    onChange={(e) =>
+                                      setBatchAssignWorkerId(e.target.value)
+                                    }
+                                    className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-4 focus:ring-blue-100"
+                                  >
+                                    <option value="">— Seleccionar —</option>
+                                    {workers.map((w) => (
+                                      <option key={w._id} value={w._id}>
+                                        {w.lastName}, {w.name}
+                                        {w.employeeNumber
+                                          ? ` (${w.employeeNumber})`
+                                          : ""}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <div className="flex gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        confirmBatchAssign(item.payrollId!)
+                                      }
+                                      disabled={
+                                        batchAssigning || !batchAssignWorkerId
+                                      }
+                                      className="flex-1 rounded-lg bg-blue-600 px-2 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      {batchAssigning ? "..." : "Confirmar"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setBatchAssigningPayrollId(null);
+                                        setBatchAssignWorkerId("");
+                                      }}
+                                      disabled={batchAssigning}
+                                      className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setBatchAssigningPayrollId(item.payrollId!);
+                                    setBatchAssignWorkerId("");
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-4 focus:ring-amber-100"
+                                >
+                                  Asignar
+                                </button>
+                              )
+                            )}
+                          </td>
                         </tr>
                       ),
                     )}
@@ -674,6 +788,8 @@ export default function AdminPayrollPage() {
                 onClick={() => {
                   setBatchResults(null);
                   setBatchResultsFilter("all");
+                  setBatchAssigningPayrollId(null);
+                  setBatchAssignWorkerId("");
                 }}
                 className="text-xs text-slate-500 hover:text-slate-700 underline"
               >
