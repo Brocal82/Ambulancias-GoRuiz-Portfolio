@@ -93,6 +93,9 @@ export default function AdminPayrollPage() {
   const [batchResults, setBatchResults] = useState<BatchUploadResponse | null>(
     null,
   );
+  const [batchResultsFilter, setBatchResultsFilter] = useState<
+    "all" | "matched" | "unmatched" | "failed"
+  >("all");
   const [batchInputKey, setBatchInputKey] = useState(0);
   // Phase 5c: optional folder-selection mode for the batch input
   const [batchFolderMode, setBatchFolderMode] = useState(false);
@@ -182,6 +185,7 @@ export default function AdminPayrollPage() {
 
     setBatchUploading(true);
     setBatchResults(null);
+    setBatchResultsFilter("all");
     try {
       const response = await apiBatchUpload({ files: batchFiles, year, month });
       setBatchResults(response);
@@ -538,6 +542,42 @@ export default function AdminPayrollPage() {
                 )}
               </div>
 
+              {/* Filter pills */}
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    { key: "all", label: "Todas", count: batchResults.summary.total },
+                    { key: "matched", label: "Asignadas", count: batchResults.summary.matched },
+                    { key: "unmatched", label: "Sin asignar", count: batchResults.summary.unmatched },
+                    { key: "failed", label: "Con error", count: batchResults.summary.failed },
+                  ] as const
+                )
+                  .filter(({ key, count }) => key === "all" || count > 0)
+                  .map(({ key, label, count }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setBatchResultsFilter(key)}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                        batchResultsFilter === key
+                          ? "bg-slate-800 text-white"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {label}
+                      <span
+                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                          batchResultsFilter === key
+                            ? "bg-white/20 text-white"
+                            : "bg-slate-300/60 text-slate-600"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  ))}
+              </div>
+
               {/* Per-file result table */}
               <div className="overflow-x-auto rounded-xl border border-slate-200">
                 <table className="min-w-full text-sm">
@@ -555,7 +595,13 @@ export default function AdminPayrollPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {batchResults.results.map(
+                    {batchResults.results
+                      .filter(
+                        (item) =>
+                          batchResultsFilter === "all" ||
+                          item.status === batchResultsFilter,
+                      )
+                      .map(
                       (item: BatchResultItem, idx: number) => (
                         <tr
                           key={idx}
@@ -612,7 +658,10 @@ export default function AdminPayrollPage() {
 
               <button
                 type="button"
-                onClick={() => setBatchResults(null)}
+                onClick={() => {
+                  setBatchResults(null);
+                  setBatchResultsFilter("all");
+                }}
                 className="text-xs text-slate-500 hover:text-slate-700 underline"
               >
                 Cerrar resultados
