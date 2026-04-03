@@ -2,6 +2,8 @@ import api from "../../../api/axios";
 import type {
   PayrollDocument,
   UploadPayrollPayload,
+  UploadPayrollResponse,
+  AssignPayrollResponse,
   WorkerPayrollDocument,
   BatchUploadPayload,
   BatchUploadResponse,
@@ -22,13 +24,14 @@ export const listPayrollDocuments = async (): Promise<PayrollDocument[]> => {
  */
 export const uploadPayrollDocument = async (
   payload: UploadPayrollPayload,
-): Promise<void> => {
+): Promise<UploadPayrollResponse> => {
   const form = new FormData();
   form.append("payroll", payload.file);
   if (payload.workerId) form.append("workerId", payload.workerId);
   if (payload.year !== undefined) form.append("year", String(payload.year));
   if (payload.month !== undefined) form.append("month", String(payload.month));
-  await api.post("/payroll/upload", form);
+  const { data } = await api.post<UploadPayrollResponse>("/payroll/upload", form);
+  return data;
 };
 
 /**
@@ -58,8 +61,9 @@ export const uploadPayrollBatch = async (
 export const assignPayrollDocument = async (
   id: string,
   workerId: string,
-): Promise<void> => {
-  await api.patch(`/payroll/${id}/assign`, { workerId });
+): Promise<AssignPayrollResponse> => {
+  const { data } = await api.patch<AssignPayrollResponse>(`/payroll/${id}/assign`, { workerId });
+  return data;
 };
 
 /**

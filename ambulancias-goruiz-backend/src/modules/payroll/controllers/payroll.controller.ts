@@ -6,6 +6,50 @@ import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 import { matchWorkerFromFilename } from "../utils/payroll-filename-parser";
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Duplicate detection helper (Phase 8a)
+//
+// Returns minimal metadata for the first confirmed (manual/matched) document
+// that shares the same worker + period inside this company, excluding the
+// document just created/saved.
+// Returns null when no duplicate is found or when year/month is absent
+// (cannot detect duplicates without a complete period).
+// ─────────────────────────────────────────────────────────────────────────────
+interface DuplicateInfo {
+  payrollId: string;
+  originalName: string;
+  createdAt: Date;
+}
+
+async function findPayrollDuplicate(
+  companyOid: mongoose.Types.ObjectId,
+  workerOid: mongoose.Types.ObjectId,
+  year: number | undefined,
+  month: number | undefined,
+  excludeDocumentId: mongoose.Types.ObjectId,
+): Promise<DuplicateInfo | null> {
+  if (year === undefined || month === undefined) return null;
+
+  const existing = await PayrollDocument.findOne({
+    _id: { $ne: excludeDocumentId },
+    companyId: companyOid,
+    workerId: workerOid,
+    year,
+    month,
+    matchStatus: { $in: ["manual", "matched"] },
+  })
+    .select("originalName createdAt")
+    .lean();
+
+  if (!existing) return null;
+
+  return {
+    payrollId: String(existing._id),
+    originalName: existing.originalName,
+    createdAt: existing.createdAt as Date,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // POST /api/payroll/upload
 // Admin only.
 //
@@ -130,6 +174,14 @@ export async function uploadPayrollDocument(
         ...(parsedMonth !== undefined && { month: parsedMonth }),
       });
 
+      const possibleDuplicate = await findPayrollDuplicate(
+        companyOid,
+        workerOid,
+        parsedYear,
+        parsedMonth,
+        new mongoose.Types.ObjectId(String(doc._id)),
+      );
+
       res.status(201).json({
         message: "Nómina subida y asignada manualmente",
         payrollId: doc._id,
@@ -139,6 +191,7 @@ export async function uploadPayrollDocument(
         matchStatus: doc.matchStatus,
         year: doc.year,
         month: doc.month,
+        ...(possibleDuplicate && { possibleDuplicate }),
       });
       return;
     }
@@ -147,8 +200,9 @@ export async function uploadPayrollDocument(
     const matchResult = await matchWorkerFromFilename(originalName, adminCompanyId);
 
     if (matchResult.status === "matched") {
+      const matchedWorkerOid = new mongoose.Types.ObjectId(matchResult.workerId);
       const doc = await PayrollDocument.create({
-        workerId: new mongoose.Types.ObjectId(matchResult.workerId),
+        workerId: matchedWorkerOid,
         companyId: companyOid,
         uploadedBy: new mongoose.Types.ObjectId(req.userId as string),
         filename: storedFilename,
@@ -160,6 +214,14 @@ export async function uploadPayrollDocument(
         ...(parsedMonth !== undefined && { month: parsedMonth }),
       });
 
+      const possibleDuplicate = await findPayrollDuplicate(
+        companyOid,
+        matchedWorkerOid,
+        parsedYear,
+        parsedMonth,
+        new mongoose.Types.ObjectId(String(doc._id)),
+      );
+
       res.status(201).json({
         message: "Nómina subida y asignada automáticamente",
         payrollId: doc._id,
@@ -170,6 +232,7 @@ export async function uploadPayrollDocument(
         parsedEmployeeNumber: doc.parsedEmployeeNumber,
         year: doc.year,
         month: doc.month,
+        ...(possibleDuplicate && { possibleDuplicate }),
       });
       return;
     }
@@ -228,6 +291,7 @@ type BatchResultItem =
       parsedEmployeeNumber: string;
       year?: number;
       month?: number;
+      possibleDuplicate?: DuplicateInfo;
     }
   | {
       originalName: string;
@@ -302,6 +366,7 @@ export async function uploadPayrollBatch(
     let matched = 0;
     let unmatched = 0;
     let failed = 0;
+    let duplicateWarnings = 0;
 
     for (const file of files) {
       const originalName = file.originalname;
@@ -334,8 +399,9 @@ export async function uploadPayrollBatch(
         );
 
         if (matchResult.status === "matched") {
+          const batchWorkerOid = new mongoose.Types.ObjectId(matchResult.workerId);
           const doc = await PayrollDocument.create({
-            workerId: new mongoose.Types.ObjectId(matchResult.workerId),
+            workerId: batchWorkerOid,
             companyId: companyOid,
             uploadedBy: uploaderOid,
             filename: storedFilename,
@@ -346,6 +412,15 @@ export async function uploadPayrollBatch(
             ...periodFields,
           });
 
+          const possibleDuplicate = await findPayrollDuplicate(
+            companyOid,
+            batchWorkerOid,
+            parsedYear,
+            parsedMonth,
+            new mongoose.Types.ObjectId(String(doc._id)),
+          );
+          if (possibleDuplicate) duplicateWarnings++;
+
           results.push({
             originalName,
             status: "matched",
@@ -354,6 +429,7 @@ export async function uploadPayrollBatch(
             matchStatus: "matched",
             parsedEmployeeNumber: matchResult.parsedEmployeeNumber,
             ...periodFields,
+            ...(possibleDuplicate && { possibleDuplicate }),
           });
           matched++;
         } else {
@@ -399,6 +475,7 @@ export async function uploadPayrollBatch(
         matched,
         unmatched,
         failed,
+        duplicateWarnings,
       },
       results,
     });
@@ -461,11 +538,12 @@ export async function assignPayrollDocument(
       return;
     }
 
-    // Verify the payroll document belongs to the admin's company
+    // Verify the payroll document belongs to the admin's company.
+    // year + month are selected so the duplicate check can use them.
     const payroll = await PayrollDocument.findOne({
       _id: new mongoose.Types.ObjectId(id),
       companyId: companyOid,
-    }).select("_id matchStatus");
+    }).select("_id matchStatus year month");
 
     if (!payroll) {
       res.status(404).json({ message: "Documento de nómina no encontrado" });
@@ -476,11 +554,20 @@ export async function assignPayrollDocument(
     payroll.matchStatus = "manual";
     await payroll.save();
 
+    const possibleDuplicate = await findPayrollDuplicate(
+      companyOid,
+      workerOid,
+      payroll.year,
+      payroll.month,
+      new mongoose.Types.ObjectId(String(payroll._id)),
+    );
+
     res.status(200).json({
       message: "Nómina asignada correctamente",
       payrollId: payroll._id,
       workerId: payroll.workerId,
       matchStatus: payroll.matchStatus,
+      ...(possibleDuplicate && { possibleDuplicate }),
     });
   } catch (err) {
     console.error("[payroll] assignPayrollDocument error:", err);

@@ -47,6 +47,33 @@ export interface UploadPayrollPayload {
   month?: number;
 }
 
+// ── Duplicate detection (Phase 8) ─────────────────────────────────────────────
+
+/**
+ * Minimal metadata returned when a possible worker+period duplicate is detected.
+ * The document was saved — this is a warning only, never a block.
+ */
+export interface DuplicateWarning {
+  payrollId: string;
+  originalName: string;
+  createdAt: string;
+}
+
+/** Response from POST /api/payroll/upload (Phase 8b: adds optional duplicate warning). */
+export interface UploadPayrollResponse {
+  payrollId: string;
+  matchStatus: PayrollMatchStatus;
+  possibleDuplicate?: DuplicateWarning;
+}
+
+/** Response from PATCH /api/payroll/:id/assign (Phase 8b: adds optional duplicate warning). */
+export interface AssignPayrollResponse {
+  payrollId: string;
+  workerId: string;
+  matchStatus: PayrollMatchStatus;
+  possibleDuplicate?: DuplicateWarning;
+}
+
 // ── Batch upload (Phase 5) ────────────────────────────────────────────────────
 
 export interface BatchUploadPayload {
@@ -71,6 +98,8 @@ export interface BatchResultItem {
   error?: string;
   year?: number;
   month?: number;
+  /** Present when a confirmed document for the same worker+period already exists (Phase 8). */
+  possibleDuplicate?: DuplicateWarning;
 }
 
 export interface BatchUploadSummary {
@@ -78,6 +107,8 @@ export interface BatchUploadSummary {
   matched: number;
   unmatched: number;
   failed: number;
+  /** Count of matched items that triggered a worker+period duplicate warning (Phase 8). */
+  duplicateWarnings: number;
 }
 
 export interface BatchUploadResponse {

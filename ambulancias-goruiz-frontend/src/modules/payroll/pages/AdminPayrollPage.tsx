@@ -17,6 +17,7 @@ import type {
   BatchUploadResponse,
   BatchResultItem,
   CoverageCheckResponse,
+  DuplicateWarning,
 } from "../domain/types";
 import FileUpload from "../../../components/common/FileUpload";
 
@@ -92,6 +93,9 @@ export default function AdminPayrollPage() {
   const [uploading, setUploading] = useState(false);
   // Incremented after a successful upload to force FileUpload to re-mount and reset
   const [fileInputKey, setFileInputKey] = useState(0);
+  // Phase 8b: duplicate warning for the single-file upload path
+  const [uploadDuplicateWarning, setUploadDuplicateWarning] =
+    useState<DuplicateWarning | null>(null);
 
   // ── batch upload state (Phase 5) ───────────────────────────────────────────
   const [batchFiles, setBatchFiles] = useState<File[]>([]);
@@ -104,7 +108,7 @@ export default function AdminPayrollPage() {
     null,
   );
   const [batchResultsFilter, setBatchResultsFilter] = useState<
-    "all" | "matched" | "unmatched" | "failed"
+    "all" | "matched" | "unmatched" | "failed" | "duplicate"
   >("all");
   const [batchInputKey, setBatchInputKey] = useState(0);
   // Phase 5c: optional folder-selection mode for the batch input
@@ -178,14 +182,16 @@ export default function AdminPayrollPage() {
     const month = uploadMonth ? parseInt(uploadMonth, 10) : undefined;
 
     setUploading(true);
+    setUploadDuplicateWarning(null);
     try {
-      await apiUpload({
+      const response = await apiUpload({
         file: uploadFile,
         workerId: uploadWorkerId || undefined,
         year,
         month,
       });
       toastT.success("Nómina subida correctamente");
+      setUploadDuplicateWarning(response.possibleDuplicate ?? null);
       setUploadFile(null);
       setUploadWorkerId("");
       setUploadYear(String(new Date().getFullYear()));
@@ -256,8 +262,13 @@ export default function AdminPayrollPage() {
     }
     setAssigning(true);
     try {
-      await apiAssign(id, assignWorkerId);
+      const response = await apiAssign(id, assignWorkerId);
       toastT.success("Nómina asignada correctamente");
+      if (response.possibleDuplicate) {
+        toastT.warn(
+          `⚠ Posible duplicado detectado: ya existe una nómina confirmada para este trabajador en el mismo período ("${response.possibleDuplicate.originalName}"). El documento se ha guardado.`,
+        );
+      }
       setAssigningId(null);
       setAssignWorkerId("");
       await fetchDocs();
@@ -276,12 +287,18 @@ export default function AdminPayrollPage() {
     }
     setBatchAssigning(true);
     try {
-      await apiAssign(payrollId, batchAssignWorkerId);
+      const response = await apiAssign(payrollId, batchAssignWorkerId);
       toastT.success("Nómina asignada correctamente");
+      if (response.possibleDuplicate) {
+        toastT.warn(
+          `⚠ Posible duplicado detectado: ya existe una nómina confirmada para este trabajador en el mismo período ("${response.possibleDuplicate.originalName}"). El documento se ha guardado.`,
+        );
+      }
       setBatchAssigningPayrollId(null);
       setBatchAssignWorkerId("");
       // Optimistically reflect the assignment in the batch results panel.
       // The item flips to "matched" so filters and sort update immediately.
+      // Also propagate any duplicate warning into the result item and summary.
       setBatchResults((prev) => {
         if (!prev) return prev;
         return {
@@ -290,10 +307,20 @@ export default function AdminPayrollPage() {
             ...prev.summary,
             unmatched: Math.max(0, prev.summary.unmatched - 1),
             matched: prev.summary.matched + 1,
+            duplicateWarnings:
+              (prev.summary.duplicateWarnings ?? 0) +
+              (response.possibleDuplicate ? 1 : 0),
           },
           results: prev.results.map((item) =>
             item.payrollId === payrollId
-              ? { ...item, status: "matched" as const, matchStatus: "manual" as const }
+              ? {
+                  ...item,
+                  status: "matched" as const,
+                  matchStatus: "manual" as const,
+                  ...(response.possibleDuplicate && {
+                    possibleDuplicate: response.possibleDuplicate,
+                  }),
+                }
               : item,
           ),
         };
@@ -459,6 +486,31 @@ export default function AdminPayrollPage() {
               Sin trabajador seleccionado, el sistema intentará asignar
               automáticamente por número de empleado en el nombre del archivo.
             </p>
+          )}
+
+          {/* Phase 8b: duplicate warning for single-file upload */}
+          {uploadDuplicateWarning && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <span className="mt-0.5 text-amber-500 shrink-0">⚠</span>
+              <div className="flex-1 text-xs text-amber-800">
+                <span className="font-medium">Posible duplicado detectado.</span>{" "}
+                Ya existe una nómina confirmada para este trabajador en el mismo
+                período:{" "}
+                <span className="font-medium">
+                  &ldquo;{uploadDuplicateWarning.originalName}&rdquo;
+                </span>
+                . El documento se ha guardado igualmente. Revisa la tabla si
+                necesitas eliminar el anterior.
+              </div>
+              <button
+                type="button"
+                aria-label="Cerrar aviso de duplicado"
+                onClick={() => setUploadDuplicateWarning(null)}
+                className="shrink-0 text-amber-400 hover:text-amber-600"
+              >
+                ✕
+              </button>
+            </div>
           )}
         </div>
 
@@ -627,6 +679,11 @@ export default function AdminPayrollPage() {
                     ✕ Con error: {batchResults.summary.failed}
                   </span>
                 )}
+                {(batchResults.summary.duplicateWarnings ?? 0) > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-orange-700 font-medium ring-1 ring-inset ring-orange-600/20">
+                    ⚠ Posibles duplicados: {batchResults.summary.duplicateWarnings}
+                  </span>
+                )}
               </div>
 
               {/* Filter pills */}
@@ -637,6 +694,7 @@ export default function AdminPayrollPage() {
                     { key: "matched", label: "Asignadas", count: batchResults.summary.matched },
                     { key: "unmatched", label: "Sin asignar", count: batchResults.summary.unmatched },
                     { key: "failed", label: "Con error", count: batchResults.summary.failed },
+                    { key: "duplicate", label: "Posibles duplicados", count: batchResults.summary.duplicateWarnings ?? 0 },
                   ] as const
                 )
                   .filter(({ key, count }) => key === "all" || count > 0)
@@ -689,7 +747,9 @@ export default function AdminPayrollPage() {
                       .filter(
                         (item) =>
                           batchResultsFilter === "all" ||
-                          item.status === batchResultsFilter,
+                          (batchResultsFilter === "duplicate"
+                            ? !!item.possibleDuplicate
+                            : item.status === batchResultsFilter),
                       )
                       .sort(
                         (a, b) =>
@@ -742,6 +802,15 @@ export default function AdminPayrollPage() {
                             )}
                             {item.status === "failed" && item.error && (
                               <span className="text-red-600">{item.error}</span>
+                            )}
+                            {/* Phase 8b: inline duplicate warning */}
+                            {item.possibleDuplicate && (
+                              <span
+                                className="mt-1 inline-flex items-center gap-1 rounded bg-orange-50 px-1.5 py-0.5 text-[10px] font-medium text-orange-700 ring-1 ring-inset ring-orange-600/20"
+                                title={`Posible duplicado: "${item.possibleDuplicate.originalName}"`}
+                              >
+                                ⚠ Posible duplicado
+                              </span>
                             )}
                           </td>
 
