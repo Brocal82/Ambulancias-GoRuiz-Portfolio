@@ -136,6 +136,14 @@ export default function AdminPayrollPage() {
   const [batchAssignWorkerId, setBatchAssignWorkerId] = useState("");
   const [batchAssigning, setBatchAssigning] = useState(false);
 
+  // ── docs table filter state ────────────────────────────────────────────────
+  const [tableSearch, setTableSearch] = useState("");
+  const [tableStatusFilter, setTableStatusFilter] = useState<
+    "" | PayrollMatchStatus
+  >("");
+  const [tableYearFilter, setTableYearFilter] = useState("");
+  const [tableMonthFilter, setTableMonthFilter] = useState("");
+
   // Keep webkitdirectory attribute in sync with batchFolderMode.
   // React's InputHTMLAttributes does not include webkitdirectory, so we apply
   // it imperatively. The effect re-runs on batchInputKey changes so the
@@ -364,6 +372,45 @@ export default function AdminPayrollPage() {
       toastT.apiError(err, "Error al abrir el archivo");
     }
   };
+
+  // ── docs table: derived filter data ──────────────────────────────────────
+  // Unique years present in loaded documents, descending (for the year select).
+  const tableYearOptions = Array.from(
+    new Set(
+      docs.map((d) => d.year).filter((y): y is number => y !== undefined),
+    ),
+  ).sort((a, b) => b - a);
+
+  const isTableFiltered =
+    tableSearch.trim() !== "" ||
+    tableStatusFilter !== "" ||
+    tableYearFilter !== "" ||
+    tableMonthFilter !== "";
+
+  const filteredDocs = isTableFiltered
+    ? docs.filter((doc) => {
+        if (tableStatusFilter && doc.matchStatus !== tableStatusFilter)
+          return false;
+        if (tableYearFilter && doc.year !== Number(tableYearFilter))
+          return false;
+        if (tableMonthFilter && doc.month !== Number(tableMonthFilter))
+          return false;
+        if (tableSearch.trim()) {
+          const q = tableSearch.trim().toLowerCase();
+          const inFilename = doc.originalName.toLowerCase().includes(q);
+          const inWorkerName = doc.workerId
+            ? `${doc.workerId.name} ${doc.workerId.lastName}`
+                .toLowerCase()
+                .includes(q)
+            : false;
+          const inEmpNum =
+            (doc.workerId?.employeeNumber ?? "").toLowerCase().includes(q) ||
+            (doc.parsedEmployeeNumber ?? "").toLowerCase().includes(q);
+          if (!inFilename && !inWorkerName && !inEmpNum) return false;
+        }
+        return true;
+      })
+    : docs;
 
   // ── table style (consistent with AdminSickLeavesPage) ─────────────────────
   const thClass =
@@ -1077,7 +1124,11 @@ export default function AdminPayrollPage() {
           <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
             <h2 className="text-base font-semibold text-slate-800">
               Documentos subidos{" "}
-              <span className="text-slate-500 font-normal">({docs.length})</span>
+              <span className="text-slate-500 font-normal">
+                {isTableFiltered
+                  ? `(${filteredDocs.length} de ${docs.length})`
+                  : `(${docs.length})`}
+              </span>
             </h2>
             <button
               type="button"
@@ -1089,6 +1140,112 @@ export default function AdminPayrollPage() {
             </button>
           </div>
 
+          {/* ── Table filters ──────────────────────────────────────────────────── */}
+          <div className="px-6 py-3 border-b border-slate-200 bg-slate-50/60 flex flex-wrap gap-3 items-end">
+            {/* Search */}
+            <div className="flex-1 min-w-[200px] space-y-1">
+              <label
+                htmlFor="table-search"
+                className="block text-xs font-medium text-slate-600"
+              >
+                Buscar
+              </label>
+              <input
+                id="table-search"
+                type="search"
+                placeholder="Nombre, Nº empleado, archivo…"
+                value={tableSearch}
+                onChange={(e) => setTableSearch(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+              />
+            </div>
+
+            {/* Status */}
+            <div className="space-y-1 w-44">
+              <label
+                htmlFor="table-status"
+                className="block text-xs font-medium text-slate-600"
+              >
+                Estado
+              </label>
+              <select
+                id="table-status"
+                value={tableStatusFilter}
+                onChange={(e) =>
+                  setTableStatusFilter(e.target.value as "" | PayrollMatchStatus)
+                }
+                className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+              >
+                <option value="">Todos</option>
+                <option value="matched">Auto-asignada</option>
+                <option value="manual">Manual</option>
+                <option value="unmatched">Sin asignar</option>
+              </select>
+            </div>
+
+            {/* Year */}
+            <div className="space-y-1 w-28">
+              <label
+                htmlFor="table-year"
+                className="block text-xs font-medium text-slate-600"
+              >
+                Año
+              </label>
+              <select
+                id="table-year"
+                value={tableYearFilter}
+                onChange={(e) => setTableYearFilter(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+              >
+                <option value="">Todos</option>
+                {tableYearOptions.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Month */}
+            <div className="space-y-1 w-36">
+              <label
+                htmlFor="table-month"
+                className="block text-xs font-medium text-slate-600"
+              >
+                Mes
+              </label>
+              <select
+                id="table-month"
+                value={tableMonthFilter}
+                onChange={(e) => setTableMonthFilter(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+              >
+                <option value="">Todos</option>
+                {MONTH_NAMES.map((name, idx) => (
+                  <option key={idx + 1} value={idx + 1}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Clear filters */}
+            {isTableFiltered && (
+              <button
+                type="button"
+                onClick={() => {
+                  setTableSearch("");
+                  setTableStatusFilter("");
+                  setTableYearFilter("");
+                  setTableMonthFilter("");
+                }}
+                className="self-end text-xs font-medium text-slate-500 hover:text-slate-800 underline focus:outline-none focus:ring-2 focus:ring-slate-200 rounded"
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+
           {loading && docs.length === 0 ? (
             <div className="p-6 text-center text-sm text-slate-500">
               Cargando documentos...
@@ -1096,6 +1253,10 @@ export default function AdminPayrollPage() {
           ) : docs.length === 0 ? (
             <div className="p-6 text-center text-sm text-slate-500">
               No hay documentos de nómina todavía.
+            </div>
+          ) : filteredDocs.length === 0 ? (
+            <div className="p-6 text-center text-sm text-slate-500">
+              Ningún documento coincide con los filtros aplicados.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -1111,7 +1272,7 @@ export default function AdminPayrollPage() {
                 </thead>
 
                 <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
-                  {docs.map((doc) => (
+                  {filteredDocs.map((doc) => (
                     <tr key={doc._id} className={trClass}>
 
                       {/* Original filename + parsed employee number hint */}
