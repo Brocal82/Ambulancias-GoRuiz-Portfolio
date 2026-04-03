@@ -85,6 +85,34 @@ export interface BatchUploadResponse {
   results: BatchResultItem[];
 }
 
+// ── Coverage check (Phase 6) ──────────────────────────────────────────────────
+
+/** A worker entry returned when they have no confirmed payroll for a period. */
+export interface CoverageWorker {
+  _id: string;
+  name: string;
+  lastName: string;
+  email: string;
+  /** Null if the worker has no employeeNumber set. */
+  employeeNumber: string | null;
+}
+
+/**
+ * Response from GET /api/payroll/missing?year=YYYY&month=M.
+ * "Missing" means no confirmed (manual or matched) payroll document for the
+ * given period. This includes ALL workers registered in the company system —
+ * there is no active/inactive employment filtering.
+ */
+export interface CoverageCheckResponse {
+  period: { year: number; month: number };
+  totalWorkers: number;
+  coveredCount: number;
+  missingCount: number;
+  missingWorkers: CoverageWorker[];
+  /** Unmatched documents for this period not yet assigned to any worker. */
+  unmatchedDocumentsForPeriod: number;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**

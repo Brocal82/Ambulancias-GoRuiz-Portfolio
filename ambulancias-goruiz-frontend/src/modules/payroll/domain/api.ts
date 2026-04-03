@@ -5,6 +5,7 @@ import type {
   WorkerPayrollDocument,
   BatchUploadPayload,
   BatchUploadResponse,
+  CoverageCheckResponse,
 } from "./types";
 
 /** Admin: list all payroll documents scoped to their company. */
@@ -59,6 +60,23 @@ export const assignPayrollDocument = async (
   workerId: string,
 ): Promise<void> => {
   await api.patch(`/payroll/${id}/assign`, { workerId });
+};
+
+/**
+ * Admin: check which workers in the company have no confirmed payroll document
+ * for the given period (Phase 6).
+ * Both year and month are required.
+ * "Missing" = no manual/matched document — unmatched documents do not count.
+ * Includes all workers registered in the company; no active/inactive filtering.
+ */
+export const checkPayrollCoverage = async (
+  year: number,
+  month: number,
+): Promise<CoverageCheckResponse> => {
+  const { data } = await api.get<CoverageCheckResponse>("/payroll/missing", {
+    params: { year, month },
+  });
+  return data;
 };
 
 /** Worker: list own payroll documents (confirmed assigned only). */
