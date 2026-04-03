@@ -27,6 +27,14 @@ const MONTH_NAMES = [
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
 
+// Batch results display priority: failed → unmatched → matched.
+// Lower number = shown first.
+const BATCH_STATUS_ORDER: Record<string, number> = {
+  failed: 0,
+  unmatched: 1,
+  matched: 2,
+};
+
 function workerDisplayName(w: PayrollDocument["workerId"]): string {
   if (!w) return "—";
   return `${w.lastName}, ${w.name}`;
@@ -600,6 +608,11 @@ export default function AdminPayrollPage() {
                         (item) =>
                           batchResultsFilter === "all" ||
                           item.status === batchResultsFilter,
+                      )
+                      .sort(
+                        (a, b) =>
+                          (BATCH_STATUS_ORDER[a.status] ?? 99) -
+                          (BATCH_STATUS_ORDER[b.status] ?? 99),
                       )
                       .map(
                       (item: BatchResultItem, idx: number) => (
