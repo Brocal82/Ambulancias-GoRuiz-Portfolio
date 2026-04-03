@@ -224,11 +224,12 @@ export default function AdminPayrollPage() {
 
             {/* Optional worker selector */}
             <div className="space-y-1 min-w-[200px]">
-              <label className="block text-sm font-medium text-slate-700">
+              <label htmlFor="upload-worker-id" className="block text-sm font-medium text-slate-700">
                 Trabajador{" "}
                 <span className="font-normal text-slate-500">(opcional)</span>
               </label>
               <select
+                id="upload-worker-id"
                 value={uploadWorkerId}
                 onChange={(e) => setUploadWorkerId(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
@@ -245,10 +246,11 @@ export default function AdminPayrollPage() {
 
             {/* Year */}
             <div className="space-y-1 w-24">
-              <label className="block text-sm font-medium text-slate-700">
+              <label htmlFor="upload-year" className="block text-sm font-medium text-slate-700">
                 Año
               </label>
               <input
+                id="upload-year"
                 type="number"
                 value={uploadYear}
                 onChange={(e) => setUploadYear(e.target.value)}
@@ -260,11 +262,12 @@ export default function AdminPayrollPage() {
 
             {/* Month */}
             <div className="space-y-1 w-40">
-              <label className="block text-sm font-medium text-slate-700">
+              <label htmlFor="upload-month" className="block text-sm font-medium text-slate-700">
                 Mes{" "}
                 <span className="font-normal text-slate-500">(opcional)</span>
               </label>
               <select
+                id="upload-month"
                 value={uploadMonth}
                 onChange={(e) => setUploadMonth(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
@@ -421,6 +424,7 @@ export default function AdminPayrollPage() {
                           {assigningId === doc._id && (
                             <div className="flex flex-col gap-1.5 items-stretch min-w-[160px]">
                               <select
+                                aria-label="Seleccionar trabajador para asignar"
                                 value={assignWorkerId}
                                 onChange={(e) =>
                                   setAssignWorkerId(e.target.value)

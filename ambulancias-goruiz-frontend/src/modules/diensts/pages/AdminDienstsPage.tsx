@@ -37,6 +37,7 @@ import { isPastDay } from "../../../utils/dates/isPastDay";
 import { isTeamIncomplete } from "../utils/assignmentUtils";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { toastT } from "../../../utils/toast";
 import { toastAmbulanceConflictOrApiError } from "../utils/ambulanceConflictToast";
 import { getPscheinInfoAsOfDate } from "../../../utils/pscheinUtils";
@@ -90,7 +91,7 @@ function shouldShowWeeklyUserSummary(
 function deriveGeneratedWeekTeamSummaryData(
   dienst: Dienst,
   weekStartISO: string,
-  t: (key: string, defaultValue?: string) => string,
+  t: TFunction,
   skippedAbsencesFromApi?: Array<{
     date: string;
     role: "driver" | "medic";
