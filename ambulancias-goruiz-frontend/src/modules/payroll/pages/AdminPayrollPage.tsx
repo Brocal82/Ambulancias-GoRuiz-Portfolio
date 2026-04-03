@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
 import { openSecureFile } from "../../../utils/openSecureFile";
@@ -94,11 +94,28 @@ export default function AdminPayrollPage() {
     null,
   );
   const [batchInputKey, setBatchInputKey] = useState(0);
+  // Phase 5c: optional folder-selection mode for the batch input
+  const [batchFolderMode, setBatchFolderMode] = useState(false);
+  const batchFileInputRef = useRef<HTMLInputElement>(null);
 
   // ── inline assign state ────────────────────────────────────────────────────
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [assignWorkerId, setAssignWorkerId] = useState("");
   const [assigning, setAssigning] = useState(false);
+
+  // Keep webkitdirectory attribute in sync with batchFolderMode.
+  // React's InputHTMLAttributes does not include webkitdirectory, so we apply
+  // it imperatively. The effect re-runs on batchInputKey changes so the
+  // attribute is reapplied each time the input is remounted (after reset).
+  useEffect(() => {
+    const el = batchFileInputRef.current;
+    if (!el) return;
+    if (batchFolderMode) {
+      el.setAttribute("webkitdirectory", "");
+    } else {
+      el.removeAttribute("webkitdirectory");
+    }
+  }, [batchFolderMode, batchInputKey]);
 
   // ── fetch ──────────────────────────────────────────────────────────────────
   const fetchDocs = useCallback(async () => {
@@ -359,29 +376,71 @@ export default function AdminPayrollPage() {
           <h2 className="text-base font-semibold text-slate-800 mb-1">
             Subir múltiples nóminas (lote)
           </h2>
-          <p className="text-xs text-slate-500 mb-4">
+          <p className="text-xs text-slate-500 mb-3">
             Selecciona hasta 20 PDFs. El sistema intentará asignar cada archivo
             automáticamente por número de empleado. Los no asignados quedarán
             pendientes de revisión.
           </p>
 
+          {/* Mode toggle (Phase 5c) */}
+          <label className="inline-flex items-center gap-2 mb-4 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={batchFolderMode}
+              onChange={(e) => {
+                setBatchFolderMode(e.target.checked);
+                setBatchFiles([]);
+                setBatchInputKey((k) => k + 1);
+              }}
+              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm text-slate-700">
+              Seleccionar carpeta
+            </span>
+            <span className="text-xs text-slate-400">
+              {batchFolderMode
+                ? "El navegador mostrará el selector de carpeta. Solo se subirán los PDFs que contenga."
+                : "Selección de archivos individuales (por defecto)"}
+            </span>
+          </label>
+
           <div className="flex flex-wrap gap-4 items-end">
-            {/* Native multi-file input */}
+            {/* Native multi-file / folder input */}
             <div className="space-y-1">
               <label
                 htmlFor="batch-pdf-upload"
                 className="block text-sm font-medium text-slate-700"
               >
-                Archivos PDF
+                {batchFolderMode ? "Carpeta de nóminas" : "Archivos PDF"}
               </label>
               <input
                 key={batchInputKey}
+                ref={batchFileInputRef}
                 id="batch-pdf-upload"
                 type="file"
                 multiple
                 accept=".pdf,application/pdf"
                 onChange={(e) => {
-                  const selected = Array.from(e.target.files ?? []);
+                  let selected = Array.from(e.target.files ?? []);
+
+                  if (batchFolderMode) {
+                    const nonPdf = selected.filter(
+                      (f) =>
+                        f.type !== "application/pdf" &&
+                        !f.name.toLowerCase().endsWith(".pdf"),
+                    );
+                    if (nonPdf.length > 0) {
+                      toastT.warn(
+                        `Se ignoraron ${nonPdf.length} archivo${nonPdf.length !== 1 ? "s" : ""} que no son PDF`,
+                      );
+                    }
+                    selected = selected.filter(
+                      (f) =>
+                        f.type === "application/pdf" ||
+                        f.name.toLowerCase().endsWith(".pdf"),
+                    );
+                  }
+
                   if (selected.length > 20) {
                     toastT.warn("Máximo 20 archivos por lote");
                     setBatchFiles(selected.slice(0, 20));
