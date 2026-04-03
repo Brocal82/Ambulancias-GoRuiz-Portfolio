@@ -204,6 +204,208 @@ export async function uploadPayrollDocument(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// POST /api/payroll/upload/batch
+// Admin only. Accepts up to 20 PDF files (field name: "payrolls").
+//
+// Each file is processed independently using the same auto-match logic as the
+// single-file upload. There is no manual workerId path here — unmatched files
+// can be reassigned later via PATCH /api/payroll/:id/assign.
+//
+// Response: 200 with summary counts + per-file result items.
+// Partial success is intentional — one file's failure does not abort the rest.
+// ─────────────────────────────────────────────────────────────────────────────
+
+type BatchResultItem =
+  | {
+      originalName: string;
+      status: "matched";
+      payrollId: string;
+      workerId: string;
+      matchStatus: "matched";
+      parsedEmployeeNumber: string;
+      year?: number;
+      month?: number;
+    }
+  | {
+      originalName: string;
+      status: "unmatched";
+      payrollId: string;
+      matchStatus: "unmatched";
+      matchReason: string;
+      year?: number;
+      month?: number;
+    }
+  | {
+      originalName: string;
+      status: "failed";
+      error: string;
+    };
+
+export async function uploadPayrollBatch(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res
+        .status(companyResult.statusCode)
+        .json({ message: companyResult.message });
+      return;
+    }
+    const adminCompanyId = companyResult.companyId;
+
+    const files = req.files as Express.Multer.File[] | undefined;
+    if (!files || files.length === 0) {
+      res.status(400).json({
+        message:
+          "No se recibieron archivos. Usa el campo 'payrolls' (hasta 20 PDFs).",
+      });
+      return;
+    }
+
+    const { year, month } = req.body as { year?: string; month?: string };
+
+    const parsedYear = year !== undefined ? parseInt(year, 10) : undefined;
+    const parsedMonth = month !== undefined ? parseInt(month, 10) : undefined;
+
+    if (
+      parsedYear !== undefined &&
+      (isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100)
+    ) {
+      res
+        .status(400)
+        .json({ message: "year debe ser un número entre 2000 y 2100" });
+      return;
+    }
+    if (
+      parsedMonth !== undefined &&
+      (isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12)
+    ) {
+      res
+        .status(400)
+        .json({ message: "month debe ser un número entre 1 y 12" });
+      return;
+    }
+
+    const companyOid = new mongoose.Types.ObjectId(adminCompanyId);
+    const uploaderOid = new mongoose.Types.ObjectId(req.userId as string);
+    const periodFields = {
+      ...(parsedYear !== undefined && { year: parsedYear }),
+      ...(parsedMonth !== undefined && { month: parsedMonth }),
+    };
+
+    const results: BatchResultItem[] = [];
+    let matched = 0;
+    let unmatched = 0;
+    let failed = 0;
+
+    for (const file of files) {
+      const originalName = file.originalname;
+
+      // Resolve stored filename — same pattern as uploadPayrollDocument
+      let storedFilename: string | undefined;
+      if (file.filename && typeof file.filename === "string") {
+        storedFilename = file.filename;
+      } else if (file.path && typeof file.path === "string") {
+        const normalized = file.path.replace(/\\/g, "/");
+        storedFilename = normalized.split("/").pop();
+      }
+
+      if (!storedFilename) {
+        results.push({
+          originalName,
+          status: "failed",
+          error: "No se pudo resolver el nombre del archivo almacenado",
+        });
+        failed++;
+        continue;
+      }
+
+      const fileUrl = `/uploads/${storedFilename}`;
+
+      try {
+        const matchResult = await matchWorkerFromFilename(
+          originalName,
+          adminCompanyId,
+        );
+
+        if (matchResult.status === "matched") {
+          const doc = await PayrollDocument.create({
+            workerId: new mongoose.Types.ObjectId(matchResult.workerId),
+            companyId: companyOid,
+            uploadedBy: uploaderOid,
+            filename: storedFilename,
+            originalName,
+            fileUrl,
+            matchStatus: "matched",
+            parsedEmployeeNumber: matchResult.parsedEmployeeNumber,
+            ...periodFields,
+          });
+
+          results.push({
+            originalName,
+            status: "matched",
+            payrollId: String(doc._id),
+            workerId: String(doc.workerId),
+            matchStatus: "matched",
+            parsedEmployeeNumber: matchResult.parsedEmployeeNumber,
+            ...periodFields,
+          });
+          matched++;
+        } else {
+          const doc = await PayrollDocument.create({
+            workerId: null,
+            companyId: companyOid,
+            uploadedBy: uploaderOid,
+            filename: storedFilename,
+            originalName,
+            fileUrl,
+            matchStatus: "unmatched",
+            matchReason: matchResult.reason,
+            ...periodFields,
+          });
+
+          results.push({
+            originalName,
+            status: "unmatched",
+            payrollId: String(doc._id),
+            matchStatus: "unmatched",
+            matchReason: matchResult.reason,
+            ...periodFields,
+          });
+          unmatched++;
+        }
+      } catch (fileErr) {
+        console.error(
+          `[payroll] batch: error processing "${originalName}":`,
+          fileErr,
+        );
+        results.push({
+          originalName,
+          status: "failed",
+          error: "Error interno al procesar este archivo",
+        });
+        failed++;
+      }
+    }
+
+    res.status(200).json({
+      summary: {
+        total: files.length,
+        matched,
+        unmatched,
+        failed,
+      },
+      results,
+    });
+  } catch (err) {
+    console.error("[payroll] uploadPayrollBatch error:", err);
+    res.status(500).json({ message: "Error al procesar el lote de nóminas" });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // PATCH /api/payroll/:id/assign
 // Admin only: manually assign (or re-assign) a payroll document to a worker.
 // Works on any document in the admin's company regardless of current matchStatus.

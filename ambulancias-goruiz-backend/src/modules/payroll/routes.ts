@@ -5,12 +5,25 @@ import { upload } from "../../middlewares/uploadMiddleware";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import {
   uploadPayrollDocument,
+  uploadPayrollBatch,
   assignPayrollDocument,
   listPayrollDocumentsAdmin,
   listMyPayrollDocuments,
 } from "./controllers/payroll.controller";
 
 const router = express.Router();
+
+// Admin: batch-upload up to 20 payslip PDFs in a single request (Phase 5).
+// Each file is auto-matched independently; no manual workerId path.
+// Unmatched files can be reassigned via PATCH /api/payroll/:id/assign.
+// POST /api/payroll/upload/batch  (multipart field name: "payrolls", up to 20 files)
+router.post(
+  "/upload/batch",
+  authenticateToken,
+  authorizeRole("admin"),
+  upload.array("payrolls", 20),
+  uploadPayrollBatch,
+);
 
 // Admin: upload a payslip PDF.
 //   - With workerId in body → manual assignment (Phase 1 path)

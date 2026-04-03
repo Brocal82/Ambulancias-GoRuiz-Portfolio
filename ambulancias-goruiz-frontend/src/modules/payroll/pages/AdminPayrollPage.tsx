@@ -7,9 +7,15 @@ import type { User } from "../../users";
 import {
   listPayrollDocuments,
   uploadPayrollDocument as apiUpload,
+  uploadPayrollBatch as apiBatchUpload,
   assignPayrollDocument as apiAssign,
 } from "../domain/api";
-import type { PayrollDocument, PayrollMatchStatus } from "../domain/types";
+import type {
+  PayrollDocument,
+  PayrollMatchStatus,
+  BatchUploadResponse,
+  BatchResultItem,
+} from "../domain/types";
 import FileUpload from "../../../components/common/FileUpload";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -77,6 +83,18 @@ export default function AdminPayrollPage() {
   // Incremented after a successful upload to force FileUpload to re-mount and reset
   const [fileInputKey, setFileInputKey] = useState(0);
 
+  // ── batch upload state (Phase 5) ───────────────────────────────────────────
+  const [batchFiles, setBatchFiles] = useState<File[]>([]);
+  const [batchYear, setBatchYear] = useState<string>(
+    String(new Date().getFullYear()),
+  );
+  const [batchMonth, setBatchMonth] = useState<string>("");
+  const [batchUploading, setBatchUploading] = useState(false);
+  const [batchResults, setBatchResults] = useState<BatchUploadResponse | null>(
+    null,
+  );
+  const [batchInputKey, setBatchInputKey] = useState(0);
+
   // ── inline assign state ────────────────────────────────────────────────────
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [assignWorkerId, setAssignWorkerId] = useState("");
@@ -132,6 +150,42 @@ export default function AdminPayrollPage() {
       toastT.apiError(err, "Error al subir la nómina");
     } finally {
       setUploading(false);
+    }
+  };
+
+  // ── batch upload (Phase 5) ─────────────────────────────────────────────────
+  const handleBatchUpload = async () => {
+    if (batchFiles.length === 0) {
+      toastT.warn("Selecciona al menos un archivo PDF antes de subir");
+      return;
+    }
+
+    const year = batchYear ? parseInt(batchYear, 10) : undefined;
+    const month = batchMonth ? parseInt(batchMonth, 10) : undefined;
+
+    setBatchUploading(true);
+    setBatchResults(null);
+    try {
+      const response = await apiBatchUpload({ files: batchFiles, year, month });
+      setBatchResults(response);
+      setBatchFiles([]);
+      setBatchInputKey((k) => k + 1);
+      await fetchDocs();
+
+      const { matched, unmatched, failed, total } = response.summary;
+      if (failed === 0 && unmatched === 0) {
+        toastT.success(`${matched} de ${total} nóminas asignadas automáticamente`);
+      } else if (failed === total) {
+        toastT.error("Todos los archivos fallaron. Revisa los errores.");
+      } else {
+        toastT.warn(
+          `Lote procesado: ${matched} asignadas, ${unmatched} sin asignar, ${failed} con error`,
+        );
+      }
+    } catch (err) {
+      toastT.apiError(err, "Error al subir el lote de nóminas");
+    } finally {
+      setBatchUploading(false);
     }
   };
 
@@ -297,6 +351,214 @@ export default function AdminPayrollPage() {
               Sin trabajador seleccionado, el sistema intentará asignar
               automáticamente por número de empleado en el nombre del archivo.
             </p>
+          )}
+        </div>
+
+        {/* ── Batch upload section (Phase 5) ────────────────────────────────── */}
+        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
+          <h2 className="text-base font-semibold text-slate-800 mb-1">
+            Subir múltiples nóminas (lote)
+          </h2>
+          <p className="text-xs text-slate-500 mb-4">
+            Selecciona hasta 20 PDFs. El sistema intentará asignar cada archivo
+            automáticamente por número de empleado. Los no asignados quedarán
+            pendientes de revisión.
+          </p>
+
+          <div className="flex flex-wrap gap-4 items-end">
+            {/* Native multi-file input */}
+            <div className="space-y-1">
+              <label
+                htmlFor="batch-pdf-upload"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Archivos PDF
+              </label>
+              <input
+                key={batchInputKey}
+                id="batch-pdf-upload"
+                type="file"
+                multiple
+                accept=".pdf,application/pdf"
+                onChange={(e) => {
+                  const selected = Array.from(e.target.files ?? []);
+                  if (selected.length > 20) {
+                    toastT.warn("Máximo 20 archivos por lote");
+                    setBatchFiles(selected.slice(0, 20));
+                  } else {
+                    setBatchFiles(selected);
+                  }
+                }}
+                className="block text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 focus:outline-none"
+              />
+              {batchFiles.length > 0 && (
+                <p className="text-xs text-slate-500">
+                  {batchFiles.length} archivo{batchFiles.length !== 1 ? "s" : ""} seleccionado{batchFiles.length !== 1 ? "s" : ""}
+                </p>
+              )}
+            </div>
+
+            {/* Year */}
+            <div className="space-y-1 w-24">
+              <label
+                htmlFor="batch-year"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Año
+              </label>
+              <input
+                id="batch-year"
+                type="number"
+                value={batchYear}
+                onChange={(e) => setBatchYear(e.target.value)}
+                min={2000}
+                max={2100}
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+              />
+            </div>
+
+            {/* Month */}
+            <div className="space-y-1 w-40">
+              <label
+                htmlFor="batch-month"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Mes{" "}
+                <span className="font-normal text-slate-500">(opcional)</span>
+              </label>
+              <select
+                id="batch-month"
+                value={batchMonth}
+                onChange={(e) => setBatchMonth(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+              >
+                <option value="">— Sin especificar —</option>
+                {MONTH_NAMES.map((name, idx) => (
+                  <option key={idx + 1} value={idx + 1}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="button"
+              onClick={handleBatchUpload}
+              disabled={batchUploading || batchFiles.length === 0}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {batchUploading
+                ? "Subiendo..."
+                : `Subir ${batchFiles.length > 0 ? batchFiles.length : ""} nómina${batchFiles.length !== 1 ? "s" : ""}`}
+            </button>
+          </div>
+
+          {/* ── Batch results panel ─────────────────────────────────────────── */}
+          {batchResults && (
+            <div className="mt-5 space-y-3">
+              {/* Summary banner */}
+              <div className="flex flex-wrap gap-3 text-sm">
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-slate-700 font-medium">
+                  Total: {batchResults.summary.total}
+                </span>
+                {batchResults.summary.matched > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 font-medium ring-1 ring-inset ring-emerald-600/20">
+                    ✓ Asignadas: {batchResults.summary.matched}
+                  </span>
+                )}
+                {batchResults.summary.unmatched > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-amber-700 font-medium ring-1 ring-inset ring-amber-600/20">
+                    ⚠ Sin asignar: {batchResults.summary.unmatched}
+                  </span>
+                )}
+                {batchResults.summary.failed > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-1 text-red-700 font-medium ring-1 ring-inset ring-red-600/20">
+                    ✕ Con error: {batchResults.summary.failed}
+                  </span>
+                )}
+              </div>
+
+              {/* Per-file result table */}
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50">
+                    <tr className="border-b border-slate-200">
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-600">
+                        Archivo
+                      </th>
+                      <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-600">
+                        Resultado
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-600">
+                        Detalle
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {batchResults.results.map(
+                      (item: BatchResultItem, idx: number) => (
+                        <tr
+                          key={idx}
+                          className="border-t border-slate-200 hover:bg-slate-50/70"
+                        >
+                          <td
+                            className="px-3 py-2 text-slate-800 font-medium max-w-[240px] truncate"
+                            title={item.originalName}
+                          >
+                            {item.originalName}
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            {item.status === "matched" && (
+                              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                                Auto-asignada
+                              </span>
+                            )}
+                            {item.status === "unmatched" && (
+                              <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                                Sin asignar
+                              </span>
+                            )}
+                            {item.status === "failed" && (
+                              <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">
+                                Error
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-xs text-slate-500">
+                            {item.status === "matched" &&
+                              item.parsedEmployeeNumber && (
+                                <span>
+                                  Nº empleado: {item.parsedEmployeeNumber}
+                                </span>
+                              )}
+                            {item.status === "unmatched" && item.matchReason && (
+                              <span
+                                title={item.matchReason}
+                                className="max-w-[280px] block truncate"
+                              >
+                                {item.matchReason}
+                              </span>
+                            )}
+                            {item.status === "failed" && item.error && (
+                              <span className="text-red-600">{item.error}</span>
+                            )}
+                          </td>
+                        </tr>
+                      ),
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setBatchResults(null)}
+                className="text-xs text-slate-500 hover:text-slate-700 underline"
+              >
+                Cerrar resultados
+              </button>
+            </div>
           )}
         </div>
 

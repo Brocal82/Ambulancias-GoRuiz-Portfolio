@@ -47,6 +47,46 @@ export interface UploadPayrollPayload {
   month?: number;
 }
 
+// ── Batch upload (Phase 5) ────────────────────────────────────────────────────
+
+export interface BatchUploadPayload {
+  files: File[];
+  year?: number;
+  month?: number;
+}
+
+/** Per-file status in a batch upload response. */
+export type BatchResultStatus = "matched" | "unmatched" | "failed";
+
+export interface BatchResultItem {
+  originalName: string;
+  status: BatchResultStatus;
+  /** Present for matched and unmatched (a document was created). */
+  payrollId?: string;
+  workerId?: string;
+  matchStatus?: PayrollMatchStatus;
+  parsedEmployeeNumber?: string;
+  matchReason?: string;
+  /** Present only when status is "failed" (no document created). */
+  error?: string;
+  year?: number;
+  month?: number;
+}
+
+export interface BatchUploadSummary {
+  total: number;
+  matched: number;
+  unmatched: number;
+  failed: number;
+}
+
+export interface BatchUploadResponse {
+  summary: BatchUploadSummary;
+  results: BatchResultItem[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * Payroll document as returned by GET /api/payroll/mine (worker).
  * Only the fields the backend selects for the worker are present.

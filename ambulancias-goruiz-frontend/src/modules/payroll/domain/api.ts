@@ -3,6 +3,8 @@ import type {
   PayrollDocument,
   UploadPayrollPayload,
   WorkerPayrollDocument,
+  BatchUploadPayload,
+  BatchUploadResponse,
 } from "./types";
 
 /** Admin: list all payroll documents scoped to their company. */
@@ -26,6 +28,29 @@ export const uploadPayrollDocument = async (
   if (payload.year !== undefined) form.append("year", String(payload.year));
   if (payload.month !== undefined) form.append("month", String(payload.month));
   await api.post("/payroll/upload", form);
+};
+
+/**
+ * Admin: batch-upload up to 20 payslip PDFs (Phase 5).
+ * Multipart field name for the files: "payrolls".
+ * Each file is auto-matched independently — no manual workerId path.
+ * Returns a structured response with per-file results and a summary.
+ * Partial success is intentional; check summary.failed for errors.
+ */
+export const uploadPayrollBatch = async (
+  payload: BatchUploadPayload,
+): Promise<BatchUploadResponse> => {
+  const form = new FormData();
+  for (const file of payload.files) {
+    form.append("payrolls", file);
+  }
+  if (payload.year !== undefined) form.append("year", String(payload.year));
+  if (payload.month !== undefined) form.append("month", String(payload.month));
+  const { data } = await api.post<BatchUploadResponse>(
+    "/payroll/upload/batch",
+    form,
+  );
+  return data;
 };
 
 /** Admin: assign (or re-assign) an unmatched document to a specific worker. */
