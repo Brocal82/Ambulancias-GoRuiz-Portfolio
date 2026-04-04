@@ -8,11 +8,11 @@
 
 ---
 
-## 1. What “legacy `companyId` behavior” means here
+## 1. What "legacy `companyId` behavior" means here
 
 Some MongoDB documents (notably **Dienst** and related aggregates) may still have `companyId` **null** or **missing**, reflecting data or flows from before strict multi-tenant modeling.
 
-The codebase still carries **helpers** (e.g. in `requireCompany.ts`, calendar/list filters) that treat “no company on the document” as compatible with certain **legacy** read or branching rules. That is **technical debt**, not the target architecture.
+The codebase still carries **helpers** (e.g. in `requireCompany.ts`, calendar/list filters) that treat "no company on the document" as compatible with certain **legacy** read or branching rules. That is **technical debt**, not the target architecture.
 
 ---
 
@@ -28,11 +28,12 @@ Do not design new features around users without a company unless there is an exp
 
 **New write paths must be strict company-scoped by default:**
 
-- Resolve the acting admin’s or worker’s `companyId` from the authenticated context and/or loaded `User` / resource documents.
+- Resolve the acting admin's or worker's `companyId` from the authenticated context and/or loaded `User` / resource documents.
 - Persist new rows with `companyId` set when the schema supports it.
-- Restrict queries and updates so a tenant cannot read or mutate another tenant’s data.
+- Restrict queries and updates so a tenant cannot read or mutate another tenant's data.
+- **Enforcement belongs in the service layer.** Controllers extract and forward `companyId`; services own the isolation check. Use `requireCompanyForAdmin` at the service entry point and `isSameCompany` / `isResourceFromCompany` from `src/utils/requireCompany.ts` for record-level checks.
 
-Do **not** copy legacy `$or: [{ companyId: null }, { companyId: { $exists: false } }]` patterns into new code “for consistency” without an explicit review.
+Do **not** copy legacy `$or: [{ companyId: null }, { companyId: { $exists: false } }]` patterns into new code "for consistency" without an explicit review.
 
 ---
 
@@ -69,6 +70,7 @@ Do not mix large data migrations into unrelated feature PRs. Track migration sep
 | Topic                         | Policy |
 |-------------------------------|--------|
 | New writes                    | Strict company scope by default |
+| Enforcement layer             | Service layer; use `requireCompany.ts` utilities |
 | New code patterns             | Do not spread legacy null/missing `companyId` helpers by default |
 | Existing legacy helpers       | Legacy debt; narrow use only |
 | Reads vs writes               | Tolerant reads ≠ unscoped writes |
