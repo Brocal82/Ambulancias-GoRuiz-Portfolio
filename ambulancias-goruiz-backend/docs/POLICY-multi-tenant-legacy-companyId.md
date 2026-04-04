@@ -4,6 +4,8 @@
 **Scope:** Backend (`ambulancias-goruiz-backend`) and any feature touching tenant boundaries  
 **Audience:** Engineers implementing new routes, services, or cross-entity mutations
 
+> ⚠️ **Breaking tenant isolation can expose one company's data to another.** This is the highest-severity class of bug in a multi-tenant system. Treat every missing companyId check as a potential data breach.
+
 ---
 
 ## 1. What “legacy `companyId` behavior” means here
