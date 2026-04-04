@@ -83,6 +83,10 @@ Frontend:
     - requireCompanyForAdmin
 - Avoid duplicate queries unless necessary
 - Prefer service-level enforcement (not only controller)
+- Controllers only: parse request → call service → return JSON. No business logic or DB queries in controllers.
+- companyId enforcement belongs in the service layer, not only at the route or controller level.
+
+**Domain-critical modules:** Some domains (e.g. `diensts` / scheduling) have lifecycle constraints across sub-modules. Read `ambulancias-goruiz-backend/docs/DOMAIN-diensts.md` before modifying scheduling logic.
 
 ---
 
@@ -92,6 +96,7 @@ Frontend:
 - Preserve UX exactly
 - Avoid new hooks unless necessary
 - Prefer existing utilities over new abstractions
+- Follow existing API call patterns: HTTP calls belong in each module's `domain/api.ts`, using the shared axios instance. Do not introduce new calling patterns.
 
 Examples:
 
@@ -137,3 +142,12 @@ Incrementally improve:
 - file handling
 
 WITHOUT breaking the system.
+
+---
+
+# 📋 ADDITIONAL CONTEXT
+
+This file provides global rules. File-specific operational guidance lives in `.cursor/rules/`:
+
+- `backend-modules.mdc` — backend module structure and utility imports (activates on `src/modules/**`)
+- `frontend-modules.mdc` — frontend API patterns, locale sync, shared components (activates on `src/**`)
