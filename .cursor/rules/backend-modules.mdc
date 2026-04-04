@@ -1,0 +1,41 @@
+---
+description: Backend module conventions for ambulancias-goruiz-backend
+globs: ambulancias-goruiz-backend/src/modules/**/*
+alwaysApply: false
+---
+
+# Backend Module Conventions
+
+## Module folder contract
+
+Each domain module follows this structure:
+
+```
+src/modules/<name>/
+  routes.ts                   — Express router; auth and role middleware applied here
+  controllers/
+    <name>.controller.ts      — one file, or split by read/write if the domain warrants it
+  services/
+    <name>.service.ts         — one file, or split by read/write/responsibility
+  models/
+    <name>.model.ts           — Mongoose schema and TypeScript interface
+```
+
+Valid variation: controllers and services may be split into `<name>-read` and `<name>-write` files
+when the domain has distinct read and write concerns (see `sick-leaves`, `vacation`, `praemien`).
+This is a recognized pattern, not a violation.
+
+## Controller responsibility boundary
+
+Controllers do one thing: parse the request → call a service function → return a JSON response.
+Business logic and database queries belong in services, not controllers.
+
+## Multi-tenant enforcement
+
+For the full companyId policy and the legacy-null fallback pattern, see:
+`ambulancias-goruiz-backend/docs/POLICY-multi-tenant-legacy-companyId.md`
+
+Utilities live in `src/utils/requireCompany.ts`:
+- `requireCompanyForAdmin(req)` — use at the start of admin write operations
+- `isSameCompany(targetCompanyId, adminCompanyId)` — use when a record may have a null companyId (legacy fallback)
+- `isResourceFromCompany(resourceCompanyId, companyId)` — use for ambulances, hospitals, and other non-user resources

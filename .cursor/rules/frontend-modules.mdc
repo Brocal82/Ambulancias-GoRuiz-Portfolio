@@ -1,0 +1,43 @@
+---
+description: Frontend module conventions for ambulancias-goruiz-frontend
+globs: ambulancias-goruiz-frontend/src/**/*
+alwaysApply: false
+---
+
+# Frontend Module Conventions
+
+## API calls
+
+All HTTP calls for a feature belong in that module's `domain/api.ts` file.
+Use the shared Axios instance from `src/api/axios.ts` — do not create a second instance.
+
+```
+src/modules/<name>/domain/api.ts   ← HTTP calls go here
+```
+
+Hooks may wrap `domain/api.ts` calls to manage local state. That is the expected pattern.
+Direct HTTP calls inside components (outside a hook or `domain/api.ts`) are not the established convention.
+
+## Secure document access
+
+For PDFs, payroll documents, sick-leave attachments, and any file served from `/api/files/`:
+use `openSecureFile()` from `src/utils/openSecureFile.ts`.
+
+The security policy behind this (public `/uploads` vs authenticated `/api/files/`) is in `CLAUDE.md`.
+
+## Locale sync
+
+When adding any user-visible string, add the translation key to all three locale files:
+- `src/locales/de/translation.json`
+- `src/locales/en/translation.json`
+- `src/locales/es/translation.json`
+
+All three files must stay in sync. A key missing from one locale will silently fall back or display the key name.
+
+## Shared UI primitives
+
+Before creating a new button or action component, check `src/components/common/`:
+- `actions/` — Save, Cancel, Create, Edit, Delete, DangerDelete, DayOff
+- `PageShell.tsx` — standard page wrapper
+- `StatusBadge.tsx` — status pill
+- `FileUpload.tsx` — upload widget
