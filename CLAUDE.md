@@ -51,6 +51,9 @@ Correct pattern:
 - Trust only userId relationships
 - Skip company checks in services
 
+For full multi-tenant rules and legacy `companyId` handling, see:
+`ambulancias-goruiz-backend/docs/POLICY-multi-tenant-legacy-companyId.md`
+
 ---
 
 # 📁 FILE SECURITY RULES
