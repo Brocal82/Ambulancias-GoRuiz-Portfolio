@@ -91,6 +91,8 @@ Frontend:
 
 **Domain-critical modules:** Some domains (e.g. `diensts` / scheduling) have lifecycle constraints across sub-modules. Read `ambulancias-goruiz-backend/docs/DOMAIN-diensts.md` before modifying scheduling logic.
 
+**Superadmin role boundary:** `authorizeRole("admin")` uses strict equality — `"superadmin" !== "admin"` — so superadmins are intentionally blocked from routes guarded by `authorizeRole("admin")`. Superadmin operations go through their own dedicated routes. Do not loosen this without an explicit requirement.
+
 ---
 
 # 🎨 FRONTEND RULES

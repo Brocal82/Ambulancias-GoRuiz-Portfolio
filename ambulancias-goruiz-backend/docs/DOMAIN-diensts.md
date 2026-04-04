@@ -65,6 +65,7 @@ Existing Dienst documents may have `companyId: null` — this is expected legacy
 
 - **Read paths** may use legacy-tolerant filters where they already exist.
 - **New generated Diensts** must have `companyId` set from the authenticated admin's context.
+- **`cleanupOldDiensts` (cron) skips Diensts with `companyId: null`.** Legacy records are never deleted by the automated cleanup. This is intentional — do not modify the null filter without a planned migration.
 
 For the full companyId policy and the legacy-null decision logic, see:
 `ambulancias-goruiz-backend/docs/POLICY-multi-tenant-legacy-companyId.md`

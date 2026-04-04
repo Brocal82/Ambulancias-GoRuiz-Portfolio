@@ -28,9 +28,9 @@ The security policy behind this (public `/uploads` vs authenticated `/api/files/
 ## Locale sync
 
 When adding any user-visible string, add the translation key to all three locale files:
-- `src/locales/de/translation.json`
-- `src/locales/en/translation.json`
-- `src/locales/es/translation.json`
+- `src/locales/de/common.json`
+- `src/locales/en/common.json`
+- `src/locales/es/common.json`
 
 All three files must stay in sync. A key missing from one locale will silently fall back or display the key name.
 

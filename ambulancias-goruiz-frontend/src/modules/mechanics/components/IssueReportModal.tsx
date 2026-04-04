@@ -1,6 +1,6 @@
 // src/components/workday/IssueReportModal.tsx
 import React, { useState } from "react";
-import axios from "../../../api/axios";
+import { reportIssue } from "../domain/api";
 import { toastT } from "../../../utils/toast";
 import type { AssignedDayFull } from "../../../modules/diensts";
 import { formatYYYYMMDDToDDMMYYYY } from "../../../utils/timeUtils";
@@ -75,7 +75,7 @@ const IssueReportModal: React.FC<Props> = ({
         };
 
         try {
-            await axios.post("/workday-summary/report-issue", payload);
+            await reportIssue(payload);
 
             notifyAdminIssuesChanged();
             toastT.success(["toasts.mechanics.reportSent"]);

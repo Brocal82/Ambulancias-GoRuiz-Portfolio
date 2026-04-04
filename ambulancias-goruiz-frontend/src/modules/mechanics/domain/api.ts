@@ -2,6 +2,25 @@ import axios from "../../../api/axios";
 import { getApiErrorMessage } from "../../../utils/toast";
 import type { WorkdayIssue } from "./types";
 
+export interface ReportIssuePayload {
+  dienstNumber: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  team: string;
+  ambulanceNumber: string;
+  ambulanceId: string;
+  finalKm: number;
+  timestamp: string;
+  issueText: string;
+  driver: string;
+  medic: string;
+}
+
+export const reportIssue = async (payload: ReportIssuePayload): Promise<void> => {
+  await axios.post("/workday-summary/report-issue", payload);
+};
+
 export const getAllIssueReports = async (): Promise<WorkdayIssue[]> => {
   try {
     const res = await axios.get<WorkdayIssue[]>("/workday-summary/issues");
