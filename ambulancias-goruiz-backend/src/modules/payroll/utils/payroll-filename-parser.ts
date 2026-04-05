@@ -72,6 +72,28 @@ function tokenizeFilename(originalName: string): string[] {
 }
 
 /**
+ * Attempt to extract an employeeNumber candidate directly from the raw filename
+ * stem using regex, before any normalization.
+ *
+ * Strategy:
+ *  1. EMP-prefix pattern  /EMP\d+/i  → returned uppercased  (e.g. "EMP0001")
+ *  2. Bare digit run      /\d{4,}/   → returned as-is       (e.g. "0001")
+ *     (minimum 4 digits to avoid matching 3-char month codes or 3-digit sequences)
+ *
+ * Returns null when neither pattern matches so the caller can fall back to the
+ * existing token-sequence approach.
+ */
+function extractCandidateFromStem(stem: string): string | null {
+  const empMatch = stem.match(/EMP\d+/i);
+  if (empMatch) return empMatch[0].toUpperCase();
+
+  const digitMatch = stem.match(/\d{4,}/);
+  if (digitMatch) return digitMatch[0];
+
+  return null;
+}
+
+/**
  * Attempt to match a single worker in `companyId` by finding their
  * `employeeNumber` as a contiguous token sequence inside `originalName`.
  *
@@ -116,20 +138,38 @@ export async function matchWorkerFromFilename(
     };
   }
 
+  // Primary path: extract a candidate directly from the raw stem via regex.
+  // This handles EMP-prefixed formats (EMP0001, emp0001) and pure-digit numbers
+  // (0001) without being sensitive to separator style or casing around the token.
+  // When no regex candidate is found the loop falls back to the original
+  // token-sequence approach so existing behaviour is fully preserved.
+  const stem = originalName.replace(/\.[^.]+$/, "");
+  const regexCandidate = extractCandidateFromStem(stem);
+
   const matches: Array<{ workerId: string; parsedEmployeeNumber: string }> = [];
 
   for (const worker of workers) {
     const raw = worker.employeeNumber;
     if (!raw || !raw.trim()) continue;
 
-    const normalizedEmp = normalize(raw);
+    let matched: boolean;
 
-    // Guard: fewer than 4 non-space chars → too short to be a reliable discriminator
-    if (normalizedEmp.replace(/\s/g, "").length < MIN_EMP_NUM_LENGTH) continue;
+    if (regexCandidate !== null) {
+      // Case-insensitive exact match between the regex-extracted candidate and
+      // the stored employeeNumber (both normalised to uppercase + trimmed).
+      matched = regexCandidate === raw.trim().toUpperCase();
+    } else {
+      // Fallback: original token-sequence approach.
+      const normalizedEmp = normalize(raw);
 
-    const empTokens = tokenize(normalizedEmp);
+      // Guard: fewer than 4 non-space chars → too short to be a reliable discriminator
+      if (normalizedEmp.replace(/\s/g, "").length < MIN_EMP_NUM_LENGTH) continue;
 
-    if (includesSequence(filenameTokens, empTokens)) {
+      const empTokens = tokenize(normalizedEmp);
+      matched = includesSequence(filenameTokens, empTokens);
+    }
+
+    if (matched) {
       matches.push({
         workerId: String(worker._id),
         parsedEmployeeNumber: raw.trim(),
