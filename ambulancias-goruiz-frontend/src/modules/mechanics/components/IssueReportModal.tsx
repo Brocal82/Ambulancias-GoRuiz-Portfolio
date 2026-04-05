@@ -60,6 +60,7 @@ const IssueReportModal: React.FC<Props> = ({
         const finalKmValue = Number(finalKmInput);
 
         const payload = {
+            assignmentId: assignedDay.assignmentId,
             dienstNumber: assignedDay.dienstNumber!,
             date: assignedDay.date,
             startTime: assignedDay.startTime,

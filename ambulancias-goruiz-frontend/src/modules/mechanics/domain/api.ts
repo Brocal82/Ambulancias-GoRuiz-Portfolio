@@ -3,6 +3,7 @@ import { getApiErrorMessage } from "../../../utils/toast";
 import type { WorkdayIssue } from "./types";
 
 export interface ReportIssuePayload {
+  assignmentId: string;
   dienstNumber: number;
   date: string;
   startTime: string;
