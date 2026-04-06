@@ -141,8 +141,14 @@ export default function AdminPayrollPage() {
   const [tableStatusFilter, setTableStatusFilter] = useState<
     "" | PayrollMatchStatus
   >("");
-  const [tableYearFilter, setTableYearFilter] = useState("");
-  const [tableMonthFilter, setTableMonthFilter] = useState("");
+  // Default to current year/month so the admin sees the relevant period on arrival.
+  // "Limpiar filtros" resets them back to "" to show all documents.
+  const [tableYearFilter, setTableYearFilter] = useState(
+    String(new Date().getFullYear()),
+  );
+  const [tableMonthFilter, setTableMonthFilter] = useState(
+    String(new Date().getMonth() + 1),
+  );
 
   // Keep webkitdirectory attribute in sync with batchFolderMode.
   // React's InputHTMLAttributes does not include webkitdirectory, so we apply
@@ -375,10 +381,13 @@ export default function AdminPayrollPage() {
 
   // ── docs table: derived filter data ──────────────────────────────────────
   // Unique years present in loaded documents, descending (for the year select).
+  // Current year is always included so the pre-selected default renders correctly
+  // even before any documents for this year have been uploaded.
   const tableYearOptions = Array.from(
-    new Set(
-      docs.map((d) => d.year).filter((y): y is number => y !== undefined),
-    ),
+    new Set([
+      new Date().getFullYear(),
+      ...docs.map((d) => d.year).filter((y): y is number => y !== undefined),
+    ]),
   ).sort((a, b) => b - a);
 
   const isTableFiltered =
@@ -387,7 +396,7 @@ export default function AdminPayrollPage() {
     tableYearFilter !== "" ||
     tableMonthFilter !== "";
 
-  const filteredDocs = isTableFiltered
+  const filteredDocs = (isTableFiltered
     ? docs.filter((doc) => {
         if (tableStatusFilter && doc.matchStatus !== tableStatusFilter)
           return false;
@@ -410,13 +419,35 @@ export default function AdminPayrollPage() {
         }
         return true;
       })
-    : docs;
+    // .slice() creates a copy so the sort below never mutates the docs state array.
+    : docs.slice()
+  ).sort((a, b) => {
+    // Unmatched documents surface first so they are immediately actionable.
+    if (a.matchStatus === "unmatched" && b.matchStatus !== "unmatched") return -1;
+    if (a.matchStatus !== "unmatched" && b.matchStatus === "unmatched") return 1;
+    // Within each status group, preserve the server-side createdAt descending order.
+    return 0;
+  });
 
   // ── table style (consistent with AdminSickLeavesPage) ─────────────────────
   const thClass =
     "px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-600";
   const trClass =
     "border-t border-slate-200 hover:bg-slate-50/70 transition-colors";
+
+  // ── header summary: current-month stats (derived, no extra API call) ──────
+  const summaryYear = new Date().getFullYear();
+  const summaryMonth = new Date().getMonth() + 1;
+  const summaryMonthName = MONTH_NAMES[summaryMonth - 1];
+  const summaryCurrentDocs = docs.filter(
+    (d) => d.year === summaryYear && d.month === summaryMonth,
+  );
+  const summaryConfirmed = summaryCurrentDocs.filter(
+    (d) => d.matchStatus === "matched" || d.matchStatus === "manual",
+  ).length;
+  const summaryPending = summaryCurrentDocs.filter(
+    (d) => d.matchStatus === "unmatched",
+  ).length;
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -430,6 +461,26 @@ export default function AdminPayrollPage() {
           </h1>
           <p className="text-sm text-slate-600">
             Gestión de documentos de nómina por trabajador
+          </p>
+          <p className="mt-1 text-sm text-slate-500">
+            <span className="font-medium text-slate-700">
+              {summaryMonthName} {summaryYear}
+            </span>
+            {" · "}
+            <span className="text-emerald-700">{summaryConfirmed} confirmadas</span>
+            {summaryPending > 0 ? (
+              <>
+                {" · "}
+                <span className="font-medium text-amber-600">
+                  {summaryPending} pendientes de asignación
+                </span>
+              </>
+            ) : summaryConfirmed > 0 ? (
+              <>
+                {" · "}
+                <span className="text-slate-400">sin pendientes ✓</span>
+              </>
+            ) : null}
           </p>
         </div>
 
@@ -572,27 +623,52 @@ export default function AdminPayrollPage() {
             pendientes de revisión.
           </p>
 
-          {/* Mode toggle (Phase 5c) */}
-          <label className="inline-flex items-center gap-2 mb-4 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={batchFolderMode}
-              onChange={(e) => {
-                setBatchFolderMode(e.target.checked);
-                setBatchFiles([]);
-                setBatchInputKey((k) => k + 1);
-              }}
-              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-sm text-slate-700">
-              Seleccionar carpeta
-            </span>
+          {/* Mode toggle (Phase 5c) — segmented control.
+              batchFolderMode state, webkitdirectory effect, and reset logic are unchanged. */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  // Only trigger side-effects when the mode is actually changing.
+                  if (batchFolderMode) {
+                    setBatchFolderMode(false);
+                    setBatchFiles([]);
+                    setBatchInputKey((k) => k + 1);
+                  }
+                }}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                  !batchFolderMode
+                    ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Archivos
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!batchFolderMode) {
+                    setBatchFolderMode(true);
+                    setBatchFiles([]);
+                    setBatchInputKey((k) => k + 1);
+                  }
+                }}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                  batchFolderMode
+                    ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Carpeta
+              </button>
+            </div>
             <span className="text-xs text-slate-400">
               {batchFolderMode
                 ? "El navegador mostrará el selector de carpeta. Solo se subirán los PDFs que contenga."
                 : "Selección de archivos individuales (por defecto)"}
             </span>
-          </label>
+          </div>
 
           <div className="flex flex-wrap gap-4 items-end">
             {/* Native multi-file / folder input */}
@@ -807,7 +883,11 @@ export default function AdminPayrollPage() {
                       (item: BatchResultItem, idx: number) => (
                         <tr
                           key={idx}
-                          className="border-t border-slate-200 hover:bg-slate-50/70"
+                          className={
+                            item.status === "unmatched"
+                              ? "border-t border-slate-200 bg-amber-50/40 hover:bg-amber-100/50"
+                              : "border-t border-slate-200 hover:bg-slate-50/70"
+                          }
                         >
                           <td
                             className="px-3 py-2 text-slate-800 font-medium max-w-[240px] truncate"
@@ -939,9 +1019,9 @@ export default function AdminPayrollPage() {
                   setBatchAssigningPayrollId(null);
                   setBatchAssignWorkerId("");
                 }}
-                className="text-xs text-slate-500 hover:text-slate-700 underline"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
               >
-                Cerrar resultados
+                ✕ Cerrar resultados
               </button>
             </div>
           )}
@@ -1111,9 +1191,9 @@ export default function AdminPayrollPage() {
               <button
                 type="button"
                 onClick={() => setCoverageResult(null)}
-                className="text-xs text-slate-500 hover:text-slate-700 underline"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
               >
-                Cerrar resultados
+                ✕ Cerrar resultados
               </button>
             </div>
           )}
@@ -1273,7 +1353,16 @@ export default function AdminPayrollPage() {
 
                 <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
                   {filteredDocs.map((doc) => (
-                    <tr key={doc._id} className={trClass}>
+                    <tr
+                      key={doc._id}
+                      className={
+                        doc.matchStatus === "unmatched"
+                          // !bg overrides the <tbody> nth-child zebra selector which
+                          // would otherwise win on odd rows due to higher specificity.
+                          ? "border-t border-slate-200 !bg-amber-50/40 hover:bg-amber-100/50 transition-colors"
+                          : trClass
+                      }
+                    >
 
                       {/* Original filename + parsed employee number hint */}
                       <td className="px-3 py-2 text-left align-top">
