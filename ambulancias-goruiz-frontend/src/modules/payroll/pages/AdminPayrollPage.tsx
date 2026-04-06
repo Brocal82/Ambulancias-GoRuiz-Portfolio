@@ -83,6 +83,16 @@ export default function AdminPayrollPage() {
   const [workers, setWorkers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // ── working period context ─────────────────────────────────────────────────
+  // Drives the Period Context Bar, the header summary, and the document table
+  // filter. Each individual form (upload, batch, coverage) remains independent.
+  const [workingYear, setWorkingYear] = useState<number>(
+    new Date().getFullYear(),
+  );
+  const [workingMonth, setWorkingMonth] = useState<number>(
+    new Date().getMonth() + 1,
+  );
+
   // ── upload form state ──────────────────────────────────────────────────────
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadWorkerId, setUploadWorkerId] = useState("");
@@ -379,6 +389,39 @@ export default function AdminPayrollPage() {
     }
   };
 
+  // ── working period navigation ──────────────────────────────────────────────
+  const navigatePeriod = (delta: -1 | 1) => {
+    let newMonth = workingMonth + delta;
+    let newYear = workingYear;
+    if (newMonth < 1) {
+      newMonth = 12;
+      newYear -= 1;
+    } else if (newMonth > 12) {
+      newMonth = 1;
+      newYear += 1;
+    }
+    setWorkingYear(newYear);
+    setWorkingMonth(newMonth);
+    // Keep the document table scoped to the new period.
+    setTableYearFilter(String(newYear));
+    setTableMonthFilter(String(newMonth));
+    // Close any open inline assignment — the row may leave the filtered view.
+    setAssigningId(null);
+    setAssignWorkerId("");
+  };
+
+  const resetToCurrentPeriod = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    setWorkingYear(year);
+    setWorkingMonth(month);
+    setTableYearFilter(String(year));
+    setTableMonthFilter(String(month));
+    setAssigningId(null);
+    setAssignWorkerId("");
+  };
+
   // ── docs table: derived filter data ──────────────────────────────────────
   // Unique years present in loaded documents, descending (for the year select).
   // Current year is always included so the pre-selected default renders correctly
@@ -386,6 +429,9 @@ export default function AdminPayrollPage() {
   const tableYearOptions = Array.from(
     new Set([
       new Date().getFullYear(),
+      // Always include the working year so the select renders correctly even
+      // when navigated to a year with no documents yet.
+      workingYear,
       ...docs.map((d) => d.year).filter((y): y is number => y !== undefined),
     ]),
   ).sort((a, b) => b - a);
@@ -435,9 +481,16 @@ export default function AdminPayrollPage() {
   const trClass =
     "border-t border-slate-200 hover:bg-slate-50/70 transition-colors";
 
-  // ── header summary: current-month stats (derived, no extra API call) ──────
-  const summaryYear = new Date().getFullYear();
-  const summaryMonth = new Date().getMonth() + 1;
+  // ── working period: derived helpers ───────────────────────────────────────
+  const isCurrentPeriod =
+    workingYear === new Date().getFullYear() &&
+    workingMonth === new Date().getMonth() + 1;
+
+  // ── header summary: stats for the active working period ───────────────────
+  // Uses workingYear/workingMonth so the summary reacts to period bar navigation.
+  // On initial load these equal new Date() values — no behavioral difference.
+  const summaryYear = workingYear;
+  const summaryMonth = workingMonth;
   const summaryMonthName = MONTH_NAMES[summaryMonth - 1];
   const summaryCurrentDocs = docs.filter(
     (d) => d.year === summaryYear && d.month === summaryMonth,
@@ -482,6 +535,46 @@ export default function AdminPayrollPage() {
               </>
             ) : null}
           </p>
+        </div>
+
+        {/* ── Period Context Bar ────────────────────────────────────────────── */}
+        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 px-5 py-3 flex items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={() => navigatePeriod(-1)}
+            aria-label="Mes anterior"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
+          >
+            ← Anterior
+          </button>
+
+          <div className="flex items-center gap-2.5">
+            <span className="text-base font-semibold text-slate-800">
+              {summaryMonthName} {workingYear}
+            </span>
+            {isCurrentPeriod ? (
+              <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-200">
+                Mes actual
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={resetToCurrentPeriod}
+                className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200"
+              >
+                Volver al mes actual
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigatePeriod(1)}
+            aria-label="Mes siguiente"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
+          >
+            Siguiente →
+          </button>
         </div>
 
         {/* ── Upload section ────────────────────────────────────────────────── */}
