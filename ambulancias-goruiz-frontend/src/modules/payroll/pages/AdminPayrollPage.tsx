@@ -131,10 +131,14 @@ export default function AdminPayrollPage() {
   const [assigning, setAssigning] = useState(false);
 
   // ── coverage check state (Phase 6b) ───────────────────────────────────────
+  // Pre-populated from the working period as a default; admin can change freely.
+  // No reactive sync — useState initializer runs once at mount only.
   const [coverageYear, setCoverageYear] = useState<string>(
-    String(new Date().getFullYear()),
+    String(workingYear),
   );
-  const [coverageMonth, setCoverageMonth] = useState<string>("");
+  const [coverageMonth, setCoverageMonth] = useState<string>(
+    String(workingMonth),
+  );
   const [coverageChecking, setCoverageChecking] = useState(false);
   const [coverageResult, setCoverageResult] =
     useState<CoverageCheckResponse | null>(null);
@@ -1291,6 +1295,36 @@ export default function AdminPayrollPage() {
             </div>
           )}
         </div>
+
+        {/* ── Unmatched attention callout ───────────────────────────────────── */}
+        {summaryPending > 0 && (
+          <div className="flex items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3.5">
+            <div className="flex items-center gap-2.5 text-sm text-amber-800">
+              <span className="shrink-0 text-amber-500">⚠</span>
+              <span>
+                <span className="font-semibold">{summaryPending}</span>{" "}
+                documento{summaryPending !== 1 ? "s" : ""} pendiente
+                {summaryPending !== 1 ? "s" : ""} de asignación en{" "}
+                <span className="font-semibold">
+                  {summaryMonthName} {workingYear}
+                </span>
+                .
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setTableYearFilter(String(workingYear));
+                setTableMonthFilter(String(workingMonth));
+                setTableStatusFilter("unmatched");
+                setTableSearch("");
+              }}
+              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-200 transition-colors"
+            >
+              Ver pendientes →
+            </button>
+          </div>
+        )}
 
         {/* ── Documents table ────────────────────────────────────────────────── */}
         <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
