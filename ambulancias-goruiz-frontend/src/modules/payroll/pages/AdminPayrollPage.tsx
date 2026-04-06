@@ -72,6 +72,206 @@ function MatchBadge({ status }: { status: PayrollMatchStatus }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// WorkerSearchSelect
+// Replaces native <select> with a searchable inline combobox.
+// Renders inline (no absolute positioning) so it is safe inside overflow-x-auto
+// table wrappers. Value semantics are identical to the original <select>:
+// onChange receives a workerId string, or "" for no selection.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function WorkerSearchSelect({
+  id,
+  workers,
+  value,
+  onChange,
+  placeholder = "Buscar por nombre o nº de empleado",
+  allowEmpty = false,
+  emptyLabel = "Detectar por nombre de archivo",
+  size = "default",
+}: {
+  id?: string;
+  workers: User[];
+  value: string;
+  onChange: (workerId: string) => void;
+  placeholder?: string;
+  allowEmpty?: boolean;
+  emptyLabel?: string;
+  size?: "default" | "sm";
+}) {
+  const [query, setQuery] = useState("");
+  const [focused, setFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const selectedWorker = workers.find((w) => w._id === value) ?? null;
+  const isCompact = size === "sm";
+
+  // Filter: requires at least one typed character — empty query returns nothing.
+  // Max 3 results to keep the list compact.
+  const filtered = (() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return workers
+      .filter(
+        (w) =>
+          w.name.toLowerCase().includes(q) ||
+          w.lastName.toLowerCase().includes(q) ||
+          (w.employeeNumber ?? "").toLowerCase().includes(q),
+      )
+      .slice(0, 3);
+  })();
+
+  // Reset the search query whenever the parent clears the selection
+  // (e.g. after a successful assignment resets the state to "").
+  useEffect(() => {
+    if (!value) setQuery("");
+  }, [value]);
+
+  const handleSelect = (workerId: string) => {
+    onChange(workerId);
+    setQuery("");
+    setFocused(false);
+  };
+
+  // Clear selection and re-open search so the admin can pick again.
+  const handleClearAndRefocus = () => {
+    onChange("");
+    setQuery("");
+    setFocused(true);
+    // Input re-mounts on next render; focus after the paint.
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const inputClass = isCompact
+    ? "w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-4 focus:ring-blue-100"
+    : "w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100";
+
+  // ── Collapsed state: a worker is selected and the field is not being edited ─
+  if (selectedWorker && !focused) {
+    return (
+      <div className="flex items-center gap-1.5 min-w-0 w-full">
+        <span
+          className={`flex-1 truncate ${isCompact ? "text-xs text-slate-800" : "text-sm text-slate-800"}`}
+        >
+          <span className="font-medium">
+            {selectedWorker.lastName}, {selectedWorker.name}
+          </span>
+          {selectedWorker.employeeNumber && (
+            <span
+              className={`ml-1 font-normal text-slate-500 ${isCompact ? "text-[10px]" : "text-xs"}`}
+            >
+              ({selectedWorker.employeeNumber})
+            </span>
+          )}
+        </span>
+        <button
+          type="button"
+          onClick={handleClearAndRefocus}
+          aria-label="Cambiar trabajador"
+          className={`shrink-0 rounded border border-slate-200 bg-white text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors ${
+            isCompact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-xs"
+          }`}
+        >
+          ✕
+        </button>
+      </div>
+    );
+  }
+
+  // ── Search state: input + inline list ────────────────────────────────────────
+  return (
+    <div className="w-full">
+      <input
+        ref={inputRef}
+        id={id}
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => {
+          // Delay so onMouseDown on list items fires before the list disappears.
+          setTimeout(() => {
+            setFocused(false);
+            setQuery("");
+          }, 150);
+        }}
+        placeholder={placeholder}
+        autoComplete="off"
+        spellCheck={false}
+        className={inputClass}
+      />
+      {/* Panel is only visible when: the user has typed something (search-first),
+          OR when allowEmpty=true so the "auto-detect" shortcut is always reachable. */}
+      {focused && (query.trim() !== "" || allowEmpty) && (
+        <div
+          className={`mt-1 rounded-xl border border-slate-200 bg-white overflow-hidden ${
+            isCompact ? "" : "shadow-sm"
+          }`}
+        >
+          {/* Optional "no selection / auto-detect" entry — always visible when focused */}
+          {allowEmpty && (
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleSelect("");
+              }}
+              className={`w-full text-left italic text-slate-400 hover:bg-slate-50 ${
+                isCompact ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"
+              }`}
+            >
+              {emptyLabel}
+            </button>
+          )}
+
+          {/* Worker results and empty state — only rendered once the user has typed */}
+          {query.trim() !== "" && (
+            filtered.length === 0 ? (
+              <p
+                className={`text-slate-400 ${
+                  allowEmpty ? "border-t border-slate-100" : ""
+                } ${isCompact ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"}`}
+              >
+                Sin resultados
+              </p>
+            ) : (
+              <ul>
+                {filtered.map((w, i) => (
+                  <li key={w._id}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleSelect(w._id);
+                      }}
+                      className={`w-full text-left hover:bg-slate-50 ${
+                        i > 0 || allowEmpty ? "border-t border-slate-100" : ""
+                      } ${isCompact ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"}`}
+                    >
+                      <span className="font-medium text-slate-800">
+                        {w.lastName}, {w.name}
+                      </span>
+                      {w.employeeNumber && (
+                        <span
+                          className={`ml-1.5 text-slate-500 ${
+                            isCompact ? "text-[10px]" : "text-xs"
+                          }`}
+                        >
+                          {w.employeeNumber}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Page
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -612,20 +812,15 @@ export default function AdminPayrollPage() {
                 Trabajador{" "}
                 <span className="font-normal text-slate-500">(opcional)</span>
               </label>
-              <select
+              <WorkerSearchSelect
                 id="upload-worker-id"
+                workers={workers}
                 value={uploadWorkerId}
-                onChange={(e) => setUploadWorkerId(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-              >
-                <option value="">— Auto-detectar del nombre del archivo —</option>
-                {workers.map((w) => (
-                  <option key={w._id} value={w._id}>
-                    {w.lastName}, {w.name}
-                    {w.employeeNumber ? ` (${w.employeeNumber})` : ""}
-                  </option>
-                ))}
-              </select>
+                onChange={setUploadWorkerId}
+                placeholder="Buscar por nombre o nº de empleado"
+                allowEmpty
+                emptyLabel="Detectar por nombre de archivo"
+              />
             </div>
 
             {/* Year */}
@@ -1043,24 +1238,13 @@ export default function AdminPayrollPage() {
                             {item.status === "unmatched" && item.payrollId && (
                               batchAssigningPayrollId === item.payrollId ? (
                                 <div className="flex flex-col gap-1.5 min-w-[160px]">
-                                  <select
-                                    aria-label="Seleccionar trabajador para asignar"
+                                  <WorkerSearchSelect
+                                    workers={workers}
                                     value={batchAssignWorkerId}
-                                    onChange={(e) =>
-                                      setBatchAssignWorkerId(e.target.value)
-                                    }
-                                    className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-4 focus:ring-blue-100"
-                                  >
-                                    <option value="">— Seleccionar —</option>
-                                    {workers.map((w) => (
-                                      <option key={w._id} value={w._id}>
-                                        {w.lastName}, {w.name}
-                                        {w.employeeNumber
-                                          ? ` (${w.employeeNumber})`
-                                          : ""}
-                                      </option>
-                                    ))}
-                                  </select>
+                                    onChange={setBatchAssignWorkerId}
+                                    size="sm"
+                                    placeholder="Buscar trabajador…"
+                                  />
                                   <div className="flex gap-1">
                                     <button
                                       type="button"
@@ -1572,24 +1756,13 @@ export default function AdminPayrollPage() {
                           {/* Inline assign form */}
                           {assigningId === doc._id && (
                             <div className="flex flex-col gap-1.5 items-stretch min-w-[160px]">
-                              <select
-                                aria-label="Seleccionar trabajador para asignar"
+                              <WorkerSearchSelect
+                                workers={workers}
                                 value={assignWorkerId}
-                                onChange={(e) =>
-                                  setAssignWorkerId(e.target.value)
-                                }
-                                className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-4 focus:ring-blue-100"
-                              >
-                                <option value="">— Seleccionar —</option>
-                                {workers.map((w) => (
-                                  <option key={w._id} value={w._id}>
-                                    {w.lastName}, {w.name}
-                                    {w.employeeNumber
-                                      ? ` (${w.employeeNumber})`
-                                      : ""}
-                                  </option>
-                                ))}
-                              </select>
+                                onChange={setAssignWorkerId}
+                                size="sm"
+                                placeholder="Buscar trabajador…"
+                              />
                               <div className="flex gap-1">
                                 <button
                                   type="button"
