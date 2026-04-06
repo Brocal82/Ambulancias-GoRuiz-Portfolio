@@ -679,6 +679,28 @@ export default function AdminPayrollPage() {
     return 0;
   });
 
+  // ── docs table: render mode ───────────────────────────────────────────────
+  // Year selected + no month → group filtered results by month for visual
+  // clarity.  Every other combination keeps the existing flat table.
+  const renderMode: "flat" | "grouped_by_month" =
+    tableYearFilter !== "" && tableMonthFilter === ""
+      ? "grouped_by_month"
+      : "flat";
+
+  // Groups are computed after filtering, so status / search still apply.
+  // Months that have no matching documents after filtering are excluded.
+  // Sorted most-recent-month first.
+  const groupedByMonth =
+    renderMode === "grouped_by_month"
+      ? MONTH_NAMES.map((name, i) => ({
+          month: i + 1,
+          name,
+          docs: filteredDocs.filter((d) => d.month === i + 1),
+        }))
+          .filter((g) => g.docs.length > 0)
+          .sort((a, b) => b.month - a.month)
+      : [];
+
   // ── table style (consistent with AdminSickLeavesPage) ─────────────────────
   const thClass =
     "px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-600";
@@ -1533,47 +1555,6 @@ export default function AdminPayrollPage() {
 
           {/* ── Table filters ──────────────────────────────────────────────────── */}
           <div className="px-6 py-3 border-b border-slate-200 bg-slate-50/60 flex flex-wrap gap-3 items-end">
-            {/* Search */}
-            <div className="flex-1 min-w-[200px] space-y-1">
-              <label
-                htmlFor="table-search"
-                className="block text-xs font-medium text-slate-600"
-              >
-                Buscar
-              </label>
-              <input
-                id="table-search"
-                type="search"
-                placeholder="Nombre, Nº empleado, archivo…"
-                value={tableSearch}
-                onChange={(e) => setTableSearch(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-              />
-            </div>
-
-            {/* Status */}
-            <div className="space-y-1 w-44">
-              <label
-                htmlFor="table-status"
-                className="block text-xs font-medium text-slate-600"
-              >
-                Estado
-              </label>
-              <select
-                id="table-status"
-                value={tableStatusFilter}
-                onChange={(e) =>
-                  setTableStatusFilter(e.target.value as "" | PayrollMatchStatus)
-                }
-                className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-              >
-                <option value="">Todos</option>
-                <option value="matched">Auto-asignada</option>
-                <option value="manual">Manual</option>
-                <option value="unmatched">Sin asignar</option>
-              </select>
-            </div>
-
             {/* Year */}
             <div className="space-y-1 w-28">
               <label
@@ -1620,6 +1601,47 @@ export default function AdminPayrollPage() {
               </select>
             </div>
 
+            {/* Search */}
+            <div className="flex-1 min-w-[200px] space-y-1">
+              <label
+                htmlFor="table-search"
+                className="block text-xs font-medium text-slate-600"
+              >
+                Buscar
+              </label>
+              <input
+                id="table-search"
+                type="search"
+                placeholder="Nombre, Nº empleado, archivo…"
+                value={tableSearch}
+                onChange={(e) => setTableSearch(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+              />
+            </div>
+
+            {/* Status */}
+            <div className="space-y-1 w-44">
+              <label
+                htmlFor="table-status"
+                className="block text-xs font-medium text-slate-600"
+              >
+                Estado
+              </label>
+              <select
+                id="table-status"
+                value={tableStatusFilter}
+                onChange={(e) =>
+                  setTableStatusFilter(e.target.value as "" | PayrollMatchStatus)
+                }
+                className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+              >
+                <option value="">Todos</option>
+                <option value="matched">Auto-asignada</option>
+                <option value="manual">Manual</option>
+                <option value="unmatched">Sin asignar</option>
+              </select>
+            </div>
+
             {/* Clear filters */}
             {isTableFiltered && (
               <button
@@ -1649,7 +1671,179 @@ export default function AdminPayrollPage() {
             <div className="p-6 text-center text-sm text-slate-500">
               Ningún documento coincide con los filtros aplicados.
             </div>
+          ) : renderMode === "grouped_by_month" ? (
+
+            /* ── Grouped-by-month view ─────────────────────────────────────────
+               Active when a year is selected but no specific month.
+               Filtering (status / search) is already applied in filteredDocs;
+               each group only contains documents that passed those filters.
+               Assignment actions work identically — they use doc._id.        ── */
+            <div className="divide-y divide-slate-200">
+              {groupedByMonth.map(({ month, name, docs: groupDocs }) => {
+                const pendingInGroup = groupDocs.filter(
+                  (d) => d.matchStatus === "unmatched",
+                ).length;
+                return (
+                  <div key={month}>
+
+                    {/* Month group header */}
+                    <div className="px-6 py-3 bg-slate-50/80 flex items-center gap-3">
+                      <span className="text-sm font-semibold text-slate-700">
+                        {name} {tableYearFilter}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {groupDocs.length}{" "}
+                        documento{groupDocs.length !== 1 ? "s" : ""}
+                      </span>
+                      {pendingInGroup > 0 && (
+                        <span className="text-xs font-medium text-amber-600">
+                          · {pendingInGroup} pendiente
+                          {pendingInGroup !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Sub-table for this month group.
+                        thead is not sticky here to avoid multiple sticky bars.
+                        "Período" column is omitted — the group header shows it. */}
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-sm text-center">
+                        <thead className="bg-slate-50 border-b border-slate-200">
+                          <tr>
+                            <th className={`${thClass} text-left`}>Archivo</th>
+                            <th className={thClass}>Trabajador</th>
+                            <th className={thClass}>Estado</th>
+                            <th className={thClass}>Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
+                          {groupDocs.map((doc) => (
+                            <tr
+                              key={doc._id}
+                              className={
+                                doc.matchStatus === "unmatched"
+                                  ? "border-t border-slate-200 !bg-amber-50/40 hover:bg-amber-100/50 transition-colors"
+                                  : trClass
+                              }
+                            >
+                              {/* Filename + parsed employee number hint */}
+                              <td className="px-3 py-2 text-left align-top">
+                                <span
+                                  className="block text-slate-800 font-medium truncate max-w-[220px]"
+                                  title={doc.originalName}
+                                >
+                                  {doc.originalName}
+                                </span>
+                                {doc.parsedEmployeeNumber && (
+                                  <span className="text-xs text-slate-500">
+                                    Nº empleado detectado:{" "}
+                                    {doc.parsedEmployeeNumber}
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Assigned worker */}
+                              <td className="px-3 py-2 align-top">
+                                <span className="text-slate-800">
+                                  {workerDisplayName(doc.workerId)}
+                                </span>
+                                {doc.workerId?.employeeNumber && (
+                                  <span className="block text-xs text-slate-500">
+                                    {doc.workerId.employeeNumber}
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Match status + unmatched reason */}
+                              <td className="px-3 py-2 align-top">
+                                <MatchBadge status={doc.matchStatus} />
+                                {doc.matchStatus === "unmatched" &&
+                                  doc.matchReason && (
+                                    <p
+                                      className="mt-1 text-xs text-slate-500 max-w-[180px] mx-auto"
+                                      title={doc.matchReason}
+                                    >
+                                      {doc.matchReason.length > 60
+                                        ? `${doc.matchReason.slice(0, 60)}…`
+                                        : doc.matchReason}
+                                    </p>
+                                  )}
+                              </td>
+
+                              {/* Actions */}
+                              <td className="px-3 py-2 align-top">
+                                <div className="flex flex-col items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleOpenFile(
+                                        doc.filename,
+                                        doc.originalName,
+                                      )
+                                    }
+                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                                  >
+                                    📄 Ver
+                                  </button>
+                                  {doc.matchStatus === "unmatched" &&
+                                    assigningId !== doc._id && (
+                                      <button
+                                        type="button"
+                                        onClick={() => startAssign(doc._id)}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-4 focus:ring-amber-100"
+                                      >
+                                        Asignar
+                                      </button>
+                                    )}
+                                  {assigningId === doc._id && (
+                                    <div className="flex flex-col gap-1.5 items-stretch min-w-[160px]">
+                                      <WorkerSearchSelect
+                                        workers={workers}
+                                        value={assignWorkerId}
+                                        onChange={setAssignWorkerId}
+                                        size="sm"
+                                        placeholder="Buscar trabajador…"
+                                      />
+                                      <div className="flex gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            confirmAssign(doc._id)
+                                          }
+                                          disabled={
+                                            assigning || !assignWorkerId
+                                          }
+                                          className="flex-1 rounded-lg bg-blue-600 px-2 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                          {assigning ? "..." : "Confirmar"}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={cancelAssign}
+                                          className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
           ) : (
+
+            /* ── Flat table view (unchanged) ───────────────────────────────────
+               Active for all other filter combinations:
+               month selected, search only, status only, no filters, etc.   ── */
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm text-center">
                 <thead className="bg-slate-50 sticky top-0 z-10">
