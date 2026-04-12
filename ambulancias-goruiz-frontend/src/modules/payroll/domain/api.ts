@@ -90,3 +90,17 @@ export const listMyPayrollDocuments = async (): Promise<
   const res = await api.get<WorkerPayrollDocument[]>("/payroll/mine");
   return res.data;
 };
+
+/**
+ * Admin: soft-delete (invalidate) a payroll document.
+ * Sets deletedAt on the DB record. File is retained on disk.
+ * The document is immediately excluded from all listings and file access.
+ */
+export const invalidatePayrollDocument = async (
+  id: string,
+): Promise<{ payrollId: string }> => {
+  const { data } = await api.patch<{ payrollId: string }>(
+    `/payroll/${id}/invalidate`,
+  );
+  return data;
+};

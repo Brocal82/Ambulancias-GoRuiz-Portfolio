@@ -10,6 +10,7 @@ import {
   uploadPayrollBatch as apiBatchUpload,
   assignPayrollDocument as apiAssign,
   checkPayrollCoverage as apiCheckCoverage,
+  invalidatePayrollDocument as apiInvalidate,
 } from "../domain/api";
 import type {
   PayrollDocument,
@@ -350,6 +351,9 @@ export default function AdminPayrollPage() {
   const [batchAssignWorkerId, setBatchAssignWorkerId] = useState("");
   const [batchAssigning, setBatchAssigning] = useState(false);
 
+  // ── invalidation state ────────────────────────────────────────────────────
+  const [invalidatingId, setInvalidatingId] = useState<string | null>(null);
+
   // ── docs table filter state ────────────────────────────────────────────────
   const [tableSearch, setTableSearch] = useState("");
   const [tableStatusFilter, setTableStatusFilter] = useState<
@@ -590,6 +594,26 @@ export default function AdminPayrollPage() {
       await openSecureFile(filename, originalName);
     } catch (err) {
       toastT.apiError(err, "Error al abrir el archivo");
+    }
+  };
+
+  // ── invalidate ─────────────────────────────────────────────────────────────
+  const handleInvalidate = async (id: string) => {
+    if (
+      !window.confirm(
+        "¿Eliminar este documento? El archivo se conservará y la acción puede revertirse.",
+      )
+    )
+      return;
+    setInvalidatingId(id);
+    try {
+      await apiInvalidate(id);
+      toastT.success("Documento eliminado correctamente");
+      await fetchDocs();
+    } catch (err) {
+      toastT.apiError(err, "Error al eliminar el documento");
+    } finally {
+      setInvalidatingId(null);
     }
   };
 
@@ -1786,13 +1810,23 @@ export default function AdminPayrollPage() {
                                     📄 Ver
                                   </button>
                                   {assigningId !== doc._id && (
-                                    <button
-                                      type="button"
-                                      onClick={() => startAssign(doc._id)}
-                                      className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-4 focus:ring-amber-100"
-                                    >
-                                      {doc.matchStatus === "unmatched" ? "Asignar" : "Re-asignar"}
-                                    </button>
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => startAssign(doc._id)}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-4 focus:ring-amber-100"
+                                      >
+                                        {doc.matchStatus === "unmatched" ? "Asignar" : "Re-asignar"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleInvalidate(doc._id)}
+                                        disabled={invalidatingId === doc._id}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 focus:outline-none focus:ring-4 focus:ring-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                      >
+                                        {invalidatingId === doc._id ? "..." : "Eliminar"}
+                                      </button>
+                                    </>
                                   )}
                                   {assigningId === doc._id && (
                                     <div className="flex flex-col gap-1.5 items-stretch min-w-[160px]">
@@ -1934,15 +1968,25 @@ export default function AdminPayrollPage() {
                             📄 Ver
                           </button>
 
-                          {/* Assign / re-assign trigger (all statuses, not while assigning) */}
+                          {/* Assign / re-assign + Eliminar (all statuses, not while assigning) */}
                           {assigningId !== doc._id && (
-                            <button
-                              type="button"
-                              onClick={() => startAssign(doc._id)}
-                              className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-4 focus:ring-amber-100"
-                            >
-                              {doc.matchStatus === "unmatched" ? "Asignar" : "Re-asignar"}
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => startAssign(doc._id)}
+                                className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-4 focus:ring-amber-100"
+                              >
+                                {doc.matchStatus === "unmatched" ? "Asignar" : "Re-asignar"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleInvalidate(doc._id)}
+                                disabled={invalidatingId === doc._id}
+                                className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 focus:outline-none focus:ring-4 focus:ring-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {invalidatingId === doc._id ? "..." : "Eliminar"}
+                              </button>
+                            </>
                           )}
 
                           {/* Inline assign form */}

@@ -36,6 +36,7 @@ async function findPayrollDuplicate(
     year,
     month,
     matchStatus: { $in: ["manual", "matched"] },
+    deletedAt: null,
   })
     .select("originalName createdAt")
     .lean();
@@ -538,11 +539,12 @@ export async function assignPayrollDocument(
       return;
     }
 
-    // Verify the payroll document belongs to the admin's company.
+    // Verify the payroll document belongs to the admin's company and is not invalidated.
     // year + month are selected so the duplicate check can use them.
     const payroll = await PayrollDocument.findOne({
       _id: new mongoose.Types.ObjectId(id),
       companyId: companyOid,
+      deletedAt: null,
     }).select("_id matchStatus year month");
 
     if (!payroll) {
@@ -594,7 +596,7 @@ export async function listPayrollDocumentsAdmin(
 
     const companyOid = new mongoose.Types.ObjectId(companyResult.companyId);
 
-    const docs = await PayrollDocument.find({ companyId: companyOid })
+    const docs = await PayrollDocument.find({ companyId: companyOid, deletedAt: null })
       .sort({ createdAt: -1 })
       .select("-fileUrl")
       .populate("workerId", "name lastName email employeeNumber")
@@ -634,8 +636,9 @@ export async function listMyPayrollDocuments(
 
     const workerOid = new mongoose.Types.ObjectId(userId);
 
-    // Only matched/manual docs appear for workers — unmatched (workerId null) are excluded automatically
-    const docs = await PayrollDocument.find({ workerId: workerOid })
+    // Only matched/manual docs appear for workers — unmatched (workerId null) are excluded automatically.
+    // Invalidated documents are also excluded.
+    const docs = await PayrollDocument.find({ workerId: workerOid, deletedAt: null })
       .sort({ year: -1, month: -1, createdAt: -1 })
       .select("filename originalName year month matchStatus createdAt")
       .lean();
@@ -741,6 +744,7 @@ export async function checkPayrollCoverage(
       month,
       matchStatus: { $in: ["manual", "matched"] },
       workerId: { $ne: null },
+      deletedAt: null,
     })
       .select("workerId")
       .lean()) as Array<{ workerId: unknown }>;
@@ -764,6 +768,7 @@ export async function checkPayrollCoverage(
       year,
       month,
       matchStatus: "unmatched",
+      deletedAt: null,
     });
 
     // coveredCount derived from workers in scope (not from Set size) so that
@@ -789,5 +794,60 @@ export async function checkPayrollCoverage(
     res
       .status(500)
       .json({ message: "Error al verificar la cobertura de nóminas" });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PATCH /api/payroll/:id/invalidate
+// Admin only. Soft-deletes a payroll document by setting deletedAt = now.
+//
+// Invalidated documents are excluded from all listings, coverage checks,
+// duplicate detection, assignment, and file access. The DB record and the
+// physical file on disk are retained to allow future restore.
+//
+// Attempting to invalidate an already-invalidated document returns 409.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function invalidatePayrollDocument(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res
+        .status(companyResult.statusCode)
+        .json({ message: companyResult.message });
+      return;
+    }
+    const adminCompanyId = companyResult.companyId;
+
+    const { id } = req.params;
+    const companyOid = new mongoose.Types.ObjectId(adminCompanyId);
+
+    const payroll = await PayrollDocument.findOne({
+      _id: new mongoose.Types.ObjectId(id),
+      companyId: companyOid,
+    }).select("_id deletedAt");
+
+    if (!payroll) {
+      res.status(404).json({ message: "Documento de nómina no encontrado" });
+      return;
+    }
+
+    if (payroll.deletedAt !== null) {
+      res.status(409).json({ message: "El documento ya está invalidado" });
+      return;
+    }
+
+    payroll.deletedAt = new Date();
+    await payroll.save();
+
+    res.status(200).json({
+      message: "Documento invalidado correctamente",
+      payrollId: payroll._id,
+    });
+  } catch (err) {
+    console.error("[payroll] invalidatePayrollDocument error:", err);
+    res.status(500).json({ message: "Error al invalidar el documento" });
   }
 }

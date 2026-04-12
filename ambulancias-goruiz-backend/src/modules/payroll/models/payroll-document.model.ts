@@ -32,6 +32,13 @@ export interface IPayrollDocument extends Document {
   parsedEmployeeNumber?: string;
   /** Human-readable explanation of why the document was matched or not matched. */
   matchReason?: string;
+  /**
+   * Soft-delete timestamp. Null = active document. Non-null = invalidated by admin.
+   * Invalidated documents are excluded from all listings, coverage checks, duplicate
+   * detection, assignment, and file access. The DB record and file on disk are retained
+   * to allow future restore.
+   */
+  deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -92,6 +99,12 @@ const PayrollDocumentSchema = new Schema<IPayrollDocument>(
     matchReason: {
       type: String,
       required: false,
+    },
+    deletedAt: {
+      type: Date,
+      required: false,
+      default: null,
+      index: true,
     },
   },
   { timestamps: true },

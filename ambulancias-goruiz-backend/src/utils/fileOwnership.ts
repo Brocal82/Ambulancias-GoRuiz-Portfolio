@@ -103,15 +103,18 @@ export async function canAccessFile(
   if (messageMatch) return true;
 
   // ── 6. PayrollDocument — worker direct ownership ──────────────────────────
+  // Invalidated documents (deletedAt != null) are inaccessible to all actors.
   const ownPayroll = await PayrollDocument.findOne({
     workerId: userOid,
     fileUrl: storedPath,
+    deletedAt: null,
   })
     .select("_id")
     .lean();
   if (ownPayroll) return true;
 
   // ── 6b. PayrollDocument — admin of same company ───────────────────────────
+  // Invalidated documents are also inaccessible to admins.
   if (
     userRole === "admin" &&
     companyId &&
@@ -121,6 +124,7 @@ export async function canAccessFile(
     const adminPayroll = await PayrollDocument.findOne({
       companyId: companyOid,
       fileUrl: storedPath,
+      deletedAt: null,
     })
       .select("_id")
       .lean();

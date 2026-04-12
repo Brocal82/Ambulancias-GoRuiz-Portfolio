@@ -7,6 +7,7 @@ import {
   uploadPayrollDocument,
   uploadPayrollBatch,
   assignPayrollDocument,
+  invalidatePayrollDocument,
   listPayrollDocumentsAdmin,
   listMyPayrollDocuments,
   checkPayrollCoverage,
@@ -38,7 +39,7 @@ router.post(
   uploadPayrollDocument,
 );
 
-// Admin: assign (or re-assign) an unmatched document to a specific worker
+// Admin: assign (or re-assign) a document to a specific worker
 // PATCH /api/payroll/:id/assign
 router.patch(
   "/:id/assign",
@@ -46,6 +47,17 @@ router.patch(
   authorizeRole("admin"),
   validateObjectId("id"),
   assignPayrollDocument,
+);
+
+// Admin: soft-delete (invalidate) a payroll document
+// Sets deletedAt = now. The document and its file are retained for future restore.
+// PATCH /api/payroll/:id/invalidate
+router.patch(
+  "/:id/invalidate",
+  authenticateToken,
+  authorizeRole("admin"),
+  validateObjectId("id"),
+  invalidatePayrollDocument,
 );
 
 // Admin: coverage check — which workers have no confirmed payroll for a period
