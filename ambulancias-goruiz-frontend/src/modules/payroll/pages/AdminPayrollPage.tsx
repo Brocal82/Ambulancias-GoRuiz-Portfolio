@@ -1785,16 +1785,15 @@ export default function AdminPayrollPage() {
                                   >
                                     📄 Ver
                                   </button>
-                                  {doc.matchStatus === "unmatched" &&
-                                    assigningId !== doc._id && (
-                                      <button
-                                        type="button"
-                                        onClick={() => startAssign(doc._id)}
-                                        className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-4 focus:ring-amber-100"
-                                      >
-                                        Asignar
-                                      </button>
-                                    )}
+                                  {assigningId !== doc._id && (
+                                    <button
+                                      type="button"
+                                      onClick={() => startAssign(doc._id)}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-4 focus:ring-amber-100"
+                                    >
+                                      {doc.matchStatus === "unmatched" ? "Asignar" : "Re-asignar"}
+                                    </button>
+                                  )}
                                   {assigningId === doc._id && (
                                     <div className="flex flex-col gap-1.5 items-stretch min-w-[160px]">
                                       <WorkerSearchSelect
@@ -1935,17 +1934,16 @@ export default function AdminPayrollPage() {
                             📄 Ver
                           </button>
 
-                          {/* Assign trigger (unmatched only, not while assigning) */}
-                          {doc.matchStatus === "unmatched" &&
-                            assigningId !== doc._id && (
-                              <button
-                                type="button"
-                                onClick={() => startAssign(doc._id)}
-                                className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-4 focus:ring-amber-100"
-                              >
-                                Asignar
-                              </button>
-                            )}
+                          {/* Assign / re-assign trigger (all statuses, not while assigning) */}
+                          {assigningId !== doc._id && (
+                            <button
+                              type="button"
+                              onClick={() => startAssign(doc._id)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-4 focus:ring-amber-100"
+                            >
+                              {doc.matchStatus === "unmatched" ? "Asignar" : "Re-asignar"}
+                            </button>
+                          )}
 
                           {/* Inline assign form */}
                           {assigningId === doc._id && (
