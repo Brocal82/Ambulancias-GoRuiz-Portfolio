@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
 import { openSecureFile } from "../../../utils/openSecureFile";
@@ -269,6 +270,11 @@ function WorkerSearchSelect({
 
 export default function AdminPayrollPage() {
   const { token } = useAuth();
+  const navigate = useNavigate();
+  const { year: yearParam, month: monthParam } = useParams<{
+    year: string;
+    month: string;
+  }>();
 
   // ── data ───────────────────────────────────────────────────────────────────
   const [docs, setDocs] = useState<PayrollDocument[]>([]);
@@ -326,19 +332,10 @@ export default function AdminPayrollPage() {
   // ── invalidation state ────────────────────────────────────────────────────
   const [invalidatingId, setInvalidatingId] = useState<string | null>(null);
 
-  // ── global payroll search filters (read-focused lookup; year/month/search only)
-  const [tableSearch, setTableSearch] = useState("");
-  // Default to current year/month so the admin sees the relevant period on arrival.
-  // "Limpiar filtros" resets them back to "" to show all documents.
-  const [tableYearFilter, setTableYearFilter] = useState(
-    String(new Date().getFullYear()),
-  );
-  const [tableMonthFilter, setTableMonthFilter] = useState(
-    String(new Date().getMonth() + 1),
-  );
-
   /** Monthly documents list under PayrollCompletionSnapshot (collapsed by default). */
   const [monthlyDocsListExpanded, setMonthlyDocsListExpanded] = useState(false);
+  /** Local filter for the expanded monthly list only (current month docs). */
+  const [monthlyListFilter, setMonthlyListFilter] = useState("");
 
   // Keep webkitdirectory attribute in sync with batchFolderMode.
   // React's InputHTMLAttributes does not include webkitdirectory, so we apply
@@ -382,6 +379,32 @@ export default function AdminPayrollPage() {
       .then((all) => setWorkers(all.filter((u) => u.role === "worker")))
       .catch(() => toastT.error("Error al cargar los trabajadores"));
   }, [token, fetchDocs]);
+
+  // Initialize / sync workspace from route: /admin/payroll/month/:year/:month
+  useEffect(() => {
+    if (!yearParam || !monthParam) return;
+    const y = parseInt(yearParam, 10);
+    const m = parseInt(monthParam, 10);
+    if (
+      Number.isNaN(y) ||
+      Number.isNaN(m) ||
+      m < 1 ||
+      m > 12 ||
+      y < 2000 ||
+      y > 2100
+    )
+      return;
+    setWorkingYear(y);
+    setWorkingMonth(m);
+    setBatchYear(String(y));
+    setBatchMonth(String(m));
+    setUploadYear(String(y));
+    setUploadMonth(String(m));
+    setAssigningId(null);
+    setAssignWorkerId("");
+    setMonthlyDocsListExpanded(false);
+    setMonthlyListFilter("");
+  }, [yearParam, monthParam]);
 
   // ── upload ─────────────────────────────────────────────────────────────────
   const handleUpload = async () => {
@@ -517,17 +540,6 @@ export default function AdminPayrollPage() {
     }
   };
 
-  /** Sync month workspace + search filters to a document's period (lookup → operate). */
-  const goToPayrollMonth = (year: number, month: number) => {
-    setWorkingYear(year);
-    setWorkingMonth(month);
-    setTableYearFilter(String(year));
-    setTableMonthFilter(String(month));
-    setAssigningId(null);
-    setAssignWorkerId("");
-    setMonthlyDocsListExpanded(false);
-  };
-
   // ── invalidate ─────────────────────────────────────────────────────────────
   const handleInvalidate = async (id: string) => {
     if (
@@ -561,13 +573,11 @@ export default function AdminPayrollPage() {
     }
     setWorkingYear(newYear);
     setWorkingMonth(newMonth);
-    // Keep the document table scoped to the new period.
-    setTableYearFilter(String(newYear));
-    setTableMonthFilter(String(newMonth));
-    // Close any open inline assignment — the row may leave the filtered view.
     setAssigningId(null);
     setAssignWorkerId("");
     setMonthlyDocsListExpanded(false);
+    setMonthlyListFilter("");
+    navigate(`/admin/payroll/month/${newYear}/${newMonth}`, { replace: true });
   };
 
   const resetToCurrentPeriod = () => {
@@ -576,62 +586,12 @@ export default function AdminPayrollPage() {
     const month = now.getMonth() + 1;
     setWorkingYear(year);
     setWorkingMonth(month);
-    setTableYearFilter(String(year));
-    setTableMonthFilter(String(month));
     setAssigningId(null);
     setAssignWorkerId("");
     setMonthlyDocsListExpanded(false);
+    setMonthlyListFilter("");
+    navigate(`/admin/payroll/month/${year}/${month}`, { replace: true });
   };
-
-  // ── docs table: derived filter data ──────────────────────────────────────
-  // Unique years present in loaded documents, descending (for the year select).
-  // Current year is always included so the pre-selected default renders correctly
-  // even before any documents for this year have been uploaded.
-  const tableYearOptions = Array.from(
-    new Set([
-      new Date().getFullYear(),
-      // Always include the working year so the select renders correctly even
-      // when navigated to a year with no documents yet.
-      workingYear,
-      ...docs.map((d) => d.year).filter((y): y is number => y !== undefined),
-    ]),
-  ).sort((a, b) => b - a);
-
-  const isTableFiltered =
-    tableSearch.trim() !== "" ||
-    tableYearFilter !== "" ||
-    tableMonthFilter !== "";
-
-  const filteredDocs = (isTableFiltered
-    ? docs.filter((doc) => {
-        if (tableYearFilter && doc.year !== Number(tableYearFilter))
-          return false;
-        if (tableMonthFilter && doc.month !== Number(tableMonthFilter))
-          return false;
-        if (tableSearch.trim()) {
-          const q = tableSearch.trim().toLowerCase();
-          const inFilename = doc.originalName.toLowerCase().includes(q);
-          const inWorkerName = doc.workerId
-            ? `${doc.workerId.name} ${doc.workerId.lastName}`
-                .toLowerCase()
-                .includes(q)
-            : false;
-          const inEmpNum =
-            (doc.workerId?.employeeNumber ?? "").toLowerCase().includes(q) ||
-            (doc.parsedEmployeeNumber ?? "").toLowerCase().includes(q);
-          if (!inFilename && !inWorkerName && !inEmpNum) return false;
-        }
-        return true;
-      })
-    // .slice() creates a copy so the sort below never mutates the docs state array.
-    : docs.slice()
-  ).sort((a, b) => {
-    // Unmatched documents surface first so they are immediately actionable.
-    if (a.matchStatus === "unmatched" && b.matchStatus !== "unmatched") return -1;
-    if (a.matchStatus !== "unmatched" && b.matchStatus === "unmatched") return 1;
-    // Within each status group, preserve the server-side createdAt descending order.
-    return 0;
-  });
 
   // ── table style (consistent with AdminSickLeavesPage) ─────────────────────
   const thClass =
@@ -690,10 +650,35 @@ export default function AdminPayrollPage() {
     return 0;
   });
 
+  const monthlyListFilterTrim = monthlyListFilter.trim().toLowerCase();
+  const monthlyFilteredDocs = monthlyListFilterTrim
+    ? monthlySortedDocs.filter((doc) => {
+        const q = monthlyListFilterTrim;
+        const inFilename = doc.originalName.toLowerCase().includes(q);
+        const inWorkerName = doc.workerId
+          ? `${doc.workerId.name} ${doc.workerId.lastName}`
+              .toLowerCase()
+              .includes(q)
+          : false;
+        const inEmpNum =
+          (doc.workerId?.employeeNumber ?? "").toLowerCase().includes(q) ||
+          (doc.parsedEmployeeNumber ?? "").toLowerCase().includes(q);
+        return inFilename || inWorkerName || inEmpNum;
+      })
+    : monthlySortedDocs;
+
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <div>
+          <Link
+            to="/admin/payroll"
+            className="text-sm font-medium text-slate-600 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 rounded"
+          >
+            ← Resumen anual
+          </Link>
+        </div>
 
         {/* ── Header ────────────────────────────────────────────────────────── */}
         <div>
@@ -785,9 +770,26 @@ export default function AdminPayrollPage() {
                 Documentos del mes ({summaryMonthName} {summaryYear})
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                {monthlySortedDocs.length} documento
-                {monthlySortedDocs.length !== 1 ? "s" : ""}
+                {monthlyListFilterTrim
+                  ? `${monthlyFilteredDocs.length} de ${monthlySortedDocs.length} documento${monthlySortedDocs.length !== 1 ? "s" : ""}`
+                  : `${monthlySortedDocs.length} documento${monthlySortedDocs.length !== 1 ? "s" : ""}`}
               </p>
+            </div>
+            <div className="px-6 py-3 border-b border-slate-200 bg-white">
+              <label
+                htmlFor="monthly-docs-filter"
+                className="block text-xs font-medium text-slate-600 mb-1"
+              >
+                Filtrar en este mes
+              </label>
+              <input
+                id="monthly-docs-filter"
+                type="search"
+                placeholder="Buscar por trabajador, número o archivo"
+                value={monthlyListFilter}
+                onChange={(e) => setMonthlyListFilter(e.target.value)}
+                className="w-full max-w-md rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+              />
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm text-center">
@@ -800,7 +802,17 @@ export default function AdminPayrollPage() {
                   </tr>
                 </thead>
                 <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
-                  {monthlySortedDocs.map((doc) => (
+                  {monthlyFilteredDocs.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-6 py-8 text-center text-sm text-slate-500"
+                      >
+                        Ningún documento coincide con el filtro.
+                      </td>
+                    </tr>
+                  ) : null}
+                  {monthlyFilteredDocs.map((doc) => (
                     <tr
                       key={doc._id}
                       className={
@@ -1267,224 +1279,6 @@ export default function AdminPayrollPage() {
               >
                 ✕ Cerrar resultados
               </button>
-            </div>
-          )}
-        </div>
-
-        {/* ── Global Payroll Search (read-focused lookup) ──────────────────── */}
-        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-base font-semibold text-slate-800">
-                Buscar nómina{" "}
-                <span className="text-slate-500 font-normal">
-                  {isTableFiltered
-                    ? `(${filteredDocs.length} de ${docs.length})`
-                    : `(${docs.length})`}
-                </span>
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Búsqueda rápida. La gestión del mes (asignar, eliminar) se hace arriba en el espacio del mes seleccionado.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={fetchDocs}
-              disabled={loading}
-              className="shrink-0 text-xs font-medium text-slate-600 hover:text-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-100 rounded-full px-3 py-1.5 disabled:opacity-50"
-            >
-              {loading ? "Cargando..." : "↻ Actualizar"}
-            </button>
-          </div>
-
-          <div className="px-6 py-3 border-b border-slate-200 bg-slate-50/60 flex flex-wrap gap-3 items-end">
-            <div className="space-y-1 w-28">
-              <label
-                htmlFor="table-year"
-                className="block text-xs font-medium text-slate-600"
-              >
-                Año
-              </label>
-              <select
-                id="table-year"
-                value={tableYearFilter}
-                onChange={(e) => setTableYearFilter(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-              >
-                <option value="">Todos</option>
-                {tableYearOptions.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1 w-36">
-              <label
-                htmlFor="table-month"
-                className="block text-xs font-medium text-slate-600"
-              >
-                Mes
-              </label>
-              <select
-                id="table-month"
-                value={tableMonthFilter}
-                onChange={(e) => setTableMonthFilter(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-              >
-                <option value="">Todos</option>
-                {MONTH_NAMES.map((name, idx) => (
-                  <option key={idx + 1} value={idx + 1}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex-1 min-w-[200px] space-y-1">
-              <label
-                htmlFor="table-search"
-                className="block text-xs font-medium text-slate-600"
-              >
-                Trabajador / archivo
-              </label>
-              <input
-                id="table-search"
-                type="search"
-                placeholder="Nombre, Nº empleado, archivo…"
-                value={tableSearch}
-                onChange={(e) => setTableSearch(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-              />
-            </div>
-
-            {isTableFiltered && (
-              <button
-                type="button"
-                onClick={() => {
-                  setTableSearch("");
-                  setTableYearFilter("");
-                  setTableMonthFilter("");
-                }}
-                className="self-end text-xs font-medium text-slate-500 hover:text-slate-800 underline focus:outline-none focus:ring-2 focus:ring-slate-200 rounded"
-              >
-                Limpiar filtros
-              </button>
-            )}
-          </div>
-
-          {loading && docs.length === 0 ? (
-            <div className="p-6 text-center text-sm text-slate-500">
-              Cargando documentos...
-            </div>
-          ) : docs.length === 0 ? (
-            <div className="p-6 text-center text-sm text-slate-500">
-              No hay documentos de nómina todavía.
-            </div>
-          ) : filteredDocs.length === 0 ? (
-            <div className="p-6 text-center text-sm text-slate-500">
-              Ningún documento coincide con la búsqueda.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm text-center">
-                <thead className="bg-slate-50 sticky top-0 z-10">
-                  <tr className="border-b border-slate-200">
-                    <th className={`${thClass} text-left`}>Archivo</th>
-                    <th className={thClass}>Trabajador</th>
-                    <th className={thClass}>Estado</th>
-                    <th className={thClass}>Período</th>
-                    <th className={thClass}>Acciones</th>
-                  </tr>
-                </thead>
-
-                <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
-                  {filteredDocs.map((doc) => (
-                    <tr
-                      key={doc._id}
-                      className={
-                        doc.matchStatus === "unmatched"
-                          ? "border-t border-slate-200 !bg-amber-50/40 hover:bg-amber-100/50 transition-colors"
-                          : trClass
-                      }
-                    >
-                      <td className="px-3 py-2 text-left align-top">
-                        <span
-                          className="block text-slate-800 font-medium truncate max-w-[220px]"
-                          title={doc.originalName}
-                        >
-                          {doc.originalName}
-                        </span>
-                        {doc.parsedEmployeeNumber && (
-                          <span className="text-xs text-slate-500">
-                            Nº empleado detectado: {doc.parsedEmployeeNumber}
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="px-3 py-2 align-top">
-                        <span className="text-slate-800">
-                          {workerDisplayName(doc.workerId)}
-                        </span>
-                        {doc.workerId?.employeeNumber && (
-                          <span className="block text-xs text-slate-500">
-                            {doc.workerId.employeeNumber}
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="px-3 py-2 align-top">
-                        <MatchBadge status={doc.matchStatus} />
-                        {doc.matchStatus === "unmatched" && doc.matchReason && (
-                          <p
-                            className="mt-1 text-xs text-slate-500 max-w-[180px] mx-auto"
-                            title={doc.matchReason}
-                          >
-                            {doc.matchReason.length > 60
-                              ? `${doc.matchReason.slice(0, 60)}…`
-                              : doc.matchReason}
-                          </p>
-                        )}
-                      </td>
-
-                      <td className="px-3 py-2 align-top whitespace-nowrap">
-                        {periodLabel(doc.year, doc.month) !== "—" ? (
-                          periodLabel(doc.year, doc.month)
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
-                      </td>
-
-                      <td className="px-3 py-2 align-top">
-                        <div className="flex flex-col items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleOpenFile(doc.filename, doc.originalName)
-                            }
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
-                          >
-                            📄 Ver
-                          </button>
-                          {doc.year !== undefined &&
-                          doc.month !== undefined ? (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                goToPayrollMonth(doc.year!, doc.month!)
-                              }
-                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-4 focus:ring-slate-100"
-                            >
-                              Ir al mes
-                            </button>
-                          ) : null}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           )}
         </div>

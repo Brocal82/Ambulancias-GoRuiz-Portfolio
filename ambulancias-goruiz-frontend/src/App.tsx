@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout";
 import { AuthProvider } from "./context/AuthProvider";
 import RequireAuth from "./components/RequireAuth";
@@ -44,7 +44,18 @@ import AdminSentMessages from "./modules/messages/pages/AdminSentMessages";
 import AdminTeamsPage from "./modules/teams/pages/AdminTeamsPage";
 import AdminSickLeavesPage from "./modules/sick/pages/AdminSickLeavesPage";
 import AdminPayrollPage from "./modules/payroll/pages/AdminPayrollPage";
+import PayrollYearHubPage from "./modules/payroll/pages/PayrollYearHubPage";
 import WorkerPayrollPage from "./modules/payroll/pages/WorkerPayrollPage";
+
+function RedirectToCurrentPayrollMonth() {
+  const d = new Date();
+  return (
+    <Navigate
+      to={`/admin/payroll/month/${d.getFullYear()}/${d.getMonth() + 1}`}
+      replace
+    />
+  );
+}
 import SuperadminCompaniesList from "./modules/companies/pages/SuperadminCompaniesList";
 import SuperadminCompanyForm from "./modules/companies/pages/SuperadminCompanyForm";
 import SuperadminCreateAdmin from "./modules/companies/pages/SuperadminCreateAdmin";
@@ -106,7 +117,15 @@ export default function App() {
                 <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
                 <Route path="/admin/teams" element={<AdminTeamsPage />} />
                 <Route path="/admin/sick-leaves" element={<AdminSickLeavesPage />} />
-                <Route path="/admin/payroll" element={<AdminPayrollPage />} />
+                <Route path="/admin/payroll" element={<PayrollYearHubPage />} />
+                <Route
+                  path="/admin/payroll/month/:year/:month"
+                  element={<AdminPayrollPage />}
+                />
+                <Route
+                  path="/admin/payroll/month"
+                  element={<RedirectToCurrentPayrollMonth />}
+                />
               </Route>
             </Route>
           </Route>
