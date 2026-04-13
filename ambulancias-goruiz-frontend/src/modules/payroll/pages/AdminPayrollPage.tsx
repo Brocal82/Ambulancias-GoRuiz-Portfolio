@@ -22,8 +22,7 @@ import type {
 } from "../domain/types";
 import FileUpload from "../../../components/common/FileUpload";
 import PayrollCompletionSnapshot from "../components/PayrollCompletionSnapshot";
-import WorkersMissingPayroll from "../components/WorkersMissingPayroll";
-import UnassignedPayrolls from "../components/UnassignedPayrolls";
+import ResolutionWorkspace from "../components/ResolutionWorkspace";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -883,8 +882,8 @@ export default function AdminPayrollPage() {
           coveredWorkers={summaryCoveredWorkers}
           totalWorkers={workers.length}
         />
-        <WorkersMissingPayroll missingWorkers={missingWorkersForSummaryPeriod} />
-        <UnassignedPayrolls
+        <ResolutionWorkspace
+          missingWorkers={missingWorkersForSummaryPeriod}
           unassignedPayrolls={unassignedPayrollsForSummaryPeriod}
         />
 
