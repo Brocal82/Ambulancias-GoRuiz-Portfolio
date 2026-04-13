@@ -16,7 +16,6 @@ import type {
   PayrollDocument,
   PayrollMatchStatus,
   BatchUploadResponse,
-  BatchResultItem,
   CoverageCheckResponse,
   DuplicateWarning,
 } from "../domain/types";
@@ -32,14 +31,6 @@ const MONTH_NAMES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
-
-// Batch results display priority: failed → unmatched → matched.
-// Lower number = shown first.
-const BATCH_STATUS_ORDER: Record<string, number> = {
-  failed: 0,
-  unmatched: 1,
-  matched: 2,
-};
 
 function workerDisplayName(w: PayrollDocument["workerId"]): string {
   if (!w) return "—";
@@ -324,9 +315,6 @@ export default function AdminPayrollPage() {
   const [batchResults, setBatchResults] = useState<BatchUploadResponse | null>(
     null,
   );
-  const [batchResultsFilter, setBatchResultsFilter] = useState<
-    "all" | "matched" | "unmatched" | "failed" | "duplicate"
-  >("all");
   const [batchInputKey, setBatchInputKey] = useState(0);
   // Phase 5c: optional folder-selection mode for the batch input
   const [batchFolderMode, setBatchFolderMode] = useState(false);
@@ -349,13 +337,6 @@ export default function AdminPayrollPage() {
   const [coverageChecking, setCoverageChecking] = useState(false);
   const [coverageResult, setCoverageResult] =
     useState<CoverageCheckResponse | null>(null);
-
-  // ── inline assign state (batch results panel) ──────────────────────────────
-  const [batchAssigningPayrollId, setBatchAssigningPayrollId] = useState<
-    string | null
-  >(null);
-  const [batchAssignWorkerId, setBatchAssignWorkerId] = useState("");
-  const [batchAssigning, setBatchAssigning] = useState(false);
 
   // ── invalidation state ────────────────────────────────────────────────────
   const [invalidatingId, setInvalidatingId] = useState<string | null>(null);
@@ -473,9 +454,6 @@ export default function AdminPayrollPage() {
 
     setBatchUploading(true);
     setBatchResults(null);
-    setBatchResultsFilter("all");
-    setBatchAssigningPayrollId(null);
-    setBatchAssignWorkerId("");
     try {
       const response = await apiBatchUpload({ files: batchFiles, year, month });
       setBatchResults(response);
@@ -532,60 +510,6 @@ export default function AdminPayrollPage() {
       toastT.apiError(err, "Error al asignar la nómina");
     } finally {
       setAssigning(false);
-    }
-  };
-
-  // ── batch inline assign (batch results panel) ─────────────────────────────
-  const confirmBatchAssign = async (payrollId: string) => {
-    if (!batchAssignWorkerId) {
-      toastT.warn("Selecciona un trabajador");
-      return;
-    }
-    setBatchAssigning(true);
-    try {
-      const response = await apiAssign(payrollId, batchAssignWorkerId);
-      toastT.success("Nómina asignada correctamente");
-      if (response.possibleDuplicate) {
-        toastT.warn(
-          `⚠ Posible duplicado detectado: ya existe una nómina confirmada para este trabajador en el mismo período ("${response.possibleDuplicate.originalName}"). El documento se ha guardado.`,
-        );
-      }
-      setBatchAssigningPayrollId(null);
-      setBatchAssignWorkerId("");
-      // Optimistically reflect the assignment in the batch results panel.
-      // The item flips to "matched" so filters and sort update immediately.
-      // Also propagate any duplicate warning into the result item and summary.
-      setBatchResults((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          summary: {
-            ...prev.summary,
-            unmatched: Math.max(0, prev.summary.unmatched - 1),
-            matched: prev.summary.matched + 1,
-            duplicateWarnings:
-              (prev.summary.duplicateWarnings ?? 0) +
-              (response.possibleDuplicate ? 1 : 0),
-          },
-          results: prev.results.map((item) =>
-            item.payrollId === payrollId
-              ? {
-                  ...item,
-                  status: "matched" as const,
-                  matchStatus: "manual" as const,
-                  ...(response.possibleDuplicate && {
-                    possibleDuplicate: response.possibleDuplicate,
-                  }),
-                }
-              : item,
-          ),
-        };
-      });
-      await fetchDocs();
-    } catch (err) {
-      toastT.apiError(err, "Error al asignar la nómina");
-    } finally {
-      setBatchAssigning(false);
     }
   };
 
@@ -1212,204 +1136,10 @@ export default function AdminPayrollPage() {
                 )}
               </div>
 
-              {/* Filter pills */}
-              <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    { key: "all", label: "Todas", count: batchResults.summary.total },
-                    { key: "matched", label: "Asignadas", count: batchResults.summary.matched },
-                    { key: "unmatched", label: "Sin asignar", count: batchResults.summary.unmatched },
-                    { key: "failed", label: "Con error", count: batchResults.summary.failed },
-                    { key: "duplicate", label: "Posibles duplicados", count: batchResults.summary.duplicateWarnings ?? 0 },
-                  ] as const
-                )
-                  .filter(({ key, count }) => key === "all" || count > 0)
-                  .map(({ key, label, count }) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setBatchResultsFilter(key)}
-                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${
-                        batchResultsFilter === key
-                          ? "bg-slate-800 text-white"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                      }`}
-                    >
-                      {label}
-                      <span
-                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                          batchResultsFilter === key
-                            ? "bg-white/20 text-white"
-                            : "bg-slate-300/60 text-slate-600"
-                        }`}
-                      >
-                        {count}
-                      </span>
-                    </button>
-                  ))}
-              </div>
-
-              {/* Per-file result table */}
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-slate-50">
-                    <tr className="border-b border-slate-200">
-                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-600">
-                        Archivo
-                      </th>
-                      <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-600">
-                        Resultado
-                      </th>
-                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-600">
-                        Detalle
-                      </th>
-                      <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-600">
-                        Acciones
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {batchResults.results
-                      .filter(
-                        (item) =>
-                          batchResultsFilter === "all" ||
-                          (batchResultsFilter === "duplicate"
-                            ? !!item.possibleDuplicate
-                            : item.status === batchResultsFilter),
-                      )
-                      .sort(
-                        (a, b) =>
-                          (BATCH_STATUS_ORDER[a.status] ?? 99) -
-                          (BATCH_STATUS_ORDER[b.status] ?? 99),
-                      )
-                      .map(
-                      (item: BatchResultItem, idx: number) => (
-                        <tr
-                          key={idx}
-                          className={
-                            item.status === "unmatched"
-                              ? "border-t border-slate-200 bg-amber-50/40 hover:bg-amber-100/50"
-                              : "border-t border-slate-200 hover:bg-slate-50/70"
-                          }
-                        >
-                          <td
-                            className="px-3 py-2 text-slate-800 font-medium max-w-[240px] truncate"
-                            title={item.originalName}
-                          >
-                            {item.originalName}
-                          </td>
-                          <td className="px-3 py-2 text-center">
-                            {item.status === "matched" && (
-                              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-                                Auto-asignada
-                              </span>
-                            )}
-                            {item.status === "unmatched" && (
-                              <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
-                                Sin asignar
-                              </span>
-                            )}
-                            {item.status === "failed" && (
-                              <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">
-                                Error
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-3 py-2 text-xs text-slate-500">
-                            {item.status === "matched" &&
-                              item.parsedEmployeeNumber && (
-                                <span>
-                                  Nº empleado: {item.parsedEmployeeNumber}
-                                </span>
-                              )}
-                            {item.status === "unmatched" && item.matchReason && (
-                              <span
-                                title={item.matchReason}
-                                className="max-w-[280px] block truncate"
-                              >
-                                {item.matchReason}
-                              </span>
-                            )}
-                            {item.status === "failed" && item.error && (
-                              <span className="text-red-600">{item.error}</span>
-                            )}
-                            {/* Phase 8b: inline duplicate warning */}
-                            {item.possibleDuplicate && (
-                              <span
-                                className="mt-1 inline-flex items-center gap-1 rounded bg-orange-50 px-1.5 py-0.5 text-[10px] font-medium text-orange-700 ring-1 ring-inset ring-orange-600/20"
-                                title={`Posible duplicado: "${item.possibleDuplicate.originalName}"`}
-                              >
-                                ⚠ Posible duplicado
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Inline assign — only for unmatched rows */}
-                          <td className="px-3 py-2 align-top">
-                            {item.status === "unmatched" && item.payrollId && (
-                              batchAssigningPayrollId === item.payrollId ? (
-                                <div className="flex flex-col gap-1.5 min-w-[160px]">
-                                  <WorkerSearchSelect
-                                    workers={workers}
-                                    value={batchAssignWorkerId}
-                                    onChange={setBatchAssignWorkerId}
-                                    size="sm"
-                                    placeholder="Buscar trabajador…"
-                                  />
-                                  <div className="flex gap-1">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        confirmBatchAssign(item.payrollId!)
-                                      }
-                                      disabled={
-                                        batchAssigning || !batchAssignWorkerId
-                                      }
-                                      className="flex-1 rounded-lg bg-blue-600 px-2 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                      {batchAssigning ? "..." : "Confirmar"}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setBatchAssigningPayrollId(null);
-                                        setBatchAssignWorkerId("");
-                                      }}
-                                      disabled={batchAssigning}
-                                      className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                                    >
-                                      ✕
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setBatchAssigningPayrollId(item.payrollId!);
-                                    setBatchAssignWorkerId("");
-                                  }}
-                                  className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-4 focus:ring-amber-100"
-                                >
-                                  Asignar
-                                </button>
-                              )
-                            )}
-                          </td>
-                        </tr>
-                      ),
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
               <button
                 type="button"
                 onClick={() => {
                   setBatchResults(null);
-                  setBatchResultsFilter("all");
-                  setBatchAssigningPayrollId(null);
-                  setBatchAssignWorkerId("");
                 }}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
               >
