@@ -337,6 +337,13 @@ export default function AdminPayrollPage() {
   /** Local filter for the expanded monthly list only (current month docs). */
   const [monthlyListFilter, setMonthlyListFilter] = useState("");
 
+  const unassignedPayrollsSectionRef = useRef<HTMLDivElement>(null);
+  const workersMissingSectionRef = useRef<HTMLDivElement>(null);
+  const [highlightUnassignedPayrolls, setHighlightUnassignedPayrolls] =
+    useState(false);
+  const [highlightWorkersMissing, setHighlightWorkersMissing] =
+    useState(false);
+
   // Keep webkitdirectory attribute in sync with batchFolderMode.
   // React's InputHTMLAttributes does not include webkitdirectory, so we apply
   // it imperatively. The effect re-runs on batchInputKey changes so the
@@ -370,6 +377,30 @@ export default function AdminPayrollPage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const RESOLUTION_SECTION_FLASH_MS = 1600;
+  const navigateToUnassignedPayrolls = useCallback(() => {
+    unassignedPayrollsSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    setHighlightUnassignedPayrolls(true);
+    window.setTimeout(
+      () => setHighlightUnassignedPayrolls(false),
+      RESOLUTION_SECTION_FLASH_MS,
+    );
+  }, []);
+  const navigateToWorkersMissingPayroll = useCallback(() => {
+    workersMissingSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    setHighlightWorkersMissing(true);
+    window.setTimeout(
+      () => setHighlightWorkersMissing(false),
+      RESOLUTION_SECTION_FLASH_MS,
+    );
   }, []);
 
   useEffect(() => {
@@ -758,11 +789,14 @@ export default function AdminPayrollPage() {
           unassignedPayrollDocs={summaryPending}
           coveredWorkers={summaryCoveredWorkers}
           totalWorkers={workers.length}
+          workersMissingPayroll={missingWorkersForSummaryPeriod.length}
           onClick={() => {
             if (summaryCurrentDocs.length === 0) return;
             setMonthlyDocsListExpanded((v) => !v);
           }}
           monthlyListExpanded={monthlyDocsListExpanded}
+          onNavigateToUnassignedPayrolls={navigateToUnassignedPayrolls}
+          onNavigateToWorkersMissingPayroll={navigateToWorkersMissingPayroll}
         />
 
         {monthlyDocsListExpanded && monthlySortedDocs.length > 0 ? (
@@ -950,6 +984,10 @@ export default function AdminPayrollPage() {
         <ResolutionWorkspace
           missingWorkers={missingWorkersForSummaryPeriod}
           unassignedPayrolls={unassignedPayrollsForSummaryPeriod}
+          workersMissingSectionRef={workersMissingSectionRef}
+          unassignedPayrollsSectionRef={unassignedPayrollsSectionRef}
+          highlightWorkersMissing={highlightWorkersMissing}
+          highlightUnassignedPayrolls={highlightUnassignedPayrolls}
         />
 
         {/* ── Single upload section (secondary / exception flow) ───────────── */}

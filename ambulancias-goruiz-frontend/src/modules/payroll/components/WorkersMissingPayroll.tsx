@@ -1,14 +1,26 @@
+import type { RefObject } from "react";
 import type { User } from "../../users";
 
 interface WorkersMissingPayrollProps {
   missingWorkers: User[];
+  sectionRef?: RefObject<HTMLDivElement | null>;
+  highlight?: boolean;
 }
 
 export default function WorkersMissingPayroll({
   missingWorkers,
+  sectionRef,
+  highlight,
 }: WorkersMissingPayrollProps) {
   return (
-    <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-5">
+    <div
+      ref={sectionRef}
+      className={`rounded-2xl bg-white shadow-sm p-5 transition-shadow duration-300 ${
+        highlight
+          ? "ring-2 ring-blue-300 ring-offset-2"
+          : "ring-1 ring-slate-200"
+      }`}
+    >
       <h2 className="text-base font-semibold text-slate-800 mb-3">
         Workers Missing Payroll
       </h2>
