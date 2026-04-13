@@ -811,13 +811,21 @@ export default function AdminPayrollPage() {
           unassignedPayrolls={unassignedPayrollsForSummaryPeriod}
         />
 
-        {/* ── Upload section ────────────────────────────────────────────────── */}
-        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
-          <h2 className="text-base font-semibold text-slate-800 mb-4">
-            Subir documento de nómina
-          </h2>
+        {/* ── Single upload section (secondary / exception flow) ───────────── */}
+        <details className="rounded-xl bg-slate-50 ring-1 ring-slate-200 p-4">
+          <summary className="cursor-pointer list-none flex items-center justify-between gap-3 text-sm font-medium text-slate-700">
+            <span>Subir nómina individual (uso puntual)</span>
+            <span className="text-xs font-normal text-slate-500">
+              ¿Necesitas subir una nómina individual?
+            </span>
+          </summary>
 
-          <div className="flex flex-wrap gap-4 items-end">
+          <div className="mt-4 space-y-3">
+            <p className="text-xs text-slate-500">
+              Utiliza esta opción solo para casos excepcionales (nóminas tardías o correcciones puntuales).
+            </p>
+
+            <div className="flex flex-wrap gap-4 items-end">
             {/* File picker */}
             <div className="space-y-1">
               <label className="block text-sm font-medium text-slate-700">
@@ -899,40 +907,41 @@ export default function AdminPayrollPage() {
             >
               {uploading ? "Subiendo..." : "Subir nómina"}
             </button>
-          </div>
-
-          {!uploadWorkerId && (
-            <p className="mt-3 text-xs text-slate-500">
-              Sin trabajador seleccionado, el sistema intentará asignar
-              automáticamente por número de empleado en el nombre del archivo.
-            </p>
-          )}
-
-          {/* Phase 8b: duplicate warning for single-file upload */}
-          {uploadDuplicateWarning && (
-            <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <span className="mt-0.5 text-amber-500 shrink-0">⚠</span>
-              <div className="flex-1 text-xs text-amber-800">
-                <span className="font-medium">Posible duplicado detectado.</span>{" "}
-                Ya existe una nómina confirmada para este trabajador en el mismo
-                período:{" "}
-                <span className="font-medium">
-                  &ldquo;{uploadDuplicateWarning.originalName}&rdquo;
-                </span>
-                . El documento se ha guardado igualmente. Revisa la tabla si
-                necesitas eliminar el anterior.
-              </div>
-              <button
-                type="button"
-                aria-label="Cerrar aviso de duplicado"
-                onClick={() => setUploadDuplicateWarning(null)}
-                className="shrink-0 text-amber-400 hover:text-amber-600"
-              >
-                ✕
-              </button>
             </div>
-          )}
-        </div>
+
+            {!uploadWorkerId && (
+              <p className="text-xs text-slate-500">
+                Sin trabajador seleccionado, el sistema intentará asignar
+                automáticamente por número de empleado en el nombre del archivo.
+              </p>
+            )}
+
+            {/* Phase 8b: duplicate warning for single-file upload */}
+            {uploadDuplicateWarning && (
+              <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <span className="mt-0.5 text-amber-500 shrink-0">⚠</span>
+                <div className="flex-1 text-xs text-amber-800">
+                  <span className="font-medium">Posible duplicado detectado.</span>{" "}
+                  Ya existe una nómina confirmada para este trabajador en el mismo
+                  período:{" "}
+                  <span className="font-medium">
+                    &ldquo;{uploadDuplicateWarning.originalName}&rdquo;
+                  </span>
+                  . El documento se ha guardado igualmente. Revisa la tabla si
+                  necesitas eliminar el anterior.
+                </div>
+                <button
+                  type="button"
+                  aria-label="Cerrar aviso de duplicado"
+                  onClick={() => setUploadDuplicateWarning(null)}
+                  className="shrink-0 text-amber-400 hover:text-amber-600"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+          </div>
+        </details>
 
         {/* ── Batch upload section (Phase 5) ────────────────────────────────── */}
         <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
