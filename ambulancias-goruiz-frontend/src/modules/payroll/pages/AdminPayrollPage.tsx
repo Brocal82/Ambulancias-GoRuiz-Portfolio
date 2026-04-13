@@ -9,14 +9,12 @@ import {
   uploadPayrollDocument as apiUpload,
   uploadPayrollBatch as apiBatchUpload,
   assignPayrollDocument as apiAssign,
-  checkPayrollCoverage as apiCheckCoverage,
   invalidatePayrollDocument as apiInvalidate,
 } from "../domain/api";
 import type {
   PayrollDocument,
   PayrollMatchStatus,
   BatchUploadResponse,
-  CoverageCheckResponse,
   DuplicateWarning,
 } from "../domain/types";
 import FileUpload from "../../../components/common/FileUpload";
@@ -325,19 +323,6 @@ export default function AdminPayrollPage() {
   const [assignWorkerId, setAssignWorkerId] = useState("");
   const [assigning, setAssigning] = useState(false);
 
-  // ── coverage check state (Phase 6b) ───────────────────────────────────────
-  // Pre-populated from the working period as a default; admin can change freely.
-  // No reactive sync — useState initializer runs once at mount only.
-  const [coverageYear, setCoverageYear] = useState<string>(
-    String(workingYear),
-  );
-  const [coverageMonth, setCoverageMonth] = useState<string>(
-    String(workingMonth),
-  );
-  const [coverageChecking, setCoverageChecking] = useState(false);
-  const [coverageResult, setCoverageResult] =
-    useState<CoverageCheckResponse | null>(null);
-
   // ── invalidation state ────────────────────────────────────────────────────
   const [invalidatingId, setInvalidatingId] = useState<string | null>(null);
 
@@ -510,27 +495,6 @@ export default function AdminPayrollPage() {
       toastT.apiError(err, "Error al asignar la nómina");
     } finally {
       setAssigning(false);
-    }
-  };
-
-  // ── coverage check (Phase 6b) ─────────────────────────────────────────────
-  const handleCheckCoverage = async () => {
-    if (!coverageMonth) {
-      toastT.warn("Selecciona un mes para verificar la cobertura");
-      return;
-    }
-    const year = parseInt(coverageYear, 10);
-    const month = parseInt(coverageMonth, 10);
-
-    setCoverageChecking(true);
-    setCoverageResult(null);
-    try {
-      const result = await apiCheckCoverage(year, month);
-      setCoverageResult(result);
-    } catch (err) {
-      toastT.apiError(err, "Error al verificar la cobertura de nóminas");
-    } finally {
-      setCoverageChecking(false);
     }
   };
 
@@ -1150,178 +1114,6 @@ export default function AdminPayrollPage() {
                 onClick={() => {
                   setBatchResults(null);
                 }}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
-              >
-                ✕ Cerrar resultados
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* ── Coverage check section (Phase 6b) ─────────────────────────────── */}
-        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
-          <h2 className="text-base font-semibold text-slate-800 mb-1">
-            Verificar cobertura del período
-          </h2>
-          <p className="text-xs text-slate-500 mb-4">
-            Muestra los trabajadores <span className="font-medium">activos</span> en la empresa que no tienen
-            ningún documento de nómina confirmado para el período seleccionado.
-            Trabajadores inactivos no aparecen en esta lista. Los documentos
-            históricos de trabajadores inactivos siguen siendo accesibles en la
-            tabla de documentos.
-          </p>
-
-          <div className="flex flex-wrap gap-4 items-end">
-            {/* Year */}
-            <div className="space-y-1 w-24">
-              <label
-                htmlFor="coverage-year"
-                className="block text-sm font-medium text-slate-700"
-              >
-                Año
-              </label>
-              <input
-                id="coverage-year"
-                type="number"
-                value={coverageYear}
-                onChange={(e) => {
-                  setCoverageYear(e.target.value);
-                  setCoverageResult(null);
-                }}
-                min={2000}
-                max={2100}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-              />
-            </div>
-
-            {/* Month (required) */}
-            <div className="space-y-1 w-44">
-              <label
-                htmlFor="coverage-month"
-                className="block text-sm font-medium text-slate-700"
-              >
-                Mes{" "}
-                <span className="font-normal text-slate-500">(obligatorio)</span>
-              </label>
-              <select
-                id="coverage-month"
-                value={coverageMonth}
-                onChange={(e) => {
-                  setCoverageMonth(e.target.value);
-                  setCoverageResult(null);
-                }}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-              >
-                <option value="">— Seleccionar mes —</option>
-                {MONTH_NAMES.map((name, idx) => (
-                  <option key={idx + 1} value={idx + 1}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Submit */}
-            <button
-              type="button"
-              onClick={handleCheckCoverage}
-              disabled={coverageChecking || !coverageMonth}
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-700 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {coverageChecking ? "Verificando..." : "Verificar cobertura"}
-            </button>
-          </div>
-
-          {/* ── Coverage results ──────────────────────────────────────────────── */}
-          {coverageResult && (
-            <div className="mt-5 space-y-3">
-
-              {/* Summary line */}
-              {coverageResult.totalWorkers === 0 ? (
-                <p className="text-sm text-slate-500">
-                  No hay trabajadores registrados en la empresa para este período.
-                </p>
-              ) : coverageResult.missingCount === 0 ? (
-                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 ring-1 ring-inset ring-emerald-600/20">
-                  <span className="text-emerald-700 font-medium text-sm">
-                    ✓ Todos los trabajadores tienen nómina confirmada para{" "}
-                    {MONTH_NAMES[coverageResult.period.month - 1]}{" "}
-                    {coverageResult.period.year}.
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-4 py-3 ring-1 ring-inset ring-amber-600/20">
-                  <span className="text-amber-800 font-medium text-sm">
-                    {coverageResult.missingCount} de{" "}
-                    {coverageResult.totalWorkers} trabajadores en el sistema no
-                    tienen nómina confirmada para{" "}
-                    {MONTH_NAMES[coverageResult.period.month - 1]}{" "}
-                    {coverageResult.period.year}.
-                  </span>
-                </div>
-              )}
-
-              {/* Unmatched documents warning */}
-              {coverageResult.unmatchedDocumentsForPeriod > 0 && (
-                <div className="flex items-start gap-2 rounded-xl bg-blue-50 px-4 py-3 ring-1 ring-inset ring-blue-600/20">
-                  <span className="text-blue-800 text-xs">
-                    <span className="font-semibold">
-                      {coverageResult.unmatchedDocumentsForPeriod} documento
-                      {coverageResult.unmatchedDocumentsForPeriod !== 1
-                        ? "s"
-                        : ""}{" "}
-                      sin asignar
-                    </span>{" "}
-                    para este período. Asígnalos manualmente — puede que algunos
-                    trabajadores de la lista ya estén cubiertos.
-                  </span>
-                </div>
-              )}
-
-              {/* Missing workers table */}
-              {coverageResult.missingCount > 0 && (
-                <div className="overflow-x-auto rounded-xl border border-slate-200">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-slate-50">
-                      <tr className="border-b border-slate-200">
-                        <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-600">
-                          Trabajador
-                        </th>
-                        <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-600">
-                          Nº empleado
-                        </th>
-                        <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-600">
-                          Email
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {coverageResult.missingWorkers.map((w) => (
-                        <tr
-                          key={w._id}
-                          className="border-t border-slate-200 hover:bg-slate-50/70"
-                        >
-                          <td className="px-3 py-2 font-medium text-slate-800">
-                            {w.lastName}, {w.name}
-                          </td>
-                          <td className="px-3 py-2 text-center text-slate-600">
-                            {w.employeeNumber ?? (
-                              <span className="text-slate-400">—</span>
-                            )}
-                          </td>
-                          <td className="px-3 py-2 text-slate-600">
-                            {w.email}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setCoverageResult(null)}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
               >
                 ✕ Cerrar resultados
