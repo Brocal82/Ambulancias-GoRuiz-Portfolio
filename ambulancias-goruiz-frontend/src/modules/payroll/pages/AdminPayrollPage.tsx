@@ -21,6 +21,7 @@ import type {
   DuplicateWarning,
 } from "../domain/types";
 import FileUpload from "../../../components/common/FileUpload";
+import PayrollCompletionSnapshot from "../components/PayrollCompletionSnapshot";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -773,6 +774,15 @@ export default function AdminPayrollPage() {
   const summaryPending = summaryCurrentDocs.filter(
     (d) => d.matchStatus === "unmatched",
   ).length;
+  const summaryCoveredWorkers = new Set(
+    summaryCurrentDocs
+      .filter(
+        (d) =>
+          (d.matchStatus === "matched" || d.matchStatus === "manual") &&
+          d.workerId?._id,
+      )
+      .map((d) => d.workerId!._id),
+  ).size;
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -848,6 +858,14 @@ export default function AdminPayrollPage() {
             Siguiente →
           </button>
         </div>
+
+        <PayrollCompletionSnapshot
+          totalPayrollDocs={summaryCurrentDocs.length}
+          assignedPayrollDocs={summaryConfirmed}
+          unassignedPayrollDocs={summaryPending}
+          coveredWorkers={summaryCoveredWorkers}
+          totalWorkers={workers.length}
+        />
 
         {/* ── Upload section ────────────────────────────────────────────────── */}
         <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
