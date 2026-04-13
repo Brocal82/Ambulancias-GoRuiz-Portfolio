@@ -22,6 +22,7 @@ import type {
 } from "../domain/types";
 import FileUpload from "../../../components/common/FileUpload";
 import PayrollCompletionSnapshot from "../components/PayrollCompletionSnapshot";
+import WorkersMissingPayroll from "../components/WorkersMissingPayroll";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -783,6 +784,18 @@ export default function AdminPayrollPage() {
       )
       .map((d) => d.workerId!._id),
   ).size;
+  const assignedWorkerIdsForSummaryPeriod = new Set(
+    summaryCurrentDocs
+      .filter(
+        (d) =>
+          (d.matchStatus === "matched" || d.matchStatus === "manual") &&
+          d.workerId?._id,
+      )
+      .map((d) => d.workerId!._id),
+  );
+  const missingWorkersForSummaryPeriod = workers.filter(
+    (w) => !assignedWorkerIdsForSummaryPeriod.has(w._id),
+  );
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -866,6 +879,7 @@ export default function AdminPayrollPage() {
           coveredWorkers={summaryCoveredWorkers}
           totalWorkers={workers.length}
         />
+        <WorkersMissingPayroll missingWorkers={missingWorkersForSummaryPeriod} />
 
         {/* ── Upload section ────────────────────────────────────────────────── */}
         <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
