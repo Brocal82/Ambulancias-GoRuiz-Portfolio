@@ -23,6 +23,7 @@ import type {
 import FileUpload from "../../../components/common/FileUpload";
 import PayrollCompletionSnapshot from "../components/PayrollCompletionSnapshot";
 import WorkersMissingPayroll from "../components/WorkersMissingPayroll";
+import UnassignedPayrolls from "../components/UnassignedPayrolls";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -796,6 +797,9 @@ export default function AdminPayrollPage() {
   const missingWorkersForSummaryPeriod = workers.filter(
     (w) => !assignedWorkerIdsForSummaryPeriod.has(w._id),
   );
+  const unassignedPayrollsForSummaryPeriod = summaryCurrentDocs.filter(
+    (d) => d.matchStatus === "unmatched",
+  );
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -880,6 +884,9 @@ export default function AdminPayrollPage() {
           totalWorkers={workers.length}
         />
         <WorkersMissingPayroll missingWorkers={missingWorkersForSummaryPeriod} />
+        <UnassignedPayrolls
+          unassignedPayrolls={unassignedPayrollsForSummaryPeriod}
+        />
 
         {/* ── Upload section ────────────────────────────────────────────────── */}
         <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
