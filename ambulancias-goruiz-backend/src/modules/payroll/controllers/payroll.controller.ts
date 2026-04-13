@@ -107,23 +107,25 @@ export async function uploadPayrollDocument(
       month?: string;
     };
 
-    // Validate year/month if provided
-    const parsedYear = year !== undefined ? parseInt(year, 10) : undefined;
-    const parsedMonth = month !== undefined ? parseInt(month, 10) : undefined;
+    if (year === undefined || String(year).trim() === "") {
+      res.status(400).json({ message: "year es obligatorio" });
+      return;
+    }
+    if (month === undefined || String(month).trim() === "") {
+      res.status(400).json({ message: "month es obligatorio" });
+      return;
+    }
 
-    if (
-      parsedYear !== undefined &&
-      (isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100)
-    ) {
+    const parsedYear = parseInt(year, 10);
+    const parsedMonth = parseInt(month, 10);
+
+    if (isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
       res
         .status(400)
         .json({ message: "year debe ser un número entre 2000 y 2100" });
       return;
     }
-    if (
-      parsedMonth !== undefined &&
-      (isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12)
-    ) {
+    if (isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12) {
       res
         .status(400)
         .json({ message: "month debe ser un número entre 1 y 12" });
@@ -171,8 +173,8 @@ export async function uploadPayrollDocument(
         originalName,
         fileUrl,
         matchStatus: "manual",
-        ...(parsedYear !== undefined && { year: parsedYear }),
-        ...(parsedMonth !== undefined && { month: parsedMonth }),
+        year: parsedYear,
+        month: parsedMonth,
       });
 
       const possibleDuplicate = await findPayrollDuplicate(
@@ -211,8 +213,8 @@ export async function uploadPayrollDocument(
         fileUrl,
         matchStatus: "matched",
         parsedEmployeeNumber: matchResult.parsedEmployeeNumber,
-        ...(parsedYear !== undefined && { year: parsedYear }),
-        ...(parsedMonth !== undefined && { month: parsedMonth }),
+        year: parsedYear,
+        month: parsedMonth,
       });
 
       const possibleDuplicate = await findPayrollDuplicate(
@@ -249,8 +251,8 @@ export async function uploadPayrollDocument(
       matchStatus: "unmatched",
       parsedEmployeeNumber: matchResult.parsedEmployeeNumber ?? undefined,
       matchReason: matchResult.reason,
-      ...(parsedYear !== undefined && { year: parsedYear }),
-      ...(parsedMonth !== undefined && { month: parsedMonth }),
+      year: parsedYear,
+      month: parsedMonth,
     });
 
     res.status(201).json({
@@ -334,22 +336,25 @@ export async function uploadPayrollBatch(
 
     const { year, month } = req.body as { year?: string; month?: string };
 
-    const parsedYear = year !== undefined ? parseInt(year, 10) : undefined;
-    const parsedMonth = month !== undefined ? parseInt(month, 10) : undefined;
+    if (year === undefined || String(year).trim() === "") {
+      res.status(400).json({ message: "year es obligatorio" });
+      return;
+    }
+    if (month === undefined || String(month).trim() === "") {
+      res.status(400).json({ message: "month es obligatorio" });
+      return;
+    }
 
-    if (
-      parsedYear !== undefined &&
-      (isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100)
-    ) {
+    const parsedYear = parseInt(year, 10);
+    const parsedMonth = parseInt(month, 10);
+
+    if (isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
       res
         .status(400)
         .json({ message: "year debe ser un número entre 2000 y 2100" });
       return;
     }
-    if (
-      parsedMonth !== undefined &&
-      (isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12)
-    ) {
+    if (isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12) {
       res
         .status(400)
         .json({ message: "month debe ser un número entre 1 y 12" });
@@ -359,8 +364,8 @@ export async function uploadPayrollBatch(
     const companyOid = new mongoose.Types.ObjectId(adminCompanyId);
     const uploaderOid = new mongoose.Types.ObjectId(req.userId as string);
     const periodFields = {
-      ...(parsedYear !== undefined && { year: parsedYear }),
-      ...(parsedMonth !== undefined && { month: parsedMonth }),
+      year: parsedYear,
+      month: parsedMonth,
     };
 
     const results: BatchResultItem[] = [];

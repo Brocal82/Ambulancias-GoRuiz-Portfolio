@@ -43,8 +43,8 @@ export interface PayrollDocument {
 export interface UploadPayrollPayload {
   file: File;
   workerId?: string;
-  year?: number;
-  month?: number;
+  year: number;
+  month: number;
 }
 
 // ── Duplicate detection (Phase 8) ─────────────────────────────────────────────
@@ -78,8 +78,8 @@ export interface AssignPayrollResponse {
 
 export interface BatchUploadPayload {
   files: File[];
-  year?: number;
-  month?: number;
+  year: number;
+  month: number;
 }
 
 /** Per-file status in a batch upload response. */

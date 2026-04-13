@@ -300,7 +300,9 @@ export default function AdminPayrollPage() {
   const [uploadYear, setUploadYear] = useState<string>(
     String(new Date().getFullYear()),
   );
-  const [uploadMonth, setUploadMonth] = useState<string>("");
+  const [uploadMonth, setUploadMonth] = useState<string>(
+    String(new Date().getMonth() + 1),
+  );
   const [uploading, setUploading] = useState(false);
   // Incremented after a successful upload to force FileUpload to re-mount and reset
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -313,7 +315,9 @@ export default function AdminPayrollPage() {
   const [batchYear, setBatchYear] = useState<string>(
     String(new Date().getFullYear()),
   );
-  const [batchMonth, setBatchMonth] = useState<string>("");
+  const [batchMonth, setBatchMonth] = useState<string>(
+    String(new Date().getMonth() + 1),
+  );
   const [batchUploading, setBatchUploading] = useState(false);
   const [batchResults, setBatchResults] = useState<BatchUploadResponse | null>(
     null,
@@ -410,8 +414,17 @@ export default function AdminPayrollPage() {
       return;
     }
 
-    const year = uploadYear ? parseInt(uploadYear, 10) : undefined;
-    const month = uploadMonth ? parseInt(uploadMonth, 10) : undefined;
+    if (!uploadYear) {
+      toastT.warn("Selecciona un año para la nómina");
+      return;
+    }
+    if (!uploadMonth) {
+      toastT.warn("Selecciona un mes para la nómina");
+      return;
+    }
+
+    const year = parseInt(uploadYear, 10);
+    const month = parseInt(uploadMonth, 10);
 
     setUploading(true);
     setUploadDuplicateWarning(null);
@@ -427,7 +440,7 @@ export default function AdminPayrollPage() {
       setUploadFile(null);
       setUploadWorkerId("");
       setUploadYear(String(new Date().getFullYear()));
-      setUploadMonth("");
+      setUploadMonth(String(new Date().getMonth() + 1));
       setFileInputKey((k) => k + 1);
       await fetchDocs();
     } catch (err) {
@@ -444,8 +457,17 @@ export default function AdminPayrollPage() {
       return;
     }
 
-    const year = batchYear ? parseInt(batchYear, 10) : undefined;
-    const month = batchMonth ? parseInt(batchMonth, 10) : undefined;
+    if (!batchYear) {
+      toastT.warn("Selecciona un año para el lote");
+      return;
+    }
+    if (!batchMonth) {
+      toastT.warn("Selecciona un mes para el lote");
+      return;
+    }
+
+    const year = parseInt(batchYear, 10);
+    const month = parseInt(batchMonth, 10);
 
     setBatchUploading(true);
     setBatchResults(null);
@@ -889,7 +911,7 @@ export default function AdminPayrollPage() {
             <div className="space-y-1 w-40">
               <label htmlFor="upload-month" className="block text-sm font-medium text-slate-700">
                 Mes{" "}
-                <span className="font-normal text-slate-500">(opcional)</span>
+                <span className="font-normal text-slate-500">(obligatorio)</span>
               </label>
               <select
                 id="upload-month"
@@ -897,7 +919,7 @@ export default function AdminPayrollPage() {
                 onChange={(e) => setUploadMonth(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
               >
-                <option value="">— Sin especificar —</option>
+                <option value="">— Seleccionar mes —</option>
                 {MONTH_NAMES.map((name, idx) => (
                   <option key={idx + 1} value={idx + 1}>
                     {name}
@@ -910,7 +932,7 @@ export default function AdminPayrollPage() {
             <button
               type="button"
               onClick={handleUpload}
-              disabled={uploading || !uploadFile}
+              disabled={uploading || !uploadFile || !uploadYear || !uploadMonth}
               className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {uploading ? "Subiendo..." : "Subir nómina"}
@@ -1087,7 +1109,7 @@ export default function AdminPayrollPage() {
                 className="block text-sm font-medium text-slate-700"
               >
                 Mes{" "}
-                <span className="font-normal text-slate-500">(opcional)</span>
+                <span className="font-normal text-slate-500">(obligatorio)</span>
               </label>
               <select
                 id="batch-month"
@@ -1095,7 +1117,7 @@ export default function AdminPayrollPage() {
                 onChange={(e) => setBatchMonth(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
               >
-                <option value="">— Sin especificar —</option>
+                <option value="">— Seleccionar mes —</option>
                 {MONTH_NAMES.map((name, idx) => (
                   <option key={idx + 1} value={idx + 1}>
                     {name}
@@ -1108,7 +1130,12 @@ export default function AdminPayrollPage() {
             <button
               type="button"
               onClick={handleBatchUpload}
-              disabled={batchUploading || batchFiles.length === 0}
+              disabled={
+                batchUploading ||
+                batchFiles.length === 0 ||
+                !batchYear ||
+                !batchMonth
+              }
               className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {batchUploading
