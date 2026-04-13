@@ -75,7 +75,6 @@ export default function PayrollYearHubPage() {
           docs={docs}
           loading={loading}
           onRefresh={fetchDocs}
-          onGoToMonth={goToMonthWorkspace}
           contextYear={hubYear}
           hubCompactLookup
           helperText="Escribe o elige año/mes para ver hasta 12 coincidencias. Abre un mes en la cuadrícula para operar."

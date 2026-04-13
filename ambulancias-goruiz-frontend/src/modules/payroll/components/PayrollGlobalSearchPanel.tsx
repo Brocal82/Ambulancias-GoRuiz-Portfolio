@@ -47,7 +47,8 @@ export interface PayrollGlobalSearchPanelProps {
   docs: PayrollDocument[];
   loading: boolean;
   onRefresh: () => void | Promise<void>;
-  onGoToMonth: (year: number, month: number) => void;
+  /** Optional; hub lookup no longer needs month navigation from results. */
+  onGoToMonth?: (year: number, month: number) => void;
   /** Included in year dropdown options alongside doc years and current calendar year. */
   contextYear: number;
   /** Explains where month operations happen (hub vs workspace). */
@@ -59,7 +60,7 @@ export interface PayrollGlobalSearchPanelProps {
 }
 
 /**
- * Read-focused global payroll lookup: año / mes / texto + Ver e Ir al mes.
+ * Read-focused global payroll lookup (filters + Ver on results).
  */
 export default function PayrollGlobalSearchPanel({
   docs,
@@ -176,7 +177,11 @@ export default function PayrollGlobalSearchPanel({
         </button>
       </div>
 
-      <div className="px-6 py-3 border-b border-slate-200 bg-slate-50/60 flex flex-wrap gap-3 items-end">
+      <div
+        className={`px-6 border-b border-slate-200 bg-slate-50/60 flex flex-wrap gap-3 items-end ${
+          hubCompactLookup ? "py-2" : "py-3"
+        }`}
+      >
         <div className="space-y-1 w-28">
           <label
             htmlFor="payroll-global-search-year"
@@ -255,78 +260,95 @@ export default function PayrollGlobalSearchPanel({
 
       {hubCompactLookup && hubLookupActive ? (
         loading && docs.length === 0 ? (
-          <div className="p-4 text-center text-sm text-slate-500">
+          <div className="p-3 text-center text-sm text-slate-500">
             Cargando documentos...
           </div>
         ) : docs.length === 0 ? (
-          <div className="p-4 text-center text-sm text-slate-500">
+          <div className="p-3 text-center text-sm text-slate-500">
             No hay documentos de nómina todavía.
           </div>
         ) : hubFilteredSorted.length === 0 ? (
-          <div className="p-4 text-center text-sm text-slate-500">
+          <div className="p-3 text-center text-sm text-slate-500">
             Ningún documento coincide con la búsqueda.
           </div>
         ) : (
           <div className="border-t border-slate-100">
             {hubHasMoreThanCap ? (
-              <p className="px-6 py-2 text-xs text-slate-500 bg-slate-50/80">
+              <p className="px-4 py-1 text-[11px] leading-snug text-slate-500 bg-slate-50/80">
                 Mostrando {HUB_LOOKUP_MAX_RESULTS} de {hubFilteredSorted.length}.
                 Refina la búsqueda para acotar.
               </p>
             ) : null}
-            <ul className="divide-y divide-slate-100">
-              {hubVisibleDocs.map((doc) => (
-                <li
-                  key={doc._id}
-                  className={`px-6 py-3 flex flex-wrap items-start justify-between gap-3 ${
-                    doc.matchStatus === "unmatched" ? "bg-amber-50/30" : ""
-                  }`}
-                >
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <p
-                      className="text-sm font-medium text-slate-800 truncate"
-                      title={doc.originalName}
-                    >
-                      {doc.originalName}
-                    </p>
-                    <p className="text-xs text-slate-600">
-                      {workerDisplayName(doc.workerId)}
-                      {periodLabel(doc.year, doc.month) !== "—"
-                        ? ` · ${periodLabel(doc.year, doc.month)}`
-                        : ""}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <MatchBadge status={doc.matchStatus} />
-                      {doc.parsedEmployeeNumber ? (
-                        <span className="text-[10px] text-slate-500">
-                          Nº det.: {doc.parsedEmployeeNumber}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleOpenFile(doc.filename, doc.originalName)
-                      }
-                      className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
-                    >
-                      📄 Ver
-                    </button>
-                    {doc.year !== undefined && doc.month !== undefined ? (
-                      <button
-                        type="button"
-                        onClick={() => onGoToMonth(doc.year!, doc.month!)}
-                        className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-4 focus:ring-slate-100"
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50/80">
+                    <th className="px-3 py-1 font-medium text-slate-600">
+                      Nombre del empleado
+                    </th>
+                    <th className="px-2 py-1 font-medium text-slate-600 whitespace-nowrap">
+                      Nº empleado
+                    </th>
+                    <th className="px-2 py-1 font-medium text-slate-600 whitespace-nowrap">
+                      Mes / período
+                    </th>
+                    <th className="px-2 py-1 font-medium text-slate-600 text-center">
+                      Estado
+                    </th>
+                    <th className="w-[64px] px-2 py-1 font-medium text-slate-600 text-center">
+                      Ver
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {hubVisibleDocs.map((doc) => {
+                    const name = workerDisplayName(doc.workerId);
+                    const empNum =
+                      doc.workerId?.employeeNumber ?? doc.parsedEmployeeNumber;
+                    const period = periodLabel(doc.year, doc.month);
+                    return (
+                      <tr
+                        key={doc._id}
+                        className={
+                          doc.matchStatus === "unmatched"
+                            ? "bg-amber-50/35"
+                            : "bg-white"
+                        }
                       >
-                        Ir al mes
-                      </button>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
+                        <td
+                          className="px-3 py-1.5 text-slate-800 max-w-[200px] truncate align-middle"
+                          title={
+                            name === "—" ? doc.originalName : undefined
+                          }
+                        >
+                          {name}
+                        </td>
+                        <td className="px-2 py-1.5 text-slate-700 whitespace-nowrap tabular-nums align-middle">
+                          {empNum ?? "—"}
+                        </td>
+                        <td className="px-2 py-1.5 text-slate-700 whitespace-nowrap align-middle">
+                          {period !== "—" ? period : "—"}
+                        </td>
+                        <td className="px-2 py-1 text-center align-middle">
+                          <MatchBadge status={doc.matchStatus} />
+                        </td>
+                        <td className="px-2 py-1 text-center align-middle">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleOpenFile(doc.filename, doc.originalName)
+                            }
+                            className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                          >
+                            Ver
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )
       ) : showResultsTable && !hubCompactLookup ? (
@@ -423,7 +445,9 @@ export default function PayrollGlobalSearchPanel({
                         >
                           📄 Ver
                         </button>
-                        {doc.year !== undefined && doc.month !== undefined ? (
+                        {onGoToMonth &&
+                        doc.year !== undefined &&
+                        doc.month !== undefined ? (
                           <button
                             type="button"
                             onClick={() =>
