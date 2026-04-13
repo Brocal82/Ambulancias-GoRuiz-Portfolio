@@ -593,11 +593,13 @@ export default function AdminPayrollPage() {
     navigate(`/admin/payroll/month/${year}/${month}`, { replace: true });
   };
 
-  // ── table style (consistent with AdminSickLeavesPage) ─────────────────────
-  const thClass =
-    "px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-600";
-  const trClass =
-    "border-t border-slate-200 hover:bg-slate-50/70 transition-colors";
+  // ── monthly documents table (compact; aligned with Year Hub search table) ─
+  const monthlyTh =
+    "py-1 text-xs font-medium text-slate-600";
+  const monthlyTr =
+    "transition-colors hover:bg-slate-50/70";
+  const monthlyTrUnmatched =
+    "bg-amber-50/35 hover:bg-amber-50/50 transition-colors";
 
   // ── working period: derived helpers ───────────────────────────────────────
   const isCurrentPeriod =
@@ -765,20 +767,20 @@ export default function AdminPayrollPage() {
 
         {monthlyDocsListExpanded && monthlySortedDocs.length > 0 ? (
           <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
-            <div className="px-6 py-3 border-b border-slate-200 bg-slate-50/80">
-              <h2 className="text-sm font-semibold text-slate-700">
+            <div className="px-4 py-2 border-b border-slate-200 bg-slate-50/80">
+              <h2 className="text-sm font-semibold text-slate-700 leading-tight">
                 Documentos del mes ({summaryMonthName} {summaryYear})
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
                 {monthlyListFilterTrim
                   ? `${monthlyFilteredDocs.length} de ${monthlySortedDocs.length} documento${monthlySortedDocs.length !== 1 ? "s" : ""}`
                   : `${monthlySortedDocs.length} documento${monthlySortedDocs.length !== 1 ? "s" : ""}`}
               </p>
             </div>
-            <div className="px-6 py-3 border-b border-slate-200 bg-white">
+            <div className="px-4 py-2 border-b border-slate-200 bg-white">
               <label
                 htmlFor="monthly-docs-filter"
-                className="block text-xs font-medium text-slate-600 mb-1"
+                className="block text-[11px] font-medium text-slate-600 mb-0.5"
               >
                 Filtrar en este mes
               </label>
@@ -788,94 +790,109 @@ export default function AdminPayrollPage() {
                 placeholder="Buscar por trabajador, número o archivo"
                 value={monthlyListFilter}
                 onChange={(e) => setMonthlyListFilter(e.target.value)}
-                className="w-full max-w-md rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                className="w-full max-w-md rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
               />
             </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm text-center">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className={`${thClass} text-left`}>Archivo</th>
-                    <th className={thClass}>Trabajador</th>
-                    <th className={thClass}>Estado</th>
-                    <th className={thClass}>Acciones</th>
+              <table className="min-w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50/80">
+                    <th className={`${monthlyTh} px-3 text-left`}>
+                      Nombre trabajador
+                    </th>
+                    <th
+                      className={`${monthlyTh} px-2 whitespace-nowrap text-left`}
+                    >
+                      Nº empleado
+                    </th>
+                    <th className={`${monthlyTh} px-2 text-left`}>Archivo</th>
+                    <th
+                      className={`${monthlyTh} px-2 text-center whitespace-nowrap`}
+                    >
+                      Estado
+                    </th>
+                    <th
+                      className={`${monthlyTh} px-2 text-center whitespace-nowrap min-w-[14rem]`}
+                    >
+                      Acciones
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
+                <tbody className="divide-y divide-slate-100">
                   {monthlyFilteredDocs.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={4}
-                        className="px-6 py-8 text-center text-sm text-slate-500"
+                        colSpan={5}
+                        className="px-4 py-5 text-center text-xs text-slate-500"
                       >
                         Ningún documento coincide con el filtro.
                       </td>
                     </tr>
                   ) : null}
-                  {monthlyFilteredDocs.map((doc) => (
-                    <tr
-                      key={doc._id}
-                      className={
-                        doc.matchStatus === "unmatched"
-                          ? "border-t border-slate-200 !bg-amber-50/40 hover:bg-amber-100/50 transition-colors"
-                          : trClass
-                      }
-                    >
-                      <td className="px-3 py-2 text-left align-top">
-                        <span
-                          className="block text-slate-800 font-medium truncate max-w-[220px]"
-                          title={doc.originalName}
+                  {monthlyFilteredDocs.map((doc) => {
+                    const name = workerDisplayName(doc.workerId);
+                    const empNum =
+                      doc.workerId?.employeeNumber ?? doc.parsedEmployeeNumber;
+                    return (
+                      <tr
+                        key={doc._id}
+                        className={
+                          doc.matchStatus === "unmatched"
+                            ? monthlyTrUnmatched
+                            : monthlyTr
+                        }
+                      >
+                        <td
+                          className="px-3 py-1.5 text-slate-800 align-middle max-w-[200px] truncate"
+                          title={name === "—" ? doc.originalName : undefined}
                         >
-                          {doc.originalName}
-                        </span>
-                        {doc.parsedEmployeeNumber && (
-                          <span className="text-xs text-slate-500">
-                            Nº empleado detectado:{" "}
-                            {doc.parsedEmployeeNumber}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 align-top">
-                        <span className="text-slate-800">
-                          {workerDisplayName(doc.workerId)}
-                        </span>
-                        {doc.workerId?.employeeNumber && (
-                          <span className="block text-xs text-slate-500">
-                            {doc.workerId.employeeNumber}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 align-top">
-                        <MatchBadge status={doc.matchStatus} />
-                        {doc.matchStatus === "unmatched" &&
-                          doc.matchReason && (
-                            <p
-                              className="mt-1 text-xs text-slate-500 max-w-[180px] mx-auto"
-                              title={doc.matchReason}
-                            >
-                              {doc.matchReason.length > 60
-                                ? `${doc.matchReason.slice(0, 60)}…`
-                                : doc.matchReason}
-                            </p>
-                          )}
-                      </td>
-                      <td className="px-3 py-2 align-top">
-                        <div className="flex flex-col items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleOpenFile(doc.filename, doc.originalName)
-                            }
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                          {name}
+                        </td>
+                        <td className="px-2 py-1.5 text-slate-700 whitespace-nowrap tabular-nums align-middle">
+                          {empNum ?? "—"}
+                        </td>
+                        <td className="px-2 py-1.5 align-middle min-w-[10rem] max-w-[22rem]">
+                          <span
+                            className="text-slate-800 font-medium break-words leading-snug"
+                            title={doc.originalName}
                           >
-                            📄 Ver
-                          </button>
-                          {assigningId !== doc._id && (
-                            <>
+                            {doc.originalName}
+                          </span>
+                        </td>
+                        <td className="px-2 py-1 text-center align-middle">
+                          <MatchBadge status={doc.matchStatus} />
+                          {doc.matchStatus === "unmatched" &&
+                            doc.matchReason && (
+                              <p
+                                className="mt-0.5 text-[11px] text-slate-500 max-w-[180px] mx-auto text-left leading-snug"
+                                title={doc.matchReason}
+                              >
+                                {doc.matchReason.length > 60
+                                  ? `${doc.matchReason.slice(0, 60)}…`
+                                  : doc.matchReason}
+                              </p>
+                            )}
+                        </td>
+                        <td
+                          className={`px-2 py-1.5 align-middle ${
+                            assigningId !== doc._id ? "whitespace-nowrap" : ""
+                          }`}
+                        >
+                          {assigningId !== doc._id ? (
+                            <div className="flex flex-row flex-nowrap items-center justify-center gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleOpenFile(doc.filename, doc.originalName)
+                                }
+                                className="inline-flex shrink-0 items-center justify-center rounded-md border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                              >
+                                Ver
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => startAssign(doc._id)}
-                                className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-4 focus:ring-amber-100"
+                                className="inline-flex shrink-0 items-center justify-center rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-100"
                               >
                                 {doc.matchStatus === "unmatched"
                                   ? "Asignar"
@@ -885,16 +902,15 @@ export default function AdminPayrollPage() {
                                 type="button"
                                 onClick={() => handleInvalidate(doc._id)}
                                 disabled={invalidatingId === doc._id}
-                                className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 focus:outline-none focus:ring-4 focus:ring-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="inline-flex shrink-0 items-center justify-center rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {invalidatingId === doc._id
                                   ? "..."
                                   : "Eliminar"}
                               </button>
-                            </>
-                          )}
-                          {assigningId === doc._id && (
-                            <div className="flex flex-col gap-1.5 items-stretch min-w-[160px]">
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-1 items-stretch min-w-[160px] max-w-[240px] mx-auto">
                               <WorkerSearchSelect
                                 workers={workers}
                                 value={assignWorkerId}
@@ -907,24 +923,24 @@ export default function AdminPayrollPage() {
                                   type="button"
                                   onClick={() => confirmAssign(doc._id)}
                                   disabled={assigning || !assignWorkerId}
-                                  className="flex-1 rounded-lg bg-blue-600 px-2 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="flex-1 rounded-md bg-blue-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                   {assigning ? "..." : "Confirmar"}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={cancelAssign}
-                                  className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+                                  className="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-600 hover:bg-slate-50"
                                 >
                                   ✕
                                 </button>
                               </div>
                             </div>
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
