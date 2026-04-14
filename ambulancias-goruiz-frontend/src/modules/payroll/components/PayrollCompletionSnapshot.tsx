@@ -133,7 +133,9 @@ export default function PayrollCompletionSnapshot({
           type="button"
           onClick={onClick}
           aria-expanded={monthlyListExpanded}
-          className="w-full rounded-xl -mx-1 px-1 py-0.5 text-left cursor-pointer hover:bg-slate-50/80 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 transition-colors space-y-2"
+          className={`w-full rounded-xl -mx-1 px-1 py-0.5 text-left cursor-pointer hover:bg-slate-50/80 outline-none focus:outline-none focus:ring-0 focus:ring-offset-0 transition-colors space-y-2 ${
+            monthlyListExpanded ? "border border-slate-900" : ""
+          }`}
         >
           {headerAndHint}
         </button>

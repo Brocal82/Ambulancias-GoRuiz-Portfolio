@@ -68,7 +68,7 @@ export default function PayrollGlobalSearchPanel({
   onRefresh,
   onGoToMonth,
   contextYear,
-  helperText = "Búsqueda rápida. La gestión del mes (asignar, eliminar) se hace arriba en el espacio del mes seleccionado.",
+  helperText: _helperText = "Búsqueda rápida. La gestión del mes (asignar, eliminar) se hace arriba en el espacio del mes seleccionado.",
   showResultsTable = true,
   hubCompactLookup = false,
 }: PayrollGlobalSearchPanelProps) {
@@ -131,7 +131,7 @@ export default function PayrollGlobalSearchPanel({
   const hubHasMoreThanCap = hubFilteredSorted.length > HUB_LOOKUP_MAX_RESULTS;
 
   const thClass =
-    "px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-600";
+    "px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-200";
   const trClass =
     "border-t border-slate-200 hover:bg-slate-50/70 transition-colors";
 
@@ -147,25 +147,7 @@ export default function PayrollGlobalSearchPanel({
     <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
       <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-slate-800">
-            Buscar nómina{" "}
-            <span className="text-slate-500 font-normal">
-              {hubCompactLookup
-                ? hubLookupActive
-                  ? hubFilteredSorted.length === 0
-                    ? "(0 coincidencias)"
-                    : hubHasMoreThanCap
-                      ? `(hasta ${HUB_LOOKUP_MAX_RESULTS} de ${hubFilteredSorted.length})`
-                      : `(${hubFilteredSorted.length} coincidencia${hubFilteredSorted.length !== 1 ? "s" : ""})`
-                : `(${docs.length})`
-                : showResultsTable
-                  ? isTableFiltered
-                    ? `(${filteredDocs.length} de ${docs.length})`
-                    : `(${docs.length})`
-                  : `(${docs.length})`}
-            </span>
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">{helperText}</p>
+          <h2 className="text-base font-semibold text-slate-800">Buscar nómina</h2>
         </div>
         <button
           type="button"
@@ -282,20 +264,20 @@ export default function PayrollGlobalSearchPanel({
             <div className="overflow-x-auto">
               <table className="min-w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/80">
-                    <th className="px-3 py-1 font-medium text-slate-600">
+                  <tr className="border-b border-slate-800 bg-slate-900/95">
+                    <th className="px-3 py-1 font-medium text-slate-200">
                       Nombre del empleado
                     </th>
-                    <th className="px-2 py-1 font-medium text-slate-600 whitespace-nowrap">
+                    <th className="px-2 py-1 font-medium text-slate-200 whitespace-nowrap">
                       Nº empleado
                     </th>
-                    <th className="px-2 py-1 font-medium text-slate-600 whitespace-nowrap">
+                    <th className="px-2 py-1 font-medium text-slate-200 whitespace-nowrap">
                       Mes / período
                     </th>
-                    <th className="px-2 py-1 font-medium text-slate-600 text-center">
+                    <th className="px-2 py-1 font-medium text-slate-200 text-center">
                       Estado
                     </th>
-                    <th className="w-[64px] px-2 py-1 font-medium text-slate-600 text-center">
+                    <th className="w-[64px] px-2 py-1 font-medium text-slate-200 text-center">
                       Ver
                     </th>
                   </tr>
@@ -367,8 +349,8 @@ export default function PayrollGlobalSearchPanel({
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm text-center">
-              <thead className="bg-slate-50 sticky top-0 z-10">
-                <tr className="border-b border-slate-200">
+              <thead className="bg-slate-900/95 sticky top-0 z-10">
+                <tr className="border-b border-slate-800">
                   <th className={`${thClass} text-left`}>Archivo</th>
                   <th className={thClass}>Trabajador</th>
                   <th className={thClass}>Estado</th>
