@@ -339,10 +339,7 @@ export default function AdminPayrollPage() {
   /** Local filter for the expanded monthly list only (current month docs). */
   const [monthlyListFilter, setMonthlyListFilter] = useState("");
 
-  const unassignedPayrollsSectionRef = useRef<HTMLDivElement>(null);
   const workersMissingSectionRef = useRef<HTMLDivElement>(null);
-  const [highlightUnassignedPayrolls, setHighlightUnassignedPayrolls] =
-    useState(false);
   const [highlightWorkersMissing, setHighlightWorkersMissing] =
     useState(false);
 
@@ -390,9 +387,14 @@ export default function AdminPayrollPage() {
       (d) => d.year === workingYear && d.month === workingMonth,
     );
     if (!hasCurrentDocs) return;
+    if (monthlyDocsListExpanded && monthlyDocsListMode === "unassigned") {
+      setMonthlyDocsListExpanded(false);
+      setMonthlyDocsListMode("all");
+      return;
+    }
     setMonthlyDocsListExpanded(true);
     setMonthlyDocsListMode("unassigned");
-  }, [docs, workingYear, workingMonth]);
+  }, [docs, workingYear, workingMonth, monthlyDocsListExpanded, monthlyDocsListMode]);
   const navigateToWorkersMissingPayroll = useCallback(() => {
     workersMissingSectionRef.current?.scrollIntoView({
       behavior: "smooth",
@@ -678,10 +680,6 @@ export default function AdminPayrollPage() {
   const missingWorkersForSummaryPeriod = workers.filter(
     (w) => !assignedWorkerIdsForSummaryPeriod.has(w._id),
   );
-  const unassignedPayrollsForSummaryPeriod = summaryCurrentDocs.filter(
-    (d) => d.matchStatus === "unmatched",
-  );
-
   const monthlySortedDocs = [...summaryCurrentDocs].sort((a, b) => {
     if (a.matchStatus === "unmatched" && b.matchStatus !== "unmatched") return -1;
     if (a.matchStatus !== "unmatched" && b.matchStatus === "unmatched") return 1;
@@ -1007,11 +1005,8 @@ export default function AdminPayrollPage() {
 
         <ResolutionWorkspace
           missingWorkers={missingWorkersForSummaryPeriod}
-          unassignedPayrolls={unassignedPayrollsForSummaryPeriod}
           workersMissingSectionRef={workersMissingSectionRef}
-          unassignedPayrollsSectionRef={unassignedPayrollsSectionRef}
           highlightWorkersMissing={highlightWorkersMissing}
-          highlightUnassignedPayrolls={highlightUnassignedPayrolls}
         />
 
         {/* ── Single upload section (secondary / exception flow) ───────────── */}
