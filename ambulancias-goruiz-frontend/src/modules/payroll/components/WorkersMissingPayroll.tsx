@@ -5,12 +5,14 @@ interface WorkersMissingPayrollProps {
   missingWorkers: User[];
   sectionRef?: RefObject<HTMLDivElement | null>;
   highlight?: boolean;
+  onViewUnassignedPayrolls?: () => void;
 }
 
 export default function WorkersMissingPayroll({
   missingWorkers,
   sectionRef,
   highlight,
+  onViewUnassignedPayrolls,
 }: WorkersMissingPayrollProps) {
   return (
     <div
@@ -36,14 +38,27 @@ export default function WorkersMissingPayroll({
               key={worker._id}
               className="text-sm text-slate-700 rounded-lg bg-slate-50 px-3 py-2"
             >
-              <span className="font-medium">
-                {worker.lastName}, {worker.name}
-              </span>
-              {worker.employeeNumber ? (
-                <span className="ml-2 text-slate-500">
-                  ({worker.employeeNumber})
-                </span>
-              ) : null}
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <span className="font-medium">
+                    {worker.lastName}, {worker.name}
+                  </span>
+                  {worker.employeeNumber ? (
+                    <span className="ml-2 text-slate-500">
+                      ({worker.employeeNumber})
+                    </span>
+                  ) : null}
+                </div>
+                {onViewUnassignedPayrolls ? (
+                  <button
+                    type="button"
+                    onClick={onViewUnassignedPayrolls}
+                    className="shrink-0 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-100"
+                  >
+                    Ver nóminas sin asignar
+                  </button>
+                ) : null}
+              </div>
             </li>
           ))}
         </ul>

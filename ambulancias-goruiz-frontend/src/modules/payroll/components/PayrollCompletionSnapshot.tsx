@@ -10,10 +10,10 @@ interface PayrollCompletionSnapshotProps {
   onClick?: () => void;
   /** Reflects expanded state for a11y + chevron when interactive. */
   monthlyListExpanded?: boolean;
-  /** Scroll to UnassignedPayrolls in the resolution workspace. */
-  onNavigateToUnassignedPayrolls?: () => void;
-  /** Scroll to WorkersMissingPayroll in the resolution workspace. */
-  onNavigateToWorkersMissingPayroll?: () => void;
+  /** Unified reconciliation toggle/action. */
+  onToggleReconciliation?: () => void;
+  /** Reflects reconciliation open state in snapshot UI. */
+  reconciliationOpen?: boolean;
 }
 
 export default function PayrollCompletionSnapshot({
@@ -25,8 +25,8 @@ export default function PayrollCompletionSnapshot({
   workersMissingPayroll,
   onClick,
   monthlyListExpanded = false,
-  onNavigateToUnassignedPayrolls,
-  onNavigateToWorkersMissingPayroll,
+  onToggleReconciliation,
+  reconciliationOpen = false,
 }: PayrollCompletionSnapshotProps) {
   const isComplete =
     unassignedPayrollDocs === 0 && coveredWorkers === totalWorkers;
@@ -47,48 +47,48 @@ export default function PayrollCompletionSnapshot({
           {assignedPayrollDocs}
         </span>
       </div>
-      {onNavigateToUnassignedPayrolls ? (
+      {onToggleReconciliation ? (
         <button
           type="button"
-          onClick={onNavigateToUnassignedPayrolls}
-          className="rounded-lg bg-slate-50 px-3 py-2 text-left w-full cursor-pointer hover:bg-slate-100/90 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-1"
+          onClick={onToggleReconciliation}
+          className={`rounded-lg px-3 py-2 text-left w-full cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-1 sm:col-span-2 ${
+            reconciliationOpen
+              ? "bg-blue-50 ring-1 ring-blue-200 hover:bg-blue-100/80"
+              : "bg-slate-50 hover:bg-slate-100/90"
+          }`}
         >
-          Unassigned payrolls:{" "}
-          <span className="font-semibold text-amber-700">
-            {unassignedPayrollDocs}
-          </span>
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-medium text-slate-800">
+              Reconciliation
+            </span>
+            <span className="text-[11px] text-slate-500">
+              {reconciliationOpen ? "Abierto" : "Abrir"}
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-slate-600">
+            Sin asignar:{" "}
+            <span className="font-semibold text-amber-700">
+              {unassignedPayrollDocs}
+            </span>
+            {" · "}
+            Trabajadores sin nómina:{" "}
+            <span className="font-semibold text-amber-700">
+              {workersMissingPayroll}
+            </span>
+          </p>
         </button>
       ) : (
-        <div className={staticTileClass}>
-          Unassigned payrolls:{" "}
-          <span className="font-semibold text-amber-700">
-            {unassignedPayrollDocs}
-          </span>
+        <div className={`${staticTileClass} sm:col-span-2`}>
+          Reconciliation · Sin asignar:{" "}
+          <span className="font-semibold text-amber-700">{unassignedPayrollDocs}</span>
+          {" · "}Trabajadores sin nómina:{" "}
+          <span className="font-semibold text-amber-700">{workersMissingPayroll}</span>
         </div>
       )}
       <div className={staticTileClass}>
         Workers covered:{" "}
         <span className="font-semibold text-slate-900">{coveredWorkers}</span>
       </div>
-      {onNavigateToWorkersMissingPayroll ? (
-        <button
-          type="button"
-          onClick={onNavigateToWorkersMissingPayroll}
-          className="rounded-lg bg-slate-50 px-3 py-2 text-left w-full cursor-pointer hover:bg-slate-100/90 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-1"
-        >
-          Workers missing payroll:{" "}
-          <span className="font-semibold text-amber-700">
-            {workersMissingPayroll}
-          </span>
-        </button>
-      ) : (
-        <div className={staticTileClass}>
-          Workers missing payroll:{" "}
-          <span className="font-semibold text-amber-700">
-            {workersMissingPayroll}
-          </span>
-        </div>
-      )}
       <div className={staticTileClass}>
         Total workers:{" "}
         <span className="font-semibold text-slate-900">{totalWorkers}</span>

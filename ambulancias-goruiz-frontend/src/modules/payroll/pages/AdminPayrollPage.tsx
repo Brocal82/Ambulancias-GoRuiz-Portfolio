@@ -336,6 +336,8 @@ export default function AdminPayrollPage() {
   const [monthlyDocsListExpanded, setMonthlyDocsListExpanded] = useState(false);
   /** View mode for the monthly documents list. */
   const [monthlyDocsListMode, setMonthlyDocsListMode] = useState<"all" | "unassigned">("all");
+  /** Unified reconciliation workspace visibility. */
+  const [reconciliationOpen, setReconciliationOpen] = useState(false);
   /** Local filter for the expanded monthly list only (current month docs). */
   const [monthlyListFilter, setMonthlyListFilter] = useState("");
 
@@ -381,31 +383,29 @@ export default function AdminPayrollPage() {
     }
   }, []);
 
-  const RESOLUTION_SECTION_FLASH_MS = 1600;
-  const navigateToUnassignedPayrolls = useCallback(() => {
+  const activateUnassignedPayrollsFilter = useCallback(() => {
     const hasCurrentDocs = docs.some(
       (d) => d.year === workingYear && d.month === workingMonth,
     );
     if (!hasCurrentDocs) return;
-    if (monthlyDocsListExpanded && monthlyDocsListMode === "unassigned") {
-      setMonthlyDocsListExpanded(false);
-      setMonthlyDocsListMode("all");
-      return;
-    }
     setMonthlyDocsListExpanded(true);
     setMonthlyDocsListMode("unassigned");
-  }, [docs, workingYear, workingMonth, monthlyDocsListExpanded, monthlyDocsListMode]);
-  const navigateToWorkersMissingPayroll = useCallback(() => {
-    workersMissingSectionRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-    setHighlightWorkersMissing(true);
-    window.setTimeout(
-      () => setHighlightWorkersMissing(false),
-      RESOLUTION_SECTION_FLASH_MS,
-    );
-  }, []);
+  }, [docs, workingYear, workingMonth]);
+
+  const navigateToUnassignedPayrolls = useCallback(() => {
+    if (reconciliationOpen) {
+      setReconciliationOpen(false);
+      setMonthlyDocsListExpanded(false);
+      setMonthlyDocsListMode("all");
+      setMonthlyListFilter("");
+      return;
+    }
+    setReconciliationOpen(true);
+    activateUnassignedPayrollsFilter();
+  }, [
+    reconciliationOpen,
+    activateUnassignedPayrollsFilter,
+  ]);
 
   useEffect(() => {
     if (!token) return;
@@ -439,6 +439,7 @@ export default function AdminPayrollPage() {
     setAssignWorkerId("");
     setMonthlyDocsListExpanded(false);
     setMonthlyDocsListMode("all");
+    setReconciliationOpen(false);
     setMonthlyListFilter("");
   }, [yearParam, monthParam]);
 
@@ -613,6 +614,7 @@ export default function AdminPayrollPage() {
     setAssignWorkerId("");
     setMonthlyDocsListExpanded(false);
     setMonthlyDocsListMode("all");
+    setReconciliationOpen(false);
     setMonthlyListFilter("");
     navigate(`/admin/payroll/month/${newYear}/${newMonth}`, { replace: true });
   };
@@ -627,6 +629,7 @@ export default function AdminPayrollPage() {
     setAssignWorkerId("");
     setMonthlyDocsListExpanded(false);
     setMonthlyDocsListMode("all");
+    setReconciliationOpen(false);
     setMonthlyListFilter("");
     navigate(`/admin/payroll/month/${year}/${month}`, { replace: true });
   };
@@ -803,8 +806,8 @@ export default function AdminPayrollPage() {
             setMonthlyDocsListMode("all");
           }}
           monthlyListExpanded={monthlyDocsListExpanded}
-          onNavigateToUnassignedPayrolls={navigateToUnassignedPayrolls}
-          onNavigateToWorkersMissingPayroll={navigateToWorkersMissingPayroll}
+          onToggleReconciliation={navigateToUnassignedPayrolls}
+          reconciliationOpen={reconciliationOpen}
         />
 
         {monthlyDocsListExpanded && monthlySortedDocs.length > 0 ? (
@@ -1003,11 +1006,14 @@ export default function AdminPayrollPage() {
           </div>
         ) : null}
 
-        <ResolutionWorkspace
-          missingWorkers={missingWorkersForSummaryPeriod}
-          workersMissingSectionRef={workersMissingSectionRef}
-          highlightWorkersMissing={highlightWorkersMissing}
-        />
+        {reconciliationOpen ? (
+          <ResolutionWorkspace
+            missingWorkers={missingWorkersForSummaryPeriod}
+            workersMissingSectionRef={workersMissingSectionRef}
+            highlightWorkersMissing={highlightWorkersMissing}
+            onViewUnassignedPayrolls={activateUnassignedPayrollsFilter}
+          />
+        ) : null}
 
         {/* ── Single upload section (secondary / exception flow) ───────────── */}
         <details className="rounded-xl bg-slate-50 ring-1 ring-slate-200 p-4">
