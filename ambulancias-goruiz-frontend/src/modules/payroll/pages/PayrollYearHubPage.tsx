@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
@@ -33,6 +33,7 @@ export default function PayrollYearHubPage() {
   const [hubYear, setHubYear] = useState(() => new Date().getFullYear());
   const [docs, setDocs] = useState<PayrollDocument[]>([]);
   const [loading, setLoading] = useState(false);
+  const toolbarResultsPortalRef = useRef<HTMLDivElement>(null);
 
   const fetchDocs = useCallback(async () => {
     setLoading(true);
@@ -71,35 +72,42 @@ export default function PayrollYearHubPage() {
           </p>
         </div>
 
-        <PayrollGlobalSearchPanel
-          docs={docs}
-          loading={loading}
-          onRefresh={fetchDocs}
-          contextYear={hubYear}
-          hubCompactLookup
-          helperText="Escribe o elige año/mes para ver hasta 12 coincidencias. Abre un mes en la cuadrícula para operar."
-        />
-
         <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
-          <div className="flex items-center justify-between gap-4 mb-4">
-            <h2 className="text-base font-semibold text-slate-800">
-              Año {hubYear}
-            </h2>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => shiftYear(-1)}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
-              >
-                ← Año anterior
-              </button>
-              <button
-                type="button"
-                onClick={() => shiftYear(1)}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
-              >
-                Año siguiente →
-              </button>
+          <div className="mb-4 space-y-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center justify-start gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => shiftYear(-1)}
+                  aria-label="Año anterior"
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                >
+                  ←
+                </button>
+                <h2 className="text-base font-semibold text-slate-800 min-w-[7.5rem] text-center">
+                  Año {hubYear}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => shiftYear(1)}
+                  aria-label="Año siguiente"
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                >
+                  →
+                </button>
+              </div>
+
+              <div className="w-full lg:w-auto lg:ml-auto">
+                <PayrollGlobalSearchPanel
+                  docs={docs}
+                  loading={loading}
+                  onRefresh={fetchDocs}
+                  contextYear={hubYear}
+                  hubCompactLookup
+                  compactToolbar
+                  resultsPortalTarget={toolbarResultsPortalRef.current}
+                />
+              </div>
             </div>
           </div>
 
@@ -136,6 +144,8 @@ export default function PayrollYearHubPage() {
               );
             })}
           </div>
+
+          <div ref={toolbarResultsPortalRef} className="mt-4" />
         </div>
       </div>
     </div>
