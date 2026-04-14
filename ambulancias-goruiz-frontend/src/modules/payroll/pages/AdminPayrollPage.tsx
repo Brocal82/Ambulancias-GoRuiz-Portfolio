@@ -727,50 +727,27 @@ export default function AdminPayrollPage() {
         {/* ── Header ────────────────────────────────────────────────────────── */}
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Nóminas
+            Nóminas · {summaryMonthName} {summaryYear}
           </h1>
-          <p className="text-sm text-slate-600">
-            Gestión de documentos de nómina por trabajador
-          </p>
-          <p className="mt-1 text-sm text-slate-500">
-            <span className="font-medium text-slate-700">
-              {summaryMonthName} {summaryYear}
-            </span>
-            {" · "}
-            <span className="text-emerald-700">{summaryConfirmed} confirmadas</span>
-            {summaryPending > 0 ? (
-              <>
-                {" · "}
-                <span className="font-medium text-amber-600">
-                  {summaryPending} pendientes de asignación
-                </span>
-              </>
-            ) : summaryConfirmed > 0 ? (
-              <>
-                {" · "}
-                <span className="text-slate-400">sin pendientes ✓</span>
-              </>
-            ) : null}
-          </p>
         </div>
 
         {/* ── Period Context Bar ────────────────────────────────────────────── */}
-        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 px-5 py-3 flex items-center justify-between gap-4">
+        <div className="inline-flex items-center gap-2 rounded-xl bg-white shadow-sm ring-1 ring-slate-200 px-3 py-2">
           <button
             type="button"
             onClick={() => navigatePeriod(-1)}
             aria-label="Mes anterior"
-            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
           >
-            ← Anterior
+            ←
           </button>
 
-          <div className="flex items-center gap-2.5">
-            <span className="text-base font-semibold text-slate-800">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-slate-800">
               {summaryMonthName} {workingYear}
             </span>
             {isCurrentPeriod ? (
-              <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-200">
+              <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-600 ring-1 ring-inset ring-blue-200">
                 Mes actual
               </span>
             ) : (
@@ -788,9 +765,9 @@ export default function AdminPayrollPage() {
             type="button"
             onClick={() => navigatePeriod(1)}
             aria-label="Mes siguiente"
-            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
           >
-            Siguiente →
+            →
           </button>
         </div>
 
