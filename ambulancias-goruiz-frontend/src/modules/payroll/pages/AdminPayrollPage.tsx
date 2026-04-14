@@ -323,6 +323,9 @@ export default function AdminPayrollPage() {
   // Phase 5c: optional folder-selection mode for the batch input
   const [batchFolderMode, setBatchFolderMode] = useState(false);
   const batchFileInputRef = useRef<HTMLInputElement>(null);
+  const [activeUploadPanel, setActiveUploadPanel] = useState<
+    "none" | "single" | "batch"
+  >("none");
 
   // ── inline assign state (docs table) ──────────────────────────────────────
   const [assigningId, setAssigningId] = useState<string | null>(null);
@@ -441,6 +444,7 @@ export default function AdminPayrollPage() {
     setMonthlyDocsListMode("all");
     setReconciliationOpen(false);
     setMonthlyListFilter("");
+    setActiveUploadPanel("none");
   }, [yearParam, monthParam]);
 
   // ── upload ─────────────────────────────────────────────────────────────────
@@ -631,7 +635,12 @@ export default function AdminPayrollPage() {
     setMonthlyDocsListMode("all");
     setReconciliationOpen(false);
     setMonthlyListFilter("");
+    setActiveUploadPanel("none");
     navigate(`/admin/payroll/month/${year}/${month}`, { replace: true });
+  };
+
+  const toggleUploadPanel = (panel: "single" | "batch") => {
+    setActiveUploadPanel((current) => (current === panel ? "none" : panel));
   };
 
   // ── monthly documents table (compact; aligned with Year Hub search table) ─
@@ -732,43 +741,69 @@ export default function AdminPayrollPage() {
         </div>
 
         {/* ── Period Context Bar ────────────────────────────────────────────── */}
-        <div className="inline-flex items-center gap-2 rounded-xl bg-white shadow-sm ring-1 ring-slate-200 px-3 py-2">
-          <button
-            type="button"
-            onClick={() => navigatePeriod(-1)}
-            aria-label="Mes anterior"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
-          >
-            ←
-          </button>
+        <div className="flex w-full flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-2 rounded-xl bg-white shadow-sm ring-1 ring-slate-200 px-3 py-2">
+            <button
+              type="button"
+              onClick={() => navigatePeriod(-1)}
+              aria-label="Mes anterior"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
+            >
+              ←
+            </button>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-slate-800">
-              {summaryMonthName} {workingYear}
-            </span>
-            {isCurrentPeriod ? (
-              <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-600 ring-1 ring-inset ring-blue-200">
-                Mes actual
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-slate-800">
+                {summaryMonthName} {workingYear}
               </span>
-            ) : (
-              <button
-                type="button"
-                onClick={resetToCurrentPeriod}
-                className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200"
-              >
-                Volver al mes actual
-              </button>
-            )}
-          </div>
+              {isCurrentPeriod ? (
+                <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-600 ring-1 ring-inset ring-blue-200">
+                  Mes actual
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={resetToCurrentPeriod}
+                  className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200"
+                >
+                  Volver al mes actual
+                </button>
+              )}
+            </div>
 
-          <button
-            type="button"
-            onClick={() => navigatePeriod(1)}
-            aria-label="Mes siguiente"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
-          >
-            →
-          </button>
+            <button
+              type="button"
+              onClick={() => navigatePeriod(1)}
+              aria-label="Mes siguiente"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
+            >
+              →
+            </button>
+          </div>
+          <div className="ml-auto flex w-full items-center justify-start gap-2 sm:w-auto sm:justify-end">
+            <button
+              type="button"
+              onClick={() => toggleUploadPanel("single")}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200 ${
+                activeUploadPanel === "single"
+                  ? "border-blue-200 bg-blue-50 text-blue-700"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              Subir individual
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleUploadPanel("batch")}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200 ${
+                activeUploadPanel === "batch"
+                  ? "border-blue-200 bg-blue-50 text-blue-700"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              Subir lote
+            </button>
+          </div>
         </div>
 
         <PayrollCompletionSnapshot
@@ -787,6 +822,342 @@ export default function AdminPayrollPage() {
           onToggleReconciliation={navigateToUnassignedPayrolls}
           reconciliationOpen={reconciliationOpen}
         />
+
+        {activeUploadPanel === "single" ? (
+          <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4 space-y-3">
+            <h2 className="text-sm font-semibold text-slate-800">
+              Subir nómina individual
+            </h2>
+            <div className="flex flex-wrap gap-4 items-end">
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-slate-700">
+                  Archivo PDF
+                </label>
+                <FileUpload
+                  key={fileInputKey}
+                  id="payroll-pdf-upload"
+                  label="Seleccionar PDF"
+                  accept=".pdf,application/pdf"
+                  maxSizeMB={10}
+                  onFileSelect={setUploadFile}
+                  onError={(msg) => toastT.error(msg)}
+                  hintWhenEmpty="Sin archivo seleccionado"
+                  showSelectedList
+                />
+              </div>
+              <div className="space-y-1 min-w-[200px]">
+                <label
+                  htmlFor="upload-worker-id"
+                  className="block text-sm font-medium text-slate-700"
+                >
+                  Trabajador{" "}
+                  <span className="font-normal text-slate-500">(opcional)</span>
+                </label>
+                <WorkerSearchSelect
+                  id="upload-worker-id"
+                  workers={workers}
+                  value={uploadWorkerId}
+                  onChange={setUploadWorkerId}
+                  placeholder="Buscar por nombre o nº de empleado"
+                  allowEmpty
+                  emptyLabel="Detectar por nombre de archivo"
+                />
+              </div>
+              <div className="space-y-1 w-24">
+                <label
+                  htmlFor="upload-year"
+                  className="block text-sm font-medium text-slate-700"
+                >
+                  Año
+                </label>
+                <input
+                  id="upload-year"
+                  type="number"
+                  value={uploadYear}
+                  onChange={(e) => setUploadYear(e.target.value)}
+                  min={2000}
+                  max={2100}
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                />
+              </div>
+              <div className="space-y-1 w-40">
+                <label
+                  htmlFor="upload-month"
+                  className="block text-sm font-medium text-slate-700"
+                >
+                  Mes{" "}
+                  <span className="font-normal text-slate-500">(obligatorio)</span>
+                </label>
+                <select
+                  id="upload-month"
+                  value={uploadMonth}
+                  onChange={(e) => setUploadMonth(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                >
+                  <option value="">— Seleccionar mes —</option>
+                  {MONTH_NAMES.map((name, idx) => (
+                    <option key={idx + 1} value={idx + 1}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={handleUpload}
+                disabled={uploading || !uploadFile || !uploadYear || !uploadMonth}
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {uploading ? "Subiendo..." : "Subir nómina"}
+              </button>
+            </div>
+
+            {!uploadWorkerId && (
+              <p className="text-xs text-slate-500">
+                Sin trabajador seleccionado, el sistema intentará asignar
+                automáticamente por número de empleado en el nombre del archivo.
+              </p>
+            )}
+
+            {uploadDuplicateWarning && (
+              <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <span className="mt-0.5 text-amber-500 shrink-0">⚠</span>
+                <div className="flex-1 text-xs text-amber-800">
+                  <span className="font-medium">Posible duplicado detectado.</span>{" "}
+                  Ya existe una nómina confirmada para este trabajador en el mismo
+                  período:{" "}
+                  <span className="font-medium">
+                    &ldquo;{uploadDuplicateWarning.originalName}&rdquo;
+                  </span>
+                  . El documento se ha guardado igualmente. Revisa la tabla si
+                  necesitas eliminar el anterior.
+                </div>
+                <button
+                  type="button"
+                  aria-label="Cerrar aviso de duplicado"
+                  onClick={() => setUploadDuplicateWarning(null)}
+                  className="shrink-0 text-amber-400 hover:text-amber-600"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+          </div>
+        ) : null}
+
+        {activeUploadPanel === "batch" ? (
+          <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
+            <h2 className="text-base font-semibold text-slate-800 mb-1">
+              Subir múltiples nóminas (lote)
+            </h2>
+            <p className="text-xs text-slate-500 mb-3">
+              Selecciona hasta 20 PDFs. El sistema intentará asignar cada archivo
+              automáticamente por número de empleado. Los no asignados quedarán
+              pendientes de revisión.
+            </p>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (batchFolderMode) {
+                      setBatchFolderMode(false);
+                      setBatchFiles([]);
+                      setBatchInputKey((k) => k + 1);
+                    }
+                  }}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                    !batchFolderMode
+                      ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Archivos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!batchFolderMode) {
+                      setBatchFolderMode(true);
+                      setBatchFiles([]);
+                      setBatchInputKey((k) => k + 1);
+                    }
+                  }}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                    batchFolderMode
+                      ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Carpeta
+                </button>
+              </div>
+              <span className="text-xs text-slate-400">
+                {batchFolderMode
+                  ? "El navegador mostrará el selector de carpeta. Solo se subirán los PDFs que contenga."
+                  : "Selección de archivos individuales (por defecto)"}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-4 items-end">
+              <div className="space-y-1">
+                <label
+                  htmlFor="batch-pdf-upload"
+                  className="block text-sm font-medium text-slate-700"
+                >
+                  {batchFolderMode ? "Carpeta de nóminas" : "Archivos PDF"}
+                </label>
+                <input
+                  key={batchInputKey}
+                  ref={batchFileInputRef}
+                  id="batch-pdf-upload"
+                  type="file"
+                  multiple
+                  accept=".pdf,application/pdf"
+                  onChange={(e) => {
+                    let selected = Array.from(e.target.files ?? []);
+
+                    if (batchFolderMode) {
+                      const nonPdf = selected.filter(
+                        (f) =>
+                          f.type !== "application/pdf" &&
+                          !f.name.toLowerCase().endsWith(".pdf"),
+                      );
+                      if (nonPdf.length > 0) {
+                        toastT.warn(
+                          `Se ignoraron ${nonPdf.length} archivo${nonPdf.length !== 1 ? "s" : ""} que no son PDF`,
+                        );
+                      }
+                      selected = selected.filter(
+                        (f) =>
+                          f.type === "application/pdf" ||
+                          f.name.toLowerCase().endsWith(".pdf"),
+                      );
+                    }
+
+                    if (selected.length > 20) {
+                      toastT.warn("Máximo 20 archivos por lote");
+                      selected = selected.slice(0, 20);
+                    }
+
+                    // Accumulate selections across multiple picker openings.
+                    // Keep existing behavior: cap the final batch at 20 files.
+                    setBatchFiles((prev) => {
+                      const merged = [...prev, ...selected];
+                      if (merged.length > 20) {
+                        toastT.warn("Máximo 20 archivos por lote");
+                        return merged.slice(0, 20);
+                      }
+                      return merged;
+                    });
+
+                    // Allow selecting the same file(s) again in a new picker opening.
+                    if (e.currentTarget) {
+                      e.currentTarget.value = "";
+                    }
+                  }}
+                  className="block text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 focus:outline-none"
+                />
+                {batchFiles.length > 0 && (
+                  <p className="text-xs text-slate-500">
+                    {batchFiles.length} archivo{batchFiles.length !== 1 ? "s" : ""} seleccionado{batchFiles.length !== 1 ? "s" : ""}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1 w-24">
+                <label
+                  htmlFor="batch-year"
+                  className="block text-sm font-medium text-slate-700"
+                >
+                  Año
+                </label>
+                <input
+                  id="batch-year"
+                  type="number"
+                  value={batchYear}
+                  onChange={(e) => setBatchYear(e.target.value)}
+                  min={2000}
+                  max={2100}
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                />
+              </div>
+              <div className="space-y-1 w-40">
+                <label
+                  htmlFor="batch-month"
+                  className="block text-sm font-medium text-slate-700"
+                >
+                  Mes{" "}
+                  <span className="font-normal text-slate-500">(obligatorio)</span>
+                </label>
+                <select
+                  id="batch-month"
+                  value={batchMonth}
+                  onChange={(e) => setBatchMonth(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                >
+                  <option value="">— Seleccionar mes —</option>
+                  {MONTH_NAMES.map((name, idx) => (
+                    <option key={idx + 1} value={idx + 1}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={handleBatchUpload}
+                disabled={
+                  batchUploading ||
+                  batchFiles.length === 0 ||
+                  !batchYear ||
+                  !batchMonth
+                }
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {batchUploading
+                  ? "Subiendo..."
+                  : `Subir ${batchFiles.length > 0 ? batchFiles.length : ""} nómina${batchFiles.length !== 1 ? "s" : ""}`}
+              </button>
+            </div>
+            {batchResults && (
+              <div className="mt-5 space-y-3">
+                <div className="flex flex-wrap gap-3 text-sm">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-slate-700 font-medium">
+                    Total: {batchResults.summary.total}
+                  </span>
+                  {batchResults.summary.matched > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 font-medium ring-1 ring-inset ring-emerald-600/20">
+                      ✓ Asignadas: {batchResults.summary.matched}
+                    </span>
+                  )}
+                  {batchResults.summary.unmatched > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-amber-700 font-medium ring-1 ring-inset ring-amber-600/20">
+                      ⚠ Sin asignar: {batchResults.summary.unmatched}
+                    </span>
+                  )}
+                  {batchResults.summary.failed > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-1 text-red-700 font-medium ring-1 ring-inset ring-red-600/20">
+                      ✕ Con error: {batchResults.summary.failed}
+                    </span>
+                  )}
+                  {(batchResults.summary.duplicateWarnings ?? 0) > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-orange-700 font-medium ring-1 ring-inset ring-orange-600/20">
+                      ⚠ Posibles duplicados: {batchResults.summary.duplicateWarnings}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBatchResults(null);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
+                >
+                  ✕ Cerrar resultados
+                </button>
+              </div>
+            )}
+          </div>
+        ) : null}
 
         {monthlyDocsListExpanded && monthlySortedDocs.length > 0 ? (
           <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
@@ -974,366 +1345,6 @@ export default function AdminPayrollPage() {
           />
         ) : null}
 
-        {/* ── Single upload section (secondary / exception flow) ───────────── */}
-        <details className="rounded-xl bg-slate-50 ring-1 ring-slate-200 p-4">
-          <summary className="cursor-pointer list-none flex items-center justify-between gap-3 text-sm font-medium text-slate-700">
-            <span>Subir nómina individual (uso puntual)</span>
-            <span className="text-xs font-normal text-slate-500">
-              ¿Necesitas subir una nómina individual?
-            </span>
-          </summary>
-
-          <div className="mt-4 space-y-3">
-            <p className="text-xs text-slate-500">
-              Utiliza esta opción solo para casos excepcionales (nóminas tardías o correcciones puntuales).
-            </p>
-
-            <div className="flex flex-wrap gap-4 items-end">
-            {/* File picker */}
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700">
-                Archivo PDF
-              </label>
-              <FileUpload
-                key={fileInputKey}
-                id="payroll-pdf-upload"
-                label="Seleccionar PDF"
-                accept=".pdf,application/pdf"
-                maxSizeMB={10}
-                onFileSelect={setUploadFile}
-                onError={(msg) => toastT.error(msg)}
-                hintWhenEmpty="Sin archivo seleccionado"
-                showSelectedList
-              />
-            </div>
-
-            {/* Optional worker selector */}
-            <div className="space-y-1 min-w-[200px]">
-              <label htmlFor="upload-worker-id" className="block text-sm font-medium text-slate-700">
-                Trabajador{" "}
-                <span className="font-normal text-slate-500">(opcional)</span>
-              </label>
-              <WorkerSearchSelect
-                id="upload-worker-id"
-                workers={workers}
-                value={uploadWorkerId}
-                onChange={setUploadWorkerId}
-                placeholder="Buscar por nombre o nº de empleado"
-                allowEmpty
-                emptyLabel="Detectar por nombre de archivo"
-              />
-            </div>
-
-            {/* Year */}
-            <div className="space-y-1 w-24">
-              <label htmlFor="upload-year" className="block text-sm font-medium text-slate-700">
-                Año
-              </label>
-              <input
-                id="upload-year"
-                type="number"
-                value={uploadYear}
-                onChange={(e) => setUploadYear(e.target.value)}
-                min={2000}
-                max={2100}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-              />
-            </div>
-
-            {/* Month */}
-            <div className="space-y-1 w-40">
-              <label htmlFor="upload-month" className="block text-sm font-medium text-slate-700">
-                Mes{" "}
-                <span className="font-normal text-slate-500">(obligatorio)</span>
-              </label>
-              <select
-                id="upload-month"
-                value={uploadMonth}
-                onChange={(e) => setUploadMonth(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-              >
-                <option value="">— Seleccionar mes —</option>
-                {MONTH_NAMES.map((name, idx) => (
-                  <option key={idx + 1} value={idx + 1}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Submit */}
-            <button
-              type="button"
-              onClick={handleUpload}
-              disabled={uploading || !uploadFile || !uploadYear || !uploadMonth}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {uploading ? "Subiendo..." : "Subir nómina"}
-            </button>
-            </div>
-
-            {!uploadWorkerId && (
-              <p className="text-xs text-slate-500">
-                Sin trabajador seleccionado, el sistema intentará asignar
-                automáticamente por número de empleado en el nombre del archivo.
-              </p>
-            )}
-
-            {/* Phase 8b: duplicate warning for single-file upload */}
-            {uploadDuplicateWarning && (
-              <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <span className="mt-0.5 text-amber-500 shrink-0">⚠</span>
-                <div className="flex-1 text-xs text-amber-800">
-                  <span className="font-medium">Posible duplicado detectado.</span>{" "}
-                  Ya existe una nómina confirmada para este trabajador en el mismo
-                  período:{" "}
-                  <span className="font-medium">
-                    &ldquo;{uploadDuplicateWarning.originalName}&rdquo;
-                  </span>
-                  . El documento se ha guardado igualmente. Revisa la tabla si
-                  necesitas eliminar el anterior.
-                </div>
-                <button
-                  type="button"
-                  aria-label="Cerrar aviso de duplicado"
-                  onClick={() => setUploadDuplicateWarning(null)}
-                  className="shrink-0 text-amber-400 hover:text-amber-600"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-          </div>
-        </details>
-
-        {/* ── Batch upload section (Phase 5) ────────────────────────────────── */}
-        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
-          <h2 className="text-base font-semibold text-slate-800 mb-1">
-            Subir múltiples nóminas (lote)
-          </h2>
-          <p className="text-xs text-slate-500 mb-3">
-            Selecciona hasta 20 PDFs. El sistema intentará asignar cada archivo
-            automáticamente por número de empleado. Los no asignados quedarán
-            pendientes de revisión.
-          </p>
-
-          {/* Mode toggle (Phase 5c) — segmented control.
-              batchFolderMode state, webkitdirectory effect, and reset logic are unchanged. */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
-              <button
-                type="button"
-                onClick={() => {
-                  // Only trigger side-effects when the mode is actually changing.
-                  if (batchFolderMode) {
-                    setBatchFolderMode(false);
-                    setBatchFiles([]);
-                    setBatchInputKey((k) => k + 1);
-                  }
-                }}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${
-                  !batchFolderMode
-                    ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                Archivos
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!batchFolderMode) {
-                    setBatchFolderMode(true);
-                    setBatchFiles([]);
-                    setBatchInputKey((k) => k + 1);
-                  }
-                }}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${
-                  batchFolderMode
-                    ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                Carpeta
-              </button>
-            </div>
-            <span className="text-xs text-slate-400">
-              {batchFolderMode
-                ? "El navegador mostrará el selector de carpeta. Solo se subirán los PDFs que contenga."
-                : "Selección de archivos individuales (por defecto)"}
-            </span>
-          </div>
-
-          <div className="flex flex-wrap gap-4 items-end">
-            {/* Native multi-file / folder input */}
-            <div className="space-y-1">
-              <label
-                htmlFor="batch-pdf-upload"
-                className="block text-sm font-medium text-slate-700"
-              >
-                {batchFolderMode ? "Carpeta de nóminas" : "Archivos PDF"}
-              </label>
-              <input
-                key={batchInputKey}
-                ref={batchFileInputRef}
-                id="batch-pdf-upload"
-                type="file"
-                multiple
-                accept=".pdf,application/pdf"
-                onChange={(e) => {
-                  let selected = Array.from(e.target.files ?? []);
-
-                  if (batchFolderMode) {
-                    const nonPdf = selected.filter(
-                      (f) =>
-                        f.type !== "application/pdf" &&
-                        !f.name.toLowerCase().endsWith(".pdf"),
-                    );
-                    if (nonPdf.length > 0) {
-                      toastT.warn(
-                        `Se ignoraron ${nonPdf.length} archivo${nonPdf.length !== 1 ? "s" : ""} que no son PDF`,
-                      );
-                    }
-                    selected = selected.filter(
-                      (f) =>
-                        f.type === "application/pdf" ||
-                        f.name.toLowerCase().endsWith(".pdf"),
-                    );
-                  }
-
-                  if (selected.length > 20) {
-                    toastT.warn("Máximo 20 archivos por lote");
-                    selected = selected.slice(0, 20);
-                  }
-
-                  // Accumulate selections across multiple picker openings.
-                  // Keep existing behavior: cap the final batch at 20 files.
-                  setBatchFiles((prev) => {
-                    const merged = [...prev, ...selected];
-                    if (merged.length > 20) {
-                      toastT.warn("Máximo 20 archivos por lote");
-                      return merged.slice(0, 20);
-                    }
-                    return merged;
-                  });
-
-                  // Allow selecting the same file(s) again in a new picker opening.
-                  if (e.currentTarget) {
-                    e.currentTarget.value = "";
-                  }
-                }}
-                className="block text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 focus:outline-none"
-              />
-              {batchFiles.length > 0 && (
-                <p className="text-xs text-slate-500">
-                  {batchFiles.length} archivo{batchFiles.length !== 1 ? "s" : ""} seleccionado{batchFiles.length !== 1 ? "s" : ""}
-                </p>
-              )}
-            </div>
-
-            {/* Year */}
-            <div className="space-y-1 w-24">
-              <label
-                htmlFor="batch-year"
-                className="block text-sm font-medium text-slate-700"
-              >
-                Año
-              </label>
-              <input
-                id="batch-year"
-                type="number"
-                value={batchYear}
-                onChange={(e) => setBatchYear(e.target.value)}
-                min={2000}
-                max={2100}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-              />
-            </div>
-
-            {/* Month */}
-            <div className="space-y-1 w-40">
-              <label
-                htmlFor="batch-month"
-                className="block text-sm font-medium text-slate-700"
-              >
-                Mes{" "}
-                <span className="font-normal text-slate-500">(obligatorio)</span>
-              </label>
-              <select
-                id="batch-month"
-                value={batchMonth}
-                onChange={(e) => setBatchMonth(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-              >
-                <option value="">— Seleccionar mes —</option>
-                {MONTH_NAMES.map((name, idx) => (
-                  <option key={idx + 1} value={idx + 1}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Submit */}
-            <button
-              type="button"
-              onClick={handleBatchUpload}
-              disabled={
-                batchUploading ||
-                batchFiles.length === 0 ||
-                !batchYear ||
-                !batchMonth
-              }
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {batchUploading
-                ? "Subiendo..."
-                : `Subir ${batchFiles.length > 0 ? batchFiles.length : ""} nómina${batchFiles.length !== 1 ? "s" : ""}`}
-            </button>
-          </div>
-
-          {/* ── Batch results panel ─────────────────────────────────────────── */}
-          {batchResults && (
-            <div className="mt-5 space-y-3">
-              {/* Summary banner */}
-              <div className="flex flex-wrap gap-3 text-sm">
-                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-slate-700 font-medium">
-                  Total: {batchResults.summary.total}
-                </span>
-                {batchResults.summary.matched > 0 && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 font-medium ring-1 ring-inset ring-emerald-600/20">
-                    ✓ Asignadas: {batchResults.summary.matched}
-                  </span>
-                )}
-                {batchResults.summary.unmatched > 0 && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-amber-700 font-medium ring-1 ring-inset ring-amber-600/20">
-                    ⚠ Sin asignar: {batchResults.summary.unmatched}
-                  </span>
-                )}
-                {batchResults.summary.failed > 0 && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-1 text-red-700 font-medium ring-1 ring-inset ring-red-600/20">
-                    ✕ Con error: {batchResults.summary.failed}
-                  </span>
-                )}
-                {(batchResults.summary.duplicateWarnings ?? 0) > 0 && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-orange-700 font-medium ring-1 ring-inset ring-orange-600/20">
-                    ⚠ Posibles duplicados: {batchResults.summary.duplicateWarnings}
-                  </span>
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setBatchResults(null);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-colors"
-              >
-                ✕ Cerrar resultados
-              </button>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
