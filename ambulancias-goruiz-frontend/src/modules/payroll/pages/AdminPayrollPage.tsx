@@ -1226,9 +1226,23 @@ export default function AdminPayrollPage() {
 
                   if (selected.length > 20) {
                     toastT.warn("Máximo 20 archivos por lote");
-                    setBatchFiles(selected.slice(0, 20));
-                  } else {
-                    setBatchFiles(selected);
+                    selected = selected.slice(0, 20);
+                  }
+
+                  // Accumulate selections across multiple picker openings.
+                  // Keep existing behavior: cap the final batch at 20 files.
+                  setBatchFiles((prev) => {
+                    const merged = [...prev, ...selected];
+                    if (merged.length > 20) {
+                      toastT.warn("Máximo 20 archivos por lote");
+                      return merged.slice(0, 20);
+                    }
+                    return merged;
+                  });
+
+                  // Allow selecting the same file(s) again in a new picker opening.
+                  if (e.currentTarget) {
+                    e.currentTarget.value = "";
                   }
                 }}
                 className="block text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 focus:outline-none"
