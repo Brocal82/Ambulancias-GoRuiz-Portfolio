@@ -656,6 +656,7 @@ export default function AdminPayrollPage() {
   const summaryCurrentDocs = docs.filter(
     (d) => d.year === summaryYear && d.month === summaryMonth,
   );
+  const hasSummaryPayrollDocs = summaryCurrentDocs.length > 0;
   const summaryConfirmed = summaryCurrentDocs.filter(
     (d) => d.matchStatus === "matched" || d.matchStatus === "manual",
   ).length;
@@ -680,9 +681,9 @@ export default function AdminPayrollPage() {
       )
       .map((d) => d.workerId!._id),
   );
-  const missingWorkersForSummaryPeriod = workers.filter(
-    (w) => !assignedWorkerIdsForSummaryPeriod.has(w._id),
-  );
+  const missingWorkersForSummaryPeriod = hasSummaryPayrollDocs
+    ? workers.filter((w) => !assignedWorkerIdsForSummaryPeriod.has(w._id))
+    : [];
   const monthlySortedDocs = [...summaryCurrentDocs].sort((a, b) => {
     if (a.matchStatus === "unmatched" && b.matchStatus !== "unmatched") return -1;
     if (a.matchStatus !== "unmatched" && b.matchStatus === "unmatched") return 1;
