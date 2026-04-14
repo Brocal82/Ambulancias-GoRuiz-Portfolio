@@ -79,6 +79,8 @@ export default function PayrollGlobalSearchPanel({
   compactToolbar = false,
   resultsPortalTarget,
 }: PayrollGlobalSearchPanelProps) {
+  const ALL_FILTER_VALUE = "__all__";
+  const NONE_FILTER_VALUE = "__none__";
   const [tableSearch, setTableSearch] = useState("");
   const [tableYearFilter, setTableYearFilter] = useState("");
   const [tableMonthFilter, setTableMonthFilter] = useState("");
@@ -103,9 +105,17 @@ export default function PayrollGlobalSearchPanel({
   const filteredDocs = useMemo(() => {
     const base = isTableFiltered
       ? docs.filter((doc) => {
-          if (tableYearFilter && doc.year !== Number(tableYearFilter))
+          if (
+            tableYearFilter &&
+            tableYearFilter !== ALL_FILTER_VALUE &&
+            doc.year !== Number(tableYearFilter)
+          )
             return false;
-          if (tableMonthFilter && doc.month !== Number(tableMonthFilter))
+          if (
+            tableMonthFilter &&
+            tableMonthFilter !== ALL_FILTER_VALUE &&
+            doc.month !== Number(tableMonthFilter)
+          )
             return false;
           if (tableSearch.trim()) {
             const q = tableSearch.trim().toLowerCase();
@@ -371,17 +381,26 @@ export default function PayrollGlobalSearchPanel({
               <select
                 id="payroll-global-search-year"
                 value={tableYearFilter}
-                onChange={(e) => setTableYearFilter(e.target.value)}
-                className={`h-9 w-full rounded-lg border border-slate-300 px-2 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${
+                onChange={(e) =>
+                  setTableYearFilter(
+                    e.target.value === NONE_FILTER_VALUE ? "" : e.target.value,
+                  )
+                }
+                className={`h-9 w-full rounded-lg border border-slate-300 px-2 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-200 ${
                   tableYearFilter ? "text-slate-700" : "text-slate-400"
                 }`}
               >
-                <option value="" disabled>
+                <option value="" hidden>
                   Año
                 </option>
-                <option value="">Todos</option>
+                <option value={NONE_FILTER_VALUE} className="text-slate-700">
+                  Ninguno
+                </option>
+                <option value={ALL_FILTER_VALUE} className="text-slate-700">
+                  Todos
+                </option>
                 {tableYearOptions.map((y) => (
-                  <option key={y} value={y}>
+                  <option key={y} value={y} className="text-slate-700">
                     {y}
                   </option>
                 ))}
@@ -392,17 +411,26 @@ export default function PayrollGlobalSearchPanel({
               <select
                 id="payroll-global-search-month"
                 value={tableMonthFilter}
-                onChange={(e) => setTableMonthFilter(e.target.value)}
-                className={`h-9 w-full rounded-lg border border-slate-300 px-2 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${
+                onChange={(e) =>
+                  setTableMonthFilter(
+                    e.target.value === NONE_FILTER_VALUE ? "" : e.target.value,
+                  )
+                }
+                className={`h-9 w-full rounded-lg border border-slate-300 px-2 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-200 ${
                   tableMonthFilter ? "text-slate-700" : "text-slate-400"
                 }`}
               >
-                <option value="" disabled>
+                <option value="" hidden>
                   Mes
                 </option>
-                <option value="">Todos</option>
+                <option value={NONE_FILTER_VALUE} className="text-slate-700">
+                  Ninguno
+                </option>
+                <option value={ALL_FILTER_VALUE} className="text-slate-700">
+                  Todos
+                </option>
                 {MONTH_NAMES.map((name, idx) => (
-                  <option key={idx + 1} value={idx + 1}>
+                  <option key={idx + 1} value={idx + 1} className="text-slate-700">
                     {name}
                   </option>
                 ))}
@@ -410,14 +438,14 @@ export default function PayrollGlobalSearchPanel({
             </div>
 
             <div className="w-full lg:w-64 min-w-[220px]">
-              <div className="h-9 flex items-center rounded-lg border border-slate-300 bg-white px-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-100">
+              <div className="h-9 flex items-center rounded-lg border border-slate-300 bg-white px-2 shadow-sm focus-within:ring-2 focus-within:ring-slate-200">
                 <input
                   id="payroll-global-search-text"
-                  type="search"
-                  placeholder="Trabajador / archivo"
+                  type="text"
+                  placeholder="Nombre / Nº trabajador"
                   value={tableSearch}
                   onChange={(e) => setTableSearch(e.target.value)}
-                  className="w-full bg-transparent text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none"
+                  className="payroll-toolbar-search-input w-full bg-transparent text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none"
                 />
               </div>
             </div>
@@ -511,11 +539,11 @@ export default function PayrollGlobalSearchPanel({
               </label>
               <input
                 id="payroll-global-search-text"
-                type="search"
+                type="text"
                 placeholder="Nombre, Nº empleado, archivo…"
                 value={tableSearch}
                 onChange={(e) => setTableSearch(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                className="payroll-toolbar-search-input w-full rounded-xl border border-slate-300 px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
               />
             </div>
 
