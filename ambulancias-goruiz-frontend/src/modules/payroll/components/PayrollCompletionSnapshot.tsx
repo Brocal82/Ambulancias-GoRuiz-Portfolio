@@ -72,7 +72,7 @@ export default function PayrollCompletionSnapshot({
           className={`rounded-lg border px-3 py-2 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-1 ${
             reconciliationInteractive
               ? reconciliationOpen
-                ? "border-blue-300 bg-blue-50 hover:bg-blue-100/80 cursor-pointer"
+                ? "border-slate-900 bg-white hover:bg-slate-50 cursor-pointer"
                 : "border-amber-300 bg-amber-50 hover:bg-amber-100/80 cursor-pointer"
               : "border-slate-200 bg-slate-50 text-slate-500 cursor-default"
           }`}
