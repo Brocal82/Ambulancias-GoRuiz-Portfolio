@@ -334,6 +334,8 @@ export default function AdminPayrollPage() {
 
   /** Monthly documents list under PayrollCompletionSnapshot (collapsed by default). */
   const [monthlyDocsListExpanded, setMonthlyDocsListExpanded] = useState(false);
+  /** View mode for the monthly documents list. */
+  const [monthlyDocsListMode, setMonthlyDocsListMode] = useState<"all" | "unassigned">("all");
   /** Local filter for the expanded monthly list only (current month docs). */
   const [monthlyListFilter, setMonthlyListFilter] = useState("");
 
@@ -363,7 +365,10 @@ export default function AdminPayrollPage() {
     const count = docs.filter(
       (d) => d.year === workingYear && d.month === workingMonth,
     ).length;
-    if (count === 0) setMonthlyDocsListExpanded(false);
+    if (count === 0) {
+      setMonthlyDocsListExpanded(false);
+      setMonthlyDocsListMode("all");
+    }
   }, [docs, workingYear, workingMonth]);
 
   // ── fetch ──────────────────────────────────────────────────────────────────
@@ -381,16 +386,13 @@ export default function AdminPayrollPage() {
 
   const RESOLUTION_SECTION_FLASH_MS = 1600;
   const navigateToUnassignedPayrolls = useCallback(() => {
-    unassignedPayrollsSectionRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-    setHighlightUnassignedPayrolls(true);
-    window.setTimeout(
-      () => setHighlightUnassignedPayrolls(false),
-      RESOLUTION_SECTION_FLASH_MS,
+    const hasCurrentDocs = docs.some(
+      (d) => d.year === workingYear && d.month === workingMonth,
     );
-  }, []);
+    if (!hasCurrentDocs) return;
+    setMonthlyDocsListExpanded(true);
+    setMonthlyDocsListMode("unassigned");
+  }, [docs, workingYear, workingMonth]);
   const navigateToWorkersMissingPayroll = useCallback(() => {
     workersMissingSectionRef.current?.scrollIntoView({
       behavior: "smooth",
@@ -434,6 +436,7 @@ export default function AdminPayrollPage() {
     setAssigningId(null);
     setAssignWorkerId("");
     setMonthlyDocsListExpanded(false);
+    setMonthlyDocsListMode("all");
     setMonthlyListFilter("");
   }, [yearParam, monthParam]);
 
@@ -607,6 +610,7 @@ export default function AdminPayrollPage() {
     setAssigningId(null);
     setAssignWorkerId("");
     setMonthlyDocsListExpanded(false);
+    setMonthlyDocsListMode("all");
     setMonthlyListFilter("");
     navigate(`/admin/payroll/month/${newYear}/${newMonth}`, { replace: true });
   };
@@ -620,6 +624,7 @@ export default function AdminPayrollPage() {
     setAssigningId(null);
     setAssignWorkerId("");
     setMonthlyDocsListExpanded(false);
+    setMonthlyDocsListMode("all");
     setMonthlyListFilter("");
     navigate(`/admin/payroll/month/${year}/${month}`, { replace: true });
   };
@@ -683,9 +688,13 @@ export default function AdminPayrollPage() {
     return 0;
   });
 
+  const monthlyBaseDocs =
+    monthlyDocsListMode === "unassigned"
+      ? monthlySortedDocs.filter((doc) => doc.matchStatus === "unmatched")
+      : monthlySortedDocs;
   const monthlyListFilterTrim = monthlyListFilter.trim().toLowerCase();
   const monthlyFilteredDocs = monthlyListFilterTrim
-    ? monthlySortedDocs.filter((doc) => {
+    ? monthlyBaseDocs.filter((doc) => {
         const q = monthlyListFilterTrim;
         const inFilename = doc.originalName.toLowerCase().includes(q);
         const inWorkerName = doc.workerId
@@ -698,7 +707,7 @@ export default function AdminPayrollPage() {
           (doc.parsedEmployeeNumber ?? "").toLowerCase().includes(q);
         return inFilename || inWorkerName || inEmpNum;
       })
-    : monthlySortedDocs;
+    : monthlyBaseDocs;
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -793,6 +802,7 @@ export default function AdminPayrollPage() {
           onClick={() => {
             if (summaryCurrentDocs.length === 0) return;
             setMonthlyDocsListExpanded((v) => !v);
+            setMonthlyDocsListMode("all");
           }}
           monthlyListExpanded={monthlyDocsListExpanded}
           onNavigateToUnassignedPayrolls={navigateToUnassignedPayrolls}
@@ -805,10 +815,24 @@ export default function AdminPayrollPage() {
               <h2 className="text-sm font-semibold text-slate-700 leading-tight">
                 Documentos del mes ({summaryMonthName} {summaryYear})
               </h2>
+              {monthlyDocsListMode === "unassigned" ? (
+                <div className="mt-1.5 flex items-center gap-2">
+                  <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                    Mostrando solo nóminas sin asignar
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setMonthlyDocsListMode("all")}
+                    className="text-[11px] font-medium text-slate-600 hover:text-slate-800 underline underline-offset-2"
+                  >
+                    Ver todas
+                  </button>
+                </div>
+              ) : null}
               <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
                 {monthlyListFilterTrim
-                  ? `${monthlyFilteredDocs.length} de ${monthlySortedDocs.length} documento${monthlySortedDocs.length !== 1 ? "s" : ""}`
-                  : `${monthlySortedDocs.length} documento${monthlySortedDocs.length !== 1 ? "s" : ""}`}
+                  ? `${monthlyFilteredDocs.length} de ${monthlyBaseDocs.length} documento${monthlyBaseDocs.length !== 1 ? "s" : ""}`
+                  : `${monthlyBaseDocs.length} documento${monthlyBaseDocs.length !== 1 ? "s" : ""}`}
               </p>
             </div>
             <div className="px-4 py-2 border-b border-slate-200 bg-white">
