@@ -814,9 +814,11 @@ export default function AdminPayrollPage() {
           <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
             <div className="px-4 py-2 border-b border-slate-200 bg-slate-50/80">
               <h2 className="text-sm font-semibold text-slate-700 leading-tight">
-                Documentos del mes ({summaryMonthName} {summaryYear})
+                {reconciliationOpen
+                  ? `Nominas sin asignar pendientes de resolucion (${summaryMonthName} ${summaryYear})`
+                  : `Documentos del mes (${summaryMonthName} ${summaryYear})`}
               </h2>
-              {monthlyDocsListMode === "unassigned" ? (
+              {monthlyDocsListMode === "unassigned" && !reconciliationOpen ? (
                 <div className="mt-1.5 flex items-center gap-2">
                   <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
                     Mostrando solo nóminas sin asignar
@@ -1011,7 +1013,6 @@ export default function AdminPayrollPage() {
             missingWorkers={missingWorkersForSummaryPeriod}
             workersMissingSectionRef={workersMissingSectionRef}
             highlightWorkersMissing={highlightWorkersMissing}
-            onViewUnassignedPayrolls={activateUnassignedPayrollsFilter}
           />
         ) : null}
 
