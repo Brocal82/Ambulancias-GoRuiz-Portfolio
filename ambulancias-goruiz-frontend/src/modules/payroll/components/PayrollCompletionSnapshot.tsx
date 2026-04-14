@@ -28,8 +28,15 @@ export default function PayrollCompletionSnapshot({
   onToggleReconciliation,
   reconciliationOpen = false,
 }: PayrollCompletionSnapshotProps) {
+  const isEmpty = totalPayrollDocs === 0;
   const isComplete =
-    unassignedPayrollDocs === 0 && coveredWorkers === totalWorkers;
+    !isEmpty && unassignedPayrollDocs === 0 && coveredWorkers === totalWorkers;
+  const statusLabel = isEmpty ? "EMPTY" : isComplete ? "COMPLETE" : "INCOMPLETE";
+  const statusClass = isEmpty
+    ? "bg-slate-100 text-slate-600 ring-slate-500/20"
+    : isComplete
+      ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20"
+      : "bg-amber-50 text-amber-700 ring-amber-600/20";
 
   const interactive = Boolean(onClick) && totalPayrollDocs > 0;
   const hasReconciliationPending =
@@ -108,13 +115,9 @@ export default function PayrollCompletionSnapshot({
           ) : null}
         </div>
         <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${
-            isComplete
-              ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20"
-              : "bg-amber-50 text-amber-700 ring-amber-600/20"
-          }`}
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${statusClass}`}
         >
-          {isComplete ? "COMPLETE" : "INCOMPLETE"}
+          {statusLabel}
         </span>
       </div>
 
