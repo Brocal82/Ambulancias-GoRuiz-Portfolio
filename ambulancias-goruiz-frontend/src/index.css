@@ -1,1 +1,12 @@
 @import "tailwindcss";
+
+/* Keep payroll toolbar search autofill visually neutral (no blue fill). */
+input.payroll-toolbar-search-input:-webkit-autofill,
+input.payroll-toolbar-search-input:-webkit-autofill:hover,
+input.payroll-toolbar-search-input:-webkit-autofill:focus,
+input.payroll-toolbar-search-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+  -webkit-text-fill-color: #334155;
+  caret-color: #334155;
+  transition: background-color 9999s ease-in-out 0s;
+}
