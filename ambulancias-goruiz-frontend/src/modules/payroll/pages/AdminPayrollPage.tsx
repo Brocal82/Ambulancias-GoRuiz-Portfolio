@@ -17,6 +17,7 @@ import type {
   BatchUploadResponse,
   DuplicateWarning,
 } from "../domain/types";
+import { PAYROLL_MONTH_NAMES } from "../domain/constants";
 import FileUpload from "../../../components/common/FileUpload";
 import PayrollUploadTriggerButton from "../../../components/common/actions/PayrollUploadTriggerButton";
 import SendIconButton from "../../../components/common/actions/SendIconButton";
@@ -27,11 +28,6 @@ import MatchBadge from "../components/MatchBadge";
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-
-const MONTH_NAMES = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-];
 
 function workerDisplayName(w: PayrollDocument["workerId"]): string {
   if (!w) return "—";
@@ -626,7 +622,7 @@ export default function AdminPayrollPage() {
   // On initial load these equal new Date() values — no behavioral difference.
   const summaryYear = workingYear;
   const summaryMonth = workingMonth;
-  const summaryMonthName = MONTH_NAMES[summaryMonth - 1];
+  const summaryMonthName = PAYROLL_MONTH_NAMES[summaryMonth - 1];
   const summaryCurrentDocs = docs.filter(
     (d) => d.year === summaryYear && d.month === summaryMonth,
   );
@@ -855,7 +851,7 @@ export default function AdminPayrollPage() {
                     className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
                   >
                     <option value="">— Seleccionar mes —</option>
-                    {MONTH_NAMES.map((name, idx) => (
+                    {PAYROLL_MONTH_NAMES.map((name, idx) => (
                       <option key={idx + 1} value={idx + 1}>
                         {name}
                       </option>
@@ -1060,7 +1056,7 @@ export default function AdminPayrollPage() {
                     className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
                   >
                     <option value="">— Seleccionar mes —</option>
-                    {MONTH_NAMES.map((name, idx) => (
+                    {PAYROLL_MONTH_NAMES.map((name, idx) => (
                       <option key={idx + 1} value={idx + 1}>
                         {name}
                       </option>

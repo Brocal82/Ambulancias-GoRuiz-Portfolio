@@ -4,19 +4,15 @@ import { toastT } from "../../../utils/toast";
 import { openSecureFile } from "../../../utils/openSecureFile";
 import { listMyPayrollDocuments } from "../domain/api";
 import type { WorkerPayrollDocument } from "../domain/types";
+import { PAYROLL_MONTH_NAMES } from "../domain/constants";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-const MONTH_NAMES = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-];
-
 function periodLabel(year?: number, month?: number): string {
   if (!year && !month) return "—";
-  const m = month ? MONTH_NAMES[month - 1] : "";
+  const m = month ? PAYROLL_MONTH_NAMES[month - 1] : "";
   return [m, year].filter(Boolean).join(" ");
 }
 

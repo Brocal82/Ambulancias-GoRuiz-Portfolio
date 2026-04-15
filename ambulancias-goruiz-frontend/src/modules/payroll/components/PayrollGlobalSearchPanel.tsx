@@ -4,13 +4,9 @@ import { openSecureFile } from "../../../utils/openSecureFile";
 import { toastT } from "../../../utils/toast";
 import type { PayrollDocument } from "../domain/types";
 import MatchBadge from "./MatchBadge";
+import { PAYROLL_MONTH_NAMES } from "../domain/constants";
 
 const HUB_LOOKUP_MAX_RESULTS = 12;
-
-const MONTH_NAMES = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-];
 
 function workerDisplayName(w: PayrollDocument["workerId"]): string {
   if (!w) return "—";
@@ -19,7 +15,7 @@ function workerDisplayName(w: PayrollDocument["workerId"]): string {
 
 function periodLabel(year?: number, month?: number): string {
   if (!year && !month) return "—";
-  const m = month ? MONTH_NAMES[month - 1] : "";
+  const m = month ? PAYROLL_MONTH_NAMES[month - 1] : "";
   return [m, year].filter(Boolean).join(" ");
 }
 
@@ -408,7 +404,7 @@ export default function PayrollGlobalSearchPanel({
                 <option value={ALL_FILTER_VALUE} className="text-slate-700">
                   Todos
                 </option>
-                {MONTH_NAMES.map((name, idx) => (
+                {PAYROLL_MONTH_NAMES.map((name, idx) => (
                   <option key={idx + 1} value={idx + 1} className="text-slate-700">
                     {name}
                   </option>

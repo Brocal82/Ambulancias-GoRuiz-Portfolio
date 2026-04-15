@@ -5,11 +5,7 @@ import { toastT } from "../../../utils/toast";
 import { listPayrollDocuments } from "../domain/api";
 import type { PayrollDocument } from "../domain/types";
 import PayrollGlobalSearchPanel from "../components/PayrollGlobalSearchPanel";
-
-const MONTH_NAMES = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-];
+import { PAYROLL_MONTH_NAMES } from "../domain/constants";
 
 type MonthCellStatus = "empty" | "incomplete" | "complete";
 
@@ -112,7 +108,7 @@ export default function PayrollYearHubPage() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {MONTH_NAMES.map((name, idx) => {
+            {PAYROLL_MONTH_NAMES.map((name, idx) => {
               const month = idx + 1;
               const status = monthCellStatus(docs, hubYear, month);
               const ring =
