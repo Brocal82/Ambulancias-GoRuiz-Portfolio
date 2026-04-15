@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import fs from "fs";
 import mongoose from "mongoose";
 import PayrollDocument from "../models/payroll-document.model";
 import User from "../../users/models/user.model";
@@ -18,6 +19,41 @@ interface DuplicateInfo {
   payrollId: string;
   originalName: string;
   createdAt: Date;
+}
+
+type UploadedFileLike = {
+  mimetype?: string;
+  originalname?: string;
+  filename?: string;
+  path?: string;
+};
+
+const PAYROLL_PDF_ONLY_MESSAGE =
+  "Solo se permiten archivos PDF para las nóminas.";
+
+function hasPdfExtension(name?: string): boolean {
+  if (!name || typeof name !== "string") return false;
+  return name.toLowerCase().endsWith(".pdf");
+}
+
+function isPayrollPdfFile(file: UploadedFileLike): boolean {
+  // Accept PDF by MIME, with extension fallback for clients that send generic MIME.
+  return (
+    file.mimetype === "application/pdf" ||
+    hasPdfExtension(file.originalname) ||
+    hasPdfExtension(file.filename)
+  );
+}
+
+async function deleteUploadedFileIfPresent(file: UploadedFileLike): Promise<void> {
+  if (!file.path || typeof file.path !== "string") return;
+  await fs.promises.unlink(file.path).catch(() => undefined);
+}
+
+async function deleteUploadedFilesIfPresent(
+  files: UploadedFileLike[],
+): Promise<void> {
+  await Promise.all(files.map((file) => deleteUploadedFileIfPresent(file)));
 }
 
 async function findPayrollDuplicate(
@@ -82,6 +118,12 @@ export async function uploadPayrollDocument(
       res.status(400).json({
         message: "No se recibió ningún archivo. Usa el campo 'payroll' (PDF).",
       });
+      return;
+    }
+
+    if (!isPayrollPdfFile(file)) {
+      await deleteUploadedFileIfPresent(file);
+      res.status(400).json({ message: PAYROLL_PDF_ONLY_MESSAGE });
       return;
     }
 
@@ -331,6 +373,14 @@ export async function uploadPayrollBatch(
         message:
           "No se recibieron archivos. Usa el campo 'payrolls' (hasta 20 PDFs).",
       });
+      return;
+    }
+
+    const invalidFiles = files.filter((file) => !isPayrollPdfFile(file));
+    if (invalidFiles.length > 0) {
+      // Batch is all-or-nothing for file-type validation to avoid mixed behavior.
+      await deleteUploadedFilesIfPresent(files);
+      res.status(400).json({ message: PAYROLL_PDF_ONLY_MESSAGE });
       return;
     }
 
