@@ -784,22 +784,28 @@ export default function AdminPayrollPage() {
             <button
               type="button"
               onClick={() => toggleUploadPanel("single")}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200 ${activeUploadPanel === "single"
+              aria-label="Subir individual"
+              title="Subir individual"
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border text-lg leading-none shadow-sm cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-slate-200 ${activeUploadPanel === "single"
                 ? "border-blue-200 bg-blue-50 text-blue-700"
                 : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                 }`}
             >
-              Subir individual
+              <span aria-hidden="true">📄</span>
             </button>
             <button
               type="button"
               onClick={() => toggleUploadPanel("batch")}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200 ${activeUploadPanel === "batch"
+              aria-label="Subir lote"
+              title="Subir lote"
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border text-base leading-none shadow-sm cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-slate-200 ${activeUploadPanel === "batch"
                 ? "border-blue-200 bg-blue-50 text-blue-700"
                 : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                 }`}
             >
-              Subir lote
+              <span aria-hidden="true" className="inline-flex items-center gap-0.5">
+                <span>📁</span>
+              </span>
             </button>
           </div>
         </div>
