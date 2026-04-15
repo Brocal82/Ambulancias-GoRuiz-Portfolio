@@ -100,9 +100,13 @@ export async function uploadPayrollDocument(
   req: Request,
   res: Response,
 ): Promise<void> {
+  const uploadedFile = req.file as UploadedFileLike | undefined;
+  let documentCreated = false;
+
   try {
     const companyResult = requireCompanyForAdmin(req);
     if (!companyResult.ok) {
+      await deleteUploadedFileIfPresent(uploadedFile ?? {});
       res
         .status(companyResult.statusCode)
         .json({ message: companyResult.message });
@@ -137,6 +141,7 @@ export async function uploadPayrollDocument(
     }
 
     if (!storedFilename) {
+      await deleteUploadedFileIfPresent(file);
       res
         .status(500)
         .json({ message: "No se pudo resolver el nombre del archivo subido" });
@@ -150,10 +155,12 @@ export async function uploadPayrollDocument(
     };
 
     if (year === undefined || String(year).trim() === "") {
+      await deleteUploadedFileIfPresent(file);
       res.status(400).json({ message: "year es obligatorio" });
       return;
     }
     if (month === undefined || String(month).trim() === "") {
+      await deleteUploadedFileIfPresent(file);
       res.status(400).json({ message: "month es obligatorio" });
       return;
     }
@@ -162,12 +169,14 @@ export async function uploadPayrollDocument(
     const parsedMonth = parseInt(month, 10);
 
     if (isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
+      await deleteUploadedFileIfPresent(file);
       res
         .status(400)
         .json({ message: "year debe ser un número entre 2000 y 2100" });
       return;
     }
     if (isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12) {
+      await deleteUploadedFileIfPresent(file);
       res
         .status(400)
         .json({ message: "month debe ser un número entre 1 y 12" });
@@ -181,6 +190,7 @@ export async function uploadPayrollDocument(
     // ── Manual assignment (Phase 1 path) ─────────────────────────────────────
     if (workerId) {
       if (!mongoose.Types.ObjectId.isValid(workerId)) {
+        await deleteUploadedFileIfPresent(file);
         res
           .status(400)
           .json({ message: "workerId debe ser un ObjectId válido" });
@@ -201,6 +211,7 @@ export async function uploadPayrollDocument(
         .lean();
 
       if (!workerDoc) {
+        await deleteUploadedFileIfPresent(file);
         res.status(403).json({
           message: "El trabajador no existe o no pertenece a tu empresa",
         });
@@ -218,6 +229,7 @@ export async function uploadPayrollDocument(
         year: parsedYear,
         month: parsedMonth,
       });
+      documentCreated = true;
 
       const possibleDuplicate = await findPayrollDuplicate(
         companyOid,
@@ -258,6 +270,7 @@ export async function uploadPayrollDocument(
         year: parsedYear,
         month: parsedMonth,
       });
+      documentCreated = true;
 
       const possibleDuplicate = await findPayrollDuplicate(
         companyOid,
@@ -296,6 +309,7 @@ export async function uploadPayrollDocument(
       year: parsedYear,
       month: parsedMonth,
     });
+    documentCreated = true;
 
     res.status(201).json({
       message:
@@ -309,6 +323,9 @@ export async function uploadPayrollDocument(
       month: doc.month,
     });
   } catch (err) {
+    if (!documentCreated) {
+      await deleteUploadedFileIfPresent(uploadedFile ?? {});
+    }
     console.error("[payroll] uploadPayrollDocument error:", err);
     res.status(500).json({ message: "Error al subir la nómina" });
   }
@@ -357,9 +374,12 @@ export async function uploadPayrollBatch(
   req: Request,
   res: Response,
 ): Promise<void> {
+  const uploadedFiles = (req.files as UploadedFileLike[] | undefined) ?? [];
+
   try {
     const companyResult = requireCompanyForAdmin(req);
     if (!companyResult.ok) {
+      await deleteUploadedFilesIfPresent(uploadedFiles);
       res
         .status(companyResult.statusCode)
         .json({ message: companyResult.message });
@@ -387,10 +407,12 @@ export async function uploadPayrollBatch(
     const { year, month } = req.body as { year?: string; month?: string };
 
     if (year === undefined || String(year).trim() === "") {
+      await deleteUploadedFilesIfPresent(files);
       res.status(400).json({ message: "year es obligatorio" });
       return;
     }
     if (month === undefined || String(month).trim() === "") {
+      await deleteUploadedFilesIfPresent(files);
       res.status(400).json({ message: "month es obligatorio" });
       return;
     }
@@ -399,12 +421,14 @@ export async function uploadPayrollBatch(
     const parsedMonth = parseInt(month, 10);
 
     if (isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
+      await deleteUploadedFilesIfPresent(files);
       res
         .status(400)
         .json({ message: "year debe ser un número entre 2000 y 2100" });
       return;
     }
     if (isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12) {
+      await deleteUploadedFilesIfPresent(files);
       res
         .status(400)
         .json({ message: "month debe ser un número entre 1 y 12" });
@@ -426,6 +450,7 @@ export async function uploadPayrollBatch(
 
     for (const file of files) {
       const originalName = file.originalname;
+      let documentCreatedForFile = false;
 
       // Resolve stored filename — same pattern as uploadPayrollDocument
       let storedFilename: string | undefined;
@@ -437,6 +462,7 @@ export async function uploadPayrollBatch(
       }
 
       if (!storedFilename) {
+        await deleteUploadedFileIfPresent(file);
         results.push({
           originalName,
           status: "failed",
@@ -467,6 +493,7 @@ export async function uploadPayrollBatch(
             parsedEmployeeNumber: matchResult.parsedEmployeeNumber,
             ...periodFields,
           });
+          documentCreatedForFile = true;
 
           const possibleDuplicate = await findPayrollDuplicate(
             companyOid,
@@ -500,6 +527,7 @@ export async function uploadPayrollBatch(
             matchReason: matchResult.reason,
             ...periodFields,
           });
+          documentCreatedForFile = true;
 
           results.push({
             originalName,
@@ -512,6 +540,9 @@ export async function uploadPayrollBatch(
           unmatched++;
         }
       } catch (fileErr) {
+        if (!documentCreatedForFile) {
+          await deleteUploadedFileIfPresent(file);
+        }
         console.error(
           `[payroll] batch: error processing "${originalName}":`,
           fileErr,
