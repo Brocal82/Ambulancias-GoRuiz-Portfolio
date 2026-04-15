@@ -44,7 +44,6 @@ export default function PayrollCompletionSnapshot({
   const reconciliationInteractive =
     Boolean(onToggleReconciliation) && hasReconciliationPending;
 
-  const staticTileClass = "rounded-lg bg-slate-50 px-3 py-2 cursor-default";
   const metricTileClass = "rounded-lg bg-slate-50 px-3 py-2";
 
   const summary = (

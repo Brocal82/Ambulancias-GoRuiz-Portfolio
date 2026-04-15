@@ -37,12 +37,6 @@ function workerDisplayName(w: PayrollDocument["workerId"]): string {
   return `${w.lastName}, ${w.name}`;
 }
 
-function periodLabel(year?: number, month?: number): string {
-  if (!year && !month) return "—";
-  const m = month ? MONTH_NAMES[month - 1] : "";
-  return [m, year].filter(Boolean).join(" ");
-}
-
 function MatchBadge({ status }: { status: PayrollMatchStatus }) {
   if (status === "matched") {
     return (
@@ -163,9 +157,8 @@ function WorkerSearchSelect({
           type="button"
           onClick={handleClearAndRefocus}
           aria-label="Cambiar trabajador"
-          className={`shrink-0 rounded border border-slate-200 bg-white text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors ${
-            isCompact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-xs"
-          }`}
+          className={`shrink-0 rounded border border-slate-200 bg-white text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors ${isCompact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-xs"
+            }`}
         >
           ✕
         </button>
@@ -199,9 +192,8 @@ function WorkerSearchSelect({
           OR when allowEmpty=true so the "auto-detect" shortcut is always reachable. */}
       {focused && (query.trim() !== "" || allowEmpty) && (
         <div
-          className={`${dropdownOverlay ? "absolute left-0 right-0 top-full mt-1 z-20" : "mt-1"} rounded-xl border border-slate-200 bg-white overflow-hidden ${
-            isCompact ? "" : "shadow-sm"
-          }`}
+          className={`${dropdownOverlay ? "absolute left-0 right-0 top-full mt-1 z-20" : "mt-1"} rounded-xl border border-slate-200 bg-white overflow-hidden ${isCompact ? "" : "shadow-sm"
+            }`}
         >
           {/* Optional "no selection / auto-detect" entry — always visible when focused */}
           {allowEmpty && (
@@ -211,9 +203,8 @@ function WorkerSearchSelect({
                 e.preventDefault();
                 handleSelect("");
               }}
-              className={`w-full text-left italic text-slate-400 hover:bg-slate-50 ${
-                isCompact ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"
-              }`}
+              className={`w-full text-left italic text-slate-400 hover:bg-slate-50 ${isCompact ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"
+                }`}
             >
               {emptyLabel}
             </button>
@@ -223,9 +214,8 @@ function WorkerSearchSelect({
           {query.trim() !== "" && (
             filtered.length === 0 ? (
               <p
-                className={`text-slate-400 ${
-                  allowEmpty ? "border-t border-slate-100" : ""
-                } ${isCompact ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"}`}
+                className={`text-slate-400 ${allowEmpty ? "border-t border-slate-100" : ""
+                  } ${isCompact ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"}`}
               >
                 Sin resultados
               </p>
@@ -239,18 +229,16 @@ function WorkerSearchSelect({
                         e.preventDefault();
                         handleSelect(w._id);
                       }}
-                      className={`w-full text-left hover:bg-slate-50 ${
-                        i > 0 || allowEmpty ? "border-t border-slate-100" : ""
-                      } ${isCompact ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"}`}
+                      className={`w-full text-left hover:bg-slate-50 ${i > 0 || allowEmpty ? "border-t border-slate-100" : ""
+                        } ${isCompact ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"}`}
                     >
                       <span className="font-medium text-slate-800">
                         {w.lastName}, {w.name}
                       </span>
                       {w.employeeNumber && (
                         <span
-                          className={`ml-1.5 text-slate-500 ${
-                            isCompact ? "text-[10px]" : "text-xs"
-                          }`}
+                          className={`ml-1.5 text-slate-500 ${isCompact ? "text-[10px]" : "text-xs"
+                            }`}
                         >
                           {w.employeeNumber}
                         </span>
@@ -282,7 +270,6 @@ export default function AdminPayrollPage() {
   // ── data ───────────────────────────────────────────────────────────────────
   const [docs, setDocs] = useState<PayrollDocument[]>([]);
   const [workers, setWorkers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(false);
 
   // ── working period context ─────────────────────────────────────────────────
   // Drives the Period Context Bar, the header summary, and the document table
@@ -348,8 +335,7 @@ export default function AdminPayrollPage() {
   const [monthlyListFilter, setMonthlyListFilter] = useState("");
 
   const workersMissingSectionRef = useRef<HTMLDivElement>(null);
-  const [highlightWorkersMissing, setHighlightWorkersMissing] =
-    useState(false);
+  const [highlightWorkersMissing] = useState(false);
 
   // Keep webkitdirectory attribute in sync with batchFolderMode.
   // React's InputHTMLAttributes does not include webkitdirectory, so we apply
@@ -378,14 +364,11 @@ export default function AdminPayrollPage() {
 
   // ── fetch ──────────────────────────────────────────────────────────────────
   const fetchDocs = useCallback(async () => {
-    setLoading(true);
     try {
       const data = await listPayrollDocuments();
       setDocs(data);
     } catch (err) {
       toastT.apiError(err, "Error al cargar los documentos de nómina");
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -709,18 +692,18 @@ export default function AdminPayrollPage() {
   const monthlyListFilterTrim = monthlyListFilter.trim().toLowerCase();
   const monthlyFilteredDocs = monthlyListFilterTrim
     ? monthlyBaseDocs.filter((doc) => {
-        const q = monthlyListFilterTrim;
-        const inFilename = doc.originalName.toLowerCase().includes(q);
-        const inWorkerName = doc.workerId
-          ? `${doc.workerId.name} ${doc.workerId.lastName}`
-              .toLowerCase()
-              .includes(q)
-          : false;
-        const inEmpNum =
-          (doc.workerId?.employeeNumber ?? "").toLowerCase().includes(q) ||
-          (doc.parsedEmployeeNumber ?? "").toLowerCase().includes(q);
-        return inFilename || inWorkerName || inEmpNum;
-      })
+      const q = monthlyListFilterTrim;
+      const inFilename = doc.originalName.toLowerCase().includes(q);
+      const inWorkerName = doc.workerId
+        ? `${doc.workerId.name} ${doc.workerId.lastName}`
+          .toLowerCase()
+          .includes(q)
+        : false;
+      const inEmpNum =
+        (doc.workerId?.employeeNumber ?? "").toLowerCase().includes(q) ||
+        (doc.parsedEmployeeNumber ?? "").toLowerCase().includes(q);
+      return inFilename || inWorkerName || inEmpNum;
+    })
     : monthlyBaseDocs;
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -787,22 +770,20 @@ export default function AdminPayrollPage() {
             <button
               type="button"
               onClick={() => toggleUploadPanel("single")}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200 ${
-                activeUploadPanel === "single"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-              }`}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200 ${activeUploadPanel === "single"
+                ? "border-blue-200 bg-blue-50 text-blue-700"
+                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
             >
               Subir individual
             </button>
             <button
               type="button"
               onClick={() => toggleUploadPanel("batch")}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200 ${
-                activeUploadPanel === "batch"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-              }`}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200 ${activeUploadPanel === "batch"
+                ? "border-blue-200 bg-blue-50 text-blue-700"
+                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
             >
               Subir lote
             </button>
@@ -832,7 +813,7 @@ export default function AdminPayrollPage() {
               Subir 1 nómina
             </h2>
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-[auto_1fr_auto] lg:items-end lg:gap-4">
-              <div className="shrink-0">
+              <div className="shrink-0 lg:mr-6">
                 <FileUpload
                   key={fileInputKey}
                   id="payroll-pdf-upload"
@@ -901,15 +882,28 @@ export default function AdminPayrollPage() {
                   </select>
                 </div>
               </div>
-              <div className="w-full lg:w-auto flex items-center gap-3 lg:justify-end">
+              <div className="w-full lg:w-auto lg:ml-6 flex items-center gap-3 lg:justify-end">
                 <div
-                  className={`w-[220px] min-w-[180px] max-w-[260px] text-right text-xs leading-tight truncate ${
-                    uploadFile ? "text-blue-600 font-medium" : "text-slate-500"
-                  }`}
+                  className={`w-[220px] min-w-[180px] max-w-[260px] text-right text-xs leading-tight truncate ${uploadFile ? "text-blue-600 font-medium" : "text-slate-500"
+                    }`}
                   title={uploadFile?.name ?? "Sin archivo seleccionado"}
                 >
                   {uploadFile ? uploadFile.name : "Sin archivo seleccionado"}
                 </div>
+                {uploadFile ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUploadFile(null);
+                      setFileInputKey((k) => k + 1);
+                    }}
+                    aria-label="Quitar archivo seleccionado"
+                    title="Quitar archivo"
+                    className="shrink-0 text-red-400 hover:text-red-600 text-sm leading-none cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                ) : null}
                 <SendIconButton
                   onClick={handleUpload}
                   disabled={uploading || !uploadFile || !uploadYear || !uploadMonth}
@@ -966,11 +960,10 @@ export default function AdminPayrollPage() {
                       setBatchInputKey((k) => k + 1);
                     }
                   }}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${
-                    !batchFolderMode
-                      ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${!batchFolderMode
+                    ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
+                    : "text-slate-500 hover:text-slate-700"
+                    }`}
                 >
                   Archivos
                 </button>
@@ -983,11 +976,10 @@ export default function AdminPayrollPage() {
                       setBatchInputKey((k) => k + 1);
                     }
                   }}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${
-                    batchFolderMode
-                      ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${batchFolderMode
+                    ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
+                    : "text-slate-500 hover:text-slate-700"
+                    }`}
                 >
                   Carpeta
                 </button>
@@ -1264,9 +1256,8 @@ export default function AdminPayrollPage() {
                           <MatchBadge status={doc.matchStatus} />
                         </td>
                         <td
-                          className={`px-2 py-1.5 align-middle ${
-                            assigningId !== doc._id ? "whitespace-nowrap" : ""
-                          }`}
+                          className={`px-2 py-1.5 align-middle ${assigningId !== doc._id ? "whitespace-nowrap" : ""
+                            }`}
                         >
                           {assigningId !== doc._id ? (
                             <div className="flex flex-row flex-nowrap items-center justify-center gap-0.5">
