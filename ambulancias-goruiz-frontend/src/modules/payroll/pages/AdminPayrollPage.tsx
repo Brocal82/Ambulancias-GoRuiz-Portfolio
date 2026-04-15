@@ -19,6 +19,7 @@ import type {
   DuplicateWarning,
 } from "../domain/types";
 import FileUpload from "../../../components/common/FileUpload";
+import SendIconButton from "../../../components/common/actions/SendIconButton";
 import PayrollCompletionSnapshot from "../components/PayrollCompletionSnapshot";
 import ResolutionWorkspace from "../components/ResolutionWorkspace";
 
@@ -81,6 +82,7 @@ function WorkerSearchSelect({
   allowEmpty = false,
   emptyLabel = "Detectar por nombre de archivo",
   size = "default",
+  dropdownOverlay = false,
 }: {
   id?: string;
   workers: User[];
@@ -90,6 +92,7 @@ function WorkerSearchSelect({
   allowEmpty?: boolean;
   emptyLabel?: string;
   size?: "default" | "sm";
+  dropdownOverlay?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
@@ -172,7 +175,7 @@ function WorkerSearchSelect({
 
   // ── Search state: input + inline list ────────────────────────────────────────
   return (
-    <div className="w-full">
+    <div className={`w-full ${dropdownOverlay ? "relative" : ""}`}>
       <input
         ref={inputRef}
         id={id}
@@ -196,7 +199,7 @@ function WorkerSearchSelect({
           OR when allowEmpty=true so the "auto-detect" shortcut is always reachable. */}
       {focused && (query.trim() !== "" || allowEmpty) && (
         <div
-          className={`mt-1 rounded-xl border border-slate-200 bg-white overflow-hidden ${
+          className={`${dropdownOverlay ? "absolute left-0 right-0 top-full mt-1 z-20" : "mt-1"} rounded-xl border border-slate-200 bg-white overflow-hidden ${
             isCompact ? "" : "shadow-sm"
           }`}
         >
@@ -826,13 +829,10 @@ export default function AdminPayrollPage() {
         {activeUploadPanel === "single" ? (
           <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4 space-y-3">
             <h2 className="text-sm font-semibold text-slate-800">
-              Subir nómina individual
+              Subir 1 nómina
             </h2>
-            <div className="flex flex-wrap gap-4 items-end">
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-slate-700">
-                  Archivo PDF
-                </label>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[auto_1fr_auto] lg:items-end lg:gap-4">
+              <div className="shrink-0">
                 <FileUpload
                   key={fileInputKey}
                   id="payroll-pdf-upload"
@@ -842,82 +842,82 @@ export default function AdminPayrollPage() {
                   onFileSelect={setUploadFile}
                   onError={(msg) => toastT.error(msg)}
                   hintWhenEmpty="Sin archivo seleccionado"
-                  showSelectedList
+                  showSelectedList={false}
                 />
               </div>
-              <div className="space-y-1 min-w-[200px]">
-                <label
-                  htmlFor="upload-worker-id"
-                  className="block text-sm font-medium text-slate-700"
+              <div className="flex items-end gap-2.5 min-w-0">
+                <div className="space-y-1 min-w-[160px] w-[190px]">
+                  <label
+                    htmlFor="upload-worker-id"
+                    className="block text-sm font-medium text-slate-700"
+                  >
+                    Trabajador
+                  </label>
+                  <WorkerSearchSelect
+                    id="upload-worker-id"
+                    workers={workers}
+                    value={uploadWorkerId}
+                    onChange={setUploadWorkerId}
+                    placeholder="Nombre/Nº trabajador"
+                    dropdownOverlay
+                  />
+                </div>
+                <div className="space-y-1 w-20 shrink-0">
+                  <label
+                    htmlFor="upload-year"
+                    className="block text-sm font-medium text-slate-700"
+                  >
+                    Año
+                  </label>
+                  <input
+                    id="upload-year"
+                    type="number"
+                    value={uploadYear}
+                    onChange={(e) => setUploadYear(e.target.value)}
+                    min={2000}
+                    max={2100}
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                  />
+                </div>
+                <div className="space-y-1 w-32 shrink-0">
+                  <label
+                    htmlFor="upload-month"
+                    className="block text-sm font-medium text-slate-700"
+                  >
+                    Mes
+                  </label>
+                  <select
+                    id="upload-month"
+                    value={uploadMonth}
+                    onChange={(e) => setUploadMonth(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                  >
+                    <option value="">— Seleccionar mes —</option>
+                    {MONTH_NAMES.map((name, idx) => (
+                      <option key={idx + 1} value={idx + 1}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="w-full lg:w-auto flex items-center gap-3 lg:justify-end">
+                <div
+                  className={`w-[220px] min-w-[180px] max-w-[260px] text-right text-xs leading-tight truncate ${
+                    uploadFile ? "text-blue-600 font-medium" : "text-slate-500"
+                  }`}
+                  title={uploadFile?.name ?? "Sin archivo seleccionado"}
                 >
-                  Trabajador{" "}
-                  <span className="font-normal text-slate-500">(opcional)</span>
-                </label>
-                <WorkerSearchSelect
-                  id="upload-worker-id"
-                  workers={workers}
-                  value={uploadWorkerId}
-                  onChange={setUploadWorkerId}
-                  placeholder="Buscar por nombre o nº de empleado"
-                  allowEmpty
-                  emptyLabel="Detectar por nombre de archivo"
+                  {uploadFile ? uploadFile.name : "Sin archivo seleccionado"}
+                </div>
+                <SendIconButton
+                  onClick={handleUpload}
+                  disabled={uploading || !uploadFile || !uploadYear || !uploadMonth}
+                  title={uploading ? "Subiendo nómina..." : "Subir nómina"}
+                  className="shrink-0"
                 />
               </div>
-              <div className="space-y-1 w-24">
-                <label
-                  htmlFor="upload-year"
-                  className="block text-sm font-medium text-slate-700"
-                >
-                  Año
-                </label>
-                <input
-                  id="upload-year"
-                  type="number"
-                  value={uploadYear}
-                  onChange={(e) => setUploadYear(e.target.value)}
-                  min={2000}
-                  max={2100}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-                />
-              </div>
-              <div className="space-y-1 w-40">
-                <label
-                  htmlFor="upload-month"
-                  className="block text-sm font-medium text-slate-700"
-                >
-                  Mes{" "}
-                  <span className="font-normal text-slate-500">(obligatorio)</span>
-                </label>
-                <select
-                  id="upload-month"
-                  value={uploadMonth}
-                  onChange={(e) => setUploadMonth(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-                >
-                  <option value="">— Seleccionar mes —</option>
-                  {MONTH_NAMES.map((name, idx) => (
-                    <option key={idx + 1} value={idx + 1}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                type="button"
-                onClick={handleUpload}
-                disabled={uploading || !uploadFile || !uploadYear || !uploadMonth}
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {uploading ? "Subiendo..." : "Subir nómina"}
-              </button>
             </div>
-
-            {!uploadWorkerId && (
-              <p className="text-xs text-slate-500">
-                Sin trabajador seleccionado, el sistema intentará asignar
-                automáticamente por número de empleado en el nombre del archivo.
-              </p>
-            )}
 
             {uploadDuplicateWarning && (
               <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
