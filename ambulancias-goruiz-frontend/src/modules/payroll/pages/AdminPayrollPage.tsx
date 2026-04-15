@@ -19,6 +19,7 @@ import type {
   DuplicateWarning,
 } from "../domain/types";
 import FileUpload from "../../../components/common/FileUpload";
+import PayrollUploadTriggerButton from "../../../components/common/actions/PayrollUploadTriggerButton";
 import SendIconButton from "../../../components/common/actions/SendIconButton";
 import PayrollCompletionSnapshot from "../components/PayrollCompletionSnapshot";
 import ResolutionWorkspace from "../components/ResolutionWorkspace";
@@ -817,13 +818,15 @@ export default function AdminPayrollPage() {
                 <FileUpload
                   key={fileInputKey}
                   id="payroll-pdf-upload"
-                  label="Seleccionar PDF"
+                  label="Subir nómina"
                   accept=".pdf,application/pdf"
                   maxSizeMB={10}
                   onFileSelect={setUploadFile}
                   onError={(msg) => toastT.error(msg)}
                   hintWhenEmpty="Sin archivo seleccionado"
                   showSelectedList={false}
+                  useUploadActionTrigger
+                  uploadActionMode="single"
                 />
               </div>
               <div className="flex items-end gap-2.5 min-w-0">
@@ -1037,7 +1040,14 @@ export default function AdminPayrollPage() {
                       e.currentTarget.value = "";
                     }
                   }}
-                  className="block text-sm text-transparent file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 focus:outline-none"
+                  className="sr-only"
+                />
+                <PayrollUploadTriggerButton
+                  mode={batchFolderMode ? "folder" : "files"}
+                  onClick={() => {
+                    batchFileInputRef.current?.click();
+                  }}
+                  label={batchFolderMode ? "Subir carpeta" : "Subir varias"}
                 />
               </div>
               <div className="flex items-end gap-2.5 min-w-0">

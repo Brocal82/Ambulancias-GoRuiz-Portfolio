@@ -1,4 +1,6 @@
 import React from "react";
+import FileTriggerButton from "./actions/FileTriggerButton";
+import PayrollUploadTriggerButton from "./actions/PayrollUploadTriggerButton";
 
 type FileUploadProps = {
   id: string;
@@ -16,6 +18,9 @@ type FileUploadProps = {
   showSelectedList?: boolean; // NUEVO: si false, no renderiza la lista interna
   /** Si es false, no muestra el icono de adjunto (📎). Por defecto true (retrocompatible). */
   showAttachmentIcon?: boolean;
+  triggerVariant?: "neutral" | "primary";
+  useUploadActionTrigger?: boolean;
+  uploadActionMode?: "single" | "files" | "folder";
 };
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -33,8 +38,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
   disabled = false,
   showSelectedList = true,
   showAttachmentIcon = true,
+  triggerVariant = "neutral",
+  useUploadActionTrigger = false,
+  uploadActionMode = "single",
 }) => {
   const [files, setFiles] = React.useState<FileList | null>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   const maxBytes =
     typeof maxSizeMB === "number" ? maxSizeMB * 1024 * 1024 : undefined;
@@ -105,8 +114,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
   return (
     <div className={`space-y-1 ${className}`}>
       <input
+        ref={inputRef}
         type="file"
         id={id}
+        aria-label={label}
         accept={accept}
         multiple={multiple}
         onChange={handleChange}
@@ -114,24 +125,21 @@ const FileUpload: React.FC<FileUploadProps> = ({
         disabled={disabled}
       />
 
-      <label
-        htmlFor={id}
-        className={[
-          "inline-flex items-center rounded-md border border-slate-300",
-          showAttachmentIcon ? "gap-2" : "gap-0",
-          "bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700",
-          "shadow-sm transition-all duration-150",
-          disabled
-            ? "opacity-60 cursor-not-allowed"
-            : "hover:bg-slate-100 hover:border-slate-400 cursor-pointer",
-          "focus:outline-none focus:ring-2 focus:ring-slate-200",
-        ].join(" ")}
-      >
-        {showAttachmentIcon ? (
-          <span aria-hidden="true">📎</span>
-        ) : null}
-        <span>{label}</span>
-      </label>
+      {useUploadActionTrigger ? (
+        <PayrollUploadTriggerButton
+          mode={uploadActionMode}
+          onClick={() => inputRef.current?.click()}
+          disabled={disabled}
+          label={label}
+        />
+      ) : (
+        <FileTriggerButton
+          label={`${showAttachmentIcon ? "📎 " : ""}${label}`}
+          onClick={() => inputRef.current?.click()}
+          disabled={disabled}
+          variant={triggerVariant}
+        />
+      )}
 
       {/* Lista interna de seleccionados (ocultable) */}
       {showSelectedList ? (
