@@ -218,6 +218,37 @@ export async function uploadPayrollDocument(
         return;
       }
 
+      const existingDuplicate = await PayrollDocument.findOne({
+        companyId: companyOid,
+        workerId: workerOid,
+        year: parsedYear,
+        month: parsedMonth,
+        matchStatus: { $in: ["manual", "matched"] },
+        deletedAt: null,
+      })
+        .select("_id originalName createdAt")
+        .lean();
+
+      if (existingDuplicate) {
+        await deleteUploadedFileIfPresent(file);
+        res.status(200).json({
+          message:
+            "Nómina duplicada omitida (ya existe una nómina activa para este trabajador y período)",
+          status: "skipped_duplicate",
+          payrollId: String(existingDuplicate._id),
+          workerId,
+          matchStatus: "manual",
+          year: parsedYear,
+          month: parsedMonth,
+          possibleDuplicate: {
+            payrollId: String(existingDuplicate._id),
+            originalName: existingDuplicate.originalName,
+            createdAt: existingDuplicate.createdAt as Date,
+          },
+        });
+        return;
+      }
+
       const doc = await PayrollDocument.create({
         workerId: workerOid,
         companyId: companyOid,
@@ -258,6 +289,38 @@ export async function uploadPayrollDocument(
 
     if (matchResult.status === "matched") {
       const matchedWorkerOid = new mongoose.Types.ObjectId(matchResult.workerId);
+      const existingDuplicate = await PayrollDocument.findOne({
+        companyId: companyOid,
+        workerId: matchedWorkerOid,
+        year: parsedYear,
+        month: parsedMonth,
+        matchStatus: { $in: ["manual", "matched"] },
+        deletedAt: null,
+      })
+        .select("_id originalName createdAt")
+        .lean();
+
+      if (existingDuplicate) {
+        await deleteUploadedFileIfPresent(file);
+        res.status(200).json({
+          message:
+            "Nómina duplicada omitida (ya existe una nómina activa para este trabajador y período)",
+          status: "skipped_duplicate",
+          payrollId: String(existingDuplicate._id),
+          workerId: matchResult.workerId,
+          matchStatus: "matched",
+          parsedEmployeeNumber: matchResult.parsedEmployeeNumber,
+          year: parsedYear,
+          month: parsedMonth,
+          possibleDuplicate: {
+            payrollId: String(existingDuplicate._id),
+            originalName: existingDuplicate.originalName,
+            createdAt: existingDuplicate.createdAt as Date,
+          },
+        });
+        return;
+      }
+
       const doc = await PayrollDocument.create({
         workerId: matchedWorkerOid,
         companyId: companyOid,
@@ -368,6 +431,14 @@ type BatchResultItem =
       originalName: string;
       status: "failed";
       error: string;
+    }
+  | {
+      originalName: string;
+      status: "skipped_duplicate";
+      duplicateOfPayrollId: string;
+      duplicateOfOriginalName: string;
+      year?: number;
+      month?: number;
     };
 
 export async function uploadPayrollBatch(
@@ -482,6 +553,30 @@ export async function uploadPayrollBatch(
 
         if (matchResult.status === "matched") {
           const batchWorkerOid = new mongoose.Types.ObjectId(matchResult.workerId);
+          const existingDuplicate = await PayrollDocument.findOne({
+            companyId: companyOid,
+            workerId: batchWorkerOid,
+            year: parsedYear,
+            month: parsedMonth,
+            matchStatus: { $in: ["manual", "matched"] },
+            deletedAt: null,
+          })
+            .select("_id originalName")
+            .lean();
+
+          if (existingDuplicate) {
+            await deleteUploadedFileIfPresent(file);
+            duplicateWarnings++;
+            results.push({
+              originalName,
+              status: "skipped_duplicate",
+              duplicateOfPayrollId: String(existingDuplicate._id),
+              duplicateOfOriginalName: existingDuplicate.originalName,
+              ...periodFields,
+            });
+            continue;
+          }
+
           const doc = await PayrollDocument.create({
             workerId: batchWorkerOid,
             companyId: companyOid,
