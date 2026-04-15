@@ -813,10 +813,17 @@ export default function AdminPayrollPage() {
           workersMissingPayroll={missingWorkersForSummaryPeriod.length}
           onClick={() => {
             if (summaryCurrentDocs.length === 0) return;
-            setMonthlyDocsListExpanded((v) => !v);
+            if (reconciliationOpen) {
+              setReconciliationOpen(false);
+              setMonthlyDocsListExpanded(true);
+              setMonthlyDocsListMode("all");
+              return;
+            }
+            const nextExpanded = !monthlyDocsListExpanded;
+            setMonthlyDocsListExpanded(nextExpanded);
             setMonthlyDocsListMode("all");
           }}
-          monthlyListExpanded={monthlyDocsListExpanded}
+          monthlyListExpanded={monthlyDocsListExpanded && !reconciliationOpen}
           onToggleReconciliation={navigateToUnassignedPayrolls}
           reconciliationOpen={reconciliationOpen}
         />
