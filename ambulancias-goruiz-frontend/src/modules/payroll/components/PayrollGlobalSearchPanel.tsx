@@ -497,7 +497,7 @@ export default function PayrollGlobalSearchPanel({
                 className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
               >
                 <option value="">Todos</option>
-                {MONTH_NAMES.map((name, idx) => (
+                {PAYROLL_MONTH_NAMES.map((name, idx) => (
                   <option key={idx + 1} value={idx + 1}>
                     {name}
                   </option>
