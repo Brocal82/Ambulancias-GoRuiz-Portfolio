@@ -7,6 +7,7 @@ import { UsersApi } from "../../users";
 import type { User } from "../../users";
 import {
   listPayrollDocuments,
+  checkPayrollCoverage as apiCheckPayrollCoverage,
   uploadPayrollDocument as apiUpload,
   uploadPayrollBatch as apiBatchUpload,
   assignPayrollDocument as apiAssign,
@@ -17,6 +18,7 @@ import type {
   PayrollDocument,
   BatchUploadResponse,
   DuplicateWarning,
+  CoverageWorker,
 } from "../domain/types";
 import { PAYROLL_MONTH_NAMES } from "../domain/constants";
 import FileUpload from "../../../components/common/FileUpload";
@@ -33,6 +35,17 @@ import MatchBadge from "../components/MatchBadge";
 function workerDisplayName(w: PayrollDocument["workerId"]): string {
   if (!w) return "—";
   return `${w.lastName}, ${w.name}`;
+}
+
+function mapCoverageWorkerToUser(worker: CoverageWorker): User {
+  return {
+    _id: worker._id,
+    name: worker.name,
+    lastName: worker.lastName,
+    email: worker.email,
+    role: "worker",
+    employeeNumber: worker.employeeNumber ?? undefined,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -246,6 +259,10 @@ export default function AdminPayrollPage() {
   // ── data ───────────────────────────────────────────────────────────────────
   const [docs, setDocs] = useState<PayrollDocument[]>([]);
   const [workers, setWorkers] = useState<User[]>([]);
+  const [coverageMissingWorkers, setCoverageMissingWorkers] = useState<User[] | null>(null);
+  const [coverageTotalWorkers, setCoverageTotalWorkers] = useState<number | null>(
+    null,
+  );
 
   // ── working period context ─────────────────────────────────────────────────
   // Drives the Period Context Bar, the header summary, and the document table
@@ -379,6 +396,33 @@ export default function AdminPayrollPage() {
       .then((all) => setWorkers(all.filter((u) => u.role === "worker")))
       .catch(() => toastT.error("Error al cargar los trabajadores"));
   }, [token, fetchDocs]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    let cancelled = false;
+    setCoverageMissingWorkers(null);
+    setCoverageTotalWorkers(null);
+
+    void apiCheckPayrollCoverage(workingYear, workingMonth)
+      .then((coverage) => {
+        if (cancelled) return;
+        setCoverageMissingWorkers(
+          coverage.missingWorkers.map(mapCoverageWorkerToUser),
+        );
+        setCoverageTotalWorkers(coverage.totalWorkers);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // Keep existing local fallback if payroll coverage check fails.
+        setCoverageMissingWorkers(null);
+        setCoverageTotalWorkers(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, workingYear, workingMonth]);
 
   // Initialize / sync workspace from route: /admin/payroll/month/:year/:month
   useEffect(() => {
@@ -652,9 +696,13 @@ export default function AdminPayrollPage() {
       )
       .map((d) => d.workerId!._id),
   );
-  const missingWorkersForSummaryPeriod = hasSummaryPayrollDocs
+  const localMissingWorkersForSummaryPeriod = hasSummaryPayrollDocs
     ? workers.filter((w) => !assignedWorkerIdsForSummaryPeriod.has(w._id))
     : [];
+  const missingWorkersForSummaryPeriod = hasSummaryPayrollDocs
+    ? (coverageMissingWorkers ?? localMissingWorkersForSummaryPeriod)
+    : [];
+  const totalWorkersForSummaryPeriod = coverageTotalWorkers ?? workers.length;
   const monthlySortedDocs = [...summaryCurrentDocs].sort((a, b) => {
     if (a.matchStatus === "unmatched" && b.matchStatus !== "unmatched") return -1;
     if (a.matchStatus !== "unmatched" && b.matchStatus === "unmatched") return 1;
@@ -761,7 +809,7 @@ export default function AdminPayrollPage() {
           assignedPayrollDocs={summaryConfirmed}
           unassignedPayrollDocs={summaryPending}
           coveredWorkers={summaryCoveredWorkers}
-          totalWorkers={workers.length}
+          totalWorkers={totalWorkersForSummaryPeriod}
           workersMissingPayroll={missingWorkersForSummaryPeriod.length}
           onClick={() => {
             if (summaryCurrentDocs.length === 0) return;
