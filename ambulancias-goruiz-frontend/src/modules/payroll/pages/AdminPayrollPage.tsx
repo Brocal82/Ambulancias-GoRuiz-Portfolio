@@ -12,6 +12,7 @@ import {
   assignPayrollDocument as apiAssign,
   invalidatePayrollDocument as apiInvalidate,
 } from "../domain/api";
+import { matchesPayrollDocumentText } from "../domain/predicates";
 import type {
   PayrollDocument,
   BatchUploadResponse,
@@ -667,17 +668,7 @@ export default function AdminPayrollPage() {
   const monthlyListFilterTrim = monthlyListFilter.trim().toLowerCase();
   const monthlyFilteredDocs = monthlyListFilterTrim
     ? monthlyBaseDocs.filter((doc) => {
-      const q = monthlyListFilterTrim;
-      const inFilename = doc.originalName.toLowerCase().includes(q);
-      const inWorkerName = doc.workerId
-        ? `${doc.workerId.name} ${doc.workerId.lastName}`
-          .toLowerCase()
-          .includes(q)
-        : false;
-      const inEmpNum =
-        (doc.workerId?.employeeNumber ?? "").toLowerCase().includes(q) ||
-        (doc.parsedEmployeeNumber ?? "").toLowerCase().includes(q);
-      return inFilename || inWorkerName || inEmpNum;
+      return matchesPayrollDocumentText(doc, monthlyListFilterTrim);
     })
     : monthlyBaseDocs;
 

@@ -5,6 +5,7 @@ import { toastT } from "../../../utils/toast";
 import type { PayrollDocument } from "../domain/types";
 import MatchBadge from "./MatchBadge";
 import { PAYROLL_MONTH_NAMES } from "../domain/constants";
+import { matchesPayrollDocumentText } from "../domain/predicates";
 
 const HUB_LOOKUP_MAX_RESULTS = 12;
 
@@ -94,16 +95,7 @@ export default function PayrollGlobalSearchPanel({
             return false;
           if (tableSearch.trim()) {
             const q = tableSearch.trim().toLowerCase();
-            const inFilename = doc.originalName.toLowerCase().includes(q);
-            const inWorkerName = doc.workerId
-              ? `${doc.workerId.name} ${doc.workerId.lastName}`
-                  .toLowerCase()
-                  .includes(q)
-              : false;
-            const inEmpNum =
-              (doc.workerId?.employeeNumber ?? "").toLowerCase().includes(q) ||
-              (doc.parsedEmployeeNumber ?? "").toLowerCase().includes(q);
-            if (!inFilename && !inWorkerName && !inEmpNum) return false;
+            if (!matchesPayrollDocumentText(doc, q)) return false;
           }
           return true;
         })
