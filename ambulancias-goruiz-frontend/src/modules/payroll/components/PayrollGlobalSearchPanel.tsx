@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { openSecureFile } from "../../../utils/openSecureFile";
 import { toastT } from "../../../utils/toast";
-import type { PayrollDocument, PayrollMatchStatus } from "../domain/types";
+import type { PayrollDocument } from "../domain/types";
+import MatchBadge from "./MatchBadge";
 
 const HUB_LOOKUP_MAX_RESULTS = 12;
 
@@ -20,28 +21,6 @@ function periodLabel(year?: number, month?: number): string {
   if (!year && !month) return "—";
   const m = month ? MONTH_NAMES[month - 1] : "";
   return [m, year].filter(Boolean).join(" ");
-}
-
-function MatchBadge({ status }: { status: PayrollMatchStatus }) {
-  if (status === "matched") {
-    return (
-      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-        Auto-asignada
-      </span>
-    );
-  }
-  if (status === "unmatched") {
-    return (
-      <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
-        Sin asignar
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/20">
-      Manual
-    </span>
-  );
 }
 
 export interface PayrollGlobalSearchPanelProps {
