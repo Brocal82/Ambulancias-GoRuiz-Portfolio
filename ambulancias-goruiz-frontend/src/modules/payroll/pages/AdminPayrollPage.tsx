@@ -941,14 +941,9 @@ export default function AdminPayrollPage() {
 
         {activeUploadPanel === "batch" ? (
           <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
-            <h2 className="text-base font-semibold text-slate-800 mb-1">
+            <h2 className="text-sm font-semibold text-slate-800 mb-2">
               Subir múltiples nóminas (lote)
             </h2>
-            <p className="text-xs text-slate-500 mb-3">
-              Selecciona hasta 20 PDFs. El sistema intentará asignar cada archivo
-              automáticamente por número de empleado. Los no asignados quedarán
-              pendientes de revisión.
-            </p>
             <div className="flex items-center gap-3 mb-4">
               <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
                 <button
@@ -984,14 +979,9 @@ export default function AdminPayrollPage() {
                   Carpeta
                 </button>
               </div>
-              <span className="text-xs text-slate-400">
-                {batchFolderMode
-                  ? "El navegador mostrará el selector de carpeta. Solo se subirán los PDFs que contenga."
-                  : "Selección de archivos individuales (por defecto)"}
-              </span>
             </div>
-            <div className="flex flex-wrap gap-4 items-end">
-              <div className="space-y-1">
+            <div className="flex flex-wrap lg:flex-nowrap items-end gap-4">
+              <div className="shrink-0">
                 <label
                   htmlFor="batch-pdf-upload"
                   className="block text-sm font-medium text-slate-700"
@@ -1047,68 +1037,89 @@ export default function AdminPayrollPage() {
                       e.currentTarget.value = "";
                     }
                   }}
-                  className="block text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 focus:outline-none"
-                />
-                {batchFiles.length > 0 && (
-                  <p className="text-xs text-slate-500">
-                    {batchFiles.length} archivo{batchFiles.length !== 1 ? "s" : ""} seleccionado{batchFiles.length !== 1 ? "s" : ""}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-1 w-24">
-                <label
-                  htmlFor="batch-year"
-                  className="block text-sm font-medium text-slate-700"
-                >
-                  Año
-                </label>
-                <input
-                  id="batch-year"
-                  type="number"
-                  value={batchYear}
-                  onChange={(e) => setBatchYear(e.target.value)}
-                  min={2000}
-                  max={2100}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                  className="block text-sm text-transparent file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 focus:outline-none"
                 />
               </div>
-              <div className="space-y-1 w-40">
-                <label
-                  htmlFor="batch-month"
-                  className="block text-sm font-medium text-slate-700"
-                >
-                  Mes{" "}
-                  <span className="font-normal text-slate-500">(obligatorio)</span>
-                </label>
-                <select
-                  id="batch-month"
-                  value={batchMonth}
-                  onChange={(e) => setBatchMonth(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
-                >
-                  <option value="">— Seleccionar mes —</option>
-                  {MONTH_NAMES.map((name, idx) => (
-                    <option key={idx + 1} value={idx + 1}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex items-end gap-2.5 min-w-0">
+                <div className="space-y-1 w-24 shrink-0">
+                  <label
+                    htmlFor="batch-year"
+                    className="block text-sm font-medium text-slate-700"
+                  >
+                    Año
+                  </label>
+                  <input
+                    id="batch-year"
+                    type="number"
+                    value={batchYear}
+                    onChange={(e) => setBatchYear(e.target.value)}
+                    min={2000}
+                    max={2100}
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                  />
+                </div>
+                <div className="space-y-1 w-36 shrink-0">
+                  <label
+                    htmlFor="batch-month"
+                    className="block text-sm font-medium text-slate-700"
+                  >
+                    Mes
+                  </label>
+                  <select
+                    id="batch-month"
+                    value={batchMonth}
+                    onChange={(e) => setBatchMonth(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100"
+                  >
+                    <option value="">— Seleccionar mes —</option>
+                    {MONTH_NAMES.map((name, idx) => (
+                      <option key={idx + 1} value={idx + 1}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={handleBatchUpload}
-                disabled={
-                  batchUploading ||
-                  batchFiles.length === 0 ||
-                  !batchYear ||
-                  !batchMonth
-                }
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {batchUploading
-                  ? "Subiendo..."
-                  : `Subir ${batchFiles.length > 0 ? batchFiles.length : ""} nómina${batchFiles.length !== 1 ? "s" : ""}`}
-              </button>
+              <div className="w-full lg:w-auto lg:ml-auto flex items-center gap-3 lg:justify-end">
+                <div
+                  className={`w-[220px] min-w-[180px] max-w-[260px] text-right text-xs leading-tight truncate ${batchFiles.length > 0 ? "text-blue-600 font-medium" : "text-slate-500"}`}
+                  title={
+                    batchFiles.length > 0
+                      ? `${batchFiles.length} archivo${batchFiles.length !== 1 ? "s" : ""} seleccionado${batchFiles.length !== 1 ? "s" : ""}`
+                      : "Sin archivos seleccionados"
+                  }
+                >
+                  {batchFiles.length > 0
+                    ? `${batchFiles.length} archivo${batchFiles.length !== 1 ? "s" : ""} seleccionado${batchFiles.length !== 1 ? "s" : ""}`
+                    : "Sin archivos seleccionados"}
+                </div>
+                {batchFiles.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setBatchFiles([])}
+                    aria-label="Quitar archivos seleccionados"
+                    title="Quitar archivos"
+                    className="shrink-0 text-red-400 hover:text-red-600 text-sm leading-none cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                ) : null}
+                <SendIconButton
+                  onClick={handleBatchUpload}
+                  disabled={
+                    batchUploading ||
+                    batchFiles.length === 0 ||
+                    !batchYear ||
+                    !batchMonth
+                  }
+                  title={
+                    batchUploading
+                      ? "Subiendo lote..."
+                      : `Subir ${batchFiles.length > 0 ? batchFiles.length : ""} nómina${batchFiles.length !== 1 ? "s" : ""}`
+                  }
+                  className="shrink-0"
+                />
+              </div>
             </div>
             {batchResults && (
               <div className="mt-5 space-y-3">
