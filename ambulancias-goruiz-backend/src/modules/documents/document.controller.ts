@@ -303,3 +303,44 @@ export async function deleteCompanyDocument(req: Request, res: Response) {
   }
 }
 
+export async function deleteCompanyDocumentsBatch(req: Request, res: Response) {
+  const companyResult = requireCompanyForAdmin(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
+
+  const { uploadBatchId } = req.params;
+  if (!uploadBatchId || !mongoose.Types.ObjectId.isValid(uploadBatchId)) {
+    res.status(400).json({ message: "uploadBatchId no es un ObjectId válido" });
+    return;
+  }
+
+  try {
+    const companyObjectId = new mongoose.Types.ObjectId(companyResult.companyId);
+    const batchObjectId = new mongoose.Types.ObjectId(uploadBatchId);
+
+    const result = await CompanyDocument.updateMany(
+      {
+        companyId: companyObjectId,
+        uploadBatchId: batchObjectId,
+        deletedAt: null,
+      },
+      { $set: { deletedAt: new Date() } },
+    );
+
+    if (!result.modifiedCount) {
+      res.status(404).json({ message: "No se encontraron documentos para ese lote" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Lote de documentos eliminado correctamente",
+      deletedCount: result.modifiedCount,
+    });
+  } catch (err) {
+    console.error("Error al eliminar lote de documentos:", err);
+    res.status(500).json({ message: "Error al eliminar el lote de documentos" });
+  }
+}
+

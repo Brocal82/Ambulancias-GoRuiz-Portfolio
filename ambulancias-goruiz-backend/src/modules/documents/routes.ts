@@ -4,6 +4,7 @@ import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
 import { upload } from "../../middlewares/uploadMiddleware";
 import {
+  deleteCompanyDocumentsBatch,
   deleteCompanyDocument,
   listCompanyDocuments,
   uploadCompanyDocument,
@@ -34,6 +35,13 @@ router.get(
   authenticateToken,
   authorizeRole("admin"),
   listCompanyDocuments,
+);
+
+router.delete(
+  "/batch/:uploadBatchId",
+  authenticateToken,
+  authorizeRole("admin"),
+  deleteCompanyDocumentsBatch,
 );
 
 router.delete(

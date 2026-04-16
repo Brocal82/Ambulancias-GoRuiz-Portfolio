@@ -190,6 +190,36 @@ const AdminDocumentsPage = () => {
     }
   };
 
+  const handleDeleteBatch = async (uploadBatchId: string, count: number) => {
+    if (
+      !window.confirm(
+        `¿Eliminar este lote de ${count} documento${count !== 1 ? "s" : ""}? Los accesos futuros quedarán bloqueados, pero los archivos se conservarán en el sistema.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response = await axiosInstance.delete<{
+        message: string;
+        deletedCount?: number;
+      }>(`/api/documents/batch/${uploadBatchId}`);
+      toastT.success(
+        response.data.deletedCount
+          ? `Lote eliminado correctamente (${response.data.deletedCount} documento${response.data.deletedCount !== 1 ? "s" : ""})`
+          : response.data.message || "Lote eliminado correctamente",
+      );
+      setExpandedBatchIds((prev) => {
+        const next = { ...prev };
+        delete next[uploadBatchId];
+        return next;
+      });
+      await fetchDocuments();
+    } catch (err) {
+      toastT.apiError(err, "Error al eliminar el lote de documentos");
+    }
+  };
+
   const batchSelection = batchSelectionSummary(batchFiles, folderMode);
 
   const toggleBatchExpanded = (uploadBatchId: string) => {
@@ -439,8 +469,19 @@ const AdminDocumentsPage = () => {
                           <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
                             {row.docs[0].readCount}
                           </td>
-                          <td className="px-4 py-2 text-right text-xs text-slate-500">
-                            —
+                          <td className="px-4 py-2 text-right">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void handleDeleteBatch(
+                                  row.uploadBatchId,
+                                  row.docs.length,
+                                )
+                              }
+                              className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
+                            >
+                              Eliminar lote
+                            </button>
                           </td>
                         </tr>
                         {expandedBatchIds[row.uploadBatchId] ? (
