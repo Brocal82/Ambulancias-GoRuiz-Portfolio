@@ -12,6 +12,7 @@ import type {
 } from "../domain/types";
 import PayrollGlobalSearchPanel from "../components/PayrollGlobalSearchPanel";
 import { PAYROLL_MONTH_NAMES } from "../domain/constants";
+import BackButton from "../../../components/ui/BackButton";
 
 type MonthCellStatus = "empty" | "incomplete" | "complete";
 
@@ -85,6 +86,7 @@ export default function PayrollYearHubPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <BackButton to="/admin/payroll" />
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Nóminas

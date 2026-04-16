@@ -6,6 +6,7 @@ import { openSecureFile } from "../../../utils/openSecureFile";
 import axiosInstance from "../../../api/axios";
 import PayrollUploadTriggerButton from "../../../components/common/actions/PayrollUploadTriggerButton";
 import SendIconButton from "../../../components/common/actions/SendIconButton";
+import BackButton from "../../../components/ui/BackButton";
 
 type AdminDocument = {
   id: string;
@@ -99,6 +100,7 @@ const AdminDocumentsPage = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <BackButton to="/admin/payroll" />
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Documentos / Información para trabajador
