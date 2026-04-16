@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toastT } from "../../../utils/toast";
@@ -16,7 +16,92 @@ type AdminDocument = {
   createdAt: string;
   totalRecipients: number;
   readCount: number;
+  /** Present for batch uploads; absent on legacy rows. */
+  uploadBatchId?: string | null;
 };
+
+type DocumentDisplayRow =
+  | { kind: "single"; doc: AdminDocument }
+  | { kind: "group"; uploadBatchId: string; docs: AdminDocument[] };
+
+/** Groups multi-file batches by stable `uploadBatchId`; singles and legacy rows stay individual. */
+function buildDocumentDisplayRows(docs: AdminDocument[]): DocumentDisplayRow[] {
+  const byBatch = new Map<string, AdminDocument[]>();
+  for (const d of docs) {
+    const bid = d.uploadBatchId;
+    if (bid) {
+      const arr = byBatch.get(bid) ?? [];
+      arr.push(d);
+      byBatch.set(bid, arr);
+    }
+  }
+
+  const inMultiFileBatch = new Set<string>();
+  for (const [, arr] of byBatch) {
+    if (arr.length > 1) {
+      for (const d of arr) {
+        inMultiFileBatch.add(d.id);
+      }
+    }
+  }
+
+  const rows: DocumentDisplayRow[] = [];
+
+  for (const [uploadBatchId, arr] of byBatch) {
+    if (arr.length > 1) {
+      const sorted = [...arr].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+      rows.push({ kind: "group", uploadBatchId, docs: sorted });
+    }
+  }
+
+  for (const d of docs) {
+    if (inMultiFileBatch.has(d.id)) continue;
+    rows.push({ kind: "single", doc: d });
+  }
+
+  rows.sort((a, b) => {
+    const ta =
+      a.kind === "group"
+        ? new Date(a.docs[0].createdAt).getTime()
+        : new Date(a.doc.createdAt).getTime();
+    const tb =
+      b.kind === "group"
+        ? new Date(b.docs[0].createdAt).getTime()
+        : new Date(b.doc.createdAt).getTime();
+    return tb - ta;
+  });
+
+  return rows;
+}
+
+function batchSelectionSummary(
+  files: File[],
+  folderMode: boolean,
+): { text: string; title: string } {
+  const n = files.length;
+  if (n === 0) {
+    return {
+      text: "Sin archivos seleccionados",
+      title: "Sin archivos seleccionados",
+    };
+  }
+  if (folderMode) {
+    const text = `📁 ${n} archivo${n !== 1 ? "s" : ""} seleccionado${n !== 1 ? "s" : ""}`;
+    return { text, title: text };
+  }
+  if (n > 1) {
+    const text = `📎 ${n} archivos seleccionados`;
+    return { text, title: text };
+  }
+  const name = files[0]!.name;
+  return {
+    text: "1 archivo seleccionado",
+    title: name,
+  };
+}
 
 const AdminDocumentsPage = () => {
   const [documents, setDocuments] = useState<AdminDocument[]>([]);
@@ -26,6 +111,14 @@ const AdminDocumentsPage = () => {
   const batchInputRef = useRef<HTMLInputElement | null>(null);
   const [batchInputKey, setBatchInputKey] = useState(0);
   const [folderMode, setFolderMode] = useState(false);
+  const [expandedBatchIds, setExpandedBatchIds] = useState<Record<string, boolean>>(
+    {},
+  );
+
+  const displayRows = useMemo(
+    () => buildDocumentDisplayRows(documents),
+    [documents],
+  );
 
   const fetchDocuments = async () => {
     setLoading(true);
@@ -96,6 +189,20 @@ const AdminDocumentsPage = () => {
       toastT.apiError(err, "Error al eliminar el documento");
     }
   };
+
+  const batchSelection = batchSelectionSummary(batchFiles, folderMode);
+
+  const toggleBatchExpanded = (uploadBatchId: string) => {
+    setExpandedBatchIds((prev) => ({
+      ...prev,
+      [uploadBatchId]: !prev[uploadBatchId],
+    }));
+  };
+
+  const formatUploadedAt = (createdAt: string) =>
+    createdAt
+      ? format(new Date(createdAt), "dd/MM/yyyy HH:mm", { locale: es })
+      : "—";
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -195,15 +302,9 @@ const AdminDocumentsPage = () => {
             <div className="w-full lg:w-auto lg:ml-auto flex items-center gap-3 lg:justify-end">
               <div
                 className={`w-[220px] min-w-[180px] max-w-[260px] text-right text-xs leading-tight truncate ${batchFiles.length > 0 ? "text-blue-600 font-medium" : "text-slate-500"}`}
-                title={
-                  batchFiles.length > 0
-                    ? `${batchFiles.length} archivo${batchFiles.length !== 1 ? "s" : ""} seleccionado${batchFiles.length !== 1 ? "s" : ""}`
-                    : "Sin archivos seleccionados"
-                }
+                title={batchSelection.title}
               >
-                {batchFiles.length > 0
-                  ? `${batchFiles.length} archivo${batchFiles.length !== 1 ? "s" : ""} seleccionado${batchFiles.length !== 1 ? "s" : ""}`
-                  : "Sin archivos seleccionados"}
+                {batchSelection.text}
               </div>
             {batchFiles.length > 0 ? (
               <button
@@ -268,50 +369,135 @@ const AdminDocumentsPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {documents.map((doc) => (
-                    <tr key={doc.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-2 max-w-xs">
-                        <span
-                          className="text-sm text-slate-800 break-words"
-                          title={doc.originalName}
-                        >
-                          {doc.originalName}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 text-sm text-slate-700 whitespace-nowrap">
-                        {doc.createdAt
-                          ? format(new Date(doc.createdAt), "dd/MM/yyyy HH:mm", {
-                              locale: es,
-                            })
-                          : "—"}
-                      </td>
-                      <td className="px-4 py-2 text-xs text-slate-600 whitespace-nowrap">
-                        {doc.mimeType}
-                      </td>
-                      <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
-                        {doc.totalRecipients}
-                      </td>
-                      <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
-                        {doc.readCount}
-                      </td>
-                      <td className="px-4 py-2 text-right space-x-2">
-                        <button
-                          type="button"
-                          onClick={() => void handleOpen(doc)}
-                          className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                        >
-                          Abrir
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleDelete(doc)}
-                          className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
-                        >
-                          Eliminar
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {displayRows.map((row) =>
+                    row.kind === "single" ? (
+                      <tr key={row.doc.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-2 max-w-xs">
+                          <span
+                            className="text-sm text-slate-800 break-words"
+                            title={row.doc.originalName}
+                          >
+                            {row.doc.originalName}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-sm text-slate-700 whitespace-nowrap">
+                          {formatUploadedAt(row.doc.createdAt)}
+                        </td>
+                        <td className="px-4 py-2 text-xs text-slate-600 whitespace-nowrap">
+                          {row.doc.mimeType}
+                        </td>
+                        <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                          {row.doc.totalRecipients}
+                        </td>
+                        <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                          {row.doc.readCount}
+                        </td>
+                        <td className="px-4 py-2 text-right space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => void handleOpen(row.doc)}
+                            className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                          >
+                            Abrir
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDelete(row.doc)}
+                            className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
+                          >
+                            Eliminar
+                          </button>
+                        </td>
+                      </tr>
+                    ) : (
+                      <Fragment key={row.uploadBatchId}>
+                        <tr className="hover:bg-slate-50">
+                          <td className="px-4 py-2 max-w-xs">
+                            <button
+                              type="button"
+                              onClick={() => toggleBatchExpanded(row.uploadBatchId)}
+                              aria-expanded={!!expandedBatchIds[row.uploadBatchId]}
+                              className="inline-flex max-w-full items-center gap-2 text-left text-sm font-medium text-slate-800 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 rounded"
+                            >
+                              <span className="shrink-0 text-slate-500" aria-hidden>
+                                {expandedBatchIds[row.uploadBatchId] ? "▼" : "▶"}
+                              </span>
+                              <span className="break-words">
+                                📁 Lote de documentos ({row.docs.length} archivos)
+                              </span>
+                            </button>
+                          </td>
+                          <td className="px-4 py-2 text-sm text-slate-700 whitespace-nowrap">
+                            {formatUploadedAt(row.docs[0].createdAt)}
+                          </td>
+                          <td className="px-4 py-2 text-xs text-slate-500 whitespace-nowrap">
+                            —
+                          </td>
+                          <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                            {row.docs[0].totalRecipients}
+                          </td>
+                          <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                            {row.docs[0].readCount}
+                          </td>
+                          <td className="px-4 py-2 text-right text-xs text-slate-500">
+                            —
+                          </td>
+                        </tr>
+                        {expandedBatchIds[row.uploadBatchId] ? (
+                          <tr className="bg-slate-50/80">
+                            <td colSpan={6} className="px-4 py-2 pl-10">
+                              <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                                <table className="min-w-full text-left text-sm">
+                                  <tbody className="divide-y divide-slate-100">
+                                    {row.docs.map((doc) => (
+                                      <tr key={doc.id} className="hover:bg-slate-50">
+                                        <td className="px-3 py-2 max-w-xs">
+                                          <span
+                                            className="text-sm text-slate-800 break-words"
+                                            title={doc.originalName}
+                                          >
+                                            {doc.originalName}
+                                          </span>
+                                        </td>
+                                        <td className="px-3 py-2 text-sm text-slate-700 whitespace-nowrap">
+                                          {formatUploadedAt(doc.createdAt)}
+                                        </td>
+                                        <td className="px-3 py-2 text-xs text-slate-600 whitespace-nowrap">
+                                          {doc.mimeType}
+                                        </td>
+                                        <td className="px-3 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                                          {doc.totalRecipients}
+                                        </td>
+                                        <td className="px-3 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                                          {doc.readCount}
+                                        </td>
+                                        <td className="px-3 py-2 text-right space-x-2 whitespace-nowrap">
+                                          <button
+                                            type="button"
+                                            onClick={() => void handleOpen(doc)}
+                                            className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                          >
+                                            Abrir
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => void handleDelete(doc)}
+                                            className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
+                                          >
+                                            Eliminar
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
+                    ),
+                  )}
                 </tbody>
               </table>
             </div>

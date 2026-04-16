@@ -4,6 +4,8 @@ export interface ICompanyDocument extends MongooseDocument {
   companyId: Types.ObjectId;
   uploadedBy: Types.ObjectId;
   targetWorkerId?: Types.ObjectId | null;
+  /** Same id for all files created in one POST /api/documents/upload/batch request; null for single uploads. */
+  uploadBatchId?: Types.ObjectId | null;
   originalName: string;
   filename: string;
   mimeType: string;
@@ -29,6 +31,12 @@ const CompanyDocumentSchema = new Schema<ICompanyDocument>(
     targetWorkerId: {
       type: Schema.Types.ObjectId,
       ref: "User",
+      required: false,
+      default: null,
+      index: true,
+    },
+    uploadBatchId: {
+      type: Schema.Types.ObjectId,
       required: false,
       default: null,
       index: true,

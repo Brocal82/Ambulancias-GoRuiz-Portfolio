@@ -17,8 +17,16 @@ async function createCompanyDocumentWithDeliveries(params: {
   file: UploadedFile;
   targetWorkerId?: mongoose.Types.ObjectId | null;
   workersCache?: { _id: unknown }[];
+  uploadBatchId?: mongoose.Types.ObjectId | null;
 }) {
-  const { companyId, adminUserId, file, targetWorkerId, workersCache } = params;
+  const {
+    companyId,
+    adminUserId,
+    file,
+    targetWorkerId,
+    workersCache,
+    uploadBatchId,
+  } = params;
 
   if (!file || !file.filename || !file.originalname || !file.mimetype) {
     throw new Error("FILE_INVALID");
@@ -28,6 +36,7 @@ async function createCompanyDocumentWithDeliveries(params: {
     companyId,
     uploadedBy: adminUserId,
     targetWorkerId: targetWorkerId ?? null,
+    uploadBatchId: uploadBatchId ?? null,
     originalName: file.originalname,
     filename: file.filename,
     mimeType: file.mimetype,
@@ -136,6 +145,7 @@ export async function uploadCompanyDocumentsBatch(req: Request, res: Response) {
       .select("_id")
       .lean();
 
+    const uploadBatchId = new mongoose.Types.ObjectId();
     const createdDocs = [];
     for (const file of files) {
       const doc = await createCompanyDocumentWithDeliveries({
@@ -143,6 +153,7 @@ export async function uploadCompanyDocumentsBatch(req: Request, res: Response) {
         adminUserId,
         file,
         workersCache: workers,
+        uploadBatchId,
       });
       createdDocs.push({
         id: doc._id,
@@ -177,7 +188,9 @@ export async function listCompanyDocuments(req: Request, res: Response) {
       companyId: companyObjectId,
       deletedAt: null,
     })
-      .select("_id originalName filename mimeType createdAt targetWorkerId")
+      .select(
+        "_id originalName filename mimeType createdAt targetWorkerId uploadBatchId",
+      )
       .sort({ createdAt: -1 })
       .lean();
 
@@ -238,6 +251,7 @@ export async function listCompanyDocuments(req: Request, res: Response) {
           mimeType: d.mimeType,
           createdAt: d.createdAt,
           targetWorkerId: d.targetWorkerId ?? null,
+          uploadBatchId: d.uploadBatchId ? String(d.uploadBatchId) : null,
           totalRecipients: stats.totalRecipients,
           readCount: stats.readCount,
         };
