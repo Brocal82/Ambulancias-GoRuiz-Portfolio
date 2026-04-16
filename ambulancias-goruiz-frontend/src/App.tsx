@@ -45,6 +45,9 @@ import AdminTeamsPage from "./modules/teams/pages/AdminTeamsPage";
 import AdminSickLeavesPage from "./modules/sick/pages/AdminSickLeavesPage";
 import AdminPayrollPage from "./modules/payroll/pages/AdminPayrollPage";
 import PayrollYearHubPage from "./modules/payroll/pages/PayrollYearHubPage";
+import AdminPayrollModuleHubPage from "./modules/payroll/pages/AdminPayrollModuleHubPage";
+import AdminPayrollDocsPlaceholderPage from "./modules/payroll/pages/AdminPayrollDocsPlaceholderPage";
+import AdminPayrollSignaturePlaceholderPage from "./modules/payroll/pages/AdminPayrollSignaturePlaceholderPage";
 import WorkerPayrollPage from "./modules/payroll/pages/WorkerPayrollPage";
 
 function RedirectToCurrentPayrollMonth() {
@@ -117,7 +120,16 @@ export default function App() {
                 <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
                 <Route path="/admin/teams" element={<AdminTeamsPage />} />
                 <Route path="/admin/sick-leaves" element={<AdminSickLeavesPage />} />
-                <Route path="/admin/payroll" element={<PayrollYearHubPage />} />
+                <Route path="/admin/payroll" element={<AdminPayrollModuleHubPage />} />
+                <Route path="/admin/payroll/nominas" element={<PayrollYearHubPage />} />
+                <Route
+                  path="/admin/payroll/docs"
+                  element={<AdminPayrollDocsPlaceholderPage />}
+                />
+                <Route
+                  path="/admin/payroll/signature"
+                  element={<AdminPayrollSignaturePlaceholderPage />}
+                />
                 <Route
                   path="/admin/payroll/month/:year/:month"
                   element={<AdminPayrollPage />}

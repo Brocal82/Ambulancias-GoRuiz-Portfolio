@@ -733,7 +733,7 @@ export default function AdminPayrollPage() {
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <div>
           <Link
-            to="/admin/payroll"
+            to="/admin/payroll/nominas"
             className="text-sm font-medium text-slate-600 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 rounded"
           >
             ← Resumen anual
