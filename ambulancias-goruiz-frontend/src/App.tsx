@@ -46,7 +46,7 @@ import AdminSickLeavesPage from "./modules/sick/pages/AdminSickLeavesPage";
 import AdminPayrollPage from "./modules/payroll/pages/AdminPayrollPage";
 import PayrollYearHubPage from "./modules/payroll/pages/PayrollYearHubPage";
 import AdminPayrollModuleHubPage from "./modules/payroll/pages/AdminPayrollModuleHubPage";
-import AdminPayrollDocsPlaceholderPage from "./modules/payroll/pages/AdminPayrollDocsPlaceholderPage";
+import AdminDocumentsPage from "./modules/documents/pages/AdminDocumentsPage";
 import AdminPayrollSignaturePlaceholderPage from "./modules/payroll/pages/AdminPayrollSignaturePlaceholderPage";
 import WorkerPayrollPage from "./modules/payroll/pages/WorkerPayrollPage";
 
@@ -124,7 +124,7 @@ export default function App() {
                 <Route path="/admin/payroll/nominas" element={<PayrollYearHubPage />} />
                 <Route
                   path="/admin/payroll/docs"
-                  element={<AdminPayrollDocsPlaceholderPage />}
+                  element={<AdminDocumentsPage />}
                 />
                 <Route
                   path="/admin/payroll/signature"

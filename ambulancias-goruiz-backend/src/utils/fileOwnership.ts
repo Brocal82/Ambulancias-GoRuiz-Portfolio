@@ -3,6 +3,7 @@ import User from "../modules/users/models/user.model";
 import SickLeave from "../modules/sick-leaves/models/sick-leave.model";
 import { Message } from "../modules/messages/models/message.model";
 import PayrollDocument from "../modules/payroll/models/payroll-document.model";
+import { CompanyDocument } from "../modules/documents/models/document.model";
 import { isSameCompany } from "./requireCompany";
 
 /**
@@ -129,6 +130,23 @@ export async function canAccessFile(
       .select("_id")
       .lean();
     if (adminPayroll) return true;
+  }
+
+  // ── 7. CompanyDocument — admin of same company ─────────────────────────────
+  if (
+    userRole === "admin" &&
+    companyId &&
+    mongoose.Types.ObjectId.isValid(companyId)
+  ) {
+    const companyOid = new mongoose.Types.ObjectId(companyId);
+    const adminDoc = await CompanyDocument.findOne({
+      companyId: companyOid,
+      fileUrl: storedPath,
+      deletedAt: null,
+    })
+      .select("_id")
+      .lean();
+    if (adminDoc) return true;
   }
 
   return false;
