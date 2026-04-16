@@ -4,8 +4,10 @@ import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
 import { upload } from "../../middlewares/uploadMiddleware";
 import {
+  deleteCompanyDocument,
   listCompanyDocuments,
   uploadCompanyDocument,
+  uploadCompanyDocumentsBatch,
 } from "./document.controller";
 import type { ErrorRequestHandler } from "express";
 
@@ -19,11 +21,26 @@ router.post(
   uploadCompanyDocument,
 );
 
+router.post(
+  "/upload/batch",
+  authenticateToken,
+  authorizeRole("admin"),
+  upload.array("files", 50),
+  uploadCompanyDocumentsBatch,
+);
+
 router.get(
   "/",
   authenticateToken,
   authorizeRole("admin"),
   listCompanyDocuments,
+);
+
+router.delete(
+  "/:id",
+  authenticateToken,
+  authorizeRole("admin"),
+  deleteCompanyDocument,
 );
 
 const multerErrorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
