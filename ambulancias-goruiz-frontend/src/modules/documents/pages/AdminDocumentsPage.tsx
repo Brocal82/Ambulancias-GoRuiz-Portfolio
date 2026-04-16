@@ -114,7 +114,13 @@ const AdminDocumentsPage = () => {
             Subir documentos
           </h2>
           <div className="flex items-center gap-3 mb-4">
-            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+            <div className="relative inline-grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none absolute left-0.5 top-0.5 h-[calc(100%-4px)] w-[calc(50%-2px)] rounded-md bg-white shadow-sm ring-1 ring-orange-200 transition-transform duration-200 ease-out ${
+                  folderMode ? "translate-x-full" : "translate-x-0"
+                }`}
+              />
               <button
                 type="button"
                 onClick={() => {
@@ -124,10 +130,11 @@ const AdminDocumentsPage = () => {
                     setBatchInputKey((k) => k + 1);
                   }
                 }}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${!folderMode
-                  ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
-                  : "text-slate-500 hover:text-slate-700"
-                  }`}
+                className={`relative z-10 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-200/80 focus-visible:ring-offset-0 ${
+                  !folderMode
+                    ? "text-slate-800"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
               >
                 Archivos
               </button>
@@ -140,10 +147,11 @@ const AdminDocumentsPage = () => {
                     setBatchInputKey((k) => k + 1);
                   }
                 }}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${folderMode
-                  ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
-                  : "text-slate-500 hover:text-slate-700"
-                  }`}
+                className={`relative z-10 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-200/80 focus-visible:ring-offset-0 ${
+                  folderMode
+                    ? "text-slate-800"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
               >
                 Carpeta
               </button>
@@ -217,9 +225,6 @@ const AdminDocumentsPage = () => {
               />
             </div>
           </div>
-          <p className="text-xs text-slate-500">
-            Puedes seleccionar un archivo, varios archivos o una carpeta completa.
-          </p>
         </div>
 
         <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
