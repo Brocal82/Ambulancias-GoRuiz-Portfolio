@@ -481,14 +481,12 @@ export default function AdminPayrollPage() {
         year,
         month,
       });
-      if (response.status === "skipped_duplicate") {
-        toastT.warn(
-          "Nómina ignorada: ya existe un documento confirmado duplicado para este período.",
-        );
-        setUploadDuplicateWarning(null);
-        return;
-      }
       toastT.success("Nómina subida correctamente");
+      if (response.replacedDocument) {
+        toastT.warn(
+          `Nómina reemplazada: se invalidó la nómina activa anterior ("${response.replacedDocument.originalName}").`,
+        );
+      }
       setUploadDuplicateWarning(response.possibleDuplicate ?? null);
       setUploadFile(null);
       setUploadWorkerId("");

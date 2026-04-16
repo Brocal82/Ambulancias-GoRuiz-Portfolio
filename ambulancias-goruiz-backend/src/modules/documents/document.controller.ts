@@ -16,7 +16,7 @@ async function createCompanyDocumentWithDeliveries(params: {
   adminUserId: mongoose.Types.ObjectId;
   file: UploadedFile;
   targetWorkerId?: mongoose.Types.ObjectId | null;
-  workersCache?: { _id: mongoose.Types.ObjectId }[];
+  workersCache?: { _id: unknown }[];
 }) {
   const { companyId, adminUserId, file, targetWorkerId, workersCache } = params;
 
@@ -50,7 +50,7 @@ async function createCompanyDocumentWithDeliveries(params: {
     const deliveries = workers.map((w) => ({
       companyId,
       documentId: doc._id,
-      workerId: w._id,
+      workerId: new mongoose.Types.ObjectId(String(w._id)),
       sentAt: now,
       readAt: null,
     }));

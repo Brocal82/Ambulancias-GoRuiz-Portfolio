@@ -59,12 +59,18 @@ export interface DuplicateWarning {
   createdAt: string;
 }
 
+export interface ReplacedDocumentInfo {
+  payrollId: string;
+  originalName: string;
+}
+
 /** Response from POST /api/payroll/upload (Phase 8b: adds optional duplicate warning). */
 export interface UploadPayrollResponse {
-  status?: "uploaded" | "skipped_duplicate";
+  status?: "uploaded";
   payrollId: string;
   matchStatus: PayrollMatchStatus;
   possibleDuplicate?: DuplicateWarning;
+  replacedDocument?: ReplacedDocumentInfo;
 }
 
 /** Response from PATCH /api/payroll/:id/assign (Phase 8b: adds optional duplicate warning). */
@@ -101,6 +107,8 @@ export interface BatchResultItem {
   month?: number;
   /** Present when a confirmed document for the same worker+period already exists (Phase 8). */
   possibleDuplicate?: DuplicateWarning;
+  /** Present when a previous active confirmed payroll was replaced. */
+  replacedDocument?: ReplacedDocumentInfo;
 }
 
 export interface BatchUploadSummary {

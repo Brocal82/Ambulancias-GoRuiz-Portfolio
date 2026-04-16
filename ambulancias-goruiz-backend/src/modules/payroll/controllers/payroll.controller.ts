@@ -21,6 +21,11 @@ interface DuplicateInfo {
   createdAt: Date;
 }
 
+interface ReplacementInfo {
+  payrollId: string;
+  originalName: string;
+}
+
 type UploadedFileLike = {
   mimetype?: string;
   originalname?: string;
@@ -83,6 +88,43 @@ async function findPayrollDuplicate(
     payrollId: String(existing._id),
     originalName: existing.originalName,
     createdAt: existing.createdAt as Date,
+  };
+}
+
+async function replaceExistingConfirmedPayroll(params: {
+  companyOid: mongoose.Types.ObjectId;
+  workerOid: mongoose.Types.ObjectId;
+  year: number;
+  month: number;
+  newDocumentId: mongoose.Types.ObjectId;
+}): Promise<ReplacementInfo | null> {
+  const { companyOid, workerOid, year, month, newDocumentId } = params;
+
+  const existingDuplicates = await PayrollDocument.find({
+    _id: { $ne: newDocumentId },
+    companyId: companyOid,
+    workerId: workerOid,
+    year,
+    month,
+    matchStatus: { $in: ["manual", "matched"] },
+    deletedAt: null,
+  })
+    .select("_id originalName")
+    .sort({ createdAt: -1 })
+    .lean();
+
+  if (existingDuplicates.length === 0) return null;
+
+  const duplicateIds = existingDuplicates.map((d) => d._id);
+  await PayrollDocument.updateMany(
+    { _id: { $in: duplicateIds } },
+    { $set: { deletedAt: new Date() } },
+  );
+  const mostRecentReplaced = existingDuplicates[0];
+
+  return {
+    payrollId: String(mostRecentReplaced._id),
+    originalName: mostRecentReplaced.originalName,
   };
 }
 
@@ -218,37 +260,6 @@ export async function uploadPayrollDocument(
         return;
       }
 
-      const existingDuplicate = await PayrollDocument.findOne({
-        companyId: companyOid,
-        workerId: workerOid,
-        year: parsedYear,
-        month: parsedMonth,
-        matchStatus: { $in: ["manual", "matched"] },
-        deletedAt: null,
-      })
-        .select("_id originalName createdAt")
-        .lean();
-
-      if (existingDuplicate) {
-        await deleteUploadedFileIfPresent(file);
-        res.status(200).json({
-          message:
-            "Nómina duplicada omitida (ya existe una nómina activa para este trabajador y período)",
-          status: "skipped_duplicate",
-          payrollId: String(existingDuplicate._id),
-          workerId,
-          matchStatus: "manual",
-          year: parsedYear,
-          month: parsedMonth,
-          possibleDuplicate: {
-            payrollId: String(existingDuplicate._id),
-            originalName: existingDuplicate.originalName,
-            createdAt: existingDuplicate.createdAt as Date,
-          },
-        });
-        return;
-      }
-
       const doc = await PayrollDocument.create({
         workerId: workerOid,
         companyId: companyOid,
@@ -262,6 +273,14 @@ export async function uploadPayrollDocument(
       });
       documentCreated = true;
 
+      const replacedDocument = await replaceExistingConfirmedPayroll({
+        companyOid,
+        workerOid,
+        year: parsedYear,
+        month: parsedMonth,
+        newDocumentId: new mongoose.Types.ObjectId(String(doc._id)),
+      });
+
       const possibleDuplicate = await findPayrollDuplicate(
         companyOid,
         workerOid,
@@ -271,7 +290,10 @@ export async function uploadPayrollDocument(
       );
 
       res.status(201).json({
-        message: "Nómina subida y asignada manualmente",
+        message: replacedDocument
+          ? "Nómina subida y reemplazo aplicado sobre la nómina activa anterior"
+          : "Nómina subida y asignada manualmente",
+        status: "uploaded",
         payrollId: doc._id,
         workerId: doc.workerId,
         filename: doc.filename,
@@ -279,6 +301,7 @@ export async function uploadPayrollDocument(
         matchStatus: doc.matchStatus,
         year: doc.year,
         month: doc.month,
+        ...(replacedDocument && { replacedDocument }),
         ...(possibleDuplicate && { possibleDuplicate }),
       });
       return;
@@ -289,38 +312,6 @@ export async function uploadPayrollDocument(
 
     if (matchResult.status === "matched") {
       const matchedWorkerOid = new mongoose.Types.ObjectId(matchResult.workerId);
-      const existingDuplicate = await PayrollDocument.findOne({
-        companyId: companyOid,
-        workerId: matchedWorkerOid,
-        year: parsedYear,
-        month: parsedMonth,
-        matchStatus: { $in: ["manual", "matched"] },
-        deletedAt: null,
-      })
-        .select("_id originalName createdAt")
-        .lean();
-
-      if (existingDuplicate) {
-        await deleteUploadedFileIfPresent(file);
-        res.status(200).json({
-          message:
-            "Nómina duplicada omitida (ya existe una nómina activa para este trabajador y período)",
-          status: "skipped_duplicate",
-          payrollId: String(existingDuplicate._id),
-          workerId: matchResult.workerId,
-          matchStatus: "matched",
-          parsedEmployeeNumber: matchResult.parsedEmployeeNumber,
-          year: parsedYear,
-          month: parsedMonth,
-          possibleDuplicate: {
-            payrollId: String(existingDuplicate._id),
-            originalName: existingDuplicate.originalName,
-            createdAt: existingDuplicate.createdAt as Date,
-          },
-        });
-        return;
-      }
-
       const doc = await PayrollDocument.create({
         workerId: matchedWorkerOid,
         companyId: companyOid,
@@ -335,6 +326,14 @@ export async function uploadPayrollDocument(
       });
       documentCreated = true;
 
+      const replacedDocument = await replaceExistingConfirmedPayroll({
+        companyOid,
+        workerOid: matchedWorkerOid,
+        year: parsedYear,
+        month: parsedMonth,
+        newDocumentId: new mongoose.Types.ObjectId(String(doc._id)),
+      });
+
       const possibleDuplicate = await findPayrollDuplicate(
         companyOid,
         matchedWorkerOid,
@@ -344,7 +343,10 @@ export async function uploadPayrollDocument(
       );
 
       res.status(201).json({
-        message: "Nómina subida y asignada automáticamente",
+        message: replacedDocument
+          ? "Nómina subida automáticamente y reemplazo aplicado sobre la nómina activa anterior"
+          : "Nómina subida y asignada automáticamente",
+        status: "uploaded",
         payrollId: doc._id,
         workerId: doc.workerId,
         filename: doc.filename,
@@ -353,6 +355,7 @@ export async function uploadPayrollDocument(
         parsedEmployeeNumber: doc.parsedEmployeeNumber,
         year: doc.year,
         month: doc.month,
+        ...(replacedDocument && { replacedDocument }),
         ...(possibleDuplicate && { possibleDuplicate }),
       });
       return;
@@ -434,9 +437,12 @@ type BatchResultItem =
     }
   | {
       originalName: string;
-      status: "skipped_duplicate";
-      duplicateOfPayrollId: string;
-      duplicateOfOriginalName: string;
+      status: "matched";
+      payrollId: string;
+      workerId: string;
+      matchStatus: "matched";
+      parsedEmployeeNumber: string;
+      replacedDocument: ReplacementInfo;
       year?: number;
       month?: number;
     };
@@ -553,30 +559,6 @@ export async function uploadPayrollBatch(
 
         if (matchResult.status === "matched") {
           const batchWorkerOid = new mongoose.Types.ObjectId(matchResult.workerId);
-          const existingDuplicate = await PayrollDocument.findOne({
-            companyId: companyOid,
-            workerId: batchWorkerOid,
-            year: parsedYear,
-            month: parsedMonth,
-            matchStatus: { $in: ["manual", "matched"] },
-            deletedAt: null,
-          })
-            .select("_id originalName")
-            .lean();
-
-          if (existingDuplicate) {
-            await deleteUploadedFileIfPresent(file);
-            duplicateWarnings++;
-            results.push({
-              originalName,
-              status: "skipped_duplicate",
-              duplicateOfPayrollId: String(existingDuplicate._id),
-              duplicateOfOriginalName: existingDuplicate.originalName,
-              ...periodFields,
-            });
-            continue;
-          }
-
           const doc = await PayrollDocument.create({
             workerId: batchWorkerOid,
             companyId: companyOid,
@@ -589,6 +571,15 @@ export async function uploadPayrollBatch(
             ...periodFields,
           });
           documentCreatedForFile = true;
+
+          const replacedDocument = await replaceExistingConfirmedPayroll({
+            companyOid,
+            workerOid: batchWorkerOid,
+            year: parsedYear,
+            month: parsedMonth,
+            newDocumentId: new mongoose.Types.ObjectId(String(doc._id)),
+          });
+          if (replacedDocument) duplicateWarnings++;
 
           const possibleDuplicate = await findPayrollDuplicate(
             companyOid,
@@ -607,6 +598,7 @@ export async function uploadPayrollBatch(
             matchStatus: "matched",
             parsedEmployeeNumber: matchResult.parsedEmployeeNumber,
             ...periodFields,
+            ...(replacedDocument && { replacedDocument }),
             ...(possibleDuplicate && { possibleDuplicate }),
           });
           matched++;
