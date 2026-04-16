@@ -8,6 +8,7 @@ import type {
   BatchUploadPayload,
   BatchUploadResponse,
   CoverageCheckResponse,
+  CoverageYearSummaryResponse,
 } from "./types";
 
 /** Admin: list all payroll documents scoped to their company. */
@@ -80,6 +81,19 @@ export const checkPayrollCoverage = async (
   const { data } = await api.get<CoverageCheckResponse>("/payroll/missing", {
     params: { year, month },
   });
+  return data;
+};
+
+/** Admin: yearly payroll coverage counters for the year hub grid. */
+export const getPayrollCoverageYearSummary = async (
+  year: number,
+): Promise<CoverageYearSummaryResponse> => {
+  const { data } = await api.get<CoverageYearSummaryResponse>(
+    "/payroll/coverage/year",
+    {
+      params: { year },
+    },
+  );
   return data;
 };
 

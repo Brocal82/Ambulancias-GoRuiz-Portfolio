@@ -11,6 +11,7 @@ import {
   listPayrollDocumentsAdmin,
   listMyPayrollDocuments,
   checkPayrollCoverage,
+  getPayrollCoverageYearSummary,
 } from "./controllers/payroll.controller";
 
 const router = express.Router();
@@ -64,6 +65,13 @@ router.patch(
 // GET /api/payroll/missing?year=YYYY&month=M
 // Must be registered before GET / to be explicit (no dynamic segment conflict here,
 // but ordering makes intent clear).
+router.get(
+  "/coverage/year",
+  authenticateToken,
+  authorizeRole("admin"),
+  getPayrollCoverageYearSummary,
+);
+
 router.get(
   "/missing",
   authenticateToken,

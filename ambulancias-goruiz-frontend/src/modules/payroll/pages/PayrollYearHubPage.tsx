@@ -2,8 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
-import { listPayrollDocuments } from "../domain/api";
-import type { PayrollDocument } from "../domain/types";
+import {
+  getPayrollCoverageYearSummary,
+  listPayrollDocuments,
+} from "../domain/api";
+import type {
+  CoverageYearSummaryResponse,
+  PayrollDocument,
+} from "../domain/types";
 import PayrollGlobalSearchPanel from "../components/PayrollGlobalSearchPanel";
 import { PAYROLL_MONTH_NAMES } from "../domain/constants";
 
@@ -29,6 +35,8 @@ export default function PayrollYearHubPage() {
   const [hubYear, setHubYear] = useState(() => new Date().getFullYear());
   const [docs, setDocs] = useState<PayrollDocument[]>([]);
   const [loading, setLoading] = useState(false);
+  const [yearCoverage, setYearCoverage] =
+    useState<CoverageYearSummaryResponse | null>(null);
   const toolbarResultsPortalRef = useRef<HTMLDivElement>(null);
 
   const fetchDocs = useCallback(async () => {
@@ -47,6 +55,24 @@ export default function PayrollYearHubPage() {
     if (!token) return;
     void fetchDocs();
   }, [token, fetchDocs]);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    void getPayrollCoverageYearSummary(hubYear)
+      .then((data) => {
+        if (cancelled) return;
+        setYearCoverage(data);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setYearCoverage(null);
+        toastT.apiError(err, "Error al cargar los contadores de cobertura anual");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, hubYear]);
 
   const goToMonthWorkspace = (year: number, month: number) => {
     navigate(`/admin/payroll/month/${year}/${month}`);
@@ -111,30 +137,46 @@ export default function PayrollYearHubPage() {
             {PAYROLL_MONTH_NAMES.map((name, idx) => {
               const month = idx + 1;
               const status = monthCellStatus(docs, hubYear, month);
+              const assignedCount =
+                yearCoverage?.months.find((item) => item.month === month)
+                  ?.assignedCount ?? 0;
+              const totalWorkers = yearCoverage?.totalWorkers ?? 0;
               const ring =
                 status === "empty"
                   ? "ring-slate-200 bg-slate-50/80"
                   : status === "incomplete"
                     ? "ring-amber-300 bg-amber-50/50"
                     : "ring-emerald-200 bg-emerald-50/40";
-              const subtitle =
-                status === "empty"
-                  ? "Sin datos"
-                  : status === "incomplete"
-                    ? "Pendientes"
-                    : "Sin pendientes de asignación";
               return (
                 <button
                   key={month}
                   type="button"
                   onClick={() => goToMonthWorkspace(hubYear, month)}
-                  className={`rounded-xl p-4 text-left ring-1 shadow-sm transition-colors hover:brightness-[0.98] focus:outline-none focus:ring-2 focus:ring-blue-200 ${ring}`}
+                  className={`rounded-xl p-4 text-left ring-1 shadow-sm transition-colors hover:brightness-[0.98] focus:outline-none focus:ring-2 focus:ring-blue-200 h-24 ${ring}`}
                 >
-                  <span className="block text-sm font-semibold text-slate-800">
-                    {name}
-                  </span>
-                  <span className="mt-1 block text-xs text-slate-500">
-                    {subtitle}
+                  <span className="flex h-full flex-col">
+                    <span className="block text-sm font-semibold text-slate-800">
+                      {name}
+                    </span>
+                    <span className="mt-auto flex justify-between items-end w-full text-xs">
+                      <span
+                        className={
+                          assignedCount > 0 && assignedCount < totalWorkers
+                            ? "text-red-600 font-medium"
+                            : "text-slate-600"
+                        }
+                      >
+                        👤 {totalWorkers}{" "}
+                        {totalWorkers > 0 && assignedCount >= totalWorkers
+                          ? "✅"
+                          : ""}
+                      </span>
+                      <span
+                        className="text-slate-600"
+                      >
+                        📄 {assignedCount}
+                      </span>
+                    </span>
                   </span>
                 </button>
               );

@@ -979,6 +979,105 @@ export async function checkPayrollCoverage(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /api/payroll/coverage/year?year=YYYY
+// Admin only.
+//
+// Returns compact monthly counters for the year grid:
+// - totalWorkers: active workers in the company
+// - months: assigned payroll document count per month (1..12),
+//           where assigned means matchStatus manual/matched with workerId.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getPayrollCoverageYearSummary(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res
+        .status(companyResult.statusCode)
+        .json({ message: companyResult.message });
+      return;
+    }
+    const adminCompanyId = companyResult.companyId;
+
+    const { year: yearParam } = req.query as { year?: string };
+    if (!yearParam) {
+      res.status(400).json({
+        message: "El parámetro 'year' es obligatorio. Ejemplo: ?year=2025",
+      });
+      return;
+    }
+
+    const year = parseInt(yearParam, 10);
+    if (isNaN(year) || year < 2000 || year > 2100) {
+      res
+        .status(400)
+        .json({ message: "year debe ser un número entre 2000 y 2100" });
+      return;
+    }
+
+    const companyOid = new mongoose.Types.ObjectId(adminCompanyId);
+
+    // Same worker scope as checkPayrollCoverage: active workers only.
+    const totalWorkers = await User.countDocuments({
+      companyId: companyOid,
+      role: "worker",
+      isActive: true,
+    });
+
+    // Same confirmed coverage criteria as checkPayrollCoverage.
+    const assignedByMonth = (await PayrollDocument.aggregate([
+      {
+        $match: {
+          companyId: companyOid,
+          year,
+          matchStatus: { $in: ["manual", "matched"] },
+          workerId: { $ne: null },
+          deletedAt: null,
+        },
+      },
+      {
+        $group: {
+          _id: "$month",
+          assignedCount: { $sum: 1 },
+        },
+      },
+    ])) as Array<{ _id: number | null; assignedCount: number }>;
+
+    const assignedByMonthMap = new Map<number, number>();
+    for (const item of assignedByMonth) {
+      if (
+        typeof item._id === "number" &&
+        item._id >= 1 &&
+        item._id <= 12
+      ) {
+        assignedByMonthMap.set(item._id, item.assignedCount);
+      }
+    }
+
+    const months = Array.from({ length: 12 }, (_, idx) => {
+      const month = idx + 1;
+      return {
+        month,
+        assignedCount: assignedByMonthMap.get(month) ?? 0,
+      };
+    });
+
+    res.status(200).json({
+      year,
+      totalWorkers,
+      months,
+    });
+  } catch (err) {
+    console.error("[payroll] getPayrollCoverageYearSummary error:", err);
+    res
+      .status(500)
+      .json({ message: "Error al obtener el resumen anual de cobertura" });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // PATCH /api/payroll/:id/invalidate
 // Admin only. Soft-deletes a payroll document by setting deletedAt = now.
 //

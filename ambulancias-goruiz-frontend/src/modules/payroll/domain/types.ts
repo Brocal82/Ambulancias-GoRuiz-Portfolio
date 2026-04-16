@@ -145,6 +145,17 @@ export interface CoverageCheckResponse {
   unmatchedDocumentsForPeriod: number;
 }
 
+export interface CoverageYearMonthItem {
+  month: number;
+  assignedCount: number;
+}
+
+export interface CoverageYearSummaryResponse {
+  year: number;
+  totalWorkers: number;
+  months: CoverageYearMonthItem[];
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
