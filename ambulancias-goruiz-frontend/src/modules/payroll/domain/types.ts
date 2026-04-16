@@ -61,6 +61,7 @@ export interface DuplicateWarning {
 
 /** Response from POST /api/payroll/upload (Phase 8b: adds optional duplicate warning). */
 export interface UploadPayrollResponse {
+  status?: "uploaded" | "skipped_duplicate";
   payrollId: string;
   matchStatus: PayrollMatchStatus;
   possibleDuplicate?: DuplicateWarning;
