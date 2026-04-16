@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
 import { openSecureFile } from "../../../utils/openSecureFile";
@@ -730,15 +730,7 @@ export default function AdminPayrollPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2">
-          <BackButton to="/admin/payroll" />
-          <Link
-            to="/admin/payroll/nominas"
-            className="text-sm font-medium text-slate-600 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 rounded"
-          >
-            ← Resumen anual
-          </Link>
-        </div>
+        <BackButton to="/admin/payroll/nominas" />
 
         {/* ── Header ────────────────────────────────────────────────────────── */}
         <div>
