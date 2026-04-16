@@ -4,6 +4,8 @@ import { es } from "date-fns/locale";
 import { toastT } from "../../../utils/toast";
 import { openSecureFile } from "../../../utils/openSecureFile";
 import axiosInstance from "../../../api/axios";
+import PayrollUploadTriggerButton from "../../../components/common/actions/PayrollUploadTriggerButton";
+import SendIconButton from "../../../components/common/actions/SendIconButton";
 
 type AdminDocument = {
   id: string;
@@ -18,12 +20,11 @@ type AdminDocument = {
 const AdminDocumentsPage = () => {
   const [documents, setDocuments] = useState<AdminDocument[]>([]);
   const [loading, setLoading] = useState(false);
-  const [uploadingSingle, setUploadingSingle] = useState(false);
-  const [uploadingBatch, setUploadingBatch] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [batchFiles, setBatchFiles] = useState<File[]>([]);
   const batchInputRef = useRef<HTMLInputElement | null>(null);
   const [batchInputKey, setBatchInputKey] = useState(0);
+  const [folderMode, setFolderMode] = useState(false);
 
   const fetchDocuments = async () => {
     setLoading(true);
@@ -41,35 +42,9 @@ const AdminDocumentsPage = () => {
     void fetchDocuments();
   }, []);
 
-  const handleUploadSingle = async () => {
-    if (!file) {
-      toastT.warn("Selecciona un archivo antes de subir");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    setUploadingSingle(true);
-    try {
-      await axiosInstance.post("/api/documents/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      toastT.success("Documento subido correctamente");
-      setFile(null);
-      await fetchDocuments();
-    } catch (err) {
-      toastT.apiError(err, "Error al subir el documento");
-    } finally {
-      setUploadingSingle(false);
-    }
-  };
-
-  const handleUploadBatch = async () => {
+  const handleUpload = async () => {
     if (batchFiles.length === 0) {
-      toastT.warn("Selecciona al menos un archivo antes de subir el lote");
+      toastT.warn("Selecciona al menos un archivo antes de enviar");
       return;
     }
 
@@ -78,21 +53,21 @@ const AdminDocumentsPage = () => {
       formData.append("files", f);
     });
 
-    setUploadingBatch(true);
+    setUploading(true);
     try {
       await axiosInstance.post("/api/documents/upload/batch", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-      toastT.success("Lote de documentos subido correctamente");
+      toastT.success("Documentos enviados correctamente");
       setBatchFiles([]);
       setBatchInputKey((k) => k + 1);
       await fetchDocuments();
     } catch (err) {
       toastT.apiError(err, "Error al subir el lote de documentos");
     } finally {
-      setUploadingBatch(false);
+      setUploading(false);
     }
   };
 
@@ -134,56 +109,62 @@ const AdminDocumentsPage = () => {
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4 space-y-4">
+        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
           <h2 className="text-sm font-semibold text-slate-800">
-            Subir documento único
+            Subir documentos
           </h2>
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="block text-sm text-slate-700">
-              <span className="mr-3 font-medium">Archivo</span>
-              <input
-                type="file"
-                accept=".pdf,application/pdf,image/jpeg,image/png,image/webp"
-                onChange={(e) => {
-                  const nextFile = e.target.files?.[0] ?? null;
-                  setFile(nextFile);
+          <div className="flex items-center gap-3 mb-4">
+            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  if (folderMode) {
+                    setFolderMode(false);
+                    setBatchFiles([]);
+                    setBatchInputKey((k) => k + 1);
+                  }
                 }}
-                className="mt-1 block text-sm text-slate-700 file:mr-3 file:rounded-md file:border file:border-slate-300 file:bg-slate-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-100"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={handleUploadSingle}
-              disabled={uploadingSingle || !file}
-              className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {uploadingSingle ? "Subiendo..." : "Subir documento"}
-            </button>
-            {file ? (
-              <span className="text-xs text-slate-600 truncate max-w-xs">
-                {file.name}
-              </span>
-            ) : null}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${!folderMode
+                  ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
+                  : "text-slate-500 hover:text-slate-700"
+                  }`}
+              >
+                Archivos
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!folderMode) {
+                    setFolderMode(true);
+                    setBatchFiles([]);
+                    setBatchInputKey((k) => k + 1);
+                  }
+                }}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${folderMode
+                  ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
+                  : "text-slate-500 hover:text-slate-700"
+                  }`}
+              >
+                Carpeta
+              </button>
+            </div>
           </div>
-          <p className="text-xs text-slate-500">
-            Se permiten archivos PDF e imágenes (JPG, PNG, WEBP) de hasta 10 MB.
-          </p>
-        </div>
-
-        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4 space-y-4">
-          <h2 className="text-sm font-semibold text-slate-800">
-            Subir varios documentos (lote)
-          </h2>
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="block text-sm text-slate-700">
-              <span className="mr-3 font-medium">Archivos o carpeta</span>
+          <div className="flex flex-wrap lg:flex-nowrap items-end gap-4">
+            <div className="shrink-0">
+              <label
+                htmlFor="documents-batch-upload"
+                className="block text-sm font-medium text-slate-700"
+              >
+                {folderMode ? "Carpeta de documentos" : "Archivos"}
+              </label>
               <input
                 key={batchInputKey}
                 ref={batchInputRef}
+                id="documents-batch-upload"
                 type="file"
                 multiple
                 // @ts-expect-error: webkitdirectory is not in the standard typings
-                webkitdirectory="true"
+                webkitdirectory={folderMode ? "" : undefined}
                 accept=".pdf,application/pdf,image/jpeg,image/png,image/webp"
                 onChange={(e) => {
                   const files = Array.from(e.target.files ?? []);
@@ -191,23 +172,29 @@ const AdminDocumentsPage = () => {
                   setBatchFiles((prev) => [...prev, ...files]);
                   e.target.value = "";
                 }}
-                className="mt-1 block text-sm text-slate-700 file:mr-3 file:rounded-md file:border file:border-slate-300 file:bg-slate-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-100"
+                className="sr-only"
               />
-            </label>
-            <button
-              type="button"
-              onClick={handleUploadBatch}
-              disabled={uploadingBatch || batchFiles.length === 0}
-              className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {uploadingBatch ? "Subiendo lote..." : "Subir lote"}
-            </button>
-            {batchFiles.length > 0 ? (
-              <span className="text-xs text-slate-600 truncate max-w-xs">
-                {batchFiles.length} archivo
-                {batchFiles.length === 1 ? "" : "s"} seleccionados
-              </span>
-            ) : null}
+              <PayrollUploadTriggerButton
+                mode={folderMode ? "folder" : "files"}
+                onClick={() => {
+                  batchInputRef.current?.click();
+                }}
+                label={folderMode ? "Subir carpeta" : "Subir varias"}
+              />
+            </div>
+            <div className="w-full lg:w-auto lg:ml-auto flex items-center gap-3 lg:justify-end">
+              <div
+                className={`w-[220px] min-w-[180px] max-w-[260px] text-right text-xs leading-tight truncate ${batchFiles.length > 0 ? "text-blue-600 font-medium" : "text-slate-500"}`}
+                title={
+                  batchFiles.length > 0
+                    ? `${batchFiles.length} archivo${batchFiles.length !== 1 ? "s" : ""} seleccionado${batchFiles.length !== 1 ? "s" : ""}`
+                    : "Sin archivos seleccionados"
+                }
+              >
+                {batchFiles.length > 0
+                  ? `${batchFiles.length} archivo${batchFiles.length !== 1 ? "s" : ""} seleccionado${batchFiles.length !== 1 ? "s" : ""}`
+                  : "Sin archivos seleccionados"}
+              </div>
             {batchFiles.length > 0 ? (
               <button
                 type="button"
@@ -215,14 +202,23 @@ const AdminDocumentsPage = () => {
                   setBatchFiles([]);
                   setBatchInputKey((k) => k + 1);
                 }}
-                className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                aria-label="Quitar archivos seleccionados"
+                title="Quitar archivos"
+                className="shrink-0 text-red-400 hover:text-red-600 text-sm leading-none cursor-pointer"
               >
-                Limpiar selección
+                ✕
               </button>
             ) : null}
+              <SendIconButton
+                onClick={handleUpload}
+                disabled={uploading || batchFiles.length === 0}
+                title={uploading ? "Enviando documentos..." : "Enviar documentos"}
+                className="shrink-0"
+              />
+            </div>
           </div>
           <p className="text-xs text-slate-500">
-            Puedes seleccionar varios archivos o una carpeta completa de documentos.
+            Puedes seleccionar un archivo, varios archivos o una carpeta completa.
           </p>
         </div>
 
