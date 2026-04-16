@@ -141,6 +141,7 @@ export default function PayrollYearHubPage() {
                 yearCoverage?.months.find((item) => item.month === month)
                   ?.assignedCount ?? 0;
               const totalWorkers = yearCoverage?.totalWorkers ?? 0;
+              const missingWorkers = Math.max(totalWorkers - assignedCount, 0);
               const ring =
                 status === "empty"
                   ? "ring-slate-200 bg-slate-50/80"
@@ -159,17 +160,15 @@ export default function PayrollYearHubPage() {
                       {name}
                     </span>
                     <span className="mt-auto flex justify-between items-end w-full text-xs">
-                      <span
-                        className={
-                          assignedCount > 0 && assignedCount < totalWorkers
-                            ? "text-red-600 font-medium"
-                            : "text-slate-600"
-                        }
-                      >
+                      <span className="text-slate-600">
                         👤 {totalWorkers}{" "}
-                        {totalWorkers > 0 && assignedCount >= totalWorkers
-                          ? "✅"
-                          : ""}
+                        {totalWorkers > 0 && missingWorkers === 0 ? (
+                          "✅"
+                        ) : assignedCount > 0 && missingWorkers > 0 ? (
+                          <span className="text-red-600 font-medium">
+                            ({missingWorkers})
+                          </span>
+                        ) : null}
                       </span>
                       <span
                         className="text-slate-600"
