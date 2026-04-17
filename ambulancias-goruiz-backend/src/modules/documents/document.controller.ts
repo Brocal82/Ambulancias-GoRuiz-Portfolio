@@ -32,6 +32,34 @@ async function createCompanyDocumentWithDeliveries(params: {
     throw new Error("FILE_INVALID");
   }
 
+  /** Recipients for DocumentDelivery: all active workers, or exactly one validated target. */
+  let recipientWorkers: { _id: unknown }[];
+
+  if (targetWorkerId) {
+    const target = await User.findOne({
+      _id: targetWorkerId,
+      companyId,
+      role: "worker",
+      isActive: true,
+    })
+      .select("_id")
+      .lean();
+    if (!target) {
+      throw new Error("TARGET_WORKER_INVALID");
+    }
+    recipientWorkers = [target];
+  } else {
+    recipientWorkers =
+      workersCache ??
+      (await User.find({
+        companyId,
+        role: "worker",
+        isActive: true,
+      })
+        .select("_id")
+        .lean());
+  }
+
   const doc = await CompanyDocument.create({
     companyId,
     uploadedBy: adminUserId,
@@ -44,19 +72,9 @@ async function createCompanyDocumentWithDeliveries(params: {
     deletedAt: null,
   });
 
-  const workers =
-    workersCache ??
-    (await User.find({
-      companyId,
-      role: "worker",
-      isActive: true,
-    })
-      .select("_id")
-      .lean());
-
-  if (workers.length > 0) {
+  if (recipientWorkers.length > 0) {
     const now = new Date();
-    const deliveries = workers.map((w) => ({
+    const deliveries = recipientWorkers.map((w) => ({
       companyId,
       documentId: doc._id,
       workerId: new mongoose.Types.ObjectId(String(w._id)),
@@ -113,6 +131,13 @@ export async function uploadCompanyDocument(req: Request, res: Response) {
   } catch (err: any) {
     if (err instanceof Error && err.message === "FILE_INVALID") {
       res.status(400).json({ message: "No se recibió ningún archivo válido" });
+      return;
+    }
+    if (err instanceof Error && err.message === "TARGET_WORKER_INVALID") {
+      res.status(400).json({
+        message:
+          "El destinatario no es válido: debe ser un trabajador activo de tu empresa.",
+      });
       return;
     }
     console.error("Error al guardar documento de empresa:", err);
