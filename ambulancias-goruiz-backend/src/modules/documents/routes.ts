@@ -2,17 +2,35 @@ import { Router } from "express";
 import multer from "multer";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { validateObjectId } from "../../middlewares/validateObjectId";
 import { upload } from "../../middlewares/uploadMiddleware";
 import {
   deleteCompanyDocumentsBatch,
   deleteCompanyDocument,
   listCompanyDocuments,
+  listMyDocumentDeliveries,
+  markMyDocumentDeliveryRead,
   uploadCompanyDocument,
   uploadCompanyDocumentsBatch,
 } from "./document.controller";
 import type { ErrorRequestHandler } from "express";
 
 const router = Router();
+
+router.get(
+  "/mine",
+  authenticateToken,
+  authorizeRole("worker"),
+  listMyDocumentDeliveries,
+);
+
+router.patch(
+  "/deliveries/:deliveryId/read",
+  authenticateToken,
+  authorizeRole("worker"),
+  validateObjectId("deliveryId"),
+  markMyDocumentDeliveryRead,
+);
 
 router.post(
   "/upload",

@@ -27,6 +27,28 @@ export function requireCompanyForAdmin(req: Request): RequireCompanyResult {
   return { ok: true, companyId };
 }
 
+/**
+ * Exige que el worker tenga companyId. Usar en operaciones multiempresa del lado worker.
+ */
+export function requireCompanyForWorker(req: Request): RequireCompanyResult {
+  if (req.userRole !== "worker") {
+    return {
+      ok: false,
+      statusCode: 403,
+      message: "Operación requiere rol trabajador con empresa asignada",
+    };
+  }
+  const companyId = req.companyId;
+  if (!companyId || typeof companyId !== "string") {
+    return {
+      ok: false,
+      statusCode: 403,
+      message: "No tienes permiso. Se requiere pertenecer a una empresa.",
+    };
+  }
+  return { ok: true, companyId };
+}
+
 function hasCompanyId(value: unknown): boolean {
   if (value == null) return false;
   const s = String(value).trim();

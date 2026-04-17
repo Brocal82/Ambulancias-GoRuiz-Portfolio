@@ -1,6 +1,9 @@
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
-import { requireCompanyForAdmin } from "../../utils/requireCompany";
+import {
+  requireCompanyForAdmin,
+  requireCompanyForWorker,
+} from "../../utils/requireCompany";
 import { CompanyDocument } from "./models/document.model";
 import { DocumentDelivery } from "./models/document-delivery.model";
 import User from "../users/models/user.model";
@@ -369,3 +372,167 @@ export async function deleteCompanyDocumentsBatch(req: Request, res: Response) {
   }
 }
 
+// ── Worker: entregas de documentos de empresa (DocumentDelivery como fuente) ─
+
+export async function listMyDocumentDeliveries(req: Request, res: Response) {
+  const companyResult = requireCompanyForWorker(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
+
+  try {
+    const companyObjectId = new mongoose.Types.ObjectId(companyResult.companyId);
+    const workerObjectId = new mongoose.Types.ObjectId(req.userId as string);
+
+    const deliveries = await DocumentDelivery.find({
+      companyId: companyObjectId,
+      workerId: workerObjectId,
+    })
+      .sort({ sentAt: -1 })
+      .lean();
+
+    if (deliveries.length === 0) {
+      res.status(200).json({ deliveries: [] });
+      return;
+    }
+
+    const docIds = [
+      ...new Set(deliveries.map((d) => String(d.documentId))),
+    ].map((id) => new mongoose.Types.ObjectId(id));
+
+    const docs = await CompanyDocument.find({
+      _id: { $in: docIds },
+      companyId: companyObjectId,
+      deletedAt: null,
+    })
+      .select("_id originalName filename mimeType createdAt uploadBatchId")
+      .lean();
+
+    const docById = new Map(docs.map((d) => [String(d._id), d]));
+
+    const out: {
+      deliveryId: string;
+      documentId: string;
+      originalName: string;
+      filename: string;
+      mimeType: string;
+      createdAt: Date;
+      uploadBatchId: string | null;
+      sentAt: Date;
+      readAt: Date | null;
+      acknowledgedAt: Date | null;
+    }[] = [];
+
+    for (const d of deliveries) {
+      const doc = docById.get(String(d.documentId));
+      if (!doc) continue;
+
+      const ack = (d as { acknowledgedAt?: Date | null }).acknowledgedAt;
+      out.push({
+        deliveryId: String(d._id),
+        documentId: String(doc._id),
+        originalName: doc.originalName,
+        filename: doc.filename,
+        mimeType: doc.mimeType,
+        createdAt: doc.createdAt,
+        uploadBatchId: doc.uploadBatchId ? String(doc.uploadBatchId) : null,
+        sentAt: d.sentAt,
+        readAt: d.readAt ?? null,
+        acknowledgedAt: ack ?? null,
+      });
+    }
+
+    res.status(200).json({ deliveries: out });
+  } catch (err) {
+    console.error("Error al listar entregas de documentos:", err);
+    res.status(500).json({ message: "Error al obtener los documentos" });
+  }
+}
+
+export async function markMyDocumentDeliveryRead(req: Request, res: Response) {
+  const companyResult = requireCompanyForWorker(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
+
+  const { deliveryId } = req.params;
+  if (!deliveryId || !mongoose.Types.ObjectId.isValid(deliveryId)) {
+    res.status(400).json({ message: "ID de entrega no válido" });
+    return;
+  }
+
+  try {
+    const companyObjectId = new mongoose.Types.ObjectId(companyResult.companyId);
+    const workerObjectId = new mongoose.Types.ObjectId(req.userId as string);
+    const deliveryOid = new mongoose.Types.ObjectId(deliveryId);
+
+    const delivery = await DocumentDelivery.findOne({
+      _id: deliveryOid,
+      companyId: companyObjectId,
+      workerId: workerObjectId,
+    }).lean();
+
+    if (!delivery) {
+      res.status(404).json({ message: "Entrega no encontrada" });
+      return;
+    }
+
+    const doc = await CompanyDocument.findOne({
+      _id: delivery.documentId,
+      companyId: companyObjectId,
+      deletedAt: null,
+    })
+      .select("_id")
+      .lean();
+
+    if (!doc) {
+      res.status(404).json({ message: "Entrega no encontrada" });
+      return;
+    }
+
+    const now = new Date();
+    const updated = await DocumentDelivery.findOneAndUpdate(
+      {
+        _id: deliveryOid,
+        companyId: companyObjectId,
+        workerId: workerObjectId,
+        readAt: null,
+      },
+      { $set: { readAt: now } },
+      { new: true },
+    )
+      .select("readAt")
+      .lean();
+
+    if (updated?.readAt) {
+      res.status(200).json({
+        deliveryId: String(deliveryOid),
+        readAt: updated.readAt,
+      });
+      return;
+    }
+
+    const final = await DocumentDelivery.findOne({
+      _id: deliveryOid,
+      companyId: companyObjectId,
+      workerId: workerObjectId,
+    })
+      .select("readAt")
+      .lean();
+
+    if (final?.readAt) {
+      res.status(200).json({
+        deliveryId: String(deliveryOid),
+        readAt: final.readAt,
+      });
+      return;
+    }
+
+    res.status(404).json({ message: "Entrega no encontrada" });
+  } catch (err) {
+    console.error("Error al marcar lectura de entrega:", err);
+    res.status(500).json({ message: "Error al actualizar la entrega" });
+  }
+}
