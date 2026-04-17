@@ -10,6 +10,8 @@ export interface IDocumentDelivery extends MongooseDocument {
   workerId: Types.ObjectId;
   sentAt: Date;
   readAt: Date | null;
+  /** Phase-1 internal acknowledgment timestamp; null until acknowledged. */
+  acknowledgedAt: Date | null;
 }
 
 const DocumentDeliverySchema = new Schema<IDocumentDelivery>(
@@ -41,6 +43,11 @@ const DocumentDeliverySchema = new Schema<IDocumentDelivery>(
       required: false,
       default: null,
       index: true,
+    },
+    acknowledgedAt: {
+      type: Date,
+      required: false,
+      default: null,
     },
   },
   {
