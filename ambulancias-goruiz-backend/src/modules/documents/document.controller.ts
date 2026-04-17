@@ -227,7 +227,12 @@ export async function listCompanyDocuments(req: Request, res: Response) {
 
     let deliveryStats: Record<
       string,
-      { totalRecipients: number; readCount: number }
+      {
+        totalRecipients: number;
+        readCount: number;
+        acknowledgedCount: number;
+        readButNotAcknowledgedCount: number;
+      }
     > = {};
 
     if (docIds.length > 0) {
@@ -235,6 +240,8 @@ export async function listCompanyDocuments(req: Request, res: Response) {
         _id: mongoose.Types.ObjectId;
         totalRecipients: number;
         readCount: number;
+        acknowledgedCount: number;
+        readButNotAcknowledgedCount: number;
       }>([
         {
           $match: {
@@ -251,6 +258,29 @@ export async function listCompanyDocuments(req: Request, res: Response) {
                 $cond: [{ $ne: ["$readAt", null] }, 1, 0],
               },
             },
+            acknowledgedCount: {
+              $sum: {
+                $cond: [
+                  { $ne: [{ $ifNull: ["$acknowledgedAt", null] }, null] },
+                  1,
+                  0,
+                ],
+              },
+            },
+            readButNotAcknowledgedCount: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $ne: [{ $ifNull: ["$readAt", null] }, null] },
+                      { $eq: [{ $ifNull: ["$acknowledgedAt", null] }, null] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
           },
         },
       ]);
@@ -260,10 +290,20 @@ export async function listCompanyDocuments(req: Request, res: Response) {
           acc[String(cur._id)] = {
             totalRecipients: cur.totalRecipients,
             readCount: cur.readCount,
+            acknowledgedCount: cur.acknowledgedCount,
+            readButNotAcknowledgedCount: cur.readButNotAcknowledgedCount,
           };
           return acc;
         },
-        {} as Record<string, { totalRecipients: number; readCount: number }>,
+        {} as Record<
+          string,
+          {
+            totalRecipients: number;
+            readCount: number;
+            acknowledgedCount: number;
+            readButNotAcknowledgedCount: number;
+          }
+        >,
       );
     }
 
@@ -272,7 +312,11 @@ export async function listCompanyDocuments(req: Request, res: Response) {
         const stats = deliveryStats[String(d._id)] ?? {
           totalRecipients: 0,
           readCount: 0,
+          acknowledgedCount: 0,
+          readButNotAcknowledgedCount: 0,
         };
+        const pendingAcknowledgmentCount =
+          stats.totalRecipients - stats.acknowledgedCount;
         return {
           id: d._id,
           originalName: d.originalName,
@@ -283,6 +327,9 @@ export async function listCompanyDocuments(req: Request, res: Response) {
           uploadBatchId: d.uploadBatchId ? String(d.uploadBatchId) : null,
           totalRecipients: stats.totalRecipients,
           readCount: stats.readCount,
+          acknowledgedCount: stats.acknowledgedCount,
+          pendingAcknowledgmentCount,
+          readButNotAcknowledgedCount: stats.readButNotAcknowledgedCount,
         };
       }),
     );
