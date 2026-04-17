@@ -43,6 +43,8 @@ export default function PayrollCompletionSnapshot({
     unassignedPayrollDocs > 0 || workersMissingPayroll > 0;
   const reconciliationInteractive =
     Boolean(onToggleReconciliation) && hasReconciliationPending;
+  const missingCoveredWorkers = Math.max(totalWorkers - coveredWorkers, 0);
+  const missingAssignedPayrolls = Math.max(unassignedPayrollDocs, 0);
 
   const metricTileClass = "rounded-lg bg-slate-50 px-3 py-2";
 
@@ -62,12 +64,20 @@ export default function PayrollCompletionSnapshot({
         <div className="space-y-2">
           <div className={metricTileClass}>
             Workers covered:{" "}
-            <span className="font-semibold text-slate-900">{coveredWorkers}</span>
+            <span className="font-semibold text-slate-900">
+              {coveredWorkers}
+              {missingCoveredWorkers > 0 ? (
+                <span className="ml-1 text-red-600">({missingCoveredWorkers})</span>
+              ) : null}
+            </span>
           </div>
           <div className={metricTileClass}>
             Assigned payrolls:{" "}
-            <span className="font-semibold text-emerald-700">
+            <span className="font-semibold text-slate-900">
               {assignedPayrollDocs}
+              {missingAssignedPayrolls > 0 ? (
+                <span className="ml-1 text-red-600">({missingAssignedPayrolls})</span>
+              ) : null}
             </span>
           </div>
         </div>
