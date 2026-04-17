@@ -15,6 +15,24 @@ type UploadedFile = {
   mimetype?: string;
 } | undefined;
 
+/** Multipart / JSON: only explicit truthy strings count; omitted → false. */
+function parseRequiresAcknowledgmentFromBody(raw: unknown): boolean {
+  if (raw === true) return true;
+  if (typeof raw !== "string") return false;
+  const s = raw.trim().toLowerCase();
+  return s === "true" || s === "1" || s === "on" || s === "yes";
+}
+
+/**
+ * Stored `false` = informational document (no confirm). Missing field = legacy row
+ * (predates flag): keep prior behavior (confirm flow allowed).
+ */
+function requiresAcknowledgmentForApi(doc: {
+  requiresAcknowledgment?: boolean | null;
+}): boolean {
+  return doc.requiresAcknowledgment !== false;
+}
+
 async function createCompanyDocumentWithDeliveries(params: {
   companyId: mongoose.Types.ObjectId;
   adminUserId: mongoose.Types.ObjectId;
@@ -22,6 +40,7 @@ async function createCompanyDocumentWithDeliveries(params: {
   targetWorkerId?: mongoose.Types.ObjectId | null;
   workersCache?: { _id: unknown }[];
   uploadBatchId?: mongoose.Types.ObjectId | null;
+  requiresAcknowledgment?: boolean;
 }) {
   const {
     companyId,
@@ -30,6 +49,7 @@ async function createCompanyDocumentWithDeliveries(params: {
     targetWorkerId,
     workersCache,
     uploadBatchId,
+    requiresAcknowledgment,
   } = params;
 
   if (!file || !file.filename || !file.originalname || !file.mimetype) {
@@ -73,6 +93,7 @@ async function createCompanyDocumentWithDeliveries(params: {
     filename: file.filename,
     mimeType: file.mimetype,
     fileUrl: `/uploads/${file.filename}`,
+    requiresAcknowledgment: requiresAcknowledgment === true,
     deletedAt: null,
   });
 
@@ -103,6 +124,9 @@ export async function uploadCompanyDocument(req: Request, res: Response) {
   const file = (req as any)?.file as UploadedFile;
 
   const { targetWorkerId } = (req.body || {}) as { targetWorkerId?: string };
+  const requiresAcknowledgment = parseRequiresAcknowledgmentFromBody(
+    (req.body as { requiresAcknowledgment?: unknown })?.requiresAcknowledgment,
+  );
   let targetWorkerObjectId: mongoose.Types.ObjectId | null = null;
 
   if (targetWorkerId) {
@@ -122,6 +146,7 @@ export async function uploadCompanyDocument(req: Request, res: Response) {
       adminUserId,
       file,
       targetWorkerId: targetWorkerObjectId,
+      requiresAcknowledgment,
     });
 
     res.status(201).json({
@@ -131,6 +156,7 @@ export async function uploadCompanyDocument(req: Request, res: Response) {
       mimeType: doc.mimeType,
       createdAt: doc.createdAt,
       targetWorkerId: doc.targetWorkerId,
+      requiresAcknowledgment: requiresAcknowledgmentForApi(doc),
     });
   } catch (err: any) {
     if (err instanceof Error && err.message === "FILE_INVALID") {
@@ -162,6 +188,13 @@ export async function uploadCompanyDocumentsBatch(req: Request, res: Response) {
     return;
   }
 
+  const requiresAcknowledgmentForBatch =
+    files.length === 1
+      ? parseRequiresAcknowledgmentFromBody(
+          (req.body as { requiresAcknowledgment?: unknown })?.requiresAcknowledgment,
+        )
+      : false;
+
   try {
     const companyObjectId = new mongoose.Types.ObjectId(companyResult.companyId);
     const adminUserId = new mongoose.Types.ObjectId(req.userId as string);
@@ -183,6 +216,7 @@ export async function uploadCompanyDocumentsBatch(req: Request, res: Response) {
         file,
         workersCache: workers,
         uploadBatchId,
+        requiresAcknowledgment: requiresAcknowledgmentForBatch,
       });
       createdDocs.push({
         id: doc._id,
@@ -190,6 +224,7 @@ export async function uploadCompanyDocumentsBatch(req: Request, res: Response) {
         filename: doc.filename,
         mimeType: doc.mimeType,
         createdAt: doc.createdAt,
+        requiresAcknowledgment: requiresAcknowledgmentForApi(doc),
       });
     }
 
@@ -218,7 +253,7 @@ export async function listCompanyDocuments(req: Request, res: Response) {
       deletedAt: null,
     })
       .select(
-        "_id originalName filename mimeType createdAt targetWorkerId uploadBatchId",
+        "_id originalName filename mimeType createdAt targetWorkerId uploadBatchId requiresAcknowledgment",
       )
       .sort({ createdAt: -1 })
       .lean();
@@ -325,6 +360,9 @@ export async function listCompanyDocuments(req: Request, res: Response) {
           createdAt: d.createdAt,
           targetWorkerId: d.targetWorkerId ?? null,
           uploadBatchId: d.uploadBatchId ? String(d.uploadBatchId) : null,
+          requiresAcknowledgment: requiresAcknowledgmentForApi(
+            d as { requiresAcknowledgment?: boolean | null },
+          ),
           totalRecipients: stats.totalRecipients,
           readCount: stats.readCount,
           acknowledgedCount: stats.acknowledgedCount,
@@ -454,7 +492,7 @@ export async function listMyDocumentDeliveries(req: Request, res: Response) {
       companyId: companyObjectId,
       deletedAt: null,
     })
-      .select("_id originalName filename mimeType createdAt uploadBatchId")
+      .select("_id originalName filename mimeType createdAt uploadBatchId requiresAcknowledgment")
       .lean();
 
     const docById = new Map(docs.map((d) => [String(d._id), d]));
@@ -467,6 +505,7 @@ export async function listMyDocumentDeliveries(req: Request, res: Response) {
       mimeType: string;
       createdAt: Date;
       uploadBatchId: string | null;
+      requiresAcknowledgment: boolean;
       sentAt: Date;
       readAt: Date | null;
       acknowledgedAt: Date | null;
@@ -485,6 +524,9 @@ export async function listMyDocumentDeliveries(req: Request, res: Response) {
         mimeType: doc.mimeType,
         createdAt: doc.createdAt,
         uploadBatchId: doc.uploadBatchId ? String(doc.uploadBatchId) : null,
+        requiresAcknowledgment: requiresAcknowledgmentForApi(
+          doc as { requiresAcknowledgment?: boolean | null },
+        ),
         sentAt: d.sentAt,
         readAt: d.readAt ?? null,
         acknowledgedAt: ack ?? null,
@@ -633,7 +675,7 @@ export async function acknowledgeMyDocumentDelivery(req: Request, res: Response)
       companyId: companyObjectId,
       deletedAt: null,
     })
-      .select("_id")
+      .select("_id requiresAcknowledgment")
       .lean();
 
     if (!doc) {
@@ -647,6 +689,13 @@ export async function acknowledgeMyDocumentDelivery(req: Request, res: Response)
         deliveryId: String(deliveryOid),
         readAt: delivery.readAt ?? null,
         acknowledgedAt: existingAck,
+      });
+      return;
+    }
+
+    if ((doc as { requiresAcknowledgment?: boolean | null }).requiresAcknowledgment === false) {
+      res.status(400).json({
+        message: "Este documento no requiere confirmación de recepción.",
       });
       return;
     }

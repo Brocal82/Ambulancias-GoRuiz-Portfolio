@@ -11,6 +11,8 @@ export interface ICompanyDocument extends MongooseDocument {
   mimeType: string;
   /** Internal storage path (e.g. /uploads/...). Used by canAccessFile. */
   fileUrl: string;
+  /** When false, workers can read but must not confirm reception (company documents module only). */
+  requiresAcknowledgment: boolean;
   createdAt: Date;
   deletedAt: Date | null;
 }
@@ -57,6 +59,11 @@ const CompanyDocumentSchema = new Schema<ICompanyDocument>(
     fileUrl: {
       type: String,
       required: true,
+    },
+    requiresAcknowledgment: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
     deletedAt: {
       type: Date,

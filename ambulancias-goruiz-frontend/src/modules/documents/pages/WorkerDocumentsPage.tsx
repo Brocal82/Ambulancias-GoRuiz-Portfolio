@@ -101,6 +101,8 @@ export default function WorkerDocumentsPage() {
       const status = ax.response?.status;
       if (status === 409 && ax.response?.data?.message) {
         toastT.warn(ax.response.data.message);
+      } else if (status === 400 && ax.response?.data?.message) {
+        toastT.warn(ax.response.data.message);
       } else if (status === 401) {
         toastT.error("Email o contraseña incorrectos.");
       } else {
@@ -181,7 +183,8 @@ export default function WorkerDocumentsPage() {
                   <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
                     {rows.map((row) => {
                       const status = deliveryStatus(row);
-                      const canAck = !row.acknowledgedAt;
+                      const showAckButton =
+                        row.requiresAcknowledgment === true && !row.acknowledgedAt;
                       return (
                         <tr key={row.deliveryId} className={trClass}>
                           <td className="px-3 py-3 align-middle text-left">
@@ -224,7 +227,7 @@ export default function WorkerDocumentsPage() {
                               >
                                 📄 {openingId === row.deliveryId ? "Abriendo…" : "Abrir"}
                               </button>
-                              {canAck ? (
+                              {showAckButton ? (
                                 <button
                                   type="button"
                                   onClick={() => openAckModal(row)}
@@ -232,9 +235,9 @@ export default function WorkerDocumentsPage() {
                                 >
                                   Confirmar recepción
                                 </button>
-                              ) : (
+                              ) : row.requiresAcknowledgment === true ? (
                                 <span className="text-xs text-slate-400 py-2">—</span>
-                              )}
+                              ) : null}
                             </div>
                           </td>
                         </tr>

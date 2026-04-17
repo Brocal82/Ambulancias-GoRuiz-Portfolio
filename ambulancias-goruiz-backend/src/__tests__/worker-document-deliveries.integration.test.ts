@@ -46,6 +46,7 @@ describe("Worker document deliveries API (integration)", () => {
       filename: `f-${Date.now()}.pdf`,
       mimeType: "application/pdf",
       fileUrl: `/uploads/f-${Date.now()}.pdf`,
+      requiresAcknowledgment: false,
       deletedAt: null,
     });
 
@@ -66,6 +67,7 @@ describe("Worker document deliveries API (integration)", () => {
     expect(res1.status).toBe(200);
     expect(res1.body.deliveries).toHaveLength(1);
     expect(res1.body.deliveries[0].documentId).toBe(String(doc._id));
+    expect(res1.body.deliveries[0].requiresAcknowledgment).toBe(false);
 
     const res2 = await request(app)
       .get(`${API}/mine`)
@@ -280,6 +282,7 @@ describe("POST /api/documents/deliveries/:deliveryId/acknowledge (integration)",
       filename: `ack-${Date.now()}.pdf`,
       mimeType: "application/pdf",
       fileUrl: `/uploads/ack-${Date.now()}.pdf`,
+      requiresAcknowledgment: true,
       deletedAt: null,
     });
 
@@ -328,6 +331,7 @@ describe("POST /api/documents/deliveries/:deliveryId/acknowledge (integration)",
       filename: `ack2-${Date.now()}.pdf`,
       mimeType: "application/pdf",
       fileUrl: `/uploads/ack2-${Date.now()}.pdf`,
+      requiresAcknowledgment: true,
       deletedAt: null,
     });
 
@@ -379,6 +383,7 @@ describe("POST /api/documents/deliveries/:deliveryId/acknowledge (integration)",
       filename: `nr-${Date.now()}.pdf`,
       mimeType: "application/pdf",
       fileUrl: `/uploads/nr-${Date.now()}.pdf`,
+      requiresAcknowledgment: true,
       deletedAt: null,
     });
 
@@ -423,6 +428,7 @@ describe("POST /api/documents/deliveries/:deliveryId/acknowledge (integration)",
       filename: `bp-${Date.now()}.pdf`,
       mimeType: "application/pdf",
       fileUrl: `/uploads/bp-${Date.now()}.pdf`,
+      requiresAcknowledgment: true,
       deletedAt: null,
     });
 
@@ -467,6 +473,7 @@ describe("POST /api/documents/deliveries/:deliveryId/acknowledge (integration)",
       filename: `ow-${Date.now()}.pdf`,
       mimeType: "application/pdf",
       fileUrl: `/uploads/ow-${Date.now()}.pdf`,
+      requiresAcknowledgment: true,
       deletedAt: null,
     });
 
@@ -512,6 +519,7 @@ describe("POST /api/documents/deliveries/:deliveryId/acknowledge (integration)",
       filename: `ca-${Date.now()}.pdf`,
       mimeType: "application/pdf",
       fileUrl: `/uploads/ca-${Date.now()}.pdf`,
+      requiresAcknowledgment: true,
       deletedAt: null,
     });
 
@@ -561,6 +569,7 @@ describe("POST /api/documents/deliveries/:deliveryId/acknowledge (integration)",
       filename: `sd-${Date.now()}.pdf`,
       mimeType: "application/pdf",
       fileUrl: `/uploads/sd-${Date.now()}.pdf`,
+      requiresAcknowledgment: true,
       deletedAt: new Date(),
     });
 
@@ -579,6 +588,48 @@ describe("POST /api/documents/deliveries/:deliveryId/acknowledge (integration)",
       .send({ password: WORKER_PASSWORD });
 
     expect(res.status).toBe(404);
+
+    await DocumentDelivery.deleteMany({ documentId: doc._id });
+    await CompanyDocument.deleteOne({ _id: doc._id });
+    await User.deleteMany({ _id: { $in: [w1._id, adminOid] } });
+    await Company.deleteOne({ _id: companyOid });
+  });
+
+  it("rechaza confirmación si el documento no requiere confirmación (400)", async () => {
+    const { companyId, adminId } = await createTestAdminWithCompany();
+    const companyOid = new mongoose.Types.ObjectId(companyId);
+    const adminOid = new mongoose.Types.ObjectId(adminId);
+    const w1 = await createTestWorkerInCompany(companyOid, Date.now() + 171);
+
+    const doc = await CompanyDocument.create({
+      companyId: companyOid,
+      uploadedBy: adminOid,
+      targetWorkerId: null,
+      uploadBatchId: null,
+      originalName: "no-req-ack.pdf",
+      filename: `nra-${Date.now()}.pdf`,
+      mimeType: "application/pdf",
+      fileUrl: `/uploads/nra-${Date.now()}.pdf`,
+      requiresAcknowledgment: false,
+      deletedAt: null,
+    });
+
+    const del = await DocumentDelivery.create({
+      companyId: companyOid,
+      documentId: doc._id,
+      workerId: w1._id,
+      sentAt: new Date(),
+      readAt: new Date(),
+    });
+
+    const t1 = issueTestJwt(String(w1._id), "worker", companyId);
+    const res = await request(app)
+      .post(`${API}/deliveries/${String(del._id)}/acknowledge`)
+      .set("Authorization", `Bearer ${t1}`)
+      .send({ password: WORKER_PASSWORD });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain("no requiere confirmación");
 
     await DocumentDelivery.deleteMany({ documentId: doc._id });
     await CompanyDocument.deleteOne({ _id: doc._id });

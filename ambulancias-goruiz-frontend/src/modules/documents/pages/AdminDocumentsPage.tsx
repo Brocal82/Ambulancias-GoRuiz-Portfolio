@@ -20,6 +20,7 @@ type AdminDocument = {
   pendingAcknowledgmentCount: number;
   /** Present when API returns it; not shown in UI yet. */
   readButNotAcknowledgedCount?: number;
+  requiresAcknowledgment: boolean;
   /** Present for batch uploads; absent on legacy rows. */
   uploadBatchId?: string | null;
 };
@@ -115,6 +116,8 @@ const AdminDocumentsPage = () => {
   const batchInputRef = useRef<HTMLInputElement | null>(null);
   const [batchInputKey, setBatchInputKey] = useState(0);
   const [folderMode, setFolderMode] = useState(false);
+  const [requiresAcknowledgmentUpload, setRequiresAcknowledgmentUpload] =
+    useState(false);
   const [expandedBatchIds, setExpandedBatchIds] = useState<Record<string, boolean>>(
     {},
   );
@@ -140,6 +143,12 @@ const AdminDocumentsPage = () => {
     void fetchDocuments();
   }, []);
 
+  useEffect(() => {
+    if (batchFiles.length !== 1) {
+      setRequiresAcknowledgmentUpload(false);
+    }
+  }, [batchFiles.length]);
+
   const handleUpload = async () => {
     if (batchFiles.length === 0) {
       toastT.warn("Selecciona al menos un archivo antes de enviar");
@@ -150,6 +159,9 @@ const AdminDocumentsPage = () => {
     batchFiles.forEach((f) => {
       formData.append("files", f);
     });
+    if (batchFiles.length === 1 && requiresAcknowledgmentUpload) {
+      formData.append("requiresAcknowledgment", "true");
+    }
 
     setUploading(true);
     try {
@@ -160,6 +172,7 @@ const AdminDocumentsPage = () => {
       });
       toastT.success("Documentos enviados correctamente");
       setBatchFiles([]);
+      setRequiresAcknowledgmentUpload(false);
       setBatchInputKey((k) => k + 1);
       await fetchDocuments();
     } catch (err) {
@@ -270,6 +283,7 @@ const AdminDocumentsPage = () => {
                   if (folderMode) {
                     setFolderMode(false);
                     setBatchFiles([]);
+                    setRequiresAcknowledgmentUpload(false);
                     setBatchInputKey((k) => k + 1);
                   }
                 }}
@@ -287,6 +301,7 @@ const AdminDocumentsPage = () => {
                   if (!folderMode) {
                     setFolderMode(true);
                     setBatchFiles([]);
+                    setRequiresAcknowledgmentUpload(false);
                     setBatchInputKey((k) => k + 1);
                   }
                 }}
@@ -300,6 +315,23 @@ const AdminDocumentsPage = () => {
               </button>
             </div>
           </div>
+          {batchFiles.length === 1 ? (
+            <div className="mb-4 flex items-center gap-2">
+              <input
+                id="requires-ack-upload"
+                type="checkbox"
+                checked={requiresAcknowledgmentUpload}
+                onChange={(e) => setRequiresAcknowledgmentUpload(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <label
+                htmlFor="requires-ack-upload"
+                className="text-sm text-slate-700 cursor-pointer select-none"
+              >
+                Requiere confirmación
+              </label>
+            </div>
+          ) : null}
           <div className="flex flex-wrap lg:flex-nowrap items-end gap-4">
             <div className="shrink-0">
               <label
@@ -345,6 +377,7 @@ const AdminDocumentsPage = () => {
                 type="button"
                 onClick={() => {
                   setBatchFiles([]);
+                  setRequiresAcknowledgmentUpload(false);
                   setBatchInputKey((k) => k + 1);
                 }}
                 aria-label="Quitar archivos seleccionados"
