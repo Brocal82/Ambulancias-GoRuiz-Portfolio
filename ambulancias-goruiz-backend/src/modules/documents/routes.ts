@@ -5,6 +5,7 @@ import { authorizeRole } from "../../middlewares/roleMiddleware";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import { upload } from "../../middlewares/uploadMiddleware";
 import {
+  acknowledgeMyDocumentDelivery,
   deleteCompanyDocumentsBatch,
   deleteCompanyDocument,
   listCompanyDocuments,
@@ -30,6 +31,14 @@ router.patch(
   authorizeRole("worker"),
   validateObjectId("deliveryId"),
   markMyDocumentDeliveryRead,
+);
+
+router.post(
+  "/deliveries/:deliveryId/acknowledge",
+  authenticateToken,
+  authorizeRole("worker"),
+  validateObjectId("deliveryId"),
+  acknowledgeMyDocumentDelivery,
 );
 
 router.post(

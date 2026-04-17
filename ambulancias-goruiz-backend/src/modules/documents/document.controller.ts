@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import {
   requireCompanyForAdmin,
@@ -534,5 +535,146 @@ export async function markMyDocumentDeliveryRead(req: Request, res: Response) {
   } catch (err) {
     console.error("Error al marcar lectura de entrega:", err);
     res.status(500).json({ message: "Error al actualizar la entrega" });
+  }
+}
+
+/** Misma cadena que `loginUserService` ante contraseña incorrecta (no filtrar detalles). */
+const ACK_PASSWORD_AUTH_FAILURE = "Email o contraseña incorrectos.";
+
+export async function acknowledgeMyDocumentDelivery(req: Request, res: Response) {
+  const companyResult = requireCompanyForWorker(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
+
+  const { deliveryId } = req.params;
+  if (!deliveryId || !mongoose.Types.ObjectId.isValid(deliveryId)) {
+    res.status(400).json({ message: "ID de entrega no válido" });
+    return;
+  }
+
+  const rawPassword =
+    typeof (req.body as { password?: unknown })?.password === "string"
+      ? (req.body as { password: string }).password
+      : "";
+  const password = rawPassword.trim();
+
+  if (!password) {
+    res.status(400).json({ message: "Contraseña requerida" });
+    return;
+  }
+
+  try {
+    const companyObjectId = new mongoose.Types.ObjectId(companyResult.companyId);
+    const workerObjectId = new mongoose.Types.ObjectId(req.userId as string);
+    const deliveryOid = new mongoose.Types.ObjectId(deliveryId);
+
+    const delivery = await DocumentDelivery.findOne({
+      _id: deliveryOid,
+      companyId: companyObjectId,
+      workerId: workerObjectId,
+    }).lean();
+
+    if (!delivery) {
+      res.status(404).json({ message: "Entrega no encontrada" });
+      return;
+    }
+
+    const doc = await CompanyDocument.findOne({
+      _id: delivery.documentId,
+      companyId: companyObjectId,
+      deletedAt: null,
+    })
+      .select("_id")
+      .lean();
+
+    if (!doc) {
+      res.status(404).json({ message: "Entrega no encontrada" });
+      return;
+    }
+
+    const existingAck = (delivery as { acknowledgedAt?: Date | null }).acknowledgedAt;
+    if (existingAck) {
+      res.status(200).json({
+        deliveryId: String(deliveryOid),
+        readAt: delivery.readAt ?? null,
+        acknowledgedAt: existingAck,
+      });
+      return;
+    }
+
+    if (delivery.readAt == null) {
+      res.status(409).json({
+        message:
+          "Debes abrir el documento (marcar como leído) antes de confirmar su recepción.",
+      });
+      return;
+    }
+
+    const user = await User.findOne({
+      _id: workerObjectId,
+      companyId: companyObjectId,
+      isActive: true,
+    })
+      .select("password")
+      .lean();
+
+    if (!user?.password) {
+      res.status(401).json({ message: ACK_PASSWORD_AUTH_FAILURE });
+      return;
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      res.status(401).json({ message: ACK_PASSWORD_AUTH_FAILURE });
+      return;
+    }
+
+    const now = new Date();
+    const updated = await DocumentDelivery.findOneAndUpdate(
+      {
+        _id: deliveryOid,
+        companyId: companyObjectId,
+        workerId: workerObjectId,
+        acknowledgedAt: null,
+      },
+      { $set: { acknowledgedAt: now } },
+      { new: true },
+    )
+      .select("readAt acknowledgedAt")
+      .lean();
+
+    if (updated?.acknowledgedAt) {
+      res.status(200).json({
+        deliveryId: String(deliveryOid),
+        readAt: updated.readAt ?? null,
+        acknowledgedAt: updated.acknowledgedAt,
+      });
+      return;
+    }
+
+    const final = await DocumentDelivery.findOne({
+      _id: deliveryOid,
+      companyId: companyObjectId,
+      workerId: workerObjectId,
+    })
+      .select("readAt acknowledgedAt")
+      .lean();
+
+    const finalAck = (final as { acknowledgedAt?: Date | null })?.acknowledgedAt;
+    if (finalAck) {
+      res.status(200).json({
+        deliveryId: String(deliveryOid),
+        readAt: final?.readAt ?? null,
+        acknowledgedAt: finalAck,
+      });
+      return;
+    }
+
+    res.status(404).json({ message: "Entrega no encontrada" });
+  } catch (err) {
+    console.error("Error al confirmar recepción de entrega:", err);
+    res.status(500).json({ message: "Error al confirmar la recepción" });
   }
 }
