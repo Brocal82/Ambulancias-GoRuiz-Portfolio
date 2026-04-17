@@ -1,3 +1,5 @@
+import { withCommonIconButtonInteraction } from "./iconButtonStyles";
+
 interface CreateIconButtonProps {
     onClick?: () => void;
     label: string;
@@ -22,25 +24,23 @@ const CreateIconButton = ({
             title={label}
             aria-label={label}
             disabled={disabled}
-            className={`
+            className={withCommonIconButtonInteraction(`
                 inline-flex items-center justify-center
                 h-9 w-9
                 rounded-md
                 bg-white
                 text-slate-600
-                ring-1 ring-slate-300
                 shadow-sm
                 transition
                 hover:bg-slate-50
                 hover:text-slate-800
                 hover:ring-orange-400
-                hover:-translate-y-[1px]
                 focus:outline-none
                 focus:ring-2 focus:ring-slate-400
                 disabled:opacity-50
                 disabled:cursor-not-allowed
                 ${className}
-            `}
+            `)}
         >
             <span className="text-base leading-none" aria-hidden>
                 ➕

@@ -1,4 +1,5 @@
 import React from "react";
+import { withCommonIconButtonInteraction } from "./iconButtonStyles";
 
 interface DayOffIconButtonProps
     extends React.ButtonHTMLAttributes<HTMLButtonElement> { }
@@ -13,7 +14,7 @@ const DayOffIconButton = ({
         <button
             type={type}
             title={title}
-            className={`
+            className={withCommonIconButtonInteraction(`
         inline-flex items-center justify-center
         w-14 h-14
         rounded-full
@@ -21,13 +22,12 @@ const DayOffIconButton = ({
         text-slate-700
         transition
         hover:bg-emerald-50
-        active:scale-95
 
         disabled:opacity-60
         disabled:cursor-not-allowed
         disabled:hover:bg-transparent
         ${className}
-      `}
+      `)}
             {...props}
         >
             🌴

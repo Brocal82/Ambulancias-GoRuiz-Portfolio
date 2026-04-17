@@ -1,5 +1,6 @@
 // frontend/src/components/common/actions/EditIconButton.tsx
 import React from "react";
+import { withCommonIconButtonInteraction } from "./iconButtonStyles";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
     title?: string;
@@ -10,10 +11,9 @@ const EditIconButton = ({ title = "Editar", className = "", ...props }: Props) =
         <button
             type="button"
             title={title}
-            className={
-                `inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-base hover:bg-gray-100 transition ` +
-                className
-            }
+            className={withCommonIconButtonInteraction(
+                `inline-flex h-8 w-8 items-center justify-center rounded-full text-base hover:bg-gray-100 transition ${className}`,
+            )}
             {...props}
         >
             ✏️

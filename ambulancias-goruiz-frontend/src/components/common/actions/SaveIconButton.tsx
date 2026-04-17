@@ -1,5 +1,6 @@
 // frontend/src/components/common/actions/SaveIconButton.tsx
 import React from "react";
+import { withCommonIconButtonInteraction } from "./iconButtonStyles";
 
 interface SaveButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> { }
 
@@ -13,7 +14,7 @@ const SaveIconButton = ({
         <button
             type={type}
             title={title}
-            className={`
+            className={withCommonIconButtonInteraction(`
         inline-flex items-center justify-center
         w-14 h-14
         rounded-full
@@ -21,13 +22,12 @@ const SaveIconButton = ({
         text-slate-700
         transition
         hover:bg-slate-100
-        active:scale-95
 
         disabled:opacity-60
         disabled:cursor-not-allowed
         disabled:hover:bg-transparent
         ${className}
-      `}
+      `)}
             {...props}
         >
             💾

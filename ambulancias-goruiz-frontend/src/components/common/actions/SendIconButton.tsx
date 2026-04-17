@@ -1,3 +1,5 @@
+import { withCommonIconButtonInteraction } from "./iconButtonStyles";
+
 interface SendIconButtonProps {
   onClick?: () => void;
   disabled?: boolean;
@@ -18,7 +20,9 @@ export default function SendIconButton({
       disabled={disabled}
       title={title}
       aria-label={title}
-      className={`inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      className={withCommonIconButtonInteraction(
+        `inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed ${className}`,
+      )}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
