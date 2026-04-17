@@ -16,6 +16,10 @@ type AdminDocument = {
   createdAt: string;
   totalRecipients: number;
   readCount: number;
+  acknowledgedCount: number;
+  pendingAcknowledgmentCount: number;
+  /** Present when API returns it; not shown in UI yet. */
+  readButNotAcknowledgedCount?: number;
   /** Present for batch uploads; absent on legacy rows. */
   uploadBatchId?: string | null;
 };
@@ -393,6 +397,12 @@ const AdminDocumentsPage = () => {
                     <th className="px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
                       Leídos
                     </th>
+                    <th className="px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
+                      Confirmados
+                    </th>
+                    <th className="px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
+                      Pendientes confirmación
+                    </th>
                     <th className="px-4 py-2 text-xs font-medium text-slate-600 text-right">
                       Acciones
                     </th>
@@ -421,6 +431,12 @@ const AdminDocumentsPage = () => {
                         </td>
                         <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
                           {row.doc.readCount}
+                        </td>
+                        <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                          {row.doc.acknowledgedCount}
+                        </td>
+                        <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                          {row.doc.pendingAcknowledgmentCount}
                         </td>
                         <td className="px-4 py-2 text-right space-x-2">
                           <button
@@ -469,6 +485,12 @@ const AdminDocumentsPage = () => {
                           <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
                             {row.docs[0].readCount}
                           </td>
+                          <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                            {row.docs[0].acknowledgedCount}
+                          </td>
+                          <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                            {row.docs[0].pendingAcknowledgmentCount}
+                          </td>
                           <td className="px-4 py-2 text-right">
                             <button
                               type="button"
@@ -486,7 +508,7 @@ const AdminDocumentsPage = () => {
                         </tr>
                         {expandedBatchIds[row.uploadBatchId] ? (
                           <tr className="bg-slate-50/80">
-                            <td colSpan={6} className="px-4 py-2 pl-10">
+                            <td colSpan={8} className="px-4 py-2 pl-10">
                               <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
                                 <table className="min-w-full text-left text-sm">
                                   <tbody className="divide-y divide-slate-100">
@@ -511,6 +533,12 @@ const AdminDocumentsPage = () => {
                                         </td>
                                         <td className="px-3 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
                                           {doc.readCount}
+                                        </td>
+                                        <td className="px-3 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                                          {doc.acknowledgedCount}
+                                        </td>
+                                        <td className="px-3 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                                          {doc.pendingAcknowledgmentCount}
                                         </td>
                                         <td className="px-3 py-2 text-right space-x-2 whitespace-nowrap">
                                           <button
