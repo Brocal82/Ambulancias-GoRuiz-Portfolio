@@ -4,6 +4,7 @@ import SickLeave from "../modules/sick-leaves/models/sick-leave.model";
 import { Message } from "../modules/messages/models/message.model";
 import PayrollDocument from "../modules/payroll/models/payroll-document.model";
 import { CompanyDocument } from "../modules/documents/models/document.model";
+import { DocumentDelivery } from "../modules/documents/models/document-delivery.model";
 import { isSameCompany } from "./requireCompany";
 
 /**
@@ -15,6 +16,7 @@ import { isSameCompany } from "./requireCompany";
  *                                              (legacy companyId=null uses user fallback)
  *   - Message.attachments[].url:              sender or explicit recipient only
  *   - PayrollDocument.fileUrl:                worker who owns it, or admin of same company
+ *   - CompanyDocument.fileUrl:                admin of same company, or worker with DocumentDelivery
  *
  * Same-company alone is NOT sufficient for workers — they may only access
  * files they directly own or are explicitly authorized to view.
@@ -147,6 +149,32 @@ export async function canAccessFile(
       .select("_id")
       .lean();
     if (adminDoc) return true;
+  }
+
+  // ── 7b. CompanyDocument — worker with DocumentDelivery same company ─────────
+  if (
+    userRole === "worker" &&
+    companyId &&
+    mongoose.Types.ObjectId.isValid(companyId)
+  ) {
+    const companyOid = new mongoose.Types.ObjectId(companyId);
+    const companyDoc = await CompanyDocument.findOne({
+      companyId: companyOid,
+      fileUrl: storedPath,
+      deletedAt: null,
+    })
+      .select("_id")
+      .lean();
+    if (companyDoc) {
+      const delivery = await DocumentDelivery.findOne({
+        companyId: companyOid,
+        documentId: companyDoc._id,
+        workerId: userOid,
+      })
+        .select("_id")
+        .lean();
+      if (delivery) return true;
+    }
   }
 
   return false;
