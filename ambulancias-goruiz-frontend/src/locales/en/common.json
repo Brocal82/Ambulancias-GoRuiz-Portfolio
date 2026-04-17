@@ -209,6 +209,10 @@
                 "title": "🛠 Payroll/Documents",
                 "desc": "Coming soon"
             },
+            "companyDocuments": {
+                "title": "📄 Company documents",
+                "desc": "View and confirm receipt of company documents"
+            },
             "game": {
                 "title": "🛠 Game/Training",
                 "desc": "Coming soon"

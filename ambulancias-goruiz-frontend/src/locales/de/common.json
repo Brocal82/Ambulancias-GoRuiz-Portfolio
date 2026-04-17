@@ -209,6 +209,10 @@
                 "title": "🛠 Löhne/Dokumente",
                 "desc": "Demnächst"
             },
+            "companyDocuments": {
+                "title": "📄 Unternehmensdokumente",
+                "desc": "Dokumente ansehen und den Erhalt bestätigen"
+            },
             "game": {
                 "title": "🛠 Spiel/Schulung",
                 "desc": "Demnächst"

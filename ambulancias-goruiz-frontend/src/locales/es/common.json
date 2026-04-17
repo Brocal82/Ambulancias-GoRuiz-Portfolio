@@ -209,6 +209,10 @@
                 "title": "🛠 Nóminas/Documentos",
                 "desc": "Próximamente"
             },
+            "companyDocuments": {
+                "title": "📄 Documentos de empresa",
+                "desc": "Consulta y confirma la recepción de documentos"
+            },
             "game": {
                 "title": "🛠 Juego/Formacion",
                 "desc": "Próximamente"

@@ -47,6 +47,7 @@ import AdminPayrollPage from "./modules/payroll/pages/AdminPayrollPage";
 import PayrollYearHubPage from "./modules/payroll/pages/PayrollYearHubPage";
 import AdminPayrollModuleHubPage from "./modules/payroll/pages/AdminPayrollModuleHubPage";
 import AdminDocumentsPage from "./modules/documents/pages/AdminDocumentsPage";
+import WorkerDocumentsPage from "./modules/documents/pages/WorkerDocumentsPage";
 import AdminPayrollSignaturePlaceholderPage from "./modules/payroll/pages/AdminPayrollSignaturePlaceholderPage";
 import WorkerPayrollPage from "./modules/payroll/pages/WorkerPayrollPage";
 
@@ -90,6 +91,7 @@ export default function App() {
               <Route path="/my-workday" element={<MyWorkdayPage />} />
               <Route path="/worker/appointments" element={<WorkerAppointmentsPage />} />
               <Route path="/worker/payroll" element={<WorkerPayrollPage />} />
+              <Route path="/worker/documents" element={<WorkerDocumentsPage />} />
 
               <Route element={<RequireRole role="superadmin" />}>
                 <Route path="/superadmin" element={<SuperadminDashboard />} />
