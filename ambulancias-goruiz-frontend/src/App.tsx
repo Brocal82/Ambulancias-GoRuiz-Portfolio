@@ -48,7 +48,6 @@ import PayrollYearHubPage from "./modules/payroll/pages/PayrollYearHubPage";
 import AdminPayrollModuleHubPage from "./modules/payroll/pages/AdminPayrollModuleHubPage";
 import AdminDocumentsPage from "./modules/documents/pages/AdminDocumentsPage";
 import WorkerDocumentsPage from "./modules/documents/pages/WorkerDocumentsPage";
-import AdminPayrollSignaturePlaceholderPage from "./modules/payroll/pages/AdminPayrollSignaturePlaceholderPage";
 import WorkerPayrollPage from "./modules/payroll/pages/WorkerPayrollPage";
 
 function RedirectToCurrentPayrollMonth() {
@@ -127,10 +126,6 @@ export default function App() {
                 <Route
                   path="/admin/payroll/docs"
                   element={<AdminDocumentsPage />}
-                />
-                <Route
-                  path="/admin/payroll/signature"
-                  element={<AdminPayrollSignaturePlaceholderPage />}
                 />
                 <Route
                   path="/admin/payroll/month/:year/:month"
