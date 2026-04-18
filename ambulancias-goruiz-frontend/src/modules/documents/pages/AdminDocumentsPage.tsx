@@ -315,23 +315,6 @@ const AdminDocumentsPage = () => {
               </button>
             </div>
           </div>
-          {batchFiles.length === 1 ? (
-            <div className="mb-4 flex items-center gap-2">
-              <input
-                id="requires-ack-upload"
-                type="checkbox"
-                checked={requiresAcknowledgmentUpload}
-                onChange={(e) => setRequiresAcknowledgmentUpload(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-              />
-              <label
-                htmlFor="requires-ack-upload"
-                className="text-sm text-slate-700 cursor-pointer select-none"
-              >
-                Requiere confirmación
-              </label>
-            </div>
-          ) : null}
           <div className="flex flex-wrap lg:flex-nowrap items-end gap-4">
             <div className="shrink-0">
               <label
@@ -366,27 +349,54 @@ const AdminDocumentsPage = () => {
               />
             </div>
             <div className="w-full lg:w-auto lg:ml-auto flex items-center gap-3 lg:justify-end">
-              <div
-                className={`w-[220px] min-w-[180px] max-w-[260px] text-right text-xs leading-tight truncate ${batchFiles.length > 0 ? "text-blue-600 font-medium" : "text-slate-500"}`}
-                title={batchSelection.title}
-              >
-                {batchSelection.text}
+              <div className="inline-flex min-w-0 shrink items-center gap-1">
+                {batchFiles.length === 1 ? (
+                  <label
+                    htmlFor="requires-ack-upload"
+                    className="inline-flex shrink-0 cursor-pointer select-none items-center gap-1"
+                  >
+                    <span
+                      className="box-border flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 leading-none shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-500 ease-in-out hover:-translate-y-0.5 hover:border-orange-200 hover:bg-slate-100 hover:shadow-md"
+                      aria-hidden="true"
+                    >
+                      <span className="flex h-full w-full items-center justify-center text-3xl leading-none">
+                        🫆
+                      </span>
+                    </span>
+                    <input
+                      id="requires-ack-upload"
+                      type="checkbox"
+                      checked={requiresAcknowledgmentUpload}
+                      onChange={(e) =>
+                        setRequiresAcknowledgmentUpload(e.target.checked)
+                      }
+                      className="h-4 w-4 shrink-0 rounded border-slate-300 text-green-600 accent-green-600 focus:ring-green-500"
+                      aria-label="Requiere confirmación por el trabajador"
+                    />
+                  </label>
+                ) : null}
+                <div
+                  className={`w-[220px] min-w-[180px] max-w-[260px] text-right text-xs leading-tight truncate ${batchFiles.length > 0 ? "text-blue-600 font-medium" : "text-slate-500"}`}
+                  title={batchSelection.title}
+                >
+                  {batchSelection.text}
+                </div>
               </div>
-            {batchFiles.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setBatchFiles([]);
-                  setRequiresAcknowledgmentUpload(false);
-                  setBatchInputKey((k) => k + 1);
-                }}
-                aria-label="Quitar archivos seleccionados"
-                title="Quitar archivos"
-                className="shrink-0 text-red-400 hover:text-red-600 text-sm leading-none cursor-pointer"
-              >
-                ✕
-              </button>
-            ) : null}
+              {batchFiles.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBatchFiles([]);
+                    setRequiresAcknowledgmentUpload(false);
+                    setBatchInputKey((k) => k + 1);
+                  }}
+                  aria-label="Quitar archivos seleccionados"
+                  title="Quitar archivos"
+                  className="shrink-0 text-red-400 hover:text-red-600 text-sm leading-none cursor-pointer"
+                >
+                  ✕
+                </button>
+              ) : null}
               <SendIconButton
                 onClick={handleUpload}
                 disabled={uploading || batchFiles.length === 0}
