@@ -269,7 +269,7 @@ const AdminDocumentsPage = () => {
           <h2 className="text-sm font-semibold text-slate-800">
             Subir documentos
           </h2>
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center justify-between mb-4">
             <div className="relative inline-grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-100 p-0.5">
               <span
                 aria-hidden="true"
@@ -314,6 +314,31 @@ const AdminDocumentsPage = () => {
                 Carpeta
               </button>
             </div>
+            {batchFiles.length === 1 ? (
+              <label
+                htmlFor="requires-ack-upload"
+                className="inline-flex shrink-0 cursor-pointer select-none items-center gap-1"
+              >
+                <span
+                  className="box-border flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 leading-none shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-500 ease-in-out hover:-translate-y-0.5 hover:border-orange-200 hover:bg-slate-100 hover:shadow-md"
+                  aria-hidden="true"
+                >
+                  <span className="flex h-full w-full items-center justify-center text-3xl leading-none">
+                    🫆
+                  </span>
+                </span>
+                <input
+                  id="requires-ack-upload"
+                  type="checkbox"
+                  checked={requiresAcknowledgmentUpload}
+                  onChange={(e) =>
+                    setRequiresAcknowledgmentUpload(e.target.checked)
+                  }
+                  className="h-4 w-4 shrink-0 rounded border-slate-300 text-green-600 accent-green-600 focus:ring-green-500"
+                  aria-label="Requiere confirmación por el trabajador"
+                />
+              </label>
+            ) : null}
           </div>
           <div className="flex flex-wrap lg:flex-nowrap items-end gap-4">
             <div className="shrink-0">
@@ -349,38 +374,11 @@ const AdminDocumentsPage = () => {
               />
             </div>
             <div className="w-full lg:w-auto lg:ml-auto flex items-center gap-3 lg:justify-end">
-              <div className="inline-flex min-w-0 shrink items-center gap-1">
-                {batchFiles.length === 1 ? (
-                  <label
-                    htmlFor="requires-ack-upload"
-                    className="inline-flex shrink-0 cursor-pointer select-none items-center gap-1"
-                  >
-                    <span
-                      className="box-border flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 leading-none shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-500 ease-in-out hover:-translate-y-0.5 hover:border-orange-200 hover:bg-slate-100 hover:shadow-md"
-                      aria-hidden="true"
-                    >
-                      <span className="flex h-full w-full items-center justify-center text-3xl leading-none">
-                        🫆
-                      </span>
-                    </span>
-                    <input
-                      id="requires-ack-upload"
-                      type="checkbox"
-                      checked={requiresAcknowledgmentUpload}
-                      onChange={(e) =>
-                        setRequiresAcknowledgmentUpload(e.target.checked)
-                      }
-                      className="h-4 w-4 shrink-0 rounded border-slate-300 text-green-600 accent-green-600 focus:ring-green-500"
-                      aria-label="Requiere confirmación por el trabajador"
-                    />
-                  </label>
-                ) : null}
-                <div
-                  className={`w-[220px] min-w-[180px] max-w-[260px] text-right text-xs leading-tight truncate ${batchFiles.length > 0 ? "text-blue-600 font-medium" : "text-slate-500"}`}
-                  title={batchSelection.title}
-                >
-                  {batchSelection.text}
-                </div>
+              <div
+                className={`w-[220px] min-w-[180px] max-w-[260px] text-right text-xs leading-tight truncate ${batchFiles.length > 0 ? "text-blue-600 font-medium" : "text-slate-500"}`}
+                title={batchSelection.title}
+              >
+                {batchSelection.text}
               </div>
               {batchFiles.length > 0 ? (
                 <button
