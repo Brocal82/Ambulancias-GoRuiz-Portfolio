@@ -8,6 +8,7 @@ import {
 import { monthLabel as fmtMonth } from "../../../utils/intl";
 import { useVacationAvailabilityInvalidation } from "../hooks/useVacationAvailabilityInvalidation";
 import { isPastLocalDay } from "../utils/isPastLocalDay";
+import SendIconButton from "../../../components/common/actions/SendIconButton";
 
 type DayState = "green" | "red";
 
@@ -580,8 +581,7 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
                             {/* CTA abajo derecha */}
                             {selectedSummary && (
                                 <div className="mt-2 flex justify-end">
-                                    <button
-                                        type="button"
+                                    <SendIconButton
                                         disabled={!canSubmit}
                                         onClick={() => {
                                             if (!selectedSummary) return;
@@ -592,10 +592,8 @@ const AdminAlternativeOptionModal: React.FC<Props> = ({
                                                 days: selectedSummary.days,
                                             });
                                         }}
-                                        className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-xs font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50"
-                                    >
-                                        {String(t("pages.vacations.altModal.send", { defaultValue: "Enviar" }))}
-                                    </button>
+                                        title={String(t("pages.vacations.altModal.send", { defaultValue: "Enviar" }))}
+                                    />
                                 </div>
                             )}
                         </div>

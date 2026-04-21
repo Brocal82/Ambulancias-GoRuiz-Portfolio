@@ -5,6 +5,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import { emitAppointmentsChanged } from "../utils/appointmentEvents";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
+import SendIconButton from "../../../components/common/actions/SendIconButton";
 
 interface Props {
   isOpen: boolean;
@@ -117,15 +118,13 @@ export default function RequestAppointmentModal({
           >
             {t("pages.appointments.request.actions.cancel")}
           </button>
-          <button
+          <SendIconButton
             onClick={handleSubmit}
-            className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-60"
             disabled={!canSubmit || loading}
-          >
-            {loading
+            title={loading
               ? t("pages.appointments.request.actions.submitting")
               : t("pages.appointments.request.actions.submit")}
-          </button>
+          />
         </div>
       </div>
     </div>

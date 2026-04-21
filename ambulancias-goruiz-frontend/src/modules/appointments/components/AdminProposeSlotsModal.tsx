@@ -6,6 +6,7 @@ import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { APP_TZ } from "../../../config/app";
 import { localDateTimeToUtcISO } from "../../../utils/tz";
 import { useTranslation } from "react-i18next";
+import SendIconButton from "../../../components/common/actions/SendIconButton";
 import type { Appointment } from "../domain/types";
 
 interface Props {
@@ -226,15 +227,13 @@ export default function AdminProposeSlotsModal({
           >
             {t("pages.appointments.propose.actions.cancel")}
           </button>
-          <button
+          <SendIconButton
             onClick={handleSubmit}
-            className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-100 disabled:opacity-60"
             disabled={!canSubmit || loading}
-          >
-            {loading
+            title={loading
               ? t("pages.appointments.propose.actions.submitting")
               : t("pages.appointments.propose.actions.submit")}
-          </button>
+          />
         </div>
       </div>
     </div>

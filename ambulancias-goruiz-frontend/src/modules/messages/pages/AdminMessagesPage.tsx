@@ -14,7 +14,7 @@ import { useMessageExpansion } from "../hooks/useMessageExpansion";
 import { sortMessagesByDateDesc } from "../utils/sortMessagesByDateDesc";
 import MessagesMonthPickerModal from "../components/MessagesMonthPickerModal";
 import RecipientsPicker from "../components/RecipientsPicker";
-import SendMessageButton from "../components/SendMessageButton";
+import SendIconButton from "../../../components/common/actions/SendIconButton";
 import { useMessagesChanged } from "../hooks/useMessagesChanged";
 import { emitMessagesChanged } from "../utils/messageEvents";
 
@@ -235,12 +235,10 @@ const AdminMessagesPage = () => {
 
           {/* Acciones */}
           <div className="flex justify-end pt-4">
-            <SendMessageButton
+            <SendIconButton
               onClick={handleSend}
               disabled={!canSend || loading}
-              loading={loading}
-              label={t("pages.messages.adminPage.actions.send") as string}
-              loadingLabel={t("pages.messages.adminPage.actions.sending") as string}
+              title={t("pages.messages.adminPage.actions.send") as string}
             />
 
 

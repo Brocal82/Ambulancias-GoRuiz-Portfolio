@@ -9,6 +9,7 @@ import { useVacationAvailabilityInvalidation } from "../hooks/useVacationAvailab
 import { toBerlinDayKey, todayBerlinDayKey } from "../../../utils/dates/dayKey";
 import { isPastLocalDay } from "../utils/isPastLocalDay";
 import type { IVacationRequest } from "../domain/types";
+import SendIconButton from "../../../components/common/actions/SendIconButton";
 import WorkerMonthRequests from "./WorkerMonthRequests";
 
 type DayState = "green" | "yellow" | "red";
@@ -715,8 +716,7 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                             {/* 3) Botón separado abajo a la derecha */}
                             {selectedSummary && (
                                 <div className="mt-2 flex justify-end">
-                                    <button
-                                        type="button"
+                                    <SendIconButton
                                         disabled={!canRequest}
                                         onClick={() => {
                                             if (!selectedSummary) return;
@@ -726,14 +726,12 @@ const SelectableWorkerAvailabilityMonthModal: React.FC<Props> = ({
                                                 days: selectedSummary.days,
                                             });
                                         }}
-                                        className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-xs font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50"
-                                    >
-                                        {String(
+                                        title={String(
                                             t("pages.vacations.workerPage.requestFromGrid", {
                                                 defaultValue: "Solicitar",
                                             }),
                                         )}
-                                    </button>
+                                    />
                                 </div>
                             )}
                         </div>

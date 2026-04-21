@@ -13,6 +13,7 @@ import { startOfDay } from "date-fns";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { useAuth } from "../../../hooks/useAuth";
+import SendIconButton from "../../../components/common/actions/SendIconButton";
 import {
   createVacationRequest,
   getVacationAvailability,
@@ -337,15 +338,15 @@ const VacationRequestForm: React.FC<VacationRequestFormProps> = ({
         </p>
       )}
 
-      <button
-        disabled={loading}
-        onClick={handleSubmit}
-        className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50"
-      >
-        {loading
-          ? t("pages.vacations.requestForm.sending")
-          : t("pages.vacations.requestForm.send")}
-      </button>
+      <div className="mt-4 flex justify-end">
+        <SendIconButton
+          disabled={loading}
+          onClick={handleSubmit}
+          title={loading
+            ? t("pages.vacations.requestForm.sending")
+            : t("pages.vacations.requestForm.send")}
+        />
+      </div>
     </div>
   );
 };

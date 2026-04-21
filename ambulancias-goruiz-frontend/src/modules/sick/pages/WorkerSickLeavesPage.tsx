@@ -10,6 +10,7 @@ import {
   type SickLeave,
 } from "../domain";
 import FileUpload from "../../../components/common/FileUpload";
+import SendIconButton from "../../../components/common/actions/SendIconButton";
 import { openSecureFile } from "../../../utils/openSecureFile";
 import { displayFileNameFromUrl } from "../../../utils/fileName";
 import SickLeaveRequestForm from "../components/SickLeaveRequestForm";
@@ -325,16 +326,15 @@ export default function WorkerSickLeavesPage() {
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  onClick={onSubmit as any}
-                  disabled={!canSubmit || loading || isCreatingUpload}
-                  className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50"
-                >
-                  {isCreatingUpload
-                    ? t("pages.sick.create.uploading", "Enviando…")
-                    : t("pages.sick.create.submit", "Enviar")}
-                </button>
+                <div className="mt-4 flex justify-end">
+                  <SendIconButton
+                    onClick={onSubmit as any}
+                    disabled={!canSubmit || loading || isCreatingUpload}
+                    title={isCreatingUpload
+                      ? t("pages.sick.create.uploading", "Enviando…")
+                      : t("pages.sick.create.submit", "Enviar")}
+                  />
+                </div>
               </div>
             </div>
           </div>
