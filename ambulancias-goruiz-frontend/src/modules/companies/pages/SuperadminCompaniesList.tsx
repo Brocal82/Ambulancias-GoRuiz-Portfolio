@@ -1,16 +1,32 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCompanies } from "../domain/api";
+import { deleteCompany, getCompanies } from "../domain/api";
 import type { Company } from "../domain/types";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import CreateIconButton from "../../../components/common/actions/CreateIconButton";
 import EditIconButton from "../../../components/common/actions/EditIconButton";
 import CreateAdminIconButton from "../../../components/common/actions/CreateAdminIconButton";
+import DangerDeleteButton from "../../../components/common/actions/DangerDeleteButton";
 
 export default function SuperadminCompaniesList() {
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const handleDelete = async (company: Company) => {
+    if (
+      !window.confirm(
+        `¿Eliminar la empresa "${company.name}"? Esta acción no se puede deshacer.`,
+      )
+    ) return;
+    try {
+      await deleteCompany(company._id);
+      toastT.success("Empresa eliminada correctamente");
+      setCompanies((prev) => prev.filter((c) => c._id !== company._id));
+    } catch (e: unknown) {
+      toastT.error(getApiErrorMessage(e, "Error al eliminar la empresa"));
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -55,7 +71,7 @@ export default function SuperadminCompaniesList() {
                 <th className="px-4 py-3 font-semibold text-center">Admins</th>
                 <th className="px-4 py-3 font-semibold text-center">Trabajadores</th>
                 <th className="px-4 py-3 font-semibold text-center">Activa</th>
-                <th className="px-4 py-3 font-semibold text-right">Acciones</th>
+                <th className="px-4 py-3 font-semibold text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -77,7 +93,7 @@ export default function SuperadminCompaniesList() {
                       : <span className="text-lg leading-none">❌</span>}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-center gap-2">
                       <EditIconButton
                         onClick={() => navigate(`/superadmin/companies/${c._id}`)}
                         title="Editar empresa"
@@ -85,6 +101,11 @@ export default function SuperadminCompaniesList() {
                       <CreateAdminIconButton
                         onClick={() => navigate(`/superadmin/companies/${c._id}/admin`)}
                         title="Crear admin"
+                      />
+                      <DangerDeleteButton
+                        onClick={() => void handleDelete(c)}
+                        title="Eliminar empresa"
+                        className="!w-8 !h-8 !text-base"
                       />
                     </div>
                   </td>
