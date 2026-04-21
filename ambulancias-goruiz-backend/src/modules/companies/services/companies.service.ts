@@ -50,6 +50,11 @@ export async function getCompanyById(id: string) {
   return await Company.findById(id).lean();
 }
 
+export async function deleteCompany(id: string) {
+  if (!mongoose.Types.ObjectId.isValid(id)) return null;
+  return await Company.findByIdAndDelete(id).lean();
+}
+
 export async function getCompanyAdmins(companyId: string) {
   if (!mongoose.Types.ObjectId.isValid(companyId)) return [];
   return await User.find(

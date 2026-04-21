@@ -62,6 +62,19 @@ export const getMyCompany = async (req: Request, res: Response): Promise<void> =
   }
 };
 
+export const deleteCompany = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const deleted = await companiesService.deleteCompany(req.params.id);
+    if (!deleted) {
+      res.status(404).json({ message: "Empresa no encontrada" });
+      return;
+    }
+    res.status(200).json({ message: "Empresa eliminada correctamente" });
+  } catch {
+    res.status(500).json({ message: "Error al eliminar la empresa" });
+  }
+};
+
 export const getCompanyAdmins = async (req: Request, res: Response): Promise<void> => {
   try {
     const admins = await companiesService.getCompanyAdmins(req.params.id);

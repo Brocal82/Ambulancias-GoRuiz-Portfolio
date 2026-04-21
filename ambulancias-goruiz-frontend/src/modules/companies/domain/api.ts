@@ -35,6 +35,10 @@ export const updateCompany = async (
   return res.data;
 };
 
+export const deleteCompany = async (id: string): Promise<void> => {
+  await axios.delete(`/companies/${id}`);
+};
+
 export const getCompanyAdmins = async (companyId: string): Promise<CompanyAdmin[]> => {
   const res = await axios.get<CompanyAdmin[]>(`/companies/${companyId}/admins`);
   return res.data;

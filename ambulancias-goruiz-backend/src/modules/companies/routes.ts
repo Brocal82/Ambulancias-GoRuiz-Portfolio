@@ -5,6 +5,7 @@ import {
   getCompanyById,
   getMyCompany,
   updateCompany,
+  deleteCompany,
   getCompanyAdmins,
 } from "./controllers/companies.controller";
 import { createFirstAdmin } from "./controllers/company-admin.controller";
@@ -29,6 +30,7 @@ router.get("/", getAllCompanies);
 router.get("/:id", validateObjectId("id"), getCompanyById);
 router.get("/:id/admins", validateObjectId("id"), getCompanyAdmins);
 router.patch("/:id", validateObjectId("id"), validateBody(updateCompanySchema), updateCompany);
+router.delete("/:id", validateObjectId("id"), deleteCompany);
 
 router.post(
   "/:id/admin",
