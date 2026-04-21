@@ -128,23 +128,27 @@ const WorkerDashboard = () => {
           </Link>
         )}
 
-        <Link to="/worker/payroll" className={centeredCard}>
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.workerDashboard.payrollDocs.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.workerDashboard.payrollDocs.desc")}
-          </p>
-        </Link>
+        {hasModule(MODULE_KEYS.PAYROLL) && (
+          <Link to="/worker/payroll" className={centeredCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.workerDashboard.payrollDocs.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.workerDashboard.payrollDocs.desc")}
+            </p>
+          </Link>
+        )}
 
-        <Link to="/worker/documents" className={centeredCard}>
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.workerDashboard.companyDocuments.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.workerDashboard.companyDocuments.desc")}
-          </p>
-        </Link>
+        {hasModule(MODULE_KEYS.DOCUMENTS) && (
+          <Link to="/worker/documents" className={centeredCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.workerDashboard.companyDocuments.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.workerDashboard.companyDocuments.desc")}
+            </p>
+          </Link>
+        )}
 
         <div className={centeredCardDisabled}>
           <span className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">

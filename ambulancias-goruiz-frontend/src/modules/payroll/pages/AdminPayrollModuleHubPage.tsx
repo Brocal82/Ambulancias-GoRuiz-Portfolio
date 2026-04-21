@@ -1,8 +1,12 @@
 import { Link } from "react-router-dom";
+import { useModules } from "../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../constants/modules";
 
 const AdminPayrollModuleHubPage = () => {
   const baseCard =
     "bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition flex flex-col items-center text-center";
+
+  const { hasModule } = useModules();
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -20,15 +24,17 @@ const AdminPayrollModuleHubPage = () => {
           </p>
         </Link>
 
-        <Link to="/admin/payroll/docs" className={baseCard}>
-          <h2 className="text-lg font-semibold mb-2">
-            Documentos / Info para trabajador
-          </h2>
-          <p className="text-sm text-gray-600">
-            Próximamente: espacio para compartir documentación e información con
-            los trabajadores.
-          </p>
-        </Link>
+        {hasModule(MODULE_KEYS.DOCUMENTS) && (
+          <Link to="/admin/payroll/docs" className={baseCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              Documentos / Info para trabajador
+            </h2>
+            <p className="text-sm text-gray-600">
+              Próximamente: espacio para compartir documentación e información con
+              los trabajadores.
+            </p>
+          </Link>
+        )}
       </div>
     </div>
   );

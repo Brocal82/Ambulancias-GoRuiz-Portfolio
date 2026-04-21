@@ -94,8 +94,12 @@ export default function App() {
               <Route element={<RequireModule name="appointments" />}>
                 <Route path="/worker/appointments" element={<WorkerAppointmentsPage />} />
               </Route>
-              <Route path="/worker/payroll" element={<WorkerPayrollPage />} />
-              <Route path="/worker/documents" element={<WorkerDocumentsPage />} />
+              <Route element={<RequireModule name="payroll" />}>
+                <Route path="/worker/payroll" element={<WorkerPayrollPage />} />
+              </Route>
+              <Route element={<RequireModule name="documents" />}>
+                <Route path="/worker/documents" element={<WorkerDocumentsPage />} />
+              </Route>
 
               <Route element={<RequireRole role="superadmin" />}>
                 <Route path="/superadmin" element={<SuperadminDashboard />} />
@@ -130,20 +134,24 @@ export default function App() {
                 </Route>
                 <Route path="/admin/teams" element={<AdminTeamsPage />} />
                 <Route path="/admin/sick-leaves" element={<AdminSickLeavesPage />} />
-                <Route path="/admin/payroll" element={<AdminPayrollModuleHubPage />} />
-                <Route path="/admin/payroll/nominas" element={<PayrollYearHubPage />} />
-                <Route
-                  path="/admin/payroll/docs"
-                  element={<AdminDocumentsPage />}
-                />
-                <Route
-                  path="/admin/payroll/month/:year/:month"
-                  element={<AdminPayrollPage />}
-                />
-                <Route
-                  path="/admin/payroll/month"
-                  element={<RedirectToCurrentPayrollMonth />}
-                />
+                <Route element={<RequireModule name="payroll" />}>
+                  <Route path="/admin/payroll" element={<AdminPayrollModuleHubPage />} />
+                  <Route path="/admin/payroll/nominas" element={<PayrollYearHubPage />} />
+                  <Route
+                    path="/admin/payroll/month/:year/:month"
+                    element={<AdminPayrollPage />}
+                  />
+                  <Route
+                    path="/admin/payroll/month"
+                    element={<RedirectToCurrentPayrollMonth />}
+                  />
+                </Route>
+                <Route element={<RequireModule name="documents" />}>
+                  <Route
+                    path="/admin/payroll/docs"
+                    element={<AdminDocumentsPage />}
+                  />
+                </Route>
               </Route>
             </Route>
           </Route>

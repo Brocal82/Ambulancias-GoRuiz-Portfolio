@@ -1,6 +1,7 @@
 import express from "express";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { requireModule } from "../../middlewares/requireModule";
 import { upload } from "../../middlewares/uploadMiddleware";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import {
@@ -13,6 +14,7 @@ import {
   checkPayrollCoverage,
   getPayrollCoverageYearSummary,
 } from "./controllers/payroll.controller";
+import { MODULE_KEYS } from "../companies/constants/modules.constants";
 
 const router = express.Router();
 
@@ -23,6 +25,7 @@ const router = express.Router();
 router.post(
   "/upload/batch",
   authenticateToken,
+  requireModule(MODULE_KEYS.PAYROLL),
   authorizeRole("admin"),
   upload.array("payrolls", 20),
   uploadPayrollBatch,
@@ -35,6 +38,7 @@ router.post(
 router.post(
   "/upload",
   authenticateToken,
+  requireModule(MODULE_KEYS.PAYROLL),
   authorizeRole("admin"),
   upload.single("payroll"),
   uploadPayrollDocument,
@@ -45,6 +49,7 @@ router.post(
 router.patch(
   "/:id/assign",
   authenticateToken,
+  requireModule(MODULE_KEYS.PAYROLL),
   authorizeRole("admin"),
   validateObjectId("id"),
   assignPayrollDocument,
@@ -56,6 +61,7 @@ router.patch(
 router.patch(
   "/:id/invalidate",
   authenticateToken,
+  requireModule(MODULE_KEYS.PAYROLL),
   authorizeRole("admin"),
   validateObjectId("id"),
   invalidatePayrollDocument,
@@ -68,6 +74,7 @@ router.patch(
 router.get(
   "/coverage/year",
   authenticateToken,
+  requireModule(MODULE_KEYS.PAYROLL),
   authorizeRole("admin"),
   getPayrollCoverageYearSummary,
 );
@@ -75,6 +82,7 @@ router.get(
 router.get(
   "/missing",
   authenticateToken,
+  requireModule(MODULE_KEYS.PAYROLL),
   authorizeRole("admin"),
   checkPayrollCoverage,
 );
@@ -84,6 +92,7 @@ router.get(
 router.get(
   "/",
   authenticateToken,
+  requireModule(MODULE_KEYS.PAYROLL),
   authorizeRole("admin"),
   listPayrollDocumentsAdmin,
 );
@@ -93,6 +102,7 @@ router.get(
 router.get(
   "/mine",
   authenticateToken,
+  requireModule(MODULE_KEYS.PAYROLL),
   listMyPayrollDocuments,
 );
 
