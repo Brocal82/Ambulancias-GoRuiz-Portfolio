@@ -90,7 +90,9 @@ export default function App() {
               <Route element={<RequireModule name="vacation" />}>
                 <Route path="/worker/vacations" element={<WorkerVacationsPage />} />
               </Route>
-              <Route path="/worker/sick-leaves" element={<WorkerSickLeavesPage />} />
+              <Route element={<RequireModule name="sick-leaves" />}>
+                <Route path="/worker/sick-leaves" element={<WorkerSickLeavesPage />} />
+              </Route>
               <Route element={<RequireModule name="messages" />}>
                 <Route path="/worker/messages" element={<WorkerMessagesPage />} />
               </Route>
@@ -141,7 +143,9 @@ export default function App() {
                   <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
                 </Route>
                 <Route path="/admin/teams" element={<AdminTeamsPage />} />
-                <Route path="/admin/sick-leaves" element={<AdminSickLeavesPage />} />
+                <Route element={<RequireModule name="sick-leaves" />}>
+                  <Route path="/admin/sick-leaves" element={<AdminSickLeavesPage />} />
+                </Route>
                 <Route element={<RequireModule name="payroll" />}>
                   <Route path="/admin/payroll" element={<AdminPayrollModuleHubPage />} />
                   <Route path="/admin/payroll/nominas" element={<PayrollYearHubPage />} />

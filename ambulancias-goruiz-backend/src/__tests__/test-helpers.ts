@@ -12,6 +12,7 @@ import { app } from "../app";
 import { env } from "../config/env";
 import User from "../modules/users/models/user.model";
 import Company from "../modules/companies/models/company.model";
+import { V1_DEFAULT_MODULES } from "../modules/companies/constants/modules.constants";
 
 const API = "/api";
 
@@ -107,7 +108,11 @@ export async function createTestAdminWithCompany(password: string = "password123
   const suffix = Date.now() + Math.floor(Math.random() * 1000);
   const adminEmail = `admin-company-${suffix}@example.com`;
 
-  const company = await Company.create({ name: `Test Company ${suffix}`, isActive: true });
+  const company = await Company.create({
+    name: `Test Company ${suffix}`,
+    isActive: true,
+    enabledModules: [...V1_DEFAULT_MODULES],
+  });
   const hashedPassword = await bcrypt.hash(password, 10);
   const adminUser = await User.create({
     name: "Admin",

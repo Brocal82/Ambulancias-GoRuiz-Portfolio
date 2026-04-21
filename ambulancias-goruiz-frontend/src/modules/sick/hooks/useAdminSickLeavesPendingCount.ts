@@ -6,6 +6,11 @@ import { useSickLeavesChanged } from "./useSickLeavesChanged";
 type Options = {
   /** Intervalo de refresco en ms. 0 = sin polling (por defecto). */
   pollMs?: number;
+  /**
+   * Cuando skip=true el hook no realiza ninguna petición y mantiene count=0.
+   * Usar cuando el módulo sick-leaves está deshabilitado para esta empresa.
+   */
+  skip?: boolean;
 };
 
 type State = {
@@ -16,7 +21,7 @@ type State = {
 };
 
 export default function useAdminSickLeavesPendingCount(options: Options = {}) {
-  const { pollMs = 0 } = options;
+  const { pollMs = 0, skip = false } = options;
 
   const { token } = useAuth();
 
@@ -31,15 +36,7 @@ export default function useAdminSickLeavesPendingCount(options: Options = {}) {
   const intervalRef = useRef<number | null>(null);
 
   const fetchCount = useCallback(async () => {
-    if (!token) {
-      setState((s) => ({
-        ...s,
-        isLoading: false,
-        isError: false,
-        error: undefined,
-      }));
-      return;
-    }
+    if (!token || skip) return;
 
     // Loading discreto: solo spinner si aún no tenemos dato (count===0)
     setState((s) => ({ ...s, isLoading: s.count === 0 }));
@@ -64,7 +61,7 @@ export default function useAdminSickLeavesPendingCount(options: Options = {}) {
       // eslint-disable-next-line no-console
       console.warn("[useAdminSickLeavesPendingCount]", err);
     }
-  }, [token]);
+  }, [token, skip]);
 
   const refresh = useCallback(() => {
     void fetchCount();
@@ -73,11 +70,20 @@ export default function useAdminSickLeavesPendingCount(options: Options = {}) {
   // Primer fetch
   useEffect(() => {
     mountedRef.current = true;
-    void fetchCount();
+    if (token && !skip) {
+      void fetchCount();
+    } else {
+      setState({
+        count: 0,
+        isLoading: false,
+        isError: false,
+        error: undefined,
+      });
+    }
     return () => {
       mountedRef.current = false;
     };
-  }, [fetchCount]);
+  }, [fetchCount, token, skip]);
 
   // Refresco al volver a foco
   useEffect(() => {

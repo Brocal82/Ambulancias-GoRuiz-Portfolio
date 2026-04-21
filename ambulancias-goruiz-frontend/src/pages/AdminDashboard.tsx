@@ -36,7 +36,9 @@ const AdminDashboard = () => {
   const issuesHasOpen = !issuesLoading && issuesOpenCount > 0;
 
   const { count: sickPendingCount, isLoading: sickLoading } =
-    useAdminSickLeavesPendingCount();
+    useAdminSickLeavesPendingCount({
+      skip: !hasModule(MODULE_KEYS.SICK_LEAVES),
+    });
   const sickHasPending = !sickLoading && sickPendingCount > 0;
 
   // justo encima del return, dentro del componente
@@ -196,32 +198,34 @@ const AdminDashboard = () => {
           </Link>
         )}
 
-        <Link
-          to="/admin/sick-leaves"
-          className={`${centeredCardRelative} ${sickHasPending ? "ring-2 ring-orange-300" : ""}`}
-          aria-label={
-            sickHasPending
-              ? t("pages.adminDashboard.sickLeaves.title") +
-              ` (${sickPendingCount})`
-              : t("pages.adminDashboard.sickLeaves.title")
-          }
-        >
-          {!sickLoading && sickPendingCount > 0 && (
-            <span
-              className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-orange-500 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
-              aria-label={`${sickPendingCount} ${t("pages.adminDashboard.sickLeaves.pending") ?? "pendientes"}`}
-            >
-              {sickPendingCount}
-            </span>
-          )}
+        {hasModule(MODULE_KEYS.SICK_LEAVES) && (
+          <Link
+            to="/admin/sick-leaves"
+            className={`${centeredCardRelative} ${sickHasPending ? "ring-2 ring-orange-300" : ""}`}
+            aria-label={
+              sickHasPending
+                ? t("pages.adminDashboard.sickLeaves.title") +
+                ` (${sickPendingCount})`
+                : t("pages.adminDashboard.sickLeaves.title")
+            }
+          >
+            {!sickLoading && sickPendingCount > 0 && (
+              <span
+                className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-orange-500 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
+                aria-label={`${sickPendingCount} ${t("pages.adminDashboard.sickLeaves.pending") ?? "pendientes"}`}
+              >
+                {sickPendingCount}
+              </span>
+            )}
 
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.adminDashboard.sickLeaves.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.adminDashboard.sickLeaves.desc")}
-          </p>
-        </Link>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.adminDashboard.sickLeaves.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.adminDashboard.sickLeaves.desc")}
+            </p>
+          </Link>
+        )}
 
         {hasModule(MODULE_KEYS.APPOINTMENTS) && (
           <Link
