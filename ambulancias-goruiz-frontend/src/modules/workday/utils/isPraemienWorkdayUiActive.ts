@@ -7,7 +7,10 @@ export type PraemienModeEffectiveFrom = { year: number; month: number };
  * Call with `praemienEnabled` from `useModules().hasModule(MODULE_KEYS.PRAEMIEN)`.
  *
  * - Module off: never active.
- * - automatic (or unknown mode with module on): active.
+ * - automatic (or unknown mode with module on): active (ignores
+ *   `praemienModeEffectiveFrom`; deferred automatic-from-manual is not split
+ *   into a separate behavioral mode in V1 — only superadmin scheduling + APIs
+ *   use that field when stored mode is automatic).
  * - manual: active only before the first day of `praemienModeEffectiveFrom`
  *   (transition month still uses automatic-style UI). Missing effectiveFrom
  *   with manual → not active (safe default).

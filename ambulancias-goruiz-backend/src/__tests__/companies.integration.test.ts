@@ -13,6 +13,8 @@ import {
   issueTestJwt,
 } from "./test-helpers";
 import User from "../modules/users/models/user.model";
+import Company from "../modules/companies/models/company.model";
+import { V1_DEFAULT_MODULES } from "../modules/companies/constants/modules.constants";
 
 const API = "/api";
 
@@ -127,6 +129,44 @@ describe("Companies - gestión superadmin", () => {
         .send({ name: "Actualizada OK" })
         .expect(200);
       expect(res.body.name).toBe("Actualizada OK");
+    });
+
+    it("superadmin: último PATCH de praemienMode + praemienModeEffectiveFrom se persiste", async () => {
+      const createRes = await request(app)
+        .post(`${API}/companies`)
+        .set("Authorization", `Bearer ${superadminToken}`)
+        .send({
+          name: `Praemien patch ${Date.now()}`,
+          enabledModules: [...V1_DEFAULT_MODULES],
+        })
+        .expect(201);
+      const id = createRes.body._id ?? createRes.body.id;
+      const eff1 = { year: 2029, month: 4 };
+      const eff2 = { year: 2029, month: 7 };
+
+      await request(app)
+        .patch(`${API}/companies/${id}`)
+        .set("Authorization", `Bearer ${superadminToken}`)
+        .send({
+          enabledModules: [...V1_DEFAULT_MODULES],
+          praemienMode: "manual",
+          praemienModeEffectiveFrom: eff1,
+        })
+        .expect(200);
+
+      await request(app)
+        .patch(`${API}/companies/${id}`)
+        .set("Authorization", `Bearer ${superadminToken}`)
+        .send({
+          enabledModules: [...V1_DEFAULT_MODULES],
+          praemienMode: "automatic",
+          praemienModeEffectiveFrom: eff2,
+        })
+        .expect(200);
+
+      const doc = await Company.findById(id).lean();
+      expect(doc?.praemienMode).toBe("automatic");
+      expect(doc?.praemienModeEffectiveFrom).toEqual(eff2);
     });
   });
 

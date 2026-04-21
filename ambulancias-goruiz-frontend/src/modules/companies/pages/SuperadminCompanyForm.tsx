@@ -13,12 +13,10 @@ import {
   V1_LOCKED_ON_MODULES,
 } from "../../../constants/modules";
 import type { UpdateCompanyInput } from "../domain/types";
-
-function getNextCalendarMonth(): { year: number; month: number } {
-  const d = new Date();
-  const next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-  return { year: next.getFullYear(), month: next.getMonth() + 1 };
-}
+import {
+  getNextCalendarMonth,
+  shouldAttachPraemienEffectiveFromOnCompanyEdit,
+} from "../utils/praemienScheduleEdit";
 
 export default function SuperadminCompanyForm() {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +40,8 @@ export default function SuperadminCompanyForm() {
     year: number;
     month: number;
   } | null>(null);
+  /** Any Prämien mode radio change this session (fixes M→A→M last-save scheduling). */
+  const [praemienScheduleTouched, setPraemienScheduleTouched] = useState(false);
   const [loading, setLoading] = useState(!isCreate);
   const [submitting, setSubmitting] = useState(false);
 
@@ -50,6 +50,7 @@ export default function SuperadminCompanyForm() {
     setPraemienMode("automatic");
     setInitialPraemienMode(null);
     setLoadedEffectiveFrom(null);
+    setPraemienScheduleTouched(false);
   }, [isCreate]);
 
   useEffect(() => {
@@ -81,6 +82,7 @@ export default function SuperadminCompanyForm() {
             ? { year: ef.year, month: ef.month }
             : null,
         );
+        setPraemienScheduleTouched(false);
       } catch (e: unknown) {
         if (!cancelled) {
           toastT.error(getApiErrorMessage(e, "No se pudo cargar la empresa"));
@@ -138,8 +140,11 @@ export default function SuperadminCompanyForm() {
         if (hasPraemien) {
           payload.praemienMode = praemienMode;
           if (
-            initialPraemienMode !== null &&
-            praemienMode !== initialPraemienMode
+            shouldAttachPraemienEffectiveFromOnCompanyEdit({
+              initialPraemienMode,
+              praemienMode,
+              praemienScheduleTouched,
+            })
           ) {
             payload.praemienModeEffectiveFrom = getNextCalendarMonth();
           }
@@ -277,7 +282,10 @@ export default function SuperadminCompanyForm() {
                 type="radio"
                 name="praemienMode"
                 checked={praemienMode === "automatic"}
-                onChange={() => setPraemienMode("automatic")}
+                onChange={() => {
+                  setPraemienScheduleTouched(true);
+                  setPraemienMode("automatic");
+                }}
                 className="border-slate-300"
               />
               <span>Automático (comportamiento actual)</span>
@@ -287,7 +295,10 @@ export default function SuperadminCompanyForm() {
                 type="radio"
                 name="praemienMode"
                 checked={praemienMode === "manual"}
-                onChange={() => setPraemienMode("manual")}
+                onChange={() => {
+                  setPraemienScheduleTouched(true);
+                  setPraemienMode("manual");
+                }}
                 className="border-slate-300"
               />
               <span>Manual (solo guardado; sin flujo todavía)</span>
