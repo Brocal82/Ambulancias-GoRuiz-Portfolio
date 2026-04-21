@@ -239,14 +239,16 @@ const AdminDashboard = () => {
           </Link>
         )}
 
-        <Link to="/admin/messages" className={centeredCard}>
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.adminDashboard.messages.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.adminDashboard.messages.desc")}
-          </p>
-        </Link>
+        {hasModule(MODULE_KEYS.MESSAGES) && (
+          <Link to="/admin/messages" className={centeredCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.adminDashboard.messages.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.adminDashboard.messages.desc")}
+            </p>
+          </Link>
+        )}
 
         {hasModule(MODULE_KEYS.PAYROLL) && (
           <Link to="/admin/payroll" className={centeredCard}>

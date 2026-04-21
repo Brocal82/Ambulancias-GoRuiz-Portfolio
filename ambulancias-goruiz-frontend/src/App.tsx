@@ -89,7 +89,9 @@ export default function App() {
               <Route path="/worker/praemien" element={<WorkerPraemienPage />} />
               <Route path="/worker/vacations" element={<WorkerVacationsPage />} />
               <Route path="/worker/sick-leaves" element={<WorkerSickLeavesPage />} />
-              <Route path="/worker/messages" element={<WorkerMessagesPage />} />
+              <Route element={<RequireModule name="messages" />}>
+                <Route path="/worker/messages" element={<WorkerMessagesPage />} />
+              </Route>
               <Route path="/my-workday" element={<MyWorkdayPage />} />
               <Route element={<RequireModule name="appointments" />}>
                 <Route path="/worker/appointments" element={<WorkerAppointmentsPage />} />
@@ -123,8 +125,10 @@ export default function App() {
                   <Route path="/admin/hospitals" element={<AdminHospitalsPage />} />
                 </Route>
                 <Route path="/admin/vacations" element={<AdminVacationsPage />} />
-                <Route path="/admin/messages" element={<AdminMessagesPage />} />
-                <Route path="/admin/messages/sent" element={<AdminSentMessages />} />
+                <Route element={<RequireModule name="messages" />}>
+                  <Route path="/admin/messages" element={<AdminMessagesPage />} />
+                  <Route path="/admin/messages/sent" element={<AdminSentMessages />} />
+                </Route>
                 <Route path="/admin/summaries" element={<AdminSummariesPage />} />
                 <Route path="/admin/ambulances" element={<AdminAmbulancesPage />} />
                 <Route path="/admin/user/:userId" element={<AdminUserDetailDashboard />} />

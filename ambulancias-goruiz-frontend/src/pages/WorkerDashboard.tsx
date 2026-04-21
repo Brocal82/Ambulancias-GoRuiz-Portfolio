@@ -8,8 +8,11 @@ import { MODULE_KEYS } from "../constants/modules";
 
 const WorkerDashboard = () => {
   const { t } = useTranslation();
-  const { count: unreadMessages } = useUnreadMessagesCount({ pollMs: 30000 });
   const { hasModule } = useModules();
+  const { count: unreadMessages } = useUnreadMessagesCount({
+    pollMs: 30000,
+    skip: !hasModule(MODULE_KEYS.MESSAGES),
+  });
 
   // justo encima del return, dentro del componente
   const centeredCard =
@@ -73,31 +76,33 @@ const WorkerDashboard = () => {
         )}
 
         {/* MENSAJES con borde + contador (sin campana) */}
-        <Link
-          to="/worker/messages"
-          className={`${centeredCardRelative} ${unreadMessages > 0 ? "ring-2 ring-orange-300" : ""
-            }`}
-          aria-label={
-            unreadMessages > 0
-              ? `${t("pages.workerDashboard.messages.title")} (${unreadMessages} sin leer)`
-              : t("pages.workerDashboard.messages.title")
-          }
-        >
-          {unreadMessages > 0 && (
-            <span
-              className="absolute right-3 top-3 inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-orange-400 px-1.5 text-xs font-semibold text-white shadow-lg"
-              aria-hidden="true"
-            >
-              {unreadMessages}
-            </span>
-          )}
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.workerDashboard.messages.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.workerDashboard.messages.desc")}
-          </p>
-        </Link>
+        {hasModule(MODULE_KEYS.MESSAGES) && (
+          <Link
+            to="/worker/messages"
+            className={`${centeredCardRelative} ${unreadMessages > 0 ? "ring-2 ring-orange-300" : ""
+              }`}
+            aria-label={
+              unreadMessages > 0
+                ? `${t("pages.workerDashboard.messages.title")} (${unreadMessages} sin leer)`
+                : t("pages.workerDashboard.messages.title")
+            }
+          >
+            {unreadMessages > 0 && (
+              <span
+                className="absolute right-3 top-3 inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-orange-400 px-1.5 text-xs font-semibold text-white shadow-lg"
+                aria-hidden="true"
+              >
+                {unreadMessages}
+              </span>
+            )}
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.workerDashboard.messages.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.workerDashboard.messages.desc")}
+            </p>
+          </Link>
+        )}
 
         <Link to="/worker/vacations" className={centeredCard}>
           <h2 className="text-lg font-semibold mb-2">

@@ -5,9 +5,15 @@ import { useMessagesChanged } from "./useMessagesChanged";
 
 type Options = {
   pollMs?: number; // intervalo de refresco (0 = sin polling)
+  /**
+   * Cuando skip=true el hook no realiza ninguna petición y devuelve count=0.
+   * Usar cuando el módulo messages está deshabilitado para esta empresa,
+   * evitando 403 repetidos en los listeners de foco/visibilidad/polling.
+   */
+  skip?: boolean;
 };
 
-export function useUnreadMessagesCount({ pollMs = 30000 }: Options = {}) {
+export function useUnreadMessagesCount({ pollMs = 30000, skip = false }: Options = {}) {
   const { token } = useAuth();
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -16,12 +22,13 @@ export function useUnreadMessagesCount({ pollMs = 30000 }: Options = {}) {
   const hasFetchedSuccessRef = useRef(false);
 
   const fetchCount = useCallback(async () => {
+    if (!token || skip) {
+      setCount(0);
+      setLoading(false);
+      hasFetchedSuccessRef.current = false;
+      return;
+    }
     try {
-      if (!token) {
-        setCount(0);
-        hasFetchedSuccessRef.current = false;
-        return;
-      }
       // Solo loading en primera carga; polls/refetches no activan loading si ya hay dato
       setLoading(!hasFetchedSuccessRef.current);
       setError(null);
@@ -34,7 +41,7 @@ export function useUnreadMessagesCount({ pollMs = 30000 }: Options = {}) {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, skip]);
 
   useEffect(() => {
     // primera carga

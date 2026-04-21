@@ -11,30 +11,34 @@ import {
 } from "./controllers/messages.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { requireModule } from "../../middlewares/requireModule";
 import { validateBody } from "../../middlewares/validateBody";
 import { upload } from "../../middlewares/uploadMiddleware";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import { messageSchema } from "./schemas/message.schema";
 import type { ErrorRequestHandler } from "express";
+import { MODULE_KEYS } from "../companies/constants/modules.constants";
 
 const router = Router();
 
 router.post(
   "/",
   authenticateToken,
+  requireModule(MODULE_KEYS.MESSAGES),
   authorizeRole("admin"),
   upload.array("attachment", 5),
   validateBody(messageSchema),
   createMessage,
 );
 
-router.get("/", authenticateToken, authorizeRole("worker"), getMyMessages);
+router.get("/", authenticateToken, requireModule(MODULE_KEYS.MESSAGES), authorizeRole("worker"), getMyMessages);
 
-router.get("/sent", authenticateToken, authorizeRole("admin"), getSentMessages);
+router.get("/sent", authenticateToken, requireModule(MODULE_KEYS.MESSAGES), authorizeRole("admin"), getSentMessages);
 
 router.get(
   "/user/:id",
   authenticateToken,
+  requireModule(MODULE_KEYS.MESSAGES),
   authorizeRole("admin"),
   validateObjectId("id"),
   getMessagesForUserAsAdmin,
@@ -43,6 +47,7 @@ router.get(
 router.patch(
   "/:id/read",
   authenticateToken,
+  requireModule(MODULE_KEYS.MESSAGES),
   authorizeRole("worker"),
   validateObjectId("id"),
   markMessageAsRead,
@@ -51,6 +56,7 @@ router.patch(
 router.patch(
   "/:id/remove",
   authenticateToken,
+  requireModule(MODULE_KEYS.MESSAGES),
   authorizeRole("worker"),
   validateObjectId("id"),
   deleteMessageForUser,
@@ -59,6 +65,7 @@ router.patch(
 router.delete(
   "/:id",
   authenticateToken,
+  requireModule(MODULE_KEYS.MESSAGES),
   authorizeRole("admin"),
   validateObjectId("id"),
   deleteMessageByAdmin,
