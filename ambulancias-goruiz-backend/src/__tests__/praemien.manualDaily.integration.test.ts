@@ -232,4 +232,72 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
       .expect(200);
     expect(res.body.status).toBe("submitted");
   });
+
+  it("Phase 5: monthly-history incluye mes cerrado manual desde snapshot", async () => {
+    const now = new Date();
+    const curYm0 = now.getFullYear() * 12 + now.getMonth();
+    const prevYm0 = curYm0 - 1;
+    const py = Math.floor(prevYm0 / 12);
+    const pm = (prevYm0 % 12) + 1;
+
+    await Company.updateOne(
+      { _id: companyId },
+      {
+        $set: {
+          praemienMode: "manual",
+          praemienModeEffectiveFrom: { year: py, month: pm },
+        },
+      },
+    );
+
+    const dateStr = `${py}-${String(pm).padStart(2, "0")}-05`;
+
+    await request(app)
+      .put(`${API}/praemien/manual-daily`)
+      .set("Authorization", `Bearer ${workerToken}`)
+      .send({ date: dateStr, workerSubmittedValue: 6 })
+      .expect(200);
+
+    await request(app)
+      .post(`${API}/praemien/manual-daily/admin/approve`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ userId: workerId, date: dateStr })
+      .expect(200);
+
+    const hist = await request(app)
+      .get(`${API}/praemien/monthly-history`)
+      .set("Authorization", `Bearer ${workerToken}`)
+      .expect(200);
+
+    expect(Array.isArray(hist.body)).toBe(true);
+    const hit = hist.body.find(
+      (x: { year: number; month: number }) => x.year === py && x.month === pm,
+    );
+    expect(hit).toBeDefined();
+    expect(hit.averagePatients).toBe(6);
+  });
+
+  it("Phase 5: save-monthly no escribe en modo manual efectivo", async () => {
+    const now = new Date();
+    await Company.updateOne(
+      { _id: companyId },
+      {
+        $set: {
+          praemienMode: "manual",
+          praemienModeEffectiveFrom: {
+            year: now.getFullYear(),
+            month: now.getMonth() + 1,
+          },
+        },
+      },
+    );
+
+    const res = await request(app)
+      .post(`${API}/praemien/save-monthly`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .query({ year: now.getFullYear(), month: now.getMonth() + 1 })
+      .expect(200);
+
+    expect(String(res.body.message)).toMatch(/manual|aprobadas/i);
+  });
 });

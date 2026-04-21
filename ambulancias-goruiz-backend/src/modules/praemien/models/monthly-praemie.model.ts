@@ -7,6 +7,8 @@ export interface IMonthlyPraemie extends Document {
   month: number; // 1-12
   averagePatients: number;
   premieLevel: string;
+  /** Phase 5: `manual` = closed month from approved manual daily entries; absent/`automatic` = legacy workday save. */
+  snapshotSource?: "manual" | "automatic";
   createdAt: Date;
 }
 
@@ -17,6 +19,11 @@ const monthlyPraemieSchema = new Schema<IMonthlyPraemie>({
   month: { type: Number, required: true },
   averagePatients: { type: Number, required: true },
   premieLevel: { type: String, required: true },
+  snapshotSource: {
+    type: String,
+    enum: ["manual", "automatic"],
+    required: false,
+  },
   createdAt: { type: Date, default: Date.now },
 });
 

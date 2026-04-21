@@ -18,6 +18,14 @@ export const saveMonthlyPraemie = async (
       req.query.month,
     );
 
+    if ("skippedManualMode" in result && result.skippedManualMode) {
+      res.status(200).json({
+        message:
+          "En modo manual efectivo los cierres mensuales se generan automáticamente desde las entradas aprobadas.",
+      });
+      return;
+    }
+
     if (!result.hasData) {
       res.status(200).json({ message: "No hay datos para ese mes" });
       return;

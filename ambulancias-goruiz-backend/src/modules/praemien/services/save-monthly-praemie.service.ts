@@ -2,16 +2,8 @@ import { endOfMonth, startOfMonth } from "date-fns";
 import MonthlyPraemie from "../models/monthly-praemie.model";
 import { computeMonthlyPraemienStatsForUser } from "./get-monthly-summary.service";
 import { getCompanyObjectIdForPraemienUser } from "./resolvePraemienUserCompany";
-
-function getPremieLevel(averagePatients: number): string {
-  let premieLevel = "\u274c No alcanza m\u00ednimo";
-  if (averagePatients >= 10) premieLevel = "\ud83c\udfc6 Pr\u00e4mie 10";
-  else if (averagePatients >= 9) premieLevel = "\ud83c\udf96 Pr\u00e4mie 9";
-  else if (averagePatients >= 8) premieLevel = "\ud83e\udd48 Pr\u00e4mie 8";
-  else if (averagePatients >= 7) premieLevel = "\ud83e\udd49 Pr\u00e4mie 7";
-
-  return premieLevel;
-}
+import { getEffectiveManualPraemienContextForUser } from "./resolve-effective-manual-praemien.service";
+import { getPremieLevelFromAverage } from "../utils/premieLevelFromAverage";
 
 export async function saveMonthlyPraemieForUser(
   userId: string,
@@ -20,6 +12,14 @@ export async function saveMonthlyPraemieForUser(
 ) {
   const year = Number(yearQuery) || new Date().getFullYear();
   const month = Number(monthQuery) || new Date().getMonth() + 1;
+
+  const manualCtx = await getEffectiveManualPraemienContextForUser(userId);
+  if (manualCtx.isEffectiveManual) {
+    return {
+      hasData: false as const,
+      skippedManualMode: true as const,
+    };
+  }
 
   const companyId = await getCompanyObjectIdForPraemienUser(userId);
 
@@ -36,7 +36,7 @@ export async function saveMonthlyPraemieForUser(
     return { hasData: false as const };
   }
 
-  const premieLevel = getPremieLevel(averagePatients);
+  const premieLevel = getPremieLevelFromAverage(averagePatients);
 
   const updated = await MonthlyPraemie.findOneAndUpdate(
     { userId, year, month },
@@ -47,6 +47,7 @@ export async function saveMonthlyPraemieForUser(
       month,
       averagePatients,
       premieLevel,
+      snapshotSource: "automatic",
       createdAt: new Date(),
     },
     { upsert: true, new: true },
