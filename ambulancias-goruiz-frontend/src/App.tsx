@@ -83,14 +83,18 @@ export default function App() {
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/worker" element={<WorkerDashboard />} />
               <Route path="/dienst" element={<WorkerDienstsPage />} />
-              <Route path="/worker/hospitals" element={<WorkerHospitalsPage />} />
+              <Route element={<RequireModule name="hospitals" />}>
+                <Route path="/worker/hospitals" element={<WorkerHospitalsPage />} />
+              </Route>
               <Route path="/worker/praemien" element={<WorkerPraemienPage />} />
               <Route path="/worker/vacations" element={<WorkerVacationsPage />} />
               <Route path="/worker/sick-leaves" element={<WorkerSickLeavesPage />} />
               <Route path="/worker/messages" element={<WorkerMessagesPage />} />
               <Route path="/my-workday" element={<MyWorkdayPage />} />
               <Route path="/worker/appointments" element={<WorkerAppointmentsPage />} />
-              <Route path="/worker/payroll" element={<WorkerPayrollPage />} />
+              <Route element={<RequireModule name="payroll" />}>
+                <Route path="/worker/payroll" element={<WorkerPayrollPage />} />
+              </Route>
               <Route element={<RequireModule name="documents" />}>
                 <Route path="/worker/documents" element={<WorkerDocumentsPage />} />
               </Route>
@@ -113,7 +117,9 @@ export default function App() {
                 <Route path="/admin/invitations" element={<AdminInvitationsPage />} />
                 <Route path="/admin/diensts" element={<AdminDienstsPage />} />
                 <Route path="/admin/dienst-templates" element={<AdminDienstTemplatesPage />} />
-                <Route path="/admin/hospitals" element={<AdminHospitalsPage />} />
+                <Route element={<RequireModule name="hospitals" />}>
+                  <Route path="/admin/hospitals" element={<AdminHospitalsPage />} />
+                </Route>
                 <Route path="/admin/vacations" element={<AdminVacationsPage />} />
                 <Route path="/admin/messages" element={<AdminMessagesPage />} />
                 <Route path="/admin/messages/sent" element={<AdminSentMessages />} />
@@ -124,22 +130,24 @@ export default function App() {
                 <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
                 <Route path="/admin/teams" element={<AdminTeamsPage />} />
                 <Route path="/admin/sick-leaves" element={<AdminSickLeavesPage />} />
-                <Route path="/admin/payroll" element={<AdminPayrollModuleHubPage />} />
-                <Route path="/admin/payroll/nominas" element={<PayrollYearHubPage />} />
+                <Route element={<RequireModule name="payroll" />}>
+                  <Route path="/admin/payroll" element={<AdminPayrollModuleHubPage />} />
+                  <Route path="/admin/payroll/nominas" element={<PayrollYearHubPage />} />
+                  <Route
+                    path="/admin/payroll/month/:year/:month"
+                    element={<AdminPayrollPage />}
+                  />
+                  <Route
+                    path="/admin/payroll/month"
+                    element={<RedirectToCurrentPayrollMonth />}
+                  />
+                </Route>
                 <Route element={<RequireModule name="documents" />}>
                   <Route
                     path="/admin/payroll/docs"
                     element={<AdminDocumentsPage />}
                   />
                 </Route>
-                <Route
-                  path="/admin/payroll/month/:year/:month"
-                  element={<AdminPayrollPage />}
-                />
-                <Route
-                  path="/admin/payroll/month"
-                  element={<RedirectToCurrentPayrollMonth />}
-                />
               </Route>
             </Route>
           </Route>

@@ -61,14 +61,16 @@ const WorkerDashboard = () => {
           </p>
         </Link>
 
-        <Link to="/worker/hospitals" className={centeredCard}>
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.workerDashboard.hospitals.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.workerDashboard.hospitals.desc")}
-          </p>
-        </Link>
+        {hasModule(MODULE_KEYS.HOSPITALS) && (
+          <Link to="/worker/hospitals" className={centeredCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.workerDashboard.hospitals.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.workerDashboard.hospitals.desc")}
+            </p>
+          </Link>
+        )}
 
         {/* MENSAJES con borde + contador (sin campana) */}
         <Link
@@ -124,14 +126,16 @@ const WorkerDashboard = () => {
           </p>
         </Link>
 
-        <Link to="/worker/payroll" className={centeredCard}>
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.workerDashboard.payrollDocs.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.workerDashboard.payrollDocs.desc")}
-          </p>
-        </Link>
+        {hasModule(MODULE_KEYS.PAYROLL) && (
+          <Link to="/worker/payroll" className={centeredCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.workerDashboard.payrollDocs.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.workerDashboard.payrollDocs.desc")}
+            </p>
+          </Link>
+        )}
 
         {hasModule(MODULE_KEYS.DOCUMENTS) && (
           <Link to="/worker/documents" className={centeredCard}>

@@ -8,9 +8,12 @@ import useAdminSummariesPendingCount from "../modules/workday/hooks/useAdminSumm
 import { useAdminAppointmentsPendingCount } from "../modules/appointments";
 import { useAdminIssuesOpenCount } from "../modules/mechanics";
 import useAdminSickLeavesPendingCount from "../modules/sick/hooks/useAdminSickLeavesPendingCount";
+import { useModules } from "../hooks/useModules";
+import { MODULE_KEYS } from "../constants/modules";
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
+  const { hasModule } = useModules();
 
   // ? Contador de solicitudes de vacaciones pendientes
   const { count: vacationsPendingCount, isLoading: vacationsLoading } =
@@ -124,14 +127,16 @@ const AdminDashboard = () => {
           </p>
         </Link>
 
-        <Link to="/admin/hospitals" className={centeredCard}>
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.adminDashboard.hospitals.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.adminDashboard.hospitals.desc")}
-          </p>
-        </Link>
+        {hasModule(MODULE_KEYS.HOSPITALS) && (
+          <Link to="/admin/hospitals" className={centeredCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.adminDashboard.hospitals.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.adminDashboard.hospitals.desc")}
+            </p>
+          </Link>
+        )}
 
         <Link to="/admin/ambulances" className={centeredCard}>
           <h2 className="text-lg font-semibold mb-2">
@@ -241,14 +246,16 @@ const AdminDashboard = () => {
           </p>
         </Link>
 
-        <Link to="/admin/payroll" className={centeredCard}>
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.adminDashboard.payrollDocs.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.adminDashboard.payrollDocs.desc")}
-          </p>
-        </Link>
+        {hasModule(MODULE_KEYS.PAYROLL) && (
+          <Link to="/admin/payroll" className={centeredCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.adminDashboard.payrollDocs.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.adminDashboard.payrollDocs.desc")}
+            </p>
+          </Link>
+        )}
 
         <div className={centeredCardDisabled}>
           <span className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
