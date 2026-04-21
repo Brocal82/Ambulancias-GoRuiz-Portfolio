@@ -16,6 +16,7 @@ export const createCompanySchema = z.object({
   name: z.string().trim().min(1, "name no puede estar vacío"),
   isActive: z.boolean().optional().default(true),
   emailDomain: optionalEmailDomain,
+  enabledModules: z.array(z.string()).optional(),
 });
 
 /** PATCH: omit = sin cambio; null = borrar dominio guardado */
@@ -43,6 +44,7 @@ export const updateCompanySchema = z.object({
   name: z.string().trim().min(1, "name no puede estar vacío").optional(),
   isActive: z.boolean().optional(),
   emailDomain: updateEmailDomainField,
+  enabledModules: z.array(z.string()).optional(),
 });
 
 export type CreateCompanyInput = z.infer<typeof createCompanySchema>;

@@ -8,6 +8,17 @@ export interface AuthContextType {
   role: string | null;
   user: User | null;
 
+  /**
+   * Canonical module keys enabled for the user's company.
+   * null  → not yet loaded (treat as all-enabled to avoid false negatives).
+   * []    → explicitly no modules (should not occur for active companies
+   *          once the backfill script has been run).
+   * string[] → the definitive list from the Company document.
+   *
+   * Superadmin users: always null (bypasses module checks entirely).
+   */
+  enabledModules: string[] | null;
+
   // ✅ CLAVE para evitar parpadeos
   isAuthReady: boolean;
 

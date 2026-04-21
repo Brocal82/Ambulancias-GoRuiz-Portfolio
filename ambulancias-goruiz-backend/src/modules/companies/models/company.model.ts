@@ -5,6 +5,13 @@ export interface ICompany extends Document {
   isActive: boolean;
   emailDomain?: string;
   createdBy?: Types.ObjectId;
+  /**
+   * Canonical module keys enabled for this company.
+   * An empty array means no modules are explicitly enabled.
+   * Run scripts/backfill-company-modules.ts before activating
+   * any requireModule() guard on a route.
+   */
+  enabledModules: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -13,6 +20,7 @@ const companySchema = new Schema<ICompany>(
   {
     name: { type: String, required: true, trim: true },
     isActive: { type: Boolean, default: true },
+    enabledModules: { type: [String], default: [] },
     emailDomain: {
       type: String,
       required: false,

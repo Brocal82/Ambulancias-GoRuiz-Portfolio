@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { AuthContext } from "./AuthContext";
 import type { User } from "../modules/users";
+import type { Company } from "../modules/companies/domain/types";
 import { getTokenExpiration } from "../utils/jwtUtils";
 import { toastT } from "../utils/toast";
 import axios from "../api/axios";
@@ -16,6 +17,7 @@ export const AuthProvider = ({ children }: Props) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [enabledModules, setEnabledModules] = useState<string[] | null>(null);
 
   // ✅ Estado clave
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -30,6 +32,7 @@ export const AuthProvider = ({ children }: Props) => {
       const storedUserId = sessionStorage.getItem("userId");
       const storedRole = sessionStorage.getItem("role");
       const storedUser = sessionStorage.getItem("user");
+      const storedModules = sessionStorage.getItem("enabledModules");
 
       if (storedToken && storedUserId && storedRole) {
         setToken(storedToken);
@@ -43,6 +46,20 @@ export const AuthProvider = ({ children }: Props) => {
           } catch {
             sessionStorage.removeItem("user");
           }
+        }
+
+        // Pintar enabledModules inmediatamente si existe en caché
+        // Superadmin tiene null (sin companyId, accede a todo)
+        if (storedRole !== "superadmin") {
+          if (storedModules) {
+            try {
+              setEnabledModules(JSON.parse(storedModules));
+            } catch {
+              sessionStorage.removeItem("enabledModules");
+            }
+          }
+          // Refresco de módulos en segundo plano
+          void refreshModules(storedToken);
         }
 
         // Refresco en segundo plano (no bloquea render)
@@ -90,6 +107,27 @@ export const AuthProvider = ({ children }: Props) => {
   };
 
   /**
+   * Refresco de enabledModules desde /api/companies/me.
+   * Llamado en background; nunca bloquea el render ni isAuthReady.
+   * Superadmin no tiene companyId → 403 esperado → se ignora silenciosamente.
+   */
+  const refreshModules = async (tkn: string) => {
+    try {
+      const res = await axios.get<Company>("/companies/me", {
+        headers: { Authorization: `Bearer ${tkn}` },
+      });
+      const modules: string[] = Array.isArray(res.data.enabledModules)
+        ? res.data.enabledModules
+        : [];
+      setEnabledModules(modules);
+      sessionStorage.setItem("enabledModules", JSON.stringify(modules));
+    } catch {
+      // Superadmin gets 403 here — expected. Network errors are silent.
+      // enabledModules stays at its current value (null or cached).
+    }
+  };
+
+  /**
    * Aviso antes de que expire el token
    */
   useEffect(() => {
@@ -132,6 +170,14 @@ export const AuthProvider = ({ children }: Props) => {
     sessionStorage.setItem("role", newRole);
     sessionStorage.setItem("user", JSON.stringify(newUser));
 
+    // Reset modules on new login — load fresh for this session.
+    // Superadmin has no companyId → skip.
+    setEnabledModules(null);
+    sessionStorage.removeItem("enabledModules");
+    if (newRole !== "superadmin") {
+      void refreshModules(newToken);
+    }
+
     setIsAuthReady(true);
   };
 
@@ -143,6 +189,7 @@ export const AuthProvider = ({ children }: Props) => {
     setUserId(null);
     setRole(null);
     setUser(null);
+    setEnabledModules(null);
 
     sessionStorage.clear();
     window.location.href = "/";
@@ -155,6 +202,7 @@ export const AuthProvider = ({ children }: Props) => {
         userId,
         role,
         user,
+        enabledModules,
         isAuthReady,
         login,
         logout,

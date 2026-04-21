@@ -1,0 +1,41 @@
+/**
+ * Canonical module keys for per-company feature gating.
+ * These strings are stored in Company.enabledModules.
+ *
+ * ALWAYS-ON INFRASTRUCTURE (not module keys — never gated):
+ *   users, companies, invitations
+ *
+ * COMPOSITE MODULES (one key covers multiple backend/frontend folders):
+ *   scheduling  → diensts + dienst-templates (templates mounted as subroute)
+ *   workday     → workday-summary + trips + mechanics/issue-reporting
+ *
+ * V1 OPERATIONAL ALWAYS-ON:
+ *   scheduling and workday are present in the model but must remain
+ *   locked-on in the V1 superadmin UI. Do not allow toggling them off
+ *   until Phase 4 architectural prerequisites are complete.
+ */
+
+export const MODULE_KEYS = {
+  HOSPITALS:    "hospitals",
+  AMBULANCES:   "ambulances",
+  TEAMS:        "teams",
+  SCHEDULING:   "scheduling",
+  WORKDAY:      "workday",
+  APPOINTMENTS: "appointments",
+  MESSAGES:     "messages",
+  VACATION:     "vacation",
+  SICK_LEAVES:  "sick-leaves",
+  PRAEMIEN:     "praemien",
+  PAYROLL:      "payroll",
+  DOCUMENTS:    "documents",
+} as const;
+
+export type ModuleKey = (typeof MODULE_KEYS)[keyof typeof MODULE_KEYS];
+
+/**
+ * Full default set: all 12 canonical V1 modules.
+ * Used by the backfill script and new company creation defaults.
+ * Existing companies with an empty enabledModules array must be migrated
+ * to this list before any requireModule() guard is activated on a route.
+ */
+export const V1_DEFAULT_MODULES: ModuleKey[] = Object.values(MODULE_KEYS);

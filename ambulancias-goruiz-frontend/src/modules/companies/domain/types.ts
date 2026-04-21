@@ -3,6 +3,7 @@ export interface Company {
   name: string;
   isActive: boolean;
   emailDomain?: string;
+  enabledModules: string[];
   workerCount?: number;
   adminCount?: number;
 }
@@ -17,12 +18,14 @@ export interface CompanyAdmin {
 export interface CreateCompanyInput {
   name: string;
   emailDomain?: string;
+  enabledModules?: string[];
 }
 
 export interface UpdateCompanyInput {
   name?: string;
   isActive?: boolean;
   emailDomain?: string | null;
+  enabledModules?: string[];
 }
 
 export interface CreateAdminInput {

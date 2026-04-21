@@ -1,17 +1,22 @@
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import ProfilePage from "./ProfilePage";
+// These imports exist regardless of module state. Components are only
+// rendered when their tab is visible (i.e. the module is enabled).
 import AdminUserDienstsTab from "../../diensts/components/AdminUserDienstsTab";
 import AdminUserPraemienTab from "../../praemien/components/AdminUserPraemienTab";
 import AdminUserVacationsTab from "../../vacation/components/AdminUserVacationsTab";
 import AdminUserSickLeavesTab from "../../sick/components/AdminUserSickLeavesTab";
 import AdminUserMessageTab from "../../messages/components/AdminUserMessageTab";
 import { useAuth } from "../../../hooks/useAuth";
+import { useModules } from "../../../hooks/useModules";
 import * as UsersApi from "../domain/api";
 import type { User } from "../domain/types";
 import { useTranslation } from "react-i18next";
+import { MODULE_KEYS } from "../../../constants/modules";
 
-const TAB_KEYS = [
+/** All tabs that can ever appear, in display order. */
+const ALL_TAB_KEYS = [
   "profile",
   "diensts",
   "praemien",
@@ -20,11 +25,24 @@ const TAB_KEYS = [
   "messages",
 ] as const;
 
-type TabKey = (typeof TAB_KEYS)[number];
+type TabKey = (typeof ALL_TAB_KEYS)[number];
+
+/**
+ * Maps each tab to the module key that gates it.
+ * Tabs without an entry (e.g. "profile") are always visible.
+ */
+const TAB_MODULE_MAP: Partial<Record<TabKey, string>> = {
+  diensts:    MODULE_KEYS.SCHEDULING,
+  praemien:   MODULE_KEYS.PRAEMIEN,
+  vacations:  MODULE_KEYS.VACATION,
+  sick:       MODULE_KEYS.SICK_LEAVES,
+  messages:   MODULE_KEYS.MESSAGES,
+};
 
 const AdminUserDetailDashboard = () => {
   const { userId } = useParams<{ userId: string }>();
   const { token } = useAuth();
+  const { hasModule } = useModules();
   const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
@@ -40,6 +58,20 @@ const AdminUserDetailDashboard = () => {
       .catch(console.error)
       .finally(() => setLoadingUser(false));
   }, [token, userId]);
+
+  /** Tabs visible to this admin based on company's enabled modules. */
+  const visibleTabs = ALL_TAB_KEYS.filter((key) => {
+    const moduleKey = TAB_MODULE_MAP[key];
+    return !moduleKey || hasModule(moduleKey);
+  });
+
+  // If the current tab becomes invisible (module disabled while viewing it),
+  // fall back to profile.
+  useEffect(() => {
+    if (!visibleTabs.includes(activeTab)) {
+      setActiveTab("profile");
+    }
+  }, [visibleTabs, activeTab]);
 
   const isDiensts = activeTab === "diensts";
 
@@ -80,7 +112,7 @@ const AdminUserDetailDashboard = () => {
       {/* Tabs nav */}
       <nav className="mb-6 rounded-2xl bg-white/70 backdrop-blur ring-1 ring-slate-200 shadow-sm p-2 flex justify-center">
         <div className="flex flex-wrap gap-3">
-          {TAB_KEYS.map((key) => {
+          {visibleTabs.map((key) => {
             const isActive = activeTab === key;
             return (
               <button

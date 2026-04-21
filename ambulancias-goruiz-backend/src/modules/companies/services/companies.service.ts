@@ -14,6 +14,9 @@ export async function createCompany(
   if (data.emailDomain) {
     doc.emailDomain = data.emailDomain;
   }
+  if (Array.isArray(data.enabledModules)) {
+    doc.enabledModules = data.enabledModules;
+  }
   if (createdBy && mongoose.Types.ObjectId.isValid(createdBy)) {
     doc.createdBy = new mongoose.Types.ObjectId(createdBy);
   }
@@ -69,6 +72,9 @@ export async function updateCompany(id: string, data: UpdateCompanyInput) {
   const $unset: Record<string, string> = {};
   if (data.name !== undefined) $set.name = data.name;
   if (data.isActive !== undefined) $set.isActive = data.isActive;
+  if (Array.isArray(data.enabledModules)) {
+    $set.enabledModules = data.enabledModules;
+  }
   if (data.emailDomain === null) {
     $unset.emailDomain = "";
   } else if (data.emailDomain !== undefined) {
