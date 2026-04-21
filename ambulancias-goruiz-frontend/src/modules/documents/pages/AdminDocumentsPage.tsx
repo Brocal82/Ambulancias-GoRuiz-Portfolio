@@ -265,136 +265,168 @@ const AdminDocumentsPage = () => {
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
-          <h2 className="text-sm font-semibold text-slate-800">
+        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
+          <h2 className="text-sm font-semibold text-slate-800 mb-2">
             Subir documentos
           </h2>
-          <div className="flex items-center justify-between mb-4">
-            <div className="relative inline-grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-100 p-0.5">
-              <span
-                aria-hidden="true"
-                className={`pointer-events-none absolute left-0.5 top-0.5 h-[calc(100%-4px)] w-[calc(50%-2px)] rounded-md bg-white shadow-sm ring-1 ring-orange-200 transition-transform duration-200 ease-out ${
-                  folderMode ? "translate-x-full" : "translate-x-0"
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (folderMode) {
-                    setFolderMode(false);
-                    setBatchFiles([]);
-                    setRequiresAcknowledgmentUpload(false);
-                    setBatchInputKey((k) => k + 1);
-                  }
-                }}
-                className={`relative z-10 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-200/80 focus-visible:ring-offset-0 ${
-                  !folderMode
-                    ? "text-slate-800"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                Archivos
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!folderMode) {
-                    setFolderMode(true);
-                    setBatchFiles([]);
-                    setRequiresAcknowledgmentUpload(false);
-                    setBatchInputKey((k) => k + 1);
-                  }
-                }}
-                className={`relative z-10 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-200/80 focus-visible:ring-offset-0 ${
-                  folderMode
-                    ? "text-slate-800"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                Carpeta
-              </button>
-            </div>
-            {batchFiles.length === 1 ? (
-              <label
-                htmlFor="requires-ack-upload"
-                className="inline-flex shrink-0 cursor-pointer select-none items-center gap-1"
-              >
-                <span
-                  className="box-border flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 leading-none shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-500 ease-in-out hover:-translate-y-0.5 hover:border-orange-200 hover:bg-slate-100 hover:shadow-md"
-                  aria-hidden="true"
-                >
-                  <span className="flex h-full w-full items-center justify-center text-3xl leading-none">
-                    🫆
-                  </span>
-                </span>
-                <input
-                  id="requires-ack-upload"
-                  type="checkbox"
-                  checked={requiresAcknowledgmentUpload}
-                  onChange={(e) =>
-                    setRequiresAcknowledgmentUpload(e.target.checked)
-                  }
-                  className="h-4 w-4 shrink-0 rounded border-slate-300 text-green-600 accent-green-600 focus:ring-green-500"
-                  aria-label="Requiere confirmación por el trabajador"
-                />
-              </label>
-            ) : null}
-          </div>
-          <div className="flex flex-wrap lg:flex-nowrap items-end gap-4">
-            <div className="shrink-0">
-              <label
-                htmlFor="documents-batch-upload"
-                className="block text-sm font-medium text-slate-700"
-              >
-                {folderMode ? "Carpeta de documentos" : "Archivos"}
-              </label>
-              <input
-                key={batchInputKey}
-                ref={batchInputRef}
-                id="documents-batch-upload"
-                type="file"
-                multiple
-                // @ts-expect-error: webkitdirectory is not in the standard typings
-                webkitdirectory={folderMode ? "" : undefined}
-                accept=".pdf,application/pdf,image/jpeg,image/png,image/webp"
-                onChange={(e) => {
-                  const files = Array.from(e.target.files ?? []);
-                  if (files.length === 0) return;
-                  setBatchFiles((prev) => [...prev, ...files]);
-                  e.target.value = "";
-                }}
-                className="sr-only"
-              />
-              <PayrollUploadTriggerButton
-                mode={folderMode ? "folder" : "files"}
-                onClick={() => {
-                  batchInputRef.current?.click();
-                }}
-                label={folderMode ? "Subir carpeta" : "Subir varias"}
-              />
-            </div>
-            <div className="w-full lg:w-auto lg:ml-auto flex items-center gap-3 lg:justify-end">
-              <div
-                className={`w-[220px] min-w-[180px] max-w-[260px] text-right text-xs leading-tight truncate ${batchFiles.length > 0 ? "text-blue-600 font-medium" : "text-slate-500"}`}
-                title={batchSelection.title}
-              >
-                {batchSelection.text}
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {/* SECTION 1 — Upload type */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  1. Tipo de subida
+                </div>
+                <div className="relative inline-grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+                  <span
+                    aria-hidden="true"
+                    className={`pointer-events-none absolute left-0.5 top-0.5 h-[calc(100%-4px)] w-[calc(50%-2px)] rounded-md bg-white shadow-sm ring-1 ring-orange-200 transition-transform duration-200 ease-out ${
+                      folderMode ? "translate-x-full" : "translate-x-0"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (folderMode) {
+                        setFolderMode(false);
+                        setBatchFiles([]);
+                        setRequiresAcknowledgmentUpload(false);
+                        setBatchInputKey((k) => k + 1);
+                      }
+                    }}
+                    className={`relative z-10 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-200/80 focus-visible:ring-offset-0 ${
+                      !folderMode
+                        ? "text-slate-800"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    Archivos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!folderMode) {
+                        setFolderMode(true);
+                        setBatchFiles([]);
+                        setRequiresAcknowledgmentUpload(false);
+                        setBatchInputKey((k) => k + 1);
+                      }
+                    }}
+                    className={`relative z-10 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-200/80 focus-visible:ring-offset-0 ${
+                      folderMode
+                        ? "text-slate-800"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    Carpeta
+                  </button>
+                </div>
               </div>
-              {batchFiles.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBatchFiles([]);
-                    setRequiresAcknowledgmentUpload(false);
-                    setBatchInputKey((k) => k + 1);
-                  }}
-                  aria-label="Quitar archivos seleccionados"
-                  title="Quitar archivos"
-                  className="shrink-0 text-red-400 hover:text-red-600 text-sm leading-none cursor-pointer"
+
+              {/* SECTION 2 — File selection */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  2. Seleccionar archivos
+                </div>
+                <label
+                  htmlFor="documents-batch-upload"
+                  className="sr-only"
                 >
-                  ✕
-                </button>
-              ) : null}
+                  {folderMode ? "Carpeta de documentos" : "Archivos"}
+                </label>
+                <input
+                  key={batchInputKey}
+                  ref={batchInputRef}
+                  id="documents-batch-upload"
+                  type="file"
+                  multiple
+                  // @ts-expect-error: webkitdirectory is not in the standard typings
+                  webkitdirectory={folderMode ? "" : undefined}
+                  accept=".pdf,application/pdf,image/jpeg,image/png,image/webp"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files ?? []);
+                    if (files.length === 0) return;
+                    setBatchFiles((prev) => [...prev, ...files]);
+                    e.target.value = "";
+                  }}
+                  className="sr-only"
+                />
+                <PayrollUploadTriggerButton
+                  mode={folderMode ? "folder" : "files"}
+                  onClick={() => {
+                    batchInputRef.current?.click();
+                  }}
+                  label={folderMode ? "Subir carpeta" : "Subir varias"}
+                />
+              </div>
+
+              {/* SECTION 3 — Acknowledgment option */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  3. Confirmación de lectura
+                </div>
+                <label
+                  htmlFor="requires-ack-upload"
+                  className={`inline-flex shrink-0 select-none items-center gap-2 ${
+                    batchFiles.length === 1
+                      ? "cursor-pointer"
+                      : "cursor-not-allowed opacity-40"
+                  }`}
+                >
+                  <span
+                    className="box-border flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 leading-none shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-500 ease-in-out hover:-translate-y-0.5 hover:border-orange-200 hover:bg-slate-100 hover:shadow-md"
+                    aria-hidden="true"
+                  >
+                    <span className="flex h-full w-full items-center justify-center text-3xl leading-none">
+                      ✍️
+                    </span>
+                  </span>
+                  <input
+                    id="requires-ack-upload"
+                    type="checkbox"
+                    checked={requiresAcknowledgmentUpload}
+                    onChange={(e) =>
+                      setRequiresAcknowledgmentUpload(e.target.checked)
+                    }
+                    disabled={batchFiles.length !== 1}
+                    className="h-4 w-4 shrink-0 rounded border-slate-300 text-green-600 accent-green-600 focus:ring-green-500"
+                    aria-label="Requiere confirmación por el trabajador"
+                  />
+                </label>
+              </div>
+
+              {/* SECTION 4 — Selected files preview */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  4. Archivos seleccionados
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <div
+                    className={`min-w-0 truncate text-xs leading-tight ${batchFiles.length > 0 ? "text-blue-600 font-medium" : "text-slate-500"}`}
+                    title={batchSelection.title}
+                  >
+                    {batchSelection.text}
+                  </div>
+                  {batchFiles.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBatchFiles([]);
+                        setRequiresAcknowledgmentUpload(false);
+                        setBatchInputKey((k) => k + 1);
+                      }}
+                      aria-label="Quitar archivos seleccionados"
+                      title="Quitar archivos"
+                      className="shrink-0 text-red-400 hover:text-red-600 text-sm leading-none cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 5 — Send action */}
+            <div className="flex justify-end">
               <SendIconButton
                 onClick={handleUpload}
                 disabled={uploading || batchFiles.length === 0}
