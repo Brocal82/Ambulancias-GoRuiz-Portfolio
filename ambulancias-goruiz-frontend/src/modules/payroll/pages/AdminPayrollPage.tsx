@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
 import { openSecureFile } from "../../../utils/openSecureFile";
+import ViewIconButton from "../../../components/common/actions/ViewIconButton";
+import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 import { UsersApi } from "../../users";
 import type { User } from "../../users";
 import {
@@ -1312,15 +1314,12 @@ export default function AdminPayrollPage() {
                         >
                           {assigningId !== doc._id ? (
                             <div className="flex flex-row flex-nowrap items-center justify-center gap-0.5">
-                              <button
-                                type="button"
+                              <ViewIconButton
                                 onClick={() =>
                                   handleOpenFile(doc.filename, doc.originalName)
                                 }
-                                className="inline-flex shrink-0 items-center justify-center rounded-md border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                              >
-                                Ver
-                              </button>
+                                title={`Ver ${doc.originalName}`}
+                              />
                               <button
                                 type="button"
                                 onClick={() => startAssign(doc._id)}
@@ -1330,16 +1329,11 @@ export default function AdminPayrollPage() {
                                   ? "Asignar"
                                   : "Re-asignar"}
                               </button>
-                              <button
-                                type="button"
+                              <DeleteIconButton
                                 onClick={() => handleInvalidate(doc._id)}
                                 disabled={invalidatingId === doc._id}
-                                className="inline-flex shrink-0 items-center justify-center rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {invalidatingId === doc._id
-                                  ? "..."
-                                  : "Eliminar"}
-                              </button>
+                                title="Eliminar documento"
+                              />
                             </div>
                           ) : (
                             <div className="flex flex-col gap-1 items-stretch min-w-[160px] max-w-[240px] mx-auto">

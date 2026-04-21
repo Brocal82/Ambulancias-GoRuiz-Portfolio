@@ -1,6 +1,5 @@
 // frontend/src/components/common/actions/DeleteIconButton.tsx
 import React from "react";
-import { withCommonIconButtonInteraction } from "./iconButtonStyles";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
     title?: string;
@@ -15,19 +14,7 @@ const DeleteIconButton = ({
         <button
             type="button"
             title={title}
-            className={withCommonIconButtonInteraction(`
-    inline-flex items-center justify-center
-    w-8 h-8
-    rounded-full
-    text-xl scale-80
-
-    hover:bg-rose-200 hover:border-red-300
-
-    focus:outline-none focus:ring-4 focus:ring-rose-300
-    disabled:opacity-60
-    transition
-    ${className}
-    `)}
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-base border border-transparent hover:bg-red-50 hover:border-red-400 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0.5 active:shadow-sm focus:outline-none focus:ring-4 focus:ring-rose-300 disabled:opacity-60 transition-all duration-200 ease-out ${className}`}
             {...props}
         >
             🗑️

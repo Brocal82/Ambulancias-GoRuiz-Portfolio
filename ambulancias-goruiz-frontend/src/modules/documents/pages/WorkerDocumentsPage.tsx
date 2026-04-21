@@ -8,6 +8,7 @@ import {
   markMyDocumentDeliveryRead,
 } from "../domain/api";
 import type { WorkerDocumentDelivery } from "../domain/types";
+import ViewIconButton from "../../../components/common/actions/ViewIconButton";
 
 function fmtDate(iso: string): string {
   const d = new Date(iso);
@@ -219,14 +220,11 @@ export default function WorkerDocumentsPage() {
                           </td>
                           <td className="px-3 py-3 align-middle">
                             <div className="flex flex-col sm:flex-row gap-2 justify-center items-stretch">
-                              <button
-                                type="button"
+                              <ViewIconButton
                                 onClick={() => void handleOpen(row)}
                                 disabled={openingId === row.deliveryId}
-                                className="inline-flex min-h-[44px] items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-50"
-                              >
-                                📄 {openingId === row.deliveryId ? "Abriendo…" : "Abrir"}
-                              </button>
+                                title="Ver documento"
+                              />
                               {showAckButton ? (
                                 <button
                                   type="button"

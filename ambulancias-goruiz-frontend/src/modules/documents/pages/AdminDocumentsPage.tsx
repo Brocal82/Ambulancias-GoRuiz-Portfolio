@@ -6,6 +6,8 @@ import { openSecureFile } from "../../../utils/openSecureFile";
 import axiosInstance from "../../../api/axios";
 import PayrollUploadTriggerButton from "../../../components/common/actions/PayrollUploadTriggerButton";
 import SendIconButton from "../../../components/common/actions/SendIconButton";
+import ViewIconButton from "../../../components/common/actions/ViewIconButton";
+import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 import BackButton from "../../../components/ui/BackButton";
 
 type AdminDocument = {
@@ -455,13 +457,13 @@ const AdminDocumentsPage = () => {
               <table className="w-full table-fixed text-left text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="w-[20%] px-4 py-2 text-xs font-medium text-slate-600">
+                    <th className="w-[20%] px-4 py-2 text-xs font-medium text-slate-600 text-center">
                       Nombre
                     </th>
-                    <th className="w-[16%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap">
+                    <th className="w-[16%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
                       Fecha
                     </th>
-                    <th className="w-[14%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap">
+                    <th className="w-[14%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
                       Tipo
                     </th>
                     <th className="w-[8%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
@@ -476,7 +478,7 @@ const AdminDocumentsPage = () => {
                     <th className="w-[12%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
                       Pendientes
                     </th>
-                    <th className="w-[11%] px-4 py-2 text-xs font-medium text-slate-600 text-right">
+                    <th className="w-[11%] px-4 py-2 text-xs font-medium text-slate-600 text-center">
                       Acciones
                     </th>
                   </tr>
@@ -485,7 +487,7 @@ const AdminDocumentsPage = () => {
                   {displayRows.map((row) =>
                     row.kind === "single" ? (
                       <tr key={row.doc.id} className="hover:bg-slate-50">
-                        <td className="w-0 max-w-xs px-4 py-1.5">
+                        <td className="w-0 max-w-xs px-4 py-1.5 text-center">
                           <span
                             className="block truncate whitespace-nowrap text-sm text-slate-800"
                             title={row.doc.originalName}
@@ -493,10 +495,10 @@ const AdminDocumentsPage = () => {
                             {row.doc.originalName}
                           </span>
                         </td>
-                        <td className="px-4 py-1.5 text-sm text-slate-700 whitespace-nowrap">
+                        <td className="px-4 py-1.5 text-sm text-slate-700 whitespace-nowrap text-center">
                           {formatUploadedAt(row.doc.createdAt)}
                         </td>
-                        <td className="px-4 py-1.5 text-xs text-slate-600 whitespace-nowrap">
+                        <td className="px-4 py-1.5 text-xs text-slate-600 whitespace-nowrap text-center">
                           {row.doc.mimeType}
                         </td>
                         <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
@@ -511,29 +513,23 @@ const AdminDocumentsPage = () => {
                         <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
                           {row.doc.pendingAcknowledgmentCount}
                         </td>
-                        <td className="px-4 py-1.5 text-right whitespace-nowrap">
-                          <div className="inline-flex items-center gap-2">
-                            <button
-                              type="button"
+                        <td className="px-4 py-1.5 whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-2">
+                            <ViewIconButton
                               onClick={() => void handleOpen(row.doc)}
-                              className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                            >
-                              Abrir
-                            </button>
-                            <button
-                              type="button"
+                              title={`Ver ${row.doc.originalName}`}
+                            />
+                            <DeleteIconButton
                               onClick={() => void handleDelete(row.doc)}
-                              className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
-                            >
-                              Eliminar
-                            </button>
+                              title="Eliminar documento"
+                            />
                           </div>
                         </td>
                       </tr>
                     ) : (
                       <Fragment key={row.uploadBatchId}>
                         <tr className="hover:bg-slate-50">
-                          <td className="px-4 py-1.5 max-w-xs">
+                          <td className="px-4 py-1.5 max-w-xs text-center">
                             <button
                               type="button"
                               onClick={() => toggleBatchExpanded(row.uploadBatchId)}
@@ -548,10 +544,10 @@ const AdminDocumentsPage = () => {
                               </span>
                             </button>
                           </td>
-                          <td className="px-4 py-1.5 text-sm text-slate-700 whitespace-nowrap">
+                          <td className="px-4 py-1.5 text-sm text-slate-700 whitespace-nowrap text-center">
                             {formatUploadedAt(row.docs[0].createdAt)}
                           </td>
-                          <td className="px-4 py-1.5 text-xs text-slate-500 whitespace-nowrap">
+                          <td className="px-4 py-1.5 text-xs text-slate-500 whitespace-nowrap text-center">
                             —
                           </td>
                           <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
@@ -566,19 +562,18 @@ const AdminDocumentsPage = () => {
                           <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
                             {row.docs[0].pendingAcknowledgmentCount}
                           </td>
-                          <td className="px-4 py-1.5 text-right whitespace-nowrap">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void handleDeleteBatch(
-                                  row.uploadBatchId,
-                                  row.docs.length,
-                                )
-                              }
-                              className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
-                            >
-                              Eliminar lote
-                            </button>
+                          <td className="px-4 py-1.5 whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-2">
+                              <DeleteIconButton
+                                onClick={() =>
+                                  void handleDeleteBatch(
+                                    row.uploadBatchId,
+                                    row.docs.length,
+                                  )
+                                }
+                                title="Eliminar lote"
+                              />
+                            </div>
                           </td>
                         </tr>
                         {expandedBatchIds[row.uploadBatchId] ? (
@@ -589,7 +584,7 @@ const AdminDocumentsPage = () => {
                                   <tbody className="divide-y divide-slate-100">
                                     {row.docs.map((doc) => (
                                       <tr key={doc.id} className="hover:bg-slate-50">
-                                        <td className="w-0 max-w-xs px-3 py-1.5">
+                                        <td className="w-0 max-w-xs px-3 py-1.5 text-center">
                                           <span
                                             className="block truncate whitespace-nowrap text-sm text-slate-800"
                                             title={doc.originalName}
@@ -597,10 +592,10 @@ const AdminDocumentsPage = () => {
                                             {doc.originalName}
                                           </span>
                                         </td>
-                                        <td className="px-3 py-1.5 text-sm text-slate-700 whitespace-nowrap">
+                                        <td className="px-3 py-1.5 text-sm text-slate-700 whitespace-nowrap text-center">
                                           {formatUploadedAt(doc.createdAt)}
                                         </td>
-                                        <td className="px-3 py-1.5 text-xs text-slate-600 whitespace-nowrap">
+                                        <td className="px-3 py-1.5 text-xs text-slate-600 whitespace-nowrap text-center">
                                           {doc.mimeType}
                                         </td>
                                         <td className="px-3 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
@@ -615,22 +610,16 @@ const AdminDocumentsPage = () => {
                                         <td className="px-3 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
                                           {doc.pendingAcknowledgmentCount}
                                         </td>
-                                        <td className="px-3 py-1.5 text-right whitespace-nowrap">
-                                          <div className="inline-flex items-center gap-2">
-                                            <button
-                                              type="button"
+                                        <td className="px-3 py-1.5 whitespace-nowrap">
+                                          <div className="flex items-center justify-center gap-2">
+                                            <ViewIconButton
                                               onClick={() => void handleOpen(doc)}
-                                              className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                                            >
-                                              Abrir
-                                            </button>
-                                            <button
-                                              type="button"
+                                              title={`Ver ${doc.originalName}`}
+                                            />
+                                            <DeleteIconButton
                                               onClick={() => void handleDelete(doc)}
-                                              className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
-                                            >
-                                              Eliminar
-                                            </button>
+                                              title="Eliminar documento"
+                                            />
                                           </div>
                                         </td>
                                       </tr>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
 import { openSecureFile } from "../../../utils/openSecureFile";
+import ViewIconButton from "../../../components/common/actions/ViewIconButton";
 import { listMyPayrollDocuments } from "../domain/api";
 import type { WorkerPayrollDocument } from "../domain/types";
 import { PAYROLL_MONTH_NAMES } from "../domain/constants";
@@ -162,14 +163,10 @@ export default function WorkerPayrollPage() {
 
                         {/* Open action */}
                         <td className="px-3 py-2 align-middle">
-                          <button
-                            type="button"
+                          <ViewIconButton
                             onClick={() => handleOpen(doc)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
-                            aria-label={`Abrir ${doc.originalName}`}
-                          >
-                            📄 Ver
-                          </button>
+                            title={`Ver ${doc.originalName}`}
+                          />
                         </td>
 
                       </tr>
