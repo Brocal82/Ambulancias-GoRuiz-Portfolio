@@ -152,6 +152,19 @@ export const AuthProvider = ({ children }: Props) => {
   }, [token]);
 
   /**
+   * Refresco de módulos al recuperar el foco de ventana.
+   * Garantiza que los cambios del superadmin en enabledModules se reflejan
+   * en sesiones de admin/worker ya activas sin necesidad de reload manual.
+   * Superadmin se omite (sin companyId → refreshModules devolvería 403).
+   */
+  useEffect(() => {
+    if (!token || role === "superadmin") return;
+    const onFocus = () => void refreshModules(token);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [token, role]);
+
+  /**
    * Login
    */
   const login = (

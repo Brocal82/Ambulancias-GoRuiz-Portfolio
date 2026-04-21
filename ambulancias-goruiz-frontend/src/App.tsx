@@ -83,7 +83,9 @@ export default function App() {
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/worker" element={<WorkerDashboard />} />
               <Route path="/dienst" element={<WorkerDienstsPage />} />
-              <Route path="/worker/hospitals" element={<WorkerHospitalsPage />} />
+              <Route element={<RequireModule name="hospitals" />}>
+                <Route path="/worker/hospitals" element={<WorkerHospitalsPage />} />
+              </Route>
               <Route path="/worker/praemien" element={<WorkerPraemienPage />} />
               <Route path="/worker/vacations" element={<WorkerVacationsPage />} />
               <Route path="/worker/sick-leaves" element={<WorkerSickLeavesPage />} />
@@ -113,7 +115,9 @@ export default function App() {
                 <Route path="/admin/invitations" element={<AdminInvitationsPage />} />
                 <Route path="/admin/diensts" element={<AdminDienstsPage />} />
                 <Route path="/admin/dienst-templates" element={<AdminDienstTemplatesPage />} />
-                <Route path="/admin/hospitals" element={<AdminHospitalsPage />} />
+                <Route element={<RequireModule name="hospitals" />}>
+                  <Route path="/admin/hospitals" element={<AdminHospitalsPage />} />
+                </Route>
                 <Route path="/admin/vacations" element={<AdminVacationsPage />} />
                 <Route path="/admin/messages" element={<AdminMessagesPage />} />
                 <Route path="/admin/messages/sent" element={<AdminSentMessages />} />
