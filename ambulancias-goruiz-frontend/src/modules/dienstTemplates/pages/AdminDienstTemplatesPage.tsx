@@ -12,6 +12,8 @@ import EditDienstTemplateModal from "../components/EditDienstTemplateModal";
 import CreateDienstTemplateModal from "../components/CreateDienstTemplateModal";
 
 import CreateIconButton from "../../../components/common/actions/CreateIconButton";
+import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
+import EditIconButton from "../../../components/common/actions/EditIconButton";
 
 const dayLabels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 // Orden visual: Lunes (1) → Sábado (6) → Domingo (0)
@@ -224,21 +226,15 @@ const AdminDienstTemplatesPage: React.FC = () => {
                     {/* Acciones */}
                     <td className="px-4 py-2 align-middle">
                       <div className="flex min-h-[56px] items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-base hover:bg-gray-100"
+                        <EditIconButton
                           title="Editar plantilla"
                           onClick={() => {
                             setEditingTemplate(tpl);
                             setIsEditOpen(true);
                           }}
-                        >
-                          ✏️
-                        </button>
+                        />
 
-                        <button
-                          type="button"
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-300 text-base text-red-700 hover:bg-red-50"
+                        <DeleteIconButton
                           title="Eliminar plantilla"
                           onClick={async () => {
                             if (!token) return;
@@ -263,9 +259,7 @@ const AdminDienstTemplatesPage: React.FC = () => {
                               );
                             }
                           }}
-                        >
-                          🗑️
-                        </button>
+                        />
                       </div>
                     </td>
                   </tr>

@@ -6,6 +6,7 @@ import { calcVacationDays } from "../utils/calcVacationDays";
 import { getRequestRangeBerlin } from "../utils/getRequestRangeBerlin";
 import { toBerlinDayKey } from "../../../utils/dates/dayKey";
 import StatusBadge from "../../../components/common/StatusBadge";
+import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 import { vacationRequestTone } from "../utils/vacationRequestTone";
 
 
@@ -286,26 +287,16 @@ const AdminVacationRequestsTable: React.FC<Props> = ({
                                             )}
 
                                             {(req.status === "accepted" || req.status === "cancelled") && (
-                                                <button
+                                                <DeleteIconButton
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         onDelete(req._id);
                                                     }}
-                                                    aria-label={t(
-                                                        "pages.vacations.adminPage.actions.delete",
-                                                        "Eliminar",
-                                                    )}
                                                     title={t(
                                                         "pages.vacations.adminPage.actions.delete",
                                                         "Eliminar",
                                                     )}
-                                                    className="inline-flex h-7 w-7 items-center justify-center rounded-full
-                          bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700 active:scale-95 transition
-                          focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400
-                          focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-                                                >
-                                                    🗑️
-                                                </button>
+                                                />
                                             )}
                                         </div>
                                     )}

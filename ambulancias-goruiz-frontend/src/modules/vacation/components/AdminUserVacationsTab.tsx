@@ -6,6 +6,8 @@ import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
 import { emitVacationRequestsUpdated } from "../utils/vacationEvents";
+import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
+import EditIconButton from "../../../components/common/actions/EditIconButton";
 import { invalidateAvailabilityForRange } from "../utils/invalidateAvailabilityForRange";
 
 import { formatISOToDDMMYYYY } from "../../../utils/timeUtils";
@@ -181,29 +183,19 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
 
                       <td className="px-3 py-2 align-top">
                         <div className="flex flex-wrap justify-center gap-2">
-                          {/* ✏️ Editar */}
-                          <button
-                            type="button"
+                          <EditIconButton
                             onClick={() => handleEditVacation(v._id)}
-                            className="inline-flex items-center justify-center rounded-full border-slate-300 bg-white px-2.5 py-1.5 text-sm hover:bg-slate-50 text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
                             title={t(
                               "pages.vacations.adminUserTab.actions.edit",
                             )}
-                          >
-                            ✏️
-                          </button>
+                          />
 
-                          {/* 🗑️ Eliminar */}
-                          <button
-                            type="button"
+                          <DeleteIconButton
                             onClick={() => handleDeleteVacation(v._id)}
-                            className="inline-flex items-center justify-center rounded-full bg-red-50 px-2.5 py-1.5 text-sm text-red-700 hover:bg-red-100 focus:outline-none focus:ring-4 focus:ring-red-100"
                             title={t(
                               "pages.vacations.adminUserTab.actions.delete",
                             )}
-                          >
-                            🗑️
-                          </button>
+                          />
                         </div>
                       </td>
                     </tr>

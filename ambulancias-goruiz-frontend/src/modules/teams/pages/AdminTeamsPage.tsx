@@ -20,6 +20,8 @@ import { fmtDDMM } from "../../../utils/timeUtils";
 import { getBerlinWeekRangeISO } from "../utils";
 
 import CreateIconButton from "../../../components/common/actions/CreateIconButton";
+import EditIconButton from "../../../components/common/actions/EditIconButton";
+import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 
 export default function AdminTeamsPage() {
   const { token } = useAuth();
@@ -310,21 +312,14 @@ export default function AdminTeamsPage() {
               >
                 {/* 🔧 Botones editar + eliminar (más pequeños) */}
                 <div className="absolute top-2 right-2 flex gap-1">
-                  <button
+                  <EditIconButton
                     onClick={() => handleEdit(team)}
-                    className="rounded-lg bg-slate-200 p-0.5 text-xs text-slate-700 hover:bg-slate-300 transition"
                     title={t("common.edit", "Editar")}
-                  >
-                    ✏️
-                  </button>
-
-                  <button
+                  />
+                  <DeleteIconButton
                     onClick={() => handleDelete(team._id)}
-                    className="rounded-lg p-0.5 text-xs text-white hover:bg-rose-500 transition"
                     title={t("common.delete", "Eliminar")}
-                  >
-                    🗑️
-                  </button>
+                  />
                 </div>
 
                 {/* 👥 Miembros del equipo */}
