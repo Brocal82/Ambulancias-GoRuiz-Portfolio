@@ -8,6 +8,7 @@ import {
   postAdminManualDailyReopen,
   type ManualDailyEntryDto,
 } from "../domain/manualDailyApi";
+import { labelPraemienManualStatus } from "../utils/labelPraemienManualStatus";
 
 interface Props {
   userId: string;
@@ -148,7 +149,9 @@ const AdminManualPraemienReviewPanel = ({ userId }: Props) => {
                   <td className="py-1.5 pr-2 tabular-nums">
                     {r.adminFinalValue != null ? r.adminFinalValue : "—"}
                   </td>
-                  <td className="py-1.5 pr-2">{r.status}</td>
+                  <td className="py-1.5 pr-2">
+                    {labelPraemienManualStatus(t, r.status)}
+                  </td>
                 </tr>
               ))}
             </tbody>

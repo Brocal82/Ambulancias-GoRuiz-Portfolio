@@ -665,6 +665,13 @@
                     "status": "Status"
                 }
             },
+            "status": {
+                "draft": "Entwurf",
+                "submitted": "Zur Prüfung",
+                "approved": "Genehmigt",
+                "rejected": "Abgelehnt",
+                "reopened": "Wieder geöffnet"
+            },
             "levels": {
                 "none": "🐌 0 Prämie",
                 "7": "🥉 7 Prämie",

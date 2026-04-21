@@ -6,6 +6,7 @@ import {
   putMyManualDailyEntry,
   type ManualDailyEntryDto,
 } from "../domain/manualDailyApi";
+import { labelPraemienManualStatus } from "../utils/labelPraemienManualStatus";
 
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
@@ -320,7 +321,9 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
           {selectedEntry && (
             <div className="space-y-1 text-xs text-slate-500">
               <p>
-                {t("pages.praemien.manual.statusLine", { status: selectedEntry.status })}
+                {t("pages.praemien.manual.statusLine", {
+                  status: labelPraemienManualStatus(t, selectedEntry.status),
+                })}
               </p>
               {selectedEntry.status === "rejected" && selectedEntry.rejectionReason && (
                 <p className="text-rose-700">
