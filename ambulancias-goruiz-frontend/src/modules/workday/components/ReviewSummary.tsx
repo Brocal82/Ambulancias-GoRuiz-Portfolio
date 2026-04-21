@@ -27,6 +27,8 @@ interface Props {
     trips: Trip[];
     hideHeader?: boolean; // oculta la cabecera (fecha, horas, equipo, km)
     dense?: boolean; // activa modo compacto (menos alto)
+    /** When false, hides prämie multiplier column (Phase 2 workday gating). */
+    showPraemieColumn?: boolean;
 }
 
 const ReviewSummary: React.FC<Props> = ({
@@ -37,10 +39,13 @@ const ReviewSummary: React.FC<Props> = ({
     trips,
     hideHeader = false,
     dense = false,
+    showPraemieColumn = true,
 }) => {
     const { t } = useTranslation();
+    const tableColSpan = showPraemieColumn ? 13 : 12;
 
     const weekendLate =
+        showPraemieColumn &&
         [0, 6].includes(new Date(assignedDay.date).getDay()) &&
         (() => {
             const h = Number(assignedDay.startTime.split(":")[0] ?? 0);
@@ -170,20 +175,28 @@ const ReviewSummary: React.FC<Props> = ({
                             <th className={`${headCell} text-center`}>
                                 {t("pages.workday.reviewSummary.table.kmDiff")}
                             </th>
-                            <th className={`${headCell} text-center`}>
-                                {t("pages.workday.reviewSummary.table.praemie")}
-                            </th>
+                            {showPraemieColumn && (
+                                <th className={`${headCell} text-center`}>
+                                    {t("pages.workday.reviewSummary.table.praemie")}
+                                </th>
+                            )}
                         </tr>
                     </thead>
 
                     <tbody>
                         {trips.map((tItem, i) => {
                             const diff = calcTripKm(tItem);
-                            const mult = getMultiplier(tItem, diff, weekendLate);
+                            const mult = showPraemieColumn
+                                ? getMultiplier(tItem, diff, weekendLate)
+                                : 0;
                             const isStornoThatCounts =
-                                tItem.wasCancelled && tItem.countsTrip === 1;
+                                showPraemieColumn &&
+                                tItem.wasCancelled &&
+                                tItem.countsTrip === 1;
                             const isStornoThatDoesNotCount =
-                                tItem.wasCancelled && tItem.countsTrip === 0;
+                                showPraemieColumn &&
+                                tItem.wasCancelled &&
+                                tItem.countsTrip === 0;
 
                             return (
                                 <React.Fragment key={i}>
@@ -234,15 +247,17 @@ const ReviewSummary: React.FC<Props> = ({
                                         >
                                             {diff}
                                         </td>
-                                        <td className={`${cell} text-center font-bold`}>
-                                            {isStornoThatDoesNotCount ? (
-                                                <span className="text-slate-500">0x</span>
-                                            ) : isStornoThatCounts ? (
-                                                <span className="text-green-600">{mult}x</span>
-                                            ) : (
-                                                <span className="text-slate-800">{mult}x</span>
-                                            )}
-                                        </td>
+                                        {showPraemieColumn && (
+                                            <td className={`${cell} text-center font-bold`}>
+                                                {isStornoThatDoesNotCount ? (
+                                                    <span className="text-slate-500">0x</span>
+                                                ) : isStornoThatCounts ? (
+                                                    <span className="text-green-600">{mult}x</span>
+                                                ) : (
+                                                    <span className="text-slate-800">{mult}x</span>
+                                                )}
+                                            </td>
+                                        )}
                                     </tr>
 
                                     {tItem.reports && tItem.reports.trim() !== "" && (
@@ -250,7 +265,7 @@ const ReviewSummary: React.FC<Props> = ({
                                             className={`${i % 2 === 1 ? "bg-slate-50" : "bg-slate-50/70"}`}
                                         >
                                             <td
-                                                colSpan={13}
+                                                colSpan={tableColSpan}
                                                 className={`px-3 ${dense ? "py-1 text-[10px]" : "py-2 text-[11px]"} text-slate-700 italic`}
                                             >
                                                 {t("pages.workday.reviewSummary.labels.observations")}{" "}

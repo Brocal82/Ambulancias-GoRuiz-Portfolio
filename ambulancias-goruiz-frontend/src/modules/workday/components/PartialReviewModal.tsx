@@ -6,6 +6,7 @@ import { toastT } from "../../../utils/toast";
 import { calculateEffectivePatients } from "../../praemien/utils/calculateEffectivePatients";
 import { IssueReportModal } from "../../mechanics";
 import { useTranslation } from "react-i18next";
+import { usePraemienWorkdayUiActive } from "../../../hooks/usePraemienWorkdayUiActive";
 
 interface Props {
     trips: Trip[];
@@ -34,6 +35,7 @@ const PartialReviewModal: React.FC<Props> = ({
     onSend,
 }) => {
     const { t } = useTranslation();
+    const praemienWorkdayUiActive = usePraemienWorkdayUiActive();
 
     const [report, setReport] = useState("");
     const [finalKm, setFinalKm] = useState<number | "">("");
@@ -44,10 +46,9 @@ const PartialReviewModal: React.FC<Props> = ({
 
     const parsedInitialKm = Number(initialKm);
     const parsedFinalKm = finalKm === "" ? 0 : Number(finalKm);
-    const totalEffectivePatients = calculateEffectivePatients(
-        trips,
-        assignedDay.date,
-    );
+    const totalEffectivePatients = praemienWorkdayUiActive
+        ? calculateEffectivePatients(trips, assignedDay.date)
+        : 0;
 
     const ensureValidFinalKm = (): boolean => {
         if (finalKm === "" || isNaN(Number(finalKm))) {
@@ -93,13 +94,16 @@ const PartialReviewModal: React.FC<Props> = ({
                     finalKm={parsedFinalKm}
                     trips={trips}
                     dense
+                    showPraemieColumn={praemienWorkdayUiActive}
                 />
 
-                <p className="text-center font-semibold text-green-700">
-                    {t("pages.workday.partial.totalPatients", {
-                        count: totalEffectivePatients,
-                    })}
-                </p>
+                {praemienWorkdayUiActive && (
+                    <p className="text-center font-semibold text-green-700">
+                        {t("pages.workday.partial.totalPatients", {
+                            count: totalEffectivePatients,
+                        })}
+                    </p>
+                )}
 
                 <textarea
                     placeholder={t("pages.workday.partial.placeholders.report") as string}

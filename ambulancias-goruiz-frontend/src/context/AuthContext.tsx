@@ -19,6 +19,13 @@ export interface AuthContextType {
    */
   enabledModules: string[] | null;
 
+  /**
+   * Company prämien mode from GET /companies/me (null until loaded or superadmin).
+   * Phase 2: drives workday UI only; backend unchanged.
+   */
+  praemienMode: "automatic" | "manual" | null;
+  praemienModeEffectiveFrom: { year: number; month: number } | null;
+
   // ✅ CLAVE para evitar parpadeos
   isAuthReady: boolean;
 

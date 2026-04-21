@@ -6,6 +6,7 @@ import type { AssignedDayFull } from "../../../modules/diensts";
 import { calculateEffectivePatients } from "../../praemien/utils/calculateEffectivePatients";
 import { IssueReportModal } from "../../mechanics";
 import { useTranslation } from "react-i18next";
+import { usePraemienWorkdayUiActive } from "../../../hooks/usePraemienWorkdayUiActive";
 
 interface FinalReviewModalProps {
     isOpen: boolean;
@@ -31,6 +32,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
     assignedDay,
 }) => {
     const { t } = useTranslation();
+    const praemienWorkdayUiActive = usePraemienWorkdayUiActive();
 
     const [note, setNote] = useState<string>("");
     const [finalKmLocal, setFinalKmLocal] = useState<number | "">(
@@ -43,10 +45,9 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
 
     const parsedInitialKm = Number(initialKm);
     const parsedFinalKm = finalKmLocal === "" ? 0 : Number(finalKmLocal);
-    const totalEffectivePatients = calculateEffectivePatients(
-        trips,
-        assignedDay.date,
-    );
+    const totalEffectivePatients = praemienWorkdayUiActive
+        ? calculateEffectivePatients(trips, assignedDay.date)
+        : 0;
 
     if (!isOpen) return null;
 
@@ -92,13 +93,16 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
                     finalKm={parsedFinalKm}
                     trips={trips}
                     dense
+                    showPraemieColumn={praemienWorkdayUiActive}
                 />
 
-                <p className="text-center font-semibold text-green-700">
-                    {t("pages.workday.final.totalPatients", {
-                        count: totalEffectivePatients,
-                    })}
-                </p>
+                {praemienWorkdayUiActive && (
+                    <p className="text-center font-semibold text-green-700">
+                        {t("pages.workday.final.totalPatients", {
+                            count: totalEffectivePatients,
+                        })}
+                    </p>
+                )}
 
                 <textarea
                     placeholder={t("pages.workday.final.placeholders.note") as string}

@@ -18,6 +18,13 @@ export const AuthProvider = ({ children }: Props) => {
   const [role, setRole] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [enabledModules, setEnabledModules] = useState<string[] | null>(null);
+  const [praemienMode, setPraemienMode] = useState<"automatic" | "manual" | null>(
+    null,
+  );
+  const [praemienModeEffectiveFrom, setPraemienModeEffectiveFrom] = useState<{
+    year: number;
+    month: number;
+  } | null>(null);
 
   // ✅ Estado clave
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -33,6 +40,10 @@ export const AuthProvider = ({ children }: Props) => {
       const storedRole = sessionStorage.getItem("role");
       const storedUser = sessionStorage.getItem("user");
       const storedModules = sessionStorage.getItem("enabledModules");
+      const storedPraemienMode = sessionStorage.getItem("companyPraemienMode");
+      const storedPraemienFrom = sessionStorage.getItem(
+        "companyPraemienEffectiveFrom",
+      );
 
       if (storedToken && storedUserId && storedRole) {
         setToken(storedToken);
@@ -56,6 +67,28 @@ export const AuthProvider = ({ children }: Props) => {
               setEnabledModules(JSON.parse(storedModules));
             } catch {
               sessionStorage.removeItem("enabledModules");
+            }
+          }
+          if (storedPraemienMode === "manual" || storedPraemienMode === "automatic") {
+            setPraemienMode(storedPraemienMode);
+          }
+          if (storedPraemienFrom) {
+            try {
+              const parsed = JSON.parse(storedPraemienFrom) as {
+                year?: number;
+                month?: number;
+              };
+              if (
+                typeof parsed.year === "number" &&
+                typeof parsed.month === "number"
+              ) {
+                setPraemienModeEffectiveFrom({
+                  year: parsed.year,
+                  month: parsed.month,
+                });
+              }
+            } catch {
+              sessionStorage.removeItem("companyPraemienEffectiveFrom");
             }
           }
           // Refresco de módulos en segundo plano
@@ -121,6 +154,24 @@ export const AuthProvider = ({ children }: Props) => {
         : [];
       setEnabledModules(modules);
       sessionStorage.setItem("enabledModules", JSON.stringify(modules));
+
+      const mode: "automatic" | "manual" =
+        res.data.praemienMode === "manual" ? "manual" : "automatic";
+      setPraemienMode(mode);
+      sessionStorage.setItem("companyPraemienMode", mode);
+      const from = res.data.praemienModeEffectiveFrom;
+      if (
+        from &&
+        typeof from.year === "number" &&
+        typeof from.month === "number"
+      ) {
+        const ef = { year: from.year, month: from.month };
+        setPraemienModeEffectiveFrom(ef);
+        sessionStorage.setItem("companyPraemienEffectiveFrom", JSON.stringify(ef));
+      } else {
+        setPraemienModeEffectiveFrom(null);
+        sessionStorage.removeItem("companyPraemienEffectiveFrom");
+      }
     } catch {
       // Superadmin gets 403 here — expected. Network errors are silent.
       // enabledModules stays at its current value (null or cached).
@@ -187,6 +238,10 @@ export const AuthProvider = ({ children }: Props) => {
     // Superadmin has no companyId → skip.
     setEnabledModules(null);
     sessionStorage.removeItem("enabledModules");
+    setPraemienMode(null);
+    setPraemienModeEffectiveFrom(null);
+    sessionStorage.removeItem("companyPraemienMode");
+    sessionStorage.removeItem("companyPraemienEffectiveFrom");
     if (newRole !== "superadmin") {
       void refreshModules(newToken);
     }
@@ -203,6 +258,8 @@ export const AuthProvider = ({ children }: Props) => {
     setRole(null);
     setUser(null);
     setEnabledModules(null);
+    setPraemienMode(null);
+    setPraemienModeEffectiveFrom(null);
 
     sessionStorage.clear();
     window.location.href = "/";
@@ -216,6 +273,8 @@ export const AuthProvider = ({ children }: Props) => {
         role,
         user,
         enabledModules,
+        praemienMode,
+        praemienModeEffectiveFrom,
         isAuthReady,
         login,
         logout,
