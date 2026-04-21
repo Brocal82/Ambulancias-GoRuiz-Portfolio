@@ -1,6 +1,8 @@
 import { useEffect, useId, useMemo, useState } from "react";
 
 import { useAuth } from "../../../hooks/useAuth";
+import { useModules } from "../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../constants/modules";
 import { useTranslation } from "react-i18next";
 
 import { UsersApi } from "../../users";
@@ -55,6 +57,9 @@ export default function UserAssignModal({
   excludeAsMedic,
 }: Props) {
   const { token } = useAuth();
+  const { hasModule } = useModules();
+  const vacationModuleOn = hasModule(MODULE_KEYS.VACATION);
+  const sickLeavesModuleOn = hasModule(MODULE_KEYS.SICK_LEAVES);
   const { t } = useTranslation();
 
   const [users, setUsers] = useState<User[]>([]);
@@ -141,18 +146,22 @@ export default function UserAssignModal({
     (async () => {
       try {
         setFlagsLoading(true);
-        const vacPromise = getVacationFlagsInRange({
-          userIds: ids,
-          fromISO: weekStartISO,
-          toISO: weekEndISO,
-          includeFullSpan: true,
-        });
-        const sickPromise = getSickFlagsInRange({
-          userIds: ids,
-          fromISO: weekStartISO,
-          toISO: weekEndISO,
-          includeFullSpan: true,
-        });
+        const vacPromise = vacationModuleOn
+          ? getVacationFlagsInRange({
+              userIds: ids,
+              fromISO: weekStartISO,
+              toISO: weekEndISO,
+              includeFullSpan: true,
+            })
+          : Promise.resolve({} as Record<string, VacFlag>);
+        const sickPromise = sickLeavesModuleOn
+          ? getSickFlagsInRange({
+              userIds: ids,
+              fromISO: weekStartISO,
+              toISO: weekEndISO,
+              includeFullSpan: true,
+            })
+          : Promise.resolve({} as Record<string, SickFlag>);
 
         const [vacFlags, sickFlagsRes] = await Promise.all([
           vacPromise,
@@ -176,7 +185,7 @@ export default function UserAssignModal({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, token, filteredByRole, weekStartISO, weekEndISO]);
+  }, [isOpen, token, filteredByRole, weekStartISO, weekEndISO, vacationModuleOn, sickLeavesModuleOn]);
 
   // P-Schein solo afecta a DRIVER (UI: colorear/inhabilitar)
   const driverPscheinClass = (pschein?: string | null) => {

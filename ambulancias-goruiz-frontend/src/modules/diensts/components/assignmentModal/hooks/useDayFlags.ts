@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 import { getVacationFlagsInRange, type VacFlag } from "../../../../../modules/vacation/domain/api";
 import { getSickFlagsInRange, type SickFlag } from "../../../../sick/domain";
+import { useModules } from "../../../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../../../constants/modules";
 
 export const useDayFlags = (params: {
   isOpen: boolean;
@@ -10,6 +12,9 @@ export const useDayFlags = (params: {
   userIds: string[];
 }) => {
   const { isOpen, token, date, userIds } = params;
+  const { hasModule } = useModules();
+  const vacationModuleOn = hasModule(MODULE_KEYS.VACATION);
+  const sickLeavesModuleOn = hasModule(MODULE_KEYS.SICK_LEAVES);
 
   const [vacationFlags, setVacationFlags] = useState<Record<string, VacFlag>>({});
   const [sickFlags, setSickFlags] = useState<Record<string, SickFlag>>({});
@@ -30,19 +35,23 @@ export const useDayFlags = (params: {
       try {
         setFlagsLoading(true);
 
-        const vacPromise = getVacationFlagsInRange({
-          userIds,
-          fromISO: date,
-          toISO: date,
-          includeFullSpan: true,
-        });
+        const vacPromise = vacationModuleOn
+          ? getVacationFlagsInRange({
+              userIds,
+              fromISO: date,
+              toISO: date,
+              includeFullSpan: true,
+            })
+          : Promise.resolve({} as Record<string, VacFlag>);
 
-        const sickPromise = getSickFlagsInRange({
-          userIds,
-          fromISO: date,
-          toISO: date,
-          includeFullSpan: true,
-        });
+        const sickPromise = sickLeavesModuleOn
+          ? getSickFlagsInRange({
+              userIds,
+              fromISO: date,
+              toISO: date,
+              includeFullSpan: true,
+            })
+          : Promise.resolve({} as Record<string, SickFlag>);
 
         const [vacFlags, sickFlagsRes] = await Promise.all([
           vacPromise,
@@ -67,7 +76,7 @@ export const useDayFlags = (params: {
     return () => {
       cancelled = true;
     };
-  }, [isOpen, token, date, userIds]);
+  }, [isOpen, token, date, userIds, vacationModuleOn, sickLeavesModuleOn]);
 
   return { vacationFlags, sickFlags, flagsLoading };
 };

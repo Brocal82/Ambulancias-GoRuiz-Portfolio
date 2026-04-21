@@ -1,6 +1,8 @@
 import { useEffect, useState, useId, useMemo } from "react";
 
 import { useAuth } from "../../../hooks/useAuth";
+import { useModules } from "../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../constants/modules";
 
 import { getTeams, type Team, getUsedTeamsForWeek } from "../../teams/domain";
 import { toastT } from "../../../utils/toast";
@@ -60,6 +62,9 @@ export default function TeamAssignModal({
   endTime,
 }: Props) {
   const { token } = useAuth();
+  const { hasModule } = useModules();
+  const vacationModuleOn = hasModule(MODULE_KEYS.VACATION);
+  const sickLeavesModuleOn = hasModule(MODULE_KEYS.SICK_LEAVES);
   const { t } = useTranslation();
 
   const [teams, setTeams] = useState<Team[]>([]);
@@ -220,18 +225,22 @@ export default function TeamAssignModal({
     (async () => {
       try {
         setFlagsLoading(true);
-        const vacPromise = getVacationFlagsInRange({
-          userIds,
-          fromISO: weekStartISO,
-          toISO: weekEndISO,
-          includeFullSpan: true,
-        });
-        const sickPromise = getSickFlagsInRange({
-          userIds,
-          fromISO: weekStartISO,
-          toISO: weekEndISO,
-          includeFullSpan: true,
-        });
+        const vacPromise = vacationModuleOn
+          ? getVacationFlagsInRange({
+              userIds,
+              fromISO: weekStartISO,
+              toISO: weekEndISO,
+              includeFullSpan: true,
+            })
+          : Promise.resolve({} as Record<string, VacFlag>);
+        const sickPromise = sickLeavesModuleOn
+          ? getSickFlagsInRange({
+              userIds,
+              fromISO: weekStartISO,
+              toISO: weekEndISO,
+              includeFullSpan: true,
+            })
+          : Promise.resolve({} as Record<string, SickFlag>);
 
         const [vacFlagsRes, sickFlagsRes] = await Promise.all([
           vacPromise,
@@ -255,7 +264,7 @@ export default function TeamAssignModal({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, token, teams, weekStartISO, weekEndISO]);
+  }, [isOpen, token, teams, weekStartISO, weekEndISO, vacationModuleOn, sickLeavesModuleOn]);
 
   // --- Compatibilidad de equipo con reglas de P-Schein y swap ---
   const selectedTeam = teams.find((t) => t._id === selectedId) || null;

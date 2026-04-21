@@ -11,6 +11,8 @@ import type { AssignedDay, Dienst } from "../index";
 import type { FlexibleAssignment } from "../domain/types/flexibleAssignment";
 import { isPastDay } from "../../../utils/dates/isPastDay";
 import { useAuth } from "../../../hooks/useAuth";
+import { useModules } from "../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../constants/modules";
 import { useTranslation } from "react-i18next";
 import { DienstDayCell, WeekBlock } from "./index";
 import {
@@ -49,6 +51,9 @@ interface Props {
 
 const AdminUserDienstsTab = ({ userId }: Props) => {
   const { token } = useAuth();
+  const { hasModule } = useModules();
+  const vacationModuleOn = hasModule(MODULE_KEYS.VACATION);
+  const sickLeavesModuleOn = hasModule(MODULE_KEYS.SICK_LEAVES);
   const { t, i18n } = useTranslation();
 
   const [userDiensts, setUserDiensts] = useState<Dienst[]>([]);
@@ -90,8 +95,12 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
         getAssignedDaysForUser(userId, token),
         getDienstByUser(userId, token),
         getAllDiensts(token),
-        getVacationRequests(),
-        adminListSickLeaves({ userId }),
+        vacationModuleOn
+          ? getVacationRequests()
+          : Promise.resolve([] as IVacationRequest[]),
+        sickLeavesModuleOn
+          ? adminListSickLeaves({ userId })
+          : Promise.resolve([] as SickLeave[]),
       ]);
 
       setAssignedDays(assignedDaysData);
@@ -105,7 +114,7 @@ const AdminUserDienstsTab = ({ userId }: Props) => {
     } finally {
       setLoading(false);
     }
-  }, [userId, token]);
+  }, [userId, token, vacationModuleOn, sickLeavesModuleOn]);
 
   const fetchDataRef = useRef(fetchData);
   fetchDataRef.current = fetchData;

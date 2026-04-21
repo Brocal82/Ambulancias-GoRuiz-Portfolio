@@ -10,6 +10,8 @@ import type { FlexibleAssignment } from "../domain/types/flexibleAssignment";
 import AssignmentModal from "../components/assignmentModal/AssignmentModal";
 import { isPartialAssignment } from "../utils/assignmentUtils";
 import { useAuth } from "../../../hooks/useAuth";
+import { useModules } from "../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../constants/modules";
 import { useTranslation } from "react-i18next";
 
 import { formatAmbulanceLabel } from "../utils";
@@ -25,6 +27,9 @@ import { resolveUserAbsenceForFreeDay } from "../utils";
 
 const DienstPage = () => {
   const { userId, token } = useAuth();
+  const { hasModule } = useModules();
+  const vacationModuleOn = hasModule(MODULE_KEYS.VACATION);
+  const sickLeavesModuleOn = hasModule(MODULE_KEYS.SICK_LEAVES);
   const { t, i18n } = useTranslation();
 
   const fmtDate = (d: Date) =>
@@ -53,8 +58,12 @@ const DienstPage = () => {
     try {
       const [data, vacs, sick] = await Promise.all([
         getDienstByUser(userId, token),
-        getUserVacationRequests(),
-        listMySickLeaves(),
+        vacationModuleOn
+          ? getUserVacationRequests()
+          : Promise.resolve([] as IVacationRequest[]),
+        sickLeavesModuleOn
+          ? listMySickLeaves()
+          : Promise.resolve([] as SickLeave[]),
       ]);
       setDiensts(data);
       setVacationRequests(Array.isArray(vacs) ? vacs : []);
@@ -64,7 +73,7 @@ const DienstPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [userId, token]);
+  }, [userId, token, vacationModuleOn, sickLeavesModuleOn]);
 
   useEffect(() => {
     fetchDiensts();

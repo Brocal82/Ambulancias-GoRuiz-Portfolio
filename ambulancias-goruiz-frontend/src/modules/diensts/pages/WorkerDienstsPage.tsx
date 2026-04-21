@@ -9,6 +9,8 @@ import AssignmentModal from "../components/assignmentModal/AssignmentModal";
 import type { FlexibleAssignment } from "../domain/types/flexibleAssignment";
 
 import { useAuth } from "../../../hooks/useAuth";
+import { useModules } from "../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../constants/modules";
 import { useTranslation } from "react-i18next";
 
 import { getUserVacationRequests } from "../../vacation/domain/api";
@@ -36,6 +38,9 @@ import PageShell from "../../../components/common/PageShell";
 
 const WorkerDienstsPage = () => {
   const { userId, token } = useAuth();
+  const { hasModule } = useModules();
+  const vacationModuleOn = hasModule(MODULE_KEYS.VACATION);
+  const sickLeavesModuleOn = hasModule(MODULE_KEYS.SICK_LEAVES);
   const { t, i18n } = useTranslation();
 
   const [assignedDays, setAssignedDays] = useState<AssignedDay[]>([]);
@@ -64,8 +69,12 @@ const WorkerDienstsPage = () => {
     try {
       const [days, vacs, sick] = await Promise.all([
         getAssignedDaysForUser(userId, token),
-        getUserVacationRequests(),
-        listMySickLeaves(),
+        vacationModuleOn
+          ? getUserVacationRequests()
+          : Promise.resolve([] as IVacationRequest[]),
+        sickLeavesModuleOn
+          ? listMySickLeaves()
+          : Promise.resolve([] as SickLeave[]),
       ]);
       setAssignedDays(days);
       setVacationRequests(Array.isArray(vacs) ? vacs : []);
@@ -75,7 +84,7 @@ const WorkerDienstsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [userId, token]);
+  }, [userId, token, vacationModuleOn, sickLeavesModuleOn]);
 
   const fetchAssignedDaysRef = useRef(fetchAssignedDays);
   fetchAssignedDaysRef.current = fetchAssignedDays;
