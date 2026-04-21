@@ -1,6 +1,7 @@
 import axios from "../../../api/axios";
 import type {
   Company,
+  CompanyAdmin,
   CreateCompanyInput,
   UpdateCompanyInput,
   CreateAdminInput,
@@ -31,6 +32,11 @@ export const updateCompany = async (
   data: UpdateCompanyInput,
 ): Promise<Company> => {
   const res = await axios.patch<Company>(`/companies/${id}`, data);
+  return res.data;
+};
+
+export const getCompanyAdmins = async (companyId: string): Promise<CompanyAdmin[]> => {
+  const res = await axios.get<CompanyAdmin[]>(`/companies/${companyId}/admins`);
   return res.data;
 };
 

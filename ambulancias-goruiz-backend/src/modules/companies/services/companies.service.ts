@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Company from "../models/company.model";
+import User from "../../users/models/user.model";
 import type { CreateCompanyInput, UpdateCompanyInput } from "../schemas/company.schema";
 
 export async function createCompany(
@@ -21,12 +22,40 @@ export async function createCompany(
 }
 
 export async function getAllCompanies() {
-  return await Company.find().sort({ createdAt: -1 }).lean();
+  const companies = await Company.find().sort({ createdAt: -1 }).lean();
+
+  const [workerCounts, adminCounts] = await Promise.all([
+    User.aggregate<{ _id: mongoose.Types.ObjectId; count: number }>([
+      { $match: { companyId: { $exists: true } } },
+      { $group: { _id: "$companyId", count: { $sum: 1 } } },
+    ]),
+    User.aggregate<{ _id: mongoose.Types.ObjectId; count: number }>([
+      { $match: { companyId: { $exists: true }, role: "admin" } },
+      { $group: { _id: "$companyId", count: { $sum: 1 } } },
+    ]),
+  ]);
+
+  const workerMap = new Map(workerCounts.map((c) => [c._id.toString(), c.count]));
+  const adminMap = new Map(adminCounts.map((c) => [c._id.toString(), c.count]));
+
+  return companies.map((company) => ({
+    ...company,
+    workerCount: workerMap.get(company._id.toString()) ?? 0,
+    adminCount: adminMap.get(company._id.toString()) ?? 0,
+  }));
 }
 
 export async function getCompanyById(id: string) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
   return await Company.findById(id).lean();
+}
+
+export async function getCompanyAdmins(companyId: string) {
+  if (!mongoose.Types.ObjectId.isValid(companyId)) return [];
+  return await User.find(
+    { companyId: new mongoose.Types.ObjectId(companyId), role: "admin" },
+    { name: 1, lastName: 1, email: 1, _id: 1 },
+  ).lean();
 }
 
 export async function updateCompany(id: string, data: UpdateCompanyInput) {

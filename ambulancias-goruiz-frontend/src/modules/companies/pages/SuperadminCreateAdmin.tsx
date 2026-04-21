@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { createCompanyAdmin, getCompanyById } from "../domain/api";
-import type { Company } from "../domain/types";
+import { createCompanyAdmin, getCompanyAdmins, getCompanyById } from "../domain/api";
+import type { Company, CompanyAdmin } from "../domain/types";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
 
 export default function SuperadminCreateAdmin() {
@@ -10,6 +10,7 @@ export default function SuperadminCreateAdmin() {
 
   const [company, setCompany] = useState<Company | null>(null);
   const [companyLoading, setCompanyLoading] = useState(true);
+  const [existingAdmins, setExistingAdmins] = useState<CompanyAdmin[]>([]);
   const [name, setName] = useState("");
   const [lastName, setLastName] = useState("");
   const [localPart, setLocalPart] = useState("");
@@ -22,8 +23,14 @@ export default function SuperadminCreateAdmin() {
     let cancelled = false;
     (async () => {
       try {
-        const c = await getCompanyById(companyId);
-        if (!cancelled) setCompany(c);
+        const [c, admins] = await Promise.all([
+          getCompanyById(companyId),
+          getCompanyAdmins(companyId),
+        ]);
+        if (!cancelled) {
+          setCompany(c);
+          setExistingAdmins(admins);
+        }
       } catch (e: unknown) {
         if (!cancelled) {
           toastT.error(getApiErrorMessage(e, "No se pudo cargar la empresa"));
@@ -92,6 +99,27 @@ export default function SuperadminCreateAdmin() {
         Crea la cuenta del administrador de esta empresa. Podrá iniciar sesión y
         gestionar usuarios mediante invitaciones.
       </p>
+      {existingAdmins.length > 0 && (
+        <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <h2 className="mb-3 text-sm font-semibold text-slate-700">
+            Administradores actuales ({existingAdmins.length})
+          </h2>
+          <ul className="space-y-2">
+            {existingAdmins.map((admin, i) => (
+              <li key={admin._id} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                <span className="text-base leading-none">🧑‍💼</span>
+                <div className="min-w-0">
+                  <p className="font-medium text-slate-800">
+                    Administrador {i + 1} — {admin.name} {admin.lastName}
+                  </p>
+                  <p className="truncate text-xs text-slate-500">{admin.email}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {!useDomain && (
         <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
           Esta empresa no tiene dominio de correo configurado. Puedes indicar el

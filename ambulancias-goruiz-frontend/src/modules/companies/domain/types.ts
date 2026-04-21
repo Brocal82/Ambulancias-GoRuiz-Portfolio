@@ -3,6 +3,15 @@ export interface Company {
   name: string;
   isActive: boolean;
   emailDomain?: string;
+  workerCount?: number;
+  adminCount?: number;
+}
+
+export interface CompanyAdmin {
+  _id: string;
+  name: string;
+  lastName: string;
+  email: string;
 }
 
 export interface CreateCompanyInput {

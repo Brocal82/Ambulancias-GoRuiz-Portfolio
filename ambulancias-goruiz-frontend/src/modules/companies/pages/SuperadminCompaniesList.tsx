@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { getCompanies } from "../domain/api";
 import type { Company } from "../domain/types";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
+import CreateIconButton from "../../../components/common/actions/CreateIconButton";
+import EditIconButton from "../../../components/common/actions/EditIconButton";
+import CreateAdminIconButton from "../../../components/common/actions/CreateAdminIconButton";
 
 export default function SuperadminCompaniesList() {
   const navigate = useNavigate();
@@ -32,13 +35,10 @@ export default function SuperadminCompaniesList() {
     <div className="p-4 max-w-5xl mx-auto">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-slate-900">Empresas</h1>
-        <button
-          type="button"
+        <CreateIconButton
           onClick={() => navigate("/superadmin/companies/new")}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-        >
-          Crear empresa
-        </button>
+          label="Crear empresa"
+        />
       </div>
 
       {loading ? (
@@ -51,7 +51,10 @@ export default function SuperadminCompaniesList() {
             <thead className="bg-slate-100 text-left text-slate-700">
               <tr>
                 <th className="px-4 py-3 font-semibold">Nombre</th>
-                <th className="px-4 py-3 font-semibold">Activa</th>
+                <th className="px-4 py-3 font-semibold">Dominio</th>
+                <th className="px-4 py-3 font-semibold text-center">Admins</th>
+                <th className="px-4 py-3 font-semibold text-center">Trabajadores</th>
+                <th className="px-4 py-3 font-semibold text-center">Activa</th>
                 <th className="px-4 py-3 font-semibold text-right">Acciones</th>
               </tr>
             </thead>
@@ -59,26 +62,31 @@ export default function SuperadminCompaniesList() {
               {companies.map((c) => (
                 <tr key={c._id} className="border-t border-slate-200">
                   <td className="px-4 py-3 text-slate-900">{c.name}</td>
-                  <td className="px-4 py-3 text-slate-700">
-                    {c.isActive ? "Sí" : "No"}
+                  <td className="px-4 py-3 text-slate-500 text-xs">
+                    {c.emailDomain ?? <span className="text-slate-400 italic">—</span>}
                   </td>
-                  <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/superadmin/companies/${c._id}`)}
-                      className="text-blue-600 hover:underline font-medium"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        navigate(`/superadmin/companies/${c._id}/admin`)
-                      }
-                      className="text-blue-600 hover:underline font-medium"
-                    >
-                      Crear admin
-                    </button>
+                  <td className="px-4 py-3 text-center text-sm font-medium text-slate-700">
+                    {c.adminCount ?? 0}
+                  </td>
+                  <td className="px-4 py-3 text-center text-sm font-medium text-slate-700">
+                    {c.workerCount ?? 0}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {c.isActive
+                      ? <span className="text-lg leading-none">✅</span>
+                      : <span className="text-lg leading-none">❌</span>}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex items-center justify-end gap-2">
+                      <EditIconButton
+                        onClick={() => navigate(`/superadmin/companies/${c._id}`)}
+                        title="Editar empresa"
+                      />
+                      <CreateAdminIconButton
+                        onClick={() => navigate(`/superadmin/companies/${c._id}/admin`)}
+                        title="Crear admin"
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}

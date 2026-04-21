@@ -5,6 +5,7 @@ import {
   getCompanyById,
   getMyCompany,
   updateCompany,
+  getCompanyAdmins,
 } from "./controllers/companies.controller";
 import { createFirstAdmin } from "./controllers/company-admin.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
@@ -26,6 +27,7 @@ router.use(authenticateToken, authorizeSuperadmin);
 router.post("/", validateBody(createCompanySchema), createCompany);
 router.get("/", getAllCompanies);
 router.get("/:id", validateObjectId("id"), getCompanyById);
+router.get("/:id/admins", validateObjectId("id"), getCompanyAdmins);
 router.patch("/:id", validateObjectId("id"), validateBody(updateCompanySchema), updateCompany);
 
 router.post(

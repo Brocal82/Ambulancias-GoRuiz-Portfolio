@@ -62,6 +62,15 @@ export const getMyCompany = async (req: Request, res: Response): Promise<void> =
   }
 };
 
+export const getCompanyAdmins = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const admins = await companiesService.getCompanyAdmins(req.params.id);
+    res.status(200).json(admins);
+  } catch {
+    res.status(500).json({ message: "Error al obtener administradores" });
+  }
+};
+
 export const updateCompany = async (req: Request, res: Response): Promise<void> => {
   try {
     const parsed = updateCompanySchema.parse(req.body);
