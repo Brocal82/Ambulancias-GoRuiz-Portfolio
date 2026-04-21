@@ -3,6 +3,7 @@ import AppLayout from "./layouts/AppLayout";
 import { AuthProvider } from "./context/AuthProvider";
 import RequireAuth from "./components/RequireAuth";
 import RequireRole from "./components/RequireRole";
+import RequireModule from "./components/RequireModule";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -88,7 +89,9 @@ export default function App() {
               <Route path="/worker/sick-leaves" element={<WorkerSickLeavesPage />} />
               <Route path="/worker/messages" element={<WorkerMessagesPage />} />
               <Route path="/my-workday" element={<MyWorkdayPage />} />
-              <Route path="/worker/appointments" element={<WorkerAppointmentsPage />} />
+              <Route element={<RequireModule name="appointments" />}>
+                <Route path="/worker/appointments" element={<WorkerAppointmentsPage />} />
+              </Route>
               <Route path="/worker/payroll" element={<WorkerPayrollPage />} />
               <Route path="/worker/documents" element={<WorkerDocumentsPage />} />
 
@@ -118,7 +121,9 @@ export default function App() {
                 <Route path="/admin/ambulances" element={<AdminAmbulancesPage />} />
                 <Route path="/admin/user/:userId" element={<AdminUserDetailDashboard />} />
                 <Route path="/admin/mechanics" element={<AdminMechanicsPage />} />
-                <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
+                <Route element={<RequireModule name="appointments" />}>
+                  <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
+                </Route>
                 <Route path="/admin/teams" element={<AdminTeamsPage />} />
                 <Route path="/admin/sick-leaves" element={<AdminSickLeavesPage />} />
                 <Route path="/admin/payroll" element={<AdminPayrollModuleHubPage />} />

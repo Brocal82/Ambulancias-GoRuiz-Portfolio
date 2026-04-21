@@ -3,9 +3,13 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useUnreadMessagesCount } from "../modules/messages/hooks/useUnreadMessagesCount";
+import { useModules } from "../hooks/useModules";
+import { MODULE_KEYS } from "../constants/modules";
+
 const WorkerDashboard = () => {
   const { t } = useTranslation();
   const { count: unreadMessages } = useUnreadMessagesCount({ pollMs: 30000 });
+  const { hasModule } = useModules();
 
   // justo encima del return, dentro del componente
   const centeredCard =
@@ -111,14 +115,16 @@ const WorkerDashboard = () => {
           </p>
         </Link>
 
-        <Link to="/worker/appointments" className={centeredCard}>
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.workerDashboard.appointments.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.workerDashboard.appointments.desc")}
-          </p>
-        </Link>
+        {hasModule(MODULE_KEYS.APPOINTMENTS) && (
+          <Link to="/worker/appointments" className={centeredCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.workerDashboard.appointments.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.workerDashboard.appointments.desc")}
+            </p>
+          </Link>
+        )}
 
         <Link to="/worker/payroll" className={centeredCard}>
           <h2 className="text-lg font-semibold mb-2">

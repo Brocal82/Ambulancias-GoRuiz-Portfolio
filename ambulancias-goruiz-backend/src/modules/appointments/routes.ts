@@ -2,6 +2,7 @@
 import { Router } from "express";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { requireModule } from "../../middlewares/requireModule";
 import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import {
@@ -23,6 +24,7 @@ import {
   selectSlotSchema,
   updateAppointmentSchema,
 } from "./schemas/appointment.schema";
+import { MODULE_KEYS } from "../companies/constants/modules.constants";
 
 const router = Router();
 
@@ -30,6 +32,7 @@ const router = Router();
 router.post(
   "/requests",
   authenticateToken,
+  requireModule(MODULE_KEYS.APPOINTMENTS),
   authorizeRole("worker"),
   validateBody(requestAppointmentSchema),
   requestAppointment,
@@ -39,6 +42,7 @@ router.post(
 router.get(
   "/my",
   authenticateToken,
+  requireModule(MODULE_KEYS.APPOINTMENTS),
   authorizeRole("worker"),
   getMyAppointments,
 );
@@ -47,6 +51,7 @@ router.get(
 router.get(
   "/pending",
   authenticateToken,
+  requireModule(MODULE_KEYS.APPOINTMENTS),
   authorizeRole("admin"),
   getPendingAppointments,
 );
@@ -55,6 +60,7 @@ router.get(
 router.get(
   "/open",
   authenticateToken,
+  requireModule(MODULE_KEYS.APPOINTMENTS),
   authorizeRole("admin"),
   getOpenAppointments,
 );
@@ -63,6 +69,7 @@ router.get(
 router.get(
   "/count",
   authenticateToken,
+  requireModule(MODULE_KEYS.APPOINTMENTS),
   authorizeRole("admin"),
   getAppointmentsCount,
 );
@@ -71,6 +78,7 @@ router.get(
 router.post(
   "/:id/select",
   authenticateToken,
+  requireModule(MODULE_KEYS.APPOINTMENTS),
   authorizeRole("worker"),
   validateObjectId("id"),
   validateBody(selectSlotSchema),
@@ -81,6 +89,7 @@ router.post(
 router.post(
   "/:id/propose",
   authenticateToken,
+  requireModule(MODULE_KEYS.APPOINTMENTS),
   authorizeRole("admin"),
   validateObjectId("id"),
   validateBody(proposeSlotsSchema),
@@ -91,6 +100,7 @@ router.post(
 router.get(
   "/calendar",
   authenticateToken,
+  requireModule(MODULE_KEYS.APPOINTMENTS),
   authorizeRole("admin"),
   getCalendarAppointments,
 );
@@ -99,6 +109,7 @@ router.get(
 router.patch(
   "/:id",
   authenticateToken,
+  requireModule(MODULE_KEYS.APPOINTMENTS),
   authorizeRole("admin"),
   validateObjectId("id"),
   validateBody(updateAppointmentSchema),
@@ -109,6 +120,7 @@ router.patch(
 router.delete(
   "/:id/my",
   authenticateToken,
+  requireModule(MODULE_KEYS.APPOINTMENTS),
   authorizeRole("worker"),
   validateObjectId("id"),
   deleteMyAppointment,
@@ -118,6 +130,7 @@ router.delete(
 router.delete(
   "/:id",
   authenticateToken,
+  requireModule(MODULE_KEYS.APPOINTMENTS),
   authorizeRole("admin"),
   validateObjectId("id"),
   cancelAppointment,

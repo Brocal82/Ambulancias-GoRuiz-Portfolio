@@ -8,9 +8,12 @@ import useAdminSummariesPendingCount from "../modules/workday/hooks/useAdminSumm
 import { useAdminAppointmentsPendingCount } from "../modules/appointments";
 import { useAdminIssuesOpenCount } from "../modules/mechanics";
 import useAdminSickLeavesPendingCount from "../modules/sick/hooks/useAdminSickLeavesPendingCount";
+import { useModules } from "../hooks/useModules";
+import { MODULE_KEYS } from "../constants/modules";
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
+  const { hasModule } = useModules();
 
   // ? Contador de solicitudes de vacaciones pendientes
   const { count: vacationsPendingCount, isLoading: vacationsLoading } =
@@ -214,23 +217,25 @@ const AdminDashboard = () => {
           </p>
         </Link>
 
-        <Link
-          to="/admin/appointments"
-          className={`${centeredCardRelative} ${apptHasPending ? "ring-2 ring-orange-300" : ""}`}
-        >
-          {!apptLoading && apptHasPending && (
-            <span className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 px-2 rounded-full bg-orange-500 text-white text-xs font-semibold flex items-center justify-center shadow">
-              {apptPending}
-            </span>
-          )}
+        {hasModule(MODULE_KEYS.APPOINTMENTS) && (
+          <Link
+            to="/admin/appointments"
+            className={`${centeredCardRelative} ${apptHasPending ? "ring-2 ring-orange-300" : ""}`}
+          >
+            {!apptLoading && apptHasPending && (
+              <span className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 px-2 rounded-full bg-orange-500 text-white text-xs font-semibold flex items-center justify-center shadow">
+                {apptPending}
+              </span>
+            )}
 
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.adminDashboard.appointments.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.adminDashboard.appointments.desc")}
-          </p>
-        </Link>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.adminDashboard.appointments.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.adminDashboard.appointments.desc")}
+            </p>
+          </Link>
+        )}
 
         <Link to="/admin/messages" className={centeredCard}>
           <h2 className="text-lg font-semibold mb-2">
