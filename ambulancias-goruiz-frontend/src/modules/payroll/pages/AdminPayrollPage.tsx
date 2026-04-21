@@ -937,7 +937,7 @@ export default function AdminPayrollPage() {
                 <SendIconButton
                   onClick={handleUpload}
                   disabled={uploading || !uploadFile || !uploadYear || !uploadMonth}
-                  title={uploading ? "Subiendo nómina..." : "Subir nómina"}
+                  title={uploading ? "Mandando nómina..." : "Mandar nómina"}
                   className="shrink-0"
                 />
               </div>
@@ -1156,8 +1156,8 @@ export default function AdminPayrollPage() {
                   }
                   title={
                     batchUploading
-                      ? "Subiendo lote..."
-                      : `Subir ${batchFiles.length > 0 ? batchFiles.length : ""} nómina${batchFiles.length !== 1 ? "s" : ""}`
+                      ? "Mandando lote..."
+                      : `Mandar ${batchFiles.length > 0 ? batchFiles.length : ""} nómina${batchFiles.length !== 1 ? "s" : ""}`
                   }
                   className="shrink-0"
                 />
