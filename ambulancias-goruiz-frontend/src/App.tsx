@@ -3,6 +3,7 @@ import AppLayout from "./layouts/AppLayout";
 import { AuthProvider } from "./context/AuthProvider";
 import RequireAuth from "./components/RequireAuth";
 import RequireRole from "./components/RequireRole";
+import RequireModule from "./components/RequireModule";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -90,7 +91,9 @@ export default function App() {
               <Route path="/my-workday" element={<MyWorkdayPage />} />
               <Route path="/worker/appointments" element={<WorkerAppointmentsPage />} />
               <Route path="/worker/payroll" element={<WorkerPayrollPage />} />
-              <Route path="/worker/documents" element={<WorkerDocumentsPage />} />
+              <Route element={<RequireModule name="documents" />}>
+                <Route path="/worker/documents" element={<WorkerDocumentsPage />} />
+              </Route>
 
               <Route element={<RequireRole role="superadmin" />}>
                 <Route path="/superadmin" element={<SuperadminDashboard />} />
@@ -123,10 +126,12 @@ export default function App() {
                 <Route path="/admin/sick-leaves" element={<AdminSickLeavesPage />} />
                 <Route path="/admin/payroll" element={<AdminPayrollModuleHubPage />} />
                 <Route path="/admin/payroll/nominas" element={<PayrollYearHubPage />} />
-                <Route
-                  path="/admin/payroll/docs"
-                  element={<AdminDocumentsPage />}
-                />
+                <Route element={<RequireModule name="documents" />}>
+                  <Route
+                    path="/admin/payroll/docs"
+                    element={<AdminDocumentsPage />}
+                  />
+                </Route>
                 <Route
                   path="/admin/payroll/month/:year/:month"
                   element={<AdminPayrollPage />}

@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { requireModule } from "../../middlewares/requireModule";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import { upload } from "../../middlewares/uploadMiddleware";
 import {
@@ -15,12 +16,14 @@ import {
   uploadCompanyDocumentsBatch,
 } from "./document.controller";
 import type { ErrorRequestHandler } from "express";
+import { MODULE_KEYS } from "../companies/constants/modules.constants";
 
 const router = Router();
 
 router.get(
   "/mine",
   authenticateToken,
+  requireModule(MODULE_KEYS.DOCUMENTS),
   authorizeRole("worker"),
   listMyDocumentDeliveries,
 );
@@ -28,6 +31,7 @@ router.get(
 router.patch(
   "/deliveries/:deliveryId/read",
   authenticateToken,
+  requireModule(MODULE_KEYS.DOCUMENTS),
   authorizeRole("worker"),
   validateObjectId("deliveryId"),
   markMyDocumentDeliveryRead,
@@ -36,6 +40,7 @@ router.patch(
 router.post(
   "/deliveries/:deliveryId/acknowledge",
   authenticateToken,
+  requireModule(MODULE_KEYS.DOCUMENTS),
   authorizeRole("worker"),
   validateObjectId("deliveryId"),
   acknowledgeMyDocumentDelivery,
@@ -44,6 +49,7 @@ router.post(
 router.post(
   "/upload",
   authenticateToken,
+  requireModule(MODULE_KEYS.DOCUMENTS),
   authorizeRole("admin"),
   upload.single("file"),
   uploadCompanyDocument,
@@ -52,6 +58,7 @@ router.post(
 router.post(
   "/upload/batch",
   authenticateToken,
+  requireModule(MODULE_KEYS.DOCUMENTS),
   authorizeRole("admin"),
   upload.array("files", 50),
   uploadCompanyDocumentsBatch,
@@ -60,6 +67,7 @@ router.post(
 router.get(
   "/",
   authenticateToken,
+  requireModule(MODULE_KEYS.DOCUMENTS),
   authorizeRole("admin"),
   listCompanyDocuments,
 );
@@ -67,6 +75,7 @@ router.get(
 router.delete(
   "/batch/:uploadBatchId",
   authenticateToken,
+  requireModule(MODULE_KEYS.DOCUMENTS),
   authorizeRole("admin"),
   deleteCompanyDocumentsBatch,
 );
@@ -74,6 +83,7 @@ router.delete(
 router.delete(
   "/:id",
   authenticateToken,
+  requireModule(MODULE_KEYS.DOCUMENTS),
   authorizeRole("admin"),
   deleteCompanyDocument,
 );
