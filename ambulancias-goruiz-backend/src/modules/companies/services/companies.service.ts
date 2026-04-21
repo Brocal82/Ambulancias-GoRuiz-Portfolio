@@ -17,6 +17,12 @@ export async function createCompany(
   if (Array.isArray(data.enabledModules)) {
     doc.enabledModules = data.enabledModules;
   }
+  doc.praemienMode = data.praemienMode ?? "automatic";
+  if (data.praemienModeEffectiveFrom !== undefined) {
+    doc.praemienModeEffectiveFrom = data.praemienModeEffectiveFrom;
+  } else {
+    doc.praemienModeEffectiveFrom = null;
+  }
   if (createdBy && mongoose.Types.ObjectId.isValid(createdBy)) {
     doc.createdBy = new mongoose.Types.ObjectId(createdBy);
   }
@@ -74,6 +80,12 @@ export async function updateCompany(id: string, data: UpdateCompanyInput) {
   if (data.isActive !== undefined) $set.isActive = data.isActive;
   if (Array.isArray(data.enabledModules)) {
     $set.enabledModules = data.enabledModules;
+  }
+  if (data.praemienMode !== undefined) {
+    $set.praemienMode = data.praemienMode;
+  }
+  if (data.praemienModeEffectiveFrom !== undefined) {
+    $set.praemienModeEffectiveFrom = data.praemienModeEffectiveFrom;
   }
   if (data.emailDomain === null) {
     $unset.emailDomain = "";

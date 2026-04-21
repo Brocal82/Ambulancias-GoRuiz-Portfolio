@@ -12,15 +12,42 @@ export interface ICompany extends Document {
    * any requireModule() guard on a route.
    */
   enabledModules: string[];
+  /**
+   * Prämien calculation mode when the `praemien` module is enabled.
+   * Phase 1: stored only; automatic math unchanged until later phases.
+   */
+  praemienMode?: "automatic" | "manual";
+  /**
+   * First calendar month (1–12) when `praemienMode` applies after a scheduled change.
+   * Null/absent = no pending transition (current mode applies).
+   */
+  praemienModeEffectiveFrom?: { year: number; month: number } | null;
   createdAt: Date;
   updatedAt: Date;
 }
+
+const praemienModeEffectiveFromSchema = new Schema(
+  {
+    year: { type: Number, required: true },
+    month: { type: Number, required: true, min: 1, max: 12 },
+  },
+  { _id: false },
+);
 
 const companySchema = new Schema<ICompany>(
   {
     name: { type: String, required: true, trim: true },
     isActive: { type: Boolean, default: true },
     enabledModules: { type: [String], default: [] },
+    praemienMode: {
+      type: String,
+      enum: ["automatic", "manual"],
+      default: "automatic",
+    },
+    praemienModeEffectiveFrom: {
+      type: praemienModeEffectiveFromSchema,
+      default: null,
+    },
     emailDomain: {
       type: String,
       required: false,

@@ -8,9 +8,17 @@ import {
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import {
   ALL_MODULE_KEYS,
+  MODULE_KEYS,
   MODULE_LABELS,
   V1_LOCKED_ON_MODULES,
 } from "../../../constants/modules";
+import type { UpdateCompanyInput } from "../domain/types";
+
+function getNextCalendarMonth(): { year: number; month: number } {
+  const d = new Date();
+  const next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+  return { year: next.getFullYear(), month: next.getMonth() + 1 };
+}
 
 export default function SuperadminCompanyForm() {
   const { id } = useParams<{ id: string }>();
@@ -24,8 +32,25 @@ export default function SuperadminCompanyForm() {
   const [selectedModules, setSelectedModules] = useState<Set<string>>(
     new Set(ALL_MODULE_KEYS),
   );
+  const [praemienMode, setPraemienMode] = useState<"automatic" | "manual">(
+    "automatic",
+  );
+  const [initialPraemienMode, setInitialPraemienMode] = useState<
+    "automatic" | "manual" | null
+  >(null);
+  const [loadedEffectiveFrom, setLoadedEffectiveFrom] = useState<{
+    year: number;
+    month: number;
+  } | null>(null);
   const [loading, setLoading] = useState(!isCreate);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isCreate) return;
+    setPraemienMode("automatic");
+    setInitialPraemienMode(null);
+    setLoadedEffectiveFrom(null);
+  }, [isCreate]);
 
   useEffect(() => {
     if (isCreate || !id) return;
@@ -44,6 +69,18 @@ export default function SuperadminCompanyForm() {
             ? company.enabledModules
             : ALL_MODULE_KEYS;
         setSelectedModules(new Set(modules));
+        const pm =
+          company.praemienMode === "manual" ? "manual" : "automatic";
+        setPraemienMode(pm);
+        setInitialPraemienMode(pm);
+        const ef = company.praemienModeEffectiveFrom;
+        setLoadedEffectiveFrom(
+          ef &&
+            typeof ef.year === "number" &&
+            typeof ef.month === "number"
+            ? { year: ef.year, month: ef.month }
+            : null,
+        );
       } catch (e: unknown) {
         if (!cancelled) {
           toastT.error(getApiErrorMessage(e, "No se pudo cargar la empresa"));
@@ -77,20 +114,37 @@ export default function SuperadminCompanyForm() {
     try {
       const domainTrim = emailDomain.trim();
       const enabledModules = Array.from(selectedModules);
+      const hasPraemien = enabledModules.includes(MODULE_KEYS.PRAEMIEN);
       if (isCreate) {
         await createCompany({
           name: name.trim(),
           ...(domainTrim ? { emailDomain: domainTrim.toLowerCase() } : {}),
           enabledModules,
+          ...(hasPraemien
+            ? {
+                praemienMode,
+                praemienModeEffectiveFrom: null,
+              }
+            : {}),
         });
         toastT.success("Empresa creada correctamente");
       } else if (id) {
-        await updateCompany(id, {
+        const payload: UpdateCompanyInput = {
           name: name.trim(),
           isActive,
           emailDomain: domainTrim ? domainTrim.toLowerCase() : null,
           enabledModules,
-        });
+        };
+        if (hasPraemien) {
+          payload.praemienMode = praemienMode;
+          if (
+            initialPraemienMode !== null &&
+            praemienMode !== initialPraemienMode
+          ) {
+            payload.praemienModeEffectiveFrom = getNextCalendarMonth();
+          }
+        }
+        await updateCompany(id, payload);
         toastT.success("Empresa actualizada correctamente");
       }
       navigate("/superadmin/companies");
@@ -200,6 +254,46 @@ export default function SuperadminCompanyForm() {
             })}
           </div>
         </fieldset>
+
+        {selectedModules.has(MODULE_KEYS.PRAEMIEN) && (
+          <fieldset className="border border-slate-200 rounded-lg p-4">
+            <legend className="text-sm font-semibold text-slate-700 px-1">
+              Prämien — modo de cálculo
+            </legend>
+            <p className="text-xs text-slate-500 mb-3">
+              Si cambias entre automático y manual, el nuevo modo aplica desde
+              el <strong>primer día del mes siguiente</strong> al guardar. La
+              fase manual completa llegará en una versión posterior.
+            </p>
+            {!isCreate && loadedEffectiveFrom && (
+              <p className="text-xs text-amber-800 bg-amber-50 rounded px-2 py-1.5 mb-3">
+                Cambio de modo programado: desde{" "}
+                {String(loadedEffectiveFrom.month).padStart(2, "0")}/
+                {loadedEffectiveFrom.year}
+              </p>
+            )}
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="radio"
+                name="praemienMode"
+                checked={praemienMode === "automatic"}
+                onChange={() => setPraemienMode("automatic")}
+                className="border-slate-300"
+              />
+              <span>Automático (comportamiento actual)</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm cursor-pointer mt-2">
+              <input
+                type="radio"
+                name="praemienMode"
+                checked={praemienMode === "manual"}
+                onChange={() => setPraemienMode("manual")}
+                className="border-slate-300"
+              />
+              <span>Manual (solo guardado; sin flujo todavía)</span>
+            </label>
+          </fieldset>
+        )}
 
         <div className="flex gap-3 pt-2">
           <button

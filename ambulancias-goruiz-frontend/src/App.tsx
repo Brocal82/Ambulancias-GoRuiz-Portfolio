@@ -86,7 +86,9 @@ export default function App() {
               <Route element={<RequireModule name="hospitals" />}>
                 <Route path="/worker/hospitals" element={<WorkerHospitalsPage />} />
               </Route>
-              <Route path="/worker/praemien" element={<WorkerPraemienPage />} />
+              <Route element={<RequireModule name="praemien" />}>
+                <Route path="/worker/praemien" element={<WorkerPraemienPage />} />
+              </Route>
               <Route element={<RequireModule name="vacation" />}>
                 <Route path="/worker/vacations" element={<WorkerVacationsPage />} />
               </Route>
