@@ -15,6 +15,8 @@ import {
 } from "./index";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { requireModule } from "../../middlewares/requireModule";
+import { MODULE_KEYS } from "../companies/constants/modules.constants";
 import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import {
@@ -26,11 +28,12 @@ import {
 
 const router = Router();
 
-router.get("/availability", authenticateToken, getAvailability);
+router.get("/availability", authenticateToken, requireModule(MODULE_KEYS.VACATION), getAvailability);
 
 router.post(
   "/check-range",
   authenticateToken,
+  requireModule(MODULE_KEYS.VACATION),
   validateBody(checkVacationsInRangeSchema),
   checkVacationsInRange,
 );
@@ -38,12 +41,14 @@ router.post(
 router.get(
   "/month-config",
   authenticateToken,
+  requireModule(MODULE_KEYS.VACATION),
   authorizeRole("admin"),
   getMonthConfig,
 );
 router.post(
   "/month-config",
   authenticateToken,
+  requireModule(MODULE_KEYS.VACATION),
   authorizeRole("admin"),
   validateBody(upsertMonthConfigSchema),
   upsertMonthConfig,
@@ -52,6 +57,7 @@ router.post(
 router.post(
   "/",
   authenticateToken,
+  requireModule(MODULE_KEYS.VACATION),
   validateBody(createVacationRequestSchema),
   createVacationRequest,
 );
@@ -59,15 +65,23 @@ router.post(
 router.patch(
   "/:id/cancel",
   authenticateToken,
+  requireModule(MODULE_KEYS.VACATION),
   validateObjectId("id"),
   cancelMyVacationRequest,
 );
 
-router.get("/", authenticateToken, authorizeRole("admin"), getVacationRequests);
+router.get(
+  "/",
+  authenticateToken,
+  requireModule(MODULE_KEYS.VACATION),
+  authorizeRole("admin"),
+  getVacationRequests,
+);
 
 router.get(
   "/count",
   authenticateToken,
+  requireModule(MODULE_KEYS.VACATION),
   authorizeRole("admin"),
   getVacationPendingCount,
 );
@@ -75,6 +89,7 @@ router.get(
 router.patch(
   "/:id",
   authenticateToken,
+  requireModule(MODULE_KEYS.VACATION),
   authorizeRole("admin"),
   validateObjectId("id"),
   validateBody(updateVacationRequestSchema),
@@ -84,15 +99,22 @@ router.patch(
 router.post(
   "/:id/respond",
   authenticateToken,
+  requireModule(MODULE_KEYS.VACATION),
   validateObjectId("id"),
   respondToAlternativeDate,
 );
 
-router.get("/user", authenticateToken, getUserVacationRequests);
+router.get(
+  "/user",
+  authenticateToken,
+  requireModule(MODULE_KEYS.VACATION),
+  getUserVacationRequests,
+);
 
 router.delete(
   "/:id",
   authenticateToken,
+  requireModule(MODULE_KEYS.VACATION),
   authorizeRole("admin"),
   validateObjectId("id"),
   deleteVacationRequest,

@@ -17,7 +17,9 @@ const AdminDashboard = () => {
 
   // ? Contador de solicitudes de vacaciones pendientes
   const { count: vacationsPendingCount, isLoading: vacationsLoading } =
-    useAdminVacationsPendingCount();
+    useAdminVacationsPendingCount({
+      skip: !hasModule(MODULE_KEYS.VACATION),
+    });
   const vacationsHasPending = !vacationsLoading && vacationsPendingCount > 0;
 
   //  Contador de resúmenes pendientes
@@ -165,32 +167,34 @@ const AdminDashboard = () => {
           </p>
         </Link>
 
-        <Link
-          to="/admin/vacations"
-          className={`${centeredCardRelative} ${vacationsHasPending ? "ring-2 ring-orange-300" : ""}`}
-          aria-label={
-            vacationsHasPending
-              ? t("pages.adminDashboard.vacations.title") +
-              ` (${vacationsPendingCount})`
-              : t("pages.adminDashboard.vacations.title")
-          }
-        >
-          {!vacationsLoading && vacationsPendingCount > 0 && (
-            <span
-              className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-orange-500 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
-              aria-label={`${vacationsPendingCount} ${t("pages.adminDashboard.vacations.pending") ?? "pendientes"}`}
-            >
-              {vacationsPendingCount}
-            </span>
-          )}
+        {hasModule(MODULE_KEYS.VACATION) && (
+          <Link
+            to="/admin/vacations"
+            className={`${centeredCardRelative} ${vacationsHasPending ? "ring-2 ring-orange-300" : ""}`}
+            aria-label={
+              vacationsHasPending
+                ? t("pages.adminDashboard.vacations.title") +
+                ` (${vacationsPendingCount})`
+                : t("pages.adminDashboard.vacations.title")
+            }
+          >
+            {!vacationsLoading && vacationsPendingCount > 0 && (
+              <span
+                className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-orange-500 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
+                aria-label={`${vacationsPendingCount} ${t("pages.adminDashboard.vacations.pending") ?? "pendientes"}`}
+              >
+                {vacationsPendingCount}
+              </span>
+            )}
 
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.adminDashboard.vacations.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.adminDashboard.vacations.desc")}
-          </p>
-        </Link>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.adminDashboard.vacations.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.adminDashboard.vacations.desc")}
+            </p>
+          </Link>
+        )}
 
         <Link
           to="/admin/sick-leaves"

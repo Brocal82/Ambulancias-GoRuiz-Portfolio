@@ -6,6 +6,11 @@ import { useVacationRequestsUpdated } from "./useVacationRequestsUpdated";
 type Options = {
   /** Intervalo de refresco en ms. 0 = sin polling (por defecto). */
   pollMs?: number;
+  /**
+   * Cuando skip=true el hook no realiza ninguna petición y mantiene count=0.
+   * Usar cuando el módulo vacation está deshabilitado para esta empresa.
+   */
+  skip?: boolean;
 };
 
 type State = {
@@ -16,7 +21,7 @@ type State = {
 };
 
 export default function useAdminVacationsPendingCount(options: Options = {}) {
-  const { pollMs = 0 } = options;
+  const { pollMs = 0, skip = false } = options;
 
   // Según tu Profile.tsx, useAuth devuelve token directamente
   const { token } = useAuth();
@@ -32,16 +37,7 @@ export default function useAdminVacationsPendingCount(options: Options = {}) {
   const intervalRef = useRef<number | null>(null);
 
   const fetchCount = useCallback(async () => {
-    if (!token) {
-      // Sin token: no pedimos nada; mantenemos 0 y sin error visible
-      setState((s) => ({
-        ...s,
-        isLoading: false,
-        isError: false,
-        error: undefined,
-      }));
-      return;
-    }
+    if (!token || skip) return;
 
     // Loading discreto: solo spinner si aún no tenemos dato (count===0)
     setState((s) => ({ ...s, isLoading: s.count === 0 }));
@@ -63,7 +59,7 @@ export default function useAdminVacationsPendingCount(options: Options = {}) {
       // eslint-disable-next-line no-console
       console.warn("[useAdminVacationsPendingCount]", err);
     }
-  }, [token]);
+  }, [token, skip]);
 
   const refresh = useCallback(() => {
     void fetchCount();
@@ -72,11 +68,20 @@ export default function useAdminVacationsPendingCount(options: Options = {}) {
   // Primer fetch
   useEffect(() => {
     mountedRef.current = true;
-    void fetchCount();
+    if (token && !skip) {
+      void fetchCount();
+    } else {
+      setState({
+        count: 0,
+        isLoading: false,
+        isError: false,
+        error: undefined,
+      });
+    }
     return () => {
       mountedRef.current = false;
     };
-  }, [fetchCount]);
+  }, [fetchCount, token, skip]);
 
   // Refresco al volver a foco
   useEffect(() => {

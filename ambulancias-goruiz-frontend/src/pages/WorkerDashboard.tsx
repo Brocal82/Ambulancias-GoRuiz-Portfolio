@@ -104,14 +104,16 @@ const WorkerDashboard = () => {
           </Link>
         )}
 
-        <Link to="/worker/vacations" className={centeredCard}>
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.workerDashboard.vacations.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.workerDashboard.vacations.desc")}
-          </p>
-        </Link>
+        {hasModule(MODULE_KEYS.VACATION) && (
+          <Link to="/worker/vacations" className={centeredCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.workerDashboard.vacations.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.workerDashboard.vacations.desc")}
+            </p>
+          </Link>
+        )}
 
         <Link to="/worker/sick-leaves" className={centeredCard}>
           <h2 className="text-lg font-semibold mb-2">

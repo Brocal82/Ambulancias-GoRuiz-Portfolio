@@ -87,7 +87,9 @@ export default function App() {
                 <Route path="/worker/hospitals" element={<WorkerHospitalsPage />} />
               </Route>
               <Route path="/worker/praemien" element={<WorkerPraemienPage />} />
-              <Route path="/worker/vacations" element={<WorkerVacationsPage />} />
+              <Route element={<RequireModule name="vacation" />}>
+                <Route path="/worker/vacations" element={<WorkerVacationsPage />} />
+              </Route>
               <Route path="/worker/sick-leaves" element={<WorkerSickLeavesPage />} />
               <Route element={<RequireModule name="messages" />}>
                 <Route path="/worker/messages" element={<WorkerMessagesPage />} />
@@ -124,7 +126,9 @@ export default function App() {
                 <Route element={<RequireModule name="hospitals" />}>
                   <Route path="/admin/hospitals" element={<AdminHospitalsPage />} />
                 </Route>
-                <Route path="/admin/vacations" element={<AdminVacationsPage />} />
+                <Route element={<RequireModule name="vacation" />}>
+                  <Route path="/admin/vacations" element={<AdminVacationsPage />} />
+                </Route>
                 <Route element={<RequireModule name="messages" />}>
                   <Route path="/admin/messages" element={<AdminMessagesPage />} />
                   <Route path="/admin/messages/sent" element={<AdminSentMessages />} />
