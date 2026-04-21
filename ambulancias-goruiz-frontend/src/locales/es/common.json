@@ -613,6 +613,29 @@
                     "empty": "No hay datos disponibles"
                 }
             },
+            "manual": {
+                "pendingNotice": "El modo manual de Prämie comenzará en {{monthYear}}. Hasta entonces, este periodo sigue usando el cálculo automático a partir de tus jornadas.",
+                "title": "Prämie diaria (entrada manual)",
+                "prevMonth": "Anterior",
+                "nextMonth": "Siguiente",
+                "loading": "Cargando tus entradas…",
+                "loadError": "No se pudieron cargar las entradas manuales.",
+                "saveError": "No se pudo guardar la entrada.",
+                "invalidValue": "Introduce un número entero entre 0 y 10000.",
+                "editDay": "Día seleccionado: {{date}}",
+                "valueLabel": "Pacientes / viajes efectivos",
+                "save": "Guardar",
+                "lastSaved": "Último guardado: {{at}}",
+                "weekdayShort": {
+                    "0": "Lu",
+                    "1": "Ma",
+                    "2": "Mi",
+                    "3": "Ju",
+                    "4": "Vi",
+                    "5": "Sá",
+                    "6": "Do"
+                }
+            },
             "levels": {
                 "none": "🐌 0 Prämie",
                 "7": "🥉 7 Prämie",

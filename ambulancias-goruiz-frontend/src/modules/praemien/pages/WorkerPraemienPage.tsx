@@ -1,5 +1,5 @@
 // src/modules/praemien/pages/WorkerPraemienPage.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { getMonthlyPraemienSummary } from "../domain/api";
@@ -7,19 +7,47 @@ import type { MonthlyPraemienDay } from "../domain/api";
 import WorkerPraemienHistory from "../components/WorkerPraemienHistory";
 import MonthlyMiniCalendar from "../components/MonthlyMiniCalendar";
 import PraemieProgressBars from "../components/PraemieProgressBars";
+import WorkerManualPraemienMonthPanel from "../components/WorkerManualPraemienMonthPanel";
 import { useAuth } from "../../../hooks/useAuth";
+import { useModules } from "../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../constants/modules";
+import {
+  formatPraemienEffectiveMonthLabel,
+  isPraemienManualEntryPhaseActive,
+} from "../utils/isPraemienManualEntryPhaseActive";
 
 const WorkerPraemienPage = () => {
-  const { token } = useAuth();
-  const { t } = useTranslation();
+  const { token, praemienMode, praemienModeEffectiveFrom } = useAuth();
+  const { hasModule } = useModules();
+  const { t, i18n } = useTranslation();
 
   const [summaries, setSummaries] = useState<MonthlyPraemienDay[]>([]);
   const [media, setMedia] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const praemienEnabled = hasModule(MODULE_KEYS.PRAEMIEN);
+  const manualPhaseActive = useMemo(
+    () =>
+      isPraemienManualEntryPhaseActive({
+        praemienEnabled,
+        praemienMode,
+        praemienModeEffectiveFrom,
+      }),
+    [praemienEnabled, praemienMode, praemienModeEffectiveFrom],
+  );
+
+  const manualPendingNotice =
+    praemienEnabled &&
+    praemienMode === "manual" &&
+    praemienModeEffectiveFrom != null &&
+    !manualPhaseActive;
+
   useEffect(() => {
-    if (!token) return;
+    if (!token || manualPhaseActive) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -35,13 +63,14 @@ const WorkerPraemienPage = () => {
       .finally(() => {
         setLoading(false);
       });
-  }, [token, t]);
+  }, [token, t, manualPhaseActive]);
 
-  if (loading)
+  if (!manualPhaseActive && loading)
     return (
       <p className="p-4 text-center">{t("pages.praemien.page.loading")}</p>
     );
-  if (error) return <p className="p-4 text-center text-red-600">{error}</p>;
+  if (!manualPhaseActive && error)
+    return <p className="p-4 text-center text-red-600">{error}</p>;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -50,16 +79,34 @@ const WorkerPraemienPage = () => {
           {t("pages.praemien.page.title")}
         </h1>
 
-        {/* Barras + nivel global dentro del componente */}
-        <PraemieProgressBars averagePatients={media} days={summaries} />
+        {manualPendingNotice && (
+          <div className="mx-auto mb-6 max-w-3xl rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-950">
+            {t("pages.praemien.manual.pendingNotice", {
+              monthYear: formatPraemienEffectiveMonthLabel(
+                praemienModeEffectiveFrom,
+                i18n.language,
+              ),
+            })}
+          </div>
+        )}
 
-        {/* Historial diario (mini-calendario mensual) */}
-        <div className="mx-auto max-w-3xl">
-          <MonthlyMiniCalendar days={summaries} />
-        </div>
+        {!manualPhaseActive && (
+          <>
+            <PraemieProgressBars averagePatients={media} days={summaries} />
+            <div className="mx-auto max-w-3xl">
+              <MonthlyMiniCalendar days={summaries} />
+            </div>
+          </>
+        )}
 
+        {manualPhaseActive && praemienModeEffectiveFrom && (
+          <div className="mx-auto max-w-3xl mb-8">
+            <WorkerManualPraemienMonthPanel
+              effectiveFrom={praemienModeEffectiveFrom}
+            />
+          </div>
+        )}
 
-        {/* Historial mensual */}
         <div className="mx-auto max-w-3xl mt-8">
           <WorkerPraemienHistory />
         </div>

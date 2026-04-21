@@ -613,6 +613,29 @@
                     "empty": "No data available"
                 }
             },
+            "manual": {
+                "pendingNotice": "Manual Prämie mode will start in {{monthYear}}. Until then, this period still follows automatic calculation from your workdays.",
+                "title": "Daily Prämie (manual entry)",
+                "prevMonth": "Previous",
+                "nextMonth": "Next",
+                "loading": "Loading your entries…",
+                "loadError": "Could not load manual entries.",
+                "saveError": "Could not save your entry.",
+                "invalidValue": "Enter a whole number between 0 and 10000.",
+                "editDay": "Selected day: {{date}}",
+                "valueLabel": "Patients / effective trips",
+                "save": "Save",
+                "lastSaved": "Last saved: {{at}}",
+                "weekdayShort": {
+                    "0": "Mo",
+                    "1": "Tu",
+                    "2": "We",
+                    "3": "Th",
+                    "4": "Fr",
+                    "5": "Sa",
+                    "6": "Su"
+                }
+            },
             "levels": {
                 "none": "🐌 0 Prämie",
                 "7": "🥉 7 Prämie",

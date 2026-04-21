@@ -613,6 +613,29 @@
                     "empty": "Keine Daten verfügbar"
                 }
             },
+            "manual": {
+                "pendingNotice": "Der manuelle Prämien-Modus startet ab {{monthYear}}. Bis dahin gilt weiterhin die automatische Berechnung aus Ihren Diensten.",
+                "title": "Tägliche Prämie (manuelle Eingabe)",
+                "prevMonth": "Zurück",
+                "nextMonth": "Weiter",
+                "loading": "Einträge werden geladen…",
+                "loadError": "Manuelle Einträge konnten nicht geladen werden.",
+                "saveError": "Speichern fehlgeschlagen.",
+                "invalidValue": "Bitte eine ganze Zahl zwischen 0 und 10000 eingeben.",
+                "editDay": "Ausgewählter Tag: {{date}}",
+                "valueLabel": "Patienten / wirksame Fahrten",
+                "save": "Speichern",
+                "lastSaved": "Zuletzt gespeichert: {{at}}",
+                "weekdayShort": {
+                    "0": "Mo",
+                    "1": "Di",
+                    "2": "Mi",
+                    "3": "Do",
+                    "4": "Fr",
+                    "5": "Sa",
+                    "6": "So"
+                }
+            },
             "levels": {
                 "none": "🐌 0 Prämie",
                 "7": "🥉 7 Prämie",
