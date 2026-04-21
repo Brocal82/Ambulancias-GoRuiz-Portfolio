@@ -437,8 +437,8 @@ const AdminDocumentsPage = () => {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+        <div className="space-y-2">
+          <div className="px-1 py-1 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-800">
               Documentos subidos
             </h2>
@@ -451,32 +451,32 @@ const AdminDocumentsPage = () => {
               No hay documentos subidos todavía.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
+            <div className="w-full">
+              <table className="w-full table-fixed text-left text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-4 py-2 text-xs font-medium text-slate-600">
+                    <th className="w-[20%] px-4 py-2 text-xs font-medium text-slate-600">
                       Nombre
                     </th>
-                    <th className="px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap">
+                    <th className="w-[16%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap">
                       Fecha
                     </th>
-                    <th className="px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap">
+                    <th className="w-[14%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap">
                       Tipo
                     </th>
-                    <th className="px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
+                    <th className="w-[8%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
                       Enviados
                     </th>
-                    <th className="px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
+                    <th className="w-[8%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
                       Leídos
                     </th>
-                    <th className="px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
+                    <th className="w-[8%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
                       Confirmados
                     </th>
-                    <th className="px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
-                      Pendientes confirmación
+                    <th className="w-[12%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
+                      Pendientes
                     </th>
-                    <th className="px-4 py-2 text-xs font-medium text-slate-600 text-right">
+                    <th className="w-[11%] px-4 py-2 text-xs font-medium text-slate-600 text-right">
                       Acciones
                     </th>
                   </tr>
@@ -485,53 +485,55 @@ const AdminDocumentsPage = () => {
                   {displayRows.map((row) =>
                     row.kind === "single" ? (
                       <tr key={row.doc.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-2 max-w-xs">
+                        <td className="w-0 max-w-xs px-4 py-1.5">
                           <span
-                            className="text-sm text-slate-800 break-words"
+                            className="block truncate whitespace-nowrap text-sm text-slate-800"
                             title={row.doc.originalName}
                           >
                             {row.doc.originalName}
                           </span>
                         </td>
-                        <td className="px-4 py-2 text-sm text-slate-700 whitespace-nowrap">
+                        <td className="px-4 py-1.5 text-sm text-slate-700 whitespace-nowrap">
                           {formatUploadedAt(row.doc.createdAt)}
                         </td>
-                        <td className="px-4 py-2 text-xs text-slate-600 whitespace-nowrap">
+                        <td className="px-4 py-1.5 text-xs text-slate-600 whitespace-nowrap">
                           {row.doc.mimeType}
                         </td>
-                        <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                        <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
                           {row.doc.totalRecipients}
                         </td>
-                        <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                        <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
                           {row.doc.readCount}
                         </td>
-                        <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                        <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
                           {row.doc.acknowledgedCount}
                         </td>
-                        <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                        <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
                           {row.doc.pendingAcknowledgmentCount}
                         </td>
-                        <td className="px-4 py-2 text-right space-x-2">
-                          <button
-                            type="button"
-                            onClick={() => void handleOpen(row.doc)}
-                            className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                          >
-                            Abrir
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void handleDelete(row.doc)}
-                            className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
-                          >
-                            Eliminar
-                          </button>
+                        <td className="px-4 py-1.5 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => void handleOpen(row.doc)}
+                              className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                            >
+                              Abrir
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleDelete(row.doc)}
+                              className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ) : (
                       <Fragment key={row.uploadBatchId}>
                         <tr className="hover:bg-slate-50">
-                          <td className="px-4 py-2 max-w-xs">
+                          <td className="px-4 py-1.5 max-w-xs">
                             <button
                               type="button"
                               onClick={() => toggleBatchExpanded(row.uploadBatchId)}
@@ -546,25 +548,25 @@ const AdminDocumentsPage = () => {
                               </span>
                             </button>
                           </td>
-                          <td className="px-4 py-2 text-sm text-slate-700 whitespace-nowrap">
+                          <td className="px-4 py-1.5 text-sm text-slate-700 whitespace-nowrap">
                             {formatUploadedAt(row.docs[0].createdAt)}
                           </td>
-                          <td className="px-4 py-2 text-xs text-slate-500 whitespace-nowrap">
+                          <td className="px-4 py-1.5 text-xs text-slate-500 whitespace-nowrap">
                             —
                           </td>
-                          <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                          <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
                             {row.docs[0].totalRecipients}
                           </td>
-                          <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                          <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
                             {row.docs[0].readCount}
                           </td>
-                          <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                          <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
                             {row.docs[0].acknowledgedCount}
                           </td>
-                          <td className="px-4 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                          <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
                             {row.docs[0].pendingAcknowledgmentCount}
                           </td>
-                          <td className="px-4 py-2 text-right">
+                          <td className="px-4 py-1.5 text-right whitespace-nowrap">
                             <button
                               type="button"
                               onClick={() =>
@@ -587,47 +589,49 @@ const AdminDocumentsPage = () => {
                                   <tbody className="divide-y divide-slate-100">
                                     {row.docs.map((doc) => (
                                       <tr key={doc.id} className="hover:bg-slate-50">
-                                        <td className="px-3 py-2 max-w-xs">
+                                        <td className="w-0 max-w-xs px-3 py-1.5">
                                           <span
-                                            className="text-sm text-slate-800 break-words"
+                                            className="block truncate whitespace-nowrap text-sm text-slate-800"
                                             title={doc.originalName}
                                           >
                                             {doc.originalName}
                                           </span>
                                         </td>
-                                        <td className="px-3 py-2 text-sm text-slate-700 whitespace-nowrap">
+                                        <td className="px-3 py-1.5 text-sm text-slate-700 whitespace-nowrap">
                                           {formatUploadedAt(doc.createdAt)}
                                         </td>
-                                        <td className="px-3 py-2 text-xs text-slate-600 whitespace-nowrap">
+                                        <td className="px-3 py-1.5 text-xs text-slate-600 whitespace-nowrap">
                                           {doc.mimeType}
                                         </td>
-                                        <td className="px-3 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                                        <td className="px-3 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
                                           {doc.totalRecipients}
                                         </td>
-                                        <td className="px-3 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                                        <td className="px-3 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
                                           {doc.readCount}
                                         </td>
-                                        <td className="px-3 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                                        <td className="px-3 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
                                           {doc.acknowledgedCount}
                                         </td>
-                                        <td className="px-3 py-2 text-xs text-slate-700 text-center whitespace-nowrap">
+                                        <td className="px-3 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
                                           {doc.pendingAcknowledgmentCount}
                                         </td>
-                                        <td className="px-3 py-2 text-right space-x-2 whitespace-nowrap">
-                                          <button
-                                            type="button"
-                                            onClick={() => void handleOpen(doc)}
-                                            className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                                          >
-                                            Abrir
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => void handleDelete(doc)}
-                                            className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
-                                          >
-                                            Eliminar
-                                          </button>
+                                        <td className="px-3 py-1.5 text-right whitespace-nowrap">
+                                          <div className="inline-flex items-center gap-2">
+                                            <button
+                                              type="button"
+                                              onClick={() => void handleOpen(doc)}
+                                              className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                            >
+                                              Abrir
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => void handleDelete(doc)}
+                                              className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
+                                            >
+                                              Eliminar
+                                            </button>
+                                          </div>
                                         </td>
                                       </tr>
                                     ))}
