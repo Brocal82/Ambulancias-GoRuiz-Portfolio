@@ -1,13 +1,13 @@
 import axiosInstance from "../api/axios";
 
 /**
- * Downloads a protected file via authenticated request and opens it in a new tab.
+ * Fetches a protected file via authenticated request and opens it inline in a new tab.
+ * The second parameter is kept for backwards-compatibility but is no longer used.
  * @param storedPath - The path stored in the DB, e.g. "/uploads/filename.pdf"
- * @param downloadName - Optional filename hint for the download attribute
  */
 export async function openSecureFile(
   storedPath: string,
-  downloadName?: string,
+  _downloadName?: string,
 ): Promise<void> {
   const filename = storedPath.split("/").pop();
   if (!filename) return;
@@ -16,14 +16,8 @@ export async function openSecureFile(
     responseType: "blob",
   });
 
-  const url = URL.createObjectURL(response.data);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.target = "_blank";
-  anchor.rel = "noopener noreferrer";
-  if (downloadName) anchor.download = downloadName;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
+  const blob = new Blob([response.data], { type: response.data.type });
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank", "noopener,noreferrer");
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
