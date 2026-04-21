@@ -639,7 +639,8 @@
                 "statusLine": "Status: {{status}}",
                 "rejectedReason": "Rejection reason: {{reason}}",
                 "originalLine": "Original worker value: {{value}}",
-                "finalLine": "Approved final value: {{value}}"
+                "finalLine": "Approved final value: {{value}}",
+                "reopenedHint": "This day was reopened for edits. Save again to send it back for admin review."
             },
             "adminManual": {
                 "title": "Manual daily entries (review)",
@@ -657,6 +658,7 @@
                 "reopenNote": "Reopen note (optional)",
                 "reopen": "Reopen",
                 "invalidCorrect": "Enter a whole number between 0 and 10000.",
+                "draftHint": "This row is still a draft. The worker must submit it before you can approve, reject, or correct it.",
                 "th": {
                     "date": "Date",
                     "original": "Original",

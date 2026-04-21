@@ -639,7 +639,8 @@
                 "statusLine": "Estado: {{status}}",
                 "rejectedReason": "Motivo del rechazo: {{reason}}",
                 "originalLine": "Valor original del trabajador: {{value}}",
-                "finalLine": "Valor final aprobado: {{value}}"
+                "finalLine": "Valor final aprobado: {{value}}",
+                "reopenedHint": "Este día se reabrió para edición. Guarda de nuevo para enviarlo a revisión del administrador."
             },
             "adminManual": {
                 "title": "Entradas diarias manuales (revisión)",
@@ -657,6 +658,7 @@
                 "reopenNote": "Nota de reapertura (opcional)",
                 "reopen": "Reabrir",
                 "invalidCorrect": "Introduce un número entero entre 0 y 10000.",
+                "draftHint": "Esta fila sigue en borrador. El trabajador debe enviarla antes de que puedas aprobar, rechazar o corregir.",
                 "th": {
                     "date": "Fecha",
                     "original": "Original",

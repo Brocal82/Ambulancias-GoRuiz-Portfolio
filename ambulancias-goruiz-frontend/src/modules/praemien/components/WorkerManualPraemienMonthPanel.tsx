@@ -332,6 +332,11 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
                   })}
                 </p>
               )}
+              {selectedEntry.status === "reopened" && (
+                <p className="text-amber-900">
+                  {t("pages.praemien.manual.reopenedHint")}
+                </p>
+              )}
               <p>
                 {t("pages.praemien.manual.originalLine", {
                   value: selectedEntry.originalWorkerValue,

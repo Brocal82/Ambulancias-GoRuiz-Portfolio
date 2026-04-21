@@ -13,6 +13,29 @@ const MAX_VALUE = 10_000;
 
 export type { ManualDailyEntryDto };
 
+/** Minimal production trace (ids + action); no full audit subsystem. */
+function logPraemienAdminAction(
+  action: "approve" | "reject" | "correctApprove" | "reopen",
+  meta: {
+    companyId?: string;
+    targetUserId: string;
+    date: string;
+    adminUserId: string;
+  },
+): void {
+  console.info(
+    "[praemien-admin]",
+    JSON.stringify({
+      action,
+      companyId: meta.companyId ?? null,
+      targetUserId: meta.targetUserId,
+      date: meta.date,
+      adminUserId: meta.adminUserId,
+      at: new Date().toISOString(),
+    }),
+  );
+}
+
 export async function adminListManualDailyEntriesForMonth(params: {
   companyIdStr: string | undefined;
   targetUserId: string;
@@ -109,6 +132,14 @@ export async function adminApproveManualDailyEntry(params: {
       message: "La entrada está rechazada. El trabajador debe volver a enviarla.",
     };
   }
+  if (st === "draft") {
+    return {
+      ok: false,
+      statusCode: 400,
+      message:
+        "La entrada está en borrador. El trabajador debe enviarla antes de aprobarla.",
+    };
+  }
 
   const workerVal = Number(loaded.doc.workerSubmittedValue ?? 0);
   const parsed = parseOptionalFinalValue(params.adminFinalValue, workerVal);
@@ -137,6 +168,12 @@ export async function adminApproveManualDailyEntry(params: {
   if (!dto) {
     return { ok: false, statusCode: 500, message: "Error al leer la entrada." };
   }
+  logPraemienAdminAction("approve", {
+    companyId: params.companyIdStr,
+    targetUserId: params.targetUserId,
+    date: params.date,
+    adminUserId: params.adminUserId,
+  });
   return { ok: true, entry: dto };
 }
 
@@ -159,6 +196,14 @@ export async function adminRejectManualDailyEntry(params: {
       ok: false,
       statusCode: 400,
       message: "La entrada está aprobada. Reábrala antes de rechazarla.",
+    };
+  }
+  if (st === "draft") {
+    return {
+      ok: false,
+      statusCode: 400,
+      message:
+        "La entrada está en borrador. No se puede rechazar hasta que el trabajador la envíe.",
     };
   }
 
@@ -186,6 +231,12 @@ export async function adminRejectManualDailyEntry(params: {
   if (!dto) {
     return { ok: false, statusCode: 500, message: "Error al leer la entrada." };
   }
+  logPraemienAdminAction("reject", {
+    companyId: params.companyIdStr,
+    targetUserId: params.targetUserId,
+    date: params.date,
+    adminUserId: params.adminUserId,
+  });
   return { ok: true, entry: dto };
 }
 
@@ -211,6 +262,14 @@ export async function adminCorrectApproveManualDailyEntry(params: {
       ok: false,
       statusCode: 400,
       message: "La entrada está rechazada. El trabajador debe volver a enviarla.",
+    };
+  }
+  if (st === "draft") {
+    return {
+      ok: false,
+      statusCode: 400,
+      message:
+        "La entrada está en borrador. El trabajador debe enviarla antes de corregir y aprobar.",
     };
   }
 
@@ -246,6 +305,12 @@ export async function adminCorrectApproveManualDailyEntry(params: {
   if (!dto) {
     return { ok: false, statusCode: 500, message: "Error al leer la entrada." };
   }
+  logPraemienAdminAction("correctApprove", {
+    companyId: params.companyIdStr,
+    targetUserId: params.targetUserId,
+    date: params.date,
+    adminUserId: params.adminUserId,
+  });
   return { ok: true, entry: dto };
 }
 
@@ -294,5 +359,11 @@ export async function adminReopenManualDailyEntry(params: {
   if (!dto) {
     return { ok: false, statusCode: 500, message: "Error al leer la entrada." };
   }
+  logPraemienAdminAction("reopen", {
+    companyId: params.companyIdStr,
+    targetUserId: params.targetUserId,
+    date: params.date,
+    adminUserId: params.adminUserId,
+  });
   return { ok: true, entry: dto };
 }

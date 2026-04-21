@@ -639,7 +639,8 @@
                 "statusLine": "Status: {{status}}",
                 "rejectedReason": "Ablehnungsgrund: {{reason}}",
                 "originalLine": "Ursprünglicher Wert des Mitarbeiters: {{value}}",
-                "finalLine": "Genehmigter Endwert: {{value}}"
+                "finalLine": "Genehmigter Endwert: {{value}}",
+                "reopenedHint": "Dieser Tag wurde zur Bearbeitung wieder geöffnet. Speichern Sie erneut, um ihn erneut zur Admin-Prüfung zu senden."
             },
             "adminManual": {
                 "title": "Manuelle Tageseinträge (Prüfung)",
@@ -657,6 +658,7 @@
                 "reopenNote": "Notiz zur Wiedereröffnung (optional)",
                 "reopen": "Wieder öffnen",
                 "invalidCorrect": "Bitte eine ganze Zahl zwischen 0 und 10000 eingeben.",
+                "draftHint": "Diese Zeile ist noch ein Entwurf. Der Mitarbeiter muss sie senden, bevor Sie genehmigen, ablehnen oder korrigieren können.",
                 "th": {
                     "date": "Datum",
                     "original": "Original",

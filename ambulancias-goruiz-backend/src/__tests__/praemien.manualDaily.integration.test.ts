@@ -277,6 +277,56 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     expect(hit.averagePatients).toBe(6);
   });
 
+  it("hardening: no se puede aprobar ni rechazar una fila en borrador", async () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    const dateStr = `${y}-${pad(m)}-21`;
+
+    await request(app)
+      .put(`${API}/praemien/manual-daily`)
+      .set("Authorization", `Bearer ${workerToken}`)
+      .send({ date: dateStr, workerSubmittedValue: 3, status: "draft" })
+      .expect(200);
+
+    await request(app)
+      .post(`${API}/praemien/manual-daily/admin/approve`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ userId: workerId, date: dateStr })
+      .expect(400);
+
+    await request(app)
+      .post(`${API}/praemien/manual-daily/admin/reject`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ userId: workerId, date: dateStr, reason: "x" })
+      .expect(400);
+
+    await request(app)
+      .post(`${API}/praemien/manual-daily/admin/correct-approve`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ userId: workerId, date: dateStr, adminFinalValue: 5 })
+      .expect(400);
+  });
+
+  it("hardening: trabajador no puede volver a borrador tras enviar", async () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    const dateStr = `${y}-${pad(m)}-22`;
+
+    await request(app)
+      .put(`${API}/praemien/manual-daily`)
+      .set("Authorization", `Bearer ${workerToken}`)
+      .send({ date: dateStr, workerSubmittedValue: 4, status: "submitted" })
+      .expect(200);
+
+    await request(app)
+      .put(`${API}/praemien/manual-daily`)
+      .set("Authorization", `Bearer ${workerToken}`)
+      .send({ date: dateStr, workerSubmittedValue: 4, status: "draft" })
+      .expect(400);
+  });
+
   it("Phase 5: save-monthly no escribe en modo manual efectivo", async () => {
     const now = new Date();
     await Company.updateOne(

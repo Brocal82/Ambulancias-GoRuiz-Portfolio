@@ -171,9 +171,12 @@ const AdminManualPraemienReviewPanel = ({ userId }: Props) => {
               })}
             </p>
           )}
-          {(selected.status === "submitted" ||
-            selected.status === "draft" ||
-            selected.status === "reopened") && (
+          {selected.status === "draft" && (
+            <p className="text-xs text-slate-600">
+              {t("pages.praemien.adminManual.draftHint")}
+            </p>
+          )}
+          {(selected.status === "submitted" || selected.status === "reopened") && (
             <label className="block text-[11px] text-slate-600">
               {t("pages.praemien.adminManual.rejectReasonLabel")}
               <input
@@ -184,9 +187,7 @@ const AdminManualPraemienReviewPanel = ({ userId }: Props) => {
             </label>
           )}
           <div className="flex flex-wrap gap-2">
-            {(selected.status === "submitted" ||
-              selected.status === "draft" ||
-              selected.status === "reopened") && (
+            {(selected.status === "submitted" || selected.status === "reopened") && (
               <>
                 <button
                   type="button"
@@ -221,9 +222,7 @@ const AdminManualPraemienReviewPanel = ({ userId }: Props) => {
                 </button>
               </>
             )}
-            {(selected.status === "submitted" ||
-              selected.status === "draft" ||
-              selected.status === "reopened") && (
+            {(selected.status === "submitted" || selected.status === "reopened") && (
               <div className="flex flex-wrap items-end gap-2">
                 <label className="flex flex-col text-[11px] text-slate-600">
                   {t("pages.praemien.adminManual.correctValue")}

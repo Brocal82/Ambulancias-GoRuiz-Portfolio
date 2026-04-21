@@ -94,6 +94,19 @@ export async function upsertMyManualDailyEntry(params: {
     };
   }
 
+  if (
+    existing &&
+    existing.status === "submitted" &&
+    statusParam === "draft"
+  ) {
+    return {
+      ok: false,
+      statusCode: 400,
+      message:
+        "No se puede volver a borrador después de enviar a revisión. Pide que rechacen o reabran la entrada.",
+    };
+  }
+
   if (!existing) {
     const created = await PraemienManualDailyEntry.create({
       companyId: gate.companyObjectId,
