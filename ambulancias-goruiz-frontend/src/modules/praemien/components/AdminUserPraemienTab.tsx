@@ -1,5 +1,5 @@
 // src/pages/AdminUserPraemienTab.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { getMonthlyPraemienSummary } from "../domain/api";
@@ -7,21 +7,42 @@ import type { MonthlyPraemienDay } from "../domain/api";
 import MonthlyMiniCalendar from "./MonthlyMiniCalendar";
 import PraemieProgressBars from "./PraemieProgressBars";
 import WorkerPraemienHistory from "./WorkerPraemienHistory";
+import AdminManualPraemienReviewPanel from "./AdminManualPraemienReviewPanel";
 import { useAuth } from "../../../hooks/useAuth";
+import { MODULE_KEYS } from "../../../constants/modules";
+import { isPraemienManualEntryPhaseActive } from "../utils/isPraemienManualEntryPhaseActive";
+
 interface Props {
   userId: string;
 }
 
 const AdminUserPraemienTab = ({ userId }: Props) => {
-  const { token } = useAuth();
+  const { token, praemienMode, praemienModeEffectiveFrom, enabledModules, role } =
+    useAuth();
   const { t } = useTranslation();
 
   const [summaries, setSummaries] = useState<MonthlyPraemienDay[]>([]);
   const [averagePatients, setAveragePatients] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
+  const manualEffective = useMemo(() => {
+    const praemienEnabled =
+      role === "superadmin" ||
+      enabledModules === null ||
+      (Array.isArray(enabledModules) &&
+        enabledModules.includes(MODULE_KEYS.PRAEMIEN));
+    return isPraemienManualEntryPhaseActive({
+      praemienEnabled,
+      praemienMode,
+      praemienModeEffectiveFrom,
+    });
+  }, [role, enabledModules, praemienMode, praemienModeEffectiveFrom]);
+
   useEffect(() => {
-    if (!token || !userId) return;
+    if (!token || !userId || manualEffective) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
     getMonthlyPraemienSummary(userId)
@@ -31,9 +52,9 @@ const AdminUserPraemienTab = ({ userId }: Props) => {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [token, userId]);
+  }, [token, userId, manualEffective]);
 
-  if (loading) {
+  if (!manualEffective && loading) {
     return <p className="p-4">{t("pages.praemien.page.loading")}</p>;
   }
 
@@ -43,15 +64,17 @@ const AdminUserPraemienTab = ({ userId }: Props) => {
         {t("pages.praemien.adminUserTab.currentTitle")}
       </h2>
 
-      {/* Barras (incluye el Global Level dentro, sin duplicar) */}
-      <PraemieProgressBars averagePatients={averagePatients} days={summaries} />
+      {manualEffective ? (
+        <AdminManualPraemienReviewPanel userId={userId} />
+      ) : (
+        <>
+          <PraemieProgressBars averagePatients={averagePatients} days={summaries} />
+          <div className="mt-6">
+            <MonthlyMiniCalendar days={summaries} />
+          </div>
+        </>
+      )}
 
-      {/* Historial diario (mini-calendario) */}
-      <div className="mt-6">
-        <MonthlyMiniCalendar days={summaries} />
-      </div>
-
-      {/* Historial mensual (12 meses) */}
       <div className="mt-8 border-t pt-6">
         <WorkerPraemienHistory userId={userId} />
       </div>

@@ -634,6 +634,35 @@
                     "4": "Fr",
                     "5": "Sa",
                     "6": "So"
+                },
+                "approvedReadOnly": "Dieser Tag ist genehmigt. Bitte einen Administrator, ihn wieder zu öffnen, falls Sie den Wert ändern müssen.",
+                "statusLine": "Status: {{status}}",
+                "rejectedReason": "Ablehnungsgrund: {{reason}}",
+                "originalLine": "Ursprünglicher Wert des Mitarbeiters: {{value}}",
+                "finalLine": "Genehmigter Endwert: {{value}}"
+            },
+            "adminManual": {
+                "title": "Manuelle Tageseinträge (Prüfung)",
+                "loading": "Einträge werden geladen…",
+                "loadError": "Manuelle Einträge konnten nicht geladen werden.",
+                "actionError": "Aktion fehlgeschlagen.",
+                "empty": "Keine manuellen Einträge in diesem Monat.",
+                "selected": "Ausgewählt: {{date}}",
+                "rejectReason": "Letzte Ablehnung: {{reason}}",
+                "rejectReasonLabel": "Ablehnungsnotiz (optional)",
+                "approve": "Genehmigen",
+                "reject": "Ablehnen",
+                "correctValue": "Endwert",
+                "correctApprove": "Korrigieren & genehmigen",
+                "reopenNote": "Notiz zur Wiedereröffnung (optional)",
+                "reopen": "Wieder öffnen",
+                "invalidCorrect": "Bitte eine ganze Zahl zwischen 0 und 10000 eingeben.",
+                "th": {
+                    "date": "Datum",
+                    "original": "Original",
+                    "worker": "Mitarbeiter",
+                    "final": "Ende",
+                    "status": "Status"
                 }
             },
             "levels": {

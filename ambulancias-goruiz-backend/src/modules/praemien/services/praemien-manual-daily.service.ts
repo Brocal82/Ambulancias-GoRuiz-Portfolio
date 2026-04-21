@@ -5,15 +5,14 @@ import {
   assertDateAllowedForManualEntry,
   assertManualPraemienDailyApisAllowed,
 } from "./assert-manual-praemien-phase.service";
+import {
+  mapManualDailyDocToDto,
+  type ManualDailyEntryDto,
+} from "./praemien-manual-daily-mapper";
+
+export type { ManualDailyEntryDto };
 
 const MAX_VALUE = 10_000;
-
-export interface ManualDailyEntryDto {
-  date: string;
-  workerSubmittedValue: number;
-  workerSubmittedAt: string;
-  status: PraemienManualDailyStatus;
-}
 
 function monthRangeStrings(year: number, month1to12: number): {
   start: string;
@@ -66,9 +65,9 @@ export async function upsertMyManualDailyEntry(params: {
     };
   }
 
-  let status: PraemienManualDailyStatus = "submitted";
+  let statusParam: PraemienManualDailyStatus = "submitted";
   if (params.status === "draft" || params.status === "submitted") {
-    status = params.status;
+    statusParam = params.status;
   } else if (params.status != null && params.status !== "") {
     return {
       ok: false,
@@ -80,44 +79,68 @@ export async function upsertMyManualDailyEntry(params: {
   const userOid = new mongoose.Types.ObjectId(params.userId);
   const now = new Date();
 
-  const doc = await PraemienManualDailyEntry.findOneAndUpdate(
-    {
-      companyId: gate.companyObjectId,
-      userId: userOid,
-      date: dateStr,
-    },
-    {
-      $set: {
-        workerSubmittedValue: num,
-        workerSubmittedAt: now,
-        status,
-      },
-      $setOnInsert: {
-        companyId: gate.companyObjectId,
-        userId: userOid,
-        date: dateStr,
-      },
-    },
-    { new: true, upsert: true, runValidators: true },
-  ).lean();
+  const existing = await PraemienManualDailyEntry.findOne({
+    companyId: gate.companyObjectId,
+    userId: userOid,
+    date: dateStr,
+  }).lean();
 
-  if (!doc) {
+  if (existing && existing.status === "approved") {
     return {
       ok: false,
-      statusCode: 500,
-      message: "No se pudo guardar la entrada.",
+      statusCode: 403,
+      message:
+        "Esta entrada está aprobada. Pídele a un administrador que la reabra para poder editarla.",
     };
   }
 
-  return {
-    ok: true,
-    entry: {
-      date: doc.date,
-      workerSubmittedValue: doc.workerSubmittedValue,
-      workerSubmittedAt: (doc.workerSubmittedAt ?? now).toISOString(),
-      status: doc.status as PraemienManualDailyStatus,
-    },
+  if (!existing) {
+    const created = await PraemienManualDailyEntry.create({
+      companyId: gate.companyObjectId,
+      userId: userOid,
+      date: dateStr,
+      originalWorkerValue: num,
+      workerSubmittedValue: num,
+      workerSubmittedAt: now,
+      status: statusParam,
+    });
+    const dto = mapManualDailyDocToDto(
+      created.toObject() as unknown as Record<string, unknown>,
+    );
+    if (!dto) {
+      return { ok: false, statusCode: 500, message: "No se pudo guardar la entrada." };
+    }
+    return { ok: true, entry: dto };
+  }
+
+  const patch: Record<string, unknown> = {
+    workerSubmittedValue: num,
+    workerSubmittedAt: now,
   };
+
+  if (existing.originalWorkerValue == null) {
+    patch.originalWorkerValue = existing.workerSubmittedValue;
+  }
+
+  let nextStatus: PraemienManualDailyStatus = statusParam;
+  if (existing.status === "reopened" || existing.status === "rejected") {
+    nextStatus = "submitted";
+  } else {
+    nextStatus = statusParam;
+  }
+  patch.status = nextStatus;
+
+  await PraemienManualDailyEntry.updateOne(
+    { _id: existing._id },
+    { $set: patch },
+  );
+
+  const fresh = await PraemienManualDailyEntry.findById(existing._id).lean();
+  const dto = mapManualDailyDocToDto(fresh as Record<string, unknown> | null);
+  if (!dto) {
+    return { ok: false, statusCode: 500, message: "No se pudo guardar la entrada." };
+  }
+  return { ok: true, entry: dto };
 }
 
 export async function listMyManualDailyEntriesForMonth(params: {
@@ -156,12 +179,9 @@ export async function listMyManualDailyEntriesForMonth(params: {
     .sort({ date: 1 })
     .lean();
 
-  const entries: ManualDailyEntryDto[] = rows.map((doc) => ({
-    date: doc.date,
-    workerSubmittedValue: doc.workerSubmittedValue,
-    workerSubmittedAt: (doc.workerSubmittedAt ?? doc.updatedAt).toISOString(),
-    status: doc.status as PraemienManualDailyStatus,
-  }));
+  const entries: ManualDailyEntryDto[] = rows
+    .map((doc) => mapManualDailyDocToDto(doc as unknown as Record<string, unknown>))
+    .filter((e): e is ManualDailyEntryDto => e != null);
 
   return { ok: true, entries };
 }
@@ -198,11 +218,6 @@ export async function getMyManualDailyEntryForDay(params: {
 
   return {
     ok: true,
-    entry: {
-      date: doc.date,
-      workerSubmittedValue: doc.workerSubmittedValue,
-      workerSubmittedAt: (doc.workerSubmittedAt ?? doc.updatedAt).toISOString(),
-      status: doc.status as PraemienManualDailyStatus,
-    },
+    entry: mapManualDailyDocToDto(doc as unknown as Record<string, unknown>),
   };
 }

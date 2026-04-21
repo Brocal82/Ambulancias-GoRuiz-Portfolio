@@ -14,10 +14,13 @@ import {
 
 const API = "/api";
 
-describe("Praemien - manual-daily (Phase 3)", () => {
+describe("Praemien - manual-daily (Phase 3 + 4)", () => {
   let workerToken: string;
   let adminToken: string;
+  let workerId: string;
   let companyId: mongoose.Types.ObjectId;
+
+  const pad = (n: number) => String(n).padStart(2, "0");
 
   beforeAll(async () => {
     await mongoose.connect(env.MONGODB_URI);
@@ -26,6 +29,7 @@ describe("Praemien - manual-daily (Phase 3)", () => {
     companyId = company._id as mongoose.Types.ObjectId;
 
     const worker = await createTestWorkerInCompany(companyId);
+    workerId = String(worker._id);
     const workerRes = await request(app)
       .post(`${API}/users/login`)
       .send({ email: worker.email, password: "password123" });
@@ -148,5 +152,84 @@ describe("Praemien - manual-daily (Phase 3)", () => {
       .set("Authorization", `Bearer ${adminToken}`)
       .send({ date: dateStr, workerSubmittedValue: 1 })
       .expect(403);
+  });
+
+  it("Phase 4: admin list + approve + worker bloqueado + reopen + worker edita", async () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    const dateStr = `${y}-${pad(m)}-18`;
+
+    await request(app)
+      .put(`${API}/praemien/manual-daily`)
+      .set("Authorization", `Bearer ${workerToken}`)
+      .send({ date: dateStr, workerSubmittedValue: 4 })
+      .expect(200);
+
+    const list = await request(app)
+      .get(`${API}/praemien/manual-daily/admin/month?userId=${workerId}&year=${y}&month=${m}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .expect(200);
+    expect(Array.isArray(list.body)).toBe(true);
+    expect(list.body.some((e: { date: string }) => e.date === dateStr)).toBe(true);
+
+    await request(app)
+      .post(`${API}/praemien/manual-daily/admin/approve`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ userId: workerId, date: dateStr })
+      .expect(200);
+
+    await request(app)
+      .put(`${API}/praemien/manual-daily`)
+      .set("Authorization", `Bearer ${workerToken}`)
+      .send({ date: dateStr, workerSubmittedValue: 9 })
+      .expect(403);
+
+    await request(app)
+      .post(`${API}/praemien/manual-daily/admin/reopen`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ userId: workerId, date: dateStr, note: "fix" })
+      .expect(200);
+
+    await request(app)
+      .put(`${API}/praemien/manual-daily`)
+      .set("Authorization", `Bearer ${workerToken}`)
+      .send({ date: dateStr, workerSubmittedValue: 9 })
+      .expect(200);
+
+    const cap = await request(app)
+      .post(`${API}/praemien/manual-daily/admin/correct-approve`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ userId: workerId, date: dateStr, adminFinalValue: 11 })
+      .expect(200);
+    expect(cap.body.status).toBe("approved");
+    expect(cap.body.adminFinalValue).toBe(11);
+    expect(cap.body.originalWorkerValue).toBe(4);
+  });
+
+  it("Phase 4: admin reject luego worker puede reenviar", async () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    const dateStr = `${y}-${pad(m)}-19`;
+
+    await request(app)
+      .put(`${API}/praemien/manual-daily`)
+      .set("Authorization", `Bearer ${workerToken}`)
+      .send({ date: dateStr, workerSubmittedValue: 2 })
+      .expect(200);
+
+    await request(app)
+      .post(`${API}/praemien/manual-daily/admin/reject`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ userId: workerId, date: dateStr, reason: "no" })
+      .expect(200);
+
+    const res = await request(app)
+      .put(`${API}/praemien/manual-daily`)
+      .set("Authorization", `Bearer ${workerToken}`)
+      .send({ date: dateStr, workerSubmittedValue: 5 })
+      .expect(200);
+    expect(res.body.status).toBe("submitted");
   });
 });

@@ -634,6 +634,35 @@
                     "4": "Fr",
                     "5": "Sa",
                     "6": "Su"
+                },
+                "approvedReadOnly": "This day is approved. Ask an admin to reopen it if you need to change the value.",
+                "statusLine": "Status: {{status}}",
+                "rejectedReason": "Rejection reason: {{reason}}",
+                "originalLine": "Original worker value: {{value}}",
+                "finalLine": "Approved final value: {{value}}"
+            },
+            "adminManual": {
+                "title": "Manual daily entries (review)",
+                "loading": "Loading entries…",
+                "loadError": "Could not load manual entries.",
+                "actionError": "Action failed.",
+                "empty": "No manual entries for this month.",
+                "selected": "Selected: {{date}}",
+                "rejectReason": "Last rejection: {{reason}}",
+                "rejectReasonLabel": "Rejection note (optional)",
+                "approve": "Approve",
+                "reject": "Reject",
+                "correctValue": "Final value",
+                "correctApprove": "Correct & approve",
+                "reopenNote": "Reopen note (optional)",
+                "reopen": "Reopen",
+                "invalidCorrect": "Enter a whole number between 0 and 10000.",
+                "th": {
+                    "date": "Date",
+                    "original": "Original",
+                    "worker": "Worker",
+                    "final": "Final",
+                    "status": "Status"
                 }
             },
             "levels": {

@@ -99,6 +99,7 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
   }, [entries]);
 
   const selectedEntry = selectedDate ? byDate.get(selectedDate) : undefined;
+  const selectedReadOnly = selectedEntry?.status === "approved";
 
   useEffect(() => {
     if (!selectedDate) {
@@ -106,9 +107,17 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
       return;
     }
     const ex = byDate.get(selectedDate);
-    setDraftValue(
-      ex != null ? String(ex.workerSubmittedValue) : "",
-    );
+    if (ex == null) {
+      setDraftValue("");
+      return;
+    }
+    if (ex.status === "approved") {
+      setDraftValue(
+        String(ex.adminFinalValue ?? ex.workerSubmittedValue),
+      );
+    } else {
+      setDraftValue(String(ex.workerSubmittedValue));
+    }
   }, [selectedDate, byDate]);
 
   const dayMeta = useCallback(
@@ -153,7 +162,7 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
   const canNext = year < maxYm.y || (year === maxYm.y && month < maxYm.m);
 
   const handleSave = async () => {
-    if (!selectedDate || saving) return;
+    if (!selectedDate || saving || selectedReadOnly) return;
     const n = Number(draftValue);
     if (!Number.isInteger(n) || n < 0 || n > 10_000) {
       setError(t("pages.praemien.manual.invalidValue"));
@@ -234,6 +243,10 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
             const { dateStr, disabled } = dayMeta(day);
             const val = byDate.get(dateStr);
             const isSel = selectedDate === dateStr;
+            const cellNum =
+              val != null && val.status === "approved" && val.adminFinalValue != null
+                ? val.adminFinalValue
+                : val?.workerSubmittedValue;
             return (
               <button
                 key={dateStr}
@@ -251,8 +264,17 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
               >
                 <span className="font-semibold">{day}</span>
                 {!disabled && val != null && (
-                  <span className="tabular-nums text-[10px] text-slate-600">
-                    {val.workerSubmittedValue}
+                  <span
+                    className={[
+                      "tabular-nums text-[10px]",
+                      val.status === "approved"
+                        ? "font-semibold text-emerald-700"
+                        : val.status === "rejected"
+                          ? "text-rose-600"
+                          : "text-slate-600",
+                    ].join(" ")}
+                  >
+                    {cellNum}
                   </span>
                 )}
               </button>
@@ -266,36 +288,68 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
           <p className="text-sm text-slate-700">
             {t("pages.praemien.manual.editDay", { date: selectedDate })}
           </p>
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="flex flex-col text-xs text-slate-600">
-              {t("pages.praemien.manual.valueLabel")}
-              <input
-                type="number"
-                min={0}
-                max={10_000}
-                step={1}
-                value={draftValue}
-                onChange={(e) => setDraftValue(e.target.value)}
-                className="mt-0.5 w-40 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-              />
-            </label>
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => void handleSave()}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              {saving ? t("common.saving") : t("pages.praemien.manual.save")}
-            </button>
-          </div>
-          {selectedEntry && (
-            <p className="text-xs text-slate-500">
-              {t("pages.praemien.manual.lastSaved", {
-                at: new Date(selectedEntry.workerSubmittedAt).toLocaleString(
-                  i18n.language,
-                ),
-              })}
+          {selectedReadOnly ? (
+            <p className="text-sm text-emerald-800">
+              {t("pages.praemien.manual.approvedReadOnly")}
             </p>
+          ) : (
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="flex flex-col text-xs text-slate-600">
+                {t("pages.praemien.manual.valueLabel")}
+                <input
+                  type="number"
+                  min={0}
+                  max={10_000}
+                  step={1}
+                  value={draftValue}
+                  onChange={(e) => setDraftValue(e.target.value)}
+                  disabled={selectedReadOnly}
+                  className="mt-0.5 w-40 rounded-md border border-slate-300 px-2 py-1.5 text-sm disabled:bg-slate-100"
+                />
+              </label>
+              <button
+                type="button"
+                disabled={saving || selectedReadOnly}
+                onClick={() => void handleSave()}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {saving ? t("common.saving") : t("pages.praemien.manual.save")}
+              </button>
+            </div>
+          )}
+          {selectedEntry && (
+            <div className="space-y-1 text-xs text-slate-500">
+              <p>
+                {t("pages.praemien.manual.statusLine", { status: selectedEntry.status })}
+              </p>
+              {selectedEntry.status === "rejected" && selectedEntry.rejectionReason && (
+                <p className="text-rose-700">
+                  {t("pages.praemien.manual.rejectedReason", {
+                    reason: selectedEntry.rejectionReason,
+                  })}
+                </p>
+              )}
+              <p>
+                {t("pages.praemien.manual.originalLine", {
+                  value: selectedEntry.originalWorkerValue,
+                })}
+              </p>
+              {selectedEntry.status === "approved" &&
+                selectedEntry.adminFinalValue != null && (
+                  <p>
+                    {t("pages.praemien.manual.finalLine", {
+                      value: selectedEntry.adminFinalValue,
+                    })}
+                  </p>
+                )}
+              <p>
+                {t("pages.praemien.manual.lastSaved", {
+                  at: new Date(selectedEntry.workerSubmittedAt).toLocaleString(
+                    i18n.language,
+                  ),
+                })}
+              </p>
+            </div>
           )}
         </div>
       )}

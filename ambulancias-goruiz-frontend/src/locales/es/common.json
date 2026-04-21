@@ -634,6 +634,35 @@
                     "4": "Vi",
                     "5": "Sá",
                     "6": "Do"
+                },
+                "approvedReadOnly": "Este día está aprobado. Pide a un administrador que lo reabra si necesitas cambiar el valor.",
+                "statusLine": "Estado: {{status}}",
+                "rejectedReason": "Motivo del rechazo: {{reason}}",
+                "originalLine": "Valor original del trabajador: {{value}}",
+                "finalLine": "Valor final aprobado: {{value}}"
+            },
+            "adminManual": {
+                "title": "Entradas diarias manuales (revisión)",
+                "loading": "Cargando entradas…",
+                "loadError": "No se pudieron cargar las entradas manuales.",
+                "actionError": "La acción ha fallado.",
+                "empty": "No hay entradas manuales en este mes.",
+                "selected": "Seleccionado: {{date}}",
+                "rejectReason": "Último rechazo: {{reason}}",
+                "rejectReasonLabel": "Nota de rechazo (opcional)",
+                "approve": "Aprobar",
+                "reject": "Rechazar",
+                "correctValue": "Valor final",
+                "correctApprove": "Corregir y aprobar",
+                "reopenNote": "Nota de reapertura (opcional)",
+                "reopen": "Reabrir",
+                "invalidCorrect": "Introduce un número entero entre 0 y 10000.",
+                "th": {
+                    "date": "Fecha",
+                    "original": "Original",
+                    "worker": "Trabajador",
+                    "final": "Final",
+                    "status": "Estado"
                 }
             },
             "levels": {
