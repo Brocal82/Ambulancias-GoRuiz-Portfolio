@@ -15,6 +15,8 @@ import {
   entitiesBelongToSameCompany,
   CompanyValidationError,
 } from "../../../../utils/requireCompany";
+import { companyHasEnabledModule } from "../../../../utils/companyEnabledModules";
+import { MODULE_KEYS } from "../../../companies/constants/modules.constants";
 import type { z } from "zod";
 import type { dienstSchema } from "../../schemas/dienstSchema";
 
@@ -72,6 +74,24 @@ async function validateAssignmentCompanies(
   }
 }
 
+async function assertAmbulancesPayloadAllowedForCompany(
+  assignments: Array<{ ambulanceId?: unknown }> | undefined,
+  companyIdStr: string,
+) {
+  const hasAmbulance = (assignments ?? []).some((a) => {
+    const id = a?.ambulanceId;
+    if (id == null || id === "") return false;
+    if (typeof id === "string" && id.trim() === "") return false;
+    return true;
+  });
+  if (!hasAmbulance) return;
+  if (!(await companyHasEnabledModule(companyIdStr, MODULE_KEYS.AMBULANCES))) {
+    throw new CompanyValidationError(
+      "El módulo de ambulancias no está habilitado para esta empresa.",
+    );
+  }
+}
+
 export async function createDienst(data: DienstCreateInput, companyId?: string | null) {
   if (companyId == null || String(companyId).trim() === "") {
     throw new CompanyValidationError(
@@ -79,6 +99,10 @@ export async function createDienst(data: DienstCreateInput, companyId?: string |
     );
   }
   const companyIdStr = String(companyId).trim();
+  await assertAmbulancesPayloadAllowedForCompany(
+    data.assignments as Array<{ ambulanceId?: unknown }> | undefined,
+    companyIdStr,
+  );
   await validateAssignmentCompanies(
     (data.assignments || []) as Array<{ ambulanceId?: string; driver?: string; medic?: string }>,
     companyIdStr,
@@ -107,6 +131,10 @@ export async function updateDienst(
   }
   const dienstCompanyId = String(existingCompany);
   if (data.assignments && data.assignments.length > 0) {
+    await assertAmbulancesPayloadAllowedForCompany(
+      data.assignments as Array<{ ambulanceId?: unknown }>,
+      dienstCompanyId,
+    );
     const assignList = data.assignments as Array<{ ambulanceId?: string; driver?: string; medic?: string }>;
     await validateAssignmentCompanies(assignList, dienstCompanyId);
   }
@@ -200,6 +228,11 @@ export async function generateDienstTemplatesForWeek(
       "No hay plantillas de Dienst activas. Crea al menos una antes de generar la semana.",
     );
   }
+
+  const ambulancesModuleEnabled = await companyHasEnabledModule(
+    companyIdStr,
+    MODULE_KEYS.AMBULANCES,
+  );
 
   const dienstNumbers = templates.map((tpl) => tpl.dienstNumber);
 
@@ -517,7 +550,7 @@ export async function generateDienstTemplatesForWeek(
           baseAssignment.medic = new mongoose.Types.ObjectId(medicIdStr);
         }
 
-        if (teamAmbulanceId) {
+        if (teamAmbulanceId && ambulancesModuleEnabled) {
           baseAssignment.ambulanceId = teamAmbulanceId;
         }
 

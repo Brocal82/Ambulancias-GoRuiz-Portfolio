@@ -5,6 +5,8 @@ import Dienst from "../../diensts/models/dienst.model";
 import VacationRequest from "../../vacation/models/vacation-request.model";
 import { DateTime } from "luxon";
 import { Ambulance } from "../../ambulances";
+import { MODULE_KEYS } from "../../companies/constants/modules.constants";
+import { companyHasEnabledModule } from "../../../utils/companyEnabledModules";
 import { entitiesBelongToSameCompany } from "../../../utils/requireCompany";
 
 /** Error con código HTTP para mapeo en controller */
@@ -104,6 +106,16 @@ export async function listTeams(companyId?: string | null) {
     }),
   );
 
+  const ambModuleOn = await companyHasEnabledModule(
+    companyId,
+    MODULE_KEYS.AMBULANCES,
+  );
+  if (!ambModuleOn) {
+    for (const t of teams as { ambulanceId?: unknown }[]) {
+      if ("ambulanceId" in t) delete t.ambulanceId;
+    }
+  }
+
   return teams;
 }
 
@@ -145,7 +157,17 @@ export async function createTeam(
   }
 
   let normalizedAmbulanceId: string | null = null;
+  const ambModuleOnCreate = await companyHasEnabledModule(
+    targetCo,
+    MODULE_KEYS.AMBULANCES,
+  );
   if (ambulanceId) {
+    if (!ambModuleOnCreate) {
+      throw new TeamError(
+        "El módulo de ambulancias no está habilitado para esta empresa.",
+        403,
+      );
+    }
     if (!isObjectId(ambulanceId)) {
       throw new TeamError("ambulanceId debe ser un ObjectId válido", 400);
     }
@@ -433,13 +455,32 @@ export async function updateTeam(
     normalizedAmbulance = new mongoose.Types.ObjectId(ambulanceId);
   }
 
+  const ambModuleOnUpdate = await companyHasEnabledModule(
+    targetCo,
+    MODULE_KEYS.AMBULANCES,
+  );
+  if (!ambModuleOnUpdate) {
+    if (
+      normalizedAmbulance !== undefined &&
+      normalizedAmbulance !== null
+    ) {
+      throw new TeamError(
+        "El módulo de ambulancias no está habilitado para esta empresa.",
+        403,
+      );
+    }
+    normalizedAmbulance = null;
+  }
+
   const updateDoc: any = {
     driver,
     medic,
     rotationMode: normalizedRotation,
     fixedDienstNumber: normalizedFixedDienst,
   };
-  if (normalizedAmbulance !== undefined) {
+  if (!ambModuleOnUpdate) {
+    updateDoc.ambulanceId = null;
+  } else if (normalizedAmbulance !== undefined) {
     updateDoc.ambulanceId = normalizedAmbulance;
   }
 

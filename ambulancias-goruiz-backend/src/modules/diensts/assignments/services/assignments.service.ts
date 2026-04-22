@@ -17,6 +17,8 @@ import {
 } from "../../utils/dienstValidation";
 import { extractValidDatesFromAssignments, mapAssignmentToAssignedDay } from "../../utils/dienstMappers";
 import { entitiesBelongToSameCompany } from "../../../../utils/requireCompany";
+import { companyHasEnabledModule } from "../../../../utils/companyEnabledModules";
+import { MODULE_KEYS } from "../../../companies/constants/modules.constants";
 import { computeShiftBounds, diffMinutes, ZONE } from "../../../../utils/time";
 import { DienstAssignmentError } from "./assignment-errors";
 import type { DndCrossDienstSameWeekBody } from "../schemas/dnd-cross-dienst-same-week.schema";
@@ -646,6 +648,36 @@ export async function updateDienstPartial(
   if (String(dc) !== callerCo) return null;
 
   const dienstCompanyId = String(dc);
+
+  const ambulancesModuleEnabled =
+    await companyHasEnabledModule(dienstCompanyId, MODULE_KEYS.AMBULANCES);
+  if (!ambulancesModuleEnabled) {
+    for (const incoming of assignments) {
+      if (!Object.prototype.hasOwnProperty.call(incoming, "ambulanceId")) continue;
+      const incomingAny = incoming as { date?: string; ambulanceId?: unknown };
+      const isClearing =
+        incomingAny.ambulanceId === "" || incomingAny.ambulanceId === null;
+      if (isClearing) continue;
+
+      const newAmbId = oidStr(incomingAny.ambulanceId);
+      if (!newAmbId) continue;
+
+      const idx = dienst.assignments.findIndex(
+        (a: { date?: string }) => a.date === incomingAny.date,
+      );
+      const prev = idx !== -1 ? dienst.assignments[idx] : null;
+      const oldAmbId = oidStr(prev?.ambulanceId);
+
+      if (newAmbId !== oldAmbId) {
+        throw new DienstAssignmentError(
+          403,
+          "ambulances_module_disabled",
+          "El módulo de ambulancias no está habilitado para esta empresa.",
+        );
+      }
+    }
+  }
+
   await validateAssignmentEntities(assignments, dienstCompanyId);
 
   let cachedWeekStart: Date | null = null;
@@ -1231,6 +1263,17 @@ export async function assignTeamToWeek(
   const teamAmbulanceId: mongoose.Types.ObjectId | null = (team as any).ambulanceId
     ? new mongoose.Types.ObjectId(String((team as any).ambulanceId))
     : null;
+
+  if (
+    teamAmbulanceId &&
+    !(await companyHasEnabledModule(callerCo, MODULE_KEYS.AMBULANCES))
+  ) {
+    throw new DienstAssignmentError(
+      403,
+      "ambulances_module_disabled",
+      "El módulo de ambulancias no está habilitado: el equipo tiene una ambulancia asignada. Quítala del equipo o activa el módulo.",
+    );
+  }
 
   let driverId = teamDriverId;
   let medicId = teamMedicId;
@@ -2459,6 +2502,14 @@ export async function assignAmbulanceToWeek(
       403,
       "forbidden",
       "No tienes permiso para modificar este Dienst",
+    );
+  }
+
+  if (!(await companyHasEnabledModule(callerCo, MODULE_KEYS.AMBULANCES))) {
+    throw new DienstAssignmentError(
+      403,
+      "ambulances_module_disabled",
+      "El módulo de ambulancias no está habilitado para esta empresa.",
     );
   }
 

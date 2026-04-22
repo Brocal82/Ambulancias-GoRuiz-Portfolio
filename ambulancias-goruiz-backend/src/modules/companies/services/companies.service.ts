@@ -1,7 +1,45 @@
 import mongoose from "mongoose";
 import Company from "../models/company.model";
 import User from "../../users/models/user.model";
+import { Team } from "../../teams/models/team.model";
+import Dienst from "../../diensts/models/dienst.model";
+import { MODULE_KEYS } from "../constants/modules.constants";
 import type { CreateCompanyInput, UpdateCompanyInput } from "../schemas/company.schema";
+
+/** Al desactivar el módulo ambulancias, los equipos no deben seguir referenciando vehículos. */
+async function clearTeamAmbulancesForCompany(companyId: string): Promise<void> {
+  if (!mongoose.Types.ObjectId.isValid(companyId)) return;
+  const oid = new mongoose.Types.ObjectId(companyId);
+  await Team.updateMany(
+    { companyId: oid, ambulanceId: { $exists: true, $ne: null } },
+    { $unset: { ambulanceId: "" } },
+  );
+}
+
+/** Quita ambulanceId de cada día en todos los Diensts de la empresa (planificación histórica). */
+async function clearDienstAssignmentAmbulancesForCompany(companyId: string): Promise<void> {
+  if (!mongoose.Types.ObjectId.isValid(companyId)) return;
+  const oid = new mongoose.Types.ObjectId(companyId);
+  const diensts = await Dienst.find({ companyId: oid });
+  for (const d of diensts) {
+    let changed = false;
+    for (const a of d.assignments) {
+      if (a.ambulanceId != null) {
+        (a as { ambulanceId?: unknown }).ambulanceId = undefined;
+        changed = true;
+      }
+    }
+    if (changed) {
+      d.markModified("assignments");
+      await d.save();
+    }
+  }
+}
+
+async function stripAmbulanceReferencesForCompany(companyId: string): Promise<void> {
+  await clearTeamAmbulancesForCompany(companyId);
+  await clearDienstAssignmentAmbulancesForCompany(companyId);
+}
 
 export async function createCompany(
   data: CreateCompanyInput,
@@ -78,7 +116,17 @@ export async function updateCompany(id: string, data: UpdateCompanyInput) {
   const $unset: Record<string, string> = {};
   if (data.name !== undefined) $set.name = data.name;
   if (data.isActive !== undefined) $set.isActive = data.isActive;
+  let shouldStripAmbulanceModuleData = false;
   if (Array.isArray(data.enabledModules)) {
+    const existing = await Company.findById(id).select("enabledModules").lean();
+    const prev: string[] = Array.isArray(
+      (existing as { enabledModules?: string[] } | null)?.enabledModules,
+    )
+      ? ((existing as { enabledModules: string[] }).enabledModules as string[])
+      : [];
+    const next = data.enabledModules;
+    shouldStripAmbulanceModuleData =
+      prev.includes(MODULE_KEYS.AMBULANCES) && !next.includes(MODULE_KEYS.AMBULANCES);
     $set.enabledModules = data.enabledModules;
   }
   if (data.praemienMode !== undefined) {
@@ -98,8 +146,14 @@ export async function updateCompany(id: string, data: UpdateCompanyInput) {
   if (Object.keys(update).length === 0) {
     return await Company.findById(id).lean();
   }
-  return await Company.findByIdAndUpdate(id, update, {
+  const updated = await Company.findByIdAndUpdate(id, update, {
     new: true,
     runValidators: true,
   }).lean();
+
+  if (shouldStripAmbulanceModuleData && updated) {
+    await stripAmbulanceReferencesForCompany(id);
+  }
+
+  return updated;
 }

@@ -10,6 +10,8 @@ import { dienstTemplateRoutes } from "../dienst-templates";
 
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { requireModule } from "../../middlewares/requireModule";
+import { MODULE_KEYS } from "../companies/constants/modules.constants";
 import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import { updateDienstPartialSchema } from "./assignments/schemas/update-dienst-partial.schema";
@@ -125,6 +127,7 @@ router.post(
   "/assign-ambulance-to-week",
   authenticateToken,
   authorizeRole("admin"),
+  requireModule(MODULE_KEYS.AMBULANCES),
   DienstAssignments.assignAmbulanceToWeek,
 );
 
