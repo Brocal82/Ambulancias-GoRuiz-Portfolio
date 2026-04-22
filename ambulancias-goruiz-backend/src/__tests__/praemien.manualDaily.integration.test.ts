@@ -7,6 +7,9 @@ import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
 import Company from "../modules/companies/models/company.model";
+import PraemienManualDailyEntry from "../modules/praemien/models/praemien-manual-daily-entry.model";
+import User from "../modules/users/models/user.model";
+import WorkdaySummary from "../modules/workday-summary/models/workday-summary.model";
 import {
   createTestAdminWithCompany,
   createTestWorkerInCompany,
@@ -154,7 +157,7 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
       .expect(403);
   });
 
-  it("Phase 4: admin list + approve + worker bloqueado + reopen + worker edita", async () => {
+  it("Phase 4: admin list + approve + worker bloqueado + reopen + worker sigue bloqueado; admin corrige", async () => {
     const now = new Date();
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
@@ -191,11 +194,20 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
       .send({ userId: workerId, date: dateStr, note: "fix" })
       .expect(200);
 
+    const workerMonthAfterReopen = await request(app)
+      .get(`${API}/praemien/manual-daily/month?year=${y}&month=${m}`)
+      .set("Authorization", `Bearer ${workerToken}`)
+      .expect(200);
+    const rowAfterReopen = workerMonthAfterReopen.body.find(
+      (e: { date: string }) => e.date === dateStr,
+    );
+    expect(rowAfterReopen?.status).toBe("approved");
+
     await request(app)
       .put(`${API}/praemien/manual-daily`)
       .set("Authorization", `Bearer ${workerToken}`)
       .send({ date: dateStr, workerSubmittedValue: 9 })
-      .expect(200);
+      .expect(403);
 
     const cap = await request(app)
       .post(`${API}/praemien/manual-daily/admin/correct-approve`)
@@ -205,6 +217,94 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     expect(cap.body.status).toBe("approved");
     expect(cap.body.adminFinalValue).toBe(11);
     expect(cap.body.originalWorkerValue).toBe(4);
+  });
+
+  it("Dienst: al aprobar al conductor con valor rectificado, el médico recibe la misma fila aprobada", async () => {
+    const now = new Date();
+    /** Mes calendario anterior: siempre ≤ hoy y sin colisión con otros casos del fichero. */
+    const ref = new Date(now.getFullYear(), now.getMonth() - 1, 15);
+    const y = ref.getFullYear();
+    const m = ref.getMonth() + 1;
+    const dateStr = `${y}-${pad(m)}-15`;
+    const assignmentKey = `ws-teammate-manual-${Date.now()}`;
+    const ambulanceOid = new mongoose.Types.ObjectId();
+
+    await Company.updateOne(
+      { _id: companyId },
+      {
+        $set: {
+          praemienMode: "manual",
+          praemienModeEffectiveFrom: { year: y, month: m },
+        },
+      },
+    );
+
+    const medic = await createTestWorkerInCompany(companyId, Date.now() + 20411);
+    const medicId = String(medic._id);
+    const medicLogin = await request(app)
+      .post(`${API}/users/login`)
+      .send({ email: medic.email, password: "password123" });
+    expect(medicLogin.body.token).toBeDefined();
+    const medicToken = medicLogin.body.token as string;
+
+    const minimalTrip = {
+      auftragNumber: "TS1",
+      patientName: "P",
+      fromAddress: "A",
+      toAddress: "B",
+      timeWarning: "08:00",
+      wasCancelled: false,
+      countsTrip: 1 as const,
+    };
+
+    await WorkdaySummary.create({
+      date: dateStr,
+      assignmentId: assignmentKey,
+      driver: new mongoose.Types.ObjectId(workerId),
+      medic: new mongoose.Types.ObjectId(medicId),
+      ambulanceId: ambulanceOid,
+      ambulanceNumber: "TS-99",
+      initialKm: 0,
+      totalDienstKm: 1,
+      trips: [minimalTrip],
+      totalEffectivePatients: 1,
+      totalRealTrips: 1,
+      companyId,
+      isFinalClosure: true,
+    });
+
+    try {
+      await request(app)
+        .put(`${API}/praemien/manual-daily`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .send({ date: dateStr, workerSubmittedValue: 3, status: "submitted" })
+        .expect(200);
+
+      await request(app)
+        .post(`${API}/praemien/manual-daily/admin/approve`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ userId: workerId, date: dateStr, adminFinalValue: 8 })
+        .expect(200);
+
+      const medicMonth = await request(app)
+        .get(
+          `${API}/praemien/manual-daily/month?year=${y}&month=${m}`,
+        )
+        .set("Authorization", `Bearer ${medicToken}`)
+        .expect(200);
+
+      const medicRow = medicMonth.body.find(
+        (x: { date: string }) => x.date === dateStr,
+      );
+      expect(medicRow).toBeDefined();
+      expect(medicRow.status).toBe("approved");
+      expect(medicRow.adminFinalValue).toBe(8);
+      expect(medicRow.workerSubmittedValue).toBe(8);
+    } finally {
+      await WorkdaySummary.deleteMany({ assignmentId: assignmentKey });
+      await PraemienManualDailyEntry.deleteMany({ companyId, date: dateStr });
+      await User.deleteOne({ _id: medic._id });
+    }
   });
 
   it("Phase 4: admin reject luego worker puede reenviar", async () => {
