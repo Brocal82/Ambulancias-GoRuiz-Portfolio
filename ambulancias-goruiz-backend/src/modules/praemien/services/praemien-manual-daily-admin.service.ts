@@ -3,13 +3,14 @@ import PraemienManualDailyEntry from "../models/praemien-manual-daily-entry.mode
 import {
   assertManualPraemienDailyApisAllowed,
 } from "./assert-manual-praemien-phase.service";
+import { enrichManualDailyDto } from "./enrich-manual-daily-dto-admin-names";
+import { parseManualPraemieNumericValue } from "./manual-praemie-value-parse";
 import {
   mapManualDailyDocToDto,
   type ManualDailyEntryDto,
 } from "./praemien-manual-daily-mapper";
 import { listMyManualDailyEntriesForMonth } from "./praemien-manual-daily.service";
 
-const MAX_VALUE = 10_000;
 
 export type { ManualDailyEntryDto };
 
@@ -95,17 +96,9 @@ function parseOptionalFinalValue(
   fallback: number,
 ): { ok: true; value: number } | { ok: false; message: string } {
   if (raw === undefined || raw === null || raw === "") {
-    return { ok: true, value: fallback };
+    return { ok: true, value: Math.round(fallback * 100) / 100 };
   }
-  const num =
-    typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
-  if (!Number.isFinite(num) || !Number.isInteger(num) || num < 0 || num > MAX_VALUE) {
-    return {
-      ok: false,
-      message: `adminFinalValue debe ser un entero entre 0 y ${MAX_VALUE}.`,
-    };
-  }
-  return { ok: true, value: num };
+  return parseManualPraemieNumericValue(raw);
 }
 
 export async function adminApproveManualDailyEntry(params: {
@@ -174,7 +167,7 @@ export async function adminApproveManualDailyEntry(params: {
     date: params.date,
     adminUserId: params.adminUserId,
   });
-  return { ok: true, entry: dto };
+  return { ok: true, entry: await enrichManualDailyDto(dto) };
 }
 
 export async function adminRejectManualDailyEntry(params: {
@@ -237,7 +230,7 @@ export async function adminRejectManualDailyEntry(params: {
     date: params.date,
     adminUserId: params.adminUserId,
   });
-  return { ok: true, entry: dto };
+  return { ok: true, entry: await enrichManualDailyDto(dto) };
 }
 
 export async function adminCorrectApproveManualDailyEntry(params: {
@@ -273,16 +266,11 @@ export async function adminCorrectApproveManualDailyEntry(params: {
     };
   }
 
-  const raw = params.adminFinalValue;
-  const num =
-    typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
-  if (!Number.isFinite(num) || !Number.isInteger(num) || num < 0 || num > MAX_VALUE) {
-    return {
-      ok: false,
-      statusCode: 400,
-      message: "Debe indicar adminFinalValue (entero entre 0 y 10000).",
-    };
+  const valueParsed = parseManualPraemieNumericValue(params.adminFinalValue);
+  if (!valueParsed.ok) {
+    return { ok: false, statusCode: 400, message: valueParsed.message };
   }
+  const num = valueParsed.value;
 
   const now = new Date();
   const adminOid = new mongoose.Types.ObjectId(params.adminUserId);
@@ -311,7 +299,7 @@ export async function adminCorrectApproveManualDailyEntry(params: {
     date: params.date,
     adminUserId: params.adminUserId,
   });
-  return { ok: true, entry: dto };
+  return { ok: true, entry: await enrichManualDailyDto(dto) };
 }
 
 export async function adminReopenManualDailyEntry(params: {
@@ -365,5 +353,5 @@ export async function adminReopenManualDailyEntry(params: {
     date: params.date,
     adminUserId: params.adminUserId,
   });
-  return { ok: true, entry: dto };
+  return { ok: true, entry: await enrichManualDailyDto(dto) };
 }

@@ -7,6 +7,7 @@ import { saveMonthlyPraemie } from "./controllers/praemien-write.controller";
 import {
   getMyManualDailyEntriesMonth,
   getMyManualDailyEntryDay,
+  getMyManualPraemieFinalClosureDates,
   putMyManualDailyEntry,
 } from "./controllers/praemien-manual-daily.controller";
 import {
@@ -57,6 +58,13 @@ router.get(
   requireModule(MODULE_KEYS.PRAEMIEN),
   authorizeRole("worker"),
   getMyManualDailyEntriesMonth,
+);
+router.get(
+  "/manual-daily/final-closure-dates",
+  authenticateToken,
+  requireModule(MODULE_KEYS.PRAEMIEN),
+  authorizeRole("worker"),
+  getMyManualPraemieFinalClosureDates,
 );
 router.get(
   "/manual-daily/day",

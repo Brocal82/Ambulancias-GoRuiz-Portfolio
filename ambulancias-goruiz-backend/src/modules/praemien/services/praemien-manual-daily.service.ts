@@ -6,13 +6,18 @@ import {
   assertManualPraemienDailyApisAllowed,
 } from "./assert-manual-praemien-phase.service";
 import {
+  listUserFinalWorkdayClosureDatesInMonth,
+  userHasFinalWorkdayClosureOnDate,
+} from "./manual-praemie-final-closure-dates.service";
+import { enrichManualDailyDto, enrichManualDailyDtosWithAdminNames } from "./enrich-manual-daily-dto-admin-names";
+import { parseManualPraemieNumericValue } from "./manual-praemie-value-parse";
+import {
   mapManualDailyDocToDto,
   type ManualDailyEntryDto,
 } from "./praemien-manual-daily-mapper";
 
 export type { ManualDailyEntryDto };
 
-const MAX_VALUE = 10_000;
 
 function monthRangeStrings(year: number, month1to12: number): {
   start: string;
@@ -50,20 +55,25 @@ export async function upsertMyManualDailyEntry(params: {
     return { ok: false, statusCode: 400, message: dateCheck.message };
   }
 
-  const rawVal = params.workerSubmittedValue;
-  const num =
-    typeof rawVal === "number"
-      ? rawVal
-      : typeof rawVal === "string"
-        ? Number(rawVal)
-        : NaN;
-  if (!Number.isFinite(num) || !Number.isInteger(num) || num < 0 || num > MAX_VALUE) {
+  const hasFinalClosure = await userHasFinalWorkdayClosureOnDate({
+    companyObjectId: gate.companyObjectId,
+    userId: params.userId,
+    dateStr,
+  });
+  if (!hasFinalClosure) {
     return {
       ok: false,
       statusCode: 400,
-      message: `El valor debe ser un entero entre 0 y ${MAX_VALUE}.`,
+      message:
+        "Solo puedes registrar la Prämie manual en días en los que cerraste la jornada con un cierre total (día con Dienst finalizado).",
     };
   }
+
+  const valueParsed = parseManualPraemieNumericValue(params.workerSubmittedValue);
+  if (!valueParsed.ok) {
+    return { ok: false, statusCode: 400, message: valueParsed.message };
+  }
+  const num = valueParsed.value;
 
   let statusParam: PraemienManualDailyStatus = "submitted";
   if (params.status === "draft" || params.status === "submitted") {
@@ -123,7 +133,7 @@ export async function upsertMyManualDailyEntry(params: {
     if (!dto) {
       return { ok: false, statusCode: 500, message: "No se pudo guardar la entrada." };
     }
-    return { ok: true, entry: dto };
+    return { ok: true, entry: await enrichManualDailyDto(dto) };
   }
 
   const patch: Record<string, unknown> = {
@@ -153,7 +163,7 @@ export async function upsertMyManualDailyEntry(params: {
   if (!dto) {
     return { ok: false, statusCode: 500, message: "No se pudo guardar la entrada." };
   }
-  return { ok: true, entry: dto };
+  return { ok: true, entry: await enrichManualDailyDto(dto) };
 }
 
 export async function listMyManualDailyEntriesForMonth(params: {
@@ -192,10 +202,11 @@ export async function listMyManualDailyEntriesForMonth(params: {
     .sort({ date: 1 })
     .lean();
 
-  const entries: ManualDailyEntryDto[] = rows
+  const raw: ManualDailyEntryDto[] = rows
     .map((doc) => mapManualDailyDocToDto(doc as unknown as Record<string, unknown>))
     .filter((e): e is ManualDailyEntryDto => e != null);
 
+  const entries = await enrichManualDailyDtosWithAdminNames(raw);
   return { ok: true, entries };
 }
 
@@ -229,8 +240,46 @@ export async function getMyManualDailyEntryForDay(params: {
     return { ok: true, entry: null };
   }
 
+  const raw = mapManualDailyDocToDto(doc as unknown as Record<string, unknown>);
+  if (!raw) {
+    return { ok: true, entry: null };
+  }
   return {
     ok: true,
-    entry: mapManualDailyDocToDto(doc as unknown as Record<string, unknown>),
+    entry: await enrichManualDailyDto(raw),
   };
+}
+
+export async function getMyFinalClosureDateKeysForMonth(params: {
+  companyIdStr: string | undefined;
+  userId: string;
+  year: number;
+  month: number;
+}): Promise<
+  | { ok: true; dates: string[] }
+  | { ok: false; statusCode: number; message: string }
+> {
+  const gate = await assertManualPraemienDailyApisAllowed(params.companyIdStr);
+  if (!gate.allowed) {
+    return { ok: false, statusCode: gate.statusCode, message: gate.message };
+  }
+
+  if (
+    !Number.isInteger(params.year) ||
+    params.year < 1970 ||
+    params.year > 2100 ||
+    !Number.isInteger(params.month) ||
+    params.month < 1 ||
+    params.month > 12
+  ) {
+    return { ok: false, statusCode: 400, message: "Año o mes inválido." };
+  }
+
+  const dates = await listUserFinalWorkdayClosureDatesInMonth({
+    companyObjectId: gate.companyObjectId,
+    userId: params.userId,
+    year: params.year,
+    month: params.month,
+  });
+  return { ok: true, dates };
 }

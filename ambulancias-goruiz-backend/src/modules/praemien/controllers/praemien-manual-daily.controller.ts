@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import {
+  getMyFinalClosureDateKeysForMonth,
   getMyManualDailyEntryForDay,
   listMyManualDailyEntriesForMonth,
   upsertMyManualDailyEntry,
@@ -96,6 +97,40 @@ export const getMyManualDailyEntryDay = async (
     res.status(200).json(result.entry);
   } catch (error) {
     console.error("Error en getMyManualDailyEntryDay:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+/** Días YYYY-MM-DD del mes con cierre final de jornada (para calendario manual). */
+export const getMyManualPraemieFinalClosureDates = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ message: "No autorizado" });
+      return;
+    }
+
+    const year = Number(req.query.year);
+    const month = Number(req.query.month);
+
+    const result = await getMyFinalClosureDateKeysForMonth({
+      companyIdStr: req.companyId,
+      userId,
+      year,
+      month,
+    });
+
+    if (!result.ok) {
+      res.status(result.statusCode).json({ message: result.message });
+      return;
+    }
+
+    res.status(200).json({ dates: result.dates });
+  } catch (error) {
+    console.error("Error en getMyManualPraemieFinalClosureDates:", error);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };

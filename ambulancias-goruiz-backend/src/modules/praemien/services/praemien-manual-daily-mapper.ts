@@ -11,6 +11,8 @@ export interface ManualDailyEntryDto {
   rejectionReason: string | null;
   adminReviewedAt: string | null;
   adminReviewedBy: string | null;
+  /** Nombre resuelto en API (no se persiste en Mongo). */
+  adminReviewedByName: string | null;
   reopenedAt: string | null;
   reopenedBy: string | null;
   reopenNote: string | null;
@@ -36,18 +38,28 @@ export function mapManualDailyDocToDto(
         ? Number(doc.adminFinalValue)
         : null,
     status: doc.status as PraemienManualDailyStatus,
-    rejectionReason:
-      doc.rejectionReason != null ? String(doc.rejectionReason) : null,
+    rejectionReason: (() => {
+      const raw = doc.rejectionReason;
+      if (raw == null || raw === "") return null;
+      const s = String(raw).trim();
+      return s === "" ? null : s;
+    })(),
     adminReviewedAt: doc.adminReviewedAt
       ? (doc.adminReviewedAt as Date).toISOString()
       : null,
     adminReviewedBy: doc.adminReviewedBy
       ? String(doc.adminReviewedBy)
       : null,
+    adminReviewedByName: null,
     reopenedAt: doc.reopenedAt
       ? (doc.reopenedAt as Date).toISOString()
       : null,
     reopenedBy: doc.reopenedBy ? String(doc.reopenedBy) : null,
-    reopenNote: doc.reopenNote != null ? String(doc.reopenNote) : null,
+    reopenNote: (() => {
+      const raw = doc.reopenNote;
+      if (raw == null || raw === "") return null;
+      const s = String(raw).trim();
+      return s === "" ? null : s;
+    })(),
   };
 }
