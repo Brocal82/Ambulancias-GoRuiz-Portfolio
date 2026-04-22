@@ -126,6 +126,11 @@
                 "title": "📈 Final reports",
                 "desc": "View submitted day closures"
             },
+            "praemien": {
+                "title": "🎖 Prämien (manual)",
+                "desc": "Review daily values; open a worker and the Prämien tab",
+                "pending": "entries pending review"
+            },
             "hospitals": {
                 "title": "🏥 Hospitals",
                 "desc": "Add and edit hospitals"
@@ -224,6 +229,47 @@
         },
         "adminUsers": {
             "title": "Registered Users",
+            "titlePraemiePendingFilter": "Workers with pending manual Prämie",
+            "praemiePendingBanner": "Filter active: showing {{count}} worker(s) with at least one day pending review (submitted or reopened entries).",
+            "praemiePendingBannerLoading": "Loading pending list…",
+            "praemiePendingShowAll": "Show all workers",
+            "praemiePendingDaysTooltip": "{{count}} day(s) with Prämie pending review",
+            "titlePraemiePendingQueue": "Manual Prämie review — pending queue",
+            "praemiePendingQueueSubtitle": "One row per day. Approve, or open the worker profile to correct or reject.",
+            "praemiePendingQueueMeta": "{{days}} day(s) · {{workers}} distinct worker(s)",
+            "backToUserList": "Back to user list",
+            "praemiePendingListEmpty": "No entries pending review.",
+            "praemiePendingListLoadError": "Could not load the manual Prämie queue.",
+            "praemiePendingListApproveSuccess": "Entry approved.",
+            "praemiePendingListApproveError": "Could not approve. Try again or use the worker profile.",
+            "praemiePendingListRejectSuccess": "Entry rejected.",
+            "praemiePendingListRejectError": "Could not reject the entry.",
+            "praemieListRectifyHint": "Optional: enter the final value and tap Approve. If the field is empty, the worker’s submitted value is used.",
+            "praemieListRejectReasonPlaceholder": "Rejection reason (optional)",
+            "praemieListRejectTextareaPlaceholder": "Reason (optional). Ctrl+Enter confirms · Esc cancels.",
+            "praemieListRejectTextareaTitle": "Reject: Ctrl+Enter confirms, Esc cancels.",
+            "praemieListRejectPanelHint": "Add a reason (optional) and confirm.",
+            "praemieListRejectConfirm": "Confirm reject",
+            "praemieListRejectCancel": "Cancel",
+            "praemieListColWorker": "Worker",
+            "praemieListColEquipo": "Team",
+            "praemieListWorker1": "Worker 1",
+            "praemieListWorker2": "Worker 2",
+            "praemieListColEmployeeNumberPair": "Emp. no. 1/2",
+            "praemieListTeamBothPending": "Workers 1 & 2 pending: ✅ approves both Prämies in one click.",
+            "praemieListApproveAlsoTeammate": "If the other Dienst seat is also pending, their Prämie is approved in the same click.",
+            "praemieListColEmployeeNumber": "Employee no.",
+            "praemieListColDate": "Date",
+            "praemieListColDienst": "Dienst no.",
+            "praemieListColSchedule": "Shift times",
+            "praemieListColManualValue": "Value (manual)",
+            "praemieListColFinalValue": "Final value",
+            "praemieListColActions": "Actions",
+            "praemieListActionApprove": "Approve",
+            "praemieListActionCorrect": "Correct",
+            "praemieListActionReject": "Reject",
+            "praemieListReopenedTag": "Reopened",
+            "praemieListOpenUser": "Profile",
             "search": {
                 "label": "Search by name:",
                 "placeholder": "First or last name"
@@ -231,10 +277,16 @@
             "legend": {
                 "expired": "P-Schein expired",
                 "warning": "P-Schein within 6 months",
-                "noPscheinDate": "No P-Schein date (driver / both)"
+                "noPscheinDate": "No P-Schein date (driver / both)",
+                "praemiePendingDays": "Manual Prämie days pending review (number in column)"
             },
             "noPscheinDateTitle": "P-Schein expiry date not set",
             "filters": {
+                "praemienManual": {
+                    "label": "Manual Prämie (review):",
+                    "all": "All",
+                    "pendingOnly": "Pending only"
+                },
                 "role": {
                     "label": "Filter by role:",
                     "all": "⭐"
@@ -604,8 +656,6 @@
                 "loading": "Loading bonus summary...",
                 "error": "Failed to load bonus data.",
                 "title": "🎖 Monthly Prämien Summary",
-                "workerInfo": "Until manual mode is in effect for your company, you will see a summary based on your workdays. When it applies, the calendar for daily Prämie entry or review will appear below.",
-                "jumpToManualLink": "Go to the manual entry calendar",
                 "helpLinkLabel": "More information",
                 "summaryLoading": "Loading reference summary (bars and averages)…",
                 "summaryErrorHint": "Could not load the reference summary. You can still use the manual entry calendar below.",
@@ -629,7 +679,9 @@
                 "readOnlyLegacyNoFinalClosure": "This row was stored without a final closure linked in the system. Read-only; ask an admin to reopen or correct it if needed.",
                 "saveError": "Could not save your entry.",
                 "invalidValue": "Enter a number between 0 and 10000 (decimals allowed, e.g. 1.5; at most 2 decimal places).",
-                "editDay": "Selected day: {{date}}",
+                "detailHeading": "Day details",
+                "detailApprovedBy": "Approved by",
+                "detailApprovedAt": "Approval date & time",
                 "valueLabel": "Patients / effective trips",
                 "save": "Save",
                 "lastSaved": "Last saved: {{at}}",
@@ -642,7 +694,8 @@
                     "5": "Sa",
                     "6": "Su"
                 },
-                "approvedReadOnly": "This day is approved. Ask an admin to reopen it if you need to change the value.",
+                "approvedDayAria": "Approved day",
+                "pendingReviewDayAria": "Submitted, pending admin review",
                 "statusLine": "Status: {{status}}",
                 "rejectedReason": "Rejection reason: {{reason}}",
                 "rejectedNoComment": "An administrator has rejected this entry. No message was provided.",
@@ -659,17 +712,16 @@
                 "loadError": "Could not load manual entries.",
                 "actionError": "Action failed.",
                 "empty": "No manual entries for this month.",
-                "selected": "Selected: {{date}}",
                 "rejectReason": "Last rejection: {{reason}}",
                 "rejectReasonLabel": "Rejection note (optional)",
                 "approve": "Approve",
                 "reject": "Reject",
                 "correctValue": "Final value",
                 "correctApprove": "Correct & approve",
-                "reopenNote": "Reopen note (optional)",
-                "reopen": "Reopen",
+                "reopen": "Edit",
                 "invalidCorrect": "Enter a number between 0 and 10000 (decimals allowed, e.g. 1.5).",
                 "draftHint": "This row is still a draft. The worker must submit it before you can approve, reject, or correct it.",
+                "rejectedQueueHint": "Rejected. The worker must fix and resubmit.",
                 "th": {
                     "date": "Date",
                     "original": "Original",

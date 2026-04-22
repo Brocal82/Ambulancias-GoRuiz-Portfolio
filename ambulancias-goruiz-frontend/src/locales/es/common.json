@@ -126,6 +126,11 @@
                 "title": "📈 Reportes Finales",
                 "desc": "Ver cierres de jornada enviados"
             },
+            "praemien": {
+                "title": "🎖 Prämien (manual)",
+                "desc": "Revisa y aprueba valores diarios; abre un trabajador y la pestaña Prämien",
+                "pending": "entradas pendientes de revisión"
+            },
             "hospitals": {
                 "title": "🏥 Hospitales",
                 "desc": "Añade y edita hospitales"
@@ -224,6 +229,47 @@
         },
         "adminUsers": {
             "title": "Usuarios registrados",
+            "titlePraemiePendingFilter": "Trabajadores con Prämie manual pendiente",
+            "praemiePendingBanner": "Filtro activo: se muestran {{count}} trabajador(es) con al menos un día pendiente de revisar (entradas enviadas o reabiertas).",
+            "praemiePendingBannerLoading": "Cargando listado de pendientes…",
+            "praemiePendingShowAll": "Ver todos los trabajadores",
+            "praemiePendingDaysTooltip": "{{count}} día(s) con Prämie pendiente de revisión",
+            "titlePraemiePendingQueue": "Revisión Prämie manual — cola de pendientes",
+            "praemiePendingQueueSubtitle": "Una fila por día. Aprueba o abre la ficha del trabajador si necesitas corregir o rechazar.",
+            "praemiePendingQueueMeta": "{{days}} día(s) · {{workers}} trabajador(es) distintos",
+            "backToUserList": "Volver al listado de usuarios",
+            "praemiePendingListEmpty": "No hay entradas pendientes de revisión.",
+            "praemiePendingListLoadError": "No se pudo cargar la cola de Prämie manual.",
+            "praemiePendingListApproveSuccess": "Entrada aprobada.",
+            "praemiePendingListApproveError": "No se pudo aprobar. Inténtalo de nuevo o usa la ficha del trabajador.",
+            "praemiePendingListRejectSuccess": "Entrada rechazada.",
+            "praemiePendingListRejectError": "No se pudo rechazar la entrada.",
+            "praemieListRectifyHint": "Opcional: introduce el valor final y pulsa «Aprobar». Si el campo está vacío, se acepta el valor enviado por el trabajador.",
+            "praemieListRejectReasonPlaceholder": "Motivo del rechazo (opcional)",
+            "praemieListRejectTextareaPlaceholder": "Motivo (opcional). Ctrl+Intro confirma · Esc cancela.",
+            "praemieListRejectTextareaTitle": "Rechazo: Ctrl+Intro confirma, Esc cancela.",
+            "praemieListRejectPanelHint": "Motivo (opcional) y confirma el rechazo.",
+            "praemieListRejectConfirm": "Confirmar rechazo",
+            "praemieListRejectCancel": "Cancelar",
+            "praemieListColWorker": "Trabajador",
+            "praemieListColEquipo": "Equipo",
+            "praemieListWorker1": "Trabajador 1",
+            "praemieListWorker2": "Trabajador 2",
+            "praemieListColEmployeeNumberPair": "N.º trab. 1/2",
+            "praemieListTeamBothPending": "Trab. 1 y 2 pendientes: ✅ aprueba ambas Prämies en un clic.",
+            "praemieListApproveAlsoTeammate": "Si el otro puesto del Dienst también está pendiente, se aprueba su Prämie en el mismo clic.",
+            "praemieListColEmployeeNumber": "N.º trabajador",
+            "praemieListColDate": "Fecha",
+            "praemieListColDienst": "Dienst n.º",
+            "praemieListColSchedule": "Horario",
+            "praemieListColManualValue": "Valor (manual)",
+            "praemieListColFinalValue": "Valor final",
+            "praemieListColActions": "Acciones",
+            "praemieListActionApprove": "Aprobar",
+            "praemieListActionCorrect": "Rectif.",
+            "praemieListActionReject": "Rechazar",
+            "praemieListReopenedTag": "Reabierto",
+            "praemieListOpenUser": "Ficha",
             "search": {
                 "label": "Buscar por nombre:",
                 "placeholder": "Nombre o apellido"
@@ -231,10 +277,16 @@
             "legend": {
                 "expired": "P-Schein caducado",
                 "warning": "P-Schein a 6 meses",
-                "noPscheinDate": "Sin fecha P-Schein (conductor / ambos)"
+                "noPscheinDate": "Sin fecha P-Schein (conductor / ambos)",
+                "praemiePendingDays": "Días Prämie manual pendientes de revisar (número en la columna)"
             },
             "noPscheinDateTitle": "Fecha de caducidad P-Schein no indicada",
             "filters": {
+                "praemienManual": {
+                    "label": "Prämie manual (revisión):",
+                    "all": "Todos",
+                    "pendingOnly": "Solo pendientes"
+                },
                 "role": {
                     "label": "Filtrar por rol:",
                     "all": "⭐"
@@ -604,8 +656,6 @@
                 "loading": "Cargando resumen de premios...",
                 "error": "Error al cargar los datos de premios.",
                 "title": "🎖 Resumen mensual Prämien",
-                "workerInfo": "Mientras el modo manual aún no esté en vigor para tu empresa, aquí verás un resumen calculado a partir de tus jornadas. Cuando corresponda, debajo tendrás el calendario para introducir o revisar la Prämie día a día.",
-                "jumpToManualLink": "Ir al calendario de entrada manual",
                 "helpLinkLabel": "Más información",
                 "summaryLoading": "Cargando resumen de referencia (barras y medias)…",
                 "summaryErrorHint": "No se pudo cargar el resumen de referencia. Puedes seguir usando el calendario de entrada manual debajo.",
@@ -629,7 +679,9 @@
                 "readOnlyLegacyNoFinalClosure": "Esta fila quedó guardada sin cierre final asociado en el sistema. Solo lectura; pide a un administrador que la reabra o corrígela si hace falta.",
                 "saveError": "No se pudo guardar la entrada.",
                 "invalidValue": "Introduce un número entre 0 y 10000 (se permiten decimales, p. ej. 1,5; como máximo 2 cifras decimales).",
-                "editDay": "Día seleccionado: {{date}}",
+                "detailHeading": "Detalle del día",
+                "detailApprovedBy": "Aprobado por",
+                "detailApprovedAt": "Fecha de aprobación",
                 "valueLabel": "Pacientes / viajes efectivos",
                 "save": "Guardar",
                 "lastSaved": "Último guardado: {{at}}",
@@ -642,7 +694,8 @@
                     "5": "Sá",
                     "6": "Do"
                 },
-                "approvedReadOnly": "Este día está aprobado. Pide a un administrador que lo reabra si necesitas cambiar el valor.",
+                "approvedDayAria": "Día aprobado",
+                "pendingReviewDayAria": "Enviado, pendiente de revisión por un administrador",
                 "statusLine": "Estado: {{status}}",
                 "rejectedReason": "Motivo del rechazo: {{reason}}",
                 "rejectedNoComment": "El administrador ha rechazado esta entrada. No se añadió comentario.",
@@ -659,17 +712,16 @@
                 "loadError": "No se pudieron cargar las entradas manuales.",
                 "actionError": "La acción ha fallado.",
                 "empty": "No hay entradas manuales en este mes.",
-                "selected": "Seleccionado: {{date}}",
                 "rejectReason": "Último rechazo: {{reason}}",
                 "rejectReasonLabel": "Nota de rechazo (opcional)",
                 "approve": "Aprobar",
                 "reject": "Rechazar",
                 "correctValue": "Valor final",
                 "correctApprove": "Corregir y aprobar",
-                "reopenNote": "Nota de reapertura (opcional)",
-                "reopen": "Reabrir",
+                "reopen": "Editar",
                 "invalidCorrect": "Introduce un número entre 0 y 10000 (se permiten decimales, p. ej. 1,5).",
                 "draftHint": "Esta fila sigue en borrador. El trabajador debe enviarla antes de que puedas aprobar, rechazar o corregir.",
+                "rejectedQueueHint": "Rechazada. El trabajador debe corregir y volver a enviar.",
                 "th": {
                     "date": "Fecha",
                     "original": "Original",

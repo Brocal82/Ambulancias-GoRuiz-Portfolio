@@ -126,6 +126,11 @@
                 "title": "📈 Tagesabschlüsse",
                 "desc": "Gesendete Tagesabschlüsse ansehen"
             },
+            "praemien": {
+                "title": "🎖 Prämien (manuell)",
+                "desc": "Tageswerte prüfen; Mitarbeiter öffnen und Registerkarte Prämien",
+                "pending": "Einträge warten auf Freigabe"
+            },
             "hospitals": {
                 "title": "🏥 Krankenhäuser",
                 "desc": "Krankenhäuser hinzufügen und bearbeiten"
@@ -224,6 +229,47 @@
         },
         "adminUsers": {
             "title": "Registrierte Nutzer",
+            "titlePraemiePendingFilter": "Mitarbeiter mit ausstehendem manuellem Prämie",
+            "praemiePendingBanner": "Filter aktiv: {{count}} Mitarbeiter mit mindestens einem Tag zur Prüfung (eingereicht oder wieder geöffnet).",
+            "praemiePendingBannerLoading": "Ausstehende Einträge werden geladen…",
+            "praemiePendingShowAll": "Alle Mitarbeiter anzeigen",
+            "praemiePendingDaysTooltip": "{{count}} Tag(e) mit Prämie zur Freigabe",
+            "titlePraemiePendingQueue": "Manuelles Prämie – Warteschlange",
+            "praemiePendingQueueSubtitle": "Eine Zeile pro Tag. Freigeben oder Mitarbeiter öffnen zum Korrigieren oder Ablehnen.",
+            "praemiePendingQueueMeta": "{{days}} Tag(e) · {{workers}} Mitarbeiter",
+            "backToUserList": "Zur Nutzerliste",
+            "praemiePendingListEmpty": "Keine offenen Einträge.",
+            "praemiePendingListLoadError": "Warteschlange konnte nicht geladen werden.",
+            "praemiePendingListApproveSuccess": "Eintrag freigegeben.",
+            "praemiePendingListApproveError": "Freigabe fehlgeschlagen. Profil des Mitarbeiters nutzen.",
+            "praemiePendingListRejectSuccess": "Eintrag abgelehnt.",
+            "praemiePendingListRejectError": "Eintrag konnte nicht abgelehnt werden.",
+            "praemieListRectifyHint": "Optional: Endwert eintragen und „Freigeben“ wählen. Ist das Feld leer, wird der Wert des Mitarbeiters übernommen.",
+            "praemieListRejectReasonPlaceholder": "Ablehnungsgrund (optional)",
+            "praemieListRejectTextareaPlaceholder": "Grund (optional). Strg+Enter bestätigt · Esc bricht ab.",
+            "praemieListRejectTextareaTitle": "Ablehnen: Strg+Enter bestätigt, Esc bricht ab.",
+            "praemieListRejectPanelHint": "Optional Grund, dann bestätigen.",
+            "praemieListRejectConfirm": "Ablehnen bestätigen",
+            "praemieListRejectCancel": "Abbrechen",
+            "praemieListColWorker": "Mitarbeiter",
+            "praemieListColEquipo": "Team",
+            "praemieListWorker1": "Mitarbeiter 1",
+            "praemieListWorker2": "Mitarbeiter 2",
+            "praemieListColEmployeeNumberPair": "Personalnr. 1/2",
+            "praemieListTeamBothPending": "Mitarbeiter 1 & 2 offen: ✅ beide Prämien mit einem Klick.",
+            "praemieListApproveAlsoTeammate": "Wenn der andere Dienst-Platz ebenfalls offen ist, wird dessen Prämie im selben Klick freigegeben.",
+            "praemieListColEmployeeNumber": "Personalnr.",
+            "praemieListColDate": "Datum",
+            "praemieListColDienst": "Dienst-Nr.",
+            "praemieListColSchedule": "Zeiten",
+            "praemieListColManualValue": "Wert (manuell)",
+            "praemieListColFinalValue": "Endwert",
+            "praemieListColActions": "Aktionen",
+            "praemieListActionApprove": "Freigeben",
+            "praemieListActionCorrect": "Korri.",
+            "praemieListActionReject": "Ablehnen",
+            "praemieListReopenedTag": "Wieder geöffnet",
+            "praemieListOpenUser": "Profil",
             "search": {
                 "label": "Nach Name suchen:",
                 "placeholder": "Vor- oder Nachname"
@@ -231,10 +277,16 @@
             "legend": {
                 "expired": "P-Schein abgelaufen",
                 "warning": "P-Schein in 6 Monaten",
-                "noPscheinDate": "Kein P-Schein-Datum (Fahrer / beides)"
+                "noPscheinDate": "Kein P-Schein-Datum (Fahrer / beides)",
+                "praemiePendingDays": "Manuelle Prämie-Tage ausstehend (Zahl in der Spalte)"
             },
             "noPscheinDateTitle": "P-Schein-Ablaufdatum nicht gesetzt",
             "filters": {
+                "praemienManual": {
+                    "label": "Manuelles Prämie (Prüfung):",
+                    "all": "Alle",
+                    "pendingOnly": "Nur ausstehend"
+                },
                 "role": {
                     "label": "Nach Rolle filtern:",
                     "all": "⭐"
@@ -604,8 +656,6 @@
                 "loading": "Prämienübersicht wird geladen...",
                 "error": "Fehler beim Laden der Prämien-Daten.",
                 "title": "🎖 Monatliche Prämien-Übersicht",
-                "workerInfo": "Solange der manuelle Modus für Ihr Unternehmen noch nicht gilt, sehen Sie eine Übersicht auf Basis Ihrer Dienste. Sobald es zutrifft, erscheint unten der Kalender zur täglichen Eingabe oder Prüfung der Prämie.",
-                "jumpToManualLink": "Zum Kalender manueller Eingabe",
                 "helpLinkLabel": "Weitere Informationen",
                 "summaryLoading": "Referenzübersicht (Balken und Durchschnitte) wird geladen…",
                 "summaryErrorHint": "Die Referenzübersicht konnte nicht geladen werden. Der Kalender für manuelle Eingabe unten steht trotzdem zur Verfügung.",
@@ -629,7 +679,9 @@
                 "readOnlyLegacyNoFinalClosure": "Dieser Eintrag wurde ohne erkennbaren Endabschluss im System gespeichert. Nur lesen; bitten Sie ggf. einen Administrator um Freigabe oder Korrektur.",
                 "saveError": "Speichern fehlgeschlagen.",
                 "invalidValue": "Bitte eine Zahl zwischen 0 und 10000 eingeben (Dezimalzahlen erlaubt, z. B. 1,5; maximal 2 Nachkommastellen).",
-                "editDay": "Ausgewählter Tag: {{date}}",
+                "detailHeading": "Tagesdetails",
+                "detailApprovedBy": "Genehmigt von",
+                "detailApprovedAt": "Genehmigt am (Datum & Uhrzeit)",
                 "valueLabel": "Patienten / wirksame Fahrten",
                 "save": "Speichern",
                 "lastSaved": "Zuletzt gespeichert: {{at}}",
@@ -642,7 +694,8 @@
                     "5": "Sa",
                     "6": "So"
                 },
-                "approvedReadOnly": "Dieser Tag ist genehmigt. Bitte einen Administrator, ihn wieder zu öffnen, falls Sie den Wert ändern müssen.",
+                "approvedDayAria": "Tag genehmigt",
+                "pendingReviewDayAria": "Eingereicht, ausstehende Prüfung durch einen Administrator",
                 "statusLine": "Status: {{status}}",
                 "rejectedReason": "Ablehnungsgrund: {{reason}}",
                 "rejectedNoComment": "Ein Administrator hat diesen Eintrag abgelehnt. Es wurde kein Kommentar hinterlegt.",
@@ -659,17 +712,16 @@
                 "loadError": "Manuelle Einträge konnten nicht geladen werden.",
                 "actionError": "Aktion fehlgeschlagen.",
                 "empty": "Keine manuellen Einträge in diesem Monat.",
-                "selected": "Ausgewählt: {{date}}",
                 "rejectReason": "Letzte Ablehnung: {{reason}}",
                 "rejectReasonLabel": "Ablehnungsnotiz (optional)",
                 "approve": "Genehmigen",
                 "reject": "Ablehnen",
                 "correctValue": "Endwert",
                 "correctApprove": "Korrigieren & genehmigen",
-                "reopenNote": "Notiz zur Wiedereröffnung (optional)",
-                "reopen": "Wieder öffnen",
+                "reopen": "Bearbeiten",
                 "invalidCorrect": "Bitte eine Zahl zwischen 0 und 10000 eingeben (Dezimalzahlen erlaubt, z. B. 1,5).",
                 "draftHint": "Diese Zeile ist noch ein Entwurf. Der Mitarbeiter muss sie senden, bevor Sie genehmigen, ablehnen oder korrigieren können.",
+                "rejectedQueueHint": "Abgelehnt. Der Mitarbeiter muss korrigieren und erneut senden.",
                 "th": {
                     "date": "Datum",
                     "original": "Original",
