@@ -8,6 +8,7 @@ import useAdminSummariesPendingCount from "../modules/workday/hooks/useAdminSumm
 import { useAdminAppointmentsPendingCount } from "../modules/appointments";
 import { useAdminIssuesOpenCount } from "../modules/mechanics";
 import useAdminSickLeavesPendingCount from "../modules/sick/hooks/useAdminSickLeavesPendingCount";
+import useAdminManualPraemiePendingCount from "../modules/praemien/hooks/useAdminManualPraemiePendingCount";
 import { useModules } from "../hooks/useModules";
 import { MODULE_KEYS } from "../constants/modules";
 
@@ -40,6 +41,13 @@ const AdminDashboard = () => {
       skip: !hasModule(MODULE_KEYS.SICK_LEAVES),
     });
   const sickHasPending = !sickLoading && sickPendingCount > 0;
+
+  const { count: praemienManualPending, isLoading: praemienManualLoading } =
+    useAdminManualPraemiePendingCount({
+      skip: !hasModule(MODULE_KEYS.PRAEMIEN),
+    });
+  const praemienManualHasPending =
+    !praemienManualLoading && praemienManualPending > 0;
 
   // justo encima del return, dentro del componente
   const centeredCard =
@@ -130,6 +138,35 @@ const AdminDashboard = () => {
             {t("pages.adminDashboard.summaries.desc")}
           </p>
         </Link>
+
+        {hasModule(MODULE_KEYS.PRAEMIEN) && (
+          <Link
+            to="/admin/users?praemienPending=1"
+            className={`${centeredCardRelative} ${praemienManualHasPending ? "ring-2 ring-orange-300" : ""}`}
+            aria-label={
+              praemienManualHasPending
+                ? t("pages.adminDashboard.praemien.title") +
+                  ` (${praemienManualPending})`
+                : t("pages.adminDashboard.praemien.title")
+            }
+          >
+            {!praemienManualLoading && praemienManualPending > 0 && (
+              <span
+                className="absolute -top-2 -right-2 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-orange-400 px-2 text-xs font-semibold text-white shadow"
+                aria-label={`${praemienManualPending} ${t("pages.adminDashboard.praemien.pending")}`}
+              >
+                {praemienManualPending}
+              </span>
+            )}
+
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.adminDashboard.praemien.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.adminDashboard.praemien.desc")}
+            </p>
+          </Link>
+        )}
 
         {hasModule(MODULE_KEYS.HOSPITALS) && (
           <Link to="/admin/hospitals" className={centeredCard}>
