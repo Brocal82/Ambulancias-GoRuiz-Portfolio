@@ -11,6 +11,14 @@ export function getNextCalendarMonth(now: Date = new Date()): {
   return { year: next.getFullYear(), month: next.getMonth() + 1 };
 }
 
+/** Mes calendario en curso (para alta con Praemie manual: vigente desde el día 1 de este mes). */
+export function getCurrentCalendarMonth(now: Date = new Date()): {
+  year: number;
+  month: number;
+} {
+  return { year: now.getFullYear(), month: now.getMonth() + 1 };
+}
+
 export function shouldAttachPraemienEffectiveFromOnCompanyEdit(params: {
   initialPraemienMode: "automatic" | "manual" | null;
   praemienMode: "automatic" | "manual";

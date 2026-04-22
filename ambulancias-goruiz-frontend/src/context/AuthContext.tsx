@@ -26,6 +26,13 @@ export interface AuthContextType {
   praemienMode: "automatic" | "manual" | null;
   praemienModeEffectiveFrom: { year: number; month: number } | null;
 
+  /**
+   * For company users (admin/worker), false until the first /companies/me
+   * attempt finishes (then true even on error, so UI does not block forever).
+   * True when not logged in or superadmin (no company config to load).
+   */
+  companyPraemienConfigReady: boolean;
+
   // ✅ CLAVE para evitar parpadeos
   isAuthReady: boolean;
 

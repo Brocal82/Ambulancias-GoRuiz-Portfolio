@@ -14,6 +14,7 @@ import {
 } from "../../../constants/modules";
 import type { UpdateCompanyInput } from "../domain/types";
 import {
+  getCurrentCalendarMonth,
   getNextCalendarMonth,
   shouldAttachPraemienEffectiveFromOnCompanyEdit,
 } from "../utils/praemienScheduleEdit";
@@ -125,7 +126,10 @@ export default function SuperadminCompanyForm() {
           ...(hasPraemien
             ? {
                 praemienMode,
-                praemienModeEffectiveFrom: null,
+                praemienModeEffectiveFrom:
+                  praemienMode === "manual"
+                    ? getCurrentCalendarMonth()
+                    : null,
               }
             : {}),
         });
@@ -147,6 +151,12 @@ export default function SuperadminCompanyForm() {
             })
           ) {
             payload.praemienModeEffectiveFrom = getNextCalendarMonth();
+          } else if (
+            praemienMode === "manual" &&
+            !loadedEffectiveFrom
+          ) {
+            // Empresas creadas antes con manual y sin fecha: vigencia desde el mes en curso.
+            payload.praemienModeEffectiveFrom = getCurrentCalendarMonth();
           }
         }
         await updateCompany(id, payload);

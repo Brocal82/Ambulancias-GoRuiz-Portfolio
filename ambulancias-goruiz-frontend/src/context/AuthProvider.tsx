@@ -12,6 +12,16 @@ interface Props {
   children: ReactNode;
 }
 
+/** Initial: wait for /companies/me only when a company user session exists. */
+function readInitialCompanyPraemienConfigReady(): boolean {
+  if (typeof window === "undefined") return true;
+  const storedToken = sessionStorage.getItem("token");
+  const storedRole = sessionStorage.getItem("role");
+  if (!storedToken) return true;
+  if (storedRole === "superadmin") return true;
+  return false;
+}
+
 export const AuthProvider = ({ children }: Props) => {
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -25,6 +35,9 @@ export const AuthProvider = ({ children }: Props) => {
     year: number;
     month: number;
   } | null>(null);
+  const [companyPraemienConfigReady, setCompanyPraemienConfigReady] = useState(
+    readInitialCompanyPraemienConfigReady,
+  );
 
   // ✅ Estado clave
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -175,6 +188,8 @@ export const AuthProvider = ({ children }: Props) => {
     } catch {
       // Superadmin gets 403 here — expected. Network errors are silent.
       // enabledModules stays at its current value (null or cached).
+    } finally {
+      setCompanyPraemienConfigReady(true);
     }
   };
 
@@ -242,7 +257,10 @@ export const AuthProvider = ({ children }: Props) => {
     setPraemienModeEffectiveFrom(null);
     sessionStorage.removeItem("companyPraemienMode");
     sessionStorage.removeItem("companyPraemienEffectiveFrom");
-    if (newRole !== "superadmin") {
+    if (newRole === "superadmin") {
+      setCompanyPraemienConfigReady(true);
+    } else {
+      setCompanyPraemienConfigReady(false);
       void refreshModules(newToken);
     }
 
@@ -260,6 +278,7 @@ export const AuthProvider = ({ children }: Props) => {
     setEnabledModules(null);
     setPraemienMode(null);
     setPraemienModeEffectiveFrom(null);
+    setCompanyPraemienConfigReady(true);
 
     sessionStorage.clear();
     window.location.href = "/";
@@ -275,6 +294,7 @@ export const AuthProvider = ({ children }: Props) => {
         enabledModules,
         praemienMode,
         praemienModeEffectiveFrom,
+        companyPraemienConfigReady,
         isAuthReady,
         login,
         logout,

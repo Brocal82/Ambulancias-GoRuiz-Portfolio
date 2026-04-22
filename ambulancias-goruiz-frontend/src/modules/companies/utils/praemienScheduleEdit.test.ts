@@ -1,8 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
+  getCurrentCalendarMonth,
   getNextCalendarMonth,
   shouldAttachPraemienEffectiveFromOnCompanyEdit,
 } from "./praemienScheduleEdit";
+
+describe("getCurrentCalendarMonth", () => {
+  it("returns year and month 1-12 of the given date", () => {
+    expect(getCurrentCalendarMonth(new Date(2026, 1, 15))).toEqual({
+      year: 2026,
+      month: 2,
+    });
+  });
+});
 
 describe("getNextCalendarMonth", () => {
   it("returns first day of next calendar month", () => {
