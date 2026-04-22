@@ -21,7 +21,6 @@ const WorkdayIssueSchema = new mongoose.Schema(
       default: null,
     },
 
-    // 👇 NUEVOS CAMPOS para marcado de "visto"
     isSeen: { type: Boolean, default: false },
     seenAt: { type: Date, default: null },
   },

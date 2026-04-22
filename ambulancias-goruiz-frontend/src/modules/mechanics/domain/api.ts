@@ -19,12 +19,12 @@ export interface ReportIssuePayload {
 }
 
 export const reportIssue = async (payload: ReportIssuePayload): Promise<void> => {
-  await axios.post("/workday-summary/report-issue", payload);
+  await axios.post("/mechanics/report-issue", payload);
 };
 
 export const getAllIssueReports = async (): Promise<WorkdayIssue[]> => {
   try {
-    const res = await axios.get<WorkdayIssue[]>("/workday-summary/issues");
+    const res = await axios.get<WorkdayIssue[]>("/mechanics/issues");
     return res.data;
   } catch {
     // Mantener el mismo mensaje de error que con fetch (!res.ok)
@@ -34,7 +34,7 @@ export const getAllIssueReports = async (): Promise<WorkdayIssue[]> => {
 
 // Borrar reporte
 export const deleteIssueReport = async (id: string): Promise<void> => {
-  await axios.delete(`/workday-summary/issues/${id}`);
+  await axios.delete(`/mechanics/issues/${id}`);
 };
 
 /* =========================
@@ -43,10 +43,10 @@ export const deleteIssueReport = async (id: string): Promise<void> => {
 
 /**
  * Marca una avería como vista (isSeen=true, seenAt=now).
- * PATCH /workday-summary/issues/:id/seen
+ * PATCH /mechanics/issues/:id/seen
  */
 export const markIssueSeen = async (id: string): Promise<WorkdayIssue> => {
-  const res = await axios.patch(`/workday-summary/issues/${id}/seen`, null);
+  const res = await axios.patch(`/mechanics/issues/${id}/seen`, null);
   return res.data as WorkdayIssue;
 };
 
@@ -57,7 +57,7 @@ interface IssuesCountResponse {
 export const getIssuesOpenCount = async (): Promise<number> => {
   try {
     const res = await axios.get<IssuesCountResponse>(
-      "/workday-summary/issues/count",
+      "/mechanics/issues/count",
       {
         params: { status: "open" },
       },
@@ -75,7 +75,7 @@ export const getIssuesCountByStatus = async (
 ): Promise<number> => {
   try {
     const res = await axios.get<IssuesCountResponse>(
-      "/workday-summary/issues/count",
+      "/mechanics/issues/count",
       {
         params: { status },
       },

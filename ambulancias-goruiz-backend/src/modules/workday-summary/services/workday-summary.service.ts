@@ -1,11 +1,16 @@
 import mongoose from "mongoose";
 import { Dienst } from "../../diensts";
-import type { IDienst, IDienstAssignment } from "../../diensts";
 import { Trip } from "../../trips";
 import WorkdaySummary from "../models/workday-summary.model";
 import type { IWorkdaySummary } from "../models/workday-summary.model";
-import WorkdayIssue from "../models/workday-issue.model";
 import { calculateEffectivePatients } from "../utils/calculateEffectivePatients";
+import {
+  WorkdaySummaryError,
+  resolveAssignmentByAssignmentId,
+  assertUserCanCloseAssignment,
+} from "../utils/closureAuthorization";
+
+export { WorkdaySummaryError } from "../utils/closureAuthorization";
 
 function isMongoDuplicateKeyError(err: unknown): boolean {
   let e: unknown = err;
@@ -26,85 +31,6 @@ function isMongoDuplicateKeyError(err: unknown): boolean {
     e = next;
   }
   return false;
-}
-
-/** Error con código HTTP para mapeo en controller */
-export class WorkdaySummaryError extends Error {
-  constructor(
-    message: string,
-    public readonly statusCode: number = 500,
-  ) {
-    super(message);
-    this.name = "WorkdaySummaryError";
-  }
-}
-
-/** Resuelve el assignment por assignmentId dentro del tenant. Lanza 404 si no existe. */
-async function resolveAssignmentByAssignmentId(
-  assignmentId: string,
-  companyId: string,
-): Promise<{
-  dienst: IDienst;
-  assignment: IDienstAssignment;
-}> {
-  const raw = String(companyId).trim();
-  if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
-    throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
-  }
-  const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
-  const companyOid = new mongoose.Types.ObjectId(raw);
-  const dienst = await Dienst.findOne({
-    "assignments._id": assignmentObjectId,
-    companyId: companyOid,
-  });
-
-  if (!dienst) {
-    throw new WorkdaySummaryError(
-      "Dienst no encontrado con ese assignmentId",
-      404,
-    );
-  }
-
-  const assignment = dienst.assignments.find(
-    (a) => a._id?.toString() === assignmentObjectId.toString(),
-  );
-  if (!assignment) {
-    throw new WorkdaySummaryError("Asignación no encontrada", 404);
-  }
-
-  return { dienst, assignment };
-}
-
-/** Verifica que el usuario pueda cerrar este assignment. Admin: mismo companyId. Worker: participante y mismo companyId. */
-function assertUserCanCloseAssignment(
-  dienst: { companyId?: unknown },
-  assignment: { driver?: mongoose.Types.ObjectId; medic?: mongoose.Types.ObjectId },
-  userId: string,
-  userRole: string,
-  userCompanyId?: string | null,
-): void {
-  const callerCo =
-    userCompanyId != null && String(userCompanyId).trim() !== ""
-      ? String(userCompanyId).trim()
-      : "";
-  if (!callerCo || !mongoose.Types.ObjectId.isValid(callerCo)) {
-    throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
-  }
-  const dienstCompanyStr = dienst.companyId ? String(dienst.companyId) : "";
-  if (!dienstCompanyStr || dienstCompanyStr !== callerCo) {
-    throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
-  }
-
-  if (userRole === "admin") {
-    return;
-  }
-
-  const driverStr = assignment.driver?.toString();
-  const medicStr = assignment.medic?.toString();
-  const isParticipant = driverStr === userId || medicStr === userId;
-  if (!isParticipant) {
-    throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
-  }
 }
 
 /** Valida que todos los trips pertenecen al assignment. Lanza si no. */
@@ -464,85 +390,8 @@ export async function getAllWorkdaySummaries(
   return enriched;
 }
 
-/* ─────────────────────────────
- * AVERÍAS
- * driver/medic se obtienen del assignment en BD, nunca del body.
- * ───────────────────────────── */
-export async function reportIssue(
-  body: Record<string, unknown>,
-  userId: string,
-  userRole: string,
-  userCompanyId?: string | null,
-) {
-  const {
-    assignmentId,
-    dienstNumber,
-    date,
-    startTime,
-    endTime,
-    team,
-    ambulanceNumber,
-    ambulanceId,
-    finalKm,
-    timestamp,
-    issueText,
-    driver: _bodyDriver,
-    medic: _bodyMedic,
-  } = body;
-  if (_bodyDriver !== undefined || _bodyMedic !== undefined) {
-    console.warn(
-      "[report-issue] driver/medic del body ignorados; se usan los del assignment",
-    );
-  }
-
-  if (
-    !assignmentId ||
-    !dienstNumber ||
-    !ambulanceNumber ||
-    !ambulanceId ||
-    !timestamp ||
-    !issueText
-  ) {
-    throw new WorkdaySummaryError(
-      "Faltan datos obligatorios para reporte de avería.",
-      400,
-    );
-  }
-
-  const scopeCo =
-    userCompanyId != null && String(userCompanyId).trim() !== ""
-      ? String(userCompanyId).trim()
-      : "";
-  const { dienst, assignment } = await resolveAssignmentByAssignmentId(
-    assignmentId as string,
-    scopeCo,
-  );
-  assertUserCanCloseAssignment(dienst as any, assignment, userId, userRole, userCompanyId);
-
-  const { driver, medic } = assignment;
-  const dienstCompanyId = (dienst as any).companyId;
-
-  const newIssue = await WorkdayIssue.create({
-    dienstNumber: dienst.dienstNumber,
-    date,
-    startTime,
-    endTime,
-    team,
-    ambulanceNumber,
-    ambulanceId,
-    finalKm,
-    timestamp,
-    issueText,
-    driver,
-    medic,
-    ...(dienstCompanyId && { companyId: dienstCompanyId }),
-  });
-
-  return newIssue;
-}
-
 /**
- * Mutación por id (issues / summaries): aislamiento multiempresa.
+ * Mutación por id (summaries): aislamiento multiempresa.
  */
 function assertCanMutateWorkdayEntityByCompany(
   documentCompanyId: unknown,
@@ -561,84 +410,6 @@ function assertCanMutateWorkdayEntityByCompany(
   if (!docCo || docCo !== callerCo) {
     throw new WorkdaySummaryError(forbiddenMessage, 403);
   }
-}
-
-export async function getAllIssueReports(companyId?: string | null) {
-  const raw = typeof companyId === "string" ? companyId.trim() : "";
-  if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
-    return [];
-  }
-  const filter = { companyId: new mongoose.Types.ObjectId(raw) };
-  return await WorkdayIssue.find(filter).sort({ timestamp: -1 });
-}
-
-export async function deleteIssueReport(id: string, companyId?: string | null) {
-  if (!mongoose.isValidObjectId(id)) {
-    throw new WorkdaySummaryError("ID inválido", 400);
-  }
-  const issue = await WorkdayIssue.findById(id).select("companyId").lean();
-  if (issue) {
-    assertCanMutateWorkdayEntityByCompany(
-      (issue as { companyId?: unknown }).companyId,
-      companyId,
-      "No tienes permiso para eliminar este reporte",
-    );
-  }
-  const deleted = await WorkdayIssue.findByIdAndDelete(id);
-  if (!deleted) {
-    throw new WorkdaySummaryError("Reporte no encontrado", 404);
-  }
-
-  return { message: "Reporte eliminado correctamente" };
-}
-
-export async function markIssueSeen(id: string, companyId?: string | null) {
-  if (!mongoose.isValidObjectId(id)) {
-    throw new WorkdaySummaryError("ID inválido", 400);
-  }
-  const issue = await WorkdayIssue.findById(id).select("companyId").lean();
-  if (issue) {
-    assertCanMutateWorkdayEntityByCompany(
-      (issue as { companyId?: unknown }).companyId,
-      companyId,
-      "No tienes permiso para marcar este reporte",
-    );
-  }
-  const updated = await WorkdayIssue.findByIdAndUpdate(
-    id,
-    { $set: { isSeen: true, seenAt: new Date() } },
-    { new: true },
-  );
-
-  if (!updated) {
-    throw new WorkdaySummaryError("Avería no encontrada", 404);
-  }
-
-  return updated;
-}
-
-export async function getIssuesCount(status?: string, companyId?: string | null) {
-  const rawStatus = typeof status === "string" ? status : "open";
-  const normalizedStatus = rawStatus.toLowerCase();
-
-  let statusFilter: Record<string, unknown> = {};
-  if (normalizedStatus === "open") {
-    statusFilter = { isSeen: { $ne: true } };
-  } else if (normalizedStatus === "seen" || normalizedStatus === "closed") {
-    statusFilter = { isSeen: true };
-  }
-  const rawCo = typeof companyId === "string" ? companyId.trim() : "";
-  if (!rawCo || !mongoose.Types.ObjectId.isValid(rawCo)) {
-    return { count: 0 };
-  }
-  const companyFilter = { companyId: new mongoose.Types.ObjectId(rawCo) };
-  const filter =
-    Object.keys(statusFilter).length > 0
-      ? { $and: [statusFilter, companyFilter] }
-      : companyFilter;
-
-  const count = await WorkdayIssue.countDocuments(filter);
-  return { count };
 }
 
 export async function getSummariesCountByStatus(status?: string, companyId?: string | null) {

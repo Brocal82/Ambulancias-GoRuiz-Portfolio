@@ -13,7 +13,7 @@ type Options = {
 
 /**
  * Hook para contar aver­as "abiertas" (admin).
- * - Llama a GET /workday-summary/issues/count?status=open
+ * - Llama a GET /mechanics/issues/count?status=open
  * - Refresca en focus/visibilitychange y al emitir el evento global 'admin-issues-changed'
  * - Polling opcional con pollMs
  */

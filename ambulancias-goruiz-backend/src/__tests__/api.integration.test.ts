@@ -104,9 +104,9 @@ describe("API - Rutas críticas", () => {
   });
 
   describe("Auth - report-issue", () => {
-    it("POST /api/workday-summary/report-issue sin token devuelve 401", async () => {
+    it("POST /api/mechanics/report-issue sin token devuelve 401", async () => {
       const res = await request(app)
-        .post(`${API}/workday-summary/report-issue`)
+        .post(`${API}/mechanics/report-issue`)
         .send({ summary: "test", description: "test" })
         .expect(401);
       expect(res.body).toHaveProperty("message");
@@ -114,16 +114,16 @@ describe("API - Rutas críticas", () => {
   });
 
   describe("Auth - issues (solo admin)", () => {
-    it("GET /api/workday-summary/issues sin token devuelve 401", async () => {
+    it("GET /api/mechanics/issues sin token devuelve 401", async () => {
       const res = await request(app)
-        .get(`${API}/workday-summary/issues`)
+        .get(`${API}/mechanics/issues`)
         .expect(401);
       expect(res.body).toHaveProperty("message");
     });
 
-    it("GET /api/workday-summary/issues con token worker devuelve 403", async () => {
+    it("GET /api/mechanics/issues con token worker devuelve 403", async () => {
       const res = await request(app)
-        .get(`${API}/workday-summary/issues`)
+        .get(`${API}/mechanics/issues`)
         .set("Authorization", `Bearer ${workerToken}`)
         .expect(403);
       expect(res.body).toHaveProperty("message");
@@ -317,14 +317,14 @@ describe("API - Rutas críticas", () => {
 
     it("admin con empresa no puede marcar vista avería legacy sin companyId (403)", async () => {
       await request(app)
-        .patch(`${API}/workday-summary/issues/${legacyIssueSeenId}/seen`)
+        .patch(`${API}/mechanics/issues/${legacyIssueSeenId}/seen`)
         .set("Authorization", `Bearer ${adminToken}`)
         .expect(403);
     });
 
     it("admin con empresa no puede borrar avería legacy sin companyId (403)", async () => {
       await request(app)
-        .delete(`${API}/workday-summary/issues/${legacyIssueDeleteId}`)
+        .delete(`${API}/mechanics/issues/${legacyIssueDeleteId}`)
         .set("Authorization", `Bearer ${adminToken}`)
         .expect(403);
     });
@@ -338,14 +338,14 @@ describe("API - Rutas críticas", () => {
 
     it("admin con empresa puede marcar vista avería de su empresa (200)", async () => {
       await request(app)
-        .patch(`${API}/workday-summary/issues/${scopedIssueSeenId}/seen`)
+        .patch(`${API}/mechanics/issues/${scopedIssueSeenId}/seen`)
         .set("Authorization", `Bearer ${adminToken}`)
         .expect(200);
     });
 
     it("admin con empresa puede borrar avería de su empresa (200)", async () => {
       await request(app)
-        .delete(`${API}/workday-summary/issues/${scopedIssueDeleteId}`)
+        .delete(`${API}/mechanics/issues/${scopedIssueDeleteId}`)
         .set("Authorization", `Bearer ${adminToken}`)
         .expect(200);
     });
@@ -374,7 +374,7 @@ describe("API - Rutas críticas", () => {
 
     it("admin sin companyId recibe 403 en PATCH .../issues/:id/seen", async () => {
       const res = await request(app)
-        .patch(`${API}/workday-summary/issues/${dummyId()}/seen`)
+        .patch(`${API}/mechanics/issues/${dummyId()}/seen`)
         .set("Authorization", `Bearer ${jwtAdminWithoutCompany}`)
         .expect(403);
       expect(res.body.message).toMatch(/empresa|permiso/i);
@@ -382,7 +382,7 @@ describe("API - Rutas críticas", () => {
 
     it("admin sin companyId recibe 403 en DELETE .../issues/:id", async () => {
       const res = await request(app)
-        .delete(`${API}/workday-summary/issues/${dummyId()}`)
+        .delete(`${API}/mechanics/issues/${dummyId()}`)
         .set("Authorization", `Bearer ${jwtAdminWithoutCompany}`)
         .expect(403);
       expect(res.body.message).toMatch(/empresa|permiso/i);
@@ -1479,13 +1479,13 @@ describe("API - Rutas críticas", () => {
   });
 
   describe("Mechanics module gate", () => {
-    it("GET /workday-summary/issues devuelve 403 si la empresa no tiene mechanics", async () => {
+    it("GET /mechanics/issues devuelve 403 si la empresa no tiene mechanics", async () => {
       await Company.findByIdAndUpdate(companyId, {
         $pull: { enabledModules: MODULE_KEYS.MECHANICS },
       });
       try {
         const res = await request(app)
-          .get(`${API}/workday-summary/issues`)
+          .get(`${API}/mechanics/issues`)
           .set("Authorization", `Bearer ${adminToken}`)
           .expect(403);
         expect(res.body.message).toMatch(/mechanics/i);
