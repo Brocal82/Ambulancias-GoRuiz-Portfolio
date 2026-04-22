@@ -1,8 +1,11 @@
 import mongoose from "mongoose";
-import { Dienst } from "../../diensts";
-import type { IDienst, IDienstAssignment } from "../../diensts";
+import { Dienst } from "../modules/diensts";
+import type { IDienst, IDienstAssignment } from "../modules/diensts";
 
-/** Error con código HTTP para mapeo en controllers (cierre jornada / averías). */
+/**
+ * Cierre de jornada y reporte de avería comparten validación de assignment
+ * (misma empresa, worker participante). Módulo neutral respecto a workday-summary / mechanics.
+ */
 export class WorkdaySummaryError extends Error {
   constructor(
     message: string,

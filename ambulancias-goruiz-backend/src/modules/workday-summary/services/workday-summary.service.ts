@@ -8,9 +8,9 @@ import {
   WorkdaySummaryError,
   resolveAssignmentByAssignmentId,
   assertUserCanCloseAssignment,
-} from "../utils/closureAuthorization";
+} from "../../../utils/assignmentClosure";
 
-export { WorkdaySummaryError } from "../utils/closureAuthorization";
+export { WorkdaySummaryError } from "../../../utils/assignmentClosure";
 
 function isMongoDuplicateKeyError(err: unknown): boolean {
   let e: unknown = err;

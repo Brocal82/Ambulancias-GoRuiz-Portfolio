@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { requireCompanyForAdmin } from "../../../utils/requireCompany";
-import { WorkdaySummaryError } from "../../workday-summary/utils/closureAuthorization";
+import { WorkdaySummaryError } from "../../../utils/assignmentClosure";
 import {
   reportIssue as svcReportIssue,
   getAllIssueReports as svcGetAllIssueReports,

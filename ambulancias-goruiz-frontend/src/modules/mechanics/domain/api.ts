@@ -1,3 +1,7 @@
+/**
+ * API canónica: /api/mechanics/* (el backend mantiene /api/workday-summary/* solo como
+ * compatibilidad con cabeceras Deprecation hasta retirar clientes legacy).
+ */
 import axios from "../../../api/axios";
 import { getApiErrorMessage } from "../../../utils/toast";
 import type { WorkdayIssue } from "./types";

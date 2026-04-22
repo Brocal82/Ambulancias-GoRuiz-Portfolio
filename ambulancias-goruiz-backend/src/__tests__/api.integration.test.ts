@@ -111,6 +111,14 @@ describe("API - Rutas críticas", () => {
         .expect(401);
       expect(res.body).toHaveProperty("message");
     });
+
+    it("POST /api/workday-summary/report-issue (legacy) sin token devuelve 401", async () => {
+      const res = await request(app)
+        .post(`${API}/workday-summary/report-issue`)
+        .send({})
+        .expect(401);
+      expect(res.body).toHaveProperty("message");
+    });
   });
 
   describe("Auth - issues (solo admin)", () => {
@@ -1479,6 +1487,15 @@ describe("API - Rutas críticas", () => {
   });
 
   describe("Mechanics module gate", () => {
+    it("GET /workday-summary/issues (legacy) incluye Deprecation y Link hacia mechanics", async () => {
+      const res = await request(app)
+        .get(`${API}/workday-summary/issues`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+      expect(res.headers.deprecation).toBe("true");
+      expect(String(res.headers.link ?? "")).toMatch(/\/api\/mechanics/i);
+    });
+
     it("GET /mechanics/issues devuelve 403 si la empresa no tiene mechanics", async () => {
       await Company.findByIdAndUpdate(companyId, {
         $pull: { enabledModules: MODULE_KEYS.MECHANICS },

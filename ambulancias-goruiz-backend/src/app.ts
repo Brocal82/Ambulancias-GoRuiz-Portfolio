@@ -11,7 +11,10 @@ import dienstRoutes from "./modules/diensts/routes";
 import hospitalRoutes from "./modules/hospitals/routes";
 import { tripsRoutes } from "./modules/trips";
 import { workdaySummaryRoutes } from "./modules/workday-summary";
-import { mechanicsRoutes } from "./modules/mechanics";
+import {
+  mechanicsRoutes,
+  mechanicsLegacyWorkdaySummaryRoutes,
+} from "./modules/mechanics";
 import praemienRoutes from "./modules/praemien/routes";
 import vacationRoutes from "./modules/vacation/routes";
 import { ambulancesRoutes } from "./modules/ambulances";
@@ -101,6 +104,9 @@ app.use("/api/hospitals", hospitalRoutes);
 app.use("/api/trips", tripsRoutes);
 app.use("/api/mechanics/report-issue", rateLimitReportIssue);
 app.use("/api/mechanics", mechanicsRoutes);
+/* Legacy: mismos handlers + cabeceras Deprecation; quitar tras migración de clientes. */
+app.use("/api/workday-summary/report-issue", rateLimitReportIssue);
+app.use("/api/workday-summary", mechanicsLegacyWorkdaySummaryRoutes);
 app.use("/api/workday-summary", workdaySummaryRoutes);
 app.use("/api/praemien", praemienRoutes);
 app.use("/api/vacations", vacationRoutes);

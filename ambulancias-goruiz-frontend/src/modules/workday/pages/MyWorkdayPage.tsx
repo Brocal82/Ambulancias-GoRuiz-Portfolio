@@ -500,9 +500,6 @@ const MyWorkday = () => {
         finalKm: Number(finalKmValue),
         trips,
         partialClosureReason: reasonTrimmed,
-        ...(mechanicsModuleOn && issueFromModal
-          ? { issueData: issueFromModal }
-          : {}),
       });
 
 

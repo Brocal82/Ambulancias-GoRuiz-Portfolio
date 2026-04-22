@@ -64,8 +64,7 @@ export const buildPartialSummaryPayload = (args: {
   finalKm: number;
   trips: Trip[];
   partialClosureReason: string;
-  issueData?: unknown;
-}): PartialSummaryPayload & { issueData?: unknown } => {
+}): PartialSummaryPayload => {
   const totalDienstKm = calcTotalDienstKm(args.initialKm, args.finalKm);
 
   return {
@@ -90,7 +89,5 @@ export const buildPartialSummaryPayload = (args: {
     dienstNumber: args.assignedDay.dienstNumber,
     startTime: args.assignedDay.startTime,
     endTime: args.assignedDay.endTime,
-
-    ...(args.issueData ? { issueData: args.issueData } : {}),
   };
 };

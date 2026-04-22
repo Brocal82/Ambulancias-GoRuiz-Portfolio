@@ -4,7 +4,7 @@ import {
   WorkdaySummaryError,
   resolveAssignmentByAssignmentId,
   assertUserCanCloseAssignment,
-} from "../../workday-summary/utils/closureAuthorization";
+} from "../../../utils/assignmentClosure";
 
 function assertCanMutateIssueByCompany(
   documentCompanyId: unknown,
