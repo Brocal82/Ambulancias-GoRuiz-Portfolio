@@ -17,6 +17,8 @@ export interface ManualDailyEntryDto {
   rejectionReason: string | null;
   adminReviewedAt: string | null;
   adminReviewedBy: string | null;
+  /** Nombre del administrador que aprobó/rechazó (según flujo); resuelto en API. */
+  adminReviewedByName: string | null;
   reopenedAt: string | null;
   reopenedBy: string | null;
   reopenNote: string | null;
@@ -39,6 +41,18 @@ export async function getMyManualDailyEntriesForMonth(
     params: { year, month },
   });
   return res.data;
+}
+
+/** Días YYYY-MM-DD con cierre final de jornada (Dienst) en ese mes, para el calendario manual. */
+export async function getMyFinalClosureDatesForMonth(
+  year: number,
+  month: number,
+): Promise<string[]> {
+  const res = await axios.get<{ dates: string[] }>(
+    "/praemien/manual-daily/final-closure-dates",
+    { params: { year, month } },
+  );
+  return res.data.dates;
 }
 
 export async function getMyManualDailyEntryForDay(
