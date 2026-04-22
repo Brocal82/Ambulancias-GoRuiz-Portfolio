@@ -87,7 +87,7 @@ const AdminUserPraemienTab = ({ userId }: Props) => {
   }
 
   return (
-    <div className="bg-white p-4 rounded-2xl shadow-sm ring-1 ring-slate-200">
+    <div className="min-w-0 w-full bg-white p-4 rounded-2xl shadow-sm ring-1 ring-slate-200">
       <h2 className="text-lg font-bold text-slate-900 mb-4">
         {t("pages.praemien.adminUserTab.currentTitle")}
       </h2>

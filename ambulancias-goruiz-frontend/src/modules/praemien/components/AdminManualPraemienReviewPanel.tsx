@@ -1,20 +1,26 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { PraemienModeEffectiveFrom } from "../../companies/domain/types";
 import type { MonthlyPraemienDay } from "../domain/api";
 import {
   getAdminManualDailyMonth,
+  getAdminManualPraemieDayQueueRow,
   postAdminManualDailyApprove,
-  postAdminManualDailyCorrectApprove,
   postAdminManualDailyReject,
   postAdminManualDailyReopen,
+  type AdminManualPraemieQueueRowData,
   type ManualDailyEntryDto,
 } from "../domain/manualDailyApi";
 import { usePraemienDienstDayTints } from "../hooks/usePraemienDienstDayTints";
 import { maxNavigablePraemienYm } from "../utils/dienstCalendarTints";
-import { labelPraemienManualStatus } from "../utils/labelPraemienManualStatus";
+import { dispatchPraemienManualPendingChanged } from "../utils/praemienManualPendingEvents";
 import { parseManualPraemieClientValue } from "../utils/parseManualPraemieClientValue";
 import MonthlyMiniCalendar, { type ViewMonth } from "./MonthlyMiniCalendar";
+import {
+  AdminManualPraemieQueueColumnHeaders,
+  AdminManualPraemieQueueRowBody,
+  AdminManualPraemieQueueTableShell,
+} from "./AdminManualPraemieQueueRowTable";
 
 interface Props {
   userId: string;
@@ -47,8 +53,13 @@ const AdminManualPraemienReviewPanel = ({
   const [selected, setSelected] = useState<ManualDailyEntryDto | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [correctVal, setCorrectVal] = useState("");
-  const [reopenNote, setReopenNote] = useState("");
+  const [showRejectPanel, setShowRejectPanel] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [queueRow, setQueueRow] = useState<AdminManualPraemieQueueRowData | null>(
+    null,
+  );
+  const [queueRowLoading, setQueueRowLoading] = useState(false);
+  const queueFetchSeq = useRef(0);
 
   const tStart = useMemo(() => todayStart(), []);
   const effStart = useMemo(
@@ -72,17 +83,19 @@ const AdminManualPraemienReviewPanel = ({
 
   const viewMonth: ViewMonth = useMemo(() => ({ year, month }), [year, month]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<ManualDailyEntryDto[]> => {
     setLoading(true);
     setError("");
     try {
       const data = await getAdminManualDailyMonth(userId, year, month);
       setRows(data);
+      return data;
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { message?: string } } })?.response?.data
           ?.message ?? t("pages.praemien.adminManual.loadError");
       setError(String(msg));
+      return [];
     } finally {
       setLoading(false);
     }
@@ -91,6 +104,47 @@ const AdminManualPraemienReviewPanel = ({
   useEffect(() => {
     void load();
   }, [load]);
+
+  const refreshQueueRow = useCallback(
+    async (date: string | null) => {
+      const id = ++queueFetchSeq.current;
+      if (!date) {
+        setQueueRow(null);
+        setQueueRowLoading(false);
+        return;
+      }
+      setQueueRowLoading(true);
+      try {
+        const r = await getAdminManualPraemieDayQueueRow(userId, date);
+        if (id === queueFetchSeq.current) {
+          setQueueRow(r);
+        }
+      } catch {
+        if (id === queueFetchSeq.current) {
+          setQueueRow(null);
+        }
+      } finally {
+        if (id === queueFetchSeq.current) {
+          setQueueRowLoading(false);
+        }
+      }
+    },
+    [userId],
+  );
+
+  useEffect(() => {
+    if (!selected) {
+      setRejectReason("");
+      setCorrectVal("");
+      setShowRejectPanel(false);
+      void refreshQueueRow(null);
+      return;
+    }
+    setRejectReason("");
+    setCorrectVal("");
+    setShowRejectPanel(false);
+    void refreshQueueRow(selected.date);
+  }, [selected?.date, refreshQueueRow]);
 
   const byDate = useMemo(() => {
     const m = new Map<string, ManualDailyEntryDto>();
@@ -141,15 +195,23 @@ const AdminManualPraemienReviewPanel = ({
   );
 
   const run = async (fn: () => Promise<void>) => {
+    const selDate = selected?.date ?? null;
     setBusy(true);
     setError("");
     try {
       await fn();
-      await load();
-      setSelected(null);
+      const data = await load();
+      dispatchPraemienManualPendingChanged();
+      setSelected((prev) => {
+        if (!prev) return null;
+        return data.find((r) => r.date === prev.date) ?? null;
+      });
       setRejectReason("");
       setCorrectVal("");
-      setReopenNote("");
+      setShowRejectPanel(false);
+      if (selDate) {
+        await refreshQueueRow(selDate);
+      }
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { message?: string } } })?.response?.data
@@ -186,103 +248,74 @@ const AdminManualPraemienReviewPanel = ({
   const canNext = year < maxYm.y || (year === maxYm.y && month < maxYm.m);
 
   return (
-    <div className="mx-auto mt-2 max-w-4xl space-y-4">
-      <p className="text-sm text-slate-600">{t("pages.praemien.adminManual.instructions")}</p>
+    <div className="mt-2 w-full min-w-0 space-y-4">
+      {/* Calendario e instrucciones: ancho contenido moderado; la tabla de revisión va ancho completo abajo. */}
+      <div className="mx-auto w-full max-w-4xl space-y-4">
+        <p className="text-xs text-slate-600">{t("pages.praemien.adminManual.instructions")}</p>
 
-      {error && !selected && (
-        <p className="rounded bg-rose-50 px-2 py-1.5 text-sm text-rose-800">{error}</p>
-      )}
+        {error && !selected && (
+          <p className="rounded bg-rose-50 px-2 py-1.5 text-xs text-rose-800">{error}</p>
+        )}
 
-      {loading ? (
-        <p className="text-sm text-slate-600">{t("pages.praemien.adminManual.loading")}</p>
-      ) : (
-        <MonthlyMiniCalendar
-          viewMonth={viewMonth}
-          days={summaryDays}
-          titleKey="pages.praemien.page.dailyHistoryTitle"
-          monthNav={{
-            onPrev: goPrevMonth,
-            onNext: goNextMonth,
-            canPrev,
-            canNext,
-            prevLabel: t("pages.praemien.manual.prevMonth"),
-            nextLabel: t("pages.praemien.manual.nextMonth"),
-          }}
-          interactive={{
-            selectedKey: selected?.date ?? null,
-            onSelect: (key) => {
-              const row = byDate.get(key);
-              if (!row) return;
-              setSelected((prev) =>
-                prev?.date === key ? null : row,
-              );
-            },
-            isDisabled,
-            valueClassName,
-            dayBaseClassName,
-          }}
-        />
-      )}
+        {loading ? (
+          <p className="text-xs text-slate-600">{t("pages.praemien.adminManual.loading")}</p>
+        ) : (
+          <MonthlyMiniCalendar
+            viewMonth={viewMonth}
+            days={summaryDays}
+            titleKey="pages.praemien.page.dailyHistoryTitle"
+            monthNav={{
+              onPrev: goPrevMonth,
+              onNext: goNextMonth,
+              canPrev,
+              canNext,
+              prevLabel: t("pages.praemien.manual.prevMonth"),
+              nextLabel: t("pages.praemien.manual.nextMonth"),
+            }}
+            interactive={{
+              selectedKey: selected?.date ?? null,
+              onSelect: (key) => {
+                const row = byDate.get(key);
+                if (!row) return;
+                setSelected((prev) => (prev?.date === key ? null : row));
+              },
+              isDisabled,
+              valueClassName,
+              dayBaseClassName,
+            }}
+          />
+        )}
+
+        {!loading && rows.length === 0 && (
+          <p className="text-xs text-slate-500">{t("pages.praemien.adminManual.empty")}</p>
+        )}
+      </div>
 
       {selected && (
-        <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+        <div className="min-w-0 w-full space-y-3">
           {error && (
-            <p className="rounded bg-rose-50 px-2 py-1.5 text-sm text-rose-800">{error}</p>
+            <p className="rounded bg-rose-50 px-2 py-1.5 text-xs text-rose-800">{error}</p>
           )}
-          <p className="text-sm font-medium text-slate-800">
-            {t("pages.praemien.adminManual.selected", { date: selected.date })}
-          </p>
-          <p className="text-xs text-slate-600">
-            {t("pages.praemien.adminManual.statusPreview", {
-              status: labelPraemienManualStatus(t, selected.status),
-            })}
-          </p>
-          {selected.rejectionReason && (
-            <p className="text-xs text-rose-700">
-              {t("pages.praemien.adminManual.rejectReason", {
-                reason: selected.rejectionReason,
-              })}
-            </p>
-          )}
-          {selected.status === "draft" && (
-            <p className="text-xs text-slate-600">
-              {t("pages.praemien.adminManual.draftHint")}
-            </p>
-          )}
-          {(selected.status === "submitted" || selected.status === "reopened") && (
-            <label className="block text-[11px] text-slate-600">
-              {t("pages.praemien.adminManual.rejectReasonLabel")}
-              <input
-                className="mt-0.5 w-full max-w-md rounded border border-slate-300 bg-white px-2 py-1.5 text-xs"
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                disabled={busy}
-              />
-            </label>
-          )}
-          <div className="flex flex-wrap gap-2">
-            {(selected.status === "submitted" || selected.status === "reopened") && (
-              <>
-                <button
-                  type="button"
-                  disabled={busy}
-                  className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-                  onClick={() =>
-                    void run(async () => {
-                      await postAdminManualDailyApprove({
-                        userId,
-                        date: selected.date,
-                      });
-                    })
-                  }
-                >
-                  {t("pages.praemien.adminManual.approve")}
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  className="rounded bg-rose-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-                  onClick={() =>
+          {queueRowLoading ? (
+            <p className="text-xs text-slate-500">{t("pages.praemien.adminManual.loading")}</p>
+          ) : queueRow ? (
+            <AdminManualPraemieQueueTableShell
+              ariaLabel={t("pages.praemien.adminManual.title")}
+            >
+              <div role="rowgroup">
+                <AdminManualPraemieQueueColumnHeaders />
+              </div>
+              <div role="rowgroup">
+                <AdminManualPraemieQueueRowBody
+                  row={queueRow}
+                  rectifyInput={correctVal}
+                  onRectifyChange={setCorrectVal}
+                  rejectReason={rejectReason}
+                  onRejectReasonChange={setRejectReason}
+                  showRejectPanel={showRejectPanel}
+                  onToggleReject={() => setShowRejectPanel((p) => !p)}
+                  onCancelReject={() => setShowRejectPanel(false)}
+                  onConfirmReject={() =>
                     void run(async () => {
                       await postAdminManualDailyReject({
                         userId,
@@ -291,82 +324,41 @@ const AdminManualPraemienReviewPanel = ({
                       });
                     })
                   }
-                >
-                  {t("pages.praemien.adminManual.reject")}
-                </button>
-                <div className="flex w-full flex-wrap items-end gap-2 sm:w-auto">
-                  <label className="flex flex-col text-[11px] text-slate-600">
-                    {t("pages.praemien.adminManual.correctValue")}
-                    <input
-                      type="number"
-                      min={0}
-                      max={10_000}
-                      step={0.1}
-                      className="w-24 rounded border border-slate-300 bg-white px-1 py-0.5"
-                      value={correctVal}
-                      onChange={(e) => setCorrectVal(e.target.value)}
-                      disabled={busy}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    className="rounded bg-blue-700 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-                    onClick={() => {
+                  onApprove={() => {
+                    let extra: { adminFinalValue?: number } = {};
+                    const raw = correctVal.trim();
+                    if (raw !== "") {
                       const parsed = parseManualPraemieClientValue(correctVal);
                       if (!parsed.ok) {
                         setError(t("pages.praemien.adminManual.invalidCorrect"));
                         return;
                       }
-                      void run(async () => {
-                        await postAdminManualDailyCorrectApprove({
-                          userId,
-                          date: selected.date,
-                          adminFinalValue: parsed.value,
-                        });
+                      extra = { adminFinalValue: parsed.value };
+                    }
+                    void run(async () => {
+                      await postAdminManualDailyApprove({
+                        userId,
+                        date: selected.date,
+                        ...extra,
                       });
-                    }}
-                  >
-                    {t("pages.praemien.adminManual.correctApprove")}
-                  </button>
-                </div>
-              </>
-            )}
-            {selected.status === "approved" && (
-              <div className="flex w-full flex-wrap items-end gap-2">
-                <label className="flex flex-col text-[11px] text-slate-600">
-                  {t("pages.praemien.adminManual.reopenNote")}
-                  <input
-                    className="w-48 max-w-full rounded border border-slate-300 bg-white px-1 py-0.5"
-                    value={reopenNote}
-                    onChange={(e) => setReopenNote(e.target.value)}
-                    disabled={busy}
-                  />
-                </label>
-                <button
-                  type="button"
-                  disabled={busy}
-                  className="rounded border border-amber-600 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-900 disabled:opacity-50"
-                  onClick={() =>
+                    });
+                  }}
+                  busy={busy}
+                  onReopen={() =>
                     void run(async () => {
                       await postAdminManualDailyReopen({
                         userId,
                         date: selected.date,
-                        note: reopenNote,
                       });
                     })
                   }
-                >
-                  {t("pages.praemien.adminManual.reopen")}
-                </button>
+                />
               </div>
-            )}
-          </div>
+            </AdminManualPraemieQueueTableShell>
+          ) : (
+            <p className="text-xs text-slate-500">{t("pages.praemien.adminManual.loadError")}</p>
+          )}
         </div>
-      )}
-
-      {!loading && rows.length === 0 && (
-        <p className="text-sm text-slate-500">{t("pages.praemien.adminManual.empty")}</p>
       )}
     </div>
   );
