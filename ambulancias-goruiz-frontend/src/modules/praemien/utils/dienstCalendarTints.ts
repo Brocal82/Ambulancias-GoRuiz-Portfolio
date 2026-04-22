@@ -44,24 +44,10 @@ export function maxNavigablePraemienYm(
   return { y: bestY, m: bestM };
 }
 
-/**
- * Fondos suaves por número de Dienst (misma semana puede compartir tono).
- * Escala 200 + opacidad alta: legibles en calendario sin pasar a neón. Rotación por `dienstNumber`.
- */
+/** Fondo único azul para cualquier día con Dienst asignado (sin rotar colores por número de Dienst). */
 export function dienstNumberToSoftCalendarBg(dienstNumber: number): string {
   if (!Number.isFinite(dienstNumber) || dienstNumber < 1) {
     return "bg-slate-200/95";
   }
-  const palette = [
-    "bg-sky-200",
-    "bg-violet-200",
-    "bg-teal-200",
-    "bg-amber-200",
-    "bg-rose-200",
-    "bg-lime-200",
-    "bg-indigo-200",
-    "bg-fuchsia-200",
-  ];
-  const idx = (Math.floor(dienstNumber) - 1) % palette.length;
-  return palette[idx] ?? "bg-slate-200/95";
+  return "bg-sky-200";
 }

@@ -105,36 +105,25 @@ const WorkerPraemienPage = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 text-center mb-3">
+        <h1
+          className={`text-2xl font-semibold tracking-tight text-slate-900 text-center ${
+            PRAEMIEN_WORKER_HELP_URL ? "mb-3" : "mb-8"
+          }`}
+        >
           {t("pages.praemien.page.title")}
         </h1>
-        <p className="mx-auto mb-8 max-w-2xl text-center text-sm leading-relaxed text-slate-600">
-          {t("pages.praemien.page.workerInfo")}
-          {manualPhaseActive && (
-            <>
-              {" "}
-              <a
-                href="#worker-praemien-manual-entry"
-                className="font-medium text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-800"
-              >
-                {t("pages.praemien.page.jumpToManualLink")}
-              </a>
-            </>
-          )}
-          {PRAEMIEN_WORKER_HELP_URL && (
-            <>
-              {" "}
-              <a
-                href={PRAEMIEN_WORKER_HELP_URL}
-                className="font-medium text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-800"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {t("pages.praemien.page.helpLinkLabel")}
-              </a>
-            </>
-          )}
-        </p>
+        {PRAEMIEN_WORKER_HELP_URL && (
+          <p className="mx-auto mb-8 max-w-2xl text-center text-sm leading-relaxed text-slate-600">
+            <a
+              href={PRAEMIEN_WORKER_HELP_URL}
+              className="font-medium text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-800"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t("pages.praemien.page.helpLinkLabel")}
+            </a>
+          </p>
+        )}
 
         {manualPendingNotice && (
           <div className="mx-auto mb-6 max-w-4xl rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-950">
@@ -169,7 +158,7 @@ const WorkerPraemienPage = () => {
 
         {manualPhaseActive && praemienModeEffectiveFrom && (
           <div
-            className="mx-auto max-w-4xl mb-8 mt-6 scroll-mt-4"
+            className="mb-8 mt-6 w-full min-w-0 scroll-mt-4"
             id="worker-praemien-manual-entry"
           >
             <WorkerManualPraemienMonthPanel

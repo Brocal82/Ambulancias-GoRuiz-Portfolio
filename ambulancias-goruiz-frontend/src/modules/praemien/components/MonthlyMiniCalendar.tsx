@@ -265,7 +265,7 @@ export default function MonthlyMiniCalendar({
             ].join(" ");
           } else if (selected) {
             surfaceClass = [
-              "h-9 rounded-lg ring-2 relative px-1 ring-orange-400",
+              "h-9 rounded-lg ring-1 relative px-1 ring-orange-400",
               hasDienstBg ? dienstBg : "bg-orange-50/50",
             ].join(" ");
           } else {

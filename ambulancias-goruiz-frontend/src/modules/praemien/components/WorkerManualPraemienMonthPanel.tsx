@@ -11,9 +11,17 @@ import {
 import type { MonthlyPraemienDay } from "../domain/api";
 import { usePraemienDienstDayTints } from "../hooks/usePraemienDienstDayTints";
 import { maxNavigablePraemienYm } from "../utils/dienstCalendarTints";
+import { dispatchPraemienManualPendingChanged } from "../utils/praemienManualPendingEvents";
 import { labelPraemienManualStatus } from "../utils/labelPraemienManualStatus";
 import { parseManualPraemieClientValue } from "../utils/parseManualPraemieClientValue";
+import { fmtDDMM } from "../../../utils/timeUtils";
 import MonthlyMiniCalendar, { type ViewMonth } from "./MonthlyMiniCalendar";
+import {
+  PRAEMIE_QUEUE_TABLE_SHELL_CLASS,
+  PRAEMIE_WORKER_DETAIL_bodyRow,
+  PRAEMIE_WORKER_DETAIL_headerRow,
+} from "./praemieManualQueueTableStyles";
+import type { AssignedDay, UserRef } from "../../diensts/domain/types";
 
 /** Alineado con el DTO; tolera `rejection_reason` si en alguna respuesta llega en snake_case. */
 function getManualRejectionNote(e: ManualDailyEntryDto): string {
@@ -41,6 +49,58 @@ function effectiveStartDate(from: PraemienModeEffectiveFrom): Date {
 function todayStart(): Date {
   const n = new Date();
   return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+}
+
+function personListLabel(ref: string | UserRef | undefined): string {
+  if (!ref) return "";
+  if (typeof ref === "string") return ref.trim();
+  const ln = String(ref.lastName ?? "").trim();
+  const fn = String(ref.name ?? "").trim();
+  if (ln && fn) return `${ln}, ${fn}`;
+  return ln || fn;
+}
+
+/** Misma convención que la cola admin: apellido, nombre; conductor / sanitario. */
+function formatEquipoFromAssignedDay(a: AssignedDay | undefined): string {
+  if (!a) return "";
+  const d = personListLabel(a.driver);
+  const m = personListLabel(a.medic);
+  if (d && m) return `${d} / ${m}`;
+  return d || m;
+}
+
+function ManualEntryStatusCheckIcon({
+  colorClassName,
+  title,
+  ariaLabel,
+}: {
+  colorClassName: string;
+  title: string;
+  ariaLabel: string;
+}) {
+  return (
+    <span
+      className={`inline-flex shrink-0 ${colorClassName}`}
+      title={title}
+      aria-label={ariaLabel}
+      role="img"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        className="h-7 w-7"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path
+          fillRule="evenodd"
+          d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z"
+          clipRule="evenodd"
+        />
+      </svg>
+    </span>
+  );
 }
 
 interface Props {
@@ -120,6 +180,11 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
   }, [entries]);
 
   const selectedEntry = selectedDate ? byDate.get(selectedDate) : undefined;
+  const selectedAssignment = useMemo(
+    () => (selectedDate ? dienstByDate.get(selectedDate) : undefined),
+    [selectedDate, dienstByDate],
+  );
+
   const selectedReadOnly = useMemo(() => {
     if (selectedEntry?.status === "approved") return true;
     if (
@@ -131,6 +196,12 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
     }
     return false;
   }, [selectedEntry, selectedDate, closureEligible]);
+
+  const canEditTrips = Boolean(
+    selectedDate &&
+      closureEligible.has(selectedDate) &&
+      !selectedReadOnly,
+  );
 
   useEffect(() => {
     if (!selectedDate) {
@@ -231,6 +302,7 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
         status: "submitted",
       });
       await loadMonth();
+      dispatchPraemienManualPendingChanged();
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { message?: string } } })?.response?.data
@@ -242,96 +314,236 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
   };
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="w-full min-w-0 space-y-4">
       {error && (
         <p className="mb-3 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-800">
           {error}
         </p>
       )}
 
-      <p className="mb-3 text-sm text-slate-600">
-        {t("pages.praemien.manual.finalClosureOnlyHint")}
-      </p>
-
-      {loading ? (
-        <p className="text-center text-sm text-slate-600">
-          {t("pages.praemien.manual.loading")}
+      <div className="mx-auto w-full max-w-4xl space-y-3">
+        <p className="text-sm text-slate-600">
+          {t("pages.praemien.manual.finalClosureOnlyHint")}
         </p>
-      ) : (
-        <MonthlyMiniCalendar
-          viewMonth={viewMonth}
-          days={summaryDays}
-          titleKey="pages.praemien.page.dailyHistoryTitle"
-          monthNav={{
-            onPrev: goPrevMonth,
-            onNext: goNextMonth,
-            canPrev,
-            canNext,
-            prevLabel: t("pages.praemien.manual.prevMonth"),
-            nextLabel: t("pages.praemien.manual.nextMonth"),
-          }}
-          interactive={{
-            selectedKey: selectedDate,
-            onSelect: (key) =>
-              setSelectedDate((prev) => (prev === key ? null : key)),
-            isDisabled,
-            valueClassName,
-            dayBaseClassName,
-          }}
-        />
-      )}
+
+        {loading ? (
+          <p className="text-center text-sm text-slate-600">
+            {t("pages.praemien.manual.loading")}
+          </p>
+        ) : (
+          <MonthlyMiniCalendar
+            viewMonth={viewMonth}
+            days={summaryDays}
+            titleKey="pages.praemien.page.dailyHistoryTitle"
+            monthNav={{
+              onPrev: goPrevMonth,
+              onNext: goNextMonth,
+              canPrev,
+              canNext,
+              prevLabel: t("pages.praemien.manual.prevMonth"),
+              nextLabel: t("pages.praemien.manual.nextMonth"),
+            }}
+            interactive={{
+              selectedKey: selectedDate,
+              onSelect: (key) =>
+                setSelectedDate((prev) => (prev === key ? null : key)),
+              isDisabled,
+              valueClassName,
+              dayBaseClassName,
+            }}
+          />
+        )}
+      </div>
 
       {selectedDate && (
-        <div className="mt-4 space-y-2 rounded-2xl border border-slate-200 bg-white p-4 ring-1 ring-slate-200/80">
-          <p className="text-sm text-slate-700">
-            {t("pages.praemien.manual.editDay", { date: selectedDate })}
-          </p>
-          {selectedEntry?.status === "approved" && selectedReadOnly ? (
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-slate-100 pb-3">
-              <p className="text-sm font-medium text-emerald-800">
-                {selectedEntry.adminReviewedByName?.trim()
-                  ? t("pages.praemien.manual.approvedByAdmin", {
-                      name: selectedEntry.adminReviewedByName.trim(),
-                    })
-                  : t("pages.praemien.manual.approvedByAdminFallback")}
-              </p>
-              <p className="text-xs text-slate-500 tabular-nums sm:text-right">
-                {t("pages.praemien.manual.lastSaved", {
-                  at: new Date(
-                    selectedEntry.workerSubmittedAt,
-                  ).toLocaleString(i18n.language),
-                })}
-              </p>
+        <div className="min-w-0 w-full space-y-3 text-xs">
+          <div
+            className={PRAEMIE_QUEUE_TABLE_SHELL_CLASS}
+            role="table"
+            aria-label={t("pages.praemien.manual.detailHeading")}
+          >
+            <div role="rowgroup">
+              <div role="row" className={PRAEMIE_WORKER_DETAIL_headerRow}>
+                <div
+                  role="columnheader"
+                  className="min-w-0 break-words text-center"
+                >
+                  {t("pages.adminUsers.praemieListColEquipo")}
+                </div>
+                <div
+                  role="columnheader"
+                  className="min-w-0 whitespace-nowrap text-center"
+                >
+                  {t("pages.adminUsers.praemieListColDate")}
+                </div>
+                <div
+                  role="columnheader"
+                  className="min-w-0 break-words text-center"
+                >
+                  {t("pages.adminUsers.praemieListColDienst")}
+                </div>
+                <div
+                  role="columnheader"
+                  className="min-w-0 break-words text-center"
+                >
+                  {t("pages.adminUsers.praemieListColManualValue")}
+                </div>
+                <div
+                  role="columnheader"
+                  className="min-w-0 break-words text-center"
+                >
+                  {t("pages.adminUsers.praemieListColFinalValue")}
+                </div>
+                <div
+                  role="columnheader"
+                  className="min-w-0 break-words text-center"
+                >
+                  {t("pages.praemien.manual.detailApprovedBy")}
+                </div>
+                <div
+                  role="columnheader"
+                  className="min-w-0 break-words text-center"
+                >
+                  {t("pages.praemien.manual.detailApprovedAt")}
+                </div>
+                <div
+                  role="columnheader"
+                  className="min-w-0 w-full break-words text-center"
+                >
+                  {t("pages.adminUsers.praemieListColActions")}
+                </div>
+              </div>
             </div>
-          ) : selectedReadOnly ? (
-            <p className="text-sm text-amber-900">
-              {t("pages.praemien.manual.readOnlyLegacyNoFinalClosure")}
-            </p>
-          ) : (
-            <div className="flex flex-wrap items-end gap-2">
-              <label className="flex flex-col text-xs text-slate-600">
-                {t("pages.praemien.manual.valueLabel")}
-                <input
-                  type="number"
-                  min={0}
-                  max={10_000}
-                  step={0.1}
-                  value={draftValue}
-                  onChange={(e) => setDraftValue(e.target.value)}
-                  disabled={selectedReadOnly}
-                  className="mt-0.5 w-40 rounded-md border border-slate-300 px-2 py-1.5 text-sm disabled:bg-slate-100"
-                />
-              </label>
-              <button
-                type="button"
-                disabled={saving || selectedReadOnly}
-                onClick={() => void handleSave()}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                {saving ? t("common.saving") : t("pages.praemien.manual.save")}
-              </button>
+            <div role="rowgroup">
+              <div role="row" className={PRAEMIE_WORKER_DETAIL_bodyRow}>
+                <div role="cell" className="min-w-0 text-center text-slate-900">
+                  <div className="line-clamp-2 break-words font-medium leading-tight">
+                    {formatEquipoFromAssignedDay(selectedAssignment) || "—"}
+                  </div>
+                </div>
+                <div
+                  role="cell"
+                  className="min-w-0 whitespace-nowrap text-center tabular-nums text-slate-800"
+                >
+                  {fmtDDMM(selectedDate) || "—"}
+                </div>
+                <div
+                  role="cell"
+                  className="min-w-0 text-center tabular-nums text-slate-800"
+                >
+                  {selectedAssignment?.dienstNumber != null
+                    ? selectedAssignment.dienstNumber
+                    : "—"}
+                </div>
+                <div
+                  role="cell"
+                  className="min-w-0 text-center tabular-nums text-slate-800"
+                >
+                  {selectedEntry != null
+                    ? selectedEntry.workerSubmittedValue
+                    : "—"}
+                </div>
+                <div
+                  role="cell"
+                  className="min-w-0 text-center tabular-nums text-slate-800"
+                >
+                  {selectedEntry?.status === "approved" ? (
+                    <span className="tabular-nums text-slate-800">
+                      {selectedEntry.adminFinalValue ??
+                        selectedEntry.workerSubmittedValue}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
+                </div>
+                <div
+                  role="cell"
+                  className="min-w-0 text-center text-slate-800"
+                >
+                  {selectedEntry?.status === "approved" ? (
+                    <span className="line-clamp-2 break-words font-medium leading-tight">
+                      {selectedEntry.adminReviewedByName?.trim() ||
+                        t("pages.praemien.manual.approvedByAdminFallback")}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
+                </div>
+                <div
+                  role="cell"
+                  className="min-w-0 whitespace-nowrap text-center tabular-nums text-slate-800"
+                >
+                  {selectedEntry?.status === "approved" &&
+                  selectedEntry.adminReviewedAt ? (
+                    new Date(selectedEntry.adminReviewedAt).toLocaleString(
+                      i18n.language,
+                      { dateStyle: "short", timeStyle: "short" },
+                    )
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
+                </div>
+                <div
+                  role="cell"
+                  className="min-w-0 w-full justify-self-stretch"
+                >
+                  <div className="flex min-h-[2rem] w-full min-w-0 flex-wrap items-center justify-center gap-1.5 px-0.5">
+                    {selectedEntry?.status === "approved" &&
+                    selectedReadOnly ? (
+                      <ManualEntryStatusCheckIcon
+                        colorClassName="text-emerald-600"
+                        title={t("pages.praemien.manual.approvedDayAria")}
+                        ariaLabel={t("pages.praemien.manual.approvedDayAria")}
+                      />
+                    ) : selectedEntry?.status === "submitted" ? (
+                      <ManualEntryStatusCheckIcon
+                        colorClassName="text-amber-500"
+                        title={t(
+                          "pages.praemien.manual.pendingReviewDayAria",
+                        )}
+                        ariaLabel={t(
+                          "pages.praemien.manual.pendingReviewDayAria",
+                        )}
+                      />
+                    ) : canEditTrips ? (
+                      <>
+                        <input
+                          type="number"
+                          min={0}
+                          max={10_000}
+                          step={0.1}
+                          value={draftValue}
+                          onChange={(e) => setDraftValue(e.target.value)}
+                          disabled={saving}
+                          title={t("pages.praemien.manual.valueLabel")}
+                          aria-label={t("pages.praemien.manual.valueLabel")}
+                          className="box-border h-7 w-[4.25rem] max-w-full shrink-0 rounded border border-slate-300 bg-white px-1 text-center text-xs tabular-nums text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-200 disabled:opacity-60"
+                        />
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={() => void handleSave()}
+                          className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          {saving
+                            ? t("common.saving")
+                            : t("pages.praemien.manual.save")}
+                        </button>
+                      </>
+                    ) : selectedReadOnly ? (
+                      <p className="max-w-[14rem] text-center text-[10px] font-medium leading-snug text-amber-900">
+                        {t(
+                          "pages.praemien.manual.readOnlyLegacyNoFinalClosure",
+                        )}
+                      </p>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
           {selectedEntry && (
             <div className="space-y-1 text-xs text-slate-500">
               {selectedEntry.status !== "approved" && (
@@ -362,19 +574,6 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
                   )}
                 </div>
               )}
-              <p>
-                {t("pages.praemien.manual.originalLine", {
-                  value: selectedEntry.originalWorkerValue,
-                })}
-              </p>
-              {selectedEntry.status === "approved" &&
-                selectedEntry.adminFinalValue != null && (
-                  <p>
-                    {t("pages.praemien.manual.finalLine", {
-                      value: selectedEntry.adminFinalValue,
-                    })}
-                  </p>
-                )}
               {selectedEntry.status !== "approved" && (
                 <p>
                   {t("pages.praemien.manual.lastSaved", {
