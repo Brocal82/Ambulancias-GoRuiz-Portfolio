@@ -8,9 +8,13 @@ import {
 import {
   adminApproveManualDailyEntry,
   adminCorrectApproveManualDailyEntry,
+  adminGetManualPraemieDayQueueRow,
   adminListManualDailyEntriesForMonth,
   adminRejectManualDailyEntry,
   adminReopenManualDailyEntry,
+  countPendingManualPraemieForCompany,
+  listPendingManualPraemieByUser,
+  listPendingManualPraemieEntriesEnriched,
 } from "../services/praemien-manual-daily-admin.service";
 
 async function assertAdminSameCompanyAsTarget(
@@ -82,6 +86,42 @@ export const adminGetManualDailyMonth = async (
   }
 };
 
+/** Una fila enriquecida (equipo, Dienst, horario) como el listado de pendientes, para un día concreto. */
+export const adminGetManualPraemieDayQueueRowHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const gate = await assertAdminSameCompanyAsTarget(
+      req,
+      req.query.userId as string | undefined,
+    );
+    if (!gate.ok) {
+      res.status(gate.statusCode).json({ message: gate.message });
+      return;
+    }
+
+    const date =
+      typeof req.query.date === "string" ? req.query.date.trim() : "";
+
+    const result = await adminGetManualPraemieDayQueueRow({
+      companyIdStr: gate.companyId,
+      targetUserId: gate.targetUserId,
+      date,
+    });
+
+    if (!result.ok) {
+      res.status(result.statusCode).json({ message: result.message });
+      return;
+    }
+
+    res.status(200).json(result.row);
+  } catch (error) {
+    console.error("Error en adminGetManualPraemieDayQueueRowHandler:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
 export const adminPostManualDailyApprove = async (
   req: Request,
   res: Response,
@@ -105,6 +145,7 @@ export const adminPostManualDailyApprove = async (
       date: req.body?.date,
       adminUserId: userId,
       adminFinalValue: req.body?.adminFinalValue,
+      cascadeTeammate: req.body?.cascadeTeammate !== false,
     });
 
     if (!result.ok) {
@@ -226,6 +267,63 @@ export const adminPostManualDailyReopen = async (
     res.status(200).json(result.entry);
   } catch (error) {
     console.error("Error en adminPostManualDailyReopen:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+/** Contador de entradas manuales pendientes de aprobación o rechazo (toda la empresa). */
+export const adminGetManualPraemiePendingCount = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const cr = requireCompanyForAdmin(req);
+    if (!cr.ok) {
+      res.status(cr.statusCode).json({ message: cr.message });
+      return;
+    }
+    const count = await countPendingManualPraemieForCompany(cr.companyId);
+    res.status(200).json({ count });
+  } catch (error) {
+    console.error("Error en adminGetManualPraemiePendingCount:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+/** Trabajadores con al menos un día de Prämie manual pendiente de revisión. */
+export const adminGetManualPraemiePendingByUser = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const cr = requireCompanyForAdmin(req);
+    if (!cr.ok) {
+      res.status(cr.statusCode).json({ message: cr.message });
+      return;
+    }
+    const items = await listPendingManualPraemieByUser(cr.companyId);
+    res.status(200).json({ items });
+  } catch (error) {
+    console.error("Error en adminGetManualPraemiePendingByUser:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+/** Cada entrada pendiente con nombre, cierre de jornada (Dienst, horario, viajes). */
+export const adminGetManualPraemiePendingEntries = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const cr = requireCompanyForAdmin(req);
+    if (!cr.ok) {
+      res.status(cr.statusCode).json({ message: cr.message });
+      return;
+    }
+    const items = await listPendingManualPraemieEntriesEnriched(cr.companyId);
+    res.status(200).json({ items });
+  } catch (error) {
+    console.error("Error en adminGetManualPraemiePendingEntries:", error);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };

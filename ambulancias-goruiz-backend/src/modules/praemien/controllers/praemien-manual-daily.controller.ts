@@ -56,6 +56,7 @@ export const getMyManualDailyEntriesMonth = async (
       userId,
       year,
       month,
+      applyWorkerFacing: true,
     });
 
     if (!result.ok) {

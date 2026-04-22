@@ -12,6 +12,10 @@ import {
 } from "./controllers/praemien-manual-daily.controller";
 import {
   adminGetManualDailyMonth,
+  adminGetManualPraemieDayQueueRowHandler,
+  adminGetManualPraemiePendingByUser,
+  adminGetManualPraemiePendingCount,
+  adminGetManualPraemiePendingEntries,
   adminPostManualDailyApprove,
   adminPostManualDailyCorrectApprove,
   adminPostManualDailyReject,
@@ -76,11 +80,39 @@ router.get(
 
 /** Phase 4: admin review of worker manual daily entries (manual mode effective only). */
 router.get(
+  "/manual-daily/admin/pending-count",
+  authenticateToken,
+  requireModule(MODULE_KEYS.PRAEMIEN),
+  authorizeRole("admin"),
+  adminGetManualPraemiePendingCount,
+);
+router.get(
+  "/manual-daily/admin/pending-by-user",
+  authenticateToken,
+  requireModule(MODULE_KEYS.PRAEMIEN),
+  authorizeRole("admin"),
+  adminGetManualPraemiePendingByUser,
+);
+router.get(
+  "/manual-daily/admin/pending-entries",
+  authenticateToken,
+  requireModule(MODULE_KEYS.PRAEMIEN),
+  authorizeRole("admin"),
+  adminGetManualPraemiePendingEntries,
+);
+router.get(
   "/manual-daily/admin/month",
   authenticateToken,
   requireModule(MODULE_KEYS.PRAEMIEN),
   authorizeRole("admin"),
   adminGetManualDailyMonth,
+);
+router.get(
+  "/manual-daily/admin/day-queue-row",
+  authenticateToken,
+  requireModule(MODULE_KEYS.PRAEMIEN),
+  authorizeRole("admin"),
+  adminGetManualPraemieDayQueueRowHandler,
 );
 router.post(
   "/manual-daily/admin/approve",

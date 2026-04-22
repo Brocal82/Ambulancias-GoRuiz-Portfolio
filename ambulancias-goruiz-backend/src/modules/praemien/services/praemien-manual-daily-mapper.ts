@@ -63,3 +63,20 @@ export function mapManualDailyDocToDto(
     })(),
   };
 }
+
+/**
+ * Vista trabajador: "reopened" es solo para que el admin corrija en su panel.
+ * El trabajador sigue viendo el día como aprobado (solo lectura, tick verde).
+ */
+export function toWorkerFacingManualDailyDto(
+  dto: ManualDailyEntryDto,
+): ManualDailyEntryDto {
+  if (dto.status !== "reopened") return dto;
+  return {
+    ...dto,
+    status: "approved",
+    reopenedAt: null,
+    reopenedBy: null,
+    reopenNote: null,
+  };
+}

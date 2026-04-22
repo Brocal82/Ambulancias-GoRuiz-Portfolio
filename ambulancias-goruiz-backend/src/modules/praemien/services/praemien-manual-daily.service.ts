@@ -13,8 +13,10 @@ import { enrichManualDailyDto, enrichManualDailyDtosWithAdminNames } from "./enr
 import { parseManualPraemieNumericValue } from "./manual-praemie-value-parse";
 import {
   mapManualDailyDocToDto,
+  toWorkerFacingManualDailyDto,
   type ManualDailyEntryDto,
 } from "./praemien-manual-daily-mapper";
+import { syncDienstPartnersManualDailySubmitted } from "./manual-daily-dienst-teammates";
 
 export type { ManualDailyEntryDto };
 
@@ -104,6 +106,15 @@ export async function upsertMyManualDailyEntry(params: {
     };
   }
 
+  if (existing && existing.status === "reopened") {
+    return {
+      ok: false,
+      statusCode: 403,
+      message:
+        "Un administrador está corrigiendo esta entrada. No puedes editarla desde tu cuenta.",
+    };
+  }
+
   if (
     existing &&
     existing.status === "submitted" &&
@@ -133,7 +144,18 @@ export async function upsertMyManualDailyEntry(params: {
     if (!dto) {
       return { ok: false, statusCode: 500, message: "No se pudo guardar la entrada." };
     }
-    return { ok: true, entry: await enrichManualDailyDto(dto) };
+    if (statusParam === "submitted") {
+      await syncDienstPartnersManualDailySubmitted({
+        companyObjectId: gate.companyObjectId,
+        primaryUserId: params.userId,
+        dateStr,
+        submittedValue: num,
+      });
+    }
+    return {
+      ok: true,
+      entry: toWorkerFacingManualDailyDto(await enrichManualDailyDto(dto)),
+    };
   }
 
   const patch: Record<string, unknown> = {
@@ -146,7 +168,7 @@ export async function upsertMyManualDailyEntry(params: {
   }
 
   let nextStatus: PraemienManualDailyStatus = statusParam;
-  if (existing.status === "reopened" || existing.status === "rejected") {
+  if (existing.status === "rejected") {
     nextStatus = "submitted";
   } else {
     nextStatus = statusParam;
@@ -163,7 +185,18 @@ export async function upsertMyManualDailyEntry(params: {
   if (!dto) {
     return { ok: false, statusCode: 500, message: "No se pudo guardar la entrada." };
   }
-  return { ok: true, entry: await enrichManualDailyDto(dto) };
+  if (nextStatus === "submitted") {
+    await syncDienstPartnersManualDailySubmitted({
+      companyObjectId: gate.companyObjectId,
+      primaryUserId: params.userId,
+      dateStr,
+      submittedValue: num,
+    });
+  }
+  return {
+    ok: true,
+    entry: toWorkerFacingManualDailyDto(await enrichManualDailyDto(dto)),
+  };
 }
 
 export async function listMyManualDailyEntriesForMonth(params: {
@@ -171,6 +204,8 @@ export async function listMyManualDailyEntriesForMonth(params: {
   userId: string;
   year: number;
   month: number;
+  /** Solo rutas trabajador: oculta `reopened` como `approved`. Admin debe usar false. */
+  applyWorkerFacing?: boolean;
 }): Promise<
   | { ok: true; entries: ManualDailyEntryDto[] }
   | { ok: false; statusCode: number; message: string }
@@ -206,7 +241,10 @@ export async function listMyManualDailyEntriesForMonth(params: {
     .map((doc) => mapManualDailyDocToDto(doc as unknown as Record<string, unknown>))
     .filter((e): e is ManualDailyEntryDto => e != null);
 
-  const entries = await enrichManualDailyDtosWithAdminNames(raw);
+  let entries = await enrichManualDailyDtosWithAdminNames(raw);
+  if (params.applyWorkerFacing) {
+    entries = entries.map(toWorkerFacingManualDailyDto);
+  }
   return { ok: true, entries };
 }
 
@@ -246,7 +284,7 @@ export async function getMyManualDailyEntryForDay(params: {
   }
   return {
     ok: true,
-    entry: await enrichManualDailyDto(raw),
+    entry: toWorkerFacingManualDailyDto(await enrichManualDailyDto(raw)),
   };
 }
 
