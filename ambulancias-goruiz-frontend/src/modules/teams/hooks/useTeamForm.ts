@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "../../../hooks/useAuth";
+import { useModules } from "../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../constants/modules";
 import { getAllAmbulances } from "../../ambulances/domain/api";
 import type { Team } from "../domain";
 import type { TeamPickerValue } from "../components/TeamPicker";
@@ -62,6 +64,8 @@ export function useTeamForm({
   team = null,
 }: UseTeamFormArgs): UseTeamFormReturn {
   const { token } = useAuth();
+  const { hasModule } = useModules();
+  const ambulancesModuleOn = hasModule(MODULE_KEYS.AMBULANCES);
 
   const [value, setValue] = useState<TeamPickerValue>(() => getInitialValue(team));
   const [rotationMode, setRotationMode] = useState<RotationMode>(() =>
@@ -87,6 +91,12 @@ export function useTeamForm({
 
   useEffect(() => {
     if (!isOpen || !token) return;
+
+    if (!ambulancesModuleOn) {
+      setAmbulances([]);
+      setLoadingAmbulances(false);
+      return;
+    }
 
     let cancelled = false;
 
@@ -120,7 +130,7 @@ export function useTeamForm({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, token]);
+  }, [isOpen, token, ambulancesModuleOn]);
 
   const samePerson = useMemo(
     () => !!value.driver && value.driver === value.medic,

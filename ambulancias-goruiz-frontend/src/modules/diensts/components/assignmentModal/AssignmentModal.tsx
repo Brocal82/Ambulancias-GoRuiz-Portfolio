@@ -2,6 +2,8 @@
 import { useState, useEffect, useId, useMemo } from "react";
 
 import { useAuth } from "../../../../hooks/useAuth";
+import { useModules } from "../../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../../constants/modules";
 
 import { updateDienstPartial, removeAssignment } from "../../domain/api";
 import { emitDienstsChanged } from "../../utils/dienstEvents";
@@ -61,12 +63,16 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     const { role: userRole, token } = useAuth();
     const isAdmin = userRole === "admin";
     const { t, i18n } = useTranslation();
-
+    const { hasModule } = useModules();
+    const ambulancesModuleOn = hasModule(MODULE_KEYS.AMBULANCES);
 
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
     const [ambulanceId, setAmbulanceId] = useState("");
-    const { ambulances } = useAmbulances({ token });
+    const { ambulances } = useAmbulances({
+        token,
+        skip: !ambulancesModuleOn,
+    });
     const [selectedDriverId, setSelectedDriverId] = useState("");
     const [selectedMedicId, setSelectedMedicId] = useState("");
     const { availableDrivers, availableMedics } = useAvailableUsersForAssignment({
@@ -437,6 +443,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                             onClose={onClose}
                             isLoading={isLoading}
                             hasAssignment={!!assignment}
+                            showAmbulanceField={ambulancesModuleOn}
                         >
 
                         </AssignmentModalAdminForm>

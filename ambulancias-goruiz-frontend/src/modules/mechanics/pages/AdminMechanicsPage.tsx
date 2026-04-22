@@ -12,6 +12,8 @@ import {
 } from "../domain";
 import type { WorkdayIssue } from "../domain/types";
 import { useAuth } from "../../../hooks/useAuth";
+import { useModules } from "../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../constants/modules";
 import { toastT } from "../../../utils/toast";
 import { getAllAmbulances } from "../../ambulances/domain/api";
 import type { Ambulance } from "../../ambulances/domain/types";
@@ -26,6 +28,8 @@ import StatusBadge from "../../../components/common/StatusBadge";
 
 const AdminMechanicsPage = () => {
   const { token } = useAuth();
+  const { hasModule } = useModules();
+  const ambulancesModuleOn = hasModule(MODULE_KEYS.AMBULANCES);
   const { t } = useTranslation();
   const [issues, setIssues] = useState<WorkdayIssue[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,15 +60,19 @@ const AdminMechanicsPage = () => {
     try {
       const issuesData = await getAllIssueReports();
       setIssues(normalizeIssues(issuesData));
-      const ambulancesData = await getAllAmbulances();
-      setAmbulances(ambulancesData);
+      if (ambulancesModuleOn) {
+        const ambulancesData = await getAllAmbulances();
+        setAmbulances(ambulancesData);
+      } else {
+        setAmbulances([]);
+      }
       } catch (err) {
         console.error("¢ Error al cargar reportes o ambulancias:", err);
       toastT.error(["toasts.mechanics.loadError"]);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, ambulancesModuleOn]);
 
   const fetchDataRef = useRef(fetchData);
   fetchDataRef.current = fetchData;

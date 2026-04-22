@@ -138,7 +138,9 @@ export default function App() {
                   <Route path="/admin/messages/sent" element={<AdminSentMessages />} />
                 </Route>
                 <Route path="/admin/summaries" element={<AdminSummariesPage />} />
-                <Route path="/admin/ambulances" element={<AdminAmbulancesPage />} />
+                <Route element={<RequireModule name="ambulances" />}>
+                  <Route path="/admin/ambulances" element={<AdminAmbulancesPage />} />
+                </Route>
                 <Route path="/admin/user/:userId" element={<AdminUserDetailDashboard />} />
                 <Route path="/admin/mechanics" element={<AdminMechanicsPage />} />
                 <Route element={<RequireModule name="appointments" />}>

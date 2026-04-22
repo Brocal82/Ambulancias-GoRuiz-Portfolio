@@ -36,6 +36,8 @@ import { dayKeyToLocalDate, toBerlinDayKey } from "../../../utils/dates/dayKey";
 import { isPastDay } from "../../../utils/dates/isPastDay";
 import { isTeamIncomplete } from "../utils/assignmentUtils";
 import { useAuth } from "../../../hooks/useAuth";
+import { useModules } from "../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../constants/modules";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { toastT } from "../../../utils/toast";
@@ -797,6 +799,8 @@ const AdminPage = () => {
   );
 
   const { token } = useAuth();
+  const { hasModule } = useModules();
+  const ambulancesModuleOn = hasModule(MODULE_KEYS.AMBULANCES);
   const { t, i18n } = useTranslation();
 
   const fmtDate = (d: Date) => d.toLocaleDateString(i18n.language);
@@ -1154,34 +1158,36 @@ const AdminPage = () => {
                                 </span>
                               </button>
 
-                              {/* 🚑 Asignar ambulancia (siempre visible) */}
-                              <button
-                                className="flex items-center justify-center w-5 h-5 text-slate-500 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
-                                title={t(
-                                  "pages.diensts.adminPage.assignAmbulanceToWeek",
-                                  "Asignar ambulancia a la semana",
-                                )}
-                                onClick={() =>
-                                  setWeekAmbulanceModal({
-                                    open: true,
-                                    dienstNumber: dienst.dienstNumber,
-                                    weekStartISO,
-                                  })
-                                }
-                              >
-                                <span
-                                  aria-hidden
-                                  className="block text-[14px] leading-none"
-                                >
-                                  🚑
-                                </span>
-                                <span className="sr-only">
-                                  {t(
+                              {/* 🚑 Asignar ambulancia a la semana */}
+                              {ambulancesModuleOn ? (
+                                <button
+                                  className="flex items-center justify-center w-5 h-5 text-slate-500 hover:text-slate-900 transition-transform transform hover:scale-110 focus:outline-none"
+                                  title={t(
                                     "pages.diensts.adminPage.assignAmbulanceToWeek",
                                     "Asignar ambulancia a la semana",
                                   )}
-                                </span>
-                              </button>
+                                  onClick={() =>
+                                    setWeekAmbulanceModal({
+                                      open: true,
+                                      dienstNumber: dienst.dienstNumber,
+                                      weekStartISO,
+                                    })
+                                  }
+                                >
+                                  <span
+                                    aria-hidden
+                                    className="block text-[14px] leading-none"
+                                  >
+                                    🚑
+                                  </span>
+                                  <span className="sr-only">
+                                    {t(
+                                      "pages.diensts.adminPage.assignAmbulanceToWeek",
+                                      "Asignar ambulancia a la semana",
+                                    )}
+                                  </span>
+                                </button>
+                              ) : null}
                             </div>
 
                           </div>
@@ -1755,7 +1761,7 @@ const AdminPage = () => {
       )}
 
       {/* Modal Ambulancia semana */}
-      {weekAmbulanceModal?.open && (
+      {ambulancesModuleOn && weekAmbulanceModal?.open && (
         <AmbulanceAssignModal
           isOpen={true}
           onClose={() => setWeekAmbulanceModal(null)}

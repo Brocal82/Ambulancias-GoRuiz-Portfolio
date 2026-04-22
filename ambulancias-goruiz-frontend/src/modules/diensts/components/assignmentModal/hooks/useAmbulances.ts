@@ -9,13 +9,19 @@ export interface AmbulanceRef {
 
 export const useAmbulances = (params: {
   token: string | null | undefined;
+  /** When true, do not call the API (avoids 403 when the ambulances module is off). */
+  skip?: boolean;
 }) => {
-  const { token } = params;
+  const { token, skip } = params;
 
   const [ambulances, setAmbulances] = useState<AmbulanceRef[]>([]);
 
   useEffect(() => {
     const fetchAmbulances = async () => {
+      if (skip) {
+        setAmbulances([]);
+        return;
+      }
       if (!token) return;
 
       try {
@@ -31,7 +37,7 @@ export const useAmbulances = (params: {
     };
 
     fetchAmbulances();
-  }, [token]);
+  }, [token, skip]);
 
   return { ambulances };
 };

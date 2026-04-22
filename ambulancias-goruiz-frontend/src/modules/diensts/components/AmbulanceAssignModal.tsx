@@ -1,6 +1,8 @@
 import { useEffect, useId, useState } from "react";
 
 import { useAuth } from "../../../hooks/useAuth";
+import { useModules } from "../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../constants/modules";
 import { useTranslation } from "react-i18next";
 import { getAllAmbulances } from "../../ambulances/domain/api";
 import type { Ambulance } from "../../ambulances/domain/types";
@@ -18,6 +20,8 @@ export default function AmbulanceAssignModal({
   onConfirm,
 }: Props) {
   const { token } = useAuth();
+  const { hasModule } = useModules();
+  const ambulancesModuleOn = hasModule(MODULE_KEYS.AMBULANCES);
   const { t } = useTranslation();
 
   const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
@@ -28,7 +32,10 @@ export default function AmbulanceAssignModal({
   const selectId = useId();
 
   useEffect(() => {
-    if (!isOpen || !token) return;
+    if (!isOpen || !token || !ambulancesModuleOn) {
+      if (!ambulancesModuleOn) setAmbulances([]);
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
@@ -45,7 +52,7 @@ export default function AmbulanceAssignModal({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, token]);
+  }, [isOpen, token, ambulancesModuleOn]);
 
   // Reset selection when modal opens/closes
   useEffect(() => {

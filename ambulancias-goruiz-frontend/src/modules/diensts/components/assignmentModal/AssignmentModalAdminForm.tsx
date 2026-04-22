@@ -70,6 +70,8 @@ type Props = {
     isLoading: boolean;
     hasAssignment: boolean;
 
+    /** When false, ambulance picker is hidden (module off); times/driver/medic unchanged. */
+    showAmbulanceField?: boolean;
 
     children?: React.ReactNode;
 };
@@ -122,13 +124,16 @@ const AssignmentModalAdminForm: React.FC<Props> = ({
     isLoading,
     hasAssignment,
 
+    showAmbulanceField = true,
 
     children,
 }) => {
     return (
         <>
             {/* Row 1: startTime | endTime | ambulance */}
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div
+                className={`grid grid-cols-1 gap-3 ${showAmbulanceField ? "md:grid-cols-3" : "md:grid-cols-2"}`}
+            >
                 {/* Hora inicio */}
                 <div className="space-y-1">
                     <label htmlFor="startTime" className="block text-sm font-medium text-slate-700">
@@ -158,23 +163,25 @@ const AssignmentModalAdminForm: React.FC<Props> = ({
                 </div>
 
                 {/* Ambulancia */}
-                <div className="space-y-1">
-                    <AmbulanceDropdown
-                        label={t("pages.assignmentModal.labels.ambulance")}
-                        buttonId={ambulanceBtnId}
-                        isOpen={openAmbulanceList}
-                        setIsOpen={setOpenAmbulanceList}
-                        ambulances={ambulances}
-                        selectedId={ambulanceId}
-                        setSelectedId={setAmbulanceId}
-                        emptyLabel={t("common.empty", "No hay resultados")}
-                        placeholderLabel={t(
-                            "pages.assignmentModal.placeholders.selectAmbulance",
-                            "Selecciona ambulancia"
-                        )}
-                        unassignedLabel={t("common.none", "Ninguno")}
-                    />
-                </div>
+                {showAmbulanceField ? (
+                    <div className="space-y-1">
+                        <AmbulanceDropdown
+                            label={t("pages.assignmentModal.labels.ambulance")}
+                            buttonId={ambulanceBtnId}
+                            isOpen={openAmbulanceList}
+                            setIsOpen={setOpenAmbulanceList}
+                            ambulances={ambulances}
+                            selectedId={ambulanceId}
+                            setSelectedId={setAmbulanceId}
+                            emptyLabel={t("common.empty", "No hay resultados")}
+                            placeholderLabel={t(
+                                "pages.assignmentModal.placeholders.selectAmbulance",
+                                "Selecciona ambulancia"
+                            )}
+                            unassignedLabel={t("common.none", "Ninguno")}
+                        />
+                    </div>
+                ) : null}
             </div>
 
             {/* Row 2: driver | medic */}

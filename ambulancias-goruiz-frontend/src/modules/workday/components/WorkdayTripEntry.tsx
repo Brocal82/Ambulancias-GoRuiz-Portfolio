@@ -27,6 +27,10 @@ interface Props {
     formBlocked: boolean;
     onConfirmAmbulanceData: () => void;
 
+    /** When true, ambulance is not selectable (module off); show lockedAmbulanceLabel instead. */
+    ambulanceSelectorHidden?: boolean;
+    lockedAmbulanceLabel?: string;
+
     tripFormData: TripData;
     setTripFormData: React.Dispatch<React.SetStateAction<TripData>>;
 
@@ -77,6 +81,9 @@ const WorkdayTripEntry: React.FC<Props> = ({
     vehicleConfirmed,
     formBlocked,
     onConfirmAmbulanceData,
+
+    ambulanceSelectorHidden = false,
+    lockedAmbulanceLabel = "",
 
     tripFormData,
     setTripFormData,
@@ -166,34 +173,49 @@ const WorkdayTripEntry: React.FC<Props> = ({
                     {/* VEHICLE + KM + CONFIRM */}
                     <div className="flex items-end gap-3 md:justify-end">
 
-                        {/* Select ambulancia */}
+                        {/* Select ambulancia (o fija desde planificación si el módulo está off) */}
                         <div className="flex flex-col">
                             <label
-                                htmlFor="ambulanceId"
+                                htmlFor={
+                                    ambulanceSelectorHidden
+                                        ? "workday-ambulance-readonly"
+                                        : "ambulanceId"
+                                }
                                 className="text-xs font-medium text-slate-600"
                             >
                                 {t("pages.workday.selectAmbulance.label")}
                             </label>
 
-                            <select
-                                id="ambulanceId"
-                                value={ambulanceId}
-                                onChange={(e) => setAmbulanceId(e.target.value)}
-                                disabled={vehicleConfirmed}
-                                className="h-[36px] rounded-lg bg-white px-3 text-sm
+                            {ambulanceSelectorHidden ? (
+                                <span
+                                    id="workday-ambulance-readonly"
+                                    className="mt-1 h-[36px] flex items-center text-sm text-slate-800 px-1 max-w-[220px] truncate"
+                                    title={lockedAmbulanceLabel}
+                                >
+                                    {lockedAmbulanceLabel || "—"}
+                                </span>
+                            ) : (
+                                <select
+                                    id="ambulanceId"
+                                    aria-label={t("pages.workday.selectAmbulance.label")}
+                                    value={ambulanceId}
+                                    onChange={(e) => setAmbulanceId(e.target.value)}
+                                    disabled={vehicleConfirmed}
+                                    className="h-[36px] rounded-lg bg-white px-3 text-sm
             ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300
             disabled:bg-slate-50
             w-[170px]"
-                            >
-                                <option value="">
-                                    {t("pages.workday.selectAmbulance.placeholder")}
-                                </option>
-                                {ambulances.map((amb) => (
-                                    <option key={amb._id} value={amb._id}>
-                                        {amb.ambulanceNumber}
+                                >
+                                    <option value="">
+                                        {t("pages.workday.selectAmbulance.placeholder")}
                                     </option>
-                                ))}
-                            </select>
+                                    {ambulances.map((amb) => (
+                                        <option key={amb._id} value={amb._id}>
+                                            {amb.ambulanceNumber}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
                         </div>
 
                         {/* KM inicial */}

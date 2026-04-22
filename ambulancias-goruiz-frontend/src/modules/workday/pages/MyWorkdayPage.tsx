@@ -8,6 +8,10 @@ import { getAllAmbulances } from "../../ambulances/domain/api";
 import { sendPartialClosure, sendFinalClosure } from "../domain";
 
 import { useAuth } from "../../../hooks/useAuth";
+import { useModules } from "../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../constants/modules";
+import type { AssignedDayFull } from "../../diensts";
+import { normalizeAmbulanceIdToString } from "../../diensts";
 import { toastT } from "../../../utils/toast";
 import { notifyAdminIssuesChanged } from "../../mechanics";
 import { emitWorkdaySummariesChanged } from "../utils/workdayEvents";
@@ -55,10 +59,19 @@ import {
 
 import { todayBerlinDayKey } from "../../../utils/dates/dayKey";
 
+function ambulanceNumberFromAssignedDay(d: AssignedDayFull): string {
+  if (d.ambulanceNumber?.trim()) return d.ambulanceNumber;
+  if (d.ambulanceId && typeof d.ambulanceId === "object") {
+    return (d.ambulanceId as Ambulance).ambulanceNumber ?? "";
+  }
+  return "";
+}
 
 const MyWorkday = () => {
   const { t } = useTranslation();
   const { token, user } = useAuth();
+  const { hasModule } = useModules();
+  const ambulancesModuleOn = hasModule(MODULE_KEYS.AMBULANCES);
   const today = todayBerlinDayKey();
   const todayFormatted = formatYYYYMMDDToDDMMYYYY(today);
   const weekday = new Date(`${today}T00:00:00`).toLocaleDateString(
@@ -199,7 +212,8 @@ const MyWorkday = () => {
   const handleCloseTripModal = () => setSelectedTrip(null);
 
   useEffect(() => {
-    if (!assignedDay || !ambulances.length) return;
+    if (!assignedDay) return;
+    if (ambulancesModuleOn && ambulances.length === 0) return;
 
     const loaded = loadAmbulanceData(assignedDay.assignmentId);
     if (loaded) {
@@ -207,17 +221,30 @@ const MyWorkday = () => {
       setInitialAmbulanceKm(loaded.initialKm);
       if (loaded.ambulanceNumber) {
         setAmbulanceNumber(loaded.ambulanceNumber);
-      } else {
+      } else if (ambulancesModuleOn) {
         const amb = ambulances.find((a) => a._id === loaded.ambulanceId);
         setAmbulanceNumber(amb?.ambulanceNumber || "??");
+      } else if (
+        normalizeAmbulanceIdToString(assignedDay.ambulanceId) ===
+        loaded.ambulanceId
+      ) {
+        const n = ambulanceNumberFromAssignedDay(assignedDay);
+        setAmbulanceNumber(n || "??");
+      } else {
+        setAmbulanceNumber("??");
       }
+    } else if (!ambulancesModuleOn) {
+      const id = normalizeAmbulanceIdToString(assignedDay.ambulanceId);
+      const num = ambulanceNumberFromAssignedDay(assignedDay);
+      if (id) setAmbulanceId(id);
+      if (num) setAmbulanceNumber(num);
     }
 
     const isConfirmed =
       localStorage.getItem(confirmedAmbulanceKey(assignedDay.assignmentId)) ===
       "true";
     setVehicleConfirmed(isConfirmed);
-  }, [assignedDay, ambulances]);
+  }, [assignedDay, ambulances, ambulancesModuleOn]);
 
   useEffect(() => {
     if (assignedDay && ambulanceId && ambulanceNumber && initialAmbulanceKm) {
@@ -231,6 +258,10 @@ const MyWorkday = () => {
   }, [ambulanceId, ambulanceNumber, initialAmbulanceKm, assignedDay]);
 
   useEffect(() => {
+    if (!ambulancesModuleOn) {
+      setAmbulances([]);
+      return;
+    }
     const fetchAmbulances = async () => {
       try {
         if (!token) return;
@@ -241,7 +272,7 @@ const MyWorkday = () => {
       }
     };
     fetchAmbulances();
-  }, [token]);
+  }, [token, ambulancesModuleOn]);
 
   const handleSaveTrip = async () => {
     if (!token) return;
@@ -614,6 +645,17 @@ const MyWorkday = () => {
               vehicleConfirmed={vehicleConfirmed}
               formBlocked={formBlocked}
               onConfirmAmbulanceData={handleConfirmAmbulanceData}
+              ambulanceSelectorHidden={!ambulancesModuleOn}
+              lockedAmbulanceLabel={
+                !ambulancesModuleOn
+                  ? ambulanceNumber ||
+                    ambulanceNumberFromAssignedDay(assignedDay) ||
+                    t(
+                      "pages.workday.noAmbulanceOnAssignment",
+                      "Sin ambulancia en la asignación",
+                    )
+                  : ""
+              }
               tripFormData={tripFormData}
               setTripFormData={setTripFormData}
               wasCancelled={wasCancelled}
