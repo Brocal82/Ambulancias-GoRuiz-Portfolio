@@ -17,8 +17,7 @@ export const rateLimitLogin = rateLimit({
 });
 
 /**
- * Rate limit para report-issue (POST /api/mechanics/report-issue y legacy
- * POST /api/workday-summary/report-issue). Evita spam de reportes.
+ * Rate limit para POST /api/mechanics/report-issue. Evita spam de reportes.
  * Default: 10 reportes por minuto por IP.
  */
 export const rateLimitReportIssue = rateLimit({

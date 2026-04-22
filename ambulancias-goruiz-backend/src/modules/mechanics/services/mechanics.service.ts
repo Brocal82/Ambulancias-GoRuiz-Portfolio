@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import WorkdayIssue from "../models/workday-issue.model";
+import MechanicsIssue from "../models/mechanics-issue.model";
 import {
   WorkdaySummaryError,
   resolveAssignmentByAssignmentId,
@@ -79,7 +79,7 @@ export async function reportIssue(
   const { driver, medic } = assignment;
   const dienstCompanyId = (dienst as any).companyId;
 
-  const newIssue = await WorkdayIssue.create({
+  const newIssue = await MechanicsIssue.create({
     dienstNumber: dienst.dienstNumber,
     date,
     startTime,
@@ -104,14 +104,14 @@ export async function getAllIssueReports(companyId?: string | null) {
     return [];
   }
   const filter = { companyId: new mongoose.Types.ObjectId(raw) };
-  return await WorkdayIssue.find(filter).sort({ timestamp: -1 });
+  return await MechanicsIssue.find(filter).sort({ timestamp: -1 });
 }
 
 export async function deleteIssueReport(id: string, companyId?: string | null) {
   if (!mongoose.isValidObjectId(id)) {
     throw new WorkdaySummaryError("ID inválido", 400);
   }
-  const issue = await WorkdayIssue.findById(id).select("companyId").lean();
+  const issue = await MechanicsIssue.findById(id).select("companyId").lean();
   if (issue) {
     assertCanMutateIssueByCompany(
       (issue as { companyId?: unknown }).companyId,
@@ -119,7 +119,7 @@ export async function deleteIssueReport(id: string, companyId?: string | null) {
       "No tienes permiso para eliminar este reporte",
     );
   }
-  const deleted = await WorkdayIssue.findByIdAndDelete(id);
+  const deleted = await MechanicsIssue.findByIdAndDelete(id);
   if (!deleted) {
     throw new WorkdaySummaryError("Reporte no encontrado", 404);
   }
@@ -131,7 +131,7 @@ export async function markIssueSeen(id: string, companyId?: string | null) {
   if (!mongoose.isValidObjectId(id)) {
     throw new WorkdaySummaryError("ID inválido", 400);
   }
-  const issue = await WorkdayIssue.findById(id).select("companyId").lean();
+  const issue = await MechanicsIssue.findById(id).select("companyId").lean();
   if (issue) {
     assertCanMutateIssueByCompany(
       (issue as { companyId?: unknown }).companyId,
@@ -139,7 +139,7 @@ export async function markIssueSeen(id: string, companyId?: string | null) {
       "No tienes permiso para marcar este reporte",
     );
   }
-  const updated = await WorkdayIssue.findByIdAndUpdate(
+  const updated = await MechanicsIssue.findByIdAndUpdate(
     id,
     { $set: { isSeen: true, seenAt: new Date() } },
     { new: true },
@@ -172,6 +172,6 @@ export async function getIssuesCount(status?: string, companyId?: string | null)
       ? { $and: [statusFilter, companyFilter] }
       : companyFilter;
 
-  const count = await WorkdayIssue.countDocuments(filter);
+  const count = await MechanicsIssue.countDocuments(filter);
   return { count };
 }

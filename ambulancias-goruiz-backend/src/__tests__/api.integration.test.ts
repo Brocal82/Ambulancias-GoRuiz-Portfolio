@@ -111,14 +111,6 @@ describe("API - Rutas críticas", () => {
         .expect(401);
       expect(res.body).toHaveProperty("message");
     });
-
-    it("POST /api/workday-summary/report-issue (legacy) sin token devuelve 401", async () => {
-      const res = await request(app)
-        .post(`${API}/workday-summary/report-issue`)
-        .send({})
-        .expect(401);
-      expect(res.body).toHaveProperty("message");
-    });
   });
 
   describe("Auth - issues (solo admin)", () => {
@@ -244,20 +236,20 @@ describe("API - Rutas críticas", () => {
     let scopedSummaryReviewId: string;
 
     beforeAll(async () => {
-      const WorkdayIssue = mongoose.model("WorkdayIssue");
+      const MechanicsIssue = mongoose.model("MechanicsIssue");
       const WorkdaySummary = mongoose.model("WorkdaySummary");
       const companyOid = new mongoose.Types.ObjectId(companyId);
       const ambOid = new mongoose.Types.ObjectId();
 
       const [li1, li2] = await Promise.all([
-        WorkdayIssue.create({
+        MechanicsIssue.create({
           dienstNumber: 1,
           date: "2030-03-01",
           ambulanceNumber: "L1",
           timestamp: new Date().toISOString(),
           issueText: "legacy for seen",
         }),
-        WorkdayIssue.create({
+        MechanicsIssue.create({
           dienstNumber: 1,
           date: "2030-03-02",
           ambulanceNumber: "L2",
@@ -285,7 +277,7 @@ describe("API - Rutas críticas", () => {
       legacySummaryReviewId = legacySummary._id.toString();
 
       const [si1, si2] = await Promise.all([
-        WorkdayIssue.create({
+        MechanicsIssue.create({
           dienstNumber: 2,
           date: "2030-03-04",
           ambulanceNumber: "S1",
@@ -293,7 +285,7 @@ describe("API - Rutas críticas", () => {
           issueText: "scoped for seen",
           companyId: companyOid,
         }),
-        WorkdayIssue.create({
+        MechanicsIssue.create({
           dienstNumber: 2,
           date: "2030-03-05",
           ambulanceNumber: "S2",
@@ -1487,15 +1479,6 @@ describe("API - Rutas críticas", () => {
   });
 
   describe("Mechanics module gate", () => {
-    it("GET /workday-summary/issues (legacy) incluye Deprecation y Link hacia mechanics", async () => {
-      const res = await request(app)
-        .get(`${API}/workday-summary/issues`)
-        .set("Authorization", `Bearer ${adminToken}`)
-        .expect(200);
-      expect(res.headers.deprecation).toBe("true");
-      expect(String(res.headers.link ?? "")).toMatch(/\/api\/mechanics/i);
-    });
-
     it("GET /mechanics/issues devuelve 403 si la empresa no tiene mechanics", async () => {
       await Company.findByIdAndUpdate(companyId, {
         $pull: { enabledModules: MODULE_KEYS.MECHANICS },

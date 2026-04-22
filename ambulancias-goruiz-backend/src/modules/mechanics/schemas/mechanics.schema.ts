@@ -9,7 +9,7 @@ const dateStringSchema = z.string().refine(
   { message: "Fecha inválida" },
 );
 
-/** POST /api/mechanics/report-issue */
+/** POST /api/mechanics/report-issue — alineado con modelo MechanicsIssue */
 export const reportIssueSchema = z.object({
   assignmentId: objectIdSchema,
   dienstNumber: z.number().int().positive(),

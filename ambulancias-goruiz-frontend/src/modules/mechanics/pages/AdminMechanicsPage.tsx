@@ -10,7 +10,7 @@ import {
   deleteIssueReport,
   markIssueSeen,
 } from "../domain";
-import type { WorkdayIssue } from "../domain/types";
+import type { MechanicsIssue } from "../domain/types";
 import { useAuth } from "../../../hooks/useAuth";
 import { useModules } from "../../../hooks/useModules";
 import { MODULE_KEYS } from "../../../constants/modules";
@@ -31,7 +31,7 @@ const AdminMechanicsPage = () => {
   const { hasModule } = useModules();
   const ambulancesModuleOn = hasModule(MODULE_KEYS.AMBULANCES);
   const { t } = useTranslation();
-  const [issues, setIssues] = useState<WorkdayIssue[]>([]);
+  const [issues, setIssues] = useState<MechanicsIssue[]>([]);
   const [loading, setLoading] = useState(true);
   const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -109,7 +109,7 @@ const AdminMechanicsPage = () => {
   };
 
   const toggleExpand = useCallback(
-    async (issue: WorkdayIssue) => {
+    async (issue: MechanicsIssue) => {
       if (!token) return;
 
       // ¢â¦ Calculamos esto ANTES del setState (sin estado desfasado)

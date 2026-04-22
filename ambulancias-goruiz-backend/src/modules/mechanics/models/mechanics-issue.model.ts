@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const WorkdayIssueSchema = new mongoose.Schema(
+const MechanicsIssueSchema = new mongoose.Schema(
   {
     dienstNumber: { type: Number, required: true },
     date: { type: String, required: true },
@@ -20,15 +20,14 @@ const WorkdayIssueSchema = new mongoose.Schema(
       required: false,
       default: null,
     },
-
     isSeen: { type: Boolean, default: false },
     seenAt: { type: Date, default: null },
   },
   { timestamps: true },
 );
 
-const WorkdayIssue =
-  (mongoose.models.WorkdayIssue as mongoose.Model<unknown>) ||
-  mongoose.model("WorkdayIssue", WorkdayIssueSchema);
+const MechanicsIssue =
+  (mongoose.models.MechanicsIssue as mongoose.Model<unknown>) ||
+  mongoose.model("MechanicsIssue", MechanicsIssueSchema);
 
-export default WorkdayIssue;
+export default MechanicsIssue;

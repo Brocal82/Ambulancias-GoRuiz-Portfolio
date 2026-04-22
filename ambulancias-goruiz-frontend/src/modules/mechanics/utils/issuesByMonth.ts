@@ -1,5 +1,5 @@
 // src/utils/mechanics/issuesByMonth.ts
-import type { WorkdayIssue } from "../domain/types";
+import type { MechanicsIssue } from "../domain/types";
 
 export type IssueMonthCounts = {
   total: number;
@@ -14,7 +14,7 @@ const isSameYearMonth = (iso: string, year: number, monthIndex: number) => {
 };
 
 export function buildIssueCountsByMonthForYear(
-  issues: WorkdayIssue[],
+  issues: MechanicsIssue[],
   year: number,
 ): IssueCountsByMonth {
   const out: IssueCountsByMonth = {};
@@ -35,9 +35,9 @@ export function buildIssueCountsByMonthForYear(
 }
 
 export function filterIssuesByYearMonth(
-  issues: WorkdayIssue[],
+  issues: MechanicsIssue[],
   year: number,
   monthIndex: number,
-): WorkdayIssue[] {
+): MechanicsIssue[] {
   return issues.filter((it) => isSameYearMonth(it.timestamp, year, monthIndex));
 }

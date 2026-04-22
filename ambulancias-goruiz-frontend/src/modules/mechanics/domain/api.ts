@@ -1,10 +1,6 @@
-/**
- * API canónica: /api/mechanics/* (el backend mantiene /api/workday-summary/* solo como
- * compatibilidad con cabeceras Deprecation hasta retirar clientes legacy).
- */
 import axios from "../../../api/axios";
 import { getApiErrorMessage } from "../../../utils/toast";
-import type { WorkdayIssue } from "./types";
+import type { MechanicsIssue } from "./types";
 
 export interface ReportIssuePayload {
   assignmentId: string;
@@ -26,9 +22,9 @@ export const reportIssue = async (payload: ReportIssuePayload): Promise<void> =>
   await axios.post("/mechanics/report-issue", payload);
 };
 
-export const getAllIssueReports = async (): Promise<WorkdayIssue[]> => {
+export const getAllIssueReports = async (): Promise<MechanicsIssue[]> => {
   try {
-    const res = await axios.get<WorkdayIssue[]>("/mechanics/issues");
+    const res = await axios.get<MechanicsIssue[]>("/mechanics/issues");
     return res.data;
   } catch {
     // Mantener el mismo mensaje de error que con fetch (!res.ok)
@@ -49,9 +45,9 @@ export const deleteIssueReport = async (id: string): Promise<void> => {
  * Marca una avería como vista (isSeen=true, seenAt=now).
  * PATCH /mechanics/issues/:id/seen
  */
-export const markIssueSeen = async (id: string): Promise<WorkdayIssue> => {
+export const markIssueSeen = async (id: string): Promise<MechanicsIssue> => {
   const res = await axios.patch(`/mechanics/issues/${id}/seen`, null);
-  return res.data as WorkdayIssue;
+  return res.data as MechanicsIssue;
 };
 
 interface IssuesCountResponse {
