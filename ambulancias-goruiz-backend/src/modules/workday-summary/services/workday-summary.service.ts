@@ -219,8 +219,9 @@ export async function createWorkdaySummary(
     date as string,
   );
   const totalDienstKm = nFinalKm - nInitialKm;
+  /** Viajes que cuentan: `countsTrip === 1` (incl. storno/cancelados marcados como que cuentan). */
   const totalRealTrips = sanitizedTrips.filter(
-    (t: any) => !t.wasCancelled || t.cancelledAtPickup,
+    (t: { countsTrip?: unknown }) => t.countsTrip === 1,
   ).length;
 
   const summaryDoc = {
@@ -355,7 +356,7 @@ export async function submitPartialClosure(
   );
   const totalDienstKm = nFinalKm - nInitialKm;
   const totalRealTrips = sanitizedTrips.filter(
-    (t: any) => !t.wasCancelled || t.cancelledAtPickup,
+    (t: { countsTrip?: unknown }) => t.countsTrip === 1,
   ).length;
 
   const summaryDoc = {
