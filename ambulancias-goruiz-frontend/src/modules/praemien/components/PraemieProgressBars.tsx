@@ -52,7 +52,7 @@ export default function PraemieProgressBars({
     }, [averagePatients, days, levels]);
 
     return (
-        <div className="mx-auto max-w-3xl mb-8">
+        <div className="mx-auto max-w-4xl mb-8">
             {/* Tarjeta principal */}
             <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-4">
                 {/* Nivel global (título del bloque) */}

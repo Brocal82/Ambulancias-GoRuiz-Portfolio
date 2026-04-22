@@ -73,7 +73,7 @@ const WorkerPraemienHistory = ({ userId }: Props) => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto mt-6 rounded-2xl bg-white ring-1 ring-slate-200 p-4 shadow-sm">
+    <div className="mx-auto mt-6 max-w-4xl rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
       <div className="flex items-baseline justify-between mb-3">
         <h2 className="text-base font-semibold text-slate-900">
           {t("pages.praemien.history.title")}
