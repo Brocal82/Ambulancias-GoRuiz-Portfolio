@@ -220,8 +220,7 @@ const VacationRequestForm: React.FC<VacationRequestFormProps> = ({
     await Promise.all(jobs);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!token) {
       setMessage(t("pages.vacations.requestForm.mustLogin"));
       return;

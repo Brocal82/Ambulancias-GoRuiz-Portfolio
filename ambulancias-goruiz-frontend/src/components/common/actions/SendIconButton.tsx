@@ -1,6 +1,7 @@
+import type { MouseEventHandler } from "react";
 
 interface SendIconButtonProps {
-  onClick?: () => void;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
   disabled?: boolean;
   className?: string;
   title?: string;

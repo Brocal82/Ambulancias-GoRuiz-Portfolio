@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
 import Company from "../modules/companies/models/company.model";
+import MonthlyPraemie from "../modules/praemien/models/monthly-praemie.model";
 import PraemienManualDailyEntry from "../modules/praemien/models/praemien-manual-daily-entry.model";
 import User from "../modules/users/models/user.model";
 import WorkdaySummary from "../modules/workday-summary/models/workday-summary.model";
@@ -24,6 +25,38 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
   let companyId: mongoose.Types.ObjectId;
 
   const pad = (n: number) => String(n).padStart(2, "0");
+
+  /** PUT manual-daily exige cierre final de jornada ese día (WorkdaySummary). */
+  async function seedWorkerFinalClosureDay(
+    dateStr: string,
+    assignmentId: string,
+  ): Promise<void> {
+    await WorkdaySummary.create({
+      date: dateStr,
+      assignmentId,
+      driver: new mongoose.Types.ObjectId(workerId),
+      medic: new mongoose.Types.ObjectId(workerId),
+      ambulanceId: new mongoose.Types.ObjectId(),
+      ambulanceNumber: "99",
+      initialKm: 0,
+      totalDienstKm: 1,
+      trips: [
+        {
+          auftragNumber: "MT",
+          patientName: "P",
+          fromAddress: "A",
+          toAddress: "B",
+          timeWarning: "08:00",
+          wasCancelled: false,
+          countsTrip: 1 as const,
+        },
+      ],
+      totalEffectivePatients: 1,
+      totalRealTrips: 1,
+      companyId,
+      isFinalClosure: true,
+    });
+  }
 
   beforeAll(async () => {
     await mongoose.connect(env.MONGODB_URI);
@@ -107,30 +140,41 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     );
 
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const assignmentKey = `ws-put-month-${Date.now()}`;
+    await seedWorkerFinalClosureDay(dateStr, assignmentKey);
 
-    const putRes = await request(app)
-      .put(`${API}/praemien/manual-daily`)
-      .set("Authorization", `Bearer ${workerToken}`)
-      .send({ date: dateStr, workerSubmittedValue: 7, status: "submitted" })
-      .expect(200);
+    try {
+      const putRes = await request(app)
+        .put(`${API}/praemien/manual-daily`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .send({ date: dateStr, workerSubmittedValue: 7, status: "submitted" })
+        .expect(200);
 
-    expect(putRes.body).toMatchObject({
-      date: dateStr,
-      workerSubmittedValue: 7,
-      status: "submitted",
-    });
+      expect(putRes.body).toMatchObject({
+        date: dateStr,
+        workerSubmittedValue: 7,
+        status: "submitted",
+      });
 
-    const listRes = await request(app)
-      .get(
-        `${API}/praemien/manual-daily/month?year=${now.getFullYear()}&month=${now.getMonth() + 1}`,
-      )
-      .set("Authorization", `Bearer ${workerToken}`)
-      .expect(200);
+      const listRes = await request(app)
+        .get(
+          `${API}/praemien/manual-daily/month?year=${now.getFullYear()}&month=${now.getMonth() + 1}`,
+        )
+        .set("Authorization", `Bearer ${workerToken}`)
+        .expect(200);
 
-    expect(Array.isArray(listRes.body)).toBe(true);
-    const found = listRes.body.find((x: { date: string }) => x.date === dateStr);
-    expect(found).toBeDefined();
-    expect(found.workerSubmittedValue).toBe(7);
+      expect(Array.isArray(listRes.body)).toBe(true);
+      const found = listRes.body.find((x: { date: string }) => x.date === dateStr);
+      expect(found).toBeDefined();
+      expect(found.workerSubmittedValue).toBe(7);
+    } finally {
+      await WorkdaySummary.deleteMany({ assignmentId: assignmentKey });
+      await PraemienManualDailyEntry.deleteMany({
+        companyId,
+        userId: new mongoose.Types.ObjectId(workerId),
+        date: dateStr,
+      });
+    }
   });
 
   it("admin no puede usar PUT manual-daily (403 rol)", async () => {
@@ -162,7 +206,10 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
     const dateStr = `${y}-${pad(m)}-18`;
+    const assignmentKey = `ws-phase4-18-${Date.now()}`;
+    await seedWorkerFinalClosureDay(dateStr, assignmentKey);
 
+    try {
     await request(app)
       .put(`${API}/praemien/manual-daily`)
       .set("Authorization", `Bearer ${workerToken}`)
@@ -217,6 +264,14 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     expect(cap.body.status).toBe("approved");
     expect(cap.body.adminFinalValue).toBe(11);
     expect(cap.body.originalWorkerValue).toBe(4);
+    } finally {
+      await WorkdaySummary.deleteMany({ assignmentId: assignmentKey });
+      await PraemienManualDailyEntry.deleteMany({
+        companyId,
+        userId: new mongoose.Types.ObjectId(workerId),
+        date: dateStr,
+      });
+    }
   });
 
   it("Dienst: al aprobar al conductor con valor rectificado, el médico recibe la misma fila aprobada", async () => {
@@ -312,7 +367,10 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
     const dateStr = `${y}-${pad(m)}-19`;
+    const assignmentKey = `ws-phase4-19-${Date.now()}`;
+    await seedWorkerFinalClosureDay(dateStr, assignmentKey);
 
+    try {
     await request(app)
       .put(`${API}/praemien/manual-daily`)
       .set("Authorization", `Bearer ${workerToken}`)
@@ -331,6 +389,14 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
       .send({ date: dateStr, workerSubmittedValue: 5 })
       .expect(200);
     expect(res.body.status).toBe("submitted");
+    } finally {
+      await WorkdaySummary.deleteMany({ assignmentId: assignmentKey });
+      await PraemienManualDailyEntry.deleteMany({
+        companyId,
+        userId: new mongoose.Types.ObjectId(workerId),
+        date: dateStr,
+      });
+    }
   });
 
   it("Phase 5: monthly-history incluye mes cerrado manual desde snapshot", async () => {
@@ -351,7 +417,10 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     );
 
     const dateStr = `${py}-${String(pm).padStart(2, "0")}-05`;
+    const assignmentKey = `ws-phase5-hist-${Date.now()}`;
+    await seedWorkerFinalClosureDay(dateStr, assignmentKey);
 
+    try {
     await request(app)
       .put(`${API}/praemien/manual-daily`)
       .set("Authorization", `Bearer ${workerToken}`)
@@ -375,6 +444,19 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     );
     expect(hit).toBeDefined();
     expect(hit.averagePatients).toBe(6);
+    } finally {
+      await WorkdaySummary.deleteMany({ assignmentId: assignmentKey });
+      await PraemienManualDailyEntry.deleteMany({
+        companyId,
+        userId: new mongoose.Types.ObjectId(workerId),
+        date: dateStr,
+      });
+      await MonthlyPraemie.deleteMany({
+        userId: workerId,
+        year: py,
+        month: pm,
+      });
+    }
   });
 
   it("hardening: no se puede aprobar ni rechazar una fila en borrador", async () => {
@@ -382,7 +464,10 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
     const dateStr = `${y}-${pad(m)}-21`;
+    const assignmentKey = `ws-hard-draft-${Date.now()}`;
+    await seedWorkerFinalClosureDay(dateStr, assignmentKey);
 
+    try {
     await request(app)
       .put(`${API}/praemien/manual-daily`)
       .set("Authorization", `Bearer ${workerToken}`)
@@ -406,6 +491,14 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
       .set("Authorization", `Bearer ${adminToken}`)
       .send({ userId: workerId, date: dateStr, adminFinalValue: 5 })
       .expect(400);
+    } finally {
+      await WorkdaySummary.deleteMany({ assignmentId: assignmentKey });
+      await PraemienManualDailyEntry.deleteMany({
+        companyId,
+        userId: new mongoose.Types.ObjectId(workerId),
+        date: dateStr,
+      });
+    }
   });
 
   it("hardening: trabajador no puede volver a borrador tras enviar", async () => {
@@ -413,7 +506,10 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
     const dateStr = `${y}-${pad(m)}-22`;
+    const assignmentKey = `ws-hard-submit-${Date.now()}`;
+    await seedWorkerFinalClosureDay(dateStr, assignmentKey);
 
+    try {
     await request(app)
       .put(`${API}/praemien/manual-daily`)
       .set("Authorization", `Bearer ${workerToken}`)
@@ -425,6 +521,14 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
       .set("Authorization", `Bearer ${workerToken}`)
       .send({ date: dateStr, workerSubmittedValue: 4, status: "draft" })
       .expect(400);
+    } finally {
+      await WorkdaySummary.deleteMany({ assignmentId: assignmentKey });
+      await PraemienManualDailyEntry.deleteMany({
+        companyId,
+        userId: new mongoose.Types.ObjectId(workerId),
+        date: dateStr,
+      });
+    }
   });
 
   it("Phase 5: save-monthly no escribe en modo manual efectivo", async () => {

@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { WorkdaySummary } from "../../workday-summary";
 import PraemienManualDailyEntry from "../models/praemien-manual-daily-entry.model";
 import { MonthlyPraemienSummaryResponse } from "../types/praemien.types";
+import { formatLocalYmd } from "../utils/localCalendarYmd";
 import { getCompanyObjectIdForPraemienUser } from "./resolvePraemienUserCompany";
 import { getEffectiveManualPraemienContextForUser } from "./resolve-effective-manual-praemien.service";
 
@@ -20,8 +21,8 @@ export async function computeMonthlyPraemienStatsForUser(
 
   const summaries = await WorkdaySummary.find({
     date: {
-      $gte: monthStart.toISOString().split("T")[0],
-      $lte: monthEnd.toISOString().split("T")[0],
+      $gte: formatLocalYmd(monthStart),
+      $lte: formatLocalYmd(monthEnd),
     },
     $or: [{ driver: objectUserId }, { medic: objectUserId }],
     companyId: companyOid,
@@ -81,8 +82,8 @@ async function computeApprovedManualStatsCurrentMonth(
   monthStart: Date,
   monthEnd: Date,
 ): Promise<MonthlyPraemienSummaryResponse> {
-  const start = monthStart.toISOString().split("T")[0];
-  const end = monthEnd.toISOString().split("T")[0];
+  const start = formatLocalYmd(monthStart);
+  const end = formatLocalYmd(monthEnd);
   const userOid = new mongoose.Types.ObjectId(userId);
 
   const rows = await PraemienManualDailyEntry.find({

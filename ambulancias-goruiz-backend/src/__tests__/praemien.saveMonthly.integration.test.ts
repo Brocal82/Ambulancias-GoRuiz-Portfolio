@@ -21,12 +21,15 @@ const API = "/api";
 
 const SAVE_YEAR = 2033;
 const SAVE_MONTH = 4;
+/** Mes distinto para probar protección de snapshot manual sin chocar con el guardado automático del primer test. */
+const SAVE_MONTH_PROTECT = 5;
 
 describe("Praemien save-monthly (integration)", () => {
   let adminToken: string;
   let adminId: string;
   let companyOid: mongoose.Types.ObjectId;
   let assignmentKey: string;
+  let assignmentKeyProtect: string;
   let ambulanceOid: mongoose.Types.ObjectId;
 
   beforeAll(async () => {
@@ -38,6 +41,7 @@ describe("Praemien save-monthly (integration)", () => {
     companyOid = data.company._id as mongoose.Types.ObjectId;
     ambulanceOid = new mongoose.Types.ObjectId();
     assignmentKey = `assign-save-praem-${Date.now()}`;
+    assignmentKeyProtect = `assign-save-praem-prot-${Date.now()}`;
 
     const minimalTrip = {
       auftragNumber: "S1",
@@ -64,10 +68,28 @@ describe("Praemien save-monthly (integration)", () => {
       companyId: companyOid,
       isFinalClosure: true,
     });
+
+    await WorkdaySummary.create({
+      date: `${SAVE_YEAR}-${String(SAVE_MONTH_PROTECT).padStart(2, "0")}-11`,
+      assignmentId: assignmentKeyProtect,
+      driver: new mongoose.Types.ObjectId(adminId),
+      medic: new mongoose.Types.ObjectId(adminId),
+      ambulanceId: ambulanceOid,
+      ambulanceNumber: "1",
+      initialKm: 0,
+      totalDienstKm: 5,
+      trips: [minimalTrip],
+      totalEffectivePatients: 6,
+      totalRealTrips: 1,
+      companyId: companyOid,
+      isFinalClosure: true,
+    });
   });
 
   afterAll(async () => {
-    await WorkdaySummary.deleteMany({ assignmentId: assignmentKey });
+    await WorkdaySummary.deleteMany({
+      assignmentId: { $in: [assignmentKey, assignmentKeyProtect] },
+    });
     await MonthlyPraemie.deleteMany({ userId: adminId });
     await User.deleteOne({ _id: adminId });
     await Company.deleteOne({ _id: companyOid });
@@ -90,6 +112,35 @@ describe("Praemien save-monthly (integration)", () => {
     }).lean();
     expect(row).not.toBeNull();
     expect(typeof row?.averagePatients).toBe("number");
+  });
+
+  it("no sobrescribe MonthlyPraemie con snapshotSource manual (empresa en automático)", async () => {
+    await MonthlyPraemie.create({
+      userId: adminId,
+      companyId: companyOid,
+      year: SAVE_YEAR,
+      month: SAVE_MONTH_PROTECT,
+      averagePatients: 99,
+      premieLevel: "A",
+      snapshotSource: "manual",
+    });
+
+    const res = await request(app)
+      .post(`${API}/praemien/save-monthly`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .query({ year: SAVE_YEAR, month: SAVE_MONTH_PROTECT })
+      .expect(200);
+
+    expect(String(res.body.message)).toMatch(/manual|sobrescribir/i);
+    expect(res.body.data).toBeUndefined();
+
+    const row = await MonthlyPraemie.findOne({
+      userId: adminId,
+      year: SAVE_YEAR,
+      month: SAVE_MONTH_PROTECT,
+    }).lean();
+    expect(row?.averagePatients).toBe(99);
+    expect(row?.snapshotSource).toBe("manual");
   });
 
   it("worker => 403 rol insuficiente", async () => {

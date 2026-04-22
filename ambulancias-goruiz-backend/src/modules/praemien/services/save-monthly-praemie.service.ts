@@ -36,6 +36,16 @@ export async function saveMonthlyPraemieForUser(
     return { hasData: false as const };
   }
 
+  const existing = await MonthlyPraemie.findOne({ userId, year, month })
+    .select("snapshotSource")
+    .lean();
+  if (existing?.snapshotSource === "manual") {
+    return {
+      hasData: false as const,
+      skippedProtectedManualSnapshot: true as const,
+    };
+  }
+
   const premieLevel = getPremieLevelFromAverage(averagePatients);
 
   const updated = await MonthlyPraemie.findOneAndUpdate(

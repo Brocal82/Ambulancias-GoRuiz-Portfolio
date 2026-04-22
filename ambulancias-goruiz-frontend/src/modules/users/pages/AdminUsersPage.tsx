@@ -487,40 +487,36 @@ const AdminUsersPage = () => {
             <div className="min-w-0">
               <div
                 className="w-full min-w-0 text-xs"
-                role="table"
+                role="region"
                 aria-label={t("pages.adminUsers.titlePraemiePendingQueue")}
               >
-                <div role="rowgroup">
-                  <AdminManualPraemieQueueColumnHeaders />
-                </div>
-                <div role="rowgroup">
-                  {praemiePendingListRows.map((row) => {
-                    const k = rowPraemieKey(row);
-                    const showRejectPanel = rejectPanelRowKey === k;
-                    const qRow = pendingListEntryToQueueRowData(row);
-                    return (
-                      <AdminManualPraemieQueueRowBody
-                        key={k}
-                        row={qRow}
-                        rectifyInput={rectifyInputByRowKey[k] ?? ""}
-                        onRectifyChange={(value) =>
-                          setRectifyInputByRowKey((prev) => ({ ...prev, [k]: value }))
-                        }
-                        rejectReason={rejectReasonByRowKey[k] ?? ""}
-                        onRejectReasonChange={(value) =>
-                          setRejectReasonByRowKey((prev) => ({ ...prev, [k]: value }))
-                        }
-                        showRejectPanel={showRejectPanel}
-                        onToggleReject={() => void handlePraemieListToggleRejectPanel(row)}
-                        onCancelReject={() => handlePraemieListCancelReject(row)}
-                        onConfirmReject={() => void handlePraemieListConfirmReject(row)}
-                        onApprove={() => void handlePraemieListApproveAsWorker(row)}
-                        busy={praemieListBusyKey === k}
-                        onReopen={() => {}}
-                      />
-                    );
-                  })}
-                </div>
+                <AdminManualPraemieQueueColumnHeaders />
+                {praemiePendingListRows.map((row) => {
+                  const k = rowPraemieKey(row);
+                  const showRejectPanel = rejectPanelRowKey === k;
+                  const qRow = pendingListEntryToQueueRowData(row);
+                  return (
+                    <AdminManualPraemieQueueRowBody
+                      key={k}
+                      row={qRow}
+                      rectifyInput={rectifyInputByRowKey[k] ?? ""}
+                      onRectifyChange={(value) =>
+                        setRectifyInputByRowKey((prev) => ({ ...prev, [k]: value }))
+                      }
+                      rejectReason={rejectReasonByRowKey[k] ?? ""}
+                      onRejectReasonChange={(value) =>
+                        setRejectReasonByRowKey((prev) => ({ ...prev, [k]: value }))
+                      }
+                      showRejectPanel={showRejectPanel}
+                      onToggleReject={() => void handlePraemieListToggleRejectPanel(row)}
+                      onCancelReject={() => handlePraemieListCancelReject(row)}
+                      onConfirmReject={() => void handlePraemieListConfirmReject(row)}
+                      onApprove={() => void handlePraemieListApproveAsWorker(row)}
+                      busy={praemieListBusyKey === k}
+                      onReopen={() => {}}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}

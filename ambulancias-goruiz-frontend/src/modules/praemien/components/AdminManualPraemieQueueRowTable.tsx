@@ -15,29 +15,29 @@ import {
 export function AdminManualPraemieQueueColumnHeaders() {
   const { t } = useTranslation();
   return (
-    <div className={PRAEMIE_QUEUE_headerRow} role="row">
-      <div role="columnheader" className="min-w-0 break-words text-center">
+    <div className={PRAEMIE_QUEUE_headerRow}>
+      <div className="min-w-0 break-words text-center">
         {t("pages.adminUsers.praemieListColEquipo")}
       </div>
-      <div role="columnheader" className="min-w-0 break-words text-center">
+      <div className="min-w-0 break-words text-center">
         {t("pages.adminUsers.praemieListColEmployeeNumber")}
       </div>
-      <div role="columnheader" className="min-w-0 whitespace-nowrap text-center">
+      <div className="min-w-0 whitespace-nowrap text-center">
         {t("pages.adminUsers.praemieListColDate")}
       </div>
-      <div role="columnheader" className="min-w-0 break-words text-center">
+      <div className="min-w-0 break-words text-center">
         {t("pages.adminUsers.praemieListColDienst")}
       </div>
-      <div role="columnheader" className="min-w-0 break-words text-center">
+      <div className="min-w-0 break-words text-center">
         {t("pages.adminUsers.praemieListColSchedule")}
       </div>
-      <div role="columnheader" className="min-w-0 break-words text-center">
+      <div className="min-w-0 break-words text-center">
         {t("pages.adminUsers.praemieListColManualValue")}
       </div>
-      <div role="columnheader" className="min-w-0 break-words text-center">
+      <div className="min-w-0 break-words text-center">
         {t("pages.adminUsers.praemieListColFinalValue")}
       </div>
-      <div role="columnheader" className="min-w-0 w-full break-words text-center">
+      <div className="min-w-0 w-full break-words text-center">
         {t("pages.adminUsers.praemieListColActions")}
       </div>
     </div>
@@ -103,8 +103,8 @@ export function AdminManualPraemieQueueRowBody({
     approved && row.adminFinalValue != null ? String(row.adminFinalValue) : null;
 
   return (
-    <div role="row" className={PRAEMIE_QUEUE_bodyRow}>
-      <div role="cell" className="min-w-0 text-center text-slate-900">
+    <div className={PRAEMIE_QUEUE_bodyRow}>
+      <div className="min-w-0 text-center text-slate-900">
         <div className="line-clamp-2 break-words font-medium leading-tight">
           {equipoNamesDisplay}
         </div>
@@ -124,7 +124,7 @@ export function AdminManualPraemieQueueRowBody({
           </p>
         ) : null}
       </div>
-      <div role="cell" className="min-w-0 text-center tabular-nums text-slate-800">
+      <div className="min-w-0 text-center tabular-nums text-slate-800">
         <span className="whitespace-nowrap">
           {fmtPraemieEmployeeNoDisplay(row.equipoDriverEmployeeNumber)}
           <span className="mx-0.5 text-slate-400">/</span>
@@ -133,19 +133,19 @@ export function AdminManualPraemieQueueRowBody({
             : "—"}
         </span>
       </div>
-      <div role="cell" className="min-w-0 whitespace-nowrap text-center text-slate-800">
+      <div className="min-w-0 whitespace-nowrap text-center text-slate-800">
         {fmtDDMM(row.date)}
       </div>
-      <div role="cell" className="min-w-0 text-center tabular-nums text-slate-800">
+      <div className="min-w-0 text-center tabular-nums text-slate-800">
         {row.dienstNumber != null ? row.dienstNumber : "—"}
       </div>
-      <div role="cell" className="min-w-0 break-words text-center leading-tight text-slate-800">
+      <div className="min-w-0 break-words text-center leading-tight text-slate-800">
         {horario}
       </div>
-      <div role="cell" className="min-w-0 text-center tabular-nums text-slate-800">
+      <div className="min-w-0 text-center tabular-nums text-slate-800">
         {row.workerSubmittedValue}
       </div>
-      <div role="cell" className="min-w-0 text-center">
+      <div className="min-w-0 text-center">
         {actionable ? (
           <input
             type="number"
@@ -168,7 +168,7 @@ export function AdminManualPraemieQueueRowBody({
           <span className="text-slate-400">—</span>
         )}
       </div>
-      <div role="cell" className="min-w-0 w-full justify-self-stretch">
+      <div className="min-w-0 w-full justify-self-stretch">
         <div className="flex min-w-0 w-full flex-col items-stretch justify-center gap-1">
           <div className="flex min-h-[2.75rem] w-full min-w-0 items-center justify-center">
             {actionable && showRejectPanel ? (
@@ -261,7 +261,7 @@ export function AdminManualPraemieQueueTableShell({
   return (
     <div
       className={PRAEMIE_MANUAL_DAY_DETAIL_SHELL_CLASS}
-      role="table"
+      role="region"
       aria-label={ariaLabel}
     >
       {children}

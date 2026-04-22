@@ -26,6 +26,17 @@ export const saveMonthlyPraemie = async (
       return;
     }
 
+    if (
+      "skippedProtectedManualSnapshot" in result &&
+      result.skippedProtectedManualSnapshot
+    ) {
+      res.status(200).json({
+        message:
+          "Este mes tiene un cierre Prämie manual aprobado; no se puede sobrescribir con el guardado automático.",
+      });
+      return;
+    }
+
     if (!result.hasData) {
       res.status(200).json({ message: "No hay datos para ese mes" });
       return;

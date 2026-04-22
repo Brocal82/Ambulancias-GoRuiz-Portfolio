@@ -7,6 +7,7 @@ import request from "supertest";
 import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
+import MonthlyPraemie from "../modules/praemien/models/monthly-praemie.model";
 import {
   createTestAdminWithCompany,
   createTestWorkerInCompany,
@@ -19,6 +20,7 @@ describe("Praemien - monthly-summary / monthly-history (IDOR fix)", () => {
   let workerToken: string;
   let workerId: string;
   let adminId: string;
+  let companyOid: mongoose.Types.ObjectId;
 
   const ambulanceId = new mongoose.Types.ObjectId();
   const minimalTrip = {
@@ -37,7 +39,7 @@ describe("Praemien - monthly-summary / monthly-history (IDOR fix)", () => {
       await createTestAdminWithCompany();
     adminId = aid;
     adminToken = aTok;
-    const companyOid = company._id as mongoose.Types.ObjectId;
+    companyOid = company._id as mongoose.Types.ObjectId;
 
     const worker = await createTestWorkerInCompany(companyOid);
     workerId = String(worker._id);
@@ -128,6 +130,40 @@ describe("Praemien - monthly-summary / monthly-history (IDOR fix)", () => {
       .expect(400);
     expect(res.body).toHaveProperty("message");
     expect(res.body.message).toBe("userId inválido");
+  });
+
+  it("GET /api/praemien/monthly-history incluye meses solo-manual al estar la empresa en automático", async () => {
+    const histYear = 2018;
+    const histMonth = 9;
+    await MonthlyPraemie.create({
+      userId: workerId,
+      companyId: companyOid,
+      year: histYear,
+      month: histMonth,
+      averagePatients: 11.5,
+      premieLevel: "B",
+      snapshotSource: "manual",
+    });
+    try {
+      const res = await request(app)
+        .get(`${API}/praemien/monthly-history`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .expect(200);
+
+      expect(Array.isArray(res.body)).toBe(true);
+      const hit = res.body.find(
+        (x: { year: number; month: number }) =>
+          x.year === histYear && x.month === histMonth,
+      );
+      expect(hit).toBeDefined();
+      expect(hit.averagePatients).toBe(11.5);
+    } finally {
+      await MonthlyPraemie.deleteOne({
+        userId: workerId,
+        year: histYear,
+        month: histMonth,
+      });
+    }
   });
 
   it("GET /api/praemien/monthly-history worker con ?userId=adminId ignora query (IDOR fix)", async () => {

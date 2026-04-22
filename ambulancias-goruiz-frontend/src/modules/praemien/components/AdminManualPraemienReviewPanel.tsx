@@ -302,58 +302,54 @@ const AdminManualPraemienReviewPanel = ({
             <AdminManualPraemieQueueTableShell
               ariaLabel={t("pages.praemien.adminManual.title")}
             >
-              <div role="rowgroup">
-                <AdminManualPraemieQueueColumnHeaders />
-              </div>
-              <div role="rowgroup">
-                <AdminManualPraemieQueueRowBody
-                  row={queueRow}
-                  rectifyInput={correctVal}
-                  onRectifyChange={setCorrectVal}
-                  rejectReason={rejectReason}
-                  onRejectReasonChange={setRejectReason}
-                  showRejectPanel={showRejectPanel}
-                  onToggleReject={() => setShowRejectPanel((p) => !p)}
-                  onCancelReject={() => setShowRejectPanel(false)}
-                  onConfirmReject={() =>
-                    void run(async () => {
-                      await postAdminManualDailyReject({
-                        userId,
-                        date: selected.date,
-                        reason: rejectReason,
-                      });
-                    })
-                  }
-                  onApprove={() => {
-                    let extra: { adminFinalValue?: number } = {};
-                    const raw = correctVal.trim();
-                    if (raw !== "") {
-                      const parsed = parseManualPraemieClientValue(correctVal);
-                      if (!parsed.ok) {
-                        setError(t("pages.praemien.adminManual.invalidCorrect"));
-                        return;
-                      }
-                      extra = { adminFinalValue: parsed.value };
-                    }
-                    void run(async () => {
-                      await postAdminManualDailyApprove({
-                        userId,
-                        date: selected.date,
-                        ...extra,
-                      });
+              <AdminManualPraemieQueueColumnHeaders />
+              <AdminManualPraemieQueueRowBody
+                row={queueRow}
+                rectifyInput={correctVal}
+                onRectifyChange={setCorrectVal}
+                rejectReason={rejectReason}
+                onRejectReasonChange={setRejectReason}
+                showRejectPanel={showRejectPanel}
+                onToggleReject={() => setShowRejectPanel((p) => !p)}
+                onCancelReject={() => setShowRejectPanel(false)}
+                onConfirmReject={() =>
+                  void run(async () => {
+                    await postAdminManualDailyReject({
+                      userId,
+                      date: selected.date,
+                      reason: rejectReason,
                     });
-                  }}
-                  busy={busy}
-                  onReopen={() =>
-                    void run(async () => {
-                      await postAdminManualDailyReopen({
-                        userId,
-                        date: selected.date,
-                      });
-                    })
+                  })
+                }
+                onApprove={() => {
+                  let extra: { adminFinalValue?: number } = {};
+                  const raw = correctVal.trim();
+                  if (raw !== "") {
+                    const parsed = parseManualPraemieClientValue(correctVal);
+                    if (!parsed.ok) {
+                      setError(t("pages.praemien.adminManual.invalidCorrect"));
+                      return;
+                    }
+                    extra = { adminFinalValue: parsed.value };
                   }
-                />
-              </div>
+                  void run(async () => {
+                    await postAdminManualDailyApprove({
+                      userId,
+                      date: selected.date,
+                      ...extra,
+                    });
+                  });
+                }}
+                busy={busy}
+                onReopen={() =>
+                  void run(async () => {
+                    await postAdminManualDailyReopen({
+                      userId,
+                      date: selected.date,
+                    });
+                  })
+                }
+              />
             </AdminManualPraemieQueueTableShell>
           ) : (
             <p className="text-xs text-slate-500">{t("pages.praemien.adminManual.loadError")}</p>

@@ -70,6 +70,22 @@ function aggregateWorkdaySummariesToHistoryItems(
     );
 }
 
+function mergeHistoryPreferManual(
+  workdayPart: PraemienMonthlyHistoryItem[],
+  manualPart: PraemienMonthlyHistoryItem[],
+): PraemienMonthlyHistoryItem[] {
+  const merged = new Map<string, PraemienMonthlyHistoryItem>();
+  for (const item of workdayPart) {
+    merged.set(`${item.year}-${item.month}`, item);
+  }
+  for (const item of manualPart) {
+    merged.set(`${item.year}-${item.month}`, item);
+  }
+  return Array.from(merged.values()).sort(
+    (a, b) => b.year - a.year || b.month - a.month,
+  );
+}
+
 export async function getMonthlyHistoryForUser(
   userId: string,
 ): Promise<PraemienMonthlyHistoryItem[]> {
@@ -88,15 +104,34 @@ export async function getMonthlyHistoryForUser(
   const currentYm = calendarMonthKey(currentYear, currentMonth);
 
   if (!manualCtx.isEffectiveManual) {
-    if (!summaries.length) {
+    const workdayPart = summaries.length
+      ? aggregateWorkdaySummariesToHistoryItems(
+          summaries as { date: unknown; totalEffectivePatients?: number }[],
+          null,
+          currentYear,
+          currentMonth,
+        )
+      : [];
+
+    const snapRowsAuto = await MonthlyPraemie.find({
+      userId,
+      snapshotSource: "manual",
+    })
+      .select("year month averagePatients")
+      .lean();
+
+    const manualPartAuto: PraemienMonthlyHistoryItem[] = snapRowsAuto
+      .filter((row) => calendarMonthKey(row.year, row.month) < currentYm)
+      .map((row) => ({
+        year: row.year,
+        month: row.month,
+        averagePatients: Math.round(Number(row.averagePatients) * 2) / 2,
+      }));
+
+    if (!workdayPart.length && !manualPartAuto.length) {
       return [];
     }
-    return aggregateWorkdaySummariesToHistoryItems(
-      summaries as { date: unknown; totalEffectivePatients?: number }[],
-      null,
-      currentYear,
-      currentMonth,
-    );
+    return mergeHistoryPreferManual(workdayPart, manualPartAuto);
   }
 
   const effYm = calendarMonthKey(
@@ -111,21 +146,27 @@ export async function getMonthlyHistoryForUser(
     currentMonth,
   );
 
+  const snapshotMonths: { year: number; month: number }[] = [];
   let y = manualCtx.effectiveFrom.year;
   let m = manualCtx.effectiveFrom.month;
   while (calendarMonthKey(y, m) < currentYm) {
-    await ensureManualMonthCloseSnapshot({
-      userId,
-      year: y,
-      month: m,
-      companyObjectId: manualCtx.companyObjectId,
-    });
+    snapshotMonths.push({ year: y, month: m });
     m += 1;
     if (m > 12) {
       m = 1;
       y += 1;
     }
   }
+  await Promise.all(
+    snapshotMonths.map((t) =>
+      ensureManualMonthCloseSnapshot({
+        userId,
+        year: t.year,
+        month: t.month,
+        companyObjectId: manualCtx.companyObjectId,
+      }),
+    ),
+  );
 
   const snapRows = await MonthlyPraemie.find({
     userId,
@@ -145,15 +186,5 @@ export async function getMonthlyHistoryForUser(
       averagePatients: Math.round(Number(row.averagePatients) * 2) / 2,
     }));
 
-  const merged = new Map<string, PraemienMonthlyHistoryItem>();
-  for (const item of workdayPart) {
-    merged.set(`${item.year}-${item.month}`, item);
-  }
-  for (const item of manualPart) {
-    merged.set(`${item.year}-${item.month}`, item);
-  }
-
-  return Array.from(merged.values()).sort(
-    (a, b) => b.year - a.year || b.month - a.month,
-  );
+  return mergeHistoryPreferManual(workdayPart, manualPart);
 }
