@@ -5,7 +5,8 @@ import type { AssignedDayFull } from "../../../modules/diensts";
 import ReviewSummary from "./ReviewSummary";
 import { useTranslation } from "react-i18next";
 import StatusBadge from "../../../components/common/StatusBadge";
-import { usePraemienWorkdayUiActive } from "../../../hooks/usePraemienWorkdayUiActive";
+import { useModules } from "../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../constants/modules";
 
 /**
  * Mapeo de WorkdaySummary (lo que recibe el admin)
@@ -56,7 +57,8 @@ const AdminSummaryGroupModal: React.FC<AdminSummaryGroupModalProps> = ({
     summaries,
 }) => {
     const { t } = useTranslation();
-    const praemienWorkdayUiActive = usePraemienWorkdayUiActive();
+    const { hasModule } = useModules();
+    const praemienModuleEnabled = hasModule(MODULE_KEYS.PRAEMIEN);
 
     if (!isOpen) return null;
     if (!summaries || summaries.length === 0) return null;
@@ -142,7 +144,7 @@ const AdminSummaryGroupModal: React.FC<AdminSummaryGroupModalProps> = ({
                                         />
 
 
-                                        {praemienWorkdayUiActive &&
+                                        {praemienModuleEnabled &&
                                             s.totalEffectivePatients != null && (
                                             <span className="text-[11px] text-slate-700">
                                                 {t(
@@ -174,7 +176,7 @@ const AdminSummaryGroupModal: React.FC<AdminSummaryGroupModalProps> = ({
                                         a.timeWarning.localeCompare(b.timeWarning),
                                     )}
                                     dense
-                                    showPraemieColumn={praemienWorkdayUiActive}
+                                    showPraemieColumn={praemienModuleEnabled}
                                 />
                             </div>
                         );
