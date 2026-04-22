@@ -16,6 +16,8 @@ interface Props {
     ambulanceNumber: string;
     initialKm: string;
     finalKm: string;
+    /** Si false, no se muestra flujo de avería (módulo mechanics desactivado). */
+    mechanicsModuleOn: boolean;
     onClose: () => void;
     onSend: (
         report: string,
@@ -32,6 +34,7 @@ const PartialReviewModal: React.FC<Props> = ({
     ambulanceId,
     ambulanceNumber,
     initialKm,
+    mechanicsModuleOn,
     onClose,
     onSend,
 }) => {
@@ -126,7 +129,8 @@ const PartialReviewModal: React.FC<Props> = ({
                     className="w-full border border-slate-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-200"
                 />
 
-                {/* Botón Avería */}
+                {/* Botón Avería (solo módulo mechanics) */}
+                {mechanicsModuleOn && (
                 <div className="pt-1 flex justify-end">
                     <button
                         type="button"
@@ -150,9 +154,10 @@ const PartialReviewModal: React.FC<Props> = ({
                         ️ {t("pages.workday.partial.issue.button")}
                     </button>
                 </div>
+                )}
 
                 {/* Modal técnico */}
-                {showIssueModal && (
+                {mechanicsModuleOn && showIssueModal && (
                     <IssueReportModal
                         isOpen={true}
                         onClose={() => {

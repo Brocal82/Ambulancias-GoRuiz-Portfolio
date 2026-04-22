@@ -8,7 +8,8 @@
  *
  * COMPOSITE MODULES:
  *   scheduling  → diensts + dienst-templates
- *   workday     → workday-summary + trips + mechanics/issue-reporting
+ *   workday     → workday-summary + trips
+ *   mechanics   → averías (report-issue, admin mechanics)
  *
  * V1 OPERATIONAL ALWAYS-ON:
  *   scheduling and workday are present in the model but locked-on in
@@ -21,6 +22,7 @@ export const MODULE_KEYS = {
   TEAMS:        "teams",
   SCHEDULING:   "scheduling",
   WORKDAY:      "workday",
+  MECHANICS:    "mechanics",
   APPOINTMENTS: "appointments",
   MESSAGES:     "messages",
   VACATION:     "vacation",
@@ -32,13 +34,14 @@ export const MODULE_KEYS = {
 
 export type ModuleKey = (typeof MODULE_KEYS)[keyof typeof MODULE_KEYS];
 
-/** All 12 canonical V1 module keys in display order. */
+/** All canonical V1 module keys in display order. */
 export const ALL_MODULE_KEYS: ModuleKey[] = [
   MODULE_KEYS.HOSPITALS,
   MODULE_KEYS.AMBULANCES,
   MODULE_KEYS.TEAMS,
   MODULE_KEYS.SCHEDULING,
   MODULE_KEYS.WORKDAY,
+  MODULE_KEYS.MECHANICS,
   MODULE_KEYS.APPOINTMENTS,
   MODULE_KEYS.MESSAGES,
   MODULE_KEYS.VACATION,
@@ -54,7 +57,8 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   ambulances:   "Ambulancias",
   teams:        "Equipos",
   scheduling:   "Planificación (Diensts)",
-  workday:      "Jornada laboral y averías",
+  workday:      "Jornada laboral y viajes",
+  mechanics:    "Averías / taller",
   appointments: "Citas médicas",
   messages:     "Mensajes internos",
   vacation:     "Vacaciones",

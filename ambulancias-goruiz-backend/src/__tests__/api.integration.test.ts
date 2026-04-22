@@ -12,6 +12,8 @@ import {
   createTestAdminWithCompany,
   createTestWorkerInCompany,
 } from "./test-helpers";
+import Company from "../modules/companies/models/company.model";
+import { MODULE_KEYS } from "../modules/companies/constants/modules.constants";
 
 const API = "/api";
 
@@ -1473,6 +1475,25 @@ describe("API - Rutas críticas", () => {
       expect(res.body).toHaveProperty("updatedCount");
       expect(res.body).toHaveProperty("dienstId");
       expect(typeof res.body.updatedCount).toBe("number");
+    });
+  });
+
+  describe("Mechanics module gate", () => {
+    it("GET /workday-summary/issues devuelve 403 si la empresa no tiene mechanics", async () => {
+      await Company.findByIdAndUpdate(companyId, {
+        $pull: { enabledModules: MODULE_KEYS.MECHANICS },
+      });
+      try {
+        const res = await request(app)
+          .get(`${API}/workday-summary/issues`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .expect(403);
+        expect(res.body.message).toMatch(/mechanics/i);
+      } finally {
+        await Company.findByIdAndUpdate(companyId, {
+          $addToSet: { enabledModules: MODULE_KEYS.MECHANICS },
+        });
+      }
     });
   });
 

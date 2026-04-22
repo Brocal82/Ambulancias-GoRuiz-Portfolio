@@ -142,7 +142,9 @@ export default function App() {
                   <Route path="/admin/ambulances" element={<AdminAmbulancesPage />} />
                 </Route>
                 <Route path="/admin/user/:userId" element={<AdminUserDetailDashboard />} />
-                <Route path="/admin/mechanics" element={<AdminMechanicsPage />} />
+                <Route element={<RequireModule name="mechanics" />}>
+                  <Route path="/admin/mechanics" element={<AdminMechanicsPage />} />
+                </Route>
                 <Route element={<RequireModule name="appointments" />}>
                   <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
                 </Route>

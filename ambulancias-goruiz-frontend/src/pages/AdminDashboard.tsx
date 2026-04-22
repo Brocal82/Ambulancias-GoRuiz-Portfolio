@@ -33,7 +33,9 @@ const AdminDashboard = () => {
   const apptHasPending = !apptLoading && apptPending > 0;
 
   const { count: issuesOpenCount, isLoading: issuesLoading } =
-    useAdminIssuesOpenCount();
+    useAdminIssuesOpenCount({
+      skip: !hasModule(MODULE_KEYS.MECHANICS),
+    });
   const issuesHasOpen = !issuesLoading && issuesOpenCount > 0;
 
   const { count: sickPendingCount, isLoading: sickLoading } =
@@ -190,23 +192,25 @@ const AdminDashboard = () => {
           </Link>
         )}
 
-        <Link
-          to="/admin/mechanics"
-          className={`${centeredCardRelative} ${issuesHasOpen ? "ring-2 ring-red-300" : ""}`}
-        >
-          {!issuesLoading && issuesHasOpen && (
-            <span className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 px-2 rounded-full bg-red-500 text-white text-xs font-semibold flex items-center justify-center shadow">
-              {issuesOpenCount}
-            </span>
-          )}
+        {hasModule(MODULE_KEYS.MECHANICS) && (
+          <Link
+            to="/admin/mechanics"
+            className={`${centeredCardRelative} ${issuesHasOpen ? "ring-2 ring-red-300" : ""}`}
+          >
+            {!issuesLoading && issuesHasOpen && (
+              <span className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 px-2 rounded-full bg-red-500 text-white text-xs font-semibold flex items-center justify-center shadow">
+                {issuesOpenCount}
+              </span>
+            )}
 
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.adminDashboard.mechanics.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.adminDashboard.mechanics.desc")}
-          </p>
-        </Link>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.adminDashboard.mechanics.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.adminDashboard.mechanics.desc")}
+            </p>
+          </Link>
+        )}
 
         {hasModule(MODULE_KEYS.VACATION) && (
           <Link

@@ -7,6 +7,8 @@ import { useMechanicsIssuesChanged } from "./useMechanicsIssuesChanged";
 type Options = {
   /** Intervalo de refresco en ms. 0 = sin polling (default). */
   pollMs?: number;
+  /** Sin peticiones si el módulo mechanics está desactivado. */
+  skip?: boolean;
 };
 
 /**
@@ -15,7 +17,10 @@ type Options = {
  * - Refresca en focus/visibilitychange y al emitir el evento global 'admin-issues-changed'
  * - Polling opcional con pollMs
  */
-export function useAdminIssuesOpenCount({ pollMs = 0 }: Options = {}) {
+export function useAdminIssuesOpenCount({
+  pollMs = 0,
+  skip = false,
+}: Options = {}) {
   const { token } = useAuth();
   const [count, setCount] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
@@ -23,7 +28,7 @@ export function useAdminIssuesOpenCount({ pollMs = 0 }: Options = {}) {
   const mountedRef = useRef(true);
 
   const fetchCount = useCallback(async () => {
-    if (!token) return;
+    if (!token || skip) return;
     try {
       setError(null);
       const c = await getIssuesOpenCount();
@@ -36,12 +41,16 @@ export function useAdminIssuesOpenCount({ pollMs = 0 }: Options = {}) {
     } finally {
       if (mountedRef.current) setLoading(false);
     }
-  }, [token]);
+  }, [token, skip]);
 
   // Carga inicial y cuando cambie el token
   useEffect(() => {
     mountedRef.current = true;
-    if (token) {
+    if (skip) {
+      setCount(0);
+      setLoading(false);
+      setError(null);
+    } else if (token) {
       setLoading(true);
       void fetchCount();
     } else {
@@ -52,7 +61,7 @@ export function useAdminIssuesOpenCount({ pollMs = 0 }: Options = {}) {
     return () => {
       mountedRef.current = false;
     };
-  }, [token, fetchCount]);
+  }, [token, fetchCount, skip]);
 
   // Sincronización cross-tab (CustomEvent + BroadcastChannel + storage)
   useMechanicsIssuesChanged(fetchCount);

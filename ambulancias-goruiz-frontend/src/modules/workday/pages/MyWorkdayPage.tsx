@@ -72,6 +72,7 @@ const MyWorkday = () => {
   const { token, user } = useAuth();
   const { hasModule } = useModules();
   const ambulancesModuleOn = hasModule(MODULE_KEYS.AMBULANCES);
+  const mechanicsModuleOn = hasModule(MODULE_KEYS.MECHANICS);
   const today = todayBerlinDayKey();
   const todayFormatted = formatYYYYMMDDToDDMMYYYY(today);
   const weekday = new Date(`${today}T00:00:00`).toLocaleDateString(
@@ -172,7 +173,6 @@ const MyWorkday = () => {
     previousTripFormData,
   );
 
-  const [issueData, setIssueData] = useState<any | null>(null);
   const navigate = useNavigate();
 
   const viewState = getWorkdayViewState({
@@ -470,6 +470,7 @@ const MyWorkday = () => {
   const handleSendPartialClosure = async (
     reason: string,
     finalKmValue: number,
+    issueFromModal: unknown | null = null,
   ) => {
     if (!token || !assignedDay) return;
 
@@ -499,7 +500,9 @@ const MyWorkday = () => {
         finalKm: Number(finalKmValue),
         trips,
         partialClosureReason: reasonTrimmed,
-        issueData,
+        ...(mechanicsModuleOn && issueFromModal
+          ? { issueData: issueFromModal }
+          : {}),
       });
 
 
@@ -507,13 +510,12 @@ const MyWorkday = () => {
 
       emitWorkdaySummariesChanged();
 
-      // Si vino una avería en el parcial, notifica para refrescar el badge
-      if (issueData) {
+      if (mechanicsModuleOn && issueFromModal) {
         notifyAdminIssuesChanged();
       }
 
       toastT.success(
-        issueData
+        mechanicsModuleOn && issueFromModal
           ? ["toasts.workday.partialSentWithIssue"]
           : ["toasts.workday.partialSent"],
       );
@@ -746,10 +748,14 @@ const MyWorkday = () => {
           ambulanceNumber={ambulanceNumber}
           initialKm={initialAmbulanceKm}
           finalKm={finalAmbulanceKm}
+          mechanicsModuleOn={mechanicsModuleOn}
           onClose={closeReviewModal}
           onSend={async (reason, finalKmValue, _totalEffectivePatients, issue) => {
-            setIssueData(issue || null);
-            await handleSendPartialClosure(reason, finalKmValue);
+            await handleSendPartialClosure(
+              reason,
+              finalKmValue,
+              issue ?? null,
+            );
           }}
 
         />
@@ -765,6 +771,7 @@ const MyWorkday = () => {
           ambulanceNumber={ambulanceNumber}
           initialKm={initialAmbulanceKm}
           finalKm={finalAmbulanceKm}
+          mechanicsModuleOn={mechanicsModuleOn}
           onConfirm={handleConfirmFinalClosure}
         />
       )}

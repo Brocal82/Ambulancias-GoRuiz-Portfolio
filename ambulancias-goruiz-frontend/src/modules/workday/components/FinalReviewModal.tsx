@@ -19,6 +19,7 @@ interface FinalReviewModalProps {
     initialKm: string;
     finalKm: string;
     assignedDay: AssignedDayFull;
+    mechanicsModuleOn: boolean;
 }
 
 const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
@@ -31,6 +32,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
     initialKm,
     finalKm,
     assignedDay,
+    mechanicsModuleOn,
 }) => {
     const { t } = useTranslation();
     const { hasModule } = useModules();
@@ -123,7 +125,7 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
                     className="w-full border border-slate-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-200"
                 />
 
-                {/* Botón Avería */}
+                {mechanicsModuleOn && (
                 <div className="pt-1 flex justify-end">
                     <button
                         type="button"
@@ -151,9 +153,9 @@ const FinalReviewModal: React.FC<FinalReviewModalProps> = ({
                         ️ {t("pages.workday.final.issue.button")}
                     </button>
                 </div>
+                )}
 
-                {/* Modal técnico (independiente del envío del sumario) */}
-                {showIssueModal && (
+                {mechanicsModuleOn && showIssueModal && (
                     <IssueReportModal
                         isOpen={true}
                         onClose={() => {

@@ -15,6 +15,8 @@ import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
 import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
+import { requireModule } from "../../middlewares/requireModule";
+import { MODULE_KEYS } from "../companies/constants/modules.constants";
 import { reportIssueSchema } from "./schemas/workday-summary.schema";
 
 const router = express.Router();
@@ -34,6 +36,7 @@ router.get(
 router.get(
   "/issues/count",
   authenticateToken,
+  requireModule(MODULE_KEYS.MECHANICS),
   authorizeRole("admin"),
   getIssuesCount,
 );
@@ -42,6 +45,7 @@ router.get(
 router.patch(
   "/issues/:id/seen",
   authenticateToken,
+  requireModule(MODULE_KEYS.MECHANICS),
   authorizeRole("admin"),
   validateObjectId("id"),
   markIssueSeen,
@@ -62,15 +66,23 @@ router.get("/", authenticateToken, getAllWorkdaySummaries);
 router.post(
   "/report-issue",
   authenticateToken,
+  requireModule(MODULE_KEYS.MECHANICS),
   validateBody(reportIssueSchema),
   reportIssue,
 );
 
 // 🟠 Listar averías: solo admin (AdminMechanicsPage)
-router.get("/issues", authenticateToken, authorizeRole("admin"), getAllIssueReports);
+router.get(
+  "/issues",
+  authenticateToken,
+  requireModule(MODULE_KEYS.MECHANICS),
+  authorizeRole("admin"),
+  getAllIssueReports,
+);
 router.delete(
   "/issues/:id",
   authenticateToken,
+  requireModule(MODULE_KEYS.MECHANICS),
   authorizeRole("admin"),
   validateObjectId("id"),
   deleteIssueReport,

@@ -7,7 +7,8 @@
  *
  * COMPOSITE MODULES (one key covers multiple backend/frontend folders):
  *   scheduling  → diensts + dienst-templates (templates mounted as subroute)
- *   workday     → workday-summary + trips + mechanics/issue-reporting
+ *   workday     → workday-summary + trips (jornada / viajes)
+ *   mechanics   → averías / report-issue + admin mechanics (opcional por empresa)
  *
  * V1 OPERATIONAL ALWAYS-ON:
  *   scheduling and workday are present in the model but must remain
@@ -21,6 +22,7 @@ export const MODULE_KEYS = {
   TEAMS:        "teams",
   SCHEDULING:   "scheduling",
   WORKDAY:      "workday",
+  MECHANICS:    "mechanics",
   APPOINTMENTS: "appointments",
   MESSAGES:     "messages",
   VACATION:     "vacation",
@@ -33,7 +35,7 @@ export const MODULE_KEYS = {
 export type ModuleKey = (typeof MODULE_KEYS)[keyof typeof MODULE_KEYS];
 
 /**
- * Full default set: all 12 canonical V1 modules.
+ * Full default set: all canonical V1 modules.
  * Used by the backfill script and new company creation defaults.
  * Existing companies with an empty enabledModules array must be migrated
  * to this list before any requireModule() guard is activated on a route.
