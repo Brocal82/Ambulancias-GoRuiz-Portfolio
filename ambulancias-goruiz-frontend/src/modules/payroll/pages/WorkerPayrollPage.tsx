@@ -6,6 +6,7 @@ import ViewIconButton from "../../../components/common/actions/ViewIconButton";
 import { listMyPayrollDocuments } from "../domain/api";
 import type { WorkerPayrollDocument } from "../domain/types";
 import { PAYROLL_MONTH_NAMES } from "../domain/constants";
+import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -62,7 +63,7 @@ export default function WorkerPayrollPage() {
 
   // table style consistent with existing worker pages
   const thClass =
-    "px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-600";
+    "px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-200";
   const trClass =
     "border-b border-slate-100 text-center hover:bg-slate-50/70 transition-colors";
 
@@ -124,8 +125,8 @@ export default function WorkerPayrollPage() {
                     <col className="w-[15%]" />
                   </colgroup>
 
-                  <thead className="sticky top-0 bg-slate-50 z-10">
-                    <tr className="border-b border-slate-200 text-slate-600">
+                  <thead className={APP_NAV_MATCH_TABLE_THEAD_STICKY}>
+                    <tr className="text-slate-200">
                       <th className={`${thClass} text-left`}>Archivo</th>
                       <th className={thClass}>Período</th>
                       <th className={thClass}>Fecha</th>

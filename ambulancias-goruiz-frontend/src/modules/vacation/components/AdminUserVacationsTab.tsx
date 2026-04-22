@@ -14,6 +14,7 @@ import { formatISOToDDMMYYYY } from "../../../utils/timeUtils";
 import { calcVacationDays } from "../utils/calcVacationDays";
 import StatusBadge from "../../../components/common/StatusBadge";
 import { vacationRequestTone } from "../utils/vacationRequestTone";
+import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
 
 interface Props {
   userId: string;
@@ -131,8 +132,8 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
                 <col className="w-[30%]" /> {/* Acciones */}
               </colgroup>
 
-              <thead className="sticky top-0 bg-slate-50 z-10">
-                <tr className="text-slate-600 border-b border-slate-200 text-center">
+              <thead className={APP_NAV_MATCH_TABLE_THEAD_STICKY}>
+                <tr className="text-center text-slate-200">
                   <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
                     {t("pages.vacations.adminUserTab.th.dates", "Fechas")}
                   </th>

@@ -3,6 +3,7 @@ import React from "react";
 import type { TFunction } from "i18next";
 import type { IVacationRequest } from "../domain/types";
 import StatusBadge from "../../../components/common/StatusBadge";
+import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
 import { calcVacationDays } from "../utils/calcVacationDays";
 import { getRequestRangeBerlin } from "../utils/getRequestRangeBerlin";
 import { toBerlinDayKey } from "../../../utils/dates/dayKey";
@@ -57,8 +58,8 @@ const AdminActionableVacationRequestsTable: React.FC<Props> = ({
                     <col className="w-[25%]" /> {/* Acciones */}
                 </colgroup>
 
-                <thead className="sticky top-0 bg-slate-50 z-10">
-                    <tr className="text-slate-600 border-b border-slate-200">
+                <thead className={APP_NAV_MATCH_TABLE_THEAD_STICKY}>
+                    <tr className="text-slate-200">
                         <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
                             {t("pages.vacations.adminPage.table.user")}
                         </th>

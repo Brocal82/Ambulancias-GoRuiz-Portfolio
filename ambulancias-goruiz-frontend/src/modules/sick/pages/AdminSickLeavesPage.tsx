@@ -15,6 +15,7 @@ import StatusBadge from "../../../components/common/StatusBadge";
 import { sickLeaveTone } from "../utils/sickLeavesTone";
 import { emitSickLeavesChanged } from "../utils/sickEvents";
 import { useAdminSickLeavesSync } from "../hooks/useAdminSickLeavesSync";
+import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return "—";
@@ -267,8 +268,8 @@ export default function AdminSickLeavesPage() {
                       <col className="w-[10%]" />
                     </colgroup>
 
-                    <thead className="sticky top-0 bg-slate-50 z-10">
-                      <tr className="text-slate-600 border-b border-slate-200">
+                    <thead className={APP_NAV_MATCH_TABLE_THEAD_STICKY}>
+                      <tr className="text-slate-200">
                         <th className={thClass}>
                           {t("pages.sick.admin.th.user", "Trabajador")}
                         </th>

@@ -30,6 +30,7 @@ import PayrollCompletionSnapshot from "../components/PayrollCompletionSnapshot";
 import ResolutionWorkspace from "../components/ResolutionWorkspace";
 import MatchBadge from "../components/MatchBadge";
 import BackButton from "../../../components/ui/BackButton";
+import { APP_NAV_MATCH_TABLE_HEADER_TR } from "../../../components/ui/appTableHeader";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -659,7 +660,7 @@ export default function AdminPayrollPage() {
 
   // ── monthly documents table (compact; aligned with Year Hub search table) ─
   const monthlyTh =
-    "py-1 text-xs font-medium text-slate-600";
+    "py-1 text-xs font-medium text-slate-200";
   const monthlyTr =
     "transition-colors hover:bg-slate-50/70";
   const monthlyTrUnmatched =
@@ -1242,7 +1243,7 @@ export default function AdminPayrollPage() {
             <div className="overflow-x-auto">
               <table className="min-w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/80">
+                  <tr className={APP_NAV_MATCH_TABLE_HEADER_TR}>
                     <th className={`${monthlyTh} px-3 text-left`}>
                       Nombre trabajador
                     </th>

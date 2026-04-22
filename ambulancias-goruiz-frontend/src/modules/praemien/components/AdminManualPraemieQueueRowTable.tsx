@@ -5,11 +5,11 @@ import { fmtDDMM } from "../../../utils/timeUtils";
 import type { AdminManualPraemieQueueRowData } from "../domain/manualDailyApi";
 import {
   fmtPraemieEmployeeNoDisplay,
+  PRAEMIE_MANUAL_DAY_DETAIL_SHELL_CLASS,
   PRAEMIE_QUEUE_bodyRow,
   PRAEMIE_QUEUE_btnApproveVacationStyle,
   PRAEMIE_QUEUE_btnRejectVacationStyle,
   PRAEMIE_QUEUE_headerRow,
-  PRAEMIE_QUEUE_TABLE_SHELL_CLASS,
 } from "./praemieManualQueueTableStyles";
 
 export function AdminManualPraemieQueueColumnHeaders() {
@@ -260,7 +260,7 @@ export function AdminManualPraemieQueueTableShell({
 }) {
   return (
     <div
-      className={PRAEMIE_QUEUE_TABLE_SHELL_CLASS}
+      className={PRAEMIE_MANUAL_DAY_DETAIL_SHELL_CLASS}
       role="table"
       aria-label={ariaLabel}
     >

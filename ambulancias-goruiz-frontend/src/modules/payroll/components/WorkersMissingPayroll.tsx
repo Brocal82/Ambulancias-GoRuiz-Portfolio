@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
 import type { User } from "../../users";
+import { APP_NAV_MATCH_TABLE_HEADER_TR } from "../../../components/ui/appTableHeader";
 
 interface WorkersMissingPayrollProps {
   missingWorkers: User[];
@@ -35,9 +36,9 @@ export default function WorkersMissingPayroll({
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80">
-                <th className="px-3 py-1 text-xs font-medium text-slate-600">Nombre</th>
-                <th className="px-3 py-1 text-xs font-medium text-slate-600 whitespace-nowrap">
+              <tr className={APP_NAV_MATCH_TABLE_HEADER_TR}>
+                <th className="px-3 py-1 text-xs font-medium text-slate-200">Nombre</th>
+                <th className="px-3 py-1 text-xs font-medium text-slate-200 whitespace-nowrap">
                   Numero de empleado
                 </th>
               </tr>

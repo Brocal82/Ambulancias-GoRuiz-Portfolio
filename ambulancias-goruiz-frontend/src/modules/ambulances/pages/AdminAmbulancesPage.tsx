@@ -17,6 +17,7 @@ import { confirmAction } from "../../../utils/confirm";
 import CreateIconButton from "../../../components/common/actions/CreateIconButton";
 import EditIconButton from "../../../components/common/actions/EditIconButton";
 import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
+import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
 const AdminAmbulancesPage: React.FC = () => {
   const { token } = useAuth();
   const { t } = useTranslation();
@@ -142,8 +143,8 @@ const AdminAmbulancesPage: React.FC = () => {
                 {/* 4 primeras columnas flexibles + Acciones con ancho fijo (~256px) */}
                 <colgroup><col span={4} /><col className="w-[16rem]" /></colgroup>
 
-                <thead className="bg-slate-100 text-slate-800 sticky top-0 z-10">
-                  <tr>
+                <thead className={APP_NAV_MATCH_TABLE_THEAD_STICKY}>
+                  <tr className="text-slate-200">
                     <th className="px-4 py-2 text-center font-semibold whitespace-nowrap">
                       {t("pages.ambulances.adminPage.table.brand")}
                     </th>

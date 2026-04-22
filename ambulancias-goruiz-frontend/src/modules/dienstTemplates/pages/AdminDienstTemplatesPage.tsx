@@ -14,6 +14,7 @@ import CreateDienstTemplateModal from "../components/CreateDienstTemplateModal";
 import CreateIconButton from "../../../components/common/actions/CreateIconButton";
 import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 import EditIconButton from "../../../components/common/actions/EditIconButton";
+import { APP_NAV_MATCH_TABLE_THEAD } from "../../../components/ui/appTableHeader";
 
 const dayLabels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 // Orden visual: Lunes (1) → Sábado (6) → Domingo (0)
@@ -135,20 +136,20 @@ const AdminDienstTemplatesPage: React.FC = () => {
       {!loading && !error && templates.length > 0 && (
         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-2 text-left font-medium text-gray-700">
+            <thead className={APP_NAV_MATCH_TABLE_THEAD}>
+              <tr className="text-slate-200">
+                <th className="px-4 py-2 text-left font-medium">
                   Nº Dienst
                 </th>
                 {orderedDayIndices.map((dayIndex) => (
                   <th
                     key={dayIndex}
-                    className="px-2 py-2 text-center font-medium text-gray-700"
+                    className="px-2 py-2 text-center font-medium"
                   >
                     {dayLabels[dayIndex]}
                   </th>
                 ))}
-                <th className="px-4 py-2 text-right font-medium text-gray-700">
+                <th className="px-4 py-2 text-right font-medium">
                   Acciones
                 </th>
               </tr>

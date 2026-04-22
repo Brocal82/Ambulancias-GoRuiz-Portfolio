@@ -9,6 +9,7 @@ import {
 } from "../domain/api";
 import type { WorkerDocumentDelivery } from "../domain/types";
 import ViewIconButton from "../../../components/common/actions/ViewIconButton";
+import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
 
 function fmtDate(iso: string): string {
   const d = new Date(iso);
@@ -115,7 +116,7 @@ export default function WorkerDocumentsPage() {
   };
 
   const thClass =
-    "px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-600";
+    "px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-200";
   const trClass =
     "border-b border-slate-100 text-center hover:bg-slate-50/70 transition-colors";
 
@@ -172,8 +173,8 @@ export default function WorkerDocumentsPage() {
                     <col className="w-[12%]" />
                     <col className="w-[24%]" />
                   </colgroup>
-                  <thead className="sticky top-0 bg-slate-50 z-10">
-                    <tr className="border-b border-slate-200 text-slate-600">
+                  <thead className={APP_NAV_MATCH_TABLE_THEAD_STICKY}>
+                    <tr className="text-slate-200">
                       <th className={`${thClass} text-left`}>Documento</th>
                       <th className={thClass}>Enviado</th>
                       <th className={thClass}>Tipo</th>

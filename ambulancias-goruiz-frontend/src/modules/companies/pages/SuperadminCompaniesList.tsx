@@ -7,6 +7,7 @@ import CreateIconButton from "../../../components/common/actions/CreateIconButto
 import EditIconButton from "../../../components/common/actions/EditIconButton";
 import CreateAdminIconButton from "../../../components/common/actions/CreateAdminIconButton";
 import DangerDeleteButton from "../../../components/common/actions/DangerDeleteButton";
+import { APP_NAV_MATCH_TABLE_THEAD } from "../../../components/ui/appTableHeader";
 
 export default function SuperadminCompaniesList() {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ export default function SuperadminCompaniesList() {
       ) : (
         <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
           <table className="min-w-full text-sm">
-            <thead className="bg-slate-100 text-left text-slate-700">
+            <thead className={`${APP_NAV_MATCH_TABLE_THEAD} text-left text-slate-200`}>
               <tr>
                 <th className="px-4 py-3 font-semibold">Nombre</th>
                 <th className="px-4 py-3 font-semibold">Dominio</th>

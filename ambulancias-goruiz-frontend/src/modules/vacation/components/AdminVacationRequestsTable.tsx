@@ -7,6 +7,7 @@ import { getRequestRangeBerlin } from "../utils/getRequestRangeBerlin";
 import { toBerlinDayKey } from "../../../utils/dates/dayKey";
 import StatusBadge from "../../../components/common/StatusBadge";
 import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
+import { APP_NAV_MATCH_TABLE_THEAD } from "../../../components/ui/appTableHeader";
 import { vacationRequestTone } from "../utils/vacationRequestTone";
 
 
@@ -73,8 +74,8 @@ const AdminVacationRequestsTable: React.FC<Props> = ({
                     <col className="w-[20%]" /> {/* Acciones */}
                 </colgroup>
 
-                <thead className="bg-slate-50">
-                    <tr className="text-slate-600 border-b border-slate-200 text-center">
+                <thead className={APP_NAV_MATCH_TABLE_THEAD}>
+                    <tr className="text-center text-slate-200">
                         <th className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wide">
                             {t("pages.vacations.adminPage.table.user", "Trabajador")}
                         </th>

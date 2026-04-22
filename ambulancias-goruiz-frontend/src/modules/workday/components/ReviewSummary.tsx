@@ -4,6 +4,7 @@ import type { Trip } from "../domain/types/trip";
 import type { AssignedDayFull } from "../../../modules/diensts";
 import { formatYYYYMMDDToDDMMYYYY } from "../../../utils/timeUtils";
 import { useTranslation } from "react-i18next";
+import { APP_NAV_MATCH_TABLE_THEAD } from "../../../components/ui/appTableHeader";
 
 const calcTripKm = (t: Trip) => Math.max(0, t.kmEnd - t.kmStart);
 
@@ -137,7 +138,9 @@ const ReviewSummary: React.FC<Props> = ({
             {/* -------- TABLA -------- */}
             <div className={wrapContainer}>
                 <table className={`w-full table-auto ${tableText}`}>
-                    <thead className="bg-slate-50 text-slate-600 uppercase tracking-wide">
+                    <thead
+                        className={`${APP_NAV_MATCH_TABLE_THEAD} uppercase tracking-wide text-slate-200`}
+                    >
                         <tr>
                             <th className={`${headCell} text-center`}>
                                 {t("pages.workday.reviewSummary.table.auftrag")}

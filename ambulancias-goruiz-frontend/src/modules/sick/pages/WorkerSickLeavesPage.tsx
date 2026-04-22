@@ -20,6 +20,7 @@ import CreateIconButton from "../../../components/common/actions/CreateIconButto
 import CancelButton from "../../../components/common/actions/CancelButton";
 import { emitSickLeavesChanged } from "../utils/sickEvents";
 import { useSickLeavesChanged } from "../hooks/useSickLeavesChanged";
+import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
 
 function fmtISO(d?: string, locale?: string) {
   if (!d) return "—";
@@ -382,8 +383,8 @@ export default function WorkerSickLeavesPage() {
                     <col className="w-[20%]" /> {/* Acciones */}
                   </colgroup>
 
-                  <thead className="sticky top-0 bg-slate-50 z-10">
-                    <tr className="text-slate-600 border-b border-slate-200 text-center">
+                  <thead className={APP_NAV_MATCH_TABLE_THEAD_STICKY}>
+                    <tr className="text-center text-slate-200">
                       <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
                         {t("pages.sick.admin.th.dates", "Fechas")}
                       </th>

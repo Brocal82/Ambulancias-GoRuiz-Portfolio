@@ -17,7 +17,7 @@ import { parseManualPraemieClientValue } from "../utils/parseManualPraemieClient
 import { fmtDDMM } from "../../../utils/timeUtils";
 import MonthlyMiniCalendar, { type ViewMonth } from "./MonthlyMiniCalendar";
 import {
-  PRAEMIE_QUEUE_TABLE_SHELL_CLASS,
+  PRAEMIE_MANUAL_DAY_DETAIL_SHELL_CLASS,
   PRAEMIE_WORKER_DETAIL_bodyRow,
   PRAEMIE_WORKER_DETAIL_headerRow,
 } from "./praemieManualQueueTableStyles";
@@ -358,7 +358,7 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
       {selectedDate && (
         <div className="min-w-0 w-full space-y-3 text-xs">
           <div
-            className={PRAEMIE_QUEUE_TABLE_SHELL_CLASS}
+            className={PRAEMIE_MANUAL_DAY_DETAIL_SHELL_CLASS}
             role="table"
             aria-label={t("pages.praemien.manual.detailHeading")}
           >

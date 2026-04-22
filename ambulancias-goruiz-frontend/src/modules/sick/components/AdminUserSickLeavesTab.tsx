@@ -11,6 +11,7 @@ import {
 import StatusBadge from "../../../components/common/StatusBadge";
 import { sickLeaveTone } from "../utils/sickLeavesTone";
 import { useSickLeavesChanged } from "../hooks/useSickLeavesChanged";
+import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
 
 type Props = {
   userId: string;
@@ -88,8 +89,8 @@ export default function AdminUserSickLeavesTab({ userId }: Props) {
                 <col className="w-[40%]" /> {/* Documentos */}
               </colgroup>
 
-              <thead className="sticky top-0 bg-slate-50 z-10">
-                <tr className="text-slate-600 border-b border-slate-200 text-center">
+              <thead className={APP_NAV_MATCH_TABLE_THEAD_STICKY}>
+                <tr className="text-center text-slate-200">
                   <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
                     {t("pages.sick.admin.th.dates", "Fechas")}
                   </th>

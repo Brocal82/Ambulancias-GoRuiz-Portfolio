@@ -28,7 +28,7 @@ import {
   PRAEMIEN_MANUAL_PENDING_CHANGED,
   dispatchPraemienManualPendingChanged,
 } from "../../praemien/utils/praemienManualPendingEvents";
-
+import { APP_NAV_MATCH_TABLE_THEAD } from "../../../components/ui/appTableHeader";
 
 // Mapeo de estilos de la píldora de rol (no cambia lógica)
 const rolePillClass: Record<
@@ -776,29 +776,29 @@ const AdminUsersPage = () => {
                 <col className="w-[18%]" /> {/* Rol */}
                 <col className="w-[18%]" /> {/* Status */}
               </colgroup>
-              <thead className="bg-slate-100">
+              <thead className={APP_NAV_MATCH_TABLE_THEAD}>
                 <tr>
                   <th
                     scope="col"
-                    className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-900"
+                    className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-200"
                   >
                     {t("pages.adminUsers.columns.lastName")}
                   </th>
                   <th
                     scope="col"
-                    className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-900"
+                    className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-200"
                   >
                     {t("pages.adminUsers.columns.name")}
                   </th>
                   <th
                     scope="col"
-                    className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-900"
+                    className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-200"
                   >
                     {t("pages.adminUsers.columns.role")}
                   </th>
                   <th
                     scope="col"
-                    className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-900"
+                    className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-200"
                   >
                     {t("pages.adminUsers.columns.status", "Status")}
                   </th>

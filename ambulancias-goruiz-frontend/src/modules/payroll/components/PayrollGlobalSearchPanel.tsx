@@ -6,6 +6,10 @@ import type { PayrollDocument } from "../domain/types";
 import MatchBadge from "./MatchBadge";
 import { PAYROLL_MONTH_NAMES } from "../domain/constants";
 import { matchesPayrollDocumentText } from "../domain/predicates";
+import {
+  APP_NAV_MATCH_TABLE_HEADER_TR,
+  APP_NAV_MATCH_TABLE_THEAD_STICKY,
+} from "../../../components/ui/appTableHeader";
 
 const HUB_LOOKUP_MAX_RESULTS = 12;
 
@@ -152,7 +156,7 @@ export default function PayrollGlobalSearchPanel({
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-900/95">
+                <tr className={APP_NAV_MATCH_TABLE_HEADER_TR}>
                   <th className="px-3 py-1 font-medium text-slate-200">
                     Nombre del empleado
                   </th>
@@ -237,8 +241,8 @@ export default function PayrollGlobalSearchPanel({
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm text-center">
-            <thead className="bg-slate-900/95 sticky top-0 z-10">
-              <tr className="border-b border-slate-800">
+            <thead className={APP_NAV_MATCH_TABLE_THEAD_STICKY}>
+              <tr>
                 <th className={`${thClass} text-left`}>Archivo</th>
                 <th className={thClass}>Trabajador</th>
                 <th className={thClass}>Estado</th>

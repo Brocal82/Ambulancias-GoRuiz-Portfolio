@@ -9,6 +9,7 @@ import SendIconButton from "../../../components/common/actions/SendIconButton";
 import ViewIconButton from "../../../components/common/actions/ViewIconButton";
 import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 import BackButton from "../../../components/ui/BackButton";
+import { APP_NAV_MATCH_TABLE_THEAD } from "../../../components/ui/appTableHeader";
 
 type AdminDocument = {
   id: string;
@@ -455,30 +456,30 @@ const AdminDocumentsPage = () => {
           ) : (
             <div className="w-full">
               <table className="w-full table-fixed text-left text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className={APP_NAV_MATCH_TABLE_THEAD}>
                   <tr>
-                    <th className="w-[20%] px-4 py-2 text-xs font-medium text-slate-600 text-center">
+                    <th className="w-[20%] px-4 py-2 text-xs font-medium text-slate-200 text-center">
                       Nombre
                     </th>
-                    <th className="w-[16%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
+                    <th className="w-[16%] px-4 py-2 text-xs font-medium text-slate-200 whitespace-nowrap text-center">
                       Fecha
                     </th>
-                    <th className="w-[14%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
+                    <th className="w-[14%] px-4 py-2 text-xs font-medium text-slate-200 whitespace-nowrap text-center">
                       Tipo
                     </th>
-                    <th className="w-[8%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
+                    <th className="w-[8%] px-4 py-2 text-xs font-medium text-slate-200 whitespace-nowrap text-center">
                       Enviados
                     </th>
-                    <th className="w-[8%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
+                    <th className="w-[8%] px-4 py-2 text-xs font-medium text-slate-200 whitespace-nowrap text-center">
                       Leídos
                     </th>
-                    <th className="w-[8%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
+                    <th className="w-[8%] px-4 py-2 text-xs font-medium text-slate-200 whitespace-nowrap text-center">
                       Confirmados
                     </th>
-                    <th className="w-[12%] px-4 py-2 text-xs font-medium text-slate-600 whitespace-nowrap text-center">
+                    <th className="w-[12%] px-4 py-2 text-xs font-medium text-slate-200 whitespace-nowrap text-center">
                       Pendientes
                     </th>
-                    <th className="w-[11%] px-4 py-2 text-xs font-medium text-slate-600 text-center">
+                    <th className="w-[11%] px-4 py-2 text-xs font-medium text-slate-200 text-center">
                       Acciones
                     </th>
                   </tr>
