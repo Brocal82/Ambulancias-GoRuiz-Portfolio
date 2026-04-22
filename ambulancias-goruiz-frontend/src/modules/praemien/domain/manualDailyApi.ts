@@ -77,10 +77,145 @@ export async function getAdminManualDailyMonth(
   return res.data;
 }
 
+export async function getAdminManualPraemiePendingCount(): Promise<number> {
+  const res = await axios.get<{ count: number }>(
+    "/praemien/manual-daily/admin/pending-count",
+  );
+  return typeof res.data?.count === "number" ? res.data.count : 0;
+}
+
+export type AdminManualPraemiePendingByUser = { userId: string; count: number };
+
+export async function getAdminManualPraemiePendingByUser(): Promise<
+  AdminManualPraemiePendingByUser[]
+> {
+  const res = await axios.get<{ items: AdminManualPraemiePendingByUser[] }>(
+    "/praemien/manual-daily/admin/pending-by-user",
+  );
+  return Array.isArray(res.data?.items) ? res.data.items : [];
+}
+
+export type PraemienManualDailyStatusForAdmin =
+  | "draft"
+  | "submitted"
+  | "approved"
+  | "rejected"
+  | "reopened";
+
+/** Una fila por día pendiente, con cierre de jornada (Dienst, horario). */
+export type AdminManualPraemiePendingListEntry = {
+  userId: string;
+  name: string;
+  lastName: string;
+  employeeNumber: string | null;
+  date: string;
+  dienstNumber: number | null;
+  startTime: string | null;
+  endTime: string | null;
+  workerSubmittedValue: number;
+  status: "submitted" | "reopened";
+  equipoDriverUserId: string | null;
+  equipoDriverName: string;
+  equipoDriverLastName: string;
+  equipoDriverEmployeeNumber: string | null;
+  equipoMedicUserId: string | null;
+  equipoMedicName: string;
+  equipoMedicLastName: string;
+  equipoMedicEmployeeNumber: string | null;
+  equipoBothSlotsPending: boolean;
+};
+
+/** Misma forma que `GET .../day-queue-row` y filas enriquecidas del listado (UI unificada). */
+export type AdminManualPraemieQueueRowData = Omit<
+  AdminManualPraemiePendingListEntry,
+  "status"
+> & {
+  manualStatus: PraemienManualDailyStatusForAdmin;
+  adminFinalValue: number | null;
+  rejectionReason: string | null;
+};
+
+function normalizeQueueRowData(
+  r: AdminManualPraemieQueueRowData,
+): AdminManualPraemieQueueRowData {
+  return {
+    ...r,
+    equipoDriverUserId: r.equipoDriverUserId ?? null,
+    equipoDriverName: r.equipoDriverName ?? "",
+    equipoDriverLastName: r.equipoDriverLastName ?? "",
+    equipoDriverEmployeeNumber: r.equipoDriverEmployeeNumber ?? null,
+    equipoMedicUserId: r.equipoMedicUserId ?? null,
+    equipoMedicName: r.equipoMedicName ?? "",
+    equipoMedicLastName: r.equipoMedicLastName ?? "",
+    equipoMedicEmployeeNumber: r.equipoMedicEmployeeNumber ?? null,
+    equipoBothSlotsPending: Boolean(r.equipoBothSlotsPending),
+    adminFinalValue:
+      r.adminFinalValue != null && Number.isFinite(Number(r.adminFinalValue))
+        ? Number(r.adminFinalValue)
+        : null,
+    rejectionReason:
+      r.rejectionReason != null && String(r.rejectionReason).trim() !== ""
+        ? String(r.rejectionReason).trim()
+        : null,
+  };
+}
+
+export function pendingListEntryToQueueRowData(
+  r: AdminManualPraemiePendingListEntry,
+): AdminManualPraemieQueueRowData {
+  const { status, ...rest } = r;
+  return normalizeQueueRowData({
+    ...rest,
+    manualStatus: status,
+    adminFinalValue: null,
+    rejectionReason: null,
+  });
+}
+
+export async function getAdminManualPraemieDayQueueRow(
+  userId: string,
+  date: string,
+): Promise<AdminManualPraemieQueueRowData> {
+  const res = await axios.get<AdminManualPraemieQueueRowData>(
+    "/praemien/manual-daily/admin/day-queue-row",
+    { params: { userId, date } },
+  );
+  return normalizeQueueRowData(res.data);
+}
+
+function normalizePendingListEntry(
+  r: AdminManualPraemiePendingListEntry,
+): AdminManualPraemiePendingListEntry {
+  return {
+    ...r,
+    equipoDriverUserId: r.equipoDriverUserId ?? null,
+    equipoDriverName: r.equipoDriverName ?? "",
+    equipoDriverLastName: r.equipoDriverLastName ?? "",
+    equipoDriverEmployeeNumber: r.equipoDriverEmployeeNumber ?? null,
+    equipoMedicUserId: r.equipoMedicUserId ?? null,
+    equipoMedicName: r.equipoMedicName ?? "",
+    equipoMedicLastName: r.equipoMedicLastName ?? "",
+    equipoMedicEmployeeNumber: r.equipoMedicEmployeeNumber ?? null,
+    equipoBothSlotsPending: Boolean(r.equipoBothSlotsPending),
+  };
+}
+
+export async function getAdminManualPraemiePendingEntries(): Promise<
+  AdminManualPraemiePendingListEntry[]
+> {
+  const res = await axios.get<{ items: AdminManualPraemiePendingListEntry[] }>(
+    "/praemien/manual-daily/admin/pending-entries",
+  );
+  const items = Array.isArray(res.data?.items) ? res.data.items : [];
+  return items.map(normalizePendingListEntry);
+}
+
 export async function postAdminManualDailyApprove(body: {
   userId: string;
   date: string;
   adminFinalValue?: number;
+  /** Por defecto el backend también aprueba al compañero de Dienst si sigue pendiente. */
+  cascadeTeammate?: boolean;
 }): Promise<ManualDailyEntryDto> {
   const res = await axios.post<ManualDailyEntryDto>(
     "/praemien/manual-daily/admin/approve",
@@ -96,18 +231,6 @@ export async function postAdminManualDailyReject(body: {
 }): Promise<ManualDailyEntryDto> {
   const res = await axios.post<ManualDailyEntryDto>(
     "/praemien/manual-daily/admin/reject",
-    body,
-  );
-  return res.data;
-}
-
-export async function postAdminManualDailyCorrectApprove(body: {
-  userId: string;
-  date: string;
-  adminFinalValue: number;
-}): Promise<ManualDailyEntryDto> {
-  const res = await axios.post<ManualDailyEntryDto>(
-    "/praemien/manual-daily/admin/correct-approve",
     body,
   );
   return res.data;
