@@ -5,6 +5,8 @@ import { Message } from "../modules/messages/models/message.model";
 import PayrollDocument from "../modules/payroll/models/payroll-document.model";
 import { CompanyDocument } from "../modules/documents/models/document.model";
 import { DocumentDelivery } from "../modules/documents/models/document-delivery.model";
+import ExcelPlanningImport from "../modules/excel-planning/models/excel-planning-import.model";
+import ExcelPlanningWeek from "../modules/excel-planning/models/excel-planning-week.model";
 import { isSameCompany } from "./requireCompany";
 
 /**
@@ -17,6 +19,8 @@ import { isSameCompany } from "./requireCompany";
  *   - Message.attachments[].url:              sender or explicit recipient only
  *   - PayrollDocument.fileUrl:                worker who owns it, or admin of same company
  *   - CompanyDocument.fileUrl:                admin of same company, or worker with DocumentDelivery
+ *   - ExcelPlanningImport.fileUrl: admin of same company
+ *   - ExcelPlanningWeek.sourceFileUrl: admin of same company (el Excel puede contener el plano completo)
  *
  * Same-company alone is NOT sufficient for workers — they may only access
  * files they directly own or are explicitly authorized to view.
@@ -175,6 +179,30 @@ export async function canAccessFile(
         .lean();
       if (delivery) return true;
     }
+  }
+
+  // ── 8. Excel planning — archivo de importación o semana publicada (solo admin empresa) ──
+  if (
+    userRole === "admin" &&
+    companyId &&
+    mongoose.Types.ObjectId.isValid(companyId)
+  ) {
+    const companyOid = new mongoose.Types.ObjectId(companyId);
+    const excelImport = await ExcelPlanningImport.findOne({
+      companyId: companyOid,
+      fileUrl: storedPath,
+    })
+      .select("_id")
+      .lean();
+    if (excelImport) return true;
+
+    const excelWeek = await ExcelPlanningWeek.findOne({
+      companyId: companyOid,
+      sourceFileUrl: storedPath,
+    })
+      .select("_id")
+      .lean();
+    if (excelWeek) return true;
   }
 
   return false;

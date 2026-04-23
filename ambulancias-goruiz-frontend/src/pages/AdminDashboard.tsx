@@ -120,6 +120,17 @@ const AdminDashboard = () => {
           </Link>
         )}
 
+        {hasModule(MODULE_KEYS.EXCEL_PLANNING) && (
+          <Link to="/admin/excel-planning" className={centeredCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.adminDashboard.excelPlanning.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.adminDashboard.excelPlanning.desc")}
+            </p>
+          </Link>
+        )}
+
         {hasModule(MODULE_KEYS.WORKDAY) && (
           <Link
             to="/admin/summaries"

@@ -25,7 +25,9 @@
     "cleanup:test-data": "ts-node scripts/cleanupTestDataFromDev.ts",
     "seed:test-workers": "ts-node scripts/seed-test-workers.ts",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "backfill:excel-planning-module": "ts-node src/scripts/backfill-company-module-excel-planning.ts",
+    "generate:excel-planning-real": "ts-node scripts/generate-excel-planning-real-workers.ts"
   },
   "keywords": [],
   "author": "",
@@ -42,6 +44,7 @@
     "mongoose": "^8.14.1",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
+    "xlsx": "^0.18.5",
     "zod": "^3.24.4"
   },
   "devDependencies": {

@@ -49,6 +49,8 @@ import PayrollYearHubPage from "./modules/payroll/pages/PayrollYearHubPage";
 import AdminPayrollModuleHubPage from "./modules/payroll/pages/AdminPayrollModuleHubPage";
 import AdminDocumentsPage from "./modules/documents/pages/AdminDocumentsPage";
 import WorkerDocumentsPage from "./modules/documents/pages/WorkerDocumentsPage";
+import AdminExcelPlanningPage from "./modules/excel-planning/pages/AdminExcelPlanningPage";
+import WorkerExcelPlanningPage from "./modules/excel-planning/pages/WorkerExcelPlanningPage";
 import WorkerPayrollPage from "./modules/payroll/pages/WorkerPayrollPage";
 
 function RedirectToCurrentPayrollMonth() {
@@ -118,6 +120,12 @@ export default function App() {
               <Route element={<RequireModule name="documents" />}>
                 <Route path="/worker/documents" element={<WorkerDocumentsPage />} />
               </Route>
+              <Route element={<RequireModule name="excel-planning" />}>
+                <Route
+                  path="/worker/excel-planning"
+                  element={<WorkerExcelPlanningPage />}
+                />
+              </Route>
 
               <Route element={<RequireRole role="superadmin" />}>
                 <Route path="/superadmin" element={<SuperadminDashboard />} />
@@ -185,6 +193,12 @@ export default function App() {
                   <Route
                     path="/admin/payroll/docs"
                     element={<AdminDocumentsPage />}
+                  />
+                </Route>
+                <Route element={<RequireModule name="excel-planning" />}>
+                  <Route
+                    path="/admin/excel-planning"
+                    element={<AdminExcelPlanningPage />}
                   />
                 </Route>
               </Route>

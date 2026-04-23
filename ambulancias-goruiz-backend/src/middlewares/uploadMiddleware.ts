@@ -81,3 +81,37 @@ export const uploadImagesOnly = multer({
     fileSize: 10 * 1024 * 1024,
   },
 });
+
+const excelMimeTypes = [
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-excel",
+];
+
+const excelFilter = (
+  _req: unknown,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback,
+) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  const mimeOk =
+    excelMimeTypes.includes(file.mimetype) ||
+    file.mimetype === "application/octet-stream";
+  if (mimeOk || ext === ".xlsx" || ext === ".xls") {
+    if (ext !== ".xlsx" && ext !== ".xls") {
+      cb(new Error("❌ Solo se permiten archivos Excel (.xlsx / .xls)."));
+      return;
+    }
+    cb(null, true);
+    return;
+  }
+  cb(new Error("❌ Solo se permiten archivos Excel (.xlsx / .xls)."));
+};
+
+/** Multer solo Excel — rutas dedicadas al módulo excel-planning (no mezclar con PDF/imagen global). */
+export const uploadExcelOnly = multer({
+  storage,
+  fileFilter: excelFilter,
+  limits: {
+    fileSize: 15 * 1024 * 1024,
+  },
+});

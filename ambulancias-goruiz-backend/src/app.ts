@@ -23,6 +23,7 @@ import invitationsRoutes from "./modules/invitations/routes";
 import companiesRoutes from "./modules/companies/routes";
 import documentsRoutes from "./modules/documents/routes";
 import payrollRoutes from "./modules/payroll/routes";
+import excelPlanningRoutes from "./modules/excel-planning/routes";
 
 import { errorHandler } from "./middlewares/errorHandler";
 import { notFoundHandler } from "./middlewares/notFoundHandler";
@@ -115,6 +116,7 @@ app.use("/api/invitations", invitationsRoutes);
 app.use("/api/companies", companiesRoutes);
 app.use("/api/payroll", payrollRoutes);
 app.use("/api/documents", documentsRoutes);
+app.use("/api/excel-planning", excelPlanningRoutes);
 
 app.get("/api/files/:filename", authenticateToken, async (req, res) => {
   const filename = path.basename(req.params.filename);

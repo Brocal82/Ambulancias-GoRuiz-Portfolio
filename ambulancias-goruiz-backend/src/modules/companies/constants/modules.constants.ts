@@ -7,8 +7,8 @@
  *
  * COMPOSITE MODULES (one key covers multiple backend/frontend folders):
  *   scheduling  → diensts + dienst-templates (CRUD bajo /api/diensts/templates/…).
- *   Futuro: sustituto no dinámico (p. ej. import Excel solo lectura) sería otro
- *   módulo o ruta; desactivar `scheduling` solo corta la planificación Dienst actual.
+ *   excel-planning → import/publicación semanal Excel (solo lectura), /api/excel-planning;
+ *     independiente de `scheduling`; puede desactivarse por separado.
  *   workday     → workday-summary + trips (jornada / viajes)
  *   mechanics   → averías / report-issue + admin mechanics (opcional por empresa)
  *
@@ -30,6 +30,8 @@ export const MODULE_KEYS = {
   PRAEMIEN:     "praemien",
   PAYROLL:      "payroll",
   DOCUMENTS:    "documents",
+  /** Planificación semanal importada desde Excel (solo lectura; independiente de Diensts). */
+  EXCEL_PLANNING: "excel-planning",
 } as const;
 
 export type ModuleKey = (typeof MODULE_KEYS)[keyof typeof MODULE_KEYS];

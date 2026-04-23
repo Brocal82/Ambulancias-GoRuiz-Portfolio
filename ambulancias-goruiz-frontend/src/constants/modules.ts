@@ -7,8 +7,8 @@
  *   users, companies, invitations
  *
  * COMPOSITE MODULES:
- *   scheduling  → diensts + dienst-templates (desactivable; Excel solo lectura
- *   vendría aparte, no reemplaza aún a esta clave)
+ *   scheduling     → diensts + dienst-templates
+ *   excel-planning → planificación importada Excel (/api/excel-planning), aparte de scheduling
  *   workday     → workday-summary + trips
  *   mechanics   → averías (report-issue, admin mechanics)
  *
@@ -31,6 +31,7 @@ export const MODULE_KEYS = {
   PRAEMIEN:     "praemien",
   PAYROLL:      "payroll",
   DOCUMENTS:    "documents",
+  EXCEL_PLANNING: "excel-planning",
 } as const;
 
 export type ModuleKey = (typeof MODULE_KEYS)[keyof typeof MODULE_KEYS];
@@ -50,6 +51,7 @@ export const ALL_MODULE_KEYS: ModuleKey[] = [
   MODULE_KEYS.PRAEMIEN,
   MODULE_KEYS.PAYROLL,
   MODULE_KEYS.DOCUMENTS,
+  MODULE_KEYS.EXCEL_PLANNING,
 ];
 
 /** Human-readable labels for superadmin UI. */
@@ -67,6 +69,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   praemien:     "Prämien (bonificaciones)",
   payroll:      "Nóminas",
   documents:    "Documentos de empresa",
+  [MODULE_KEYS.EXCEL_PLANNING]: "Planificación (Excel)",
 };
 
 /**
