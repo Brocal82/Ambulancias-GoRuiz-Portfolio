@@ -6,7 +6,7 @@ export interface MechanicsIssue {
   endTime: string;
   team: string;
   ambulanceNumber: string;
-  ambulanceId: string;
+  ambulanceId?: string;
   finalKm: number;
   timestamp: string;
   issueText: string;

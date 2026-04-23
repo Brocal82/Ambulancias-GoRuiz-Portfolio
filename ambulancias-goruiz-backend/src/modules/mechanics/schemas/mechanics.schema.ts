@@ -17,8 +17,15 @@ export const reportIssueSchema = z.object({
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   team: z.string().optional(),
-  ambulanceNumber: z.string().min(1, "ambulanceNumber requerido"),
-  ambulanceId: objectIdSchema,
+  ambulanceNumber: z.preprocess(
+    (v) =>
+      v === "" || v === null || v === undefined ? undefined : v,
+    z.string().min(1, "ambulanceNumber requerido").optional(),
+  ),
+  ambulanceId: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : v),
+    objectIdSchema.optional(),
+  ),
   finalKm: z.number().optional(),
   timestamp: z.string().min(1, "timestamp requerido"),
   issueText: z.string().min(1, "issueText requerido"),

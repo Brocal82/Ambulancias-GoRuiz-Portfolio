@@ -38,7 +38,7 @@ import AdminDienstsPage from "./modules/diensts/pages/AdminDienstsPage";
 import AdminDienstTemplatesPage from "./modules/dienstTemplates/pages/AdminDienstTemplatesPage";
 import AdminVacationsPage from "./modules/vacation/pages/AdminVacationsPage";
 import AdminAmbulancesPage from "./modules/ambulances/pages/AdminAmbulancesPage";
-import { AdminMechanicsPage } from "./modules/mechanics";
+import { AdminMechanicsPage, WorkerReportMechanicsPage } from "./modules/mechanics";
 import AdminUserDetailDashboard from "./modules/users/pages/AdminUserDetailDashboard";
 import AdminMessagesPage from "./modules/messages/pages/AdminMessagesPage";
 import AdminSentMessages from "./modules/messages/pages/AdminSentMessages";
@@ -99,6 +99,12 @@ export default function App() {
                 <Route path="/worker/messages" element={<WorkerMessagesPage />} />
               </Route>
               <Route path="/my-workday" element={<MyWorkdayPage />} />
+              <Route element={<RequireModule name="mechanics" />}>
+                <Route
+                  path="/worker/report-issue"
+                  element={<WorkerReportMechanicsPage />}
+                />
+              </Route>
               <Route element={<RequireModule name="appointments" />}>
                 <Route path="/worker/appointments" element={<WorkerAppointmentsPage />} />
               </Route>

@@ -186,6 +186,10 @@
                 "title": "🚨 Mein heutiger Arbeitstag",
                 "desc": "Tägliche Fahrten erfassen und verwalten"
             },
+            "mechanics": {
+                "title": "🔧 Störung melden",
+                "desc": "Technischen Bericht senden, ohne den Tag abzuschließen"
+            },
             "praemien": {
                 "title": "🎖 Prämien",
                 "desc": "Monatlichen Fortschritt ansehen"
@@ -799,7 +803,20 @@
                 "actions": {
                     "cancel": "Abbrechen",
                     "send": "Störung senden"
-                }
+                },
+                "manualAmbulanceLabel": "Fahrzeug-Kennzeichnung",
+                "manualAmbulancePlaceholder": "z. B. Flottennummer, Kennzeichen oder Vermerk vom Papier"
+            },
+            "workerReport": {
+                "title": "Störung melden",
+                "intro": "Es reicht ein heute zugewiesener Dienst (oder ein laufender Nachtdienst). „Mein heutiger Arbeitstag“ ist nicht nötig—fehlt das Fahrzeug aus Planung oder Krankenwagen-Modul, kannst du es im Formular eintragen.",
+                "back": "Zurück zum Panel",
+                "noAssignment": "Für heute ist kein Dienst zugewiesen.",
+                "linkDienst": "Dienstplan ansehen",
+                "openForm": "Störungsformular öffnen",
+                "refresh": "Dienst-Daten aktualisieren",
+                "hintManualVehicle": "Wenn die Ambulanz nicht automatisch erkannt wird, fragt das Formular nach der Kennzeichnung.",
+                "ambulanceFromRoster": "Fahrzeug laut Dienstplan (keine Nummer hier)"
             }
         },
         "appointments": {
@@ -1383,6 +1400,7 @@
             "reportSent": "🔧 Störung erfolgreich gemeldet.",
             "reportError": "❌ Störung konnte nicht gemeldet werden.",
             "invalidAmbulance": "🚑 Bitte ein gültiges Fahrzeug auswählen.",
+            "missingAmbulanceIdentification": "🚑 Bitte angeben, wie die Ambulanz zu identifizieren ist (Nummer, Kennzeichen usw.).",
             "missingDescription": "📝 Bitte die Störung beschreiben.",
             "invalidFinalKm": "📏 Bitte eine gültige End-KM Zahl eingeben.",
             "deleteSuccess": "Bericht erfolgreich gelöscht.",

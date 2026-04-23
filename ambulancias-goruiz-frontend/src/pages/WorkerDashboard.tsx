@@ -55,6 +55,17 @@ const WorkerDashboard = () => {
           </p>
         </Link>
 
+        {hasModule(MODULE_KEYS.MECHANICS) && (
+          <Link to="/worker/report-issue" className={centeredCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.workerDashboard.mechanics.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.workerDashboard.mechanics.desc")}
+            </p>
+          </Link>
+        )}
+
         {hasModule(MODULE_KEYS.PRAEMIEN) && (
           <Link to="/worker/praemien" className={centeredCard}>
             <h2 className="text-lg font-semibold mb-2">

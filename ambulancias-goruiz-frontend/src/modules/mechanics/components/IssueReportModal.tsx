@@ -1,5 +1,5 @@
 // src/components/workday/IssueReportModal.tsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { reportIssue } from "../domain/api";
 import { toastT } from "../../../utils/toast";
 import type { AssignedDayFull } from "../../../modules/diensts";
@@ -31,16 +31,34 @@ const IssueReportModal: React.FC<Props> = ({
     const [finalKmInput, setFinalKmInput] = useState<string>(
         finalKm > 0 ? finalKm.toString() : "",
     );
+    const [manualAmbulanceNumber, setManualAmbulanceNumber] = useState("");
     const [isSending, setIsSending] = useState(false);
 
+    useEffect(() => {
+        if (!isOpen) return;
+        setManualAmbulanceNumber("");
+        setDescription("");
+        setFinalKmInput(finalKm > 0 ? finalKm.toString() : "");
+    }, [isOpen, assignedDay.assignmentId, finalKm]);
+
     if (!isOpen) return null;
+
+    const displayAmbulance =
+        ambulanceNumber.trim() ||
+        manualAmbulanceNumber.trim() ||
+        t("pages.mechanics.issueModal.unknownAmbulance");
 
     const handleSend = async () => {
         if (isSending) return;
         setIsSending(true);
 
-        if (!ambulanceId || ambulanceId.length < 24) {
-            toastT.warn(["toasts.mechanics.invalidAmbulance"]);
+        const effectiveAmbulanceNumber = (
+            ambulanceNumber.trim() ||
+            manualAmbulanceNumber.trim()
+        ).trim();
+
+        if (!effectiveAmbulanceNumber) {
+            toastT.warn(["toasts.mechanics.missingAmbulanceIdentification"]);
             setIsSending(false);
             return;
         }
@@ -58,6 +76,12 @@ const IssueReportModal: React.FC<Props> = ({
         }
 
         const finalKmValue = Number(finalKmInput);
+        const validAmbulanceId =
+            typeof ambulanceId === "string" &&
+            ambulanceId.length === 24 &&
+            /^[0-9a-fA-F]{24}$/.test(ambulanceId)
+                ? ambulanceId
+                : undefined;
 
         const payload = {
             assignmentId: assignedDay.assignmentId,
@@ -66,13 +90,13 @@ const IssueReportModal: React.FC<Props> = ({
             startTime: assignedDay.startTime,
             endTime: assignedDay.endTime,
             team: `${assignedDay.driver.lastName}, ${assignedDay.driver.name} + ${assignedDay.medic.lastName}, ${assignedDay.medic.name}`,
-            ambulanceNumber: ambulanceNumber,
-            ambulanceId,
+            ambulanceNumber: effectiveAmbulanceNumber,
             finalKm: finalKmValue,
             timestamp: new Date().toISOString(),
             issueText: description.trim(),
             driver: assignedDay.driver._id,
             medic: assignedDay.medic._id,
+            ...(validAmbulanceId ? { ambulanceId: validAmbulanceId } : {}),
         };
 
         try {
@@ -133,12 +157,28 @@ const IssueReportModal: React.FC<Props> = ({
                                     <strong className="text-slate-800">
                                         {t("pages.mechanics.issueModal.ambulance")}
                                     </strong>{" "}
-                                    {ambulanceNumber ||
-                                        t("pages.mechanics.issueModal.unknownAmbulance")}
+                                    {displayAmbulance}
                                 </p>
                             </div>
                         </div>
                     </div>
+
+                    {!ambulanceNumber.trim() ? (
+                        <div>
+                            <label className="block text-sm font-medium text-slate-800 mb-1">
+                                {t("pages.mechanics.issueModal.manualAmbulanceLabel")}
+                            </label>
+                            <input
+                                type="text"
+                                value={manualAmbulanceNumber}
+                                onChange={(e) => setManualAmbulanceNumber(e.target.value)}
+                                placeholder={t(
+                                    "pages.mechanics.issueModal.manualAmbulancePlaceholder",
+                                )}
+                                className="w-full rounded-md border border-slate-300 bg-slate-50/50 px-3 py-2 text-sm placeholder-slate-400 outline-none focus:border-slate-400 focus:ring-2 focus:ring-blue-200"
+                            />
+                        </div>
+                    ) : null}
 
                     {/* Kilometraje final */}
                     <div>

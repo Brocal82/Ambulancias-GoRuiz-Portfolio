@@ -343,10 +343,12 @@ const AdminMechanicsPage = () => {
                                 </div>
                               ) : (
                                 <div className="text-slate-700">
-                                  {t("pages.mechanics.adminPage.ambulanceFallback", {
-                                    number: issue.ambulanceNumber,
-                                    id: issue.ambulanceId,
-                                  })}
+                                  {issue.ambulanceId
+                                    ? t("pages.mechanics.adminPage.ambulanceFallback", {
+                                        number: issue.ambulanceNumber,
+                                        id: issue.ambulanceId,
+                                      })
+                                    : issue.ambulanceNumber}
                                   <div className="mt-1">
                                     <span className="font-semibold text-slate-800">
                                       {t("pages.mechanics.adminPage.labels.finalKm")}

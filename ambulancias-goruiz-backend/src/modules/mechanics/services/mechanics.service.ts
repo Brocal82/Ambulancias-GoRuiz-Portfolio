@@ -52,14 +52,7 @@ export async function reportIssue(
     );
   }
 
-  if (
-    !assignmentId ||
-    !dienstNumber ||
-    !ambulanceNumber ||
-    !ambulanceId ||
-    !timestamp ||
-    !issueText
-  ) {
+  if (!assignmentId || !dienstNumber || !timestamp || !issueText) {
     throw new WorkdaySummaryError(
       "Faltan datos obligatorios para reporte de avería.",
       400,
@@ -76,6 +69,22 @@ export async function reportIssue(
   );
   assertUserCanCloseAssignment(dienst as any, assignment, userId, userRole, userCompanyId);
 
+  let resolvedAmbulanceId: string | undefined;
+  if (
+    typeof ambulanceId === "string" &&
+    mongoose.Types.ObjectId.isValid(ambulanceId)
+  ) {
+    resolvedAmbulanceId = ambulanceId;
+  }
+  if (!resolvedAmbulanceId && assignment.ambulanceId) {
+    resolvedAmbulanceId = assignment.ambulanceId.toString();
+  }
+
+  let resolvedAmbulanceNumber = String(ambulanceNumber ?? "").trim();
+  if (!resolvedAmbulanceNumber) {
+    resolvedAmbulanceNumber = "—";
+  }
+
   const { driver, medic } = assignment;
   const dienstCompanyId = (dienst as any).companyId;
 
@@ -85,8 +94,8 @@ export async function reportIssue(
     startTime,
     endTime,
     team,
-    ambulanceNumber,
-    ambulanceId,
+    ambulanceNumber: resolvedAmbulanceNumber,
+    ...(resolvedAmbulanceId ? { ambulanceId: resolvedAmbulanceId } : {}),
     finalKm,
     timestamp,
     issueText,

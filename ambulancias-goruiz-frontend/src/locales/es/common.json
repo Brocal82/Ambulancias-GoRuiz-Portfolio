@@ -186,6 +186,10 @@
                 "title": "🚨 Mi jornada de hoy",
                 "desc": "Registra y gestiona tus viajes diarios"
             },
+            "mechanics": {
+                "title": "🔧 Reportar avería",
+                "desc": "Envía un parte técnico sin cerrar la jornada"
+            },
             "praemien": {
                 "title": "🎖 Premios",
                 "desc": "Consulta tu progreso mensual"
@@ -799,7 +803,20 @@
                 "actions": {
                     "cancel": "Cancelar",
                     "send": "Enviar avería"
-                }
+                },
+                "manualAmbulanceLabel": "Identificación del vehículo",
+                "manualAmbulancePlaceholder": "Ej. número de flota, matrícula o anotación del papel de ruta"
+            },
+            "workerReport": {
+                "title": "Reportar avería",
+                "intro": "Basta con tener un Dienst asignado para hoy (o turno nocturno en curso). No hace falta usar «Mi jornada»: si el vehículo no viene del plan o del módulo de ambulancias, podrás indicarlo en el formulario.",
+                "back": "Volver al panel",
+                "noAssignment": "No tienes un Dienst asignado para hoy.",
+                "linkDienst": "Ver horario de turnos",
+                "openForm": "Abrir formulario de avería",
+                "refresh": "Actualizar datos del turno",
+                "hintManualVehicle": "Si no reconocemos la ambulancia automáticamente, el formulario te pedirá cómo identificarla.",
+                "ambulanceFromRoster": "Vehículo según plan de turnos (sin número en pantalla)"
             }
         },
         "appointments": {
@@ -1383,6 +1400,7 @@
             "reportSent": "🔧 Avería reportada correctamente.",
             "reportError": "❌ No se pudo reportar la avería.",
             "invalidAmbulance": "🚑 Selecciona una ambulancia válida.",
+            "missingAmbulanceIdentification": "🚑 Indica cómo identificar la ambulancia (número, matrícula, etc.).",
             "missingDescription": "📝 Describe la avería antes de enviar.",
             "invalidFinalKm": "📏 Introduce un número válido de KM finales.",
             "deleteSuccess": "Reporte eliminado correctamente.",
