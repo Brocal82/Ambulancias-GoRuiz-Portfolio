@@ -150,7 +150,7 @@ const WorkerReportMechanicsPage = () => {
             </p>
             <p className="text-sm text-slate-700">
               <span className="font-medium text-slate-800">
-                {t("pages.mechanics.issueModal.ambulance")}:
+                {t("pages.mechanics.issueModal.ambulanceNumberLabel")}:
               </span>{" "}
               {ambulanceLine}
             </p>

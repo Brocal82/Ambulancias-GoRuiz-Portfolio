@@ -319,7 +319,9 @@ const AdminMechanicsPage = () => {
                                 <div className="grid grid-cols-2 gap-x-6 gap-y-1">
                                   <div className="truncate">
                                     <span className="font-semibold text-slate-800">
-                                      {t("pages.mechanics.adminPage.labels.ambulance")}
+                                      {t(
+                                        "pages.mechanics.adminPage.labels.ambulanceNumber",
+                                      )}
                                     </span>{" "}
                                     {amb.ambulanceNumber}
                                   </div>
@@ -343,14 +345,24 @@ const AdminMechanicsPage = () => {
                                   </div>
                                 </div>
                               ) : (
-                                <div className="text-slate-700">
-                                  {issue.ambulanceId
-                                    ? t("pages.mechanics.adminPage.ambulanceFallback", {
-                                        number: issue.ambulanceNumber,
-                                        id: issue.ambulanceId,
-                                      })
-                                    : issue.ambulanceNumber}
-                                  <div className="mt-1">
+                                <div className="text-slate-700 space-y-1">
+                                  <div>
+                                    <span className="font-semibold text-slate-800">
+                                      {t(
+                                        "pages.mechanics.adminPage.labels.ambulanceNumber",
+                                      )}
+                                    </span>{" "}
+                                    {issue.ambulanceId
+                                      ? t(
+                                          "pages.mechanics.adminPage.ambulanceFallback",
+                                          {
+                                            number: issue.ambulanceNumber,
+                                            id: issue.ambulanceId,
+                                          },
+                                        )
+                                      : issue.ambulanceNumber}
+                                  </div>
+                                  <div>
                                     <span className="font-semibold text-slate-800">
                                       {t("pages.mechanics.adminPage.labels.finalKm")}
                                     </span>{" "}

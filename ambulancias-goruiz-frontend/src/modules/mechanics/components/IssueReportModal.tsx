@@ -48,11 +48,6 @@ const IssueReportModal: React.FC<Props> = ({
 
     if (!isOpen) return null;
 
-    const displayAmbulance =
-        ambulanceNumber.trim() ||
-        manualAmbulanceNumber.trim() ||
-        t("pages.mechanics.issueModal.unknownAmbulance");
-
     const handleSend = async () => {
         if (isSending) return;
         setIsSending(true);
@@ -150,7 +145,7 @@ const IssueReportModal: React.FC<Props> = ({
                                 </p>
                             </div>
 
-                            {/* Columna derecha: fecha y ambulancia */}
+                            {/* Columna derecha: fecha */}
                             <div className="space-y-1 sm:text-right">
                                 <p>
                                     <strong className="text-slate-800">
@@ -158,22 +153,29 @@ const IssueReportModal: React.FC<Props> = ({
                                     </strong>{" "}
                                     {formatYYYYMMDDToDDMMYYYY(assignedDay.date)}
                                 </p>
-                                <p>
-                                    <strong className="text-slate-800">
-                                        {t("pages.mechanics.issueModal.ambulance")}
-                                    </strong>{" "}
-                                    {displayAmbulance}
-                                </p>
                             </div>
                         </div>
                     </div>
 
-                    {!ambulanceNumber.trim() ? (
-                        <div>
-                            <label className="block text-sm font-medium text-slate-800 mb-1">
-                                {t("pages.mechanics.issueModal.manualAmbulanceLabel")}
-                            </label>
+                    {/* Número de ambulancia (mismo patrón de título que KM finales) */}
+                    <div>
+                        <label
+                            htmlFor="mechanics-issue-ambulance-number"
+                            className="block text-sm font-medium text-slate-800 mb-1"
+                        >
+                            {t("pages.mechanics.issueModal.ambulanceNumberLabel")}
+                        </label>
+                        {ambulanceNumber.trim() ? (
                             <input
+                                id="mechanics-issue-ambulance-number"
+                                readOnly
+                                type="text"
+                                value={ambulanceNumber.trim()}
+                                className="w-full cursor-default rounded-md border border-slate-300 bg-slate-100/80 px-3 py-2 text-sm text-slate-800 outline-none"
+                            />
+                        ) : (
+                            <input
+                                id="mechanics-issue-ambulance-number"
                                 type="text"
                                 value={manualAmbulanceNumber}
                                 onChange={(e) => setManualAmbulanceNumber(e.target.value)}
@@ -182,8 +184,8 @@ const IssueReportModal: React.FC<Props> = ({
                                 )}
                                 className="w-full rounded-md border border-slate-300 bg-slate-50/50 px-3 py-2 text-sm placeholder-slate-400 outline-none focus:border-slate-400 focus:ring-2 focus:ring-blue-200"
                             />
-                        </div>
-                    ) : null}
+                        )}
+                    </div>
 
                     {/* Kilometraje final */}
                     <div>
