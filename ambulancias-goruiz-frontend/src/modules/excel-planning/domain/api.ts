@@ -11,17 +11,26 @@ export interface ExcelPlanningMapping {
   rowLabelColumn?: number;
   dayColumns: [number, number, number, number, number, number, number];
   lineDelimiter?: string;
-  cellLineOrder: Array<
-    | "time"
-    | "vehicle"
-    | "employeeNumber"
-    | "partnerEmployeeNumber"
-    | "name"
-    | "partnerName"
-    | "ignore"
-  >;
+  /** Nombres canónicos o alias por empresa; el backend resuelve (p. ej. autoid → vehicle). */
+  cellLineOrder: string[];
   nameMatching?: "employee_number_only" | "employee_number_then_name";
   normalizeEmployeeNumber?: "trim" | "trim_strip_leading_zeros";
+  /** Mismas claves que en GET /me → cardLayout. */
+  workerCardLayout?: {
+    dayDateField: string;
+    timeField: string;
+    vehicleField: string;
+    driverField: string;
+    medicField: string;
+  };
+  /** Nombres propios (Excel / jerga) por parte de ficha, solo referencia en admin. */
+  workerCardLineNameHints?: {
+    dayDateField?: string;
+    timeField?: string;
+    vehicleField?: string;
+    driverField?: string;
+    medicField?: string;
+  };
 }
 
 /** Cuerpo de POST /export (sin campos de match del import). */
@@ -166,6 +175,13 @@ export async function getMyExcelPlanningWeek(weekStart?: string) {
     rows: ExcelPlanRow[];
     published: boolean;
     sourceFileUrl?: string;
+    cardLayout?: {
+      dayDateField: string;
+      timeField: string;
+      vehicleField: string;
+      driverField: string;
+      medicField: string;
+    };
   }>("/api/excel-planning/me", {
     params: weekStart ? { weekStart } : undefined,
   });

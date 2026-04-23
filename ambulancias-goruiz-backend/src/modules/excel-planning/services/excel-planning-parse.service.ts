@@ -1,6 +1,9 @@
 import * as XLSX from "xlsx";
 import { setISOWeek, startOfISOWeek } from "date-fns";
-import type { ExcelPlanningMapping } from "../schemas/excel-planning.schemas";
+import {
+  type ExcelPlanningMapping,
+  resolveCellLineRoleToCanonical,
+} from "../schemas/excel-planning.schemas";
 import type { IExcelPlanRow } from "../models/excel-planning-import.model";
 
 export interface ParseExcelResult {
@@ -99,14 +102,18 @@ export function parseWeekStartFromCellText(raw: string): Date | null {
 export function migrateLegacyCellLineOrder(
   order: ExcelPlanningMapping["cellLineOrder"],
 ): ExcelPlanningMapping["cellLineOrder"] {
-  const peIdx = order.indexOf("partnerEmployeeNumber");
-  const nameIdx = order.indexOf("name");
+  const canon = order.map((r) => resolveCellLineRoleToCanonical(r)!);
+  const peIdx = canon.indexOf("partnerEmployeeNumber");
+  const nameIdx = canon.indexOf("name");
   if (peIdx === -1 || nameIdx === -1 || peIdx >= nameIdx) {
     return order;
   }
-  const without = order.filter((r) => r !== "partnerEmployeeNumber");
-  const pnIdx = without.indexOf("partnerName");
-  const nameIdx2 = without.indexOf("name");
+  const without = order.filter(
+    (_r, i) => canon[i] !== "partnerEmployeeNumber",
+  );
+  const withoutCanon = without.map((r) => resolveCellLineRoleToCanonical(r)!);
+  const pnIdx = withoutCanon.indexOf("partnerName");
+  const nameIdx2 = withoutCanon.indexOf("name");
   const insertAt =
     pnIdx >= 0 ? pnIdx + 1 : nameIdx2 >= 0 ? nameIdx2 + 1 : without.length;
   const out: ExcelPlanningMapping["cellLineOrder"] = [...without];
@@ -167,7 +174,7 @@ function mapLinesToFields(
     displayPartnerNameFromExcel?: string;
   } = {};
   for (let i = 0; i < order.length; i++) {
-    const role = order[i];
+    const role = resolveCellLineRoleToCanonical(order[i])!;
     const line = lines[i]?.trim() ?? "";
     if (role === "ignore" || !line) continue;
     if (role === "time") out.timeText = line;

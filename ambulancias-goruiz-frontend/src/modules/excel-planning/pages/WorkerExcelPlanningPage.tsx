@@ -10,7 +10,6 @@ import {
   WeekBlock,
   DienstDayCell,
   WEEK_GRID_CLASS,
-  type DienstDayCellLines,
 } from "../../diensts/components";
 import {
   addDaysToDayKey,
@@ -21,7 +20,6 @@ import {
   getAssignmentStatus,
   buildDienstDayCellLines,
   resolveUserAbsenceForFreeDay,
-  formatPersonLabel,
 } from "../../diensts/utils";
 import { useModules } from "../../../hooks/useModules";
 import { MODULE_KEYS } from "../../../constants/modules";
@@ -33,7 +31,12 @@ import {
   getMyExcelPlanningWeek,
   type ExcelPlanRow,
 } from "../domain/api";
-import { formatCellDateUnified } from "../../../utils/timeUtils";
+import {
+  buildExcelCellLinesForLayout,
+  DEFAULT_WORKER_CARD_LAYOUT,
+  normalizeWorkerCardLayout,
+  type WorkerCardLayout,
+} from "../domain/workerCardLayout";
 
 /** Soporta "06:45-14:45" sin espacios alrededor del guion. */
 function parseExcelTimeRange(text?: string): { start?: string; end?: string } {
@@ -120,42 +123,6 @@ function excelRowsToAssignment(rows: ExcelPlanRow[]): {
     driver: driverLabel.trim() || "—",
     medic: medicLabel.trim() || "—",
     ambulanceNumber,
-  };
-}
-
-/**
- * Misma tarjeta que Diensts worker: fecha arriba, horario + vehículo, conductor + sanitario.
- */
-function buildExcelShiftCellLines(
-  isoDay: string,
-  lang: string,
-  rows: ExcelPlanRow[],
-): DienstDayCellLines {
-  const first = rows[0];
-  const parsed = rows.map((r) => parseExcelTimeRange(r.timeText));
-  const ok = parsed.filter((p) => p.start && p.end);
-
-  let timeLine: string;
-  if (ok.length === 1 && ok[0].start && ok[0].end) {
-    timeLine = `🕒 ${ok[0].start} - ${ok[0].end}`;
-  } else if (ok.length > 1) {
-    timeLine = `🕒 ${ok.map((p) => `${p.start}-${p.end}`).join(" · ")}`;
-  } else if (first.timeText?.trim()) {
-    timeLine = `🕒 ${first.timeText.trim()}`;
-  } else {
-    timeLine = "🕒 —";
-  }
-
-  const vehicles = [...new Set(rows.map((r) => r.vehicleCode).filter(Boolean))];
-  const ambulanceText = vehicles.length ? vehicles.join(" · ") : "—";
-  const { driverLabel, medicLabel } = resolveDriverMedicLabels(rows);
-
-  return {
-    dateLine: formatCellDateUnified(isoDay, lang),
-    timeLine,
-    ambulanceLine: `🚑 ${ambulanceText}`,
-    driverLine: `👨‍✈️ ${driverLabel.trim() ? formatPersonLabel(driverLabel) : "—"}`,
-    medicLine: `🧑‍⚕️ ${medicLabel.trim() ? formatPersonLabel(medicLabel) : "—"}`,
   };
 }
 
@@ -253,6 +220,7 @@ function buildExcelRowGroupsForWeek(
 type WeekBundle = {
   rows: ExcelPlanRow[];
   published: boolean;
+  cardLayout: WorkerCardLayout;
 };
 
 function publishedFromApi(data: {
@@ -315,10 +283,16 @@ export default function WorkerExcelPlanningPage() {
         [w0]: {
           rows: d0.rows ?? [],
           published: publishedFromApi(d0),
+          cardLayout: normalizeWorkerCardLayout(d0.cardLayout) ?? {
+            ...DEFAULT_WORKER_CARD_LAYOUT,
+          },
         },
         [w1]: {
           rows: d1.rows ?? [],
           published: publishedFromApi(d1),
+          cardLayout: normalizeWorkerCardLayout(d1.cardLayout) ?? {
+            ...DEFAULT_WORKER_CARD_LAYOUT,
+          },
         },
       });
       setVacationRequests(Array.isArray(vacs) ? vacs : []);
@@ -433,6 +407,8 @@ export default function WorkerExcelPlanningPage() {
             {pairMondays.map((mk) => {
               const published = bundleByMonday[mk]?.published ?? false;
               const weekRows = bundleByMonday[mk]?.rows ?? [];
+              const weekCardLayout =
+                bundleByMonday[mk]?.cardLayout ?? DEFAULT_WORKER_CARD_LAYOUT;
               const weekDates = getWeekDays(mk);
               const rowGroups = mergeWorkerExcelRowGroupsForWeek(
                 buildExcelRowGroupsForWeek(weekRows, weekDates),
@@ -491,10 +467,11 @@ export default function WorkerExcelPlanningPage() {
 
                               const assignmentLike =
                                 excelRowsToAssignment(dayRows);
-                              const lines = buildExcelShiftCellLines(
+                              const lines = buildExcelCellLinesForLayout(
                                 dateStr,
                                 i18n.language,
                                 dayRows,
+                                weekCardLayout,
                               );
                               const status = getAssignmentStatus(assignmentLike);
                               return (

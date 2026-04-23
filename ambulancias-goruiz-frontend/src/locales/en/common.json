@@ -1563,6 +1563,32 @@
         "workerTitle": "My planning (Excel)",
         "workerIntro": "Only shifts that match your employee number or import assignment are shown.",
         "backAdmin": "← Back to dashboard",
+        "cardTemplate": {
+            "sectionTitle": "Card layout (worker view)",
+            "intro": "Choose which field from each imported row fills each part of the worker card: day header, time, vehicle, and staff lines.",
+            "hintKeys": "Values like timeText, vehicleCode, displayNameFromExcel must exist in the data after import. “driver” and “medic” resolve driver/medic using directory roles. “app_dayDate” formats the day date in the card header.",
+            "exampleWeekTitle": "Template: preview and names",
+            "tableIntro": "Each row: what the worker sees (same layout for every company), the logical app field, and on the right what your team calls it in the Excel (reference only, stored in the template).",
+            "colPreview": "Preview (example)",
+            "colFieldKey": "App field",
+            "colYourName": "What you call it in Excel (optional)",
+            "yourNamePlaceholder": "e.g. fleet id, KFZ, line 2…",
+            "exampleNote": "After save, workers see the week in this field layout. The third column does not change the import; it is per-company reference only.",
+            "slotLabel": {
+                "dayDateField": "Header: day date on the card",
+                "timeField": "Time / shift line (clock)",
+                "vehicleField": "Vehicle line (ambulance icon)",
+                "driverField": "Driver line (icon)",
+                "medicField": "Medic line (icon)"
+            },
+            "slotHelp": {
+                "dayDateField": "Usually app_dayDate or another field for the day label.",
+                "timeField": "Usually timeText.",
+                "vehicleField": "Usually vehicleCode.",
+                "driverField": "Use “driver” for role-based driver, or a field name for fixed text.",
+                "medicField": "Use “medic” for the partner/role line, or a specific field name."
+            }
+        },
         "backWorker": "← Back to dashboard",
         "loading": "Loading…",
         "loadError": "Could not load planning.",

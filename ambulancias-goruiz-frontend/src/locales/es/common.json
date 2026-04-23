@@ -1563,6 +1563,32 @@
         "workerTitle": "Mi planificación (Excel)",
         "workerIntro": "Solo se muestran turnos que le corresponden por número de trabajador o asignación en la importación.",
         "backAdmin": "← Volver al panel",
+        "cardTemplate": {
+            "sectionTitle": "Vista de tarjeta (trabajador)",
+            "intro": "Indique qué campo de cada fila importada rellena cada parte de la ficha, como en la app del trabajador: fecha, horario, vehículo y personal.",
+            "hintKeys": "Valores como timeText, vehicleCode, displayNameFromExcel, etc. deben existir en los datos tras el import. «driver» y «medic» resuelven conductor y sanitario con los roles del directorio. «app_dayDate» formatea la fecha del día en la cabecera de la tarjeta.",
+            "exampleWeekTitle": "Plantilla: vista previa y nombres",
+            "tableIntro": "Cada fila: lo que el trabajador ve (igual estructura para todas las empresas), el campo lógico en la app y, a la derecha, cómo lo llama vuestro Excel o vuestro equipo (solo informativo, se guarda en la plantilla).",
+            "colPreview": "Vista (ejemplo)",
+            "colFieldKey": "Campo en la app",
+            "colYourName": "Cómo lo llama vuestro Excel (opcional)",
+            "yourNamePlaceholder": "p. ej. KFZ, autoid, nº de línea Dienst…",
+            "exampleNote": "Tras guardar, los trabajadores verán su semana con esta disposición de campos. Los nombres de la tercera columna no cambian el import: sirven de referencia por empresa.",
+            "slotLabel": {
+                "dayDateField": "Cabecera: fecha del día en la tarjeta",
+                "timeField": "Línea de franja u horario (icono reloj)",
+                "vehicleField": "Línea de vehículo (icono ambulancia)",
+                "driverField": "Línea conductor (icono)",
+                "medicField": "Línea sanitario (icono)"
+            },
+            "slotHelp": {
+                "dayDateField": "Casi siempre app_dayDate (fecha de la columna) o un campo de texto con fecha.",
+                "timeField": "Suele ser timeText.",
+                "vehicleField": "Suele ser vehicleCode.",
+                "driverField": "Use «driver» para asignar conductor según perfiles, o un campo concreto (p. ej. displayNameFromExcel) si prefiere texto fijo.",
+                "medicField": "Use «medic» con compañero y roles, o un campo (p. ej. displayPartnerNameFromExcel)."
+            }
+        },
         "backWorker": "← Volver al panel",
         "loading": "Cargando…",
         "loadError": "No se pudo cargar la planificación.",

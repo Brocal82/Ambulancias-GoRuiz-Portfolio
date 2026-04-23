@@ -8,7 +8,11 @@ import ExcelPlanningImport, {
   type IExcelPlanRow,
 } from "../models/excel-planning-import.model";
 import ExcelPlanningWeek from "../models/excel-planning-week.model";
-import { excelPlanningMappingSchema } from "../schemas/excel-planning.schemas";
+import {
+  excelPlanningMappingSchema,
+  workerCardLayoutSchema,
+  type WorkerCardLayout,
+} from "../schemas/excel-planning.schemas";
 import type {
   ExcelPlanningMapping,
   PutExcelPlanningTemplateBody,
@@ -693,6 +697,7 @@ export async function getMyPublishedWeek(req: Request, weekStartQuery?: string) 
         rows: [] as IExcelPlanRow[],
         published: false,
         sourceFileUrl: undefined as string | undefined,
+        cardLayout: pickWorkerCardLayoutFromMapping(undefined),
       },
     };
   }
@@ -786,6 +791,13 @@ export async function getMyPublishedWeek(req: Request, weekStartQuery?: string) 
     };
   });
 
+  const templateDoc = await ExcelPlanningTemplate.findOne({
+    companyId: r.companyId,
+  }).lean();
+  const cardLayout = pickWorkerCardLayoutFromMapping(
+    templateDoc?.mapping as ExcelPlanningMapping | undefined,
+  );
+
   return {
     ok: true as const,
     data: {
@@ -793,8 +805,20 @@ export async function getMyPublishedWeek(req: Request, weekStartQuery?: string) 
       rows,
       published: true,
       sourceFileUrl: doc.sourceFileUrl,
+      cardLayout,
     },
   };
+}
+
+function pickWorkerCardLayoutFromMapping(
+  mapping: ExcelPlanningMapping | undefined,
+): WorkerCardLayout {
+  const w = mapping?.workerCardLayout;
+  if (!w || typeof w !== "object") {
+    return workerCardLayoutSchema.parse({});
+  }
+  const p = workerCardLayoutSchema.safeParse(w);
+  return p.success ? p.data : workerCardLayoutSchema.parse({});
 }
 
 export async function discardImportForAdmin(req: Request, importId: string) {

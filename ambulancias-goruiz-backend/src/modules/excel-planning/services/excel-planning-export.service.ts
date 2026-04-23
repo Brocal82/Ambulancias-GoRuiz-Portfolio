@@ -1,5 +1,8 @@
 import * as XLSX from "xlsx";
-import type { ExcelPlanningMapping } from "../schemas/excel-planning.schemas";
+import {
+  type ExcelPlanningMapping,
+  resolveCellLineRoleToCanonical,
+} from "../schemas/excel-planning.schemas";
 import { parseIsoDateUtc, normalizeYmdToIsoWeekMondayUtc } from "./excel-planning-parse.service";
 
 export type ExcelExportInputRow = {
@@ -43,7 +46,8 @@ function buildMultilineCell(
 ): string {
   const delim = mapping.lineDelimiter ?? "\n";
   const parts: string[] = [];
-  for (const role of mapping.cellLineOrder) {
+  for (const roleRaw of mapping.cellLineOrder) {
+    const role = resolveCellLineRoleToCanonical(roleRaw)!;
     if (role === "ignore") {
       parts.push("");
       continue;

@@ -1563,6 +1563,32 @@
         "workerTitle": "Meine Planung (Excel)",
         "workerIntro": "Es werden nur Schichten angezeigt, die über Personalnummer oder Zuordnung im Import zu Ihnen passen.",
         "backAdmin": "← Zurück zum Panel",
+        "cardTemplate": {
+            "sectionTitle": "Karten-Layout (Mitarbeiteransicht)",
+            "intro": "Legen Sie fest, welches Feld aus jeder importierten Zeile welchen Teil der Karte füllt: Datum, Zeit, Fahrzeug und Personal.",
+            "hintKeys": "Werte wie timeText, vehicleCode, displayNameFromExcel müssen nach dem Import vorhanden sein. «driver» und «medic» nutzen die Rollen im Profil. «app_dayDate» formatiert das Tagesdatum in der Kartenüberschrift.",
+            "exampleWeekTitle": "Vorlage: Vorschau und Bezeichnungen",
+            "tableIntro": "Jede Zeile: was der Mitarbeiter sieht (gleiche Struktur für alle), das logische App-Feld, rechts Ihre Bezeichnung im Excel (nur Notiz, wird in der Vorlage gespeichert).",
+            "colPreview": "Vorschau (Beispiel)",
+            "colFieldKey": "Feld in der App",
+            "colYourName": "Ihre Bezeichnung im Excel (optional)",
+            "yourNamePlaceholder": "z. B. Kfz-Nr., autoid, Dienstzeile…",
+            "exampleNote": "Nach dem Speichern sehen Mitarbeiter die Woche so. Die dritte Spalte ändert den Import nicht; sie dient als firmeninterne Referenz.",
+            "slotLabel": {
+                "dayDateField": "Kopf: Datumstag",
+                "timeField": "Schichtzeile (Uhr)",
+                "vehicleField": "Fahrzeug (Rettungswagen-Icon)",
+                "driverField": "Fahrer (Icon)",
+                "medicField": "Sanitäter (Icon)"
+            },
+            "slotHelp": {
+                "dayDateField": "Meist app_dayDate oder anderes Textfeld fürs Datum.",
+                "timeField": "Meist timeText.",
+                "vehicleField": "Meist vehicleCode.",
+                "driverField": "«driver» für rollenbasierte Zuordnung, oder Feldname für festen Text.",
+                "medicField": "«medic» für Partner/Rollen oder konkretes Namensfeld."
+            }
+        },
         "backWorker": "← Zurück zum Panel",
         "loading": "Laden…",
         "loadError": "Planung konnte nicht geladen werden.",

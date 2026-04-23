@@ -15,6 +15,15 @@ import {
   type ExcelPlanRow,
   type ExcelExportRow,
 } from "../domain/api";
+import {
+  DEFAULT_WORKER_CARD_LAYOUT,
+  EMPTY_WORKER_CARD_LINE_NAME_HINTS,
+  normalizeWorkerCardLayout,
+  normalizeWorkerCardLineNameHints,
+  type WorkerCardLayout,
+  type WorkerCardLineNameHints,
+} from "../domain/workerCardLayout";
+import WorkerCardTemplateEditor from "../components/WorkerCardTemplateEditor";
 
 const DEFAULT_MAPPING: ExcelPlanningMapping = {
   sheetIndex: 0,
@@ -111,6 +120,13 @@ export default function AdminExcelPlanningPage() {
     JSON.stringify(EXPORT_ROWS_EXAMPLE, null, 2),
   );
   const [exporting, setExporting] = useState(false);
+  const [workerCardLayout, setWorkerCardLayout] = useState<WorkerCardLayout>(
+    () => ({ ...DEFAULT_WORKER_CARD_LAYOUT }),
+  );
+  const [workerCardLineNameHints, setWorkerCardLineNameHints] =
+    useState<WorkerCardLineNameHints>(() => ({
+      ...EMPTY_WORKER_CARD_LINE_NAME_HINTS,
+    }));
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -119,6 +135,16 @@ export default function AdminExcelPlanningPage() {
       if (tpl?.mapping) {
         setName(tpl.name ?? "");
         setMappingText(JSON.stringify(tpl.mapping, null, 2));
+        setWorkerCardLayout(
+          normalizeWorkerCardLayout(
+            (tpl.mapping as ExcelPlanningMapping).workerCardLayout,
+          ),
+        );
+        setWorkerCardLineNameHints(
+          normalizeWorkerCardLineNameHints(
+            (tpl.mapping as ExcelPlanningMapping).workerCardLineNameHints,
+          ),
+        );
       }
       const w = await listExcelPlanningWeeks();
       setWeeks(w);
@@ -133,6 +159,24 @@ export default function AdminExcelPlanningPage() {
     void load();
   }, [load]);
 
+  const syncLayoutFromMappingJson = useCallback(() => {
+    try {
+      const parsed = JSON.parse(mappingText) as unknown;
+      if (!parsed || typeof parsed !== "object") return;
+      const m = parsed as Record<string, unknown>;
+      if ("workerCardLayout" in m) {
+        setWorkerCardLayout(normalizeWorkerCardLayout(m.workerCardLayout));
+      }
+      if ("workerCardLineNameHints" in m) {
+        setWorkerCardLineNameHints(
+          normalizeWorkerCardLineNameHints(m.workerCardLineNameHints),
+        );
+      }
+    } catch {
+      // JSON inválido: no tocar el editor de plantilla
+    }
+  }, [mappingText]);
+
   const saveTemplate = async () => {
     let mapping: ExcelPlanningMapping;
     try {
@@ -141,6 +185,11 @@ export default function AdminExcelPlanningPage() {
       toast.error(t("excelPlanning.invalidJson"));
       return;
     }
+    mapping = {
+      ...mapping,
+      workerCardLayout,
+      workerCardLineNameHints,
+    };
     setSaving(true);
     try {
       await putExcelPlanningTemplate({
@@ -148,6 +197,7 @@ export default function AdminExcelPlanningPage() {
         mapping,
       });
       toast.success(t("excelPlanning.templateSaved"));
+      setMappingText(JSON.stringify(mapping, null, 2));
     } catch (e) {
       toast.error(getApiErrorMessage(e, t("excelPlanning.saveError")));
     } finally {
@@ -256,12 +306,25 @@ export default function AdminExcelPlanningPage() {
             onChange={(e) => setName(e.target.value)}
           />
         </label>
+        <div className="pt-1">
+          <h3 className="text-sm font-medium text-slate-800 mb-1">
+            {t("excelPlanning.cardTemplate.sectionTitle")}
+          </h3>
+          <WorkerCardTemplateEditor
+            value={workerCardLayout}
+            onChange={setWorkerCardLayout}
+            lineNameHints={workerCardLineNameHints}
+            onLineNameHintsChange={setWorkerCardLineNameHints}
+          />
+        </div>
         <label className="block text-sm">
           {t("excelPlanning.mappingJson")}
           <textarea
             className="mt-1 w-full font-mono text-xs border rounded px-2 py-2 min-h-[220px]"
             value={mappingText}
             onChange={(e) => setMappingText(e.target.value)}
+            onBlur={syncLayoutFromMappingJson}
+            spellCheck={false}
           />
         </label>
         <button
