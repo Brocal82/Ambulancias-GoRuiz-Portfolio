@@ -11,9 +11,9 @@
  *   workday     → workday-summary + trips
  *   mechanics   → averías (report-issue, admin mechanics)
  *
- * V1 OPERATIONAL ALWAYS-ON:
- *   scheduling and workday are present in the model but locked-on in
- *   the V1 superadmin UI. Do not allow toggling them off.
+ * V1 OPERATIONAL (superadmin UI):
+ *   `scheduling` stays locked-on until Phase 4. `workday` can be toggled;
+ *   Prämien requires workday in the company form and API.
  */
 
 export const MODULE_KEYS = {
@@ -74,5 +74,4 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
  */
 export const V1_LOCKED_ON_MODULES: ReadonlySet<ModuleKey> = new Set([
   MODULE_KEYS.SCHEDULING,
-  MODULE_KEYS.WORKDAY,
 ]);

@@ -11,9 +11,13 @@ import { env } from "../config/env";
 import {
   createTestAdminWithCompany,
   createTestWorkerInCompany,
+  createTestSuperadmin,
 } from "./test-helpers";
 import Company from "../modules/companies/models/company.model";
-import { MODULE_KEYS } from "../modules/companies/constants/modules.constants";
+import {
+  MODULE_KEYS,
+  V1_DEFAULT_MODULES,
+} from "../modules/companies/constants/modules.constants";
 
 const API = "/api";
 
@@ -1494,6 +1498,65 @@ describe("API - Rutas críticas", () => {
           $addToSet: { enabledModules: MODULE_KEYS.MECHANICS },
         });
       }
+    });
+  });
+
+  describe("Workday module gate", () => {
+    it("GET /api/workday-summary devuelve 403 si workday desactivada", async () => {
+      await Company.findByIdAndUpdate(companyId, {
+        $pull: {
+          enabledModules: { $in: [MODULE_KEYS.WORKDAY, MODULE_KEYS.PRAEMIEN] },
+        },
+      });
+      try {
+        const res = await request(app)
+          .get(`${API}/workday-summary`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .expect(403);
+        expect(res.body.message).toMatch(/workday/i);
+      } finally {
+        await Company.findByIdAndUpdate(companyId, {
+          $addToSet: {
+            enabledModules: { $each: [MODULE_KEYS.WORKDAY, MODULE_KEYS.PRAEMIEN] },
+          },
+        });
+      }
+    });
+
+    it("GET /api/trips/date/:date devuelve 403 si workday desactivada", async () => {
+      await Company.findByIdAndUpdate(companyId, {
+        $pull: {
+          enabledModules: { $in: [MODULE_KEYS.WORKDAY, MODULE_KEYS.PRAEMIEN] },
+        },
+      });
+      try {
+        const res = await request(app)
+          .get(`${API}/trips/date/2024-06-01`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .expect(403);
+        expect(res.body.message).toMatch(/workday/i);
+      } finally {
+        await Company.findByIdAndUpdate(companyId, {
+          $addToSet: {
+            enabledModules: { $each: [MODULE_KEYS.WORKDAY, MODULE_KEYS.PRAEMIEN] },
+          },
+        });
+      }
+    });
+  });
+
+  describe("Company modules: Praemien requires workday", () => {
+    it("PATCH /api/companies/:id devuelve 400 si praemien sin workday", async () => {
+      const { superadminToken } = await createTestSuperadmin();
+      const modulesMissingWorkday = V1_DEFAULT_MODULES.filter(
+        (k) => k !== MODULE_KEYS.WORKDAY,
+      );
+      const res = await request(app)
+        .patch(`${API}/companies/${companyId}`)
+        .set("Authorization", `Bearer ${superadminToken}`)
+        .send({ enabledModules: modulesMissingWorkday })
+        .expect(400);
+      expect(res.body.message).toMatch(/workday|jornada|Prämien|praemien/i);
     });
   });
 

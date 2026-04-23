@@ -25,7 +25,9 @@ const AdminDashboard = () => {
 
   //  Contador de resúmenes pendientes
   const { count: summariesPendingCount, isLoading: summariesLoading } =
-    useAdminSummariesPendingCount();
+    useAdminSummariesPendingCount({
+      skip: !hasModule(MODULE_KEYS.WORKDAY),
+    });
   const summariesHasPending = !summariesLoading && summariesPendingCount > 0;
 
   const { count: apptPending, isLoading: apptLoading } =
@@ -114,32 +116,34 @@ const AdminDashboard = () => {
           </p>
         </Link>
 
-        <Link
-          to="/admin/summaries"
-          className={`${centeredCardRelative} ${summariesHasPending ? "ring-2 ring-orange-300" : ""}`}
-          aria-label={
-            summariesHasPending
-              ? t("pages.adminDashboard.summaries.title") +
-              ` (${summariesPendingCount})`
-              : t("pages.adminDashboard.summaries.title")
-          }
-        >
-          {!summariesLoading && summariesPendingCount > 0 && (
-            <span
-              className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-orange-400 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
-              aria-label={`${summariesPendingCount} ${t("pages.adminDashboard.summaries.pending") ?? "pendientes"}`}
-            >
-              {summariesPendingCount}
-            </span>
-          )}
+        {hasModule(MODULE_KEYS.WORKDAY) && (
+          <Link
+            to="/admin/summaries"
+            className={`${centeredCardRelative} ${summariesHasPending ? "ring-2 ring-orange-300" : ""}`}
+            aria-label={
+              summariesHasPending
+                ? t("pages.adminDashboard.summaries.title") +
+                ` (${summariesPendingCount})`
+                : t("pages.adminDashboard.summaries.title")
+            }
+          >
+            {!summariesLoading && summariesPendingCount > 0 && (
+              <span
+                className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-orange-400 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
+                aria-label={`${summariesPendingCount} ${t("pages.adminDashboard.summaries.pending") ?? "pendientes"}`}
+              >
+                {summariesPendingCount}
+              </span>
+            )}
 
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.adminDashboard.summaries.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.adminDashboard.summaries.desc")}
-          </p>
-        </Link>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.adminDashboard.summaries.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.adminDashboard.summaries.desc")}
+            </p>
+          </Link>
+        )}
 
         {hasModule(MODULE_KEYS.PRAEMIEN) && (
           <Link

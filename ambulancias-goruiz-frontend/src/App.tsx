@@ -98,7 +98,9 @@ export default function App() {
               <Route element={<RequireModule name="messages" />}>
                 <Route path="/worker/messages" element={<WorkerMessagesPage />} />
               </Route>
-              <Route path="/my-workday" element={<MyWorkdayPage />} />
+              <Route element={<RequireModule name="workday" />}>
+                <Route path="/my-workday" element={<MyWorkdayPage />} />
+              </Route>
               <Route element={<RequireModule name="mechanics" />}>
                 <Route
                   path="/worker/report-issue"
@@ -143,7 +145,9 @@ export default function App() {
                   <Route path="/admin/messages" element={<AdminMessagesPage />} />
                   <Route path="/admin/messages/sent" element={<AdminSentMessages />} />
                 </Route>
-                <Route path="/admin/summaries" element={<AdminSummariesPage />} />
+                <Route element={<RequireModule name="workday" />}>
+                  <Route path="/admin/summaries" element={<AdminSummariesPage />} />
+                </Route>
                 <Route element={<RequireModule name="ambulances" />}>
                   <Route path="/admin/ambulances" element={<AdminAmbulancesPage />} />
                 </Route>

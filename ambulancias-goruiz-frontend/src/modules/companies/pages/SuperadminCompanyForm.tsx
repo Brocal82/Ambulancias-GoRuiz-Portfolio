@@ -104,8 +104,14 @@ export default function SuperadminCompanyForm() {
       const next = new Set(prev);
       if (next.has(key)) {
         next.delete(key);
+        if (key === MODULE_KEYS.WORKDAY) {
+          next.delete(MODULE_KEYS.PRAEMIEN);
+        }
       } else {
         next.add(key);
+        if (key === MODULE_KEYS.PRAEMIEN) {
+          next.add(MODULE_KEYS.WORKDAY);
+        }
       }
       return next;
     });
@@ -235,8 +241,9 @@ export default function SuperadminCompanyForm() {
             Módulos habilitados
           </legend>
           <p className="text-xs text-slate-500 mb-3">
-            Los módulos bloqueados (🔒) son operativos esenciales en V1 y no
-            pueden desactivarse todavía.
+            El módulo bloqueado (🔒) —planificación (diensts)— es operativo
+            esencial en V1. Jornada y viajes (workday) se pueden desactivar si
+            la empresa no usa jornada digital; Prämien requiere jornada.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {ALL_MODULE_KEYS.map((key) => {

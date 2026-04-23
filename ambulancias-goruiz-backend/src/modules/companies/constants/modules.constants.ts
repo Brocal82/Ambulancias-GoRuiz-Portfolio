@@ -10,10 +10,10 @@
  *   workday     → workday-summary + trips (jornada / viajes)
  *   mechanics   → averías / report-issue + admin mechanics (opcional por empresa)
  *
- * V1 OPERATIONAL ALWAYS-ON:
- *   scheduling and workday are present in the model but must remain
- *   locked-on in the V1 superadmin UI. Do not allow toggling them off
- *   until Phase 4 architectural prerequisites are complete.
+ * V1 OPERATIONAL (superadmin UI):
+ *   `scheduling` remains locked-on until Phase 4 prerequisites are met.
+ *   `workday` (jornada + viajes) is toggleable per company; `praemien`
+ *   cannot be enabled without `workday` (validated in companies.service).
  */
 
 export const MODULE_KEYS = {

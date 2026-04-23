@@ -7,6 +7,8 @@ import { useWorkdaySummariesChanged } from "./useWorkdaySummariesChanged";
 type Options = {
   /** Intervalo de refresco en ms. 0 = sin polling (por defecto). */
   pollMs?: number;
+  /** No llama a la API (p. ej. módulo workday desactivado). */
+  skip?: boolean;
 };
 
 type State = {
@@ -17,7 +19,7 @@ type State = {
 };
 
 export default function useAdminSummariesPendingCount(options: Options = {}) {
-  const { pollMs = 0 } = options;
+  const { pollMs = 0, skip = false } = options;
 
   // Según tu Profile.tsx, useAuth devuelve token directamente
   const { token } = useAuth();
@@ -33,6 +35,16 @@ export default function useAdminSummariesPendingCount(options: Options = {}) {
   const intervalRef = useRef<number | null>(null);
 
   const fetchCount = useCallback(async () => {
+    if (skip) {
+      setState((s) => ({
+        ...s,
+        count: 0,
+        isLoading: false,
+        isError: false,
+        error: undefined,
+      }));
+      return;
+    }
     if (!token) {
       setState((s) => ({
         ...s,
@@ -61,7 +73,7 @@ export default function useAdminSummariesPendingCount(options: Options = {}) {
       // eslint-disable-next-line no-console
       console.warn("[useAdminSummariesPendingCount]", err);
     }
-  }, [token]);
+  }, [token, skip]);
 
   const refresh = useCallback(() => {
     void fetchCount();

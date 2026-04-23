@@ -6,6 +6,23 @@ import Dienst from "../../diensts/models/dienst.model";
 import { MODULE_KEYS } from "../constants/modules.constants";
 import type { CreateCompanyInput, UpdateCompanyInput } from "../schemas/company.schema";
 
+/**
+ * Prämies automático (y la mayoría de flujos) depende de workday-summaries.
+ * Desactivar `workday` no borra datos históricos: solo se bloquean las rutas
+ * con `requireModule(WORKDAY)`; al reactivar, los datos vuelven a ser accesibles.
+ */
+function assertPraemienRequiresWorkday(modules: string[] | undefined): void {
+  if (!modules) return;
+  if (
+    modules.includes(MODULE_KEYS.PRAEMIEN) &&
+    !modules.includes(MODULE_KEYS.WORKDAY)
+  ) {
+    throw new Error(
+      "El módulo Prämien requiere el módulo de jornada y viajes (workday).",
+    );
+  }
+}
+
 /** Al desactivar el módulo ambulancias, los equipos no deben seguir referenciando vehículos. */
 async function clearTeamAmbulancesForCompany(companyId: string): Promise<void> {
   if (!mongoose.Types.ObjectId.isValid(companyId)) return;
@@ -53,6 +70,7 @@ export async function createCompany(
     doc.emailDomain = data.emailDomain;
   }
   if (Array.isArray(data.enabledModules)) {
+    assertPraemienRequiresWorkday(data.enabledModules);
     doc.enabledModules = data.enabledModules;
   }
   doc.praemienMode = data.praemienMode ?? "automatic";
@@ -118,6 +136,7 @@ export async function updateCompany(id: string, data: UpdateCompanyInput) {
   if (data.isActive !== undefined) $set.isActive = data.isActive;
   let shouldStripAmbulanceModuleData = false;
   if (Array.isArray(data.enabledModules)) {
+    assertPraemienRequiresWorkday(data.enabledModules);
     const existing = await Company.findById(id).select("enabledModules").lean();
     const prev: string[] = Array.isArray(
       (existing as { enabledModules?: string[] } | null)?.enabledModules,
