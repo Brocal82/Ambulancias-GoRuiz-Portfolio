@@ -24,6 +24,7 @@ import { normalizeIssues } from "../utils/normalizeIssue";
 import { sortIssuesByDateDesc } from "../utils/sortIssuesByDateDesc";
 import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 import StatusBadge from "../../../components/common/StatusBadge";
+import { buildImageUrl } from "../../../utils/apiOrigins";
 
 
 const AdminMechanicsPage = () => {
@@ -364,7 +365,9 @@ const AdminMechanicsPage = () => {
                                 {t("pages.mechanics.adminPage.labels.team")}
                               </span>
                               <div className="whitespace-pre-line leading-tight text-slate-700">
-                                {issue.team.split("+").map((member, idx) => (
+                                {(issue.team || "")
+                                  .split("+")
+                                  .map((member, idx) => (
                                   <p key={idx}>{member.trim()}</p>
                                 ))}
                               </div>
@@ -379,6 +382,40 @@ const AdminMechanicsPage = () => {
                               {issue.issueText}
                             </p>
                           </div>
+
+                          {issue.attachments && issue.attachments.length > 0 ? (
+                            <div className="mt-4">
+                              <p className="text-sm font-semibold text-slate-800 mb-2">
+                                {t("pages.mechanics.adminPage.labels.photos")}
+                              </p>
+                              <ul className="flex flex-wrap gap-3">
+                                {issue.attachments.map((att, idx) => {
+                                  const src = buildImageUrl(att.url);
+                                  return (
+                                    <li key={`${att.url}-${idx}`}>
+                                      <a
+                                        href={src}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block rounded-lg ring-1 ring-slate-200 overflow-hidden hover:ring-slate-400 transition"
+                                      >
+                                        <img
+                                          src={src}
+                                          alt={
+                                            att.originalName ||
+                                            (t(
+                                              "pages.mechanics.adminPage.labels.photos",
+                                            ) as string)
+                                          }
+                                          className="h-28 w-28 object-cover"
+                                        />
+                                      </a>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          ) : null}
                         </div>
                       </li>
                     );

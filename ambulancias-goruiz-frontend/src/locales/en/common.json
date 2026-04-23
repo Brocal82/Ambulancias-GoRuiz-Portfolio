@@ -781,7 +781,8 @@
                     "numberPlate": "Number plate:",
                     "finalKm": "Final KM:",
                     "issue": "🛠️ Issue:",
-                    "seenAt": "Seen at"
+                    "seenAt": "Seen at",
+                    "photos": "📷 Photos"
                 },
                 "ambulanceFallback": "{{number}} (ID: {{id}})",
                 "delete": "Delete",
@@ -800,6 +801,9 @@
                 "finalKmPlaceholder": "Enter final kilometers",
                 "timestamp": "⏱ Timestamp:",
                 "descriptionPlaceholder": "Describe the issue…",
+                "photosLabel": "Photos (optional)",
+                "photosHint": "JPG, PNG or WEBP. Up to 5 images, 10 MB each.",
+                "photosCount": "{{count}} photo(s) selected",
                 "actions": {
                     "cancel": "Cancel",
                     "send": "Send report"

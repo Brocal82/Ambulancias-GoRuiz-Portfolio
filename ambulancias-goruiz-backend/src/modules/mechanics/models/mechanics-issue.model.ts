@@ -1,5 +1,16 @@
 import mongoose from "mongoose";
 
+const MechanicsAttachmentSchema = new mongoose.Schema(
+  {
+    url: { type: String, required: true },
+    originalName: { type: String, default: "" },
+    mimetype: { type: String, default: "" },
+    size: { type: Number, default: 0 },
+    storedFilename: { type: String, default: "" },
+  },
+  { _id: false },
+);
+
 const MechanicsIssueSchema = new mongoose.Schema(
   {
     dienstNumber: { type: Number, required: true },
@@ -22,6 +33,7 @@ const MechanicsIssueSchema = new mongoose.Schema(
     },
     isSeen: { type: Boolean, default: false },
     seenAt: { type: Date, default: null },
+    attachments: { type: [MechanicsAttachmentSchema], default: [] },
   },
   { timestamps: true },
 );

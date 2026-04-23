@@ -1,3 +1,11 @@
+export interface MechanicsIssueAttachment {
+  url: string;
+  originalName?: string;
+  mimetype?: string;
+  size?: number;
+  storedFilename?: string;
+}
+
 export interface MechanicsIssue {
   _id: string;
   dienstNumber: number;
@@ -14,4 +22,5 @@ export interface MechanicsIssue {
   medic: string;
   isSeen?: boolean;
   seenAt?: string | null;
+  attachments?: MechanicsIssueAttachment[];
 }

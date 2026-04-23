@@ -781,7 +781,8 @@
                     "numberPlate": "Kennzeichen:",
                     "finalKm": "End-KM:",
                     "issue": "🛠️ Störung:",
-                    "seenAt": "Gesehen am"
+                    "seenAt": "Gesehen am",
+                    "photos": "📷 Fotos"
                 },
                 "ambulanceFallback": "{{number}} (ID: {{id}})",
                 "delete": "Löschen",
@@ -800,6 +801,9 @@
                 "finalKmPlaceholder": "Endkilometer eingeben",
                 "timestamp": "⏱ Zeitstempel:",
                 "descriptionPlaceholder": "Störung beschreiben…",
+                "photosLabel": "Fotos (optional)",
+                "photosHint": "JPG, PNG oder WEBP. Bis zu 5 Bilder, je 10 MB.",
+                "photosCount": "{{count}} Foto(s) ausgewählt",
                 "actions": {
                     "cancel": "Abbrechen",
                     "send": "Störung senden"

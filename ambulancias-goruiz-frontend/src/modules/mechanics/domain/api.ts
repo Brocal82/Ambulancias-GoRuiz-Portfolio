@@ -18,8 +18,29 @@ export interface ReportIssuePayload {
   medic: string;
 }
 
-export const reportIssue = async (payload: ReportIssuePayload): Promise<void> => {
-  await axios.post("/mechanics/report-issue", payload);
+const MAX_MECHANICS_PHOTOS = 5;
+
+/**
+ * Envía avería: JSON si no hay fotos; multipart si hay adjuntos (campo `photos`, solo imágenes).
+ */
+export const reportIssue = async (
+  payload: ReportIssuePayload,
+  photos?: File[],
+): Promise<void> => {
+  const files = (photos ?? []).filter(Boolean).slice(0, MAX_MECHANICS_PHOTOS);
+  if (files.length === 0) {
+    await axios.post("/mechanics/report-issue", payload);
+    return;
+  }
+  const form = new FormData();
+  for (const [key, value] of Object.entries(payload)) {
+    if (value === undefined || value === null) continue;
+    form.append(key, String(value));
+  }
+  for (const file of files) {
+    form.append("photos", file);
+  }
+  await axios.post("/mechanics/report-issue", form);
 };
 
 export const getAllIssueReports = async (): Promise<MechanicsIssue[]> => {

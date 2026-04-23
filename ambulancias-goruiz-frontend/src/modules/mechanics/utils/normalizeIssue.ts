@@ -9,7 +9,8 @@ export function normalizeIssue(issue: MechanicsIssue): MechanicsIssue {
   return {
     ...issue,
     isSeen: issue.isSeen ?? false,
-seenAt: issue.seenAt ?? null,
+    seenAt: issue.seenAt ?? null,
+    attachments: Array.isArray(issue.attachments) ? issue.attachments : [],
   };
 }
 

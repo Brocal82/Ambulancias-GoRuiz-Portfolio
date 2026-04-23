@@ -54,3 +54,30 @@ export const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10 MB máximo
   },
 });
+
+const imageOnlyTypes = ["image/jpeg", "image/png", "image/webp"];
+
+const imageOnlyFilter = (
+  _req: unknown,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback,
+) => {
+  if (imageOnlyTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(
+      new Error(
+        "❌ Tipo de archivo no permitido. Solo imágenes JPG, PNG o WEBP.",
+      ),
+    );
+  }
+};
+
+/** Multer solo imágenes (p. ej. fotos de averías mechanics). Mismo límite de tamaño. */
+export const uploadImagesOnly = multer({
+  storage,
+  fileFilter: imageOnlyFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+  },
+});

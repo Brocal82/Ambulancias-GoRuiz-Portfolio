@@ -1,10 +1,56 @@
 import mongoose from "mongoose";
+import path from "path";
+import fs from "fs/promises";
 import MechanicsIssue from "../models/mechanics-issue.model";
 import {
   WorkdaySummaryError,
   resolveAssignmentByAssignmentId,
   assertUserCanCloseAssignment,
 } from "../../../utils/assignmentClosure";
+
+const uploadsDir = path.join(__dirname, "../../../../uploads");
+
+type MechanicsAttachmentInput = {
+  url: string;
+  originalName: string;
+  mimetype: string;
+  size: number;
+  storedFilename: string;
+};
+
+function buildAttachmentsFromFiles(
+  files: Express.Multer.File[] | undefined,
+): MechanicsAttachmentInput[] {
+  if (!files?.length) return [];
+  return files.map((file) => ({
+    url: `/uploads/${file.filename}`,
+    originalName: file.originalname,
+    mimetype: file.mimetype,
+    size: file.size,
+    storedFilename: file.filename,
+  }));
+}
+
+async function unlinkIssueAttachments(
+  attachments: MechanicsAttachmentInput[] | undefined,
+): Promise<void> {
+  if (!attachments?.length) return;
+  for (const a of attachments) {
+    const url = typeof a.url === "string" ? a.url : "";
+    if (!url.startsWith("/uploads/")) continue;
+    const basename = path.basename(url);
+    if (!basename || basename.includes("..")) continue;
+    const fullPath = path.join(uploadsDir, basename);
+    try {
+      await fs.unlink(fullPath);
+    } catch (err: unknown) {
+      const code = err && typeof err === "object" && "code" in err ? (err as { code?: string }).code : "";
+      if (code !== "ENOENT") {
+        console.warn("[mechanics] no se pudo borrar adjunto:", fullPath, err);
+      }
+    }
+  }
+}
 
 function assertCanMutateIssueByCompany(
   documentCompanyId: unknown,
@@ -27,6 +73,7 @@ function assertCanMutateIssueByCompany(
 
 export async function reportIssue(
   body: Record<string, unknown>,
+  files: Express.Multer.File[] | undefined,
   userId: string,
   userRole: string,
   userCompanyId?: string | null,
@@ -87,6 +134,7 @@ export async function reportIssue(
 
   const { driver, medic } = assignment;
   const dienstCompanyId = (dienst as any).companyId;
+  const attachments = buildAttachmentsFromFiles(files);
 
   const newIssue = await MechanicsIssue.create({
     dienstNumber: dienst.dienstNumber,
@@ -101,6 +149,7 @@ export async function reportIssue(
     issueText,
     driver,
     medic,
+    ...(attachments.length > 0 ? { attachments } : {}),
     ...(dienstCompanyId && { companyId: dienstCompanyId }),
   });
 
@@ -120,7 +169,9 @@ export async function deleteIssueReport(id: string, companyId?: string | null) {
   if (!mongoose.isValidObjectId(id)) {
     throw new WorkdaySummaryError("ID inválido", 400);
   }
-  const issue = await MechanicsIssue.findById(id).select("companyId").lean();
+  const issue = await MechanicsIssue.findById(id)
+    .select("companyId attachments")
+    .lean();
   if (issue) {
     assertCanMutateIssueByCompany(
       (issue as { companyId?: unknown }).companyId,
@@ -132,6 +183,10 @@ export async function deleteIssueReport(id: string, companyId?: string | null) {
   if (!deleted) {
     throw new WorkdaySummaryError("Reporte no encontrado", 404);
   }
+
+  const rawAtt = (deleted as { attachments?: MechanicsAttachmentInput[] })
+    .attachments;
+  await unlinkIssueAttachments(rawAtt);
 
   return { message: "Reporte eliminado correctamente" };
 }

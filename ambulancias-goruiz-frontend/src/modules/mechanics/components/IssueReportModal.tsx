@@ -7,6 +7,9 @@ import { formatYYYYMMDDToDDMMYYYY } from "../../../utils/timeUtils";
 import { useTranslation } from "react-i18next";
 import { notifyAdminIssuesChanged } from "../hooks/useAdminIssuesOpenCount";
 
+const MAX_PHOTOS = 5;
+const PHOTO_ACCEPT = "image/jpeg,image/png,image/webp";
+
 interface Props {
     isOpen: boolean;
     onClose: () => void;
@@ -33,12 +36,14 @@ const IssueReportModal: React.FC<Props> = ({
     );
     const [manualAmbulanceNumber, setManualAmbulanceNumber] = useState("");
     const [isSending, setIsSending] = useState(false);
+    const [photos, setPhotos] = useState<File[]>([]);
 
     useEffect(() => {
         if (!isOpen) return;
         setManualAmbulanceNumber("");
         setDescription("");
         setFinalKmInput(finalKm > 0 ? finalKm.toString() : "");
+        setPhotos([]);
     }, [isOpen, assignedDay.assignmentId, finalKm]);
 
     if (!isOpen) return null;
@@ -100,7 +105,7 @@ const IssueReportModal: React.FC<Props> = ({
         };
 
         try {
-            await reportIssue(payload);
+            await reportIssue(payload, photos.length > 0 ? photos : undefined);
 
             notifyAdminIssuesChanged();
             toastT.success(["toasts.mechanics.reportSent"]);
@@ -204,6 +209,40 @@ const IssueReportModal: React.FC<Props> = ({
                         onChange={(e) => setDescription(e.target.value)}
                         className="w-full h-32 rounded-md border border-slate-300 bg-slate-50/50 px-3 py-2 text-sm placeholder-slate-400 outline-none focus:border-slate-400 focus:ring-2 focus:ring-blue-200"
                     />
+
+                    <div>
+                        <label
+                            htmlFor="mechanics-issue-photos"
+                            className="block text-sm font-medium text-slate-800 mb-1"
+                        >
+                            {t("pages.mechanics.issueModal.photosLabel")}
+                        </label>
+                        <p className="text-xs text-slate-500 mb-2">
+                            {t("pages.mechanics.issueModal.photosHint")}
+                        </p>
+                        <input
+                            id="mechanics-issue-photos"
+                            type="file"
+                            accept={PHOTO_ACCEPT}
+                            multiple
+                            disabled={isSending}
+                            onChange={(e) => {
+                                const list = e.target.files
+                                    ? Array.from(e.target.files).slice(0, MAX_PHOTOS)
+                                    : [];
+                                setPhotos(list);
+                                e.target.value = "";
+                            }}
+                            className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-800 hover:file:bg-slate-200"
+                        />
+                        {photos.length > 0 ? (
+                            <p className="mt-1 text-xs text-slate-600">
+                                {t("pages.mechanics.issueModal.photosCount", {
+                                    count: photos.length,
+                                })}
+                            </p>
+                        ) : null}
+                    </div>
                 </div>
 
                 {/* Footer */}

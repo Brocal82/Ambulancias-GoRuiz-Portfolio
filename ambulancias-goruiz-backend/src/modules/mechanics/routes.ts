@@ -1,4 +1,6 @@
 import express from "express";
+import multer from "multer";
+import type { ErrorRequestHandler } from "express";
 import {
   reportIssue,
   getAllIssueReports,
@@ -11,6 +13,7 @@ import { authorizeRole } from "../../middlewares/roleMiddleware";
 import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import { requireModule } from "../../middlewares/requireModule";
+import { uploadImagesOnly } from "../../middlewares/uploadMiddleware";
 import { MODULE_KEYS } from "../companies/constants/modules.constants";
 import { reportIssueSchema } from "./schemas/mechanics.schema";
 
@@ -37,6 +40,7 @@ router.post(
   "/report-issue",
   authenticateToken,
   requireModule(MODULE_KEYS.MECHANICS),
+  uploadImagesOnly.array("photos", 5),
   validateBody(reportIssueSchema),
   reportIssue,
 );
@@ -57,5 +61,30 @@ router.delete(
   validateObjectId("id"),
   deleteIssueReport,
 );
+
+const mechanicsMulterErrorHandler: ErrorRequestHandler = (
+  err,
+  _req,
+  res,
+  next,
+) => {
+  if (err instanceof multer.MulterError) {
+    res.status(400).json({ message: `Error de subida: ${err.message}` });
+    return;
+  }
+
+  if (
+    err &&
+    typeof err.message === "string" &&
+    err.message.includes("Tipo de archivo no permitido")
+  ) {
+    res.status(400).json({ message: err.message });
+    return;
+  }
+
+  next(err);
+};
+
+router.use(mechanicsMulterErrorHandler);
 
 export default router;

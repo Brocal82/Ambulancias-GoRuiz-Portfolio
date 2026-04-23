@@ -26,8 +26,11 @@ function handleError(
 
 export const reportIssue = async (req: Request, res: Response): Promise<void> => {
   try {
+    const uploaded = (req as Request & { files?: Express.Multer.File[] }).files;
+    const files = Array.isArray(uploaded) ? uploaded : undefined;
     const newIssue = await svcReportIssue(
       req.body,
+      files,
       req.userId ?? "",
       req.userRole ?? "",
       req.companyId ?? null,

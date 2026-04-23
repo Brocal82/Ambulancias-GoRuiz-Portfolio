@@ -781,7 +781,8 @@
                     "numberPlate": "Matrícula:",
                     "finalKm": "KM finales:",
                     "issue": "🛠️ Avería:",
-                    "seenAt": "Visto en"
+                    "seenAt": "Visto en",
+                    "photos": "📷 Fotos"
                 },
                 "ambulanceFallback": "{{number}} (ID: {{id}})",
                 "delete": "Eliminar",
@@ -800,6 +801,9 @@
                 "finalKmPlaceholder": "Introduce los kilómetros finales",
                 "timestamp": "⏱ Timestamp:",
                 "descriptionPlaceholder": "Describe la avería…",
+                "photosLabel": "Fotos (opcional)",
+                "photosHint": "JPG, PNG o WEBP. Hasta 5 imágenes, 10 MB cada una.",
+                "photosCount": "{{count}} foto(s) seleccionada(s)",
                 "actions": {
                     "cancel": "Cancelar",
                     "send": "Enviar avería"
