@@ -104,7 +104,7 @@ const WorkerDienstsPage = () => {
   }
 
   return (
-    <PageShell title={t("pages.diensts.workerPage.title")} maxWidthClassName="max-w-6xl">
+    <PageShell title={t("pages.diensts.workerPage.title")} maxWidthClassName="max-w-screen-2xl">
 
       {(() => {
         const weekStartKeys = getWeekStartsBerlin(2); // semana actual + siguiente
@@ -157,6 +157,7 @@ const WorkerDienstsPage = () => {
                         statusClass={cls}
                         isPast={isPast}
                         isPartial={status === "partial"}
+                        preferLineWrap
                         isDisabled={Boolean(
                           assignment &&
                           (

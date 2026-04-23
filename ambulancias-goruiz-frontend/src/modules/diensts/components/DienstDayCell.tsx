@@ -44,6 +44,11 @@ export interface DienstDayCellProps {
     onOpen: () => void;
     /** Solo admin Dienst: DnD hacia PATCH (vacío o swap both en misma línea). */
     adminDnd?: AdminDienstDndProps;
+    /**
+     * Vista trabajador (Diensts / plan Excel): texto con salto de línea y sin `…` forzado
+     * para que nombres largos y celdas anchas muestren el contenido.
+     */
+    preferLineWrap?: boolean;
 };
 
 export const DienstDayCell: React.FC<DienstDayCellProps> = ({
@@ -55,6 +60,7 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
     lines,
     onOpen,
     adminDnd,
+    preferLineWrap = false,
 }) => {
     const disabled = Boolean(isPast || isDisabled);
     const isIncomplete = Boolean(isDisabled && !isPast);
@@ -67,10 +73,13 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
         !lines?.driverLine &&
         !lines?.medicLine;
 
-    // 🔒 UNA sola línea, sin saltos, con …
-    const lineCls = useIncompleteText
-        ? `text-xs leading-tight ${INCOMPLETE_TEXT} flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis`
-        : "text-xs leading-tight text-slate-700 flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis";
+    const lineCls = preferLineWrap
+        ? useIncompleteText
+            ? `text-xs leading-tight ${INCOMPLETE_TEXT} min-w-0 break-words hyphens-auto`
+            : "text-xs leading-tight text-slate-700 min-w-0 break-words hyphens-auto"
+        : useIncompleteText
+            ? `text-xs leading-tight ${INCOMPLETE_TEXT} flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis`
+            : "text-xs leading-tight text-slate-700 flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis";
 
     const combinedLineCls = `${lineCls} font-semibold`;
 
@@ -317,6 +326,16 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
                 /* 📄 Día con contenido */
                 <div className="space-y-0">
                     {lines?.timeLine && lines?.ambulanceLine ? (
+                        preferLineWrap ? (
+                            <div className="space-y-0.5">
+                                <p className={`${combinedLineCls} block`}>
+                                    {lines.timeLine}
+                                </p>
+                                <p className={`${combinedLineCls} block`}>
+                                    {lines.ambulanceLine}
+                                </p>
+                            </div>
+                        ) : (
                         /* Wide: icons + split corners | Narrow: no icons + split corners */
                         <div className={`${combinedLineCls} justify-between`}>
                             <span className="truncate min-w-0">
@@ -328,6 +347,7 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
                                 {String(lines.ambulanceLine).replace(/^🚑\s*/, "")}
                             </span>
                         </div>
+                        )
                     ) : (
                         <>
                             {lines?.timeLine && <p className={lineCls}>{lines.timeLine}</p>}
@@ -363,7 +383,7 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
 
     const shellClassName = `
         rounded-xl p-2 ring-1 transition text-left
-        flex flex-col min-h-[72px]
+        flex flex-col ${preferLineWrap ? "min-h-0" : "min-h-[72px]"}
         ${statusClass}
         ${finalBorderClass}
         ${disabled ? disabledStyle : "hover:shadow-sm hover:-translate-y-0.5"}

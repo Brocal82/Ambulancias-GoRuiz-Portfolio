@@ -12,8 +12,9 @@ export type WeekBlockProps = {
     withGrid?: boolean;
 };
 
+/** Cuadrícula semanal: ancho completo del contenedor (p. ej. max-w-screen-2xl) para celdas más amplias. */
 export const WEEK_GRID_CLASS =
-    "grid grid-cols-7 gap-3";
+    "w-full min-w-0 grid grid-cols-7 gap-2 sm:gap-3";
 
 
 

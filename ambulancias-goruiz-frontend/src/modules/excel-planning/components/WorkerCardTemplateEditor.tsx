@@ -84,7 +84,7 @@ export default function WorkerCardTemplateEditor({
           {t("excelPlanning.cardTemplate.tableIntro")}
         </p>
         <div className="overflow-x-auto -mx-1 px-1">
-          <table className="w-full min-w-[640px] text-xs sm:text-sm border-collapse">
+          <table className="w-full min-w-0 sm:min-w-[36rem] text-xs sm:text-sm border-collapse">
             <thead>
               <tr className="text-left text-slate-600 border-b border-slate-200">
                 <th className="py-2 pr-2 font-medium w-[28%]">
@@ -120,7 +120,7 @@ export default function WorkerCardTemplateEditor({
                       </label>
                       <select
                         id={`wct-field-${k}`}
-                        className="w-full min-w-0 max-w-md border rounded px-2 py-1.5 text-xs font-mono"
+                        className="w-full min-w-0 border rounded px-2 py-1.5 text-xs font-mono"
                         value={value[k]}
                         onChange={(e) =>
                           onChange({

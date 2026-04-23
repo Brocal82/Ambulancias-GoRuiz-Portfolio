@@ -350,7 +350,7 @@ export default function WorkerExcelPlanningPage() {
   };
 
   return (
-    <PageShell title={t("excelPlanning.workerTitle")} maxWidthClassName="max-w-6xl">
+    <PageShell title={t("excelPlanning.workerTitle")} maxWidthClassName="max-w-screen-2xl">
       <div className="flex justify-end mb-2">
         <Link to="/worker" className="text-sm text-blue-600 hover:underline">
           {t("excelPlanning.backWorker")}
@@ -459,6 +459,7 @@ export default function WorkerExcelPlanningPage() {
                                     isPast={isPast}
                                     isPartial={false}
                                     isDisabled={false}
+                                    preferLineWrap
                                     lines={lines}
                                     onOpen={() => {}}
                                   />
@@ -482,6 +483,7 @@ export default function WorkerExcelPlanningPage() {
                                   isPast={isPast}
                                   isPartial={status === "partial"}
                                   isDisabled={false}
+                                  preferLineWrap
                                   lines={lines}
                                   onOpen={() => {}}
                                 />

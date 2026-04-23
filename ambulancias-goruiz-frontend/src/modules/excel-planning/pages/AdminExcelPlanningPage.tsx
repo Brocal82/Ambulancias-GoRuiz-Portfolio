@@ -286,7 +286,7 @@ export default function AdminExcelPlanningPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="max-w-screen-2xl mx-auto space-y-8">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-2xl font-bold">{t("excelPlanning.adminTitle")}</h1>
         <Link to="/admin" className="text-blue-600 hover:underline text-sm">
@@ -432,43 +432,55 @@ export default function AdminExcelPlanningPage() {
                 {t("excelPlanning.openOriginal")}
               </button>
             )}
-            <div className="overflow-x-auto max-h-64 overflow-y-auto border rounded">
-              <table className="min-w-full text-xs">
+            <div className="overflow-x-auto max-h-96 overflow-y-auto border rounded">
+              <table className="w-full min-w-[56rem] text-xs table-fixed">
+                <colgroup>
+                  <col className="w-24" />
+                  <col className="w-16" />
+                  <col className="w-28" />
+                  <col className="w-24" />
+                  <col className="w-20" />
+                  <col className="w-20" />
+                  <col className="min-w-0" />
+                  <col className="min-w-0" />
+                  <col className="w-28" />
+                  <col className="min-w-0" />
+                </colgroup>
                 <thead>
                   <tr className="bg-slate-100">
-                    <th className="p-1 text-left">{t("excelPlanning.col.day")}</th>
-                    <th className="p-1 text-left">{t("excelPlanning.col.dienst")}</th>
-                    <th className="p-1 text-left">{t("excelPlanning.col.time")}</th>
-                    <th className="p-1 text-left">{t("excelPlanning.col.vehicle")}</th>
-                    <th className="p-1 text-left">{t("excelPlanning.col.empNum")}</th>
-                    <th className="p-1 text-left">{t("excelPlanning.col.partnerEmp")}</th>
-                    <th className="p-1 text-left">{t("excelPlanning.col.name")}</th>
-                    <th className="p-1 text-left">{t("excelPlanning.col.partner")}</th>
-                    <th className="p-1 text-left">{t("excelPlanning.col.match")}</th>
-                    <th className="p-1 text-left max-w-[180px]">
+                    <th className="p-1.5 text-left align-bottom">{t("excelPlanning.col.day")}</th>
+                    <th className="p-1.5 text-left align-bottom">{t("excelPlanning.col.dienst")}</th>
+                    <th className="p-1.5 text-left align-bottom">{t("excelPlanning.col.time")}</th>
+                    <th className="p-1.5 text-left align-bottom">{t("excelPlanning.col.vehicle")}</th>
+                    <th className="p-1.5 text-left align-bottom">{t("excelPlanning.col.empNum")}</th>
+                    <th className="p-1.5 text-left align-bottom">{t("excelPlanning.col.partnerEmp")}</th>
+                    <th className="p-1.5 text-left align-bottom">{t("excelPlanning.col.name")}</th>
+                    <th className="p-1.5 text-left align-bottom">{t("excelPlanning.col.partner")}</th>
+                    <th className="p-1.5 text-left align-bottom">{t("excelPlanning.col.match")}</th>
+                    <th className="p-1.5 text-left align-bottom break-words">
                       {t("excelPlanning.col.warning")}
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {preview.rows.slice(0, 80).map((r, i) => (
-                    <tr key={i} className="border-t border-slate-100">
-                      <td className="p-1 whitespace-nowrap">
+                    <tr key={i} className="border-t border-slate-100 align-top">
+                      <td className="p-1.5 whitespace-nowrap">
                         {r.dayDate?.slice?.(0, 10) ?? r.dayIndex}
                       </td>
-                      <td className="p-1">{r.dienstNumber}</td>
-                      <td className="p-1">{r.timeText}</td>
-                      <td className="p-1">{r.vehicleCode}</td>
-                      <td className="p-1">{r.employeeNumber}</td>
-                      <td className="p-1">{r.partnerEmployeeNumber}</td>
-                      <td className="p-1 max-w-[140px] truncate" title={r.displayNameFromExcel}>
+                      <td className="p-1.5 whitespace-nowrap">{r.dienstNumber}</td>
+                      <td className="p-1.5 break-words">{r.timeText}</td>
+                      <td className="p-1.5 break-words">{r.vehicleCode}</td>
+                      <td className="p-1.5 whitespace-nowrap">{r.employeeNumber}</td>
+                      <td className="p-1.5 whitespace-nowrap">{r.partnerEmployeeNumber}</td>
+                      <td className="p-1.5 min-w-0 break-words text-left" title={r.displayNameFromExcel}>
                         {r.displayNameFromExcel}
                       </td>
-                      <td className="p-1 max-w-[140px] truncate" title={r.displayPartnerNameFromExcel}>
+                      <td className="p-1.5 min-w-0 break-words text-left" title={r.displayPartnerNameFromExcel}>
                         {r.displayPartnerNameFromExcel}
                       </td>
-                      <td className="p-1">{r.matchMethod}</td>
-                      <td className="p-1 max-w-[180px] text-amber-900 text-[11px]">
+                      <td className="p-1.5 break-words">{r.matchMethod}</td>
+                      <td className="p-1.5 min-w-0 break-words text-amber-900 text-[11px]">
                         {r.matchWarning ?? "—"}
                       </td>
                     </tr>
