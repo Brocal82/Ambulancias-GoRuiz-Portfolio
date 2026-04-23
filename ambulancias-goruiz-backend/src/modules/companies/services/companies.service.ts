@@ -7,18 +7,23 @@ import { MODULE_KEYS } from "../constants/modules.constants";
 import type { CreateCompanyInput, UpdateCompanyInput } from "../schemas/company.schema";
 
 /**
- * Prämies automático (y la mayoría de flujos) depende de workday-summaries.
- * Desactivar `workday` no borra datos históricos: solo se bloquean las rutas
- * con `requireModule(WORKDAY)`; al reactivar, los datos vuelven a ser accesibles.
+ * Prämien en modo **automático** lee workday-summaries: exige módulo workday.
+ * Prämien **manual** (cierres en papel) puede activarse sin jornada digital.
+ * Desactivar `workday` no borra datos históricos; solo se bloquean rutas
+ * con `requireModule(WORKDAY)`.
  */
-function assertPraemienRequiresWorkday(modules: string[] | undefined): void {
+function assertAutomaticPraemienRequiresWorkday(
+  modules: string[] | undefined,
+  praemienMode: "automatic" | "manual",
+): void {
   if (!modules) return;
   if (
+    praemienMode === "automatic" &&
     modules.includes(MODULE_KEYS.PRAEMIEN) &&
     !modules.includes(MODULE_KEYS.WORKDAY)
   ) {
     throw new Error(
-      "El módulo Prämien requiere el módulo de jornada y viajes (workday).",
+      "Prämien automático requiere el módulo de jornada y viajes (workday). Usa Prämien manual para datos en papel sin jornada digital.",
     );
   }
 }
@@ -69,11 +74,16 @@ export async function createCompany(
   if (data.emailDomain) {
     doc.emailDomain = data.emailDomain;
   }
+  const resolvedPraemienMode: "automatic" | "manual" =
+    data.praemienMode === "manual" ? "manual" : "automatic";
   if (Array.isArray(data.enabledModules)) {
-    assertPraemienRequiresWorkday(data.enabledModules);
+    assertAutomaticPraemienRequiresWorkday(
+      data.enabledModules,
+      resolvedPraemienMode,
+    );
     doc.enabledModules = data.enabledModules;
   }
-  doc.praemienMode = data.praemienMode ?? "automatic";
+  doc.praemienMode = resolvedPraemienMode;
   if (data.praemienModeEffectiveFrom !== undefined) {
     doc.praemienModeEffectiveFrom = data.praemienModeEffectiveFrom;
   } else {
@@ -135,18 +145,39 @@ export async function updateCompany(id: string, data: UpdateCompanyInput) {
   if (data.name !== undefined) $set.name = data.name;
   if (data.isActive !== undefined) $set.isActive = data.isActive;
   let shouldStripAmbulanceModuleData = false;
-  if (Array.isArray(data.enabledModules)) {
-    assertPraemienRequiresWorkday(data.enabledModules);
-    const existing = await Company.findById(id).select("enabledModules").lean();
+  if (
+    Array.isArray(data.enabledModules) ||
+    data.praemienMode === "automatic"
+  ) {
+    const existingDoc = await Company.findById(id)
+      .select("enabledModules praemienMode")
+      .lean();
+    if (!existingDoc) {
+      return null;
+    }
     const prev: string[] = Array.isArray(
-      (existing as { enabledModules?: string[] } | null)?.enabledModules,
+      (existingDoc as { enabledModules?: string[] }).enabledModules,
     )
-      ? ((existing as { enabledModules: string[] }).enabledModules as string[])
+      ? ((existingDoc as { enabledModules: string[] }).enabledModules as string[])
       : [];
-    const next = data.enabledModules;
-    shouldStripAmbulanceModuleData =
-      prev.includes(MODULE_KEYS.AMBULANCES) && !next.includes(MODULE_KEYS.AMBULANCES);
-    $set.enabledModules = data.enabledModules;
+    const nextModules = Array.isArray(data.enabledModules)
+      ? data.enabledModules
+      : prev;
+    const effectiveMode: "automatic" | "manual" =
+      data.praemienMode !== undefined
+        ? data.praemienMode === "manual"
+          ? "manual"
+          : "automatic"
+        : (existingDoc as { praemienMode?: string }).praemienMode === "manual"
+          ? "manual"
+          : "automatic";
+    assertAutomaticPraemienRequiresWorkday(nextModules, effectiveMode);
+    if (Array.isArray(data.enabledModules)) {
+      const next = data.enabledModules;
+      shouldStripAmbulanceModuleData =
+        prev.includes(MODULE_KEYS.AMBULANCES) && !next.includes(MODULE_KEYS.AMBULANCES);
+      $set.enabledModules = data.enabledModules;
+    }
   }
   if (data.praemienMode !== undefined) {
     $set.praemienMode = data.praemienMode;

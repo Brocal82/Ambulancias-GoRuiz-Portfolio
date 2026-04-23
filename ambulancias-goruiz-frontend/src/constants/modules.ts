@@ -13,7 +13,7 @@
  *
  * V1 OPERATIONAL (superadmin UI):
  *   `scheduling` stays locked-on until Phase 4. `workday` can be toggled;
- *   Prämien requires workday in the company form and API.
+ *   Prämien automático requiere workday; Prämien manual puede ir sin jornada digital.
  */
 
 export const MODULE_KEYS = {

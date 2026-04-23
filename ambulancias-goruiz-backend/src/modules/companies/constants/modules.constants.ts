@@ -12,8 +12,8 @@
  *
  * V1 OPERATIONAL (superadmin UI):
  *   `scheduling` remains locked-on until Phase 4 prerequisites are met.
- *   `workday` (jornada + viajes) is toggleable per company; `praemien`
- *   cannot be enabled without `workday` (validated in companies.service).
+ *   `workday` is toggleable. Prämien **automático** requires `workday`;
+ *   Prämien **manual** (papel) can be on without `workday`.
  */
 
 export const MODULE_KEYS = {

@@ -100,16 +100,24 @@ export default function SuperadminCompanyForm() {
 
   const toggleModule = (key: string) => {
     if (V1_LOCKED_ON_MODULES.has(key as never)) return; // V1 locked — no-op
+    if (
+      key === MODULE_KEYS.WORKDAY &&
+      selectedModules.has(MODULE_KEYS.WORKDAY) &&
+      selectedModules.has(MODULE_KEYS.PRAEMIEN) &&
+      praemienMode === "automatic"
+    ) {
+      toastT.warn(
+        "Prämien en modo automático usa la jornada digital. Cambia Prämien a «manual» para poder desactivar jornada y viajes (datos en papel).",
+      );
+      return;
+    }
     setSelectedModules((prev) => {
       const next = new Set(prev);
       if (next.has(key)) {
         next.delete(key);
-        if (key === MODULE_KEYS.WORKDAY) {
-          next.delete(MODULE_KEYS.PRAEMIEN);
-        }
       } else {
         next.add(key);
-        if (key === MODULE_KEYS.PRAEMIEN) {
+        if (key === MODULE_KEYS.PRAEMIEN && praemienMode === "automatic") {
           next.add(MODULE_KEYS.WORKDAY);
         }
       }
@@ -242,8 +250,9 @@ export default function SuperadminCompanyForm() {
           </legend>
           <p className="text-xs text-slate-500 mb-3">
             El módulo bloqueado (🔒) —planificación (diensts)— es operativo
-            esencial en V1. Jornada y viajes (workday) se pueden desactivar si
-            la empresa no usa jornada digital; Prämien requiere jornada.
+            esencial en V1. Jornada y viajes se pueden apagar si trabajan en
+            papel; Prämien automático sigue enlazado a la jornada digital, Prämien
+            manual no.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {ALL_MODULE_KEYS.map((key) => {
@@ -302,6 +311,12 @@ export default function SuperadminCompanyForm() {
                 onChange={() => {
                   setPraemienScheduleTouched(true);
                   setPraemienMode("automatic");
+                  setSelectedModules((prev) => {
+                    if (!prev.has(MODULE_KEYS.PRAEMIEN)) return prev;
+                    const next = new Set(prev);
+                    next.add(MODULE_KEYS.WORKDAY);
+                    return next;
+                  });
                 }}
                 className="border-slate-300"
               />

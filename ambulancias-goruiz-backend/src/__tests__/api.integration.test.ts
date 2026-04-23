@@ -1545,8 +1545,8 @@ describe("API - Rutas críticas", () => {
     });
   });
 
-  describe("Company modules: Praemien requires workday", () => {
-    it("PATCH /api/companies/:id devuelve 400 si praemien sin workday", async () => {
+  describe("Company modules: automatic Praemien requires workday", () => {
+    it("PATCH /api/companies/:id devuelve 400 si Prämien automático sin workday", async () => {
       const { superadminToken } = await createTestSuperadmin();
       const modulesMissingWorkday = V1_DEFAULT_MODULES.filter(
         (k) => k !== MODULE_KEYS.WORKDAY,
@@ -1556,7 +1556,37 @@ describe("API - Rutas críticas", () => {
         .set("Authorization", `Bearer ${superadminToken}`)
         .send({ enabledModules: modulesMissingWorkday })
         .expect(400);
-      expect(res.body.message).toMatch(/workday|jornada|Prämien|praemien/i);
+      expect(res.body.message).toMatch(
+        /automático|workday|jornada|Prämien|praemien|manual|papel/i,
+      );
+    });
+
+    it("PATCH /api/companies/:id devuelve 200 con Prämien manual sin workday (papel)", async () => {
+      const { superadminToken } = await createTestSuperadmin();
+      const modulesNoWorkday = V1_DEFAULT_MODULES.filter(
+        (k) => k !== MODULE_KEYS.WORKDAY,
+      );
+      try {
+        const res = await request(app)
+          .patch(`${API}/companies/${companyId}`)
+          .set("Authorization", `Bearer ${superadminToken}`)
+          .send({
+            enabledModules: modulesNoWorkday,
+            praemienMode: "manual",
+          })
+          .expect(200);
+        expect(res.body.enabledModules).not.toContain(MODULE_KEYS.WORKDAY);
+        expect(res.body.enabledModules).toContain(MODULE_KEYS.PRAEMIEN);
+        expect(res.body.praemienMode).toBe("manual");
+      } finally {
+        await Company.findByIdAndUpdate(companyId, {
+          $set: {
+            enabledModules: [...V1_DEFAULT_MODULES],
+            praemienMode: "automatic",
+            praemienModeEffectiveFrom: null,
+          },
+        });
+      }
     });
   });
 
