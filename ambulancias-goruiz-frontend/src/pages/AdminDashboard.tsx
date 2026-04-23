@@ -98,23 +98,27 @@ const AdminDashboard = () => {
           </p>
         </Link>
 
-        <Link to="/admin/diensts" className={centeredCard}>
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.adminDashboard.diensts.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.adminDashboard.diensts.desc")}
-          </p>
-        </Link>
+        {hasModule(MODULE_KEYS.SCHEDULING) && (
+          <Link to="/admin/diensts" className={centeredCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.adminDashboard.diensts.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.adminDashboard.diensts.desc")}
+            </p>
+          </Link>
+        )}
 
-        <Link to="/admin/dienst-templates" className={centeredCard}>
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.adminDashboard.dienstTemplates.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.adminDashboard.dienstTemplates.desc")}
-          </p>
-        </Link>
+        {hasModule(MODULE_KEYS.SCHEDULING) && (
+          <Link to="/admin/dienst-templates" className={centeredCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.adminDashboard.dienstTemplates.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.adminDashboard.dienstTemplates.desc")}
+            </p>
+          </Link>
+        )}
 
         {hasModule(MODULE_KEYS.WORKDAY) && (
           <Link

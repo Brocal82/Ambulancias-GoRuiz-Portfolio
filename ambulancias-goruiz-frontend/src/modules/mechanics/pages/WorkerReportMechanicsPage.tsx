@@ -27,6 +27,7 @@ const WorkerReportMechanicsPage = () => {
   const { token, user } = useAuth();
   const { hasModule } = useModules();
   const ambulancesModuleOn = hasModule(MODULE_KEYS.AMBULANCES);
+  const schedulingModuleOn = hasModule(MODULE_KEYS.SCHEDULING);
   const today = todayBerlinDayKey();
 
   const { assignedDay, refreshAssignedDay } = useWorkdayAssignment({
@@ -133,12 +134,18 @@ const WorkerReportMechanicsPage = () => {
         {!assignedDay ? (
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
             <p className="mb-2">{t("pages.mechanics.workerReport.noAssignment")}</p>
-            <Link
-              to="/dienst"
-              className="font-medium text-amber-950 underline hover:no-underline"
-            >
-              {t("pages.mechanics.workerReport.linkDienst")}
-            </Link>
+            {schedulingModuleOn ? (
+              <Link
+                to="/dienst"
+                className="font-medium text-amber-950 underline hover:no-underline"
+              >
+                {t("pages.mechanics.workerReport.linkDienst")}
+              </Link>
+            ) : (
+              <p className="text-amber-950/90">
+                {t("pages.mechanics.workerReport.noDienstModuleHint")}
+              </p>
+            )}
           </div>
         ) : (
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">

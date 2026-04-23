@@ -12,15 +12,30 @@ import {
 
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { requireModule } from "../../middlewares/requireModule";
 import { validateObjectId } from "../../middlewares/validateObjectId";
+import { MODULE_KEYS } from "../companies/constants/modules.constants";
 
 const router = express.Router();
 
-router.get("/", authenticateToken, authorizeRole("admin"), getDienstTemplates);
-router.post("/", authenticateToken, authorizeRole("admin"), createDienstTemplate);
+router.get(
+  "/",
+  authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
+  authorizeRole("admin"),
+  getDienstTemplates,
+);
+router.post(
+  "/",
+  authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
+  authorizeRole("admin"),
+  createDienstTemplate,
+);
 router.put(
   "/:id",
   authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   validateObjectId("id"),
   updateDienstTemplate,
@@ -28,6 +43,7 @@ router.put(
 router.delete(
   "/:id",
   authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   validateObjectId("id"),
   deleteDienstTemplate,

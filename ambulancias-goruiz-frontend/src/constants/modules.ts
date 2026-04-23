@@ -7,13 +7,14 @@
  *   users, companies, invitations
  *
  * COMPOSITE MODULES:
- *   scheduling  → diensts + dienst-templates
+ *   scheduling  → diensts + dienst-templates (desactivable; Excel solo lectura
+ *   vendría aparte, no reemplaza aún a esta clave)
  *   workday     → workday-summary + trips
  *   mechanics   → averías (report-issue, admin mechanics)
  *
- * V1 OPERATIONAL (superadmin UI):
- *   `scheduling` stays locked-on until Phase 4. `workday` can be toggled;
- *   Prämien automático requiere workday; Prämien manual puede ir sin jornada digital.
+ * Superadmin: todos los módulos de la lista son opt-in/opt-out por empresa.
+ * (Antes `scheduling` estaba bloqueado; ahora se puede desacoplar la dienst
+ * dinámica con vistas a un flujo Excel de solo lectura en el futuro.)
  */
 
 export const MODULE_KEYS = {
@@ -69,9 +70,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
 };
 
 /**
- * Modules that are locked on in V1 and cannot be disabled from the
- * superadmin UI until future architectural prerequisites are in place.
+ * Módulos que el superadmin no puede desactivar. Vacío: todo es configurable
+ * (la planificación Dienst dinámica es el módulo `scheduling`).
  */
-export const V1_LOCKED_ON_MODULES: ReadonlySet<ModuleKey> = new Set([
-  MODULE_KEYS.SCHEDULING,
-]);
+export const V1_LOCKED_ON_MODULES: ReadonlySet<ModuleKey> = new Set();

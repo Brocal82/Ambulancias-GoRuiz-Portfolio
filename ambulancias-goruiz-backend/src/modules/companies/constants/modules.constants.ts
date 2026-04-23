@@ -6,14 +6,14 @@
  *   users, companies, invitations
  *
  * COMPOSITE MODULES (one key covers multiple backend/frontend folders):
- *   scheduling  → diensts + dienst-templates (templates mounted as subroute)
+ *   scheduling  → diensts + dienst-templates (CRUD bajo /api/diensts/templates/…).
+ *   Futuro: sustituto no dinámico (p. ej. import Excel solo lectura) sería otro
+ *   módulo o ruta; desactivar `scheduling` solo corta la planificación Dienst actual.
  *   workday     → workday-summary + trips (jornada / viajes)
  *   mechanics   → averías / report-issue + admin mechanics (opcional por empresa)
  *
- * V1 OPERATIONAL (superadmin UI):
- *   `scheduling` remains locked-on until Phase 4 prerequisites are met.
- *   `workday` is toggleable. Prämien **automático** requires `workday`;
- *   Prämien **manual** (papel) can be on without `workday`.
+ * Superadmin: `scheduling` (diensts + plantillas) es opt-in por empresa.
+ * Prämien automático requiere `workday`; manual puede ir sin jornada digital.
  */
 
 export const MODULE_KEYS = {

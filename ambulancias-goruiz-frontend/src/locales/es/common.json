@@ -819,6 +819,7 @@
                 "back": "Volver al panel",
                 "noAssignment": "No tienes un Dienst asignado para hoy.",
                 "linkDienst": "Ver horario de turnos",
+                "noDienstModuleHint": "En esta empresa la planificación dinámica de turnos (Diensts) está desactivada. Puedes indicar el vehículo manualmente al abrir el formulario de avería.",
                 "openForm": "Abrir formulario de avería",
                 "refresh": "Actualizar datos del turno",
                 "hintManualVehicle": "Si no reconocemos la ambulancia automáticamente, el formulario te pedirá cómo identificarla.",

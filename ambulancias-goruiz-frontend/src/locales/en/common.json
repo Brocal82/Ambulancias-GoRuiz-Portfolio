@@ -819,6 +819,7 @@
                 "back": "Back to dashboard",
                 "noAssignment": "You have no duty assigned for today.",
                 "linkDienst": "View duty roster",
+                "noDienstModuleHint": "Dynamic scheduling (Diensts) is off for this company. You can enter the vehicle manually when you open the issue form.",
                 "openForm": "Open breakdown form",
                 "refresh": "Refresh duty data",
                 "hintManualVehicle": "If we cannot detect the ambulance automatically, the form will ask how to identify it.",

@@ -1545,6 +1545,42 @@ describe("API - Rutas críticas", () => {
     });
   });
 
+  describe("Scheduling module gate (diensts + templates)", () => {
+    it("GET /api/diensts devuelve 403 si scheduling desactivada", async () => {
+      await Company.findByIdAndUpdate(companyId, {
+        $pull: { enabledModules: MODULE_KEYS.SCHEDULING },
+      });
+      try {
+        const res = await request(app)
+          .get(`${API}/diensts`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .expect(403);
+        expect(res.body.message).toMatch(/scheduling/i);
+      } finally {
+        await Company.findByIdAndUpdate(companyId, {
+          $addToSet: { enabledModules: MODULE_KEYS.SCHEDULING },
+        });
+      }
+    });
+
+    it("GET /api/diensts/templates devuelve 403 si scheduling desactivada", async () => {
+      await Company.findByIdAndUpdate(companyId, {
+        $pull: { enabledModules: MODULE_KEYS.SCHEDULING },
+      });
+      try {
+        const res = await request(app)
+          .get(`${API}/diensts/templates`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .expect(403);
+        expect(res.body.message).toMatch(/scheduling/i);
+      } finally {
+        await Company.findByIdAndUpdate(companyId, {
+          $addToSet: { enabledModules: MODULE_KEYS.SCHEDULING },
+        });
+      }
+    });
+  });
+
   describe("Company modules: automatic Praemien requires workday", () => {
     it("PATCH /api/companies/:id devuelve 400 si Prämien automático sin workday", async () => {
       const { superadminToken } = await createTestSuperadmin();

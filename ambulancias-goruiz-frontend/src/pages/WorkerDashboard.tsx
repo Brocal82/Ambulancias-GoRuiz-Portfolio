@@ -37,14 +37,16 @@ const WorkerDashboard = () => {
           </p>
         </Link>
 
-        <Link to="/dienst" className={centeredCard}>
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.workerDashboard.dienst.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.workerDashboard.dienst.desc")}
-          </p>
-        </Link>
+        {hasModule(MODULE_KEYS.SCHEDULING) && (
+          <Link to="/dienst" className={centeredCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.workerDashboard.dienst.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.workerDashboard.dienst.desc")}
+            </p>
+          </Link>
+        )}
 
         {hasModule(MODULE_KEYS.WORKDAY) && (
           <Link to="/my-workday" className={centeredCard}>

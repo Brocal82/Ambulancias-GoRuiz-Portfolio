@@ -819,6 +819,7 @@
                 "back": "Zurück zum Panel",
                 "noAssignment": "Für heute ist kein Dienst zugewiesen.",
                 "linkDienst": "Dienstplan ansehen",
+                "noDienstModuleHint": "Für dieses Unternehmen ist die dynamische Dienstplanung deaktiviert. Sie können das Fahrzeug in der Meldung manuell angeben.",
                 "openForm": "Störungsformular öffnen",
                 "refresh": "Dienst-Daten aktualisieren",
                 "hintManualVehicle": "Wenn die Ambulanz nicht automatisch erkannt wird, fragt das Formular nach der Kennzeichnung.",

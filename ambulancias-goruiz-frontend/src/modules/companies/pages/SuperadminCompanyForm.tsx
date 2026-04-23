@@ -249,10 +249,10 @@ export default function SuperadminCompanyForm() {
             Módulos habilitados
           </legend>
           <p className="text-xs text-slate-500 mb-3">
-            El módulo bloqueado (🔒) —planificación (diensts)— es operativo
-            esencial en V1. Jornada y viajes se pueden apagar si trabajan en
-            papel; Prämien automático sigue enlazado a la jornada digital, Prämien
-            manual no.
+            Marca los módulos que la empresa usará. Planificación (diensts y
+            plantillas) es opt-in: sin ella no hay calendario dinámico; un flujo
+            futuro de Excel de solo lectura irá por otra vía. Jornada en papel:
+            Prämien manual sin módulo jornada; automático requiere jornada digital.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {ALL_MODULE_KEYS.map((key) => {

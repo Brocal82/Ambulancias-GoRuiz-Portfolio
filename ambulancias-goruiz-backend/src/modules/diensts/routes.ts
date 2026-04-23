@@ -20,27 +20,53 @@ import { dndCrossDienstSameWeekSchema } from "./assignments/schemas/dnd-cross-di
 
 const router = express.Router();
 
-// 👮‍♂️ Rutas protegidas
-router.post("/", authenticateToken, authorizeRole("admin"), DienstLifecycle.createDienst);
-router.get("/", authenticateToken, authorizeRole("admin"), DienstCalendar.getAllDiensts);
-router.get("/search", authenticateToken, authorizeRole("admin"), DienstCalendar.searchDienst);
-router.get("/user/:userId", authenticateToken, DienstCalendar.getDienstsByUser);
+// 👮‍♂️ Rutas protegidas (módulo `scheduling`: diensts + plantillas bajo /templates)
+router.post(
+  "/",
+  authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
+  authorizeRole("admin"),
+  DienstLifecycle.createDienst,
+);
+router.get(
+  "/",
+  authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
+  authorizeRole("admin"),
+  DienstCalendar.getAllDiensts,
+);
+router.get(
+  "/search",
+  authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
+  authorizeRole("admin"),
+  DienstCalendar.searchDienst,
+);
+router.get(
+  "/user/:userId",
+  authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
+  DienstCalendar.getDienstsByUser,
+);
 
 router.get(
   "/assigned-days/:userId",
   authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
   DienstAssignments.getAssignedDaysForUser,
 );
 
 router.post(
   "/generate-week",
   authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   DienstLifecycle.generateDienstTemplatesForWeek,
 );
 router.post(
   "/delete-week",
   authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   DienstLifecycle.deleteDienstsForWeek,
 );
@@ -49,10 +75,17 @@ router.post(
 router.use("/templates", dienstTemplateRoutes);
 
 // 👇 Acceso según permisos
-router.get("/:id", authenticateToken, validateObjectId("id"), DienstCalendar.getDienstById);
+router.get(
+  "/:id",
+  authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
+  validateObjectId("id"),
+  DienstCalendar.getDienstById,
+);
 router.put(
   "/:id",
   authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   validateObjectId("id"),
   DienstLifecycle.updateDienst,
@@ -62,6 +95,7 @@ router.put(
 router.patch(
   "/:id/remove-assignment",
   authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   validateObjectId("id"),
   DienstAssignments.removeAssignment,
@@ -70,6 +104,7 @@ router.patch(
 router.patch(
   "/:id",
   authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   validateObjectId("id"),
   validateBody(updateDienstPartialSchema),
@@ -78,6 +113,7 @@ router.patch(
 router.delete(
   "/:id",
   authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   validateObjectId("id"),
   DienstLifecycle.deleteDienst,
@@ -87,6 +123,7 @@ router.delete(
 router.post(
   "/assign-team-to-week",
   authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   DienstAssignments.assignTeamToWeek,
 );
@@ -95,6 +132,7 @@ router.post(
 router.post(
   "/assign-user-to-week",
   authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   DienstAssignments.assignUserToWeek,
 );
@@ -102,6 +140,7 @@ router.post(
 router.post(
   "/clear-week-people",
   authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   DienstAssignments.clearPeopleForWeek,
 );
@@ -109,6 +148,7 @@ router.post(
 router.post(
   "/move-slot-same-week",
   authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   validateBody(moveSlotSameWeekSchema),
   DienstAssignments.moveSlotSameWeek,
@@ -117,6 +157,7 @@ router.post(
 router.post(
   "/dnd-cross-dienst-same-week",
   authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   validateBody(dndCrossDienstSameWeekSchema),
   DienstAssignments.dndCrossDienstSameWeek,
@@ -126,6 +167,7 @@ router.post(
 router.post(
   "/assign-ambulance-to-week",
   authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   requireModule(MODULE_KEYS.AMBULANCES),
   DienstAssignments.assignAmbulanceToWeek,
