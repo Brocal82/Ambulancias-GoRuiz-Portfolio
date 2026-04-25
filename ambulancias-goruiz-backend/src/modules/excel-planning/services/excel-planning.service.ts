@@ -685,6 +685,22 @@ export async function publishImportForAdmin(
   imp.status = "published";
   await imp.save();
 
+  try {
+    console.info(
+      "[excel_planning] published",
+      JSON.stringify({
+        event: "excel_planning_published",
+        companyId: r.companyId,
+        importId: String(imp._id),
+        weekStart: weekStart.toISOString().slice(0, 10),
+        rowCount: rows.length,
+        publishedBy: req.userId != null ? String(req.userId) : null,
+      }),
+    );
+  } catch {
+    // no interrumpir la respuesta por logging
+  }
+
   return { ok: true as const, data: weekDoc };
 }
 

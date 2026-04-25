@@ -28,7 +28,8 @@
     "test:watch": "jest --watch",
     "backfill:excel-planning-module": "ts-node src/scripts/backfill-company-module-excel-planning.ts",
     "generate:excel-planning-real": "ts-node scripts/generate-excel-planning-real-workers.ts",
-    "sample:excels-villanos-avengers": "node scripts/generate-sample-excels-villanos-avengers.js"
+    "sample:excels-villanos-avengers": "node scripts/generate-sample-excels-villanos-avengers.js",
+    "cleanup:excel-planning-discarded": "ts-node src/scripts/cleanup-excel-planning-discarded-imports.ts"
   },
   "keywords": [],
   "author": "",
