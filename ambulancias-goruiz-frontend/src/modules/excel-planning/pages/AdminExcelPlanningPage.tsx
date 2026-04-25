@@ -357,6 +357,7 @@ export default function AdminExcelPlanningPage() {
   const canPublish =
     Boolean(lastImportId) &&
     Boolean(preview?.rows?.length) &&
+    (preview?.parseErrors?.length ?? 0) === 0 &&
     (preview?.stats?.unmatched ?? 0) === 0 &&
     (preview?.stats?.numberKeyCollisions ?? 0) === 0;
 
@@ -372,12 +373,13 @@ export default function AdminExcelPlanningPage() {
 
   const importPreviewAllGreen = useMemo(() => {
     if (!preview?.stats || !preview?.rows?.length) return false;
+    if ((preview.parseErrors?.length ?? 0) > 0) return false;
     const s = preview.stats;
     if ((s.unmatched ?? 0) > 0) return false;
     if ((s.numberKeyCollisions ?? 0) > 0) return false;
     if (pairCells == null) return false;
     return pairCells === preview.rows.length;
-  }, [preview?.stats, preview?.rows, pairCells]);
+  }, [preview?.parseErrors, preview?.stats, preview?.rows, pairCells]);
 
   const saveRecommendedTemplate = useCallback(async () => {
     setSaving(true);

@@ -611,6 +611,16 @@ export async function publishImportForAdmin(
     };
   }
 
+  const parseErrs = imp.parseErrors ?? [];
+  if (parseErrs.length > 0) {
+    return {
+      ok: false as const,
+      statusCode: 400,
+      message:
+        "No se puede publicar: el análisis del Excel registró avisos. Corrija el archivo, el mapeo o la celda de semana y vuelva a importar.",
+    };
+  }
+
   let weekStart: Date | null = null;
   if (body.weekStart?.trim()) {
     weekStart = normalizeYmdToIsoWeekMondayUtc(body.weekStart.trim());
