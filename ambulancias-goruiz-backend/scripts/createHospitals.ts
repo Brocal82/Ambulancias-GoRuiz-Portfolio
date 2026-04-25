@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { Hospital } from "../src/modules/hospitals/models/hospital.model";
+import Company from "../src/modules/companies/models/company.model";
 
 dotenv.config();
 
@@ -33,10 +34,20 @@ const hospitals = [
 const seedHospitals = async () => {
   try {
     await mongoose.connect(MONGODB_URI);
-    await Hospital.deleteMany();
-    const created = await Hospital.insertMany(hospitals);
-    console.log(`✅ ${created.length} hospitales creados`);
-    mongoose.disconnect();
+    const company = await Company.findOne().select("_id").lean();
+    if (!company) {
+      console.error(
+        "❌ No hay empresas en la BD. Crea al menos una company antes de sembrar hospitales.",
+      );
+      process.exit(1);
+    }
+    const companyId = (company as { _id: mongoose.Types.ObjectId })._id;
+    await Hospital.deleteMany({ companyId });
+    const created = await Hospital.insertMany(
+      hospitals.map((h) => ({ ...h, companyId })),
+    );
+    console.log(`✅ ${created.length} hospitales creados para company ${companyId}`);
+    await mongoose.disconnect();
   } catch (err) {
     console.error("❌ Error al crear hospitales:", err);
     process.exit(1);

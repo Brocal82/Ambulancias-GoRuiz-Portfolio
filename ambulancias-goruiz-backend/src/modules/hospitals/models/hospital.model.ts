@@ -6,7 +6,7 @@ export interface IHospital extends Document {
   phone: string;
   specialties: string[];
   isOpen: boolean;
-  companyId?: Types.ObjectId | null;
+  companyId: Types.ObjectId;
 }
 
 const HospitalSchema = new Schema<IHospital>({
@@ -18,9 +18,11 @@ const HospitalSchema = new Schema<IHospital>({
   companyId: {
     type: Schema.Types.ObjectId,
     ref: "Company",
-    required: false,
-    default: null,
+    required: true,
   },
 });
+
+/** Listados por tenant y búsquedas por nombre dentro de la empresa. */
+HospitalSchema.index({ companyId: 1, name: 1 });
 
 export const Hospital = mongoose.model<IHospital>("Hospital", HospitalSchema);

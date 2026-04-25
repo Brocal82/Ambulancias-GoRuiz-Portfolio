@@ -2,12 +2,20 @@ import mongoose from "mongoose";
 import { Hospital } from "../models/hospital.model";
 import type { UpdateHospitalInput } from "../schemas/hospital.schema";
 
-export const getAllHospitals = async (companyId?: string | null) => {
+function toCompanyObjectId(companyId?: string | null): mongoose.Types.ObjectId | null {
   const raw = typeof companyId === "string" ? companyId.trim() : "";
   if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+    return null;
+  }
+  return new mongoose.Types.ObjectId(raw);
+}
+
+export const getAllHospitals = async (companyId?: string | null) => {
+  const oid = toCompanyObjectId(companyId);
+  if (!oid) {
     return [];
   }
-  return await Hospital.find({ companyId: new mongoose.Types.ObjectId(raw) });
+  return await Hospital.find({ companyId: oid });
 };
 
 export const createHospital = async (
@@ -18,19 +26,20 @@ export const createHospital = async (
     specialties: string[];
     isOpen?: boolean;
   },
-  companyId?: string | null,
+  companyId: string,
 ) => {
-  const doc: Record<string, unknown> = {
+  const oid = toCompanyObjectId(companyId);
+  if (!oid) {
+    throw new Error("createHospital: companyId inválido o ausente");
+  }
+  const hospital = new Hospital({
     name: data.name,
     address: data.address,
     phone: data.phone,
     specialties: data.specialties,
     isOpen: data.isOpen,
-  };
-  if (companyId != null && companyId !== "") {
-    doc.companyId = new mongoose.Types.ObjectId(companyId);
-  }
-  const hospital = new Hospital(doc);
+    companyId: oid,
+  });
   return await hospital.save();
 };
 
@@ -39,28 +48,27 @@ export const updateHospital = async (
   updateData: UpdateHospitalInput,
   companyId?: string | null,
 ) => {
-  const existing = await Hospital.findById(id).select("companyId").lean();
-  if (!existing) return null;
-  const existingCompany = (existing as { companyId?: unknown }).companyId;
-  if (existingCompany && companyId != null && companyId !== "") {
-    if (String(existingCompany) !== String(companyId)) return null;
-  } else if (existingCompany) {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
     return null;
   }
-  return await Hospital.findByIdAndUpdate(id, updateData, { new: true });
+  const oid = toCompanyObjectId(companyId);
+  if (!oid) {
+    return null;
+  }
+  return await Hospital.findOneAndUpdate(
+    { _id: id, companyId: oid },
+    updateData,
+    { new: true, runValidators: true },
+  );
 };
 
-export const deleteHospital = async (
-  id: string,
-  companyId?: string | null,
-) => {
-  const existing = await Hospital.findById(id).select("companyId").lean();
-  if (!existing) return null;
-  const existingCompany = (existing as { companyId?: unknown }).companyId;
-  if (existingCompany && companyId != null && companyId !== "") {
-    if (String(existingCompany) !== String(companyId)) return null;
-  } else if (existingCompany) {
+export const deleteHospital = async (id: string, companyId?: string | null) => {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
     return null;
   }
-  return await Hospital.findByIdAndDelete(id);
+  const oid = toCompanyObjectId(companyId);
+  if (!oid) {
+    return null;
+  }
+  return await Hospital.findOneAndDelete({ _id: id, companyId: oid });
 };
