@@ -25,6 +25,7 @@ import {
   normalizeYmdToIsoWeekMondayUtc,
   parseExcelBuffer,
   parseIsoDateUtc,
+  splitDualEmployeeNumberLine,
 } from "./excel-planning-parse.service";
 import { buildExcelBufferFromPlanRows } from "./excel-planning-export.service";
 import { requireCompanyForAdmin, requireCompanyForWorker } from "../../../utils/requireCompany";
@@ -64,6 +65,41 @@ function fixRowDayDateIfLegacy(row: IExcelPlanRow, weekStart: Date): IExcelPlanR
     return { ...row, dayDate: addDaysUtc(weekStart, row.dayIndex) };
   }
   return row;
+}
+
+/** Pareja: línea explícita o "0001/0002" en la misma celda. */
+function partnerRawForRematch(row: IExcelPlanRow): string | undefined {
+  const p = row.partnerEmployeeNumber?.trim();
+  if (p) return p;
+  const e = row.employeeNumber?.trim();
+  if (!e) return undefined;
+  const { partner } = splitDualEmployeeNumberLine(e);
+  return partner;
+}
+
+/**
+ * Fila pública en la que aún faltó matchedPartnerUserId; al leer, resolvemos p. nº de compañero.
+ */
+function resolvePartnerUserIdStringForRead(
+  row: IExcelPlanRow,
+  byNumber: Map<string, CompanyUserLite>,
+  normalizeMode: "trim" | "trim_strip_leading_zeros",
+): string | undefined {
+  if (row.matchedPartnerUserId) {
+    return String(row.matchedPartnerUserId);
+  }
+  const pRaw = partnerRawForRematch(row);
+  if (!pRaw) return undefined;
+  const hit = lookupWorkerByEmployeeKeys(
+    pRaw,
+    byNumber,
+    normalizeMode,
+  );
+  if (!hit) return undefined;
+  if (row.matchedUserId && String(hit._id) === String(row.matchedUserId)) {
+    return undefined;
+  }
+  return String(hit._id);
 }
 
 function addEmployeeNumberAlias(
@@ -638,7 +674,7 @@ export async function listWeeksForAdmin(req: Request, limit = 24) {
   const docs = await ExcelPlanningWeek.find({ companyId: r.companyId })
     .sort({ weekStart: -1 })
     .limit(limit)
-    .select("weekStart publishedAt sourceFileUrl")
+    .select("weekStart publishedAt sourceFileUrl sourceStoredFilename")
     .lean();
   return { ok: true as const, data: docs };
 }
@@ -714,10 +750,37 @@ export async function getMyPublishedWeek(req: Request, weekStartQuery?: string) 
         String(row.matchedPartnerUserId) === String(meId)),
   );
 
+  const normMode: "trim" | "trim_strip_leading_zeros" =
+    doc.normalizeEmployeeNumber === "trim_strip_leading_zeros"
+      ? "trim_strip_leading_zeros"
+      : "trim";
+
+  const needPartnerRematch = rowsFiltered.some(
+    (row) =>
+      !row.matchedPartnerUserId &&
+      Boolean(partnerRawForRematch(row)),
+  );
+
+  const byNumberForRematch = needPartnerRematch
+    ? (await buildEmployeeMaps(companyOid, {
+        normalizeEmployeeNumber: normMode,
+      } as ExcelPlanningMapping)).byNumber
+    : null;
+
   const userIds = new Set<string>();
   for (const row of rowsFiltered) {
     if (row.matchedUserId) userIds.add(String(row.matchedUserId));
     if (row.matchedPartnerUserId) userIds.add(String(row.matchedPartnerUserId));
+  }
+  if (byNumberForRematch) {
+    for (const row of rowsFiltered) {
+      const p = resolvePartnerUserIdStringForRead(
+        row,
+        byNumberForRematch,
+        normMode,
+      );
+      if (p) userIds.add(p);
+    }
   }
 
   type UserLabelRole = {
@@ -757,28 +820,39 @@ export async function getMyPublishedWeek(req: Request, weekStartQuery?: string) 
     const primaryId = fixed.matchedUserId
       ? String(fixed.matchedUserId)
       : undefined;
-    const partnerId = fixed.matchedPartnerUserId
-      ? String(fixed.matchedPartnerUserId)
-      : undefined;
+    const partnerIdResolved = byNumberForRematch
+      ? resolvePartnerUserIdStringForRead(
+          fixed,
+          byNumberForRematch,
+          normMode,
+        )
+      : fixed.matchedPartnerUserId
+        ? String(fixed.matchedPartnerUserId)
+        : undefined;
 
     const primaryLabel =
-      fixed.displayNameFromExcel?.trim() ||
       (primaryId ? labelById.get(primaryId) : undefined) ||
+      fixed.displayNameFromExcel?.trim() ||
       "";
     const partnerLabel =
+      (partnerIdResolved ? labelById.get(partnerIdResolved) : undefined) ||
       fixed.displayPartnerNameFromExcel?.trim() ||
-      (partnerId ? labelById.get(partnerId) : undefined) ||
       "";
 
     let next: Record<string, unknown> = { ...fixed };
     if (primaryLabel) next = { ...next, displayNameFromExcel: primaryLabel };
     if (partnerLabel) next = { ...next, displayPartnerNameFromExcel: partnerLabel };
+    if (partnerIdResolved) {
+      next.matchedPartnerUserId = new mongoose.Types.ObjectId(
+        partnerIdResolved,
+      );
+    }
 
     const primaryAmbulanceRole = primaryId
       ? roleById.get(primaryId)
       : undefined;
-    const partnerAmbulanceRole = partnerId
-      ? roleById.get(partnerId)
+    const partnerAmbulanceRole = partnerIdResolved
+      ? roleById.get(partnerIdResolved)
       : undefined;
 
     return {

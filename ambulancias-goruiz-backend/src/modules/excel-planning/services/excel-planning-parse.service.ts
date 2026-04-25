@@ -125,7 +125,8 @@ export function migrateLegacyCellLineOrder(
  * Dos nº en la misma línea del Excel (p. ej. "0001 / 0002") para que ambos se vean en la cuadrícula.
  * Solo aplica si aún no hay partnerEmployeeNumber en su línea propia.
  */
-function splitDualEmployeeNumberLine(raw: string): {
+/** Exportado para re-coincidencia en vista trabajador (nº de pareja faltante en filas antiguas). */
+export function splitDualEmployeeNumberLine(raw: string): {
   primary: string;
   partner?: string;
 } {
@@ -192,6 +193,82 @@ function mapLinesToFields(
     }
   }
   return out;
+}
+
+function isAllEmployeeDigits(s: string): boolean {
+  const t = s.replace(/\s/g, "");
+  return t.length > 0 && /^\d+$/.test(t);
+}
+
+/**
+ * A veces el nº de compañero termina mapeado al rol partnerName (p. ej. 5.ª línea
+ * sin "partnerEmployeeNumber" en el JSON) → pasa a Nº comp.
+ */
+function reclassifyDigitPartnerInPartnerNameSlot(
+  out: {
+    partnerEmployeeNumber?: string;
+    displayPartnerNameFromExcel?: string;
+  },
+): void {
+  if (out.partnerEmployeeNumber?.trim()) return;
+  const t = out.displayPartnerNameFromExcel?.trim();
+  if (!t) return;
+  if (!isAllEmployeeDigits(t)) return;
+  out.partnerEmployeeNumber = t;
+  out.displayPartnerNameFromExcel = undefined;
+}
+
+/**
+ * Celdas con más líneas de texto que entradas en `cellLineOrder` (6 líneas, 5 roles, etc.),
+ * o 6.ª línea "0002" colgando sin mapeo.
+ */
+function applyOverflowPartnerFields(
+  lines: string[],
+  orderLen: number,
+  out: {
+    partnerEmployeeNumber?: string;
+    displayNameFromExcel?: string;
+    displayPartnerNameFromExcel?: string;
+  },
+  primaryNormalized: string | undefined,
+  mode: ExcelPlanningMapping["normalizeEmployeeNumber"],
+): void {
+  for (let j = orderLen; j < lines.length; j++) {
+    const line = lines[j]?.trim() ?? "";
+    if (!line) continue;
+    if (isAllEmployeeDigits(line)) {
+      const n = normalizeEmployeeNumber(line, mode);
+      if (primaryNormalized && n === primaryNormalized) continue;
+      if (!out.partnerEmployeeNumber) out.partnerEmployeeNumber = line;
+    } else if (!out.displayPartnerNameFromExcel) {
+      out.displayPartnerNameFromExcel = line;
+    }
+  }
+  if (out.partnerEmployeeNumber?.trim()) return;
+  for (let j = lines.length - 1; j >= 0; j--) {
+    const line = lines[j]?.trim() ?? "";
+    if (!isAllEmployeeDigits(line)) continue;
+    const n = normalizeEmployeeNumber(line, mode);
+    if (primaryNormalized && n === primaryNormalized) continue;
+    out.partnerEmployeeNumber = line;
+    break;
+  }
+}
+
+/** Trocea por delimitador guardado, o LFs reales (Windows/macOS) si el mapeo usa salto de línea. */
+function splitCellToLines(
+  rawCellText: string,
+  lineDelimiter: string | undefined,
+): string[] {
+  const d = (lineDelimiter ?? "\n").trim() || "\n";
+  if (d === "\n" || d === "\r\n") {
+    return rawCellText
+      .split(/\r\n|\n|\r/)
+      .map((l) => l.trim());
+  }
+  return rawCellText
+    .split(d)
+    .map((l) => l.trim());
 }
 
 function addDaysUtc(monday: Date, dayIndex: number): Date {
@@ -285,17 +362,33 @@ export function parseExcelBuffer(
       const rawCellText = cellToString(cellVal).trim();
       if (!rawCellText) continue;
 
-      const lines = rawCellText
-        .split(mapping.lineDelimiter)
-        .map((l) => l.trim());
+      const lines = splitCellToLines(
+        rawCellText,
+        mapping.lineDelimiter,
+      );
 
       const fields = mapLinesToFields(lines, cellLineOrder);
+      reclassifyDigitPartnerInPartnerNameSlot(fields);
       let empRaw = fields.employeeNumber?.trim() ?? "";
       let partnerEmpRaw = fields.partnerEmployeeNumber?.trim() ?? "";
       const dual = splitDualEmployeeNumberLine(empRaw);
       if (dual.partner) {
         empRaw = dual.primary;
         if (!partnerEmpRaw) partnerEmpRaw = dual.partner;
+      }
+      const primaryNormForOverflow = empRaw
+        ? normalizeEmployeeNumber(empRaw, mapping.normalizeEmployeeNumber)
+        : undefined;
+      applyOverflowPartnerFields(
+        lines,
+        cellLineOrder.length,
+        fields,
+        primaryNormForOverflow,
+        mapping.normalizeEmployeeNumber,
+      );
+      reclassifyDigitPartnerInPartnerNameSlot(fields);
+      if (!partnerEmpRaw && fields.partnerEmployeeNumber?.trim()) {
+        partnerEmpRaw = fields.partnerEmployeeNumber.trim();
       }
       const employeeNumberNorm = empRaw
         ? normalizeEmployeeNumber(empRaw, mapping.normalizeEmployeeNumber)
