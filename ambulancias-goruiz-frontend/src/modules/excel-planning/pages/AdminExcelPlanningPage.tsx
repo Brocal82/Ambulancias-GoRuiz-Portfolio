@@ -34,6 +34,7 @@ import WorkerCardTemplateEditor from "../components/WorkerCardTemplateEditor";
 import { stringifyExcelMappingForEditor } from "../domain/formatMappingEditorText";
 import "./AdminExcelPlanningPage.css";
 
+/** Alineado con el backend: `nameMatching` por defecto es solo nº (recomendado en producción). */
 const DEFAULT_MAPPING: ExcelPlanningMapping = {
   sheetIndex: 0,
   requireWeekFromSheet: false,

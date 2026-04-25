@@ -164,6 +164,7 @@ export const excelPlanningMappingSchema = z.object({
   lineDelimiter: z.string().default("\n"),
   /** Orden de líneas dentro de cada celda multilínea (nombres canónicos o alias por empresa, ver resolveCellLineRoleToCanonical). */
   cellLineOrder: cellLineOrderFieldSchema,
+  /** `employee_number_only` es el default y el recomendado en producción (evita heurística de nombres). */
   nameMatching: z
     .enum(["employee_number_only", "employee_number_then_name"])
     .default("employee_number_only"),
