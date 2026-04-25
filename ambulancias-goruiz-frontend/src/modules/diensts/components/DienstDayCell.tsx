@@ -49,6 +49,11 @@ export interface DienstDayCellProps {
      * para que nombres largos y celdas anchas muestren el contenido.
      */
     preferLineWrap?: boolean;
+    /**
+     * Solo lectura decorativa (p. ej. plantilla Excel en admin): sin elevación al hover
+     * ni aspecto de botón; se renderiza como `div`.
+     */
+    isStaticPreview?: boolean;
 };
 
 export const DienstDayCell: React.FC<DienstDayCellProps> = ({
@@ -61,6 +66,7 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
     onOpen,
     adminDnd,
     preferLineWrap = false,
+    isStaticPreview = false,
 }) => {
     const disabled = Boolean(isPast || isDisabled);
     const isIncomplete = Boolean(isDisabled && !isPast);
@@ -382,15 +388,25 @@ export const DienstDayCell: React.FC<DienstDayCellProps> = ({
     );
 
     const shellClassName = `
-        rounded-xl p-2 ring-1 transition text-left
+        rounded-xl p-2 ring-1 text-left
         flex flex-col ${preferLineWrap ? "min-h-0" : "min-h-[72px]"}
         ${statusClass}
         ${finalBorderClass}
-        ${disabled ? disabledStyle : "hover:shadow-sm hover:-translate-y-0.5"}
+        ${
+            disabled
+                ? disabledStyle
+                : isStaticPreview
+                  ? "cursor-default"
+                  : "transition hover:shadow-sm hover:-translate-y-0.5"
+        }
       `;
 
     const cellDrop =
         Boolean(adminDnd?.cellDropTarget && adminDnd?.onDropCell);
+
+    if (isStaticPreview && !adminDnd) {
+        return <div className={shellClassName}>{inner}</div>;
+    }
 
     if (adminDnd) {
         return (

@@ -1,0 +1,9 @@
+/* Altura mapeo JSON alineada con columna plantilla (valor en píxeles vía --excel-planning-mapeo-h en runtime). */
+.excel-planning-mapeo-col {
+  min-height: 12rem;
+}
+
+.excel-planning-mapeo-col--height-synced {
+  height: var(--excel-planning-mapeo-h);
+  max-height: var(--excel-planning-mapeo-h);
+}

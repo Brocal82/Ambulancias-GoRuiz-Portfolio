@@ -177,12 +177,20 @@ function mergeWorkerExcelRowGroupsForWeek(
 function buildExcelRowGroupsForWeek(
   rows: ExcelPlanRow[],
   weekDates: DayKey[],
+  /** Lunes ISO de la semana publicada: alinea por dayIndex si dayDate en BD está desfasado. */
+  weekMonday?: DayKey,
 ): ExcelRowGroup[] {
   const inWeek = new Set(weekDates);
   const map = new Map<string, ExcelRowGroup>();
 
   for (const r of rows) {
-    const dk = toBerlinDayKey(new Date(r.dayDate));
+    const dk =
+      weekMonday != null &&
+      typeof r.dayIndex === "number" &&
+      r.dayIndex >= 0 &&
+      r.dayIndex <= 6
+        ? addDaysToDayKey(weekMonday, r.dayIndex)
+        : toBerlinDayKey(new Date(r.dayDate));
     if (!inWeek.has(dk)) continue;
 
     const key = `${r.dienstNumber}\t${r.rowLabel ?? ""}`;
@@ -411,7 +419,7 @@ export default function WorkerExcelPlanningPage() {
                 bundleByMonday[mk]?.cardLayout ?? DEFAULT_WORKER_CARD_LAYOUT;
               const weekDates = getWeekDays(mk);
               const rowGroups = mergeWorkerExcelRowGroupsForWeek(
-                buildExcelRowGroupsForWeek(weekRows, weekDates),
+                buildExcelRowGroupsForWeek(weekRows, weekDates, mk),
               );
 
               return (

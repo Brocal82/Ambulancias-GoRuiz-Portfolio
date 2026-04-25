@@ -1,5 +1,4 @@
 import axiosInstance from "../../../api/axios";
-import { isAxiosError } from "axios";
 
 export interface ExcelPlanningMapping {
   sheetIndex: number;
@@ -32,20 +31,6 @@ export interface ExcelPlanningMapping {
     medicField?: string;
   };
 }
-
-/** Cuerpo de POST /export (sin campos de match del import). */
-export type ExcelExportRow = {
-  dayIndex?: number;
-  dayDate?: string;
-  dienstNumber: string;
-  rowLabel?: string;
-  timeText?: string;
-  vehicleCode?: string;
-  employeeNumber?: string;
-  partnerEmployeeNumber?: string;
-  displayNameFromExcel?: string;
-  displayPartnerNameFromExcel?: string;
-};
 
 export interface ExcelPlanRow {
   dayIndex: number;
@@ -84,35 +69,6 @@ export async function putExcelPlanningTemplate(body: {
 }) {
   const { data } = await axiosInstance.put("/api/excel-planning/template", body);
   return data;
-}
-
-export async function postExcelPlanningExport(body: {
-  weekStart: string;
-  rows: ExcelExportRow[];
-}): Promise<{ blob: Blob; filename: string }> {
-  try {
-    const res = await axiosInstance.post<Blob>("/api/excel-planning/export", body, {
-      responseType: "blob",
-    });
-    const cd = res.headers["content-disposition"];
-    let filename = "excel-planning.xlsx";
-    const m = typeof cd === "string" ? /filename="([^"]+)"/i.exec(cd) : null;
-    if (m?.[1]) filename = m[1];
-    return { blob: res.data, filename };
-  } catch (e: unknown) {
-    if (isAxiosError(e) && e.response?.data instanceof Blob) {
-      const text = await e.response.data.text();
-      let msg = text || "Error al exportar";
-      try {
-        const j = JSON.parse(text) as { message?: string };
-        if (j.message) msg = j.message;
-      } catch {
-        /* mantener msg */
-      }
-      throw new Error(msg);
-    }
-    throw e;
-  }
 }
 
 export async function postExcelPlanningImport(file: File) {
@@ -164,7 +120,12 @@ export async function publishExcelPlanningImport(
 
 export async function listExcelPlanningWeeks() {
   const { data } = await axiosInstance.get<
-    Array<{ weekStart: string; publishedAt?: string; sourceFileUrl?: string }>
+    Array<{
+      weekStart: string;
+      publishedAt?: string;
+      sourceFileUrl?: string;
+      sourceStoredFilename?: string;
+    }>
   >("/api/excel-planning/weeks");
   return data;
 }

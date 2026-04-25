@@ -129,7 +129,7 @@ function fieldTextFromKey(
     return (key === "driver" ? d.driverLabel : d.medicLabel).trim();
   }
   if (!rows.length) return "—";
-  const first = rows[0] as Record<string, unknown>;
+  const first = rows[0] as unknown as Record<string, unknown>;
   if (key === "timeText") {
     const parsed = rows.map((r) => parseExcelTimeRange(r.timeText));
     const ok = parsed.filter((p) => p.start && p.end);
