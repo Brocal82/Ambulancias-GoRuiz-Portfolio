@@ -1,0 +1,19 @@
+{
+  "sheetIndex": 0,
+  "requireWeekFromSheet": false,
+  "dataStartRow": 2,
+  "dienstNumberColumn": 0,
+  "rowLabelColumn": 1,
+  "dayColumns": [2, 3, 4, 5, 6, 7, 8],
+  "lineDelimiter": "\n",
+  "cellLineOrder": [
+    "time",
+    "vehicle",
+    "employeeNumber",
+    "name",
+    "partnerName",
+    "partnerEmployeeNumber"
+  ],
+  "nameMatching": "employee_number_only",
+  "normalizeEmployeeNumber": "trim_strip_leading_zeros"
+}
