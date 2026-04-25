@@ -48,9 +48,16 @@ export function getApiErrorMessage(
 ): string {
   if (typeof err === "string") return err;
   if (err && typeof err === "object") {
-    const ax = err as { response?: { data?: { message?: unknown } } };
-    if (typeof ax?.response?.data?.message === "string")
-      return ax.response.data.message;
+    const ax = err as {
+      response?: { data?: { message?: unknown; code?: unknown } };
+    };
+    const d = ax?.response?.data;
+    if (d && typeof d === "object" && typeof d.code === "string") {
+      const k = `excelPlanning.apiErrors.${d.code}`;
+      const translated = i18next.t(k);
+      if (translated && translated !== k) return translated;
+    }
+    if (typeof d?.message === "string") return d.message;
     const anyErr = err as { message?: unknown; error?: unknown };
     if (typeof anyErr.message === "string") return anyErr.message;
     if (typeof anyErr.error === "string") return anyErr.error;

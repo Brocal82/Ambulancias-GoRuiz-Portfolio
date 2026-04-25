@@ -30,6 +30,7 @@ import {
 import { buildExcelBufferFromPlanRows } from "./excel-planning-export.service";
 import { requireCompanyForAdmin, requireCompanyForWorker } from "../../../utils/requireCompany";
 import type { Request } from "express";
+import { EXCEL_ERR } from "../excel-planning-codes";
 
 const uploadDir = path.join(__dirname, "../../../../uploads");
 
@@ -400,6 +401,7 @@ export async function exportExcelBufferForAdmin(
     return {
       ok: false as const,
       statusCode: 400,
+      code: EXCEL_ERR.EXCEL_EXPORT_NO_TEMPLATE,
       message: "No hay plantilla Excel. Guarde el mapeo antes de exportar.",
     };
   }
@@ -414,6 +416,7 @@ export async function exportExcelBufferForAdmin(
     return {
       ok: false as const,
       statusCode: 400,
+      code: EXCEL_ERR.EXCEL_EXPORT_TEMPLATE_INVALID,
       message: "La plantilla guardada no es válida. Revise el JSON de mapeo.",
     };
   }
@@ -426,7 +429,12 @@ export async function exportExcelBufferForAdmin(
     return { ok: true as const, buffer, filename };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error al generar Excel.";
-    return { ok: false as const, statusCode: 400, message: msg };
+    return {
+      ok: false as const,
+      statusCode: 400,
+      code: EXCEL_ERR.EXCEL_EXPORT_BUILD_FAILED,
+      message: msg,
+    };
   }
 }
 
@@ -462,7 +470,12 @@ export async function createImportFromUpload(
   const r = requireCompanyForAdmin(req);
   if (!r.ok) return r;
   if (!file?.filename) {
-    return { ok: false as const, statusCode: 400, message: "Falta archivo Excel." };
+    return {
+      ok: false as const,
+      statusCode: 400,
+      code: EXCEL_ERR.EXCEL_IMPORT_NO_FILE,
+      message: "Falta archivo Excel.",
+    };
   }
 
   const template = await ExcelPlanningTemplate.findOne({
@@ -472,6 +485,7 @@ export async function createImportFromUpload(
     return {
       ok: false as const,
       statusCode: 400,
+      code: EXCEL_ERR.EXCEL_NO_TEMPLATE_FOR_IMPORT,
       message: "Configure primero la plantilla de importación.",
     };
   }
@@ -488,6 +502,7 @@ export async function createImportFromUpload(
     return {
       ok: false as const,
       statusCode: 500,
+      code: EXCEL_ERR.EXCEL_READ_UPLOAD_FAILED,
       message: "No se pudo leer el archivo subido.",
     };
   }
@@ -551,7 +566,12 @@ export async function getImportForAdmin(req: Request, importId: string) {
     companyId: r.companyId,
   }).lean();
   if (!doc) {
-    return { ok: false as const, statusCode: 404, message: "Importación no encontrada." };
+    return {
+      ok: false as const,
+      statusCode: 404,
+      code: EXCEL_ERR.EXCEL_GET_IMPORT_NOT_FOUND,
+      message: "Importación no encontrada.",
+    };
   }
   return { ok: true as const, data: doc };
 }
@@ -573,6 +593,7 @@ export async function publishImportForAdmin(
     return {
       ok: false as const,
       statusCode: 404,
+      code: EXCEL_ERR.EXCEL_IMPORT_PUBLISH_NOT_DRAFT,
       message: "Importación no encontrada o ya publicada.",
     };
   }
@@ -584,6 +605,7 @@ export async function publishImportForAdmin(
     return {
       ok: false as const,
       statusCode: 400,
+      code: EXCEL_ERR.EXCEL_NO_TEMPLATE_FOR_PUBLISH,
       message: "Plantilla no configurada.",
     };
   }
@@ -596,6 +618,7 @@ export async function publishImportForAdmin(
     return {
       ok: false as const,
       statusCode: 400,
+      code: EXCEL_ERR.EXCEL_NO_ROWS_TO_PUBLISH,
       message:
         "No se puede publicar: no hay celdas con datos. Revise el mapeo o vuelva a importar el archivo.",
     };
@@ -606,6 +629,7 @@ export async function publishImportForAdmin(
     return {
       ok: false as const,
       statusCode: 400,
+      code: EXCEL_ERR.EXCEL_UNMATCHED_PUBLISH,
       message:
         "No se puede publicar: hay celdas sin asignar a un trabajador. Revise números de empleado o nombres en el directorio, o ajuste el mapeo.",
     };
@@ -616,6 +640,7 @@ export async function publishImportForAdmin(
     return {
       ok: false as const,
       statusCode: 400,
+      code: EXCEL_ERR.EXCEL_KEY_COLLISION_PUBLISH,
       message:
         "No se puede publicar: varios trabajadores comparten un mismo número de empleado (claves en conflicto al normalizar). Corrija los perfiles o la plantilla (normalización).",
     };
@@ -626,6 +651,7 @@ export async function publishImportForAdmin(
     return {
       ok: false as const,
       statusCode: 400,
+      code: EXCEL_ERR.EXCEL_PARSE_WARNINGS_PUBLISH,
       message:
         "No se puede publicar: el análisis del Excel registró avisos. Corrija el archivo, el mapeo o la celda de semana y vuelva a importar.",
     };
@@ -638,6 +664,7 @@ export async function publishImportForAdmin(
       return {
         ok: false as const,
         statusCode: 400,
+        code: EXCEL_ERR.EXCEL_WEEK_START_BAD,
         message:
           "weekStart no válido. Use YYYY-MM-DD (cualquier día de la semana; se guarda el lunes ISO correspondiente) o deje el campo vacío para usar la semana detectada en la hoja.",
       };
@@ -652,6 +679,7 @@ export async function publishImportForAdmin(
     return {
       ok: false as const,
       statusCode: 400,
+      code: EXCEL_ERR.EXCEL_WEEK_START_REQUIRED,
       message:
         "Indique weekStart (YYYY-MM-DD) o configure weekCell en la plantilla para detectar la semana.",
     };
@@ -720,14 +748,24 @@ export async function getWeekForAdmin(req: Request, weekStartStr: string) {
   if (!r.ok) return r;
   const weekStart = parseIsoDateUtc(weekStartStr);
   if (!weekStart) {
-    return { ok: false as const, statusCode: 400, message: "weekStart inválido." };
+    return {
+      ok: false as const,
+      statusCode: 400,
+      code: EXCEL_ERR.EXCEL_WEEK_START_BAD,
+      message: "weekStart inválido.",
+    };
   }
   const doc = await ExcelPlanningWeek.findOne({
     companyId: r.companyId,
     weekStart,
   }).lean();
   if (!doc) {
-    return { ok: false as const, statusCode: 404, message: "Semana no publicada." };
+    return {
+      ok: false as const,
+      statusCode: 404,
+      code: EXCEL_ERR.EXCEL_ADMIN_WEEK_NOT_PUBLISHED,
+      message: "Semana no publicada.",
+    };
   }
   return { ok: true as const, data: doc };
 }
@@ -754,7 +792,12 @@ export async function getMyPublishedWeek(req: Request, weekStartQuery?: string) 
     weekStart = currentUtcMonday();
   }
   if (!weekStart) {
-    return { ok: false as const, statusCode: 400, message: "Semana inválida." };
+    return {
+      ok: false as const,
+      statusCode: 400,
+      code: EXCEL_ERR.EXCEL_WEEK_INVALID_QUERY,
+      message: "Semana inválida.",
+    };
   }
 
   const doc = await ExcelPlanningWeek.findOne({
@@ -942,14 +985,24 @@ export async function discardImportForAdmin(req: Request, importId: string) {
     .select("storedFilename")
     .lean<{ storedFilename: string } | null>();
   if (!draft) {
-    return { ok: false as const, statusCode: 404, message: "Borrador no encontrado." };
+    return {
+      ok: false as const,
+      statusCode: 404,
+      code: EXCEL_ERR.EXCEL_DISCARD_NOT_FOUND,
+      message: "Borrador no encontrado.",
+    };
   }
   const res = await ExcelPlanningImport.updateOne(
     { _id: importId, companyId: r.companyId, status: "draft" },
     { $set: { status: "discarded" } },
   );
   if (res.matchedCount === 0) {
-    return { ok: false as const, statusCode: 404, message: "Borrador no encontrado." };
+    return {
+      ok: false as const,
+      statusCode: 404,
+      code: EXCEL_ERR.EXCEL_DISCARD_NOT_FOUND,
+      message: "Borrador no encontrado.",
+    };
   }
   const toRemove = resolveExcelImportUploadPath(draft.storedFilename);
   if (toRemove) {

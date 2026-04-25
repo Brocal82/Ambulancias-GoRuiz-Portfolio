@@ -95,6 +95,7 @@ describe("Excel planning publish vs parse warnings", () => {
       .set("Authorization", `Bearer ${adminToken}`)
       .send({ weekStart: "2030-01-06" })
       .expect(400);
+    expect(res.body?.code).toBe("EXCEL_PARSE_WARNINGS_PUBLISH");
     expect(String(res.body?.message || "")).toMatch(/publicar|avisos|análisis/i);
   });
 });
