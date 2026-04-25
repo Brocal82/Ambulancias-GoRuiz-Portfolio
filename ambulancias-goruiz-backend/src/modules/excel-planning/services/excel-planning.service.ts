@@ -33,6 +33,16 @@ import type { Request } from "express";
 
 const uploadDir = path.join(__dirname, "../../../../uploads");
 
+/** Ruta absoluta bajo `uploads` solo si `storedFilename` es un basename seguro. */
+function resolveExcelImportUploadPath(storedFilename: string): string | null {
+  const base = path.basename(storedFilename);
+  if (!base || base === "." || base === "..") return null;
+  const full = path.resolve(uploadDir, base);
+  const root = path.resolve(uploadDir);
+  if (full !== root && !full.startsWith(root + path.sep)) return null;
+  return full;
+}
+
 function addDaysUtc(monday: Date, dayIndex: number): Date {
   const d = new Date(monday);
   d.setUTCDate(d.getUTCDate() + dayIndex);
@@ -908,12 +918,30 @@ function pickWorkerCardLayoutFromMapping(
 export async function discardImportForAdmin(req: Request, importId: string) {
   const r = requireCompanyForAdmin(req);
   if (!r.ok) return r;
+  const draft = await ExcelPlanningImport.findOne({
+    _id: importId,
+    companyId: r.companyId,
+    status: "draft",
+  })
+    .select("storedFilename")
+    .lean<{ storedFilename: string } | null>();
+  if (!draft) {
+    return { ok: false as const, statusCode: 404, message: "Borrador no encontrado." };
+  }
   const res = await ExcelPlanningImport.updateOne(
     { _id: importId, companyId: r.companyId, status: "draft" },
     { $set: { status: "discarded" } },
   );
   if (res.matchedCount === 0) {
     return { ok: false as const, statusCode: 404, message: "Borrador no encontrado." };
+  }
+  const toRemove = resolveExcelImportUploadPath(draft.storedFilename);
+  if (toRemove) {
+    try {
+      await fs.unlink(toRemove);
+    } catch {
+      // fichero ya borrado o inaccesible: el borrador queda descartado en BD
+    }
   }
   return { ok: true as const, data: { discarded: true } };
 }

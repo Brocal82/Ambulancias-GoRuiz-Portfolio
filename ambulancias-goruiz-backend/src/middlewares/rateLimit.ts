@@ -53,3 +53,16 @@ export const rateLimitInvitationValidate = rateLimit({
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === "test",
 });
+
+/**
+ * Rate limit para POST /api/excel-planning/imports (subida de Excel).
+ * Evita abuso de CPU/disco y escaneos repetidos. Deshabilitado en test.
+ */
+export const rateLimitExcelPlanningImport = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 25,
+  message: jsonMessage("Demasiadas importaciones de Excel. Intente más tarde."),
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === "test",
+});

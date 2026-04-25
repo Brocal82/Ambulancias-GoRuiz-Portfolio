@@ -5,6 +5,7 @@ import { requireModule } from "../../middlewares/requireModule";
 import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import { uploadExcelOnly } from "../../middlewares/uploadMiddleware";
+import { rateLimitExcelPlanningImport } from "../../middlewares/rateLimit";
 import { MODULE_KEYS } from "../companies/constants/modules.constants";
 import {
   putExcelPlanningTemplateSchema,
@@ -45,6 +46,7 @@ router.put(
 
 router.post(
   "/imports",
+  rateLimitExcelPlanningImport,
   authenticateToken,
   requireModule(MODULE_KEYS.EXCEL_PLANNING),
   authorizeRole("admin"),
