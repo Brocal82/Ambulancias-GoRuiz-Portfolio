@@ -13,10 +13,8 @@ import Company from "../modules/companies/models/company.model";
  *   - Uses a direct DB lookup on every request. No cache.
  *     At this app's scale this is sub-millisecond via the default _id index.
  *   - If the company document has an empty enabledModules array this guard
- *     BLOCKS access. Run scripts/backfill-company-modules.ts before activating
- *     this middleware on any route in production.
- *
- * NOT ACTIVE ON ANY ROUTE in Phase 0. Ready for Phase 1+ activation.
+ *     BLOCKS access. For existing tenants, run scripts/backfill-company-modules.ts
+ *     (or npm run backfill:company-modules) so every company has an explicit list.
  */
 export function requireModule(moduleKey: string) {
   return async (

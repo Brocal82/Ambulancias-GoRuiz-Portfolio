@@ -89,14 +89,16 @@ const AdminDashboard = () => {
           </p>
         </Link>
 
-        <Link to="/admin/teams" className={centeredCard}>
-          <h2 className="text-lg font-semibold mb-2">
-            {t("pages.adminDashboard.teams.title")}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {t("pages.adminDashboard.teams.desc")}
-          </p>
-        </Link>
+        {hasModule(MODULE_KEYS.TEAMS) && (
+          <Link to="/admin/teams" className={centeredCard}>
+            <h2 className="text-lg font-semibold mb-2">
+              {t("pages.adminDashboard.teams.title")}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {t("pages.adminDashboard.teams.desc")}
+            </p>
+          </Link>
+        )}
 
         {hasModule(MODULE_KEYS.SCHEDULING) && (
           <Link to="/admin/diensts" className={centeredCard}>

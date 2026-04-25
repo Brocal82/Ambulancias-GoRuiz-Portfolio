@@ -2,6 +2,8 @@
 import { Router } from "express";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
+import { requireModule } from "../../middlewares/requireModule";
+import { MODULE_KEYS } from "../companies/constants/modules.constants";
 import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import {
@@ -15,8 +17,8 @@ import { createTeamSchema, updateTeamSchema } from "./schemas/team.schema";
 
 const router = Router();
 
-// 🔐 Todas las rutas requieren admin y token
-router.use(authenticateToken, authorizeRole("admin"));
+// 🔐 Token, módulo teams, rol admin
+router.use(authenticateToken, requireModule(MODULE_KEYS.TEAMS), authorizeRole("admin"));
 
 router.get("/", listTeams);
 router.get("/used-for-week", getUsedTeamsForWeek);

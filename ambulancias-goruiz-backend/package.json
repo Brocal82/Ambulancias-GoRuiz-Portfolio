@@ -26,6 +26,7 @@
     "seed:test-workers": "ts-node scripts/seed-test-workers.ts",
     "test": "jest",
     "test:watch": "jest --watch",
+    "backfill:company-modules": "ts-node src/scripts/backfill-company-modules.ts",
     "backfill:excel-planning-module": "ts-node src/scripts/backfill-company-module-excel-planning.ts",
     "generate:excel-planning-real": "ts-node scripts/generate-excel-planning-real-workers.ts",
     "sample:excels-villanos-avengers": "node scripts/generate-sample-excels-villanos-avengers.js",

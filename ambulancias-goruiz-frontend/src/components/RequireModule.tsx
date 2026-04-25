@@ -29,8 +29,6 @@ function homePathForRole(role: string | null): string {
  *     shows a loading indicator to prevent false negatives on first render.
  *   - If module is disabled: redirects to the user's home dashboard.
  *   - If module is enabled (or user is superadmin): renders the Outlet.
- *
- * NOT USED ON ANY ROUTE in Phase 0. Add to routes in Phase 1+.
  */
 export default function RequireModule({ name }: RequireModuleProps) {
   const { isAuthReady, role } = useAuth();
