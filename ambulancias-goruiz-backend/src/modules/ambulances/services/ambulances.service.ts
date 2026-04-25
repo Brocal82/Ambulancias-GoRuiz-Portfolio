@@ -17,12 +17,20 @@ function throwDuplicateKeyError(): never {
   throw err;
 }
 
-function companyFilter(companyId?: string | null): Record<string, unknown> {
+function toCompanyObjectId(companyId?: string | null): mongoose.Types.ObjectId | null {
   const raw = typeof companyId === "string" ? companyId.trim() : "";
   if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+    return null;
+  }
+  return new mongoose.Types.ObjectId(raw);
+}
+
+function companyFilter(companyId?: string | null): Record<string, unknown> {
+  const oid = toCompanyObjectId(companyId);
+  if (!oid) {
     return { _id: { $in: [] } };
   }
-  return { companyId: new mongoose.Types.ObjectId(raw) };
+  return { companyId: oid };
 }
 
 export const getAllAmbulances = async (
@@ -36,20 +44,26 @@ export const getAmbulanceById = async (
   id: string,
   companyId?: string | null
 ): Promise<IAmbulance | null> => {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return null;
+  }
   const filter = companyFilter(companyId);
   return await Ambulance.findOne({ _id: id, ...filter });
 };
 
 export const createAmbulance = async (
   data: Record<string, unknown>,
-  companyId?: string | null
+  companyId: string
 ): Promise<IAmbulance> => {
+  const oid = toCompanyObjectId(companyId);
+  if (!oid) {
+    throw new Error("createAmbulance: companyId inválido o ausente");
+  }
   try {
-    const payload =
-      companyId != null && companyId !== ""
-        ? { ...data, companyId: new mongoose.Types.ObjectId(companyId) }
-        : data;
-    const newAmbulance = new Ambulance(payload);
+    const newAmbulance = new Ambulance({
+      ...data,
+      companyId: oid,
+    });
     return await newAmbulance.save();
   } catch (error) {
     if (isMongoDuplicateKeyError(error)) {
@@ -64,19 +78,19 @@ export const updateAmbulance = async (
   data: Record<string, unknown>,
   companyId?: string | null
 ): Promise<IAmbulance | null> => {
-  const existing = await Ambulance.findById(id).select("companyId").lean();
-  if (!existing) return null;
-  const existingCompany = (existing as { companyId?: unknown }).companyId;
-  if (existingCompany && companyId != null && companyId !== "") {
-    if (String(existingCompany) !== String(companyId)) return null;
-  } else if (existingCompany) {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return null;
+  }
+  const oid = toCompanyObjectId(companyId);
+  if (!oid) {
     return null;
   }
   try {
-    const updated = await Ambulance.findByIdAndUpdate(id, data, {
-      new: true,
-    });
-    return updated;
+    return await Ambulance.findOneAndUpdate(
+      { _id: id, companyId: oid },
+      data,
+      { new: true, runValidators: true },
+    );
   } catch (error) {
     if (isMongoDuplicateKeyError(error)) {
       throwDuplicateKeyError();
@@ -89,13 +103,12 @@ export const deleteAmbulance = async (
   id: string,
   companyId?: string | null
 ): Promise<IAmbulance | null> => {
-  const existing = await Ambulance.findById(id).select("companyId").lean();
-  if (!existing) return null;
-  const existingCompany = (existing as { companyId?: unknown }).companyId;
-  if (existingCompany && companyId != null && companyId !== "") {
-    if (String(existingCompany) !== String(companyId)) return null;
-  } else if (existingCompany) {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
     return null;
   }
-  return await Ambulance.findByIdAndDelete(id);
+  const oid = toCompanyObjectId(companyId);
+  if (!oid) {
+    return null;
+  }
+  return await Ambulance.findOneAndDelete({ _id: id, companyId: oid });
 };

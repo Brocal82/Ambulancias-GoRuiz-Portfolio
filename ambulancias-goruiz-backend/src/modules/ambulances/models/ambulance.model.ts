@@ -6,7 +6,7 @@ export interface IAmbulance extends Document {
   modelName: string;
   licensePlate: string;
   ambulanceNumber: string;
-  companyId?: Types.ObjectId | null;
+  companyId: Types.ObjectId;
 }
 
 const ambulanceSchema = new Schema<IAmbulance>({
@@ -17,8 +17,7 @@ const ambulanceSchema = new Schema<IAmbulance>({
   companyId: {
     type: Schema.Types.ObjectId,
     ref: "Company",
-    required: false,
-    default: null,
+    required: true,
   },
 });
 

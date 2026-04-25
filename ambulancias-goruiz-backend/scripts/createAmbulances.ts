@@ -2,6 +2,7 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { Ambulance } from "../src/modules/ambulances";
+import Company from "../src/modules/companies/models/company.model";
 
 dotenv.config();
 
@@ -43,13 +44,26 @@ const ambulances = [
 const run = async () => {
   try {
     await mongoose.connect(MONGODB_URI);
-    await Ambulance.deleteMany(); // limpia si hace falta
-    await Ambulance.insertMany(ambulances);
-    console.log("✅ Ambulancias creadas correctamente.");
+    const company = await Company.findOne().select("_id").lean();
+    if (!company) {
+      console.error(
+        "❌ No hay empresas en la BD. Crea al menos una company antes de sembrar ambulancias.",
+      );
+      process.exit(1);
+    }
+    const companyId = (company as { _id: mongoose.Types.ObjectId })._id;
+    await Ambulance.deleteMany({ companyId });
+    const created = await Ambulance.insertMany(
+      ambulances.map((a) => ({ ...a, companyId })),
+    );
+    console.log(
+      `✅ ${created.length} ambulancias creadas para company ${companyId}.`,
+    );
   } catch (err) {
     console.error("❌ Error creando ambulancias:", err);
+    process.exit(1);
   } finally {
-    mongoose.disconnect();
+    await mongoose.disconnect();
   }
 };
 
