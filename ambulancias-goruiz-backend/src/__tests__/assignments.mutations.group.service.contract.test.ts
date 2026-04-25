@@ -1256,6 +1256,7 @@ describe("assignments.service mutations group (company contract)", () => {
         driver: driver._id,
         medic: medic._id,
         rotationMode: "none",
+        companyId: new mongoose.Types.ObjectId(co),
       });
       await Dienst.create({
         dienstNumber: 93140,
@@ -1309,6 +1310,7 @@ describe("assignments.service mutations group (company contract)", () => {
         driver: driver._id,
         medic: medic._id,
         rotationMode: "none",
+        companyId: new mongoose.Types.ObjectId(co),
       });
       const d = await Dienst.create({
         dienstNumber: 93141,
@@ -1362,6 +1364,7 @@ describe("assignments.service mutations group (company contract)", () => {
         driver: driver._id,
         medic: medic._id,
         rotationMode: "none",
+        companyId: new mongoose.Types.ObjectId(coB),
       });
       await Dienst.create({
         dienstNumber: 93142,
@@ -1417,6 +1420,7 @@ describe("assignments.service mutations group (company contract)", () => {
         driver: driver._id,
         medic: medic._id,
         rotationMode: "none",
+        companyId: coOid,
       });
       await Dienst.create({
         dienstNumber: 94510,
@@ -1481,6 +1485,7 @@ describe("assignments.service mutations group (company contract)", () => {
         driver: uDriver._id,
         medic: uMedic._id,
         rotationMode: "none",
+        companyId: coOid,
       });
       await Dienst.create({
         dienstNumber: 94511,
@@ -1557,6 +1562,7 @@ describe("assignments.service mutations group (company contract)", () => {
         driver: uTeamDriver._id,
         medic: uTeamMedic._id,
         rotationMode: "none",
+        companyId: coOid,
       });
       await Dienst.create({
         dienstNumber: 94512,
@@ -1629,6 +1635,7 @@ describe("assignments.service mutations group (company contract)", () => {
         driver: uTeamDriver._id,
         medic: uTeamMedic._id,
         rotationMode: "none",
+        companyId: coOid,
       });
       await Dienst.create({
         dienstNumber: 94514,

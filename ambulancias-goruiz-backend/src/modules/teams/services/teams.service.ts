@@ -56,14 +56,6 @@ async function getTodayVacationInfo(userId?: mongoose.Types.ObjectId | string | 
   };
 }
 
-/** Obtiene IDs de usuarios que pertenecen a la empresa (para filtrar teams por driver/medic) */
-async function getUserIdsForCompany(companyId: string): Promise<mongoose.Types.ObjectId[]> {
-  const users = await User.find({ companyId: new mongoose.Types.ObjectId(companyId) })
-    .select("_id")
-    .lean();
-  return users.map((u: any) => u._id);
-}
-
 /** Alineado con requireCompanyForAdmin: operaciones de teams requieren empresa. */
 function assertCompanyIdForTeamOps(companyId?: string | null): asserts companyId is string {
   if (companyId == null || String(companyId).trim() === "") {
@@ -77,15 +69,8 @@ function assertCompanyIdForTeamOps(companyId?: string | null): asserts companyId
 export async function listTeams(companyId?: string | null) {
   assertCompanyIdForTeamOps(companyId);
   const companyOid = new mongoose.Types.ObjectId(companyId);
-  const userIds = await getUserIdsForCompany(companyId);
-  const filter = {
-    $or: [
-      { companyId: companyOid },
-      { companyId: null, driver: { $in: userIds } },
-    ],
-  };
 
-  const teams = await Team.find(filter)
+  const teams = await Team.find({ companyId: companyOid })
     .populate("driver", "name lastName ambulanceRole pscheinExpiry")
     .populate("medic", "name lastName ambulanceRole pscheinExpiry")
     .populate("ambulanceId", "ambulanceNumber brand modelName licensePlate")
@@ -130,6 +115,7 @@ export async function createTeam(
   companyId?: string | null,
 ) {
   assertCompanyIdForTeamOps(companyId);
+  const companyOid = new mongoose.Types.ObjectId(companyId);
   const { driver, medic, rotationMode, fixedDienstNumber, ambulanceId } = body;
 
   if (!isObjectId(driver) || !isObjectId(medic)) {
@@ -207,14 +193,20 @@ export async function createTeam(
     normalizedFixedDienst = num;
   }
 
-  const exists = await Team.findOne({ driver, medic }).lean();
+  const exists = await Team.findOne({ companyId: companyOid, driver, medic }).lean();
   if (exists) {
     throw new TeamError("Ya existe un team con esa pareja", 409);
   }
 
   const [driverConflict, medicConflict] = await Promise.all([
-    Team.findOne({ $or: [{ driver }, { medic: driver }] }).lean(),
-    Team.findOne({ $or: [{ driver: medic }, { medic }] }).lean(),
+    Team.findOne({
+      companyId: companyOid,
+      $or: [{ driver }, { medic: driver }],
+    }).lean(),
+    Team.findOne({
+      companyId: companyOid,
+      $or: [{ driver: medic }, { medic }],
+    }).lean(),
   ]);
 
   if (driverConflict) {
@@ -236,7 +228,7 @@ export async function createTeam(
     rotationMode: normalizedRotation,
     fixedDienstNumber: normalizedFixedDienst,
     ambulanceId: normalizedAmbulanceId,
-    companyId: new mongoose.Types.ObjectId(companyId),
+    companyId: companyOid,
   });
 
   return Team.findById(team._id)
@@ -266,11 +258,11 @@ export async function getUsedTeamsForWeek(
   const endDate = new Date(startDate);
   endDate.setDate(startDate.getDate() + 6);
 
-  const userIds = await getUserIdsForCompany(companyId);
-  if (userIds.length === 0) return { usedTeamIds: [] };
-  const teamFilter = { driver: { $in: userIds } };
-
-  const teams = await Team.find(teamFilter, { driver: 1, medic: 1 }).lean();
+  const companyOid = new mongoose.Types.ObjectId(companyId);
+  const teams = await Team.find(
+    { companyId: companyOid },
+    { driver: 1, medic: 1 },
+  ).lean();
 
   if (!teams || teams.length === 0) {
     return { usedTeamIds: [] };
@@ -331,25 +323,16 @@ export async function updateTeam(
   }
 
   assertCompanyIdForTeamOps(companyId);
+  const companyOid = new mongoose.Types.ObjectId(companyId);
 
-  const existing = await Team.findById(id).select("driver companyId").lean();
+  const existing = await Team.findOne({
+    _id: id,
+    companyId: companyOid,
+  })
+    .select("driver")
+    .lean();
   if (!existing) {
     throw new TeamError("Team no encontrado", 404);
-  }
-  if ((existing as any).companyId) {
-    if (String((existing as any).companyId) !== String(companyId)) {
-      throw new TeamError("No tienes permiso para editar este equipo", 403);
-    }
-  } else {
-    const existingDriverUser = await User.findById((existing as any).driver)
-      .select("companyId")
-      .lean();
-    const drvCoExisting = existingDriverUser
-      ? (existingDriverUser as { companyId?: unknown }).companyId
-      : null;
-    if (!entitiesBelongToSameCompany(drvCoExisting, companyId)) {
-      throw new TeamError("No tienes permiso para editar este equipo", 403);
-    }
   }
 
   const { driver, medic, rotationMode, fixedDienstNumber, ambulanceId } = body;
@@ -407,6 +390,7 @@ export async function updateTeam(
   }
 
   const duplicated = await Team.findOne({
+    companyId: companyOid,
     driver,
     medic,
     _id: { $ne: id },
@@ -418,10 +402,12 @@ export async function updateTeam(
 
   const [driverConflict, medicConflict] = await Promise.all([
     Team.findOne({
+      companyId: companyOid,
       _id: { $ne: id },
       $or: [{ driver }, { medic: driver }],
     }).lean(),
     Team.findOne({
+      companyId: companyOid,
       _id: { $ne: id },
       $or: [{ driver: medic }, { medic }],
     }).lean(),
@@ -484,10 +470,14 @@ export async function updateTeam(
     updateDoc.ambulanceId = normalizedAmbulance;
   }
 
-  const updated = await Team.findByIdAndUpdate(id, updateDoc, {
-    new: true,
-    runValidators: true,
-  })
+  const updated = await Team.findOneAndUpdate(
+    { _id: id, companyId: companyOid },
+    updateDoc,
+    {
+      new: true,
+      runValidators: true,
+    },
+  )
     .populate("driver", "name lastName ambulanceRole pscheinExpiry")
     .populate("medic", "name lastName ambulanceRole pscheinExpiry")
     .populate("ambulanceId", "ambulanceNumber licensePlate");
@@ -504,23 +494,10 @@ export async function deleteTeam(id: string, companyId?: string | null) {
     throw new TeamError("ID inválido", 400);
   }
   assertCompanyIdForTeamOps(companyId);
-  const existing = await Team.findById(id).select("driver companyId").lean();
-  if (!existing) {
+  const companyOid = new mongoose.Types.ObjectId(companyId);
+  const deleted = await Team.findOneAndDelete({ _id: id, companyId: companyOid });
+  if (!deleted) {
     throw new TeamError("Team no encontrado", 404);
   }
-  if ((existing as any).companyId) {
-    if (String((existing as any).companyId) !== String(companyId)) {
-      throw new TeamError("No tienes permiso para eliminar este equipo", 403);
-    }
-  } else {
-    const driverUser = await User.findById((existing as any).driver)
-      .select("companyId")
-      .lean();
-    const drvCo = driverUser ? (driverUser as { companyId?: unknown }).companyId : null;
-    if (!entitiesBelongToSameCompany(drvCo, companyId)) {
-      throw new TeamError("No tienes permiso para eliminar este equipo", 403);
-    }
-  }
-  await Team.findByIdAndDelete(id);
   return { message: "Team eliminado" };
 }

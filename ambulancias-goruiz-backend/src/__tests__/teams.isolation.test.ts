@@ -90,8 +90,8 @@ describe("Teams isolation", () => {
     const res = await request(app)
       .delete(`${API}/teams/${teamBId}`)
       .set("Authorization", `Bearer ${dataA.adminToken}`)
-      .expect(403);
-    expect(res.body.message).toContain("permiso");
+      .expect(404);
+    expect(res.body.message).toMatch(/no encontrado|not found/i);
   });
 
   it("admin A no puede actualizar team de empresa B", async () => {
@@ -99,8 +99,8 @@ describe("Teams isolation", () => {
       .patch(`${API}/teams/${teamBId}`)
       .set("Authorization", `Bearer ${dataA.adminToken}`)
       .send({ driver: dataA.adminId, medic: workerAId, rotationMode: "none" })
-      .expect(403);
-    expect(res.body.message).toContain("permiso");
+      .expect(404);
+    expect(res.body.message).toMatch(/no encontrado|not found/i);
   });
 
   it("getUsedTeamsForWeek no devuelve teams cross-company", async () => {
