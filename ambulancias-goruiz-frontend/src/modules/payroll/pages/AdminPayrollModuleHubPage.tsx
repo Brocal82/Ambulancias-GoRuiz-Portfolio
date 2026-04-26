@@ -30,8 +30,8 @@ const AdminPayrollModuleHubPage = () => {
               Documentos / Info para trabajador
             </h2>
             <p className="text-sm text-gray-600">
-              Próximamente: espacio para compartir documentación e información con
-              los trabajadores.
+              Sube y gestiona documentos e información para compartir con los
+              trabajadores.
             </p>
           </Link>
         )}
