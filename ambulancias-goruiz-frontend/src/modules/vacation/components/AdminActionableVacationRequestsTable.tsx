@@ -29,6 +29,7 @@ type Props = {
     // acciones
     onAccept: (id: string) => void;
     onOpenAlternative: (req: IVacationRequest) => void;
+    onCancelAlternative: (id: string) => void;
 };
 
 const AdminActionableVacationRequestsTable: React.FC<Props> = ({
@@ -44,18 +45,26 @@ const AdminActionableVacationRequestsTable: React.FC<Props> = ({
     onAbortCancelFlow,
     onAccept,
     onOpenAlternative,
+    onCancelAlternative,
 }) => {
+    const [msgModal, setMsgModal] = React.useState<{
+        open: boolean;
+        title: string;
+        message?: string;
+    } | null>(null);
     if (rows.length === 0) return null;
 
     return (
-        <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full table-fixed text-sm shadow-sm ring-1 ring-slate-200 rounded-xl overflow-hidden text-center">
+        <>
+            <div className="mt-4 overflow-x-auto">
+                <table className="min-w-full table-fixed text-sm shadow-sm ring-1 ring-slate-200 rounded-xl overflow-hidden text-center">
                 <colgroup>
-                    <col className="w-[22%]" /> {/* Trabajador */}
-                    <col className="w-[26%]" /> {/* Fechas */}
-                    <col className="w-[10%]" /> {/* Días */}
-                    <col className="w-[17%]" /> {/* Estado */}
-                    <col className="w-[25%]" /> {/* Acciones */}
+                    <col className="w-[20%]" /> {/* Trabajador */}
+                    <col className="w-[30%]" /> {/* Fechas */}
+                    <col className="w-[8%]" /> {/* Días */}
+                    <col className="w-[12%]" /> {/* Estado */}
+                    <col className="w-[10%]" /> {/* Mensaje */}
+                    <col className="w-[20%]" /> {/* Acciones */}
                 </colgroup>
 
                 <thead className={APP_NAV_MATCH_TABLE_THEAD_STICKY}>
@@ -73,6 +82,9 @@ const AdminActionableVacationRequestsTable: React.FC<Props> = ({
                             {t("pages.vacations.adminPage.table.status")}
                         </th>
                         <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                            {t("pages.vacations.adminPage.table.message", "Mensaje")}
+                        </th>
+                        <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
                             {t("pages.vacations.adminPage.table.actions")}
                         </th>
                     </tr>
@@ -85,6 +97,17 @@ const AdminActionableVacationRequestsTable: React.FC<Props> = ({
                         const startKey = toBerlinDayKey(start.toISOString());
                         const endKey = toBerlinDayKey(end.toISOString());
                         const days = calcVacationDays(startKey, endKey);
+                        const hasAlternative =
+                            !!req.adminOptionStartDate && !!req.adminOptionEndDate;
+                        const altDays = hasAlternative
+                            ? calcVacationDays(
+                                toBerlinDayKey(req.adminOptionStartDate as string) ??
+                                (req.adminOptionStartDate as string),
+                                toBerlinDayKey(req.adminOptionEndDate as string) ??
+                                (req.adminOptionEndDate as string),
+                            )
+                            : 0;
+                        const hasAdminMessage = !!req.adminNote?.trim();
 
                         return (
 
@@ -114,22 +137,81 @@ const AdminActionableVacationRequestsTable: React.FC<Props> = ({
                                         {start.toLocaleDateString(locale, { timeZone: "Europe/Berlin" })}
                                         {" — "}
                                         {end.toLocaleDateString(locale, { timeZone: "Europe/Berlin" })}
-
                                     </div>
+                                    {hasAlternative ? (
+                                        <div className="mt-1 text-[11px] text-sky-700 whitespace-nowrap font-medium">
+                                            {new Date(req.adminOptionStartDate as string).toLocaleDateString(
+                                                locale,
+                                                { timeZone: "Europe/Berlin" },
+                                            )}
+                                            {" — "}
+                                            {new Date(req.adminOptionEndDate as string).toLocaleDateString(
+                                                locale,
+                                                { timeZone: "Europe/Berlin" },
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <></>
+                                    )}
                                 </td>
 
                                 {/* Días */}
-                                <td className="px-3 py-2 align-top whitespace-nowrap">{days}</td>
+                                <td className="px-3 py-2 align-top whitespace-nowrap">
+                                    <div>{days}</div>
+                                    {hasAlternative ? (
+                                        <div className="mt-1 text-[11px] text-sky-700 font-medium">
+                                            {altDays}
+                                        </div>
+                                    ) : null}
+                                </td>
 
                                 {/* Estado */}
                                 <td className="px-3 py-2 align-top whitespace-nowrap">
-                                    <StatusBadge
-                                        tone={vacationRequestTone(req.status)}
-                                        label={t(`pages.vacations.adminPage.status.${req.status}`)}
-                                    />
+                                    {req.status === "option_sent" ? (
+                                        <>
+                                            <div className="h-[20px]" />
+                                            <div className="mt-1 text-[11px] text-sky-700 font-medium">
+                                                {t(`pages.vacations.adminPage.status.${req.status}`)}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <StatusBadge
+                                            tone={vacationRequestTone(req.status)}
+                                            label={t(`pages.vacations.adminPage.status.${req.status}`)}
+                                        />
+                                    )}
+                                </td>
 
-
-
+                                {/* Mensaje */}
+                                <td className="px-3 py-2 align-top whitespace-nowrap">
+                                    {hasAdminMessage ? (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setMsgModal({
+                                                    open: true,
+                                                    title: t(
+                                                        "pages.vacations.adminPage.actions.viewMessage",
+                                                        "Mensaje enviado",
+                                                    ),
+                                                    message: req.adminNote?.trim(),
+                                                })
+                                            }
+                                            title={t(
+                                                "pages.vacations.adminPage.actions.viewMessage",
+                                                "Ver mensaje",
+                                            )}
+                                            aria-label={t(
+                                                "pages.vacations.adminPage.actions.viewMessage",
+                                                "Ver mensaje",
+                                            )}
+                                            className="inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 h-8 w-8 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+                                        >
+                                            📩
+                                        </button>
+                                    ) : (
+                                        <span className="text-xs text-slate-400">—</span>
+                                    )}
                                 </td>
 
                                 {/* Acciones */}
@@ -212,8 +294,19 @@ const AdminActionableVacationRequestsTable: React.FC<Props> = ({
                                                 </button>
                                             )}
 
-                                            {/* option_sent: no actions */}
-                                            {req.status === "option_sent" && null}
+                                            {req.status === "option_sent" && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onCancelAlternative(req._id)}
+                                                    className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-sm shadow-sm hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-100 text-white"
+                                                    title={t(
+                                                        "pages.vacations.adminPage.actions.cancelAlternative",
+                                                        "Cancelar alternativa",
+                                                    )}
+                                                >
+                                                    ↩️
+                                                </button>
+                                            )}
                                         </div>
                                     )}
                                 </td>
@@ -221,8 +314,54 @@ const AdminActionableVacationRequestsTable: React.FC<Props> = ({
                         );
                     })}
                 </tbody>
-            </table>
-        </div>
+                </table>
+            </div>
+
+            {msgModal?.open && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center p-2 sm:p-4">
+                    <div
+                        className="fixed inset-0 bg-black/50"
+                        onClick={() => setMsgModal(null)}
+                    />
+
+                    <div
+                        className="relative z-10 w-full max-w-sm rounded-xl bg-white shadow-xl ring-1 ring-slate-200"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="admin-message-title"
+                    >
+                        <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2">
+                            <h3
+                                id="admin-message-title"
+                                className="text-sm font-semibold text-slate-900"
+                            >
+                                {msgModal.title}
+                            </h3>
+
+                            <button
+                                onClick={() => setMsgModal(null)}
+                                className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                                aria-label={t("pages.vacations.adminPage.actions.close", "Cerrar")}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="px-3 py-3 text-xs">
+                            {msgModal.message ? (
+                                <div className="rounded-lg bg-slate-50 ring-1 ring-slate-200 px-2.5 py-2 text-slate-700 whitespace-pre-wrap break-words">
+                                    {msgModal.message}
+                                </div>
+                            ) : (
+                                <div className="text-slate-400 italic">
+                                    {t("pages.vacations.adminPage.actions.noMessage", "No hay mensaje adicional.")}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 };
 

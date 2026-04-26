@@ -71,6 +71,11 @@ export function applyAdminVacationUpdateFields(
 
   if (typeof status !== "undefined") {
     request.status = status;
+    if (status === "pending") {
+      request.adminOptionStartDate = undefined;
+      request.adminOptionEndDate = undefined;
+      request.adminNote = undefined;
+    }
   }
 
   if (startDate) {

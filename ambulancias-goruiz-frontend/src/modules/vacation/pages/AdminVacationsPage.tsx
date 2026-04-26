@@ -228,6 +228,27 @@ const AdminVacationRequests = () => {
     }
   };
 
+  const handleCancelAlternative = async (id: string) => {
+    if (!token) return;
+    try {
+      await toastT.promise(updateVacationRequest(id, { status: "pending" }), {
+        pending: ["toasts.vacations.admin.updating"],
+        success: ["toasts.vacations.admin.updated"],
+        error: ["toasts.vacations.admin.error"],
+      });
+
+      emitVacationRequestsUpdated({
+        type: "updated",
+        id,
+        status: "pending",
+      });
+      notifyVacationsChanged();
+      fetchRequests();
+    } catch {
+      // error handled by toast
+    }
+  };
+
   const handleConfirmCancel = async (id: string) => {
     if (!token) return;
     setIsSendingCancel(true);
@@ -341,6 +362,7 @@ const AdminVacationRequests = () => {
             onOpenAlternative={(req) =>
               openAlternativeModal(req._id, req.startDate, req.endDate)
             }
+            onCancelAlternative={(id) => void handleCancelAlternative(id)}
           />
         )}
 

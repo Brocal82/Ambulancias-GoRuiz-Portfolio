@@ -22,10 +22,6 @@ type AdminMessageModalState = {
   open: boolean;
   title: string;
   message?: string;
-  requestedStart: string;
-  requestedEnd: string;
-  proposedStart?: string;
-  proposedEnd?: string;
 };
 
 const UserVacationList: React.FC<Props> = ({
@@ -59,10 +55,6 @@ const UserVacationList: React.FC<Props> = ({
     const proposedStart = req.adminOptionStartDate;
     const proposedEnd = req.adminOptionEndDate;
 
-    const { start, end } = getRequestRangeBerlin(req);
-
-
-
     const hasProposal =
       req.status === "option_sent" && !!proposedStart && !!proposedEnd;
 
@@ -86,11 +78,6 @@ const UserVacationList: React.FC<Props> = ({
       open: true,
       title,
       message: adminNote || undefined,
-      requestedStart: start.toISOString(),
-      requestedEnd: end.toISOString(),
-
-      proposedStart: hasProposal ? proposedStart : undefined,
-      proposedEnd: hasProposal ? proposedEnd : undefined,
     });
   };
 
@@ -109,11 +96,11 @@ const UserVacationList: React.FC<Props> = ({
       <div className="overflow-x-auto">
         <table className="min-w-full table-fixed text-sm">
           <colgroup>
-            <col className="w-[36%]" /> {/* Fechas */}
-            <col className="w-[12%]" /> {/* Días */}
-            <col className="w-[22%]" /> {/* Estado */}
-            <col className="w-[15%]" /> {/* Mensaje */}
-            <col className="w-[15%]" /> {/* Acciones */}
+            <col className="w-[38%]" /> {/* Fechas */}
+            <col className="w-[10%]" /> {/* Días */}
+            <col className="w-[18%]" /> {/* Estado */}
+            <col className="w-[10%]" /> {/* Mensaje */}
+            <col className="w-[24%]" /> {/* Acciones */}
           </colgroup>
 
           <thead className={APP_NAV_MATCH_TABLE_THEAD_STICKY}>
@@ -156,6 +143,12 @@ const UserVacationList: React.FC<Props> = ({
                 req.status === "option_sent" &&
                 !!proposedStart &&
                 !!proposedEnd;
+              const altDays = hasAlternative
+                ? calcVacationDays(
+                    toBerlinDayKey(proposedStart) ?? proposedStart,
+                    toBerlinDayKey(proposedEnd) ?? proposedEnd,
+                  )
+                : 0;
 
               const adminNote = req.adminNote?.trim();
 
@@ -176,22 +169,41 @@ const UserVacationList: React.FC<Props> = ({
                       {formatISOToDDMMYYYY(end.toISOString())}
 
                     </div>
+                    {hasAlternative ? (
+                      <div className="mt-1 text-[11px] text-sky-700 whitespace-nowrap font-medium">
+                        {formatISOToDDMMYYYY(proposedStart)} —{" "}
+                        {formatISOToDDMMYYYY(proposedEnd)}
+                      </div>
+                    ) : null}
 
                     {/* ✅ Eliminado: badge azul debajo de las fechas */}
                   </td>
 
                   {/* Días */}
                   <td className="px-3 py-2 align-top whitespace-nowrap">
-                    {days}
+                    <div>{days}</div>
+                    {hasAlternative ? (
+                      <div className="mt-1 text-[11px] text-sky-700 font-medium">
+                        {altDays}
+                      </div>
+                    ) : null}
                   </td>
 
                   {/* Estado */}
                   <td className="px-3 py-2 align-top whitespace-nowrap">
-                    <StatusBadge
-                      tone={vacationRequestTone(req.status)}
-                      label={t(`pages.vacations.listItem.status.${req.status}`)}
-                    />
-
+                    {req.status === "option_sent" ? (
+                      <>
+                        <div className="h-[20px]" />
+                        <div className="mt-1 text-[11px] text-sky-700 font-medium">
+                          {t(`pages.vacations.listItem.status.${req.status}`)}
+                        </div>
+                      </>
+                    ) : (
+                      <StatusBadge
+                        tone={vacationRequestTone(req.status)}
+                        label={t(`pages.vacations.listItem.status.${req.status}`)}
+                      />
+                    )}
                   </td>
 
 
@@ -332,27 +344,6 @@ const UserVacationList: React.FC<Props> = ({
 
             {/* Body */}
             <div className="px-3 py-3 space-y-3 text-xs">
-              {/* Fechas */}
-              <div className="flex flex-wrap gap-2">
-                {/* Solicitadas */}
-                <StatusBadge
-                  tone="amber"
-                  label={`🟡 ${formatISOToDDMMYYYY(msgModal.requestedStart)} — ${formatISOToDDMMYYYY(msgModal.requestedEnd)}`}
-                  className="px-2.5 py-1 font-medium"
-                />
-
-
-                {/* Propuestas */}
-                {msgModal.proposedStart && msgModal.proposedEnd && (
-                  <StatusBadge
-                    tone="sky"
-                    label={`🔵 ${formatISOToDDMMYYYY(msgModal.proposedStart)} — ${formatISOToDDMMYYYY(msgModal.proposedEnd)}`}
-                    className="px-2.5 py-1 font-medium"
-                  />
-
-                )}
-              </div>
-
               {/* Mensaje */}
               {msgModal.message ? (
                 <div
