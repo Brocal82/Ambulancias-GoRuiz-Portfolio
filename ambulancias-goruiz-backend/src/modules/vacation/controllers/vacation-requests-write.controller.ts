@@ -56,7 +56,10 @@ export const cancelMyVacationRequest = async (req: any, res: any) => {
     if (result.kind === "invalid_status") {
       return res
         .status(400)
-        .json({ message: "Solo puedes cancelar solicitudes pendientes" });
+        .json({
+          message:
+            "Solo puedes cancelar solicitudes pendientes, con opción enviada o ya aceptadas",
+        });
     }
 
     return res.status(200).json(result.request);

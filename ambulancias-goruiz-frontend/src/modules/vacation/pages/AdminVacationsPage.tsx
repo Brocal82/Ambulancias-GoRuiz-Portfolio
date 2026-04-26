@@ -66,7 +66,10 @@ const AdminVacationRequests = () => {
 
   // Mostrar solo las solicitudes que requieren acción (pendientes u opción enviada)
   const actionableRequests = requests.filter(
-    (r) => r.status === "pending" || r.status === "option_sent",
+    (r) =>
+      r.status === "pending" ||
+      r.status === "option_sent" ||
+      r.status === "cancel_requested",
   );
 
   const handleSendAlternativeOption = useCallback(

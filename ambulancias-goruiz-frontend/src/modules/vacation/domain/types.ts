@@ -10,7 +10,12 @@ export interface IVacationRequest {
   startDate: string; // fechas como ISO string en frontend
   endDate: string;
   requestedAt: string;
-  status: "pending" | "accepted" | "cancelled" | "option_sent";
+  status:
+    | "pending"
+    | "accepted"
+    | "cancelled"
+    | "option_sent"
+    | "cancel_requested";
   adminOptionStartDate?: string;
   adminOptionEndDate?: string;
   adminNote?: string;

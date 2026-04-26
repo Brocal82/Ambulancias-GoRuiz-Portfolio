@@ -17,7 +17,7 @@ const VacationRequestSchema = new Schema<IVacationRequest>({
   requestedAt: { type: Date, default: Date.now },
   status: {
     type: String,
-    enum: ["pending", "accepted", "cancelled", "option_sent"],
+    enum: ["pending", "accepted", "cancelled", "option_sent", "cancel_requested"],
     default: "pending",
   },
   adminOptionStartDate: { type: Date },

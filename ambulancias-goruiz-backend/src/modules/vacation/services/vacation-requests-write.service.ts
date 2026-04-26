@@ -42,11 +42,15 @@ export async function cancelOwnVacationRequest(input: {
   }
 
   const status = String(request.status);
-  if (status !== "pending" && status !== "option_sent") {
+  if (status !== "pending" && status !== "option_sent" && status !== "accepted") {
     return { kind: "invalid_status" as const };
   }
 
-  request.status = "cancelled";
+  if (status === "accepted") {
+    request.status = "cancel_requested";
+  } else {
+    request.status = "cancelled";
+  }
   await request.save();
 
   return { kind: "ok" as const, request };

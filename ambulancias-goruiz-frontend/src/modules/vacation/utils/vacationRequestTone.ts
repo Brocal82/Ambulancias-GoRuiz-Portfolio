@@ -6,6 +6,7 @@ export type VacationRequestStatus =
   | "accepted"
   | "option_sent"
   | "cancelled"
+  | "cancel_requested"
   | "rejected";
 
 export const vacationRequestTone = (
@@ -18,6 +19,8 @@ export const vacationRequestTone = (
       return "emerald";
     case "option_sent":
       return "sky";
+    case "cancel_requested":
+      return "amber";
     case "cancelled":
     case "rejected":
       return "rose";

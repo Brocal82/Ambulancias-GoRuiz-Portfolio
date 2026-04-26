@@ -56,7 +56,11 @@ const WorkerVacationsPage = () => {
 
   // ✅ Solo activas (NO pasadas / NO canceladas / NO historial)
   const activeRequests = requests.filter(
-    (r) => r.status === "pending" || r.status === "option_sent" || r.status === "accepted"
+    (r) =>
+      r.status === "pending" ||
+      r.status === "option_sent" ||
+      r.status === "accepted" ||
+      r.status === "cancel_requested",
   );
 
   // ✅ Worker -> Admin sync al responder alternativa
@@ -86,7 +90,7 @@ const WorkerVacationsPage = () => {
       });
 
       // 3) Invalidar disponibilidad para meses afectados (colores/capacidad)
-      if (startISO && endISO) {
+      if (req.status !== "accepted" && startISO && endISO) {
         invalidateAvailabilityForRange(startISO, endISO);
       }
     } catch {
@@ -117,7 +121,10 @@ const WorkerVacationsPage = () => {
     try {
       await toastT.promise(cancelMyVacationRequest(id), {
         pending: ["toasts.vacations.worker.cancelPending"],
-        success: ["toasts.vacations.worker.cancelSuccess"],
+        success:
+          req.status === "accepted"
+            ? ["toasts.vacations.worker.cancelRequestSent"]
+            : ["toasts.vacations.worker.cancelSuccess"],
         error: ["toasts.vacations.worker.error"],
       });
 
@@ -128,7 +135,7 @@ const WorkerVacationsPage = () => {
       emitVacationRequestsUpdated({
         type: "updated",
         id,
-        status: "cancelled",
+        status: req.status === "accepted" ? "cancel_requested" : "cancelled",
       });
 
       // 3) Invalidar disponibilidad para meses afectados (colores/capacidad)
@@ -301,7 +308,7 @@ const WorkerVacationsPage = () => {
         onNavigateMonth={handleNavigateMonthFromModal}
 
         acceptedRanges={requests
-          .filter((r) => r.status === "accepted")
+          .filter((r) => r.status === "accepted" || r.status === "cancel_requested")
           .map((r) => ({
             startISO: toBerlinDayKey(r.startDate) ?? r.startDate,
             endISO: toBerlinDayKey(r.endDate) ?? r.endDate,

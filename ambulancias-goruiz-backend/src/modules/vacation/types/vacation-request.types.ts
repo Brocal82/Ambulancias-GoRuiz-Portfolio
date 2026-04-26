@@ -5,7 +5,12 @@ export interface IVacationRequest {
   startDate: Date;
   endDate: Date;
   requestedAt: Date;
-  status: "pending" | "accepted" | "cancelled" | "option_sent";
+  status:
+    | "pending"
+    | "accepted"
+    | "cancelled"
+    | "option_sent"
+    | "cancel_requested";
   adminOptionStartDate?: Date;
   adminOptionEndDate?: Date;
   adminNote?: string;

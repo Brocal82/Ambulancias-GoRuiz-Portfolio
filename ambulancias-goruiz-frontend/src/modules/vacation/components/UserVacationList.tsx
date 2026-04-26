@@ -269,6 +269,20 @@ const UserVacationList: React.FC<Props> = ({
                         </button>
 
                       </div>
+                    ) : req.status === "accepted" && onCancelRequest ? (
+                      <div className="flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => onCancelRequest(req._id)}
+                          className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-sm text-white shadow-sm hover:bg-rose-100 focus:outline-none focus:ring-4 focus:ring-rose-100"
+                          title={t(
+                            "pages.vacations.workerList.actions.requestCancel",
+                            "Solicitar cancelación",
+                          )}
+                        >
+                          🛑
+                        </button>
+                      </div>
                     ) : (
                       <span className="text-xs text-slate-400">—</span>
                     )}

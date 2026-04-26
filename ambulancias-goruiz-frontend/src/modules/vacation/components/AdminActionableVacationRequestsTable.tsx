@@ -201,6 +201,17 @@ const AdminActionableVacationRequestsTable: React.FC<Props> = ({
                                                 </>
                                             )}
 
+                                            {req.status === "cancel_requested" && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onStartCancelFlow(req._id)}
+                                                    className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-sm shadow-sm hover:bg-rose-100 focus:outline-none focus:ring-4 focus:ring-rose-100 text-white"
+                                                    title={t("pages.vacations.adminPage.actions.confirmCancelRequest", "Confirmar cancelación solicitada")}
+                                                >
+                                                    🛑
+                                                </button>
+                                            )}
+
                                             {/* option_sent: no actions */}
                                             {req.status === "option_sent" && null}
                                         </div>
