@@ -22,6 +22,7 @@ const vacationStatusSchema = z.enum([
   "accepted",
   "cancelled",
   "option_sent",
+  "cancel_requested",
 ]);
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -83,12 +84,26 @@ export const upsertMonthConfigSchema = z.object({
 export const updateVacationRequestSchema = z
   .object({
     status: vacationStatusSchema.optional(),
+    startDate: dateStringSchema.optional(),
+    endDate: dateStringSchema.optional(),
     adminOptionStartDate: dateStringSchema.optional(),
     adminOptionEndDate: dateStringSchema.optional(),
     adminNote: z.string().optional(),
     force: z.union([z.boolean(), z.literal("true"), z.literal("1")]).optional(),
     canForceAccept: z.union([z.boolean(), z.literal("true"), z.literal("1")]).optional(),
   })
+  .refine(
+    (data) => {
+      const start = data.startDate;
+      const end = data.endDate;
+      if (!start || !end) return true;
+      return new Date(start) <= new Date(end);
+    },
+    {
+      message: "startDate debe ser anterior o igual a endDate",
+      path: ["endDate"],
+    },
+  )
   .refine(
     (data) => {
       const start = data.adminOptionStartDate;

@@ -314,7 +314,34 @@
                 "lastName": "Apellido",
                 "name": "Nombre",
                 "email": "Email",
-                "role": "Rol"
+                "role": "Rol",
+                "employeeNumber": "Nº trabajador",
+                "vacations": "Vacaciones",
+                "sickLeaves": "Bajas",
+                "view": "Ver"
+            },
+            "modals": {
+                "loading": "Cargando...",
+                "close": "Cerrar",
+                "columns": {
+                    "from": "Desde",
+                    "to": "Hasta",
+                    "status": "Estado",
+                    "requested": "Solicitada",
+                    "created": "Creada"
+                },
+                "vacations": {
+                    "open": "Ver historial de vacaciones",
+                    "title": "Vacaciones solicitadas — {{name}}",
+                    "empty": "No hay vacaciones registradas para este trabajador.",
+                    "loadError": "No se pudo cargar el historial de vacaciones."
+                },
+                "sick": {
+                    "open": "Ver historial de bajas",
+                    "title": "Bajas registradas — {{name}}",
+                    "empty": "No hay bajas registradas para este trabajador.",
+                    "loadError": "No se pudo cargar el historial de bajas."
+                }
             }
         },
         "adminTeams": {
@@ -559,12 +586,14 @@
                     "pending": "pendiente",
                     "accepted": "aceptada",
                     "cancelled": "rechazada",
-                    "option_sent": "opción enviada"
+                    "option_sent": "opción enviada",
+                    "cancel_requested": "cancelación solicitada"
                 },
                 "actions": {
                     "accept": "Aceptar",
                     "altOption": "Opción 2",
                     "cancel": "Cancelar",
+                    "confirmCancelRequest": "Confirmar cancelación solicitada",
                     "delete": "Eliminar",
                     "confirm": "Confirmar",
                     "sending": "Enviando...",
@@ -609,7 +638,8 @@
                     "accepted": "Aceptada",
                     "cancelled": "Rechazada",
                     "option_sent": "Opción enviada",
-                    "pending": "Pendiente"
+                    "pending": "Pendiente",
+                    "cancel_requested": "Cancelación solicitada"
                 }
             },
             "monthGrid": {
@@ -632,6 +662,7 @@
                     "accepted": "Aceptada",
                     "cancelled": "Rechazada",
                     "option_sent": "Opción enviada",
+                    "cancel_requested": "Cancelación solicitada",
                     "sortToggle": "Orden: inicio {{dir}}",
                     "asc": "↑",
                     "desc": "↓"
@@ -1469,7 +1500,8 @@
                 "error": "❌ Ocurrió un error.",
                 "respondPending": "📨 Enviando respuesta...",
                 "respondSuccess": "✅ Respuesta enviada",
-                "formSuccess": "✅ Solicitud enviada"
+                "formSuccess": "✅ Solicitud enviada",
+                "cancelRequestSent": "🕓 Solicitud de cancelación enviada al administrador."
             },
             "admin": {
                 "loadError": "❌ Error al cargar solicitudes.",

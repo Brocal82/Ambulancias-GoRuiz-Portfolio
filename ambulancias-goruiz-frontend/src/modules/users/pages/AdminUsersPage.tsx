@@ -7,8 +7,17 @@ import { toastT } from "../../../utils/toast";
 import { getPscheinInfo, getPscheinWarningTitle } from "../../../utils/pscheinUtils";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { getVacationFlagsInRange, type VacFlag } from "../../vacation/domain/api";
-import { getSickFlagsInRange, type SickFlag } from "../../sick/domain";
+import {
+  getVacationFlagsInRange,
+  type VacFlag,
+} from "../../vacation/domain/api";
+import AdminUserVacationsTab from "../../vacation/components/AdminUserVacationsTab";
+import {
+  adminListSickLeaves,
+  getSickFlagsInRange,
+  type SickFlag,
+  type SickLeave,
+} from "../../sick/domain";
 import { fmtDDMM } from "../../../utils/timeUtils";
 import { MODULE_KEYS } from "../../../constants/modules";
 import {
@@ -28,7 +37,9 @@ import {
   PRAEMIEN_MANUAL_PENDING_CHANGED,
   dispatchPraemienManualPendingChanged,
 } from "../../praemien/utils/praemienManualPendingEvents";
-import { APP_NAV_MATCH_TABLE_THEAD } from "../../../components/ui/appTableHeader";
+import {
+  APP_NAV_MATCH_TABLE_THEAD,
+} from "../../../components/ui/appTableHeader";
 
 // Mapeo de estilos de la píldora de rol (no cambia lógica)
 const rolePillClass: Record<
@@ -84,7 +95,7 @@ const AdminUsersPage = () => {
   const { token, role, enabledModules } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
 
   /** Estable por render (no re-crea useCallback a cada frame como `hasModule`). */
   const praemienModuleEnabled = useMemo(
@@ -111,6 +122,10 @@ const AdminUsersPage = () => {
     {},
   );
   const [sickFlags, setSickFlags] = useState<Record<string, SickFlag>>({});
+  const [vacationModalUser, setVacationModalUser] = useState<User | null>(null);
+  const [sickModalUser, setSickModalUser] = useState<User | null>(null);
+  const [sickModalLoading, setSickModalLoading] = useState(false);
+  const [sickModalItems, setSickModalItems] = useState<SickLeave[]>([]);
   const [praemiePendingByUser, setPraemiePendingByUser] = useState<
     Map<string, number>
   >(() => new Map());
@@ -337,6 +352,38 @@ const AdminUsersPage = () => {
 
   const handleEdit = (user: User) => {
     navigate(`/admin/user/${user._id}`);
+  };
+
+  const handleOpenVacationModal = (user: User) => {
+    setVacationModalUser(user);
+  };
+
+  const handleOpenSickModal = async (user: User) => {
+    if (!token) return;
+    setSickModalUser(user);
+    setSickModalLoading(true);
+    setSickModalItems([]);
+    try {
+      const allSickLeaves = await adminListSickLeaves();
+      const byUser = (allSickLeaves as SickLeave[])
+        .filter((it) => {
+          const sickUser = it.user as SickLeave["user"];
+          const uid = typeof sickUser === "string" ? sickUser : sickUser?._id;
+          return uid === user._id;
+        })
+        .sort((a, b) => {
+          const aTime = new Date(a.createdAt || a.startDate).getTime();
+          const bTime = new Date(b.createdAt || b.startDate).getTime();
+          return bTime - aTime;
+        });
+      setSickModalItems(byUser);
+    } catch (error) {
+      console.error(error);
+      toastT.error(["pages.adminUsers.modals.sick.loadError"]);
+      setSickModalItems([]);
+    } finally {
+      setSickModalLoading(false);
+    }
   };
 
   const rowPraemieKey = (r: { userId: string; date: string }) =>
@@ -767,10 +814,13 @@ const AdminUsersPage = () => {
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 table-fixed">
               <colgroup>
-                <col className="w-[32%]" />
-                <col className="w-[32%]" />
-                <col className="w-[18%]" /> {/* Rol */}
-                <col className="w-[18%]" /> {/* Status */}
+                <col className="w-[22%]" />
+                <col className="w-[20%]" />
+                <col className="w-[12%]" /> {/* Nº trabajador */}
+                <col className="w-[14%]" /> {/* Rol */}
+                <col className="w-[14%]" /> {/* Status */}
+                <col className="w-[9%]" /> {/* Vacaciones */}
+                <col className="w-[9%]" /> {/* Bajas */}
               </colgroup>
               <thead className={APP_NAV_MATCH_TABLE_THEAD}>
                 <tr>
@@ -790,6 +840,12 @@ const AdminUsersPage = () => {
                     scope="col"
                     className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-200"
                   >
+                    {t("pages.adminUsers.columns.employeeNumber", "Nº trabajador")}
+                  </th>
+                  <th
+                    scope="col"
+                    className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-200"
+                  >
                     {t("pages.adminUsers.columns.role")}
                   </th>
                   <th
@@ -797,6 +853,18 @@ const AdminUsersPage = () => {
                     className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-200"
                   >
                     {t("pages.adminUsers.columns.status", "Status")}
+                  </th>
+                  <th
+                    scope="col"
+                    className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-200"
+                  >
+                    {t("pages.adminUsers.columns.vacations", "Vacaciones")}
+                  </th>
+                  <th
+                    scope="col"
+                    className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-200"
+                  >
+                    {t("pages.adminUsers.columns.sickLeaves", "Bajas")}
                   </th>
                 </tr>
               </thead>
@@ -861,6 +929,13 @@ const AdminUsersPage = () => {
                         className={`whitespace-nowrap py-2 px-4 text-sm text-center align-middle ${dimTextClass}`}
                       >
                         {user.name}
+                      </td>
+
+                      {/* Nº trabajador */}
+                      <td
+                        className={`whitespace-nowrap py-2 px-4 text-sm text-center align-middle ${dimTextClass}`}
+                      >
+                        {user.employeeNumber?.trim() || "—"}
                       </td>
 
                       {/* Rol (píldora pequeña, lineal) */}
@@ -946,6 +1021,44 @@ const AdminUsersPage = () => {
                           )}
                         </div>
                       </td>
+
+                      {/* Vacaciones (histórico en modal) */}
+                      <td className="py-2 px-4 text-sm text-center align-middle">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleOpenVacationModal(user);
+                          }}
+                          className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                          title={t(
+                            "pages.adminUsers.modals.vacations.open",
+                            "Ver historial de vacaciones",
+                          )}
+                        >
+                          {t("pages.adminUsers.columns.view", "Ver")}
+                        </button>
+                      </td>
+
+                      {/* Bajas (histórico en modal) */}
+                      <td className="py-2 px-4 text-sm text-center align-middle">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            void handleOpenSickModal(user);
+                          }}
+                          className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                          title={t(
+                            "pages.adminUsers.modals.sick.open",
+                            "Ver historial de bajas",
+                          )}
+                        >
+                          {t("pages.adminUsers.columns.view", "Ver")}
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -954,6 +1067,106 @@ const AdminUsersPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal: Vacaciones por trabajador */}
+      {vacationModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+          <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+              <h2 className="text-sm font-semibold text-slate-900">
+                {t("pages.adminUsers.modals.vacations.title", {
+                  name: `${vacationModalUser.lastName} ${vacationModalUser.name}`,
+                })}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setVacationModalUser(null)}
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              >
+                {t("pages.adminUsers.modals.close", "Cerrar")}
+              </button>
+            </div>
+
+            <div className="max-h-[65vh] overflow-auto p-4">
+              <AdminUserVacationsTab userId={vacationModalUser._id} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Bajas por trabajador */}
+      {sickModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+          <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+              <h2 className="text-sm font-semibold text-slate-900">
+                {t("pages.adminUsers.modals.sick.title", {
+                  name: `${sickModalUser.lastName} ${sickModalUser.name}`,
+                })}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setSickModalUser(null)}
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              >
+                {t("pages.adminUsers.modals.close", "Cerrar")}
+              </button>
+            </div>
+
+            <div className="max-h-[65vh] overflow-auto p-4">
+              {sickModalLoading ? (
+                <p className="text-sm text-slate-600">
+                  {t("pages.adminUsers.modals.loading", "Cargando...")}
+                </p>
+              ) : sickModalItems.length === 0 ? (
+                <p className="text-sm text-slate-600">
+                  {t(
+                    "pages.adminUsers.modals.sick.empty",
+                    "No hay bajas registradas para este trabajador.",
+                  )}
+                </p>
+              ) : (
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-semibold text-slate-700">
+                        {t("pages.adminUsers.modals.columns.from", "Desde")}
+                      </th>
+                      <th className="px-3 py-2 text-left font-semibold text-slate-700">
+                        {t("pages.adminUsers.modals.columns.to", "Hasta")}
+                      </th>
+                      <th className="px-3 py-2 text-left font-semibold text-slate-700">
+                        {t("pages.adminUsers.modals.columns.status", "Estado")}
+                      </th>
+                      <th className="px-3 py-2 text-left font-semibold text-slate-700">
+                        {t("pages.adminUsers.modals.columns.created", "Creada")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {sickModalItems.map((item) => (
+                      <tr key={item._id}>
+                        <td className="px-3 py-2 text-slate-800">
+                          {fmtDDMM(item.startDate)}
+                        </td>
+                        <td className="px-3 py-2 text-slate-800">
+                          {fmtDDMM(item.endDate)}
+                        </td>
+                        <td className="px-3 py-2 text-slate-800">
+                          {t(`pages.sick.status.${item.status}`, item.status)}
+                        </td>
+                        <td className="px-3 py-2 text-slate-700">
+                          {new Date(item.createdAt).toLocaleDateString(i18n.language)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

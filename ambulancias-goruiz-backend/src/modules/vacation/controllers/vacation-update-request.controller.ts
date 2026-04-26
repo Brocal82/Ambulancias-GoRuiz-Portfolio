@@ -29,8 +29,14 @@ export const updateVacationRequest = async (
 
   const { id } = req.params;
 
-  const { status, adminOptionStartDate, adminOptionEndDate, adminNote } =
-    req.body;
+  const {
+    status,
+    startDate,
+    endDate,
+    adminOptionStartDate,
+    adminOptionEndDate,
+    adminNote,
+  } = req.body;
   const { forceRaw, force, isAdmin, canForceAccept } =
     parseVacationUpdateAuthorization(req, req.body);
 
@@ -97,6 +103,8 @@ export const updateVacationRequest = async (
         if (isVacationStatus(status)) {
           applyAdminVacationUpdateFields(request, {
             status,
+            startDate,
+            endDate,
             adminOptionStartDate,
             adminOptionEndDate,
             adminNote,
@@ -109,6 +117,8 @@ export const updateVacationRequest = async (
         applyAdminVacationUpdateFields(request, {
           adminOptionStartDate,
           adminOptionEndDate,
+          startDate,
+          endDate,
           adminNote,
         });
       }

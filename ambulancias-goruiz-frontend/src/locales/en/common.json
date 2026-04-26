@@ -314,7 +314,34 @@
                 "lastName": "Last name",
                 "name": "First name",
                 "email": "Email",
-                "role": "Role"
+                "role": "Role",
+                "employeeNumber": "Employee no.",
+                "vacations": "Vacations",
+                "sickLeaves": "Sick leaves",
+                "view": "View"
+            },
+            "modals": {
+                "loading": "Loading...",
+                "close": "Close",
+                "columns": {
+                    "from": "From",
+                    "to": "To",
+                    "status": "Status",
+                    "requested": "Requested",
+                    "created": "Created"
+                },
+                "vacations": {
+                    "open": "View vacation history",
+                    "title": "Requested vacations — {{name}}",
+                    "empty": "No vacations registered for this worker.",
+                    "loadError": "Could not load vacation history."
+                },
+                "sick": {
+                    "open": "View sick-leave history",
+                    "title": "Registered sick leaves — {{name}}",
+                    "empty": "No sick leaves registered for this worker.",
+                    "loadError": "Could not load sick-leave history."
+                }
             }
         },
         "adminTeams": {
@@ -559,12 +586,14 @@
                     "pending": "pending",
                     "accepted": "accepted",
                     "cancelled": "rejected",
-                    "option_sent": "option sent"
+                    "option_sent": "option sent",
+                    "cancel_requested": "cancellation requested"
                 },
                 "actions": {
                     "accept": "Accept",
                     "altOption": "Alt option",
                     "cancel": "Cancel",
+                    "confirmCancelRequest": "Confirm requested cancellation",
                     "delete": "Delete",
                     "confirm": "Confirm",
                     "sending": "Sending...",
@@ -609,7 +638,8 @@
                     "accepted": "Accepted",
                     "cancelled": "Rejected",
                     "option_sent": "Option sent",
-                    "pending": "Pending"
+                    "pending": "Pending",
+                    "cancel_requested": "Cancellation requested"
                 }
             },
             "monthGrid": {
@@ -632,6 +662,7 @@
                     "accepted": "Accepted",
                     "cancelled": "Rejected",
                     "option_sent": "Option sent",
+                    "cancel_requested": "Cancellation requested",
                     "sortToggle": "Sort: start {{dir}}",
                     "asc": "↑",
                     "desc": "↓"
@@ -1469,7 +1500,8 @@
                 "error": "❌ An error occurred.",
                 "respondPending": "📨 Sending response...",
                 "respondSuccess": "✅ Response sent successfully.",
-                "formSuccess": "✅ Request sent successfully."
+                "formSuccess": "✅ Request sent successfully.",
+                "cancelRequestSent": "🕓 Cancellation request sent to admin."
             },
             "admin": {
                 "loadError": "❌ Error loading vacation requests.",

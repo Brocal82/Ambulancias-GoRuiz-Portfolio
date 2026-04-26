@@ -26,7 +26,14 @@ interface VacationRequestPayload {
 }
 
 interface UpdateVacationPayload {
-  status?: "pending" | "accepted" | "cancelled" | "option_sent";
+  status?:
+    | "pending"
+    | "accepted"
+    | "cancelled"
+    | "option_sent"
+    | "cancel_requested";
+  startDate?: string;
+  endDate?: string;
   adminOptionStartDate?: string;
   adminOptionEndDate?: string;
   adminNote?: string;

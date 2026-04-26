@@ -8,14 +8,16 @@ export type VacationStatus =
   | "pending"
   | "accepted"
   | "cancelled"
-  | "option_sent";
+  | "option_sent"
+  | "cancel_requested";
 
 export function isVacationStatus(x: unknown): x is VacationStatus {
   return (
     x === "pending" ||
     x === "accepted" ||
     x === "cancelled" ||
-    x === "option_sent"
+    x === "option_sent" ||
+    x === "cancel_requested"
   );
 }
 
@@ -51,15 +53,31 @@ export function applyAdminVacationUpdateFields(
   request: IVacationRequestModel,
   fields: {
     status?: VacationStatus;
+    startDate?: unknown;
+    endDate?: unknown;
     adminOptionStartDate?: unknown;
     adminOptionEndDate?: unknown;
     adminNote?: unknown;
   },
 ) {
-  const { status, adminOptionStartDate, adminOptionEndDate, adminNote } = fields;
+  const {
+    status,
+    startDate,
+    endDate,
+    adminOptionStartDate,
+    adminOptionEndDate,
+    adminNote,
+  } = fields;
 
   if (typeof status !== "undefined") {
     request.status = status;
+  }
+
+  if (startDate) {
+    request.startDate = new Date(startDate as string);
+  }
+  if (endDate) {
+    request.endDate = new Date(endDate as string);
   }
 
   if (adminOptionStartDate) {

@@ -1,13 +1,19 @@
 // src/pages/AdminUserVacationsTab.tsx
 import { useEffect, useState } from "react";
 import type { IVacationRequest } from "../domain/types";
-import { getVacationRequests, deleteVacationRequest } from "../domain/api";
+import {
+  getVacationRequests,
+  deleteVacationRequest,
+  updateVacationRequest,
+} from "../domain/api";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
 import { emitVacationRequestsUpdated } from "../utils/vacationEvents";
 import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 import EditIconButton from "../../../components/common/actions/EditIconButton";
+import SaveIconButton from "../../../components/common/actions/SaveIconButton";
+import CancelButton from "../../../components/common/actions/CancelButton";
 import { invalidateAvailabilityForRange } from "../utils/invalidateAvailabilityForRange";
 
 import { formatISOToDDMMYYYY } from "../../../utils/timeUtils";
@@ -28,6 +34,10 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
   const [vacations, setVacations] = useState<IVacationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editStartDate, setEditStartDate] = useState("");
+  const [editEndDate, setEditEndDate] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const load = async () => {
     if (!token || !userId) return;
@@ -88,8 +98,68 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
   };
 
 
-  const handleEditVacation = (id: string) => {
-    toastT.info(["toasts.vacations.editPending", { id }]);
+  const handleStartEditVacation = (v: IVacationRequest) => {
+    setEditingId(v._id);
+    setEditStartDate(v.startDate.slice(0, 10));
+    setEditEndDate(v.endDate.slice(0, 10));
+  };
+
+  const handleCancelEditVacation = () => {
+    setEditingId(null);
+    setEditStartDate("");
+    setEditEndDate("");
+  };
+
+  const handleSaveEditVacation = async (v: IVacationRequest) => {
+    if (!token) return;
+    if (!editStartDate || !editEndDate) {
+      toastT.error(["toasts.vacations.admin.error"]);
+      return;
+    }
+    if (new Date(editStartDate) > new Date(editEndDate)) {
+      toastT.error(["toasts.vacations.admin.error"]);
+      return;
+    }
+
+    setSavingEdit(true);
+    try {
+      await toastT.promise(
+        updateVacationRequest(v._id, {
+          startDate: editStartDate,
+          endDate: editEndDate,
+        }),
+        {
+          pending: ["toasts.vacations.admin.updating"],
+          success: ["toasts.vacations.admin.updated"],
+          error: ["toasts.vacations.admin.error"],
+        },
+      );
+
+      setVacations((prev) =>
+        prev
+          .map((it) =>
+            it._id === v._id
+              ? { ...it, startDate: editStartDate, endDate: editEndDate }
+              : it,
+          )
+          .sort(
+            (a, b) =>
+              new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
+          ),
+      );
+
+      emitVacationRequestsUpdated({
+        type: "updated",
+        id: v._id,
+        status: v.status,
+      });
+
+      invalidateAvailabilityForRange(v.startDate, v.endDate);
+      invalidateAvailabilityForRange(editStartDate, editEndDate);
+      handleCancelEditVacation();
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
 
@@ -152,6 +222,7 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
               <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
                 {vacations.map((v) => {
                   const days = calcVacationDays(v.startDate, v.endDate);
+                  const isEditing = editingId === v._id;
 
 
                   return (
@@ -161,15 +232,46 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
                     >
                       {/* Fechas */}
                       <td className="px-3 py-2 align-top">
-                        <div className="text-slate-800 whitespace-nowrap">
-                          {formatISOToDDMMYYYY(v.startDate)} —{" "}
-                          {formatISOToDDMMYYYY(v.endDate)}
-                        </div>
+                        {isEditing ? (
+                          <div className="flex flex-col gap-1">
+                            <input
+                              type="date"
+                              value={editStartDate}
+                              onChange={(e) => setEditStartDate(e.target.value)}
+                              title={t("pages.vacations.adminUserTab.th.dates", "Fechas")}
+                              aria-label={t(
+                                "pages.adminUsers.modals.columns.from",
+                                "Desde",
+                              )}
+                              className="h-8 rounded-lg border border-slate-300 px-2 text-xs"
+                              disabled={savingEdit}
+                            />
+                            <input
+                              type="date"
+                              value={editEndDate}
+                              onChange={(e) => setEditEndDate(e.target.value)}
+                              title={t("pages.vacations.adminUserTab.th.dates", "Fechas")}
+                              aria-label={t(
+                                "pages.adminUsers.modals.columns.to",
+                                "Hasta",
+                              )}
+                              className="h-8 rounded-lg border border-slate-300 px-2 text-xs"
+                              disabled={savingEdit}
+                            />
+                          </div>
+                        ) : (
+                          <div className="text-slate-800 whitespace-nowrap">
+                            {formatISOToDDMMYYYY(v.startDate)} —{" "}
+                            {formatISOToDDMMYYYY(v.endDate)}
+                          </div>
+                        )}
                       </td>
 
                       {/* Días */}
                       <td className="px-3 py-2 align-top whitespace-nowrap">
-                        {days}
+                        {isEditing
+                          ? calcVacationDays(editStartDate, editEndDate)
+                          : days}
                       </td>
 
                       {/* Estado */}
@@ -184,12 +286,32 @@ const AdminUserVacationsTab = ({ userId }: Props) => {
 
                       <td className="px-3 py-2 align-top">
                         <div className="flex flex-wrap justify-center gap-2">
-                          <EditIconButton
-                            onClick={() => handleEditVacation(v._id)}
-                            title={t(
-                              "pages.vacations.adminUserTab.actions.edit",
-                            )}
-                          />
+                          {isEditing ? (
+                            <>
+                              <SaveIconButton
+                                type="button"
+                                onClick={() => void handleSaveEditVacation(v)}
+                                disabled={savingEdit}
+                                title={t("common.save", "Guardar")}
+                                className="!w-8 !h-8 !text-sm"
+                              />
+                              <CancelButton
+                                onClick={handleCancelEditVacation}
+                                disabled={savingEdit}
+                                title={t("common.cancel", "Cancelar")}
+                                className="!h-8"
+                              >
+                                {t("common.cancel", "Cancelar")}
+                              </CancelButton>
+                            </>
+                          ) : (
+                            <EditIconButton
+                              onClick={() => handleStartEditVacation(v)}
+                              title={t(
+                                "pages.vacations.adminUserTab.actions.edit",
+                              )}
+                            />
+                          )}
 
                           <DeleteIconButton
                             onClick={() => handleDeleteVacation(v._id)}

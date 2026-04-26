@@ -314,7 +314,34 @@
                 "lastName": "Nachname",
                 "name": "Vorname",
                 "email": "E-Mail",
-                "role": "Rolle"
+                "role": "Rolle",
+                "employeeNumber": "Personalnr.",
+                "vacations": "Urlaub",
+                "sickLeaves": "Krankmeldungen",
+                "view": "Ansehen"
+            },
+            "modals": {
+                "loading": "Wird geladen...",
+                "close": "Schließen",
+                "columns": {
+                    "from": "Von",
+                    "to": "Bis",
+                    "status": "Status",
+                    "requested": "Angefragt",
+                    "created": "Erstellt"
+                },
+                "vacations": {
+                    "open": "Urlaubsverlauf ansehen",
+                    "title": "Beantragter Urlaub — {{name}}",
+                    "empty": "Für diesen Mitarbeiter ist kein Urlaub erfasst.",
+                    "loadError": "Urlaubsverlauf konnte nicht geladen werden."
+                },
+                "sick": {
+                    "open": "Krankheitsverlauf ansehen",
+                    "title": "Erfasste Krankmeldungen — {{name}}",
+                    "empty": "Für diesen Mitarbeiter sind keine Krankmeldungen erfasst.",
+                    "loadError": "Krankheitsverlauf konnte nicht geladen werden."
+                }
             }
         },
         "adminTeams": {
@@ -559,12 +586,14 @@
                     "pending": "ausstehend",
                     "accepted": "genehmigt",
                     "cancelled": "abgelehnt",
-                    "option_sent": "Option gesendet"
+                    "option_sent": "Option gesendet",
+                    "cancel_requested": "Stornierung angefragt"
                 },
                 "actions": {
                     "accept": "Genehmigen",
                     "altOption": "Alternative",
                     "cancel": "Abbrechen",
+                    "confirmCancelRequest": "Angefragte Stornierung bestätigen",
                     "delete": "Löschen",
                     "confirm": "Bestätigen",
                     "sending": "Senden...",
@@ -609,7 +638,8 @@
                     "accepted": "Genehmigt",
                     "cancelled": "Abgelehnt",
                     "option_sent": "Option gesendet",
-                    "pending": "Ausstehend"
+                    "pending": "Ausstehend",
+                    "cancel_requested": "Stornierung angefragt"
                 }
             },
             "monthGrid": {
@@ -632,6 +662,7 @@
                     "accepted": "Genehmigt",
                     "cancelled": "Abgelehnt",
                     "option_sent": "Option gesendet",
+                    "cancel_requested": "Stornierung angefragt",
                     "sortToggle": "Sortierung: Beginn {{dir}}",
                     "asc": "↑",
                     "desc": "↓"
@@ -1469,7 +1500,8 @@
                 "error": "❌ Ein Fehler ist aufgetreten.",
                 "respondPending": "📨 Antwort wird gesendet...",
                 "respondSuccess": "✅ Antwort erfolgreich gesendet.",
-                "formSuccess": "✅ Antrag erfolgreich gesendet."
+                "formSuccess": "✅ Antrag erfolgreich gesendet.",
+                "cancelRequestSent": "🕓 Stornierungsanfrage wurde an den Admin gesendet."
             },
             "admin": {
                 "loadError": "❌ Fehler beim Laden der Urlaubsanträge.",
