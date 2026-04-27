@@ -13,6 +13,9 @@ import { useAdminAppointmentsSync } from "../hooks/useAdminAppointmentsSync";
 
 import StatusBadge from "../../../components/common/StatusBadge";
 import { toneForAppointmentStatus } from "../utils/appointmentTone";
+import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
+import ProposeSlotsIconButton from "../../../components/common/actions/ProposeSlotsIconButton";
+import ViewIconButton from "../../../components/common/actions/ViewIconButton";
 
 
 // Utils locales
@@ -124,82 +127,102 @@ export default function AdminAppointmentsPage() {
                                 {t("pages.appointments.pending.empty")}
                             </p>
                         ) : (
-                            <ul className="space-y-3">
-                                {pending.map((a) => {
-                                    const worker =
-                                        typeof a.workerId === "object" ? a.workerId : null;
-                                    const proposedSlots = a.proposedSlots;
-
-                                    return (
-                                        <li
-                                            key={a._id}
-                                            className="rounded-xl bg-white shadow-sm ring-1 ring-slate-200 p-4 hover:bg-slate-50 transition-colors cursor-pointer"
-                                            onClick={() => {
-                                                setDetailItem(a);
-                                                setDetailOpen(true);
-                                            }}
-                                        >
-                                            <div className="flex flex-col gap-3">
-                                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                                                    {/* Nombre del trabajador */}
-                                                    <div className="min-w-0">
-                                                        <div className="text-slate-900 font-medium">
-                                                            {worker
-                                                                ? `${worker.lastName}, ${worker.name}`
-                                                                : `ID: ${typeof a.workerId === "string" ? a.workerId : ""}`}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Botón de proponer + status */}
-                                                    <div className="shrink-0 flex flex-row items-center gap-2">
-                                                        {a.status === "pending" && (
-                                                            <button
-                                                                className="shrink-0 rounded bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-700 whitespace-nowrap"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setSelectedId(a._id);
-                                                                    setOpenPropose(true);
+                            <div className="overflow-x-auto rounded-xl border border-slate-200">
+                                <table className="min-w-full table-fixed text-sm">
+                                    <colgroup>
+                                        <col className="w-[20%]" />
+                                        <col className="w-[20%]" />
+                                        <col className="w-[12%]" />
+                                        <col className="w-[16%]" />
+                                        <col className="w-[14%]" />
+                                        <col className="w-[18%]" />
+                                    </colgroup>
+                                    <thead className={APP_NAV_MATCH_TABLE_THEAD_STICKY}>
+                                        <tr className="text-center text-slate-200">
+                                            <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                                {t("pages.appointments.labels.worker")}
+                                            </th>
+                                            <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                                {t("pages.appointments.labels.reason")}
+                                            </th>
+                                            <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                                Detalles
+                                            </th>
+                                            <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                                {t("pages.appointments.labels.sentAt")}
+                                            </th>
+                                            <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                                {t("pages.appointments.labels.status")}
+                                            </th>
+                                            <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                                {t("pages.appointments.labels.actions")}
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
+                                        {pending.map((a) => {
+                                            const worker =
+                                                typeof a.workerId === "object" ? a.workerId : null;
+                                            const hasMessage =
+                                                !!a.details?.trim() ||
+                                                (a.status === "proposed" &&
+                                                    (a.proposedSlots?.length ?? 0) > 0);
+                                            return (
+                                                <tr
+                                                    key={a._id}
+                                                    className="border-b border-slate-100 hover:bg-slate-50/70 text-center"
+                                                >
+                                                    <td className="px-3 py-2 align-top text-slate-800 break-words">
+                                                        {worker
+                                                            ? `${worker.lastName}, ${worker.name}`
+                                                            : `ID: ${typeof a.workerId === "string" ? a.workerId : ""}`}
+                                                    </td>
+                                                    <td className="px-3 py-2 align-top text-slate-800 break-words">
+                                                        {a.reason}
+                                                    </td>
+                                                    <td className="px-3 py-2 align-top whitespace-nowrap">
+                                                        {hasMessage ? (
+                                                            <ViewIconButton
+                                                                onClick={() => {
+                                                                    setDetailItem(a);
+                                                                    setDetailOpen(true);
                                                                 }}
-                                                                title={t(
-                                                                    "pages.appointments.actions.proposeSlots",
-                                                                )}
-                                                            >
-                                                                {t("pages.appointments.actions.proposeSlots")}
-                                                            </button>
+                                                                title={t("pages.appointments.messageModal.open")}
+                                                            />
+                                                        ) : (
+                                                            <span className="text-xs text-slate-400">—</span>
                                                         )}
+                                                    </td>
+                                                    <td className="px-3 py-2 align-top whitespace-nowrap text-slate-700">
+                                                        {new Date(a.createdAt).toLocaleString("de-DE")}
+                                                    </td>
+                                                    <td className="px-3 py-2 align-top whitespace-nowrap">
                                                         <StatusBadge
                                                             label={statusLabel(a.status)}
                                                             tone={toneForAppointmentStatus(a.status)}
                                                         />
-
-
-
-                                                    </div>
-                                                </div>
-
-                                                {/* Horarios propuestos */}
-                                                {!!proposedSlots?.length && (
-                                                    <div className="mt-1">
-                                                        <div className="text-xs uppercase text-slate-500">
-                                                            {t("pages.appointments.labels.proposedSlots")}
+                                                    </td>
+                                                    <td className="px-3 py-2 align-top">
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            {a.status === "pending" ? (
+                                                                <ProposeSlotsIconButton
+                                                                    onClick={() => {
+                                                                        setSelectedId(a._id);
+                                                                        setOpenPropose(true);
+                                                                    }}
+                                                                    title={t("pages.appointments.actions.proposeSlots")}
+                                                                />
+                                                            ) : (
+                                                                <span className="text-xs text-slate-400">—</span>
+                                                            )}
                                                         </div>
-                                                        <ul className="mt-1 space-y-1">
-                                                            {proposedSlots.map((s, idx) => (
-                                                                <li
-                                                                    key={idx}
-                                                                    className="text-sm text-slate-700"
-                                                                >
-                                                                    {formatRange(s.start, s.end)}
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
                         )}
                     </section>
 

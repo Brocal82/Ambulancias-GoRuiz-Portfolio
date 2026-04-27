@@ -920,9 +920,19 @@
             "labels": {
                 "when": "When:",
                 "reason": "Reason:",
+                "message": "Message",
+                "sentAt": "Sent at",
                 "worker": "Worker:",
                 "status": "Status:",
-                "proposedSlots": "Proposed time slots"
+                "proposedSlots": "Proposed time slots",
+                "actions": "Actions",
+                "view": "View"
+            },
+            "messageModal": {
+                "open": "View message / proposal",
+                "title": "Appointment details",
+                "noMessage": "No message",
+                "close": "Close"
             },
             "empty": {
                 "worker": "You don't have appointments yet. Need to contact an admin?"
@@ -946,8 +956,10 @@
                 "title": "Choose a time slot",
                 "empty": "No options available. Please wait for the administrator to propose times.",
                 "optionAria": "Option {{index}}: {{label}}",
+                "confirmCancelProposal": "Do you want to cancel this appointment proposal?",
                 "actions": {
                     "cancel": "Cancel",
+                    "cancelProposal": "Reject proposal",
                     "confirm": "Confirm",
                     "confirming": "Confirming..."
                 }
@@ -1581,7 +1593,9 @@
             "requestSuccess": "✅ Request sent.",
             "requestError": "❌ Failed to create request.",
             "deleteSuccess": "Appointment deleted.",
-            "deleteError": "Could not delete the appointment."
+            "deleteError": "Could not delete the appointment.",
+            "rejectProposalSuccess": "Proposal rejected.",
+            "rejectProposalError": "Could not reject proposal."
         },
         "users": {
             "loadError": "❌ Failed to load users.",

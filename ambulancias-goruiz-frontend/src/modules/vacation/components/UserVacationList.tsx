@@ -8,6 +8,7 @@ import { toBerlinDayKey } from "../../../utils/dates/dayKey";
 import StatusBadge from "../../../components/common/StatusBadge";
 import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
 import { vacationRequestTone } from "../utils/vacationRequestTone";
+import StopIconButton from "../../../components/common/actions/StopIconButton";
 
 
 
@@ -283,17 +284,13 @@ const UserVacationList: React.FC<Props> = ({
                       </div>
                     ) : req.status === "accepted" && onCancelRequest ? (
                       <div className="flex justify-center">
-                        <button
-                          type="button"
+                        <StopIconButton
                           onClick={() => onCancelRequest(req._id)}
-                          className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-sm text-white shadow-sm hover:bg-rose-100 focus:outline-none focus:ring-4 focus:ring-rose-100"
                           title={t(
                             "pages.vacations.workerList.actions.requestCancel",
                             "Solicitar cancelación",
                           )}
-                        >
-                          🛑
-                        </button>
+                        />
                       </div>
                     ) : (
                       <span className="text-xs text-slate-400">—</span>

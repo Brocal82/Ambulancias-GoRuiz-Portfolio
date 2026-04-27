@@ -225,6 +225,31 @@ export async function selectSlot(
   return await appointment.save();
 }
 
+export async function rejectProposal(workerId: string, id: string) {
+  const appointment = await Appointment.findById(id);
+  if (!appointment) {
+    throw new AppointmentError("Cita no encontrada.", 404);
+  }
+  if (appointment.workerId.toString() !== workerId) {
+    throw new AppointmentError(
+      "No autorizado para rechazar esta propuesta.",
+      403,
+    );
+  }
+  if (appointment.status !== "proposed") {
+    throw new AppointmentError(
+      "Solo se puede rechazar cuando la cita está en estado proposed.",
+      400,
+    );
+  }
+
+  appointment.status = "pending";
+  appointment.proposedSlots = [];
+  appointment.selectedSlot = null;
+
+  return await appointment.save();
+}
+
 export async function getCalendarAppointments(
   query: { from?: string; to?: string },
   companyId?: string | null,
@@ -359,24 +384,6 @@ export async function deleteMyAppointment(workerId: string, id: string) {
     throw new AppointmentError(
       "No autorizado para eliminar esta cita.",
       403,
-    );
-  }
-
-  const now = Date.now();
-  const startMs = appointment.selectedSlot?.start
-    ? appointment.selectedSlot.start.getTime()
-    : 0;
-  const endMs = appointment.selectedSlot?.end
-    ? appointment.selectedSlot.end.getTime()
-    : startMs;
-
-  const isPast = endMs > 0 && endMs < now;
-  const isCancelled = appointment.status === "cancelled";
-
-  if (!isPast && !isCancelled) {
-    throw new AppointmentError(
-      "Solo puedes eliminar citas canceladas o ya pasadas.",
-      400,
     );
   }
 

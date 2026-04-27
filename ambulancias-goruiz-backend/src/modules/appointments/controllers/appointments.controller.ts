@@ -135,6 +135,24 @@ export const selectSlot = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
+export const rejectProposal = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const workerId = req.userId as string;
+    const { id } = req.params;
+    const saved = await appointmentsService.rejectProposal(workerId, id);
+    res.status(200).json(saved);
+  } catch (err: unknown) {
+    if (err instanceof AppointmentError) {
+      res.status(err.statusCode).json({ message: err.message });
+      return;
+    }
+    console.error("rejectProposal error:", err);
+    res
+      .status(400)
+      .json({ message: (err as Error)?.message || "Error al rechazar propuesta." });
+  }
+};
+
 export const getCalendarAppointments = async (
   req: Request,
   res: Response,

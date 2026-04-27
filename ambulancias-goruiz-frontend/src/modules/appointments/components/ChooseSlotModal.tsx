@@ -1,11 +1,12 @@
 // frontend/src/modules/appointments/components/ChooseSlotModal.tsx
 import { useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
-import { selectSlot } from "../domain";
+import { rejectProposal, selectSlot } from "../domain";
 import { emitAppointmentsChanged } from "../utils/appointmentEvents";
 import type { TimeSlot } from "../domain/types";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
+import StopIconButton from "../../../components/common/actions/StopIconButton";
 
 interface Props {
   isOpen: boolean;
@@ -59,6 +60,23 @@ export default function ChooseSlotModal({
     }
   };
 
+  const handleCancelProposal = async () => {
+    const ok = window.confirm(t("pages.appointments.choose.confirmCancelProposal"));
+    if (!ok) return;
+    try {
+      setLoading(true);
+      await rejectProposal(appointmentId, token!);
+      toastT.success(["toasts.appointments.rejectProposalSuccess"]);
+      emitAppointmentsChanged();
+      onClose();
+      onSuccess?.();
+    } catch (e: unknown) {
+      toastT.error(getApiErrorMessage(e, ["toasts.appointments.rejectProposalError"]));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div
@@ -69,12 +87,22 @@ export default function ChooseSlotModal({
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200">
-          <h2
-            id="choose-title"
-            className="text-lg font-semibold tracking-tight text-slate-900"
-          >
-            {t("pages.appointments.choose.title")}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2
+              id="choose-title"
+              className="text-lg font-semibold tracking-tight text-slate-900"
+            >
+              {t("pages.appointments.choose.title")}
+            </h2>
+            <button
+              onClick={onClose}
+              className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300"
+              aria-label={t("pages.appointments.choose.actions.cancel")}
+              disabled={loading}
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Opciones */}
@@ -96,7 +124,10 @@ export default function ChooseSlotModal({
                         label: s.label,
                       })}
                       checked={selectedIndex === idx}
-                      onChange={() => setSelectedIndex(idx)}
+                      onClick={() =>
+                        setSelectedIndex((prev) => (prev === idx ? null : idx))
+                      }
+                      onChange={() => undefined}
                       className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
                     />
                     <span className="text-sm text-slate-800">{s.label}</span>
@@ -109,25 +140,33 @@ export default function ChooseSlotModal({
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100"
-            disabled={loading}
-          >
-            {t("pages.appointments.choose.actions.cancel")}
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-100 disabled:opacity-60"
-            disabled={
-              loading || selectedIndex === null || slotsBerlin.length === 0
-            }
-          >
-            {loading
-              ? t("pages.appointments.choose.actions.confirming")
-              : t("pages.appointments.choose.actions.confirm")}
-          </button>
-        </div>
+          {selectedIndex === null ? (
+            <StopIconButton
+              onClick={handleCancelProposal}
+              title={t("pages.appointments.choose.actions.cancelProposal")}
+              disabled={loading || slotsBerlin.length === 0}
+            />
+          ) : (
+            <button
+              onClick={handleConfirm}
+              className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-sm shadow-sm hover:bg-emerald-100 focus:outline-none focus:ring-4 focus:ring-emerald-100 text-white disabled:opacity-60"
+              disabled={loading || slotsBerlin.length === 0}
+              title={
+                loading
+                  ? t("pages.appointments.choose.actions.confirming")
+                  : t("pages.appointments.choose.actions.confirm")
+              }
+              aria-label={
+                loading
+                  ? t("pages.appointments.choose.actions.confirming")
+                  : t("pages.appointments.choose.actions.confirm")
+              }
+            >
+              {loading ? "…" : "✅"}
+            </button>
+          )}
+          </div>
+        
       </div>
     </div>
   );

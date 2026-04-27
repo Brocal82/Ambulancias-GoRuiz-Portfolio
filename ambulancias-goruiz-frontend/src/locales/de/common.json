@@ -920,9 +920,19 @@
             "labels": {
                 "when": "Wann:",
                 "reason": "Grund:",
+                "message": "Nachricht",
+                "sentAt": "Sendezeit",
                 "worker": "Mitarbeiter:",
                 "status": "Status:",
-                "proposedSlots": "Vorgeschlagene Zeitfenster"
+                "proposedSlots": "Vorgeschlagene Zeitfenster",
+                "actions": "Aktionen",
+                "view": "Ansehen"
+            },
+            "messageModal": {
+                "open": "Nachricht / Vorschlag ansehen",
+                "title": "Termindetails",
+                "noMessage": "Keine Nachricht",
+                "close": "Schließen"
             },
             "empty": {
                 "worker": "Du hast noch keine Termine. Möchtest du einen Admin kontaktieren?"
@@ -946,8 +956,10 @@
                 "title": "Zeitfenster wählen",
                 "empty": "Keine Optionen verfügbar. Bitte warte, bis der Administrator Zeiten vorschlägt.",
                 "optionAria": "Option {{index}}: {{label}}",
+                "confirmCancelProposal": "Möchtest du diesen Terminvorschlag abbrechen?",
                 "actions": {
                     "cancel": "Abbrechen",
+                    "cancelProposal": "Vorschlag ablehnen",
                     "confirm": "Bestätigen",
                     "confirming": "Wird bestätigt..."
                 }
@@ -1581,7 +1593,9 @@
             "requestSuccess": "✅ Anfrage gesendet.",
             "requestError": "❌ Fehler beim Erstellen der Anfrage.",
             "deleteSuccess": "Termin gelöscht.",
-            "deleteError": "Der Termin konnte nicht gelöscht werden."
+            "deleteError": "Der Termin konnte nicht gelöscht werden.",
+            "rejectProposalSuccess": "Vorschlag abgelehnt.",
+            "rejectProposalError": "Der Vorschlag konnte nicht abgelehnt werden."
         },
         "users": {
             "loadError": "❌ Fehler beim Laden der Benutzer.",

@@ -108,6 +108,21 @@ export const selectSlot = async (
   return data;
 };
 
+// Worker: rechazar propuesta y volver a pending
+export const rejectProposal = async (
+  id: string,
+  token: string,
+): Promise<Appointment> => {
+  const { data } = await axios.post<Appointment>(
+    `/appointments/${id}/reject-proposal`,
+    {},
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  return data;
+};
+
 //Worker: Borrar Cita
 export const deleteMyAppointment = async (
   id: string,

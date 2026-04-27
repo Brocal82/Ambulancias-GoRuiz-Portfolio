@@ -11,6 +11,7 @@ import {
   getPendingAppointments,
   proposeSlots,
   selectSlot,
+  rejectProposal,
   getCalendarAppointments,
   updateAppointment,
   cancelAppointment,
@@ -85,6 +86,16 @@ router.post(
   selectSlot,
 );
 
+// Worker: rechazar propuesta -> vuelve a pending para nueva propuesta admin
+router.post(
+  "/:id/reject-proposal",
+  authenticateToken,
+  requireModule(MODULE_KEYS.APPOINTMENTS),
+  authorizeRole("worker"),
+  validateObjectId("id"),
+  rejectProposal,
+);
+
 // Admin: proponer hasta 3 slots -> proposed
 router.post(
   "/:id/propose",
@@ -116,7 +127,7 @@ router.patch(
   updateAppointment,
 );
 
-// Worker: eliminar su propia cita si está cancelada o ya pasó
+// Worker: eliminar su propia cita
 router.delete(
   "/:id/my",
   authenticateToken,

@@ -21,6 +21,10 @@ import { useTranslation } from "react-i18next";
 import StatusBadge from "../../../components/common/StatusBadge";
 import { toneForAppointmentStatus } from "../utils/appointmentTone";
 import CreateIconButton from "../../../components/common/actions/CreateIconButton";
+import StopIconButton from "../../../components/common/actions/StopIconButton";
+import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
+import ViewIconButton from "../../../components/common/actions/ViewIconButton";
+import ProposeSlotsIconButton from "../../../components/common/actions/ProposeSlotsIconButton";
 
 /** Util: formato corto fecha/hora en la TZ de la app */
 function fmt(dtIso?: string): string {
@@ -64,6 +68,13 @@ export default function WorkerAppointmentsPage() {
     const [chooseSlots, setChooseSlots] = useState<
         { start: string; end: string }[]
     >([]);
+    const [openMessageModal, setOpenMessageModal] = useState(false);
+    const [messageAppointment, setMessageAppointment] = useState<Appointment | null>(null);
+
+    const openAppointmentMessage = (a: Appointment) => {
+        setMessageAppointment(a);
+        setOpenMessageModal(true);
+    };
 
     const refresh = async () => {
         try {
@@ -100,24 +111,6 @@ export default function WorkerAppointmentsPage() {
     const statusLabel = (s: Appointment["status"]) =>
         t(`pages.appointments.statusLabel.${s}`);
 
-
-    // Próxima cita confirmada / reprogramada (futura más cercana)
-    const nextConfirmed = useMemo(() => {
-        const now = Date.now();
-        return items
-            .filter(
-                (a) =>
-                    (a.status === "confirmed" || a.status === "rescheduled") &&
-                    a.selectedSlot?.start &&
-                    new Date(a.selectedSlot.start).getTime() > now,
-            )
-            .sort(
-                (x, y) =>
-                    new Date(x.selectedSlot!.start).getTime() -
-                    new Date(y.selectedSlot!.start).getTime(),
-            )[0];
-    }, [items]);
-
     // Solicitudes (pending/proposed) — ORDENADAS:
     // - Si tiene opciones: por la hora propuesta más temprana (ASC)
     // - Si no tiene opciones: por fecha de creación (DESC)
@@ -143,10 +136,9 @@ export default function WorkerAppointmentsPage() {
         });
     }, [items]);
 
-    // Otras citas: confirmed/rescheduled/cancelled (excluye la mostrada como "próxima")
+    // Otras citas: confirmed/rescheduled/cancelled
     // ORDENADAS por selectedSlot.start ASC (más antiguas arriba, más nuevas abajo)
     const others = useMemo(() => {
-        const excludeId = nextConfirmed?._id;
         return items
             .filter(
                 (a) =>
@@ -154,19 +146,8 @@ export default function WorkerAppointmentsPage() {
                     a.status === "rescheduled" ||
                     a.status === "cancelled",
             )
-            .filter((a) => a._id !== excludeId)
             .sort((a, b) => selectedStartMs(a) - selectedStartMs(b)); // 👈 ASC
-    }, [items, nextConfirmed]);
-
-    const canDelete = (a: Appointment): boolean => {
-        if (a.status === "cancelled") return true;
-        const endMs = a.selectedSlot?.end
-            ? new Date(a.selectedSlot.end).getTime()
-            : a.selectedSlot?.start
-                ? new Date(a.selectedSlot.start).getTime()
-                : 0;
-        return endMs > 0 && endMs < Date.now();
-    };
+    }, [items]);
 
     const handleDelete = async (id: string) => {
         const ok = window.confirm(t("pages.appointments.worker.confirmDelete"));
@@ -203,155 +184,190 @@ export default function WorkerAppointmentsPage() {
                 </p>
             )}
 
-            {/* Próxima cita confirmada */}
-            {!loading && nextConfirmed && (
-                <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-base font-semibold text-emerald-800">
-                            {t("pages.appointments.next.title")}
-                        </h3>
-                        <StatusBadge
-                            tone={toneForAppointmentStatus(nextConfirmed.status)}
-                            label={statusLabel(nextConfirmed.status)}
-                        />
-
-
-                    </div>
-                    <div className="mt-2 text-sm text-emerald-900">
-                        <div>
-                            <span className="font-medium">
-                                {t("pages.appointments.labels.when")}
-                            </span>{" "}
-                            {fmt(nextConfirmed.selectedSlot?.start)}
-                        </div>
-                        <div className="mt-1">
-                            <span className="font-medium">
-                                {t("pages.appointments.labels.reason")}
-                            </span>{" "}
-                            {nextConfirmed.reason}
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Mis solicitudes */}
             {!loading && recent.length > 0 && (
                 <div className="mt-6">
                     <h3 className="text-base font-semibold mb-3">
                         {t("pages.appointments.requests.title")}
                     </h3>
-                    <ul className="space-y-3">
-                        {recent.map((a) => {
-                            const showChoose =
-                                a.status === "proposed" && (a.proposedSlots?.length ?? 0) > 0;
-                            return (
-                                <li
-                                    key={a._id}
-                                    className="rounded-xl border p-4 hover:bg-slate-50 transition-colors"
-                                >
-                                    <div className="flex items-start justify-between gap-3">
-                                        {/* Columna izquierda con motivo y detalles */}
-                                        <div className="min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-medium truncate">{a.reason}</span>
-                                            </div>
-                                            <p className="text-sm text-gray-600 mt-1">{a.details}</p>
-
-                                            {a.status === "proposed" &&
-                                                (a.proposedSlots?.length ?? 0) === 0 && (
-                                                    <p className="mt-2 text-sm text-amber-700">
-                                                        {t("pages.appointments.requests.waitingOptions")}
-                                                    </p>
+                    <div className="overflow-x-auto rounded-xl border border-slate-200">
+                        <table className="min-w-full table-fixed text-sm">
+                            <colgroup>
+                                <col className="w-[22%]" />
+                                <col className="w-[12%]" />
+                                <col className="w-[18%]" />
+                                <col className="w-[16%]" />
+                                <col className="w-[32%]" />
+                            </colgroup>
+                            <thead className={APP_NAV_MATCH_TABLE_THEAD_STICKY}>
+                                <tr className="text-center text-slate-200">
+                                    <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                        {t("pages.appointments.labels.reason")}
+                                    </th>
+                                    <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                        {t("pages.appointments.labels.message")}
+                                    </th>
+                                    <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                        {t("pages.appointments.labels.sentAt")}
+                                    </th>
+                                    <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                        {t("pages.appointments.labels.status").replace(":", "")}
+                                    </th>
+                                    <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                        Acciones
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
+                                {recent.map((a) => {
+                                    const showChoose =
+                                        a.status === "proposed" &&
+                                        (a.proposedSlots?.length ?? 0) > 0;
+                                    return (
+                                        <tr
+                                            key={a._id}
+                                            className="border-b border-slate-100 hover:bg-slate-50/70 text-center"
+                                        >
+                                            <td className="px-3 py-2 align-top">
+                                                <span className="font-medium text-slate-800 break-words">
+                                                    {a.reason}
+                                                </span>
+                                            </td>
+                                            <td className="px-3 py-2 align-top whitespace-nowrap">
+                                                {((a.status === "proposed" && (a.proposedSlots?.length ?? 0) > 0) ||
+                                                    !!a.details?.trim()) ? (
+                                                    <ViewIconButton
+                                                        onClick={() => openAppointmentMessage(a)}
+                                                        title={t("pages.appointments.messageModal.open")}
+                                                    />
+                                                ) : (
+                                                    <span className="text-xs text-slate-400">—</span>
                                                 )}
-                                        </div>
-
-                                        {/* Columna derecha: botón y status */}
-                                        <div className="shrink-0 flex flex-row items-center gap-2">
-                                            {showChoose && (
-                                                <button
-                                                    className="shrink-0 rounded bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-700 whitespace-nowrap"
-                                                    onClick={() => {
-                                                        setChooseId(a._id);
-                                                        setChooseSlots(a.proposedSlots);
-                                                        setOpenChoose(true);
-                                                    }}
-                                                    title={t(
-                                                        "pages.appointments.actions.chooseSlotTitle",
+                                            </td>
+                                            <td className="px-3 py-2 align-top whitespace-nowrap text-slate-700">
+                                                {fmt(a.createdAt)}
+                                            </td>
+                                            <td className="px-3 py-2 align-top whitespace-nowrap">
+                                                <StatusBadge
+                                                    tone={toneForAppointmentStatus(a.status)}
+                                                    label={statusLabel(a.status)}
+                                                />
+                                            </td>
+                                            <td className="px-3 py-2 align-top">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    {showChoose && (
+                                                        <ProposeSlotsIconButton
+                                                            onClick={() => {
+                                                                setChooseId(a._id);
+                                                                setChooseSlots(a.proposedSlots);
+                                                                setOpenChoose(true);
+                                                            }}
+                                                            title={t(
+                                                                "pages.appointments.actions.chooseSlotTitle",
+                                                            )}
+                                                        />
                                                     )}
-                                                >
-                                                    {t("pages.appointments.actions.chooseSlot")}
-                                                </button>
-                                            )}
-                                            <StatusBadge
-                                                tone={toneForAppointmentStatus(a.status)}
-                                                label={statusLabel(a.status)}
-                                            />
-
-
-                                        </div>
-                                    </div>
-                                </li>
-                            );
-                        })}
-                    </ul>
+                                                    {a.status === "proposed" &&
+                                                        (a.proposedSlots?.length ?? 0) === 0 && (
+                                                            <span className="text-xs text-amber-700">
+                                                                {t("pages.appointments.requests.waitingOptions")}
+                                                            </span>
+                                                        )}
+                                                    {a.status !== "proposed" ? (
+                                                        <StopIconButton
+                                                            onClick={() => handleDelete(a._id)}
+                                                            title={t("pages.appointments.worker.actions.deleteTitle")}
+                                                        />
+                                                    ) : null}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
-            {/* Historial y otras citas */}
+            {/* Aceptadas y otras citas */}
             {!loading && others.length > 0 && (
                 <div className="mt-6">
                     <h3 className="text-base font-semibold mb-3">
                         {t("pages.appointments.history.title")}
                     </h3>
-                    <ul className="space-y-3">
-                        {others.map((a) => (
-                            <li
-                                key={a._id}
-                                className="relative rounded-xl border p-4 hover:bg-slate-50 transition-colors"
-                            >
-                                {/* Botón cerrar absolutamente en la esquina superior derecha */}
-                                {canDelete(a) && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.currentTarget.blur();
-                                            handleDelete(a._id);
-                                        }}
-                                        className="absolute top-2 right-2 bg-transparent p-0 text-rose-600 hover:text-rose-700
-                 font-bold text-lg leading-none focus:outline-none
-                 focus-visible:ring-2 focus-visible:ring-rose-500/40 rounded"
-                                        title={t("pages.appointments.worker.actions.deleteTitle")}
-                                        aria-label={t(
-                                            "pages.appointments.worker.actions.deleteTitle",
-                                        )}
+                    <div className="overflow-x-auto rounded-xl border border-slate-200">
+                        <table className="min-w-full table-fixed text-sm">
+                            <colgroup>
+                                <col className="w-[22%]" />
+                                <col className="w-[12%]" />
+                                <col className="w-[18%]" />
+                                <col className="w-[16%]" />
+                                <col className="w-[32%]" />
+                            </colgroup>
+                            <thead className={APP_NAV_MATCH_TABLE_THEAD_STICKY}>
+                                <tr className="text-center text-slate-200">
+                                    <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                        {t("pages.appointments.labels.reason")}
+                                    </th>
+                                    <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                        {t("pages.appointments.labels.message")}
+                                    </th>
+                                    <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                        {t("pages.appointments.labels.when")}
+                                    </th>
+                                    <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                        {t("pages.appointments.labels.status").replace(":", "")}
+                                    </th>
+                                    <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
+                                        Acciones
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
+                                {others.map((a) => (
+                                    <tr
+                                        key={a._id}
+                                        className="border-b border-slate-100 hover:bg-slate-50/70 text-center"
                                     >
-                                        ×
-                                    </button>
-                                )}
-
-                                {/* Contenido izquierda */}
-                                <div className="pr-10">
-                                    <div className="font-medium truncate">{a.reason}</div>
-                                    <p className="text-sm text-gray-600 mt-1">{a.details}</p>
-                                    <div className="text-sm text-gray-700 mt-2">
-                                        <span className="font-medium">
-                                            {t("pages.appointments.labels.when")}
-                                        </span>{" "}
-                                        {fmt(a.selectedSlot?.start)}
-                                    </div>
-                                </div>
-
-                                {/* Status fijo en la esquina inferior derecha */}
-                                <div className="absolute bottom-2 right-2">
-                                    <StatusBadge
-                                        tone={toneForAppointmentStatus(a.status)}
-                                        label={statusLabel(a.status)}
-                                    />
-
-
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
+                                        <td className="px-3 py-2 align-top">
+                                            <span className="font-medium text-slate-800 break-words">
+                                                {a.reason}
+                                            </span>
+                                        </td>
+                                        <td className="px-3 py-2 align-top whitespace-nowrap">
+                                            {((a.status === "proposed" && (a.proposedSlots?.length ?? 0) > 0) ||
+                                                !!a.details?.trim()) ? (
+                                                <ViewIconButton
+                                                    onClick={() => openAppointmentMessage(a)}
+                                                    title={t("pages.appointments.messageModal.open")}
+                                                />
+                                            ) : (
+                                                <span className="text-xs text-slate-400">—</span>
+                                            )}
+                                        </td>
+                                        <td className="px-3 py-2 align-top whitespace-nowrap text-slate-700">
+                                            {fmt(a.selectedSlot?.start)}
+                                        </td>
+                                        <td className="px-3 py-2 align-top whitespace-nowrap">
+                                            <StatusBadge
+                                                tone={toneForAppointmentStatus(a.status)}
+                                                label={statusLabel(a.status)}
+                                            />
+                                        </td>
+                                        <td className="px-3 py-2 align-top">
+                                            <div className="flex items-center justify-center">
+                                                <StopIconButton
+                                                    onClick={() => handleDelete(a._id)}
+                                                    title={t("pages.appointments.worker.actions.deleteTitle")}
+                                                />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
@@ -383,6 +399,72 @@ export default function WorkerAppointmentsPage() {
                     setOpenChoose(false);
                 }}
             />
+
+            {openMessageModal && messageAppointment && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center p-2 sm:p-4">
+                    <div
+                        className="fixed inset-0 bg-black/50"
+                        onClick={() => setOpenMessageModal(false)}
+                    />
+                    <div
+                        className="relative z-10 w-full max-w-lg rounded-xl bg-white shadow-xl ring-1 ring-slate-200"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="appointment-message-title"
+                    >
+                        <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2">
+                            <h3 id="appointment-message-title" className="text-sm font-semibold text-slate-900">
+                                {t("pages.appointments.messageModal.title")}
+                            </h3>
+                            <button
+                                onClick={() => setOpenMessageModal(false)}
+                                className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                                aria-label="Cerrar"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="px-3 py-3 space-y-3 text-sm">
+                            <div>
+                                <p className="text-xs font-medium text-slate-500">
+                                    {t("pages.appointments.labels.reason")}
+                                </p>
+                                <p className="text-slate-800">{messageAppointment.reason}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs font-medium text-slate-500">
+                                    {t("pages.appointments.labels.message")}
+                                </p>
+                                <p className="text-slate-700 whitespace-pre-wrap break-words">
+                                    {messageAppointment.details || t("pages.appointments.messageModal.noMessage")}
+                                </p>
+                            </div>
+                            {messageAppointment.proposedSlots?.length ? (
+                                <div>
+                                    <p className="text-xs font-medium text-slate-500">
+                                        {t("pages.appointments.labels.proposedSlots")}
+                                    </p>
+                                    <ul className="mt-1 space-y-1 text-slate-700">
+                                        {messageAppointment.proposedSlots.map((slot, idx) => (
+                                            <li key={`${slot.start}-${idx}`} className="rounded bg-slate-50 px-2 py-1">
+                                                {t("pages.appointments.propose.optionLegend", { index: idx + 1 })}: {fmt(slot.start)}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ) : null}
+                        </div>
+                        <div className="border-t border-slate-200 px-3 py-2 flex justify-end">
+                            <button
+                                onClick={() => setOpenMessageModal(false)}
+                                className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                            >
+                                {t("pages.appointments.messageModal.close")}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

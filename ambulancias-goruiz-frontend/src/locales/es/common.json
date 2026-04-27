@@ -920,9 +920,19 @@
             "labels": {
                 "when": "Cuándo:",
                 "reason": "Motivo:",
+                "message": "Mensaje",
+                "sentAt": "Hora de envío",
                 "worker": "Trabajador:",
                 "status": "Estado:",
-                "proposedSlots": "Horarios propuestos"
+                "proposedSlots": "Horarios propuestos",
+                "actions": "Acciones",
+                "view": "Ver"
+            },
+            "messageModal": {
+                "open": "Ver mensaje / propuesta",
+                "title": "Detalle de cita",
+                "noMessage": "Sin mensaje",
+                "close": "Cerrar"
             },
             "empty": {
                 "worker": "Aún no tienes citas. ¿Necesitas hablar con un admin?"
@@ -946,8 +956,10 @@
                 "title": "Elige un horario",
                 "empty": "No hay opciones disponibles. Espera a que el administrador proponga horarios.",
                 "optionAria": "Opción {{index}}: {{label}}",
+                "confirmCancelProposal": "¿Quieres rechazar la propuesta?",
                 "actions": {
                     "cancel": "Cancelar",
+                    "cancelProposal": "Rechazar propuesta",
                     "confirm": "Confirmar",
                     "confirming": "Confirmando..."
                 }
@@ -1581,7 +1593,9 @@
             "requestSuccess": "✅ Solicitud enviada.",
             "requestError": "❌ Error al crear la solicitud.",
             "deleteSuccess": "Cita eliminada.",
-            "deleteError": "No se pudo eliminar la cita."
+            "deleteError": "No se pudo eliminar la cita.",
+            "rejectProposalSuccess": "Propuesta rechazada.",
+            "rejectProposalError": "No se pudo rechazar la propuesta."
         },
         "users": {
             "loadError": "❌ Error al cargar usuarios.",
