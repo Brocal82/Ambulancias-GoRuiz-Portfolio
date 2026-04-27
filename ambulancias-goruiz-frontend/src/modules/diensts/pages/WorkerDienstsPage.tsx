@@ -104,7 +104,7 @@ const WorkerDienstsPage = () => {
   }
 
   return (
-    <PageShell title={t("pages.diensts.workerPage.title")} maxWidthClassName="max-w-screen-2xl">
+    <PageShell title={t("pages.diensts.workerPage.title")} maxWidthClassName="max-w-5xl">
 
       {(() => {
         const weekStartKeys = getWeekStartsBerlin(2); // semana actual + siguiente

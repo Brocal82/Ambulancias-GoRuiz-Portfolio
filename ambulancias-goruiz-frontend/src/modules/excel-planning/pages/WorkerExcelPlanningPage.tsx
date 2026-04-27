@@ -358,7 +358,7 @@ export default function WorkerExcelPlanningPage() {
   };
 
   return (
-    <PageShell title={t("excelPlanning.workerTitle")} maxWidthClassName="max-w-screen-2xl">
+    <PageShell title={t("excelPlanning.workerTitle")} maxWidthClassName="max-w-5xl">
       <div className="flex justify-end mb-2">
         <Link to="/worker" className="text-sm text-blue-600 hover:underline">
           {t("excelPlanning.backWorker")}

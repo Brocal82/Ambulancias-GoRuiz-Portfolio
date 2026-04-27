@@ -242,7 +242,7 @@ const WorkerVacationsPage = () => {
   if (error) return <p className="p-4 text-sm text-red-600">{error}</p>;
 
   return (
-    <PageShell title={t("pages.vacations.workerPage.title")}>
+    <PageShell title={t("pages.vacations.workerPage.title")} maxWidthClassName="max-w-5xl">
       {/* Grid de 12 meses con navegación de año integrada */}
       <div className="mb-4">
         <AdminVacationMonthGrid

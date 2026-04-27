@@ -246,7 +246,7 @@ const AdminActionableVacationRequestsTable: React.FC<Props> = ({
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="flex flex-wrap justify-center gap-2">
+                                        <div className="flex flex-nowrap justify-center gap-2">
                                             {req.status === "pending" && (
                                                 <>
                                                     {/* ✅ ACEPTAR */}

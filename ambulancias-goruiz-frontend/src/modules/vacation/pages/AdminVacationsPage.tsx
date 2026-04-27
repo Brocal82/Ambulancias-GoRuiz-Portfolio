@@ -299,10 +299,11 @@ const AdminVacationRequests = () => {
         "pages.vacations.adminPage.subtitle",
         "Gestiona solicitudes, propuestas y disponibilidad por mes.",
       )}
+      maxWidthClassName="max-w-5xl"
     >
       <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
-        {/* Bloque con borde (selector año + leyenda + grid) */}
-        <div className="rounded-xl ring-1 ring-slate-200 bg-white p-3 sm:p-4 mb-6">
+        {/* Grid anual con el mismo ancho visual que el resto de grids */}
+        <div className="mb-6">
           <AdminVacationMonthGrid
             key={gridYear}
             requests={requests}
