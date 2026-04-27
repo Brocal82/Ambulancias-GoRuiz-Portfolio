@@ -143,7 +143,7 @@ export default function AdminAppointmentsPage() {
                                                 {t("pages.appointments.labels.worker")}
                                             </th>
                                             <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                                                {t("pages.appointments.labels.reason")}
+                                                {t("pages.appointments.labels.reason").replace(":", "")}
                                             </th>
                                             <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
                                                 Detalles
@@ -152,7 +152,7 @@ export default function AdminAppointmentsPage() {
                                                 {t("pages.appointments.labels.sentAt")}
                                             </th>
                                             <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
-                                                {t("pages.appointments.labels.status")}
+                                                {t("pages.appointments.labels.status").replace(":", "")}
                                             </th>
                                             <th className="px-3 py-2 text-xs font-medium uppercase tracking-wide">
                                                 {t("pages.appointments.labels.actions")}

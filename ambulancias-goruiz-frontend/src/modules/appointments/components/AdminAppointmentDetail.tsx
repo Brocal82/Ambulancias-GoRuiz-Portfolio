@@ -10,6 +10,8 @@ import { partsFromISO, localDateTimeToUtcISO } from "../../../utils/tz";
 import { useTranslation } from "react-i18next";
 import StatusBadge from "../../../components/common/StatusBadge";
 import { toneForAppointmentStatus } from "../utils/appointmentTone";
+import EditIconButton from "../../../components/common/actions/EditIconButton";
+import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 
 type Props = {
   isOpen: boolean;
@@ -118,19 +120,19 @@ const AdminAppointmentDetail: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3">
       <div
-        className="w-full max-w-xl rounded-2xl bg-white shadow-sm ring-1 ring-slate-200"
+        className="w-full max-w-lg rounded-xl bg-white shadow-sm ring-1 ring-slate-200"
         role="dialog"
         aria-modal="true"
         aria-labelledby="appt-detail-title"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
           <div className="flex items-center gap-3">
             <h3
               id="appt-detail-title"
-              className="text-lg font-semibold tracking-tight text-slate-900"
+              className="text-base font-semibold tracking-tight text-slate-900"
             >
               {t("pages.appointments.detail.title")}
             </h3>
@@ -143,72 +145,72 @@ const AdminAppointmentDetail: React.FC<Props> = ({
 
 
           </div>
-
-          {!isCancelled && !editMode && (
-            <button
-              onClick={() => setEditMode(true)}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100"
-              title={t("pages.appointments.detail.rebookTitle")}
-            >
-              {t("pages.appointments.detail.rebook")}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300"
+            aria-label={t("pages.appointments.detail.actions.close")}
+            title={t("pages.appointments.detail.actions.close")}
+            disabled={loading}
+          >
+            ✕
+          </button>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-4 space-y-5">
+        <div className="px-4 py-3 space-y-3">
           {/* Datos principales en grid */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 p-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="rounded-lg border border-slate-200 p-2.5">
               <div className="text-xs text-slate-500">
                 {t("pages.appointments.detail.labels.worker")}
               </div>
-              <div className="mt-0.5 text-sm font-medium text-slate-900">
+              <div className="mt-0.5 text-xs font-medium text-slate-900">
                 {worker}
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 p-3">
+            <div className="rounded-lg border border-slate-200 p-2.5">
               <div className="text-xs text-slate-500">
                 {t("pages.appointments.detail.labels.currentWhen")}
               </div>
-              <div className="mt-0.5 text-sm font-medium text-slate-900">
+              <div className="mt-0.5 text-xs font-medium text-slate-900">
                 {when}
               </div>
             </div>
           </div>
 
           {/* Motivo */}
-          <div className="rounded-xl border border-slate-200 p-4">
+          <div className="rounded-lg border border-slate-200 p-2.5">
             <div className="text-xs text-slate-500">
               {t("pages.appointments.detail.labels.reason")}
             </div>
-            <div className="mt-1 text-sm font-medium text-slate-900">
+            <div className="mt-1 text-xs font-medium text-slate-900">
               {item.reason}
             </div>
           </div>
 
           {/* Descripción */}
-          <div className="rounded-xl border border-slate-200 p-4">
+          <div className="rounded-lg border border-slate-200 p-2.5">
             <div className="text-xs text-slate-500">
               {t("pages.appointments.detail.labels.description")}
             </div>
-            <div className="mt-1 whitespace-pre-wrap text-sm text-slate-800">
+            <div className="mt-1 whitespace-pre-wrap text-xs text-slate-800">
               {item.details}
             </div>
           </div>
 
           {/* Reprogramar: SOLO visible en editMode */}
           {!isCancelled && editMode && (
-            <div className="rounded-xl border border-slate-200 p-4">
-              <div className="mb-2 text-sm font-semibold text-slate-800">
+            <div className="rounded-lg border border-slate-200 p-2.5">
+              <div className="mb-2 text-xs font-semibold text-slate-800">
                 {t("pages.appointments.detail.rebook")}
               </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div>
                   <label
                     htmlFor="re-date"
-                    className="mb-1 block text-sm font-medium text-slate-700"
+                    className="mb-1 block text-xs font-medium text-slate-700"
                   >
                     {t("pages.appointments.detail.inputs.newDate")}
                   </label>
@@ -218,13 +220,13 @@ const AdminAppointmentDetail: React.FC<Props> = ({
                     value={reDate}
                     onChange={(e) => setReDate(e.target.value)}
                     disabled={loading}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-60"
+                    className="h-9 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:opacity-60"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="re-time"
-                    className="mb-1 block text-sm font-medium text-slate-700"
+                    className="mb-1 block text-xs font-medium text-slate-700"
                   >
                     {t("pages.appointments.detail.inputs.newTime")}
                   </label>
@@ -234,7 +236,7 @@ const AdminAppointmentDetail: React.FC<Props> = ({
                     value={reTime}
                     onChange={(e) => setReTime(e.target.value)}
                     disabled={loading}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:opacity-60"
+                    className="h-9 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -243,34 +245,36 @@ const AdminAppointmentDetail: React.FC<Props> = ({
         </div>
 
         {/* Footer (sin cambios funcionales) */}
-        <div className="flex justify-between gap-2 border-t border-slate-200 px-6 py-4">
+        <div className="flex justify-between gap-2 border-t border-slate-200 px-4 py-3">
           {!editMode ? (
             <>
-              <button
-                onClick={onClose}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100 disabled:opacity-60"
-                disabled={loading}
-              >
-                {t("pages.appointments.detail.actions.close")}
-              </button>
+              {!isCancelled ? (
+                <EditIconButton
+                  onClick={() => setEditMode(true)}
+                  title={t("pages.appointments.detail.rebookTitle")}
+                  disabled={loading}
+                />
+              ) : (
+                <span />
+              )}
 
               {!isCancelled && (
-                <button
+                <DeleteIconButton
                   onClick={handleCancelAppointment}
-                  className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100 disabled:opacity-60"
                   disabled={loading}
-                >
-                  {loading
-                    ? t("pages.appointments.detail.actions.deleting")
-                    : t("pages.appointments.detail.actions.delete")}
-                </button>
+                  title={
+                    loading
+                      ? t("pages.appointments.detail.actions.deleting")
+                      : t("pages.appointments.detail.actions.delete")
+                  }
+                />
               )}
             </>
           ) : (
             <div className="ml-auto flex gap-2">
               <button
                 onClick={() => setEditMode(false)}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100 disabled:opacity-60"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-100 disabled:opacity-60"
                 disabled={loading}
               >
                 {t("pages.appointments.detail.actions.cancelEdit")}
@@ -278,7 +282,7 @@ const AdminAppointmentDetail: React.FC<Props> = ({
 
               <button
                 onClick={handleSave}
-                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:opacity-60"
+                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
                 disabled={loading || saveDisabled}
               >
                 {loading
