@@ -78,6 +78,12 @@ export default function MechanicsWorkOrdersSection({ userRole }: Props) {
   }, [fetchOrders]);
 
   useEffect(() => {
+    if (!ambulancesModuleOn && filterAmbulanceId) {
+      setFilterAmbulanceId("");
+    }
+  }, [ambulancesModuleOn, filterAmbulanceId]);
+
+  useEffect(() => {
     if (!token || !ambulancesModuleOn) {
       setAmbulances([]);
       return;
@@ -218,33 +224,35 @@ export default function MechanicsWorkOrdersSection({ userRole }: Props) {
         ) : null}
       </div>
 
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <div>
-          <label
-            id="wo-filter-amb-label"
-            htmlFor="wo-filter-amb"
-            className="block text-xs font-medium text-slate-600 mb-1"
-          >
-            {t("pages.mechanics.workOrders.filterAmbulance")}
-          </label>
-          <select
-            id="wo-filter-amb"
-            aria-labelledby="wo-filter-amb-label"
-            value={filterAmbulanceId}
-            onChange={(e) => setFilterAmbulanceId(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 min-w-[12rem]"
-          >
-            <option value="">
-              {t("pages.mechanics.workOrders.allAmbulances")}
-            </option>
-            {ambulances.map((a) => (
-              <option key={a._id} value={a._id}>
-                #{a.ambulanceNumber} — {a.licensePlate}
+      {ambulancesModuleOn ? (
+        <div className="mb-4 flex flex-wrap items-end gap-3">
+          <div>
+            <label
+              id="wo-filter-amb-label"
+              htmlFor="wo-filter-amb"
+              className="block text-xs font-medium text-slate-600 mb-1"
+            >
+              {t("pages.mechanics.workOrders.filterAmbulance")}
+            </label>
+            <select
+              id="wo-filter-amb"
+              aria-labelledby="wo-filter-amb-label"
+              value={filterAmbulanceId}
+              onChange={(e) => setFilterAmbulanceId(e.target.value)}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 min-w-[12rem]"
+            >
+              <option value="">
+                {t("pages.mechanics.workOrders.allAmbulances")}
               </option>
-            ))}
-          </select>
+              {ambulances.map((a) => (
+                <option key={a._id} value={a._id}>
+                  #{a.ambulanceNumber} — {a.licensePlate}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {showCreate && canPlan ? (
         <form
