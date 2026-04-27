@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 import { WorkdaySummaryError } from "../../../utils/assignmentClosure";
 import {
   reportIssue as svcReportIssue,
@@ -22,6 +21,22 @@ function handleError(
   }
   console.error(logLabel, error);
   res.status(500).json({ message: fallbackMsg });
+}
+
+function requireCompanyInRequest(req: Request): { ok: true; companyId: string } | {
+  ok: false;
+  statusCode: 403;
+  message: string;
+} {
+  const companyId = typeof req.companyId === "string" ? req.companyId.trim() : "";
+  if (!companyId) {
+    return {
+      ok: false,
+      statusCode: 403,
+      message: "No tienes permiso. Se requiere pertenecer a una empresa.",
+    };
+  }
+  return { ok: true, companyId };
 }
 
 export const reportIssue = async (req: Request, res: Response): Promise<void> => {
@@ -51,7 +66,7 @@ export const getAllIssueReports = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const companyResult = requireCompanyForAdmin(req);
+    const companyResult = requireCompanyInRequest(req);
     if (!companyResult.ok) {
       res.status(companyResult.statusCode).json({ message: companyResult.message });
       return;
@@ -80,7 +95,7 @@ export const deleteIssueReport = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const companyResult = requireCompanyForAdmin(req);
+    const companyResult = requireCompanyInRequest(req);
     if (!companyResult.ok) {
       res.status(companyResult.statusCode).json({ message: companyResult.message });
       return;
@@ -107,7 +122,7 @@ export const deleteIssueReport = async (
 
 export const markIssueSeen = async (req: Request, res: Response): Promise<void> => {
   try {
-    const companyResult = requireCompanyForAdmin(req);
+    const companyResult = requireCompanyInRequest(req);
     if (!companyResult.ok) {
       res.status(companyResult.statusCode).json({ message: companyResult.message });
       return;
@@ -134,7 +149,7 @@ export const markIssueSeen = async (req: Request, res: Response): Promise<void> 
 
 export const getIssuesCount = async (req: Request, res: Response): Promise<void> => {
   try {
-    const companyResult = requireCompanyForAdmin(req);
+    const companyResult = requireCompanyInRequest(req);
     if (!companyResult.ok) {
       res.status(companyResult.statusCode).json({ message: companyResult.message });
       return;

@@ -6,6 +6,7 @@ import LanguageSwitcher from "../components/ui/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 import { buildImageUrl } from "../utils/apiOrigins";
 import { getMyCompany } from "../modules/companies/domain/api";
+import { homePathForRole } from "../utils/roleHomePath";
 
 export default function AppLayout() {
   const { logout, role, user, isAuthReady } = useAuth();
@@ -46,9 +47,7 @@ export default function AppLayout() {
   }, [isAuthReady, role, user?._id, user?.companyId]);
 
   const goHome = () => {
-    if (role === "superadmin") navigate("/superadmin");
-    else if (role === "admin") navigate("/admin");
-    else navigate("/worker");
+    navigate(homePathForRole(role ?? null));
   };
 
   return (

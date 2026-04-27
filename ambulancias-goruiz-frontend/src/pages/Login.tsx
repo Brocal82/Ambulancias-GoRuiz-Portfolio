@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { getApiErrorMessage } from "../utils/toast";
 import PublicLayout from "../layouts/PublicLayout";
+import { homePathForRole } from "../utils/roleHomePath";
 
 const Login = () => {
   const { login } = useAuth();
@@ -27,14 +28,7 @@ const Login = () => {
       const { token, user } = response.data;
 
       login(token, user._id, user.role, user);
-
-      if (user.role === "superadmin") {
-        navigate("/superadmin");
-      } else if (user.role === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/worker");
-      }
+      navigate(homePathForRole(user.role));
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, t("pages.login.genericError")));
     } finally {

@@ -23,7 +23,7 @@ router.get(
   "/issues/count",
   authenticateToken,
   requireModule(MODULE_KEYS.MECHANICS),
-  authorizeRole("admin"),
+  authorizeRole(["admin", "jefe_mecanicos", "mecanico"]),
   getIssuesCount,
 );
 
@@ -31,7 +31,7 @@ router.patch(
   "/issues/:id/seen",
   authenticateToken,
   requireModule(MODULE_KEYS.MECHANICS),
-  authorizeRole("admin"),
+  authorizeRole(["admin", "jefe_mecanicos", "mecanico"]),
   validateObjectId("id"),
   markIssueSeen,
 );
@@ -49,7 +49,7 @@ router.get(
   "/issues",
   authenticateToken,
   requireModule(MODULE_KEYS.MECHANICS),
-  authorizeRole("admin"),
+  authorizeRole(["admin", "jefe_mecanicos", "mecanico"]),
   getAllIssueReports,
 );
 
@@ -57,7 +57,7 @@ router.delete(
   "/issues/:id",
   authenticateToken,
   requireModule(MODULE_KEYS.MECHANICS),
-  authorizeRole("admin"),
+  authorizeRole(["admin", "jefe_mecanicos"]),
   validateObjectId("id"),
   deleteIssueReport,
 );

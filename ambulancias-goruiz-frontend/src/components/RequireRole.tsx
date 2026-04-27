@@ -1,6 +1,7 @@
 // src/components/RequireRole.tsx
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { homePathForRole } from "../utils/roleHomePath";
 
 type AppRole =
   | "admin"
@@ -11,13 +12,7 @@ type AppRole =
   | "superadmin";
 
 interface RequireRoleProps {
-  role: AppRole;
-}
-
-function homePathForRole(userRole: string | null): string {
-  if (userRole === "superadmin") return "/superadmin";
-  if (userRole === "admin") return "/admin";
-  return "/worker";
+  role: AppRole | AppRole[];
 }
 
 /**
@@ -26,13 +21,14 @@ function homePathForRole(userRole: string | null): string {
  */
 export default function RequireRole({ role }: RequireRoleProps) {
   const { role: userRole, isAuthReady } = useAuth();
+  const allowedRoles = Array.isArray(role) ? role : [role];
 
   if (!isAuthReady) {
     return <div className="p-4">Cargando sesión...</div>;
   }
 
-  if (userRole !== role) {
-    return <Navigate to={homePathForRole(userRole)} replace />;
+  if (!userRole || !allowedRoles.includes(userRole as AppRole)) {
+    return <Navigate to={homePathForRole(userRole ?? null)} replace />;
   }
 
   return <Outlet />;

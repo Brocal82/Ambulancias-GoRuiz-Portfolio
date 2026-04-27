@@ -2,16 +2,11 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useModules } from "../hooks/useModules";
+import { homePathForRole } from "../utils/roleHomePath";
 
 interface RequireModuleProps {
   /** Canonical module key, e.g. "hospitals", "vacation", "scheduling". */
   name: string;
-}
-
-function homePathForRole(role: string | null): string {
-  if (role === "superadmin") return "/superadmin";
-  if (role === "admin") return "/admin";
-  return "/worker";
 }
 
 /**
@@ -45,7 +40,7 @@ export default function RequireModule({ name }: RequireModuleProps) {
 
   if (!hasModule(name)) {
     return (
-      <Navigate to={homePathForRole(role)} replace />
+      <Navigate to={homePathForRole(role ?? null)} replace />
     );
   }
 
