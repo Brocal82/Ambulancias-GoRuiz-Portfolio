@@ -818,6 +818,17 @@
         },
         "mechanics": {
             "navToAmbulances": "Gestionar ambulancias",
+            "navToChiefHome": "Volver al panel del jefe",
+            "chiefDashboard": {
+                "title": "Panel del jefe de mecánicos",
+                "subtitle": "Elige a dónde quieres ir: flota de ambulancias o reportes y taller.",
+                "cardAmbulancesTitle": "Ambulancias",
+                "cardAmbulancesDesc": "Alta, edición y borrado de vehículos de la empresa.",
+                "cardReportsTitle": "Reportes y taller",
+                "cardReportsDesc": "Averías reportadas por equipos y órdenes de trabajo.",
+                "cardCta": "Entrar",
+                "noModules": "No hay módulos de mecánica o ambulancias activos para tu empresa. Pide al administrador que los active."
+            },
             "adminPage": {
                 "title": "🔧 Reportes técnicos de averías",
                 "loading": "Cargando averías...",

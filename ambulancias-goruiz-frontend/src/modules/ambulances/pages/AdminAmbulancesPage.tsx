@@ -126,14 +126,22 @@ const AdminAmbulancesPage: React.FC = () => {
             />
 
           </div>
-          {role === "jefe_mecanicos" && mechanicsModuleOn ? (
-            <p className="mb-4">
+          {role === "jefe_mecanicos" ? (
+            <p className="mb-3 flex flex-wrap gap-x-4 gap-y-1">
               <Link
-                to="/mechanics"
-                className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                to="/mechanics/dashboard"
+                className="text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline"
               >
-                {t("pages.ambulances.navToMechanics")}
+                {t("pages.mechanics.navToChiefHome")}
               </Link>
+              {mechanicsModuleOn ? (
+                <Link
+                  to="/mechanics"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {t("pages.ambulances.navToMechanics")}
+                </Link>
+              ) : null}
             </p>
           ) : null}
 

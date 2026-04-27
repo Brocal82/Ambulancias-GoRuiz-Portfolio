@@ -166,14 +166,22 @@ const AdminMechanicsPage = () => {
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-4 text-center">
             {t("pages.mechanics.adminPage.title")}
           </h1>
-          {role === "jefe_mecanicos" && ambulancesModuleOn ? (
-            <p className="text-center mb-4">
+          {role === "jefe_mecanicos" ? (
+            <p className="text-center mb-4 flex flex-wrap justify-center gap-x-4 gap-y-1">
               <Link
-                to="/mechanics/ambulances"
-                className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                to="/mechanics/dashboard"
+                className="text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline"
               >
-                {t("pages.mechanics.navToAmbulances")}
+                {t("pages.mechanics.navToChiefHome")}
               </Link>
+              {ambulancesModuleOn ? (
+                <Link
+                  to="/mechanics/ambulances"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {t("pages.mechanics.navToAmbulances")}
+                </Link>
+              ) : null}
             </p>
           ) : null}
 

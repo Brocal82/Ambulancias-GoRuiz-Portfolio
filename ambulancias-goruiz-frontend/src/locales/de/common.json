@@ -818,6 +818,17 @@
         },
         "mechanics": {
             "navToAmbulances": "Rettungswagen verwalten",
+            "navToChiefHome": "Zurück zum Leitenden-Panel",
+            "chiefDashboard": {
+                "title": "Panel Leitender Mechaniker",
+                "subtitle": "Wohin möchtest du: Fuhrpark oder Werkstattberichte?",
+                "cardAmbulancesTitle": "Rettungswagen",
+                "cardAmbulancesDesc": "Fahrzeuge der Firma anlegen, bearbeiten und löschen.",
+                "cardReportsTitle": "Berichte und Werkstatt",
+                "cardReportsDesc": "Störungsmeldungen der Teams und Werkstattaufträge.",
+                "cardCta": "Öffnen",
+                "noModules": "Die Module Mechanik oder Rettungswagen sind für dein Unternehmen nicht aktiv. Bitte den Administrator."
+            },
             "adminPage": {
                 "title": "🔧 Technische Störungsmeldungen",
                 "loading": "Störungen werden geladen...",

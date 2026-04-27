@@ -818,6 +818,17 @@
         },
         "mechanics": {
             "navToAmbulances": "Manage ambulances",
+            "navToChiefHome": "Back to chief dashboard",
+            "chiefDashboard": {
+                "title": "Chief mechanic dashboard",
+                "subtitle": "Choose where to go: ambulance fleet or workshop reports.",
+                "cardAmbulancesTitle": "Ambulances",
+                "cardAmbulancesDesc": "Create, edit and remove company vehicles.",
+                "cardReportsTitle": "Reports and workshop",
+                "cardReportsDesc": "Breakdown reports from crews and work orders.",
+                "cardCta": "Open",
+                "noModules": "Mechanics or ambulances modules are not enabled for your company. Ask an administrator to turn them on."
+            },
             "adminPage": {
                 "title": "🔧 Technical breakdown reports",
                 "loading": "Loading issues...",
