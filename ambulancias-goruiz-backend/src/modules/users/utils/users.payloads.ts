@@ -37,7 +37,7 @@ export interface CreateUserDTO {
   lastName: string;
   email: string;
   password: string;
-  role?: "admin" | "worker"; // por defecto worker
+  role?: "admin" | "worker" | "mecanico" | "jefe_mecanicos" | "jefe_logistica"; // por defecto worker
 }
 
 export interface LoginDTO {
@@ -53,7 +53,13 @@ export interface LoginResponseDTO {
     name: string;
     lastName: string;
     email: string;
-    role: "admin" | "worker" | "superadmin";
+    role:
+      | "admin"
+      | "worker"
+      | "mecanico"
+      | "jefe_mecanicos"
+      | "jefe_logistica"
+      | "superadmin";
     ambulanceRole?: AmbulanceRole;
     pscheinExpiry?: string;
     address?: string;

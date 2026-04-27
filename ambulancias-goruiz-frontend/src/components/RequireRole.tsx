@@ -2,7 +2,13 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
-type AppRole = "admin" | "worker" | "superadmin";
+type AppRole =
+  | "admin"
+  | "worker"
+  | "mecanico"
+  | "jefe_mecanicos"
+  | "jefe_logistica"
+  | "superadmin";
 
 interface RequireRoleProps {
   role: AppRole;

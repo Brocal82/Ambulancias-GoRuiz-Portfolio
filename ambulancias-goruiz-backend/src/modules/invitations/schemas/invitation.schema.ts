@@ -13,7 +13,7 @@ const optionalEmployeeNumber = z.preprocess(
 
 export const createInvitationSchema = z.object({
   email: emailSchema,
-  role: z.enum(["admin", "worker"]),
+  role: z.enum(["admin", "worker", "mecanico", "jefe_mecanicos", "jefe_logistica"]),
   expiresInDays: z.number().int().min(1).max(90).optional(),
   employeeNumber: optionalEmployeeNumber,
 });

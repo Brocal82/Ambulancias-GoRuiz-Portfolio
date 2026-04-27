@@ -1,12 +1,21 @@
 //backend/src/middlewares/roleMiddleware.ts
 import { Request, Response, NextFunction } from "express";
 
-// Middleware para verificar que el usuario tiene el rol necesario
-export const authorizeRole = (requiredRole: "admin" | "worker") => {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    const userRole = req.userRole ?? req.user?.role;
+type AppRole =
+  | "admin"
+  | "worker"
+  | "mecanico"
+  | "jefe_mecanicos"
+  | "jefe_logistica"
+  | "superadmin";
 
-    if (userRole === requiredRole) {
+// Middleware para verificar que el usuario tiene el rol necesario
+export const authorizeRole = (requiredRole: AppRole | AppRole[]) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const userRole = (req.userRole ?? req.user?.role) as AppRole | undefined;
+    const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+
+    if (userRole && requiredRoles.includes(userRole)) {
       next();
     } else {
       res.status(403).json({ message: "Acceso denegado: Rol insuficiente" });

@@ -7,6 +7,13 @@ import { createInvitation } from "../domain/api";
 import type { CreateInvitationResponse } from "../domain/types";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
 
+type InvitationRole =
+  | "admin"
+  | "worker"
+  | "mecanico"
+  | "jefe_mecanicos"
+  | "jefe_logistica";
+
 export default function AdminInvitationsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -15,7 +22,7 @@ export default function AdminInvitationsPage() {
   const [localPart, setLocalPart] = useState("");
   const [fullEmail, setFullEmail] = useState("");
   const [employeeNumber, setEmployeeNumber] = useState("");
-  const [role, setRole] = useState<"admin" | "worker">("worker");
+  const [role, setRole] = useState<InvitationRole>("worker");
   const [expiresInDaysRaw, setExpiresInDaysRaw] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CreateInvitationResponse | null>(null);
@@ -217,11 +224,18 @@ export default function AdminInvitationsPage() {
             id="inv-role"
             value={role}
             onChange={(e) =>
-              setRole(e.target.value as "admin" | "worker")
+              setRole(e.target.value as InvitationRole)
             }
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
           >
             <option value="worker">{t("pages.adminInvitations.roleWorker")}</option>
+            <option value="mecanico">{t("pages.adminInvitations.roleMechanic")}</option>
+            <option value="jefe_mecanicos">
+              {t("pages.adminInvitations.roleMechanicsChief")}
+            </option>
+            <option value="jefe_logistica">
+              {t("pages.adminInvitations.roleLogisticsChief")}
+            </option>
             <option value="admin">{t("pages.adminInvitations.roleAdmin")}</option>
           </select>
         </div>

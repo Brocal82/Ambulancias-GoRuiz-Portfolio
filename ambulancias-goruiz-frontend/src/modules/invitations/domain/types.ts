@@ -1,7 +1,7 @@
 export interface ValidateInvitationResponse {
   valid: boolean;
   email?: string;
-  role?: "admin" | "worker";
+  role?: "admin" | "worker" | "mecanico" | "jefe_mecanicos" | "jefe_logistica";
   companyName?: string;
   /** From API when invitation is worker and has a stored employee number. */
   employeeNumber?: string;
@@ -17,7 +17,7 @@ export interface AcceptInvitationInput {
 
 export interface CreateInvitationPayload {
   email: string;
-  role: "admin" | "worker";
+  role: "admin" | "worker" | "mecanico" | "jefe_mecanicos" | "jefe_logistica";
   expiresInDays?: number;
   employeeNumber?: string;
 }
@@ -27,5 +27,5 @@ export interface CreateInvitationResponse {
   token: string;
   expiresAt: string;
   email: string;
-  role: "admin" | "worker";
+  role: "admin" | "worker" | "mecanico" | "jefe_mecanicos" | "jefe_logistica";
 }

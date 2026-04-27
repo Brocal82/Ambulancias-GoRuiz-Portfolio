@@ -21,7 +21,7 @@ function normalizeEmail(email: string): string {
 
 export interface CreateInvitationInput {
   email: string;
-  role: "admin" | "worker";
+  role: "admin" | "worker" | "mecanico" | "jefe_mecanicos" | "jefe_logistica";
   expiresInDays?: number;
   employeeNumber?: string;
   companyId: mongoose.Types.ObjectId;
@@ -40,7 +40,7 @@ export async function createInvitationService(
   const { email, role, companyId, invitedBy } = input;
   const expiresInDays = input.expiresInDays ?? DEFAULT_EXPIRES_DAYS;
   const employeeNumber =
-    role === "worker" &&
+    role !== "admin" &&
     typeof input.employeeNumber === "string" &&
     input.employeeNumber.trim()
       ? input.employeeNumber.trim()
@@ -72,9 +72,9 @@ export async function createInvitationService(
 export interface ValidateInvitationResult {
   valid: true;
   email: string;
-  role: "admin" | "worker";
+  role: "admin" | "worker" | "mecanico" | "jefe_mecanicos" | "jefe_logistica";
   companyName: string;
-  /** Present only for worker invitations when stored on the document. */
+  /** Present for non-admin invitations when stored on the document. */
   employeeNumber?: string;
 }
 
@@ -108,12 +108,16 @@ export async function validateInvitationService(
 
   const company = invitation.companyId as unknown as { name?: string } | null;
   const companyName = company?.name ?? "";
-  const role = invitation.role as "admin" | "worker";
+  const role = invitation.role as
+    | "admin"
+    | "worker"
+    | "mecanico"
+    | "jefe_mecanicos"
+    | "jefe_logistica";
   const invDoc = invitation as { employeeNumber?: string };
   const rawEmp =
     typeof invDoc.employeeNumber === "string" ? invDoc.employeeNumber.trim() : "";
-  const employeeNumber =
-    role === "worker" && rawEmp.length > 0 ? rawEmp : undefined;
+  const employeeNumber = role !== "admin" && rawEmp.length > 0 ? rawEmp : undefined;
 
   return {
     valid: true,
@@ -155,7 +159,7 @@ export async function acceptInvitationService(input: AcceptInvitationInput) {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const emp =
-    invitation.role === "worker" &&
+    invitation.role !== "admin" &&
     typeof invitation.employeeNumber === "string"
       ? invitation.employeeNumber.trim()
       : "";

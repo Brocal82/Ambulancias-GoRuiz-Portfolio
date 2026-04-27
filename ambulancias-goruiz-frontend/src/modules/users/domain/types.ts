@@ -1,6 +1,12 @@
 // frontend/src/types/user.ts
 export type AmbulanceRole = "driver" | "medic" | "both";
-export type AppRole = "admin" | "worker" | "superadmin";
+export type AppRole =
+  | "admin"
+  | "worker"
+  | "mecanico"
+  | "jefe_mecanicos"
+  | "jefe_logistica"
+  | "superadmin";
 
 export interface User {
   _id: string;

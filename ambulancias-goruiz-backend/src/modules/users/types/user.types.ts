@@ -4,7 +4,7 @@ export interface IUser {
   email: string;
   password: string;
 
-  role?: "admin" | "worker"; // Opcional si se completa en otro momento
+  role?: "admin" | "worker" | "mecanico" | "jefe_mecanicos" | "jefe_logistica"; // Opcional si se completa en otro momento
   ambulanceRole?: "driver" | "medic" | "both"; // También opcional
 
   address?: string;

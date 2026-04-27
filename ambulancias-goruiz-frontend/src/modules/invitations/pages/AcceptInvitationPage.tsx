@@ -97,6 +97,12 @@ export default function AcceptInvitationPage() {
       ? t("pages.invitationAccept.roleAdmin")
       : validation?.role === "worker"
         ? t("pages.invitationAccept.roleWorker")
+        : validation?.role === "mecanico"
+          ? t("pages.invitationAccept.roleMechanic")
+          : validation?.role === "jefe_mecanicos"
+            ? t("pages.invitationAccept.roleMechanicsChief")
+            : validation?.role === "jefe_logistica"
+              ? t("pages.invitationAccept.roleLogisticsChief")
         : "";
 
   return (
@@ -170,7 +176,7 @@ export default function AcceptInvitationPage() {
                 {t("pages.invitationAccept.roleLabel")}: {roleLabel}
               </p>
             ) : null}
-            {validation.role === "worker" &&
+            {validation.role !== "admin" &&
               validation.employeeNumber?.trim() && (
                 <p className="text-slate-400 text-xs mb-1 text-center">
                   {t("pages.invitationAccept.employeeNumberLabel")}:{" "}

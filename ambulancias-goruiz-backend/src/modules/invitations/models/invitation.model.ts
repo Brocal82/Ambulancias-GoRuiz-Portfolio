@@ -3,7 +3,7 @@ import mongoose, { Document, Schema, Types } from "mongoose";
 export interface IInvitation extends Document {
   companyId: Types.ObjectId;
   email: string;
-  role: "admin" | "worker";
+  role: "admin" | "worker" | "mecanico" | "jefe_mecanicos" | "jefe_logistica";
   employeeNumber?: string;
   tokenHash: string;
   expiresAt: Date;
@@ -24,7 +24,7 @@ const invitationSchema = new Schema<IInvitation>(
     email: { type: String, required: true, lowercase: true, trim: true },
     role: {
       type: String,
-      enum: ["admin", "worker"],
+      enum: ["admin", "worker", "mecanico", "jefe_mecanicos", "jefe_logistica"],
       required: true,
     },
     employeeNumber: { type: String, required: false, trim: true },
