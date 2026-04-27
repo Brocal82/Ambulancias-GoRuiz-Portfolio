@@ -1,5 +1,6 @@
 // src/modules/ambulances/pages/AdminAmbulancesPage.tsx
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   getAllAmbulances,
   createAmbulance,
@@ -11,6 +12,8 @@ import CreateAmbulanceModal from "../components/CreateAmbulanceModal";
 import EditAmbulanceModal from "../components/EditAmbulanceModal";
 
 import { useAuth } from "../../../hooks/useAuth";
+import { useModules } from "../../../hooks/useModules";
+import { MODULE_KEYS } from "../../../constants/modules";
 import { useTranslation } from "react-i18next";
 import { toastT } from "../../../utils/toast";
 import { confirmAction } from "../../../utils/confirm";
@@ -19,7 +22,9 @@ import EditIconButton from "../../../components/common/actions/EditIconButton";
 import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
 const AdminAmbulancesPage: React.FC = () => {
-  const { token } = useAuth();
+  const { token, role } = useAuth();
+  const { hasModule } = useModules();
+  const mechanicsModuleOn = hasModule(MODULE_KEYS.MECHANICS);
   const { t } = useTranslation();
 
   const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
@@ -121,6 +126,16 @@ const AdminAmbulancesPage: React.FC = () => {
             />
 
           </div>
+          {role === "jefe_mecanicos" && mechanicsModuleOn ? (
+            <p className="mb-4">
+              <Link
+                to="/mechanics"
+                className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                {t("pages.ambulances.navToMechanics")}
+              </Link>
+            </p>
+          ) : null}
 
           {/* Lista vacía */}
           {ambulances.length === 0 ? (

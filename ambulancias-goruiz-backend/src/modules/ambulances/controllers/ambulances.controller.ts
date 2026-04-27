@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import * as ambulancesService from "../services/ambulances.service";
-import { requireCompanyForAdmin } from "../../../utils/requireCompany";
+import {
+  requireCompanyForAdmin,
+  requireCompanyForAmbulanceMutations,
+} from "../../../utils/requireCompany";
 
 function resolveCompanyId(req: Request): { companyId: string | null; ok: boolean; statusCode?: number; message?: string } {
   if (req.userRole === "admin") {
@@ -72,7 +75,7 @@ export const createAmbulance = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const companyResult = requireCompanyForAdmin(req);
+    const companyResult = requireCompanyForAmbulanceMutations(req);
     if (!companyResult.ok) {
       res.status(companyResult.statusCode).json({ message: companyResult.message });
       return;
@@ -93,7 +96,7 @@ export const updateAmbulance = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const companyResult = requireCompanyForAdmin(req);
+    const companyResult = requireCompanyForAmbulanceMutations(req);
     if (!companyResult.ok) {
       res.status(companyResult.statusCode).json({ message: companyResult.message });
       return;
@@ -119,7 +122,7 @@ export const deleteAmbulance = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const companyResult = requireCompanyForAdmin(req);
+    const companyResult = requireCompanyForAmbulanceMutations(req);
     if (!companyResult.ok) {
       res.status(companyResult.statusCode).json({ message: companyResult.message });
       return;

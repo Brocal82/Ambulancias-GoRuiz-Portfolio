@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { Link } from "react-router-dom";
 import MechanicsYearGrid from "../components/MechanicsYearGrid";
 import {
   buildIssueCountsByMonthForYear,
@@ -165,6 +166,16 @@ const AdminMechanicsPage = () => {
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-4 text-center">
             {t("pages.mechanics.adminPage.title")}
           </h1>
+          {role === "jefe_mecanicos" && ambulancesModuleOn ? (
+            <p className="text-center mb-4">
+              <Link
+                to="/mechanics/ambulances"
+                className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                {t("pages.mechanics.navToAmbulances")}
+              </Link>
+            </p>
+          ) : null}
 
           {/* ¢â¦ Grid de meses (siempre visible) */}
           <div className="mb-5">

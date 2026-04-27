@@ -37,7 +37,7 @@ router.post(
   "/",
   authenticateToken,
   requireModule(MODULE_KEYS.AMBULANCES),
-  authorizeRole("admin"),
+  authorizeRole(["admin", "jefe_mecanicos"]),
   validateBody(createAmbulanceSchema),
   createAmbulance
 );
@@ -45,7 +45,7 @@ router.put(
   "/:id",
   authenticateToken,
   requireModule(MODULE_KEYS.AMBULANCES),
-  authorizeRole("admin"),
+  authorizeRole(["admin", "jefe_mecanicos"]),
   validateObjectId("id"),
   validateBody(updateAmbulanceSchema),
   updateAmbulance
@@ -54,7 +54,7 @@ router.delete(
   "/:id",
   authenticateToken,
   requireModule(MODULE_KEYS.AMBULANCES),
-  authorizeRole("admin"),
+  authorizeRole(["admin", "jefe_mecanicos"]),
   validateObjectId("id"),
   deleteAmbulance
 );

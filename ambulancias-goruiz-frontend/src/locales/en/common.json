@@ -817,6 +817,7 @@
             }
         },
         "mechanics": {
+            "navToAmbulances": "Manage ambulances",
             "adminPage": {
                 "title": "🔧 Technical breakdown reports",
                 "loading": "Loading issues...",
@@ -1159,6 +1160,7 @@
             }
         },
         "ambulances": {
+            "navToMechanics": "View reports and workshop",
             "adminPage": {
                 "title": "Ambulance Administration",
                 "loading": "Loading ambulances...",

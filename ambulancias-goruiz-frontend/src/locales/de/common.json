@@ -817,6 +817,7 @@
             }
         },
         "mechanics": {
+            "navToAmbulances": "Rettungswagen verwalten",
             "adminPage": {
                 "title": "🔧 Technische Störungsmeldungen",
                 "loading": "Störungen werden geladen...",
@@ -1159,6 +1160,7 @@
             }
         },
         "ambulances": {
+            "navToMechanics": "Störungsberichte und Werkstatt",
             "adminPage": {
                 "title": "Rettungswagenverwaltung",
                 "loading": "Rettungswagen werden geladen...",

@@ -817,6 +817,7 @@
             }
         },
         "mechanics": {
+            "navToAmbulances": "Gestionar ambulancias",
             "adminPage": {
                 "title": "🔧 Reportes técnicos de averías",
                 "loading": "Cargando averías...",
@@ -1159,6 +1160,7 @@
             }
         },
         "ambulances": {
+            "navToMechanics": "Ver reportes y taller",
             "adminPage": {
                 "title": "Administración de Ambulancias",
                 "loading": "Cargando ambulancias...",

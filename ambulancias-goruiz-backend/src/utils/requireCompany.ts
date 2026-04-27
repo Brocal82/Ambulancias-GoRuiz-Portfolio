@@ -28,6 +28,35 @@ export function requireCompanyForAdmin(req: Request): RequireCompanyResult {
 }
 
 /**
+ * Alta/edición/borrado de ambulancias: admin o jefe de mecánicos de la misma empresa (JWT companyId).
+ */
+export function requireCompanyForAmbulanceMutations(
+  req: Request,
+): RequireCompanyResult {
+  const role = req.userRole;
+  if (role === "admin") {
+    return requireCompanyForAdmin(req);
+  }
+  if (role === "jefe_mecanicos") {
+    const companyId = req.companyId;
+    if (!companyId || typeof companyId !== "string") {
+      return {
+        ok: false,
+        statusCode: 403,
+        message: "No tienes permiso. Se requiere pertenecer a una empresa.",
+      };
+    }
+    return { ok: true, companyId };
+  }
+  return {
+    ok: false,
+    statusCode: 403,
+    message:
+      "Operación requiere rol administrador o jefe de mecánicos con empresa asignada",
+  };
+}
+
+/**
  * Exige que el worker tenga companyId. Usar en operaciones multiempresa del lado worker.
  */
 export function requireCompanyForWorker(req: Request): RequireCompanyResult {
