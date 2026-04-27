@@ -1,6 +1,6 @@
 import axios from "../../../api/axios";
 import { getApiErrorMessage } from "../../../utils/toast";
-import type { MechanicsIssue } from "./types";
+import type { MechanicsIssue, MechanicsWorkOrder } from "./types";
 
 export interface ReportIssuePayload {
   assignmentId: string;
@@ -107,4 +107,42 @@ export const getIssuesCountByStatus = async (
       getApiErrorMessage(err, "Error al obtener el contador de averías"),
     );
   }
+};
+
+export interface CreateMechanicsWorkOrderPayload {
+  ambulanceId: string;
+  title: string;
+  description?: string;
+  plannedFor?: string;
+  assignedTo?: string;
+}
+
+export const listMechanicsWorkOrders = async (
+  ambulanceId?: string,
+): Promise<MechanicsWorkOrder[]> => {
+  const res = await axios.get<MechanicsWorkOrder[]>("/mechanics/work-orders", {
+    params: ambulanceId ? { ambulanceId } : undefined,
+  });
+  return res.data;
+};
+
+export const createMechanicsWorkOrder = async (
+  payload: CreateMechanicsWorkOrderPayload,
+): Promise<MechanicsWorkOrder> => {
+  const res = await axios.post<MechanicsWorkOrder>(
+    "/mechanics/work-orders",
+    payload,
+  );
+  return res.data;
+};
+
+export const patchMechanicsWorkOrder = async (
+  id: string,
+  body: Record<string, unknown>,
+): Promise<MechanicsWorkOrder> => {
+  const res = await axios.patch<MechanicsWorkOrder>(
+    `/mechanics/work-orders/${id}`,
+    body,
+  );
+  return res.data;
 };

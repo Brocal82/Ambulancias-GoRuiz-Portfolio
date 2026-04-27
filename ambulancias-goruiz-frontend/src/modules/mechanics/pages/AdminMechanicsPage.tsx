@@ -25,10 +25,12 @@ import { sortIssuesByDateDesc } from "../utils/sortIssuesByDateDesc";
 import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 import StatusBadge from "../../../components/common/StatusBadge";
 import { buildImageUrl } from "../../../utils/apiOrigins";
+import MechanicsWorkOrdersSection from "../components/MechanicsWorkOrdersSection";
 
 
 const AdminMechanicsPage = () => {
-  const { token } = useAuth();
+  const { token, role } = useAuth();
+  const canDeleteIssues = role === "admin" || role === "jefe_mecanicos";
   const { hasModule } = useModules();
   const ambulancesModuleOn = hasModule(MODULE_KEYS.AMBULANCES);
   const { t } = useTranslation();
@@ -288,11 +290,13 @@ const AdminMechanicsPage = () => {
                           className="px-5 pb-5 pt-1 border-t border-slate-100"
                         >
                           <div className="flex items-center justify-end mb-3">
-                            <DeleteIconButton
-                              onClick={() => handleDelete(issue._id)}
-                              title={t("pages.mechanics.adminPage.delete") as string}
-                              aria-label={t("pages.mechanics.adminPage.delete") as string}
-                            />
+                            {canDeleteIssues ? (
+                              <DeleteIconButton
+                                onClick={() => handleDelete(issue._id)}
+                                title={t("pages.mechanics.adminPage.delete") as string}
+                                aria-label={t("pages.mechanics.adminPage.delete") as string}
+                              />
+                            ) : null}
                           </div>
 
 
@@ -436,6 +440,8 @@ const AdminMechanicsPage = () => {
               )}
             </div>
           )}
+
+          <MechanicsWorkOrdersSection userRole={role} />
 
         </div>
       </div>

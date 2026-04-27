@@ -8,6 +8,12 @@ import {
   getIssuesCount,
   markIssueSeen,
 } from "./controllers/mechanics.controller";
+import {
+  createWorkOrder,
+  listWorkOrders,
+  getWorkOrderById,
+  patchWorkOrder,
+} from "./controllers/mechanics-work-orders.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
 import { validateBody } from "../../middlewares/validateBody";
@@ -16,8 +22,44 @@ import { requireModule } from "../../middlewares/requireModule";
 import { uploadImagesOnly } from "../../middlewares/uploadMiddleware";
 import { MODULE_KEYS } from "../companies/constants/modules.constants";
 import { reportIssueSchema } from "./schemas/mechanics.schema";
+import { createMechanicsWorkOrderSchema } from "./schemas/mechanics-work-order.schema";
 
 const router = express.Router();
+
+router.post(
+  "/work-orders",
+  authenticateToken,
+  requireModule(MODULE_KEYS.MECHANICS),
+  authorizeRole(["admin", "jefe_mecanicos"]),
+  validateBody(createMechanicsWorkOrderSchema),
+  createWorkOrder,
+);
+
+router.get(
+  "/work-orders",
+  authenticateToken,
+  requireModule(MODULE_KEYS.MECHANICS),
+  authorizeRole(["admin", "jefe_mecanicos", "mecanico"]),
+  listWorkOrders,
+);
+
+router.get(
+  "/work-orders/:id",
+  authenticateToken,
+  requireModule(MODULE_KEYS.MECHANICS),
+  authorizeRole(["admin", "jefe_mecanicos", "mecanico"]),
+  validateObjectId("id"),
+  getWorkOrderById,
+);
+
+router.patch(
+  "/work-orders/:id",
+  authenticateToken,
+  requireModule(MODULE_KEYS.MECHANICS),
+  authorizeRole(["admin", "jefe_mecanicos", "mecanico"]),
+  validateObjectId("id"),
+  patchWorkOrder,
+);
 
 router.get(
   "/issues/count",

@@ -6,6 +6,31 @@ export interface MechanicsIssueAttachment {
   storedFilename?: string;
 }
 
+export type MechanicsWorkOrderStatus =
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
+
+export interface MechanicsWorkOrder {
+  _id: string;
+  companyId: string;
+  ambulanceId: string;
+  ambulanceNumber: string;
+  title: string;
+  description?: string;
+  status: MechanicsWorkOrderStatus;
+  plannedFor?: string | null;
+  assignedTo?: string | null;
+  createdBy: string;
+  completedAt?: string | null;
+  completedBy?: string | null;
+  completionNotes?: string;
+  cancelledAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface MechanicsIssue {
   _id: string;
   dienstNumber: number;
