@@ -15,6 +15,13 @@ export type SupportAccessDailySummary = {
   offHoursFinalApprovals: number;
 };
 
+export type SecurityMonitoringSnapshot = {
+  generatedAt: string;
+  windowHours: number;
+  deniedThreshold: number;
+  supportAccess: SupportAccessDailySummary;
+};
+
 function isOffHours(date: Date): boolean {
   const hour = date.getHours();
   return hour < 7 || hour >= 20;
@@ -23,7 +30,15 @@ function isOffHours(date: Date): boolean {
 export async function buildSupportAccessDailySummary(
   now = new Date(),
 ): Promise<SupportAccessDailySummary> {
-  const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  return buildSupportAccessSummaryForHours(24, now);
+}
+
+export async function buildSupportAccessSummaryForHours(
+  hours: number,
+  now = new Date(),
+): Promise<SupportAccessDailySummary> {
+  const safeHours = Number.isFinite(hours) ? Math.max(1, Math.min(168, Math.floor(hours))) : 24;
+  const since = new Date(now.getTime() - safeHours * 60 * 60 * 1000);
 
   const [requested, denied, revoked, expired, approvalFlows] = await Promise.all([
     SupportAccessRequest.countDocuments({ createdAt: { $gte: since, $lte: now } }),
@@ -78,13 +93,28 @@ export async function buildSupportAccessDailySummary(
   };
 }
 
+export async function buildSecurityMonitoringSnapshot(
+  hours = 24,
+  now = new Date(),
+): Promise<SecurityMonitoringSnapshot> {
+  const safeHours = Number.isFinite(hours) ? Math.max(1, Math.min(168, Math.floor(hours))) : 24;
+  const supportAccess = await buildSupportAccessSummaryForHours(safeHours, now);
+  return {
+    generatedAt: now.toISOString(),
+    windowHours: safeHours,
+    deniedThreshold: env.SECURITY_MONITORING_DENIED_THRESHOLD,
+    supportAccess,
+  };
+}
+
 export async function emitDailySecurityMonitoringReport(now = new Date()): Promise<void> {
-  const summary = await buildSupportAccessDailySummary(now);
+  const snapshot = await buildSecurityMonitoringSnapshot(24, now);
+  const summary = snapshot.supportAccess;
   emitAuditLog(AUDIT_EVENT.SECURITY_DAILY_MONITORING_REPORTED, "success", {
     resourceType: "security_monitoring",
     meta: {
-      windowHours: 24,
-      supportAccess: summary,
+      windowHours: snapshot.windowHours,
+      supportAccess: snapshot.supportAccess,
     },
   });
 

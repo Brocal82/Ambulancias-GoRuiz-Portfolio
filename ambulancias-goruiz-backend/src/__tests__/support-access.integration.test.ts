@@ -113,6 +113,10 @@ describe("Support access (JIT/break-glass)", () => {
       .get(`${API}/support-access/requests`)
       .set("Authorization", `Bearer ${adminToken}`)
       .expect(403);
+    await request(app)
+      .get(`${API}/support-access/monitoring/daily-summary`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .expect(403);
   });
 
   it("isolates active support access per actor and company", async () => {
@@ -198,5 +202,18 @@ describe("Support access (JIT/break-glass)", () => {
 
     const expired = await SupportAccessRequest.findById(requestId).lean();
     expect(expired?.status).toBe("expired");
+  });
+
+  it("returns monitoring snapshot for superadmin", async () => {
+    const res = await request(app)
+      .get(`${API}/support-access/monitoring/daily-summary`)
+      .query({ hours: 12 })
+      .set("Authorization", `Bearer ${reviewerToken1}`)
+      .expect(200);
+    expect(res.body).toHaveProperty("generatedAt");
+    expect(res.body).toHaveProperty("windowHours", 12);
+    expect(res.body).toHaveProperty("supportAccess");
+    expect(res.body.supportAccess).toHaveProperty("requested");
+    expect(res.body.supportAccess).toHaveProperty("denied");
   });
 });

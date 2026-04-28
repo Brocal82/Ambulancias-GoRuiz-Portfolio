@@ -4,6 +4,7 @@ import { authorizeSuperadmin } from "../../middlewares/roleMiddleware";
 import {
   checkMyActiveSupportAccess,
   createSupportAccess,
+  getSecurityMonitoringSummary,
   getSupportAccessRequests,
   reviewSupportAccess,
   revokeSupportAccess,
@@ -18,5 +19,6 @@ router.get("/requests", getSupportAccessRequests);
 router.post("/requests/:id/review", reviewSupportAccess);
 router.post("/requests/:id/revoke", revokeSupportAccess);
 router.get("/active", checkMyActiveSupportAccess);
+router.get("/monitoring/daily-summary", getSecurityMonitoringSummary);
 
 export default router;
