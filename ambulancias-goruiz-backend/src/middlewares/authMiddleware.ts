@@ -2,6 +2,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
+import Company from "../modules/companies/models/company.model";
 
 // JWT_SECRET es obligatorio y se valida en config/env.ts
 const JWT_SECRET = env.JWT_SECRET;
@@ -12,11 +13,11 @@ interface JwtPayload {
   companyId?: string;
 }
 
-export const authenticateToken = (
+export const authenticateToken = async (
   req: Request,
   res: Response,
   next: NextFunction,
-): void => {
+): Promise<void> => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1]; // Espera formato: Bearer <token>
 
@@ -41,6 +42,22 @@ export const authenticateToken = (
       role: decoded.role,
       ...(decoded.companyId && { companyId: decoded.companyId }),
     };
+
+    // Bloqueo operativo: si la empresa está desactivada, cualquier usuario
+    // con rol de empresa (excepto superadmin) no puede operar aunque tenga token.
+    if (decoded.role !== "superadmin" && decoded.companyId) {
+      const company = await Company.findById(decoded.companyId)
+        .select("isActive")
+        .lean();
+      if (!company || company.isActive !== true) {
+        res.status(403).json({
+          message:
+            "Tu empresa no está activa. Contacta con soporte o con el superadmin para reactivarla.",
+          code: "COMPANY_INACTIVE",
+        });
+        return;
+      }
+    }
 
     next();
   } catch (err) {

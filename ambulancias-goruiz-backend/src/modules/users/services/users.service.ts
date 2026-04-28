@@ -7,6 +7,7 @@ import VacationRequest from "../../vacation/models/vacation-request.model";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { env } from "../../../config/env";
+import Company from "../../companies/models/company.model";
 import type {
   CreateUserDTO,
   LoginDTO,
@@ -314,12 +315,28 @@ export async function loginUserService(
   }
 
   if (
-    (user.role === "admin" || user.role === "worker") &&
+    (user.role === "admin" ||
+      user.role === "worker" ||
+      user.role === "mecanico" ||
+      user.role === "jefe_mecanicos" ||
+      user.role === "jefe_logistica") &&
     !user.companyId
   ) {
     throw new Error(
       "No puedes iniciar sesión: la cuenta no está asociada a una empresa.",
     );
+  }
+
+  if (
+    user.role !== "superadmin" &&
+    user.companyId
+  ) {
+    const company = await Company.findById(user.companyId).select("isActive").lean();
+    if (!company || company.isActive !== true) {
+      throw new Error(
+        "No puedes iniciar sesión: tu empresa no está activa. Contacta con el superadmin.",
+      );
+    }
   }
 
   const payload: Record<string, unknown> = {
