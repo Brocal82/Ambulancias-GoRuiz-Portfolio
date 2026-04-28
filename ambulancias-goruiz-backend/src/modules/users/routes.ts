@@ -11,6 +11,7 @@ import {
   uploadUserFilesForUser,
   deleteUserDocument,
   deleteUserDocumentForUser,
+  revokeMySessions,
 } from "./controllers/users.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import {
@@ -34,6 +35,7 @@ router.post("/register", (_req, res) => {
   });
 });
 router.post("/login", validateBody(loginUserSchema), loginUser);
+router.post("/sessions/revoke-all", authenticateToken, revokeMySessions);
 
 // ⚠️ Rutas personalizadas antes de `/:id`
 router.get(

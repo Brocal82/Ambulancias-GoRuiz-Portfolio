@@ -3,6 +3,8 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import Company from "../modules/companies/models/company.model";
+import User from "../modules/users/models/user.model";
+import UserSessionState from "../modules/users/models/user-session-state.model";
 
 // JWT_SECRET es obligatorio y se valida en config/env.ts
 const JWT_SECRET = env.JWT_SECRET;
@@ -11,6 +13,7 @@ interface JwtPayload {
   userId: string;
   role: string;
   companyId?: string;
+  tokenVersion?: number;
 }
 
 export const authenticateToken = async (
@@ -28,11 +31,31 @@ export const authenticateToken = async (
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const userDoc = await User.findById(decoded.userId)
+      .select("role companyId tokenVersion isActive")
+      .lean();
+    if (!userDoc || userDoc.isActive !== true) {
+      res.status(401).json({ message: "Token inválido o expirado" });
+      return;
+    }
+    const sessionState = await UserSessionState.findOne({ userId: decoded.userId })
+      .select("tokenVersion")
+      .lean();
+    const persistedTokenVersion = Number((sessionState as any)?.tokenVersion ?? 0);
+    if (persistedTokenVersion !== (decoded.tokenVersion ?? 0)) {
+      res.status(401).json({ message: "Token inválido o expirado" });
+      return;
+    }
+    if (String(userDoc.role) !== String(decoded.role)) {
+      res.status(401).json({ message: "Token inválido o expirado" });
+      return;
+    }
 
     req.userId = decoded.userId;
     req.userRole = decoded.role;
-    if (decoded.companyId) {
-      req.companyId = decoded.companyId;
+    const resolvedCompanyId = decoded.companyId;
+    if (resolvedCompanyId) {
+      req.companyId = resolvedCompanyId;
     }
 
     // Compatibilidad: además de userId/userRole, rellenamos req.user
@@ -40,13 +63,13 @@ export const authenticateToken = async (
       id: decoded.userId,
       email: "",
       role: decoded.role,
-      ...(decoded.companyId && { companyId: decoded.companyId }),
+      ...(resolvedCompanyId && { companyId: resolvedCompanyId }),
     };
 
     // Bloqueo operativo: si la empresa está desactivada, cualquier usuario
     // con rol de empresa (excepto superadmin) no puede operar aunque tenga token.
-    if (decoded.role !== "superadmin" && decoded.companyId) {
-      const company = await Company.findById(decoded.companyId)
+    if (decoded.role !== "superadmin" && resolvedCompanyId) {
+      const company = await Company.findById(resolvedCompanyId)
         .select("isActive")
         .lean();
       if (!company || company.isActive !== true) {

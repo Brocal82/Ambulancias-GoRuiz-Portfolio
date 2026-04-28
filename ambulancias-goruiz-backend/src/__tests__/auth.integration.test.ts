@@ -5,12 +5,14 @@
  */
 import request from "supertest";
 import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 import { app } from "../app";
 import { env } from "../config/env";
 import {
   createTestAdminWithCompany,
   createTestWorkerInCompany,
   createTestWorkerUser,
+  issueTestJwt,
 } from "./test-helpers";
 import User from "../modules/users/models/user.model";
 import Company from "../modules/companies/models/company.model";
@@ -87,6 +89,61 @@ describe("Auth - register desactivado (8B)", () => {
       expect(res.body.message).toMatch(/empresa/i);
     } finally {
       await User.deleteOne({ _id: worker._id });
+    }
+  });
+
+  it("privileged sessions get shorter TTL than worker sessions", async () => {
+    const data = await createTestAdminWithCompany();
+    const worker = await createTestWorkerInCompany(
+      new mongoose.Types.ObjectId(data.companyId),
+      Date.now() + 100,
+    );
+    try {
+      const workerLogin = await request(app)
+        .post(`${API}/users/login`)
+        .send({ email: worker.email, password: "password123" });
+
+      const adminToken = data.adminToken as string;
+      const workerToken = workerLogin.body?.token as string;
+      expect(typeof adminToken).toBe("string");
+      expect(typeof workerToken).toBe("string");
+
+      const adminDecoded = jwt.decode(adminToken) as
+        | { iat?: number; exp?: number }
+        | null;
+      const workerDecoded = jwt.decode(workerToken) as
+        | { iat?: number; exp?: number }
+        | null;
+      const adminTtl = (adminDecoded?.exp ?? 0) - (adminDecoded?.iat ?? 0);
+      const workerTtl = (workerDecoded?.exp ?? 0) - (workerDecoded?.iat ?? 0);
+      expect(adminTtl).toBeGreaterThan(0);
+      expect(workerTtl).toBeGreaterThan(0);
+      expect(adminTtl).toBeLessThan(workerTtl);
+    } finally {
+      await User.deleteOne({ _id: worker._id });
+      await User.deleteOne({ _id: data.adminId });
+      await Company.deleteOne({ _id: data.companyId });
+    }
+  });
+
+  it("revoke-all invalidates previously issued token", async () => {
+    const data = await createTestAdminWithCompany();
+    try {
+      const oldToken = issueTestJwt(data.adminId, "admin", data.companyId, 0);
+      expect(oldToken).toBeDefined();
+
+      await request(app)
+        .post(`${API}/users/sessions/revoke-all`)
+        .set("Authorization", `Bearer ${oldToken}`)
+        .expect(200);
+
+      await request(app)
+        .get(`${API}/users`)
+        .set("Authorization", `Bearer ${oldToken}`)
+        .expect(401);
+    } finally {
+      await User.deleteOne({ _id: data.adminId });
+      await Company.deleteOne({ _id: data.companyId });
     }
   });
 });

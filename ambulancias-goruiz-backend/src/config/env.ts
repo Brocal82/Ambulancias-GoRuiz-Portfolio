@@ -35,6 +35,8 @@ const envSchema = z.object({
     .default(6),
 
   NODE_ENV: z.string().trim().optional(),
+  JWT_EXPIRES_IN: z.string().trim().default("1h"),
+  JWT_EXPIRES_IN_PRIVILEGED: z.string().trim().default("15m"),
 
   // Rate limiting (opcionales)
   RATE_LIMIT_LOGIN_MAX: z

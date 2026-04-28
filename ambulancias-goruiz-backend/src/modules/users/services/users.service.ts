@@ -1,4 +1,5 @@
 import User from "../models/user.model";
+import UserSessionState from "../models/user-session-state.model";
 import { Dienst } from "../../diensts";
 import { isDriverEligibleForAssignmentDate } from "../../diensts/utils/dienstValidation";
 import { DateTime } from "luxon";
@@ -343,12 +344,19 @@ export async function loginUserService(
     userId: user._id,
     email: user.email,
     role: user.role,
+    tokenVersion: 0,
   };
+  const sessionState = await UserSessionState.findOne({ userId: user._id })
+    .select("tokenVersion")
+    .lean();
+  payload.tokenVersion = Number((sessionState as any)?.tokenVersion ?? 0);
   if (user.companyId) {
     payload.companyId = String(user.companyId);
   }
 
-  const token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: "1h" });
+  const isPrivileged = user.role === "admin" || user.role === "superadmin";
+  const expiresIn = isPrivileged ? "15m" : env.JWT_EXPIRES_IN;
+  const token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: expiresIn as any });
 
   const userResponse: LoginResponseDTO["user"] = {
     _id: String(user._id),
@@ -389,4 +397,22 @@ export async function deleteUserService(userId: string, adminCompanyId?: string)
   }
 
   return deletedUser;
+}
+
+export async function revokeAllSessionsForUserService(userId: string) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("ID de usuario no válido");
+  }
+  const userExists = await User.findById(userId).select("_id").lean();
+  if (!userExists) {
+    throw new Error("Usuario no encontrado");
+  }
+  const updated = await UserSessionState.findOneAndUpdate(
+    { userId: new mongoose.Types.ObjectId(userId) },
+    { $inc: { tokenVersion: 1 } },
+    { upsert: true, new: true, setDefaultsOnInsert: true },
+  )
+    .select("userId tokenVersion")
+    .lean();
+  return updated as { userId: unknown; tokenVersion: number };
 }

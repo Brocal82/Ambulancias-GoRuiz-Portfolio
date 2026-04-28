@@ -16,6 +16,7 @@ import {
   createUserService,
   loginUserService,
   deleteUserService,
+  revokeAllSessionsForUserService,
 } from "../services/users.service";
 import {
   parseUpdateUserDTO,
@@ -304,6 +305,50 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     });
     console.error("Error en login:", error);
     res.status(500).json({ message: "Error al iniciar sesión" });
+  }
+};
+
+export const revokeMySessions = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  const auditContext = buildAuditContextFromRequest(req);
+  try {
+    if (!req.userId) {
+      res.status(401).json({ message: "No autorizado" });
+      return;
+    }
+    const updated = await revokeAllSessionsForUserService(req.userId);
+    emitAuditLog(AUDIT_EVENT.AUTH_SESSIONS_REVOKED, "success", {
+      ...auditContext,
+      actorUserId: req.userId,
+      statusCode: 200,
+      resourceType: "session",
+      resourceId: String((updated as any).userId ?? req.userId),
+      meta: { tokenVersion: updated.tokenVersion },
+    });
+    res.status(200).json({
+      message: "Sesiones revocadas correctamente",
+      tokenVersion: updated.tokenVersion,
+    });
+  } catch (error: any) {
+    const msg = String(error?.message || "Error al revocar sesiones");
+    emitAuditLog(AUDIT_EVENT.AUTH_SESSIONS_REVOKED, "error", {
+      ...auditContext,
+      actorUserId: req.userId,
+      statusCode: 500,
+      resourceType: "session",
+      reason: msg,
+    });
+    if (msg.includes("no válido")) {
+      res.status(400).json({ message: msg });
+      return;
+    }
+    if (msg.includes("no encontrado")) {
+      res.status(404).json({ message: msg });
+      return;
+    }
+    res.status(500).json({ message: "Error al revocar sesiones" });
   }
 };
 

@@ -20,8 +20,13 @@ const API = "/api";
  * JWT para tests cuando el actor no puede usar login real (p. ej. admin sin companyId).
  * Payload alineado con `authenticateToken`.
  */
-export function issueTestJwt(userId: string, role: string, companyId?: string): string {
-  const payload: Record<string, unknown> = { userId, role };
+export function issueTestJwt(
+  userId: string,
+  role: string,
+  companyId?: string,
+  tokenVersion: number = 0,
+): string {
+  const payload: Record<string, unknown> = { userId, role, tokenVersion };
   if (companyId) payload.companyId = companyId;
   return jwt.sign(payload, env.JWT_SECRET, { expiresIn: "1h" });
 }
