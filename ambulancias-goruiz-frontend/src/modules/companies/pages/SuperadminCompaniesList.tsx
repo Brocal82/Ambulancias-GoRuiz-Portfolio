@@ -69,9 +69,10 @@ export default function SuperadminCompaniesList() {
               <tr>
                 <th className="px-4 py-3 font-semibold">Nombre</th>
                 <th className="px-4 py-3 font-semibold">Dominio</th>
+                <th className="px-4 py-3 font-semibold text-center">Activa</th>
+                <th className="px-4 py-3 font-semibold text-center">Módulos</th>
                 <th className="px-4 py-3 font-semibold text-center">Admins</th>
                 <th className="px-4 py-3 font-semibold text-center">Trabajadores</th>
-                <th className="px-4 py-3 font-semibold text-center">Activa</th>
                 <th className="px-4 py-3 font-semibold text-center">Acciones</th>
               </tr>
             </thead>
@@ -82,16 +83,19 @@ export default function SuperadminCompaniesList() {
                   <td className="px-4 py-3 text-slate-500 text-xs">
                     {c.emailDomain ?? <span className="text-slate-400 italic">—</span>}
                   </td>
+                  <td className="px-4 py-3 text-center">
+                    {c.isActive
+                      ? <span className="text-lg leading-none">✅</span>
+                      : <span className="text-lg leading-none">❌</span>}
+                  </td>
+                  <td className="px-4 py-3 text-center text-sm font-medium text-slate-700">
+                    {Array.isArray(c.enabledModules) ? c.enabledModules.length : 0}
+                  </td>
                   <td className="px-4 py-3 text-center text-sm font-medium text-slate-700">
                     {c.adminCount ?? 0}
                   </td>
                   <td className="px-4 py-3 text-center text-sm font-medium text-slate-700">
                     {c.workerCount ?? 0}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {c.isActive
-                      ? <span className="text-lg leading-none">✅</span>
-                      : <span className="text-lg leading-none">❌</span>}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center justify-center gap-2">
