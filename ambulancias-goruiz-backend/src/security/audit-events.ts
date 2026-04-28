@@ -1,10 +1,7 @@
 export const AUDIT_EVENT = {
   AUTH_LOGIN_SUCCEEDED: "auth.login_succeeded",
   AUTH_LOGIN_FAILED: "auth.login_failed",
-<<<<<<< HEAD
-=======
   AUTH_SESSIONS_REVOKED: "auth.sessions_revoked",
->>>>>>> 39cc986 (feat(security): shorten privileged JWT sessions and support global revoke)
   COMPANY_CREATED: "company.created",
   COMPANY_UPDATED: "company.updated",
   COMPANY_DELETED: "company.deleted",
