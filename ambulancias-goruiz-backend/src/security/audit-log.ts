@@ -45,3 +45,17 @@ export function emitAuditLog(
   };
   console.info("[audit]", JSON.stringify(entry));
 }
+
+export function emitSecurityAlert(
+  type: string,
+  data: Record<string, unknown>,
+): void {
+  console.warn(
+    "[security-alert]",
+    JSON.stringify({
+      type,
+      at: new Date().toISOString(),
+      ...data,
+    }),
+  );
+}

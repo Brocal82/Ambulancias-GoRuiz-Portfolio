@@ -24,6 +24,7 @@ import companiesRoutes from "./modules/companies/routes";
 import documentsRoutes from "./modules/documents/routes";
 import payrollRoutes from "./modules/payroll/routes";
 import excelPlanningRoutes from "./modules/excel-planning/routes";
+import supportAccessRoutes from "./modules/support-access/routes";
 
 import { errorHandler } from "./middlewares/errorHandler";
 import { notFoundHandler } from "./middlewares/notFoundHandler";
@@ -119,6 +120,7 @@ app.use("/api/companies", companiesRoutes);
 app.use("/api/payroll", payrollRoutes);
 app.use("/api/documents", documentsRoutes);
 app.use("/api/excel-planning", excelPlanningRoutes);
+app.use("/api/support-access", supportAccessRoutes);
 
 app.get("/api/files/:filename", authenticateToken, async (req, res) => {
   const auditContext = buildAuditContextFromRequest(req);

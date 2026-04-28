@@ -1,0 +1,81 @@
+import request from "supertest";
+import mongoose from "mongoose";
+import { app } from "../app";
+import { env } from "../config/env";
+import {
+  createTestAdminWithCompany,
+  createTestSuperadmin,
+} from "./test-helpers";
+
+const API = "/api";
+
+describe("Support access (JIT/break-glass)", () => {
+  let companyId: string;
+  let requesterToken: string;
+  let reviewerToken: string;
+
+  beforeAll(async () => {
+    await mongoose.connect(env.MONGODB_URI);
+    const co = await createTestAdminWithCompany();
+    companyId = co.companyId;
+    const saRequester = await createTestSuperadmin();
+    const saReviewer = await createTestSuperadmin();
+    requesterToken = saRequester.superadminToken;
+    reviewerToken = saReviewer.superadminToken;
+  });
+
+  afterAll(async () => {
+    await mongoose.disconnect();
+  });
+
+  it("creates, reviews, checks active, and revokes support access", async () => {
+    const createRes = await request(app)
+      .post(`${API}/support-access/requests`)
+      .set("Authorization", `Bearer ${requesterToken}`)
+      .send({
+        companyId,
+        reason: "Debug payroll incident",
+        ticketId: "INC-12345",
+        durationMinutes: 30,
+      })
+      .expect(201);
+
+    const requestId = createRes.body._id ?? createRes.body.id;
+    expect(createRes.body.status).toBe("pending");
+
+    await request(app)
+      .post(`${API}/support-access/requests/${requestId}/review`)
+      .set("Authorization", `Bearer ${requesterToken}`)
+      .send({ approve: true })
+      .expect(400);
+
+    const approveRes = await request(app)
+      .post(`${API}/support-access/requests/${requestId}/review`)
+      .set("Authorization", `Bearer ${reviewerToken}`)
+      .send({ approve: true, reviewComment: "Approved for incident support" })
+      .expect(200);
+    expect(approveRes.body.status).toBe("approved");
+    expect(approveRes.body.expiresAt).toBeDefined();
+
+    const activeRes = await request(app)
+      .get(`${API}/support-access/active`)
+      .query({ companyId })
+      .set("Authorization", `Bearer ${requesterToken}`)
+      .expect(200);
+    expect(activeRes.body.active).toBe(true);
+
+    const revokeRes = await request(app)
+      .post(`${API}/support-access/requests/${requestId}/revoke`)
+      .set("Authorization", `Bearer ${reviewerToken}`)
+      .send({ reason: "Incident resolved" })
+      .expect(200);
+    expect(revokeRes.body.status).toBe("revoked");
+
+    const activeAfterRevoke = await request(app)
+      .get(`${API}/support-access/active`)
+      .query({ companyId })
+      .set("Authorization", `Bearer ${requesterToken}`)
+      .expect(200);
+    expect(activeAfterRevoke.body.active).toBe(false);
+  });
+});
