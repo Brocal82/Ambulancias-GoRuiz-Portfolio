@@ -25,6 +25,11 @@ import {
   requireCompanyForAdmin,
   isSameCompany,
 } from "../../../utils/requireCompany";
+import { AUDIT_EVENT } from "../../../security/audit-events";
+import {
+  buildAuditContextFromRequest,
+  emitAuditLog,
+} from "../../../security/audit-log";
 
 const ZONE = "Europe/Berlin";
 
@@ -233,31 +238,70 @@ export const deleteUser = async (
 };
 
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
+  const auditContext = buildAuditContextFromRequest(req);
   try {
     const result = await loginUserService(req.body);
+    emitAuditLog(AUDIT_EVENT.AUTH_LOGIN_SUCCEEDED, "success", {
+      ...auditContext,
+      actorUserId: result.user._id,
+      actorRole: result.user.role,
+      tenantCompanyId: result.user.companyId,
+      statusCode: 200,
+      resourceType: "session",
+    });
     res.status(200).json(result);
   } catch (error: any) {
     const msg = String(error?.message || "");
 
     if (msg.includes("obligatorios")) {
+      emitAuditLog(AUDIT_EVENT.AUTH_LOGIN_FAILED, "denied", {
+        ...auditContext,
+        statusCode: 400,
+        reason: msg,
+        resourceType: "session",
+      });
       res.status(400).json({ message: msg });
       return;
     }
 
     if (msg.includes("Email o contraseña incorrectos")) {
+      emitAuditLog(AUDIT_EVENT.AUTH_LOGIN_FAILED, "denied", {
+        ...auditContext,
+        statusCode: 401,
+        reason: "invalid_credentials",
+        resourceType: "session",
+      });
       res.status(401).json({ message: "Email o contraseña incorrectos." });
       return;
     }
 
     if (msg.includes("no está asociada a una empresa")) {
+      emitAuditLog(AUDIT_EVENT.AUTH_LOGIN_FAILED, "denied", {
+        ...auditContext,
+        statusCode: 403,
+        reason: "missing_company_membership",
+        resourceType: "session",
+      });
       res.status(403).json({ message: msg });
       return;
     }
     if (msg.includes("empresa no está activa")) {
+      emitAuditLog(AUDIT_EVENT.AUTH_LOGIN_FAILED, "denied", {
+        ...auditContext,
+        statusCode: 403,
+        reason: "company_inactive",
+        resourceType: "session",
+      });
       res.status(403).json({ message: msg, code: "COMPANY_INACTIVE" });
       return;
     }
 
+    emitAuditLog(AUDIT_EVENT.AUTH_LOGIN_FAILED, "error", {
+      ...auditContext,
+      statusCode: 500,
+      reason: "unexpected_login_error",
+      resourceType: "session",
+    });
     console.error("Error en login:", error);
     res.status(500).json({ message: "Error al iniciar sesión" });
   }

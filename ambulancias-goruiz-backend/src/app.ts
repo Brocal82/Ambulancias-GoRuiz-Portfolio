@@ -29,6 +29,8 @@ import { errorHandler } from "./middlewares/errorHandler";
 import { notFoundHandler } from "./middlewares/notFoundHandler";
 import { authenticateToken } from "./middlewares/authMiddleware";
 import { canAccessFile } from "./utils/fileOwnership";
+import { AUDIT_EVENT } from "./security/audit-events";
+import { buildAuditContextFromRequest, emitAuditLog } from "./security/audit-log";
 import {
   rateLimitLogin,
   rateLimitReportIssue,
@@ -119,9 +121,17 @@ app.use("/api/documents", documentsRoutes);
 app.use("/api/excel-planning", excelPlanningRoutes);
 
 app.get("/api/files/:filename", authenticateToken, async (req, res) => {
+  const auditContext = buildAuditContextFromRequest(req);
   const filename = path.basename(req.params.filename);
   const filePath = path.resolve(uploadsRoot, filename);
   if (!fs.existsSync(filePath)) {
+    emitAuditLog(AUDIT_EVENT.FILE_ACCESS_DENIED, "denied", {
+      ...auditContext,
+      statusCode: 404,
+      resourceType: "file",
+      resourceId: filename,
+      reason: "file_not_found",
+    });
     res.status(404).json({ message: "Archivo no encontrado" });
     return;
   }
@@ -134,17 +144,44 @@ app.get("/api/files/:filename", authenticateToken, async (req, res) => {
       req.companyId,
     );
     if (!allowed) {
+      emitAuditLog(AUDIT_EVENT.FILE_ACCESS_DENIED, "denied", {
+        ...auditContext,
+        statusCode: 403,
+        resourceType: "file",
+        resourceId: filename,
+        reason: "ownership_validation_failed",
+      });
       res.status(403).json({ message: "Acceso no autorizado" });
       return;
     }
   } catch (err) {
+    emitAuditLog(AUDIT_EVENT.FILE_ACCESS_DENIED, "error", {
+      ...auditContext,
+      statusCode: 500,
+      resourceType: "file",
+      resourceId: filename,
+      reason: "file_access_validation_error",
+    });
     console.error("[fileOwnership] Error al verificar acceso:", err);
     res.status(500).json({ message: "Error interno del servidor" });
     return;
   }
 
+  emitAuditLog(AUDIT_EVENT.FILE_ACCESS_GRANTED, "success", {
+    ...auditContext,
+    statusCode: 200,
+    resourceType: "file",
+    resourceId: filename,
+  });
   res.sendFile(filePath, (err) => {
     if (err && !res.headersSent) {
+      emitAuditLog(AUDIT_EVENT.FILE_ACCESS_DENIED, "error", {
+        ...auditContext,
+        statusCode: 500,
+        resourceType: "file",
+        resourceId: filename,
+        reason: "send_file_error",
+      });
       res.status(500).json({ message: "Error al enviar el archivo" });
     }
   });
