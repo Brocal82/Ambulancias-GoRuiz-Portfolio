@@ -643,7 +643,7 @@ const AdminUsersPage = () => {
                 placeholder={t("pages.adminUsers.search.placeholder") || ""}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-9 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder-slate-400 shadow-sm outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400"
+                className="h-9 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:border-orange-300 focus-visible:ring-1 focus-visible:ring-orange-200/60"
               />
             </label>
 
@@ -656,12 +656,12 @@ const AdminUsersPage = () => {
                 {(["all", "driver", "medic", "both"] as const).map((value) => {
                   const isActive = roleFilter === value;
                   const baseClasses =
-                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs md:text-[13px] font-medium transition-colors select-none";
+                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs md:text-[13px] font-medium transition select-none";
 
                   const activeClasses =
-                    "border-blue-500 bg-blue-50 text-blue-700";
+                    "border-orange-300 bg-blue-50 text-slate-900 shadow-sm";
                   const inactiveClasses =
-                    "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50/60";
+                    "border-transparent bg-white text-slate-700 shadow hover:shadow-md hover:bg-blue-50 hover:border-orange-300";
 
                   const label =
                     value === "all"
@@ -694,12 +694,12 @@ const AdminUsersPage = () => {
                 {(["all", "onLeave", "onVacation"] as const).map((value) => {
                   const isActive = statusFilter === value;
                   const baseClasses =
-                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs md:text-[13px] font-medium transition-colors select-none";
+                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs md:text-[13px] font-medium transition select-none";
 
                   const activeClasses =
-                    "border-emerald-500 bg-emerald-50 text-emerald-700";
+                    "border-orange-300 bg-blue-50 text-slate-900 shadow-sm";
                   const inactiveClasses =
-                    "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/60";
+                    "border-transparent bg-white text-slate-700 shadow hover:shadow-md hover:bg-blue-50 hover:border-orange-300";
 
                   const labelKey =
                     value === "all"

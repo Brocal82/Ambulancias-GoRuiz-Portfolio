@@ -119,10 +119,11 @@ const AdminUserDetailDashboard = () => {
                 <button
                   key={key}
                   onClick={() => setActiveTab(key)}
-                  className={`px-4 py-2 text-sm rounded-xl transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${isActive
-                    ? "bg-blue-600 text-white shadow-md -translate-y-0.5"
-                    : "bg-white text-slate-700 hover:bg-slate-50 ring-1 ring-slate-200 shadow-sm"
-                    }`}
+                  className={`px-4 py-2 text-sm rounded-xl border transition focus:outline-none focus-visible:ring-1 focus-visible:ring-orange-200/60 ${
+                    isActive
+                      ? "bg-blue-50 text-slate-900 border-orange-300 shadow-md"
+                      : "bg-white text-slate-700 border-transparent shadow hover:shadow-md hover:bg-blue-50 hover:border-orange-300"
+                  }`}
                 >
                   {t(`pages.adminUserDetail.tabs.${key}`)}
                 </button>
