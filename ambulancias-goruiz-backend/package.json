@@ -28,6 +28,7 @@
     "test:watch": "jest --watch",
     "test:security:isolation": "jest --runInBand src/__tests__/operational.isolation.test.ts src/__tests__/multi-tenant.isolation.test.ts src/__tests__/files.security.integration.test.ts src/__tests__/support-access.integration.test.ts",
     "test:security:isolation:ci": "jest --ci --runInBand src/__tests__/operational.isolation.test.ts src/__tests__/multi-tenant.isolation.test.ts src/__tests__/files.security.integration.test.ts src/__tests__/support-access.integration.test.ts",
+    "security:report:daily": "ts-node src/scripts/run-security-monitoring-report.ts",
     "backfill:company-modules": "ts-node src/scripts/backfill-company-modules.ts",
     "backfill:excel-planning-module": "ts-node src/scripts/backfill-company-module-excel-planning.ts",
     "generate:excel-planning-real": "ts-node scripts/generate-excel-planning-real-workers.ts",

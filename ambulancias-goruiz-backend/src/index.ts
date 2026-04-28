@@ -4,6 +4,7 @@ import cron from "node-cron";
 import { env } from "./config/env";
 import { app } from "./app";
 import cleanupOldDiensts from "./utils/cleanupOldDiensts";
+import { emitDailySecurityMonitoringReport } from "./security/security-monitoring";
 
 // Evitar crashes silenciosos: loggear y salir en producción
 process.on("uncaughtException", (err) => {
@@ -81,9 +82,33 @@ mongoose
       { timezone: TZ },
     );
 
+    if (env.SECURITY_MONITORING_ENABLED) {
+      cron.schedule(
+        env.SECURITY_MONITORING_CRON,
+        async () => {
+          const fired = new Date();
+          console.log(
+            `[CRON] securityMonitoring START @ ${fired.toISOString()} (server time)`,
+          );
+          try {
+            await emitDailySecurityMonitoringReport(fired);
+            console.log("[CRON] securityMonitoring DONE");
+          } catch (err) {
+            console.error("[CRON] securityMonitoring ERROR:", err);
+          }
+        },
+        { timezone: TZ },
+      );
+    }
+
     server = app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Server listening on http://0.0.0.0:${PORT}`);
       console.log(`🕒 Cron activo: lunes 00:00 (${TZ})`);
+      if (env.SECURITY_MONITORING_ENABLED) {
+        console.log(
+          `🕒 Security monitoring cron activo: ${env.SECURITY_MONITORING_CRON} (${TZ})`,
+        );
+      }
     });
   })
   .catch((err) => {
