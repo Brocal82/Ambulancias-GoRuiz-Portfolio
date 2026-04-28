@@ -69,6 +69,7 @@ function RedirectToCurrentPayrollMonth() {
 import SuperadminCompaniesList from "./modules/companies/pages/SuperadminCompaniesList";
 import SuperadminCompanyForm from "./modules/companies/pages/SuperadminCompanyForm";
 import SuperadminCreateAdmin from "./modules/companies/pages/SuperadminCreateAdmin";
+import SuperadminSecurityMonitoringPage from "./modules/support-access/pages/SuperadminSecurityMonitoringPage";
 
 export default function App() {
   return (
@@ -154,6 +155,10 @@ export default function App() {
                 <Route path="/superadmin" element={<SuperadminDashboard />} />
                 <Route path="/superadmin/companies" element={<SuperadminCompaniesList />} />
                 <Route path="/superadmin/companies/new" element={<SuperadminCompanyForm />} />
+                <Route
+                  path="/superadmin/security-monitoring"
+                  element={<SuperadminSecurityMonitoringPage />}
+                />
                 <Route
                   path="/superadmin/companies/:id/admin"
                   element={<SuperadminCreateAdmin />}

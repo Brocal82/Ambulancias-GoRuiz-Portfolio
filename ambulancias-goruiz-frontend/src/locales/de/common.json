@@ -104,7 +104,31 @@
         "superadminDashboard": {
             "title": "Superadmin",
             "subtitle": "Globales Verwaltungspanel.",
-            "manageCompanies": "Unternehmen verwalten"
+            "manageCompanies": "Unternehmen verwalten",
+            "securityMonitoring": "Security Monitoring"
+        },
+        "superadminSecurityMonitoring": {
+            "title": "Globales Security Monitoring",
+            "subtitle": "Aggregierte Sicht auf Break-Glass- und Support-Aktivitaet.",
+            "backToPanel": "← Zurueck zum Panel",
+            "windowLabel": "Zeitfenster",
+            "hoursOption": "{{hours}} Stunden",
+            "loading": "Sicherheitsmetriken werden geladen...",
+            "loadError": "Metriken konnten nicht geladen werden",
+            "metaTitle": "Metadaten",
+            "generatedAt": "Erstellt am",
+            "windowHours": "Fenster (h)",
+            "deniedThreshold": "Schwelle fuer Ablehnungen",
+            "range": "Analysierter Bereich",
+            "cards": {
+                "requested": "Anfragen",
+                "denied": "Abgelehnt",
+                "approvalRecorded": "Teilfreigaben",
+                "approvedFinal": "Endfreigaben",
+                "revoked": "Widerrufen",
+                "expired": "Abgelaufen",
+                "offHoursFinalApprovals": "Freigaben ausserhalb der Arbeitszeit"
+            }
         },
         "adminDashboard": {
             "title": "Administrator-Panel",

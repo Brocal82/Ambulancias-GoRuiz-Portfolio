@@ -104,7 +104,31 @@
         "superadminDashboard": {
             "title": "Superadmin",
             "subtitle": "Global management dashboard.",
-            "manageCompanies": "Manage companies"
+            "manageCompanies": "Manage companies",
+            "securityMonitoring": "Security monitoring"
+        },
+        "superadminSecurityMonitoring": {
+            "title": "Global security monitoring",
+            "subtitle": "Aggregated break-glass and support-activity visibility.",
+            "backToPanel": "← Back to panel",
+            "windowLabel": "Time window",
+            "hoursOption": "{{hours}} hours",
+            "loading": "Loading security metrics...",
+            "loadError": "Could not load metrics",
+            "metaTitle": "Metadata",
+            "generatedAt": "Generated at",
+            "windowHours": "Window (h)",
+            "deniedThreshold": "Denied threshold",
+            "range": "Analyzed range",
+            "cards": {
+                "requested": "Requests",
+                "denied": "Denied",
+                "approvalRecorded": "Partial approvals",
+                "approvedFinal": "Final approvals",
+                "revoked": "Revoked",
+                "expired": "Expired",
+                "offHoursFinalApprovals": "Off-hours final approvals"
+            }
         },
         "adminDashboard": {
             "title": "Admin Dashboard",

@@ -104,7 +104,31 @@
         "superadminDashboard": {
             "title": "Superadmin",
             "subtitle": "Panel de gestión global.",
-            "manageCompanies": "Gestionar empresas"
+            "manageCompanies": "Gestionar empresas",
+            "securityMonitoring": "Security monitoring"
+        },
+        "superadminSecurityMonitoring": {
+            "title": "Security monitoring global",
+            "subtitle": "Visibilidad agregada de break-glass y actividad de soporte.",
+            "backToPanel": "← Volver al panel",
+            "windowLabel": "Ventana temporal",
+            "hoursOption": "{{hours}} horas",
+            "loading": "Cargando métricas de seguridad...",
+            "loadError": "No se pudieron cargar las métricas",
+            "metaTitle": "Metadatos",
+            "generatedAt": "Generado",
+            "windowHours": "Ventana (h)",
+            "deniedThreshold": "Umbral de denegados",
+            "range": "Rango analizado",
+            "cards": {
+                "requested": "Solicitudes",
+                "denied": "Denegadas",
+                "approvalRecorded": "Aprobaciones parciales",
+                "approvedFinal": "Aprobaciones finales",
+                "revoked": "Revocadas",
+                "expired": "Expiradas",
+                "offHoursFinalApprovals": "Aprobaciones fuera de horario"
+            }
         },
         "adminDashboard": {
             "title": "Panel del Administrador",

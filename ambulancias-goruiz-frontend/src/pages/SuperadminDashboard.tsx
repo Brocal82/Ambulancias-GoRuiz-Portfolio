@@ -20,6 +20,13 @@ const SuperadminDashboard = () => {
       >
         {t("pages.superadminDashboard.manageCompanies")}
       </button>
+      <button
+        type="button"
+        onClick={() => navigate("/superadmin/security-monitoring")}
+        className="ml-3 rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+      >
+        {t("pages.superadminDashboard.securityMonitoring")}
+      </button>
     </div>
   );
 };
