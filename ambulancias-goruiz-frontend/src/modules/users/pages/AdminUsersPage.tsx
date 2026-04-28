@@ -105,6 +105,21 @@ const AdminUsersPage = () => {
       enabledModules.includes(MODULE_KEYS.PRAEMIEN),
     [enabledModules, role],
   );
+  const vacationModuleEnabled = useMemo(
+    () =>
+      role === "superadmin" ||
+      enabledModules === null ||
+      enabledModules.includes(MODULE_KEYS.VACATION),
+    [enabledModules, role],
+  );
+  const sickLeavesModuleEnabled = useMemo(
+    () =>
+      role === "superadmin" ||
+      enabledModules === null ||
+      enabledModules.includes(MODULE_KEYS.SICK_LEAVES),
+    [enabledModules, role],
+  );
+  const showStatusFilter = vacationModuleEnabled || sickLeavesModuleEnabled;
 
   const praemiePendingInitialLoadDoneRef = useRef(false);
 
@@ -275,6 +290,10 @@ const AdminUsersPage = () => {
       setVacationFlags({});
       return;
     }
+    if (!vacationModuleEnabled) {
+      setVacationFlags({});
+      return;
+    }
     if (!token || users.length === 0) {
       setVacationFlags({});
       return;
@@ -310,11 +329,15 @@ const AdminUsersPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [token, users, onlyPraemieManualPending]);
+  }, [token, users, onlyPraemieManualPending, vacationModuleEnabled]);
 
   // Bajas por enfermedad: flags para la semana actual (Europe/Berlin), con includeFullSpan=true para tooltips con el tramo completo real.
   useEffect(() => {
     if (onlyPraemieManualPending) {
+      setSickFlags({});
+      return;
+    }
+    if (!sickLeavesModuleEnabled) {
       setSickFlags({});
       return;
     }
@@ -348,7 +371,16 @@ const AdminUsersPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [token, users, onlyPraemieManualPending]);
+  }, [token, users, onlyPraemieManualPending, sickLeavesModuleEnabled]);
+
+  useEffect(() => {
+    if (statusFilter === "onVacation" && !vacationModuleEnabled) {
+      setStatusFilter("all");
+    }
+    if (statusFilter === "onLeave" && !sickLeavesModuleEnabled) {
+      setStatusFilter("all");
+    }
+  }, [statusFilter, vacationModuleEnabled, sickLeavesModuleEnabled]);
 
   const handleEdit = (user: User) => {
     navigate(`/admin/user/${user._id}`);
@@ -486,17 +518,20 @@ const AdminUsersPage = () => {
 
     // 🏖️ vacaciones (semana actual) usando flags
     const vacFlag = vacationFlags[user._id];
-    const isOnVacationThisWeek = !!vacFlag?.hasVacationInRange;
+    const isOnVacationThisWeek =
+      vacationModuleEnabled && !!vacFlag?.hasVacationInRange;
 
     // 🤒 enfermedad (semana actual) usando flags
     const sickFlag = sickFlags[user._id];
-    const isOnSickThisWeek = !!sickFlag?.hasSickInRange;
+    const isOnSickThisWeek = sickLeavesModuleEnabled && !!sickFlag?.hasSickInRange;
 
     const matchesStatus =
       statusFilter === "all" ||
       (statusFilter === "onLeave" &&
+        sickLeavesModuleEnabled &&
         (Boolean((user as any).onLeave) || isOnSickThisWeek)) ||
       (statusFilter === "onVacation" &&
+        vacationModuleEnabled &&
         (Boolean((user as any).onVacation) || isOnVacationThisWeek));
 
     const matchesPraemie =
@@ -684,46 +719,53 @@ const AdminUsersPage = () => {
               </div>
             </div>
 
-            {/* Filtro de status con iconos de traducción (centrado, sin duplicados) */}
-            <div className="flex flex-col items-center gap-1 text-center">
-              <span className="text-[11px] font-medium text-slate-700">
-                {t("pages.adminUsers.filters.status.label")}
-              </span>
+            {/* Filtro de status condicional a módulos de bajas/vacaciones */}
+            {showStatusFilter && (
+              <div className="flex flex-col items-center gap-1 text-center">
+                <span className="text-[11px] font-medium text-slate-700">
+                  {t("pages.adminUsers.filters.status.label")}
+                </span>
 
-              <div className="flex flex-wrap justify-center gap-1.5">
-                {(["all", "onLeave", "onVacation"] as const).map((value) => {
-                  const isActive = statusFilter === value;
-                  const baseClasses =
-                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs md:text-[13px] font-medium transition select-none";
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {(
+                    [
+                      "all",
+                      ...(sickLeavesModuleEnabled ? (["onLeave"] as const) : []),
+                      ...(vacationModuleEnabled ? (["onVacation"] as const) : []),
+                    ] as const
+                  ).map((value) => {
+                    const isActive = statusFilter === value;
+                    const baseClasses =
+                      "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs md:text-[13px] font-medium transition select-none";
 
-                  const activeClasses =
-                    "border-orange-300 bg-blue-50 text-slate-900 shadow-sm";
-                  const inactiveClasses =
-                    "border-transparent bg-white text-slate-700 shadow hover:shadow-md hover:bg-blue-50 hover:border-orange-300";
+                    const activeClasses =
+                      "border-orange-300 bg-blue-50 text-slate-900 shadow-sm";
+                    const inactiveClasses =
+                      "border-transparent bg-white text-slate-700 shadow hover:shadow-md hover:bg-blue-50 hover:border-orange-300";
 
-                  const labelKey =
-                    value === "all"
-                      ? "pages.adminUsers.filters.status.all"
-                      : value === "onLeave"
-                        ? "pages.adminUsers.filters.status.onLeave"
-                        : "pages.adminUsers.filters.status.onVacation";
+                    const labelKey =
+                      value === "all"
+                        ? "pages.adminUsers.filters.status.all"
+                        : value === "onLeave"
+                          ? "pages.adminUsers.filters.status.onLeave"
+                          : "pages.adminUsers.filters.status.onVacation";
 
-                  const label = t(labelKey);
+                    const label = t(labelKey);
 
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setStatusFilter(value)}
-                      className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
-                    >
-                      {/* El icono que venga EN el JSON, sin duplicar nada */}
-                      <span>{label}</span>
-                    </button>
-                  );
-                })}
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setStatusFilter(value)}
+                        className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
+                      >
+                        <span>{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {praemienModuleEnabled && (
@@ -787,17 +829,21 @@ const AdminUsersPage = () => {
                 "No P-Schein date (driver / both)",
               )}
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-green-600">🏖️ </span>{" "}
-              {t(
-                "pages.adminUsers.legend.vacation",
-                "Vacaciones (esta semana)",
-              )}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-600">🤒</span>{" "}
-              {t("pages.adminUsers.legend.sick", "Baja médica (esta semana)")}
-            </div>
+            {vacationModuleEnabled && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-green-600">🏖️ </span>{" "}
+                {t(
+                  "pages.adminUsers.legend.vacation",
+                  "Vacaciones (esta semana)",
+                )}
+              </div>
+            )}
+            {sickLeavesModuleEnabled && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-600">🤒</span>{" "}
+                {t("pages.adminUsers.legend.sick", "Baja médica (esta semana)")}
+              </div>
+            )}
             {praemienModuleEnabled && (
               <div className="flex items-center gap-1.5">
                 <span className="text-orange-500" aria-hidden>
@@ -819,8 +865,8 @@ const AdminUsersPage = () => {
                 <col className="w-[12%]" /> {/* Nº trabajador */}
                 <col className="w-[14%]" /> {/* Rol */}
                 <col className="w-[14%]" /> {/* Status */}
-                <col className="w-[9%]" /> {/* Vacaciones */}
-                <col className="w-[9%]" /> {/* Bajas */}
+                {vacationModuleEnabled && <col className="w-[9%]" />} {/* Vacaciones */}
+                {sickLeavesModuleEnabled && <col className="w-[9%]" />} {/* Bajas */}
               </colgroup>
               <thead className={APP_NAV_MATCH_TABLE_THEAD}>
                 <tr>
@@ -854,18 +900,22 @@ const AdminUsersPage = () => {
                   >
                     {t("pages.adminUsers.columns.status", "Status")}
                   </th>
-                  <th
-                    scope="col"
-                    className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-200"
-                  >
-                    {t("pages.adminUsers.columns.vacations", "Vacaciones")}
-                  </th>
-                  <th
-                    scope="col"
-                    className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-200"
-                  >
-                    {t("pages.adminUsers.columns.sickLeaves", "Bajas")}
-                  </th>
+                  {vacationModuleEnabled && (
+                    <th
+                      scope="col"
+                      className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-200"
+                    >
+                      {t("pages.adminUsers.columns.vacations", "Vacaciones")}
+                    </th>
+                  )}
+                  {sickLeavesModuleEnabled && (
+                    <th
+                      scope="col"
+                      className="py-2.5 px-4 text-center align-middle text-[11px] font-semibold uppercase tracking-wide text-slate-200"
+                    >
+                      {t("pages.adminUsers.columns.sickLeaves", "Bajas")}
+                    </th>
+                  )}
                 </tr>
               </thead>
 
@@ -889,10 +939,12 @@ const AdminUsersPage = () => {
                     | "unknown";
 
                   // Vacaciones (helper) + baja
-                  const vacUI = getVacationUI(user._id);
+                  const vacUI = vacationModuleEnabled
+                    ? getVacationUI(user._id)
+                    : { has: false, title: undefined as string | undefined };
                   const onVac = vacUI.has;
 
-                  const sflag = sickFlags[user._id];
+                  const sflag = sickLeavesModuleEnabled ? sickFlags[user._id] : undefined;
                   const isSick = !!sflag?.hasSickInRange;
                   const sickFromISO =
                     sflag?.sickStartFull || sflag?.sickStartInRange;
@@ -1003,7 +1055,7 @@ const AdminUsersPage = () => {
                               ❓
                             </span>
                           )}
-                          {onVac && (
+                          {vacationModuleEnabled && onVac && (
                             <span
                               className="align-middle text-slate-400 text-base leading-none"
                               title={vacUI.title}
@@ -1011,7 +1063,7 @@ const AdminUsersPage = () => {
                               🏖️
                             </span>
                           )}
-                          {isSick && (
+                          {sickLeavesModuleEnabled && isSick && (
                             <span
                               className="align-middle text-slate-500 text-base leading-none"
                               title={sickTitle}
@@ -1023,42 +1075,46 @@ const AdminUsersPage = () => {
                       </td>
 
                       {/* Vacaciones (histórico en modal) */}
-                      <td className="py-2 px-4 text-sm text-center align-middle">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleOpenVacationModal(user);
-                          }}
-                          className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
-                          title={t(
-                            "pages.adminUsers.modals.vacations.open",
-                            "Ver historial de vacaciones",
-                          )}
-                        >
-                          {t("pages.adminUsers.columns.view", "Ver")}
-                        </button>
-                      </td>
+                      {vacationModuleEnabled && (
+                        <td className="py-2 px-4 text-sm text-center align-middle">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleOpenVacationModal(user);
+                            }}
+                            className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                            title={t(
+                              "pages.adminUsers.modals.vacations.open",
+                              "Ver historial de vacaciones",
+                            )}
+                          >
+                            {t("pages.adminUsers.columns.view", "Ver")}
+                          </button>
+                        </td>
+                      )}
 
                       {/* Bajas (histórico en modal) */}
-                      <td className="py-2 px-4 text-sm text-center align-middle">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            void handleOpenSickModal(user);
-                          }}
-                          className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
-                          title={t(
-                            "pages.adminUsers.modals.sick.open",
-                            "Ver historial de bajas",
-                          )}
-                        >
-                          {t("pages.adminUsers.columns.view", "Ver")}
-                        </button>
-                      </td>
+                      {sickLeavesModuleEnabled && (
+                        <td className="py-2 px-4 text-sm text-center align-middle">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              void handleOpenSickModal(user);
+                            }}
+                            className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                            title={t(
+                              "pages.adminUsers.modals.sick.open",
+                              "Ver historial de bajas",
+                            )}
+                          >
+                            {t("pages.adminUsers.columns.view", "Ver")}
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -1069,7 +1125,7 @@ const AdminUsersPage = () => {
       </div>
 
       {/* Modal: Vacaciones por trabajador */}
-      {vacationModalUser && (
+      {vacationModuleEnabled && vacationModalUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
           <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
@@ -1095,7 +1151,7 @@ const AdminUsersPage = () => {
       )}
 
       {/* Modal: Bajas por trabajador */}
-      {sickModalUser && (
+      {sickLeavesModuleEnabled && sickModalUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
           <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
