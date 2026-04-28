@@ -37,6 +37,23 @@ const envSchema = z.object({
   NODE_ENV: z.string().trim().optional(),
   JWT_EXPIRES_IN: z.string().trim().default("1h"),
   JWT_EXPIRES_IN_PRIVILEGED: z.string().trim().default("15m"),
+  SECURITY_MONITORING_ENABLED: z
+    .preprocess(
+      (v) => {
+        if (v === undefined || v === "") return true;
+        if (typeof v === "boolean") return v;
+        return String(v).toLowerCase() !== "false";
+      },
+      z.boolean(),
+    )
+    .default(true),
+  SECURITY_MONITORING_CRON: z.string().trim().default("0 7 * * *"),
+  SECURITY_MONITORING_DENIED_THRESHOLD: z
+    .preprocess(
+      (v) => (v === undefined || v === "" ? undefined : Number(v)),
+      z.number().int().min(1).optional(),
+    )
+    .default(3),
 
   // Rate limiting (opcionales)
   RATE_LIMIT_LOGIN_MAX: z

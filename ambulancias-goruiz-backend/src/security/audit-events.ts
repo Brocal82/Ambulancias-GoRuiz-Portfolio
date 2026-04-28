@@ -13,6 +13,7 @@ export const AUDIT_EVENT = {
   SUPPORT_ACCESS_DENIED: "support_access.denied",
   SUPPORT_ACCESS_REVOKED: "support_access.revoked",
   SUPPORT_ACCESS_EXPIRED: "support_access.expired",
+  SECURITY_DAILY_MONITORING_REPORTED: "security.daily_monitoring_reported",
 } as const;
 
 export type AuditEventName = (typeof AUDIT_EVENT)[keyof typeof AUDIT_EVENT];
