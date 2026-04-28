@@ -14,6 +14,9 @@ export interface ISupportAccessRequest extends Document {
   ticketId: string;
   durationMinutes: number;
   status: SupportAccessStatus;
+  approvalActors: Types.ObjectId[];
+  approvalsRequired: number;
+  approvalsCount: number;
   reviewedBy?: Types.ObjectId;
   reviewedAt?: Date;
   reviewComment?: string;
@@ -48,6 +51,12 @@ const supportAccessRequestSchema = new Schema<ISupportAccessRequest>(
       default: "pending",
       index: true,
     },
+    approvalActors: {
+      type: [{ type: Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+    },
+    approvalsRequired: { type: Number, default: 2, min: 1, max: 3 },
+    approvalsCount: { type: Number, default: 0, min: 0 },
     reviewedBy: { type: Schema.Types.ObjectId, ref: "User" },
     reviewedAt: { type: Date },
     reviewComment: { type: String, trim: true },

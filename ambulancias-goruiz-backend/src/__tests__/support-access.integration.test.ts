@@ -13,7 +13,8 @@ const API = "/api";
 describe("Support access (JIT/break-glass)", () => {
   let companyId: string;
   let requesterToken: string;
-  let reviewerToken: string;
+  let reviewerToken1: string;
+  let reviewerToken2: string;
   let adminToken: string;
   let otherCompanyId: string;
   let otherRequesterToken: string;
@@ -26,10 +27,12 @@ describe("Support access (JIT/break-glass)", () => {
     const otherCo = await createTestAdminWithCompany();
     otherCompanyId = otherCo.companyId;
     const saRequester = await createTestSuperadmin();
-    const saReviewer = await createTestSuperadmin();
+    const saReviewer1 = await createTestSuperadmin();
+    const saReviewer2 = await createTestSuperadmin();
     const saOtherRequester = await createTestSuperadmin();
     requesterToken = saRequester.superadminToken;
-    reviewerToken = saReviewer.superadminToken;
+    reviewerToken1 = saReviewer1.superadminToken;
+    reviewerToken2 = saReviewer2.superadminToken;
     otherRequesterToken = saOtherRequester.superadminToken;
   });
 
@@ -37,7 +40,7 @@ describe("Support access (JIT/break-glass)", () => {
     await mongoose.disconnect();
   });
 
-  it("creates, reviews, checks active, and revokes support access", async () => {
+  it("requires two independent approvals before access becomes active", async () => {
     const createRes = await request(app)
       .post(`${API}/support-access/requests`)
       .set("Authorization", `Bearer ${requesterToken}`)
@@ -60,11 +63,28 @@ describe("Support access (JIT/break-glass)", () => {
 
     const approveRes = await request(app)
       .post(`${API}/support-access/requests/${requestId}/review`)
-      .set("Authorization", `Bearer ${reviewerToken}`)
+      .set("Authorization", `Bearer ${reviewerToken1}`)
       .send({ approve: true, reviewComment: "Approved for incident support" })
       .expect(200);
-    expect(approveRes.body.status).toBe("approved");
-    expect(approveRes.body.expiresAt).toBeDefined();
+    expect(approveRes.body.status).toBe("pending");
+    expect(approveRes.body.approvalsCount).toBe(1);
+    expect(approveRes.body.expiresAt).toBeFalsy();
+
+    const activeAfterOneApproval = await request(app)
+      .get(`${API}/support-access/active`)
+      .query({ companyId })
+      .set("Authorization", `Bearer ${requesterToken}`)
+      .expect(200);
+    expect(activeAfterOneApproval.body.active).toBe(false);
+
+    const secondApprove = await request(app)
+      .post(`${API}/support-access/requests/${requestId}/review`)
+      .set("Authorization", `Bearer ${reviewerToken2}`)
+      .send({ approve: true, reviewComment: "Second approver confirms" })
+      .expect(200);
+    expect(secondApprove.body.status).toBe("approved");
+    expect(secondApprove.body.approvalsCount).toBe(2);
+    expect(secondApprove.body.expiresAt).toBeDefined();
 
     const activeRes = await request(app)
       .get(`${API}/support-access/active`)
@@ -75,7 +95,7 @@ describe("Support access (JIT/break-glass)", () => {
 
     const revokeRes = await request(app)
       .post(`${API}/support-access/requests/${requestId}/revoke`)
-      .set("Authorization", `Bearer ${reviewerToken}`)
+      .set("Authorization", `Bearer ${reviewerToken2}`)
       .send({ reason: "Incident resolved" })
       .expect(200);
     expect(revokeRes.body.status).toBe("revoked");
@@ -110,8 +130,13 @@ describe("Support access (JIT/break-glass)", () => {
 
     await request(app)
       .post(`${API}/support-access/requests/${requestId}/review`)
-      .set("Authorization", `Bearer ${reviewerToken}`)
+      .set("Authorization", `Bearer ${reviewerToken1}`)
       .send({ approve: true, reviewComment: "Approved for isolated support" })
+      .expect(200);
+    await request(app)
+      .post(`${API}/support-access/requests/${requestId}/review`)
+      .set("Authorization", `Bearer ${reviewerToken2}`)
+      .send({ approve: true, reviewComment: "Second approver for activation" })
       .expect(200);
 
     const ownerActive = await request(app)
@@ -151,8 +176,13 @@ describe("Support access (JIT/break-glass)", () => {
 
     await request(app)
       .post(`${API}/support-access/requests/${requestId}/review`)
-      .set("Authorization", `Bearer ${reviewerToken}`)
+      .set("Authorization", `Bearer ${reviewerToken1}`)
       .send({ approve: true, reviewComment: "Approved for short window" })
+      .expect(200);
+    await request(app)
+      .post(`${API}/support-access/requests/${requestId}/review`)
+      .set("Authorization", `Bearer ${reviewerToken2}`)
+      .send({ approve: true, reviewComment: "Second approver for short window" })
       .expect(200);
 
     await SupportAccessRequest.findByIdAndUpdate(requestId, {
