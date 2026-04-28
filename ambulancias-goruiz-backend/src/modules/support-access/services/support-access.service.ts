@@ -4,6 +4,8 @@ import SupportAccessRequest, {
   type ISupportAccessRequest,
   type SupportAccessStatus,
 } from "../models/support-access-request.model";
+import { AUDIT_EVENT } from "../../../security/audit-events";
+import { emitAuditLog, emitSecurityAlert } from "../../../security/audit-log";
 
 function parseOid(value: string): mongoose.Types.ObjectId {
   if (!mongoose.Types.ObjectId.isValid(value)) {
@@ -50,6 +52,15 @@ export async function createSupportAccessRequest(params: {
 
 export async function expireSupportAccessRequests(): Promise<number> {
   const now = new Date();
+  const expiring = await SupportAccessRequest.find({
+    status: "approved",
+    expiresAt: { $lte: now },
+  })
+    .select("_id companyId requestedBy expiresAt")
+    .lean();
+  if (expiring.length === 0) {
+    return 0;
+  }
   const res = await SupportAccessRequest.updateMany(
     {
       status: "approved",
@@ -57,7 +68,31 @@ export async function expireSupportAccessRequests(): Promise<number> {
     },
     { $set: { status: "expired" } },
   );
-  return res.modifiedCount ?? 0;
+  const modified = res.modifiedCount ?? 0;
+  if (modified > 0) {
+    for (const request of expiring) {
+      emitAuditLog(AUDIT_EVENT.SUPPORT_ACCESS_EXPIRED, "success", {
+        resourceType: "support_access_request",
+        resourceId: String(request._id),
+        tenantCompanyId: String(request.companyId),
+        meta: {
+          requestedBy: String(request.requestedBy),
+          expiredAt: request.expiresAt instanceof Date
+            ? request.expiresAt.toISOString()
+            : request.expiresAt ?? null,
+        },
+      });
+      emitSecurityAlert("support_access_expired", {
+        requestId: String(request._id),
+        companyId: String(request.companyId),
+        requestedBy: String(request.requestedBy),
+        expiredAt: request.expiresAt instanceof Date
+          ? request.expiresAt.toISOString()
+          : request.expiresAt ?? null,
+      });
+    }
+  }
+  return modified;
 }
 
 export async function listSupportAccessRequests(status?: SupportAccessStatus) {

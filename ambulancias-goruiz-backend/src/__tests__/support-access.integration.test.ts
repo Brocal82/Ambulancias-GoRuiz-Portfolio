@@ -6,6 +6,7 @@ import {
   createTestAdminWithCompany,
   createTestSuperadmin,
 } from "./test-helpers";
+import SupportAccessRequest from "../modules/support-access/models/support-access-request.model";
 
 const API = "/api";
 
@@ -133,5 +134,39 @@ describe("Support access (JIT/break-glass)", () => {
       .set("Authorization", `Bearer ${requesterToken}`)
       .expect(200);
     expect(ownerOtherCompany.body.active).toBe(false);
+  });
+
+  it("expires approved access and marks request as expired", async () => {
+    const createRes = await request(app)
+      .post(`${API}/support-access/requests`)
+      .set("Authorization", `Bearer ${requesterToken}`)
+      .send({
+        companyId: otherCompanyId,
+        reason: "Temporary forensic access",
+        ticketId: "INC-34567",
+        durationMinutes: 5,
+      })
+      .expect(201);
+    const requestId = createRes.body._id ?? createRes.body.id;
+
+    await request(app)
+      .post(`${API}/support-access/requests/${requestId}/review`)
+      .set("Authorization", `Bearer ${reviewerToken}`)
+      .send({ approve: true, reviewComment: "Approved for short window" })
+      .expect(200);
+
+    await SupportAccessRequest.findByIdAndUpdate(requestId, {
+      $set: { expiresAt: new Date(Date.now() - 60_000) },
+    });
+
+    const activeAfterForcedExpiry = await request(app)
+      .get(`${API}/support-access/active`)
+      .query({ companyId: otherCompanyId })
+      .set("Authorization", `Bearer ${requesterToken}`)
+      .expect(200);
+    expect(activeAfterForcedExpiry.body.active).toBe(false);
+
+    const expired = await SupportAccessRequest.findById(requestId).lean();
+    expect(expired?.status).toBe("expired");
   });
 });
