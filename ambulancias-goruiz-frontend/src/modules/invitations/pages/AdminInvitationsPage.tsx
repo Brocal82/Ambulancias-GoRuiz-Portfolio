@@ -6,6 +6,7 @@ import type { Company } from "../../companies/domain/types";
 import { createInvitation } from "../domain/api";
 import type { CreateInvitationResponse } from "../domain/types";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
+import CreateInvitationIconButton from "../../../components/common/actions/CreateInvitationIconButton";
 
 type InvitationRole =
   | "admin"
@@ -116,7 +117,7 @@ export default function AdminInvitationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 max-w-2xl mx-auto">
+    <div className="min-h-screen bg-slate-50 p-6 max-w-5xl mx-auto">
       <div className="mb-6 flex items-center gap-4">
         <button
           type="button"
@@ -127,167 +128,134 @@ export default function AdminInvitationsPage() {
         </button>
       </div>
 
-      <h1 className="text-2xl font-bold text-slate-900 mb-2">
-        {t("pages.adminInvitations.title")}
-      </h1>
-      <p className="text-sm text-slate-600 mb-6">
-        {t("pages.adminInvitations.intro")}
-      </p>
+      <div className="rounded-2xl bg-white shadow ring-1 ring-slate-200 overflow-hidden">
+        <div className="px-5 py-4 bg-slate-900">
+          <h1 className="text-base sm:text-lg font-semibold tracking-tight text-white">
+            {t("pages.adminInvitations.title")}
+          </h1>
+        </div>
 
-      {!useDomain && (
-        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4">
-          {t("pages.adminInvitations.noEmailDomainHint")}
-        </p>
-      )}
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+            <div>
+              <label
+                htmlFor="inv-role"
+                className="block text-sm font-medium text-slate-700 mb-1"
+              >
+                {t("pages.adminInvitations.role")}
+              </label>
+              <select
+                id="inv-role"
+                value={role}
+                onChange={(e) => setRole(e.target.value as InvitationRole)}
+                className="h-9 w-full rounded-lg border border-slate-300 px-3 text-slate-900"
+              >
+                <option value="worker">{t("pages.adminInvitations.roleWorker")}</option>
+                <option value="mecanico">{t("pages.adminInvitations.roleMechanic")}</option>
+                <option value="jefe_mecanicos">
+                  {t("pages.adminInvitations.roleMechanicsChief")}
+                </option>
+                <option value="jefe_logistica">
+                  {t("pages.adminInvitations.roleLogisticsChief")}
+                </option>
+                <option value="admin">{t("pages.adminInvitations.roleAdmin")}</option>
+              </select>
+            </div>
 
-      {!result && (
-        <p className="text-sm text-slate-600 mb-4 rounded-lg border border-slate-200 bg-white/80 px-4 py-3">
-          {t("pages.adminInvitations.hintBeforeCreate")}
-        </p>
-      )}
-
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded-lg shadow border border-slate-200 p-6 space-y-4"
-      >
-        {useDomain ? (
-          <div>
-            <span className="block text-sm font-medium text-slate-700 mb-1">
-              {t("pages.adminInvitations.email")}
-            </span>
-            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+            <div>
+              <label
+                htmlFor="inv-employee-number"
+                className="block text-sm font-medium text-slate-700 mb-1"
+              >
+                {t("pages.adminInvitations.employeeNumber")}
+              </label>
               <input
-                id="inv-email-local"
+                id="inv-employee-number"
                 type="text"
-                value={localPart}
-                onChange={(e) => setLocalPart(e.target.value)}
-                className="flex-1 min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
-                required
+                value={employeeNumber}
+                onChange={(e) => setEmployeeNumber(e.target.value)}
+                className="h-9 w-full rounded-lg border border-slate-300 px-3 text-slate-900"
                 autoComplete="off"
-                placeholder={t("pages.adminInvitations.localPartPlaceholder")}
-                aria-label={t("pages.adminInvitations.localPartAria")}
+                placeholder={t("pages.adminInvitations.employeeNumberPlaceholder")}
               />
-              <span className="text-slate-600 text-sm sm:px-1 shrink-0 font-mono break-all">
-                {company!.emailDomain}
+            </div>
+
+            <div className="lg:col-span-2">
+              <span className="block text-sm font-medium text-slate-700 mb-1">
+                {t("pages.adminInvitations.email")}
               </span>
+              {useDomain ? (
+                <div className="flex gap-2 items-center">
+                  <input
+                    id="inv-email-local"
+                    type="text"
+                    value={localPart}
+                    onChange={(e) => setLocalPart(e.target.value)}
+                    className="h-9 flex-1 min-w-0 rounded-lg border border-slate-300 px-3 text-slate-900"
+                    required
+                    autoComplete="off"
+                    placeholder={t("pages.adminInvitations.localPartPlaceholder")}
+                    aria-label={t("pages.adminInvitations.localPartAria")}
+                  />
+                  <span className="text-slate-600 text-sm shrink-0 font-mono">
+                    {company!.emailDomain}
+                  </span>
+                </div>
+              ) : (
+                <input
+                  id="inv-email"
+                  type="email"
+                  value={fullEmail}
+                  onChange={(e) => setFullEmail(e.target.value)}
+                  className="h-9 w-full rounded-lg border border-slate-300 px-3 text-slate-900"
+                  required
+                  autoComplete="off"
+                />
+              )}
             </div>
           </div>
-        ) : (
-          <div>
-            <label
-              htmlFor="inv-email"
-              className="block text-sm font-medium text-slate-700 mb-1"
-            >
-              {t("pages.adminInvitations.email")}
-            </label>
-            <input
-              id="inv-email"
-              type="email"
-              value={fullEmail}
-              onChange={(e) => setFullEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
-              required
-              autoComplete="off"
-            />
+
+          <div className="grid grid-cols-1 sm:grid-cols-[220px_1fr] gap-3 items-end">
+            <div>
+              <label
+                htmlFor="inv-expires"
+                className="block text-sm font-medium text-slate-700 mb-1"
+              >
+                {t("pages.adminInvitations.expiresLabel")}
+              </label>
+              <input
+                id="inv-expires"
+                type="number"
+                min={1}
+                max={90}
+                placeholder={t("pages.adminInvitations.expiresPlaceholder")}
+                value={expiresInDaysRaw}
+                onChange={(e) => setExpiresInDaysRaw(e.target.value)}
+                className="h-9 w-full rounded-lg border border-slate-300 px-3 text-slate-900"
+              />
+            </div>
+
+            <div className="sm:justify-self-end">
+              <CreateInvitationIconButton
+                disabled={submitting}
+                title={
+                  submitting
+                    ? t("pages.adminInvitations.submitting")
+                    : t("pages.adminInvitations.submit")
+                }
+              />
+            </div>
           </div>
-        )}
-
-        <div>
-          <label
-            htmlFor="inv-employee-number"
-            className="block text-sm font-medium text-slate-700 mb-1"
-          >
-            {t("pages.adminInvitations.employeeNumber")}
-          </label>
-          <input
-            id="inv-employee-number"
-            type="text"
-            value={employeeNumber}
-            onChange={(e) => setEmployeeNumber(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
-            autoComplete="off"
-            placeholder={t("pages.adminInvitations.employeeNumberPlaceholder")}
-          />
-          <p className="text-xs text-slate-500 mt-1">
-            {t("pages.adminInvitations.employeeNumberHint")}
-          </p>
-        </div>
-
-        <div>
-          <label
-            htmlFor="inv-role"
-            className="block text-sm font-medium text-slate-700 mb-1"
-          >
-            {t("pages.adminInvitations.role")}
-          </label>
-          <select
-            id="inv-role"
-            value={role}
-            onChange={(e) =>
-              setRole(e.target.value as InvitationRole)
-            }
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
-          >
-            <option value="worker">{t("pages.adminInvitations.roleWorker")}</option>
-            <option value="mecanico">{t("pages.adminInvitations.roleMechanic")}</option>
-            <option value="jefe_mecanicos">
-              {t("pages.adminInvitations.roleMechanicsChief")}
-            </option>
-            <option value="jefe_logistica">
-              {t("pages.adminInvitations.roleLogisticsChief")}
-            </option>
-            <option value="admin">{t("pages.adminInvitations.roleAdmin")}</option>
-          </select>
-        </div>
-
-        <div>
-          <label
-            htmlFor="inv-expires"
-            className="block text-sm font-medium text-slate-700 mb-1"
-          >
-            {t("pages.adminInvitations.expiresLabel")}
-          </label>
-          <input
-            id="inv-expires"
-            type="number"
-            min={1}
-            max={90}
-            placeholder={t("pages.adminInvitations.expiresPlaceholder")}
-            value={expiresInDaysRaw}
-            onChange={(e) => setExpiresInDaysRaw(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
-          />
-          <p className="text-xs text-slate-500 mt-1">
-            {t("pages.adminInvitations.expiresHint")}
-          </p>
-        </div>
-
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-        >
-          {submitting
-            ? t("pages.adminInvitations.submitting")
-            : t("pages.adminInvitations.submit")}
-        </button>
-      </form>
+        </form>
+      </div>
 
       {result && (
-        <div className="mt-6 bg-white rounded-lg shadow border border-slate-200 p-6 space-y-4">
+        <div className="mt-6 bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900">
             {t("pages.adminInvitations.resultTitle")}
           </h2>
 
           <div className="text-sm space-y-1">
-            <p>
-              <span className="font-medium text-slate-700">
-                {t("pages.adminInvitations.tokenLabel")}
-              </span>{" "}
-              <span className="text-slate-600 break-all font-mono text-xs">
-                {result.token}
-              </span>
-            </p>
             <p>
               <span className="font-medium text-slate-700">
                 {t("pages.adminInvitations.expiresAtLabel")}
