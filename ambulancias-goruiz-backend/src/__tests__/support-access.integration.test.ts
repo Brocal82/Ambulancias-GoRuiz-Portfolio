@@ -13,15 +13,23 @@ describe("Support access (JIT/break-glass)", () => {
   let companyId: string;
   let requesterToken: string;
   let reviewerToken: string;
+  let adminToken: string;
+  let otherCompanyId: string;
+  let otherRequesterToken: string;
 
   beforeAll(async () => {
     await mongoose.connect(env.MONGODB_URI);
     const co = await createTestAdminWithCompany();
     companyId = co.companyId;
+    adminToken = co.adminToken;
+    const otherCo = await createTestAdminWithCompany();
+    otherCompanyId = otherCo.companyId;
     const saRequester = await createTestSuperadmin();
     const saReviewer = await createTestSuperadmin();
+    const saOtherRequester = await createTestSuperadmin();
     requesterToken = saRequester.superadminToken;
     reviewerToken = saReviewer.superadminToken;
+    otherRequesterToken = saOtherRequester.superadminToken;
   });
 
   afterAll(async () => {
@@ -77,5 +85,53 @@ describe("Support access (JIT/break-glass)", () => {
       .set("Authorization", `Bearer ${requesterToken}`)
       .expect(200);
     expect(activeAfterRevoke.body.active).toBe(false);
+  });
+
+  it("blocks non-superadmin roles from support-access endpoints", async () => {
+    await request(app)
+      .get(`${API}/support-access/requests`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .expect(403);
+  });
+
+  it("isolates active support access per actor and company", async () => {
+    const createRes = await request(app)
+      .post(`${API}/support-access/requests`)
+      .set("Authorization", `Bearer ${requesterToken}`)
+      .send({
+        companyId,
+        reason: "Investigate tenant issue",
+        ticketId: "INC-23456",
+        durationMinutes: 20,
+      })
+      .expect(201);
+    const requestId = createRes.body._id ?? createRes.body.id;
+
+    await request(app)
+      .post(`${API}/support-access/requests/${requestId}/review`)
+      .set("Authorization", `Bearer ${reviewerToken}`)
+      .send({ approve: true, reviewComment: "Approved for isolated support" })
+      .expect(200);
+
+    const ownerActive = await request(app)
+      .get(`${API}/support-access/active`)
+      .query({ companyId })
+      .set("Authorization", `Bearer ${requesterToken}`)
+      .expect(200);
+    expect(ownerActive.body.active).toBe(true);
+
+    const otherActorSameCompany = await request(app)
+      .get(`${API}/support-access/active`)
+      .query({ companyId })
+      .set("Authorization", `Bearer ${otherRequesterToken}`)
+      .expect(200);
+    expect(otherActorSameCompany.body.active).toBe(false);
+
+    const ownerOtherCompany = await request(app)
+      .get(`${API}/support-access/active`)
+      .query({ companyId: otherCompanyId })
+      .set("Authorization", `Bearer ${requesterToken}`)
+      .expect(200);
+    expect(ownerOtherCompany.body.active).toBe(false);
   });
 });
