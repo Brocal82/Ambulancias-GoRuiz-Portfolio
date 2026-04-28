@@ -24,7 +24,7 @@ export default function AdminInvitationsPage() {
   const [fullEmail, setFullEmail] = useState("");
   const [employeeNumber, setEmployeeNumber] = useState("");
   const [role, setRole] = useState<InvitationRole>("worker");
-  const [expiresInDaysRaw, setExpiresInDaysRaw] = useState("");
+  const [expiresInDaysRaw, setExpiresInDaysRaw] = useState("2");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CreateInvitationResponse | null>(null);
 
@@ -54,6 +54,10 @@ export default function AdminInvitationsPage() {
   const invitationLink = result?.token
     ? `${window.location.origin}/invitation/accept?token=${encodeURIComponent(result.token)}`
     : "";
+
+  const canSubmit = useDomain
+    ? localPart.trim().length > 0
+    : fullEmail.trim().length > 0;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -87,7 +91,7 @@ export default function AdminInvitationsPage() {
       setFullEmail("");
       setEmployeeNumber("");
       setRole("worker");
-      setExpiresInDaysRaw("");
+      setExpiresInDaysRaw("2");
       setResult(data);
     } catch (err: unknown) {
       toastT.error(
@@ -117,7 +121,7 @@ export default function AdminInvitationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 max-w-5xl mx-auto">
+    <div className="min-h-screen bg-slate-50 p-6 max-w-4xl mx-auto">
       <div className="mb-6 flex items-center gap-4">
         <button
           type="button"
@@ -135,8 +139,8 @@ export default function AdminInvitationsPage() {
           </h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+        <form onSubmit={handleSubmit} className="p-5 space-y-5">
+          <div className="grid grid-cols-1 lg:grid-cols-[170px_170px_minmax(280px,1fr)_110px] gap-3 items-end">
             <div>
               <label
                 htmlFor="inv-role"
@@ -167,7 +171,7 @@ export default function AdminInvitationsPage() {
                 htmlFor="inv-employee-number"
                 className="block text-sm font-medium text-slate-700 mb-1"
               >
-                {t("pages.adminInvitations.employeeNumber")}
+                Numero ID
               </label>
               <input
                 id="inv-employee-number"
@@ -215,33 +219,34 @@ export default function AdminInvitationsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-[220px_1fr] gap-3 items-end">
+          <div className="pt-3 flex items-end justify-between gap-4">
             <div>
               <label
-                htmlFor="inv-expires"
+                htmlFor="inv-expires-bottom"
                 className="block text-sm font-medium text-slate-700 mb-1"
               >
-                {t("pages.adminInvitations.expiresLabel")}
+                Caduca
               </label>
               <input
-                id="inv-expires"
+                id="inv-expires-bottom"
                 type="number"
                 min={1}
                 max={90}
                 placeholder={t("pages.adminInvitations.expiresPlaceholder")}
                 value={expiresInDaysRaw}
                 onChange={(e) => setExpiresInDaysRaw(e.target.value)}
-                className="h-9 w-full rounded-lg border border-slate-300 px-3 text-slate-900"
+                className="h-8 w-12 rounded-lg border border-slate-300 px-2 text-sm text-slate-900"
               />
             </div>
-
-            <div className="sm:justify-self-end">
+            <div>
               <CreateInvitationIconButton
-                disabled={submitting}
+                disabled={submitting || !canSubmit}
                 title={
                   submitting
                     ? t("pages.adminInvitations.submitting")
-                    : t("pages.adminInvitations.submit")
+                    : !canSubmit
+                      ? t("pages.adminInvitations.emailRequired")
+                      : t("pages.adminInvitations.submit")
                 }
               />
             </div>

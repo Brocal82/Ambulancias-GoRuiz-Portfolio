@@ -29,6 +29,10 @@ const CreateInvitationIconButton = ({
         focus-visible:ring-1 focus-visible:ring-orange-200/60
         disabled:opacity-50
         disabled:cursor-not-allowed
+        disabled:pointer-events-none
+        disabled:hover:bg-white
+        disabled:hover:border-transparent
+        disabled:hover:shadow-none
         ${className}
       `)}
       {...props}
