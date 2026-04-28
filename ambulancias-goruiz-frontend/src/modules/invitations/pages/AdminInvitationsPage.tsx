@@ -7,6 +7,8 @@ import { createInvitation } from "../domain/api";
 import type { CreateInvitationResponse } from "../domain/types";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import CreateInvitationIconButton from "../../../components/common/actions/CreateInvitationIconButton";
+import CreateIconButton from "../../../components/common/actions/CreateIconButton";
+import CopyLinkIconButton from "../../../components/common/actions/CopyLinkIconButton";
 
 type InvitationRole =
   | "admin"
@@ -14,6 +16,12 @@ type InvitationRole =
   | "mecanico"
   | "jefe_mecanicos"
   | "jefe_logistica";
+
+type InvitationSnapshot = {
+  role: InvitationRole;
+  employeeNumber: string;
+  email: string;
+};
 
 export default function AdminInvitationsPage() {
   const { t } = useTranslation();
@@ -27,6 +35,8 @@ export default function AdminInvitationsPage() {
   const [expiresInDaysRaw, setExpiresInDaysRaw] = useState("2");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CreateInvitationResponse | null>(null);
+  const [lastInvitationData, setLastInvitationData] =
+    useState<InvitationSnapshot | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,6 +69,14 @@ export default function AdminInvitationsPage() {
     ? localPart.trim().length > 0
     : fullEmail.trim().length > 0;
 
+  const roleLabelMap: Record<InvitationRole, string> = {
+    worker: t("pages.adminInvitations.roleWorker"),
+    mecanico: t("pages.adminInvitations.roleMechanic"),
+    jefe_mecanicos: t("pages.adminInvitations.roleMechanicsChief"),
+    jefe_logistica: t("pages.adminInvitations.roleLogisticsChief"),
+    admin: t("pages.adminInvitations.roleAdmin"),
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const email = useDomain
@@ -87,6 +105,11 @@ export default function AdminInvitationsPage() {
       };
       const data = await createInvitation(payload);
       toastT.success(t("pages.adminInvitations.toastCreateSuccess"));
+      setLastInvitationData({
+        role,
+        employeeNumber: empTrim,
+        email,
+      });
       setLocalPart("");
       setFullEmail("");
       setEmployeeNumber("");
@@ -255,53 +278,55 @@ export default function AdminInvitationsPage() {
       </div>
 
       {result && (
-        <div className="mt-6 bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5 space-y-4">
-          <h2 className="text-lg font-semibold text-slate-900">
-            {t("pages.adminInvitations.resultTitle")}
-          </h2>
-
-          <div className="text-sm space-y-1">
-            <p>
-              <span className="font-medium text-slate-700">
-                {t("pages.adminInvitations.expiresAtLabel")}
-              </span>{" "}
-              <span className="text-slate-600">
+        <div className="mt-6 space-y-3">
+          <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
+            <h2 className="text-lg font-semibold text-slate-900">Invitacion</h2>
+            {lastInvitationData && (
+              <p className="mt-1 text-xs text-slate-500">
+                <span className="font-medium text-slate-600">Rol:</span>{" "}
+                {roleLabelMap[lastInvitationData.role]}
+                {"  |  "}
+                <span className="font-medium text-slate-600">Numero ID:</span>{" "}
+                {lastInvitationData.employeeNumber || "-"}
+                {"  |  "}
+                <span className="font-medium text-slate-600">Email:</span>{" "}
+                {lastInvitationData.email}
+              </p>
+            )}
+            <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <p className="text-sm text-slate-600 md:flex-1">
+                <span className="font-medium text-slate-700">
+                  {t("pages.adminInvitations.expiresAtLabel")}:
+                </span>{" "}
                 {new Date(result.expiresAt).toLocaleString()}
-              </span>
-            </p>
-          </div>
-
-          <div>
-            <label
-              htmlFor="invitation-link"
-              className="block text-sm font-medium text-slate-700 mb-1"
-            >
-              {t("pages.adminInvitations.linkLabel")}
-            </label>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input
-                id="invitation-link"
-                readOnly
-                value={invitationLink}
-                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 bg-slate-50"
-              />
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 whitespace-nowrap"
-              >
-                {t("pages.adminInvitations.copy")}
-              </button>
+              </p>
+              <div className="flex min-w-0 items-center gap-2 md:flex-1 md:justify-end">
+                <label
+                  htmlFor="invitation-link"
+                  className="text-sm font-medium text-slate-700 whitespace-nowrap"
+                >
+                  Link:
+                </label>
+                <input
+                  id="invitation-link"
+                  readOnly
+                  value={invitationLink}
+                  className="h-9 w-full max-w-sm rounded-lg border border-slate-300 px-3 text-sm text-slate-900 bg-slate-50"
+                />
+                <CopyLinkIconButton
+                  onClick={handleCopyLink}
+                  title={t("pages.adminInvitations.copy")}
+                />
+              </div>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setResult(null)}
-            className="text-sm text-blue-600 hover:underline font-medium"
-          >
-            {t("pages.adminInvitations.createAnother")}
-          </button>
+          <div className="flex justify-end">
+            <CreateIconButton
+              onClick={() => setResult(null)}
+              label={t("pages.adminInvitations.createAnother")}
+            />
+          </div>
         </div>
       )}
     </div>

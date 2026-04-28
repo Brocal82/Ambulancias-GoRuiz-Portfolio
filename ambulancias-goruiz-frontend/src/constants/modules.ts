@@ -62,7 +62,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   scheduling:   "Planificación (Diensts)",
   workday:      "Jornada laboral y viajes",
   mechanics:    "Averías / taller",
-  appointments: "Citas médicas",
+  appointments: "Citas con jefe",
   messages:     "Mensajes internos",
   vacation:     "Vacaciones",
   "sick-leaves":"Bajas por enfermedad",
