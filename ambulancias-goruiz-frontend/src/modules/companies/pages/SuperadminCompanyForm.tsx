@@ -18,6 +18,7 @@ import {
   getNextCalendarMonth,
   shouldAttachPraemienEffectiveFromOnCompanyEdit,
 } from "../utils/praemienScheduleEdit";
+import SaveIconButton from "../../../components/common/actions/SaveIconButton";
 
 export default function SuperadminCompanyForm() {
   const { id } = useParams<{ id: string }>();
@@ -339,13 +340,11 @@ export default function SuperadminCompanyForm() {
         )}
 
         <div className="flex gap-3 pt-2">
-          <button
+          <SaveIconButton
             type="submit"
             disabled={submitting}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-          >
-            {submitting ? "Guardando…" : "Guardar"}
-          </button>
+            title={submitting ? "Guardando..." : "Guardar"}
+          />
           <button
             type="button"
             onClick={() => navigate("/superadmin/companies")}
