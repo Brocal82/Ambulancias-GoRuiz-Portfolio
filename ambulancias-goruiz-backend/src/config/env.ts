@@ -54,6 +54,12 @@ const envSchema = z.object({
       z.number().int().min(1).optional(),
     )
     .default(3),
+  SECURITY_AUDIT_LOG_RETENTION_DAYS: z
+    .preprocess(
+      (v) => (v === undefined || v === "" ? undefined : Number(v)),
+      z.number().int().min(1).optional(),
+    )
+    .default(180),
 
   // Rate limiting (opcionales)
   RATE_LIMIT_LOGIN_MAX: z

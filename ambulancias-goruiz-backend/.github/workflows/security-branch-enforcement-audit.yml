@@ -1,0 +1,95 @@
+name: Security Branch Enforcement Audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  audit-branch-enforcement:
+    name: audit-branch-enforcement
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Verify main enforces security-isolation as required check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const requiredContext = "security-isolation";
+
+            const failures = [];
+            let branchProtectionEnforced = false;
+            let rulesetEnforced = false;
+
+            try {
+              const branchProtection = await github.rest.repos.getBranchProtection({
+                owner,
+                repo,
+                branch: "main",
+              });
+
+              const contexts = branchProtection.data.required_status_checks?.contexts || [];
+              branchProtectionEnforced = contexts.includes(requiredContext);
+              if (!branchProtectionEnforced) {
+                failures.push(`Branch protection exists but missing required check '${requiredContext}'`);
+              }
+            } catch (error) {
+              if (error.status !== 404) {
+                failures.push(`Unable to read branch protection: ${error.message}`);
+              }
+            }
+
+            try {
+              const { data: rulesets } = await github.rest.repos.getAllRepoRulesets({
+                owner,
+                repo,
+              });
+
+              const activeMainRulesets = (rulesets || []).filter((ruleset) => {
+                if (!ruleset.enforcement || ruleset.enforcement === "disabled") return false;
+                return (ruleset.conditions?.ref_name?.include || []).includes("refs/heads/main");
+              });
+
+              for (const ruleset of activeMainRulesets) {
+                const { data: details } = await github.rest.repos.getRepoRuleset({
+                  owner,
+                  repo,
+                  ruleset_id: ruleset.id,
+                });
+
+                const requiredStatusRule = (details.rules || []).find(
+                  (rule) =>
+                    rule.type === "required_status_checks" &&
+                    (rule.parameters?.required_status_checks || []).some(
+                      (check) => check.context === requiredContext,
+                    ),
+                );
+
+                if (requiredStatusRule) {
+                  rulesetEnforced = true;
+                  break;
+                }
+              }
+            } catch (error) {
+              failures.push(`Unable to read repository rulesets: ${error.message}`);
+            }
+
+            if (!branchProtectionEnforced && !rulesetEnforced) {
+              failures.push(
+                `No enforcement found for '${requiredContext}' on main. Configure Branch Protection or Ruleset required checks.`,
+              );
+            }
+
+            if (failures.length > 0) {
+              core.setFailed(failures.join("\n"));
+              return;
+            }
+
+            core.info(`Enforcement validated: '${requiredContext}' is required on main.`);

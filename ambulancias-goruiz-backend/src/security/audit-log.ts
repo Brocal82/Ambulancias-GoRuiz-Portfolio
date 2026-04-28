@@ -1,5 +1,6 @@
 import type { Request } from "express";
 import type { AuditLogEntry, AuditOutcome, AuditEventName } from "./audit-events";
+import SecurityAuditLog from "./models/security-audit-log.model";
 
 function getClientIp(req: Request): string | undefined {
   const forwarded = req.headers["x-forwarded-for"];
@@ -44,6 +45,13 @@ export function emitAuditLog(
     ...data,
   };
   console.info("[audit]", JSON.stringify(entry));
+  void SecurityAuditLog.create({
+    ...entry,
+    at: new Date(entry.at),
+  }).catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[audit-persistence-error]", message);
+  });
 }
 
 export function emitSecurityAlert(
