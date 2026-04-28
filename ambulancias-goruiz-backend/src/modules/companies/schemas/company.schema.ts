@@ -7,46 +7,35 @@ const praemienModeEffectiveFromSchema = z
   })
   .strict();
 
-const optionalEmailDomain = z.preprocess(
-  (val) => (val === "" || val === null || val === undefined ? undefined : val),
+const requiredEmailDomain = z.preprocess(
+  (val) => (typeof val === "string" ? val.trim() : val),
   z
     .string()
-    .trim()
+    .min(1, "emailDomain es obligatorio")
     .toLowerCase()
     .refine((s) => s.startsWith("@"), {
       message: "emailDomain debe empezar por @",
-    })
-    .optional(),
+    }),
 );
 
 export const createCompanySchema = z.object({
   name: z.string().trim().min(1, "name no puede estar vacío"),
   isActive: z.boolean().optional().default(true),
-  emailDomain: optionalEmailDomain,
+  emailDomain: requiredEmailDomain,
   enabledModules: z.array(z.string()).optional(),
   praemienMode: z.enum(["automatic", "manual"]).optional(),
   praemienModeEffectiveFrom: praemienModeEffectiveFromSchema.nullable().optional(),
 });
 
-/** PATCH: omit = sin cambio; null = borrar dominio guardado */
 const updateEmailDomainField = z.preprocess(
-  (val) => {
-    if (val === null) return null;
-    if (val === "" || val === undefined) return undefined;
-    return val;
-  },
+  (val) => (typeof val === "string" ? val.trim() : val),
   z
-    .union([
-      z.null(),
-      z
-        .string()
-        .trim()
-        .toLowerCase()
-        .refine((s) => s.startsWith("@"), {
-          message: "emailDomain debe empezar por @",
-        }),
-    ])
-    .optional(),
+    .string()
+    .min(1, "emailDomain es obligatorio")
+    .toLowerCase()
+    .refine((s) => s.startsWith("@"), {
+      message: "emailDomain debe empezar por @",
+    }),
 );
 
 export const updateCompanySchema = z.object({

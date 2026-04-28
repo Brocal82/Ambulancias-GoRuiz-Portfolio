@@ -3,7 +3,7 @@ import mongoose, { Document, Schema, Types } from "mongoose";
 export interface ICompany extends Document {
   name: string;
   isActive: boolean;
-  emailDomain?: string;
+  emailDomain: string;
   createdBy?: Types.ObjectId;
   /**
    * Canonical module keys enabled for this company.
@@ -50,13 +50,12 @@ const companySchema = new Schema<ICompany>(
     },
     emailDomain: {
       type: String,
-      required: false,
+      required: true,
       trim: true,
       lowercase: true,
       validate: {
         validator(v: string | undefined | null) {
-          if (v == null || v === "") return true;
-          return v.startsWith("@");
+          return typeof v === "string" && v.length > 0 && v.startsWith("@");
         },
         message: "emailDomain debe empezar por @",
       },

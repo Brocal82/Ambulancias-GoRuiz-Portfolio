@@ -55,7 +55,7 @@ const AdminDashboard = () => {
 
   // justo encima del return, dentro del componente
   const centeredCard =
-    "bg-white p-6 rounded shadow hover:shadow-md hover:bg-blue-50 transition flex flex-col items-center text-center";
+    "bg-white p-6 rounded border border-transparent shadow hover:shadow-md hover:bg-blue-50 hover:border-orange-300 transition flex flex-col items-center text-center";
   const centeredCardRelative = `relative ${centeredCard}`;
   const centeredCardDisabled =
     "bg-slate-100 p-6 rounded shadow-sm opacity-75 cursor-not-allowed pointer-events-none select-none flex flex-col items-center text-center border border-slate-200";

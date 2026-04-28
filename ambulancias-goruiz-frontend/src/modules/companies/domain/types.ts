@@ -5,7 +5,7 @@ export interface Company {
   _id: string;
   name: string;
   isActive: boolean;
-  emailDomain?: string;
+  emailDomain: string;
   enabledModules: string[];
   /** When `praemien` is enabled; Phase 1 storage only for manual. */
   praemienMode?: "automatic" | "manual";
@@ -23,7 +23,7 @@ export interface CompanyAdmin {
 
 export interface CreateCompanyInput {
   name: string;
-  emailDomain?: string;
+  emailDomain: string;
   enabledModules?: string[];
   praemienMode?: "automatic" | "manual";
   praemienModeEffectiveFrom?: PraemienModeEffectiveFrom | null;
@@ -32,7 +32,7 @@ export interface CreateCompanyInput {
 export interface UpdateCompanyInput {
   name?: string;
   isActive?: boolean;
-  emailDomain?: string | null;
+  emailDomain?: string;
   enabledModules?: string[];
   praemienMode?: "automatic" | "manual";
   praemienModeEffectiveFrom?: PraemienModeEffectiveFrom | null;

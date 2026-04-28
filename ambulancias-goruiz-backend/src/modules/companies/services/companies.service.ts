@@ -70,10 +70,8 @@ export async function createCompany(
   const doc: Record<string, unknown> = {
     name: data.name,
     isActive: data.isActive ?? true,
+    emailDomain: data.emailDomain,
   };
-  if (data.emailDomain) {
-    doc.emailDomain = data.emailDomain;
-  }
   const resolvedPraemienMode: "automatic" | "manual" =
     data.praemienMode === "manual" ? "manual" : "automatic";
   if (Array.isArray(data.enabledModules)) {
@@ -141,7 +139,6 @@ export async function getCompanyAdmins(companyId: string) {
 export async function updateCompany(id: string, data: UpdateCompanyInput) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
   const $set: Record<string, unknown> = {};
-  const $unset: Record<string, string> = {};
   if (data.name !== undefined) $set.name = data.name;
   if (data.isActive !== undefined) $set.isActive = data.isActive;
   let shouldStripAmbulanceModuleData = false;
@@ -185,14 +182,11 @@ export async function updateCompany(id: string, data: UpdateCompanyInput) {
   if (data.praemienModeEffectiveFrom !== undefined) {
     $set.praemienModeEffectiveFrom = data.praemienModeEffectiveFrom;
   }
-  if (data.emailDomain === null) {
-    $unset.emailDomain = "";
-  } else if (data.emailDomain !== undefined) {
+  if (data.emailDomain !== undefined) {
     $set.emailDomain = data.emailDomain;
   }
   const update: Record<string, unknown> = {};
   if (Object.keys($set).length) update.$set = $set;
-  if (Object.keys($unset).length) update.$unset = $unset;
   if (Object.keys(update).length === 0) {
     return await Company.findById(id).lean();
   }

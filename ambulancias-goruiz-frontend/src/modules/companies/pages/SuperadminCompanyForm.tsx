@@ -46,10 +46,8 @@ export default function SuperadminCompanyForm() {
   const [name, setName] = useState("");
   const [emailDomain, setEmailDomain] = useState("");
   const [isActive, setIsActive] = useState(true);
-  // Default: all V1 modules pre-selected
-  const [selectedModules, setSelectedModules] = useState<Set<string>>(
-    new Set(ALL_MODULE_KEYS),
-  );
+  // Default on create: all modules off until explicitly enabled
+  const [selectedModules, setSelectedModules] = useState<Set<string>>(new Set());
   const [praemienMode, setPraemienMode] = useState<"automatic" | "manual">(
     "automatic",
   );
@@ -70,7 +68,7 @@ export default function SuperadminCompanyForm() {
   const [initialEmailDomain, setInitialEmailDomain] = useState("");
   const [initialIsActive, setInitialIsActive] = useState(true);
   const [initialSelectedModules, setInitialSelectedModules] = useState<Set<string>>(
-    new Set(ALL_MODULE_KEYS),
+    new Set(),
   );
 
   useEffect(() => {
@@ -84,7 +82,8 @@ export default function SuperadminCompanyForm() {
     setInitialName("");
     setInitialEmailDomain("");
     setInitialIsActive(true);
-    setInitialSelectedModules(new Set(ALL_MODULE_KEYS));
+    setSelectedModules(new Set());
+    setInitialSelectedModules(new Set());
   }, [isCreate]);
 
   useEffect(() => {
@@ -163,7 +162,6 @@ export default function SuperadminCompanyForm() {
   };
 
   const hasChanges = useMemo(() => {
-    if (isCreate) return true;
     const sameName = name.trim() === initialName.trim();
     const sameDomain = emailDomain.trim().toLowerCase() === initialEmailDomain.trim().toLowerCase();
     const sameActive = isActive === initialIsActive;
@@ -174,7 +172,6 @@ export default function SuperadminCompanyForm() {
 
     return !(sameName && sameDomain && sameActive && samePraemienMode && sameModules);
   }, [
-    isCreate,
     name,
     initialName,
     emailDomain,
@@ -192,12 +189,16 @@ export default function SuperadminCompanyForm() {
     setSubmitting(true);
     try {
       const domainTrim = emailDomain.trim();
+      if (!domainTrim) {
+        toastT.error("El dominio de correo es obligatorio");
+        return;
+      }
       const enabledModules = Array.from(selectedModules);
       const hasPraemien = enabledModules.includes(MODULE_KEYS.PRAEMIEN);
       if (isCreate) {
         await createCompany({
           name: name.trim(),
-          ...(domainTrim ? { emailDomain: domainTrim.toLowerCase() } : {}),
+          emailDomain: domainTrim.toLowerCase(),
           enabledModules,
           ...(hasPraemien
             ? {
@@ -214,7 +215,7 @@ export default function SuperadminCompanyForm() {
         const payload: UpdateCompanyInput = {
           name: name.trim(),
           isActive,
-          emailDomain: domainTrim ? domainTrim.toLowerCase() : null,
+          emailDomain: domainTrim.toLowerCase(),
           enabledModules,
         };
         if (hasPraemien) {
@@ -290,7 +291,7 @@ export default function SuperadminCompanyForm() {
               htmlFor="company-email-domain"
               className="block text-sm font-medium text-slate-700 mb-1"
             >
-              <span>Dominio de correo (opcional)</span>
+              <span>Dominio de correo</span>
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -300,6 +301,7 @@ export default function SuperadminCompanyForm() {
                 placeholder="@empresa.com"
                 disabled={!allowEmailDomainEdit}
                 className="h-9 w-full max-w-sm rounded-md border border-slate-300 px-2.5 text-sm text-slate-900 disabled:bg-slate-100 disabled:text-slate-500"
+                required
               />
               {!isCreate && (
                 <EditIconButton
@@ -352,23 +354,28 @@ export default function SuperadminCompanyForm() {
                     {MODULE_LABELS[key]}
                   </div>
                   <div
+                    role="button"
+                    tabIndex={isLocked ? -1 : 0}
+                    aria-pressed={isChecked}
+                    onClick={() => {
+                      if (!isLocked) toggleModule(key);
+                    }}
+                    onKeyDown={(e) => {
+                      if (isLocked) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleModule(key);
+                      }
+                    }}
                     className={`rounded-lg border px-2 py-2 transition
                       ${isLocked
-                        ? "bg-slate-100 text-slate-500 border-slate-200"
+                        ? "bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed"
                         : isChecked
-                          ? "bg-blue-50 border-blue-200 text-slate-900"
-                          : "bg-white border-slate-200 text-slate-700"
+                          ? "bg-blue-50 border-blue-200 text-slate-900 shadow-sm cursor-pointer hover:shadow-md hover:border-orange-300"
+                          : "bg-white border-slate-200 text-slate-700 cursor-pointer hover:bg-blue-50 hover:shadow-md hover:border-orange-300"
                       }`}
                   >
-                    <button
-                      type="button"
-                      onClick={() => toggleModule(key)}
-                      disabled={isLocked}
-                      aria-pressed={isChecked}
-                      className={`w-full rounded-md px-2 py-2 text-left
-                        ${isLocked ? "cursor-not-allowed" : "hover:bg-white/60"}
-                      `}
-                    >
+                    <div className="w-full rounded-md px-2 py-2 text-left">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xl leading-none" aria-hidden>
                           {MODULE_ICONS[key] ?? "🧩"}
@@ -382,7 +389,7 @@ export default function SuperadminCompanyForm() {
                           {isChecked ? "✅" : "❌"}
                         </span>
                       </div>
-                    </button>
+                    </div>
 
                     {isPraemien && isChecked && (
                       <div className="mt-2 border-t border-blue-200 pt-2 space-y-2">
@@ -396,7 +403,8 @@ export default function SuperadminCompanyForm() {
                         <div className="grid grid-cols-2 gap-1">
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setPraemienScheduleTouched(true);
                               setPraemienMode("automatic");
                               setSelectedModules((prev) => {
@@ -416,7 +424,8 @@ export default function SuperadminCompanyForm() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setPraemienScheduleTouched(true);
                               setPraemienMode("manual");
                             }}
@@ -448,17 +457,15 @@ export default function SuperadminCompanyForm() {
           </button>
           <SaveIconButton
             type="submit"
-            disabled={submitting || (!isCreate && !hasChanges)}
+            disabled={submitting || !hasChanges}
             title={
               submitting
                 ? "Guardando..."
-                : !isCreate && !hasChanges
+                : !hasChanges
                   ? "Sin cambios por guardar"
                   : "Guardar"
             }
-            className={
-              !isCreate && hasChanges ? "ring-2 ring-emerald-300 bg-emerald-50" : ""
-            }
+            className={hasChanges ? "ring-2 ring-emerald-300 bg-emerald-50" : ""}
           />
         </div>
       </form>
