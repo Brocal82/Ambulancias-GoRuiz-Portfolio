@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   createCompany,
@@ -19,6 +19,24 @@ import {
   shouldAttachPraemienEffectiveFromOnCompanyEdit,
 } from "../utils/praemienScheduleEdit";
 import SaveIconButton from "../../../components/common/actions/SaveIconButton";
+import EditIconButton from "../../../components/common/actions/EditIconButton";
+
+const MODULE_ICONS: Record<string, string> = {
+  [MODULE_KEYS.HOSPITALS]: "🏥",
+  [MODULE_KEYS.AMBULANCES]: "🚑",
+  [MODULE_KEYS.TEAMS]: "👥",
+  [MODULE_KEYS.SCHEDULING]: "🗓️",
+  [MODULE_KEYS.WORKDAY]: "🚨",
+  [MODULE_KEYS.MECHANICS]: "🔧",
+  [MODULE_KEYS.APPOINTMENTS]: "📕",
+  [MODULE_KEYS.MESSAGES]: "📨",
+  [MODULE_KEYS.VACATION]: "🏖️",
+  [MODULE_KEYS.SICK_LEAVES]: "🤒",
+  [MODULE_KEYS.PRAEMIEN]: "🎖",
+  [MODULE_KEYS.PAYROLL]: "🛠",
+  [MODULE_KEYS.DOCUMENTS]: "📄",
+  [MODULE_KEYS.EXCEL_PLANNING]: "📊",
+};
 
 export default function SuperadminCompanyForm() {
   const { id } = useParams<{ id: string }>();
@@ -46,6 +64,14 @@ export default function SuperadminCompanyForm() {
   const [praemienScheduleTouched, setPraemienScheduleTouched] = useState(false);
   const [loading, setLoading] = useState(!isCreate);
   const [submitting, setSubmitting] = useState(false);
+  const [allowNameEdit, setAllowNameEdit] = useState(isCreate);
+  const [allowEmailDomainEdit, setAllowEmailDomainEdit] = useState(isCreate);
+  const [initialName, setInitialName] = useState("");
+  const [initialEmailDomain, setInitialEmailDomain] = useState("");
+  const [initialIsActive, setInitialIsActive] = useState(true);
+  const [initialSelectedModules, setInitialSelectedModules] = useState<Set<string>>(
+    new Set(ALL_MODULE_KEYS),
+  );
 
   useEffect(() => {
     if (!isCreate) return;
@@ -53,6 +79,12 @@ export default function SuperadminCompanyForm() {
     setInitialPraemienMode(null);
     setLoadedEffectiveFrom(null);
     setPraemienScheduleTouched(false);
+    setAllowNameEdit(true);
+    setAllowEmailDomainEdit(true);
+    setInitialName("");
+    setInitialEmailDomain("");
+    setInitialIsActive(true);
+    setInitialSelectedModules(new Set(ALL_MODULE_KEYS));
   }, [isCreate]);
 
   useEffect(() => {
@@ -65,13 +97,15 @@ export default function SuperadminCompanyForm() {
         setName(company.name);
         setEmailDomain(company.emailDomain ?? "");
         setIsActive(company.isActive);
+        setInitialName(company.name);
+        setInitialEmailDomain(company.emailDomain ?? "");
+        setInitialIsActive(company.isActive);
         // Load existing module selection, falling back to all modules
-        const modules =
-          Array.isArray(company.enabledModules) &&
-          company.enabledModules.length > 0
-            ? company.enabledModules
-            : ALL_MODULE_KEYS;
+        const modules = Array.isArray(company.enabledModules)
+          ? company.enabledModules
+          : ALL_MODULE_KEYS;
         setSelectedModules(new Set(modules));
+        setInitialSelectedModules(new Set(modules));
         const pm =
           company.praemienMode === "manual" ? "manual" : "automatic";
         setPraemienMode(pm);
@@ -85,6 +119,8 @@ export default function SuperadminCompanyForm() {
             : null,
         );
         setPraemienScheduleTouched(false);
+        setAllowNameEdit(false);
+        setAllowEmailDomainEdit(false);
       } catch (e: unknown) {
         if (!cancelled) {
           toastT.error(getApiErrorMessage(e, "No se pudo cargar la empresa"));
@@ -125,6 +161,31 @@ export default function SuperadminCompanyForm() {
       return next;
     });
   };
+
+  const hasChanges = useMemo(() => {
+    if (isCreate) return true;
+    const sameName = name.trim() === initialName.trim();
+    const sameDomain = emailDomain.trim().toLowerCase() === initialEmailDomain.trim().toLowerCase();
+    const sameActive = isActive === initialIsActive;
+    const samePraemienMode = praemienMode === (initialPraemienMode ?? "automatic");
+    const sameModules =
+      selectedModules.size === initialSelectedModules.size &&
+      Array.from(selectedModules).every((key) => initialSelectedModules.has(key));
+
+    return !(sameName && sameDomain && sameActive && samePraemienMode && sameModules);
+  }, [
+    isCreate,
+    name,
+    initialName,
+    emailDomain,
+    initialEmailDomain,
+    isActive,
+    initialIsActive,
+    praemienMode,
+    initialPraemienMode,
+    selectedModules,
+    initialSelectedModules,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,54 +255,84 @@ export default function SuperadminCompanyForm() {
   }
 
   return (
-    <div className="p-4 max-w-md mx-auto">
+    <div className="p-4 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold text-slate-900 mb-6">
         {isCreate ? "Nueva empresa" : "Editar empresa"}
       </h1>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label
-            htmlFor="company-name"
-            className="block text-sm font-medium text-slate-700 mb-1"
-          >
-            Nombre
-          </label>
-          <input
-            id="company-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
-            required
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="company-email-domain"
-            className="block text-sm font-medium text-slate-700 mb-1"
-          >
-            Dominio de correo (opcional)
-          </label>
-          <input
-            id="company-email-domain"
-            value={emailDomain}
-            onChange={(e) => setEmailDomain(e.target.value)}
-            placeholder="@empresa.com"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
-          />
-          <p className="text-xs text-slate-500 mt-1">
-            Debe empezar por @. Se usa al crear administradores e invitaciones.
-          </p>
+        <div className="w-full lg:w-1/2 grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div>
+            <label
+              htmlFor="company-name"
+              className="block text-sm font-medium text-slate-700 mb-1"
+            >
+              <span>Nombre</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                id="company-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={!allowNameEdit}
+                className="h-9 w-full max-w-sm rounded-md border border-slate-300 px-2.5 text-sm text-slate-900 disabled:bg-slate-100 disabled:text-slate-500"
+                required
+              />
+              {!isCreate && (
+                <EditIconButton
+                  onClick={() => setAllowNameEdit((prev) => !prev)}
+                  title={allowNameEdit ? "Bloquear edición de nombre" : "Editar nombre"}
+                />
+              )}
+            </div>
+          </div>
+          <div>
+            <label
+              htmlFor="company-email-domain"
+              className="block text-sm font-medium text-slate-700 mb-1"
+            >
+              <span>Dominio de correo (opcional)</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                id="company-email-domain"
+                value={emailDomain}
+                onChange={(e) => setEmailDomain(e.target.value)}
+                placeholder="@empresa.com"
+                disabled={!allowEmailDomainEdit}
+                className="h-9 w-full max-w-sm rounded-md border border-slate-300 px-2.5 text-sm text-slate-900 disabled:bg-slate-100 disabled:text-slate-500"
+              />
+              {!isCreate && (
+                <EditIconButton
+                  onClick={() => setAllowEmailDomainEdit((prev) => !prev)}
+                  title={
+                    allowEmailDomainEdit
+                      ? "Bloquear edición de dominio"
+                      : "Editar dominio de correo"
+                  }
+                />
+              )}
+            </div>
+          </div>
         </div>
         {!isCreate && (
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="rounded border-slate-300"
-            />
-            <span className="text-sm text-slate-700">Empresa activa</span>
-          </label>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsActive((prev) => !prev)}
+              aria-pressed={isActive}
+              title={isActive ? "Desactivar empresa" : "Activar empresa"}
+              className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${
+                isActive
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                  : "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100"
+              }`}
+            >
+              ⏻
+            </button>
+            <span className="text-sm text-slate-700">
+              {isActive ? "Empresa activa" : "Empresa desactivada"}
+            </span>
+          </div>
         )}
 
         {/* Module selection */}
@@ -249,102 +340,105 @@ export default function SuperadminCompanyForm() {
           <legend className="text-sm font-semibold text-slate-700 px-1">
             Módulos habilitados
           </legend>
-          <p className="text-xs text-slate-500 mb-3">
-            Marca los módulos que la empresa usará. Planificación (diensts y
-            plantillas) es opt-in: sin ella no hay calendario dinámico; un flujo
-            futuro de Excel de solo lectura irá por otra vía. Jornada en papel:
-            Prämien manual sin módulo jornada; automático requiere jornada digital.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
             {ALL_MODULE_KEYS.map((key) => {
               const isLocked = V1_LOCKED_ON_MODULES.has(key);
               const isChecked = selectedModules.has(key);
+              const isPraemien = key === MODULE_KEYS.PRAEMIEN;
               return (
-                <label
-                  key={key}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm
-                    ${isLocked
-                      ? "bg-slate-100 text-slate-500 cursor-not-allowed"
-                      : "cursor-pointer hover:bg-slate-50"
-                    }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    disabled={isLocked}
-                    onChange={() => toggleModule(key)}
-                    className="rounded border-slate-300 disabled:opacity-50"
-                  />
-                  <span>
-                    {isLocked && (
-                      <span className="mr-1" aria-label="bloqueado">🔒</span>
-                    )}
+                <div key={key} className="space-y-1">
+                  <div className="px-1 text-xs font-medium leading-snug text-slate-700 text-center">
+                    {isLocked && <span className="mr-1">🔒</span>}
                     {MODULE_LABELS[key]}
-                  </span>
-                </label>
+                  </div>
+                  <div
+                    className={`rounded-lg border px-2 py-2 transition
+                      ${isLocked
+                        ? "bg-slate-100 text-slate-500 border-slate-200"
+                        : isChecked
+                          ? "bg-blue-50 border-blue-200 text-slate-900"
+                          : "bg-white border-slate-200 text-slate-700"
+                      }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleModule(key)}
+                      disabled={isLocked}
+                      aria-pressed={isChecked}
+                      className={`w-full rounded-md px-2 py-2 text-left
+                        ${isLocked ? "cursor-not-allowed" : "hover:bg-white/60"}
+                      `}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xl leading-none" aria-hidden>
+                          {MODULE_ICONS[key] ?? "🧩"}
+                        </span>
+                        <span
+                          className={`text-xs font-semibold ${
+                            isChecked ? "text-emerald-700" : "text-slate-500"
+                          }`}
+                          aria-label={isChecked ? "activado" : "desactivado"}
+                        >
+                          {isChecked ? "✅" : "❌"}
+                        </span>
+                      </div>
+                    </button>
+
+                    {isPraemien && isChecked && (
+                      <div className="mt-2 border-t border-blue-200 pt-2 space-y-2">
+                        {!isCreate && loadedEffectiveFrom && (
+                          <p className="text-[11px] text-amber-800 bg-amber-50 rounded px-2 py-1">
+                            Cambio programado:{" "}
+                            {String(loadedEffectiveFrom.month).padStart(2, "0")}/
+                            {loadedEffectiveFrom.year}
+                          </p>
+                        )}
+                        <div className="grid grid-cols-2 gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPraemienScheduleTouched(true);
+                              setPraemienMode("automatic");
+                              setSelectedModules((prev) => {
+                                if (!prev.has(MODULE_KEYS.PRAEMIEN)) return prev;
+                                const next = new Set(prev);
+                                next.add(MODULE_KEYS.WORKDAY);
+                                return next;
+                              });
+                            }}
+                            className={`rounded-md px-2 py-1 text-[11px] font-medium border ${
+                              praemienMode === "automatic"
+                                ? "bg-emerald-50 border-emerald-300 text-emerald-800"
+                                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            Automático
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPraemienScheduleTouched(true);
+                              setPraemienMode("manual");
+                            }}
+                            className={`rounded-md px-2 py-1 text-[11px] font-medium border ${
+                              praemienMode === "manual"
+                                ? "bg-emerald-50 border-emerald-300 text-emerald-800"
+                                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            Manual
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
         </fieldset>
 
-        {selectedModules.has(MODULE_KEYS.PRAEMIEN) && (
-          <fieldset className="border border-slate-200 rounded-lg p-4">
-            <legend className="text-sm font-semibold text-slate-700 px-1">
-              Prämien — modo de cálculo
-            </legend>
-            <p className="text-xs text-slate-500 mb-3">
-              Si cambias entre automático y manual, el nuevo modo aplica desde
-              el <strong>primer día del mes siguiente</strong> al guardar. La
-              fase manual completa llegará en una versión posterior.
-            </p>
-            {!isCreate && loadedEffectiveFrom && (
-              <p className="text-xs text-amber-800 bg-amber-50 rounded px-2 py-1.5 mb-3">
-                Cambio de modo programado: desde{" "}
-                {String(loadedEffectiveFrom.month).padStart(2, "0")}/
-                {loadedEffectiveFrom.year}
-              </p>
-            )}
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="radio"
-                name="praemienMode"
-                checked={praemienMode === "automatic"}
-                onChange={() => {
-                  setPraemienScheduleTouched(true);
-                  setPraemienMode("automatic");
-                  setSelectedModules((prev) => {
-                    if (!prev.has(MODULE_KEYS.PRAEMIEN)) return prev;
-                    const next = new Set(prev);
-                    next.add(MODULE_KEYS.WORKDAY);
-                    return next;
-                  });
-                }}
-                className="border-slate-300"
-              />
-              <span>Automático (comportamiento actual)</span>
-            </label>
-            <label className="flex items-center gap-2 text-sm cursor-pointer mt-2">
-              <input
-                type="radio"
-                name="praemienMode"
-                checked={praemienMode === "manual"}
-                onChange={() => {
-                  setPraemienScheduleTouched(true);
-                  setPraemienMode("manual");
-                }}
-                className="border-slate-300"
-              />
-              <span>Manual (solo guardado; sin flujo todavía)</span>
-            </label>
-          </fieldset>
-        )}
-
-        <div className="flex gap-3 pt-2">
-          <SaveIconButton
-            type="submit"
-            disabled={submitting}
-            title={submitting ? "Guardando..." : "Guardar"}
-          />
+        <div className="flex items-center justify-between gap-3 pt-2">
           <button
             type="button"
             onClick={() => navigate("/superadmin/companies")}
@@ -352,6 +446,20 @@ export default function SuperadminCompanyForm() {
           >
             Cancelar
           </button>
+          <SaveIconButton
+            type="submit"
+            disabled={submitting || (!isCreate && !hasChanges)}
+            title={
+              submitting
+                ? "Guardando..."
+                : !isCreate && !hasChanges
+                  ? "Sin cambios por guardar"
+                  : "Guardar"
+            }
+            className={
+              !isCreate && hasChanges ? "ring-2 ring-emerald-300 bg-emerald-50" : ""
+            }
+          />
         </div>
       </form>
     </div>
