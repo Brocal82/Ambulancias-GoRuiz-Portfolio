@@ -90,7 +90,7 @@ const WorkerVacationsPage = () => {
       });
 
       // 3) Invalidar disponibilidad para meses afectados (colores/capacidad)
-      if (req.status !== "accepted" && startISO && endISO) {
+      if (req?.status !== "accepted" && startISO && endISO) {
         invalidateAvailabilityForRange(startISO, endISO);
       }
     } catch {

@@ -18,18 +18,6 @@ import ProposeSlotsIconButton from "../../../components/common/actions/ProposeSl
 import ViewIconButton from "../../../components/common/actions/ViewIconButton";
 
 
-// Utils locales
-const formatRange = (startISO?: string, endISO?: string) => {
-    if (!startISO || !endISO) return "";
-    const start = new Date(startISO);
-    const end = new Date(endISO);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const d = `${pad(start.getDate())}.${pad(start.getMonth() + 1)}.${start.getFullYear()}`;
-    const hs = `${pad(start.getHours())}:${pad(start.getMinutes())}`;
-    const he = `${pad(end.getHours())}:${pad(end.getMinutes())}`;
-    return `${d} ${hs}–${he}`;
-};
-
 export default function AdminAppointmentsPage() {
     const { token } = useAuth();
     const { t } = useTranslation("common");

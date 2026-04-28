@@ -5,7 +5,12 @@ export type VacationRequestEventType = "created" | "updated" | "deleted";
 export type VacationRequestsUpdatedDetail = {
   type: VacationRequestEventType;
   id: string; // obligatorio
-  status?: "pending" | "accepted" | "cancelled" | "option_sent";
+  status?:
+    | "pending"
+    | "accepted"
+    | "cancelled"
+    | "option_sent"
+    | "cancel_requested";
   ts?: number;
 
   /** ✅ dedupe: id de pestaña emisora */

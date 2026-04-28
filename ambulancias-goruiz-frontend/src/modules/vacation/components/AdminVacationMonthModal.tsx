@@ -450,7 +450,13 @@ const AdminVacationMonthModal: React.FC<Props> = ({
   const monthCount = monthRequests.length;
 
   const statusCounts = useMemo(() => {
-    const acc = { pending: 0, accepted: 0, cancelled: 0, option_sent: 0 };
+    const acc = {
+      pending: 0,
+      accepted: 0,
+      cancelled: 0,
+      option_sent: 0,
+      cancel_requested: 0,
+    };
     for (const r of monthRequests) acc[r.status]++;
     return acc;
   }, [monthRequests]);
