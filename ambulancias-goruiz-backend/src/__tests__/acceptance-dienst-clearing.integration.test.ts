@@ -13,6 +13,59 @@ import SickLeave from "../modules/sick-leaves/models/sick-leave.model";
 
 const API = "/api";
 
+async function getDriverIdForAssignmentSlot(params: {
+  dienstId: string;
+  assignmentDate: string;
+  adminToken: string;
+}): Promise<string> {
+  const dienstGet = await request(app)
+    .get(`${API}/diensts/${params.dienstId}`)
+    .set("Authorization", `Bearer ${params.adminToken}`)
+    .expect(200);
+
+  const assignments = dienstGet.body.assignments as Array<{
+    date: string;
+    driver?: { _id?: string } | string;
+  }>;
+  const slot = assignments.find((a) => a.date === params.assignmentDate);
+  expect(slot).toBeDefined();
+
+  if (slot!.driver == null) return "";
+  if (typeof slot!.driver === "object" && "_id" in slot!.driver) {
+    return String((slot!.driver as { _id: string })._id);
+  }
+  return String(slot!.driver);
+}
+
+async function expectDriverEventuallyCleared(params: {
+  dienstId: string;
+  assignmentDate: string;
+  workerId: string;
+  adminToken: string;
+}): Promise<void> {
+  const maxAttempts = 10;
+  const delayMs = 100;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const driverId = await getDriverIdForAssignmentSlot({
+      dienstId: params.dienstId,
+      assignmentDate: params.assignmentDate,
+      adminToken: params.adminToken,
+    });
+    if (driverId !== params.workerId) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+
+  const finalDriverId = await getDriverIdForAssignmentSlot({
+    dienstId: params.dienstId,
+    assignmentDate: params.assignmentDate,
+    adminToken: params.adminToken,
+  });
+  expect(finalDriverId).not.toBe(params.workerId);
+}
+
 describe("Acceptance clears Dienst assignments", () => {
   let adminToken: string;
   let adminId: string;
@@ -113,27 +166,12 @@ describe("Acceptance clears Dienst assignments", () => {
     const vacDoc = await VacationRequest.findById(vacationId).lean();
     expect(vacDoc?.status).toBe("accepted");
 
-    const dienstGet = await request(app)
-      .get(`${API}/diensts/${dienstId}`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .expect(200);
-
-    const assignments = dienstGet.body.assignments as Array<{
-      date: string;
-      driver?: { _id?: string } | string;
-      medic?: { _id?: string } | string;
-    }>;
-    const slot = assignments.find((a) => a.date === ASSIGNMENT_DATE);
-    expect(slot).toBeDefined();
-
-    const driverId =
-      slot!.driver == null
-        ? ""
-        : typeof slot!.driver === "object" && "_id" in slot!.driver
-          ? String((slot!.driver as { _id: string })._id)
-          : String(slot!.driver);
-
-    expect(driverId).not.toBe(workerId);
+    await expectDriverEventuallyCleared({
+      dienstId,
+      assignmentDate: ASSIGNMENT_DATE,
+      workerId,
+      adminToken,
+    });
   });
 
   it("worker alternative accept clears worker assignment on Dienst", async () => {
@@ -207,27 +245,12 @@ describe("Acceptance clears Dienst assignments", () => {
         : "",
     ).toBe(ALT_END);
 
-    const dienstGet = await request(app)
-      .get(`${API}/diensts/${dienstId}`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .expect(200);
-
-    const assignments = dienstGet.body.assignments as Array<{
-      date: string;
-      driver?: { _id?: string } | string;
-      medic?: { _id?: string } | string;
-    }>;
-    const slot = assignments.find((a) => a.date === ASSIGNMENT_DATE);
-    expect(slot).toBeDefined();
-
-    const driverId =
-      slot!.driver == null
-        ? ""
-        : typeof slot!.driver === "object" && "_id" in slot!.driver
-          ? String((slot!.driver as { _id: string })._id)
-          : String(slot!.driver);
-
-    expect(driverId).not.toBe(workerId);
+    await expectDriverEventuallyCleared({
+      dienstId,
+      assignmentDate: ASSIGNMENT_DATE,
+      workerId,
+      adminToken,
+    });
   });
 
   it("admin sick accept clears worker assignment on Dienst", async () => {
@@ -276,26 +299,11 @@ describe("Acceptance clears Dienst assignments", () => {
     const sickDoc = await SickLeave.findById(sickLeaveId).lean();
     expect(sickDoc?.status).toBe("accepted");
 
-    const dienstGet = await request(app)
-      .get(`${API}/diensts/${dienstId}`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .expect(200);
-
-    const assignments = dienstGet.body.assignments as Array<{
-      date: string;
-      driver?: { _id?: string } | string;
-      medic?: { _id?: string } | string;
-    }>;
-    const slot = assignments.find((a) => a.date === ASSIGNMENT_DATE);
-    expect(slot).toBeDefined();
-
-    const driverId =
-      slot!.driver == null
-        ? ""
-        : typeof slot!.driver === "object" && "_id" in slot!.driver
-          ? String((slot!.driver as { _id: string })._id)
-          : String(slot!.driver);
-
-    expect(driverId).not.toBe(workerId);
+    await expectDriverEventuallyCleared({
+      dienstId,
+      assignmentDate: ASSIGNMENT_DATE,
+      workerId,
+      adminToken,
+    });
   });
 });

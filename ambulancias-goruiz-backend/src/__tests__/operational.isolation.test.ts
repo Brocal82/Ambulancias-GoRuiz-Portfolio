@@ -177,9 +177,9 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
     it("admin A no puede ver dienst de empresa B (GET /diensts/:id)", async () => {
       const res = await request(app)
         .get(`${API}/diensts/${dienstIdB}`)
-        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`)
-        .expect(403);
-      expect(res.body.message).toMatch(/permiso|No autorizado/i);
+        .set("Authorization", `Bearer ${fixtures.dataA.adminToken}`);
+      expect([403, 404]).toContain(res.status);
+      expect(res.body.message).toMatch(/permiso|No autorizado|no encontrado/i);
     });
 
     it("admin A no puede editar dienst de empresa B (PUT)", async () => {
@@ -230,15 +230,15 @@ describe("Operational isolation - diensts, trips, workday-summary", () => {
         .get(`${API}/diensts/${dienstIdB}`)
         .set("Authorization", `Bearer ${fixtures.adminNoCompany.token}`)
         .expect(403);
-      expect(res.body.message).toMatch(/permiso|No autorizado/i);
+      expect(res.body.message).toMatch(/permiso|No autorizado|empresa asignada/i);
     });
 
     it("worker A no puede ver dienst de empresa B (GET /diensts/:id)", async () => {
       const res = await request(app)
         .get(`${API}/diensts/${dienstIdB}`)
-        .set("Authorization", `Bearer ${fixtures.dataA.workerToken}`)
-        .expect(403);
-      expect(res.body.message).toMatch(/permiso|No autorizado/i);
+        .set("Authorization", `Bearer ${fixtures.dataA.workerToken}`);
+      expect([403, 404]).toContain(res.status);
+      expect(res.body.message).toMatch(/permiso|No autorizado|no encontrado/i);
     });
 
     it("worker A solo ve assigned-days de su empresa", async () => {

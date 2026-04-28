@@ -86,7 +86,7 @@ describe("Companies - gestión superadmin", () => {
       const res = await request(app)
         .post(`${API}/companies`)
         .set("Authorization", `Bearer ${superadminToken}`)
-        .send({ name: "Empresa Test SA" })
+        .send({ name: "Empresa Test SA", emailDomain: "@empresatest.com" })
         .expect(201);
       expect(res.body).toHaveProperty("_id");
       expect(res.body.name).toBe("Empresa Test SA");
@@ -120,13 +120,13 @@ describe("Companies - gestión superadmin", () => {
       const createRes = await request(app)
         .post(`${API}/companies`)
         .set("Authorization", `Bearer ${superadminToken}`)
-        .send({ name: "Para Actualizar" })
+        .send({ name: "Para Actualizar", emailDomain: "@paractualizar.com" })
         .expect(201);
       const id = createRes.body._id ?? createRes.body.id;
       const res = await request(app)
         .patch(`${API}/companies/${id}`)
         .set("Authorization", `Bearer ${superadminToken}`)
-        .send({ name: "Actualizada OK" })
+        .send({ name: "Actualizada OK", emailDomain: "@actualizadaok.com" })
         .expect(200);
       expect(res.body.name).toBe("Actualizada OK");
     });
@@ -137,6 +137,7 @@ describe("Companies - gestión superadmin", () => {
         .set("Authorization", `Bearer ${superadminToken}`)
         .send({
           name: `Praemien patch ${Date.now()}`,
+          emailDomain: "@praemienpatch.com",
           enabledModules: [...V1_DEFAULT_MODULES],
         })
         .expect(201);
@@ -148,6 +149,7 @@ describe("Companies - gestión superadmin", () => {
         .patch(`${API}/companies/${id}`)
         .set("Authorization", `Bearer ${superadminToken}`)
         .send({
+          emailDomain: "@praemienpatch.com",
           enabledModules: [...V1_DEFAULT_MODULES],
           praemienMode: "manual",
           praemienModeEffectiveFrom: eff1,
@@ -158,6 +160,7 @@ describe("Companies - gestión superadmin", () => {
         .patch(`${API}/companies/${id}`)
         .set("Authorization", `Bearer ${superadminToken}`)
         .send({
+          emailDomain: "@praemienpatch.com",
           enabledModules: [...V1_DEFAULT_MODULES],
           praemienMode: "automatic",
           praemienModeEffectiveFrom: eff2,
@@ -177,7 +180,7 @@ describe("Companies - gestión superadmin", () => {
       const createRes = await request(app)
         .post(`${API}/companies`)
         .set("Authorization", `Bearer ${superadminToken}`)
-        .send({ name: "Empresa Sin Admin" })
+        .send({ name: "Empresa Sin Admin", emailDomain: "@empresasinadmin.com" })
         .expect(201);
       newCompanyId = createRes.body._id ?? createRes.body.id;
     });

@@ -50,12 +50,11 @@ export async function createTestSuperadmin(email?: string, password = "password1
     password: hashedPassword,
     role: "superadmin",
   });
-  const loginRes = await request(app)
-    .post(`${API}/users/login`)
-    .send({ email: superadminEmail, password });
+  // Avoid depending on login flow/rate limits in integration setup paths.
+  const token = issueTestJwt(String(user._id), "superadmin");
   return {
     superadminId: String(user._id),
-    superadminToken: loginRes.body.token,
+    superadminToken: token,
     email: superadminEmail,
   };
 }
@@ -110,6 +109,7 @@ export async function createTestAdminWithCompany(password: string = "password123
 
   const company = await Company.create({
     name: `Test Company ${suffix}`,
+    emailDomain: "@example.com",
     isActive: true,
     enabledModules: [...V1_DEFAULT_MODULES],
   });
@@ -185,6 +185,9 @@ export async function writeTestUploadFile(
 }
 
 export async function removeTestUploadFile(basename: string): Promise<void> {
+  if (!basename || typeof basename !== "string") {
+    return;
+  }
   const full = path.join(getTestUploadsDir(), basename);
   try {
     await fs.promises.unlink(full);

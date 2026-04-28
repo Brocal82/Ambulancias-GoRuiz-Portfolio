@@ -1590,7 +1590,10 @@ describe("API - Rutas críticas", () => {
       const res = await request(app)
         .patch(`${API}/companies/${companyId}`)
         .set("Authorization", `Bearer ${superadminToken}`)
-        .send({ enabledModules: modulesMissingWorkday })
+        .send({
+          enabledModules: modulesMissingWorkday,
+          emailDomain: "@example.com",
+        })
         .expect(400);
       expect(res.body.message).toMatch(
         /automático|workday|jornada|Prämien|praemien|manual|papel/i,
@@ -1609,6 +1612,7 @@ describe("API - Rutas críticas", () => {
           .send({
             enabledModules: modulesNoWorkday,
             praemienMode: "manual",
+            emailDomain: "@example.com",
           })
           .expect(200);
         expect(res.body.enabledModules).not.toContain(MODULE_KEYS.WORKDAY);
