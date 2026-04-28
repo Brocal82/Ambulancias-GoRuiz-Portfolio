@@ -46,6 +46,9 @@ export async function createSupportAccessRequest(params: {
     ticketId,
     durationMinutes: duration,
     status: "pending",
+    approvalActors: [],
+    approvalsRequired: 2,
+    approvalsCount: 0,
   });
   return doc;
 }
@@ -124,10 +127,21 @@ export async function reviewSupportAccessRequest(params: {
   request.reviewComment = params.reviewComment?.trim() || undefined;
 
   if (params.approve) {
-    request.status = "approved";
-    request.expiresAt = new Date(
-      Date.now() + request.durationMinutes * 60 * 1000,
+    const reviewerOid = parseOid(params.reviewerUserId);
+    const alreadyApproved = (request.approvalActors ?? []).some(
+      (actor) => String(actor) === String(reviewerOid),
     );
+    if (alreadyApproved) {
+      throw new Error("Este superadmin ya aprobó esta solicitud");
+    }
+    request.approvalActors = [...(request.approvalActors ?? []), reviewerOid];
+    request.approvalsCount = request.approvalActors.length;
+    if (request.approvalsCount >= request.approvalsRequired) {
+      request.status = "approved";
+      request.expiresAt = new Date(
+        Date.now() + request.durationMinutes * 60 * 1000,
+      );
+    }
   } else {
     request.status = "denied";
   }

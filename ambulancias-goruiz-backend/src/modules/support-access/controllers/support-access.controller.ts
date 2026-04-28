@@ -83,8 +83,11 @@ export async function reviewSupportAccess(req: Request, res: Response): Promise<
       reviewComment:
         typeof req.body?.reviewComment === "string" ? req.body.reviewComment : undefined,
     });
+    const isFullyApproved = approve && reviewed.status === "approved";
     const event = approve
-      ? AUDIT_EVENT.SUPPORT_ACCESS_APPROVED
+      ? (isFullyApproved
+        ? AUDIT_EVENT.SUPPORT_ACCESS_APPROVED
+        : AUDIT_EVENT.SUPPORT_ACCESS_APPROVAL_RECORDED)
       : AUDIT_EVENT.SUPPORT_ACCESS_DENIED;
     emitAuditLog(event, "success", {
       ...auditContext,
@@ -94,9 +97,11 @@ export async function reviewSupportAccess(req: Request, res: Response): Promise<
       meta: {
         companyId: String(reviewed.companyId),
         expiresAt: reviewed.expiresAt?.toISOString() ?? null,
+        approvalsCount: (reviewed as any).approvalsCount ?? 0,
+        approvalsRequired: (reviewed as any).approvalsRequired ?? 2,
       },
     });
-    if (approve) {
+    if (isFullyApproved) {
       emitSecurityAlert("support_access_approved", {
         requestId: String(reviewed._id),
         companyId: String(reviewed.companyId),
