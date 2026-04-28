@@ -12,6 +12,7 @@ import {
   emitAuditLog,
   emitSecurityAlert,
 } from "../../../security/audit-log";
+import { buildSecurityMonitoringSnapshot } from "../../../security/security-monitoring";
 
 export async function createSupportAccess(req: Request, res: Response): Promise<void> {
   const auditContext = buildAuditContextFromRequest(req);
@@ -182,5 +183,19 @@ export async function checkMyActiveSupportAccess(
     res.status(200).json({ active });
   } catch (error: any) {
     res.status(400).json({ message: String(error?.message ?? "Error de validación") });
+  }
+}
+
+export async function getSecurityMonitoringSummary(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const hoursRaw = typeof req.query.hours === "string" ? Number(req.query.hours) : 24;
+  const hours = Number.isFinite(hoursRaw) ? Math.max(1, Math.min(168, Math.floor(hoursRaw))) : 24;
+  try {
+    const snapshot = await buildSecurityMonitoringSnapshot(hours);
+    res.status(200).json(snapshot);
+  } catch (error: any) {
+    res.status(500).json({ message: String(error?.message ?? "Error interno") });
   }
 }
