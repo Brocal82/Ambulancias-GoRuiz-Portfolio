@@ -2,46 +2,27 @@ import { Request, Response } from "express";
 import * as companyAdminService from "../services/company-admin.service";
 import { createCompanyAdminSchema } from "../schemas/create-admin.schema";
 import { CompanyAdminError } from "../services/company-admin.service";
+import { AUDIT_EVENT } from "../../../security/audit-events";
 import {
-  verifySuperadminStepUpSessionToken,
-  verifySuperadminTotpCode,
-} from "../../users/services/users.service";
-
-function readStepUpCode(req: Request): string {
-  const fromBody = typeof req.body?.stepUpCode === "string" ? req.body.stepUpCode : "";
-  const fromHeader = typeof req.headers["x-step-up-code"] === "string"
-    ? req.headers["x-step-up-code"]
-    : "";
-  return String(fromBody || fromHeader || "").trim();
-}
-
-function readStepUpToken(req: Request): string {
-  const fromHeader = typeof req.headers["x-step-up-token"] === "string"
-    ? req.headers["x-step-up-token"]
-    : "";
-  const fromBody = typeof req.body?.stepUpToken === "string" ? req.body.stepUpToken : "";
-  return String(fromHeader || fromBody || "").trim();
-}
+  buildAuditContextFromRequest,
+  emitAuditLog,
+} from "../../../security/audit-log";
 
 export const createFirstAdmin = async (req: Request, res: Response): Promise<void> => {
+  const auditContext = buildAuditContextFromRequest(req);
   try {
-    const actorUserId = req.userId;
-    if (!actorUserId) {
-      res.status(401).json({ message: "No autorizado" });
-      return;
-    }
-    const stepUpToken = readStepUpToken(req);
-    if (stepUpToken) {
-      await verifySuperadminStepUpSessionToken(actorUserId, stepUpToken);
-    } else {
-      await verifySuperadminTotpCode(actorUserId, readStepUpCode(req));
-    }
-
     const parsed = createCompanyAdminSchema.parse(req.body);
     const user = await companyAdminService.createFirstAdminForCompany(
       req.params.id,
       parsed,
     );
+    emitAuditLog(AUDIT_EVENT.COMPANY_ADMIN_CREATED, "success", {
+      ...auditContext,
+      resourceType: "company",
+      resourceId: req.params.id,
+      statusCode: 201,
+      meta: { createdAdminId: String(user._id), createdAdminEmail: user.email },
+    });
     res.status(201).json({
       message: "Admin de empresa creado correctamente",
       user: {
@@ -54,37 +35,36 @@ export const createFirstAdmin = async (req: Request, res: Response): Promise<voi
       },
     });
   } catch (error) {
-    const errMessage = String((error as any)?.message ?? "");
-    if (errMessage === "STEP_UP_INVALID") {
-      res.status(401).json({
-        message: "Sesión step-up inválida o expirada.",
-        code: "STEP_UP_REQUIRED",
-      });
-      return;
-    }
-    if (errMessage === "MFA_NOT_ENROLLED") {
-      res.status(403).json({
-        message: "Debes activar MFA para ejecutar esta acción crítica.",
-        code: "STEP_UP_REQUIRED",
-      });
-      return;
-    }
-    if (errMessage === "MFA_REQUIRED" || errMessage === "MFA_INVALID") {
-      res.status(401).json({
-        message: "Código MFA inválido o ausente.",
-        code: "STEP_UP_REQUIRED",
-      });
-      return;
-    }
     if (error instanceof CompanyAdminError) {
+      emitAuditLog(AUDIT_EVENT.COMPANY_ADMIN_CREATED, "denied", {
+        ...auditContext,
+        resourceType: "company",
+        resourceId: req.params.id,
+        statusCode: error.statusCode,
+        reason: error.message,
+      });
       res.status(error.statusCode).json({ message: error.message });
       return;
     }
     const err = error as { message?: string; errors?: unknown[] };
     if (err.errors) {
+      emitAuditLog(AUDIT_EVENT.COMPANY_ADMIN_CREATED, "denied", {
+        ...auditContext,
+        resourceType: "company",
+        resourceId: req.params.id,
+        statusCode: 400,
+        reason: "invalid_payload",
+      });
       res.status(400).json({ message: "Datos inválidos", errors: err.errors });
       return;
     }
+    emitAuditLog(AUDIT_EVENT.COMPANY_ADMIN_CREATED, "error", {
+      ...auditContext,
+      resourceType: "company",
+      resourceId: req.params.id,
+      statusCode: 500,
+      reason: err.message ?? "create_company_admin_error",
+    });
     res.status(500).json({ message: "Error al crear admin de empresa" });
   }
 };

@@ -7,7 +7,7 @@ import mongoose from "mongoose";
 import VacationRequest from "../../vacation/models/vacation-request.model";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { generateSecret, verify, generateURI } from "otplib";
+import speakeasy from "speakeasy";
 import { env } from "../../../config/env";
 import Company from "../../companies/models/company.model";
 import type {
@@ -353,8 +353,13 @@ export async function loginUserService(
     if (!mfaCode || !/^\d{6}$/.test(mfaCode.trim())) {
       throw new Error("MFA_REQUIRED");
     }
-    const check = await verify({ secret, token: mfaCode.trim() });
-    if (!check.valid) {
+    const ok = speakeasy.totp.verify({
+      secret,
+      encoding: "base32",
+      token: mfaCode.trim(),
+      window: 1,
+    });
+    if (!ok) {
       throw new Error("MFA_INVALID");
     }
   }
@@ -413,13 +418,14 @@ export async function startSuperadminTotpEnrollment(userId: string) {
     throw new Error("Solo superadmin puede configurar MFA");
   }
 
-  const secret = generateSecret();
+  const secret = speakeasy.generateSecret().base32;
   const issuer = env.SUPERADMIN_MFA_ISSUER;
   const label = `${issuer}:${String(user.email)}`;
-  const otpauthUrl = generateURI({
-    issuer,
-    label: String(user.email),
+  const otpauthUrl = speakeasy.otpauthURL({
     secret,
+    label: String(user.email),
+    issuer,
+    encoding: "base32",
   });
 
   await User.findByIdAndUpdate(userId, {
@@ -446,8 +452,13 @@ export async function confirmSuperadminTotpEnrollment(userId: string, code: stri
   if (!pendingSecret) {
     throw new Error("No hay una configuración MFA pendiente");
   }
-  const check = await verify({ secret: pendingSecret, token: code.trim() });
-  if (!check.valid) {
+  const ok = speakeasy.totp.verify({
+    secret: pendingSecret,
+    encoding: "base32",
+    token: code.trim(),
+    window: 1,
+  });
+  if (!ok) {
     throw new Error("Código MFA inválido");
   }
 
@@ -475,8 +486,13 @@ export async function disableSuperadminTotp(userId: string, code: string) {
   if (!enabled || !secret) {
     throw new Error("MFA no está habilitado");
   }
-  const check = await verify({ secret, token: code.trim() });
-  if (!check.valid) {
+  const ok = speakeasy.totp.verify({
+    secret,
+    encoding: "base32",
+    token: code.trim(),
+    window: 1,
+  });
+  if (!ok) {
     throw new Error("Código MFA inválido");
   }
 
@@ -527,8 +543,13 @@ export async function verifySuperadminTotpCode(userId: string, code: string) {
   if (!/^\d{6}$/.test(code.trim())) {
     throw new Error("MFA_REQUIRED");
   }
-  const check = await verify({ secret, token: code.trim() });
-  if (!check.valid) {
+  const ok = speakeasy.totp.verify({
+    secret,
+    encoding: "base32",
+    token: code.trim(),
+    window: 1,
+  });
+  if (!ok) {
     throw new Error("MFA_INVALID");
   }
 }

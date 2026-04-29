@@ -13,6 +13,9 @@ import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeSuperadmin } from "../../middlewares/roleMiddleware";
 import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
+import { requireStepUp } from "../../middlewares/requireStepUp";
+import { AUDIT_EVENT } from "../../security/audit-events";
+import { STEP_UP_ACTION } from "../../security/step-up-policy";
 import {
   createCompanySchema,
   updateCompanySchema,
@@ -29,12 +32,51 @@ router.post("/", validateBody(createCompanySchema), createCompany);
 router.get("/", getAllCompanies);
 router.get("/:id", validateObjectId("id"), getCompanyById);
 router.get("/:id/admins", validateObjectId("id"), getCompanyAdmins);
-router.patch("/:id", validateObjectId("id"), validateBody(updateCompanySchema), updateCompany);
-router.delete("/:id", validateObjectId("id"), deleteCompany);
+router.patch(
+  "/:id",
+  validateObjectId("id"),
+  requireStepUp({
+    action: STEP_UP_ACTION.COMPANY_SENSITIVE_UPDATE,
+    event: AUDIT_EVENT.COMPANY_UPDATED,
+    resourceType: "company",
+    resourceIdFromReq: (req) => req.params.id,
+    when: (req) => {
+      const sensitiveFields = [
+        "isActive",
+        "emailDomain",
+        "enabledModules",
+        "praemienMode",
+        "praemienModeEffectiveFrom",
+      ];
+      return sensitiveFields.some((field) =>
+        Object.prototype.hasOwnProperty.call(req.body ?? {}, field)
+      );
+    },
+  }),
+  validateBody(updateCompanySchema),
+  updateCompany,
+);
+router.delete(
+  "/:id",
+  validateObjectId("id"),
+  requireStepUp({
+    action: STEP_UP_ACTION.COMPANY_DELETE,
+    event: AUDIT_EVENT.COMPANY_DELETED,
+    resourceType: "company",
+    resourceIdFromReq: (req) => req.params.id,
+  }),
+  deleteCompany,
+);
 
 router.post(
   "/:id/admin",
   validateObjectId("id"),
+  requireStepUp({
+    action: STEP_UP_ACTION.COMPANY_ADMIN_CREATE,
+    event: AUDIT_EVENT.COMPANY_ADMIN_CREATED,
+    resourceType: "company",
+    resourceIdFromReq: (req) => req.params.id,
+  }),
   validateBody(createCompanyAdminSchema),
   createFirstAdmin,
 );
