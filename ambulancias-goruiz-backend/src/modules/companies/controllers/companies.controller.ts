@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import * as companiesService from "../services/companies.service";
 import { createCompanySchema, updateCompanySchema } from "../schemas/company.schema";
-import { verifySuperadminTotpCode } from "../../users/services/users.service";
+import {
+  verifySuperadminStepUpSessionToken,
+  verifySuperadminTotpCode,
+} from "../../users/services/users.service";
 import { AUDIT_EVENT } from "../../../security/audit-events";
 import {
   buildAuditContextFromRequest,
@@ -16,6 +19,14 @@ function readStepUpCode(req: Request): string {
   return String(fromBody || fromHeader || "").trim();
 }
 
+function readStepUpToken(req: Request): string {
+  const fromHeader = typeof req.headers["x-step-up-token"] === "string"
+    ? req.headers["x-step-up-token"]
+    : "";
+  const fromBody = typeof req.body?.stepUpToken === "string" ? req.body.stepUpToken : "";
+  return String(fromHeader || fromBody || "").trim();
+}
+
 async function ensureStepUpForCriticalCompanyAction(
   req: Request,
   auditContext: ReturnType<typeof buildAuditContextFromRequest>,
@@ -27,12 +38,19 @@ async function ensureStepUpForCriticalCompanyAction(
     if (!actorUserId) {
       return { ok: false, status: 401, message: "No autorizado" };
     }
+    const stepUpToken = readStepUpToken(req);
+    if (stepUpToken) {
+      await verifySuperadminStepUpSessionToken(actorUserId, stepUpToken);
+      return { ok: true };
+    }
     await verifySuperadminTotpCode(actorUserId, readStepUpCode(req));
     return { ok: true };
   } catch (error: any) {
     const msg = String(error?.message ?? "MFA_INVALID");
     const reason =
-      msg === "MFA_NOT_ENROLLED"
+      msg === "STEP_UP_INVALID"
+        ? "step_up_token_invalid"
+        : msg === "MFA_NOT_ENROLLED"
         ? "step_up_mfa_not_enrolled"
         : msg === "MFA_REQUIRED"
           ? "step_up_mfa_required"
@@ -57,6 +75,9 @@ async function ensureStepUpForCriticalCompanyAction(
     }
     if (msg === "MFA_REQUIRED") {
       return { ok: false, status: 401, message: "Se requiere código MFA de 6 dígitos." };
+    }
+    if (msg === "STEP_UP_INVALID") {
+      return { ok: false, status: 401, message: "Sesión step-up inválida o expirada." };
     }
     return { ok: false, status: 401, message: "Código MFA inválido." };
   }

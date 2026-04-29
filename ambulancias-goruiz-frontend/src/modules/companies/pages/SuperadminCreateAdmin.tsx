@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { createCompanyAdmin, getCompanyAdmins, getCompanyById } from "../domain/api";
 import type { Company, CompanyAdmin } from "../domain/types";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
+import { useStepUpSession } from "../utils/useStepUpSession";
 
 export default function SuperadminCreateAdmin() {
   const { id: companyId } = useParams<{ id: string }>();
@@ -17,6 +18,7 @@ export default function SuperadminCreateAdmin() {
   const [fullEmail, setFullEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const { requestStepUpToken, stepUpModal } = useStepUpSession();
 
   useEffect(() => {
     if (!companyId) return;
@@ -59,12 +61,19 @@ export default function SuperadminCreateAdmin() {
     }
     setSubmitting(true);
     try {
+      const stepUpToken = await requestStepUpToken(
+        "Crear administradores de empresa es una acción privilegiada. Confirma con MFA.",
+      );
+      if (!stepUpToken) {
+        toastT.error("Se canceló la creación por falta de verificación MFA.");
+        return;
+      }
       await createCompanyAdmin(companyId, {
         name: name.trim(),
         lastName: lastName.trim(),
         email,
         password,
-      });
+      }, stepUpToken);
       toastT.success("Administrador de empresa creado correctamente");
       navigate("/superadmin/companies");
     } catch (err: unknown) {
@@ -236,6 +245,7 @@ export default function SuperadminCreateAdmin() {
           </button>
         </div>
       </form>
+      {stepUpModal}
     </div>
   );
 }

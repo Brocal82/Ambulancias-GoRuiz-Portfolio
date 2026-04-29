@@ -20,6 +20,7 @@ import {
 } from "../utils/praemienScheduleEdit";
 import SaveIconButton from "../../../components/common/actions/SaveIconButton";
 import EditIconButton from "../../../components/common/actions/EditIconButton";
+import { useStepUpSession } from "../utils/useStepUpSession";
 
 const MODULE_ICONS: Record<string, string> = {
   [MODULE_KEYS.HOSPITALS]: "🏥",
@@ -70,6 +71,7 @@ export default function SuperadminCompanyForm() {
   const [initialSelectedModules, setInitialSelectedModules] = useState<Set<string>>(
     new Set(),
   );
+  const { requestStepUpToken, stepUpModal } = useStepUpSession();
 
   useEffect(() => {
     if (!isCreate) return;
@@ -236,14 +238,14 @@ export default function SuperadminCompanyForm() {
             payload.praemienModeEffectiveFrom = getCurrentCalendarMonth();
           }
         }
-        const stepUpCode = window.prompt(
-          "Acción sensible: introduce tu código MFA de 6 dígitos para guardar cambios críticos.",
+        const stepUpToken = await requestStepUpToken(
+          "Vas a aplicar cambios sensibles de tenant. Confirma con MFA para continuar.",
         );
-        if (!stepUpCode) {
+        if (!stepUpToken) {
           toastT.error("Se canceló el guardado por falta de código MFA.");
           return;
         }
-        await updateCompany(id, payload, stepUpCode);
+        await updateCompany(id, payload, stepUpToken);
         toastT.success("Empresa actualizada correctamente");
       }
       navigate("/superadmin/companies");
@@ -476,6 +478,7 @@ export default function SuperadminCompanyForm() {
           />
         </div>
       </form>
+      {stepUpModal}
     </div>
   );
 }

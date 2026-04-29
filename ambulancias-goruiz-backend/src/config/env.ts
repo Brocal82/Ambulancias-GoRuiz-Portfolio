@@ -48,6 +48,12 @@ const envSchema = z.object({
     )
     .default(false),
   SUPERADMIN_MFA_ISSUER: z.string().trim().default("AmbulanciasGoRuiz"),
+  STEP_UP_SESSION_TTL_SECONDS: z
+    .preprocess(
+      (v) => (v === undefined || v === "" ? undefined : Number(v)),
+      z.number().int().min(60).max(1800).optional(),
+    )
+    .default(300),
   SECURITY_MONITORING_ENABLED: z
     .preprocess(
       (v) => {

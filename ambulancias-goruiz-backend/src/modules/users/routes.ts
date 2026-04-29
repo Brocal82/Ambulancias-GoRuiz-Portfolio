@@ -16,6 +16,7 @@ import {
   startMyMfaEnrollment,
   confirmMyMfaEnrollment,
   disableMyMfa,
+  issueMyStepUpSession,
 } from "./controllers/users.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import {
@@ -62,6 +63,13 @@ router.post(
   authorizeSuperadmin,
   validateBody(mfaCodeSchema),
   disableMyMfa,
+);
+router.post(
+  "/me/step-up-session",
+  authenticateToken,
+  authorizeSuperadmin,
+  validateBody(mfaCodeSchema),
+  issueMyStepUpSession,
 );
 
 // ⚠️ Rutas personalizadas antes de `/:id`

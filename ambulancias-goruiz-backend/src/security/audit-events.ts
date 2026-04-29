@@ -5,6 +5,7 @@ export const AUDIT_EVENT = {
   AUTH_MFA_ENROLL_STARTED: "auth.mfa_enroll_started",
   AUTH_MFA_ENABLED: "auth.mfa_enabled",
   AUTH_MFA_DISABLED: "auth.mfa_disabled",
+  AUTH_STEP_UP_SESSION_ISSUED: "auth.step_up_session_issued",
   COMPANY_CREATED: "company.created",
   COMPANY_UPDATED: "company.updated",
   COMPANY_DELETED: "company.deleted",
