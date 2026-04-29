@@ -67,3 +67,21 @@ export type SecurityTenantRiskResponse = {
   until: string;
   rows: SecurityTenantRiskRow[];
 };
+
+export type SecurityMonthlyReviewSnapshot = {
+  generatedAt: string;
+  windowHours: number;
+  metrics: {
+    requested: number;
+    approvedFinal: number;
+    denied: number;
+    revoked: number;
+    expired: number;
+    offHoursFinalApprovals: number;
+  };
+  checks: {
+    deniedSpike: boolean;
+    offHoursApprovalsDetected: boolean;
+  };
+  overallStatus: "green" | "yellow" | "red";
+};

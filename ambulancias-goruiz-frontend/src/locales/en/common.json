@@ -136,6 +136,12 @@
             "tenantRiskLoading": "Calculating tenant risk...",
             "tenantRiskError": "Could not load tenant risk ranking",
             "tenantRiskEmpty": "No tenant risk data for this time window.",
+            "monthlyReviewTitle": "Monthly review snapshot",
+            "monthlyReviewLoading": "Loading monthly review...",
+            "monthlyReviewError": "Could not load monthly review",
+            "monthlyReviewStatus": "Overall status",
+            "exportAuditLogs": "Export CSV (audit)",
+            "exportTenantRisk": "Export CSV (tenant risk)",
             "tenantRiskTable": {
                 "tenant": "Tenant",
                 "level": "Risk",

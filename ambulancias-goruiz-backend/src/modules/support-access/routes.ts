@@ -8,6 +8,7 @@ import {
   getSecurityAuditLogs,
   getSecurityMonitoringOperationalHealth,
   getSecurityTenantRisk,
+  getSecurityMonthlyReview,
   getSupportAccessRequests,
   reviewSupportAccess,
   revokeSupportAccess,
@@ -26,5 +27,6 @@ router.get("/monitoring/daily-summary", getSecurityMonitoringSummary);
 router.get("/monitoring/audit-logs", getSecurityAuditLogs);
 router.get("/monitoring/health", getSecurityMonitoringOperationalHealth);
 router.get("/monitoring/tenant-risk", getSecurityTenantRisk);
+router.get("/monitoring/monthly-review", getSecurityMonthlyReview);
 
 export default router;

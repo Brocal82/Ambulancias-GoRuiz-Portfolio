@@ -4,11 +4,13 @@ import { useTranslation } from "react-i18next";
 import {
   getSecurityAuditLogs,
   getSecurityMonitoringOperationalHealth,
+  getSecurityMonthlyReview,
   getSecurityMonitoringSummary,
   getSecurityTenantRisk,
 } from "../domain/api";
 import type {
   SecurityAuditLogRow,
+  SecurityMonthlyReviewSnapshot,
   SecurityMonitoringOperationalHealth,
   SecurityMonitoringSnapshot,
   SecurityTenantRiskRow,
@@ -32,6 +34,9 @@ export default function SuperadminSecurityMonitoringPage() {
   const [tenantRiskRows, setTenantRiskRows] = useState<SecurityTenantRiskRow[]>([]);
   const [tenantRiskLoading, setTenantRiskLoading] = useState<boolean>(true);
   const [tenantRiskError, setTenantRiskError] = useState<string | null>(null);
+  const [monthlyReview, setMonthlyReview] = useState<SecurityMonthlyReviewSnapshot | null>(null);
+  const [monthlyReviewLoading, setMonthlyReviewLoading] = useState<boolean>(true);
+  const [monthlyReviewError, setMonthlyReviewError] = useState<string | null>(null);
   const [outcomeFilter, setOutcomeFilter] = useState<"" | "success" | "denied" | "error">("");
   const [eventFilter, setEventFilter] = useState<string>("");
   const [actorFilter, setActorFilter] = useState<string>("");
@@ -65,6 +70,49 @@ export default function SuperadminSecurityMonitoringPage() {
       cancelled = true;
     };
   }, [hours]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      setMonthlyReviewLoading(true);
+      setMonthlyReviewError(null);
+      try {
+        const data = await getSecurityMonthlyReview(24 * 30);
+        if (!cancelled) {
+          setMonthlyReview(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setMonthlyReview(null);
+          setMonthlyReviewError(err instanceof Error ? err.message : "Unknown error");
+        }
+      } finally {
+        if (!cancelled) {
+          setMonthlyReviewLoading(false);
+        }
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const exportCsv = (filename: string, headers: string[], rows: Array<Array<string | number>>) => {
+    const toCell = (value: string | number) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const csv = [headers.map(toCell).join(","), ...rows.map((r) => r.map(toCell).join(","))].join(
+      "\n",
+    );
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -330,9 +378,33 @@ export default function SuperadminSecurityMonitoringPage() {
               <h2 className="text-lg font-semibold text-slate-900">
                 {t("pages.superadminSecurityMonitoring.auditTitle")}
               </h2>
-              <p className="text-sm text-slate-600">
-                {t("pages.superadminSecurityMonitoring.auditTotal", { total: auditTotal })}
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="text-sm text-slate-600">
+                  {t("pages.superadminSecurityMonitoring.auditTotal", { total: auditTotal })}
+                </p>
+                <button
+                  type="button"
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  onClick={() =>
+                    exportCsv(
+                      "security-audit-logs.csv",
+                      ["at", "event", "outcome", "actorUserId", "tenantCompanyId", "resourceType", "resourceId", "reason"],
+                      auditRows.map((row) => [
+                        row.at,
+                        row.event,
+                        row.outcome,
+                        row.actorUserId ?? "",
+                        row.tenantCompanyId ?? "",
+                        row.resourceType ?? "",
+                        row.resourceId ?? "",
+                        row.reason ?? "",
+                      ]),
+                    )
+                  }
+                >
+                  {t("pages.superadminSecurityMonitoring.exportAuditLogs")}
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
@@ -423,6 +495,28 @@ export default function SuperadminSecurityMonitoringPage() {
             <h2 className="text-lg font-semibold text-slate-900">
               {t("pages.superadminSecurityMonitoring.tenantRiskTitle")}
             </h2>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                onClick={() =>
+                  exportCsv(
+                    "tenant-risk.csv",
+                    ["tenantCompanyId", "riskLevel", "riskScore", "requested", "denied", "offHoursFinalApprovals"],
+                    tenantRiskRows.map((row) => [
+                      row.tenantCompanyId,
+                      row.riskLevel,
+                      row.riskScore,
+                      row.requested,
+                      row.denied,
+                      row.offHoursFinalApprovals,
+                    ]),
+                  )
+                }
+              >
+                {t("pages.superadminSecurityMonitoring.exportTenantRisk")}
+              </button>
+            </div>
             {tenantRiskLoading && (
               <p className="text-sm text-slate-600">
                 {t("pages.superadminSecurityMonitoring.tenantRiskLoading")}
@@ -479,6 +573,38 @@ export default function SuperadminSecurityMonitoringPage() {
                   </tbody>
                 </table>
               </div>
+            )}
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+            <h2 className="text-lg font-semibold text-slate-900">
+              {t("pages.superadminSecurityMonitoring.monthlyReviewTitle")}
+            </h2>
+            {monthlyReviewLoading && (
+              <p className="text-sm text-slate-600">
+                {t("pages.superadminSecurityMonitoring.monthlyReviewLoading")}
+              </p>
+            )}
+            {!monthlyReviewLoading && monthlyReviewError && (
+              <p className="text-sm text-rose-700">
+                {t("pages.superadminSecurityMonitoring.monthlyReviewError")}: {monthlyReviewError}
+              </p>
+            )}
+            {!monthlyReviewLoading && !monthlyReviewError && monthlyReview && (
+              <>
+                <p className="text-sm">
+                  <span className="font-medium">{t("pages.superadminSecurityMonitoring.monthlyReviewStatus")}:</span>{" "}
+                  {monthlyReview.overallStatus}
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                  <p>requested: {monthlyReview.metrics.requested}</p>
+                  <p>approvedFinal: {monthlyReview.metrics.approvedFinal}</p>
+                  <p>denied: {monthlyReview.metrics.denied}</p>
+                  <p>revoked: {monthlyReview.metrics.revoked}</p>
+                  <p>expired: {monthlyReview.metrics.expired}</p>
+                  <p>offHours: {monthlyReview.metrics.offHoursFinalApprovals}</p>
+                </div>
+              </>
             )}
           </div>
         </>

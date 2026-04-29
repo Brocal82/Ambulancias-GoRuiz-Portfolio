@@ -16,6 +16,7 @@ import { buildSecurityMonitoringSnapshot } from "../../../security/security-moni
 import { querySecurityAuditLogs } from "../../../security/security-audit-log.service";
 import { buildSecurityMonitoringOperationalHealth } from "../../../security/security-monitoring-health.service";
 import { buildTenantRiskRanking } from "../../../security/security-tenant-risk.service";
+import { buildSecurityMonthlyReviewSnapshot } from "../../../security/security-monthly-review.service";
 
 export async function createSupportAccess(req: Request, res: Response): Promise<void> {
   const auditContext = buildAuditContextFromRequest(req);
@@ -245,6 +246,16 @@ export async function getSecurityTenantRisk(req: Request, res: Response): Promis
     const limitRaw = typeof req.query.limit === "string" ? Number(req.query.limit) : undefined;
     const ranking = await buildTenantRiskRanking({ hours: hoursRaw, limit: limitRaw });
     res.status(200).json(ranking);
+  } catch (error: any) {
+    res.status(500).json({ message: String(error?.message ?? "Error interno") });
+  }
+}
+
+export async function getSecurityMonthlyReview(req: Request, res: Response): Promise<void> {
+  try {
+    const hoursRaw = typeof req.query.hours === "string" ? Number(req.query.hours) : undefined;
+    const snapshot = await buildSecurityMonthlyReviewSnapshot(hoursRaw);
+    res.status(200).json(snapshot);
   } catch (error: any) {
     res.status(500).json({ message: String(error?.message ?? "Error interno") });
   }

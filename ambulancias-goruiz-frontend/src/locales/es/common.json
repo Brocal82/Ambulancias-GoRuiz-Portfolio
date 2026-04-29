@@ -136,6 +136,12 @@
             "tenantRiskLoading": "Calculando riesgo por tenant...",
             "tenantRiskError": "No se pudo cargar el ranking de riesgo",
             "tenantRiskEmpty": "No hay datos de riesgo por tenant en esta ventana.",
+            "monthlyReviewTitle": "Revisión mensual (snapshot)",
+            "monthlyReviewLoading": "Cargando revisión mensual...",
+            "monthlyReviewError": "No se pudo cargar la revisión mensual",
+            "monthlyReviewStatus": "Estado global",
+            "exportAuditLogs": "Exportar CSV (auditoría)",
+            "exportTenantRisk": "Exportar CSV (tenant risk)",
             "tenantRiskTable": {
                 "tenant": "Tenant",
                 "level": "Riesgo",
