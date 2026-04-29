@@ -132,6 +132,18 @@
             "operationalEnabled": "Monitoring aktiv",
             "operationalLastReport": "Letzter Tagesreport",
             "operationalNoAlerts": "Keine aktiven operativen Alerts.",
+            "tenantRiskTitle": "Tenant-Risiko-Ranking",
+            "tenantRiskLoading": "Tenant-Risiko wird berechnet...",
+            "tenantRiskError": "Tenant-Risiko-Ranking konnte nicht geladen werden",
+            "tenantRiskEmpty": "Keine Tenant-Risiko-Daten fuer dieses Zeitfenster.",
+            "tenantRiskTable": {
+                "tenant": "Tenant",
+                "level": "Risiko",
+                "score": "Score",
+                "requested": "Requested",
+                "denied": "Denied",
+                "offHours": "Off-hours"
+            },
             "filters": {
                 "outcomeAny": "Outcome: alle",
                 "outcomeSuccess": "Outcome: success",

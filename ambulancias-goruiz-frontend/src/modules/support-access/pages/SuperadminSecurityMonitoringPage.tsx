@@ -5,11 +5,13 @@ import {
   getSecurityAuditLogs,
   getSecurityMonitoringOperationalHealth,
   getSecurityMonitoringSummary,
+  getSecurityTenantRisk,
 } from "../domain/api";
 import type {
   SecurityAuditLogRow,
   SecurityMonitoringOperationalHealth,
   SecurityMonitoringSnapshot,
+  SecurityTenantRiskRow,
 } from "../domain/types";
 
 const WINDOW_OPTIONS = [24, 48, 72, 168];
@@ -27,6 +29,9 @@ export default function SuperadminSecurityMonitoringPage() {
   const [health, setHealth] = useState<SecurityMonitoringOperationalHealth | null>(null);
   const [healthLoading, setHealthLoading] = useState<boolean>(true);
   const [healthError, setHealthError] = useState<string | null>(null);
+  const [tenantRiskRows, setTenantRiskRows] = useState<SecurityTenantRiskRow[]>([]);
+  const [tenantRiskLoading, setTenantRiskLoading] = useState<boolean>(true);
+  const [tenantRiskError, setTenantRiskError] = useState<string | null>(null);
   const [outcomeFilter, setOutcomeFilter] = useState<"" | "success" | "denied" | "error">("");
   const [eventFilter, setEventFilter] = useState<string>("");
   const [actorFilter, setActorFilter] = useState<string>("");
@@ -55,6 +60,33 @@ export default function SuperadminSecurityMonitoringPage() {
       }
     };
 
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [hours]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      setTenantRiskLoading(true);
+      setTenantRiskError(null);
+      try {
+        const data = await getSecurityTenantRisk({ hours, limit: 20 });
+        if (!cancelled) {
+          setTenantRiskRows(data.rows);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setTenantRiskRows([]);
+          setTenantRiskError(err instanceof Error ? err.message : "Unknown error");
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantRiskLoading(false);
+        }
+      }
+    };
     void run();
     return () => {
       cancelled = true;
@@ -378,6 +410,69 @@ export default function SuperadminSecurityMonitoringPage() {
                       <tr>
                         <td colSpan={6} className="py-4 text-slate-500">
                           {t("pages.superadminSecurityMonitoring.table.empty")}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">
+              {t("pages.superadminSecurityMonitoring.tenantRiskTitle")}
+            </h2>
+            {tenantRiskLoading && (
+              <p className="text-sm text-slate-600">
+                {t("pages.superadminSecurityMonitoring.tenantRiskLoading")}
+              </p>
+            )}
+            {!tenantRiskLoading && tenantRiskError && (
+              <p className="text-sm text-rose-700">
+                {t("pages.superadminSecurityMonitoring.tenantRiskError")}: {tenantRiskError}
+              </p>
+            )}
+            {!tenantRiskLoading && !tenantRiskError && (
+              <div className="overflow-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-slate-600 border-b border-slate-200">
+                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.tenantRiskTable.tenant")}</th>
+                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.tenantRiskTable.level")}</th>
+                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.tenantRiskTable.score")}</th>
+                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.tenantRiskTable.requested")}</th>
+                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.tenantRiskTable.denied")}</th>
+                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.tenantRiskTable.offHours")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tenantRiskRows.map((row) => (
+                      <tr key={row.tenantCompanyId} className="border-b border-slate-100">
+                        <td className="py-2 pr-3">{row.tenantCompanyId}</td>
+                        <td className="py-2 pr-3">
+                          <span
+                            className={
+                              row.riskLevel === "high"
+                                ? "rounded-full bg-rose-100 text-rose-700 px-2 py-0.5 text-xs font-medium"
+                                : row.riskLevel === "medium"
+                                  ? "rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 text-xs font-medium"
+                                  : "rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-xs font-medium"
+                            }
+                          >
+                            {row.riskLevel}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-3">{row.riskScore}</td>
+                        <td className="py-2 pr-3">{row.requested}</td>
+                        <td className="py-2 pr-3">{row.denied}</td>
+                        <td className="py-2 pr-3">{row.offHoursFinalApprovals}</td>
+                      </tr>
+                    ))}
+                    {tenantRiskRows.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="py-4 text-slate-500">
+                          {t("pages.superadminSecurityMonitoring.tenantRiskEmpty")}
                         </td>
                       </tr>
                     )}

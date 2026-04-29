@@ -15,6 +15,7 @@ import {
 import { buildSecurityMonitoringSnapshot } from "../../../security/security-monitoring";
 import { querySecurityAuditLogs } from "../../../security/security-audit-log.service";
 import { buildSecurityMonitoringOperationalHealth } from "../../../security/security-monitoring-health.service";
+import { buildTenantRiskRanking } from "../../../security/security-tenant-risk.service";
 
 export async function createSupportAccess(req: Request, res: Response): Promise<void> {
   const auditContext = buildAuditContextFromRequest(req);
@@ -233,6 +234,17 @@ export async function getSecurityMonitoringOperationalHealth(
   try {
     const health = await buildSecurityMonitoringOperationalHealth();
     res.status(200).json(health);
+  } catch (error: any) {
+    res.status(500).json({ message: String(error?.message ?? "Error interno") });
+  }
+}
+
+export async function getSecurityTenantRisk(req: Request, res: Response): Promise<void> {
+  try {
+    const hoursRaw = typeof req.query.hours === "string" ? Number(req.query.hours) : undefined;
+    const limitRaw = typeof req.query.limit === "string" ? Number(req.query.limit) : undefined;
+    const ranking = await buildTenantRiskRanking({ hours: hoursRaw, limit: limitRaw });
+    res.status(200).json(ranking);
   } catch (error: any) {
     res.status(500).json({ message: String(error?.message ?? "Error interno") });
   }

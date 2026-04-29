@@ -48,3 +48,22 @@ export type SecurityMonitoringOperationalHealth = {
   staleDailyReport: boolean;
   alerts: SecurityOperationalAlert[];
 };
+
+export type SecurityTenantRiskRow = {
+  tenantCompanyId: string;
+  requested: number;
+  denied: number;
+  approvedFinal: number;
+  revoked: number;
+  expired: number;
+  offHoursFinalApprovals: number;
+  riskScore: number;
+  riskLevel: "low" | "medium" | "high";
+};
+
+export type SecurityTenantRiskResponse = {
+  windowHours: number;
+  since: string;
+  until: string;
+  rows: SecurityTenantRiskRow[];
+};

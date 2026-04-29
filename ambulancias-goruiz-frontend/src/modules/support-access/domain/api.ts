@@ -3,6 +3,7 @@ import type {
   SecurityAuditLogsResponse,
   SecurityMonitoringOperationalHealth,
   SecurityMonitoringSnapshot,
+  SecurityTenantRiskResponse,
 } from "./types";
 
 export async function getSecurityMonitoringSummary(
@@ -47,6 +48,22 @@ export async function getSecurityAuditLogs(params: {
 export async function getSecurityMonitoringOperationalHealth(): Promise<SecurityMonitoringOperationalHealth> {
   const res = await axios.get<SecurityMonitoringOperationalHealth>(
     "/support-access/monitoring/health",
+  );
+  return res.data;
+}
+
+export async function getSecurityTenantRisk(params: {
+  hours: number;
+  limit?: number;
+}): Promise<SecurityTenantRiskResponse> {
+  const safeHours = Number.isFinite(params.hours)
+    ? Math.max(1, Math.min(168, Math.floor(params.hours)))
+    : 24;
+  const safeLimit = Number.isFinite(params.limit)
+    ? Math.max(1, Math.min(100, Math.floor(params.limit as number)))
+    : 20;
+  const res = await axios.get<SecurityTenantRiskResponse>(
+    `/support-access/monitoring/tenant-risk?hours=${safeHours}&limit=${safeLimit}`,
   );
   return res.data;
 }
