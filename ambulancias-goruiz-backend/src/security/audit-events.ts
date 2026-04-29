@@ -9,6 +9,7 @@ export const AUDIT_EVENT = {
   COMPANY_CREATED: "company.created",
   COMPANY_UPDATED: "company.updated",
   COMPANY_DELETED: "company.deleted",
+  COMPANY_ADMIN_CREATED: "company.admin_created",
   FILE_ACCESS_GRANTED: "file.access_granted",
   FILE_ACCESS_DENIED: "file.access_denied",
   SUPPORT_ACCESS_REQUESTED: "support_access.requested",

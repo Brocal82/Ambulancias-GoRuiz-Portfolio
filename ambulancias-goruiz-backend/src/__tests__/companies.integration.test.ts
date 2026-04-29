@@ -15,6 +15,7 @@ import {
 import User from "../modules/users/models/user.model";
 import Company from "../modules/companies/models/company.model";
 import { V1_DEFAULT_MODULES } from "../modules/companies/constants/modules.constants";
+import jwt from "jsonwebtoken";
 
 const API = "/api";
 
@@ -24,10 +25,12 @@ describe("Companies - gestión superadmin", () => {
   let adminNoCompanyToken: string;
   let companyId: string;
   let legacyAdminId: string;
+  let superadminId: string;
 
   beforeAll(async () => {
     await mongoose.connect(env.MONGODB_URI);
     const sa = await createTestSuperadmin();
+    superadminId = sa.superadminId;
     superadminToken = sa.superadminToken;
 
     const adminData = await createTestAdminWithCompany();
@@ -46,6 +49,16 @@ describe("Companies - gestión superadmin", () => {
     await User.deleteOne({ _id: legacyAdminId });
     await mongoose.disconnect();
   });
+
+  async function issueStepUpToken(): Promise<string> {
+    return jwt.sign({
+      typ: "step_up",
+      userId: superadminId,
+      role: "superadmin",
+    }, env.JWT_SECRET, {
+      expiresIn: "5m",
+    });
+  }
 
   describe("Autorización - solo superadmin", () => {
     it("admin de empresa no puede crear company", async () => {
@@ -126,6 +139,7 @@ describe("Companies - gestión superadmin", () => {
       const res = await request(app)
         .patch(`${API}/companies/${id}`)
         .set("Authorization", `Bearer ${superadminToken}`)
+        .set("x-step-up-token", await issueStepUpToken())
         .send({ name: "Actualizada OK", emailDomain: "@actualizadaok.com" })
         .expect(200);
       expect(res.body.name).toBe("Actualizada OK");
@@ -148,6 +162,7 @@ describe("Companies - gestión superadmin", () => {
       await request(app)
         .patch(`${API}/companies/${id}`)
         .set("Authorization", `Bearer ${superadminToken}`)
+        .set("x-step-up-token", await issueStepUpToken())
         .send({
           emailDomain: "@praemienpatch.com",
           enabledModules: [...V1_DEFAULT_MODULES],
@@ -159,6 +174,7 @@ describe("Companies - gestión superadmin", () => {
       await request(app)
         .patch(`${API}/companies/${id}`)
         .set("Authorization", `Bearer ${superadminToken}`)
+        .set("x-step-up-token", await issueStepUpToken())
         .send({
           emailDomain: "@praemienpatch.com",
           enabledModules: [...V1_DEFAULT_MODULES],
@@ -190,6 +206,7 @@ describe("Companies - gestión superadmin", () => {
       const res = await request(app)
         .post(`${API}/companies/${newCompanyId}/admin`)
         .set("Authorization", `Bearer ${superadminToken}`)
+        .set("x-step-up-token", await issueStepUpToken())
         .send({
           name: "Primer",
           lastName: "Admin",
@@ -208,6 +225,7 @@ describe("Companies - gestión superadmin", () => {
       await request(app)
         .post(`${API}/companies/${newCompanyId}/admin`)
         .set("Authorization", `Bearer ${superadminToken}`)
+        .set("x-step-up-token", await issueStepUpToken())
         .send({
           name: "Login",
           lastName: "Test",
@@ -229,6 +247,7 @@ describe("Companies - gestión superadmin", () => {
       await request(app)
         .post(`${API}/companies/${newCompanyId}/admin`)
         .set("Authorization", `Bearer ${superadminToken}`)
+        .set("x-step-up-token", await issueStepUpToken())
         .send({
           name: "Primero",
           lastName: "Admin",
@@ -239,6 +258,7 @@ describe("Companies - gestión superadmin", () => {
       const res = await request(app)
         .post(`${API}/companies/${newCompanyId}/admin`)
         .set("Authorization", `Bearer ${superadminToken}`)
+        .set("x-step-up-token", await issueStepUpToken())
         .send({
           name: "Segundo",
           lastName: "Admin",
@@ -254,6 +274,7 @@ describe("Companies - gestión superadmin", () => {
       const res = await request(app)
         .post(`${API}/companies/${fakeId}/admin`)
         .set("Authorization", `Bearer ${superadminToken}`)
+        .set("x-step-up-token", await issueStepUpToken())
         .send({
           name: "X",
           lastName: "Y",
@@ -271,6 +292,23 @@ describe("Companies - gestión superadmin", () => {
         .set("Authorization", `Bearer ${superadminToken}`)
         .expect(200);
       expect(Array.isArray(res.body)).toBe(true);
+    });
+  });
+
+  describe("Step-up policy", () => {
+    it("rechaza PATCH sensible sin step-up", async () => {
+      const createRes = await request(app)
+        .post(`${API}/companies`)
+        .set("Authorization", `Bearer ${superadminToken}`)
+        .send({ name: `Sin step-up ${Date.now()}`, emailDomain: "@nostepup.com" })
+        .expect(201);
+      const id = createRes.body._id ?? createRes.body.id;
+      const res = await request(app)
+        .patch(`${API}/companies/${id}`)
+        .set("Authorization", `Bearer ${superadminToken}`)
+        .send({ emailDomain: "@newdomain.com" });
+      expect([401, 403]).toContain(res.status);
+      expect(res.body.code).toBe("STEP_UP_REQUIRED");
     });
   });
 
