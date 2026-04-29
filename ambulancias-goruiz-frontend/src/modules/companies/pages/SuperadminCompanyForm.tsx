@@ -236,7 +236,14 @@ export default function SuperadminCompanyForm() {
             payload.praemienModeEffectiveFrom = getCurrentCalendarMonth();
           }
         }
-        await updateCompany(id, payload);
+        const stepUpCode = window.prompt(
+          "Acción sensible: introduce tu código MFA de 6 dígitos para guardar cambios críticos.",
+        );
+        if (!stepUpCode) {
+          toastT.error("Se canceló el guardado por falta de código MFA.");
+          return;
+        }
+        await updateCompany(id, payload, stepUpCode);
         toastT.success("Empresa actualizada correctamente");
       }
       navigate("/superadmin/companies");

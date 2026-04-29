@@ -1,11 +1,66 @@
 import { Request, Response } from "express";
 import * as companiesService from "../services/companies.service";
 import { createCompanySchema, updateCompanySchema } from "../schemas/company.schema";
+import { verifySuperadminTotpCode } from "../../users/services/users.service";
 import { AUDIT_EVENT } from "../../../security/audit-events";
 import {
   buildAuditContextFromRequest,
   emitAuditLog,
 } from "../../../security/audit-log";
+
+function readStepUpCode(req: Request): string {
+  const fromBody = typeof req.body?.stepUpCode === "string" ? req.body.stepUpCode : "";
+  const fromHeader = typeof req.headers["x-step-up-code"] === "string"
+    ? req.headers["x-step-up-code"]
+    : "";
+  return String(fromBody || fromHeader || "").trim();
+}
+
+async function ensureStepUpForCriticalCompanyAction(
+  req: Request,
+  auditContext: ReturnType<typeof buildAuditContextFromRequest>,
+  action: "delete_company" | "sensitive_update",
+  resourceId: string,
+): Promise<{ ok: true } | { ok: false; status: number; message: string }> {
+  try {
+    const actorUserId = req.userId;
+    if (!actorUserId) {
+      return { ok: false, status: 401, message: "No autorizado" };
+    }
+    await verifySuperadminTotpCode(actorUserId, readStepUpCode(req));
+    return { ok: true };
+  } catch (error: any) {
+    const msg = String(error?.message ?? "MFA_INVALID");
+    const reason =
+      msg === "MFA_NOT_ENROLLED"
+        ? "step_up_mfa_not_enrolled"
+        : msg === "MFA_REQUIRED"
+          ? "step_up_mfa_required"
+          : "step_up_mfa_invalid";
+    emitAuditLog(
+      action === "delete_company" ? AUDIT_EVENT.COMPANY_DELETED : AUDIT_EVENT.COMPANY_UPDATED,
+      "denied",
+      {
+        ...auditContext,
+        resourceType: "company",
+        resourceId,
+        statusCode: 403,
+        reason,
+      },
+    );
+    if (msg === "MFA_NOT_ENROLLED") {
+      return {
+        ok: false,
+        status: 403,
+        message: "Debes activar MFA para ejecutar esta acción crítica.",
+      };
+    }
+    if (msg === "MFA_REQUIRED") {
+      return { ok: false, status: 401, message: "Se requiere código MFA de 6 dígitos." };
+    }
+    return { ok: false, status: 401, message: "Código MFA inválido." };
+  }
+}
 
 export const createCompany = async (req: Request, res: Response): Promise<void> => {
   const auditContext = buildAuditContextFromRequest(req);
@@ -89,6 +144,16 @@ export const getMyCompany = async (req: Request, res: Response): Promise<void> =
 
 export const deleteCompany = async (req: Request, res: Response): Promise<void> => {
   const auditContext = buildAuditContextFromRequest(req);
+  const stepUp = await ensureStepUpForCriticalCompanyAction(
+    req,
+    auditContext,
+    "delete_company",
+    req.params.id,
+  );
+  if (!stepUp.ok) {
+    res.status(stepUp.status).json({ message: stepUp.message, code: "STEP_UP_REQUIRED" });
+    return;
+  }
   try {
     const deleted = await companiesService.deleteCompany(req.params.id);
     if (!deleted) {
@@ -133,6 +198,29 @@ export const getCompanyAdmins = async (req: Request, res: Response): Promise<voi
 export const updateCompany = async (req: Request, res: Response): Promise<void> => {
   const auditContext = buildAuditContextFromRequest(req);
   try {
+    const sensitiveFields = [
+      "isActive",
+      "emailDomain",
+      "enabledModules",
+      "praemienMode",
+      "praemienModeEffectiveFrom",
+    ];
+    const requiresStepUp = sensitiveFields.some((field) =>
+      Object.prototype.hasOwnProperty.call(req.body ?? {}, field)
+    );
+    if (requiresStepUp) {
+      const stepUp = await ensureStepUpForCriticalCompanyAction(
+        req,
+        auditContext,
+        "sensitive_update",
+        req.params.id,
+      );
+      if (!stepUp.ok) {
+        res.status(stepUp.status).json({ message: stepUp.message, code: "STEP_UP_REQUIRED" });
+        return;
+      }
+    }
+
     const parsed = updateCompanySchema.parse(req.body);
     const company = await companiesService.updateCompany(req.params.id, parsed);
     if (!company) {
