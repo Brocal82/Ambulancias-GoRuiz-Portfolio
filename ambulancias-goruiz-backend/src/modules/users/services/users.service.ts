@@ -506,6 +506,33 @@ export async function getSuperadminTotpStatus(userId: string) {
   };
 }
 
+export async function verifySuperadminTotpCode(userId: string, code: string) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("ID de usuario no válido");
+  }
+  const user = await User.findById(userId)
+    .select("role +mfaTotpSecret +mfaTotpEnabled")
+    .lean();
+  if (!user) {
+    throw new Error("Usuario no encontrado");
+  }
+  if (user.role !== "superadmin") {
+    throw new Error("Solo superadmin puede realizar step-up");
+  }
+  const secret = (user as any).mfaTotpSecret as string | undefined;
+  const enabled = Boolean((user as any).mfaTotpEnabled);
+  if (!enabled || !secret) {
+    throw new Error("MFA_NOT_ENROLLED");
+  }
+  if (!/^\d{6}$/.test(code.trim())) {
+    throw new Error("MFA_REQUIRED");
+  }
+  const check = await verify({ secret, token: code.trim() });
+  if (!check.valid) {
+    throw new Error("MFA_INVALID");
+  }
+}
+
 export async function deleteUserService(userId: string, adminCompanyId?: string) {
   if (adminCompanyId) {
     const target = await User.findById(userId).select("companyId").lean();

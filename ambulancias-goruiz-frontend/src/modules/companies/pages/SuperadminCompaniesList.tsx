@@ -21,7 +21,11 @@ export default function SuperadminCompaniesList() {
       )
     ) return;
     try {
-      await deleteCompany(company._id);
+      const stepUpCode = window.prompt(
+        "Acción crítica: introduce tu código MFA de 6 dígitos para eliminar la empresa.",
+      );
+      if (!stepUpCode) return;
+      await deleteCompany(company._id, stepUpCode);
       toastT.success("Empresa eliminada correctamente");
       setCompanies((prev) => prev.filter((c) => c._id !== company._id));
     } catch (e: unknown) {

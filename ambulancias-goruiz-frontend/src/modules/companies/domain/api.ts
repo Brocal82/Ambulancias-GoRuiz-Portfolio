@@ -30,13 +30,19 @@ export const createCompany = async (data: CreateCompanyInput): Promise<Company> 
 export const updateCompany = async (
   id: string,
   data: UpdateCompanyInput,
+  stepUpCode?: string,
 ): Promise<Company> => {
-  const res = await axios.patch<Company>(`/companies/${id}`, data);
+  const res = await axios.patch<Company>(
+    `/companies/${id}`,
+    stepUpCode ? { ...data, stepUpCode } : data,
+  );
   return res.data;
 };
 
-export const deleteCompany = async (id: string): Promise<void> => {
-  await axios.delete(`/companies/${id}`);
+export const deleteCompany = async (id: string, stepUpCode?: string): Promise<void> => {
+  await axios.delete(`/companies/${id}`, {
+    data: stepUpCode ? { stepUpCode } : undefined,
+  });
 };
 
 export const getCompanyAdmins = async (companyId: string): Promise<CompanyAdmin[]> => {
