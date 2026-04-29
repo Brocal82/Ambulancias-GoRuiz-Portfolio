@@ -24,6 +24,14 @@ export const registerUserSchema = z.object({
 export const loginUserSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, "Contraseña requerida"),
+  mfaCode: z.string().trim().optional(),
+});
+
+export const mfaCodeSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "El código MFA debe tener 6 dígitos"),
 });
 
 /* ─────────────────────────────────────────────────────────────────────────────

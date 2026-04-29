@@ -17,6 +17,10 @@ import {
   loginUserService,
   deleteUserService,
   revokeAllSessionsForUserService,
+  startSuperadminTotpEnrollment,
+  confirmSuperadminTotpEnrollment,
+  disableSuperadminTotp,
+  getSuperadminTotpStatus,
 } from "../services/users.service";
 import {
   parseUpdateUserDTO,
@@ -275,6 +279,36 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       res.status(401).json({ message: "Email o contraseña incorrectos." });
       return;
     }
+    if (msg === "MFA_NOT_ENROLLED") {
+      emitAuditLog(AUDIT_EVENT.AUTH_LOGIN_FAILED, "denied", {
+        ...auditContext,
+        statusCode: 403,
+        reason: "mfa_not_enrolled",
+        resourceType: "session",
+      });
+      res.status(403).json({ message: "El superadmin debe activar MFA antes de iniciar sesión.", code: "MFA_NOT_ENROLLED" });
+      return;
+    }
+    if (msg === "MFA_REQUIRED") {
+      emitAuditLog(AUDIT_EVENT.AUTH_LOGIN_FAILED, "denied", {
+        ...auditContext,
+        statusCode: 401,
+        reason: "mfa_required",
+        resourceType: "session",
+      });
+      res.status(401).json({ message: "Se requiere código MFA de 6 dígitos.", code: "MFA_REQUIRED" });
+      return;
+    }
+    if (msg === "MFA_INVALID") {
+      emitAuditLog(AUDIT_EVENT.AUTH_LOGIN_FAILED, "denied", {
+        ...auditContext,
+        statusCode: 401,
+        reason: "mfa_invalid",
+        resourceType: "session",
+      });
+      res.status(401).json({ message: "Código MFA inválido.", code: "MFA_INVALID" });
+      return;
+    }
 
     if (msg.includes("no está asociada a una empresa")) {
       emitAuditLog(AUDIT_EVENT.AUTH_LOGIN_FAILED, "denied", {
@@ -305,6 +339,120 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     });
     console.error("Error en login:", error);
     res.status(500).json({ message: "Error al iniciar sesión" });
+  }
+};
+
+export const getMyMfaStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.userId) {
+      res.status(401).json({ message: "No autorizado" });
+      return;
+    }
+    const status = await getSuperadminTotpStatus(req.userId);
+    res.status(200).json(status);
+  } catch (error: any) {
+    const msg = String(error?.message ?? "Error al consultar estado MFA");
+    if (msg.includes("Solo superadmin")) {
+      res.status(403).json({ message: msg });
+      return;
+    }
+    if (msg.includes("no válido")) {
+      res.status(400).json({ message: msg });
+      return;
+    }
+    res.status(500).json({ message: "Error al consultar estado MFA" });
+  }
+};
+
+export const startMyMfaEnrollment = async (req: Request, res: Response): Promise<void> => {
+  const auditContext = buildAuditContextFromRequest(req);
+  try {
+    if (!req.userId) {
+      res.status(401).json({ message: "No autorizado" });
+      return;
+    }
+    const payload = await startSuperadminTotpEnrollment(req.userId);
+    emitAuditLog(AUDIT_EVENT.AUTH_MFA_ENROLL_STARTED, "success", {
+      ...auditContext,
+      actorUserId: req.userId,
+      statusCode: 200,
+      resourceType: "mfa_totp",
+    });
+    res.status(200).json(payload);
+  } catch (error: any) {
+    const msg = String(error?.message ?? "Error al iniciar enrolamiento MFA");
+    emitAuditLog(AUDIT_EVENT.AUTH_MFA_ENROLL_STARTED, "error", {
+      ...auditContext,
+      actorUserId: req.userId,
+      statusCode: 400,
+      reason: msg,
+      resourceType: "mfa_totp",
+    });
+    if (msg.includes("Solo superadmin")) {
+      res.status(403).json({ message: msg });
+      return;
+    }
+    if (msg.includes("no válido")) {
+      res.status(400).json({ message: msg });
+      return;
+    }
+    res.status(400).json({ message: msg });
+  }
+};
+
+export const confirmMyMfaEnrollment = async (req: Request, res: Response): Promise<void> => {
+  const auditContext = buildAuditContextFromRequest(req);
+  try {
+    if (!req.userId) {
+      res.status(401).json({ message: "No autorizado" });
+      return;
+    }
+    await confirmSuperadminTotpEnrollment(req.userId, String(req.body?.code ?? ""));
+    emitAuditLog(AUDIT_EVENT.AUTH_MFA_ENABLED, "success", {
+      ...auditContext,
+      actorUserId: req.userId,
+      statusCode: 200,
+      resourceType: "mfa_totp",
+    });
+    res.status(200).json({ message: "MFA activado correctamente" });
+  } catch (error: any) {
+    const msg = String(error?.message ?? "Error al activar MFA");
+    emitAuditLog(AUDIT_EVENT.AUTH_MFA_ENABLED, "denied", {
+      ...auditContext,
+      actorUserId: req.userId,
+      statusCode: 400,
+      reason: msg,
+      resourceType: "mfa_totp",
+    });
+    res.status(400).json({ message: msg });
+  }
+};
+
+export const disableMyMfa = async (req: Request, res: Response): Promise<void> => {
+  const auditContext = buildAuditContextFromRequest(req);
+  try {
+    if (!req.userId) {
+      res.status(401).json({ message: "No autorizado" });
+      return;
+    }
+    await disableSuperadminTotp(req.userId, String(req.body?.code ?? ""));
+    emitAuditLog(AUDIT_EVENT.AUTH_MFA_DISABLED, "success", {
+      ...auditContext,
+      actorUserId: req.userId,
+      statusCode: 200,
+      resourceType: "mfa_totp",
+    });
+    res.status(200).json({ message: "MFA desactivado correctamente" });
+  } catch (error: any) {
+    const msg = String(error?.message ?? "Error al desactivar MFA");
+    emitAuditLog(AUDIT_EVENT.AUTH_MFA_DISABLED, "denied", {
+      ...auditContext,
+      actorUserId: req.userId,
+      statusCode: 400,
+      reason: msg,
+      resourceType: "mfa_totp",
+    });
+    res.status(400).json({ message: msg });
   }
 };
 

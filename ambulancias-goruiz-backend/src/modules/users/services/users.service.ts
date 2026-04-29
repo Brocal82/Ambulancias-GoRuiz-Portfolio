@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import VacationRequest from "../../vacation/models/vacation-request.model";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { generateSecret, verify, generateURI } from "otplib";
 import { env } from "../../../config/env";
 import Company from "../../companies/models/company.model";
 import type {
@@ -294,7 +295,7 @@ export async function createUserService(data: CreateUserDTO) {
 export async function loginUserService(
   data: LoginDTO,
 ): Promise<LoginResponseDTO> {
-  const { email, password } = data;
+  const { email, password, mfaCode } = data;
 
   if (!email || !password) {
     throw new Error("Email y contraseña son obligatorios");
@@ -340,6 +341,24 @@ export async function loginUserService(
     }
   }
 
+  if (user.role === "superadmin" && env.SUPERADMIN_MFA_REQUIRED) {
+    const superadmin = await User.findById(user._id)
+      .select("+mfaTotpEnabled +mfaTotpSecret")
+      .lean();
+    const isEnabled = Boolean((superadmin as any)?.mfaTotpEnabled);
+    const secret = (superadmin as any)?.mfaTotpSecret as string | undefined;
+    if (!isEnabled || !secret) {
+      throw new Error("MFA_NOT_ENROLLED");
+    }
+    if (!mfaCode || !/^\d{6}$/.test(mfaCode.trim())) {
+      throw new Error("MFA_REQUIRED");
+    }
+    const check = await verify({ secret, token: mfaCode.trim() });
+    if (!check.valid) {
+      throw new Error("MFA_INVALID");
+    }
+  }
+
   const payload: Record<string, unknown> = {
     userId: user._id,
     email: user.email,
@@ -379,6 +398,111 @@ export async function loginUserService(
     message: "Login exitoso",
     token,
     user: userResponse,
+  };
+}
+
+export async function startSuperadminTotpEnrollment(userId: string) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("ID de usuario no válido");
+  }
+  const user = await User.findById(userId).select("email role").lean();
+  if (!user) {
+    throw new Error("Usuario no encontrado");
+  }
+  if (user.role !== "superadmin") {
+    throw new Error("Solo superadmin puede configurar MFA");
+  }
+
+  const secret = generateSecret();
+  const issuer = env.SUPERADMIN_MFA_ISSUER;
+  const label = `${issuer}:${String(user.email)}`;
+  const otpauthUrl = generateURI({
+    issuer,
+    label: String(user.email),
+    secret,
+  });
+
+  await User.findByIdAndUpdate(userId, {
+    $set: { mfaTotpPendingSecret: secret },
+  });
+
+  return { secret, issuer, label, otpauthUrl };
+}
+
+export async function confirmSuperadminTotpEnrollment(userId: string, code: string) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("ID de usuario no válido");
+  }
+  const user = await User.findById(userId)
+    .select("role +mfaTotpPendingSecret")
+    .lean();
+  if (!user) {
+    throw new Error("Usuario no encontrado");
+  }
+  if (user.role !== "superadmin") {
+    throw new Error("Solo superadmin puede configurar MFA");
+  }
+  const pendingSecret = (user as any).mfaTotpPendingSecret as string | undefined;
+  if (!pendingSecret) {
+    throw new Error("No hay una configuración MFA pendiente");
+  }
+  const check = await verify({ secret: pendingSecret, token: code.trim() });
+  if (!check.valid) {
+    throw new Error("Código MFA inválido");
+  }
+
+  await User.findByIdAndUpdate(userId, {
+    $set: { mfaTotpEnabled: true, mfaTotpSecret: pendingSecret },
+    $unset: { mfaTotpPendingSecret: 1 },
+  });
+}
+
+export async function disableSuperadminTotp(userId: string, code: string) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("ID de usuario no válido");
+  }
+  const user = await User.findById(userId)
+    .select("role +mfaTotpSecret +mfaTotpEnabled")
+    .lean();
+  if (!user) {
+    throw new Error("Usuario no encontrado");
+  }
+  if (user.role !== "superadmin") {
+    throw new Error("Solo superadmin puede desactivar MFA");
+  }
+  const secret = (user as any).mfaTotpSecret as string | undefined;
+  const enabled = Boolean((user as any).mfaTotpEnabled);
+  if (!enabled || !secret) {
+    throw new Error("MFA no está habilitado");
+  }
+  const check = await verify({ secret, token: code.trim() });
+  if (!check.valid) {
+    throw new Error("Código MFA inválido");
+  }
+
+  await User.findByIdAndUpdate(userId, {
+    $set: { mfaTotpEnabled: false },
+    $unset: { mfaTotpSecret: 1, mfaTotpPendingSecret: 1 },
+  });
+}
+
+export async function getSuperadminTotpStatus(userId: string) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("ID de usuario no válido");
+  }
+  const user = await User.findById(userId)
+    .select("role mfaTotpEnabled +mfaTotpPendingSecret")
+    .lean();
+  if (!user) {
+    throw new Error("Usuario no encontrado");
+  }
+  if (user.role !== "superadmin") {
+    throw new Error("Solo superadmin puede consultar MFA");
+  }
+  return {
+    required: env.SUPERADMIN_MFA_REQUIRED,
+    enabled: Boolean((user as any).mfaTotpEnabled),
+    pendingSetup: Boolean((user as any).mfaTotpPendingSecret),
   };
 }
 

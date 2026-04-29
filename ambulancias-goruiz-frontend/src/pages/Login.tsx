@@ -14,6 +14,8 @@ const Login = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
+  const [needsMfa, setNeedsMfa] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -24,12 +26,24 @@ const Login = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post("/users/login", { email, password });
+      const response = await axios.post("/users/login", {
+        email,
+        password,
+        ...(mfaCode.trim() ? { mfaCode: mfaCode.trim() } : {}),
+      });
       const { token, user } = response.data;
 
       login(token, user._id, user.role, user);
       navigate(homePathForRole(user.role));
     } catch (err: unknown) {
+      const maybeCode =
+        err &&
+        typeof err === "object" &&
+        "response" in err &&
+        (err as { response?: { data?: { code?: string } } }).response?.data?.code;
+      if (maybeCode === "MFA_REQUIRED" || maybeCode === "MFA_INVALID") {
+        setNeedsMfa(true);
+      }
       setError(getApiErrorMessage(err, t("pages.login.genericError")));
     } finally {
       setIsSubmitting(false);
@@ -92,6 +106,29 @@ const Login = () => {
             required
           />
         </div>
+
+        {needsMfa && (
+          <div className="mb-6">
+            <label
+              htmlFor="mfaCode"
+              className="block text-sm font-medium text-slate-200 mb-1"
+            >
+              Código MFA (6 dígitos)
+            </label>
+            <input
+              id="mfaCode"
+              type="text"
+              inputMode="numeric"
+              placeholder="123456"
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-slate-300
+                       bg-slate-100 text-slate-900 placeholder-slate-500
+                       focus:outline-none focus:ring-2 focus:ring-blue-400"
+              required={needsMfa}
+            />
+          </div>
+        )}
 
         {/* Botón */}
         <button

@@ -27,6 +27,13 @@ const SuperadminDashboard = () => {
       >
         {t("pages.superadminDashboard.securityMonitoring")}
       </button>
+      <button
+        type="button"
+        onClick={() => navigate("/superadmin/security-mfa")}
+        className="ml-3 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+      >
+        MFA superadmin
+      </button>
     </div>
   );
 };

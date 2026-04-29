@@ -43,6 +43,7 @@ export interface CreateUserDTO {
 export interface LoginDTO {
   email: string;
   password: string;
+  mfaCode?: string;
 }
 
 export interface LoginResponseDTO {

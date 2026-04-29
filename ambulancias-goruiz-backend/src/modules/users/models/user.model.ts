@@ -38,6 +38,9 @@ export interface IUser extends Document {
    * code that filters on `isActive: true` outside of the login path.
    */
   isActive: boolean;
+  mfaTotpEnabled?: boolean;
+  mfaTotpSecret?: string;
+  mfaTotpPendingSecret?: string;
 }
 
 const userSchema = new Schema<IUser>({
@@ -127,6 +130,21 @@ const userSchema = new Schema<IUser>({
     required: true,
     default: true,
     index: true,
+  },
+  mfaTotpEnabled: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
+  mfaTotpSecret: {
+    type: String,
+    required: false,
+    select: false,
+  },
+  mfaTotpPendingSecret: {
+    type: String,
+    required: false,
+    select: false,
   },
 });
 
