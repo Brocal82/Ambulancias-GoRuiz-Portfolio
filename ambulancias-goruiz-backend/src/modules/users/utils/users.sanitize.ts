@@ -11,7 +11,7 @@ export function sanitizeUser(user: any) {
   const u = typeof user.toObject === "function" ? user.toObject() : user;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { password, __v, ...safe } = u;
+  const { password, __v, mfaTotpSecret, mfaTotpPendingSecret, ...safe } = u;
 
   if (safe.pscheinConfirmedAt instanceof Date) {
     (safe as Record<string, unknown>).pscheinConfirmedAt =

@@ -34,6 +34,7 @@ import {
 } from "./modules/appointments";
 import AdminDashboard from "./pages/AdminDashboard";
 import { AdminUsersPage } from "./modules/users";
+import SuperadminMfaSettingsPage from "./modules/users/pages/SuperadminMfaSettingsPage";
 import AdminDienstsPage from "./modules/diensts/pages/AdminDienstsPage";
 import AdminDienstTemplatesPage from "./modules/dienstTemplates/pages/AdminDienstTemplatesPage";
 import AdminVacationsPage from "./modules/vacation/pages/AdminVacationsPage";
@@ -158,6 +159,10 @@ export default function App() {
                 <Route
                   path="/superadmin/security-monitoring"
                   element={<SuperadminSecurityMonitoringPage />}
+                />
+                <Route
+                  path="/superadmin/security-mfa"
+                  element={<SuperadminMfaSettingsPage />}
                 />
                 <Route
                   path="/superadmin/companies/:id/admin"

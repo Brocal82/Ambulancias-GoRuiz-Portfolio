@@ -107,3 +107,34 @@ export const uploadUserFilesForUser = async (
   return response.data;
 };
 
+export interface SuperadminMfaStatusResponse {
+  required: boolean;
+  enabled: boolean;
+  pendingSetup: boolean;
+}
+
+export interface SuperadminMfaEnrollResponse {
+  secret: string;
+  issuer: string;
+  label: string;
+  otpauthUrl: string;
+}
+
+export const getSuperadminMfaStatus = async (): Promise<SuperadminMfaStatusResponse> => {
+  const response = await api.get<SuperadminMfaStatusResponse>("/users/me/mfa/status");
+  return response.data;
+};
+
+export const startSuperadminMfaEnrollment = async (): Promise<SuperadminMfaEnrollResponse> => {
+  const response = await api.post<SuperadminMfaEnrollResponse>("/users/me/mfa/totp/enroll");
+  return response.data;
+};
+
+export const confirmSuperadminMfaEnrollment = async (code: string): Promise<void> => {
+  await api.post("/users/me/mfa/totp/confirm", { code });
+};
+
+export const disableSuperadminMfa = async (code: string): Promise<void> => {
+  await api.post("/users/me/mfa/totp/disable", { code });
+};
+

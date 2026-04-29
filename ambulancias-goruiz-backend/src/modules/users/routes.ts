@@ -12,17 +12,23 @@ import {
   deleteUserDocument,
   deleteUserDocumentForUser,
   revokeMySessions,
+  getMyMfaStatus,
+  startMyMfaEnrollment,
+  confirmMyMfaEnrollment,
+  disableMyMfa,
 } from "./controllers/users.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import {
   authorizeRole,
   authorizeSelfOrAdmin,
+  authorizeSuperadmin,
 } from "../../middlewares/roleMiddleware";
 import { validateBody } from "../../middlewares/validateBody";
 import { upload } from "../../middlewares/uploadMiddleware";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import {
   loginUserSchema,
+  mfaCodeSchema,
   updateUserSchema,
 } from "./schemas/user.schema";
 
@@ -36,6 +42,27 @@ router.post("/register", (_req, res) => {
 });
 router.post("/login", validateBody(loginUserSchema), loginUser);
 router.post("/sessions/revoke-all", authenticateToken, revokeMySessions);
+router.get("/me/mfa/status", authenticateToken, authorizeSuperadmin, getMyMfaStatus);
+router.post(
+  "/me/mfa/totp/enroll",
+  authenticateToken,
+  authorizeSuperadmin,
+  startMyMfaEnrollment,
+);
+router.post(
+  "/me/mfa/totp/confirm",
+  authenticateToken,
+  authorizeSuperadmin,
+  validateBody(mfaCodeSchema),
+  confirmMyMfaEnrollment,
+);
+router.post(
+  "/me/mfa/totp/disable",
+  authenticateToken,
+  authorizeSuperadmin,
+  validateBody(mfaCodeSchema),
+  disableMyMfa,
+);
 
 // ⚠️ Rutas personalizadas antes de `/:id`
 router.get(

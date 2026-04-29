@@ -37,6 +37,17 @@ const envSchema = z.object({
   NODE_ENV: z.string().trim().optional(),
   JWT_EXPIRES_IN: z.string().trim().default("1h"),
   JWT_EXPIRES_IN_PRIVILEGED: z.string().trim().default("15m"),
+  SUPERADMIN_MFA_REQUIRED: z
+    .preprocess(
+      (v) => {
+        if (v === undefined || v === "") return false;
+        if (typeof v === "boolean") return v;
+        return String(v).toLowerCase() === "true";
+      },
+      z.boolean(),
+    )
+    .default(false),
+  SUPERADMIN_MFA_ISSUER: z.string().trim().default("AmbulanciasGoRuiz"),
   SECURITY_MONITORING_ENABLED: z
     .preprocess(
       (v) => {
