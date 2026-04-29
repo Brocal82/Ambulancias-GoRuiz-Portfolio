@@ -13,6 +13,8 @@ import {
   emitSecurityAlert,
 } from "../../../security/audit-log";
 import { buildSecurityMonitoringSnapshot } from "../../../security/security-monitoring";
+import { querySecurityAuditLogs } from "../../../security/security-audit-log.service";
+import { buildSecurityMonitoringOperationalHealth } from "../../../security/security-monitoring-health.service";
 
 export async function createSupportAccess(req: Request, res: Response): Promise<void> {
   const auditContext = buildAuditContextFromRequest(req);
@@ -195,6 +197,42 @@ export async function getSecurityMonitoringSummary(
   try {
     const snapshot = await buildSecurityMonitoringSnapshot(hours);
     res.status(200).json(snapshot);
+  } catch (error: any) {
+    res.status(500).json({ message: String(error?.message ?? "Error interno") });
+  }
+}
+
+export async function getSecurityAuditLogs(req: Request, res: Response): Promise<void> {
+  try {
+    const hoursRaw = typeof req.query.hours === "string" ? Number(req.query.hours) : undefined;
+    const limitRaw = typeof req.query.limit === "string" ? Number(req.query.limit) : undefined;
+    const event = typeof req.query.event === "string" ? req.query.event : undefined;
+    const outcome = typeof req.query.outcome === "string" ? req.query.outcome : undefined;
+    const actorUserId = typeof req.query.actorUserId === "string" ? req.query.actorUserId : undefined;
+    const tenantCompanyId =
+      typeof req.query.tenantCompanyId === "string" ? req.query.tenantCompanyId : undefined;
+
+    const data = await querySecurityAuditLogs({
+      hours: hoursRaw,
+      limit: limitRaw,
+      event: event as any,
+      outcome: outcome as any,
+      actorUserId,
+      tenantCompanyId,
+    });
+    res.status(200).json(data);
+  } catch (error: any) {
+    res.status(500).json({ message: String(error?.message ?? "Error interno") });
+  }
+}
+
+export async function getSecurityMonitoringOperationalHealth(
+  _req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const health = await buildSecurityMonitoringOperationalHealth();
+    res.status(200).json(health);
   } catch (error: any) {
     res.status(500).json({ message: String(error?.message ?? "Error interno") });
   }

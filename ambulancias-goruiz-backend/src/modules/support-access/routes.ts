@@ -5,6 +5,8 @@ import {
   checkMyActiveSupportAccess,
   createSupportAccess,
   getSecurityMonitoringSummary,
+  getSecurityAuditLogs,
+  getSecurityMonitoringOperationalHealth,
   getSupportAccessRequests,
   reviewSupportAccess,
   revokeSupportAccess,
@@ -20,5 +22,7 @@ router.post("/requests/:id/review", reviewSupportAccess);
 router.post("/requests/:id/revoke", revokeSupportAccess);
 router.get("/active", checkMyActiveSupportAccess);
 router.get("/monitoring/daily-summary", getSecurityMonitoringSummary);
+router.get("/monitoring/audit-logs", getSecurityAuditLogs);
+router.get("/monitoring/health", getSecurityMonitoringOperationalHealth);
 
 export default router;

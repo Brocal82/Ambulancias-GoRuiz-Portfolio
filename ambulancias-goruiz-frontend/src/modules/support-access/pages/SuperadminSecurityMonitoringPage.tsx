@@ -1,8 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { getSecurityMonitoringSummary } from "../domain/api";
-import type { SecurityMonitoringSnapshot } from "../domain/types";
+import {
+  getSecurityAuditLogs,
+  getSecurityMonitoringOperationalHealth,
+  getSecurityMonitoringSummary,
+} from "../domain/api";
+import type {
+  SecurityAuditLogRow,
+  SecurityMonitoringOperationalHealth,
+  SecurityMonitoringSnapshot,
+} from "../domain/types";
 
 const WINDOW_OPTIONS = [24, 48, 72, 168];
 
@@ -12,6 +20,17 @@ export default function SuperadminSecurityMonitoringPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<SecurityMonitoringSnapshot | null>(null);
+  const [auditLoading, setAuditLoading] = useState<boolean>(true);
+  const [auditError, setAuditError] = useState<string | null>(null);
+  const [auditRows, setAuditRows] = useState<SecurityAuditLogRow[]>([]);
+  const [auditTotal, setAuditTotal] = useState<number>(0);
+  const [health, setHealth] = useState<SecurityMonitoringOperationalHealth | null>(null);
+  const [healthLoading, setHealthLoading] = useState<boolean>(true);
+  const [healthError, setHealthError] = useState<string | null>(null);
+  const [outcomeFilter, setOutcomeFilter] = useState<"" | "success" | "denied" | "error">("");
+  const [eventFilter, setEventFilter] = useState<string>("");
+  const [actorFilter, setActorFilter] = useState<string>("");
+  const [tenantFilter, setTenantFilter] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -36,6 +55,69 @@ export default function SuperadminSecurityMonitoringPage() {
       }
     };
 
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [hours]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      setAuditLoading(true);
+      setAuditError(null);
+      try {
+        const data = await getSecurityAuditLogs({
+          hours,
+          limit: 50,
+          outcome: outcomeFilter,
+          event: eventFilter,
+          actorUserId: actorFilter,
+          tenantCompanyId: tenantFilter,
+        });
+        if (!cancelled) {
+          setAuditRows(data.rows);
+          setAuditTotal(data.total);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setAuditRows([]);
+          setAuditTotal(0);
+          setAuditError(err instanceof Error ? err.message : "Unknown error");
+        }
+      } finally {
+        if (!cancelled) {
+          setAuditLoading(false);
+        }
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [hours, outcomeFilter, eventFilter, actorFilter, tenantFilter]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      setHealthLoading(true);
+      setHealthError(null);
+      try {
+        const data = await getSecurityMonitoringOperationalHealth();
+        if (!cancelled) {
+          setHealth(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setHealth(null);
+          setHealthError(err instanceof Error ? err.message : "Unknown error");
+        }
+      } finally {
+        if (!cancelled) {
+          setHealthLoading(false);
+        }
+      }
+    };
     void run();
     return () => {
       cancelled = true;
@@ -141,6 +223,168 @@ export default function SuperadminSecurityMonitoringPage() {
                 {new Date(snapshot.supportAccess.until).toLocaleString()}
               </p>
             </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+            <h2 className="text-lg font-semibold text-slate-900">
+              {t("pages.superadminSecurityMonitoring.operationalTitle")}
+            </h2>
+            {healthLoading && (
+              <p className="text-sm text-slate-600">
+                {t("pages.superadminSecurityMonitoring.operationalLoading")}
+              </p>
+            )}
+            {!healthLoading && healthError && (
+              <p className="text-sm text-rose-700">
+                {t("pages.superadminSecurityMonitoring.operationalError")}: {healthError}
+              </p>
+            )}
+            {!healthLoading && !healthError && health && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                  <p>
+                    <span className="font-medium">
+                      {t("pages.superadminSecurityMonitoring.operationalDb")}:
+                    </span>{" "}
+                    {health.dbStatus}
+                  </p>
+                  <p>
+                    <span className="font-medium">
+                      {t("pages.superadminSecurityMonitoring.operationalCron")}:
+                    </span>{" "}
+                    {health.monitoringCron}
+                  </p>
+                  <p>
+                    <span className="font-medium">
+                      {t("pages.superadminSecurityMonitoring.operationalEnabled")}:
+                    </span>{" "}
+                    {health.monitoringEnabled ? "true" : "false"}
+                  </p>
+                  <p>
+                    <span className="font-medium">
+                      {t("pages.superadminSecurityMonitoring.operationalLastReport")}:
+                    </span>{" "}
+                    {health.lastDailyReportAt
+                      ? new Date(health.lastDailyReportAt).toLocaleString()
+                      : "-"}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  {health.alerts.length === 0 ? (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+                      {t("pages.superadminSecurityMonitoring.operationalNoAlerts")}
+                    </div>
+                  ) : (
+                    health.alerts.map((alert) => (
+                      <div
+                        key={alert.code}
+                        className={
+                          alert.severity === "critical"
+                            ? "rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+                            : "rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
+                        }
+                      >
+                        <span className="font-medium">{alert.code}:</span> {alert.message}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <h2 className="text-lg font-semibold text-slate-900">
+                {t("pages.superadminSecurityMonitoring.auditTitle")}
+              </h2>
+              <p className="text-sm text-slate-600">
+                {t("pages.superadminSecurityMonitoring.auditTotal", { total: auditTotal })}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+              <select
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                value={outcomeFilter}
+                onChange={(e) =>
+                  setOutcomeFilter(e.target.value as "" | "success" | "denied" | "error")
+                }
+              >
+                <option value="">{t("pages.superadminSecurityMonitoring.filters.outcomeAny")}</option>
+                <option value="success">{t("pages.superadminSecurityMonitoring.filters.outcomeSuccess")}</option>
+                <option value="denied">{t("pages.superadminSecurityMonitoring.filters.outcomeDenied")}</option>
+                <option value="error">{t("pages.superadminSecurityMonitoring.filters.outcomeError")}</option>
+              </select>
+              <input
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                placeholder={t("pages.superadminSecurityMonitoring.filters.eventPlaceholder")}
+                value={eventFilter}
+                onChange={(e) => setEventFilter(e.target.value)}
+              />
+              <input
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                placeholder={t("pages.superadminSecurityMonitoring.filters.actorPlaceholder")}
+                value={actorFilter}
+                onChange={(e) => setActorFilter(e.target.value)}
+              />
+              <input
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                placeholder={t("pages.superadminSecurityMonitoring.filters.tenantPlaceholder")}
+                value={tenantFilter}
+                onChange={(e) => setTenantFilter(e.target.value)}
+              />
+            </div>
+
+            {auditLoading && (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                {t("pages.superadminSecurityMonitoring.auditLoading")}
+              </div>
+            )}
+            {!auditLoading && auditError && (
+              <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                {t("pages.superadminSecurityMonitoring.auditError")}: {auditError}
+              </div>
+            )}
+            {!auditLoading && !auditError && (
+              <div className="overflow-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-slate-600 border-b border-slate-200">
+                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.table.at")}</th>
+                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.table.event")}</th>
+                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.table.outcome")}</th>
+                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.table.actor")}</th>
+                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.table.tenant")}</th>
+                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.table.resource")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditRows.map((row) => (
+                      <tr key={row._id} className="border-b border-slate-100">
+                        <td className="py-2 pr-3 whitespace-nowrap">
+                          {new Date(row.at).toLocaleString()}
+                        </td>
+                        <td className="py-2 pr-3">{row.event}</td>
+                        <td className="py-2 pr-3">{row.outcome}</td>
+                        <td className="py-2 pr-3">{row.actorUserId ?? "-"}</td>
+                        <td className="py-2 pr-3">{row.tenantCompanyId ?? "-"}</td>
+                        <td className="py-2 pr-3">
+                          {[row.resourceType, row.resourceId].filter(Boolean).join(":") || "-"}
+                        </td>
+                      </tr>
+                    ))}
+                    {auditRows.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="py-4 text-slate-500">
+                          {t("pages.superadminSecurityMonitoring.table.empty")}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </>
       )}
