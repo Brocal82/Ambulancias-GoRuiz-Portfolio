@@ -120,6 +120,12 @@ export interface SuperadminMfaEnrollResponse {
   otpauthUrl: string;
 }
 
+export interface StepUpSessionResponse {
+  stepUpToken: string;
+  expiresAt: string;
+  ttlSeconds: number;
+}
+
 export const getSuperadminMfaStatus = async (): Promise<SuperadminMfaStatusResponse> => {
   const response = await api.get<SuperadminMfaStatusResponse>("/users/me/mfa/status");
   return response.data;
@@ -136,5 +142,12 @@ export const confirmSuperadminMfaEnrollment = async (code: string): Promise<void
 
 export const disableSuperadminMfa = async (code: string): Promise<void> => {
   await api.post("/users/me/mfa/totp/disable", { code });
+};
+
+export const issueSuperadminStepUpSession = async (
+  code: string,
+): Promise<StepUpSessionResponse> => {
+  const response = await api.post<StepUpSessionResponse>("/users/me/step-up-session", { code });
+  return response.data;
 };
 

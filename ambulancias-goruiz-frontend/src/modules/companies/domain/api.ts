@@ -30,18 +30,17 @@ export const createCompany = async (data: CreateCompanyInput): Promise<Company> 
 export const updateCompany = async (
   id: string,
   data: UpdateCompanyInput,
-  stepUpCode?: string,
+  stepUpToken?: string,
 ): Promise<Company> => {
-  const res = await axios.patch<Company>(
-    `/companies/${id}`,
-    stepUpCode ? { ...data, stepUpCode } : data,
-  );
+  const res = await axios.patch<Company>(`/companies/${id}`, data, {
+    headers: stepUpToken ? { "x-step-up-token": stepUpToken } : undefined,
+  });
   return res.data;
 };
 
-export const deleteCompany = async (id: string, stepUpCode?: string): Promise<void> => {
+export const deleteCompany = async (id: string, stepUpToken?: string): Promise<void> => {
   await axios.delete(`/companies/${id}`, {
-    data: stepUpCode ? { stepUpCode } : undefined,
+    headers: stepUpToken ? { "x-step-up-token": stepUpToken } : undefined,
   });
 };
 
@@ -53,7 +52,10 @@ export const getCompanyAdmins = async (companyId: string): Promise<CompanyAdmin[
 export const createCompanyAdmin = async (
   companyId: string,
   data: CreateAdminInput,
+  stepUpToken?: string,
 ) => {
-  const res = await axios.post(`/companies/${companyId}/admin`, data);
+  const res = await axios.post(`/companies/${companyId}/admin`, data, {
+    headers: stepUpToken ? { "x-step-up-token": stepUpToken } : undefined,
+  });
   return res.data;
 };

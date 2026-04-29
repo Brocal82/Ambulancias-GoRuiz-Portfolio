@@ -8,11 +8,13 @@ import EditIconButton from "../../../components/common/actions/EditIconButton";
 import CreateAdminIconButton from "../../../components/common/actions/CreateAdminIconButton";
 import DangerDeleteButton from "../../../components/common/actions/DangerDeleteButton";
 import { APP_NAV_MATCH_TABLE_THEAD } from "../../../components/ui/appTableHeader";
+import { useStepUpSession } from "../utils/useStepUpSession";
 
 export default function SuperadminCompaniesList() {
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
+  const { requestStepUpToken, stepUpModal } = useStepUpSession();
 
   const handleDelete = async (company: Company) => {
     if (
@@ -21,11 +23,11 @@ export default function SuperadminCompaniesList() {
       )
     ) return;
     try {
-      const stepUpCode = window.prompt(
-        "Acción crítica: introduce tu código MFA de 6 dígitos para eliminar la empresa.",
+      const stepUpToken = await requestStepUpToken(
+        "Eliminar una empresa es una acción crítica. Confirma con tu código MFA para continuar.",
       );
-      if (!stepUpCode) return;
-      await deleteCompany(company._id, stepUpCode);
+      if (!stepUpToken) return;
+      await deleteCompany(company._id, stepUpToken);
       toastT.success("Empresa eliminada correctamente");
       setCompanies((prev) => prev.filter((c) => c._id !== company._id));
     } catch (e: unknown) {
@@ -132,6 +134,7 @@ export default function SuperadminCompaniesList() {
       >
         ← Volver al panel superadmin
       </button>
+      {stepUpModal}
     </div>
   );
 }

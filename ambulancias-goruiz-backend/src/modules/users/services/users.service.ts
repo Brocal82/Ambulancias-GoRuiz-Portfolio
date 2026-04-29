@@ -533,6 +533,43 @@ export async function verifySuperadminTotpCode(userId: string, code: string) {
   }
 }
 
+type StepUpJwtPayload = {
+  typ: "step_up";
+  userId: string;
+  role: "superadmin";
+};
+
+export async function issueSuperadminStepUpSession(userId: string, code: string) {
+  await verifySuperadminTotpCode(userId, code);
+  const ttlSeconds = env.STEP_UP_SESSION_TTL_SECONDS;
+  const token = jwt.sign(
+    { typ: "step_up", userId, role: "superadmin" } satisfies StepUpJwtPayload,
+    env.JWT_SECRET,
+    { expiresIn: `${ttlSeconds}s` as any },
+  );
+  return {
+    stepUpToken: token,
+    expiresAt: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
+    ttlSeconds,
+  };
+}
+
+export async function verifySuperadminStepUpSessionToken(userId: string, token: string) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("ID de usuario no válido");
+  }
+  const decoded = jwt.verify(token, env.JWT_SECRET) as Partial<StepUpJwtPayload>;
+  if (decoded.typ !== "step_up") {
+    throw new Error("STEP_UP_INVALID");
+  }
+  if (decoded.role !== "superadmin") {
+    throw new Error("STEP_UP_INVALID");
+  }
+  if (String(decoded.userId ?? "") !== String(userId)) {
+    throw new Error("STEP_UP_INVALID");
+  }
+}
+
 export async function deleteUserService(userId: string, adminCompanyId?: string) {
   if (adminCompanyId) {
     const target = await User.findById(userId).select("companyId").lean();

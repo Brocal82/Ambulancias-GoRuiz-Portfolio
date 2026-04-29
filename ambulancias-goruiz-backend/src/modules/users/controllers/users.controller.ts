@@ -21,6 +21,7 @@ import {
   confirmSuperadminTotpEnrollment,
   disableSuperadminTotp,
   getSuperadminTotpStatus,
+  issueSuperadminStepUpSession,
 } from "../services/users.service";
 import {
   parseUpdateUserDTO,
@@ -453,6 +454,49 @@ export const disableMyMfa = async (req: Request, res: Response): Promise<void> =
       resourceType: "mfa_totp",
     });
     res.status(400).json({ message: msg });
+  }
+};
+
+export const issueMyStepUpSession = async (req: Request, res: Response): Promise<void> => {
+  const auditContext = buildAuditContextFromRequest(req);
+  try {
+    if (!req.userId) {
+      res.status(401).json({ message: "No autorizado" });
+      return;
+    }
+    const issued = await issueSuperadminStepUpSession(req.userId, String(req.body?.code ?? ""));
+    emitAuditLog(AUDIT_EVENT.AUTH_STEP_UP_SESSION_ISSUED, "success", {
+      ...auditContext,
+      actorUserId: req.userId,
+      statusCode: 200,
+      resourceType: "step_up_session",
+      meta: { ttlSeconds: issued.ttlSeconds, expiresAt: issued.expiresAt },
+    });
+    res.status(200).json(issued);
+  } catch (error: any) {
+    const msg = String(error?.message ?? "No se pudo emitir sesión step-up");
+    const reason =
+      msg === "MFA_NOT_ENROLLED"
+        ? "mfa_not_enrolled"
+        : msg === "MFA_REQUIRED"
+          ? "mfa_required"
+          : "mfa_invalid";
+    emitAuditLog(AUDIT_EVENT.AUTH_STEP_UP_SESSION_ISSUED, "denied", {
+      ...auditContext,
+      actorUserId: req.userId,
+      statusCode: 401,
+      resourceType: "step_up_session",
+      reason,
+    });
+    if (msg === "MFA_NOT_ENROLLED") {
+      res.status(403).json({ message: "Debes activar MFA para generar step-up.", code: msg });
+      return;
+    }
+    if (msg === "MFA_REQUIRED") {
+      res.status(401).json({ message: "Se requiere código MFA de 6 dígitos.", code: msg });
+      return;
+    }
+    res.status(401).json({ message: "Código MFA inválido.", code: "MFA_INVALID" });
   }
 };
 
