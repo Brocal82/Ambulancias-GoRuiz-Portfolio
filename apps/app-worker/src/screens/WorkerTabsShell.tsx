@@ -88,6 +88,8 @@ export function WorkerTabsShell({
             onLogout={onLogout}
             onRefreshProfile={onRefreshProfile}
             onOpenDocuments={() => setActiveTab("documents")}
+            onOpenMessages={() => setActiveTab("messages")}
+            onOpenProfile={() => setActiveTab("profile")}
             hasDocumentsModule={hasDocumentsModule}
             hasMessagesModule={hasMessagesModule}
             showBottomPreview={false}
