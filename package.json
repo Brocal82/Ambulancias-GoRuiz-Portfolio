@@ -1,6 +1,15 @@
 {
+  "name": "ambulancias-goruiz",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "dev:backend": "npm --prefix ambulancias-goruiz-backend run dev",
+    "dev:web-admin": "npm --prefix ambulancias-goruiz-frontend run dev",
+    "dev:worker": "npm --prefix apps/app-worker run start"
   },
   "devDependencies": {
     "prettier": "^3.7.4"
