@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -9,6 +9,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { getMyDocumentDeliveries } from "../services/documents";
+import { getMyMessages } from "../services/messages";
 import { AuthUser } from "../types/auth";
 
 type Props = {
@@ -16,6 +18,7 @@ type Props = {
   onRefreshProfile: () => Promise<void>;
   onOpenDocuments: () => void;
   hasDocumentsModule: boolean;
+  hasMessagesModule: boolean;
   user: AuthUser;
   showBottomPreview?: boolean;
 };
@@ -25,10 +28,12 @@ export function HomeScreen({
   onRefreshProfile,
   onOpenDocuments,
   hasDocumentsModule,
+  hasMessagesModule,
   user,
   showBottomPreview = true,
 }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [alertsCount, setAlertsCount] = useState(0);
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
 
@@ -49,10 +54,32 @@ export function HomeScreen({
     setIsRefreshing(true);
     try {
       await onRefreshProfile();
+      await refreshAlerts();
     } finally {
       setIsRefreshing(false);
     }
   };
+
+  const refreshAlerts = useCallback(async () => {
+    try {
+      const [unreadMessages, deliveries] = await Promise.all([
+        hasMessagesModule ? getMyMessages({ unreadOnly: true }) : Promise.resolve([]),
+        hasDocumentsModule ? getMyDocumentDeliveries() : Promise.resolve([]),
+      ]);
+
+      const documentsToConfirm = deliveries.filter(
+        (item) => item.requiresAcknowledgment && !item.acknowledgedAt,
+      ).length;
+
+      setAlertsCount(unreadMessages.length + documentsToConfirm);
+    } catch {
+      // Keep previous alerts value on transient failures.
+    }
+  }, [hasDocumentsModule, hasMessagesModule]);
+
+  useEffect(() => {
+    void refreshAlerts();
+  }, [refreshAlerts]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -97,7 +124,9 @@ export function HomeScreen({
               <Text style={styles.kpiLabel}>Salida</Text>
             </View>
             <View style={styles.kpiItem}>
-              <Text style={styles.kpiValue}>0</Text>
+              <Text style={styles.kpiValue}>
+                {alertsCount > 99 ? "99+" : String(alertsCount)}
+              </Text>
               <Text style={styles.kpiLabel}>Alertas</Text>
             </View>
           </View>
