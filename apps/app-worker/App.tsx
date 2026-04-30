@@ -3,8 +3,8 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 import { AdminBlockedScreen } from "./src/screens/AdminBlockedScreen";
-import { HomeScreen } from "./src/screens/HomeScreen";
 import { LoginScreen } from "./src/screens/LoginScreen";
+import { WorkerTabsShell } from "./src/screens/WorkerTabsShell";
 
 export default function App() {
   return (
@@ -33,7 +33,7 @@ function AppContent() {
       {isAuthenticated && user?.role !== "worker" ? (
         <AdminBlockedScreen onLogout={logout} />
       ) : isAuthenticated && user ? (
-        <HomeScreen
+        <WorkerTabsShell
           user={user}
           onLogout={logout}
           onRefreshProfile={refreshProfile}

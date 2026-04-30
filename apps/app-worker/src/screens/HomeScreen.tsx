@@ -15,9 +15,15 @@ type Props = {
   onLogout: () => void;
   onRefreshProfile: () => Promise<void>;
   user: AuthUser;
+  showBottomPreview?: boolean;
 };
 
-export function HomeScreen({ onLogout, onRefreshProfile, user }: Props) {
+export function HomeScreen({
+  onLogout,
+  onRefreshProfile,
+  user,
+  showBottomPreview = true,
+}: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
@@ -110,12 +116,14 @@ export function HomeScreen({ onLogout, onRefreshProfile, user }: Props) {
         </View>
       </ScrollView>
 
-      <View style={styles.bottomNavPreview}>
-        <Text style={styles.bottomNavItemActive}>Inicio</Text>
-        <Text style={styles.bottomNavItem}>Agenda</Text>
-        <Text style={styles.bottomNavItem}>Mensajes</Text>
-        <Text style={styles.bottomNavItem}>Perfil</Text>
-      </View>
+      {showBottomPreview ? (
+        <View style={styles.bottomNavPreview}>
+          <Text style={styles.bottomNavItemActive}>Inicio</Text>
+          <Text style={styles.bottomNavItem}>Agenda</Text>
+          <Text style={styles.bottomNavItem}>Mensajes</Text>
+          <Text style={styles.bottomNavItem}>Perfil</Text>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
