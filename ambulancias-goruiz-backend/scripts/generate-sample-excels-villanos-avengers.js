@@ -6,7 +6,8 @@
  *   node scripts/generate-sample-excels-villanos-avengers.js
  *
  * Salida:
- *   fixtures/sample-excel-villanos.xlsx  — 1.ª semana (lunes 2026-04-20); publicar con weekStart 2026-04-20. Pareja 0001+0002 (normaliza a 1/2: trabajadores con esos nº en la empresa).
+ *   fixtures/sample-excel-villanos.xlsx  — 1.ª semana (lunes 2026-04-20), SOLO Dienst Früh.
+ *   fixtures/sample-excel-villanos-week2.xlsx — 2.ª semana (lunes 2026-04-27), SOLO Dienst Nacht.
  *   fixtures/sample-excel-avengers.xlsx
  */
 const fs = require("fs");
@@ -15,6 +16,7 @@ const XLSX = require("xlsx");
 
 const outDir = path.join(__dirname, "..", "fixtures");
 const outV = path.join(outDir, "sample-excel-villanos.xlsx");
+const outVWeek2 = path.join(outDir, "sample-excel-villanos-week2.xlsx");
 const outA = path.join(outDir, "sample-excel-avengers.xlsx");
 
 /** Orden default admin: time → vehicle → … */
@@ -42,13 +44,12 @@ const N1 = "García, L.";
 const N2 = "Soto, M.";
 
 /**
- * Grilla Villanos: 1.ª semana (no 27/04). Rango: 20.04–26.04.2026, lunes ISO = 2026-04-20
- * (la “segunda” semana del par abril sería 27.04, ver sample-excel-second-week-five-days-pair).
- * Fila 0 título, fila 1 cabecera, datos desde fila 2. L–V: 5 celdas; Sá–Do vacías. Pareja 0001+0002.
+ * Grilla Villanos semana 1 (20.04–26.04.2026): SOLO Dienst 1 (Früh).
+ * La semana 2 (27.04–03.05.2026) se genera en otro archivo con SOLO Dienst 2 (Nacht).
  */
 const aoaVillanos = [
   [
-    "VILLANOS SA — 1.ª semana: 20.04–26.04.2026 | weekStart 2026-04-20 | Pareja 0001+0002 (García / Soto) — Lu–V",
+    "VILLANOS SA — 1.ª semana: 20.04–26.04.2026 | weekStart 2026-04-20 | SOLO Dienst Früh | Pareja 0001+0002 (García / Soto) — Lu–V",
     "",
     "",
     "",
@@ -77,6 +78,53 @@ const aoaVillanos = [
     cellVillanos("08:00-16:00", "NEF-2", "0001", N1, N2, "0002"),
     cellVillanos("08:00-16:00", "RTW-11", "0002", N2, N1, "0001"),
     cellVillanos("08:00-16:00", "RTW-11", "0001", N1, N2, "0002"),
+    "",
+    "",
+  ],
+  [
+    "2",
+    "Nacht (vacío en semana 1)",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ],
+];
+
+const aoaVillanosWeek2 = [
+  [
+    "VILLANOS SA — 2.ª semana: 27.04–03.05.2026 | weekStart 2026-04-27 | SOLO Dienst Nacht | Pareja 0001+0002 (García / Soto) — Lu–V",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ],
+  [
+    "Nr",
+    "Dienstzeit / Wagen",
+    "Mo",
+    "Di",
+    "Mi",
+    "Do",
+    "Fr",
+    "Sa",
+    "So",
+  ],
+  [
+    "1",
+    "Früh (vacío en semana 2)",
+    "",
+    "",
+    "",
+    "",
+    "",
     "",
     "",
   ],
@@ -179,10 +227,12 @@ function writeBook(aoa, filePath, sheetName) {
 }
 
 writeBook(aoaVillanos, outV, "Plan");
+writeBook(aoaVillanosWeek2, outVWeek2, "Plan");
 writeBook(aoaAvengers, outA, "FieldSchedule");
 
 console.log(
-  "\nVillanos = 1.ª semana: al publicar indica weekStart 2026-04-20 (lunes; no uses 27/04, es la 2.ª en sample-second-week).",
+  "\nVillanos semana 1 (Früh): publica sample-excel-villanos.xlsx con weekStart 2026-04-20.",
+  "\nVillanos semana 2 (Nacht): publica sample-excel-villanos-week2.xlsx con weekStart 2026-04-27.",
   "\n\nEn cada empresa, pega en «Mapeo (JSON)» el JSON de",
   "\n  fixtures/excel-planning-mapping-villanos.example.json  o",
   "\n  fixtures/excel-planning-mapping-avengers.example.json",

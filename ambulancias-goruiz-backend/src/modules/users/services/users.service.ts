@@ -342,14 +342,8 @@ export async function loginUserService(
   }
 
   if (user.role === "superadmin" && env.SUPERADMIN_MFA_REQUIRED) {
-    const superadmin = await User.findById(user._id)
-      .select("+mfaTotpEnabled +mfaTotpSecret")
-      .lean();
-    const isEnabled = Boolean((superadmin as any)?.mfaTotpEnabled);
-    const secret = (superadmin as any)?.mfaTotpSecret as string | undefined;
-    if (!isEnabled || !secret) {
-      throw new Error("MFA_NOT_ENROLLED");
-    }
+    const { enabled: isEnabled, secret } = await resolveSuperadminTotpMaterial(String(user._id));
+    if (!isEnabled || !secret) throw new Error("MFA_NOT_ENROLLED");
     if (!mfaCode || !/^\d{6}$/.test(mfaCode.trim())) {
       throw new Error("MFA_REQUIRED");
     }
@@ -404,6 +398,43 @@ export async function loginUserService(
     token,
     user: userResponse,
   };
+}
+
+async function resolveSuperadminTotpMaterial(userId: string): Promise<{
+  enabled: boolean;
+  secret?: string;
+  pendingSecret?: string;
+}> {
+  const user = await User.findById(userId)
+    .select("role mfaTotpEnabled +mfaTotpSecret +mfaTotpPendingSecret")
+    .lean();
+  if (!user) {
+    throw new Error("Usuario no encontrado");
+  }
+  if (user.role !== "superadmin") {
+    throw new Error("Solo superadmin puede realizar step-up");
+  }
+
+  const enabled = Boolean((user as any).mfaTotpEnabled);
+  const secret = (user as any).mfaTotpSecret as string | undefined;
+  const pendingSecret = (user as any).mfaTotpPendingSecret as string | undefined;
+
+  // Self-heal legacy/inconsistent state: enabled=true with missing secret but
+  // pending secret still present after partial enroll flows.
+  if (enabled && !secret && pendingSecret) {
+    await User.findByIdAndUpdate(userId, {
+      $set: { mfaTotpSecret: pendingSecret, mfaTotpEnabled: true },
+      $unset: { mfaTotpPendingSecret: 1 },
+    });
+    return { enabled: true, secret: pendingSecret };
+  }
+
+  // Inconsistent state that cannot be used for TOTP verification.
+  if (enabled && !secret) {
+    throw new Error("MFA_CONFIG_INVALID");
+  }
+
+  return { enabled, secret, pendingSecret };
 }
 
 export async function startSuperadminTotpEnrollment(userId: string) {
@@ -472,17 +503,7 @@ export async function disableSuperadminTotp(userId: string, code: string) {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     throw new Error("ID de usuario no válido");
   }
-  const user = await User.findById(userId)
-    .select("role +mfaTotpSecret +mfaTotpEnabled")
-    .lean();
-  if (!user) {
-    throw new Error("Usuario no encontrado");
-  }
-  if (user.role !== "superadmin") {
-    throw new Error("Solo superadmin puede desactivar MFA");
-  }
-  const secret = (user as any).mfaTotpSecret as string | undefined;
-  const enabled = Boolean((user as any).mfaTotpEnabled);
+  const { secret, enabled } = await resolveSuperadminTotpMaterial(userId);
   if (!enabled || !secret) {
     throw new Error("MFA no está habilitado");
   }
@@ -506,19 +527,11 @@ export async function getSuperadminTotpStatus(userId: string) {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     throw new Error("ID de usuario no válido");
   }
-  const user = await User.findById(userId)
-    .select("role mfaTotpEnabled +mfaTotpPendingSecret")
-    .lean();
-  if (!user) {
-    throw new Error("Usuario no encontrado");
-  }
-  if (user.role !== "superadmin") {
-    throw new Error("Solo superadmin puede consultar MFA");
-  }
+  const resolved = await resolveSuperadminTotpMaterial(userId);
   return {
     required: env.SUPERADMIN_MFA_REQUIRED,
-    enabled: Boolean((user as any).mfaTotpEnabled),
-    pendingSetup: Boolean((user as any).mfaTotpPendingSecret),
+    enabled: Boolean(resolved.enabled && resolved.secret),
+    pendingSetup: Boolean(resolved.pendingSecret),
   };
 }
 
@@ -526,17 +539,7 @@ export async function verifySuperadminTotpCode(userId: string, code: string) {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     throw new Error("ID de usuario no válido");
   }
-  const user = await User.findById(userId)
-    .select("role +mfaTotpSecret +mfaTotpEnabled")
-    .lean();
-  if (!user) {
-    throw new Error("Usuario no encontrado");
-  }
-  if (user.role !== "superadmin") {
-    throw new Error("Solo superadmin puede realizar step-up");
-  }
-  const secret = (user as any).mfaTotpSecret as string | undefined;
-  const enabled = Boolean((user as any).mfaTotpEnabled);
+  const { secret, enabled } = await resolveSuperadminTotpMaterial(userId);
   if (!enabled || !secret) {
     throw new Error("MFA_NOT_ENROLLED");
   }

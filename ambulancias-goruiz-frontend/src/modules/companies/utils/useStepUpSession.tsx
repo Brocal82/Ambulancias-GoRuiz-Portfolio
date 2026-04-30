@@ -82,8 +82,11 @@ export function useStepUpSession() {
   const modal = isOpen ? (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5">
-        <h3 className="text-lg font-semibold text-slate-900">Verificación MFA requerida</h3>
+        <h3 className="text-lg font-semibold text-slate-900">Confirmar acción sensible</h3>
         <p className="mt-2 text-sm text-slate-600">{reason}</p>
+        <p className="mt-1 text-xs text-slate-500">
+          Usa el código actual de tu autenticador (6 dígitos). Cambia cada 30 segundos.
+        </p>
         <input
           type="text"
           inputMode="numeric"
