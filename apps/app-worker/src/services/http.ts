@@ -3,6 +3,13 @@ import { ApiErrorPayload } from "../types/auth";
 
 const DEFAULT_TIMEOUT_MS = 12000;
 
+type AuthHandlers = {
+  getToken: () => Promise<string | null> | string | null;
+  onUnauthorized: () => Promise<void> | void;
+};
+
+let authHandlers: AuthHandlers | null = null;
+
 export class ApiError extends Error {
   status: number;
   code?: string;
@@ -17,7 +24,12 @@ export class ApiError extends Error {
 
 type RequestConfig = RequestInit & {
   timeoutMs?: number;
+  requiresAuth?: boolean;
 };
+
+export function setApiAuthHandlers(handlers: AuthHandlers | null): void {
+  authHandlers = handlers;
+}
 
 export async function apiRequest<TResponse>(
   endpoint: string,
@@ -30,10 +42,16 @@ export async function apiRequest<TResponse>(
   );
 
   try {
+    const token =
+      config.requiresAuth && authHandlers
+        ? await authHandlers.getToken()
+        : null;
+
     const response = await fetch(`${ENV.apiBaseUrl}${endpoint}`, {
       ...config,
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(config.headers ?? {}),
       },
       signal: controller.signal,
@@ -46,6 +64,9 @@ export async function apiRequest<TResponse>(
 
     if (!response.ok) {
       const payload = (data ?? {}) as ApiErrorPayload;
+      if (response.status === 401 && authHandlers) {
+        await authHandlers.onUnauthorized();
+      }
       throw new ApiError(
         payload.message ?? "Error de red o servidor.",
         response.status,

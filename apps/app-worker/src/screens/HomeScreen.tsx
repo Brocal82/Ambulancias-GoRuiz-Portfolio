@@ -1,12 +1,26 @@
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthUser } from "../types/auth";
 
 type Props = {
   onLogout: () => void;
+  onRefreshProfile: () => Promise<void>;
   user: AuthUser;
 };
 
-export function HomeScreen({ onLogout, user }: Props) {
+export function HomeScreen({ onLogout, onRefreshProfile, user }: Props) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await onRefreshProfile();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -17,6 +31,14 @@ export function HomeScreen({ onLogout, user }: Props) {
         <Text style={styles.meta}>
           Rol: {user.role} {user.ambulanceRole ? `· ${user.ambulanceRole}` : ""}
         </Text>
+
+        <Pressable style={styles.secondaryButton} onPress={handleRefresh} disabled={isRefreshing}>
+          {isRefreshing ? (
+            <ActivityIndicator color="#0f766e" />
+          ) : (
+            <Text style={styles.secondaryButtonText}>Refrescar perfil</Text>
+          )}
+        </Pressable>
 
         <Pressable style={styles.button} onPress={onLogout}>
           <Text style={styles.buttonText}>Cerrar sesion</Text>
@@ -51,11 +73,24 @@ const styles = StyleSheet.create({
     color: "#64748b",
   },
   button: {
-    marginTop: 8,
+    marginTop: 4,
     backgroundColor: "#334155",
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: "center",
+  },
+  secondaryButton: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#0f766e",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  secondaryButtonText: {
+    color: "#0f766e",
+    fontSize: 16,
+    fontWeight: "600",
   },
   buttonText: {
     color: "#ffffff",
