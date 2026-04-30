@@ -24,6 +24,8 @@ export function WorkerStack({ user, onLogout, onRefreshProfile }: Props) {
             user={user}
             onLogout={onLogout}
             onRefreshProfile={onRefreshProfile}
+            hasDocumentsModule={false}
+            onOpenDocuments={() => undefined}
           />
         )}
       </Stack.Screen>
