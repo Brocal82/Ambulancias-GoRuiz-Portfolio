@@ -5,10 +5,11 @@ import { AuthUser, CompanyModuleKey, MODULE_KEYS, ScheduleSource } from "../type
 import { getMyMessages } from "../services/messages";
 import { HomeScreen } from "./HomeScreen";
 import { WorkerAgendaScreen } from "./WorkerAgendaScreen";
+import { WorkerDocumentsScreen } from "./WorkerDocumentsScreen";
 import { WorkerMessagesScreen } from "./WorkerMessagesScreen";
 import { WorkerProfileScreen } from "./WorkerProfileScreen";
 
-type WorkerTabKey = "home" | "agenda" | "messages" | "profile";
+type WorkerTabKey = "home" | "agenda" | "documents" | "messages" | "profile";
 
 type Props = {
   user: AuthUser;
@@ -43,6 +44,9 @@ export function WorkerTabsShell({
 }: Props) {
   const [activeTab, setActiveTab] = useState<WorkerTabKey>("home");
   const hasMessagesModule = enabledModules.includes(MODULE_KEYS.MESSAGES);
+  const hasDocumentsModule =
+    enabledModules.includes(MODULE_KEYS.DOCUMENTS) ||
+    enabledModules.includes(MODULE_KEYS.PAYROLL);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
   const refreshUnreadMessagesCount = useCallback(async () => {
@@ -83,6 +87,8 @@ export function WorkerTabsShell({
             user={user}
             onLogout={onLogout}
             onRefreshProfile={onRefreshProfile}
+            onOpenDocuments={() => setActiveTab("documents")}
+            hasDocumentsModule={hasDocumentsModule}
             showBottomPreview={false}
           />
         );
@@ -97,12 +103,29 @@ export function WorkerTabsShell({
             description="Tu empresa no tiene el modulo Mensajes activo."
           />
         );
+      case "documents":
+        return hasDocumentsModule ? (
+          <WorkerDocumentsScreen />
+        ) : (
+          <PlaceholderScreen
+            title="Documentos"
+            description="Tu empresa no tiene los modulos Documentos/Nominas activos."
+          />
+        );
       case "profile":
         return <WorkerProfileScreen user={user} onRefreshProfile={onRefreshProfile} />;
       default:
         return null;
     }
-  }, [activeTab, hasMessagesModule, onLogout, onRefreshProfile, scheduleSource, user]);
+  }, [
+    activeTab,
+    hasDocumentsModule,
+    hasMessagesModule,
+    onLogout,
+    onRefreshProfile,
+    scheduleSource,
+    user,
+  ]);
 
   return (
     <View style={styles.root}>

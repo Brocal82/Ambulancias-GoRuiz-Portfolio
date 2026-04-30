@@ -48,6 +48,8 @@ export const MODULE_KEYS = {
   SCHEDULING: "scheduling",
   EXCEL_PLANNING: "excel-planning",
   MESSAGES: "messages",
+  PAYROLL: "payroll",
+  DOCUMENTS: "documents",
 } as const;
 
 export type CompanyModuleKey = (typeof MODULE_KEYS)[keyof typeof MODULE_KEYS];

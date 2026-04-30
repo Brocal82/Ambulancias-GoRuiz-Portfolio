@@ -14,6 +14,8 @@ import { AuthUser } from "../types/auth";
 type Props = {
   onLogout: () => void;
   onRefreshProfile: () => Promise<void>;
+  onOpenDocuments: () => void;
+  hasDocumentsModule: boolean;
   user: AuthUser;
   showBottomPreview?: boolean;
 };
@@ -21,6 +23,8 @@ type Props = {
 export function HomeScreen({
   onLogout,
   onRefreshProfile,
+  onOpenDocuments,
+  hasDocumentsModule,
   user,
   showBottomPreview = true,
 }: Props) {
@@ -32,7 +36,11 @@ export function HomeScreen({
     { key: "jornada", title: "Mi jornada", status: "Activo" },
     { key: "turnos", title: "Mis turnos", status: "Proximamente" },
     { key: "mensajes", title: "Mensajes", status: "Proximamente" },
-    { key: "documentos", title: "Documentos", status: "Proximamente" },
+    {
+      key: "documentos",
+      title: "Documentos",
+      status: hasDocumentsModule ? "Activo" : "No disponible",
+    },
     { key: "ausencias", title: "Vacaciones/Ausencias", status: "Proximamente" },
     { key: "perfil", title: "Mi perfil", status: "Proximamente" },
   ];
@@ -96,20 +104,23 @@ export function HomeScreen({
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Modulos trabajador (preview)</Text>
+          <Text style={styles.cardTitle}>Módulos</Text>
           <View style={[styles.modulesGrid, isTablet && styles.modulesGridTablet]}>
             {modules.map((module) => {
               const isActive = module.status === "Activo";
+              const isDocumentsModule = module.key === "documentos";
               return (
-                <View
+                <Pressable
                   key={module.key}
+                  onPress={isDocumentsModule && hasDocumentsModule ? onOpenDocuments : undefined}
+                  disabled={!isDocumentsModule || !hasDocumentsModule}
                   style={[styles.moduleTile, isTablet && styles.moduleTileTablet]}
                 >
                   <Text style={styles.moduleTitle}>{module.title}</Text>
                   <Text style={[styles.moduleStatus, isActive && styles.moduleStatusActive]}>
                     {module.status}
                   </Text>
-                </View>
+                </Pressable>
               );
             })}
           </View>
