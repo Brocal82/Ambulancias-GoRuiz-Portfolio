@@ -32,6 +32,19 @@ export function setApiAuthHandlers(handlers: AuthHandlers | null): void {
   authHandlers = handlers;
 }
 
+export async function getAuthBearerToken(): Promise<string | null> {
+  if (!authHandlers) return null;
+  const token = await authHandlers.getToken();
+  if (token === null || token === undefined) return null;
+  return typeof token === "string" ? token : null;
+}
+
+export async function notifyUnauthorizedIfStatus(status: number): Promise<void> {
+  if (status === 401 && authHandlers) {
+    await authHandlers.onUnauthorized();
+  }
+}
+
 export async function apiRequest<TResponse>(
   endpoint: string,
   config: RequestConfig = {},
