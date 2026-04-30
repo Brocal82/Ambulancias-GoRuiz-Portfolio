@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ENV } from "../config/env";
+import { ApiError } from "../services/http";
 import {
   deleteMessageForUser,
   getMyMessages,
@@ -42,8 +43,12 @@ export function WorkerMessagesScreen({ userId }: Props) {
     try {
       const allMessages = await getMyMessages({ unreadOnly: false });
       setMessages(sortBySentDateDesc(allMessages));
-    } catch (_error) {
-      setErrorMessage("No se pudieron cargar los mensajes.");
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage("No se pudieron cargar los mensajes.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -51,6 +56,14 @@ export function WorkerMessagesScreen({ userId }: Props) {
 
   useEffect(() => {
     void loadMessages();
+
+    const intervalId = setInterval(() => {
+      void loadMessages();
+    }, 20000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
   }, [loadMessages]);
 
   const unreadCount = useMemo(() => {
@@ -113,6 +126,9 @@ export function WorkerMessagesScreen({ userId }: Props) {
         <Text style={styles.title}>Mensajes</Text>
         <Text style={styles.subtitle}>Comunicaciones operativas internas</Text>
         <Text style={styles.badgeUnread}>No leidos: {unreadCount}</Text>
+        <Pressable style={styles.refreshButton} onPress={() => void loadMessages()}>
+          <Text style={styles.refreshButtonText}>Refrescar</Text>
+        </Pressable>
       </View>
 
       {isLoading ? (
@@ -226,6 +242,21 @@ const styles = StyleSheet.create({
     color: "#0f766e",
     fontSize: 12,
     fontWeight: "700",
+  },
+  refreshButton: {
+    marginTop: 6,
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: "#ffffff",
+  },
+  refreshButtonText: {
+    color: "#334155",
+    fontWeight: "700",
+    fontSize: 12,
   },
   centerState: {
     flex: 1,
