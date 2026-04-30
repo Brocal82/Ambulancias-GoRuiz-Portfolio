@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Linking,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -31,11 +33,45 @@ function sortBySentDateDesc(messages: WorkerMessage[]): WorkerMessage[] {
   });
 }
 
+function buildAttachmentCandidates(rawUrl: string): string[] {
+  if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
+    return [rawUrl];
+  }
+
+  const normalizedPath = rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`;
+  const apiBase = ENV.apiBaseUrl.replace(/\/+$/, "");
+  const apiOrigin = apiBase.endsWith("/api") ? apiBase.slice(0, -4) : apiBase;
+
+  // Prefer backend origin + /uploads path; keep apiBase variant as fallback for custom proxies.
+  return [`${apiOrigin}${normalizedPath}`, `${apiBase}${normalizedPath}`];
+}
+
+async function isReachableAttachmentUrl(url: string): Promise<boolean> {
+  try {
+    const response = await fetch(url, { method: "GET" });
+    if (!response.ok) return false;
+    const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
+    // Avoid opening JSON error payloads as blank browser tabs.
+    if (contentType.includes("application/json")) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isImageAttachment(attachment: { mimetype: string; originalName: string }): boolean {
+  const mime = (attachment.mimetype ?? "").toLowerCase();
+  if (mime.startsWith("image/")) return true;
+  const lowerName = (attachment.originalName ?? "").toLowerCase();
+  return [".jpg", ".jpeg", ".png", ".webp"].some((ext) => lowerName.endsWith(ext));
+}
+
 export function WorkerMessagesScreen({ userId }: Props) {
   const [messages, setMessages] = useState<WorkerMessage[]>([]);
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   const loadMessages = useCallback(async () => {
     setIsLoading(true);
@@ -113,11 +149,30 @@ export function WorkerMessagesScreen({ userId }: Props) {
     }
   };
 
-  const openAttachment = async (url: string) => {
-    const absolute = url.startsWith("http") ? url : `${ENV.apiBaseUrl}${url}`;
-    const canOpen = await Linking.canOpenURL(absolute);
-    if (!canOpen) return;
-    await Linking.openURL(absolute);
+  const openAttachment = async (
+    url: string,
+    attachmentMeta?: { mimetype: string; originalName: string },
+  ) => {
+    const candidates = buildAttachmentCandidates(url);
+
+    for (const candidate of candidates) {
+      const reachable = await isReachableAttachmentUrl(candidate);
+      if (!reachable) continue;
+
+      if (attachmentMeta && isImageAttachment(attachmentMeta)) {
+        setPreviewImageUrl(candidate);
+        return;
+      }
+
+      const canOpen = await Linking.canOpenURL(candidate);
+      if (!canOpen) continue;
+
+      await Linking.openURL(candidate);
+      return;
+    }
+
+    // Keep candidate in message to speed up troubleshooting in real devices.
+    setErrorMessage("No se pudo abrir el adjunto. Verifica URL/uploads en backend.");
   };
 
   return (
@@ -183,7 +238,10 @@ export function WorkerMessagesScreen({ userId }: Props) {
                             key={attachment.filename}
                             style={styles.attachmentChip}
                             onPress={() => {
-                              void openAttachment(attachment.url);
+                              void openAttachment(attachment.url, {
+                                mimetype: attachment.mimetype,
+                                originalName: attachment.originalName,
+                              });
                             }}
                           >
                             <Text style={styles.attachmentText}>{attachment.originalName}</Text>
@@ -207,6 +265,22 @@ export function WorkerMessagesScreen({ userId }: Props) {
           })}
         </ScrollView>
       )}
+
+      <Modal
+        visible={previewImageUrl !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewImageUrl(null)}
+      >
+        <View style={styles.previewOverlay}>
+          <Pressable style={styles.previewCloseButton} onPress={() => setPreviewImageUrl(null)}>
+            <Text style={styles.previewCloseText}>Cerrar</Text>
+          </Pressable>
+          {previewImageUrl ? (
+            <Image source={{ uri: previewImageUrl }} style={styles.previewImage} resizeMode="contain" />
+          ) : null}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -375,5 +449,33 @@ const styles = StyleSheet.create({
     color: "#b91c1c",
     fontSize: 12,
     fontWeight: "700",
+  },
+  previewOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(2, 6, 23, 0.92)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  previewCloseButton: {
+    position: "absolute",
+    top: 52,
+    right: 20,
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#0f172a",
+    zIndex: 10,
+  },
+  previewCloseText: {
+    color: "#e2e8f0",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  previewImage: {
+    width: "100%",
+    height: "100%",
   },
 });
