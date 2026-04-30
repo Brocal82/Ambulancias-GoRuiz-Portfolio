@@ -38,3 +38,12 @@ export interface ApiErrorPayload {
   message?: string;
   code?: string;
 }
+
+export const MODULE_KEYS = {
+  SCHEDULING: "scheduling",
+  EXCEL_PLANNING: "excel-planning",
+} as const;
+
+export type CompanyModuleKey = (typeof MODULE_KEYS)[keyof typeof MODULE_KEYS];
+
+export type ScheduleSource = "dynamic" | "excel" | "none";

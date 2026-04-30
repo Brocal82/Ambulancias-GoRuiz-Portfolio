@@ -10,11 +10,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { getDienstsByUser } from "../services/diensts";
+import { getMyExcelPlanningWeek } from "../services/excelPlanning";
 import { ApiError } from "../services/http";
-import { AuthUser } from "../types/auth";
+import { AuthUser, ScheduleSource } from "../types/auth";
 
 type Props = {
   user: AuthUser;
+  scheduleSource: ScheduleSource;
 };
 
 type DayScheduleItem = {
@@ -44,6 +46,29 @@ function toIsoDateKey(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+function normalizeDateKey(value?: string): string | null {
+  if (!value) return null;
+  const direct = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (direct) return value.trim();
+
+  // Backend can return ISO strings; keep only calendar date.
+  const isoPrefix = /^(\d{4}-\d{2}-\d{2})T/.exec(value.trim());
+  if (isoPrefix) return isoPrefix[1] ?? null;
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return toIsoDateKey(parsed);
+}
+
+function addDaysToDateKey(baseDateKey: string, days: number): string {
+  const [y, m, d] = baseDateKey.split("-").map(Number);
+  const date = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
+  date.setUTCDate(date.getUTCDate() + days);
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(
+    date.getUTCDate(),
+  ).padStart(2, "0")}`;
 }
 
 function startOfWeekMonday(input: Date): Date {
@@ -104,8 +129,9 @@ function toMinuteOfDay(hhmm: string): number {
   return Number(h) * 60 + Number(m);
 }
 
-export function WorkerAgendaScreen({ user }: Props) {
+export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeekMonday(new Date()));
+  const [hasManualWeekSelection, setHasManualWeekSelection] = useState(false);
   const [allSchedulesByDate, setAllSchedulesByDate] = useState<Record<string, DayScheduleItem[]>>(
     {},
   );
@@ -116,40 +142,88 @@ export function WorkerAgendaScreen({ user }: Props) {
     setIsLoading(true);
     setErrorMessage(undefined);
     try {
-      const diensts = await getDienstsByUser(user._id);
+      if (scheduleSource === "none") {
+        setAllSchedulesByDate({});
+        setErrorMessage("Tu empresa no tiene modulo de agenda activo.");
+        return;
+      }
+
       const byDate: Record<string, DayScheduleItem[]> = {};
 
-      for (const dienst of diensts) {
-        const dienstName = dienst.name ?? "Dienst";
+      if (scheduleSource === "dynamic") {
+        const diensts = await getDienstsByUser(user._id);
+        for (const dienst of diensts) {
+          const dienstName = dienst.name ?? "Dienst";
           const dienstNumberLabel =
             typeof dienst.dienstNumber === "number"
               ? `#${dienst.dienstNumber}`
               : "#-";
-        for (const assignment of dienst.assignments ?? []) {
-          if (!assignment.date) continue;
-          const item: DayScheduleItem = {
-            dienstId: dienst._id,
-            dienstName,
+          for (const assignment of dienst.assignments ?? []) {
+            const assignmentDateKey = normalizeDateKey(assignment.date);
+            if (!assignmentDateKey) continue;
+            const item: DayScheduleItem = {
+              dienstId: dienst._id,
+              dienstName,
               dienstNumberLabel,
-            startTime: assignment.startTime ?? "--:--",
-            endTime: assignment.endTime ?? "--:--",
-            workerRole: "driver/medic",
-            ambulanceLabel: normalizeAmbulanceLabel(assignment.ambulanceId),
-            driverLabel: normalizeUserLabel(assignment.driver),
-            medicLabel: normalizeUserLabel(assignment.medic),
-          };
+              startTime: assignment.startTime ?? "--:--",
+              endTime: assignment.endTime ?? "--:--",
+              workerRole: "driver/medic",
+              ambulanceLabel: normalizeAmbulanceLabel(assignment.ambulanceId),
+              driverLabel: normalizeUserLabel(assignment.driver),
+              medicLabel: normalizeUserLabel(assignment.medic),
+            };
 
-          const driverId = normalizeObjectId(assignment.driver);
-          const medicId = normalizeObjectId(assignment.medic);
-          if (driverId === user._id && medicId === user._id) {
-            item.workerRole = "driver/medic";
-          } else if (driverId === user._id) {
-            item.workerRole = "driver";
-          } else if (medicId === user._id) {
-            item.workerRole = "medic";
+            const driverId = normalizeObjectId(assignment.driver);
+            const medicId = normalizeObjectId(assignment.medic);
+            if (driverId === user._id && medicId === user._id) {
+              item.workerRole = "driver/medic";
+            } else if (driverId === user._id) {
+              item.workerRole = "driver";
+            } else if (medicId === user._id) {
+              item.workerRole = "medic";
+            }
+
+            byDate[assignmentDateKey] = [...(byDate[assignmentDateKey] ?? []), item];
           }
-
-          byDate[assignment.date] = [...(byDate[assignment.date] ?? []), item];
+        }
+      } else {
+        const selectedWeekKey = toIsoDateKey(weekStart);
+        const excel = await getMyExcelPlanningWeek(
+          hasManualWeekSelection ? selectedWeekKey : undefined,
+        );
+        const apiWeekKey = normalizeDateKey(String(excel.weekStart)) ?? selectedWeekKey;
+        if (!hasManualWeekSelection && excel.weekStart) {
+          const resolvedWeekStart = startOfWeekMonday(new Date(excel.weekStart));
+          if (toIsoDateKey(resolvedWeekStart) !== toIsoDateKey(weekStart)) {
+            setWeekStart(resolvedWeekStart);
+          }
+        }
+        for (const row of excel.rows ?? []) {
+          const rowDateKey =
+            typeof row.dayIndex === "number" && row.dayIndex >= 0 && row.dayIndex <= 6
+              ? addDaysToDateKey(apiWeekKey, row.dayIndex)
+              : normalizeDateKey(row.dayDate);
+          if (!rowDateKey) continue;
+          const [startTime = "--:--", endTime = "--:--"] = (row.timeText ?? "")
+            .split("-")
+            .map((v) => v.trim());
+          const item: DayScheduleItem = {
+            dienstId: `${rowDateKey}-${row.dienstNumber ?? "excel"}`,
+            dienstName: "Dienst Excel",
+            dienstNumberLabel: row.dienstNumber ? `#${row.dienstNumber}` : "#-",
+            startTime,
+            endTime: endTime || "--:--",
+            workerRole:
+              row.primaryAmbulanceRole === "both"
+                ? "driver/medic"
+                : row.primaryAmbulanceRole === "medic"
+                  ? "medic"
+                  : "driver",
+            ambulanceLabel: row.vehicleCode ?? "Sin ambulancia",
+            driverLabel: row.displayNameFromExcel ?? "Sin asignar",
+            medicLabel: row.displayPartnerNameFromExcel ?? "Sin asignar",
+          };
+          byDate[rowDateKey] = [...(byDate[rowDateKey] ?? []), item];
         }
       }
 
@@ -173,7 +247,7 @@ export function WorkerAgendaScreen({ user }: Props) {
 
   useEffect(() => {
     void loadAgenda();
-  }, []);
+  }, [scheduleSource, weekStart]);
 
   const weekDays = useMemo<WeekDay[]>(() => {
     const todayKey = toIsoDateKey(new Date());
@@ -195,32 +269,36 @@ export function WorkerAgendaScreen({ user }: Props) {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <Text style={styles.title}>Agenda semanal</Text>
-        <Text style={styles.subtitle}>Vista de lunes a domingo</Text>
+        <Text style={styles.subtitle}>
+          Vista de lunes a domingo · Fuente: {scheduleSource}
+        </Text>
       </View>
 
       <View style={styles.weekNav}>
         <Pressable
           style={styles.weekButton}
-          onPress={() =>
+          onPress={() => {
+            setHasManualWeekSelection(true);
             setWeekStart((prev) => {
               const next = new Date(prev);
               next.setDate(prev.getDate() - 7);
               return next;
-            })
-          }
+            });
+          }}
         >
           <Text style={styles.weekButtonText}>Semana anterior</Text>
         </Pressable>
         <Text style={styles.weekRange}>{formatWeekRange(weekStart)}</Text>
         <Pressable
           style={styles.weekButton}
-          onPress={() =>
+          onPress={() => {
+            setHasManualWeekSelection(true);
             setWeekStart((prev) => {
               const next = new Date(prev);
               next.setDate(prev.getDate() + 7);
               return next;
-            })
-          }
+            });
+          }}
         >
           <Text style={styles.weekButtonText}>Semana siguiente</Text>
         </Pressable>
@@ -234,7 +312,12 @@ export function WorkerAgendaScreen({ user }: Props) {
       ) : errorMessage ? (
         <View style={styles.centerState}>
           <Text style={styles.errorText}>{errorMessage}</Text>
-          <Pressable style={styles.retryButton} onPress={() => void loadAgenda()}>
+          <Pressable
+            style={styles.retryButton}
+            onPress={() => {
+              void loadAgenda();
+            }}
+          >
             <Text style={styles.retryButtonText}>Reintentar</Text>
           </Pressable>
         </View>

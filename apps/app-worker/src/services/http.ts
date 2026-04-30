@@ -25,6 +25,7 @@ export class ApiError extends Error {
 type RequestConfig = RequestInit & {
   timeoutMs?: number;
   requiresAuth?: boolean;
+  authToken?: string;
 };
 
 export function setApiAuthHandlers(handlers: AuthHandlers | null): void {
@@ -43,9 +44,10 @@ export async function apiRequest<TResponse>(
 
   try {
     const token =
-      config.requiresAuth && authHandlers
+      config.authToken ??
+      (config.requiresAuth && authHandlers
         ? await authHandlers.getToken()
-        : null;
+        : null);
 
     const response = await fetch(`${ENV.apiBaseUrl}${endpoint}`, {
       ...config,

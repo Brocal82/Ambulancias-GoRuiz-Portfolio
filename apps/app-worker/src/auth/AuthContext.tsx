@@ -1,6 +1,7 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 
 import { login as loginRequest } from "../services/auth";
+import { getMyCompanyModules } from "../services/company";
 import { ApiError, setApiAuthHandlers } from "../services/http";
 import {
   clearStoredSession,
@@ -8,7 +9,7 @@ import {
   saveSession,
 } from "../services/sessionStorage";
 import { getUserById } from "../services/users";
-import { AuthUser } from "../types/auth";
+import { AuthUser, CompanyModuleKey, MODULE_KEYS, ScheduleSource } from "../types/auth";
 
 type LoginCredentials = {
   email: string;
@@ -20,6 +21,8 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   token: string | null;
   user: AuthUser | null;
+  enabledModules: CompanyModuleKey[];
+  scheduleSource: ScheduleSource;
   authError?: string;
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
@@ -32,12 +35,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isHydrating, setIsHydrating] = useState(true);
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [enabledModules, setEnabledModules] = useState<CompanyModuleKey[]>([]);
+  const [scheduleSource, setScheduleSource] = useState<ScheduleSource>("none");
   const [authError, setAuthError] = useState<string | undefined>(undefined);
+
+  const resolveScheduleSource = (modules: CompanyModuleKey[]): ScheduleSource => {
+    const hasDynamic = modules.includes(MODULE_KEYS.SCHEDULING);
+    const hasExcel = modules.includes(MODULE_KEYS.EXCEL_PLANNING);
+    if (hasExcel) return "excel";
+    if (hasDynamic) return "dynamic";
+    return "none";
+  };
+
+  const loadCompanyModules = async (authToken?: string) => {
+    try {
+      const modules = await getMyCompanyModules(authToken);
+      setEnabledModules(modules);
+      setScheduleSource(resolveScheduleSource(modules));
+    } catch (_error) {
+      setEnabledModules([]);
+      setScheduleSource("none");
+    }
+  };
 
   const logout = async () => {
     await clearStoredSession();
     setToken(null);
     setUser(null);
+    setEnabledModules([]);
+    setScheduleSource("none");
     setAuthError(undefined);
   };
 
@@ -57,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await saveSession(response.token, JSON.stringify(response.user));
       setToken(response.token);
       setUser(response.user);
+      await loadCompanyModules(response.token);
     } catch (error) {
       if (error instanceof ApiError) {
         setAuthError(error.message);
@@ -74,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const parsedUser = JSON.parse(userJson) as AuthUser;
           setToken(storedToken);
           setUser(parsedUser);
+          await loadCompanyModules(storedToken);
         }
       } catch (_error) {
         await clearStoredSession();
@@ -101,12 +129,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: Boolean(token && user),
       token,
       user,
+      enabledModules,
+      scheduleSource,
       authError,
       login,
       logout,
       refreshProfile,
     }),
-    [isHydrating, token, user, authError],
+    [isHydrating, token, user, enabledModules, scheduleSource, authError],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

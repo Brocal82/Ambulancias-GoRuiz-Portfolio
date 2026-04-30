@@ -15,7 +15,16 @@ export default function App() {
 }
 
 function AppContent() {
-  const { isHydrating, isAuthenticated, user, authError, login, logout, refreshProfile } =
+  const {
+    isHydrating,
+    isAuthenticated,
+    user,
+    scheduleSource,
+    authError,
+    login,
+    logout,
+    refreshProfile,
+  } =
     useAuth();
 
   if (isHydrating) {
@@ -35,6 +44,7 @@ function AppContent() {
       ) : isAuthenticated && user ? (
         <WorkerTabsShell
           user={user}
+          scheduleSource={scheduleSource}
           onLogout={logout}
           onRefreshProfile={refreshProfile}
         />

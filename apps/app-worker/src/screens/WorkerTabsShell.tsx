@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { AuthUser } from "../types/auth";
+import { AuthUser, ScheduleSource } from "../types/auth";
 import { HomeScreen } from "./HomeScreen";
 import { WorkerAgendaScreen } from "./WorkerAgendaScreen";
 
@@ -9,6 +9,7 @@ type WorkerTabKey = "home" | "agenda" | "messages" | "profile";
 
 type Props = {
   user: AuthUser;
+  scheduleSource: ScheduleSource;
   onLogout: () => Promise<void>;
   onRefreshProfile: () => Promise<void>;
 };
@@ -29,7 +30,12 @@ function PlaceholderScreen({
   );
 }
 
-export function WorkerTabsShell({ user, onLogout, onRefreshProfile }: Props) {
+export function WorkerTabsShell({
+  user,
+  scheduleSource,
+  onLogout,
+  onRefreshProfile,
+}: Props) {
   const [activeTab, setActiveTab] = useState<WorkerTabKey>("home");
 
   const content = useMemo(() => {
@@ -44,7 +50,7 @@ export function WorkerTabsShell({ user, onLogout, onRefreshProfile }: Props) {
           />
         );
       case "agenda":
-        return <WorkerAgendaScreen user={user} />;
+        return <WorkerAgendaScreen user={user} scheduleSource={scheduleSource} />;
       case "messages":
         return (
           <PlaceholderScreen
@@ -62,7 +68,7 @@ export function WorkerTabsShell({ user, onLogout, onRefreshProfile }: Props) {
       default:
         return null;
     }
-  }, [activeTab, onLogout, onRefreshProfile, user]);
+  }, [activeTab, onLogout, onRefreshProfile, scheduleSource, user]);
 
   return (
     <View style={styles.root}>
