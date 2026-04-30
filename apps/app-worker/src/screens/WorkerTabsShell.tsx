@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { AppState, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AuthUser, CompanyModuleKey, MODULE_KEYS, ScheduleSource } from "../types/auth";
 import { getMyMessages } from "../services/messages";
@@ -63,7 +63,15 @@ export function WorkerTabsShell({
     const intervalId = setInterval(() => {
       void refreshUnreadMessagesCount();
     }, 20000);
-    return () => clearInterval(intervalId);
+    const appStateSubscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        void refreshUnreadMessagesCount();
+      }
+    });
+    return () => {
+      clearInterval(intervalId);
+      appStateSubscription.remove();
+    };
   }, [refreshUnreadMessagesCount]);
 
   const content = useMemo(() => {
