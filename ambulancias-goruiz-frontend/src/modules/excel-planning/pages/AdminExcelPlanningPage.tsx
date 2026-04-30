@@ -93,6 +93,35 @@ function parseDmyToYmd(dmy: string): string | null {
   return `${yNum}-${String(moNum).padStart(2, "0")}-${String(dNum).padStart(2, "0")}`;
 }
 
+function parseYmdUtc(ymd: string): Date | null {
+  const m = ymd.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  const dt = new Date(Date.UTC(y, mo - 1, d, 0, 0, 0, 0));
+  if (Number.isNaN(dt.getTime())) return null;
+  return dt;
+}
+
+/** Devuelve el lunes ISO (UTC) de la semana de la fecha indicada. */
+function isoWeekMondayUtc(ymd: string): string | null {
+  const dt = parseYmdUtc(ymd);
+  if (!dt) return null;
+  const day = dt.getUTCDay();
+  const diff = (day + 6) % 7;
+  dt.setUTCDate(dt.getUTCDate() - diff);
+  return formatYmd(dt);
+}
+
+function weekRangeLabelFromMondayYmd(mondayYmd: string): string {
+  const monday = parseYmdUtc(mondayYmd);
+  if (!monday) return mondayYmd;
+  const sunday = new Date(monday);
+  sunday.setUTCDate(sunday.getUTCDate() + 6);
+  return `${formatYmdToDmy(formatYmd(monday))} - ${formatYmdToDmy(formatYmd(sunday))}`;
+}
+
 function labelForPublishedWeekExcel(w: {
   weekStart: string;
   sourceStoredFilename?: string;
@@ -337,7 +366,12 @@ export default function AdminExcelPlanningPage() {
         toast.error(t("excelPlanning.weekStartInvalidDmy"));
         return;
       }
-      weekStartForApi = ymd;
+      weekStartForApi = isoWeekMondayUtc(ymd) ?? ymd;
+      if (weekStartForApi !== ymd) {
+        toast.info(
+          `Semana ajustada automáticamente al lunes ${formatYmdToDmy(weekStartForApi)}.`,
+        );
+      }
     } else {
       weekStartForApi = undefined;
     }
@@ -361,6 +395,12 @@ export default function AdminExcelPlanningPage() {
     (preview?.parseErrors?.length ?? 0) === 0 &&
     (preview?.stats?.unmatched ?? 0) === 0 &&
     (preview?.stats?.numberKeyCollisions ?? 0) === 0;
+
+  const weekStartInputYmd = parseDmyToYmd(weekStartPublish.trim());
+  const normalizedWeekStartYmd = weekStartInputYmd
+    ? isoWeekMondayUtc(weekStartInputYmd)
+    : null;
+  const inputAlreadyMonday = weekStartInputYmd === normalizedWeekStartYmd;
 
   const pairCells = useMemo(() => {
     if (!preview?.rows?.length) return null;
@@ -685,6 +725,20 @@ export default function AdminExcelPlanningPage() {
                       autoComplete="off"
                     />
                   </label>
+                  {normalizedWeekStartYmd && (
+                    <p className="text-xs text-slate-600">
+                      Semana que se publicará:{" "}
+                      <span className="font-semibold">
+                        {weekRangeLabelFromMondayYmd(normalizedWeekStartYmd)}
+                      </span>
+                    </p>
+                  )}
+                  {weekStartInputYmd && normalizedWeekStartYmd && !inputAlreadyMonday && (
+                    <p className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+                      La fecha introducida no es lunes; se ajustará al lunes{" "}
+                      {formatYmdToDmy(normalizedWeekStartYmd)}.
+                    </p>
+                  )}
                   {preview.weekStartDetected && (
                     <div>
                       <button
