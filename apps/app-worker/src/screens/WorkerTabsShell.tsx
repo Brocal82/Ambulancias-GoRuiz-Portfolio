@@ -89,6 +89,7 @@ export function WorkerTabsShell({
             onRefreshProfile={onRefreshProfile}
             onOpenDocuments={() => setActiveTab("documents")}
             hasDocumentsModule={hasDocumentsModule}
+            hasMessagesModule={hasMessagesModule}
             showBottomPreview={false}
           />
         );
