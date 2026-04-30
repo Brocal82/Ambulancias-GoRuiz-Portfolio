@@ -35,12 +35,26 @@ function formatAmbulanceRole(value: AuthUser["ambulanceRole"]): string {
   return "No informado";
 }
 
-function FieldRow({ label, value }: { label: string; value?: string | null }) {
+function truncateMiddle(value: string, maxLength: number): string {
+  if (value.length <= maxLength) return value;
+  const keep = Math.max(6, Math.floor((maxLength - 3) / 2));
+  return `${value.slice(0, keep)}...${value.slice(-keep)}`;
+}
+
+function FieldRow({
+  label,
+  value,
+  emptyFallback = "No informado",
+}: {
+  label: string;
+  value?: string | null;
+  emptyFallback?: string;
+}) {
   const normalized = (value ?? "").toString().trim();
   return (
     <View style={styles.fieldRow}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <Text style={styles.fieldValue}>{normalized.length > 0 ? normalized : "No informado"}</Text>
+      <Text style={styles.fieldValue}>{normalized.length > 0 ? normalized : emptyFallback}</Text>
     </View>
   );
 }
@@ -63,6 +77,10 @@ export function WorkerProfileScreen({ user, onRefreshProfile }: Props) {
   const pscheinDocument = useMemo(() => {
     return (user.pscheinDocument ?? "").trim();
   }, [user.pscheinDocument]);
+  const pscheinFilename = useMemo(() => {
+    if (!pscheinDocument) return null;
+    return filenameFromUrlOrPath(pscheinDocument) ?? "Documento P-Schein";
+  }, [pscheinDocument]);
 
   const onRefresh = async () => {
     setActionError(undefined);
@@ -151,20 +169,40 @@ export function WorkerProfileScreen({ user, onRefreshProfile }: Props) {
           <FieldRow label="Nombre" value={user.name} />
           <FieldRow label="Apellidos" value={user.lastName} />
           <FieldRow label="Email" value={user.email} />
-          <FieldRow label="Telefono" value={user.phone} />
-          <FieldRow label="Direccion" value={user.address} />
-          <FieldRow label="Telefono emergencia" value={user.emergencyPhone} />
-          <FieldRow label="Numero empleado" value={user.employeeNumber} />
+          <FieldRow label="Telefono" value={user.phone} emptyFallback="Sin telefono" />
+          <FieldRow label="Direccion" value={user.address} emptyFallback="Sin direccion" />
+          <FieldRow
+            label="Telefono emergencia"
+            value={user.emergencyPhone}
+            emptyFallback="Sin telefono de emergencia"
+          />
+          <FieldRow label="Numero empleado" value={user.employeeNumber} emptyFallback="Sin numero" />
           <FieldRow label="Rol ambulancia" value={formatAmbulanceRole(user.ambulanceRole)} />
-          <FieldRow label="P-Schein caducidad" value={user.pscheinExpiry} />
+          <FieldRow
+            label="P-Schein caducidad"
+            value={user.pscheinExpiry}
+            emptyFallback="Pendiente de validacion"
+          />
         </View>
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Documento de perfil</Text>
+          <View
+            style={[styles.documentStatusPill, pscheinDocument ? styles.documentStatusOk : styles.documentStatusEmpty]}
+          >
+            <Text
+              style={[
+                styles.documentStatusText,
+                pscheinDocument ? styles.documentStatusTextOk : styles.documentStatusTextEmpty,
+              ]}
+            >
+              {pscheinDocument ? "Documento disponible" : "Documento no disponible"}
+            </Text>
+          </View>
           {pscheinDocument ? (
             <View style={styles.documentRow}>
-              <Text style={styles.documentName}>
-                {filenameFromUrlOrPath(pscheinDocument) ?? "Documento P-Schein"}
+              <Text style={styles.documentName} numberOfLines={1}>
+                {truncateMiddle(pscheinFilename ?? "Documento P-Schein", 36)}
               </Text>
               <Pressable
                 style={[styles.openButton, isOpeningDocument && styles.openButtonDisabled]}
@@ -293,6 +331,31 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     fontWeight: "700",
     fontSize: 15,
+  },
+  documentStatusPill: {
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  documentStatusOk: {
+    borderColor: "#86efac",
+    backgroundColor: "#f0fdf4",
+  },
+  documentStatusEmpty: {
+    borderColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
+  },
+  documentStatusText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  documentStatusTextOk: {
+    color: "#166534",
+  },
+  documentStatusTextEmpty: {
+    color: "#475569",
   },
   documentRow: {
     flexDirection: "row",
