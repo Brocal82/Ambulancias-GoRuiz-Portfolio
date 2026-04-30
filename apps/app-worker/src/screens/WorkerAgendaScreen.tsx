@@ -129,12 +129,53 @@ function toMinuteOfDay(hhmm: string): number {
   return Number(h) * 60 + Number(m);
 }
 
+function parseExcelTimeRange(text?: string): { start?: string; end?: string } {
+  const value = text?.trim();
+  if (!value) return {};
+  const parts = value.split(/\s*[-–—]\s*/);
+  if (parts.length >= 2) {
+    return { start: parts[0]?.trim(), end: parts[parts.length - 1]?.trim() };
+  }
+  return {};
+}
+
+function resolveExcelDriverMedicLabels(row: {
+  displayNameFromExcel?: string;
+  displayPartnerNameFromExcel?: string;
+  primaryAmbulanceRole?: "driver" | "medic" | "both";
+  partnerAmbulanceRole?: "driver" | "medic" | "both";
+}): { driverLabel: string; medicLabel: string } {
+  const primary = row.displayNameFromExcel?.trim() ?? "";
+  const partner = row.displayPartnerNameFromExcel?.trim() ?? "";
+  const pr = row.primaryAmbulanceRole;
+  const xr = row.partnerAmbulanceRole;
+
+  if (!partner) {
+    if (pr === "medic") {
+      return { driverLabel: "Sin asignar", medicLabel: primary || "Sin asignar" };
+    }
+    return { driverLabel: primary || "Sin asignar", medicLabel: "Sin asignar" };
+  }
+
+  if (pr === "medic" && xr === "driver") {
+    return { driverLabel: partner, medicLabel: primary || "Sin asignar" };
+  }
+  if (pr === "driver" && xr === "medic") {
+    return { driverLabel: primary || "Sin asignar", medicLabel: partner };
+  }
+  if (pr === "medic") {
+    return { driverLabel: partner, medicLabel: primary || "Sin asignar" };
+  }
+  return { driverLabel: primary || "Sin asignar", medicLabel: partner };
+}
+
 export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeekMonday(new Date()));
   const [hasManualWeekSelection, setHasManualWeekSelection] = useState(false);
   const [allSchedulesByDate, setAllSchedulesByDate] = useState<Record<string, DayScheduleItem[]>>(
     {},
   );
+  const [isWeekPublished, setIsWeekPublished] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
 
@@ -144,6 +185,7 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
     try {
       if (scheduleSource === "none") {
         setAllSchedulesByDate({});
+        setIsWeekPublished(false);
         setErrorMessage("Tu empresa no tiene modulo de agenda activo.");
         return;
       }
@@ -151,6 +193,7 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
       const byDate: Record<string, DayScheduleItem[]> = {};
 
       if (scheduleSource === "dynamic") {
+        setIsWeekPublished(true);
         const diensts = await getDienstsByUser(user._id);
         for (const dienst of diensts) {
           const dienstName = dienst.name ?? "Dienst";
@@ -191,6 +234,7 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
         const excel = await getMyExcelPlanningWeek(
           hasManualWeekSelection ? selectedWeekKey : undefined,
         );
+        setIsWeekPublished(Boolean(excel.published));
         const apiWeekKey = normalizeDateKey(String(excel.weekStart)) ?? selectedWeekKey;
         if (!hasManualWeekSelection && excel.weekStart) {
           const resolvedWeekStart = startOfWeekMonday(new Date(excel.weekStart));
@@ -204,15 +248,14 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
               ? addDaysToDateKey(apiWeekKey, row.dayIndex)
               : normalizeDateKey(row.dayDate);
           if (!rowDateKey) continue;
-          const [startTime = "--:--", endTime = "--:--"] = (row.timeText ?? "")
-            .split("-")
-            .map((v) => v.trim());
+          const { start, end } = parseExcelTimeRange(row.timeText);
+          const labels = resolveExcelDriverMedicLabels(row);
           const item: DayScheduleItem = {
             dienstId: `${rowDateKey}-${row.dienstNumber ?? "excel"}`,
             dienstName: "Dienst Excel",
             dienstNumberLabel: row.dienstNumber ? `#${row.dienstNumber}` : "#-",
-            startTime,
-            endTime: endTime || "--:--",
+            startTime: start ?? "--:--",
+            endTime: end ?? "--:--",
             workerRole:
               row.primaryAmbulanceRole === "both"
                 ? "driver/medic"
@@ -220,8 +263,8 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
                   ? "medic"
                   : "driver",
             ambulanceLabel: row.vehicleCode ?? "Sin ambulancia",
-            driverLabel: row.displayNameFromExcel ?? "Sin asignar",
-            medicLabel: row.displayPartnerNameFromExcel ?? "Sin asignar",
+            driverLabel: labels.driverLabel,
+            medicLabel: labels.medicLabel,
           };
           byDate[rowDateKey] = [...(byDate[rowDateKey] ?? []), item];
         }
@@ -264,6 +307,11 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
       };
     });
   }, [allSchedulesByDate, weekStart]);
+
+  const weekItemsCount = useMemo(
+    () => weekDays.reduce((acc, day) => acc + day.items.length, 0),
+    [weekDays],
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -320,6 +368,16 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
           >
             <Text style={styles.retryButtonText}>Reintentar</Text>
           </Pressable>
+        </View>
+      ) : weekItemsCount === 0 ? (
+        <View style={styles.centerState}>
+          <Text style={styles.centerText}>
+            {scheduleSource === "excel" && !isWeekPublished
+              ? "No hay planificacion Excel publicada para esta semana."
+              : scheduleSource === "excel"
+                ? "Semana publicada, pero este trabajador no tiene filas asignadas."
+                : "No hay servicios asignados para esta semana."}
+          </Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
