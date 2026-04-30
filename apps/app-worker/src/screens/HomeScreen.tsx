@@ -17,6 +17,8 @@ type Props = {
   onLogout: () => void;
   onRefreshProfile: () => Promise<void>;
   onOpenDocuments: () => void;
+  onOpenMessages: () => void;
+  onOpenProfile: () => void;
   hasDocumentsModule: boolean;
   hasMessagesModule: boolean;
   user: AuthUser;
@@ -27,6 +29,8 @@ export function HomeScreen({
   onLogout,
   onRefreshProfile,
   onOpenDocuments,
+  onOpenMessages,
+  onOpenProfile,
   hasDocumentsModule,
   hasMessagesModule,
   user,
@@ -34,6 +38,9 @@ export function HomeScreen({
 }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [alertsCount, setAlertsCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [documentsToConfirmCount, setDocumentsToConfirmCount] = useState(0);
+  const [informativeUnreadCount, setInformativeUnreadCount] = useState(0);
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
 
@@ -70,8 +77,14 @@ export function HomeScreen({
       const documentsToConfirm = deliveries.filter(
         (item) => item.requiresAcknowledgment && !item.acknowledgedAt,
       ).length;
+      const informativeUnread = deliveries.filter(
+        (item) => !item.requiresAcknowledgment && !item.readAt,
+      ).length;
 
-      setAlertsCount(unreadMessages.length + documentsToConfirm);
+      setUnreadMessagesCount(unreadMessages.length);
+      setDocumentsToConfirmCount(documentsToConfirm);
+      setInformativeUnreadCount(informativeUnread);
+      setAlertsCount(unreadMessages.length + documentsToConfirm + informativeUnread);
     } catch {
       // Keep previous alerts value on transient failures.
     }
@@ -80,6 +93,21 @@ export function HomeScreen({
   useEffect(() => {
     void refreshAlerts();
   }, [refreshAlerts]);
+
+  const pscheinExpiryDate = user.pscheinExpiry ? new Date(user.pscheinExpiry) : null;
+  const hasValidPscheinDate =
+    pscheinExpiryDate !== null && !Number.isNaN(pscheinExpiryDate.getTime());
+  const pscheinDaysToExpiry = hasValidPscheinDate
+    ? Math.ceil((pscheinExpiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+  const hasPscheinAlert =
+    pscheinDaysToExpiry !== null && (pscheinDaysToExpiry < 0 || pscheinDaysToExpiry <= 30);
+  const pscheinAlertLabel =
+    pscheinDaysToExpiry === null
+      ? null
+      : pscheinDaysToExpiry < 0
+        ? "P-Schein caducado"
+        : `P-Schein caduca en ${pscheinDaysToExpiry} dia${pscheinDaysToExpiry === 1 ? "" : "s"}`;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -129,6 +157,52 @@ export function HomeScreen({
               </Text>
               <Text style={styles.kpiLabel}>Alertas</Text>
             </View>
+          </View>
+          <View style={styles.alertList}>
+            {hasMessagesModule && unreadMessagesCount > 0 ? (
+              <Pressable style={styles.alertRow} onPress={onOpenMessages}>
+                <Text style={styles.alertText}>
+                  Tienes {unreadMessagesCount} mensaje{unreadMessagesCount === 1 ? "" : "s"} no
+                  leído{unreadMessagesCount === 1 ? "" : "s"}
+                </Text>
+                <Text style={styles.alertLink}>Ir a Mensajes</Text>
+              </Pressable>
+            ) : null}
+
+            {hasDocumentsModule && documentsToConfirmCount > 0 ? (
+              <Pressable style={styles.alertRow} onPress={onOpenDocuments}>
+                <Text style={styles.alertText}>
+                  Tienes {documentsToConfirmCount} documento
+                  {documentsToConfirmCount === 1 ? "" : "s"} pendiente
+                  {documentsToConfirmCount === 1 ? "" : "s"} de confirmación
+                </Text>
+                <Text style={styles.alertLink}>Ir a Documentos</Text>
+              </Pressable>
+            ) : null}
+
+            {hasDocumentsModule && informativeUnreadCount > 0 ? (
+              <Pressable style={styles.alertRow} onPress={onOpenDocuments}>
+                <Text style={styles.alertText}>
+                  Tienes {informativeUnreadCount} documento{informativeUnreadCount === 1 ? "" : "s"}{" "}
+                  informativo{informativeUnreadCount === 1 ? "" : "s"} sin leer
+                </Text>
+                <Text style={styles.alertLink}>Ir a Documentos</Text>
+              </Pressable>
+            ) : null}
+
+            {hasPscheinAlert && pscheinAlertLabel ? (
+              <Pressable style={styles.alertRow} onPress={onOpenProfile}>
+                <Text style={styles.alertText}>{pscheinAlertLabel}</Text>
+                <Text style={styles.alertLink}>Ir a Perfil</Text>
+              </Pressable>
+            ) : null}
+
+            {!hasPscheinAlert &&
+            unreadMessagesCount === 0 &&
+            documentsToConfirmCount === 0 &&
+            informativeUnreadCount === 0 ? (
+              <Text style={styles.noAlertsText}>Sin alertas activas.</Text>
+            ) : null}
           </View>
         </View>
 
@@ -236,6 +310,33 @@ const styles = StyleSheet.create({
   kpiRow: {
     flexDirection: "row",
     gap: 10,
+  },
+  alertList: {
+    marginTop: 12,
+    gap: 8,
+  },
+  alertRow: {
+    borderWidth: 1,
+    borderColor: "#fde68a",
+    borderRadius: 10,
+    backgroundColor: "#fffbeb",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 2,
+  },
+  alertText: {
+    color: "#92400e",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  alertLink: {
+    color: "#0369a1",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  noAlertsText: {
+    color: "#64748b",
+    fontSize: 12,
   },
   kpiItem: {
     flex: 1,
