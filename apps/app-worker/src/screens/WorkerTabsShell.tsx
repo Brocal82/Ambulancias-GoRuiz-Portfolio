@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AuthUser, CompanyModuleKey, MODULE_KEYS, ScheduleSource } from "../types/auth";
+import { getMyMessages } from "../services/messages";
 import { HomeScreen } from "./HomeScreen";
 import { WorkerAgendaScreen } from "./WorkerAgendaScreen";
 import { WorkerMessagesScreen } from "./WorkerMessagesScreen";
@@ -41,6 +42,29 @@ export function WorkerTabsShell({
 }: Props) {
   const [activeTab, setActiveTab] = useState<WorkerTabKey>("home");
   const hasMessagesModule = enabledModules.includes(MODULE_KEYS.MESSAGES);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
+  const refreshUnreadMessagesCount = useCallback(async () => {
+    if (!hasMessagesModule) {
+      setUnreadMessagesCount(0);
+      return;
+    }
+
+    try {
+      const unread = await getMyMessages({ unreadOnly: true });
+      setUnreadMessagesCount(unread.length);
+    } catch {
+      // keep previous value to avoid badge flickering on transient failures
+    }
+  }, [hasMessagesModule]);
+
+  useEffect(() => {
+    void refreshUnreadMessagesCount();
+    const intervalId = setInterval(() => {
+      void refreshUnreadMessagesCount();
+    }, 20000);
+    return () => clearInterval(intervalId);
+  }, [refreshUnreadMessagesCount]);
 
   const content = useMemo(() => {
     switch (activeTab) {
@@ -90,10 +114,25 @@ export function WorkerTabsShell({
             Agenda
           </Text>
         </Pressable>
-        <Pressable onPress={() => setActiveTab("messages")} style={styles.tabButton}>
-          <Text style={[styles.tabText, activeTab === "messages" && styles.tabTextActive]}>
-            Mensajes
-          </Text>
+        <Pressable
+          onPress={() => {
+            setActiveTab("messages");
+            void refreshUnreadMessagesCount();
+          }}
+          style={styles.tabButton}
+        >
+          <View style={styles.messagesTabLabel}>
+            <Text style={[styles.tabText, activeTab === "messages" && styles.tabTextActive]}>
+              Mensajes
+            </Text>
+            {hasMessagesModule && unreadMessagesCount > 0 ? (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadBadgeText}>
+                  {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </Pressable>
         <Pressable onPress={() => setActiveTab("profile")} style={styles.tabButton}>
           <Text style={[styles.tabText, activeTab === "profile" && styles.tabTextActive]}>
@@ -130,6 +169,25 @@ const styles = StyleSheet.create({
   },
   tabTextActive: {
     color: "#0f766e",
+    fontWeight: "700",
+  },
+  messagesTabLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  unreadBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#dc2626",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 5,
+  },
+  unreadBadgeText: {
+    color: "#ffffff",
+    fontSize: 10,
     fontWeight: "700",
   },
   placeholderContainer: {
