@@ -19,6 +19,7 @@ function AppContent() {
     isHydrating,
     isAuthenticated,
     user,
+    enabledModules,
     scheduleSource,
     authError,
     login,
@@ -44,6 +45,7 @@ function AppContent() {
       ) : isAuthenticated && user ? (
         <WorkerTabsShell
           user={user}
+          enabledModules={enabledModules}
           scheduleSource={scheduleSource}
           onLogout={logout}
           onRefreshProfile={refreshProfile}

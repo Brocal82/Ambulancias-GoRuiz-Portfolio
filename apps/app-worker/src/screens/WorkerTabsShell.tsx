@@ -1,14 +1,16 @@
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { AuthUser, ScheduleSource } from "../types/auth";
+import { AuthUser, CompanyModuleKey, MODULE_KEYS, ScheduleSource } from "../types/auth";
 import { HomeScreen } from "./HomeScreen";
 import { WorkerAgendaScreen } from "./WorkerAgendaScreen";
+import { WorkerMessagesScreen } from "./WorkerMessagesScreen";
 
 type WorkerTabKey = "home" | "agenda" | "messages" | "profile";
 
 type Props = {
   user: AuthUser;
+  enabledModules: CompanyModuleKey[];
   scheduleSource: ScheduleSource;
   onLogout: () => Promise<void>;
   onRefreshProfile: () => Promise<void>;
@@ -32,11 +34,13 @@ function PlaceholderScreen({
 
 export function WorkerTabsShell({
   user,
+  enabledModules,
   scheduleSource,
   onLogout,
   onRefreshProfile,
 }: Props) {
   const [activeTab, setActiveTab] = useState<WorkerTabKey>("home");
+  const hasMessagesModule = enabledModules.includes(MODULE_KEYS.MESSAGES);
 
   const content = useMemo(() => {
     switch (activeTab) {
@@ -52,10 +56,12 @@ export function WorkerTabsShell({
       case "agenda":
         return <WorkerAgendaScreen user={user} scheduleSource={scheduleSource} />;
       case "messages":
-        return (
+        return hasMessagesModule ? (
+          <WorkerMessagesScreen userId={user._id} />
+        ) : (
           <PlaceholderScreen
             title="Mensajes"
-            description="Canal interno para avisos operativos y comunicaciones."
+            description="Tu empresa no tiene el modulo Mensajes activo."
           />
         );
       case "profile":
@@ -68,7 +74,7 @@ export function WorkerTabsShell({
       default:
         return null;
     }
-  }, [activeTab, onLogout, onRefreshProfile, scheduleSource, user]);
+  }, [activeTab, hasMessagesModule, onLogout, onRefreshProfile, scheduleSource, user]);
 
   return (
     <View style={styles.root}>

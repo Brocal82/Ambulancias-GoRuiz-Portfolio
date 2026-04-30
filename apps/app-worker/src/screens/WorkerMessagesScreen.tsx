@@ -1,0 +1,348 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { ENV } from "../config/env";
+import {
+  deleteMessageForUser,
+  getMyMessages,
+  markMessageAsRead,
+  WorkerMessage,
+} from "../services/messages";
+
+type Props = {
+  userId: string;
+};
+
+function sortBySentDateDesc(messages: WorkerMessage[]): WorkerMessage[] {
+  return [...messages].sort((a, b) => {
+    const aTime = new Date(a.sentAt).getTime();
+    const bTime = new Date(b.sentAt).getTime();
+    return bTime - aTime;
+  });
+}
+
+export function WorkerMessagesScreen({ userId }: Props) {
+  const [messages, setMessages] = useState<WorkerMessage[]>([]);
+  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
+
+  const loadMessages = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage(undefined);
+    try {
+      const allMessages = await getMyMessages({ unreadOnly: false });
+      setMessages(sortBySentDateDesc(allMessages));
+    } catch (_error) {
+      setErrorMessage("No se pudieron cargar los mensajes.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadMessages();
+  }, [loadMessages]);
+
+  const unreadCount = useMemo(() => {
+    return messages.reduce((acc, message) => {
+      const isUnread = !(message.readBy ?? []).some((id) => String(id) === userId);
+      return isUnread ? acc + 1 : acc;
+    }, 0);
+  }, [messages, userId]);
+
+  const toggleMessage = async (message: WorkerMessage) => {
+    const isOpening = !expandedIds[message._id];
+    setExpandedIds((prev) => ({ ...prev, [message._id]: !prev[message._id] }));
+
+    const isUnread = !(message.readBy ?? []).some((id) => String(id) === userId);
+    if (!isOpening || !isUnread) {
+      return;
+    }
+
+    try {
+      await markMessageAsRead(message._id);
+      setMessages((prev) =>
+        prev.map((current) =>
+          current._id === message._id
+            ? {
+                ...current,
+                readBy: Array.from(new Set([...(current.readBy ?? []), userId])),
+              }
+            : current,
+        ),
+      );
+    } catch {
+      // non-blocking: keep local toggle and allow manual refresh
+    }
+  };
+
+  const handleDelete = async (messageId: string) => {
+    try {
+      await deleteMessageForUser(messageId);
+      setMessages((prev) => prev.filter((message) => message._id !== messageId));
+      setExpandedIds((prev) => {
+        const next = { ...prev };
+        delete next[messageId];
+        return next;
+      });
+    } catch {
+      setErrorMessage("No se pudo eliminar el mensaje.");
+    }
+  };
+
+  const openAttachment = async (url: string) => {
+    const absolute = url.startsWith("http") ? url : `${ENV.apiBaseUrl}${url}`;
+    const canOpen = await Linking.canOpenURL(absolute);
+    if (!canOpen) return;
+    await Linking.openURL(absolute);
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Mensajes</Text>
+        <Text style={styles.subtitle}>Comunicaciones operativas internas</Text>
+        <Text style={styles.badgeUnread}>No leidos: {unreadCount}</Text>
+      </View>
+
+      {isLoading ? (
+        <View style={styles.centerState}>
+          <ActivityIndicator size="large" color="#0f766e" />
+          <Text style={styles.centerText}>Cargando mensajes...</Text>
+        </View>
+      ) : errorMessage ? (
+        <View style={styles.centerState}>
+          <Text style={styles.errorText}>{errorMessage}</Text>
+          <Pressable style={styles.retryButton} onPress={() => void loadMessages()}>
+            <Text style={styles.retryButtonText}>Reintentar</Text>
+          </Pressable>
+        </View>
+      ) : messages.length === 0 ? (
+        <View style={styles.centerState}>
+          <Text style={styles.centerText}>No hay mensajes para mostrar.</Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {messages.map((message) => {
+            const isUnread = !(message.readBy ?? []).some((id) => String(id) === userId);
+            const isExpanded = Boolean(expandedIds[message._id]);
+            return (
+              <View key={message._id} style={styles.messageCard}>
+                <Pressable
+                  style={styles.messageHeader}
+                  onPress={() => {
+                    void toggleMessage(message);
+                  }}
+                >
+                  <View style={[styles.dot, isUnread ? styles.dotUnread : styles.dotRead]} />
+                  <View style={styles.headerTextBlock}>
+                    <Text style={styles.messageSubject}>{message.subject}</Text>
+                    <Text style={styles.messageMeta}>
+                      De {message.sender?.lastName}, {message.sender?.name} ·{" "}
+                      {new Date(message.sentAt).toLocaleString("es-ES")}
+                    </Text>
+                  </View>
+                  <Text style={styles.chevron}>{isExpanded ? "▴" : "▾"}</Text>
+                </Pressable>
+
+                {isExpanded ? (
+                  <View style={styles.messageBodyBlock}>
+                    <Text style={styles.messageBody}>{message.body}</Text>
+
+                    {(message.attachments ?? []).length > 0 ? (
+                      <View style={styles.attachmentsBlock}>
+                        <Text style={styles.attachmentsTitle}>Adjuntos</Text>
+                        {(message.attachments ?? []).map((attachment) => (
+                          <Pressable
+                            key={attachment.filename}
+                            style={styles.attachmentChip}
+                            onPress={() => {
+                              void openAttachment(attachment.url);
+                            }}
+                          >
+                            <Text style={styles.attachmentText}>{attachment.originalName}</Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    ) : null}
+
+                    <Pressable
+                      style={styles.deleteButton}
+                      onPress={() => {
+                        void handleDelete(message._id);
+                      }}
+                    >
+                      <Text style={styles.deleteButtonText}>Eliminar</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+              </View>
+            );
+          })}
+        </ScrollView>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f8fafc",
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 8,
+    gap: 2,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#64748b",
+  },
+  badgeUnread: {
+    marginTop: 6,
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: "#0f766e",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    color: "#0f766e",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  centerState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 24,
+  },
+  centerText: {
+    color: "#64748b",
+  },
+  errorText: {
+    color: "#b91c1c",
+    textAlign: "center",
+  },
+  retryButton: {
+    borderWidth: 1,
+    borderColor: "#0f766e",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#ffffff",
+  },
+  retryButtonText: {
+    color: "#0f766e",
+    fontWeight: "700",
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 10,
+  },
+  messageCard: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  messageHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  dotUnread: {
+    backgroundColor: "#ef4444",
+  },
+  dotRead: {
+    backgroundColor: "#94a3b8",
+  },
+  headerTextBlock: {
+    flex: 1,
+    gap: 2,
+  },
+  messageSubject: {
+    color: "#0f172a",
+    fontWeight: "700",
+  },
+  messageMeta: {
+    color: "#64748b",
+    fontSize: 12,
+  },
+  chevron: {
+    color: "#334155",
+    fontSize: 16,
+  },
+  messageBodyBlock: {
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  messageBody: {
+    color: "#334155",
+    lineHeight: 20,
+  },
+  attachmentsBlock: {
+    gap: 6,
+  },
+  attachmentsTitle: {
+    color: "#334155",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  attachmentChip: {
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: "#ffffff",
+  },
+  attachmentText: {
+    color: "#334155",
+    fontSize: 12,
+  },
+  deleteButton: {
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: "#fecaca",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: "#fff1f2",
+  },
+  deleteButtonText: {
+    color: "#b91c1c",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+});
