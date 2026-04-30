@@ -310,6 +310,19 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       res.status(401).json({ message: "Código MFA inválido.", code: "MFA_INVALID" });
       return;
     }
+    if (msg === "MFA_CONFIG_INVALID") {
+      emitAuditLog(AUDIT_EVENT.AUTH_LOGIN_FAILED, "denied", {
+        ...auditContext,
+        statusCode: 409,
+        reason: "mfa_config_invalid",
+        resourceType: "session",
+      });
+      res.status(409).json({
+        message: "MFA está en un estado inválido. Reconfigura el autenticador desde Seguridad MFA.",
+        code: "MFA_CONFIG_INVALID",
+      });
+      return;
+    }
 
     if (msg.includes("no está asociada a una empresa")) {
       emitAuditLog(AUDIT_EVENT.AUTH_LOGIN_FAILED, "denied", {
@@ -453,6 +466,13 @@ export const disableMyMfa = async (req: Request, res: Response): Promise<void> =
       reason: msg,
       resourceType: "mfa_totp",
     });
+    if (msg === "MFA_CONFIG_INVALID") {
+      res.status(409).json({
+        message: "MFA está en un estado inválido. Reconfigura el autenticador desde Seguridad MFA.",
+        code: msg,
+      });
+      return;
+    }
     res.status(400).json({ message: msg });
   }
 };
@@ -480,6 +500,8 @@ export const issueMyStepUpSession = async (req: Request, res: Response): Promise
         ? "mfa_not_enrolled"
         : msg === "MFA_REQUIRED"
           ? "mfa_required"
+          : msg === "MFA_CONFIG_INVALID"
+            ? "mfa_config_invalid"
           : "mfa_invalid";
     emitAuditLog(AUDIT_EVENT.AUTH_STEP_UP_SESSION_ISSUED, "denied", {
       ...auditContext,
@@ -494,6 +516,13 @@ export const issueMyStepUpSession = async (req: Request, res: Response): Promise
     }
     if (msg === "MFA_REQUIRED") {
       res.status(401).json({ message: "Se requiere código MFA de 6 dígitos.", code: msg });
+      return;
+    }
+    if (msg === "MFA_CONFIG_INVALID") {
+      res.status(409).json({
+        message: "MFA está en un estado inválido. Reconfigura el autenticador desde Seguridad MFA.",
+        code: msg,
+      });
       return;
     }
     res.status(401).json({ message: "Código MFA inválido.", code: "MFA_INVALID" });
