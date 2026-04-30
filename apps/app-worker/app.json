@@ -30,7 +30,7 @@
       "expo-secure-store"
     ],
     "extra": {
-      "apiBaseUrl": "http://192.168.178.33:3000/api"
+      "apiBaseUrl": "http://192.168.178.33:5000/api"
     }
   }
 }
