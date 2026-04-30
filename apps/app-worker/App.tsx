@@ -1,10 +1,10 @@
 import { StatusBar } from "expo-status-bar";
-import { NavigationContainer } from "@react-navigation/native";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
-import { AuthStack } from "./src/navigation/AuthStack";
-import { WorkerStack } from "./src/navigation/WorkerStack";
+import { AdminBlockedScreen } from "./src/screens/AdminBlockedScreen";
+import { HomeScreen } from "./src/screens/HomeScreen";
+import { LoginScreen } from "./src/screens/LoginScreen";
 
 export default function App() {
   return (
@@ -30,17 +30,17 @@ function AppContent() {
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      <NavigationContainer>
-        {isAuthenticated && user ? (
-          <WorkerStack
-            user={user}
-            onLogout={logout}
-            onRefreshProfile={refreshProfile}
-          />
-        ) : (
-          <AuthStack onLogin={login} authError={authError} />
-        )}
-      </NavigationContainer>
+      {isAuthenticated && user?.role !== "worker" ? (
+        <AdminBlockedScreen onLogout={logout} />
+      ) : isAuthenticated && user ? (
+        <HomeScreen
+          user={user}
+          onLogout={logout}
+          onRefreshProfile={refreshProfile}
+        />
+      ) : (
+        <LoginScreen onLogin={login} errorMessage={authError} />
+      )}
     </View>
   );
 }
