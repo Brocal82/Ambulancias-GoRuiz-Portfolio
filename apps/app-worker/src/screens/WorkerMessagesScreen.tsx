@@ -11,17 +11,19 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { File, Paths } from "expo-file-system";
-import * as Sharing from "expo-sharing";
 
-import { ENV } from "../config/env";
-import { ApiError, getAuthBearerToken, notifyUnauthorizedIfStatus } from "../services/http";
+import { ApiError } from "../services/http";
 import {
   deleteMessageForUser,
   getMyMessages,
   markMessageAsRead,
   WorkerMessage,
 } from "../services/messages";
+import {
+  buildPublicFileCandidates,
+  downloadAndOpenAuthenticatedFile,
+  filenameFromUrlOrPath,
+} from "../services/secureFiles";
 
 type Props = {
   userId: string;
@@ -33,19 +35,6 @@ function sortBySentDateDesc(messages: WorkerMessage[]): WorkerMessage[] {
     const bTime = new Date(b.sentAt).getTime();
     return bTime - aTime;
   });
-}
-
-function buildAttachmentCandidates(rawUrl: string): string[] {
-  if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
-    return [rawUrl];
-  }
-
-  const normalizedPath = rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`;
-  const apiBase = ENV.apiBaseUrl.replace(/\/+$/, "");
-  const apiOrigin = apiBase.endsWith("/api") ? apiBase.slice(0, -4) : apiBase;
-
-  // Prefer backend origin + /uploads path; keep apiBase variant as fallback for custom proxies.
-  return [`${apiOrigin}${normalizedPath}`, `${apiBase}${normalizedPath}`];
 }
 
 async function isReachableAttachmentUrl(url: string): Promise<boolean> {
@@ -72,73 +61,6 @@ function isPdfAttachment(attachment: { mimetype: string; originalName: string })
   const mime = (attachment.mimetype ?? "").toLowerCase();
   if (mime === "application/pdf") return true;
   return (attachment.originalName ?? "").toLowerCase().endsWith(".pdf");
-}
-
-function filenameFromAttachmentUrl(rawUrl: string): string | null {
-  const trimmed = rawUrl.trim();
-  if (!trimmed) return null;
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    try {
-      const { pathname } = new URL(trimmed);
-      return pathname.split("/").filter(Boolean).pop() ?? null;
-    } catch {
-      return null;
-    }
-  }
-  return trimmed.split("/").filter(Boolean).pop() ?? null;
-}
-
-function sanitizeFilenameForCache(filename: string): string {
-  return filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-}
-
-function guessMimeType(filename: string): string {
-  const lower = filename.toLowerCase();
-  if (lower.endsWith(".pdf")) return "application/pdf";
-  if (lower.endsWith(".png")) return "image/png";
-  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
-  if (lower.endsWith(".webp")) return "image/webp";
-  return "application/octet-stream";
-}
-
-async function downloadAndOpenAuthenticatedFile(filename: string): Promise<void> {
-  const token = await getAuthBearerToken();
-  if (!token) {
-    throw new Error("Sesion no disponible.");
-  }
-
-  const apiRoot = ENV.apiBaseUrl.replace(/\/+$/, "");
-  const url = `${apiRoot}/files/${encodeURIComponent(filename)}`;
-  const safeName = sanitizeFilenameForCache(filename);
-  const destFile = new File(Paths.cache, `worker-file-${Date.now()}-${safeName}`);
-  const downloadedFile = await File.downloadFileAsync(url, destFile, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!downloadedFile?.uri) {
-    await notifyUnauthorizedIfStatus(401);
-    throw new Error("No se pudo descargar el archivo.");
-  }
-
-  const mimeType = guessMimeType(filename);
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(downloadedFile.uri, {
-      mimeType,
-      UTI: mimeType === "application/pdf" ? "com.adobe.pdf" : undefined,
-      dialogTitle: "Abrir adjunto",
-    });
-    return;
-  }
-
-  const canOpen = await Linking.canOpenURL(downloadedFile.uri);
-  if (canOpen) {
-    await Linking.openURL(downloadedFile.uri);
-    return;
-  }
-
-  throw new Error("No se pudo abrir el archivo en este dispositivo.");
 }
 
 export function WorkerMessagesScreen({ userId }: Props) {
@@ -231,7 +153,7 @@ export function WorkerMessagesScreen({ userId }: Props) {
     setErrorMessage(undefined);
 
     if (attachmentMeta && isPdfAttachment(attachmentMeta)) {
-      const filename = filenameFromAttachmentUrl(url);
+      const filename = filenameFromUrlOrPath(url);
       if (!filename) {
         setErrorMessage("No se pudo leer el nombre del adjunto.");
         return;
@@ -245,7 +167,7 @@ export function WorkerMessagesScreen({ userId }: Props) {
     }
 
     if (attachmentMeta && isImageAttachment(attachmentMeta)) {
-      const candidates = buildAttachmentCandidates(url);
+      const candidates = buildPublicFileCandidates(url);
       for (const candidate of candidates) {
         const reachable = await isReachableAttachmentUrl(candidate);
         if (!reachable) continue;
@@ -256,7 +178,7 @@ export function WorkerMessagesScreen({ userId }: Props) {
       return;
     }
 
-    const candidates = buildAttachmentCandidates(url);
+    const candidates = buildPublicFileCandidates(url);
     for (const candidate of candidates) {
       const reachable = await isReachableAttachmentUrl(candidate);
       if (!reachable) continue;

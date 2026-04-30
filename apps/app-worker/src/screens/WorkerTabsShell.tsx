@@ -6,6 +6,7 @@ import { getMyMessages } from "../services/messages";
 import { HomeScreen } from "./HomeScreen";
 import { WorkerAgendaScreen } from "./WorkerAgendaScreen";
 import { WorkerMessagesScreen } from "./WorkerMessagesScreen";
+import { WorkerProfileScreen } from "./WorkerProfileScreen";
 
 type WorkerTabKey = "home" | "agenda" | "messages" | "profile";
 
@@ -97,12 +98,7 @@ export function WorkerTabsShell({
           />
         );
       case "profile":
-        return (
-          <PlaceholderScreen
-            title="Perfil"
-            description="Datos personales, documentos y configuracion de cuenta."
-          />
-        );
+        return <WorkerProfileScreen user={user} onRefreshProfile={onRefreshProfile} />;
       default:
         return null;
     }

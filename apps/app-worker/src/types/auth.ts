@@ -16,6 +16,11 @@ export interface AuthUser {
   role: UserRole;
   ambulanceRole?: AmbulanceRole;
   companyId?: string;
+  employeeNumber?: string;
+  pscheinExpiry?: string;
+  pscheinConfirmedAt?: string;
+  pscheinConfirmedBy?: string;
+  pscheinDocument?: string;
   address?: string;
   phone?: string;
   emergencyPhone?: string;
