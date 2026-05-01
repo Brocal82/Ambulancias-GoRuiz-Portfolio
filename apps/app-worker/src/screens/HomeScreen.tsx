@@ -16,9 +16,13 @@ import { AuthUser } from "../types/auth";
 type Props = {
   onLogout: () => void;
   onRefreshProfile: () => Promise<void>;
+  onOpenWorkday: () => void;
+  onOpenAgenda: () => void;
   onOpenDocuments: () => void;
   onOpenMessages: () => void;
   onOpenProfile: () => void;
+  hasWorkdayModule: boolean;
+  hasAgendaModule: boolean;
   hasDocumentsModule: boolean;
   hasMessagesModule: boolean;
   user: AuthUser;
@@ -28,9 +32,13 @@ type Props = {
 export function HomeScreen({
   onLogout,
   onRefreshProfile,
+  onOpenWorkday,
+  onOpenAgenda,
   onOpenDocuments,
   onOpenMessages,
   onOpenProfile,
+  hasWorkdayModule,
+  hasAgendaModule,
   hasDocumentsModule,
   hasMessagesModule,
   user,
@@ -45,16 +53,28 @@ export function HomeScreen({
   const isTablet = width >= 768;
 
   const modules = [
-    { key: "jornada", title: "Mi jornada", status: "Activo" },
-    { key: "turnos", title: "Mis turnos", status: "Proximamente" },
-    { key: "mensajes", title: "Mensajes", status: "Proximamente" },
+    {
+      key: "jornada",
+      title: "Mi jornada",
+      status: hasWorkdayModule ? "Activo" : "No disponible",
+    },
+    {
+      key: "turnos",
+      title: "Mis turnos",
+      status: hasAgendaModule ? "Activo" : "No disponible",
+    },
+    {
+      key: "mensajes",
+      title: "Mensajes",
+      status: hasMessagesModule ? "Activo" : "No disponible",
+    },
     {
       key: "documentos",
       title: "Documentos",
       status: hasDocumentsModule ? "Activo" : "No disponible",
     },
     { key: "ausencias", title: "Vacaciones/Ausencias", status: "Proximamente" },
-    { key: "perfil", title: "Mi perfil", status: "Proximamente" },
+    { key: "perfil", title: "Mi perfil", status: "Activo" },
   ];
 
   const handleRefresh = async () => {
@@ -211,12 +231,40 @@ export function HomeScreen({
           <View style={[styles.modulesGrid, isTablet && styles.modulesGridTablet]}>
             {modules.map((module) => {
               const isActive = module.status === "Activo";
+              const isWorkdayModule = module.key === "jornada";
+              const isAgendaModule = module.key === "turnos";
+              const isMessagesModule = module.key === "mensajes";
               const isDocumentsModule = module.key === "documentos";
+              const isProfileModule = module.key === "perfil";
               return (
                 <Pressable
                   key={module.key}
-                  onPress={isDocumentsModule && hasDocumentsModule ? onOpenDocuments : undefined}
-                  disabled={!isDocumentsModule || !hasDocumentsModule}
+                  onPress={
+                    isWorkdayModule && hasWorkdayModule
+                      ? onOpenWorkday
+                      : isAgendaModule && hasAgendaModule
+                        ? onOpenAgenda
+                        : isMessagesModule && hasMessagesModule
+                          ? onOpenMessages
+                          : isProfileModule
+                            ? onOpenProfile
+                      : isDocumentsModule && hasDocumentsModule
+                        ? onOpenDocuments
+                        : undefined
+                  }
+                  disabled={
+                    isWorkdayModule
+                      ? !hasWorkdayModule
+                      : isAgendaModule
+                        ? !hasAgendaModule
+                        : isMessagesModule
+                          ? !hasMessagesModule
+                          : isProfileModule
+                            ? false
+                      : isDocumentsModule
+                        ? !hasDocumentsModule
+                        : true
+                  }
                   style={[styles.moduleTile, isTablet && styles.moduleTileTablet]}
                 >
                   <Text style={styles.moduleTitle}>{module.title}</Text>

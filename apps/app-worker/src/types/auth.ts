@@ -47,6 +47,7 @@ export interface ApiErrorPayload {
 export const MODULE_KEYS = {
   SCHEDULING: "scheduling",
   EXCEL_PLANNING: "excel-planning",
+  WORKDAY: "workday",
   MESSAGES: "messages",
   PAYROLL: "payroll",
   DOCUMENTS: "documents",
