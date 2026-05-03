@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 
@@ -95,6 +96,10 @@ export function WorkerTripStepPanel({
   const [anschlussMinKmStart, setAnschlussMinKmStart] = useState<number | undefined>(undefined);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
+  const [kmFieldFocus, setKmFieldFocus] = useState<null | "2" | "4">(null);
+
+  const { width: windowWidth } = useWindowDimensions();
+  const roundStepSize = Math.min(176, Math.round(windowWidth * 0.42));
 
   const draftRef = useRef(draft);
   const km2Ref = useRef(kmDraft2);
@@ -409,30 +414,45 @@ export function WorkerTripStepPanel({
               contentContainerStyle={styles.metaScrollContent}
               showsVerticalScrollIndicator={false}
             >
-              <TextInput
-                style={styles.inputDense}
-                value={draft.auftragNumber}
-                onChangeText={(text) => setDraft((prev) => ({ ...prev, auftragNumber: text }))}
-                placeholder="Auftrag"
-              />
-              <TextInput
-                style={styles.inputDense}
-                value={draft.patientName}
-                onChangeText={(text) => setDraft((prev) => ({ ...prev, patientName: text }))}
-                placeholder="Paciente"
-              />
-              <TextInput
-                style={styles.inputDense}
-                value={draft.fromAddress}
-                onChangeText={(text) => setDraft((prev) => ({ ...prev, fromAddress: text }))}
-                placeholder="Origen"
-              />
-              <TextInput
-                style={styles.inputDense}
-                value={draft.toAddress}
-                onChangeText={(text) => setDraft((prev) => ({ ...prev, toAddress: text }))}
-                placeholder="Destino"
-              />
+              <View style={styles.patientDataCard}>
+                <Text style={styles.patientCardTitle}>Datos del paciente</Text>
+                <View style={styles.formFieldBlock}>
+                  <Text style={styles.fieldLabel}>Auftrag</Text>
+                  <TextInput
+                    style={styles.inputInCard}
+                    value={draft.auftragNumber}
+                    onChangeText={(text) => setDraft((prev) => ({ ...prev, auftragNumber: text }))}
+                    placeholder="Numero"
+                  />
+                </View>
+                <View style={styles.formFieldBlock}>
+                  <Text style={styles.fieldLabel}>Paciente</Text>
+                  <TextInput
+                    style={styles.inputInCard}
+                    value={draft.patientName}
+                    onChangeText={(text) => setDraft((prev) => ({ ...prev, patientName: text }))}
+                    placeholder="Nombre"
+                  />
+                </View>
+                <View style={styles.formFieldBlock}>
+                  <Text style={styles.fieldLabel}>Recogida (origen)</Text>
+                  <TextInput
+                    style={styles.inputInCard}
+                    value={draft.fromAddress}
+                    onChangeText={(text) => setDraft((prev) => ({ ...prev, fromAddress: text }))}
+                    placeholder="Direccion de recogida"
+                  />
+                </View>
+                <View style={styles.formFieldBlock}>
+                  <Text style={styles.fieldLabel}>Destino</Text>
+                  <TextInput
+                    style={styles.inputInCard}
+                    value={draft.toAddress}
+                    onChangeText={(text) => setDraft((prev) => ({ ...prev, toAddress: text }))}
+                    placeholder="Direccion de destino"
+                  />
+                </View>
+              </View>
               {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
             </ScrollView>
             <Pressable style={styles.primaryButton} onPress={goToSteps}>
@@ -442,13 +462,32 @@ export function WorkerTripStepPanel({
         </View>
       ) : (
         <View style={[styles.card, styles.panelCard]}>
-          <View style={styles.compactTripBar}>
-            <Text style={styles.compactTripLine} numberOfLines={1} ellipsizeMode="tail">
-              {draft.auftragNumber.trim()} · {draft.patientName.trim()}
-            </Text>
-            <Text style={styles.compactRoute} numberOfLines={2} ellipsizeMode="tail">
-              {draft.fromAddress.trim()} → {draft.toAddress.trim()}
-            </Text>
+          <View style={styles.patientDataCard}>
+            <Text style={styles.patientCardTitle}>Datos del servicio</Text>
+            <View style={styles.patientDataRow}>
+              <Text style={styles.patientDataLabel}>Auftrag</Text>
+              <Text style={styles.patientDataValue} numberOfLines={3}>
+                {draft.auftragNumber.trim() || "—"}
+              </Text>
+            </View>
+            <View style={styles.patientDataRow}>
+              <Text style={styles.patientDataLabel}>Paciente</Text>
+              <Text style={styles.patientDataValue} numberOfLines={3}>
+                {draft.patientName.trim() || "—"}
+              </Text>
+            </View>
+            <View style={styles.patientDataRow}>
+              <Text style={styles.patientDataLabel}>Recogida</Text>
+              <Text style={styles.patientDataValue} numberOfLines={4}>
+                {draft.fromAddress.trim() || "—"}
+              </Text>
+            </View>
+            <View style={styles.patientDataRow}>
+              <Text style={styles.patientDataLabel}>Destino</Text>
+              <Text style={styles.patientDataValue} numberOfLines={4}>
+                {draft.toAddress.trim() || "—"}
+              </Text>
+            </View>
             {anschlussAwaitingPatient2Step3 ? (
               <Text style={styles.anschlussBanner}>Anschluss · paciente 2</Text>
             ) : null}
@@ -463,22 +502,44 @@ export function WorkerTripStepPanel({
           </View>
 
           {currentStep === 2 ? (
-            <TextInput
-              style={styles.inputDense}
-              keyboardType="decimal-pad"
-              value={kmDraft2}
-              onChangeText={setKmDraft2}
-              placeholder="Km en domicilio"
-            />
+            <View style={styles.kmHeroWrap}>
+              <Text style={styles.kmHeroLabel}>Odómetro en domicilio</Text>
+              <Text style={styles.kmHeroHint}>Introduce el km antes de confirmar el paso.</Text>
+              <TextInput
+                style={[
+                  styles.kmInputHero,
+                  kmFieldFocus === "2" ? styles.kmInputHeroFocused : null,
+                  canUseKmStep2 ? styles.kmInputHeroValid : null,
+                ]}
+                keyboardType="decimal-pad"
+                value={kmDraft2}
+                onChangeText={setKmDraft2}
+                onFocus={() => setKmFieldFocus("2")}
+                onBlur={() => setKmFieldFocus((f) => (f === "2" ? null : f))}
+                placeholder="0"
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
           ) : null}
           {currentStep === 4 ? (
-            <TextInput
-              style={styles.inputDense}
-              keyboardType="decimal-pad"
-              value={kmDraft4}
-              onChangeText={setKmDraft4}
-              placeholder="Km en destino (con paciente)"
-            />
+            <View style={styles.kmHeroWrap}>
+              <Text style={styles.kmHeroLabel}>Odómetro en destino (con paciente)</Text>
+              <Text style={styles.kmHeroHint}>Km con paciente a bordo en destino.</Text>
+              <TextInput
+                style={[
+                  styles.kmInputHero,
+                  kmFieldFocus === "4" ? styles.kmInputHeroFocused : null,
+                  canUseKmStep4 ? styles.kmInputHeroValid : null,
+                ]}
+                keyboardType="decimal-pad"
+                value={kmDraft4}
+                onChangeText={setKmDraft4}
+                onFocus={() => setKmFieldFocus("4")}
+                onBlur={() => setKmFieldFocus((f) => (f === "4" ? null : f))}
+                placeholder="0"
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
           ) : null}
 
           <View style={styles.bigStepCenter}>
@@ -487,14 +548,32 @@ export function WorkerTripStepPanel({
               disabled={bigStepDisabled}
               onPressIn={() => armStepHold(currentStep, bigStepDisabled)}
               onPressOut={clearStepHoldTimer}
-              style={[
-                styles.bigStepButton,
-                bigStepDisabled ? styles.bigStepButtonDisabled : null,
+              android_ripple={
+                bigStepDisabled
+                  ? undefined
+                  : { color: "rgba(15, 118, 110, 0.22)", foreground: true, borderless: false }
+              }
+              style={({ pressed }) => [
+                styles.roundStepButton,
+                {
+                  width: roundStepSize,
+                  height: roundStepSize,
+                  borderRadius: roundStepSize / 2,
+                },
+                bigStepDisabled ? styles.roundStepButtonDisabled : null,
+                !bigStepDisabled && pressed ? styles.roundStepButtonPressed : null,
               ]}
             >
-              <Text style={styles.bigStepNumber}>{currentStep}</Text>
-              <Text style={styles.bigStepTitle}>{STEP_TITLES[currentStep]}</Text>
+              <Text
+                style={[
+                  styles.roundStepNumber,
+                  bigStepDisabled ? styles.roundStepNumberDisabled : null,
+                ]}
+              >
+                {currentStep}
+              </Text>
             </Pressable>
+            <Text style={styles.bigStepTitle}>{STEP_TITLES[currentStep]}</Text>
             {needsKmNow && !kmReadyNow ? (
               <Text style={styles.kmHint}>Escribe un km válido antes de confirmar.</Text>
             ) : null}
@@ -506,15 +585,19 @@ export function WorkerTripStepPanel({
                 <Pressable
                   disabled={!anschlussEnabled}
                   onPress={handleStartAnschluss}
-                  style={[
-                    styles.anschlussFooterButton,
-                    !anschlussEnabled ? styles.anschlussFooterButtonDisabled : null,
+                  android_ripple={
+                    anschlussEnabled ? { color: "rgba(255,255,255,0.35)", foreground: true } : undefined
+                  }
+                  style={({ pressed }) => [
+                    styles.orangePillButton,
+                    !anschlussEnabled ? styles.orangePillButtonDisabled : null,
+                    anschlussEnabled && pressed ? styles.orangePillButtonPressed : null,
                   ]}
                 >
                   <Text
                     style={[
-                      styles.anschlussFooterButtonText,
-                      !anschlussEnabled ? styles.anschlussFooterButtonTextDisabled : null,
+                      styles.orangePillButtonText,
+                      !anschlussEnabled ? styles.orangePillButtonTextDisabled : null,
                     ]}
                   >
                     Anschluss (paciente 2)
@@ -527,16 +610,24 @@ export function WorkerTripStepPanel({
             ) : null}
 
             {pendingPatient1Anschluss && anschlussAwaitingPatient2Step3 ? (
-              <Pressable style={styles.linkButton} onPress={handleCancelAnschluss}>
-                <Text style={styles.linkButtonText}>Cancelar Anschluss</Text>
+              <Pressable
+                onPress={handleCancelAnschluss}
+                android_ripple={{ color: "rgba(220, 38, 38, 0.15)", foreground: true }}
+                style={({ pressed }) => [styles.redOutlineButton, pressed ? styles.redOutlineButtonPressed : null]}
+              >
+                <Text style={styles.redOutlineButtonText}>Cancelar Anschluss</Text>
               </Pressable>
             ) : null}
 
             {isSaving ? <ActivityIndicator color="#0f766e" /> : null}
             {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
-            <Pressable style={styles.ghostButton} onPress={resetDraft}>
-              <Text style={styles.ghostButtonText}>Reiniciar borrador</Text>
+            <Pressable
+              onPress={resetDraft}
+              android_ripple={{ color: "rgba(255,255,255,0.35)", foreground: true }}
+              style={({ pressed }) => [styles.redStornoButton, pressed ? styles.redStornoButtonPressed : null]}
+            >
+              <Text style={styles.redStornoButtonText}>Storno (reiniciar borrador)</Text>
             </Pressable>
           </View>
         </View>
@@ -591,7 +682,48 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingBottom: 4,
   },
-  inputDense: {
+  patientDataCard: {
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 12,
+    padding: 10,
+    gap: 8,
+    backgroundColor: "#fafafa",
+  },
+  patientCardTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#334155",
+    letterSpacing: 0.4,
+  },
+  patientDataRow: {
+    gap: 3,
+    paddingBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+  },
+  patientDataLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#64748b",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  patientDataValue: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#0f172a",
+    lineHeight: 18,
+  },
+  formFieldBlock: {
+    gap: 4,
+  },
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#475569",
+  },
+  inputInCard: {
     borderWidth: 1,
     borderColor: "#cbd5e1",
     borderRadius: 8,
@@ -612,26 +744,50 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     fontSize: 16,
   },
-  compactTripBar: {
-    gap: 4,
-    paddingBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
-  },
-  compactTripLine: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#0f172a",
-  },
-  compactRoute: {
-    fontSize: 12,
-    color: "#475569",
-    lineHeight: 16,
-  },
   anschlussBanner: {
     fontSize: 11,
     fontWeight: "700",
     color: "#0f766e",
+    marginTop: 2,
+  },
+  kmHeroWrap: {
+    gap: 6,
+    marginTop: 4,
+  },
+  kmHeroLabel: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#0f172a",
+  },
+  kmHeroHint: {
+    fontSize: 11,
+    color: "#64748b",
+    lineHeight: 15,
+  },
+  kmInputHero: {
+    borderWidth: 2,
+    borderColor: "#cbd5e1",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontSize: 28,
+    fontWeight: "800",
+    textAlign: "center",
+    backgroundColor: "#ffffff",
+    color: "#0f172a",
+    letterSpacing: 1,
+  },
+  kmInputHeroFocused: {
+    borderColor: "#0f766e",
+    backgroundColor: "#f0fdf4",
+    shadowColor: "#0f766e",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  kmInputHeroValid: {
+    borderColor: "#22c55e",
   },
   dotsRow: {
     flexDirection: "row",
@@ -661,36 +817,46 @@ const styles = StyleSheet.create({
     color: "#64748b",
     fontWeight: "600",
   },
-  bigStepButton: {
-    width: "100%",
-    maxWidth: 320,
-    minHeight: 168,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#0f766e",
-    backgroundColor: "#ecfdf5",
+  roundStepButton: {
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    paddingVertical: 20,
+    overflow: "hidden",
+    borderWidth: 3,
+    borderColor: "#0f766e",
+    backgroundColor: "#ecfdf5",
+    shadowColor: "#0f766e",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  bigStepButtonDisabled: {
-    opacity: 0.42,
+  roundStepButtonDisabled: {
+    opacity: 0.45,
     borderColor: "#94a3b8",
     backgroundColor: "#f1f5f9",
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  bigStepNumber: {
+  roundStepButtonPressed: {
+    transform: [{ scale: 0.94 }],
+    opacity: 0.9,
+  },
+  roundStepNumber: {
     fontSize: 56,
     fontWeight: "900",
     color: "#0f766e",
-    lineHeight: 62,
+    lineHeight: 60,
+  },
+  roundStepNumberDisabled: {
+    color: "#94a3b8",
   },
   bigStepTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: "#0f172a",
     textAlign: "center",
     paddingHorizontal: 12,
+    marginTop: 4,
   },
   kmHint: {
     fontSize: 12,
@@ -705,48 +871,69 @@ const styles = StyleSheet.create({
   anschlussFooterBlock: {
     gap: 4,
   },
-  anschlussFooterButton: {
-    borderWidth: 2,
-    borderColor: "#0f766e",
-    borderRadius: 12,
+  orangePillButton: {
+    borderRadius: 10,
     paddingVertical: 14,
+    paddingHorizontal: 12,
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#ea580c",
+    borderWidth: 1,
+    borderColor: "#c2410c",
   },
-  anschlussFooterButtonDisabled: {
-    borderColor: "#cbd5e1",
-    backgroundColor: "#f8fafc",
+  orangePillButtonDisabled: {
+    backgroundColor: "#ffedd5",
+    borderColor: "#fdba74",
   },
-  anschlussFooterButtonText: {
-    color: "#0f766e",
+  orangePillButtonPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.99 }],
+  },
+  orangePillButtonText: {
+    color: "#ffffff",
     fontWeight: "800",
     fontSize: 15,
   },
-  anschlussFooterButtonTextDisabled: {
-    color: "#94a3b8",
+  orangePillButtonTextDisabled: {
+    color: "#9a3412",
   },
   anschlussFooterHint: {
     fontSize: 11,
     color: "#64748b",
     textAlign: "center",
   },
-  ghostButton: {
-    alignSelf: "center",
-    paddingVertical: 6,
+  redOutlineButton: {
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#dc2626",
+    backgroundColor: "#ffffff",
   },
-  ghostButtonText: {
-    color: "#64748b",
-    fontSize: 12,
-    fontWeight: "600",
+  redOutlineButtonPressed: {
+    backgroundColor: "#fef2f2",
+    opacity: 0.95,
   },
-  linkButton: {
-    alignSelf: "center",
-    paddingVertical: 4,
+  redOutlineButtonText: {
+    color: "#b91c1c",
+    fontWeight: "800",
+    fontSize: 14,
   },
-  linkButtonText: {
-    color: "#0369a1",
-    fontSize: 13,
-    fontWeight: "700",
+  redStornoButton: {
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    backgroundColor: "#dc2626",
+    borderWidth: 1,
+    borderColor: "#b91c1c",
+  },
+  redStornoButtonPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.99 }],
+  },
+  redStornoButtonText: {
+    color: "#ffffff",
+    fontWeight: "800",
+    fontSize: 14,
   },
   errorText: {
     color: "#b91c1c",
