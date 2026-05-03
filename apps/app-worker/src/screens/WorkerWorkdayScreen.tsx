@@ -322,8 +322,8 @@ export function WorkerWorkdayScreen({ user }: Props) {
                       const pat = (trip.patientName ?? "").trim() || "—";
                       const dur = tripDurationMinutes(trip);
                       const km = tripKmForDisplay(trip);
-                      const statsLine =
-                        dur != null ? `${dur} min · ${km} km` : `— min · ${km} km`;
+                      const minText = dur != null ? `${dur} min` : "—";
+                      const kmText = km === "—" ? "—" : `${km} km`;
                       return (
                         <View key={trip._id} style={styles.tripGridRow}>
                           <View style={styles.tripColAuf}>
@@ -336,9 +336,14 @@ export function WorkerWorkdayScreen({ user }: Props) {
                               {pat}
                             </Text>
                           </View>
-                          <View style={styles.tripColStats}>
-                            <Text style={styles.tripStatsLine} numberOfLines={1} ellipsizeMode="tail">
-                              {statsLine}
+                          <View style={styles.tripColMin}>
+                            <Text style={styles.tripMetricText} numberOfLines={1}>
+                              {minText}
+                            </Text>
+                          </View>
+                          <View style={styles.tripColKm}>
+                            <Text style={styles.tripMetricText} numberOfLines={1}>
+                              {kmText}
                             </Text>
                           </View>
                         </View>
@@ -540,9 +545,15 @@ const styles = StyleSheet.create({
     minWidth: 0,
     justifyContent: "center",
   },
-  tripColStats: {
-    flex: 1,
-    minWidth: 0,
+  tripColMin: {
+    width: 64,
+    flexShrink: 0,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+  tripColKm: {
+    width: 64,
+    flexShrink: 0,
     justifyContent: "center",
     alignItems: "flex-end",
   },
@@ -552,7 +563,7 @@ const styles = StyleSheet.create({
     color: "#334155",
     lineHeight: 15,
   },
-  tripStatsLine: {
+  tripMetricText: {
     fontSize: 12,
     fontWeight: "800",
     color: "#0f172a",
