@@ -47,6 +47,31 @@ function assignmentForTripPanel(day: AssignedDay): AssignedDayFull | null {
   };
 }
 
+function displayWorkerName(field: string | AssignedDayUser | undefined): string {
+  if (field == null) return "—";
+  if (typeof field === "string") {
+    const t = field.trim();
+    if (!t) return "—";
+    return t.length > 14 ? `…${t.slice(-10)}` : t;
+  }
+  const parts = [field.name, field.lastName].filter((p) => (p ?? "").trim()).join(" ");
+  return parts.trim() || "—";
+}
+
+function displayAmbulanceLine(day: AssignedDay): string {
+  if (day.ambulanceNumber?.trim()) return day.ambulanceNumber.trim();
+  const amb = day.ambulanceId;
+  if (amb && typeof amb === "object") {
+    const num = amb.ambulanceNumber?.trim();
+    const plate = amb.licensePlate?.trim();
+    if (num && plate) return `#${num} · ${plate}`;
+    if (num) return `#${num}`;
+    if (plate) return plate;
+  }
+  if (typeof amb === "string" && amb.trim()) return amb.trim();
+  return "—";
+}
+
 type Props = {
   user: AuthUser;
 };
@@ -175,14 +200,45 @@ export function WorkerWorkdayScreen({ user }: Props) {
     }
   }, [todayStatus]);
 
+  const headerAssignmentBlock = useMemo(() => {
+    if (isLoading) {
+      return <Text style={styles.headerMetaMuted}>Cargando asignacion…</Text>;
+    }
+    if (errorMessage) {
+      return null;
+    }
+    if (!todayAssignment) {
+      return <Text style={styles.headerMetaMuted}>Sin asignacion para hoy.</Text>;
+    }
+    return (
+      <View style={styles.headerMeta}>
+        <Text style={styles.headerMetaLine}>
+          Conductor: {displayWorkerName(todayAssignment.driver)}
+        </Text>
+        <Text style={styles.headerMetaLine}>
+          Sanitario: {displayWorkerName(todayAssignment.medic)}
+        </Text>
+        <Text style={styles.headerMetaLine}>
+          Dienst #{todayAssignment.dienstNumber ?? "—"} · {todayAssignment.startTime ?? "--:--"} –{" "}
+          {todayAssignment.endTime ?? "--:--"}
+        </Text>
+        <Text style={styles.headerMetaLine}>Ambulancia: {displayAmbulanceLine(todayAssignment)}</Text>
+      </View>
+    );
+  }, [errorMessage, isLoading, todayAssignment]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <Text style={styles.title}>Mi Jornada</Text>
-        <Text style={styles.subtitle}>Estado operativo de hoy</Text>
-        <Pressable style={styles.refreshButton} onPress={() => void loadWorkday()}>
-          <Text style={styles.refreshButtonText}>Refrescar</Text>
-        </Pressable>
+        <View style={styles.headerTopRow}>
+          <Text style={styles.title} numberOfLines={1}>
+            Mi Jornada
+          </Text>
+          <Pressable style={styles.refreshButton} onPress={() => void loadWorkday()} hitSlop={8}>
+            <Text style={styles.refreshButtonText}>Refrescar</Text>
+          </Pressable>
+        </View>
+        {headerAssignmentBlock}
       </View>
 
       {isLoading ? (
@@ -202,9 +258,7 @@ export function WorkerWorkdayScreen({ user }: Props) {
           <View style={styles.topSection}>
             <View style={styles.cardCompact}>
               <Text style={styles.statusOneLine}>
-                {todayAssignment
-                  ? `${statusLabel} · Dienst #${todayAssignment.dienstNumber ?? "-"} · ${todayTrips.length} viajes`
-                  : statusLabel}
+                {todayAssignment ? `${statusLabel} · ${todayTrips.length} viaje(s)` : statusLabel}
               </Text>
             </View>
 
@@ -271,33 +325,51 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 8,
     paddingBottom: 8,
-    gap: 2,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
+  },
+  headerTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
   },
   title: {
+    flex: 1,
     fontSize: 22,
     fontWeight: "700",
     color: "#0f172a",
   },
-  subtitle: {
-    fontSize: 14,
-    color: "#64748b",
-  },
   refreshButton: {
-    marginTop: 6,
-    alignSelf: "flex-start",
     borderWidth: 1,
     borderColor: "#cbd5e1",
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     backgroundColor: "#ffffff",
+    flexShrink: 0,
   },
   refreshButtonText: {
     color: "#334155",
     fontWeight: "700",
     fontSize: 12,
+  },
+  headerMeta: {
+    gap: 3,
+  },
+  headerMetaLine: {
+    fontSize: 11,
+    color: "#475569",
+    lineHeight: 15,
+  },
+  headerMetaMuted: {
+    fontSize: 11,
+    color: "#94a3b8",
+    lineHeight: 15,
   },
   centerState: {
     flex: 1,
