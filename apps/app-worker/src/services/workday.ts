@@ -26,6 +26,9 @@ export type WorkdayTrip = {
   auftragNumber?: string;
   patientName?: string;
   timeWarning?: string;
+  timeAtHome?: string;
+  timePickup?: string;
+  timeArrival?: string;
   timeEnd?: string;
   kmStart?: number;
   kmEnd?: number;

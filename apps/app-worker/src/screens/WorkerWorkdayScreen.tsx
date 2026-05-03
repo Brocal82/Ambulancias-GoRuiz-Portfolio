@@ -13,6 +13,7 @@ import {
   getWorkdayTripsByDate,
 } from "../services/workday";
 import { AuthUser } from "../types/auth";
+import { parseHHMM } from "../utils/tripValidators";
 import { canStartTripNow } from "../utils/workdayAssignment";
 import { WorkerTripStepPanel } from "./WorkerTripStepPanel";
 
@@ -103,6 +104,41 @@ function tripKmForDisplay(trip: WorkdayTrip): string {
     return String(Math.round(ke - ks));
   }
   return "—";
+}
+
+/** Duración del viaje: primer aviso (timeWarning o timeAtHome) hasta cierre (timeEnd HH:MM o timeArrival si timeEnd no es hora). */
+function tripDurationMinutes(trip: WorkdayTrip): number | null {
+  const candidatesStart = [trip.timeWarning, trip.timeAtHome];
+  let startStr: string | undefined;
+  for (const c of candidatesStart) {
+    const t = c?.trim();
+    if (t && !Number.isNaN(parseHHMM(t))) {
+      startStr = t;
+      break;
+    }
+  }
+  if (!startStr) return null;
+
+  const te = trip.timeEnd?.trim();
+  let endStr: string | undefined;
+  if (te && !Number.isNaN(parseHHMM(te))) {
+    endStr = te;
+  } else {
+    const ta = trip.timeArrival?.trim();
+    if (ta && !Number.isNaN(parseHHMM(ta))) {
+      endStr = ta;
+    }
+  }
+  if (!endStr) return null;
+
+  const startMin = parseHHMM(startStr);
+  const endMin = parseHHMM(endStr);
+  if (Number.isNaN(startMin) || Number.isNaN(endMin)) return null;
+  let delta = endMin - startMin;
+  if (delta < 0) {
+    delta += 24 * 60;
+  }
+  return delta;
 }
 
 function summaryStateForAssignment(summaries: WorkdaySummary[], assignmentId: string): WorkdayStatus {
@@ -284,9 +320,10 @@ export function WorkerWorkdayScreen({ user }: Props) {
                     {todayTrips.map((trip) => {
                       const auf = (trip.auftragNumber ?? "").trim() || "—";
                       const pat = (trip.patientName ?? "").trim() || "—";
-                      const tw = (trip.timeWarning ?? "").trim() || "—";
-                      const te = (trip.timeEnd ?? "").trim() || "—";
+                      const dur = tripDurationMinutes(trip);
                       const km = tripKmForDisplay(trip);
+                      const statsLine =
+                        dur != null ? `${dur} min · ${km} km` : `— min · ${km} km`;
                       return (
                         <View key={trip._id} style={styles.tripGridRow}>
                           <View style={styles.tripColAuf}>
@@ -299,20 +336,9 @@ export function WorkerWorkdayScreen({ user }: Props) {
                               {pat}
                             </Text>
                           </View>
-                          <View style={styles.tripColTimes}>
-                            <Text style={styles.tripTimeText} numberOfLines={1}>
-                              {tw}
-                            </Text>
-                            <Text style={styles.tripTimeText} numberOfLines={1}>
-                              {te}
-                            </Text>
-                          </View>
-                          <View style={styles.tripColKm}>
-                            <Text style={styles.tripKmValue} numberOfLines={1}>
-                              {km}
-                            </Text>
-                            <Text style={styles.tripKmSuffix} numberOfLines={1}>
-                              km
+                          <View style={styles.tripColStats}>
+                            <Text style={styles.tripStatsLine} numberOfLines={1} ellipsizeMode="tail">
+                              {statsLine}
                             </Text>
                           </View>
                         </View>
@@ -514,19 +540,11 @@ const styles = StyleSheet.create({
     minWidth: 0,
     justifyContent: "center",
   },
-  tripColTimes: {
-    width: 56,
-    flexShrink: 0,
-    alignItems: "center",
+  tripColStats: {
+    flex: 1,
+    minWidth: 0,
     justifyContent: "center",
-    gap: 2,
-  },
-  tripColKm: {
-    width: 48,
-    flexShrink: 0,
     alignItems: "flex-end",
-    justifyContent: "center",
-    gap: 1,
   },
   tripCellText: {
     fontSize: 11,
@@ -534,29 +552,14 @@ const styles = StyleSheet.create({
     color: "#334155",
     lineHeight: 15,
   },
-  tripTimeText: {
+  tripStatsLine: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#0f172a",
     lineHeight: 16,
     fontVariant: ["tabular-nums"],
-    textAlign: "center",
+    textAlign: "right",
     width: "100%",
-  },
-  tripKmValue: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#0f172a",
-    lineHeight: 18,
-    fontVariant: ["tabular-nums"],
-    textAlign: "right",
-  },
-  tripKmSuffix: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#64748b",
-    textAlign: "right",
-    lineHeight: 12,
   },
   cardTitle: {
     fontSize: 16,
