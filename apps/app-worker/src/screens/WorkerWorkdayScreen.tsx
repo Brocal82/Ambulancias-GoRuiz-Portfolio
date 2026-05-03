@@ -1,13 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ApiError } from "../services/http";
@@ -101,6 +93,27 @@ function todayDateKey(): string {
   return `${y}-${m}-${d}`;
 }
 
+function tripKmForDisplay(trip: WorkdayTrip): string {
+  if (typeof trip.totalKm === "number" && !Number.isNaN(trip.totalKm)) {
+    return String(Math.round(trip.totalKm));
+  }
+  const ks = typeof trip.kmStart === "number" && !Number.isNaN(trip.kmStart) ? trip.kmStart : null;
+  const ke = typeof trip.kmEnd === "number" && !Number.isNaN(trip.kmEnd) ? trip.kmEnd : null;
+  if (ks != null && ke != null && ke >= ks) {
+    return String(Math.round(ke - ks));
+  }
+  return "—";
+}
+
+function formatTripDropdownLine(trip: WorkdayTrip): string {
+  const auf = (trip.auftragNumber ?? "").trim() || "—";
+  const pat = (trip.patientName ?? "").trim() || "—";
+  const tw = (trip.timeWarning ?? "").trim() || "—";
+  const te = (trip.timeEnd ?? "").trim() || "—";
+  const km = tripKmForDisplay(trip);
+  return `${auf} · ${pat} · ${tw} · ${te} · ${km} km`;
+}
+
 function summaryStateForAssignment(summaries: WorkdaySummary[], assignmentId: string): WorkdayStatus {
   const sameAssignmentToday = summaries.filter((item) => item.assignmentId === assignmentId);
   const hasFinal = sameAssignmentToday.some((item) => item.isFinalClosure === true);
@@ -111,15 +124,13 @@ function summaryStateForAssignment(summaries: WorkdaySummary[], assignmentId: st
 }
 
 export function WorkerWorkdayScreen({ user }: Props) {
-  const { height: windowHeight } = useWindowDimensions();
-  const bottomPanelMaxHeight = Math.min(260, Math.round(windowHeight * 0.3));
-
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [todayAssignment, setTodayAssignment] = useState<AssignedDay | null>(null);
   const [todayTrips, setTodayTrips] = useState<WorkdayTrip[]>([]);
   /** Solo cierres de hoy para la asignacion actual: alimenta el chip de estado (no se listan en pantalla). */
   const [recentSummaries, setRecentSummaries] = useState<WorkdaySummary[]>([]);
+  const [tripsDropdownOpen, setTripsDropdownOpen] = useState(false);
 
   const loadWorkday = useCallback(async () => {
     setIsLoading(true);
@@ -170,6 +181,12 @@ export function WorkerWorkdayScreen({ user }: Props) {
     if (todayTrips.length > 0) return "in-progress";
     return "ready";
   }, [todayAssignment, todayTrips.length, recentSummaries]);
+
+  useEffect(() => {
+    if (todayTrips.length === 0 || todayStatus !== "in-progress") {
+      setTripsDropdownOpen(false);
+    }
+  }, [todayTrips.length, todayStatus]);
 
   const tripPanelAssignment = useMemo(
     () => (todayAssignment ? assignmentForTripPanel(todayAssignment) : null),
@@ -256,11 +273,43 @@ export function WorkerWorkdayScreen({ user }: Props) {
       ) : (
         <View style={styles.mainColumn}>
           <View style={styles.topSection}>
-            <View style={styles.cardCompact}>
-              <Text style={styles.statusOneLine}>
-                {todayAssignment ? `${statusLabel} · ${todayTrips.length} viaje(s)` : statusLabel}
-              </Text>
-            </View>
+            {todayAssignment && todayStatus === "in-progress" ? (
+              <Pressable
+                style={[styles.cardCompact, styles.cardCompactExpandable]}
+                onPress={() => setTripsDropdownOpen((open) => !open)}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  tripsDropdownOpen ? "Ocultar lista de viajes de hoy" : "Ver lista de viajes de hoy"
+                }
+              >
+                <View style={styles.statusHeaderRow}>
+                  <Text style={styles.statusOneLine} numberOfLines={1}>
+                    {`${statusLabel} · ${todayTrips.length} viaje(s)`}
+                  </Text>
+                  <Text style={styles.dropdownChevron}>{tripsDropdownOpen ? "▲" : "▼"}</Text>
+                </View>
+                {tripsDropdownOpen ? (
+                  <View style={styles.tripsDropdownList}>
+                    {todayTrips.map((trip) => (
+                      <Text
+                        key={trip._id}
+                        style={styles.tripDropdownLine}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {formatTripDropdownLine(trip)}
+                      </Text>
+                    ))}
+                  </View>
+                ) : null}
+              </Pressable>
+            ) : (
+              <View style={styles.cardCompact}>
+                <Text style={styles.statusOneLine}>
+                  {todayAssignment ? `${statusLabel} · ${todayTrips.length} viaje(s)` : statusLabel}
+                </Text>
+              </View>
+            )}
 
             {todayAssignment && tripPanelAssignment ? (
               <View style={styles.tripPanelShell}>
@@ -279,38 +328,6 @@ export function WorkerWorkdayScreen({ user }: Props) {
                 </Text>
               </View>
             ) : null}
-          </View>
-
-          <View style={styles.bottomPanel}>
-            <ScrollView
-              nestedScrollEnabled
-              keyboardShouldPersistTaps="handled"
-              style={[styles.bottomPanelScroll, { maxHeight: bottomPanelMaxHeight }]}
-              contentContainerStyle={styles.bottomPanelScrollContent}
-              showsVerticalScrollIndicator
-            >
-              <View style={styles.bottomCard}>
-                <Text style={styles.bottomSectionTitle}>Viajes de hoy (no cerrados)</Text>
-                {todayTrips.length === 0 ? (
-                  <Text style={styles.emptyText}>Ninguno. Los guardados aqui aparecen al refrescar.</Text>
-                ) : (
-                  todayTrips.map((trip) => (
-                    <View key={trip._id} style={styles.tripRow}>
-                      <View style={styles.summaryLeft}>
-                        <Text style={styles.summaryDate} numberOfLines={1}>
-                          {trip.patientName?.trim() || "Paciente"} · Auf. {trip.auftragNumber?.trim() || "—"}
-                        </Text>
-                        <Text style={styles.summaryMeta} numberOfLines={1}>
-                          {trip.wasCancelled ? "Cancelado · " : ""}
-                          {trip.timeWarning ? `Aviso ${trip.timeWarning}` : "Sin hora aviso"}
-                          {trip.timeEnd ? ` → Fin ${trip.timeEnd}` : ""}
-                        </Text>
-                      </View>
-                    </View>
-                  ))
-                )}
-              </View>
-            </ScrollView>
           </View>
         </View>
       )}
@@ -412,41 +429,6 @@ const styles = StyleSheet.create({
     minHeight: 0,
     width: "100%",
   },
-  bottomPanel: {
-    flexShrink: 0,
-    flexGrow: 0,
-    width: "100%",
-    paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 8,
-  },
-  bottomPanelScroll: {
-    flexGrow: 0,
-  },
-  bottomPanelScrollContent: {
-    paddingBottom: 8,
-    gap: 10,
-  },
-  bottomCard: {
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    borderRadius: 10,
-    padding: 10,
-    gap: 6,
-  },
-  bottomSectionTitle: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#0f172a",
-  },
-  tripRow: {
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    borderRadius: 8,
-    padding: 8,
-    backgroundColor: "#f8fafc",
-  },
   card: {
     backgroundColor: "#ffffff",
     borderWidth: 1,
@@ -463,10 +445,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
+  cardCompactExpandable: {
+    gap: 6,
+  },
+  statusHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   statusOneLine: {
+    flex: 1,
     fontSize: 12,
     fontWeight: "600",
     color: "#475569",
+  },
+  dropdownChevron: {
+    fontSize: 11,
+    color: "#64748b",
+    fontWeight: "700",
+    width: 18,
+    textAlign: "center",
+  },
+  tripsDropdownList: {
+    marginTop: 4,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+    gap: 6,
+  },
+  tripDropdownLine: {
+    fontSize: 11,
+    color: "#334155",
+    fontWeight: "500",
+    lineHeight: 15,
   },
   cardTitle: {
     fontSize: 16,
@@ -489,22 +500,5 @@ const styles = StyleSheet.create({
     color: "#64748b",
     fontSize: 13,
     lineHeight: 18,
-  },
-  emptyText: {
-    color: "#64748b",
-    fontSize: 13,
-  },
-  summaryLeft: {
-    flex: 1,
-    gap: 2,
-  },
-  summaryDate: {
-    color: "#0f172a",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  summaryMeta: {
-    color: "#64748b",
-    fontSize: 12,
   },
 });

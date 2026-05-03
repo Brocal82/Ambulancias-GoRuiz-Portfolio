@@ -27,6 +27,9 @@ export type WorkdayTrip = {
   patientName?: string;
   timeWarning?: string;
   timeEnd?: string;
+  kmStart?: number;
+  kmEnd?: number;
+  totalKm?: number;
   sentInSummary?: boolean;
   wasCancelled?: boolean;
   countsTrip?: 0 | 1;
