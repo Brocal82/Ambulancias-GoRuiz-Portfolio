@@ -23,6 +23,10 @@ export type WorkdayTrip = {
   _id: string;
   date: string;
   assignmentId?: string;
+  auftragNumber?: string;
+  patientName?: string;
+  timeWarning?: string;
+  timeEnd?: string;
   sentInSummary?: boolean;
   wasCancelled?: boolean;
   countsTrip?: 0 | 1;

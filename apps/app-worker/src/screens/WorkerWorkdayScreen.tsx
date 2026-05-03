@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -85,6 +86,9 @@ function summaryStateForAssignment(summaries: WorkdaySummary[], assignmentId: st
 }
 
 export function WorkerWorkdayScreen({ user }: Props) {
+  const { height: windowHeight } = useWindowDimensions();
+  const bottomPanelMaxHeight = Math.min(260, Math.round(windowHeight * 0.3));
+
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [todayAssignment, setTodayAssignment] = useState<AssignedDay | null>(null);
@@ -220,31 +224,67 @@ export function WorkerWorkdayScreen({ user }: Props) {
             ) : null}
           </View>
 
-          <ScrollView
-            style={styles.summariesScroll}
-            contentContainerStyle={styles.summariesScrollContent}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Resumen reciente</Text>
-              {recentSummaries.length === 0 ? (
-                <Text style={styles.emptyText}>Sin cierres recientes.</Text>
-              ) : (
-                recentSummaries.map((item) => (
-                  <View key={item._id} style={styles.summaryRow}>
-                    <View style={styles.summaryLeft}>
-                      <Text style={styles.summaryDate}>{item.date}</Text>
-                      <Text style={styles.summaryMeta}>
-                        {item.isFinalClosure ? "Cierre final" : "Cierre parcial"} · Trips:{" "}
-                        {item.totalRealTrips ?? 0}
-                      </Text>
+          <View style={styles.bottomPanel}>
+            <ScrollView
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+              style={[styles.bottomPanelScroll, { maxHeight: bottomPanelMaxHeight }]}
+              contentContainerStyle={styles.bottomPanelScrollContent}
+              showsVerticalScrollIndicator
+            >
+              <View style={styles.bottomCard}>
+                <Text style={styles.bottomSectionTitle}>Viajes de hoy (no cerrados)</Text>
+                {todayTrips.length === 0 ? (
+                  <Text style={styles.emptyText}>Ninguno. Los guardados aqui aparecen al refrescar.</Text>
+                ) : (
+                  todayTrips.map((trip) => (
+                    <View key={trip._id} style={styles.tripRow}>
+                      <View style={styles.summaryLeft}>
+                        <Text style={styles.summaryDate} numberOfLines={1}>
+                          {trip.patientName?.trim() || "Paciente"} · Auf. {trip.auftragNumber?.trim() || "—"}
+                        </Text>
+                        <Text style={styles.summaryMeta} numberOfLines={1}>
+                          {trip.wasCancelled ? "Cancelado · " : ""}
+                          {trip.timeWarning ? `Aviso ${trip.timeWarning}` : "Sin hora aviso"}
+                          {trip.timeEnd ? ` → Fin ${trip.timeEnd}` : ""}
+                        </Text>
+                      </View>
                     </View>
-                    <Text style={styles.summaryKm}>{item.totalDienstKm ?? 0} km</Text>
-                  </View>
-                ))
-              )}
-            </View>
-          </ScrollView>
+                  ))
+                )}
+              </View>
+
+              <View style={[styles.bottomCard, styles.bottomCardSpaced]}>
+                <Text style={styles.bottomSectionTitle}>Cierres de jornada</Text>
+                <Text style={styles.bottomSectionHint}>Cierres parciales o finales ya enviados al servidor.</Text>
+                {recentSummaries.length === 0 ? (
+                  <Text style={styles.emptyText}>Sin cierres registrados aun.</Text>
+                ) : (
+                  recentSummaries.map((item) => {
+                    const asgTail =
+                      item.assignmentId && item.assignmentId.length >= 8
+                        ? ` · …${item.assignmentId.slice(-6)}`
+                        : item.assignmentId
+                          ? ` · ${item.assignmentId}`
+                          : "";
+                    return (
+                      <View key={item._id} style={styles.summaryRow}>
+                        <View style={styles.summaryLeft}>
+                          <Text style={styles.summaryDate}>{item.date}</Text>
+                          <Text style={styles.summaryMeta}>
+                            {item.isFinalClosure ? "Cierre final" : "Cierre parcial"} · Viajes:{" "}
+                            {item.totalRealTrips ?? 0}
+                            {asgTail}
+                          </Text>
+                        </View>
+                        <Text style={styles.summaryKm}>{item.totalDienstKm ?? 0} km</Text>
+                      </View>
+                    );
+                  })
+                )}
+              </View>
+            </ScrollView>
+          </View>
         </View>
       )}
     </SafeAreaView>
@@ -327,14 +367,48 @@ const styles = StyleSheet.create({
     minHeight: 0,
     width: "100%",
   },
-  summariesScroll: {
-    flex: 1,
-  },
-  summariesScrollContent: {
+  bottomPanel: {
+    flexShrink: 0,
+    flexGrow: 0,
+    width: "100%",
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 16,
+    paddingTop: 6,
+    paddingBottom: 8,
+  },
+  bottomPanelScroll: {
+    flexGrow: 0,
+  },
+  bottomPanelScrollContent: {
+    paddingBottom: 8,
     gap: 10,
+  },
+  bottomCard: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 10,
+    padding: 10,
+    gap: 6,
+  },
+  bottomCardSpaced: {
+    marginTop: 2,
+  },
+  bottomSectionTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+  bottomSectionHint: {
+    fontSize: 11,
+    color: "#64748b",
+    lineHeight: 15,
+  },
+  tripRow: {
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 8,
+    padding: 8,
+    backgroundColor: "#f8fafc",
   },
   card: {
     backgroundColor: "#ffffff",
