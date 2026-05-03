@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ApiError } from "../services/http";
 import {
   AssignedDay,
+  AssignedDayUser,
   WorkdaySummary,
   WorkdayTrip,
   getAssignedDaysForWorker,
@@ -19,6 +20,31 @@ import {
   getWorkdayTripsByDate,
 } from "../services/workday";
 import { AuthUser } from "../types/auth";
+import { canStartTripNow } from "../utils/workdayAssignment";
+import { WorkerTripStepPanel } from "./WorkerTripStepPanel";
+
+type AssignedDayFull = AssignedDay & {
+  driver: { _id: string };
+  medic: { _id: string };
+};
+
+function userIdFromAssignmentField(value: string | AssignedDayUser | undefined): string | null {
+  if (!value) return null;
+  if (typeof value === "string") return value.trim() || null;
+  const id = value._id?.trim();
+  return id || null;
+}
+
+function assignmentForTripPanel(day: AssignedDay): AssignedDayFull | null {
+  const driverId = userIdFromAssignmentField(day.driver);
+  const medicId = userIdFromAssignmentField(day.medic);
+  if (!driverId || !medicId) return null;
+  return {
+    ...day,
+    driver: { _id: driverId },
+    medic: { _id: medicId },
+  };
+}
 
 type Props = {
   user: AuthUser;
@@ -113,6 +139,18 @@ export function WorkerWorkdayScreen({ user }: Props) {
     return "ready";
   }, [todayAssignment, todayTrips.length, recentSummaries]);
 
+  const tripPanelAssignment = useMemo(
+    () => (todayAssignment ? assignmentForTripPanel(todayAssignment) : null),
+    [todayAssignment],
+  );
+
+  const canStartWork = useMemo(() => {
+    if (!todayAssignment) return false;
+    return canStartTripNow(todayAssignment.startTime, todayAssignment.date);
+  }, [todayAssignment]);
+
+  const tripsBlocked = todayStatus === "final-closed";
+
   const statusLabel = useMemo(() => {
     switch (todayStatus) {
       case "no-assignment":
@@ -171,6 +209,22 @@ export function WorkerWorkdayScreen({ user }: Props) {
               <Text style={styles.detailLine}>No hay asignacion activa para la fecha actual.</Text>
             )}
           </View>
+
+          {todayAssignment && tripPanelAssignment ? (
+            <WorkerTripStepPanel
+              assignedDay={tripPanelAssignment}
+              canStartWork={canStartWork}
+              blocked={tripsBlocked}
+              onTripCreated={() => void loadWorkday()}
+            />
+          ) : todayAssignment && !tripPanelAssignment ? (
+            <View style={styles.card}>
+              <Text style={styles.hintText}>
+                La asignacion de hoy no incluye conductor y medico identificados; no se puede registrar
+                un viaje desde la app.
+              </Text>
+            </View>
+          ) : null}
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Resumen reciente</Text>
@@ -287,6 +341,11 @@ const styles = StyleSheet.create({
   detailLine: {
     color: "#475569",
     fontSize: 13,
+  },
+  hintText: {
+    color: "#64748b",
+    fontSize: 13,
+    lineHeight: 18,
   },
   emptyText: {
     color: "#64748b",

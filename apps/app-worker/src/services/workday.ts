@@ -28,6 +28,29 @@ export type WorkdayTrip = {
   countsTrip?: 0 | 1;
 };
 
+export type CreateTripPayload = {
+  date: string;
+  assignmentId: string;
+  driver: string;
+  medic: string;
+  auftragNumber: string;
+  patientName: string;
+  fromAddress: string;
+  toAddress: string;
+  timeWarning: string;
+  timeAtHome: string;
+  timePickup: string;
+  timeArrival: string;
+  timeEnd: string;
+  kmStart: number;
+  kmEnd: number;
+  wasCancelled: boolean;
+  cancelledAtPickup: boolean;
+  countsTrip: number;
+  reports?: string;
+  countsForSummary: boolean;
+};
+
 export type WorkdaySummary = {
   _id: string;
   date: string;
@@ -58,5 +81,13 @@ export async function getMyWorkdaySummaries(): Promise<WorkdaySummary[]> {
   return apiRequest<WorkdaySummary[]>("/workday-summary", {
     method: "GET",
     requiresAuth: true,
+  });
+}
+
+export async function createWorkdayTrip(payload: CreateTripPayload): Promise<WorkdayTrip> {
+  return apiRequest<WorkdayTrip>("/trips", {
+    method: "POST",
+    requiresAuth: true,
+    body: JSON.stringify(payload),
   });
 }
