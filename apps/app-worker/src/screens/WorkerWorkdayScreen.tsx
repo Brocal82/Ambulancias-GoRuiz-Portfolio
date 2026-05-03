@@ -93,6 +93,7 @@ export function WorkerWorkdayScreen({ user }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [todayAssignment, setTodayAssignment] = useState<AssignedDay | null>(null);
   const [todayTrips, setTodayTrips] = useState<WorkdayTrip[]>([]);
+  /** Solo cierres de hoy para la asignacion actual: alimenta el chip de estado (no se listan en pantalla). */
   const [recentSummaries, setRecentSummaries] = useState<WorkdaySummary[]>([]);
 
   const loadWorkday = useCallback(async () => {
@@ -108,10 +109,16 @@ export function WorkerWorkdayScreen({ user }: Props) {
 
       const assignment = assignedDays.find((item) => toDateKey(item.date) === today) ?? null;
       const summariesSorted = [...summaries].sort((a, b) => b.date.localeCompare(a.date));
+      const summariesForTodayStatus =
+        assignment == null
+          ? []
+          : summariesSorted.filter(
+              (s) => toDateKey(s.date) === today && s.assignmentId === assignment.assignmentId,
+            );
 
       setTodayAssignment(assignment);
       setTodayTrips(trips);
-      setRecentSummaries(summariesSorted.slice(0, 8));
+      setRecentSummaries(summariesForTodayStatus);
     } catch (error) {
       if (error instanceof ApiError) {
         setErrorMessage(error.message);
@@ -129,12 +136,8 @@ export function WorkerWorkdayScreen({ user }: Props) {
 
   const todayStatus = useMemo<WorkdayStatus>(() => {
     if (!todayAssignment) return "no-assignment";
-    const today = todayDateKey();
-    const todaySummariesForAssignment = recentSummaries.filter(
-      (item) => toDateKey(item.date) === today && item.assignmentId === todayAssignment.assignmentId,
-    );
     const summaryState = summaryStateForAssignment(
-      todaySummariesForAssignment,
+      recentSummaries,
       todayAssignment.assignmentId,
     );
     if (summaryState === "final-closed") return "final-closed";
@@ -253,36 +256,6 @@ export function WorkerWorkdayScreen({ user }: Props) {
                   ))
                 )}
               </View>
-
-              <View style={[styles.bottomCard, styles.bottomCardSpaced]}>
-                <Text style={styles.bottomSectionTitle}>Cierres de jornada</Text>
-                <Text style={styles.bottomSectionHint}>Cierres parciales o finales ya enviados al servidor.</Text>
-                {recentSummaries.length === 0 ? (
-                  <Text style={styles.emptyText}>Sin cierres registrados aun.</Text>
-                ) : (
-                  recentSummaries.map((item) => {
-                    const asgTail =
-                      item.assignmentId && item.assignmentId.length >= 8
-                        ? ` · …${item.assignmentId.slice(-6)}`
-                        : item.assignmentId
-                          ? ` · ${item.assignmentId}`
-                          : "";
-                    return (
-                      <View key={item._id} style={styles.summaryRow}>
-                        <View style={styles.summaryLeft}>
-                          <Text style={styles.summaryDate}>{item.date}</Text>
-                          <Text style={styles.summaryMeta}>
-                            {item.isFinalClosure ? "Cierre final" : "Cierre parcial"} · Viajes:{" "}
-                            {item.totalRealTrips ?? 0}
-                            {asgTail}
-                          </Text>
-                        </View>
-                        <Text style={styles.summaryKm}>{item.totalDienstKm ?? 0} km</Text>
-                      </View>
-                    );
-                  })
-                )}
-              </View>
             </ScrollView>
           </View>
         </View>
@@ -390,18 +363,10 @@ const styles = StyleSheet.create({
     padding: 10,
     gap: 6,
   },
-  bottomCardSpaced: {
-    marginTop: 2,
-  },
   bottomSectionTitle: {
     fontSize: 13,
     fontWeight: "700",
     color: "#0f172a",
-  },
-  bottomSectionHint: {
-    fontSize: 11,
-    color: "#64748b",
-    lineHeight: 15,
   },
   tripRow: {
     borderWidth: 1,
@@ -457,16 +422,6 @@ const styles = StyleSheet.create({
     color: "#64748b",
     fontSize: 13,
   },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    borderRadius: 8,
-    padding: 10,
-    backgroundColor: "#f8fafc",
-  },
   summaryLeft: {
     flex: 1,
     gap: 2,
@@ -479,10 +434,5 @@ const styles = StyleSheet.create({
   summaryMeta: {
     color: "#64748b",
     fontSize: 12,
-  },
-  summaryKm: {
-    color: "#0f172a",
-    fontSize: 12,
-    fontWeight: "700",
   },
 });
