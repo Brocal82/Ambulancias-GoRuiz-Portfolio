@@ -191,61 +191,69 @@ export function WorkerWorkdayScreen({ user }: Props) {
           </Pressable>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Estado de hoy</Text>
-            <Text style={styles.statusText}>{statusLabel}</Text>
-            {todayAssignment ? (
-              <View style={styles.detailsList}>
-                <Text style={styles.detailLine}>Dienst #{todayAssignment.dienstNumber ?? "-"}</Text>
-                <Text style={styles.detailLine}>
-                  Turno: {todayAssignment.startTime ?? "--:--"} - {todayAssignment.endTime ?? "--:--"}
-                </Text>
-                <Text style={styles.detailLine}>
-                  Viajes pendientes del dia: {todayTrips.length}
+        <View style={styles.mainColumn}>
+          <View style={styles.topSection}>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Estado de hoy</Text>
+              <Text style={styles.statusText}>{statusLabel}</Text>
+              {todayAssignment ? (
+                <View style={styles.detailsList}>
+                  <Text style={styles.detailLine}>Dienst #{todayAssignment.dienstNumber ?? "-"}</Text>
+                  <Text style={styles.detailLine}>
+                    Turno: {todayAssignment.startTime ?? "--:--"} - {todayAssignment.endTime ?? "--:--"}
+                  </Text>
+                  <Text style={styles.detailLine}>
+                    Viajes pendientes del dia: {todayTrips.length}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.detailLine}>No hay asignacion activa para la fecha actual.</Text>
+              )}
+            </View>
+
+            {todayAssignment && tripPanelAssignment ? (
+              <WorkerTripStepPanel
+                assignedDay={tripPanelAssignment}
+                canStartWork={canStartWork}
+                blocked={tripsBlocked}
+                onTripCreated={() => void loadWorkday()}
+              />
+            ) : todayAssignment && !tripPanelAssignment ? (
+              <View style={styles.card}>
+                <Text style={styles.hintText}>
+                  La asignacion de hoy no incluye conductor y medico identificados; no se puede registrar
+                  un viaje desde la app.
                 </Text>
               </View>
-            ) : (
-              <Text style={styles.detailLine}>No hay asignacion activa para la fecha actual.</Text>
-            )}
+            ) : null}
           </View>
 
-          {todayAssignment && tripPanelAssignment ? (
-            <WorkerTripStepPanel
-              assignedDay={tripPanelAssignment}
-              canStartWork={canStartWork}
-              blocked={tripsBlocked}
-              onTripCreated={() => void loadWorkday()}
-            />
-          ) : todayAssignment && !tripPanelAssignment ? (
+          <ScrollView
+            style={styles.summariesScroll}
+            contentContainerStyle={styles.summariesScrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
             <View style={styles.card}>
-              <Text style={styles.hintText}>
-                La asignacion de hoy no incluye conductor y medico identificados; no se puede registrar
-                un viaje desde la app.
-              </Text>
-            </View>
-          ) : null}
-
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Resumen reciente</Text>
-            {recentSummaries.length === 0 ? (
-              <Text style={styles.emptyText}>Sin cierres recientes.</Text>
-            ) : (
-              recentSummaries.map((item) => (
-                <View key={item._id} style={styles.summaryRow}>
-                  <View style={styles.summaryLeft}>
-                    <Text style={styles.summaryDate}>{item.date}</Text>
-                    <Text style={styles.summaryMeta}>
-                      {item.isFinalClosure ? "Cierre final" : "Cierre parcial"} · Trips:{" "}
-                      {item.totalRealTrips ?? 0}
-                    </Text>
+              <Text style={styles.cardTitle}>Resumen reciente</Text>
+              {recentSummaries.length === 0 ? (
+                <Text style={styles.emptyText}>Sin cierres recientes.</Text>
+              ) : (
+                recentSummaries.map((item) => (
+                  <View key={item._id} style={styles.summaryRow}>
+                    <View style={styles.summaryLeft}>
+                      <Text style={styles.summaryDate}>{item.date}</Text>
+                      <Text style={styles.summaryMeta}>
+                        {item.isFinalClosure ? "Cierre final" : "Cierre parcial"} · Trips:{" "}
+                        {item.totalRealTrips ?? 0}
+                      </Text>
+                    </View>
+                    <Text style={styles.summaryKm}>{item.totalDienstKm ?? 0} km</Text>
                   </View>
-                  <Text style={styles.summaryKm}>{item.totalDienstKm ?? 0} km</Text>
-                </View>
-              ))
-            )}
-          </View>
-        </ScrollView>
+                ))
+              )}
+            </View>
+          </ScrollView>
+        </View>
       )}
     </SafeAreaView>
   );
@@ -312,8 +320,21 @@ const styles = StyleSheet.create({
     color: "#0f766e",
     fontWeight: "700",
   },
-  scrollContent: {
+  mainColumn: {
+    flex: 1,
+  },
+  topSection: {
+    flexShrink: 0,
     paddingHorizontal: 16,
+    paddingTop: 0,
+    gap: 10,
+  },
+  summariesScroll: {
+    flex: 1,
+  },
+  summariesScrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
     paddingBottom: 16,
     gap: 10,
   },

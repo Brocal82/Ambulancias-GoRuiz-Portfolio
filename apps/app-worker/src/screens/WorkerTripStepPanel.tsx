@@ -98,6 +98,23 @@ export function WorkerTripStepPanel({
     km4Ref.current = kmDraft4;
   }, [kmDraft4]);
 
+  const stepHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearStepHoldTimer = useCallback(() => {
+    if (stepHoldTimerRef.current !== null) {
+      clearTimeout(stepHoldTimerRef.current);
+      stepHoldTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => clearStepHoldTimer();
+  }, [clearStepHoldTimer]);
+
+  useEffect(() => {
+    clearStepHoldTimer();
+  }, [phase, currentStep, clearStepHoldTimer]);
+
   const canUseKmStep2 = useMemo(() => parsePositiveKm(kmDraft2) !== null, [kmDraft2]);
   const canUseKmStep4 = useMemo(() => parsePositiveKm(kmDraft4) !== null, [kmDraft4]);
 
@@ -230,6 +247,18 @@ export function WorkerTripStepPanel({
       pendingPatient1Anschluss,
       runCheckTripLogic,
     ],
+  );
+
+  const armStepHold = useCallback(
+    (step: 1 | 2 | 3 | 4 | 5, disabled: boolean) => {
+      if (disabled) return;
+      clearStepHoldTimer();
+      stepHoldTimerRef.current = setTimeout(() => {
+        stepHoldTimerRef.current = null;
+        void commitTimeForStep(step);
+      }, LONG_PRESS_MS);
+    },
+    [clearStepHoldTimer, commitTimeForStep],
   );
 
   const handleStartAnschluss = useCallback(() => {
@@ -381,6 +410,9 @@ export function WorkerTripStepPanel({
           <Text style={styles.stepMeta}>
             Paso {currentStep} de 5 {anschlussAwaitingPatient2Step3 ? "· Anschluss (paciente 2)" : ""}
           </Text>
+          <Text style={styles.cardHint}>
+            Mantén pulsado 3 segundos el botón del paso activo (sin soltar el dedo).
+          </Text>
 
           <View style={styles.stepRow}>
             {[1, 2, 3, 4, 5].map((n) => {
@@ -398,10 +430,8 @@ export function WorkerTripStepPanel({
                 <Pressable
                   key={n}
                   disabled={disabled}
-                  delayLongPress={LONG_PRESS_MS}
-                  onLongPress={() => {
-                    void commitTimeForStep(step);
-                  }}
+                  onPressIn={() => armStepHold(step, disabled)}
+                  onPressOut={clearStepHoldTimer}
                   style={[styles.stepButton, isCurrent && styles.stepButtonCurrent, disabled && styles.stepButtonDisabled]}
                 >
                   <Text style={[styles.stepButtonText, disabled && styles.stepButtonTextDisabled]}>{n}</Text>
