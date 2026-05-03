@@ -470,29 +470,33 @@ export function WorkerTripStepPanel({
           >
           <View style={styles.patientDataCard}>
             <Text style={styles.patientCardTitle}>Datos del servicio</Text>
-            <View style={styles.patientDataRow}>
-              <Text style={styles.patientDataLabel}>Auftrag</Text>
-              <Text style={styles.patientDataValue} numberOfLines={3}>
-                {draft.auftragNumber.trim() || "—"}
-              </Text>
+            <View style={[styles.serviceTwoColRow, styles.serviceRowDivider]}>
+              <View style={styles.serviceHalfCol}>
+                <Text style={styles.patientDataLabel}>Auftrag</Text>
+                <Text style={styles.patientDataValue} numberOfLines={3}>
+                  {draft.auftragNumber.trim() || "—"}
+                </Text>
+              </View>
+              <View style={styles.serviceHalfCol}>
+                <Text style={styles.patientDataLabel}>Paciente</Text>
+                <Text style={styles.patientDataValue} numberOfLines={3}>
+                  {draft.patientName.trim() || "—"}
+                </Text>
+              </View>
             </View>
-            <View style={styles.patientDataRow}>
-              <Text style={styles.patientDataLabel}>Paciente</Text>
-              <Text style={styles.patientDataValue} numberOfLines={3}>
-                {draft.patientName.trim() || "—"}
-              </Text>
-            </View>
-            <View style={styles.patientDataRow}>
-              <Text style={styles.patientDataLabel}>Recogida</Text>
-              <Text style={styles.patientDataValue} numberOfLines={4}>
-                {draft.fromAddress.trim() || "—"}
-              </Text>
-            </View>
-            <View style={styles.patientDataRow}>
-              <Text style={styles.patientDataLabel}>Destino</Text>
-              <Text style={styles.patientDataValue} numberOfLines={4}>
-                {draft.toAddress.trim() || "—"}
-              </Text>
+            <View style={styles.serviceTwoColRow}>
+              <View style={styles.serviceHalfCol}>
+                <Text style={styles.patientDataLabel}>Recogida</Text>
+                <Text style={styles.patientDataValue} numberOfLines={5}>
+                  {draft.fromAddress.trim() || "—"}
+                </Text>
+              </View>
+              <View style={styles.serviceHalfCol}>
+                <Text style={styles.patientDataLabel}>Destino</Text>
+                <Text style={styles.patientDataValue} numberOfLines={5}>
+                  {draft.toAddress.trim() || "—"}
+                </Text>
+              </View>
             </View>
             {anschlussAwaitingPatient2Step3 ? (
               <Text style={styles.anschlussBanner}>Anschluss · paciente 2</Text>
@@ -695,11 +699,21 @@ const styles = StyleSheet.create({
     color: "#334155",
     letterSpacing: 0.4,
   },
-  patientDataRow: {
-    gap: 3,
-    paddingBottom: 4,
+  serviceTwoColRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 10,
+  },
+  serviceRowDivider: {
+    paddingBottom: 8,
+    marginBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: "#e2e8f0",
+  },
+  serviceHalfCol: {
+    flex: 1,
+    minWidth: 0,
+    gap: 3,
   },
   patientDataLabel: {
     fontSize: 10,
