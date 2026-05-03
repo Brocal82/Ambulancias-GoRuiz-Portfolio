@@ -193,31 +193,23 @@ export function WorkerWorkdayScreen({ user }: Props) {
       ) : (
         <View style={styles.mainColumn}>
           <View style={styles.topSection}>
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Estado de hoy</Text>
-              <Text style={styles.statusText}>{statusLabel}</Text>
-              {todayAssignment ? (
-                <View style={styles.detailsList}>
-                  <Text style={styles.detailLine}>Dienst #{todayAssignment.dienstNumber ?? "-"}</Text>
-                  <Text style={styles.detailLine}>
-                    Turno: {todayAssignment.startTime ?? "--:--"} - {todayAssignment.endTime ?? "--:--"}
-                  </Text>
-                  <Text style={styles.detailLine}>
-                    Viajes pendientes del dia: {todayTrips.length}
-                  </Text>
-                </View>
-              ) : (
-                <Text style={styles.detailLine}>No hay asignacion activa para la fecha actual.</Text>
-              )}
+            <View style={styles.cardCompact}>
+              <Text style={styles.statusOneLine}>
+                {todayAssignment
+                  ? `${statusLabel} · Dienst #${todayAssignment.dienstNumber ?? "-"} · ${todayTrips.length} viajes`
+                  : statusLabel}
+              </Text>
             </View>
 
             {todayAssignment && tripPanelAssignment ? (
-              <WorkerTripStepPanel
-                assignedDay={tripPanelAssignment}
-                canStartWork={canStartWork}
-                blocked={tripsBlocked}
-                onTripCreated={() => void loadWorkday()}
-              />
+              <View style={styles.tripPanelShell}>
+                <WorkerTripStepPanel
+                  assignedDay={tripPanelAssignment}
+                  canStartWork={canStartWork}
+                  blocked={tripsBlocked}
+                  onTripCreated={() => void loadWorkday()}
+                />
+              </View>
             ) : todayAssignment && !tripPanelAssignment ? (
               <View style={styles.card}>
                 <Text style={styles.hintText}>
@@ -324,10 +316,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topSection: {
-    flexShrink: 0,
+    flex: 1,
+    minHeight: 0,
     paddingHorizontal: 16,
     paddingTop: 0,
-    gap: 10,
+    gap: 8,
+  },
+  tripPanelShell: {
+    flex: 1,
+    minHeight: 0,
+    width: "100%",
   },
   summariesScroll: {
     flex: 1,
@@ -345,6 +343,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     gap: 8,
+  },
+  cardCompact: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  statusOneLine: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#475569",
   },
   cardTitle: {
     fontSize: 16,

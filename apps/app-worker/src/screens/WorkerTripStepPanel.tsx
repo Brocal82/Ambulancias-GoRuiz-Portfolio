@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -19,6 +22,14 @@ import { getCurrentTimeString } from "../utils/tripTime";
 
 const LONG_PRESS_MS = 3000;
 const ANSCHLUSS_MARKER = "🔗 Anschluss";
+
+const STEP_TITLES: Record<1 | 2 | 3 | 4 | 5, string> = {
+  1: "Hora del Auftrag",
+  2: "Llegada a domicilio",
+  3: "Paciente sube (recogida)",
+  4: "Llegada con paciente a destino",
+  5: "Libre (fin del viaje)",
+};
 
 type Phase = "meta" | "steps";
 
@@ -345,175 +356,205 @@ export function WorkerTripStepPanel({
     );
   }
 
-  return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>Nuevo viaje</Text>
-      <Text style={styles.cardHint}>
-        Manten pulsado cada numero unos 3 segundos para confirmar la hora. Pasos 2 y 4: escribe los km antes de
-        confirmar.
-      </Text>
+  const needsKmNow = currentStep === 2 || currentStep === 4;
+  const kmReadyNow = currentStep === 2 ? canUseKmStep2 : currentStep === 4 ? canUseKmStep4 : true;
+  const bigStepDisabled = !canStartWork || isSaving || (needsKmNow && !kmReadyNow);
 
+  const showAnschlussSlot =
+    phase === "steps" && currentStep >= 4 && !anschlussAwaitingPatient2Step3;
+  const anschlussEnabled = currentStep === 5 && !isSaving;
+
+  const goToSteps = () => {
+    if (
+      !draft.auftragNumber.trim() ||
+      !draft.patientName.trim() ||
+      !draft.fromAddress.trim() ||
+      !draft.toAddress.trim()
+    ) {
+      setErrorMessage("Completa Auftrag, paciente, origen y destino.");
+      return;
+    }
+    setErrorMessage(undefined);
+    setPhase("steps");
+    setCurrentStep(1);
+    setKmDraft2("");
+    setKmDraft4("");
+  };
+
+  const resetDraft = () => {
+    setPhase("meta");
+    setCurrentStep(1);
+    setDraft(emptyDraft(assignedDay));
+    setKmDraft2("");
+    setKmDraft4("");
+    setPendingPatient1Anschluss(null);
+    setAnschlussAwaitingPatient2Step3(false);
+    setAnschlussMinKmStart(undefined);
+    setErrorMessage(undefined);
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.panelRoot}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 72 : 0}
+    >
       {phase === "meta" ? (
-        <View style={styles.metaBlock}>
-          <Text style={styles.label}>Auftrag</Text>
-          <TextInput
-            style={styles.input}
-            value={draft.auftragNumber}
-            onChangeText={(text) => setDraft((prev) => ({ ...prev, auftragNumber: text }))}
-            placeholder="Numero Auftrag"
-          />
-          <Text style={styles.label}>Paciente</Text>
-          <TextInput
-            style={styles.input}
-            value={draft.patientName}
-            onChangeText={(text) => setDraft((prev) => ({ ...prev, patientName: text }))}
-            placeholder="Nombre"
-          />
-          <Text style={styles.label}>Origen</Text>
-          <TextInput
-            style={styles.input}
-            value={draft.fromAddress}
-            onChangeText={(text) => setDraft((prev) => ({ ...prev, fromAddress: text }))}
-            placeholder="Desde"
-          />
-          <Text style={styles.label}>Destino</Text>
-          <TextInput
-            style={styles.input}
-            value={draft.toAddress}
-            onChangeText={(text) => setDraft((prev) => ({ ...prev, toAddress: text }))}
-            placeholder="Hasta"
-          />
-          <Pressable
-            style={styles.primaryButton}
-            onPress={() => {
-              if (
-                !draft.auftragNumber.trim() ||
-                !draft.patientName.trim() ||
-                !draft.fromAddress.trim() ||
-                !draft.toAddress.trim()
-              ) {
-                setErrorMessage("Completa Auftrag, paciente, origen y destino.");
-                return;
-              }
-              setErrorMessage(undefined);
-              setPhase("steps");
-              setCurrentStep(1);
-              setKmDraft2("");
-              setKmDraft4("");
-            }}
-          >
-            <Text style={styles.primaryButtonText}>Continuar a pasos</Text>
-          </Pressable>
+        <View style={[styles.card, styles.panelCard]}>
+          <Text style={styles.cardTitle}>Nuevo viaje</Text>
+          <View style={styles.metaColumn}>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              style={styles.metaScroll}
+              contentContainerStyle={styles.metaScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <TextInput
+                style={styles.inputDense}
+                value={draft.auftragNumber}
+                onChangeText={(text) => setDraft((prev) => ({ ...prev, auftragNumber: text }))}
+                placeholder="Auftrag"
+              />
+              <TextInput
+                style={styles.inputDense}
+                value={draft.patientName}
+                onChangeText={(text) => setDraft((prev) => ({ ...prev, patientName: text }))}
+                placeholder="Paciente"
+              />
+              <TextInput
+                style={styles.inputDense}
+                value={draft.fromAddress}
+                onChangeText={(text) => setDraft((prev) => ({ ...prev, fromAddress: text }))}
+                placeholder="Origen"
+              />
+              <TextInput
+                style={styles.inputDense}
+                value={draft.toAddress}
+                onChangeText={(text) => setDraft((prev) => ({ ...prev, toAddress: text }))}
+                placeholder="Destino"
+              />
+              {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+            </ScrollView>
+            <Pressable style={styles.primaryButton} onPress={goToSteps}>
+              <Text style={styles.primaryButtonText}>Continuar</Text>
+            </Pressable>
+          </View>
         </View>
       ) : (
-        <View style={styles.stepsBlock}>
-          <Text style={styles.stepMeta}>
-            Paso {currentStep} de 5 {anschlussAwaitingPatient2Step3 ? "· Anschluss (paciente 2)" : ""}
-          </Text>
-          <Text style={styles.cardHint}>
-            Mantén pulsado 3 segundos el botón del paso activo (sin soltar el dedo).
-          </Text>
-
-          <View style={styles.stepRow}>
-            {[1, 2, 3, 4, 5].map((n) => {
-              const step = n as 1 | 2 | 3 | 4 | 5;
-              const isCurrent = currentStep === step;
-              const needsKm = step === 2 || step === 4;
-              const kmReady = step === 2 ? canUseKmStep2 : step === 4 ? canUseKmStep4 : true;
-              const disabled =
-                !canStartWork ||
-                isSaving ||
-                !isCurrent ||
-                (needsKm && !kmReady);
-
-              return (
-                <Pressable
+        <View style={[styles.card, styles.panelCard]}>
+          <View style={styles.compactTripBar}>
+            <Text style={styles.compactTripLine} numberOfLines={1} ellipsizeMode="tail">
+              {draft.auftragNumber.trim()} · {draft.patientName.trim()}
+            </Text>
+            <Text style={styles.compactRoute} numberOfLines={2} ellipsizeMode="tail">
+              {draft.fromAddress.trim()} → {draft.toAddress.trim()}
+            </Text>
+            {anschlussAwaitingPatient2Step3 ? (
+              <Text style={styles.anschlussBanner}>Anschluss · paciente 2</Text>
+            ) : null}
+            <View style={styles.dotsRow}>
+              {([1, 2, 3, 4, 5] as const).map((n) => (
+                <View
                   key={n}
-                  disabled={disabled}
-                  onPressIn={() => armStepHold(step, disabled)}
-                  onPressOut={clearStepHoldTimer}
-                  style={[styles.stepButton, isCurrent && styles.stepButtonCurrent, disabled && styles.stepButtonDisabled]}
-                >
-                  <Text style={[styles.stepButtonText, disabled && styles.stepButtonTextDisabled]}>{n}</Text>
-                </Pressable>
-              );
-            })}
+                  style={[styles.stepDot, n === currentStep ? styles.stepDotActive : null]}
+                />
+              ))}
+            </View>
           </View>
 
-          <Text style={styles.stepCaption}>
-            {currentStep === 1 ? "1 · Hora del Auftrag" : null}
-            {currentStep === 2 ? "2 · Llegada domicilio + km domicilio" : null}
-            {currentStep === 3 ? "3 · Paciente sube (hora de recogida)" : null}
-            {currentStep === 4 ? "4 · Llegada con paciente a destino + km destino" : null}
-            {currentStep === 5 ? "5 · Libre (fin del viaje)" : null}
-          </Text>
-
           {currentStep === 2 ? (
-            <View style={styles.kmBlock}>
-              <Text style={styles.label}>Km en domicilio</Text>
-              <TextInput
-                style={styles.input}
-                keyboardType="decimal-pad"
-                value={kmDraft2}
-                onChangeText={setKmDraft2}
-                placeholder="Ej. 12345"
-              />
-            </View>
+            <TextInput
+              style={styles.inputDense}
+              keyboardType="decimal-pad"
+              value={kmDraft2}
+              onChangeText={setKmDraft2}
+              placeholder="Km en domicilio"
+            />
           ) : null}
-
           {currentStep === 4 ? (
-            <View style={styles.kmBlock}>
-              <Text style={styles.label}>Km en destino con paciente</Text>
-              <TextInput
-                style={styles.input}
-                keyboardType="decimal-pad"
-                value={kmDraft4}
-                onChangeText={setKmDraft4}
-                placeholder="Ej. 12360"
-              />
-            </View>
+            <TextInput
+              style={styles.inputDense}
+              keyboardType="decimal-pad"
+              value={kmDraft4}
+              onChangeText={setKmDraft4}
+              placeholder="Km en destino (con paciente)"
+            />
           ) : null}
 
-          {currentStep === 5 && !anschlussAwaitingPatient2Step3 ? (
-            <View style={styles.anschlussRow}>
-              <Pressable style={styles.secondaryButton} onPress={handleStartAnschluss}>
-                <Text style={styles.secondaryButtonText}>Anschluss (paciente 2)</Text>
-              </Pressable>
-            </View>
-          ) : null}
-
-          {pendingPatient1Anschluss && anschlussAwaitingPatient2Step3 ? (
-            <Pressable style={styles.linkButton} onPress={handleCancelAnschluss}>
-              <Text style={styles.linkButtonText}>Cancelar Anschluss</Text>
+          <View style={styles.bigStepCenter}>
+            <Text style={styles.holdCue}>Mantén 3 s sin soltar</Text>
+            <Pressable
+              disabled={bigStepDisabled}
+              onPressIn={() => armStepHold(currentStep, bigStepDisabled)}
+              onPressOut={clearStepHoldTimer}
+              style={[
+                styles.bigStepButton,
+                bigStepDisabled ? styles.bigStepButtonDisabled : null,
+              ]}
+            >
+              <Text style={styles.bigStepNumber}>{currentStep}</Text>
+              <Text style={styles.bigStepTitle}>{STEP_TITLES[currentStep]}</Text>
             </Pressable>
-          ) : null}
+            {needsKmNow && !kmReadyNow ? (
+              <Text style={styles.kmHint}>Escribe un km válido antes de confirmar.</Text>
+            ) : null}
+          </View>
 
-          {isSaving ? <ActivityIndicator color="#0f766e" /> : null}
-          {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+          <View style={styles.stepsFooter}>
+            {showAnschlussSlot ? (
+              <View style={styles.anschlussFooterBlock}>
+                <Pressable
+                  disabled={!anschlussEnabled}
+                  onPress={handleStartAnschluss}
+                  style={[
+                    styles.anschlussFooterButton,
+                    !anschlussEnabled ? styles.anschlussFooterButtonDisabled : null,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.anschlussFooterButtonText,
+                      !anschlussEnabled ? styles.anschlussFooterButtonTextDisabled : null,
+                    ]}
+                  >
+                    Anschluss (paciente 2)
+                  </Text>
+                </Pressable>
+                {!anschlussEnabled && currentStep < 5 ? (
+                  <Text style={styles.anschlussFooterHint}>Activo al completar el paso 5</Text>
+                ) : null}
+              </View>
+            ) : null}
 
-          <Pressable
-            style={styles.ghostButton}
-            onPress={() => {
-              setPhase("meta");
-              setCurrentStep(1);
-              setDraft(emptyDraft(assignedDay));
-              setKmDraft2("");
-              setKmDraft4("");
-              setPendingPatient1Anschluss(null);
-              setAnschlussAwaitingPatient2Step3(false);
-              setAnschlussMinKmStart(undefined);
-              setErrorMessage(undefined);
-            }}
-          >
-            <Text style={styles.ghostButtonText}>Reiniciar borrador</Text>
-          </Pressable>
+            {pendingPatient1Anschluss && anschlussAwaitingPatient2Step3 ? (
+              <Pressable style={styles.linkButton} onPress={handleCancelAnschluss}>
+                <Text style={styles.linkButtonText}>Cancelar Anschluss</Text>
+              </Pressable>
+            ) : null}
+
+            {isSaving ? <ActivityIndicator color="#0f766e" /> : null}
+            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
+            <Pressable style={styles.ghostButton} onPress={resetDraft}>
+              <Text style={styles.ghostButtonText}>Reiniciar borrador</Text>
+            </Pressable>
+          </View>
         </View>
       )}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  panelRoot: {
+    flex: 1,
+    minHeight: 0,
+    width: "100%",
+  },
+  panelCard: {
+    flex: 1,
+    minHeight: 0,
+  },
   card: {
     backgroundColor: "#ffffff",
     borderWidth: 1,
@@ -523,14 +564,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: "#0f172a",
-  },
-  cardHint: {
-    fontSize: 12,
-    color: "#64748b",
-    lineHeight: 18,
   },
   blockedText: {
     color: "#b91c1c",
@@ -541,96 +577,161 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  metaBlock: {
-    gap: 8,
-  },
-  stepsBlock: {
+  metaColumn: {
+    flex: 1,
+    minHeight: 0,
     gap: 10,
   },
-  label: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#334155",
+  metaScroll: {
+    flex: 1,
+    minHeight: 80,
   },
-  input: {
+  metaScrollContent: {
+    flexGrow: 1,
+    gap: 8,
+    paddingBottom: 4,
+  },
+  inputDense: {
     borderWidth: 1,
     borderColor: "#cbd5e1",
     borderRadius: 8,
     paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    fontSize: 15,
     backgroundColor: "#ffffff",
     color: "#0f172a",
   },
   primaryButton: {
-    marginTop: 6,
     backgroundColor: "#0f766e",
-    borderRadius: 8,
-    paddingVertical: 10,
+    borderRadius: 10,
+    paddingVertical: 14,
     alignItems: "center",
   },
   primaryButtonText: {
     color: "#ffffff",
-    fontWeight: "700",
+    fontWeight: "800",
+    fontSize: 16,
   },
-  stepMeta: {
+  compactTripBar: {
+    gap: 4,
+    paddingBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+  },
+  compactTripLine: {
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#0f172a",
   },
-  stepRow: {
+  compactRoute: {
+    fontSize: 12,
+    color: "#475569",
+    lineHeight: 16,
+  },
+  anschlussBanner: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0f766e",
+  },
+  dotsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 8,
+    marginTop: 6,
+    paddingHorizontal: 4,
   },
-  stepButton: {
+  stepDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#e2e8f0",
+  },
+  stepDotActive: {
+    backgroundColor: "#0f766e",
+    transform: [{ scale: 1.35 }],
+  },
+  bigStepCenter: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 10,
-    paddingVertical: 14,
+    minHeight: 120,
+    justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8fafc",
+    gap: 10,
   },
-  stepButtonCurrent: {
+  holdCue: {
+    fontSize: 12,
+    color: "#64748b",
+    fontWeight: "600",
+  },
+  bigStepButton: {
+    width: "100%",
+    maxWidth: 320,
+    minHeight: 168,
+    borderRadius: 16,
+    borderWidth: 2,
     borderColor: "#0f766e",
     backgroundColor: "#ecfdf5",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 20,
   },
-  stepButtonDisabled: {
-    opacity: 0.45,
+  bigStepButtonDisabled: {
+    opacity: 0.42,
+    borderColor: "#94a3b8",
+    backgroundColor: "#f1f5f9",
   },
-  stepButtonText: {
-    fontSize: 18,
-    fontWeight: "800",
+  bigStepNumber: {
+    fontSize: 56,
+    fontWeight: "900",
+    color: "#0f766e",
+    lineHeight: 62,
+  },
+  bigStepTitle: {
+    fontSize: 16,
+    fontWeight: "700",
     color: "#0f172a",
+    textAlign: "center",
+    paddingHorizontal: 12,
   },
-  stepButtonTextDisabled: {
-    color: "#94a3b8",
+  kmHint: {
+    fontSize: 12,
+    color: "#b45309",
+    fontWeight: "600",
   },
-  stepCaption: {
-    fontSize: 13,
-    color: "#475569",
-    minHeight: 36,
+  stepsFooter: {
+    gap: 8,
+    flexShrink: 0,
+    paddingTop: 4,
   },
-  kmBlock: {
-    gap: 6,
+  anschlussFooterBlock: {
+    gap: 4,
   },
-  anschlussRow: {
-    marginTop: 4,
-  },
-  secondaryButton: {
-    borderWidth: 1,
+  anschlussFooterButton: {
+    borderWidth: 2,
     borderColor: "#0f766e",
-    borderRadius: 8,
-    paddingVertical: 10,
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: "center",
     backgroundColor: "#ffffff",
   },
-  secondaryButtonText: {
+  anschlussFooterButtonDisabled: {
+    borderColor: "#cbd5e1",
+    backgroundColor: "#f8fafc",
+  },
+  anschlussFooterButtonText: {
     color: "#0f766e",
-    fontWeight: "700",
+    fontWeight: "800",
+    fontSize: 15,
+  },
+  anschlussFooterButtonTextDisabled: {
+    color: "#94a3b8",
+  },
+  anschlussFooterHint: {
+    fontSize: 11,
+    color: "#64748b",
+    textAlign: "center",
   },
   ghostButton: {
-    alignSelf: "flex-start",
+    alignSelf: "center",
     paddingVertical: 6,
   },
   ghostButtonText: {
@@ -639,7 +740,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   linkButton: {
-    alignSelf: "flex-start",
+    alignSelf: "center",
     paddingVertical: 4,
   },
   linkButtonText: {
@@ -650,5 +751,6 @@ const styles = StyleSheet.create({
   errorText: {
     color: "#b91c1c",
     fontSize: 13,
+    textAlign: "center",
   },
 });
