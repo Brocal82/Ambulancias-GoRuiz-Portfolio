@@ -105,15 +105,6 @@ function tripKmForDisplay(trip: WorkdayTrip): string {
   return "—";
 }
 
-function formatTripDropdownLine(trip: WorkdayTrip): string {
-  const auf = (trip.auftragNumber ?? "").trim() || "—";
-  const pat = (trip.patientName ?? "").trim() || "—";
-  const tw = (trip.timeWarning ?? "").trim() || "—";
-  const te = (trip.timeEnd ?? "").trim() || "—";
-  const km = tripKmForDisplay(trip);
-  return `${auf} · ${pat} · ${tw} · ${te} · ${km} km`;
-}
-
 function summaryStateForAssignment(summaries: WorkdaySummary[], assignmentId: string): WorkdayStatus {
   const sameAssignmentToday = summaries.filter((item) => item.assignmentId === assignmentId);
   const hasFinal = sameAssignmentToday.some((item) => item.isFinalClosure === true);
@@ -290,16 +281,43 @@ export function WorkerWorkdayScreen({ user }: Props) {
                 </View>
                 {tripsDropdownOpen ? (
                   <View style={styles.tripsDropdownList}>
-                    {todayTrips.map((trip) => (
-                      <Text
-                        key={trip._id}
-                        style={styles.tripDropdownLine}
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                      >
-                        {formatTripDropdownLine(trip)}
-                      </Text>
-                    ))}
+                    {todayTrips.map((trip) => {
+                      const auf = (trip.auftragNumber ?? "").trim() || "—";
+                      const pat = (trip.patientName ?? "").trim() || "—";
+                      const tw = (trip.timeWarning ?? "").trim() || "—";
+                      const te = (trip.timeEnd ?? "").trim() || "—";
+                      const km = tripKmForDisplay(trip);
+                      return (
+                        <View key={trip._id} style={styles.tripGridRow}>
+                          <View style={styles.tripColAuf}>
+                            <Text style={styles.tripCellText} numberOfLines={2} ellipsizeMode="tail">
+                              {auf}
+                            </Text>
+                          </View>
+                          <View style={styles.tripColPat}>
+                            <Text style={styles.tripCellText} numberOfLines={2} ellipsizeMode="tail">
+                              {pat}
+                            </Text>
+                          </View>
+                          <View style={styles.tripColTimes}>
+                            <Text style={styles.tripTimeText} numberOfLines={1}>
+                              {tw}
+                            </Text>
+                            <Text style={styles.tripTimeText} numberOfLines={1}>
+                              {te}
+                            </Text>
+                          </View>
+                          <View style={styles.tripColKm}>
+                            <Text style={styles.tripKmValue} numberOfLines={1}>
+                              {km}
+                            </Text>
+                            <Text style={styles.tripKmSuffix} numberOfLines={1}>
+                              km
+                            </Text>
+                          </View>
+                        </View>
+                      );
+                    })}
                   </View>
                 ) : null}
               </Pressable>
@@ -447,6 +465,8 @@ const styles = StyleSheet.create({
   },
   cardCompactExpandable: {
     gap: 6,
+    alignSelf: "stretch",
+    width: "100%",
   },
   statusHeaderRow: {
     flexDirection: "row",
@@ -467,17 +487,76 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   tripsDropdownList: {
+    alignSelf: "stretch",
+    width: "100%",
     marginTop: 4,
     paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: "#e2e8f0",
-    gap: 6,
   },
-  tripDropdownLine: {
+  tripGridRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    alignSelf: "stretch",
+    width: "100%",
+    paddingVertical: 8,
+    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#e2e8f0",
+  },
+  tripColAuf: {
+    flex: 1.1,
+    minWidth: 0,
+    justifyContent: "center",
+  },
+  tripColPat: {
+    flex: 1.2,
+    minWidth: 0,
+    justifyContent: "center",
+  },
+  tripColTimes: {
+    width: 56,
+    flexShrink: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  tripColKm: {
+    width: 48,
+    flexShrink: 0,
+    alignItems: "flex-end",
+    justifyContent: "center",
+    gap: 1,
+  },
+  tripCellText: {
     fontSize: 11,
+    fontWeight: "600",
     color: "#334155",
-    fontWeight: "500",
     lineHeight: 15,
+  },
+  tripTimeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#0f172a",
+    lineHeight: 16,
+    fontVariant: ["tabular-nums"],
+    textAlign: "center",
+    width: "100%",
+  },
+  tripKmValue: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#0f172a",
+    lineHeight: 18,
+    fontVariant: ["tabular-nums"],
+    textAlign: "right",
+  },
+  tripKmSuffix: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#64748b",
+    textAlign: "right",
+    lineHeight: 12,
   },
   cardTitle: {
     fontSize: 16,
