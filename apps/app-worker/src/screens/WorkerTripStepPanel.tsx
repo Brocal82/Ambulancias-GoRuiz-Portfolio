@@ -462,6 +462,12 @@ export function WorkerTripStepPanel({
         </View>
       ) : (
         <View style={[styles.card, styles.panelCard]}>
+          <ScrollView
+            style={styles.stepsScroll}
+            contentContainerStyle={styles.stepsScrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
           <View style={styles.patientDataCard}>
             <Text style={styles.patientCardTitle}>Datos del servicio</Text>
             <View style={styles.patientDataRow}>
@@ -504,7 +510,6 @@ export function WorkerTripStepPanel({
           {currentStep === 2 ? (
             <View style={styles.kmHeroWrap}>
               <Text style={styles.kmHeroLabel}>Odómetro en domicilio</Text>
-              <Text style={styles.kmHeroHint}>Introduce el km antes de confirmar el paso.</Text>
               <TextInput
                 style={[
                   styles.kmInputHero,
@@ -524,7 +529,6 @@ export function WorkerTripStepPanel({
           {currentStep === 4 ? (
             <View style={styles.kmHeroWrap}>
               <Text style={styles.kmHeroLabel}>Odómetro en destino (con paciente)</Text>
-              <Text style={styles.kmHeroHint}>Km con paciente a bordo en destino.</Text>
               <TextInput
                 style={[
                   styles.kmInputHero,
@@ -543,7 +547,6 @@ export function WorkerTripStepPanel({
           ) : null}
 
           <View style={styles.bigStepCenter}>
-            <Text style={styles.holdCue}>Mantén 3 s sin soltar</Text>
             <Pressable
               disabled={bigStepDisabled}
               onPressIn={() => armStepHold(currentStep, bigStepDisabled)}
@@ -574,10 +577,8 @@ export function WorkerTripStepPanel({
               </Text>
             </Pressable>
             <Text style={styles.bigStepTitle}>{STEP_TITLES[currentStep]}</Text>
-            {needsKmNow && !kmReadyNow ? (
-              <Text style={styles.kmHint}>Escribe un km válido antes de confirmar.</Text>
-            ) : null}
           </View>
+          </ScrollView>
 
           <View style={styles.stepsFooter}>
             {showAnschlussSlot ? (
@@ -603,9 +604,6 @@ export function WorkerTripStepPanel({
                     Anschluss (paciente 2)
                   </Text>
                 </Pressable>
-                {!anschlussEnabled && currentStep < 5 ? (
-                  <Text style={styles.anschlussFooterHint}>Activo al completar el paso 5</Text>
-                ) : null}
               </View>
             ) : null}
 
@@ -627,7 +625,7 @@ export function WorkerTripStepPanel({
               android_ripple={{ color: "rgba(255,255,255,0.35)", foreground: true }}
               style={({ pressed }) => [styles.redStornoButton, pressed ? styles.redStornoButtonPressed : null]}
             >
-              <Text style={styles.redStornoButtonText}>Storno (reiniciar borrador)</Text>
+              <Text style={styles.redStornoButtonText}>Storno</Text>
             </Pressable>
           </View>
         </View>
@@ -647,12 +645,13 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   card: {
+    flexDirection: "column",
     backgroundColor: "#ffffff",
     borderWidth: 1,
     borderColor: "#e2e8f0",
     borderRadius: 12,
     padding: 12,
-    gap: 10,
+    gap: 8,
   },
   cardTitle: {
     fontSize: 15,
@@ -759,10 +758,13 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#0f172a",
   },
-  kmHeroHint: {
-    fontSize: 11,
-    color: "#64748b",
-    lineHeight: 15,
+  stepsScroll: {
+    flex: 1,
+    minHeight: 0,
+  },
+  stepsScrollContent: {
+    gap: 10,
+    paddingBottom: 8,
   },
   kmInputHero: {
     borderWidth: 2,
@@ -806,16 +808,10 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.35 }],
   },
   bigStepCenter: {
-    flex: 1,
-    minHeight: 120,
     justifyContent: "center",
     alignItems: "center",
     gap: 10,
-  },
-  holdCue: {
-    fontSize: 12,
-    color: "#64748b",
-    fontWeight: "600",
+    paddingVertical: 12,
   },
   roundStepButton: {
     alignItems: "center",
@@ -858,20 +854,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginTop: 4,
   },
-  kmHint: {
-    fontSize: 12,
-    color: "#b45309",
-    fontWeight: "600",
-  },
   stepsFooter: {
     gap: 8,
     flexShrink: 0,
-    paddingTop: 4,
+    flexGrow: 0,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
   },
   anschlussFooterBlock: {
     gap: 4,
+    alignSelf: "stretch",
   },
   orangePillButton: {
+    alignSelf: "stretch",
     borderRadius: 10,
     paddingVertical: 14,
     paddingHorizontal: 12,
@@ -896,12 +892,8 @@ const styles = StyleSheet.create({
   orangePillButtonTextDisabled: {
     color: "#9a3412",
   },
-  anschlussFooterHint: {
-    fontSize: 11,
-    color: "#64748b",
-    textAlign: "center",
-  },
   redOutlineButton: {
+    alignSelf: "stretch",
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
@@ -919,6 +911,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   redStornoButton: {
+    alignSelf: "stretch",
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
