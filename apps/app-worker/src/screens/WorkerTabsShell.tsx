@@ -4,12 +4,13 @@ import { AppState, Pressable, StyleSheet, Text, View } from "react-native";
 import { AuthUser, CompanyModuleKey, MODULE_KEYS, ScheduleSource } from "../types/auth";
 import { getMyMessages } from "../services/messages";
 import { HomeScreen } from "./HomeScreen";
+import { WorkerWorkdayScreen } from "./WorkerWorkdayScreen";
 import { WorkerAgendaScreen } from "./WorkerAgendaScreen";
 import { WorkerDocumentsScreen } from "./WorkerDocumentsScreen";
 import { WorkerMessagesScreen } from "./WorkerMessagesScreen";
 import { WorkerProfileScreen } from "./WorkerProfileScreen";
 
-type WorkerTabKey = "home" | "agenda" | "documents" | "messages" | "profile";
+type WorkerTabKey = "home" | "workday" | "agenda" | "documents" | "messages" | "profile";
 
 type Props = {
   user: AuthUser;
@@ -43,6 +44,10 @@ export function WorkerTabsShell({
   onRefreshProfile,
 }: Props) {
   const [activeTab, setActiveTab] = useState<WorkerTabKey>("home");
+  const hasWorkdayModule = enabledModules.includes(MODULE_KEYS.WORKDAY);
+  const hasAgendaModule =
+    enabledModules.includes(MODULE_KEYS.SCHEDULING) ||
+    enabledModules.includes(MODULE_KEYS.EXCEL_PLANNING);
   const hasMessagesModule = enabledModules.includes(MODULE_KEYS.MESSAGES);
   const hasDocumentsModule =
     enabledModules.includes(MODULE_KEYS.DOCUMENTS) ||
@@ -87,12 +92,25 @@ export function WorkerTabsShell({
             user={user}
             onLogout={onLogout}
             onRefreshProfile={onRefreshProfile}
+            onOpenWorkday={() => setActiveTab("workday")}
+            onOpenAgenda={() => setActiveTab("agenda")}
             onOpenDocuments={() => setActiveTab("documents")}
             onOpenMessages={() => setActiveTab("messages")}
             onOpenProfile={() => setActiveTab("profile")}
+            hasWorkdayModule={hasWorkdayModule}
+            hasAgendaModule={hasAgendaModule}
             hasDocumentsModule={hasDocumentsModule}
             hasMessagesModule={hasMessagesModule}
             showBottomPreview={false}
+          />
+        );
+      case "workday":
+        return hasWorkdayModule ? (
+          <WorkerWorkdayScreen user={user} />
+        ) : (
+          <PlaceholderScreen
+            title="Mi Jornada"
+            description="Tu empresa no tiene el modulo Jornada activo."
           />
         );
       case "agenda":
@@ -122,6 +140,7 @@ export function WorkerTabsShell({
     }
   }, [
     activeTab,
+    hasWorkdayModule,
     hasDocumentsModule,
     hasMessagesModule,
     onLogout,
@@ -142,6 +161,11 @@ export function WorkerTabsShell({
         <Pressable onPress={() => setActiveTab("agenda")} style={styles.tabButton}>
           <Text style={[styles.tabText, activeTab === "agenda" && styles.tabTextActive]}>
             Agenda
+          </Text>
+        </Pressable>
+        <Pressable onPress={() => setActiveTab("workday")} style={styles.tabButton}>
+          <Text style={[styles.tabText, activeTab === "workday" && styles.tabTextActive]}>
+            Jornada
           </Text>
         </Pressable>
         <Pressable
