@@ -1,4 +1,13 @@
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { login as loginRequest } from "../services/auth";
 import { getMyCompanyModules } from "../services/company";
@@ -33,6 +42,8 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isHydrating, setIsHydrating] = useState(true);
+  /** Token actual para `apiRequest` sin esperar al flush de React (evita 401 justo tras login). */
+  const tokenRef = useRef<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [enabledModules, setEnabledModules] = useState<CompanyModuleKey[]>([]);
@@ -58,14 +69,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
+    tokenRef.current = null;
     await clearStoredSession();
     setToken(null);
     setUser(null);
     setEnabledModules([]);
     setScheduleSource("none");
     setAuthError(undefined);
-  };
+  }, []);
 
   const refreshProfile = async () => {
     if (!user) return;
@@ -81,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await loginRequest(credentials);
       await saveSession(response.token, JSON.stringify(response.user));
+      tokenRef.current = response.token;
       setToken(response.token);
       setUser(response.user);
       await loadCompanyModules(response.token);
@@ -108,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               userToRestore = parsedUser;
             }
           }
+          tokenRef.current = storedToken;
           setToken(storedToken);
           setUser(userToRestore);
           await loadCompanyModules(storedToken);
@@ -123,14 +137,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    tokenRef.current = token;
+  }, [token]);
+
+  useEffect(() => {
     setApiAuthHandlers({
-      getToken: () => token,
+      getToken: () => tokenRef.current,
       onUnauthorized: async () => {
         await logout();
       },
     });
     return () => setApiAuthHandlers(null);
-  }, [token]);
+  }, [logout]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

@@ -12,7 +12,14 @@ import { WorkerMessagesScreen } from "./WorkerMessagesScreen";
 import { WorkerProfileScreen } from "./WorkerProfileScreen";
 import { WorkerWorkdayClosureScreen } from "./WorkerWorkdayClosureScreen";
 
-type WorkerTabKey = "home" | "workday" | "agenda" | "documents" | "messages" | "profile";
+type WorkerTabKey =
+  | "home"
+  | "workday"
+  | "agenda"
+  | "praemien"
+  | "documents"
+  | "messages"
+  | "profile";
 
 type Props = {
   user: AuthUser;
@@ -56,6 +63,7 @@ export function WorkerTabsShell({
   const hasDocumentsModule =
     enabledModules.includes(MODULE_KEYS.DOCUMENTS) ||
     enabledModules.includes(MODULE_KEYS.PAYROLL);
+  const hasPraemienModule = enabledModules.includes(MODULE_KEYS.PRAEMIEN);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
   const refreshUnreadMessagesCount = useCallback(async () => {
@@ -98,6 +106,7 @@ export function WorkerTabsShell({
             onRefreshProfile={onRefreshProfile}
             onOpenWorkday={() => setActiveTab("workday")}
             onOpenAgenda={() => setActiveTab("agenda")}
+            onOpenPraemien={() => setActiveTab("praemien")}
             onOpenDocuments={() => setActiveTab("documents")}
             onOpenMessages={() => setActiveTab("messages")}
             onOpenProfile={() => setActiveTab("profile")}
@@ -105,6 +114,7 @@ export function WorkerTabsShell({
             hasAgendaModule={hasAgendaModule}
             hasDocumentsModule={hasDocumentsModule}
             hasMessagesModule={hasMessagesModule}
+            hasPraemienModule={hasPraemienModule}
             showBottomPreview={false}
           />
         );
@@ -123,6 +133,31 @@ export function WorkerTabsShell({
         );
       case "agenda":
         return <WorkerAgendaScreen user={user} scheduleSource={scheduleSource} />;
+      case "praemien":
+        return (
+          <View style={styles.auxRouteRoot}>
+            <View style={styles.auxHeader}>
+              <Pressable
+                onPress={() => setActiveTab("home")}
+                style={styles.auxBack}
+                accessibilityRole="button"
+                accessibilityLabel="Volver al inicio"
+              >
+                <Ionicons name="chevron-back" size={22} color="#0f766e" />
+                <Text style={styles.auxBackText}>Inicio</Text>
+              </Pressable>
+            </View>
+            <View style={styles.auxBody}>
+              <Text style={styles.placeholderTitle}>Prämie</Text>
+              <Text style={styles.placeholderDescription}>
+                {hasPraemienModule
+                  ? "Próximamente podrás consultar aquí tu resumen de Prämie desde la app."
+                  : "Tu empresa no tiene activo el módulo Prämie."}
+              </Text>
+              <Text style={styles.placeholderBadge}>Proximamente</Text>
+            </View>
+          </View>
+        );
       case "messages":
         return hasMessagesModule ? (
           <WorkerMessagesScreen userId={user._id} />
@@ -149,8 +184,10 @@ export function WorkerTabsShell({
   }, [
     activeTab,
     hasWorkdayModule,
+    hasAgendaModule,
     hasDocumentsModule,
     hasMessagesModule,
+    hasPraemienModule,
     onLogout,
     onRefreshProfile,
     scheduleSource,
@@ -308,6 +345,37 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 10,
     fontWeight: "700",
+  },
+  auxRouteRoot: {
+    flex: 1,
+    backgroundColor: "#f8fafc",
+  },
+  auxHeader: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+    backgroundColor: "#ffffff",
+  },
+  auxBack: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    alignSelf: "flex-start",
+    paddingVertical: 4,
+    paddingRight: 12,
+  },
+  auxBackText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#0f766e",
+  },
+  auxBody: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    gap: 10,
   },
   placeholderContainer: {
     flex: 1,

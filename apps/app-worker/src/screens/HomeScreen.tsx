@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,13 +15,61 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { getMyDocumentDeliveries } from "../services/documents";
 import { getMyMessages } from "../services/messages";
 import { buildPublicFileCandidates } from "../services/secureFiles";
+import { getMonthlyPraemienSummary } from "../services/praemien";
+import { getAssignedDaysForWorker, type AssignedDay } from "../services/workday";
+import { resolveTodayAssignment } from "../utils/workdayAssignment";
 import { AuthUser } from "../types/auth";
+
+function dienstDateKeyFromAssignment(day: AssignedDay | null): string | null {
+  if (!day?.date) return null;
+  const trimmed = day.date.trim();
+  const direct = /^(\d{4}-\d{2}-\d{2})$/.exec(trimmed);
+  if (direct) return direct[1] ?? null;
+  const iso = /^(\d{4}-\d{2}-\d{2})T/.exec(trimmed);
+  if (iso) return iso[1] ?? null;
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const y = parsed.getFullYear();
+  const m = String(parsed.getMonth() + 1).padStart(2, "0");
+  const d = String(parsed.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Día y fecha compactos: «Lunes 4/5/2026». */
+function formatDienstDayCompact(day: AssignedDay | null): string {
+  if (!day) return "—";
+  const key = dienstDateKeyFromAssignment(day);
+  if (!key) return "—";
+  const [y, mo, d] = key.split("-").map(Number);
+  const dt = new Date(y, mo - 1, d);
+  if (Number.isNaN(dt.getTime())) return "—";
+  const weekday = dt.toLocaleDateString("es-ES", { weekday: "long" });
+  const name = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+  return `${name} ${d}/${mo}/${y}`;
+}
+
+function formatDienstScheduleLine(day: AssignedDay | null): string {
+  if (!day) return "—";
+  const a = (day.startTime ?? "").trim();
+  const b = (day.endTime ?? "").trim();
+  if (!a && !b) return "—";
+  return `${a || "--:--"} – ${b || "--:--"}`;
+}
+
+function formatPraemieAveragePatients(n: number | null, moduleOn: boolean): string {
+  if (!moduleOn) return "—";
+  if (n === null) return "—";
+  const x = Math.round(n * 100) / 100;
+  if (Number.isInteger(x)) return String(x);
+  return String(x).replace(".", ",");
+}
 
 type Props = {
   onLogout: () => void;
   onRefreshProfile: () => Promise<void>;
   onOpenWorkday: () => void;
   onOpenAgenda: () => void;
+  onOpenPraemien: () => void;
   onOpenDocuments: () => void;
   onOpenMessages: () => void;
   onOpenProfile: () => void;
@@ -28,6 +77,7 @@ type Props = {
   hasAgendaModule: boolean;
   hasDocumentsModule: boolean;
   hasMessagesModule: boolean;
+  hasPraemienModule: boolean;
   user: AuthUser;
   showBottomPreview?: boolean;
 };
@@ -37,6 +87,7 @@ export function HomeScreen({
   onRefreshProfile,
   onOpenWorkday,
   onOpenAgenda,
+  onOpenPraemien,
   onOpenDocuments,
   onOpenMessages,
   onOpenProfile,
@@ -44,16 +95,17 @@ export function HomeScreen({
   hasAgendaModule,
   hasDocumentsModule,
   hasMessagesModule,
+  hasPraemienModule,
   user,
   showBottomPreview = true,
 }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [alertsCount, setAlertsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [documentsToConfirmCount, setDocumentsToConfirmCount] = useState(0);
   const [informativeUnreadCount, setInformativeUnreadCount] = useState(0);
   /** Ancho real del contenedor de módulos (evita desajuste vs. `width` de ventana + safe area). */
   const [modulesGridInnerWidth, setModulesGridInnerWidth] = useState(0);
+  const [alertsModalVisible, setAlertsModalVisible] = useState(false);
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
 
@@ -94,15 +146,27 @@ export function HomeScreen({
     { key: "perfil", title: "Mi perfil", status: "Activo" },
   ];
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
+  const [todayAssignment, setTodayAssignment] = useState<AssignedDay | null>(null);
+  const [praemieAveragePatients, setPraemieAveragePatients] = useState<number | null>(null);
+
+  const loadDienstAndPraemie = useCallback(async () => {
     try {
-      await onRefreshProfile();
-      await refreshAlerts();
-    } finally {
-      setIsRefreshing(false);
+      const days = await getAssignedDaysForWorker(user._id);
+      setTodayAssignment(resolveTodayAssignment(days));
+    } catch {
+      setTodayAssignment(null);
     }
-  };
+    if (!hasPraemienModule) {
+      setPraemieAveragePatients(null);
+      return;
+    }
+    try {
+      const summary = await getMonthlyPraemienSummary();
+      setPraemieAveragePatients(summary.averagePatients);
+    } catch {
+      setPraemieAveragePatients(null);
+    }
+  }, [hasPraemienModule, user._id]);
 
   const refreshAlerts = useCallback(async () => {
     try {
@@ -121,15 +185,28 @@ export function HomeScreen({
       setUnreadMessagesCount(unreadMessages.length);
       setDocumentsToConfirmCount(documentsToConfirm);
       setInformativeUnreadCount(informativeUnread);
-      setAlertsCount(unreadMessages.length + documentsToConfirm + informativeUnread);
     } catch {
       // Keep previous alerts value on transient failures.
     }
   }, [hasDocumentsModule, hasMessagesModule]);
 
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await onRefreshProfile();
+      await Promise.all([refreshAlerts(), loadDienstAndPraemie()]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [loadDienstAndPraemie, onRefreshProfile, refreshAlerts]);
+
   useEffect(() => {
     void refreshAlerts();
   }, [refreshAlerts]);
+
+  useEffect(() => {
+    void loadDienstAndPraemie();
+  }, [loadDienstAndPraemie]);
 
   const pscheinExpiryDate = user.pscheinExpiry ? new Date(user.pscheinExpiry) : null;
   const displayName = `${user.name ?? ""} ${user.lastName ?? ""}`.trim() || "Usuario";
@@ -153,6 +230,17 @@ export function HomeScreen({
       : pscheinDaysToExpiry < 0
         ? "P-Schein caducado"
         : `P-Schein caduca en ${pscheinDaysToExpiry} dia${pscheinDaysToExpiry === 1 ? "" : "s"}`;
+
+  const quickSummaryAlertTotal = useMemo(() => {
+    const base =
+      unreadMessagesCount + documentsToConfirmCount + informativeUnreadCount;
+    return base + (hasPscheinAlert ? 1 : 0);
+  }, [
+    documentsToConfirmCount,
+    hasPscheinAlert,
+    informativeUnreadCount,
+    unreadMessagesCount,
+  ]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -199,68 +287,76 @@ export function HomeScreen({
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Resumen rapido</Text>
+          <Text style={styles.cardTitle}>Hoy</Text>
           <View style={styles.kpiRow}>
-            <View style={styles.kpiItem}>
-              <Text style={styles.kpiValue}>08:00</Text>
-              <Text style={styles.kpiLabel}>Entrada</Text>
+            <View style={styles.kpiColumn}>
+              <Text style={styles.kpiHeadingOutside}>Dienst</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Abrir agenda semanal"
+                onPress={onOpenAgenda}
+                style={({ pressed }) => [styles.kpiBox, pressed && styles.kpiBoxPressed]}
+              >
+                <View style={styles.kpiColumnBody}>
+                  <Text
+                    style={styles.kpiDienstDayDate}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.55}
+                  >
+                    {formatDienstDayCompact(todayAssignment)}
+                  </Text>
+                  <Text
+                    style={styles.kpiDienstTime}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.65}
+                  >
+                    {formatDienstScheduleLine(todayAssignment)}
+                  </Text>
+                </View>
+              </Pressable>
             </View>
-            <View style={styles.kpiItem}>
-              <Text style={styles.kpiValue}>17:00</Text>
-              <Text style={styles.kpiLabel}>Salida</Text>
+            <View style={styles.kpiColumn}>
+              <Text style={styles.kpiHeadingOutside}>Prämie</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Abrir Prämie"
+                onPress={onOpenPraemien}
+                style={({ pressed }) => [styles.kpiBox, pressed && styles.kpiBoxPressed]}
+              >
+                <View style={styles.kpiColumnBody}>
+                  <Text
+                    style={styles.kpiValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.65}
+                  >
+                    {formatPraemieAveragePatients(praemieAveragePatients, hasPraemienModule)}
+                  </Text>
+                </View>
+              </Pressable>
             </View>
-            <View style={styles.kpiItem}>
-              <Text style={styles.kpiValue}>
-                {alertsCount > 99 ? "99+" : String(alertsCount)}
-              </Text>
-              <Text style={styles.kpiLabel}>Alertas</Text>
+            <View style={styles.kpiColumn}>
+              <Text style={styles.kpiHeadingOutside}>Alertas</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Ver alertas"
+                onPress={() => setAlertsModalVisible(true)}
+                style={({ pressed }) => [styles.kpiBox, pressed && styles.kpiBoxPressed]}
+              >
+                <View style={styles.kpiColumnBody}>
+                  <Text
+                    style={styles.kpiValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.65}
+                  >
+                    {quickSummaryAlertTotal > 99 ? "99+" : String(quickSummaryAlertTotal)}
+                  </Text>
+                </View>
+              </Pressable>
             </View>
-          </View>
-          <View style={styles.alertList}>
-            {hasMessagesModule && unreadMessagesCount > 0 ? (
-              <Pressable style={styles.alertRow} onPress={onOpenMessages}>
-                <Text style={styles.alertText}>
-                  Tienes {unreadMessagesCount} mensaje{unreadMessagesCount === 1 ? "" : "s"} no
-                  leído{unreadMessagesCount === 1 ? "" : "s"}
-                </Text>
-                <Text style={styles.alertLink}>Ir a Mensajes</Text>
-              </Pressable>
-            ) : null}
-
-            {hasDocumentsModule && documentsToConfirmCount > 0 ? (
-              <Pressable style={styles.alertRow} onPress={onOpenDocuments}>
-                <Text style={styles.alertText}>
-                  Tienes {documentsToConfirmCount} documento
-                  {documentsToConfirmCount === 1 ? "" : "s"} pendiente
-                  {documentsToConfirmCount === 1 ? "" : "s"} de confirmación
-                </Text>
-                <Text style={styles.alertLink}>Ir a Documentos</Text>
-              </Pressable>
-            ) : null}
-
-            {hasDocumentsModule && informativeUnreadCount > 0 ? (
-              <Pressable style={styles.alertRow} onPress={onOpenDocuments}>
-                <Text style={styles.alertText}>
-                  Tienes {informativeUnreadCount} documento{informativeUnreadCount === 1 ? "" : "s"}{" "}
-                  informativo{informativeUnreadCount === 1 ? "" : "s"} sin leer
-                </Text>
-                <Text style={styles.alertLink}>Ir a Documentos</Text>
-              </Pressable>
-            ) : null}
-
-            {hasPscheinAlert && pscheinAlertLabel ? (
-              <Pressable style={styles.alertRow} onPress={onOpenProfile}>
-                <Text style={styles.alertText}>{pscheinAlertLabel}</Text>
-                <Text style={styles.alertLink}>Ir a Perfil</Text>
-              </Pressable>
-            ) : null}
-
-            {!hasPscheinAlert &&
-            unreadMessagesCount === 0 &&
-            documentsToConfirmCount === 0 &&
-            informativeUnreadCount === 0 ? (
-              <Text style={styles.noAlertsText}>Sin alertas activas.</Text>
-            ) : null}
           </View>
         </View>
 
@@ -342,6 +438,102 @@ export function HomeScreen({
           <Text style={styles.bottomNavItem}>Perfil</Text>
         </View>
       ) : null}
+
+      <Modal
+        visible={alertsModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAlertsModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={styles.modalBackdropDismiss} onPress={() => setAlertsModalVisible(false)} />
+          <View style={styles.modalAlignCenter} pointerEvents="box-none">
+            <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Alertas</Text>
+              <Pressable
+                onPress={() => setAlertsModalVisible(false)}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar"
+              >
+                <Ionicons name="close" size={26} color="#334155" />
+              </Pressable>
+            </View>
+            <ScrollView
+              contentContainerStyle={styles.modalScrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              {hasMessagesModule && unreadMessagesCount > 0 ? (
+                <Pressable
+                  style={styles.alertRow}
+                  onPress={() => {
+                    setAlertsModalVisible(false);
+                    onOpenMessages();
+                  }}
+                >
+                  <Text style={styles.alertText}>
+                    Tienes {unreadMessagesCount} mensaje{unreadMessagesCount === 1 ? "" : "s"} no
+                    leído{unreadMessagesCount === 1 ? "" : "s"}
+                  </Text>
+                  <Text style={styles.alertLink}>Ir a Mensajes</Text>
+                </Pressable>
+              ) : null}
+
+              {hasDocumentsModule && documentsToConfirmCount > 0 ? (
+                <Pressable
+                  style={styles.alertRow}
+                  onPress={() => {
+                    setAlertsModalVisible(false);
+                    onOpenDocuments();
+                  }}
+                >
+                  <Text style={styles.alertText}>
+                    Tienes {documentsToConfirmCount} documento
+                    {documentsToConfirmCount === 1 ? "" : "s"} pendiente
+                    {documentsToConfirmCount === 1 ? "" : "s"} de confirmación
+                  </Text>
+                  <Text style={styles.alertLink}>Ir a Documentos</Text>
+                </Pressable>
+              ) : null}
+
+              {hasDocumentsModule && informativeUnreadCount > 0 ? (
+                <Pressable
+                  style={styles.alertRow}
+                  onPress={() => {
+                    setAlertsModalVisible(false);
+                    onOpenDocuments();
+                  }}
+                >
+                  <Text style={styles.alertText}>
+                    Tienes {informativeUnreadCount} documento{informativeUnreadCount === 1 ? "" : "s"}{" "}
+                    informativo{informativeUnreadCount === 1 ? "" : "s"} sin leer
+                  </Text>
+                  <Text style={styles.alertLink}>Ir a Documentos</Text>
+                </Pressable>
+              ) : null}
+
+              {hasPscheinAlert && pscheinAlertLabel ? (
+                <Pressable
+                  style={styles.alertRow}
+                  onPress={() => {
+                    setAlertsModalVisible(false);
+                    onOpenProfile();
+                  }}
+                >
+                  <Text style={styles.alertText}>{pscheinAlertLabel}</Text>
+                  <Text style={styles.alertLink}>Ir a Perfil</Text>
+                </Pressable>
+              ) : null}
+
+              {quickSummaryAlertTotal === 0 ? (
+                <Text style={styles.noAlertsText}>Sin alertas activas.</Text>
+              ) : null}
+            </ScrollView>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -441,10 +633,61 @@ const styles = StyleSheet.create({
   kpiRow: {
     flexDirection: "row",
     gap: 10,
+    alignItems: "flex-start",
   },
-  alertList: {
-    marginTop: 12,
-    gap: 8,
+  kpiColumn: {
+    flex: 1,
+    minWidth: 0,
+  },
+  kpiHeadingOutside: {
+    marginBottom: 6,
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#475569",
+    textAlign: "center",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
+  },
+  modalBackdropDismiss: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  modalAlignCenter: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 400,
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    maxHeight: "80%",
+    overflow: "hidden",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+  modalScrollContent: {
+    padding: 14,
+    gap: 10,
+    paddingBottom: 24,
   },
   alertRow: {
     borderWidth: 1,
@@ -469,23 +712,46 @@ const styles = StyleSheet.create({
     color: "#64748b",
     fontSize: 12,
   },
-  kpiItem: {
-    flex: 1,
+  kpiBox: {
+    width: "100%",
     backgroundColor: "#f8fafc",
     borderWidth: 1,
     borderColor: "#e2e8f0",
     borderRadius: 10,
     paddingVertical: 10,
-    alignItems: "center",
+    paddingHorizontal: 6,
+    alignItems: "stretch",
+  },
+  kpiBoxPressed: {
+    opacity: 0.88,
+  },
+  kpiColumnBody: {
+    width: "100%",
+    alignItems: "stretch",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 48,
+  },
+  kpiDienstDayDate: {
+    width: "100%",
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#334155",
+    textAlign: "center",
+  },
+  kpiDienstTime: {
+    width: "100%",
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#0f172a",
+    textAlign: "center",
   },
   kpiValue: {
+    width: "100%",
     fontSize: 18,
     fontWeight: "600",
     color: "#0f172a",
-  },
-  kpiLabel: {
-    fontSize: 12,
-    color: "#64748b",
+    textAlign: "center",
   },
   modulesGrid: {
     flexDirection: "row",
