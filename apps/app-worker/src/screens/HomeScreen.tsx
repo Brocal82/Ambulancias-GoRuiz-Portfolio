@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,9 +9,11 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getMyDocumentDeliveries } from "../services/documents";
 import { getMyMessages } from "../services/messages";
+import { buildPublicFileCandidates } from "../services/secureFiles";
 import { AuthUser } from "../types/auth";
 
 type Props = {
@@ -49,8 +52,22 @@ export function HomeScreen({
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [documentsToConfirmCount, setDocumentsToConfirmCount] = useState(0);
   const [informativeUnreadCount, setInformativeUnreadCount] = useState(0);
+  /** Ancho real del contenedor de módulos (evita desajuste vs. `width` de ventana + safe area). */
+  const [modulesGridInnerWidth, setModulesGridInnerWidth] = useState(0);
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
+
+  const moduleLayout = useMemo(() => {
+    const cols = isTablet ? 3 : 2;
+    const gap = isTablet ? 12 : 10;
+    const scrollHorizontalPad = 24 * 2;
+    const cardHorizontalPad = 14 * 2;
+    const fallbackInner = Math.max(0, width - scrollHorizontalPad - cardHorizontalPad);
+    const inner = modulesGridInnerWidth > 0 ? modulesGridInnerWidth : fallbackInner;
+    const rawTile = (inner - gap * (cols - 1)) / cols;
+    const tileWidth = Math.max(1, Math.floor(rawTile));
+    return { cols, gap, tileWidth };
+  }, [width, isTablet, modulesGridInnerWidth]);
 
   const modules = [
     {
@@ -115,6 +132,14 @@ export function HomeScreen({
   }, [refreshAlerts]);
 
   const pscheinExpiryDate = user.pscheinExpiry ? new Date(user.pscheinExpiry) : null;
+  const displayName = `${user.name ?? ""} ${user.lastName ?? ""}`.trim() || "Usuario";
+  const employeeNumber = (user.employeeNumber ?? "").trim();
+  const profileImageUrl = user.profileImage?.trim()
+    ? (buildPublicFileCandidates(user.profileImage.trim())[0] ?? user.profileImage.trim())
+    : null;
+  const initials = `${(user.name ?? "").trim().charAt(0)}${(user.lastName ?? "").trim().charAt(0)}`
+    .toUpperCase()
+    .trim() || "U";
   const hasValidPscheinDate =
     pscheinExpiryDate !== null && !Number.isNaN(pscheinExpiryDate.getTime());
   const pscheinDaysToExpiry = hasValidPscheinDate
@@ -132,29 +157,42 @@ export function HomeScreen({
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Worker Dashboard</Text>
-          <Text style={styles.subtitle}>
-            {user.name} {user.lastName}
-          </Text>
-          <Text style={styles.meta}>
-            Rol: {user.role} {user.ambulanceRole ? `· ${user.ambulanceRole}` : ""}
-          </Text>
+        <View style={styles.headerIdentity}>
+          {profileImageUrl ? (
+            <Image source={{ uri: profileImageUrl }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <Text style={styles.avatarFallbackText}>{initials}</Text>
+            </View>
+          )}
+          <View style={styles.headerIdentityText}>
+            <Text style={styles.subtitle}>{displayName}</Text>
+            {employeeNumber.length > 0 ? (
+              <Text style={styles.meta}>{employeeNumber}</Text>
+            ) : null}
+          </View>
         </View>
         <View style={styles.headerActions}>
           <Pressable
-            style={styles.iconButton}
+            style={styles.iconButtonRound}
             onPress={handleRefresh}
             disabled={isRefreshing}
+            accessibilityRole="button"
+            accessibilityLabel="Actualizar"
           >
             {isRefreshing ? (
-              <ActivityIndicator color="#0f766e" />
+              <ActivityIndicator size="small" color="#0f766e" />
             ) : (
-              <Text style={styles.iconButtonText}>Actualizar</Text>
+              <Ionicons name="refresh" size={20} color="#0f766e" />
             )}
           </Pressable>
-          <Pressable style={styles.iconButton} onPress={onLogout}>
-            <Text style={styles.iconButtonText}>Salir</Text>
+          <Pressable
+            style={styles.iconButtonRound}
+            onPress={onLogout}
+            accessibilityRole="button"
+            accessibilityLabel="Salir"
+          >
+            <Ionicons name="power" size={20} color="#b91c1c" />
           </Pressable>
         </View>
       </View>
@@ -228,8 +266,15 @@ export function HomeScreen({
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Módulos</Text>
-          <View style={[styles.modulesGrid, isTablet && styles.modulesGridTablet]}>
-            {modules.map((module) => {
+          <View
+            style={styles.modulesGrid}
+            onLayout={(e) => {
+              const w = Math.round(e.nativeEvent.layout.width);
+              if (w <= 0) return;
+              setModulesGridInnerWidth((prev) => (prev === w ? prev : w));
+            }}
+          >
+            {modules.map((module, index) => {
               const isActive = module.status === "Activo";
               const isWorkdayModule = module.key === "jornada";
               const isAgendaModule = module.key === "turnos";
@@ -265,7 +310,18 @@ export function HomeScreen({
                         ? !hasDocumentsModule
                         : true
                   }
-                  style={[styles.moduleTile, isTablet && styles.moduleTileTablet]}
+                  style={[
+                    styles.moduleTile,
+                    {
+                      width: moduleLayout.tileWidth,
+                      maxWidth: moduleLayout.tileWidth,
+                      flexGrow: 0,
+                      flexShrink: 0,
+                      alignSelf: "flex-start",
+                      marginRight: (index + 1) % moduleLayout.cols === 0 ? 0 : moduleLayout.gap,
+                      marginBottom: moduleLayout.gap,
+                    },
+                  ]}
                 >
                   <Text style={styles.moduleTitle}>{module.title}</Text>
                   <Text style={[styles.moduleStatus, isActive && styles.moduleStatusActive]}>
@@ -308,35 +364,62 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerActions: {
+    flexDirection: "row",
     gap: 8,
   },
-  iconButton: {
+  headerIdentity: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    minWidth: 0,
+    gap: 10,
+  },
+  headerIdentityText: {
+    minWidth: 0,
+    flexShrink: 1,
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#f1f5f9",
+  },
+  avatarFallback: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: "#cbd5e1",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: "#e2e8f0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarFallbackText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#334155",
+  },
+  iconButtonRound: {
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "#ffffff",
     alignItems: "center",
-  },
-  iconButtonText: {
-    color: "#0f172a",
-    fontSize: 13,
-    fontWeight: "600",
+    justifyContent: "center",
   },
   scrollContent: {
     paddingHorizontal: 24,
     paddingVertical: 16,
     gap: 16,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#111827",
-  },
   subtitle: {
     fontSize: 15,
-    color: "#4b5563",
+    color: "#111827",
+    fontWeight: "700",
   },
   meta: {
     fontSize: 13,
@@ -407,13 +490,9 @@ const styles = StyleSheet.create({
   modulesGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
-  },
-  modulesGridTablet: {
-    gap: 12,
+    width: "100%",
   },
   moduleTile: {
-    width: "48%",
     backgroundColor: "#f8fafc",
     borderWidth: 1,
     borderColor: "#e2e8f0",
@@ -421,9 +500,6 @@ const styles = StyleSheet.create({
     padding: 12,
     minHeight: 80,
     justifyContent: "space-between",
-  },
-  moduleTileTablet: {
-    width: "31%",
   },
   moduleTitle: {
     fontSize: 14,
