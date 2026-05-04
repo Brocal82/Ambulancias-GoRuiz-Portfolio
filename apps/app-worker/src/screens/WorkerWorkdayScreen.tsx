@@ -1,17 +1,12 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ApiError } from "../services/http";
 import {
   AssignedDay,
+  AssignedDayUser,
   WorkdaySummary,
   WorkdayTrip,
   getAssignedDaysForWorker,
@@ -19,9 +14,61 @@ import {
   getWorkdayTripsByDate,
 } from "../services/workday";
 import { AuthUser } from "../types/auth";
+import { canStartTripNow } from "../utils/workdayAssignment";
+import { WorkerTripStepPanel } from "./WorkerTripStepPanel";
+
+type AssignedDayFull = AssignedDay & {
+  driver: { _id: string };
+  medic: { _id: string };
+};
+
+function userIdFromAssignmentField(value: string | AssignedDayUser | undefined): string | null {
+  if (!value) return null;
+  if (typeof value === "string") return value.trim() || null;
+  const id = value._id?.trim();
+  return id || null;
+}
+
+function assignmentForTripPanel(day: AssignedDay): AssignedDayFull | null {
+  const driverId = userIdFromAssignmentField(day.driver);
+  const medicId = userIdFromAssignmentField(day.medic);
+  if (!driverId || !medicId) return null;
+  return {
+    ...day,
+    driver: { _id: driverId },
+    medic: { _id: medicId },
+  };
+}
+
+function displayWorkerName(field: string | AssignedDayUser | undefined): string {
+  if (field == null) return "—";
+  if (typeof field === "string") {
+    const t = field.trim();
+    if (!t) return "—";
+    return t.length > 14 ? `…${t.slice(-10)}` : t;
+  }
+  const parts = [field.name, field.lastName].filter((p) => (p ?? "").trim()).join(" ");
+  return parts.trim() || "—";
+}
+
+function displayAmbulanceLine(day: AssignedDay): string {
+  if (day.ambulanceNumber?.trim()) return day.ambulanceNumber.trim();
+  const amb = day.ambulanceId;
+  if (amb && typeof amb === "object") {
+    const num = amb.ambulanceNumber?.trim();
+    const plate = amb.licensePlate?.trim();
+    if (num && plate) return `#${num} · ${plate}`;
+    if (num) return `#${num}`;
+    if (plate) return plate;
+  }
+  if (typeof amb === "string" && amb.trim()) return amb.trim();
+  return "—";
+}
 
 type Props = {
   user: AuthUser;
+  /** Chip “jornada en curso” → pantalla completa de cierre (desde WorkerTabsShell). */
+  onOpenWorkdayClosure?: () => void;
 };
 
 type WorkdayStatus = "no-assignment" | "ready" | "in-progress" | "partial-closed" | "final-closed";
@@ -49,6 +96,11 @@ function todayDateKey(): string {
   return `${y}-${m}-${d}`;
 }
 
+/** Viajes que suman al contador de “jornada en curso” (incluye Storno con +1). */
+function tripCountsTowardWorkdayBanner(trip: WorkdayTrip): boolean {
+  return trip.countsTrip !== 0;
+}
+
 function summaryStateForAssignment(summaries: WorkdaySummary[], assignmentId: string): WorkdayStatus {
   const sameAssignmentToday = summaries.filter((item) => item.assignmentId === assignmentId);
   const hasFinal = sameAssignmentToday.some((item) => item.isFinalClosure === true);
@@ -58,15 +110,18 @@ function summaryStateForAssignment(summaries: WorkdaySummary[], assignmentId: st
   return "ready";
 }
 
-export function WorkerWorkdayScreen({ user }: Props) {
+export function WorkerWorkdayScreen({ user, onOpenWorkdayClosure }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [todayAssignment, setTodayAssignment] = useState<AssignedDay | null>(null);
   const [todayTrips, setTodayTrips] = useState<WorkdayTrip[]>([]);
+  /** Solo cierres de hoy para la asignacion actual: alimenta el chip de estado (no se listan en pantalla). */
   const [recentSummaries, setRecentSummaries] = useState<WorkdaySummary[]>([]);
-
-  const loadWorkday = useCallback(async () => {
-    setIsLoading(true);
+  const loadWorkday = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent === true;
+    if (!silent) {
+      setIsLoading(true);
+    }
     setErrorMessage(undefined);
     try {
       const today = todayDateKey();
@@ -78,10 +133,16 @@ export function WorkerWorkdayScreen({ user }: Props) {
 
       const assignment = assignedDays.find((item) => toDateKey(item.date) === today) ?? null;
       const summariesSorted = [...summaries].sort((a, b) => b.date.localeCompare(a.date));
+      const summariesForTodayStatus =
+        assignment == null
+          ? []
+          : summariesSorted.filter(
+              (s) => toDateKey(s.date) === today && s.assignmentId === assignment.assignmentId,
+            );
 
       setTodayAssignment(assignment);
       setTodayTrips(trips);
-      setRecentSummaries(summariesSorted.slice(0, 8));
+      setRecentSummaries(summariesForTodayStatus);
     } catch (error) {
       if (error instanceof ApiError) {
         setErrorMessage(error.message);
@@ -89,7 +150,9 @@ export function WorkerWorkdayScreen({ user }: Props) {
         setErrorMessage("No se pudo cargar Mi Jornada.");
       }
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   }, [user._id]);
 
@@ -99,12 +162,8 @@ export function WorkerWorkdayScreen({ user }: Props) {
 
   const todayStatus = useMemo<WorkdayStatus>(() => {
     if (!todayAssignment) return "no-assignment";
-    const today = todayDateKey();
-    const todaySummariesForAssignment = recentSummaries.filter(
-      (item) => toDateKey(item.date) === today && item.assignmentId === todayAssignment.assignmentId,
-    );
     const summaryState = summaryStateForAssignment(
-      todaySummariesForAssignment,
+      recentSummaries,
       todayAssignment.assignmentId,
     );
     if (summaryState === "final-closed") return "final-closed";
@@ -112,6 +171,23 @@ export function WorkerWorkdayScreen({ user }: Props) {
     if (todayTrips.length > 0) return "in-progress";
     return "ready";
   }, [todayAssignment, todayTrips.length, recentSummaries]);
+
+  const tripPanelAssignment = useMemo(
+    () => (todayAssignment ? assignmentForTripPanel(todayAssignment) : null),
+    [todayAssignment],
+  );
+
+  const tripsCountForBanner = useMemo(
+    () => todayTrips.filter(tripCountsTowardWorkdayBanner).length,
+    [todayTrips],
+  );
+
+  const canStartWork = useMemo(() => {
+    if (!todayAssignment) return false;
+    return canStartTripNow(todayAssignment.startTime, todayAssignment.date);
+  }, [todayAssignment]);
+
+  const tripsBlocked = todayStatus === "final-closed";
 
   const statusLabel = useMemo(() => {
     switch (todayStatus) {
@@ -130,15 +206,101 @@ export function WorkerWorkdayScreen({ user }: Props) {
     }
   }, [todayStatus]);
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Mi Jornada</Text>
-        <Text style={styles.subtitle}>Estado operativo de hoy</Text>
-        <Pressable style={styles.refreshButton} onPress={() => void loadWorkday()}>
-          <Text style={styles.refreshButtonText}>Refrescar</Text>
-        </Pressable>
+  const headerAssignmentBlock = useMemo(() => {
+    if (isLoading) {
+      return <Text style={styles.headerMetaMuted}>Cargando asignacion…</Text>;
+    }
+    if (errorMessage) {
+      return null;
+    }
+    if (!todayAssignment) {
+      return <Text style={styles.headerMetaMuted}>Sin asignacion para hoy.</Text>;
+    }
+    const dienstNum =
+      todayAssignment.dienstNumber != null && String(todayAssignment.dienstNumber).trim() !== ""
+        ? String(todayAssignment.dienstNumber).trim()
+        : "—";
+
+    return (
+      <View style={styles.headerMeta}>
+        <View style={styles.headerThreeColRow}>
+          <View style={[styles.headerCol, styles.headerColLeft]}>
+            <Text style={styles.headerColLabel}>Dienst</Text>
+            <Text style={styles.headerDienstNumber} numberOfLines={1}>
+              {dienstNum === "—" ? "—" : `#${dienstNum}`}
+            </Text>
+            <Text style={styles.headerSchedule} numberOfLines={1}>
+              {todayAssignment.startTime ?? "--:--"} – {todayAssignment.endTime ?? "--:--"}
+            </Text>
+          </View>
+
+          <View style={[styles.headerCol, styles.headerColCenter]}>
+            <Text style={[styles.headerColLabel, styles.headerColLabelCenter]}>Team</Text>
+            <Text
+              style={[styles.headerTeamName, styles.headerTeamNameCenter]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {displayWorkerName(todayAssignment.driver)}
+            </Text>
+            <Text
+              style={[styles.headerTeamName, styles.headerTeamNameCenter]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {displayWorkerName(todayAssignment.medic)}
+            </Text>
+          </View>
+
+          <View style={[styles.headerCol, styles.headerColRight]}>
+            <Text style={[styles.headerColLabel, styles.headerColLabelRight]}>Ambulancia</Text>
+            <Text style={styles.headerAmbValue} numberOfLines={3}>
+              {displayAmbulanceLine(todayAssignment)}
+            </Text>
+          </View>
+        </View>
       </View>
+    );
+  }, [errorMessage, isLoading, todayAssignment]);
+
+  const showHeaderTripCountChip =
+    !isLoading && !errorMessage && todayAssignment && todayStatus === "in-progress";
+
+  return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <View style={styles.headerTopRow}>
+            <View style={styles.headerTitleCluster}>
+              <Text style={styles.title} numberOfLines={1}>
+                Mi Jornada
+              </Text>
+              {showHeaderTripCountChip ? (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.headerTripCountChip,
+                    pressed ? styles.headerTripCountChipPressed : null,
+                  ]}
+                  onPress={() => onOpenWorkdayClosure?.()}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${tripsCountForBanner} viajes — abrir cierre de jornada`}
+                  hitSlop={6}
+                >
+                  <Text style={styles.headerTripCountText}>{tripsCountForBanner}</Text>
+                </Pressable>
+              ) : null}
+            </View>
+            <Pressable
+              style={({ pressed }) => [styles.refreshFab, pressed ? styles.refreshFabPressed : null]}
+              onPress={() => void loadWorkday()}
+              accessibilityRole="button"
+              accessibilityLabel="Refrescar"
+              hitSlop={6}
+            >
+              <Ionicons name="refresh" size={22} color="#334155" />
+            </Pressable>
+          </View>
+          {headerAssignmentBlock}
+        </View>
 
       {isLoading ? (
         <View style={styles.centerState}>
@@ -153,47 +315,39 @@ export function WorkerWorkdayScreen({ user }: Props) {
           </Pressable>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Estado de hoy</Text>
-            <Text style={styles.statusText}>{statusLabel}</Text>
-            {todayAssignment ? (
-              <View style={styles.detailsList}>
-                <Text style={styles.detailLine}>Dienst #{todayAssignment.dienstNumber ?? "-"}</Text>
-                <Text style={styles.detailLine}>
-                  Turno: {todayAssignment.startTime ?? "--:--"} - {todayAssignment.endTime ?? "--:--"}
-                </Text>
-                <Text style={styles.detailLine}>
-                  Viajes pendientes del dia: {todayTrips.length}
+        <View style={styles.mainColumn}>
+          <View style={styles.topSection}>
+            {todayAssignment && tripPanelAssignment ? (
+              <View style={styles.tripPanelShell}>
+                <WorkerTripStepPanel
+                  assignedDay={tripPanelAssignment}
+                  canStartWork={canStartWork}
+                  blocked={tripsBlocked}
+                  onTripCreated={() => void loadWorkday({ silent: true })}
+                />
+              </View>
+            ) : todayAssignment && !tripPanelAssignment ? (
+              <View style={styles.card}>
+                <Text style={styles.hintText}>
+                  La asignacion de hoy no incluye conductor y medico identificados; no se puede registrar
+                  un viaje desde la app.
                 </Text>
               </View>
-            ) : (
-              <Text style={styles.detailLine}>No hay asignacion activa para la fecha actual.</Text>
-            )}
-          </View>
+            ) : null}
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Resumen reciente</Text>
-            {recentSummaries.length === 0 ? (
-              <Text style={styles.emptyText}>Sin cierres recientes.</Text>
-            ) : (
-              recentSummaries.map((item) => (
-                <View key={item._id} style={styles.summaryRow}>
-                  <View style={styles.summaryLeft}>
-                    <Text style={styles.summaryDate}>{item.date}</Text>
-                    <Text style={styles.summaryMeta}>
-                      {item.isFinalClosure ? "Cierre final" : "Cierre parcial"} · Trips:{" "}
-                      {item.totalRealTrips ?? 0}
-                    </Text>
-                  </View>
-                  <Text style={styles.summaryKm}>{item.totalDienstKm ?? 0} km</Text>
-                </View>
-              ))
-            )}
+            {todayStatus !== "in-progress" ? (
+              <View style={[styles.cardCompact, styles.workdayStatusBelowForm]}>
+                <Text style={styles.statusOneLine}>
+                  {todayAssignment
+                    ? `${statusLabel} · ${tripsCountForBanner} viaje(s)`
+                    : statusLabel}
+                </Text>
+              </View>
+            ) : null}
           </View>
-        </ScrollView>
+        </View>
       )}
-    </SafeAreaView>
+      </SafeAreaView>
   );
 }
 
@@ -204,33 +358,139 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 8,
     paddingBottom: 8,
-    gap: 2,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
+  },
+  headerTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  headerTitleCluster: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
+    gap: 8,
   },
   title: {
+    flexShrink: 1,
     fontSize: 22,
     fontWeight: "700",
     color: "#0f172a",
   },
-  subtitle: {
-    fontSize: 14,
-    color: "#64748b",
-  },
-  refreshButton: {
-    marginTop: 6,
-    alignSelf: "flex-start",
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 8,
+  headerTripCountChip: {
+    height: 32,
+    minWidth: 36,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: "#ffffff",
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ecfdf5",
+    borderWidth: 1,
+    borderColor: "#a7f3d0",
+    flexShrink: 0,
   },
-  refreshButtonText: {
-    color: "#334155",
-    fontWeight: "700",
+  headerTripCountChipPressed: {
+    opacity: 0.9,
+    backgroundColor: "#d1fae5",
+  },
+  headerTripCountText: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#047857",
+    fontVariant: ["tabular-nums"],
+  },
+  refreshFab: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    flexShrink: 0,
+  },
+  refreshFabPressed: {
+    backgroundColor: "#f1f5f9",
+    opacity: 0.92,
+  },
+  headerMeta: {
+    gap: 0,
+  },
+  headerThreeColRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  headerCol: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  headerColLeft: {
+    alignItems: "flex-start",
+  },
+  headerColCenter: {
+    alignItems: "center",
+  },
+  headerColRight: {
+    alignItems: "flex-end",
+  },
+  headerColLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#64748b",
+    alignSelf: "stretch",
+  },
+  headerColLabelCenter: {
+    textAlign: "center",
+  },
+  headerColLabelRight: {
+    textAlign: "right",
+  },
+  headerDienstNumber: {
     fontSize: 12,
+    fontWeight: "800",
+    color: "#0f172a",
+    alignSelf: "stretch",
+  },
+  headerSchedule: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#475569",
+    lineHeight: 15,
+    fontVariant: ["tabular-nums"],
+    alignSelf: "stretch",
+  },
+  headerTeamName: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#334155",
+    lineHeight: 14,
+    alignSelf: "stretch",
+  },
+  headerTeamNameCenter: {
+    textAlign: "center",
+  },
+  headerAmbValue: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#334155",
+    lineHeight: 15,
+    textAlign: "right",
+    alignSelf: "stretch",
+  },
+  headerMetaMuted: {
+    fontSize: 11,
+    color: "#94a3b8",
+    lineHeight: 15,
   },
   centerState: {
     flex: 1,
@@ -258,10 +518,24 @@ const styles = StyleSheet.create({
     color: "#0f766e",
     fontWeight: "700",
   },
-  scrollContent: {
+  mainColumn: {
+    flex: 1,
+  },
+  topSection: {
+    flex: 1,
+    minHeight: 0,
     paddingHorizontal: 16,
-    paddingBottom: 16,
-    gap: 10,
+    paddingTop: 0,
+    gap: 8,
+  },
+  tripPanelShell: {
+    flex: 1,
+    minHeight: 0,
+    width: "100%",
+  },
+  workdayStatusBelowForm: {
+    flexShrink: 0,
+    alignSelf: "stretch",
   },
   card: {
     backgroundColor: "#ffffff",
@@ -270,6 +544,102 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     gap: 8,
+  },
+  cardCompact: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  cardCompactExpandable: {
+    gap: 6,
+    alignSelf: "stretch",
+    width: "100%",
+  },
+  statusHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  statusOneLine: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#475569",
+  },
+  dropdownChevron: {
+    fontSize: 11,
+    color: "#64748b",
+    fontWeight: "700",
+    width: 18,
+    textAlign: "center",
+  },
+  tripsDropdownList: {
+    alignSelf: "stretch",
+    width: "100%",
+    marginTop: 4,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+  },
+  tripGridRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    alignSelf: "stretch",
+    width: "100%",
+    paddingVertical: 8,
+    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#e2e8f0",
+  },
+  tripColAuf: {
+    flex: 1.1,
+    minWidth: 0,
+    justifyContent: "center",
+  },
+  tripColPat: {
+    flex: 1.2,
+    minWidth: 0,
+    justifyContent: "center",
+  },
+  tripColMin: {
+    width: 64,
+    flexShrink: 0,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+  tripColKm: {
+    width: 64,
+    flexShrink: 0,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+  tripCellText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#334155",
+    lineHeight: 15,
+  },
+  tripCellStorno: {
+    color: "#be123c",
+  },
+  tripStornoBadge: {
+    marginTop: 2,
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#be123c",
+    letterSpacing: 0.2,
+  },
+  tripMetricText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#0f172a",
+    lineHeight: 16,
+    fontVariant: ["tabular-nums"],
+    textAlign: "right",
+    width: "100%",
   },
   cardTitle: {
     fontSize: 16,
@@ -288,36 +658,9 @@ const styles = StyleSheet.create({
     color: "#475569",
     fontSize: 13,
   },
-  emptyText: {
+  hintText: {
     color: "#64748b",
     fontSize: 13,
-  },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    borderRadius: 8,
-    padding: 10,
-    backgroundColor: "#f8fafc",
-  },
-  summaryLeft: {
-    flex: 1,
-    gap: 2,
-  },
-  summaryDate: {
-    color: "#0f172a",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  summaryMeta: {
-    color: "#64748b",
-    fontSize: 12,
-  },
-  summaryKm: {
-    color: "#0f172a",
-    fontSize: 12,
-    fontWeight: "700",
+    lineHeight: 18,
   },
 });
