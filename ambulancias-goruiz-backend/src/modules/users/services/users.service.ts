@@ -376,6 +376,7 @@ export async function loginUserService(
   const expiresIn = isPrivileged ? "15m" : env.JWT_EXPIRES_IN;
   const token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: expiresIn as any });
 
+  const empRaw = (user.employeeNumber ?? "").trim();
   const userResponse: LoginResponseDTO["user"] = {
     _id: String(user._id),
     name: user.name,
@@ -388,6 +389,7 @@ export async function loginUserService(
     phone: user.phone,
     emergencyPhone: user.emergencyPhone,
     profileImage: user.profileImage,
+    ...(empRaw.length > 0 ? { employeeNumber: empRaw } : {}),
   };
   if (user.companyId) {
     userResponse.companyId = String(user.companyId);

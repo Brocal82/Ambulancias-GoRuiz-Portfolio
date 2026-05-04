@@ -99,8 +99,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { token: storedToken, userJson } = await getStoredSession();
         if (storedToken && userJson) {
           const parsedUser = JSON.parse(userJson) as AuthUser;
+          let userToRestore = parsedUser;
+          if (!parsedUser.employeeNumber?.trim() && parsedUser._id?.trim()) {
+            try {
+              userToRestore = await getUserById(parsedUser._id.trim(), storedToken);
+              await saveSession(storedToken, JSON.stringify(userToRestore));
+            } catch {
+              userToRestore = parsedUser;
+            }
+          }
           setToken(storedToken);
-          setUser(parsedUser);
+          setUser(userToRestore);
           await loadCompanyModules(storedToken);
         }
       } catch (_error) {
