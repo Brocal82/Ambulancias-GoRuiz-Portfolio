@@ -62,6 +62,8 @@ export interface LoginResponseDTO {
       | "jefe_logistica"
       | "superadmin";
     ambulanceRole?: AmbulanceRole;
+    /** Nº personal (visible en app worker / perfil). */
+    employeeNumber?: string;
     pscheinExpiry?: string;
     address?: string;
     phone?: string;
