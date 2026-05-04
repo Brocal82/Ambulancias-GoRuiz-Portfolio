@@ -33,8 +33,15 @@ export const checkTripLogic = (
   ];
 
   for (let i = 0; i < times.length - 1; i++) {
-    const aMin = parseHHMM(String(v[times[i].key]));
-    const bMin = parseHHMM(String(v[times[i + 1].key]));
+    const rawA = String(v[times[i].key]).trim();
+    const rawB = String(v[times[i + 1].key]).trim();
+    /** Borrador incompleto: sin comparar hasta que ambas marcas existan (evita falsear con timeEnd vacío vs "medianoche"). */
+    if (rawA === "" || rawB === "") {
+      continue;
+    }
+
+    const aMin = parseHHMM(rawA);
+    const bMin = parseHHMM(rawB);
 
     if (!isNaN(aMin) && !isNaN(bMin) && aMin > bMin) {
       return {

@@ -35,6 +35,7 @@ export type WorkdayTrip = {
   totalKm?: number;
   sentInSummary?: boolean;
   wasCancelled?: boolean;
+  /** 1 = cuenta en totales de jornada; 0 = Storno registrado pero no suma (misma regla que la web). */
   countsTrip?: 0 | 1;
 };
 

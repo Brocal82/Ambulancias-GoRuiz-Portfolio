@@ -4,7 +4,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -64,6 +63,46 @@ function emptyDraft(assigned: AssignedDayFull): CreateTripPayload {
   };
 }
 
+function metaCompleteForStorno(d: CreateTripPayload): boolean {
+  return (
+    d.auftragNumber.trim() !== "" &&
+    d.patientName.trim() !== "" &&
+    d.fromAddress.trim() !== "" &&
+    d.toAddress.trim() !== ""
+  );
+}
+
+/** Misma idea que la web: Storno con wasCancelled y countsTrip 0 | 1; horas/km pueden ir vacíos/0. */
+function buildStornoTripPayload(
+  d: CreateTripPayload,
+  assigned: AssignedDayFull,
+  countsTrip: 0 | 1,
+): CreateTripPayload {
+  const nz = (n: number) => (typeof n === "number" && !Number.isNaN(n) ? n : 0);
+  return {
+    date: assigned.date,
+    assignmentId: assigned.assignmentId,
+    driver: assigned.driver._id,
+    medic: assigned.medic._id,
+    auftragNumber: d.auftragNumber.trim(),
+    patientName: d.patientName.trim(),
+    fromAddress: d.fromAddress.trim(),
+    toAddress: d.toAddress.trim(),
+    timeWarning: d.timeWarning.trim() || getCurrentTimeString(),
+    timeAtHome: d.timeAtHome.trim() || "",
+    timePickup: d.timePickup.trim() || "",
+    timeArrival: d.timeArrival.trim() || "",
+    timeEnd: d.timeEnd.trim() || "",
+    kmStart: nz(d.kmStart),
+    kmEnd: nz(d.kmEnd),
+    wasCancelled: true,
+    cancelledAtPickup: false,
+    countsTrip,
+    reports: (d.reports ?? "").trim(),
+    countsForSummary: true,
+  };
+}
+
 function parsePositiveKm(raw: string): number | null {
   const trimmed = raw.trim().replace(",", ".");
   if (trimmed === "") return null;
@@ -97,13 +136,20 @@ export function WorkerTripStepPanel({
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [kmFieldFocus, setKmFieldFocus] = useState<null | "2" | "4">(null);
+  const [stornoBarOpen, setStornoBarOpen] = useState(false);
+  const [stornoCountsTrip, setStornoCountsTrip] = useState<0 | 1>(1);
 
-  const { width: windowWidth } = useWindowDimensions();
-  const roundStepSize = Math.min(176, Math.round(windowWidth * 0.42));
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const roundStepSize = Math.max(
+    118,
+    Math.min(176, Math.round(windowWidth * 0.42), Math.round(windowHeight * 0.26)),
+  );
 
   const draftRef = useRef(draft);
   const km2Ref = useRef(kmDraft2);
   const km4Ref = useRef(kmDraft4);
+  /** Paso del P1 al activar Anschluss; al cancelar se restaura (comportamiento tipo web). */
+  const anschlussResumeStepRef = useRef<1 | 2 | 3 | 4 | 5 | null>(null);
   useEffect(() => {
     draftRef.current = draft;
   }, [draft]);
@@ -131,8 +177,45 @@ export function WorkerTripStepPanel({
     clearStepHoldTimer();
   }, [phase, currentStep, clearStepHoldTimer]);
 
+  useEffect(() => {
+    if (phase === "meta" || currentStep <= 1) {
+      setStornoBarOpen(false);
+    }
+  }, [phase, currentStep]);
+
   const canUseKmStep2 = useMemo(() => parsePositiveKm(kmDraft2) !== null, [kmDraft2]);
   const canUseKmStep4 = useMemo(() => parsePositiveKm(kmDraft4) !== null, [kmDraft4]);
+  /** Odómetro destino (paso 4) estrictamente por debajo del de inicio: aviso visual, sin sustituir al error de hora LIBRE. */
+  const km4InvalidVsStart = useMemo(() => {
+    const k = parsePositiveKm(kmDraft4);
+    const start = Number(draft.kmStart);
+    if (k === null || !Number.isFinite(start) || start <= 0) {
+      return false;
+    }
+    return k < start;
+  }, [kmDraft4, draft.kmStart]);
+
+  /**
+   * Anschluss · P2 paso 2: el odómetro debe ser ≥ referencia del P1 (prioriza km destino P1 / paso 4 vía anschlussMinKmStart).
+   * Misma UX que paso 4 normal: rojo + botón deshabilitado si es menor.
+   */
+  const km2InvalidVsAnschlussFloor = useMemo(() => {
+    if (!anschlussAwaitingPatient2Step3) {
+      return false;
+    }
+    if (
+      typeof anschlussMinKmStart !== "number" ||
+      Number.isNaN(anschlussMinKmStart) ||
+      anschlussMinKmStart <= 0
+    ) {
+      return false;
+    }
+    const k = parsePositiveKm(kmDraft2);
+    if (k === null) {
+      return false;
+    }
+    return k < anschlussMinKmStart;
+  }, [anschlussAwaitingPatient2Step3, anschlussMinKmStart, kmDraft2]);
 
   const runCheckTripLogic = useCallback((row: TripDraft, minKm?: number) => {
     return checkTripLogic(row, false, minKm);
@@ -152,6 +235,24 @@ export function WorkerTripStepPanel({
       if (step === 2) {
         const km = parsePositiveKm(km2Ref.current);
         if (km === null) return;
+        const base = draftRef.current;
+        const logic2 = runCheckTripLogic(
+          {
+            timeWarning: base.timeWarning,
+            timeAtHome: nowStr,
+            timePickup: base.timePickup,
+            timeArrival: base.timeArrival,
+            timeEnd: base.timeEnd,
+            kmStart: km,
+            kmEnd: base.kmEnd,
+          },
+          anschlussMinKmStart,
+        );
+        if (logic2.error) {
+          setErrorMessage(logic2.error);
+          return;
+        }
+        setErrorMessage(undefined);
         setDraft((prev) => ({ ...prev, timeAtHome: nowStr, kmStart: km }));
         setCurrentStep(3);
         return;
@@ -179,6 +280,7 @@ export function WorkerTripStepPanel({
             setPendingPatient1Anschluss(null);
             setAnschlussAwaitingPatient2Step3(false);
             setAnschlussMinKmStart(undefined);
+            anschlussResumeStepRef.current = null;
             setDraft((prev) => ({ ...prev, timePickup: nowStr }));
             setCurrentStep(4);
             setKmDraft4("");
@@ -203,6 +305,24 @@ export function WorkerTripStepPanel({
       if (step === 4) {
         const km = parsePositiveKm(km4Ref.current);
         if (km === null) return;
+        const base = draftRef.current;
+        const logic4 = runCheckTripLogic(
+          {
+            timeWarning: base.timeWarning,
+            timeAtHome: base.timeAtHome,
+            timePickup: base.timePickup,
+            timeArrival: nowStr,
+            timeEnd: base.timeEnd,
+            kmStart: base.kmStart,
+            kmEnd: km,
+          },
+          anschlussMinKmStart,
+        );
+        if (logic4.error) {
+          setErrorMessage(logic4.error);
+          return;
+        }
+        setErrorMessage(undefined);
         setDraft((prev) => ({ ...prev, timeArrival: nowStr, kmEnd: km }));
         setCurrentStep(5);
         return;
@@ -244,6 +364,7 @@ export function WorkerTripStepPanel({
           setPendingPatient1Anschluss(null);
           setAnschlussAwaitingPatient2Step3(false);
           setAnschlussMinKmStart(undefined);
+          anschlussResumeStepRef.current = null;
         } catch (error) {
           if (error instanceof ApiError) {
             setErrorMessage(error.message);
@@ -282,25 +403,39 @@ export function WorkerTripStepPanel({
       setErrorMessage("Indica destino antes de usar Anschluss.");
       return;
     }
+    if (!draft.timePickup.trim()) {
+      setErrorMessage("Registra primero la hora de carga del paciente (paso 3) antes de Anschluss.");
+      return;
+    }
     const logicBefore = runCheckTripLogic(
       {
         timeWarning: draft.timeWarning,
         timeAtHome: draft.timeAtHome,
         timePickup: draft.timePickup,
         timeArrival: draft.timeArrival,
-        timeEnd: draft.timeEnd || "00:00",
+        timeEnd: draft.timeEnd,
         kmStart: draft.kmStart,
         kmEnd: draft.kmEnd,
       },
-      anschlussMinKmStart,
+      undefined,
     );
     if (logicBefore.error) {
       setErrorMessage(logicBefore.error);
       return;
     }
+    anschlussResumeStepRef.current = currentStep;
     const snapshot: CreateTripPayload = { ...draft };
     setPendingPatient1Anschluss(snapshot);
-    setAnschlussMinKmStart(Number(snapshot.kmStart));
+    /** Odómetro mínimo coherente: destino P1 si ya hay km de llegada; si no, último km conocido del P1 (domicilio/carga). */
+    const p1KmEnd = Number(snapshot.kmEnd);
+    const p1KmStart = Number(snapshot.kmStart);
+    const anschlussKmFloor =
+      !Number.isNaN(p1KmEnd) && p1KmEnd > 0
+        ? p1KmEnd
+        : !Number.isNaN(p1KmStart) && p1KmStart > 0
+          ? p1KmStart
+          : undefined;
+    setAnschlussMinKmStart(anschlussKmFloor);
     setAnschlussAwaitingPatient2Step3(true);
     setDraft({
       date: assignedDay.date,
@@ -327,21 +462,131 @@ export function WorkerTripStepPanel({
     setCurrentStep(1);
     setKmDraft2("");
     setKmDraft4("");
+    setPhase("meta");
     setErrorMessage(undefined);
-  }, [anschlussMinKmStart, assignedDay, draft, runCheckTripLogic]);
+  }, [assignedDay, currentStep, draft, runCheckTripLogic]);
 
   const handleCancelAnschluss = useCallback(() => {
     const snap = pendingPatient1Anschluss;
     if (!snap) return;
+    const resumeStep = anschlussResumeStepRef.current;
+    anschlussResumeStepRef.current = null;
     setDraft({ ...snap });
     setPendingPatient1Anschluss(null);
     setAnschlussAwaitingPatient2Step3(false);
     setAnschlussMinKmStart(undefined);
-    setCurrentStep(5);
+    setPhase("steps");
+    if (resumeStep != null) {
+      setCurrentStep(resumeStep);
+    }
     setKmDraft2(String(snap.kmStart || ""));
     setKmDraft4(String(snap.kmEnd || ""));
     setErrorMessage(undefined);
   }, [pendingPatient1Anschluss]);
+
+  const toggleStornoBar = useCallback(() => {
+    if (!canStartWork) {
+      setErrorMessage("Aun no puedes registrar viajes en esta ventana horaria.");
+      return;
+    }
+    if (!metaCompleteForStorno(draftRef.current)) {
+      setErrorMessage("Completa Auftrag, paciente, origen y destino para Storno.");
+      return;
+    }
+    if (anschlussAwaitingPatient2Step3 && pendingPatient1Anschluss) {
+      setErrorMessage("Cancela el Anschluss antes de registrar un Storno.");
+      return;
+    }
+    setStornoBarOpen((open) => {
+      const next = !open;
+      if (next) setStornoCountsTrip(1);
+      return next;
+    });
+    setErrorMessage(undefined);
+  }, [anschlussAwaitingPatient2Step3, canStartWork, pendingPatient1Anschluss]);
+
+  const handleConfirmStorno = useCallback(async () => {
+    if (!canStartWork) {
+      setErrorMessage("Aun no puedes registrar viajes en esta ventana horaria.");
+      return;
+    }
+    if (anschlussAwaitingPatient2Step3 && pendingPatient1Anschluss) {
+      setErrorMessage("Cancela el Anschluss antes de registrar un Storno.");
+      return;
+    }
+    const d = draftRef.current;
+    if (!metaCompleteForStorno(d)) {
+      setErrorMessage("Completa Auftrag, paciente, origen y destino.");
+      return;
+    }
+    const payload = buildStornoTripPayload(d, assignedDay, stornoCountsTrip);
+    setErrorMessage(undefined);
+    setIsSaving(true);
+    try {
+      await createWorkdayTrip(payload);
+      onTripCreated();
+      setStornoBarOpen(false);
+      setStornoCountsTrip(1);
+      setDraft(emptyDraft(assignedDay));
+      setPhase("meta");
+      setCurrentStep(1);
+      setKmDraft2("");
+      setKmDraft4("");
+      setPendingPatient1Anschluss(null);
+      setAnschlussAwaitingPatient2Step3(false);
+      setAnschlussMinKmStart(undefined);
+      anschlussResumeStepRef.current = null;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage("No se pudo guardar el Storno.");
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  }, [
+    anschlussAwaitingPatient2Step3,
+    assignedDay,
+    canStartWork,
+    onTripCreated,
+    pendingPatient1Anschluss,
+    stornoCountsTrip,
+  ]);
+
+  const p1TripDraftForAnschluss: TripDraft = useMemo(
+    () => ({
+      timeWarning: draft.timeWarning,
+      timeAtHome: draft.timeAtHome,
+      timePickup: draft.timePickup,
+      timeArrival: draft.timeArrival,
+      timeEnd: draft.timeEnd,
+      kmStart: draft.kmStart,
+      kmEnd: draft.kmEnd,
+    }),
+    [
+      draft.timeWarning,
+      draft.timeAtHome,
+      draft.timePickup,
+      draft.timeArrival,
+      draft.timeEnd,
+      draft.kmStart,
+      draft.kmEnd,
+    ],
+  );
+
+  const anschlussCanStart = useMemo(() => {
+    if (phase !== "steps" || anschlussAwaitingPatient2Step3) return false;
+    if (!draft.toAddress.trim() || !draft.timePickup.trim()) return false;
+    return !runCheckTripLogic(p1TripDraftForAnschluss, undefined).error;
+  }, [
+    phase,
+    anschlussAwaitingPatient2Step3,
+    draft.toAddress,
+    draft.timePickup,
+    p1TripDraftForAnschluss,
+    runCheckTripLogic,
+  ]);
 
   if (blocked) {
     return (
@@ -363,11 +608,16 @@ export function WorkerTripStepPanel({
 
   const needsKmNow = currentStep === 2 || currentStep === 4;
   const kmReadyNow = currentStep === 2 ? canUseKmStep2 : currentStep === 4 ? canUseKmStep4 : true;
-  const bigStepDisabled = !canStartWork || isSaving || (needsKmNow && !kmReadyNow);
+  const bigStepDisabled =
+    !canStartWork ||
+    isSaving ||
+    (needsKmNow && !kmReadyNow) ||
+    (currentStep === 2 && km2InvalidVsAnschlussFloor) ||
+    (currentStep === 4 && km4InvalidVsStart);
 
   const showAnschlussSlot =
-    phase === "steps" && currentStep >= 4 && !anschlussAwaitingPatient2Step3;
-  const anschlussEnabled = currentStep === 5 && !isSaving;
+    phase === "steps" && draft.timePickup.trim() !== "" && !anschlussAwaitingPatient2Step3;
+  const anschlussEnabled = anschlussCanStart && !isSaving;
 
   const goToSteps = () => {
     if (
@@ -380,6 +630,8 @@ export function WorkerTripStepPanel({
       return;
     }
     setErrorMessage(undefined);
+    setStornoBarOpen(false);
+    setStornoCountsTrip(1);
     setPhase("steps");
     setCurrentStep(1);
     setKmDraft2("");
@@ -387,6 +639,8 @@ export function WorkerTripStepPanel({
   };
 
   const resetDraft = () => {
+    setStornoBarOpen(false);
+    setStornoCountsTrip(1);
     setPhase("meta");
     setCurrentStep(1);
     setDraft(emptyDraft(assignedDay));
@@ -395,8 +649,63 @@ export function WorkerTripStepPanel({
     setPendingPatient1Anschluss(null);
     setAnschlussAwaitingPatient2Step3(false);
     setAnschlussMinKmStart(undefined);
+    anschlussResumeStepRef.current = null;
     setErrorMessage(undefined);
   };
+
+  const showStornoUi = phase === "steps" && currentStep > 1;
+
+  const stornoPanelEl = showStornoUi && stornoBarOpen ? (
+    <View style={styles.stornoPanel}>
+      <Text style={styles.stornoPanelTitle}>Cuenta en viajes de la jornada</Text>
+      <View style={styles.stornoPillsRow}>
+        <Pressable
+          onPress={() => setStornoCountsTrip(1)}
+          style={[styles.stornoPill, stornoCountsTrip === 1 ? styles.stornoPillActiveYes : null]}
+        >
+          <Text
+            style={[
+              styles.stornoPillText,
+              stornoCountsTrip === 1 ? styles.stornoPillTextActiveYes : null,
+            ]}
+          >
+            +1
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setStornoCountsTrip(0)}
+          style={[styles.stornoPill, stornoCountsTrip === 0 ? styles.stornoPillActiveNo : null]}
+        >
+          <Text
+            style={[
+              styles.stornoPillText,
+              stornoCountsTrip === 0 ? styles.stornoPillTextActiveNo : null,
+            ]}
+          >
+            0
+          </Text>
+        </Pressable>
+      </View>
+      <View style={styles.stornoActionsRow}>
+        <Pressable
+          style={styles.stornoSecondaryButton}
+          onPress={() => {
+            setStornoBarOpen(false);
+            setErrorMessage(undefined);
+          }}
+        >
+          <Text style={styles.stornoSecondaryButtonText}>Cancelar</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.stornoPrimaryButton, isSaving ? styles.stornoPrimaryButtonDisabled : null]}
+          disabled={isSaving}
+          onPress={() => void handleConfirmStorno()}
+        >
+          <Text style={styles.stornoPrimaryButtonText}>Guardar Storno</Text>
+        </Pressable>
+      </View>
+    </View>
+  ) : null;
 
   return (
     <KeyboardAvoidingView
@@ -406,16 +715,15 @@ export function WorkerTripStepPanel({
     >
       {phase === "meta" ? (
         <View style={[styles.card, styles.panelCard]}>
-          <Text style={styles.cardTitle}>Nuevo viaje</Text>
+          <Text style={styles.cardTitle}>
+            {anschlussAwaitingPatient2Step3 ? "Paciente 2 (Anschluss)" : "Nuevo viaje"}
+          </Text>
           <View style={styles.metaColumn}>
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              style={styles.metaScroll}
-              contentContainerStyle={styles.metaScrollContent}
-              showsVerticalScrollIndicator={false}
-            >
+            <View style={styles.metaBody}>
               <View style={styles.patientDataCard}>
-                <Text style={styles.patientCardTitle}>Datos del paciente</Text>
+                <Text style={styles.patientCardTitle}>
+                  {anschlussAwaitingPatient2Step3 ? "Datos del paciente 2" : "Datos del paciente"}
+                </Text>
                 <View style={styles.formFieldBlock}>
                   <Text style={styles.fieldLabel}>Auftrag</Text>
                   <TextInput
@@ -435,13 +743,20 @@ export function WorkerTripStepPanel({
                   />
                 </View>
                 <View style={styles.formFieldBlock}>
-                  <Text style={styles.fieldLabel}>Recogida (origen)</Text>
+                  <Text style={styles.fieldLabel}>Recogida (origen del P2)</Text>
                   <TextInput
-                    style={styles.inputInCard}
+                    style={[
+                      styles.inputInCard,
+                      anschlussAwaitingPatient2Step3 ? styles.inputInCardReadonly : null,
+                    ]}
                     value={draft.fromAddress}
+                    editable={!anschlussAwaitingPatient2Step3}
                     onChangeText={(text) => setDraft((prev) => ({ ...prev, fromAddress: text }))}
                     placeholder="Direccion de recogida"
                   />
+                  {anschlussAwaitingPatient2Step3 ? (
+                    <Text style={styles.anschlussFieldHint}>Enlazada al destino del paciente 1.</Text>
+                  ) : null}
                 </View>
                 <View style={styles.formFieldBlock}>
                   <Text style={styles.fieldLabel}>Destino</Text>
@@ -453,8 +768,8 @@ export function WorkerTripStepPanel({
                   />
                 </View>
               </View>
-              {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-            </ScrollView>
+            </View>
+            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
             <Pressable style={styles.primaryButton} onPress={goToSteps}>
               <Text style={styles.primaryButtonText}>Continuar</Text>
             </Pressable>
@@ -462,40 +777,37 @@ export function WorkerTripStepPanel({
         </View>
       ) : (
         <View style={[styles.card, styles.panelCard]}>
-          <ScrollView
-            style={styles.stepsScroll}
-            contentContainerStyle={styles.stepsScrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
+          <View style={styles.stepsMain}>
           <View style={styles.patientDataCard}>
             <Text style={styles.patientCardTitle}>Datos del servicio</Text>
-            <View style={[styles.serviceTwoColRow, styles.serviceRowDivider]}>
-              <View style={styles.serviceHalfCol}>
-                <Text style={styles.patientDataLabel}>Auftrag</Text>
-                <Text style={styles.patientDataValue} numberOfLines={3}>
-                  {draft.auftragNumber.trim() || "—"}
-                </Text>
+            <View style={styles.serviceRowsBlock}>
+              <View style={styles.serviceTwoColRow}>
+                <View style={styles.serviceHalfCol}>
+                  <Text style={styles.patientDataLabel}>Auftrag</Text>
+                  <Text style={styles.patientDataValue} numberOfLines={3}>
+                    {draft.auftragNumber.trim() || "—"}
+                  </Text>
+                </View>
+                <View style={styles.serviceHalfCol}>
+                  <Text style={styles.patientDataLabel}>Paciente</Text>
+                  <Text style={styles.patientDataValue} numberOfLines={3}>
+                    {draft.patientName.trim() || "—"}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.serviceHalfCol}>
-                <Text style={styles.patientDataLabel}>Paciente</Text>
-                <Text style={styles.patientDataValue} numberOfLines={3}>
-                  {draft.patientName.trim() || "—"}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.serviceTwoColRow}>
-              <View style={styles.serviceHalfCol}>
-                <Text style={styles.patientDataLabel}>Recogida</Text>
-                <Text style={styles.patientDataValue} numberOfLines={5}>
-                  {draft.fromAddress.trim() || "—"}
-                </Text>
-              </View>
-              <View style={styles.serviceHalfCol}>
-                <Text style={styles.patientDataLabel}>Destino</Text>
-                <Text style={styles.patientDataValue} numberOfLines={5}>
-                  {draft.toAddress.trim() || "—"}
-                </Text>
+              <View style={styles.serviceTwoColRow}>
+                <View style={styles.serviceHalfCol}>
+                  <Text style={styles.patientDataLabel}>Recogida</Text>
+                  <Text style={styles.patientDataValue} numberOfLines={3}>
+                    {draft.fromAddress.trim() || "—"}
+                  </Text>
+                </View>
+                <View style={styles.serviceHalfCol}>
+                  <Text style={styles.patientDataLabel}>Destino</Text>
+                  <Text style={styles.patientDataValue} numberOfLines={3}>
+                    {draft.toAddress.trim() || "—"}
+                  </Text>
+                </View>
               </View>
             </View>
             {anschlussAwaitingPatient2Step3 ? (
@@ -518,7 +830,8 @@ export function WorkerTripStepPanel({
                 style={[
                   styles.kmInputHero,
                   kmFieldFocus === "2" ? styles.kmInputHeroFocused : null,
-                  canUseKmStep2 ? styles.kmInputHeroValid : null,
+                  canUseKmStep2 && !km2InvalidVsAnschlussFloor ? styles.kmInputHeroValid : null,
+                  km2InvalidVsAnschlussFloor ? styles.kmInputHeroInvalid : null,
                 ]}
                 keyboardType="decimal-pad"
                 value={kmDraft2}
@@ -537,7 +850,8 @@ export function WorkerTripStepPanel({
                 style={[
                   styles.kmInputHero,
                   kmFieldFocus === "4" ? styles.kmInputHeroFocused : null,
-                  canUseKmStep4 ? styles.kmInputHeroValid : null,
+                  canUseKmStep4 && !km4InvalidVsStart ? styles.kmInputHeroValid : null,
+                  km4InvalidVsStart ? styles.kmInputHeroInvalid : null,
                 ]}
                 keyboardType="decimal-pad"
                 value={kmDraft4}
@@ -582,55 +896,88 @@ export function WorkerTripStepPanel({
             </Pressable>
             <Text style={styles.bigStepTitle}>{STEP_TITLES[currentStep]}</Text>
           </View>
-          </ScrollView>
+          </View>
 
           <View style={styles.stepsFooter}>
-            {showAnschlussSlot ? (
-              <View style={styles.anschlussFooterBlock}>
-                <Pressable
-                  disabled={!anschlussEnabled}
-                  onPress={handleStartAnschluss}
-                  android_ripple={
-                    anschlussEnabled ? { color: "rgba(255,255,255,0.35)", foreground: true } : undefined
-                  }
-                  style={({ pressed }) => [
-                    styles.orangePillButton,
-                    !anschlussEnabled ? styles.orangePillButtonDisabled : null,
-                    anschlussEnabled && pressed ? styles.orangePillButtonPressed : null,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.orangePillButtonText,
-                      !anschlussEnabled ? styles.orangePillButtonTextDisabled : null,
-                    ]}
-                  >
-                    Anschluss (paciente 2)
-                  </Text>
-                </Pressable>
+            {isSaving ? (
+              <View style={styles.footerStatusBlock}>
+                <ActivityIndicator color="#0f766e" />
               </View>
             ) : null}
-
-            {pendingPatient1Anschluss && anschlussAwaitingPatient2Step3 ? (
-              <Pressable
-                onPress={handleCancelAnschluss}
-                android_ripple={{ color: "rgba(220, 38, 38, 0.15)", foreground: true }}
-                style={({ pressed }) => [styles.redOutlineButton, pressed ? styles.redOutlineButtonPressed : null]}
-              >
-                <Text style={styles.redOutlineButtonText}>Cancelar Anschluss</Text>
-              </Pressable>
+            {errorMessage ? (
+              <View style={styles.footerStatusBlock}>
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
             ) : null}
+            {showStornoUi ? stornoPanelEl : null}
 
-            {isSaving ? <ActivityIndicator color="#0f766e" /> : null}
-            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+            <View style={styles.footerIconRow}>
+              <View style={styles.footerLeftActions}>
+                {showAnschlussSlot ? (
+                  <Pressable
+                    hitSlop={10}
+                    disabled={!anschlussEnabled}
+                    onPress={handleStartAnschluss}
+                    accessibilityRole="button"
+                    accessibilityLabel="Anschluss, segundo paciente"
+                    accessibilityState={{ disabled: !anschlussEnabled }}
+                    android_ripple={
+                      anschlussEnabled
+                        ? { color: "rgba(255,255,255,0.35)", foreground: true, borderless: true }
+                        : undefined
+                    }
+                    style={({ pressed }) => [
+                      styles.footerFabOrange,
+                      !anschlussEnabled ? styles.footerFabOrangeDisabled : null,
+                      anschlussEnabled && pressed ? styles.footerFabPressed : null,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.footerFabSymbol,
+                        !anschlussEnabled ? styles.footerFabSymbolDisabledOrange : null,
+                      ]}
+                    >
+                      ∞
+                    </Text>
+                  </Pressable>
+                ) : null}
+                {pendingPatient1Anschluss && anschlussAwaitingPatient2Step3 ? (
+                  <Pressable
+                    hitSlop={10}
+                    onPress={handleCancelAnschluss}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cancelar Anschluss"
+                    android_ripple={{ color: "rgba(220, 38, 38, 0.2)", foreground: true, borderless: true }}
+                    style={({ pressed }) => [
+                      styles.footerFabOutlineRed,
+                      pressed ? styles.footerFabOutlineRedPressed : null,
+                    ]}
+                  >
+                    <Text style={styles.footerFabSymbolOutline}>↩</Text>
+                  </Pressable>
+                ) : null}
+              </View>
 
-            <Pressable
-              onPress={resetDraft}
-              android_ripple={{ color: "rgba(255,255,255,0.35)", foreground: true }}
-              style={({ pressed }) => [styles.redStornoButton, pressed ? styles.redStornoButtonPressed : null]}
-            >
-              <Text style={styles.redStornoButtonText}>Storno</Text>
-            </Pressable>
+              {showStornoUi ? (
+                <Pressable
+                  hitSlop={10}
+                  onPress={toggleStornoBar}
+                  accessibilityRole="button"
+                  accessibilityLabel="Storno: registrar cancelacion"
+                  android_ripple={{ color: "rgba(255,255,255,0.35)", foreground: true, borderless: true }}
+                  style={({ pressed }) => [
+                    styles.footerFabRed,
+                    stornoBarOpen ? styles.footerFabRedActive : null,
+                    pressed ? styles.footerFabPressed : null,
+                  ]}
+                >
+                  <Text style={styles.footerFabSymbolWhite}>✖</Text>
+                </Pressable>
+              ) : (
+                <View style={styles.footerFabPlaceholder} />
+              )}
+            </View>
           </View>
         </View>
       )}
@@ -676,57 +1023,58 @@ const styles = StyleSheet.create({
     minHeight: 0,
     gap: 10,
   },
-  metaScroll: {
+  metaBody: {
     flex: 1,
-    minHeight: 80,
+    minHeight: 0,
+    gap: 8,
+    paddingBottom: 4,
   },
-  metaScrollContent: {
-    flexGrow: 1,
+  stepsMain: {
+    flex: 1,
+    minHeight: 0,
     gap: 8,
     paddingBottom: 4,
   },
   patientDataCard: {
     borderWidth: 1,
     borderColor: "#e2e8f0",
-    borderRadius: 12,
-    padding: 10,
-    gap: 8,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+    gap: 5,
     backgroundColor: "#fafafa",
+    flexShrink: 0,
   },
   patientCardTitle: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#334155",
-    letterSpacing: 0.4,
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#475569",
+    letterSpacing: 0.15,
+  },
+  serviceRowsBlock: {
+    gap: 5,
   },
   serviceTwoColRow: {
     flexDirection: "row",
-    alignItems: "stretch",
-    gap: 10,
-  },
-  serviceRowDivider: {
-    paddingBottom: 8,
-    marginBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
+    alignItems: "flex-start",
+    gap: 8,
   },
   serviceHalfCol: {
     flex: 1,
     minWidth: 0,
-    gap: 3,
+    gap: 1,
   },
   patientDataLabel: {
     fontSize: 10,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#64748b",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.1,
   },
   patientDataValue: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
     color: "#0f172a",
-    lineHeight: 18,
+    lineHeight: 15,
   },
   formFieldBlock: {
     gap: 4,
@@ -741,21 +1089,115 @@ const styles = StyleSheet.create({
     borderColor: "#cbd5e1",
     borderRadius: 8,
     paddingHorizontal: 10,
-    paddingVertical: 10,
-    fontSize: 15,
+    paddingVertical: 7,
+    fontSize: 14,
     backgroundColor: "#ffffff",
     color: "#0f172a",
+  },
+  inputInCardReadonly: {
+    backgroundColor: "#f1f5f9",
+    color: "#475569",
+  },
+  anschlussFieldHint: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#0f766e",
+    marginTop: 2,
   },
   primaryButton: {
     backgroundColor: "#0f766e",
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
+    flexShrink: 0,
   },
   primaryButtonText: {
     color: "#ffffff",
     fontWeight: "800",
     fontSize: 16,
+  },
+  stornoPanel: {
+    borderWidth: 1,
+    borderColor: "#fecdd3",
+    borderRadius: 10,
+    padding: 10,
+    gap: 8,
+    backgroundColor: "#fff1f2",
+    flexShrink: 0,
+  },
+  stornoPanelTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#9f1239",
+    textAlign: "center",
+  },
+  stornoPillsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
+  },
+  stornoPill: {
+    minWidth: 52,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+  },
+  stornoPillActiveYes: {
+    borderColor: "#22c55e",
+    backgroundColor: "#ecfdf5",
+  },
+  stornoPillActiveNo: {
+    borderColor: "#f43f5e",
+    backgroundColor: "#fff1f2",
+  },
+  stornoPillText: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#64748b",
+  },
+  stornoPillTextActiveYes: {
+    color: "#15803d",
+  },
+  stornoPillTextActiveNo: {
+    color: "#be123c",
+  },
+  stornoActionsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 2,
+  },
+  stornoSecondaryButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  stornoSecondaryButtonText: {
+    color: "#64748b",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  stornoPrimaryButton: {
+    flex: 1,
+    backgroundColor: "#dc2626",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#b91c1c",
+  },
+  stornoPrimaryButtonDisabled: {
+    opacity: 0.55,
+  },
+  stornoPrimaryButtonText: {
+    color: "#ffffff",
+    fontWeight: "800",
+    fontSize: 14,
   },
   anschlussBanner: {
     fontSize: 11,
@@ -764,34 +1206,27 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   kmHeroWrap: {
-    gap: 6,
-    marginTop: 4,
+    gap: 4,
+    marginTop: 2,
+    flexShrink: 0,
   },
   kmHeroLabel: {
-    fontSize: 13,
-    fontWeight: "800",
+    fontSize: 12,
+    fontWeight: "700",
     color: "#0f172a",
-  },
-  stepsScroll: {
-    flex: 1,
-    minHeight: 0,
-  },
-  stepsScrollContent: {
-    gap: 10,
-    paddingBottom: 8,
   },
   kmInputHero: {
     borderWidth: 2,
     borderColor: "#cbd5e1",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 28,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontSize: 22,
     fontWeight: "800",
     textAlign: "center",
     backgroundColor: "#ffffff",
     color: "#0f172a",
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
   kmInputHeroFocused: {
     borderColor: "#0f766e",
@@ -805,11 +1240,16 @@ const styles = StyleSheet.create({
   kmInputHeroValid: {
     borderColor: "#22c55e",
   },
+  kmInputHeroInvalid: {
+    borderColor: "#dc2626",
+    backgroundColor: "#fef2f2",
+    color: "#991b1b",
+  },
   dotsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 6,
-    paddingHorizontal: 4,
+    marginTop: 3,
+    paddingHorizontal: 2,
   },
   stepDot: {
     width: 8,
@@ -822,10 +1262,12 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.35 }],
   },
   bigStepCenter: {
+    flex: 1,
+    minHeight: 0,
     justifyContent: "center",
     alignItems: "center",
-    gap: 10,
-    paddingVertical: 12,
+    gap: 8,
+    paddingVertical: 6,
   },
   roundStepButton: {
     alignItems: "center",
@@ -869,78 +1311,106 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   stepsFooter: {
-    gap: 8,
+    gap: 6,
     flexShrink: 0,
     flexGrow: 0,
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: "#e2e8f0",
   },
-  anschlussFooterBlock: {
-    gap: 4,
-    alignSelf: "stretch",
-  },
-  orangePillButton: {
-    alignSelf: "stretch",
-    borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+  footerStatusBlock: {
     alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  footerIconRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    minHeight: 52,
+    paddingHorizontal: 2,
+  },
+  footerLeftActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flexShrink: 0,
+  },
+  footerFabOrange: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#ea580c",
     borderWidth: 1,
     borderColor: "#c2410c",
+    overflow: "hidden",
   },
-  orangePillButtonDisabled: {
+  footerFabOrangeDisabled: {
     backgroundColor: "#ffedd5",
     borderColor: "#fdba74",
   },
-  orangePillButtonPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.99 }],
-  },
-  orangePillButtonText: {
-    color: "#ffffff",
-    fontWeight: "800",
-    fontSize: 15,
-  },
-  orangePillButtonTextDisabled: {
-    color: "#9a3412",
-  },
-  redOutlineButton: {
-    alignSelf: "stretch",
-    borderRadius: 10,
-    paddingVertical: 12,
+  footerFabRed: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#dc2626",
-    backgroundColor: "#ffffff",
-  },
-  redOutlineButtonPressed: {
-    backgroundColor: "#fef2f2",
-    opacity: 0.95,
-  },
-  redOutlineButtonText: {
-    color: "#b91c1c",
-    fontWeight: "800",
-    fontSize: 14,
-  },
-  redStornoButton: {
-    alignSelf: "stretch",
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#dc2626",
     borderWidth: 1,
     borderColor: "#b91c1c",
+    overflow: "hidden",
   },
-  redStornoButtonPressed: {
+  footerFabRedActive: {
+    borderWidth: 3,
+    borderColor: "#fecaca",
+  },
+  footerFabPlaceholder: {
+    width: 48,
+    height: 48,
+    flexShrink: 0,
+  },
+  footerFabOutlineRed: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ffffff",
+    borderWidth: 2,
+    borderColor: "#dc2626",
+    overflow: "hidden",
+  },
+  footerFabOutlineRedPressed: {
+    backgroundColor: "#fef2f2",
+    opacity: 0.96,
+  },
+  footerFabPressed: {
     opacity: 0.9,
-    transform: [{ scale: 0.99 }],
+    transform: [{ scale: 0.96 }],
   },
-  redStornoButtonText: {
+  footerFabSymbol: {
     color: "#ffffff",
-    fontWeight: "800",
-    fontSize: 14,
+    fontSize: 30,
+    fontWeight: "600",
+    lineHeight: 34,
+    marginTop: -2,
+  },
+  footerFabSymbolDisabledOrange: {
+    color: "#9a3412",
+  },
+  footerFabSymbolWhite: {
+    color: "#ffffff",
+    fontSize: 20,
+    fontWeight: "700",
+    lineHeight: 24,
+  },
+  footerFabSymbolOutline: {
+    color: "#b91c1c",
+    fontSize: 22,
+    fontWeight: "700",
+    lineHeight: 26,
   },
   errorText: {
     color: "#b91c1c",

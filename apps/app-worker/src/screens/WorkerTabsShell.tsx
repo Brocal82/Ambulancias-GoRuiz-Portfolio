@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppState, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -9,6 +10,7 @@ import { WorkerAgendaScreen } from "./WorkerAgendaScreen";
 import { WorkerDocumentsScreen } from "./WorkerDocumentsScreen";
 import { WorkerMessagesScreen } from "./WorkerMessagesScreen";
 import { WorkerProfileScreen } from "./WorkerProfileScreen";
+import { WorkerWorkdayClosureScreen } from "./WorkerWorkdayClosureScreen";
 
 type WorkerTabKey = "home" | "workday" | "agenda" | "documents" | "messages" | "profile";
 
@@ -44,6 +46,8 @@ export function WorkerTabsShell({
   onRefreshProfile,
 }: Props) {
   const [activeTab, setActiveTab] = useState<WorkerTabKey>("home");
+  /** Pantalla completa de cierre / revision desde el chip “jornada en curso”. */
+  const [workdayClosureOpen, setWorkdayClosureOpen] = useState(false);
   const hasWorkdayModule = enabledModules.includes(MODULE_KEYS.WORKDAY);
   const hasAgendaModule =
     enabledModules.includes(MODULE_KEYS.SCHEDULING) ||
@@ -106,7 +110,7 @@ export function WorkerTabsShell({
         );
       case "workday":
         return hasWorkdayModule ? (
-          <WorkerWorkdayScreen user={user} />
+          <WorkerWorkdayScreen user={user} onOpenWorkdayClosure={() => setWorkdayClosureOpen(true)} />
         ) : (
           <PlaceholderScreen
             title="Mi Jornada"
@@ -151,21 +155,43 @@ export function WorkerTabsShell({
 
   return (
     <View style={styles.root}>
-      <View style={styles.content}>{content}</View>
-      <View style={styles.bottomNav}>
+      {workdayClosureOpen ? (
+        <WorkerWorkdayClosureScreen user={user} onClose={() => setWorkdayClosureOpen(false)} />
+      ) : (
+        <>
+          <View style={styles.content}>{content}</View>
+          <View style={styles.bottomNav}>
         <Pressable onPress={() => setActiveTab("home")} style={styles.tabButton}>
-          <Text style={[styles.tabText, activeTab === "home" && styles.tabTextActive]}>
+          <Ionicons
+            name="home-outline"
+            size={22}
+            color={activeTab === "home" ? "#0f766e" : "#64748b"}
+            style={styles.tabIcon}
+          />
+          <Text style={[styles.tabText, activeTab === "home" && styles.tabTextActive]} numberOfLines={1}>
             Inicio
           </Text>
         </Pressable>
         <Pressable onPress={() => setActiveTab("agenda")} style={styles.tabButton}>
-          <Text style={[styles.tabText, activeTab === "agenda" && styles.tabTextActive]}>
+          <Ionicons
+            name="calendar-outline"
+            size={22}
+            color={activeTab === "agenda" ? "#0f766e" : "#64748b"}
+            style={styles.tabIcon}
+          />
+          <Text style={[styles.tabText, activeTab === "agenda" && styles.tabTextActive]} numberOfLines={1}>
             Agenda
           </Text>
         </Pressable>
         <Pressable onPress={() => setActiveTab("workday")} style={styles.tabButton}>
-          <Text style={[styles.tabText, activeTab === "workday" && styles.tabTextActive]}>
-            Jornada
+          <Ionicons
+            name="today-outline"
+            size={22}
+            color={activeTab === "workday" ? "#0f766e" : "#64748b"}
+            style={styles.tabIcon}
+          />
+          <Text style={[styles.tabText, activeTab === "workday" && styles.tabTextActive]} numberOfLines={1}>
+            Mi jornada
           </Text>
         </Pressable>
         <Pressable
@@ -175,25 +201,41 @@ export function WorkerTabsShell({
           }}
           style={styles.tabButton}
         >
-          <View style={styles.messagesTabLabel}>
-            <Text style={[styles.tabText, activeTab === "messages" && styles.tabTextActive]}>
+          <View style={styles.messagesTabInner}>
+            <View style={styles.messagesIconWrap}>
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={22}
+                color={activeTab === "messages" ? "#0f766e" : "#64748b"}
+                style={styles.tabIcon}
+              />
+              {hasMessagesModule && unreadMessagesCount > 0 ? (
+                <View style={styles.unreadBadge}>
+                  <Text style={styles.unreadBadgeText}>
+                    {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={[styles.tabText, activeTab === "messages" && styles.tabTextActive]} numberOfLines={1}>
               Mensajes
             </Text>
-            {hasMessagesModule && unreadMessagesCount > 0 ? (
-              <View style={styles.unreadBadge}>
-                <Text style={styles.unreadBadgeText}>
-                  {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
-                </Text>
-              </View>
-            ) : null}
           </View>
         </Pressable>
         <Pressable onPress={() => setActiveTab("profile")} style={styles.tabButton}>
-          <Text style={[styles.tabText, activeTab === "profile" && styles.tabTextActive]}>
+          <Ionicons
+            name="person-circle-outline"
+            size={24}
+            color={activeTab === "profile" ? "#0f766e" : "#64748b"}
+            style={styles.tabIcon}
+          />
+          <Text style={[styles.tabText, activeTab === "profile" && styles.tabTextActive]} numberOfLines={1}>
             Perfil
           </Text>
         </Pressable>
-      </View>
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -211,26 +253,45 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#e2e8f0",
     backgroundColor: "#ffffff",
-    paddingVertical: 10,
+    paddingTop: 6,
+    paddingBottom: 8,
   },
   tabButton: {
     flex: 1,
     alignItems: "center",
+    justifyContent: "flex-start",
+    gap: 2,
+    minWidth: 0,
+    paddingHorizontal: 2,
+  },
+  tabIcon: {
+    marginBottom: 0,
   },
   tabText: {
-    fontSize: 12,
+    fontSize: 10,
     color: "#64748b",
+    textAlign: "center",
+    maxWidth: "100%",
   },
   tabTextActive: {
     color: "#0f766e",
     fontWeight: "700",
   },
-  messagesTabLabel: {
-    flexDirection: "row",
+  messagesTabInner: {
     alignItems: "center",
-    gap: 6,
+    gap: 2,
+    minWidth: 0,
+    maxWidth: "100%",
+  },
+  messagesIconWrap: {
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
   },
   unreadBadge: {
+    position: "absolute",
+    top: -4,
+    right: -10,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
