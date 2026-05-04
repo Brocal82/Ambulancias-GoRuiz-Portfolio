@@ -110,7 +110,11 @@ export function WorkerTabsShell({
         );
       case "workday":
         return hasWorkdayModule ? (
-          <WorkerWorkdayScreen user={user} onOpenWorkdayClosure={() => setWorkdayClosureOpen(true)} />
+          <WorkerWorkdayScreen
+            user={user}
+            enabledModules={enabledModules}
+            onOpenWorkdayClosure={() => setWorkdayClosureOpen(true)}
+          />
         ) : (
           <PlaceholderScreen
             title="Mi Jornada"

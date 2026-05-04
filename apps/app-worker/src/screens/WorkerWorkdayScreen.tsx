@@ -13,9 +13,17 @@ import {
   getMyWorkdaySummaries,
   getWorkdayTripsByDate,
 } from "../services/workday";
-import { AuthUser } from "../types/auth";
+import { getAmbulancesList, type AmbulanceListItem } from "../services/ambulances";
+import { AuthUser, CompanyModuleKey, MODULE_KEYS } from "../types/auth";
+import {
+  getVehicleConfirmedAsync,
+  loadAmbulanceDataAsync,
+  saveAmbulanceDataAsync,
+  setVehicleConfirmedAsync,
+} from "../utils/workdayAmbulanceStorage";
 import { canStartTripNow } from "../utils/workdayAssignment";
 import { WorkerTripStepPanel } from "./WorkerTripStepPanel";
+import { WorkerWorkdayPreamble } from "./WorkerWorkdayPreamble";
 
 type AssignedDayFull = AssignedDay & {
   driver: { _id: string };
@@ -65,8 +73,66 @@ function displayAmbulanceLine(day: AssignedDay): string {
   return "—";
 }
 
+/** Solo número de ambulancia (sin matrícula), para cabecera Mi Jornada. */
+function ambulanceNumberOnlyFromAssignment(day: AssignedDay): string {
+  if (day.ambulanceNumber?.trim()) return day.ambulanceNumber.trim();
+  const amb = day.ambulanceId;
+  if (amb && typeof amb === "object") {
+    const num = amb.ambulanceNumber?.trim();
+    if (num) return num;
+  }
+  return "";
+}
+
+/** Cabecera: prioriza número guardado en preámbulo / flota; nunca concatena matrícula. */
+function resolveAmbulanceLineForWorkerHeader(
+  assignment: AssignedDay,
+  ambulancesList: AmbulanceListItem[],
+  ambulanceHydrated: boolean,
+  preambleAmbulanceId: string,
+  preambleAmbulanceNumber: string,
+): string {
+  const id = preambleAmbulanceId.trim();
+  const storedNum = preambleAmbulanceNumber.trim();
+  const fromList = id ? ambulancesList.find((a) => a._id === id) : undefined;
+
+  if (ambulanceHydrated) {
+    if (storedNum && storedNum !== "—") return storedNum;
+    const listNum = fromList?.ambulanceNumber?.trim();
+    if (listNum) return listNum;
+  }
+
+  const fromAssignment = ambulanceNumberOnlyFromAssignment(assignment);
+  if (fromAssignment) return fromAssignment;
+  return "—";
+}
+
+/** Id de ambulancia para persistencia (misma idea que `normalizeAmbulanceIdToString` en web). */
+function ambulanceIdForStorage(day: AssignedDay): string {
+  const a = day.ambulanceId;
+  if (typeof a === "string" && a.trim()) return a.trim();
+  if (a && typeof a === "object" && typeof a._id === "string" && a._id.trim()) return a._id.trim();
+  return "";
+}
+
+function ambulanceNumberForStorage(day: AssignedDay): string {
+  if (day.ambulanceNumber?.trim()) return day.ambulanceNumber.trim();
+  const a = day.ambulanceId;
+  if (a && typeof a === "object" && a.ambulanceNumber?.trim()) return a.ambulanceNumber.trim();
+  return "";
+}
+
+function parseInitialKmInput(raw: string): number | null {
+  const t = raw.trim().replace(",", ".");
+  if (t === "") return null;
+  const n = Number(t);
+  if (Number.isNaN(n) || n <= 0) return null;
+  return n;
+}
+
 type Props = {
   user: AuthUser;
+  enabledModules?: CompanyModuleKey[];
   /** Chip “jornada en curso” → pantalla completa de cierre (desde WorkerTabsShell). */
   onOpenWorkdayClosure?: () => void;
 };
@@ -110,13 +176,29 @@ function summaryStateForAssignment(summaries: WorkdaySummary[], assignmentId: st
   return "ready";
 }
 
-export function WorkerWorkdayScreen({ user, onOpenWorkdayClosure }: Props) {
+export function WorkerWorkdayScreen({ user, enabledModules, onOpenWorkdayClosure }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [todayAssignment, setTodayAssignment] = useState<AssignedDay | null>(null);
   const [todayTrips, setTodayTrips] = useState<WorkdayTrip[]>([]);
   /** Solo cierres de hoy para la asignacion actual: alimenta el chip de estado (no se listan en pantalla). */
   const [recentSummaries, setRecentSummaries] = useState<WorkdaySummary[]>([]);
+  /** Km iniciales ambulancia (misma regla que web: obligatorio antes de viajes). */
+  const [ambulanceHydrated, setAmbulanceHydrated] = useState(false);
+  const [initialKmDraft, setInitialKmDraft] = useState("");
+  const [vehicleConfirmed, setVehicleConfirmed] = useState(false);
+  const [ambulanceLocalError, setAmbulanceLocalError] = useState<string | undefined>(undefined);
+  const [preambleAmbulanceId, setPreambleAmbulanceId] = useState("");
+  const [preambleAmbulanceNumber, setPreambleAmbulanceNumber] = useState("");
+  const [ambulancesList, setAmbulancesList] = useState<AmbulanceListItem[]>([]);
+  const [ambulancesLoading, setAmbulancesLoading] = useState(false);
+  const [confirmingAmbulance, setConfirmingAmbulance] = useState(false);
+
+  const hasAmbulancesModule = useMemo(
+    () => Boolean(enabledModules?.includes(MODULE_KEYS.AMBULANCES)),
+    [enabledModules],
+  );
+
   const loadWorkday = useCallback(async (options?: { silent?: boolean }) => {
     const silent = options?.silent === true;
     if (!silent) {
@@ -160,6 +242,98 @@ export function WorkerWorkdayScreen({ user, onOpenWorkdayClosure }: Props) {
     void loadWorkday();
   }, [loadWorkday]);
 
+  useEffect(() => {
+    if (!todayAssignment?.assignmentId) {
+      setAmbulanceHydrated(true);
+      setVehicleConfirmed(false);
+      setInitialKmDraft("");
+      setAmbulanceLocalError(undefined);
+      setPreambleAmbulanceId("");
+      setPreambleAmbulanceNumber("");
+      return;
+    }
+    const assignmentId = todayAssignment.assignmentId;
+    const defId = ambulanceIdForStorage(todayAssignment);
+    const defNum = ambulanceNumberForStorage(todayAssignment);
+    let cancelled = false;
+    setAmbulanceHydrated(false);
+    (async () => {
+      try {
+        const [loaded, confirmed] = await Promise.all([
+          loadAmbulanceDataAsync(assignmentId),
+          getVehicleConfirmedAsync(assignmentId),
+        ]);
+        if (cancelled) return;
+        if (loaded) {
+          setInitialKmDraft(loaded.initialKm?.trim() ? loaded.initialKm : "");
+          setPreambleAmbulanceId(loaded.ambulanceId?.trim() ? loaded.ambulanceId : defId);
+          setPreambleAmbulanceNumber(
+            loaded.ambulanceNumber?.trim() ? loaded.ambulanceNumber : defNum,
+          );
+        } else {
+          setInitialKmDraft("");
+          setPreambleAmbulanceId(defId);
+          setPreambleAmbulanceNumber(defNum);
+        }
+        const hasKm = Boolean(loaded?.initialKm?.trim());
+        setVehicleConfirmed(confirmed && hasKm);
+      } finally {
+        if (!cancelled) {
+          setAmbulanceHydrated(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [todayAssignment?.assignmentId]);
+
+  useEffect(() => {
+    if (!hasAmbulancesModule || !todayAssignment?.assignmentId) {
+      setAmbulancesList([]);
+      setAmbulancesLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setAmbulancesLoading(true);
+    void (async () => {
+      try {
+        const list = await getAmbulancesList();
+        if (!cancelled) {
+          setAmbulancesList(Array.isArray(list) ? list : []);
+        }
+      } catch {
+        if (!cancelled) {
+          setAmbulancesList([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setAmbulancesLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasAmbulancesModule, todayAssignment?.assignmentId]);
+
+  useEffect(() => {
+    if (!todayAssignment || vehicleConfirmed) return;
+    if (!hasAmbulancesModule || ambulancesList.length === 0) return;
+    const defId = ambulanceIdForStorage(todayAssignment);
+    if (!defId || !ambulancesList.some((a) => a._id === defId)) return;
+    if (!ambulancesList.some((a) => a._id === preambleAmbulanceId)) {
+      setPreambleAmbulanceId(defId);
+      setPreambleAmbulanceNumber(ambulanceNumberForStorage(todayAssignment));
+    }
+  }, [
+    ambulancesList,
+    hasAmbulancesModule,
+    preambleAmbulanceId,
+    todayAssignment,
+    vehicleConfirmed,
+  ]);
+
   const todayStatus = useMemo<WorkdayStatus>(() => {
     if (!todayAssignment) return "no-assignment";
     const summaryState = summaryStateForAssignment(
@@ -189,6 +363,56 @@ export function WorkerWorkdayScreen({ user, onOpenWorkdayClosure }: Props) {
 
   const tripsBlocked = todayStatus === "final-closed";
 
+  const vehicleSetupComplete = useMemo(
+    () => !todayAssignment || vehicleConfirmed,
+    [todayAssignment, vehicleConfirmed],
+  );
+
+  const handlePreambleSelectAmbulance = useCallback((id: string, numberForStorage: string) => {
+    setPreambleAmbulanceId(id);
+    setPreambleAmbulanceNumber(numberForStorage);
+    setAmbulanceLocalError(undefined);
+  }, []);
+
+  const handleConfirmAmbulance = useCallback(async () => {
+    if (!todayAssignment) return;
+    setAmbulanceLocalError(undefined);
+    const useFleetPicker = hasAmbulancesModule && ambulancesList.length > 0;
+    const ambId = useFleetPicker ? preambleAmbulanceId.trim() : ambulanceIdForStorage(todayAssignment);
+    if (!ambId) {
+      setAmbulanceLocalError(
+        useFleetPicker
+          ? "Selecciona la ambulancia del servicio."
+          : "La asignacion no incluye ambulancia. Contacta con administracion.",
+      );
+      return;
+    }
+    if (useFleetPicker && !ambulancesList.some((a) => a._id === ambId)) {
+      setAmbulanceLocalError("Selecciona una ambulancia de la lista.");
+      return;
+    }
+    const km = parseInitialKmInput(initialKmDraft);
+    if (km === null) {
+      setAmbulanceLocalError("Indica un kilometraje inicial valido (mayor que 0).");
+      return;
+    }
+    const kmStr = String(Math.round(km));
+    const ambNum = useFleetPicker
+      ? preambleAmbulanceNumber.trim() || "—"
+      : ambulanceNumberForStorage(todayAssignment).trim() || "—";
+    setConfirmingAmbulance(true);
+    try {
+      await saveAmbulanceDataAsync(todayAssignment.assignmentId, ambId, ambNum, kmStr);
+      await setVehicleConfirmedAsync(todayAssignment.assignmentId, true);
+      setInitialKmDraft(kmStr);
+      setVehicleConfirmed(true);
+    } catch {
+      setAmbulanceLocalError("No se pudieron guardar los datos. Reintenta.");
+    } finally {
+      setConfirmingAmbulance(false);
+    }
+  }, [ambulancesList, hasAmbulancesModule, initialKmDraft, preambleAmbulanceId, preambleAmbulanceNumber, todayAssignment]);
+
   const statusLabel = useMemo(() => {
     switch (todayStatus) {
       case "no-assignment":
@@ -205,6 +429,23 @@ export function WorkerWorkdayScreen({ user, onOpenWorkdayClosure }: Props) {
         return "Estado no disponible";
     }
   }, [todayStatus]);
+
+  const resolvedAmbulanceLine = useMemo(() => {
+    if (!todayAssignment) return "—";
+    return resolveAmbulanceLineForWorkerHeader(
+      todayAssignment,
+      ambulancesList,
+      ambulanceHydrated,
+      preambleAmbulanceId,
+      preambleAmbulanceNumber,
+    );
+  }, [
+    ambulancesList,
+    ambulanceHydrated,
+    preambleAmbulanceId,
+    preambleAmbulanceNumber,
+    todayAssignment,
+  ]);
 
   const headerAssignmentBlock = useMemo(() => {
     if (isLoading) {
@@ -254,17 +495,121 @@ export function WorkerWorkdayScreen({ user, onOpenWorkdayClosure }: Props) {
 
           <View style={[styles.headerCol, styles.headerColRight]}>
             <Text style={[styles.headerColLabel, styles.headerColLabelRight]}>Ambulancia</Text>
-            <Text style={styles.headerAmbValue} numberOfLines={3}>
-              {displayAmbulanceLine(todayAssignment)}
-            </Text>
+            <View style={styles.headerAmbTextKmRow}>
+              <Text style={styles.headerAmbValueInline} numberOfLines={2}>
+                {resolvedAmbulanceLine}
+              </Text>
+              {ambulanceHydrated && initialKmDraft.trim() !== "" ? (
+                <Text style={styles.headerKmNumberOnly} numberOfLines={1}>
+                  {initialKmDraft.trim()}
+                </Text>
+              ) : tripsBlocked ? (
+                <Text style={styles.headerKmNumberMuted} numberOfLines={1}>
+                  —
+                </Text>
+              ) : null}
+            </View>
           </View>
         </View>
       </View>
     );
-  }, [errorMessage, isLoading, todayAssignment]);
+  }, [
+    ambulanceHydrated,
+    errorMessage,
+    initialKmDraft,
+    isLoading,
+    resolvedAmbulanceLine,
+    todayAssignment,
+    tripsBlocked,
+  ]);
 
   const showHeaderTripCountChip =
     !isLoading && !errorMessage && todayAssignment && todayStatus === "in-progress";
+
+  const showPreamble = Boolean(
+    !isLoading &&
+      !errorMessage &&
+      todayAssignment &&
+      ambulanceHydrated &&
+      !vehicleConfirmed &&
+      !tripsBlocked,
+  );
+
+  const preambleDienstNumberText = useMemo(() => {
+    if (!todayAssignment) return "—";
+    const n =
+      todayAssignment.dienstNumber != null && String(todayAssignment.dienstNumber).trim() !== ""
+        ? String(todayAssignment.dienstNumber).trim()
+        : "—";
+    return n === "—" ? "—" : `#${n}`;
+  }, [todayAssignment]);
+
+  const preambleScheduleLine = useMemo(() => {
+    if (!todayAssignment) return "--:-- – --:--";
+    return `${todayAssignment.startTime ?? "--:--"} – ${todayAssignment.endTime ?? "--:--"}`;
+  }, [todayAssignment]);
+
+  const preambleConfirmDisabled = useMemo(() => {
+    if (confirmingAmbulance) return true;
+    if (parseInitialKmInput(initialKmDraft) === null) return true;
+    const useFleetPicker = hasAmbulancesModule && ambulancesList.length > 0;
+    if (useFleetPicker && !preambleAmbulanceId.trim()) return true;
+    if (!useFleetPicker) {
+      if (!todayAssignment || !ambulanceIdForStorage(todayAssignment)) return true;
+    }
+    return false;
+  }, [
+    ambulancesList.length,
+    confirmingAmbulance,
+    hasAmbulancesModule,
+    initialKmDraft,
+    preambleAmbulanceId,
+    todayAssignment,
+  ]);
+
+  if (showPreamble && todayAssignment != null) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <View style={styles.headerTopRow}>
+            <Text style={styles.title} numberOfLines={1}>
+              Preparar jornada
+            </Text>
+            <Pressable
+              style={({ pressed }) => [styles.refreshFab, pressed ? styles.refreshFabPressed : null]}
+              onPress={() => void loadWorkday()}
+              accessibilityRole="button"
+              accessibilityLabel="Refrescar"
+              hitSlop={6}
+            >
+              <Ionicons name="refresh" size={22} color="#334155" />
+            </Pressable>
+          </View>
+        </View>
+        <WorkerWorkdayPreamble
+          dienstNumberText={preambleDienstNumberText}
+          scheduleLine={preambleScheduleLine}
+          driverName={displayWorkerName(todayAssignment.driver)}
+          medicName={displayWorkerName(todayAssignment.medic)}
+          assignmentAmbulanceLine={displayAmbulanceLine(todayAssignment)}
+          hasAmbulancesModule={hasAmbulancesModule}
+          ambulancesLoading={ambulancesLoading}
+          ambulances={ambulancesList}
+          selectedAmbulanceId={preambleAmbulanceId}
+          onSelectAmbulance={handlePreambleSelectAmbulance}
+          initialKm={initialKmDraft}
+          onChangeInitialKm={(t) => {
+            setInitialKmDraft(t);
+            setAmbulanceLocalError(undefined);
+          }}
+          errorMessage={ambulanceLocalError}
+          onConfirm={() => void handleConfirmAmbulance()}
+          confirmDisabled={preambleConfirmDisabled}
+          confirming={confirmingAmbulance}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
       <SafeAreaView style={styles.safeArea}>
@@ -323,6 +668,7 @@ export function WorkerWorkdayScreen({ user, onOpenWorkdayClosure }: Props) {
                   assignedDay={tripPanelAssignment}
                   canStartWork={canStartWork}
                   blocked={tripsBlocked}
+                  vehicleSetupComplete={vehicleSetupComplete}
                   onTripCreated={() => void loadWorkday({ silent: true })}
                 />
               </View>
@@ -487,6 +833,40 @@ const styles = StyleSheet.create({
     textAlign: "right",
     alignSelf: "stretch",
   },
+  headerAmbTextKmRow: {
+    marginTop: 2,
+    flexDirection: "column",
+    alignItems: "flex-end",
+    justifyContent: "flex-start",
+    gap: 2,
+    alignSelf: "stretch",
+  },
+  headerAmbValueInline: {
+    maxWidth: "100%",
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#334155",
+    lineHeight: 15,
+    textAlign: "right",
+    alignSelf: "flex-end",
+  },
+  headerKmNumberOnly: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#475569",
+    lineHeight: 15,
+    fontVariant: ["tabular-nums"],
+    textAlign: "right",
+    flexShrink: 0,
+  },
+  headerKmNumberMuted: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#94a3b8",
+    lineHeight: 15,
+    fontVariant: ["tabular-nums"],
+    flexShrink: 0,
+  },
   headerMetaMuted: {
     fontSize: 11,
     color: "#94a3b8",
@@ -525,7 +905,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
     paddingHorizontal: 16,
-    paddingTop: 0,
+    paddingTop: 18,
     gap: 8,
   },
   tripPanelShell: {
