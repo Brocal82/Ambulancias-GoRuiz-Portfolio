@@ -115,6 +115,8 @@ type Props = {
   assignedDay: AssignedDayFull;
   canStartWork: boolean;
   blocked: boolean;
+  /** Igual que la web: hasta confirmar km (y ambulancia) en cabecera no se registran viajes. */
+  vehicleSetupComplete?: boolean;
   onTripCreated: () => void;
 };
 
@@ -122,6 +124,7 @@ export function WorkerTripStepPanel({
   assignedDay,
   canStartWork,
   blocked,
+  vehicleSetupComplete = true,
   onTripCreated,
 }: Props) {
   const [phase, setPhase] = useState<Phase>("meta");
@@ -592,6 +595,17 @@ export function WorkerTripStepPanel({
     return (
       <View style={styles.card}>
         <Text style={styles.blockedText}>La jornada esta cerrada: no se pueden registrar mas viajes.</Text>
+      </View>
+    );
+  }
+
+  if (!vehicleSetupComplete) {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.hintText}>
+          Antes de registrar viajes, indica en la cabecera los kilometros iniciales del odometro de la ambulancia
+          (columna Ambulancia) y pulsa Confirmar. Misma regla que en la web.
+        </Text>
       </View>
     );
   }
