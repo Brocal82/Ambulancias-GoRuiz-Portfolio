@@ -48,6 +48,7 @@ export const MODULE_KEYS = {
   SCHEDULING: "scheduling",
   EXCEL_PLANNING: "excel-planning",
   WORKDAY: "workday",
+  AMBULANCES: "ambulances",
   MESSAGES: "messages",
   PAYROLL: "payroll",
   DOCUMENTS: "documents",
