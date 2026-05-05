@@ -668,15 +668,16 @@ export function WorkerWorkdayScreen({ user, enabledModules, onOpenWorkdayClosure
               {showHeaderTripCountChip ? (
                 <Pressable
                   style={({ pressed }) => [
-                    styles.headerTripCountChip,
-                    pressed ? styles.headerTripCountChipPressed : null,
+                    styles.headerSummaryIconBtn,
+                    pressed ? styles.headerSummaryIconBtnPressed : null,
                   ]}
                   onPress={() => onOpenWorkdayClosure?.()}
                   accessibilityRole="button"
-                  accessibilityLabel={`${tripsCountForBanner} viajes — abrir cierre de jornada`}
+                  accessibilityLabel={`Abrir resumen de jornada (${tripsCountForBanner} viajes)`}
                   hitSlop={6}
                 >
-                  <Text style={styles.headerTripCountText}>{tripsCountForBanner}</Text>
+                  <Ionicons name="document-text-outline" size={18} color="#047857" />
+                  <Text style={styles.headerSummaryIconCount}>{tripsCountForBanner}</Text>
                 </Pressable>
               ) : null}
             </View>
@@ -776,24 +777,26 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#0f172a",
   },
-  headerTripCountChip: {
+  headerSummaryIconBtn: {
     height: 32,
-    minWidth: 36,
-    paddingHorizontal: 10,
+    minWidth: 48,
+    paddingHorizontal: 8,
     borderRadius: 10,
+    flexDirection: "row",
+    gap: 5,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ecfdf5",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
     borderColor: "#a7f3d0",
     flexShrink: 0,
   },
-  headerTripCountChipPressed: {
+  headerSummaryIconBtnPressed: {
     opacity: 0.9,
-    backgroundColor: "#d1fae5",
+    backgroundColor: "#f8fafc",
   },
-  headerTripCountText: {
-    fontSize: 17,
+  headerSummaryIconCount: {
+    fontSize: 13,
     fontWeight: "800",
     color: "#047857",
     fontVariant: ["tabular-nums"],
