@@ -130,6 +130,28 @@ function parseInitialKmInput(raw: string): number | null {
   return n;
 }
 
+function buildPreambleStartWindowMessage(assignment: AssignedDay | null): string | undefined {
+  if (!assignment?.startTime || !assignment?.date) return undefined;
+  const [hourRaw, minuteRaw] = assignment.startTime.split(":");
+  const hour = Number(hourRaw);
+  const minute = Number(minuteRaw);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return undefined;
+
+  const dienstStart = new Date(`${assignment.date}T00:00:00`);
+  dienstStart.setHours(hour, minute, 0, 0);
+  const allowedFrom = new Date(dienstStart.getTime() - 30 * 60 * 1000);
+  const now = new Date();
+
+  if (now.getTime() >= allowedFrom.getTime()) {
+    return "Ya puedes confirmar ambulancia y odómetro para iniciar jornada.";
+  }
+
+  return `Podrás iniciar la jornada desde las ${allowedFrom.toLocaleTimeString("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })} (30 min antes del dienst).`;
+}
+
 type Props = {
   user: AuthUser;
   enabledModules?: CompanyModuleKey[];
@@ -549,7 +571,27 @@ export function WorkerWorkdayScreen({ user, enabledModules, onOpenWorkdayClosure
     return `${todayAssignment.startTime ?? "--:--"} – ${todayAssignment.endTime ?? "--:--"}`;
   }, [todayAssignment]);
 
+  const preambleAssignmentAmbulanceLine = useMemo(() => {
+    if (!todayAssignment) return "—";
+    const fallback = ambulanceNumberOnlyFromAssignment(todayAssignment) || "—";
+    const useFleetPicker = hasAmbulancesModule && ambulancesList.length > 0;
+    if (!useFleetPicker) return fallback;
+    const selectedId = preambleAmbulanceId.trim();
+    if (!selectedId) return fallback;
+    const selected = ambulancesList.find((a) => a._id === selectedId);
+    if (!selected) return fallback;
+    const n = selected.ambulanceNumber?.trim();
+    if (n) return n;
+    return fallback;
+  }, [
+    ambulancesList,
+    hasAmbulancesModule,
+    preambleAmbulanceId,
+    todayAssignment,
+  ]);
+
   const preambleConfirmDisabled = useMemo(() => {
+    if (!canStartWork) return true;
     if (confirmingAmbulance) return true;
     if (parseInitialKmInput(initialKmDraft) === null) return true;
     const useFleetPicker = hasAmbulancesModule && ambulancesList.length > 0;
@@ -560,6 +602,7 @@ export function WorkerWorkdayScreen({ user, enabledModules, onOpenWorkdayClosure
     return false;
   }, [
     ambulancesList.length,
+    canStartWork,
     confirmingAmbulance,
     hasAmbulancesModule,
     initialKmDraft,
@@ -591,7 +634,7 @@ export function WorkerWorkdayScreen({ user, enabledModules, onOpenWorkdayClosure
           scheduleLine={preambleScheduleLine}
           driverName={displayWorkerName(todayAssignment.driver)}
           medicName={displayWorkerName(todayAssignment.medic)}
-          assignmentAmbulanceLine={displayAmbulanceLine(todayAssignment)}
+          assignmentAmbulanceLine={preambleAssignmentAmbulanceLine}
           hasAmbulancesModule={hasAmbulancesModule}
           ambulancesLoading={ambulancesLoading}
           ambulances={ambulancesList}
@@ -602,6 +645,9 @@ export function WorkerWorkdayScreen({ user, enabledModules, onOpenWorkdayClosure
             setInitialKmDraft(t);
             setAmbulanceLocalError(undefined);
           }}
+          startWindowMessage={buildPreambleStartWindowMessage(todayAssignment)}
+          startWindowState={canStartWork ? "ready" : "blocked"}
+          canConfirmSetup={canStartWork}
           errorMessage={ambulanceLocalError}
           onConfirm={() => void handleConfirmAmbulance()}
           confirmDisabled={preambleConfirmDisabled}

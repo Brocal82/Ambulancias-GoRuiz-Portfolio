@@ -16,6 +16,9 @@ type Props = {
   onSelectAmbulance: (id: string, numberForStorage: string) => void;
   initialKm: string;
   onChangeInitialKm: (v: string) => void;
+  startWindowMessage?: string;
+  startWindowState?: "ready" | "blocked";
+  canConfirmSetup?: boolean;
   errorMessage?: string;
   onConfirm: () => void;
   confirmDisabled: boolean;
@@ -44,6 +47,9 @@ export function WorkerWorkdayPreamble({
   onSelectAmbulance,
   initialKm,
   onChangeInitialKm,
+  startWindowMessage,
+  startWindowState = "blocked",
+  canConfirmSetup = true,
   errorMessage,
   onConfirm,
   confirmDisabled,
@@ -55,110 +61,115 @@ export function WorkerWorkdayPreamble({
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.lead}>
-        Confirma la ambulancia y el odometro inicial antes de registrar viajes (mismo criterio que en la web).
-      </Text>
-
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Asignacion de hoy</Text>
-        <View style={styles.threeCol}>
-          <View style={[styles.col, styles.colLeft]}>
-            <Text style={styles.colLabel}>Dienst</Text>
-            <Text style={styles.dienstNum} numberOfLines={1}>
-              {dienstNumberText}
+        <View style={styles.assignmentCell}>
+          <View style={styles.assignmentTopGrid}>
+            <Text style={styles.assignmentDienst} numberOfLines={1}>
+              Dienst {dienstNumberText}
             </Text>
-            <Text style={styles.scheduleLike} numberOfLines={1}>
+            <Text style={styles.assignmentSchedule} numberOfLines={1}>
               {scheduleLine}
             </Text>
-          </View>
-          <View style={[styles.col, styles.colCenter]}>
-            <Text style={[styles.colLabel, styles.colLabelCenter]}>Team</Text>
-            <Text style={[styles.teamLine, styles.teamCenter]} numberOfLines={1} ellipsizeMode="tail">
-              {driverName}
-            </Text>
-            <Text style={[styles.teamLine, styles.teamCenter]} numberOfLines={1} ellipsizeMode="tail">
-              {medicName}
-            </Text>
-          </View>
-          <View style={[styles.col, styles.colRight]}>
-            <Text style={[styles.colLabel, styles.colLabelRight]}>Ambulancia</Text>
-            <Text style={styles.ambLine} numberOfLines={3}>
+            <Text style={styles.assignmentAmbulance} numberOfLines={1}>
               {assignmentAmbulanceLine}
             </Text>
           </View>
+          <View style={styles.assignmentBottomRow}>
+            <View style={styles.assignmentTeamRow}>
+              <Text style={styles.assignmentTeamTitle}>Equipo</Text>
+              <View style={styles.assignmentTeamMembersStack}>
+                <Text style={styles.assignmentTeamMember} numberOfLines={1}>
+                  Driver: {driverName}
+                </Text>
+                <Text style={styles.assignmentTeamMember} numberOfLines={1}>
+                  Medic: {medicName}
+                </Text>
+              </View>
+            </View>
+          </View>
         </View>
       </View>
+      {startWindowMessage ? (
+        <Text style={[styles.windowInfo, startWindowState === "ready" ? styles.windowInfoReady : null]}>
+          {startWindowMessage}
+        </Text>
+      ) : null}
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Ambulancia del servicio</Text>
-        {hasAmbulancesModule && ambulancesLoading ? (
-          <View style={styles.inlineLoading}>
-            <ActivityIndicator color="#0f766e" />
-            <Text style={styles.muted}>Cargando flota…</Text>
+      {canConfirmSetup ? (
+        <>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Ambulancia del servicio</Text>
+            {hasAmbulancesModule && ambulancesLoading ? (
+              <View style={styles.inlineLoading}>
+                <ActivityIndicator color="#0f766e" />
+                <Text style={styles.muted}>Cargando flota…</Text>
+              </View>
+            ) : hasAmbulancesModule && ambulances.length > 0 ? (
+              <View style={styles.selectorWrap}>
+                {ambulances.map((a) => {
+                  const active = a._id === selectedAmbulanceId;
+                  const num = a.ambulanceNumber?.trim() || "—";
+                  return (
+                    <Pressable
+                      key={a._id}
+                      onPress={() => onSelectAmbulance(a._id, num)}
+                      style={({ pressed }) => [
+                        styles.ambChip,
+                        active ? styles.ambChipActive : null,
+                        pressed ? styles.ambChipPressed : null,
+                      ]}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Text style={[styles.ambChipText, active ? styles.ambChipTextActive : null]} numberOfLines={2}>
+                        {ambulanceChipLabel(a)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : (
+              <Text style={styles.muted}>
+                Ambulancia fijada por la asignacion:{" "}
+                <Text style={styles.ambInlineStrong}>{assignmentAmbulanceLine}</Text>
+              </Text>
+            )}
           </View>
-        ) : hasAmbulancesModule && ambulances.length > 0 ? (
-          <View style={styles.selectorWrap}>
-            {ambulances.map((a) => {
-              const active = a._id === selectedAmbulanceId;
-              const num = a.ambulanceNumber?.trim() || "—";
-              return (
-                <Pressable
-                  key={a._id}
-                  onPress={() => onSelectAmbulance(a._id, num)}
-                  style={({ pressed }) => [
-                    styles.ambChip,
-                    active ? styles.ambChipActive : null,
-                    pressed ? styles.ambChipPressed : null,
-                  ]}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: active }}
-                >
-                  <Text style={[styles.ambChipText, active ? styles.ambChipTextActive : null]} numberOfLines={2}>
-                    {ambulanceChipLabel(a)}
-                  </Text>
-                </Pressable>
-              );
-            })}
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Odometro al inicio del dienst</Text>
+            <TextInput
+              style={styles.kmInput}
+              keyboardType="decimal-pad"
+              value={initialKm}
+              onChangeText={onChangeInitialKm}
+              placeholder="Ej. 128450"
+              placeholderTextColor="#94a3b8"
+              maxLength={10}
+            />
+            {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
           </View>
-        ) : (
-          <Text style={styles.muted}>
-            Ambulancia fijada por la asignacion:{" "}
-            <Text style={styles.ambInlineStrong}>{assignmentAmbulanceLine}</Text>
-          </Text>
-        )}
-      </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Odometro al inicio del dienst</Text>
-        <TextInput
-          style={styles.kmInput}
-          keyboardType="decimal-pad"
-          value={initialKm}
-          onChangeText={onChangeInitialKm}
-          placeholder="Ej. 128450"
-          placeholderTextColor="#94a3b8"
-          maxLength={10}
-        />
-        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-      </View>
-
-      <Pressable
-        style={({ pressed }) => [
-          styles.primaryBtn,
-          (confirmDisabled || confirming) && styles.primaryBtnDisabled,
-          pressed && !confirmDisabled && !confirming ? styles.primaryBtnPressed : null,
-        ]}
-        onPress={onConfirm}
-        disabled={confirmDisabled || confirming}
-        accessibilityRole="button"
-        accessibilityLabel="Confirmar e ir a Mi jornada"
-      >
-        {confirming ? (
-          <ActivityIndicator color="#ffffff" />
-        ) : (
-          <Text style={styles.primaryBtnText}>Ir a Mi jornada</Text>
-        )}
-      </Pressable>
+          <Pressable
+            style={({ pressed }) => [
+              styles.primaryBtn,
+              (confirmDisabled || confirming) && styles.primaryBtnDisabled,
+              pressed && !confirmDisabled && !confirming ? styles.primaryBtnPressed : null,
+            ]}
+            onPress={onConfirm}
+            disabled={confirmDisabled || confirming}
+            accessibilityRole="button"
+            accessibilityLabel="Confirmar e ir a Mi jornada"
+          >
+            {confirming ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.primaryBtnText}>Ir a Mi jornada</Text>
+            )}
+          </Pressable>
+        </>
+      ) : null}
     </ScrollView>
   );
 }
@@ -169,13 +180,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
+    paddingTop: 10,
     paddingBottom: 28,
     gap: 14,
-  },
-  lead: {
-    fontSize: 14,
-    color: "#475569",
-    lineHeight: 20,
   },
   card: {
     backgroundColor: "#ffffff",
@@ -191,73 +198,92 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     letterSpacing: 0.2,
   },
-  threeCol: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+  assignmentCell: {
+    backgroundColor: "#f8fafc",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 8,
+    padding: 10,
     gap: 10,
   },
-  col: {
+  assignmentTopGrid: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  assignmentDienst: {
     flex: 1,
-    minWidth: 0,
+    color: "#334155",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  assignmentSchedule: {
+    minWidth: 88,
+    color: "#0f172a",
+    fontWeight: "700",
+    fontSize: 13,
+    textAlign: "center",
+  },
+  assignmentAmbulance: {
+    flex: 0.9,
+    color: "#475569",
+    fontSize: 13,
+    textAlign: "right",
+  },
+  assignmentBottomRow: {
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+    paddingTop: 8,
+  },
+  assignmentTeamRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  assignmentTeamTitle: {
+    flex: 0.5,
+    fontSize: 12,
+    color: "#334155",
+    fontWeight: "700",
+    textAlign: "left",
+  },
+  assignmentTeamMembersStack: {
+    flex: 1,
+    alignItems: "flex-start",
+    justifyContent: "center",
+    alignSelf: "flex-end",
     gap: 2,
   },
-  colLeft: {
-    alignItems: "flex-start",
-  },
-  colCenter: {
-    alignItems: "center",
-  },
-  colRight: {
-    alignItems: "flex-end",
-  },
-  colLabel: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: "#64748b",
-    alignSelf: "stretch",
-  },
-  colLabelCenter: {
-    textAlign: "center",
-  },
-  colLabelRight: {
-    textAlign: "right",
-  },
-  dienstNum: {
+  assignmentTeamMember: {
     fontSize: 12,
-    fontWeight: "800",
-    color: "#0f172a",
-    alignSelf: "stretch",
-  },
-  scheduleLike: {
-    fontSize: 11,
-    fontWeight: "600",
     color: "#475569",
-    lineHeight: 15,
-    fontVariant: ["tabular-nums"],
-    alignSelf: "stretch",
-  },
-  teamLine: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#334155",
-    lineHeight: 14,
-    alignSelf: "stretch",
-  },
-  teamCenter: {
-    textAlign: "center",
-  },
-  ambLine: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#334155",
-    lineHeight: 15,
-    textAlign: "right",
-    alignSelf: "stretch",
+    textAlign: "left",
   },
   muted: {
     fontSize: 13,
     color: "#64748b",
     lineHeight: 19,
+  },
+  windowInfo: {
+    fontSize: 13,
+    color: "#9f1239",
+    backgroundColor: "#fff1f2",
+    borderWidth: 1,
+    borderColor: "#fecdd3",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    lineHeight: 18,
+    textAlign: "center",
+    alignSelf: "center",
+    width: "92%",
+  },
+  windowInfoReady: {
+    color: "#166534",
+    backgroundColor: "#ecfdf5",
+    borderColor: "#a7f3d0",
   },
   ambInlineStrong: {
     fontWeight: "700",
