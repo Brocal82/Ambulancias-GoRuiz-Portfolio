@@ -197,7 +197,11 @@ export function WorkerTabsShell({
   return (
     <View style={styles.root}>
       {workdayClosureOpen ? (
-        <WorkerWorkdayClosureScreen user={user} onClose={() => setWorkdayClosureOpen(false)} />
+        <WorkerWorkdayClosureScreen
+          user={user}
+          enabledModules={enabledModules}
+          onClose={() => setWorkdayClosureOpen(false)}
+        />
       ) : (
         <>
           <View style={styles.content}>{content}</View>

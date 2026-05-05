@@ -7,6 +7,7 @@ import {
   deleteIssueReport as svcDeleteIssueReport,
   markIssueSeen as svcMarkIssueSeen,
   getIssuesCount as svcGetIssuesCount,
+  getIssueReportsByWorker as svcGetIssueReportsByWorker,
 } from "../services/mechanics.service";
 
 function handleError(
@@ -86,6 +87,38 @@ export const getAllIssueReports = async (
       res,
       "Error al obtener reportes técnicos",
       "❌ Error al obtener reportes técnicos:",
+    );
+  }
+};
+
+export const getMyIssueReports = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const companyResult = requireCompanyInRequest(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const rawCompanyId = companyResult.companyId.trim();
+    if (!rawCompanyId || !mongoose.Types.ObjectId.isValid(rawCompanyId)) {
+      res.status(403).json({
+        message: "No tienes permiso. Se requiere un contexto de empresa válido.",
+      });
+      return;
+    }
+    const requesterId = typeof req.userId === "string" ? req.userId.trim() : "";
+    if (!requesterId || !mongoose.Types.ObjectId.isValid(requesterId)) {
+      res.status(401).json({ message: "Usuario no autenticado." });
+      return;
+    }
+    const date = typeof req.query.date === "string" ? req.query.date : undefined;
+    const issues = await svcGetIssueReportsByWorker(requesterId, rawCompanyId, date);
+    res.status(200).json(issues);
+  } catch (error) {
+    handleError(
+      error,
+      res,
+      "Error al obtener tus reportes técnicos",
+      "❌ Error al obtener reportes técnicos del trabajador:",
     );
   }
 };

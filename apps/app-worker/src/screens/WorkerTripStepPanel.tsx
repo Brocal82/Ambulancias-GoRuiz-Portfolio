@@ -20,7 +20,7 @@ import { ApiError } from "../services/http";
 import { checkTripLogic, type TripDraft } from "../utils/tripValidators";
 import { getCurrentTimeString } from "../utils/tripTime";
 
-const LONG_PRESS_MS = 3000;
+const LONG_PRESS_MS = 1200;
 const ANSCHLUSS_MARKER = "🔗 Anschluss";
 
 const STEP_TITLES: Record<1 | 2 | 3 | 4 | 5, string> = {
@@ -793,7 +793,6 @@ export function WorkerTripStepPanel({
         <View style={[styles.card, styles.panelCard]}>
           <View style={styles.stepsMain}>
           <View style={styles.patientDataCard}>
-            <Text style={styles.patientCardTitle}>Datos del servicio</Text>
             <View style={styles.serviceRowsBlock}>
               <View style={styles.serviceTwoColRow}>
                 <View style={styles.serviceHalfCol}>

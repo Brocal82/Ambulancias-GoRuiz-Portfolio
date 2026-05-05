@@ -165,6 +165,31 @@ export async function getAllIssueReports(companyId?: string | null) {
   return await MechanicsIssue.find(filter).sort({ timestamp: -1 });
 }
 
+export async function getIssueReportsByWorker(
+  userId: string,
+  companyId?: string | null,
+  date?: string,
+) {
+  const raw = typeof companyId === "string" ? companyId.trim() : "";
+  if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+    return [];
+  }
+  if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+    return [];
+  }
+  const baseFilter: Record<string, unknown> = {
+    companyId: new mongoose.Types.ObjectId(raw),
+    $or: [
+      { driver: new mongoose.Types.ObjectId(userId) },
+      { medic: new mongoose.Types.ObjectId(userId) },
+    ],
+  };
+  if (typeof date === "string" && date.trim() !== "") {
+    baseFilter.date = date.trim();
+  }
+  return await MechanicsIssue.find(baseFilter).sort({ timestamp: -1 });
+}
+
 export async function deleteIssueReport(id: string, companyId?: string | null) {
   if (!mongoose.isValidObjectId(id)) {
     throw new WorkdaySummaryError("ID inválido", 400);

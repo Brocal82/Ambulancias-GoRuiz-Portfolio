@@ -2,21 +2,40 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
 
 import { ApiError } from "../services/http";
-import { WorkdayTrip, getWorkdayTripsByDate } from "../services/workday";
-import { AuthUser } from "../types/auth";
+import {
+  MechanicsIssueReport,
+  ReportIssuePayload,
+  getMyIssueReports,
+  reportIssue,
+} from "../services/mechanics";
+import {
+  AssignedDay,
+  AssignedDayUser,
+  WorkdayTrip,
+  getAssignedDaysForWorker,
+  getWorkdayTripsByDate,
+} from "../services/workday";
+import { AmbulanceListItem, getAmbulancesList } from "../services/ambulances";
+import { AuthUser, CompanyModuleKey, MODULE_KEYS } from "../types/auth";
 import { parseHHMM } from "../utils/tripValidators";
+import { resolveTodayAssignment } from "../utils/workdayAssignment";
 
 type Props = {
   user: AuthUser;
+  enabledModules?: CompanyModuleKey[];
   onClose: () => void;
 };
 
@@ -92,11 +111,66 @@ const MENU: {
   { key: "envio", label: "Envio", icon: "send-outline" },
 ];
 
-export function WorkerWorkdayClosureScreen({ user: _user, onClose }: Props) {
+function userLabel(value: string | AssignedDayUser | undefined): string {
+  if (!value) return "—";
+  if (typeof value === "string") return value.trim() || "—";
+  const n = value.name?.trim() ?? "";
+  const l = value.lastName?.trim() ?? "";
+  return `${n} ${l}`.trim() || "—";
+}
+
+function userId(value: string | AssignedDayUser | undefined): string {
+  if (!value) return "";
+  if (typeof value === "string") return value.trim();
+  return value._id?.trim() ?? "";
+}
+
+function assignmentAmbulanceNumber(day: AssignedDay | null): string {
+  if (!day) return "";
+  if (day.ambulanceNumber?.trim()) return day.ambulanceNumber.trim();
+  const a = day.ambulanceId;
+  if (a && typeof a === "object" && a.ambulanceNumber?.trim()) return a.ambulanceNumber.trim();
+  return "";
+}
+
+function assignmentAmbulancePlate(day: AssignedDay | null): string {
+  if (!day) return "";
+  const a = day.ambulanceId;
+  if (a && typeof a === "object" && a.licensePlate?.trim()) return a.licensePlate.trim();
+  return "";
+}
+
+function assignmentAmbulanceId(day: AssignedDay | null): string {
+  if (!day) return "";
+  const a = day.ambulanceId;
+  if (typeof a === "string" && a.trim()) return a.trim();
+  if (a && typeof a === "object" && a._id?.trim()) return a._id.trim();
+  return "";
+}
+
+type IssuePhoto = { uri: string; name: string; mimeType: string };
+
+export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Props) {
   const [activeKey, setActiveKey] = useState<ClosureMenuKey>("inicio");
   const [trips, setTrips] = useState<WorkdayTrip[]>([]);
   const [loadError, setLoadError] = useState<string | undefined>(undefined);
   const [loadingTrips, setLoadingTrips] = useState(true);
+  const [todayAssignment, setTodayAssignment] = useState<AssignedDay | null>(null);
+  const [loadingAssignment, setLoadingAssignment] = useState(true);
+  const [ambulances, setAmbulances] = useState<AmbulanceListItem[]>([]);
+  const [selectedAmbulanceId, setSelectedAmbulanceId] = useState("");
+  const [selectedAmbulanceNumber, setSelectedAmbulanceNumber] = useState("");
+  const [finalKm, setFinalKm] = useState("");
+  const [issueText, setIssueText] = useState("");
+  const [issuePhotos, setIssuePhotos] = useState<IssuePhoto[]>([]);
+  const [sendingIssue, setSendingIssue] = useState(false);
+  const [issueFeedback, setIssueFeedback] = useState<string | undefined>(undefined);
+  const [sentIssuesToday, setSentIssuesToday] = useState<MechanicsIssueReport[]>([]);
+
+  const hasAmbulancesModule = useMemo(
+    () => Boolean(enabledModules?.includes(MODULE_KEYS.AMBULANCES)),
+    [enabledModules],
+  );
 
   const loadTrips = useCallback(async () => {
     setLoadingTrips(true);
@@ -119,6 +193,159 @@ export function WorkerWorkdayClosureScreen({ user: _user, onClose }: Props) {
     void loadTrips();
   }, [loadTrips]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      setLoadingAssignment(true);
+      try {
+        const [days, list] = await Promise.all([
+          getAssignedDaysForWorker(user._id),
+          hasAmbulancesModule ? getAmbulancesList() : Promise.resolve([]),
+        ]);
+        if (cancelled) return;
+        const assignment = resolveTodayAssignment(days);
+        setTodayAssignment(assignment);
+        setAmbulances(list);
+        const ambId = assignmentAmbulanceId(assignment);
+        const ambNumber = assignmentAmbulanceNumber(assignment);
+        setSelectedAmbulanceId(ambId);
+        setSelectedAmbulanceNumber(ambNumber);
+      } catch {
+        if (cancelled) return;
+        setTodayAssignment(null);
+        setAmbulances([]);
+      } finally {
+        if (!cancelled) {
+          setLoadingAssignment(false);
+        }
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasAmbulancesModule, user._id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const mine = await getMyIssueReports(todayDateKey());
+        if (!cancelled) {
+          setSentIssuesToday(mine);
+        }
+      } catch {
+        if (!cancelled) {
+          setSentIssuesToday([]);
+        }
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const pickIssuePhoto = useCallback(async (source: "camera" | "library") => {
+    const permission =
+      source === "camera"
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permiso requerido", "Necesitas permisos para adjuntar fotos.");
+      return;
+    }
+    const result =
+      source === "camera"
+        ? await ImagePicker.launchCameraAsync({
+            allowsEditing: false,
+            quality: 0.7,
+            mediaTypes: ["images"],
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            allowsMultipleSelection: true,
+            quality: 0.7,
+            selectionLimit: 5,
+            mediaTypes: ["images"],
+          });
+    if (result.canceled) return;
+    const mapped: IssuePhoto[] = result.assets.slice(0, 5).map((a, idx) => ({
+      uri: a.uri,
+      name: a.fileName ?? `issue-photo-${Date.now()}-${idx}.jpg`,
+      mimeType: a.mimeType ?? "image/jpeg",
+    }));
+    setIssuePhotos((prev) => [...prev, ...mapped].slice(0, 5));
+  }, []);
+
+  const sendIssue = useCallback(async () => {
+    if (!todayAssignment) return;
+    const km = Number(finalKm.trim().replace(",", "."));
+    if (!Number.isFinite(km) || km <= 0) {
+      setIssueFeedback("Indica un kilometraje final válido.");
+      return;
+    }
+    if (!issueText.trim()) {
+      setIssueFeedback("Describe la avería antes de enviar.");
+      return;
+    }
+    const driver = userId(todayAssignment.driver);
+    const medic = userId(todayAssignment.medic);
+    if (!driver || !medic) {
+      setIssueFeedback("La asignación no incluye equipo completo (driver/medic).");
+      return;
+    }
+    const ambulanceNumber = selectedAmbulanceNumber.trim() || assignmentAmbulanceNumber(todayAssignment) || "N/A";
+    const payload: ReportIssuePayload = {
+      assignmentId: todayAssignment.assignmentId,
+      dienstNumber: Number(todayAssignment.dienstNumber ?? 0),
+      date: todayAssignment.date,
+      startTime: todayAssignment.startTime ?? "",
+      endTime: todayAssignment.endTime ?? "",
+      team: `${userLabel(todayAssignment.driver)} + ${userLabel(todayAssignment.medic)}`,
+      ambulanceNumber,
+      ...(selectedAmbulanceId.trim() ? { ambulanceId: selectedAmbulanceId.trim() } : {}),
+      finalKm: Math.round(km),
+      timestamp: new Date().toISOString(),
+      issueText: issueText.trim(),
+      driver,
+      medic,
+    };
+    setSendingIssue(true);
+    setIssueFeedback(undefined);
+    try {
+      await reportIssue(payload, issuePhotos);
+      const mine = await getMyIssueReports(todayDateKey());
+      setSentIssuesToday(mine);
+      setIssueText("");
+      setFinalKm("");
+      setIssuePhotos([]);
+      setIssueFeedback("Avería enviada correctamente.");
+      setActiveKey("inicio");
+    } catch (e) {
+      if (e instanceof ApiError) {
+        setIssueFeedback(e.message);
+      } else {
+        setIssueFeedback("No se pudo enviar la avería.");
+      }
+    } finally {
+      setSendingIssue(false);
+    }
+  }, [finalKm, issuePhotos, issueText, selectedAmbulanceId, selectedAmbulanceNumber, todayAssignment]);
+
+  const assignedAmbulanceData = useMemo(() => {
+    if (!todayAssignment) {
+      return { id: "", number: "", plate: "", brand: "", model: "" };
+    }
+    const id = assignmentAmbulanceId(todayAssignment);
+    const number = assignmentAmbulanceNumber(todayAssignment);
+    const plateFromAssignment = assignmentAmbulancePlate(todayAssignment);
+    const fromList = id ? ambulances.find((a) => a._id === id) : undefined;
+    const plate = plateFromAssignment || fromList?.licensePlate?.trim() || "";
+    const brand = fromList?.brand?.trim() || "";
+    const model = fromList?.modelName?.trim() || "";
+    return { id, number, plate, brand, model };
+  }, [ambulances, todayAssignment]);
+
   const tripsCounted = useMemo(
     () => trips.filter(tripCountsTowardWorkday).length,
     [trips],
@@ -139,6 +366,29 @@ export function WorkerWorkdayClosureScreen({ user: _user, onClose }: Props) {
               <Text style={styles.statPillValue}>{tripsCounted}</Text>
             </View>
             <Text style={styles.placeholderHint}>Menu inferior (solo maquetacion por ahora).</Text>
+            {sentIssuesToday.length > 0 ? (
+              <View style={styles.sentIssuesCard}>
+                <Text style={styles.sentIssuesTitle}>
+                  Averías enviadas hoy ({sentIssuesToday.length})
+                </Text>
+                {sentIssuesToday.map((item, idx) => (
+                  <View key={`${item._id}-${idx}`} style={styles.sentIssueRow}>
+                    <Text style={styles.sentIssueLine}>
+                      {new Date(item.timestamp).toLocaleTimeString("es-ES", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })} · Amb. {item.ambulanceNumber || "N/A"} · Km {item.finalKm ?? "N/A"}
+                    </Text>
+                    <Text style={styles.sentIssueLine} numberOfLines={2}>
+                      {item.issueText}
+                    </Text>
+                    <Text style={styles.sentIssueMeta}>
+                      Fotos adjuntas: {item.attachments?.length ?? 0}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
           </View>
         );
       case "checks":
@@ -222,12 +472,144 @@ export function WorkerWorkdayClosureScreen({ user: _user, onClose }: Props) {
           </View>
         );
       case "averias":
+        if (loadingAssignment) {
+          return (
+            <View style={styles.centerInline}>
+              <ActivityIndicator color="#0f766e" />
+              <Text style={styles.mutedSmall}>Cargando asignación…</Text>
+            </View>
+          );
+        }
+        if (!todayAssignment) {
+          return (
+            <View style={styles.placeholderBlock}>
+              <Text style={styles.placeholderTitle}>Averias</Text>
+              <Text style={styles.placeholderText}>
+                No tienes asignación activa hoy; no se puede reportar avería.
+              </Text>
+            </View>
+          );
+        }
+        const assignmentAmbLine = selectedAmbulanceNumber.trim() || assignmentAmbulanceNumber(todayAssignment) || "N/A";
         return (
           <View style={styles.placeholderBlock}>
             <Text style={styles.placeholderTitle}>Averias</Text>
-            <Text style={styles.placeholderText}>
-              Proximamente: registro de averias de ambulancia durante la jornada.
-            </Text>
+            <View style={styles.issueCard}>
+              <View style={styles.assignmentTopGrid}>
+                <Text style={styles.assignmentDienst} numberOfLines={1}>
+                  Dienst #{todayAssignment.dienstNumber ?? "—"}
+                </Text>
+                <Text style={styles.assignmentSchedule} numberOfLines={1}>
+                  {todayAssignment.startTime ?? "--:--"} - {todayAssignment.endTime ?? "--:--"}
+                </Text>
+                <Text style={styles.assignmentAmbulance} numberOfLines={1}>
+                  {assignmentAmbLine}
+                </Text>
+              </View>
+              <View style={styles.assignmentBottomRow}>
+                <View style={styles.assignmentTeamRow}>
+                  <Text style={styles.assignmentTeamTitle}>Equipo</Text>
+                  <View style={styles.assignmentTeamMembersStack}>
+                    <Text style={styles.assignmentTeamMember} numberOfLines={1}>
+                      Driver: {userLabel(todayAssignment.driver)}
+                    </Text>
+                    <Text style={styles.assignmentTeamMember} numberOfLines={1}>
+                      Medic: {userLabel(todayAssignment.medic)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.issueCard}>
+              <View style={styles.ambulanceInfoGrid}>
+                <View style={styles.ambulanceInfoCol}>
+                  <Text style={styles.ambulanceInfoLabel}>Marca</Text>
+                  <Text style={styles.ambulanceInfoValue} numberOfLines={1}>
+                    {assignedAmbulanceData.brand || "N/A"}
+                  </Text>
+                </View>
+                <View style={styles.ambulanceInfoCol}>
+                  <Text style={styles.ambulanceInfoLabel}>Modelo</Text>
+                  <Text style={styles.ambulanceInfoValue} numberOfLines={1}>
+                    {assignedAmbulanceData.model || "N/A"}
+                  </Text>
+                </View>
+                <View style={styles.ambulanceInfoCol}>
+                  <Text style={styles.ambulanceInfoLabel}>Matrícula</Text>
+                  <Text style={styles.ambulanceInfoValue} numberOfLines={1}>
+                    {assignedAmbulanceData.plate || "N/A"}
+                  </Text>
+                </View>
+                <View style={styles.ambulanceInfoCol}>
+                  <Text style={styles.ambulanceInfoLabel}>Número</Text>
+                  <Text style={styles.ambulanceInfoValue} numberOfLines={1}>
+                    {assignedAmbulanceData.number || "N/A"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.issueCard}>
+              <Text style={styles.inputLabel}>Km final</Text>
+              <TextInput
+                style={styles.issueInput}
+                value={finalKm}
+                onChangeText={setFinalKm}
+                keyboardType="decimal-pad"
+                placeholder="Ej. 128450"
+                placeholderTextColor="#94a3b8"
+              />
+              <Text style={styles.inputLabel}>Descripción de avería</Text>
+              <TextInput
+                style={[styles.issueInput, styles.issueTextarea]}
+                value={issueText}
+                onChangeText={setIssueText}
+                multiline
+                placeholder="Describe la avería..."
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
+
+            <View style={styles.issueCard}>
+              <Text style={styles.inputLabel}>Fotos (máx. 5)</Text>
+              <View style={styles.photoActionsRow}>
+                <Pressable style={styles.photoActionBtn} onPress={() => void pickIssuePhoto("camera")}>
+                  <Text style={styles.photoActionBtnText}>Cámara</Text>
+                </Pressable>
+                <Pressable style={styles.photoActionBtn} onPress={() => void pickIssuePhoto("library")}>
+                  <Text style={styles.photoActionBtnText}>Galería</Text>
+                </Pressable>
+              </View>
+              {issuePhotos.length > 0 ? (
+                <View style={styles.photoGrid}>
+                  {issuePhotos.map((p, idx) => (
+                    <Pressable
+                      key={`${p.uri}-${idx}`}
+                      onPress={() => setIssuePhotos((prev) => prev.filter((_, i) => i !== idx))}
+                      style={styles.photoThumbWrap}
+                    >
+                      <Image source={{ uri: p.uri }} style={styles.photoThumb} />
+                      <Text style={styles.photoRemove}>Quitar</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.mutedSmall}>Sin fotos adjuntas.</Text>
+              )}
+            </View>
+
+            {issueFeedback ? (
+              <Text style={styles.issueFeedback}>{issueFeedback}</Text>
+            ) : null}
+
+            <Pressable
+              style={[styles.issueSubmitBtn, sendingIssue ? styles.issueSubmitBtnDisabled : null]}
+              onPress={() => void sendIssue()}
+              disabled={sendingIssue}
+            >
+              <Text style={styles.issueSubmitBtnText}>{sendingIssue ? "Enviando..." : "Enviar avería"}</Text>
+            </Pressable>
           </View>
         );
       case "envio":
@@ -242,7 +624,29 @@ export function WorkerWorkdayClosureScreen({ user: _user, onClose }: Props) {
       default:
         return null;
     }
-  }, [activeKey, loadError, loadingTrips, loadTrips, trips, tripsCounted]);
+  }, [
+    activeKey,
+    assignedAmbulanceData.id,
+    assignedAmbulanceData.brand,
+    assignedAmbulanceData.model,
+    assignedAmbulanceData.number,
+    assignedAmbulanceData.plate,
+    finalKm,
+    issueFeedback,
+    issuePhotos,
+    issueText,
+    loadError,
+    loadingAssignment,
+    loadingTrips,
+    loadTrips,
+    sendIssue,
+    sendingIssue,
+    trips,
+    tripsCounted,
+    sentIssuesToday,
+    todayAssignment,
+    pickIssuePhoto,
+  ]);
 
   return (
     <SafeAreaView style={styles.root} edges={["top", "bottom"]}>
@@ -402,6 +806,36 @@ const styles = StyleSheet.create({
     color: "#047857",
     fontVariant: ["tabular-nums"],
   },
+  sentIssuesCard: {
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: "#fbcfe8",
+    backgroundColor: "#fff1f2",
+    borderRadius: 10,
+    padding: 10,
+    gap: 8,
+  },
+  sentIssuesTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#9f1239",
+  },
+  sentIssueRow: {
+    gap: 2,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#fda4af",
+    paddingTop: 8,
+  },
+  sentIssueLine: {
+    fontSize: 12,
+    color: "#881337",
+    fontWeight: "600",
+    lineHeight: 16,
+  },
+  sentIssueMeta: {
+    fontSize: 11,
+    color: "#9f1239",
+  },
   centerInline: {
     paddingVertical: 24,
     alignItems: "center",
@@ -488,6 +922,177 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
     textAlign: "right",
     width: "100%",
+  },
+  issueCard: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 10,
+    padding: 10,
+    gap: 8,
+  },
+  issueMeta: {
+    fontSize: 12,
+    color: "#334155",
+    fontWeight: "600",
+  },
+  ambulanceInfoGrid: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    width: "100%",
+    gap: 12,
+  },
+  ambulanceInfoCol: {
+    flex: 1,
+    flexBasis: 0,
+    gap: 2,
+    alignItems: "center",
+  },
+  ambulanceInfoLabel: {
+    fontSize: 11,
+    color: "#64748b",
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  ambulanceInfoValue: {
+    fontSize: 12,
+    color: "#0f172a",
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  assignmentTopGrid: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  assignmentDienst: {
+    flex: 1,
+    color: "#334155",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  assignmentSchedule: {
+    minWidth: 88,
+    color: "#0f172a",
+    fontWeight: "700",
+    fontSize: 13,
+    textAlign: "center",
+  },
+  assignmentAmbulance: {
+    flex: 0.9,
+    color: "#475569",
+    fontSize: 13,
+    textAlign: "right",
+  },
+  assignmentBottomRow: {
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+    paddingTop: 8,
+  },
+  assignmentTeamRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  assignmentTeamTitle: {
+    flex: 0.5,
+    fontSize: 12,
+    color: "#334155",
+    fontWeight: "700",
+    textAlign: "left",
+  },
+  assignmentTeamMembersStack: {
+    flex: 1,
+    alignItems: "flex-start",
+    justifyContent: "center",
+    alignSelf: "flex-end",
+    gap: 2,
+  },
+  assignmentTeamMember: {
+    fontSize: 12,
+    color: "#475569",
+    textAlign: "left",
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#334155",
+  },
+  issueInput: {
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    borderRadius: 8,
+    backgroundColor: "#ffffff",
+    color: "#0f172a",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  issueTextarea: {
+    minHeight: 100,
+    textAlignVertical: "top",
+  },
+  photoActionsRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  photoActionBtn: {
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    borderRadius: 8,
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  photoActionBtnText: {
+    fontSize: 12,
+    color: "#334155",
+    fontWeight: "700",
+  },
+  photoGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  photoThumbWrap: {
+    width: 86,
+    gap: 4,
+    alignItems: "center",
+  },
+  photoThumb: {
+    width: 86,
+    height: 64,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+  },
+  photoRemove: {
+    fontSize: 11,
+    color: "#b91c1c",
+    fontWeight: "600",
+  },
+  issueFeedback: {
+    fontSize: 12,
+    color: "#334155",
+    textAlign: "center",
+  },
+  issueSubmitBtn: {
+    alignSelf: "stretch",
+    borderWidth: 1,
+    borderColor: "#be123c",
+    backgroundColor: "#e11d48",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  issueSubmitBtnDisabled: {
+    opacity: 0.6,
+  },
+  issueSubmitBtnText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "800",
   },
   closureBottomNav: {
     flexDirection: "row",
