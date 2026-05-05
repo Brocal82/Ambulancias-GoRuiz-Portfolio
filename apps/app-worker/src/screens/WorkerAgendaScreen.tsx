@@ -91,11 +91,14 @@ function formatWeekRange(monday: Date): string {
 
 function normalizeAmbulanceLabel(value: unknown): string {
   if (!value) return "Sin ambulancia";
-  if (typeof value === "string") return value;
+  if (typeof value === "string") {
+    // Raw ObjectId from unpopulated backend data should not be rendered to workers.
+    return /^[0-9a-fA-F]{24}$/.test(value) ? "Ambulancia asignada" : value;
+  }
   if (typeof value === "object" && value !== null) {
-    const maybePlate = (value as { licensePlate?: string }).licensePlate;
     const maybeNumber = (value as { ambulanceNumber?: string }).ambulanceNumber;
-    return maybePlate ?? maybeNumber ?? "Ambulancia asignada";
+    const maybePlate = (value as { licensePlate?: string }).licensePlate;
+    return maybeNumber ?? maybePlate ?? "Ambulancia asignada";
   }
   return "Ambulancia asignada";
 }
@@ -179,6 +182,54 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
 
+  const sortSchedulesByTime = (byDate: Record<string, DayScheduleItem[]>) => {
+    for (const [dateKey, items] of Object.entries(byDate)) {
+      byDate[dateKey] = items.sort(
+        (a, b) => toMinuteOfDay(a.startTime) - toMinuteOfDay(b.startTime),
+      );
+    }
+  };
+
+  const loadDynamicAgenda = async (): Promise<Record<string, DayScheduleItem[]>> => {
+    const byDate: Record<string, DayScheduleItem[]> = {};
+    const diensts = await getDienstsByUser(user._id);
+    for (const dienst of diensts) {
+      const dienstName = dienst.name ?? "Dienst";
+      const dienstNumberLabel =
+        typeof dienst.dienstNumber === "number"
+          ? `#${dienst.dienstNumber}`
+          : "#-";
+      for (const assignment of dienst.assignments ?? []) {
+        const assignmentDateKey = normalizeDateKey(assignment.date);
+        if (!assignmentDateKey) continue;
+        const item: DayScheduleItem = {
+          dienstId: dienst._id,
+          dienstName,
+          dienstNumberLabel,
+          startTime: assignment.startTime ?? "--:--",
+          endTime: assignment.endTime ?? "--:--",
+          workerRole: "driver/medic",
+          ambulanceLabel: normalizeAmbulanceLabel(assignment.ambulanceId),
+          driverLabel: normalizeUserLabel(assignment.driver),
+          medicLabel: normalizeUserLabel(assignment.medic),
+        };
+
+        const driverId = normalizeObjectId(assignment.driver);
+        const medicId = normalizeObjectId(assignment.medic);
+        if (driverId === user._id && medicId === user._id) {
+          item.workerRole = "driver/medic";
+        } else if (driverId === user._id) {
+          item.workerRole = "driver";
+        } else if (medicId === user._id) {
+          item.workerRole = "medic";
+        }
+
+        byDate[assignmentDateKey] = [...(byDate[assignmentDateKey] ?? []), item];
+      }
+    }
+    return byDate;
+  };
+
   const loadAgenda = async () => {
     setIsLoading(true);
     setErrorMessage(undefined);
@@ -194,41 +245,8 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
 
       if (scheduleSource === "dynamic") {
         setIsWeekPublished(true);
-        const diensts = await getDienstsByUser(user._id);
-        for (const dienst of diensts) {
-          const dienstName = dienst.name ?? "Dienst";
-          const dienstNumberLabel =
-            typeof dienst.dienstNumber === "number"
-              ? `#${dienst.dienstNumber}`
-              : "#-";
-          for (const assignment of dienst.assignments ?? []) {
-            const assignmentDateKey = normalizeDateKey(assignment.date);
-            if (!assignmentDateKey) continue;
-            const item: DayScheduleItem = {
-              dienstId: dienst._id,
-              dienstName,
-              dienstNumberLabel,
-              startTime: assignment.startTime ?? "--:--",
-              endTime: assignment.endTime ?? "--:--",
-              workerRole: "driver/medic",
-              ambulanceLabel: normalizeAmbulanceLabel(assignment.ambulanceId),
-              driverLabel: normalizeUserLabel(assignment.driver),
-              medicLabel: normalizeUserLabel(assignment.medic),
-            };
-
-            const driverId = normalizeObjectId(assignment.driver);
-            const medicId = normalizeObjectId(assignment.medic);
-            if (driverId === user._id && medicId === user._id) {
-              item.workerRole = "driver/medic";
-            } else if (driverId === user._id) {
-              item.workerRole = "driver";
-            } else if (medicId === user._id) {
-              item.workerRole = "medic";
-            }
-
-            byDate[assignmentDateKey] = [...(byDate[assignmentDateKey] ?? []), item];
-          }
-        }
+        const dynamicByDate = await loadDynamicAgenda();
+        Object.assign(byDate, dynamicByDate);
       } else {
         const selectedWeekKey = toIsoDateKey(weekStart);
         const excel = await getMyExcelPlanningWeek(
@@ -270,14 +288,29 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
         }
       }
 
-      for (const [dateKey, items] of Object.entries(byDate)) {
-        byDate[dateKey] = items.sort(
-          (a, b) => toMinuteOfDay(a.startTime) - toMinuteOfDay(b.startTime),
-        );
-      }
+      sortSchedulesByTime(byDate);
 
       setAllSchedulesByDate(byDate);
     } catch (error) {
+      const shouldFallbackToDynamic =
+        scheduleSource === "excel" &&
+        error instanceof ApiError &&
+        /excel-planning/i.test(error.message) &&
+        /(habilitad|enabled)/i.test(error.message);
+
+      if (shouldFallbackToDynamic) {
+        try {
+          setIsWeekPublished(true);
+          const dynamicByDate = await loadDynamicAgenda();
+          sortSchedulesByTime(dynamicByDate);
+          setAllSchedulesByDate(dynamicByDate);
+          setErrorMessage(undefined);
+          return;
+        } catch {
+          // Keep original module error below if dynamic fallback also fails.
+        }
+      }
+
       if (error instanceof ApiError) {
         setErrorMessage(error.message);
       } else {
