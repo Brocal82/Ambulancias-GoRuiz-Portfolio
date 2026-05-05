@@ -15,7 +15,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { getMyDocumentDeliveries } from "../services/documents";
 import { getMyMessages } from "../services/messages";
 import { buildPublicFileCandidates } from "../services/secureFiles";
-import { getMonthlyPraemienSummary } from "../services/praemien";
+import {
+  getMonthlyPraemienSummary,
+  getMyManualDailyEntriesForMonth,
+} from "../services/praemien";
 import { getAssignedDaysForWorker, type AssignedDay } from "../services/workday";
 import { resolveTodayAssignment } from "../utils/workdayAssignment";
 import { AuthUser } from "../types/auth";
@@ -43,12 +46,31 @@ function formatDienstScheduleLine(day: AssignedDay | null): string {
   return `${a || "--:--"} – ${b || "--:--"}`;
 }
 
-function formatPraemieAveragePatients(n: number | null, moduleOn: boolean): string {
+function formatPraemieLevel(n: number | null, moduleOn: boolean): string {
   if (!moduleOn) return "—";
   if (n === null) return "—";
-  const x = Math.round(n * 100) / 100;
-  if (Number.isInteger(x)) return String(x);
-  return String(x).replace(".", ",");
+  if (n >= 10) return "10";
+  if (n >= 9) return "9";
+  if (n >= 8) return "8";
+  if (n >= 7) return "7";
+  return "Sin Prämie";
+}
+
+function computeManualMonthAverage(entries: Array<{
+  workerSubmittedValue: number;
+  adminFinalValue: number | null;
+  status: string;
+}>): number | null {
+  if (!entries.length) return null;
+  const values = entries
+    .map((entry) =>
+      entry.status === "approved" && entry.adminFinalValue != null
+        ? entry.adminFinalValue
+        : entry.workerSubmittedValue,
+    )
+    .filter((v) => Number.isFinite(v));
+  if (!values.length) return null;
+  return values.reduce((acc, value) => acc + value, 0) / values.length;
 }
 
 function formatTodayHeaderDate(date: Date): string {
@@ -157,10 +179,34 @@ export function HomeScreen({
       return;
     }
     try {
-      const summary = await getMonthlyPraemienSummary();
-      setPraemieAveragePatients(summary.averagePatients);
+      const now = new Date();
+      const [summary, entries] = await Promise.all([
+        getMonthlyPraemienSummary(),
+        getMyManualDailyEntriesForMonth(now.getFullYear(), now.getMonth() + 1).catch(() => []),
+      ]);
+      const manualAverage = computeManualMonthAverage(entries);
+      if (manualAverage != null) {
+        // In manual workflow, month entries are the source of truth for worker progress.
+        setPraemieAveragePatients(manualAverage);
+      } else if (
+        typeof summary.averagePatients === "number" &&
+        Number.isFinite(summary.averagePatients)
+      ) {
+        setPraemieAveragePatients(summary.averagePatients);
+      } else {
+        setPraemieAveragePatients(null);
+      }
     } catch {
-      setPraemieAveragePatients(null);
+      try {
+        const now = new Date();
+        const entries = await getMyManualDailyEntriesForMonth(
+          now.getFullYear(),
+          now.getMonth() + 1,
+        );
+        setPraemieAveragePatients(computeManualMonthAverage(entries));
+      } catch {
+        setPraemieAveragePatients(null);
+      }
     }
   }, [hasPraemienModule, user._id]);
 
@@ -324,7 +370,7 @@ export function HomeScreen({
                     adjustsFontSizeToFit
                     minimumFontScale={0.65}
                   >
-                    {formatPraemieAveragePatients(praemieAveragePatients, hasPraemienModule)}
+                    {formatPraemieLevel(praemieAveragePatients, hasPraemienModule)}
                   </Text>
                 </View>
               </Pressable>

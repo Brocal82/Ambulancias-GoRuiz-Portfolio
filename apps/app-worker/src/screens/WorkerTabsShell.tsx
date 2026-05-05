@@ -11,6 +11,7 @@ import { WorkerDocumentsScreen } from "./WorkerDocumentsScreen";
 import { WorkerMessagesScreen } from "./WorkerMessagesScreen";
 import { WorkerProfileScreen } from "./WorkerProfileScreen";
 import { WorkerWorkdayClosureScreen } from "./WorkerWorkdayClosureScreen";
+import { WorkerPraemienScreen } from "./WorkerPraemienScreen";
 
 type WorkerTabKey =
   | "home"
@@ -134,30 +135,7 @@ export function WorkerTabsShell({
       case "agenda":
         return <WorkerAgendaScreen user={user} scheduleSource={scheduleSource} />;
       case "praemien":
-        return (
-          <View style={styles.auxRouteRoot}>
-            <View style={styles.auxHeader}>
-              <Pressable
-                onPress={() => setActiveTab("home")}
-                style={styles.auxBack}
-                accessibilityRole="button"
-                accessibilityLabel="Volver al inicio"
-              >
-                <Ionicons name="chevron-back" size={22} color="#0f766e" />
-                <Text style={styles.auxBackText}>Inicio</Text>
-              </Pressable>
-            </View>
-            <View style={styles.auxBody}>
-              <Text style={styles.placeholderTitle}>Prämie</Text>
-              <Text style={styles.placeholderDescription}>
-                {hasPraemienModule
-                  ? "Próximamente podrás consultar aquí tu resumen de Prämie desde la app."
-                  : "Tu empresa no tiene activo el módulo Prämie."}
-              </Text>
-              <Text style={styles.placeholderBadge}>Proximamente</Text>
-            </View>
-          </View>
-        );
+        return <WorkerPraemienScreen hasPraemienModule={hasPraemienModule} userId={user._id} />;
       case "messages":
         return hasMessagesModule ? (
           <WorkerMessagesScreen userId={user._id} />
