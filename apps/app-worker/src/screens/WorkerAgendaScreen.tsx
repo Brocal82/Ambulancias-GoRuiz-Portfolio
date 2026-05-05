@@ -90,17 +90,17 @@ function formatWeekRange(monday: Date): string {
 }
 
 function normalizeAmbulanceLabel(value: unknown): string {
-  if (!value) return "Sin ambulancia";
+  if (!value) return "N/A";
   if (typeof value === "string") {
     // Raw ObjectId from unpopulated backend data should not be rendered to workers.
-    return /^[0-9a-fA-F]{24}$/.test(value) ? "Ambulancia asignada" : value;
+    return /^[0-9a-fA-F]{24}$/.test(value) ? "N/A" : value;
   }
   if (typeof value === "object" && value !== null) {
     const maybeNumber = (value as { ambulanceNumber?: string }).ambulanceNumber;
     const maybePlate = (value as { licensePlate?: string }).licensePlate;
-    return maybeNumber ?? maybePlate ?? "Ambulancia asignada";
+    return maybeNumber ?? maybePlate ?? "N/A";
   }
-  return "Ambulancia asignada";
+  return "N/A";
 }
 
 function normalizeObjectId(value: unknown): string | null {
@@ -350,9 +350,6 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <Text style={styles.title}>Agenda semanal</Text>
-        <Text style={styles.subtitle}>
-          Vista de lunes a domingo · Fuente: {scheduleSource}
-        </Text>
       </View>
 
       <View style={styles.weekNav}>
@@ -367,9 +364,14 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
             });
           }}
         >
-          <Text style={styles.weekButtonText}>Semana anterior</Text>
+          <Text style={styles.weekButtonText}>{"<"}</Text>
         </Pressable>
-        <Text style={styles.weekRange}>{formatWeekRange(weekStart)}</Text>
+        <Text
+          style={styles.weekRange}
+          numberOfLines={1}
+        >
+          {formatWeekRange(weekStart)}
+        </Text>
         <Pressable
           style={styles.weekButton}
           onPress={() => {
@@ -381,7 +383,7 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
             });
           }}
         >
-          <Text style={styles.weekButtonText}>Semana siguiente</Text>
+          <Text style={styles.weekButtonText}>{">"}</Text>
         </Pressable>
       </View>
 
@@ -428,20 +430,29 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
               ) : (
                 day.items.map((item) => (
                   <View key={`${day.dateKey}-${item.dienstId}-${item.startTime}`} style={styles.itemRow}>
-                    <View style={styles.itemLeft}>
-                      <Text style={styles.itemTime}>
-                        {item.startTime} - {item.endTime}
-                      </Text>
-                      <Text style={styles.itemName}>
+                    <View style={styles.itemTopGrid}>
+                      <Text style={styles.itemDienst} numberOfLines={1}>
                         {item.dienstName} {item.dienstNumberLabel}
                       </Text>
-                      <Text style={styles.itemRole}>Tu rol: {item.workerRole}</Text>
-                      <Text style={styles.itemAmbulance}>{item.ambulanceLabel}</Text>
+                      <Text style={styles.itemSchedule}>
+                        {item.startTime} - {item.endTime}
+                      </Text>
+                      <Text style={styles.itemAmbulance} numberOfLines={1}>
+                        {item.ambulanceLabel}
+                      </Text>
                     </View>
-                    <View style={styles.itemRight}>
-                      <Text style={styles.teamTitle}>Equipo</Text>
-                      <Text style={styles.teamMember}>Driver: {item.driverLabel}</Text>
-                      <Text style={styles.teamMember}>Medic: {item.medicLabel}</Text>
+                    <View style={styles.itemBottomRow}>
+                      <View style={styles.teamRow}>
+                        <Text style={styles.teamTitle}>Equipo</Text>
+                        <View style={styles.teamMembersStack}>
+                          <Text style={styles.teamMember} numberOfLines={1}>
+                            Driver: {item.driverLabel}
+                          </Text>
+                          <Text style={styles.teamMember} numberOfLines={1}>
+                            Medic: {item.medicLabel}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
                   </View>
                 ))
@@ -469,17 +480,15 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#0f172a",
   },
-  subtitle: {
-    fontSize: 14,
-    color: "#64748b",
-  },
   weekNav: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 12,
-    gap: 8,
+    gap: 6,
   },
   weekButton: {
-    alignSelf: "flex-start",
     borderWidth: 1,
     borderColor: "#cbd5e1",
     borderRadius: 8,
@@ -493,8 +502,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   weekRange: {
+    flex: 1,
     color: "#0f172a",
+    fontSize: 16,
     fontWeight: "600",
+    textAlign: "center",
   },
   centerState: {
     flex: 1,
@@ -544,7 +556,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dayTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "700",
     color: "#0f172a",
   },
@@ -558,9 +570,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   itemRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    flexDirection: "column",
+    alignItems: "stretch",
     backgroundColor: "#f8fafc",
     borderWidth: 1,
     borderColor: "#e2e8f0",
@@ -568,41 +579,59 @@ const styles = StyleSheet.create({
     padding: 10,
     gap: 10,
   },
-  itemLeft: {
+  itemTopGrid: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  itemDienst: {
     flex: 1,
-    gap: 2,
+    color: "#334155",
+    fontWeight: "700",
+    fontSize: 13,
   },
-  itemRight: {
-    width: 132,
-    borderLeftWidth: 1,
-    borderLeftColor: "#e2e8f0",
-    paddingLeft: 10,
-    gap: 2,
-  },
-  itemTime: {
+  itemSchedule: {
+    minWidth: 88,
     color: "#0f172a",
     fontWeight: "700",
-  },
-  itemName: {
-    color: "#334155",
+    fontSize: 13,
+    textAlign: "center",
   },
   itemAmbulance: {
-    color: "#64748b",
-    fontSize: 12,
+    flex: 0.9,
+    color: "#475569",
+    fontSize: 13,
+    textAlign: "right",
   },
-  itemRole: {
-    color: "#0f766e",
-    fontSize: 12,
-    fontWeight: "700",
+  itemBottomRow: {
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+    paddingTop: 8,
+  },
+  teamRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 8,
   },
   teamTitle: {
+    flex: 0.5,
     fontSize: 12,
     color: "#334155",
     fontWeight: "700",
-    marginBottom: 2,
+    textAlign: "left",
+  },
+  teamMembersStack: {
+    flex: 1,
+    alignItems: "flex-start",
+    justifyContent: "center",
+    alignSelf: "flex-end",
+    gap: 2,
   },
   teamMember: {
     fontSize: 12,
     color: "#475569",
+    textAlign: "left",
   },
 });

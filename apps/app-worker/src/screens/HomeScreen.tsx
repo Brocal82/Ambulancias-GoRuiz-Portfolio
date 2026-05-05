@@ -35,19 +35,6 @@ function dienstDateKeyFromAssignment(day: AssignedDay | null): string | null {
   return `${y}-${m}-${d}`;
 }
 
-/** Día y fecha compactos: «Lunes 4/5/2026». */
-function formatDienstDayCompact(day: AssignedDay | null): string {
-  if (!day) return "—";
-  const key = dienstDateKeyFromAssignment(day);
-  if (!key) return "—";
-  const [y, mo, d] = key.split("-").map(Number);
-  const dt = new Date(y, mo - 1, d);
-  if (Number.isNaN(dt.getTime())) return "—";
-  const weekday = dt.toLocaleDateString("es-ES", { weekday: "long" });
-  const name = weekday.charAt(0).toUpperCase() + weekday.slice(1);
-  return `${name} ${d}/${mo}/${y}`;
-}
-
 function formatDienstScheduleLine(day: AssignedDay | null): string {
   if (!day) return "—";
   const a = (day.startTime ?? "").trim();
@@ -62,6 +49,15 @@ function formatPraemieAveragePatients(n: number | null, moduleOn: boolean): stri
   const x = Math.round(n * 100) / 100;
   if (Number.isInteger(x)) return String(x);
   return String(x).replace(".", ",");
+}
+
+function formatTodayHeaderDate(date: Date): string {
+  const weekdayRaw = date.toLocaleDateString("es-ES", { weekday: "long" });
+  const weekday = weekdayRaw.charAt(0).toUpperCase() + weekdayRaw.slice(1);
+  const day = date.getDate();
+  const month = date.toLocaleDateString("es-ES", { month: "long" });
+  const year = date.getFullYear();
+  return `${weekday} ${day}-${month}-${year}`;
 }
 
 type Props = {
@@ -241,6 +237,7 @@ export function HomeScreen({
     informativeUnreadCount,
     unreadMessagesCount,
   ]);
+  const todayHeaderDate = useMemo(() => formatTodayHeaderDate(new Date()), []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -287,7 +284,10 @@ export function HomeScreen({
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Hoy</Text>
+          <View style={styles.cardHeaderRow}>
+            <Text style={styles.cardTitle}>Hoy</Text>
+            <Text style={styles.cardDate}>{todayHeaderDate}</Text>
+          </View>
           <View style={styles.kpiRow}>
             <View style={styles.kpiColumn}>
               <Text style={styles.kpiHeadingOutside}>Dienst</Text>
@@ -299,18 +299,10 @@ export function HomeScreen({
               >
                 <View style={styles.kpiColumnBody}>
                   <Text
-                    style={styles.kpiDienstDayDate}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.55}
-                  >
-                    {formatDienstDayCompact(todayAssignment)}
-                  </Text>
-                  <Text
                     style={styles.kpiDienstTime}
                     numberOfLines={1}
                     adjustsFontSizeToFit
-                    minimumFontScale={0.65}
+                    minimumFontScale={0.8}
                   >
                     {formatDienstScheduleLine(todayAssignment)}
                   </Text>
@@ -630,6 +622,18 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     marginBottom: 12,
   },
+  cardHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  cardDate: {
+    fontSize: 13,
+    color: "#475569",
+    fontWeight: "600",
+    marginBottom: 12,
+  },
   kpiRow: {
     flexDirection: "row",
     gap: 10,
@@ -741,8 +745,8 @@ const styles = StyleSheet.create({
   },
   kpiDienstTime: {
     width: "100%",
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 19,
+    fontWeight: "700",
     color: "#0f172a",
     textAlign: "center",
   },
