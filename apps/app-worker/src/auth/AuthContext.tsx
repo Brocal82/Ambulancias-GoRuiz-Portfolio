@@ -53,8 +53,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const resolveScheduleSource = (modules: CompanyModuleKey[]): ScheduleSource => {
     const hasDynamic = modules.includes(MODULE_KEYS.SCHEDULING);
     const hasExcel = modules.includes(MODULE_KEYS.EXCEL_PLANNING);
-    if (hasExcel) return "excel";
+    // Dynamic agenda wins when both modules are active.
     if (hasDynamic) return "dynamic";
+    if (hasExcel) return "excel";
     return "none";
   };
 

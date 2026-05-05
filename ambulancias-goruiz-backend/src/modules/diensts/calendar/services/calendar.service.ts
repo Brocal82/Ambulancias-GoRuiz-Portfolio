@@ -75,5 +75,6 @@ export async function getDienstsByUser(userId: string, userCompanyId?: string | 
   Object.assign(baseFilter, companyFilter(userCompanyId));
   return Dienst.find(baseFilter)
     .populate("assignments.driver", "name lastName")
-    .populate("assignments.medic", "name lastName");
+    .populate("assignments.medic", "name lastName")
+    .populate("assignments.ambulanceId", "ambulanceNumber licensePlate");
 }

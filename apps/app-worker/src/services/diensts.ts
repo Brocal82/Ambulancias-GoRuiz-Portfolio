@@ -6,7 +6,7 @@ export type DienstAssignment = {
   endTime?: string;
   driver?: string | { _id?: string; name?: string; lastName?: string };
   medic?: string | { _id?: string; name?: string; lastName?: string };
-  ambulanceId?: string | { _id?: string; licensePlate?: string; ambulanceNumber?: string };
+  ambulanceId?: string | { _id?: string; ambulanceNumber?: string; licensePlate?: string };
   notes?: string;
 };
 
