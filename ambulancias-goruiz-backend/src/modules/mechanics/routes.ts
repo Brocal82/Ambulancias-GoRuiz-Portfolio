@@ -4,6 +4,7 @@ import type { ErrorRequestHandler } from "express";
 import {
   reportIssue,
   getAllIssueReports,
+  getMyIssueReports,
   deleteIssueReport,
   getIssuesCount,
   markIssueSeen,
@@ -85,6 +86,13 @@ router.post(
   uploadImagesOnly.array("photos", 5),
   validateBody(reportIssueSchema),
   reportIssue,
+);
+
+router.get(
+  "/issues/mine",
+  authenticateToken,
+  requireModule(MODULE_KEYS.MECHANICS),
+  getMyIssueReports,
 );
 
 router.get(

@@ -4,6 +4,8 @@ export type AmbulanceListItem = {
   _id: string;
   ambulanceNumber?: string;
   licensePlate?: string;
+  brand?: string;
+  modelName?: string;
 };
 
 export async function getAmbulancesList(): Promise<AmbulanceListItem[]> {
