@@ -74,6 +74,13 @@ export type WorkdaySummary = {
   reviewedAt?: string;
 };
 
+export type WorkdayTripSetup = {
+  assignmentId: string;
+  ambulanceId?: string;
+  ambulanceNumber: string;
+  initialKm: number;
+};
+
 export async function getAssignedDaysForWorker(userId: string): Promise<AssignedDay[]> {
   return apiRequest<AssignedDay[]>(`/diensts/assigned-days/${userId}`, {
     method: "GET",
@@ -98,6 +105,26 @@ export async function getMyWorkdaySummaries(): Promise<WorkdaySummary[]> {
 export async function createWorkdayTrip(payload: CreateTripPayload): Promise<WorkdayTrip> {
   return apiRequest<WorkdayTrip>("/trips", {
     method: "POST",
+    requiresAuth: true,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getWorkdayTripSetup(
+  assignmentId: string,
+): Promise<WorkdayTripSetup | null> {
+  return apiRequest<WorkdayTripSetup | null>(`/trips/setup/${assignmentId}`, {
+    method: "GET",
+    requiresAuth: true,
+  });
+}
+
+export async function saveWorkdayTripSetup(
+  assignmentId: string,
+  payload: { ambulanceId?: string; ambulanceNumber: string; initialKm: number },
+): Promise<WorkdayTripSetup> {
+  return apiRequest<WorkdayTripSetup>(`/trips/setup/${assignmentId}`, {
+    method: "PUT",
     requiresAuth: true,
     body: JSON.stringify(payload),
   });
