@@ -10,7 +10,9 @@ import {
   WorkdaySummary,
   WorkdayTrip,
   getAssignedDaysForWorker,
+  getWorkdayTripSetup,
   getMyWorkdaySummaries,
+  saveWorkdayTripSetup,
   getWorkdayTripsByDate,
 } from "../services/workday";
 import { getAmbulancesList, type AmbulanceListItem } from "../services/ambulances";
@@ -128,6 +130,24 @@ function parseInitialKmInput(raw: string): number | null {
   const n = Number(t);
   if (Number.isNaN(n) || n <= 0) return null;
   return n;
+}
+
+function firstSharedKmStartForAssignment(
+  trips: WorkdayTrip[],
+  assignmentId: string,
+): string {
+  const sameAssignment = trips
+    .filter((trip) => trip.assignmentId === assignmentId)
+    .filter((trip) => typeof trip.kmStart === "number" && Number.isFinite(trip.kmStart))
+    .sort((a, b) => {
+      const ta = Date.parse(a.timeWarning ?? "") || 0;
+      const tb = Date.parse(b.timeWarning ?? "") || 0;
+      return ta - tb;
+    });
+  if (sameAssignment.length === 0) return "";
+  const km = sameAssignment[0]?.kmStart;
+  if (typeof km !== "number" || !Number.isFinite(km) || km <= 0) return "";
+  return String(Math.round(km));
 }
 
 function buildPreambleStartWindowMessage(assignment: AssignedDay | null): string | undefined {
@@ -277,6 +297,11 @@ export function WorkerWorkdayScreen({ user, enabledModules, onOpenWorkdayClosure
     const assignmentId = todayAssignment.assignmentId;
     const defId = ambulanceIdForStorage(todayAssignment);
     const defNum = ambulanceNumberForStorage(todayAssignment);
+    const sharedTripsForAssignment = todayTrips.filter(
+      (trip) => trip.assignmentId === assignmentId,
+    );
+    const sharedSetupExists = sharedTripsForAssignment.length > 0;
+    const sharedKmStart = firstSharedKmStartForAssignment(todayTrips, assignmentId);
     let cancelled = false;
     setAmbulanceHydrated(false);
     (async () => {
@@ -285,7 +310,31 @@ export function WorkerWorkdayScreen({ user, enabledModules, onOpenWorkdayClosure
           loadAmbulanceDataAsync(assignmentId),
           getVehicleConfirmedAsync(assignmentId),
         ]);
+        const sharedSetup = await getWorkdayTripSetup(assignmentId).catch(() => null);
         if (cancelled) return;
+        if (sharedSetup?.initialKm && sharedSetup.initialKm > 0) {
+          const sharedKm = String(Math.round(sharedSetup.initialKm));
+          const sharedAmbulanceId = sharedSetup.ambulanceId?.trim() || defId;
+          const sharedAmbulanceNumber = sharedSetup.ambulanceNumber?.trim() || defNum;
+          setInitialKmDraft(sharedKm);
+          setPreambleAmbulanceId(sharedAmbulanceId);
+          setPreambleAmbulanceNumber(sharedAmbulanceNumber);
+          setVehicleConfirmed(true);
+          return;
+        }
+        if (sharedSetupExists) {
+          // Professional sync behavior: if any teammate already started this assignment,
+          // treat setup as globally confirmed even on a fresh device.
+          setInitialKmDraft(
+            sharedKmStart || loaded?.initialKm?.trim() || "",
+          );
+          setPreambleAmbulanceId(loaded?.ambulanceId?.trim() ? loaded.ambulanceId : defId);
+          setPreambleAmbulanceNumber(
+            loaded?.ambulanceNumber?.trim() ? loaded.ambulanceNumber : defNum,
+          );
+          setVehicleConfirmed(true);
+          return;
+        }
         if (loaded) {
           setInitialKmDraft(loaded.initialKm?.trim() ? loaded.initialKm : "");
           setPreambleAmbulanceId(loaded.ambulanceId?.trim() ? loaded.ambulanceId : defId);
@@ -308,7 +357,7 @@ export function WorkerWorkdayScreen({ user, enabledModules, onOpenWorkdayClosure
     return () => {
       cancelled = true;
     };
-  }, [todayAssignment?.assignmentId]);
+  }, [todayAssignment?.assignmentId, todayTrips]);
 
   useEffect(() => {
     if (!hasAmbulancesModule || !todayAssignment?.assignmentId) {
@@ -424,6 +473,11 @@ export function WorkerWorkdayScreen({ user, enabledModules, onOpenWorkdayClosure
       : ambulanceNumberForStorage(todayAssignment).trim() || "—";
     setConfirmingAmbulance(true);
     try {
+      await saveWorkdayTripSetup(todayAssignment.assignmentId, {
+        ambulanceId: ambId,
+        ambulanceNumber: ambNum,
+        initialKm: Math.round(km),
+      });
       await saveAmbulanceDataAsync(todayAssignment.assignmentId, ambId, ambNum, kmStr);
       await setVehicleConfirmedAsync(todayAssignment.assignmentId, true);
       setInitialKmDraft(kmStr);

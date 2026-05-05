@@ -3,6 +3,7 @@ import { Dienst } from "../../diensts";
 import type { IDienst, IDienstAssignment } from "../../diensts";
 import WorkdaySummary from "../../workday-summary/models/workday-summary.model";
 import { Trip } from "../models/trip.model";
+import { TripSetup } from "../models/trip-setup.model";
 
 /** Error con código HTTP para mapeo en controller */
 export class TripError extends Error {
@@ -46,6 +47,16 @@ async function resolveAssignmentByAssignmentId(
   }
 
   return { dienst, assignment };
+}
+
+async function resolveAssignmentForSetup(
+  assignmentId: string,
+  companyId: string,
+): Promise<{
+  dienst: IDienst;
+  assignment: IDienstAssignment;
+}> {
+  return resolveAssignmentByAssignmentId(assignmentId, companyId);
 }
 
 /** Verifica que el usuario pueda crear trips en este assignment. Admin: dienst mismo companyId. Worker: participante y mismo companyId. */
@@ -253,4 +264,69 @@ export async function getTripsByDate(
   };
 
   return await Trip.find(workerFilter).sort({ timeWarning: 1 });
+}
+
+export async function upsertTripSetup(
+  assignmentId: string,
+  payload: {
+    ambulanceId?: string;
+    ambulanceNumber: string;
+    initialKm: number;
+  },
+  userId: string,
+  userRole: string,
+  userCompanyId?: string | null,
+) {
+  const scopeCo =
+    userCompanyId != null && String(userCompanyId).trim() !== ""
+      ? String(userCompanyId).trim()
+      : "";
+  const { dienst, assignment } = await resolveAssignmentForSetup(assignmentId, scopeCo);
+  assertUserCanCreateTripInAssignment(
+    dienst as any,
+    assignment,
+    userId,
+    userRole,
+    userCompanyId,
+  );
+  const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
+  const update: Record<string, unknown> = {
+    assignmentId: assignmentObjectId,
+    date: assignment.date,
+    ambulanceNumber: payload.ambulanceNumber,
+    initialKm: payload.initialKm,
+    updatedBy: userId && mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : null,
+    companyId: (dienst as any).companyId ?? null,
+  };
+  if (payload.ambulanceId) {
+    update.ambulanceId = payload.ambulanceId;
+  }
+  return TripSetup.findOneAndUpdate(
+    { assignmentId: assignmentObjectId },
+    { $set: update },
+    { new: true, upsert: true, setDefaultsOnInsert: true },
+  ).lean();
+}
+
+export async function getTripSetup(
+  assignmentId: string,
+  userId: string,
+  userRole: string,
+  userCompanyId?: string | null,
+) {
+  const scopeCo =
+    userCompanyId != null && String(userCompanyId).trim() !== ""
+      ? String(userCompanyId).trim()
+      : "";
+  const { dienst, assignment } = await resolveAssignmentForSetup(assignmentId, scopeCo);
+  assertUserCanCreateTripInAssignment(
+    dienst as any,
+    assignment,
+    userId,
+    userRole,
+    userCompanyId,
+  );
+  return TripSetup.findOne({
+    assignmentId: new mongoose.Types.ObjectId(assignmentId),
+  }).lean();
 }
