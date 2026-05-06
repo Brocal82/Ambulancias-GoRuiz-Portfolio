@@ -64,12 +64,13 @@ async function sumPartialTripsForUserOnDate(params: {
       { $or: [{ companyId: params.companyObjectId }, { companyId: null }] },
     ],
   })
-    .select("totalRealTrips")
+    .select("totalEffectivePatients")
     .lean();
   return rows.reduce((acc, row) => {
     const value =
-      typeof row.totalRealTrips === "number" && Number.isFinite(row.totalRealTrips)
-        ? row.totalRealTrips
+      typeof row.totalEffectivePatients === "number" &&
+      Number.isFinite(row.totalEffectivePatients)
+        ? row.totalEffectivePatients
         : 0;
     return acc + value;
   }, 0);
