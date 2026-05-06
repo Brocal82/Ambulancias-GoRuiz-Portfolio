@@ -12,6 +12,7 @@ import {
   getMonthConfig,
   upsertMonthConfig,
   checkVacationsInRange,
+  removeMyDeniedVacationRequest,
 } from "./index";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
@@ -109,6 +110,14 @@ router.get(
   authenticateToken,
   requireModule(MODULE_KEYS.VACATION),
   getUserVacationRequests,
+);
+
+router.delete(
+  "/:id/mine",
+  authenticateToken,
+  requireModule(MODULE_KEYS.VACATION),
+  validateObjectId("id"),
+  removeMyDeniedVacationRequest,
 );
 
 router.delete(

@@ -87,6 +87,7 @@ type Props = {
   onRefreshProfile: () => Promise<void>;
   onOpenWorkday: () => void;
   onOpenAgenda: () => void;
+  onOpenVacations: () => void;
   onOpenPraemien: () => void;
   onOpenDocuments: () => void;
   onOpenMessages: () => void;
@@ -95,6 +96,7 @@ type Props = {
   hasAgendaModule: boolean;
   hasDocumentsModule: boolean;
   hasMessagesModule: boolean;
+  hasVacationModule: boolean;
   hasPraemienModule: boolean;
   user: AuthUser;
   showBottomPreview?: boolean;
@@ -105,6 +107,7 @@ export function HomeScreen({
   onRefreshProfile,
   onOpenWorkday,
   onOpenAgenda,
+  onOpenVacations,
   onOpenPraemien,
   onOpenDocuments,
   onOpenMessages,
@@ -113,6 +116,7 @@ export function HomeScreen({
   hasAgendaModule,
   hasDocumentsModule,
   hasMessagesModule,
+  hasVacationModule,
   hasPraemienModule,
   user,
   showBottomPreview = true,
@@ -140,11 +144,9 @@ export function HomeScreen({
   }, [width, isTablet, modulesGridInnerWidth]);
 
   const modules = [
-    {
-      key: "jornada",
-      title: "Mi jornada",
-      status: hasWorkdayModule ? "Activo" : "No disponible",
-    },
+    ...(hasWorkdayModule
+      ? [{ key: "jornada", title: "Mi jornada", status: "Activo" }]
+      : []),
     {
       key: "turnos",
       title: "Mis turnos",
@@ -160,7 +162,11 @@ export function HomeScreen({
       title: "Documentos",
       status: hasDocumentsModule ? "Activo" : "No disponible",
     },
-    { key: "ausencias", title: "Vacaciones/Ausencias", status: "Proximamente" },
+    {
+      key: "ausencias",
+      title: "Vacaciones/Ausencias",
+      status: hasVacationModule ? "Activo" : "No disponible",
+    },
     { key: "perfil", title: "Mi perfil", status: "Activo" },
   ];
 
@@ -413,6 +419,7 @@ export function HomeScreen({
               const isWorkdayModule = module.key === "jornada";
               const isAgendaModule = module.key === "turnos";
               const isMessagesModule = module.key === "mensajes";
+              const isVacationsModule = module.key === "ausencias";
               const isDocumentsModule = module.key === "documentos";
               const isProfileModule = module.key === "perfil";
               return (
@@ -425,6 +432,8 @@ export function HomeScreen({
                         ? onOpenAgenda
                         : isMessagesModule && hasMessagesModule
                           ? onOpenMessages
+                          : isVacationsModule && hasVacationModule
+                            ? onOpenVacations
                           : isProfileModule
                             ? onOpenProfile
                       : isDocumentsModule && hasDocumentsModule
@@ -438,6 +447,8 @@ export function HomeScreen({
                         ? !hasAgendaModule
                         : isMessagesModule
                           ? !hasMessagesModule
+                          : isVacationsModule
+                            ? !hasVacationModule
                           : isProfileModule
                             ? false
                       : isDocumentsModule

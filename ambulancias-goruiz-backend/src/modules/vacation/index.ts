@@ -22,6 +22,7 @@ export {
   cancelMyVacationRequest,
   createVacationRequest,
   deleteVacationRequest,
+  removeMyDeniedVacationRequest,
 } from "./controllers/vacation-requests-write.controller";
 export {
   DEFAULT_MAX_PER_DAY,

@@ -12,11 +12,13 @@ import { WorkerMessagesScreen } from "./WorkerMessagesScreen";
 import { WorkerProfileScreen } from "./WorkerProfileScreen";
 import { WorkerWorkdayClosureScreen } from "./WorkerWorkdayClosureScreen";
 import { WorkerPraemienScreen } from "./WorkerPraemienScreen";
+import { WorkerVacationsScreen } from "./WorkerVacationsScreen";
 
 type WorkerTabKey =
   | "home"
   | "workday"
   | "agenda"
+  | "vacations"
   | "praemien"
   | "documents"
   | "messages"
@@ -61,6 +63,7 @@ export function WorkerTabsShell({
     enabledModules.includes(MODULE_KEYS.SCHEDULING) ||
     enabledModules.includes(MODULE_KEYS.EXCEL_PLANNING);
   const hasMessagesModule = enabledModules.includes(MODULE_KEYS.MESSAGES);
+  const hasVacationModule = enabledModules.includes(MODULE_KEYS.VACATION);
   const hasDocumentsModule =
     enabledModules.includes(MODULE_KEYS.DOCUMENTS) ||
     enabledModules.includes(MODULE_KEYS.PAYROLL);
@@ -107,12 +110,14 @@ export function WorkerTabsShell({
             onRefreshProfile={onRefreshProfile}
             onOpenWorkday={() => setActiveTab("workday")}
             onOpenAgenda={() => setActiveTab("agenda")}
+            onOpenVacations={() => setActiveTab("vacations")}
             onOpenPraemien={() => setActiveTab("praemien")}
             onOpenDocuments={() => setActiveTab("documents")}
             onOpenMessages={() => setActiveTab("messages")}
             onOpenProfile={() => setActiveTab("profile")}
             hasWorkdayModule={hasWorkdayModule}
             hasAgendaModule={hasAgendaModule}
+            hasVacationModule={hasVacationModule}
             hasDocumentsModule={hasDocumentsModule}
             hasMessagesModule={hasMessagesModule}
             hasPraemienModule={hasPraemienModule}
@@ -134,6 +139,15 @@ export function WorkerTabsShell({
         );
       case "agenda":
         return <WorkerAgendaScreen user={user} scheduleSource={scheduleSource} />;
+      case "vacations":
+        return hasVacationModule ? (
+          <WorkerVacationsScreen />
+        ) : (
+          <PlaceholderScreen
+            title="Vacaciones y ausencias"
+            description="Tu empresa no tiene el modulo Vacaciones activo."
+          />
+        );
       case "praemien":
         return <WorkerPraemienScreen hasPraemienModule={hasPraemienModule} userId={user._id} />;
       case "messages":
@@ -163,6 +177,7 @@ export function WorkerTabsShell({
     activeTab,
     hasWorkdayModule,
     hasAgendaModule,
+    hasVacationModule,
     hasDocumentsModule,
     hasMessagesModule,
     hasPraemienModule,
@@ -206,15 +221,28 @@ export function WorkerTabsShell({
             Agenda
           </Text>
         </Pressable>
-        <Pressable onPress={() => setActiveTab("workday")} style={styles.tabButton}>
+        {hasWorkdayModule ? (
+          <Pressable onPress={() => setActiveTab("workday")} style={styles.tabButton}>
+            <Ionicons
+              name="today-outline"
+              size={22}
+              color={activeTab === "workday" ? "#0f766e" : "#64748b"}
+              style={styles.tabIcon}
+            />
+            <Text style={[styles.tabText, activeTab === "workday" && styles.tabTextActive]} numberOfLines={1}>
+              Mi jornada
+            </Text>
+          </Pressable>
+        ) : null}
+        <Pressable onPress={() => setActiveTab("vacations")} style={styles.tabButton}>
           <Ionicons
-            name="today-outline"
+            name="airplane-outline"
             size={22}
-            color={activeTab === "workday" ? "#0f766e" : "#64748b"}
+            color={activeTab === "vacations" ? "#0f766e" : "#64748b"}
             style={styles.tabIcon}
           />
-          <Text style={[styles.tabText, activeTab === "workday" && styles.tabTextActive]} numberOfLines={1}>
-            Mi jornada
+          <Text style={[styles.tabText, activeTab === "vacations" && styles.tabTextActive]} numberOfLines={1}>
+            Vacaciones
           </Text>
         </Pressable>
         <Pressable
