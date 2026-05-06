@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { getMyCompanyPraemienConfig } from "../services/company";
 import {
@@ -124,6 +125,7 @@ type Props = {
 export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
   const today = useMemo(() => new Date(), []);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [summary, setSummary] = useState<MonthlyPraemienSummaryResponse | null>(null);
   const [history, setHistory] = useState<MonthlyPraemieHistoryItem[]>([]);
@@ -297,6 +299,18 @@ export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
     }
   }, [loadBase, loadManualMonth, manualValueInput, selectedDate]);
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadBase();
+      if (manualActive) {
+        await loadManualMonth();
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadBase, loadManualMonth, manualActive]);
+
   if (!hasPraemienModule) {
     return (
       <View style={styles.centered}>
@@ -316,15 +330,29 @@ export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
   }
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Prämie</Text>
-        <Text style={styles.muted}>
-          Modo actual: {manualActive ? "Manual" : "Automático"}
-          {effectiveFrom ? ` · Efectivo desde ${formatMonthLabel(effectiveFrom.year, effectiveFrom.month)}` : ""}
-        </Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
+        <View style={styles.headerTextWrap}>
+          <Text style={styles.title}>
+            Prämie <Text style={styles.titleMode}>({manualActive ? "Manual" : "Auto"})</Text>
+          </Text>
+        </View>
+        <Pressable
+          style={styles.refreshIconBtn}
+          onPress={() => void handleRefresh()}
+          disabled={refreshing}
+          accessibilityRole="button"
+          accessibilityLabel="Refrescar Prämie"
+        >
+          {refreshing ? (
+            <ActivityIndicator size="small" color="#0f766e" />
+          ) : (
+            <Ionicons name="refresh" size={20} color="#0f766e" />
+          )}
+        </Pressable>
       </View>
 
+      <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Resumen por nivel</Text>
         <View style={styles.levelGrid}>
@@ -517,13 +545,26 @@ export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
           <Text style={styles.errorText}>{errorMessage}</Text>
         </View>
       ) : null}
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: "#f8fafc" },
   root: { flex: 1, backgroundColor: "#f8fafc" },
   content: { padding: 16, gap: 12, paddingBottom: 28 },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    backgroundColor: "#f8fafc",
+  },
+  headerTextWrap: { flex: 1, minWidth: 0 },
   card: {
     backgroundColor: "#fff",
     borderWidth: 1,
@@ -534,6 +575,17 @@ const styles = StyleSheet.create({
   },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, padding: 24 },
   title: { fontSize: 22, fontWeight: "700", color: "#0f172a" },
+  titleMode: { fontSize: 16, fontWeight: "600", color: "#64748b" },
+  refreshIconBtn: {
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   sectionTitle: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
   muted: { fontSize: 13, color: "#64748b" },
   levelGrid: { flexDirection: "row", flexWrap: "nowrap", gap: 6 },
