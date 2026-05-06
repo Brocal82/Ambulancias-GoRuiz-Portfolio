@@ -22,7 +22,7 @@ import {
   type MonthlyPraemieHistoryItem,
   type MonthlyPraemienSummaryResponse,
 } from "../services/praemien";
-import { getAssignedDaysForWorker } from "../services/workday";
+import { getAssignedDaysForWorker, getMyWorkdaySummaries } from "../services/workday";
 
 function isManualPhaseActive(params: {
   praemienEnabled: boolean;
@@ -95,16 +95,16 @@ function statusColor(status?: string | null): string {
 
 function levelStats(average: number, days: { totalCountedPatients: number }[]) {
   const levels = [7, 8, 9, 10];
+  const roundToHalf = (value: number) => Math.round(value * 2) / 2;
   return levels.map((threshold) => {
     let totalDifference = 0;
     for (const day of days) totalDifference += day.totalCountedPatients - threshold;
-    const totalDays = days.length || 1;
-    const averageDiff = totalDifference / totalDays;
+    const accumulatedDiff = totalDifference;
     const percentage = Math.min(100, Math.max(0, (average / threshold) * 100));
     return {
       threshold,
-      averageDiff: Math.round(averageDiff * 10) / 10,
-      isPositive: averageDiff >= 0,
+      averageDiff: roundToHalf(accumulatedDiff),
+      isPositive: accumulatedDiff >= 0,
     };
   });
 }
@@ -140,6 +140,7 @@ export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [historyPage, setHistoryPage] = useState(0);
   const [assignedDateKeys, setAssignedDateKeys] = useState<string[]>([]);
+  const [partialTripsByDate, setPartialTripsByDate] = useState<Record<string, number>>({});
 
   const manualActive = useMemo(
     () =>
@@ -184,12 +185,26 @@ export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
     if (!manualActive) return;
     setErrorMessage(null);
     try {
-      const [dates, entries] = await Promise.all([
+      const [dates, entries, summaries] = await Promise.all([
         getMyFinalClosureDatesForMonth(manualYear, manualMonth),
         getMyManualDailyEntriesForMonth(manualYear, manualMonth),
+        getMyWorkdaySummaries().catch(() => []),
       ]);
       setClosureDates(dates);
       setMonthEntries(entries);
+      const monthPrefix = `${manualYear}-${String(manualMonth).padStart(2, "0")}-`;
+      const partialMap: Record<string, number> = {};
+      summaries
+        .filter((s) => !s.isFinalClosure)
+        .filter((s) => typeof s.date === "string" && s.date.startsWith(monthPrefix))
+        .forEach((s) => {
+          const key = s.date;
+          const value = typeof s.totalRealTrips === "number" && Number.isFinite(s.totalRealTrips)
+            ? s.totalRealTrips
+            : 0;
+          partialMap[key] = (partialMap[key] ?? 0) + value;
+        });
+      setPartialTripsByDate(partialMap);
       if (selectedDate && !dates.includes(selectedDate)) {
         setSelectedDate(dates[0] ?? "");
       }
@@ -230,6 +245,10 @@ export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
     () => (selectedDate ? entryByDate.get(selectedDate) ?? null : null),
     [entryByDate, selectedDate],
   );
+  const selectedPartialTrips = useMemo(
+    () => (selectedDate ? partialTripsByDate[selectedDate] ?? 0 : 0),
+    [partialTripsByDate, selectedDate],
+  );
 
   const summaryByDate = useMemo(() => {
     const map = new Map<string, number>();
@@ -258,11 +277,11 @@ export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
         manualDays.length > 0
           ? manualDays.reduce((acc, d) => acc + d.totalCountedPatients, 0) / manualDays.length
           : 0;
-      return levelStats(avg, manualDays);
+      return levelStats(Math.round(avg * 2) / 2, manualDays);
     }
     const avg = summary?.averagePatients ?? 0;
     const days = summary?.monthlyData ?? [];
-    return levelStats(avg, days);
+    return levelStats(Math.round(avg * 2) / 2, days);
   }, [manualActive, monthEntries, summary]);
 
   const historyPageSize = 6;
@@ -450,6 +469,11 @@ export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
           {selectedDate && closureSet.has(selectedDate) && !selectedEntry ? (
             <View style={styles.manualEditor}>
               <Text style={styles.inputLabel}>Valor diario ({selectedDate})</Text>
+              {selectedPartialTrips > 0 ? (
+                <Text style={styles.partialHint}>
+                  Parcial acumulado: +{selectedPartialTrips}
+                </Text>
+              ) : null}
               <View style={styles.manualEditorRow}>
                 <TextInput
                   value={manualValueInput}
@@ -468,6 +492,12 @@ export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
                   <Ionicons name="send" size={20} color="#ffffff" />
                 </Pressable>
               </View>
+              {selectedPartialTrips > 0 ? (
+                <Text style={styles.partialTotalHint}>
+                  Total a enviar: {manualValueInput.trim() === "" ? "0" : manualValueInput} +{" "}
+                  {selectedPartialTrips}
+                </Text>
+              ) : null}
             </View>
           ) : null}
         </View>
@@ -666,6 +696,8 @@ const styles = StyleSheet.create({
   manualEditor: { marginTop: 8, gap: 8 },
   manualEditorRow: { flexDirection: "row", gap: 10, alignItems: "stretch" },
   inputLabel: { color: "#334155", fontSize: 13, fontWeight: "600" },
+  partialHint: { color: "#92400e", fontSize: 12, fontWeight: "600" },
+  partialTotalHint: { color: "#475569", fontSize: 12, fontWeight: "600" },
   input: {
     borderWidth: 1,
     borderColor: "#cbd5e1",
