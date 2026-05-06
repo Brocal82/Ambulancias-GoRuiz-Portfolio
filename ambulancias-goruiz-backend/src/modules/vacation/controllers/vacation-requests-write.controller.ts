@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import {
   cancelOwnVacationRequest,
   createVacationRequestRecord,
+  deleteOwnDeniedVacationRequest,
   deleteVacationRequestRecord,
 } from "../services/vacation-requests-write.service";
 import { requireCompanyForAdmin } from "../../../utils/requireCompany";
@@ -24,8 +25,14 @@ export const createVacationRequest = async (
       endDate,
       companyId: req.companyId,
     });
+    if (newRequest.kind === "overlap") {
+      res.status(409).json({
+        message: "Ya tienes una solicitud de vacaciones en ese rango de fechas",
+      });
+      return;
+    }
 
-    res.status(201).json(newRequest);
+    res.status(201).json(newRequest.request);
   } catch (error) {
     console.error("Error al crear solicitud de vacaciones:", error);
     res.status(500).json({ message: "Error interno del servidor" });
@@ -97,6 +104,39 @@ export const deleteVacationRequest = async (
     res.status(200).json({ message: "Solicitud eliminada correctamente" });
   } catch (error) {
     console.error("Error al eliminar solicitud de vacaciones:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+export const removeMyDeniedVacationRequest = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+    if (!userId) {
+      res.status(401).json({ message: "No autorizado" });
+      return;
+    }
+
+    const result = await deleteOwnDeniedVacationRequest({ userId, id });
+    if (result.kind === "not_found") {
+      res.status(404).json({ message: "Solicitud no encontrada" });
+      return;
+    }
+    if (result.kind === "forbidden") {
+      res.status(403).json({ message: "No puedes eliminar esta solicitud" });
+      return;
+    }
+    if (result.kind === "invalid_status") {
+      res.status(400).json({ message: "Solo puedes eliminar solicitudes denegadas" });
+      return;
+    }
+
+    res.status(200).json({ message: "Solicitud eliminada correctamente" });
+  } catch (error) {
+    console.error("Error al eliminar solicitud denegada del trabajador:", error);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };

@@ -10,6 +10,20 @@ export async function createVacationRequestRecord(input: {
   companyId?: string;
 }) {
   const { userId, startDate, endDate, companyId } = input;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  const overlapping = await VacationRequest.findOne({
+    user: new mongoose.Types.ObjectId(userId),
+    status: { $in: ["pending", "accepted", "option_sent", "cancel_requested"] },
+    startDate: { $lte: end },
+    endDate: { $gte: start },
+  })
+    .select("_id")
+    .lean();
+  if (overlapping) {
+    return { kind: "overlap" as const };
+  }
 
   const newRequest = new VacationRequest({
     user: new mongoose.Types.ObjectId(userId),
@@ -23,7 +37,7 @@ export async function createVacationRequestRecord(input: {
   });
 
   await newRequest.save();
-  return newRequest;
+  return { kind: "ok" as const, request: newRequest };
 }
 
 export async function cancelOwnVacationRequest(input: {
@@ -80,6 +94,28 @@ export async function deleteVacationRequestRecord(
   }
   if (!match) {
     return { kind: "forbidden" as const };
+  }
+
+  await VacationRequest.findByIdAndDelete(id);
+  return { kind: "ok" as const };
+}
+
+export async function deleteOwnDeniedVacationRequest(input: {
+  userId: string;
+  id: string;
+}) {
+  const { userId, id } = input;
+  const request = await VacationRequest.findById(id);
+  if (!request) {
+    return { kind: "not_found" as const };
+  }
+
+  if (String(request.user) !== String(userId)) {
+    return { kind: "forbidden" as const };
+  }
+
+  if (String(request.status) !== "cancelled") {
+    return { kind: "invalid_status" as const };
   }
 
   await VacationRequest.findByIdAndDelete(id);
