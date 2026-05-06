@@ -8,6 +8,7 @@ export type ManualPraemienDailyApiGate =
       allowed: true;
       companyObjectId: mongoose.Types.ObjectId;
       effectiveFrom: PraemienModeEffectiveFrom;
+      workdayEnabled: boolean;
     }
   | { allowed: false; statusCode: number; message: string };
 
@@ -28,7 +29,7 @@ export async function assertManualPraemienDailyApisAllowed(
   }
 
   const company = await Company.findById(companyIdStr)
-    .select("praemienMode praemienModeEffectiveFrom")
+    .select("praemienMode praemienModeEffectiveFrom enabledModules")
     .lean();
 
   if (!company) {
@@ -86,6 +87,9 @@ export async function assertManualPraemienDailyApisAllowed(
     allowed: true,
     companyObjectId: new mongoose.Types.ObjectId(companyIdStr),
     effectiveFrom: { year: from.year, month: from.month },
+    workdayEnabled: Array.isArray(company.enabledModules)
+      ? company.enabledModules.includes("workday")
+      : false,
   };
 }
 

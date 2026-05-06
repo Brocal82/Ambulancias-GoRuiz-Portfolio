@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import PraemienManualDailyEntry from "../models/praemien-manual-daily-entry.model";
 import type { PraemienManualDailyStatus } from "../models/praemien-manual-daily-entry.model";
+import WorkdaySummary from "../../workday-summary/models/workday-summary.model";
 import {
   assertDateAllowedForManualEntry,
   assertManualPraemienDailyApisAllowed,
@@ -33,6 +34,47 @@ function monthRangeStrings(year: number, month1to12: number): {
   return { start: startStr, end: endStr };
 }
 
+function listDateKeysInRange(start: Date, end: Date): string[] {
+  const out: string[] = [];
+  const d = new Date(start);
+  d.setHours(0, 0, 0, 0);
+  const max = new Date(end);
+  max.setHours(0, 0, 0, 0);
+  while (d <= max) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    out.push(`${y}-${m}-${day}`);
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
+
+async function sumPartialTripsForUserOnDate(params: {
+  companyObjectId: mongoose.Types.ObjectId;
+  userId: string;
+  dateStr: string;
+}): Promise<number> {
+  const userOid = new mongoose.Types.ObjectId(params.userId);
+  const rows = await WorkdaySummary.find({
+    $and: [
+      { date: params.dateStr },
+      { isFinalClosure: false },
+      { $or: [{ driver: userOid }, { medic: userOid }] },
+      { $or: [{ companyId: params.companyObjectId }, { companyId: null }] },
+    ],
+  })
+    .select("totalRealTrips")
+    .lean();
+  return rows.reduce((acc, row) => {
+    const value =
+      typeof row.totalRealTrips === "number" && Number.isFinite(row.totalRealTrips)
+        ? row.totalRealTrips
+        : 0;
+    return acc + value;
+  }, 0);
+}
+
 export async function upsertMyManualDailyEntry(params: {
   companyIdStr: string | undefined;
   userId: string;
@@ -57,18 +99,20 @@ export async function upsertMyManualDailyEntry(params: {
     return { ok: false, statusCode: 400, message: dateCheck.message };
   }
 
-  const hasFinalClosure = await userHasFinalWorkdayClosureOnDate({
-    companyObjectId: gate.companyObjectId,
-    userId: params.userId,
-    dateStr,
-  });
-  if (!hasFinalClosure) {
-    return {
-      ok: false,
-      statusCode: 400,
-      message:
-        "Solo puedes registrar la Prämie manual en días en los que cerraste la jornada con un cierre total (día con Dienst finalizado).",
-    };
+  if (gate.workdayEnabled) {
+    const hasFinalClosure = await userHasFinalWorkdayClosureOnDate({
+      companyObjectId: gate.companyObjectId,
+      userId: params.userId,
+      dateStr,
+    });
+    if (!hasFinalClosure) {
+      return {
+        ok: false,
+        statusCode: 400,
+        message:
+          "Solo puedes registrar la Prämie manual en días en los que cerraste la jornada con un cierre total (día con Dienst finalizado).",
+      };
+    }
   }
 
   const valueParsed = parseManualPraemieNumericValue(params.workerSubmittedValue);
@@ -76,6 +120,14 @@ export async function upsertMyManualDailyEntry(params: {
     return { ok: false, statusCode: 400, message: valueParsed.message };
   }
   const num = valueParsed.value;
+  const partialTripsBonus = gate.workdayEnabled
+    ? await sumPartialTripsForUserOnDate({
+        companyObjectId: gate.companyObjectId,
+        userId: params.userId,
+        dateStr,
+      })
+    : 0;
+  const submittedTotal = num + partialTripsBonus;
 
   let statusParam: PraemienManualDailyStatus = "submitted";
   if (params.status === "draft" || params.status === "submitted") {
@@ -133,8 +185,8 @@ export async function upsertMyManualDailyEntry(params: {
       companyId: gate.companyObjectId,
       userId: userOid,
       date: dateStr,
-      originalWorkerValue: num,
-      workerSubmittedValue: num,
+      originalWorkerValue: submittedTotal,
+      workerSubmittedValue: submittedTotal,
       workerSubmittedAt: now,
       status: statusParam,
     });
@@ -149,7 +201,7 @@ export async function upsertMyManualDailyEntry(params: {
         companyObjectId: gate.companyObjectId,
         primaryUserId: params.userId,
         dateStr,
-        submittedValue: num,
+        submittedValue: submittedTotal,
       });
     }
     return {
@@ -159,7 +211,7 @@ export async function upsertMyManualDailyEntry(params: {
   }
 
   const patch: Record<string, unknown> = {
-    workerSubmittedValue: num,
+    workerSubmittedValue: submittedTotal,
     workerSubmittedAt: now,
   };
 
@@ -190,7 +242,7 @@ export async function upsertMyManualDailyEntry(params: {
       companyObjectId: gate.companyObjectId,
       primaryUserId: params.userId,
       dateStr,
-      submittedValue: num,
+      submittedValue: submittedTotal,
     });
   }
   return {
@@ -313,11 +365,39 @@ export async function getMyFinalClosureDateKeysForMonth(params: {
     return { ok: false, statusCode: 400, message: "Año o mes inválido." };
   }
 
-  const dates = await listUserFinalWorkdayClosureDatesInMonth({
-    companyObjectId: gate.companyObjectId,
-    userId: params.userId,
-    year: params.year,
-    month: params.month,
-  });
-  return { ok: true, dates };
+  if (gate.workdayEnabled) {
+    const dates = await listUserFinalWorkdayClosureDatesInMonth({
+      companyObjectId: gate.companyObjectId,
+      userId: params.userId,
+      year: params.year,
+      month: params.month,
+    });
+    return { ok: true, dates };
+  }
+
+  // Manual-only companies (without digital workday) can register values
+  // independently for any valid calendar day from effective start up to today.
+  const monthStart = new Date(params.year, params.month - 1, 1);
+  monthStart.setHours(0, 0, 0, 0);
+  const monthEnd = new Date(params.year, params.month, 0);
+  monthEnd.setHours(0, 0, 0, 0);
+  const effectiveStart = new Date(
+    gate.effectiveFrom.year,
+    gate.effectiveFrom.month - 1,
+    1,
+  );
+  effectiveStart.setHours(0, 0, 0, 0);
+  const today = new Date();
+  const todayStart = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+  const start =
+    monthStart > effectiveStart ? monthStart : effectiveStart;
+  const end = monthEnd < todayStart ? monthEnd : todayStart;
+  if (end < start) {
+    return { ok: true, dates: [] };
+  }
+  return { ok: true, dates: listDateKeysInRange(start, end) };
 }

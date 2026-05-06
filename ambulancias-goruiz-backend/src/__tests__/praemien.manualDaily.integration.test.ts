@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
 import Company from "../modules/companies/models/company.model";
+import { MODULE_KEYS } from "../modules/companies/constants/modules.constants";
 import MonthlyPraemie from "../modules/praemien/models/monthly-praemie.model";
 import PraemienManualDailyEntry from "../modules/praemien/models/praemien-manual-daily-entry.model";
 import User from "../modules/users/models/user.model";
@@ -25,6 +26,13 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
   let companyId: mongoose.Types.ObjectId;
 
   const pad = (n: number) => String(n).padStart(2, "0");
+  const dateKeyFrom = (d: Date) =>
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const daysAgoDateKey = (daysAgo: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
+    return dateKeyFrom(d);
+  };
 
   /** PUT manual-daily exige cierre final de jornada ese día (WorkdaySummary). */
   async function seedWorkerFinalClosureDay(
@@ -55,6 +63,39 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
       totalRealTrips: 1,
       companyId,
       isFinalClosure: true,
+    });
+  }
+
+  async function seedWorkerPartialClosureDay(
+    dateStr: string,
+    assignmentId: string,
+    totalRealTrips: number,
+  ): Promise<void> {
+    await WorkdaySummary.create({
+      date: dateStr,
+      assignmentId,
+      driver: new mongoose.Types.ObjectId(workerId),
+      medic: new mongoose.Types.ObjectId(workerId),
+      ambulanceId: new mongoose.Types.ObjectId(),
+      ambulanceNumber: "99",
+      initialKm: 0,
+      totalDienstKm: 1,
+      trips: [
+        {
+          auftragNumber: "PT",
+          patientName: "P",
+          fromAddress: "A",
+          toAddress: "B",
+          timeWarning: "08:00",
+          wasCancelled: false,
+          countsTrip: 1 as const,
+        },
+      ],
+      totalEffectivePatients: Math.max(totalRealTrips, 1),
+      totalRealTrips,
+      companyId,
+      isFinalClosure: false,
+      partialClosureReason: "test",
     });
   }
 
@@ -142,6 +183,7 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const assignmentKey = `ws-put-month-${Date.now()}`;
     await seedWorkerFinalClosureDay(dateStr, assignmentKey);
+    await seedWorkerPartialClosureDay(dateStr, `${assignmentKey}-partial`, 2);
 
     try {
       const putRes = await request(app)
@@ -152,7 +194,7 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
 
       expect(putRes.body).toMatchObject({
         date: dateStr,
-        workerSubmittedValue: 7,
+        workerSubmittedValue: 9,
         status: "submitted",
       });
 
@@ -166,14 +208,64 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
       expect(Array.isArray(listRes.body)).toBe(true);
       const found = listRes.body.find((x: { date: string }) => x.date === dateStr);
       expect(found).toBeDefined();
-      expect(found.workerSubmittedValue).toBe(7);
+      expect(found.workerSubmittedValue).toBe(9);
     } finally {
-      await WorkdaySummary.deleteMany({ assignmentId: assignmentKey });
+      await WorkdaySummary.deleteMany({ assignmentId: { $in: [assignmentKey, `${assignmentKey}-partial`] } });
       await PraemienManualDailyEntry.deleteMany({
         companyId,
         userId: new mongoose.Types.ObjectId(workerId),
         date: dateStr,
       });
+    }
+  });
+
+  it("worker: sin módulo workday puede registrar manual daily y ver días elegibles del mes", async () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    const dateStr = `${y}-${String(m).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    await Company.updateOne(
+      { _id: companyId },
+      {
+        $set: {
+          praemienMode: "manual",
+          praemienModeEffectiveFrom: { year: y, month: m },
+          enabledModules: [MODULE_KEYS.PRAEMIEN],
+        },
+      },
+    );
+
+    try {
+      const putRes = await request(app)
+        .put(`${API}/praemien/manual-daily`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .send({ date: dateStr, workerSubmittedValue: 8, status: "submitted" })
+        .expect(200);
+
+      expect(putRes.body).toMatchObject({
+        date: dateStr,
+        workerSubmittedValue: 8,
+        status: "submitted",
+      });
+
+      const datesRes = await request(app)
+        .get(`${API}/praemien/manual-daily/final-closure-dates?year=${y}&month=${m}`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .expect(200);
+
+      expect(Array.isArray(datesRes.body?.dates)).toBe(true);
+      expect(datesRes.body.dates).toContain(dateStr);
+    } finally {
+      await PraemienManualDailyEntry.deleteMany({
+        companyId,
+        userId: new mongoose.Types.ObjectId(workerId),
+        date: dateStr,
+      });
+      await Company.updateOne(
+        { _id: companyId },
+        { $set: { enabledModules: Object.values(MODULE_KEYS) } },
+      );
     }
   });
 
@@ -205,7 +297,7 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     const now = new Date();
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
-    const dateStr = `${y}-${pad(m)}-18`;
+    const dateStr = daysAgoDateKey(2);
     const assignmentKey = `ws-phase4-18-${Date.now()}`;
     await seedWorkerFinalClosureDay(dateStr, assignmentKey);
 
@@ -366,7 +458,7 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     const now = new Date();
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
-    const dateStr = `${y}-${pad(m)}-19`;
+    const dateStr = daysAgoDateKey(3);
     const assignmentKey = `ws-phase4-19-${Date.now()}`;
     await seedWorkerFinalClosureDay(dateStr, assignmentKey);
 
@@ -463,7 +555,7 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     const now = new Date();
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
-    const dateStr = `${y}-${pad(m)}-21`;
+    const dateStr = daysAgoDateKey(4);
     const assignmentKey = `ws-hard-draft-${Date.now()}`;
     await seedWorkerFinalClosureDay(dateStr, assignmentKey);
 
@@ -505,7 +597,7 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     const now = new Date();
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
-    const dateStr = `${y}-${pad(m)}-22`;
+    const dateStr = daysAgoDateKey(5);
     const assignmentKey = `ws-hard-submit-${Date.now()}`;
     await seedWorkerFinalClosureDay(dateStr, assignmentKey);
 

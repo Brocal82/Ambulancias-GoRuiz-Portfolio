@@ -33,9 +33,7 @@ export default function PraemieProgressBars({
             for (const day of days) {
                 totalDifference += day.totalCountedPatients - threshold;
             }
-
-            const totalDays = days.length || 1;
-            const averageDiff = totalDifference / totalDays;
+            const accumulatedDiff = totalDifference;
 
             const percentage = Math.min(
                 100,
@@ -45,8 +43,8 @@ export default function PraemieProgressBars({
             return {
                 threshold,
                 percentage,
-                averageDiff: Math.round(averageDiff * 2) / 2,
-                isPositive: averageDiff >= 0,
+                averageDiff: Math.round(accumulatedDiff * 2) / 2,
+                isPositive: accumulatedDiff >= 0,
             };
         });
     }, [averagePatients, days, levels]);

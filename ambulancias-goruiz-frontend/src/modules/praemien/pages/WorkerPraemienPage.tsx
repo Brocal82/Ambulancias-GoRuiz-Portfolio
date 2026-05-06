@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { getMonthlyPraemienSummary } from "../domain/api";
 import type { MonthlyPraemienDay } from "../domain/api";
+import { getMyManualDailyEntriesForMonth } from "../domain/manualDailyApi";
 import WorkerPraemienHistory from "../components/WorkerPraemienHistory";
 import MonthlyMiniCalendar from "../components/MonthlyMiniCalendar";
 import PraemieProgressBars from "../components/PraemieProgressBars";
@@ -16,6 +17,7 @@ import {
   formatPraemienEffectiveMonthLabel,
   isPraemienManualEntryPhaseActive,
 } from "../utils/isPraemienManualEntryPhaseActive";
+import { PRAEMIEN_MANUAL_PENDING_CHANGED } from "../utils/praemienManualPendingEvents";
 
 const PRAEMIEN_WORKER_HELP_URL: string | undefined = import.meta.env
   .VITE_PRAEMIEN_WORKER_HELP_URL as string | undefined;
@@ -75,18 +77,77 @@ const WorkerPraemienPage = () => {
     setLoading(true);
     setError("");
 
-    getMonthlyPraemienSummary()
-      .then((data) => {
+    const load = async () => {
+      try {
+        if (manualPhaseActive) {
+          const now = new Date();
+          const entries = await getMyManualDailyEntriesForMonth(
+            now.getFullYear(),
+            now.getMonth() + 1,
+          );
+          const days = entries.map((entry) => ({
+            date: entry.date,
+            totalCountedPatients:
+              entry.status === "approved" && entry.adminFinalValue != null
+                ? entry.adminFinalValue
+                : entry.workerSubmittedValue,
+          }));
+          const avg =
+            days.length > 0
+              ? days.reduce((acc, day) => acc + day.totalCountedPatients, 0) /
+                days.length
+              : 0;
+          setSummaries(days);
+          setMedia(Math.round(avg * 2) / 2);
+          return;
+        }
+
+        const data = await getMonthlyPraemienSummary();
         setSummaries(data.monthlyData);
         setMedia(data.averagePatients);
-      })
-      .catch(() => {
+      } catch {
         setError(t("pages.praemien.page.error"));
-      })
-      .finally(() => {
+      } finally {
         setLoading(false);
-      });
-  }, [token, companyPraemienConfigReady, t]);
+      }
+    };
+
+    void load();
+  }, [token, companyPraemienConfigReady, t, manualPhaseActive]);
+
+  useEffect(() => {
+    if (!manualPhaseActive) return;
+    const onChanged = () => {
+      setLoading(true);
+      setError("");
+      const now = new Date();
+      void getMyManualDailyEntriesForMonth(
+        now.getFullYear(),
+        now.getMonth() + 1,
+      )
+        .then((entries) => {
+          const days = entries.map((entry) => ({
+            date: entry.date,
+            totalCountedPatients:
+              entry.status === "approved" && entry.adminFinalValue != null
+                ? entry.adminFinalValue
+                : entry.workerSubmittedValue,
+          }));
+          const avg =
+            days.length > 0
+              ? days.reduce((acc, day) => acc + day.totalCountedPatients, 0) /
+                days.length
+              : 0;
+          setSummaries(days);
+          setMedia(Math.round(avg * 2) / 2);
+        })
+        .catch(() => setError(t("pages.praemien.page.error")))
+        .finally(() => setLoading(false));
+    };
+    window.addEventListener(PRAEMIEN_MANUAL_PENDING_CHANGED, onChanged);
+    return () =>
+      window.removeEventListener(PRAEMIEN_MANUAL_PENDING_CHANGED, onChanged);
+  }, [manualPhaseActive, t]);
 
   if (token && !companyPraemienConfigReady) {
     return (
