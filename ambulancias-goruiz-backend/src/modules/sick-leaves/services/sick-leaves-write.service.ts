@@ -33,3 +33,13 @@ export async function rejectSickLeaveRecord(sick: any) {
   await sick.save();
   return sick;
 }
+
+export async function deleteOwnRejectedSickLeave(input: { userId: string; id: string }) {
+  const { userId, id } = input;
+  const record = await SickLeave.findById(id);
+  if (!record) return { kind: "not_found" as const };
+  if (String(record.user) !== String(userId)) return { kind: "forbidden" as const };
+  if (String(record.status) !== "rejected") return { kind: "invalid_status" as const };
+  await SickLeave.findByIdAndDelete(id);
+  return { kind: "ok" as const };
+}
