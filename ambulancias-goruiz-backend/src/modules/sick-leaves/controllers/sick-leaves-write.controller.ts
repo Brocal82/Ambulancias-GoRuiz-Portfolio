@@ -7,6 +7,7 @@ import { toBerlinDay } from "../utils/sick-date.helpers";
 import { acceptSickLeaveWorkflow } from "../services/sick-acceptance.service";
 import {
   createSickLeaveRecord,
+  deleteOwnRejectedSickLeave,
   getSickLeaveById,
   rejectSickLeaveRecord,
 } from "../services/sick-leaves-write.service";
@@ -171,5 +172,33 @@ export async function rejectSickLeave(req: Request, res: Response) {
   } catch (err) {
     console.error("\u274C rejectSickLeave error:", err);
     res.status(500).json({ message: "Error al rechazar la baja" });
+  }
+}
+
+export async function removeMyRejectedSickLeave(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+    if (!userId) {
+      res.status(401).json({ message: "No autorizado" });
+      return;
+    }
+    const result = await deleteOwnRejectedSickLeave({ userId, id });
+    if (result.kind === "not_found") {
+      res.status(404).json({ message: "Baja no encontrada" });
+      return;
+    }
+    if (result.kind === "forbidden") {
+      res.status(403).json({ message: "No puedes eliminar esta baja" });
+      return;
+    }
+    if (result.kind === "invalid_status") {
+      res.status(400).json({ message: "Solo puedes eliminar bajas rechazadas" });
+      return;
+    }
+    res.status(200).json({ message: "Baja eliminada correctamente" });
+  } catch (err) {
+    console.error("\u274C removeMyRejectedSickLeave error:", err);
+    res.status(500).json({ message: "Error al eliminar la baja" });
   }
 }

@@ -10,6 +10,7 @@ import {
   createSickLeave,
   acceptSickLeave,
   rejectSickLeave,
+  removeMyRejectedSickLeave,
   sickLeaveCreateSchema,
 } from "./controllers/sick-leaves-write.controller";
 import {
@@ -80,6 +81,14 @@ router.post(
   validateObjectId("id"),
   upload.single("document"),
   attachSickDocumentFile,
+);
+
+router.delete(
+  "/:id/mine",
+  authenticateToken,
+  requireModule(MODULE_KEYS.SICK_LEAVES),
+  validateObjectId("id"),
+  removeMyRejectedSickLeave,
 );
 
 router.post(
