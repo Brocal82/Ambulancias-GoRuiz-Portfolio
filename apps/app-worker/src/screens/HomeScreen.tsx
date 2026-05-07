@@ -21,6 +21,8 @@ import {
 } from "../services/praemien";
 import { getAssignedDaysForWorker, type AssignedDay } from "../services/workday";
 import { resolveTodayAssignment } from "../utils/workdayAssignment";
+import { getMyVacationRequests } from "../services/vacations";
+import { getMySickLeaves } from "../services/sickLeaves";
 import { AuthUser } from "../types/auth";
 
 function dienstDateKeyFromAssignment(day: AssignedDay | null): string | null {
@@ -71,6 +73,25 @@ function computeManualMonthAverage(entries: Array<{
     .filter((v) => Number.isFinite(v));
   if (!values.length) return null;
   return values.reduce((acc, value) => acc + value, 0) / values.length;
+}
+
+function isTodayInRange(startDate: string, endDate: string): boolean {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  const todayKey = `${y}-${m}-${d}`;
+  // Parse dates via local device timezone so Berlin UTC timestamps map to the correct calendar day.
+  const startKey = (() => {
+    const dt = new Date(startDate);
+    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+  })();
+  const endKey = (() => {
+    const dt = new Date(endDate);
+    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+  })();
+  return todayKey >= startKey && todayKey <= endKey;
 }
 
 function formatTodayHeaderDate(date: Date): string {
@@ -166,11 +187,9 @@ export function HomeScreen({
       title: "Documentos",
       status: hasDocumentsModule ? "Activo" : "No disponible",
     },
-    {
-      key: "ausencias",
-      title: "Vacaciones/Ausencias",
-      status: hasVacationModule ? "Activo" : "No disponible",
-    },
+    ...(hasVacationModule
+      ? [{ key: "ausencias", title: "Vacaciones/Ausencias", status: "Activo" as const }]
+      : []),
     ...(hasSickLeavesModule
       ? [{ key: "bajas", title: "Bajas", status: "Activo" as const }]
       : []),
@@ -179,6 +198,8 @@ export function HomeScreen({
 
   const [todayAssignment, setTodayAssignment] = useState<AssignedDay | null>(null);
   const [praemieAveragePatients, setPraemieAveragePatients] = useState<number | null>(null);
+  const [todayIsOnVacation, setTodayIsOnVacation] = useState(false);
+  const [todayIsOnSickLeave, setTodayIsOnSickLeave] = useState(false);
 
   const loadDienstAndPraemie = useCallback(async () => {
     try {
@@ -221,7 +242,36 @@ export function HomeScreen({
         setPraemieAveragePatients(null);
       }
     }
-  }, [hasPraemienModule, user._id]);
+    if (hasVacationModule) {
+      try {
+        const vacations = await getMyVacationRequests();
+        setTodayIsOnVacation(
+          vacations.some((v) => v.status === "accepted" && isTodayInRange(v.startDate, v.endDate)),
+        );
+      } catch {
+        setTodayIsOnVacation(false);
+      }
+    } else {
+      setTodayIsOnVacation(false);
+    }
+
+    if (hasSickLeavesModule) {
+      try {
+        const sickLeaves = await getMySickLeaves();
+        setTodayIsOnSickLeave(
+          sickLeaves.some(
+            (s) =>
+              (s.status === "accepted" || s.status === "pending") &&
+              isTodayInRange(s.startDate, s.endDate),
+          ),
+        );
+      } catch {
+        setTodayIsOnSickLeave(false);
+      }
+    } else {
+      setTodayIsOnSickLeave(false);
+    }
+  }, [hasPraemienModule, hasVacationModule, hasSickLeavesModule, user._id]);
 
   const refreshAlerts = useCallback(async () => {
     try {
@@ -357,14 +407,31 @@ export function HomeScreen({
                 style={({ pressed }) => [styles.kpiBox, pressed && styles.kpiBoxPressed]}
               >
                 <View style={styles.kpiColumnBody}>
-                  <Text
-                    style={styles.kpiDienstTime}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.8}
-                  >
-                    {formatDienstScheduleLine(todayAssignment)}
-                  </Text>
+                  {todayAssignment !== null ? (
+                    <Text
+                      style={styles.kpiDienstTime}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.8}
+                    >
+                      {formatDienstScheduleLine(todayAssignment)}
+                    </Text>
+                  ) : todayIsOnSickLeave ? (
+                    <View style={styles.kpiDienstStatusBox}>
+                      <Ionicons name="thermometer-outline" size={26} color="#ef4444" />
+                      <Text style={[styles.kpiDienstStatusText, { color: "#ef4444" }]}>Enfermo</Text>
+                    </View>
+                  ) : todayIsOnVacation ? (
+                    <View style={styles.kpiDienstStatusBox}>
+                      <Ionicons name="airplane-outline" size={26} color="#0ea5e9" />
+                      <Text style={[styles.kpiDienstStatusText, { color: "#0ea5e9" }]}>Vacaciones</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.kpiDienstStatusBox}>
+                      <Ionicons name="sunny-outline" size={26} color="#059669" />
+                      <Text style={[styles.kpiDienstStatusText, { color: "#059669" }]}>Libre</Text>
+                    </View>
+                  )}
                 </View>
               </Pressable>
             </View>
@@ -817,6 +884,17 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: "700",
     color: "#0f172a",
+    textAlign: "center",
+  },
+  kpiDienstStatusBox: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  kpiDienstStatusText: {
+    fontSize: 13,
+    fontWeight: "700",
     textAlign: "center",
   },
   kpiValue: {
