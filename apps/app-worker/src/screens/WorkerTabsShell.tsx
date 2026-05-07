@@ -143,7 +143,14 @@ export function WorkerTabsShell({
           />
         );
       case "agenda":
-        return <WorkerAgendaScreen user={user} scheduleSource={scheduleSource} />;
+        return (
+          <WorkerAgendaScreen
+            user={user}
+            scheduleSource={scheduleSource}
+            hasVacationModule={hasVacationModule}
+            hasSickLeavesModule={hasSickLeavesModule}
+          />
+        );
       case "vacations":
         return hasVacationModule ? (
           <WorkerVacationsScreen />
@@ -249,17 +256,19 @@ export function WorkerTabsShell({
             </Text>
           </Pressable>
         ) : null}
-        <Pressable onPress={() => setActiveTab("vacations")} style={styles.tabButton}>
-          <Ionicons
-            name="airplane-outline"
-            size={22}
-            color={activeTab === "vacations" ? "#0f766e" : "#64748b"}
-            style={styles.tabIcon}
-          />
-          <Text style={[styles.tabText, activeTab === "vacations" && styles.tabTextActive]} numberOfLines={1}>
-            Vacaciones
-          </Text>
-        </Pressable>
+        {hasVacationModule ? (
+          <Pressable onPress={() => setActiveTab("vacations")} style={styles.tabButton}>
+            <Ionicons
+              name="airplane-outline"
+              size={22}
+              color={activeTab === "vacations" ? "#0f766e" : "#64748b"}
+              style={styles.tabIcon}
+            />
+            <Text style={[styles.tabText, activeTab === "vacations" && styles.tabTextActive]} numberOfLines={1}>
+              Vacaciones
+            </Text>
+          </Pressable>
+        ) : null}
         {hasSickLeavesModule ? (
           <Pressable onPress={() => setActiveTab("sickLeaves")} style={styles.tabButton}>
             <Ionicons
