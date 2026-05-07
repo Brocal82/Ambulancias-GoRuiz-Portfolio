@@ -8,15 +8,20 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import { getDienstsByUser } from "../services/diensts";
 import { getMyExcelPlanningWeek } from "../services/excelPlanning";
 import { ApiError } from "../services/http";
 import { AuthUser, ScheduleSource } from "../types/auth";
+import { getMyVacationRequests, VacationRequestItem } from "../services/vacations";
+import { getMySickLeaves, SickLeaveItem } from "../services/sickLeaves";
 
 type Props = {
   user: AuthUser;
   scheduleSource: ScheduleSource;
+  hasVacationModule: boolean;
+  hasSickLeavesModule: boolean;
 };
 
 type DayScheduleItem = {
@@ -172,7 +177,36 @@ function resolveExcelDriverMedicLabels(row: {
   return { driverLabel: primary || "Sin asignar", medicLabel: partner };
 }
 
-export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
+function isDateInRange(dateKey: string, startDate: string, endDate: string): boolean {
+  // Parse via local device date so Berlin UTC timestamps map to the correct calendar day.
+  const start = toIsoDateKey(new Date(startDate));
+  const end = toIsoDateKey(new Date(endDate));
+  return dateKey >= start && dateKey <= end;
+}
+
+function getEmptyDayStatus(
+  dateKey: string,
+  sick: SickLeaveItem[],
+  vacations: VacationRequestItem[],
+): "sick" | "vacation" | "libre" {
+  if (
+    sick.some(
+      (s) =>
+        (s.status === "accepted" || s.status === "pending") &&
+        isDateInRange(dateKey, s.startDate, s.endDate),
+    )
+  )
+    return "sick";
+  if (
+    vacations.some(
+      (v) => v.status === "accepted" && isDateInRange(dateKey, v.startDate, v.endDate),
+    )
+  )
+    return "vacation";
+  return "libre";
+}
+
+export function WorkerAgendaScreen({ user, scheduleSource, hasVacationModule, hasSickLeavesModule }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeekMonday(new Date()));
   const [hasManualWeekSelection, setHasManualWeekSelection] = useState(false);
   const [allSchedulesByDate, setAllSchedulesByDate] = useState<Record<string, DayScheduleItem[]>>(
@@ -181,6 +215,8 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
   const [isWeekPublished, setIsWeekPublished] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
+  const [vacationItems, setVacationItems] = useState<VacationRequestItem[]>([]);
+  const [sickLeaveItems, setSickLeaveItems] = useState<SickLeaveItem[]>([]);
 
   const sortSchedulesByTime = (byDate: Record<string, DayScheduleItem[]>) => {
     for (const [dateKey, items] of Object.entries(byDate)) {
@@ -325,6 +361,15 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
     void loadAgenda();
   }, [scheduleSource, weekStart]);
 
+  useEffect(() => {
+    if (hasVacationModule) {
+      getMyVacationRequests().then(setVacationItems).catch(() => setVacationItems([]));
+    }
+    if (hasSickLeavesModule) {
+      getMySickLeaves().then(setSickLeaveItems).catch(() => setSickLeaveItems([]));
+    }
+  }, [hasVacationModule, hasSickLeavesModule]);
+
   const weekDays = useMemo<WeekDay[]>(() => {
     const todayKey = toIsoDateKey(new Date());
     return DAY_NAMES.map((dayName, index) => {
@@ -341,10 +386,6 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
     });
   }, [allSchedulesByDate, weekStart]);
 
-  const weekItemsCount = useMemo(
-    () => weekDays.reduce((acc, day) => acc + day.items.length, 0),
-    [weekDays],
-  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -404,19 +445,17 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
             <Text style={styles.retryButtonText}>Reintentar</Text>
           </Pressable>
         </View>
-      ) : weekItemsCount === 0 ? (
+      ) : scheduleSource === "excel" && !isWeekPublished ? (
         <View style={styles.centerState}>
           <Text style={styles.centerText}>
-            {scheduleSource === "excel" && !isWeekPublished
-              ? "No hay planificacion Excel publicada para esta semana."
-              : scheduleSource === "excel"
-                ? "Semana publicada, pero este trabajador no tiene filas asignadas."
-                : "No hay servicios asignados para esta semana."}
+            No hay planificacion Excel publicada para esta semana.
           </Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {weekDays.map((day) => (
+          {weekDays.map((day) => {
+            const dayStatus = getEmptyDayStatus(day.dateKey, sickLeaveItems, vacationItems);
+            return (
             <View key={day.dateKey} style={[styles.dayCard, day.isToday && styles.todayCard]}>
               <View style={styles.dayHeader}>
                 <Text style={styles.dayTitle}>
@@ -425,8 +464,21 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
                 {day.isToday ? <Text style={styles.todayBadge}>Hoy</Text> : null}
               </View>
 
-              {day.items.length === 0 ? (
-                <Text style={styles.emptyDayText}>Sin servicio asignado</Text>
+              {dayStatus === "sick" ? (
+                <View style={styles.dayStatusRow}>
+                  <Ionicons name="thermometer-outline" size={18} color="#ef4444" />
+                  <Text style={[styles.dayStatusText, { color: "#ef4444" }]}>Enfermo</Text>
+                </View>
+              ) : dayStatus === "vacation" ? (
+                <View style={styles.dayStatusRow}>
+                  <Ionicons name="airplane-outline" size={18} color="#0ea5e9" />
+                  <Text style={[styles.dayStatusText, { color: "#0ea5e9" }]}>Vacaciones</Text>
+                </View>
+              ) : day.items.length === 0 ? (
+                <View style={styles.dayStatusRow}>
+                  <Ionicons name="sunny-outline" size={18} color="#059669" />
+                  <Text style={[styles.dayStatusText, { color: "#059669" }]}>Libre</Text>
+                </View>
               ) : (
                 day.items.map((item) => (
                   <View key={`${day.dateKey}-${item.dienstId}-${item.startTime}`} style={styles.itemRow}>
@@ -458,7 +510,8 @@ export function WorkerAgendaScreen({ user, scheduleSource }: Props) {
                 ))
               )}
             </View>
-          ))}
+            );
+          })}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -565,9 +618,14 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 12,
   },
-  emptyDayText: {
-    color: "#64748b",
+  dayStatusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  dayStatusText: {
     fontSize: 14,
+    fontWeight: "700",
   },
   itemRow: {
     flexDirection: "column",
