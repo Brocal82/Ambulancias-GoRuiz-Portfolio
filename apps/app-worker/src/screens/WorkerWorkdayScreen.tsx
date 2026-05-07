@@ -600,7 +600,7 @@ export function WorkerWorkdayScreen({ user, enabledModules, onOpenWorkdayClosure
   ]);
 
   const showHeaderTripCountChip =
-    !isLoading && !errorMessage && todayAssignment && todayStatus === "in-progress";
+    !isLoading && !errorMessage && todayAssignment != null;
 
   const showPreamble = Boolean(
     !isLoading &&
