@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { Appointment } from "../models/appointment.model";
 import User from "../../users/models/user.model";
 import { IAppointment, TimeSlot } from "../types/appointment.types";
+import { sendPushNotification } from "../../notifications";
 
 async function getWorkerIdsForCompany(companyId: string): Promise<mongoose.Types.ObjectId[]> {
   const users = await User.find({
@@ -173,7 +174,14 @@ export async function proposeSlots(
   appointment.selectedSlot = null;
   appointment.status = "proposed";
 
-  return await appointment.save();
+  const saved = await appointment.save();
+  void sendPushNotification(
+    [appointment.workerId.toString()],
+    "Nueva propuesta de cita",
+    "El administrador te ha propuesto horarios para tu cita.",
+    { type: "appointment_proposed", appointmentId: String(appointment._id) },
+  );
+  return saved;
 }
 
 export async function selectSlot(

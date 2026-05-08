@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
+import { sendPushNotification } from "../../notifications";
 import {
   applyAdminVacationUpdateFields,
   buildAcceptedVacationRange,
@@ -45,6 +46,8 @@ export const updateVacationRequest = async (
     startISO: string;
     endISO: string;
   } | null | undefined = undefined;
+
+  let vacationPush: { userId: string; status: string } | null | undefined = undefined;
 
   const session = await mongoose.startSession();
 
@@ -129,6 +132,11 @@ export const updateVacationRequest = async (
         acceptedRange = buildAcceptedVacationRange(request);
       }
 
+      const notifiableStatuses = ["accepted", "cancelled", "option_sent"];
+      if (typeof status !== "undefined" && notifiableStatuses.includes(request.status)) {
+        vacationPush = { userId: String(request.user), status: request.status };
+      }
+
       res.status(200).json(request);
     });
 
@@ -153,6 +161,26 @@ export const updateVacationRequest = async (
           stack: clearErr instanceof Error ? clearErr.stack : undefined,
         });
       }
+    }
+
+    if (vacationPush != null) {
+      const push = vacationPush as { userId: string; status: string };
+      const pushTitles: Record<string, string> = {
+        accepted: "Vacaciones aceptadas",
+        cancelled: "Vacaciones no aceptadas",
+        option_sent: "Nueva propuesta de vacaciones",
+      };
+      const pushBodies: Record<string, string> = {
+        accepted: "Tu solicitud de vacaciones ha sido aceptada.",
+        cancelled: "Tu solicitud de vacaciones no ha podido ser aceptada.",
+        option_sent: "El administrador te ha propuesto fechas alternativas.",
+      };
+      void sendPushNotification(
+        [push.userId],
+        pushTitles[push.status] ?? "Actualización de vacaciones",
+        pushBodies[push.status] ?? "Tu solicitud de vacaciones ha sido actualizada.",
+        { type: "vacation_updated", status: push.status },
+      );
     }
   } catch (err: any) {
     if (isVacationUpdateAbortError(err)) {

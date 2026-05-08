@@ -1,5 +1,16 @@
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
+import * as Notifications from "expo-notifications";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 import { AdminBlockedScreen } from "./src/screens/AdminBlockedScreen";
