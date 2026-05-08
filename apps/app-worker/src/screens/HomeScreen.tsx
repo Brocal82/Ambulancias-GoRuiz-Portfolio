@@ -110,6 +110,7 @@ type Props = {
   onOpenAgenda: () => void;
   onOpenVacations: () => void;
   onOpenSickLeaves: () => void;
+  onOpenAppointments: () => void;
   onOpenPraemien: () => void;
   onOpenDocuments: () => void;
   onOpenMessages: () => void;
@@ -120,6 +121,7 @@ type Props = {
   hasMessagesModule: boolean;
   hasVacationModule: boolean;
   hasSickLeavesModule: boolean;
+  hasAppointmentsModule: boolean;
   hasPraemienModule: boolean;
   user: AuthUser;
   showBottomPreview?: boolean;
@@ -132,6 +134,7 @@ export function HomeScreen({
   onOpenAgenda,
   onOpenVacations,
   onOpenSickLeaves,
+  onOpenAppointments,
   onOpenPraemien,
   onOpenDocuments,
   onOpenMessages,
@@ -142,6 +145,7 @@ export function HomeScreen({
   hasMessagesModule,
   hasVacationModule,
   hasSickLeavesModule,
+  hasAppointmentsModule,
   hasPraemienModule,
   user,
   showBottomPreview = true,
@@ -192,6 +196,9 @@ export function HomeScreen({
       : []),
     ...(hasSickLeavesModule
       ? [{ key: "bajas", title: "Bajas", status: "Activo" as const }]
+      : []),
+    ...(hasAppointmentsModule
+      ? [{ key: "citas", title: "Citas", status: "Activo" as const }]
       : []),
     { key: "perfil", title: "Mi perfil", status: "Activo" },
   ];
@@ -495,6 +502,7 @@ export function HomeScreen({
               const isMessagesModule = module.key === "mensajes";
               const isVacationsModule = module.key === "ausencias";
               const isSickLeavesModule = module.key === "bajas";
+              const isAppointmentsModule = module.key === "citas";
               const isDocumentsModule = module.key === "documentos";
               const isProfileModule = module.key === "perfil";
               return (
@@ -511,6 +519,8 @@ export function HomeScreen({
                             ? onOpenVacations
                           : isSickLeavesModule && hasSickLeavesModule
                             ? onOpenSickLeaves
+                          : isAppointmentsModule && hasAppointmentsModule
+                            ? onOpenAppointments
                           : isProfileModule
                             ? onOpenProfile
                       : isDocumentsModule && hasDocumentsModule
@@ -528,6 +538,8 @@ export function HomeScreen({
                             ? !hasVacationModule
                           : isSickLeavesModule
                             ? !hasSickLeavesModule
+                          : isAppointmentsModule
+                            ? !hasAppointmentsModule
                           : isProfileModule
                             ? false
                       : isDocumentsModule

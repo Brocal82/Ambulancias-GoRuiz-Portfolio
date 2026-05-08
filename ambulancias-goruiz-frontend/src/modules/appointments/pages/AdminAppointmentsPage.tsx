@@ -10,6 +10,7 @@ import {
     AdminAppointmentDetail,
 } from "../components";
 import { useAdminAppointmentsSync } from "../hooks/useAdminAppointmentsSync";
+import { acceptCancellation } from "../domain/api";
 
 import StatusBadge from "../../../components/common/StatusBadge";
 import { toneForAppointmentStatus } from "../utils/appointmentTone";
@@ -154,7 +155,8 @@ export default function AdminAppointmentsPage() {
                                             const hasMessage =
                                                 !!a.details?.trim() ||
                                                 (a.status === "proposed" &&
-                                                    (a.proposedSlots?.length ?? 0) > 0);
+                                                    (a.proposedSlots?.length ?? 0) > 0) ||
+                                                !!a.cancellationMessage?.trim();
                                             return (
                                                 <tr
                                                     key={a._id}
@@ -200,6 +202,19 @@ export default function AdminAppointmentsPage() {
                                                                     }}
                                                                     title={t("pages.appointments.actions.proposeSlots")}
                                                                 />
+                                                            ) : a.status === "cancellation_requested" ? (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={async () => {
+                                                                        if (!token) return;
+                                                                        await acceptCancellation(a._id, token);
+                                                                        await refetch();
+                                                                    }}
+                                                                    className="rounded-lg bg-amber-500 px-2 py-1 text-xs font-medium text-white hover:bg-amber-600"
+                                                                    title="Aceptar cancelación"
+                                                                >
+                                                                    Aceptar cancelación
+                                                                </button>
                                                             ) : (
                                                                 <span className="text-xs text-slate-400">—</span>
                                                             )}

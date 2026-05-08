@@ -13,6 +13,8 @@ export const toneForAppointmentStatus = (
         ? "sky"
         : s === "cancelled"
           ? "rose"
-          : "slate";
+          : s === "cancellation_requested"
+            ? "amber"
+            : "slate";
 };
 

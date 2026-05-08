@@ -6,7 +6,8 @@ export type AppointmentStatus =
   | "proposed"
   | "confirmed"
   | "cancelled"
-  | "rescheduled";
+  | "rescheduled"
+  | "cancellation_requested";
 
 export interface TimeSlot {
   start: string; // ISO UTC
@@ -22,6 +23,7 @@ export interface Appointment {
   status: AppointmentStatus;
   proposedSlots: TimeSlot[];
   selectedSlot?: TimeSlot | null;
+  cancellationMessage?: string;
   createdAt: string;
   updatedAt: string;
 }

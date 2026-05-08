@@ -123,7 +123,21 @@ export const rejectProposal = async (
   return data;
 };
 
-//Worker: Borrar Cita
+// Worker: solicitar cancelación -> cancellation_requested
+export const requestCancellation = async (
+  id: string,
+  message: string,
+  token: string,
+): Promise<Appointment> => {
+  const { data } = await axios.post<Appointment>(
+    `/appointments/${id}/request-cancel`,
+    { message },
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  return data;
+};
+
+//Worker: Borrar Cita (solo si ya está cancelled)
 export const deleteMyAppointment = async (
   id: string,
   token: string,
@@ -170,5 +184,18 @@ export const cancelAppointment = async (
   const { data } = await axios.delete<Appointment>(`/appointments/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  return data;
+};
+
+// Admin: aceptar cancelación solicitada por el trabajador
+export const acceptCancellation = async (
+  id: string,
+  token: string,
+): Promise<Appointment> => {
+  const { data } = await axios.post<Appointment>(
+    `/appointments/${id}/accept-cancel`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
   return data;
 };

@@ -238,6 +238,59 @@ export const cancelAppointment = async (
   }
 };
 
+export const requestCancellation = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const workerId = req.userId as string;
+    const { id } = req.params;
+    const saved = await appointmentsService.requestCancellation(
+      workerId,
+      id,
+      req.body.message,
+    );
+    res.status(200).json(saved);
+  } catch (err: unknown) {
+    if (err instanceof AppointmentError) {
+      res.status(err.statusCode).json({ message: err.message });
+      return;
+    }
+    console.error("requestCancellation error:", err);
+    res
+      .status(400)
+      .json({ message: (err as Error)?.message || "Error al solicitar cancelación." });
+  }
+};
+
+export const acceptCancellation = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res.status(companyResult.statusCode).json({ message: companyResult.message });
+      return;
+    }
+    const adminId = req.userId as string;
+    const { id } = req.params;
+    const saved = await appointmentsService.acceptCancellation(
+      adminId,
+      id,
+      companyResult.companyId,
+    );
+    res.status(200).json(saved);
+  } catch (err: unknown) {
+    if (err instanceof AppointmentError) {
+      res.status(err.statusCode).json({ message: err.message });
+      return;
+    }
+    console.error("acceptCancellation error:", err);
+    res.status(500).json({ message: "Error al aceptar la cancelación." });
+  }
+};
+
 export const deleteMyAppointment = async (
   req: Request,
   res: Response,

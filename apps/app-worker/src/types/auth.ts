@@ -55,6 +55,7 @@ export const MODULE_KEYS = {
   PAYROLL: "payroll",
   DOCUMENTS: "documents",
   PRAEMIEN: "praemien",
+  APPOINTMENTS: "appointments",
 } as const;
 
 export type CompanyModuleKey = (typeof MODULE_KEYS)[keyof typeof MODULE_KEYS];

@@ -18,12 +18,15 @@ import {
   deleteMyAppointment,
   getAppointmentsCount,
   getOpenAppointments,
+  requestCancellation,
+  acceptCancellation,
 } from "./controllers/appointments.controller";
 import {
   requestAppointmentSchema,
   proposeSlotsSchema,
   selectSlotSchema,
   updateAppointmentSchema,
+  requestCancellationSchema,
 } from "./schemas/appointment.schema";
 import { MODULE_KEYS } from "../companies/constants/modules.constants";
 
@@ -127,7 +130,28 @@ router.patch(
   updateAppointment,
 );
 
-// Worker: eliminar su propia cita
+// Worker: solicitar cancelación -> cancellation_requested
+router.post(
+  "/:id/request-cancel",
+  authenticateToken,
+  requireModule(MODULE_KEYS.APPOINTMENTS),
+  authorizeRole("worker"),
+  validateObjectId("id"),
+  validateBody(requestCancellationSchema),
+  requestCancellation,
+);
+
+// Admin: aceptar cancelación -> cancelled
+router.post(
+  "/:id/accept-cancel",
+  authenticateToken,
+  requireModule(MODULE_KEYS.APPOINTMENTS),
+  authorizeRole("admin"),
+  validateObjectId("id"),
+  acceptCancellation,
+);
+
+// Worker: eliminar su propia cita (solo si ya está cancelled)
 router.delete(
   "/:id/my",
   authenticateToken,

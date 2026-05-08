@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Appointment } from "../domain/types";
 import { useAuth } from "../../../hooks/useAuth";
 import { cancelAppointment, updateAppointment } from "../domain";
+import { acceptCancellation } from "../domain/api";
 import { emitAppointmentsChanged } from "../utils/appointmentEvents";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import { confirmAction } from "../../../utils/confirm";
@@ -52,6 +53,7 @@ const AdminAppointmentDetail: React.FC<Props> = ({
   if (!isOpen || !item) return null;
 
   const isCancelled = item.status === "cancelled";
+  const isCancellationRequested = item.status === "cancellation_requested";
 
   const worker =
     typeof item.workerId === "object"
@@ -73,6 +75,24 @@ const AdminAppointmentDetail: React.FC<Props> = ({
     try {
       setLoading(true);
       await cancelAppointment(item._id, token!);
+      toastT.success(["toasts.appointments.cancelSuccess"]);
+      emitAppointmentsChanged();
+      onClose();
+      onChanged?.();
+    } catch (e: unknown) {
+      toastT.error(getApiErrorMessage(e, ["toasts.appointments.cancelError"]));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAcceptCancellation = async () => {
+    if (!item?._id) return;
+    const ok = await confirmAction("¿Aceptar la cancelación solicitada por el trabajador?");
+    if (!ok) return;
+    try {
+      setLoading(true);
+      await acceptCancellation(item._id, token!);
       toastT.success(["toasts.appointments.cancelSuccess"]);
       emitAppointmentsChanged();
       onClose();
@@ -200,8 +220,20 @@ const AdminAppointmentDetail: React.FC<Props> = ({
             </div>
           </div>
 
+          {/* Mensaje de cancelación del trabajador */}
+          {item.cancellationMessage && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5">
+              <div className="text-xs text-amber-700 font-semibold mb-1">
+                Motivo de cancelación (trabajador)
+              </div>
+              <div className="whitespace-pre-wrap text-xs text-amber-900">
+                {item.cancellationMessage}
+              </div>
+            </div>
+          )}
+
           {/* Reprogramar: SOLO visible en editMode */}
-          {!isCancelled && editMode && (
+          {!isCancelled && !isCancellationRequested && editMode && (
             <div className="rounded-lg border border-slate-200 p-2.5">
               <div className="mb-2 text-xs font-semibold text-slate-800">
                 {t("pages.appointments.detail.rebook")}
@@ -244,30 +276,46 @@ const AdminAppointmentDetail: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Footer (sin cambios funcionales) */}
+        {/* Footer */}
         <div className="flex justify-between gap-2 border-t border-slate-200 px-4 py-3">
           {!editMode ? (
             <>
-              {!isCancelled ? (
-                <EditIconButton
-                  onClick={() => setEditMode(true)}
-                  title={t("pages.appointments.detail.rebookTitle")}
-                  disabled={loading}
-                />
+              {isCancellationRequested ? (
+                <>
+                  <span />
+                  <button
+                    type="button"
+                    onClick={handleAcceptCancellation}
+                    disabled={loading}
+                    className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-100 disabled:opacity-60"
+                  >
+                    {loading ? "Procesando…" : "Aceptar cancelación"}
+                  </button>
+                </>
               ) : (
-                <span />
-              )}
+                <>
+                  {!isCancelled ? (
+                    <EditIconButton
+                      onClick={() => setEditMode(true)}
+                      title={t("pages.appointments.detail.rebookTitle")}
+                      disabled={loading}
+                    />
+                  ) : (
+                    <span />
+                  )}
 
-              {!isCancelled && (
-                <DeleteIconButton
-                  onClick={handleCancelAppointment}
-                  disabled={loading}
-                  title={
-                    loading
-                      ? t("pages.appointments.detail.actions.deleting")
-                      : t("pages.appointments.detail.actions.delete")
-                  }
-                />
+                  {!isCancelled && (
+                    <DeleteIconButton
+                      onClick={handleCancelAppointment}
+                      disabled={loading}
+                      title={
+                        loading
+                          ? t("pages.appointments.detail.actions.deleting")
+                          : t("pages.appointments.detail.actions.delete")
+                      }
+                    />
+                  )}
+                </>
               )}
             </>
           ) : (

@@ -46,3 +46,10 @@ export const updateAppointmentSchema = z.object({
   details: z.string().min(1).optional(),
   selectedSlot: slotSchema.optional(),
 });
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * POST /api/appointments/:id/request-cancel — Solicitar cancelación (worker)
+ * ───────────────────────────────────────────────────────────────────────────── */
+export const requestCancellationSchema = z.object({
+  message: z.string().min(1, "El motivo de cancelación es obligatorio").max(1000),
+});
