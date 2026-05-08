@@ -45,10 +45,13 @@ const AppointmentSchema = new Schema<AppointmentDoc>(
         "confirmed",
         "cancelled",
         "rescheduled",
+        "cancellation_requested",
       ] satisfies AppointmentStatus[],
       default: "pending",
       index: true,
     },
+
+    cancellationMessage: { type: String, trim: true, maxlength: 1000 },
 
     proposedSlots: {
       type: [TimeSlotSchema],
@@ -79,7 +82,8 @@ AppointmentSchema.pre("save", function (next) {
   if (this.proposedSlots && this.proposedSlots.length > 0) {
     const enforceFuture =
       (this.isNew || this.isModified("proposedSlots")) &&
-      this.status !== "cancelled";
+      this.status !== "cancelled" &&
+      this.status !== "cancellation_requested";
 
     // (la longitud máxima ya la valida el schema, pero mantenemos el resto)
     for (const s of this.proposedSlots) {

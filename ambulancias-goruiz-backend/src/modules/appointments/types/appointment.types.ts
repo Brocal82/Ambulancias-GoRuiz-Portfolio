@@ -5,7 +5,8 @@ export type AppointmentStatus =
   | "proposed"
   | "confirmed"
   | "cancelled"
-  | "rescheduled";
+  | "rescheduled"
+  | "cancellation_requested";
 
 export interface TimeSlot {
   // Guardamos UTC; el cliente recibirá ISO.
@@ -22,6 +23,7 @@ export interface IAppointment {
   status: AppointmentStatus;
   proposedSlots: TimeSlot[]; // máx 3, ordenados asc por start
   selectedSlot?: TimeSlot | null; // debe pertenecer a proposedSlots al confirmar
+  cancellationMessage?: string; // mensaje del worker al solicitar cancelación
   companyId?: Types.ObjectId | null;
   createdAt?: Date;
   updatedAt?: Date;

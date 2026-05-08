@@ -113,7 +113,7 @@ export async function getOpenAppointments(companyId?: string | null) {
     return [];
   }
   const filter: Record<string, unknown> = {
-    status: { $in: ["pending", "proposed"] },
+    status: { $in: ["pending", "proposed", "cancellation_requested"] },
   };
   const companyOid = new mongoose.Types.ObjectId(companyId);
   const workerIds = await getWorkerIdsForCompany(companyId);
@@ -374,16 +374,82 @@ export async function cancelAppointment(
   return await appointment.save();
 }
 
+export async function requestCancellation(
+  workerId: string,
+  id: string,
+  message: string,
+) {
+  const appointment = await Appointment.findById(id);
+  if (!appointment) {
+    throw new AppointmentError("Cita no encontrada.", 404);
+  }
+  if (appointment.workerId.toString() !== workerId) {
+    throw new AppointmentError("No autorizado para cancelar esta cita.", 403);
+  }
+  if (
+    appointment.status === "cancelled" ||
+    appointment.status === "cancellation_requested"
+  ) {
+    throw new AppointmentError(
+      "Esta cita ya está cancelada o tiene una solicitud de cancelación pendiente.",
+      400,
+    );
+  }
+
+  appointment.status = "cancellation_requested";
+  appointment.cancellationMessage = message.trim();
+
+  return await appointment.save();
+}
+
+export async function acceptCancellation(
+  adminId: string,
+  id: string,
+  companyId?: string | null,
+) {
+  const appointment = await Appointment.findById(id);
+  if (!appointment) {
+    throw new AppointmentError("Cita no encontrada.", 404);
+  }
+  if (!companyId || String(companyId).trim() === "") {
+    throw new AppointmentError("No tienes permiso para cancelar esta cita.", 403);
+  }
+  let matchCancel: boolean;
+  if (appointment.companyId) {
+    matchCancel = String(appointment.companyId) === String(companyId);
+  } else {
+    const worker = await User.findById(appointment.workerId).select("companyId").lean();
+    const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
+    matchCancel = !!(workerCo && String(workerCo) === String(companyId));
+  }
+  if (!matchCancel) {
+    throw new AppointmentError("No tienes permiso para cancelar esta cita.", 403);
+  }
+  if (appointment.status !== "cancellation_requested") {
+    throw new AppointmentError(
+      "Esta cita no tiene una solicitud de cancelación pendiente.",
+      400,
+    );
+  }
+
+  appointment.status = "cancelled";
+  appointment.adminId = new mongoose.Types.ObjectId(adminId);
+
+  return await appointment.save();
+}
+
 export async function deleteMyAppointment(workerId: string, id: string) {
   const appointment = await Appointment.findById(id);
   if (!appointment) {
     throw new AppointmentError("Cita no encontrada.", 404);
   }
-
   if (appointment.workerId.toString() !== workerId) {
+    throw new AppointmentError("No autorizado para eliminar esta cita.", 403);
+  }
+  if (appointment.status !== "cancelled") {
     throw new AppointmentError(
-      "No autorizado para eliminar esta cita.",
-      403,
+      "Solo puedes eliminar citas ya canceladas.",
+      400,
     );
   }
 
