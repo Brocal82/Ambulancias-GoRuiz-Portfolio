@@ -1,5 +1,8 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import compression from "compression";
+import morgan from "morgan";
 import fs from "fs";
 import path from "path";
 import mongoose from "mongoose";
@@ -53,6 +56,8 @@ const allowedOrigins = new Set(["http://localhost:5173", ...allowedFromEnv]);
 
 const app = express();
 
+app.use(helmet());
+app.use(compression());
 app.use(
   cors({
     origin(origin, callback) {
@@ -72,7 +77,10 @@ app.use(
   }),
 );
 
-app.use(express.json());
+if (env.NODE_ENV === "production") {
+  app.use(morgan("combined"));
+}
+app.use(express.json({ limit: "100kb" }));
 
 // Archivos estáticos subidos (perfil, documentos, etc.)
 // En producción, conviene servir /uploads desde proxy reverso o CDN para mejor rendimiento y control
