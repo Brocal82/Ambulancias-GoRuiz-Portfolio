@@ -90,6 +90,8 @@ export async function createWorkdaySummary(
     finalKm,
     trips,
     extraNote,
+    checklistItems,
+    o2Level,
   } = body;
 
   const missing: string[] = [];
@@ -168,6 +170,8 @@ export async function createWorkdaySummary(
     dienstNumber,
     startTime,
     endTime,
+    ...(checklistItems != null && { checklistItems }),
+    ...(o2Level != null && typeof o2Level === "number" && !Number.isNaN(o2Level) && { o2Level }),
     ...(dienstCompanyId && { companyId: dienstCompanyId }),
   };
 

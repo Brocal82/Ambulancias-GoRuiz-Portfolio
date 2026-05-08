@@ -66,6 +66,11 @@ export interface IWorkdaySummary extends Document {
   /** 👇 NUEVO: estado de revisión para el dashboard */
   isReviewed: boolean;
   reviewedAt?: Date;
+
+  /** Checklist del vehículo al cierre (clave → marcado) */
+  checklistItems?: Record<string, boolean>;
+  /** Nivel de O2 registrado al cierre (en litros) */
+  o2Level?: number;
 }
 
 /* ─────────────────────────────────────────────
@@ -98,6 +103,8 @@ const workdaySummarySchema = new Schema<IWorkdaySummary>({
   /** 👇 NUEVO: revisión */
   isReviewed: { type: Boolean, default: false },
   reviewedAt: { type: Date },
+  checklistItems: { type: Schema.Types.Mixed, default: undefined },
+  o2Level: { type: Number },
   companyId: {
     type: Schema.Types.ObjectId,
     ref: "Company",

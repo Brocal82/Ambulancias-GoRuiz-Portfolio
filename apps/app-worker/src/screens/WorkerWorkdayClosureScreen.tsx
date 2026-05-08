@@ -25,8 +25,11 @@ import {
   AssignedDay,
   AssignedDayUser,
   WorkdayTrip,
+  WorkdayTripSetup,
   getAssignedDaysForWorker,
   getWorkdayTripsByDate,
+  getWorkdayTripSetup,
+  submitWorkdayClosure,
 } from "../services/workday";
 import { AmbulanceListItem, getAmbulancesList } from "../services/ambulances";
 import { AuthUser, CompanyModuleKey, MODULE_KEYS } from "../types/auth";
@@ -150,6 +153,15 @@ function assignmentAmbulanceId(day: AssignedDay | null): string {
 
 type IssuePhoto = { uri: string; name: string; mimeType: string };
 
+const VEHICLE_CHECKLIST = [
+  { key: "limpieza", label: "Limpieza interior" },
+  { key: "combustible", label: "Nivel de combustible OK" },
+  { key: "o2_equipo", label: "Equipo O2 en orden" },
+  { key: "botiquin", label: "Botiquín completo" },
+  { key: "documentacion", label: "Documentación en regla" },
+  { key: "luces", label: "Luces y señales operativas" },
+] as const;
+
 export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Props) {
   const [activeKey, setActiveKey] = useState<ClosureMenuKey>("inicio");
   const [trips, setTrips] = useState<WorkdayTrip[]>([]);
@@ -166,6 +178,14 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
   const [sendingIssue, setSendingIssue] = useState(false);
   const [issueFeedback, setIssueFeedback] = useState<string | undefined>(undefined);
   const [sentIssuesToday, setSentIssuesToday] = useState<MechanicsIssueReport[]>([]);
+  const [tripSetup, setTripSetup] = useState<WorkdayTripSetup | null>(null);
+  const [checklistItems, setChecklistItems] = useState<Record<string, boolean>>(
+    Object.fromEntries(VEHICLE_CHECKLIST.map((item) => [item.key, false])),
+  );
+  const [o2Level, setO2Level] = useState("");
+  const [closureSubmitting, setClosureSubmitting] = useState(false);
+  const [closureFeedback, setClosureFeedback] = useState<string | undefined>(undefined);
+  const [closureDone, setClosureDone] = useState(false);
 
   const hasAmbulancesModule = useMemo(
     () => Boolean(enabledModules?.includes(MODULE_KEYS.AMBULANCES)),
@@ -210,6 +230,14 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
         const ambNumber = assignmentAmbulanceNumber(assignment);
         setSelectedAmbulanceId(ambId);
         setSelectedAmbulanceNumber(ambNumber);
+        if (assignment?.assignmentId) {
+          try {
+            const setup = await getWorkdayTripSetup(assignment.assignmentId);
+            if (!cancelled) setTripSetup(setup);
+          } catch {
+            // tripSetup stays null; closure will show warning
+          }
+        }
       } catch {
         if (cancelled) return;
         setTodayAssignment(null);
@@ -332,6 +360,58 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
     }
   }, [finalKm, issuePhotos, issueText, selectedAmbulanceId, selectedAmbulanceNumber, todayAssignment]);
 
+  const submitClosure = useCallback(async () => {
+    if (!todayAssignment) return;
+    const km = Number(finalKm.trim().replace(",", "."));
+    if (!Number.isFinite(km) || km <= 0) {
+      setClosureFeedback("Indica los kilómetros finales en la pestaña Checks.");
+      return;
+    }
+    const ambulanceId = tripSetup?.ambulanceId ?? assignmentAmbulanceId(todayAssignment);
+    const ambulanceNumber = tripSetup?.ambulanceNumber ?? assignmentAmbulanceNumber(todayAssignment);
+    if (!ambulanceId) {
+      setClosureFeedback("No se pudo determinar la ambulancia. Completa la configuración de jornada.");
+      return;
+    }
+    const initialKm = tripSetup?.initialKm ?? 0;
+    const assignmentTrips = trips.filter(
+      (t) => !t.assignmentId || t.assignmentId === todayAssignment.assignmentId,
+    );
+    const o2LevelNum = o2Level.trim() ? Number(o2Level.trim().replace(",", ".")) : undefined;
+    setClosureSubmitting(true);
+    setClosureFeedback(undefined);
+    try {
+      await submitWorkdayClosure({
+        date: todayAssignment.date,
+        assignmentId: todayAssignment.assignmentId,
+        ambulanceId,
+        ambulanceNumber,
+        initialKm,
+        finalKm: km,
+        trips: assignmentTrips,
+        checklistItems,
+        ...(o2LevelNum != null && !Number.isNaN(o2LevelNum) ? { o2Level: o2LevelNum } : {}),
+      });
+      setClosureDone(true);
+      setClosureFeedback("Jornada cerrada correctamente.");
+    } catch (e) {
+      if (e instanceof ApiError) {
+        setClosureFeedback(e.message);
+      } else {
+        setClosureFeedback("No se pudo enviar el cierre de jornada.");
+      }
+    } finally {
+      setClosureSubmitting(false);
+    }
+  }, [
+    checklistItems,
+    finalKm,
+    o2Level,
+    todayAssignment,
+    tripSetup,
+    trips,
+  ]);
+
   const assignedAmbulanceData = useMemo(() => {
     if (!todayAssignment) {
       return { id: "", number: "", plate: "", brand: "", model: "" };
@@ -365,7 +445,6 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
               <Text style={styles.statPillLabel}>Viajes registrados (hoy)</Text>
               <Text style={styles.statPillValue}>{tripsCounted}</Text>
             </View>
-            <Text style={styles.placeholderHint}>Menu inferior (solo maquetacion por ahora).</Text>
             {sentIssuesToday.length > 0 ? (
               <View style={styles.sentIssuesCard}>
                 <Text style={styles.sentIssuesTitle}>
@@ -395,9 +474,46 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
         return (
           <View style={styles.placeholderBlock}>
             <Text style={styles.placeholderTitle}>Checks de ambulancia</Text>
-            <Text style={styles.placeholderText}>
-              Proximamente: checklist del vehiculo, lecturas de O2 y otros valores al cierre.
-            </Text>
+            <View style={styles.issueCard}>
+              {VEHICLE_CHECKLIST.map((item) => (
+                <Pressable
+                  key={item.key}
+                  style={styles.checklistRow}
+                  onPress={() =>
+                    setChecklistItems((prev) => ({ ...prev, [item.key]: !prev[item.key] }))
+                  }
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: checklistItems[item.key] }}
+                >
+                  <View style={[styles.checkBox, checklistItems[item.key] ? styles.checkBoxChecked : null]}>
+                    {checklistItems[item.key] ? (
+                      <Text style={styles.checkMark}>✓</Text>
+                    ) : null}
+                  </View>
+                  <Text style={styles.checklistLabel}>{item.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <View style={styles.issueCard}>
+              <Text style={styles.inputLabel}>Km finales de jornada</Text>
+              <TextInput
+                style={styles.issueInput}
+                value={finalKm}
+                onChangeText={setFinalKm}
+                keyboardType="decimal-pad"
+                placeholder="Ej. 128450"
+                placeholderTextColor="#94a3b8"
+              />
+              <Text style={styles.inputLabel}>Nivel O2 (litros)</Text>
+              <TextInput
+                style={styles.issueInput}
+                value={o2Level}
+                onChangeText={setO2Level}
+                keyboardType="decimal-pad"
+                placeholder="Ej. 40"
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
           </View>
         );
       case "viajes":
@@ -612,15 +728,63 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
             </Pressable>
           </View>
         );
-      case "envio":
+      case "envio": {
+        const checksDone = Object.values(checklistItems).filter(Boolean).length;
+        const checksTotal = VEHICLE_CHECKLIST.length;
+        const kmNum = Number(finalKm.trim().replace(",", "."));
+        const kmValid = Number.isFinite(kmNum) && kmNum > 0;
         return (
           <View style={styles.placeholderBlock}>
-            <Text style={styles.placeholderTitle}>Envio de reporte</Text>
-            <Text style={styles.placeholderText}>
-              Proximamente: cierre parcial o final y envio al administrador.
-            </Text>
+            <Text style={styles.placeholderTitle}>Cierre de jornada</Text>
+            <View style={styles.issueCard}>
+              <View style={styles.closureSummaryRow}>
+                <Text style={styles.closureSummaryLabel}>Viajes registrados</Text>
+                <Text style={styles.closureSummaryValue}>{tripsCounted}</Text>
+              </View>
+              <View style={styles.closureSummaryRow}>
+                <Text style={styles.closureSummaryLabel}>Checks completados</Text>
+                <Text style={[styles.closureSummaryValue, checksDone < checksTotal ? styles.closureSummaryWarn : null]}>
+                  {checksDone}/{checksTotal}
+                </Text>
+              </View>
+              <View style={styles.closureSummaryRow}>
+                <Text style={styles.closureSummaryLabel}>Km finales</Text>
+                <Text style={[styles.closureSummaryValue, !kmValid ? styles.closureSummaryWarn : null]}>
+                  {kmValid ? `${Math.round(kmNum)} km` : "—"}
+                </Text>
+              </View>
+              {o2Level.trim() ? (
+                <View style={styles.closureSummaryRow}>
+                  <Text style={styles.closureSummaryLabel}>Nivel O2</Text>
+                  <Text style={styles.closureSummaryValue}>{o2Level.trim()} L</Text>
+                </View>
+              ) : null}
+            </View>
+            {!kmValid ? (
+              <Text style={styles.closureHint}>
+                Introduce los km finales en la pestaña Checks antes de cerrar.
+              </Text>
+            ) : null}
+            {closureFeedback ? (
+              <Text style={[styles.issueFeedback, closureDone ? styles.closureSuccess : null]}>
+                {closureFeedback}
+              </Text>
+            ) : null}
+            <Pressable
+              style={[
+                styles.closureSubmitBtn,
+                (closureSubmitting || closureDone || !kmValid) ? styles.issueSubmitBtnDisabled : null,
+              ]}
+              onPress={() => void submitClosure()}
+              disabled={closureSubmitting || closureDone || !kmValid}
+            >
+              <Text style={styles.issueSubmitBtnText}>
+                {closureDone ? "Jornada cerrada" : closureSubmitting ? "Enviando..." : "Cerrar jornada"}
+              </Text>
+            </Pressable>
           </View>
         );
+      }
       default:
         return null;
     }
@@ -631,6 +795,10 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
     assignedAmbulanceData.model,
     assignedAmbulanceData.number,
     assignedAmbulanceData.plate,
+    checklistItems,
+    closureDone,
+    closureFeedback,
+    closureSubmitting,
     finalKm,
     issueFeedback,
     issuePhotos,
@@ -639,8 +807,10 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
     loadingAssignment,
     loadingTrips,
     loadTrips,
+    o2Level,
     sendIssue,
     sendingIssue,
+    submitClosure,
     trips,
     tripsCounted,
     sentIssuesToday,
@@ -1093,6 +1263,83 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 14,
     fontWeight: "800",
+  },
+  checklistRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#e2e8f0",
+  },
+  checkBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#cbd5e1",
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  checkBoxChecked: {
+    borderColor: "#0f766e",
+    backgroundColor: "#0f766e",
+  },
+  checkMark: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "800",
+    lineHeight: 16,
+  },
+  checklistLabel: {
+    flex: 1,
+    fontSize: 13,
+    color: "#334155",
+    fontWeight: "500",
+  },
+  closureSummaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#e2e8f0",
+  },
+  closureSummaryLabel: {
+    fontSize: 13,
+    color: "#64748b",
+    fontWeight: "600",
+  },
+  closureSummaryValue: {
+    fontSize: 13,
+    color: "#0f172a",
+    fontWeight: "700",
+  },
+  closureSummaryWarn: {
+    color: "#b45309",
+  },
+  closureHint: {
+    fontSize: 12,
+    color: "#92400e",
+    backgroundColor: "#fef3c7",
+    borderRadius: 8,
+    padding: 8,
+    lineHeight: 16,
+  },
+  closureSuccess: {
+    color: "#047857",
+    fontWeight: "700",
+  },
+  closureSubmitBtn: {
+    alignSelf: "stretch",
+    borderWidth: 1,
+    borderColor: "#0e7490",
+    backgroundColor: "#0891b2",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
   },
   closureBottomNav: {
     flexDirection: "row",

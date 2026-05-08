@@ -72,4 +72,6 @@ export interface WorkdaySummary {
   dienstId?: string;
   startTime?: string;
   endTime?: string;
+  checklistItems?: Record<string, boolean>;
+  o2Level?: number;
 }
