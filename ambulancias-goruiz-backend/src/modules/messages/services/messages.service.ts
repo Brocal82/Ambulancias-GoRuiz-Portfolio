@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Message } from "../models/message.model";
 import User from "../../users/models/user.model";
+import { sendPushNotification } from "../../notifications";
 
 export type CreateMessageInput = {
   subject: string;
@@ -61,6 +62,13 @@ export async function createMessage(input: CreateMessageInput) {
     attachments: input.attachments,
     companyId: new mongoose.Types.ObjectId(input.senderCompanyId),
   });
+
+  void sendPushNotification(
+    finalRecipients,
+    "Nuevo mensaje",
+    input.subject,
+    { type: "message_received", messageId: String(newMessage._id) },
+  );
 
   return newMessage;
 }

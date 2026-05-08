@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import SickLeave from "../models/sick-leave.model";
+import { sendPushNotification } from "../../notifications";
 
 export async function createSickLeaveRecord(input: {
   userId: string;
@@ -31,6 +32,15 @@ export async function getSickLeaveById(id: string) {
 export async function rejectSickLeaveRecord(sick: any) {
   sick.status = "rejected";
   await sick.save();
+  const userId = sick.user ? String(sick.user) : null;
+  if (userId) {
+    void sendPushNotification(
+      [userId],
+      "Baja rechazada",
+      "Tu solicitud de baja no ha podido ser aceptada.",
+      { type: "sick_leave_rejected", sickLeaveId: String(sick._id) },
+    );
+  }
   return sick;
 }
 

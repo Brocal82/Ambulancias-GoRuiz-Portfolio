@@ -18,6 +18,7 @@ import {
   saveSession,
 } from "../services/sessionStorage";
 import { getUserById } from "../services/users";
+import { registerForPushNotifications } from "../services/pushNotifications";
 import { AuthUser, CompanyModuleKey, MODULE_KEYS, ScheduleSource } from "../types/auth";
 
 type LoginCredentials = {
@@ -98,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(response.token);
       setUser(response.user);
       await loadCompanyModules(response.token);
+      void registerForPushNotifications().catch(() => {});
     } catch (error) {
       if (error instanceof ApiError) {
         setAuthError(error.message);
@@ -126,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setToken(storedToken);
           setUser(userToRestore);
           await loadCompanyModules(storedToken);
+          void registerForPushNotifications().catch(() => {});
         }
       } catch (_error) {
         await clearStoredSession();
