@@ -5,6 +5,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import {
     getMyAppointments,
     deleteMyAppointment as apiDeleteMyAppointment,
+    requestCancellation as apiRequestCancellation,
 } from "../domain";
 
 import {
@@ -71,6 +72,14 @@ export default function WorkerAppointmentsPage() {
     const [openMessageModal, setOpenMessageModal] = useState(false);
     const [messageAppointment, setMessageAppointment] = useState<Appointment | null>(null);
 
+    // Modal "Solicitar cancelación"
+    const [cancelModal, setCancelModal] = useState<{
+        open: boolean;
+        appointmentId: string;
+        message: string;
+        loading: boolean;
+    }>({ open: false, appointmentId: "", message: "", loading: false });
+
     const openAppointmentMessage = (a: Appointment) => {
         setMessageAppointment(a);
         setOpenMessageModal(true);
@@ -116,7 +125,7 @@ export default function WorkerAppointmentsPage() {
     // - Si no tiene opciones: por fecha de creación (DESC)
     const recent = useMemo(() => {
         const arr = items.filter(
-            (a) => a.status === "pending" || a.status === "proposed",
+            (a) => a.status === "pending" || a.status === "proposed" || a.status === "cancellation_requested",
         );
 
         return arr.slice().sort((a, b) => {
@@ -146,8 +155,23 @@ export default function WorkerAppointmentsPage() {
                     a.status === "rescheduled" ||
                     a.status === "cancelled",
             )
-            .sort((a, b) => selectedStartMs(a) - selectedStartMs(b)); // 👈 ASC
+            .sort((a, b) => selectedStartMs(a) - selectedStartMs(b));
     }, [items]);
+
+    const handleRequestCancellation = async () => {
+        if (!cancelModal.message.trim()) return;
+        setCancelModal((prev) => ({ ...prev, loading: true }));
+        try {
+            await apiRequestCancellation(cancelModal.appointmentId, cancelModal.message.trim(), token!);
+            setCancelModal({ open: false, appointmentId: "", message: "", loading: false });
+            emitAppointmentsChanged();
+            await refresh();
+            toastT.success(["toasts.appointments.cancelSuccess"]);
+        } catch (e: unknown) {
+            toastT.error(getApiErrorMessage(e, ["toasts.appointments.cancelError"]));
+            setCancelModal((prev) => ({ ...prev, loading: false }));
+        }
+    };
 
     const handleDelete = async (id: string) => {
         const ok = window.confirm(t("pages.appointments.worker.confirmDelete"));
@@ -273,12 +297,14 @@ export default function WorkerAppointmentsPage() {
                                                                 {t("pages.appointments.requests.waitingOptions")}
                                                             </span>
                                                         )}
-                                                    {a.status !== "proposed" ? (
+                                                    {a.status === "cancellation_requested" ? (
+                                                        <span className="text-xs text-amber-700">Pendiente admin</span>
+                                                    ) : (
                                                         <StopIconButton
-                                                            onClick={() => handleDelete(a._id)}
-                                                            title={t("pages.appointments.worker.actions.deleteTitle")}
+                                                            onClick={() => setCancelModal({ open: true, appointmentId: a._id, message: "", loading: false })}
+                                                            title="Solicitar cancelación"
                                                         />
-                                                    ) : null}
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -337,7 +363,8 @@ export default function WorkerAppointmentsPage() {
                                         </td>
                                         <td className="px-3 py-2 align-top whitespace-nowrap">
                                             {((a.status === "proposed" && (a.proposedSlots?.length ?? 0) > 0) ||
-                                                !!a.details?.trim()) ? (
+                                                !!a.details?.trim() ||
+                                                !!a.cancellationMessage?.trim()) ? (
                                                 <ViewIconButton
                                                     onClick={() => openAppointmentMessage(a)}
                                                     title={t("pages.appointments.messageModal.open")}
@@ -357,10 +384,17 @@ export default function WorkerAppointmentsPage() {
                                         </td>
                                         <td className="px-3 py-2 align-top">
                                             <div className="flex items-center justify-center">
-                                                <StopIconButton
-                                                    onClick={() => handleDelete(a._id)}
-                                                    title={t("pages.appointments.worker.actions.deleteTitle")}
-                                                />
+                                                {a.status === "cancelled" ? (
+                                                    <StopIconButton
+                                                        onClick={() => handleDelete(a._id)}
+                                                        title={t("pages.appointments.worker.actions.deleteTitle")}
+                                                    />
+                                                ) : (
+                                                    <StopIconButton
+                                                        onClick={() => setCancelModal({ open: true, appointmentId: a._id, message: "", loading: false })}
+                                                        title="Solicitar cancelación"
+                                                    />
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -380,6 +414,64 @@ export default function WorkerAppointmentsPage() {
                 </div>
             )}
 
+
+            {/* Modal: solicitar cancelación */}
+            {cancelModal.open && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center p-2 sm:p-4">
+                    <div
+                        className="fixed inset-0 bg-black/50"
+                        onClick={() => setCancelModal((p) => ({ ...p, open: false }))}
+                    />
+                    <div
+                        className="relative z-10 w-full max-w-md rounded-xl bg-white shadow-xl ring-1 ring-slate-200"
+                        role="dialog"
+                        aria-modal="true"
+                    >
+                        <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2">
+                            <h3 className="text-sm font-semibold text-slate-900">Solicitar cancelación</h3>
+                            <button
+                                type="button"
+                                onClick={() => setCancelModal((p) => ({ ...p, open: false }))}
+                                className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                                aria-label="Cerrar"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="px-3 py-3 space-y-3 text-sm">
+                            <p className="text-slate-500 text-xs">
+                                Indica el motivo de cancelación. El administrador recibirá tu solicitud y deberá aceptarla.
+                            </p>
+                            <textarea
+                                value={cancelModal.message}
+                                onChange={(e) => setCancelModal((p) => ({ ...p, message: e.target.value }))}
+                                placeholder="Motivo de cancelación..."
+                                maxLength={1000}
+                                rows={4}
+                                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                            />
+                        </div>
+                        <div className="border-t border-slate-200 px-3 py-2 flex justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setCancelModal((p) => ({ ...p, open: false }))}
+                                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none"
+                                disabled={cancelModal.loading}
+                            >
+                                Cerrar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void handleRequestCancellation()}
+                                disabled={cancelModal.loading || !cancelModal.message.trim()}
+                                className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-700 focus:outline-none disabled:opacity-50"
+                            >
+                                {cancelModal.loading ? "Enviando…" : "Enviar solicitud"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modal: pedir cita */}
             <RequestAppointmentModal
