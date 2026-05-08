@@ -119,6 +119,28 @@ export async function getWorkdayTripSetup(
   });
 }
 
+export type WorkdayClosurePayload = {
+  date: string;
+  assignmentId: string;
+  ambulanceId: string;
+  ambulanceNumber: string;
+  initialKm: number;
+  finalKm: number;
+  trips: unknown[];
+  checklistItems: Record<string, boolean>;
+  o2Level?: number;
+};
+
+export async function submitWorkdayClosure(
+  payload: WorkdayClosurePayload,
+): Promise<WorkdaySummary> {
+  return apiRequest<WorkdaySummary>("/workday-summary", {
+    method: "POST",
+    requiresAuth: true,
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function saveWorkdayTripSetup(
   assignmentId: string,
   payload: { ambulanceId?: string; ambulanceNumber: string; initialKm: number },
