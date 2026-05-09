@@ -10,7 +10,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/api": "http://localhost:5000", // 👈 Esto conecta el frontend con el backend
+      "/api": "http://localhost:5000",
+      "/uploads": "http://localhost:5000",
     },
   },
 });
