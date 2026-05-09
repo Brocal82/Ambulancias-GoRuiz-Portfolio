@@ -5,6 +5,7 @@ import PayrollDocument from "../models/payroll-document.model";
 import User from "../../users/models/user.model";
 import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 import { matchWorkerFromFilename } from "../utils/payroll-filename-parser";
+import { sendPushNotification } from "../../notifications";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Duplicate detection helper (Phase 8a)
@@ -273,6 +274,14 @@ export async function uploadPayrollDocument(
       });
       documentCreated = true;
 
+      void sendPushNotification(
+        [workerOid.toString()],
+        "Nómina disponible",
+        parsedYear && parsedMonth
+          ? `Tu nómina de ${parsedMonth}/${parsedYear} está disponible.`
+          : "Tienes una nueva nómina disponible.",
+      );
+
       const replacedDocument = await replaceExistingConfirmedPayroll({
         companyOid,
         workerOid,
@@ -325,6 +334,14 @@ export async function uploadPayrollDocument(
         month: parsedMonth,
       });
       documentCreated = true;
+
+      void sendPushNotification(
+        [matchedWorkerOid.toString()],
+        "Nómina disponible",
+        parsedYear && parsedMonth
+          ? `Tu nómina de ${parsedMonth}/${parsedYear} está disponible.`
+          : "Tienes una nueva nómina disponible.",
+      );
 
       const replacedDocument = await replaceExistingConfirmedPayroll({
         companyOid,
@@ -728,6 +745,14 @@ export async function assignPayrollDocument(
     payroll.workerId = workerOid;
     payroll.matchStatus = "manual";
     await payroll.save();
+
+    void sendPushNotification(
+      [workerId],
+      "Nómina disponible",
+      payroll.year && payroll.month
+        ? `Tu nómina de ${payroll.month}/${payroll.year} está disponible.`
+        : "Tienes una nueva nómina disponible.",
+    );
 
     const possibleDuplicate = await findPayrollDuplicate(
       companyOid,

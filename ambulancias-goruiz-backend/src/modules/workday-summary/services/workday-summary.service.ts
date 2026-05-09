@@ -3,6 +3,7 @@ import { Dienst } from "../../diensts";
 import { Trip } from "../../trips";
 import WorkdaySummary from "../models/workday-summary.model";
 import type { IWorkdaySummary } from "../models/workday-summary.model";
+import { sendPushNotification } from "../../notifications";
 import { calculateEffectivePatients } from "../utils/calculateEffectivePatients";
 import {
   WorkdaySummaryError,
@@ -463,7 +464,7 @@ export async function markSummaryReviewed(id: string, companyId?: string | null)
   if (!mongoose.isValidObjectId(id)) {
     throw new WorkdaySummaryError("ID inválido", 400);
   }
-  const summary = await WorkdaySummary.findById(id).select("companyId").lean();
+  const summary = await WorkdaySummary.findById(id).select("companyId driver medic date").lean();
   if (summary) {
     assertCanMutateWorkdayEntityByCompany(
       (summary as { companyId?: unknown }).companyId,
@@ -479,6 +480,17 @@ export async function markSummaryReviewed(id: string, companyId?: string | null)
 
   if (!updated) {
     throw new WorkdaySummaryError("Resumen no encontrado", 404);
+  }
+
+  const recipientIds = [updated.driver?.toString(), updated.medic?.toString()].filter(
+    (uid): uid is string => Boolean(uid),
+  );
+  if (recipientIds.length > 0) {
+    void sendPushNotification(
+      recipientIds,
+      "Cierre de jornada revisado",
+      `Tu cierre del ${updated.date} ha sido revisado por el administrador.`,
+    );
   }
 
   return updated;

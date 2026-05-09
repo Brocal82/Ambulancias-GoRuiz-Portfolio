@@ -17,6 +17,7 @@ import {
 } from "../../utils/dienstValidation";
 import { extractValidDatesFromAssignments, mapAssignmentToAssignedDay } from "../../utils/dienstMappers";
 import { entitiesBelongToSameCompany } from "../../../../utils/requireCompany";
+import { sendPushNotification } from "../../../notifications";
 import { companyHasEnabledModule } from "../../../../utils/companyEnabledModules";
 import { MODULE_KEYS } from "../../../companies/constants/modules.constants";
 import { computeShiftBounds, diffMinutes, ZONE } from "../../../../utils/time";
@@ -1153,6 +1154,12 @@ export async function assignUserToWeek(
   dienst.assignments = working as any;
 
   await dienst.save();
+
+  void sendPushNotification(
+    [userId],
+    "Nueva asignación de turno",
+    `Has sido asignado como ${role} a ${assignedCount} día(s) del Dienst #${dienstNumber}.`,
+  );
 
   const partialMinRest = skippedByMinimumRest.length > 0;
   const message = partialMinRest
