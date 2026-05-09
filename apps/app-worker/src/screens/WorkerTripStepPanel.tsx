@@ -137,6 +137,7 @@ export function WorkerTripStepPanel({
   const [anschlussAwaitingPatient2Step3, setAnschlussAwaitingPatient2Step3] = useState(false);
   const [anschlussMinKmStart, setAnschlussMinKmStart] = useState<number | undefined>(undefined);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveFlash, setSaveFlash] = useState<string | undefined>(undefined);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [kmFieldFocus, setKmFieldFocus] = useState<null | "2" | "4">(null);
   const [stornoBarOpen, setStornoBarOpen] = useState(false);
@@ -163,7 +164,23 @@ export function WorkerTripStepPanel({
     km4Ref.current = kmDraft4;
   }, [kmDraft4]);
 
+  const saveFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stepHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flashSave = useCallback((msg: string) => {
+    if (saveFlashTimerRef.current !== null) clearTimeout(saveFlashTimerRef.current);
+    setSaveFlash(msg);
+    saveFlashTimerRef.current = setTimeout(() => {
+      setSaveFlash(undefined);
+      saveFlashTimerRef.current = null;
+    }, 2000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (saveFlashTimerRef.current !== null) clearTimeout(saveFlashTimerRef.current);
+    };
+  }, []);
 
   const clearStepHoldTimer = useCallback(() => {
     if (stepHoldTimerRef.current !== null) {
@@ -280,6 +297,7 @@ export function WorkerTripStepPanel({
           try {
             await createWorkdayTrip(trip1);
             onTripCreated();
+            flashSave("✓ Paciente 1 guardado");
             setPendingPatient1Anschluss(null);
             setAnschlussAwaitingPatient2Step3(false);
             setAnschlussMinKmStart(undefined);
@@ -359,6 +377,7 @@ export function WorkerTripStepPanel({
         try {
           await createWorkdayTrip(finalDraft);
           onTripCreated();
+          flashSave("✓ Viaje registrado");
           setDraft(emptyDraft(assignedDay));
           setPhase("meta");
           setCurrentStep(1);
@@ -383,6 +402,7 @@ export function WorkerTripStepPanel({
       anschlussAwaitingPatient2Step3,
       anschlussMinKmStart,
       assignedDay,
+      flashSave,
       onTripCreated,
       pendingPatient1Anschluss,
       runCheckTripLogic,
@@ -528,6 +548,7 @@ export function WorkerTripStepPanel({
     try {
       await createWorkdayTrip(payload);
       onTripCreated();
+      flashSave("✓ Storno registrado");
       setStornoBarOpen(false);
       setStornoCountsTrip(1);
       setDraft(emptyDraft(assignedDay));
@@ -552,6 +573,7 @@ export function WorkerTripStepPanel({
     anschlussAwaitingPatient2Step3,
     assignedDay,
     canStartWork,
+    flashSave,
     onTripCreated,
     pendingPatient1Anschluss,
     stornoCountsTrip,
@@ -727,6 +749,11 @@ export function WorkerTripStepPanel({
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 72 : 0}
     >
+      {saveFlash ? (
+        <View style={styles.saveFlashBanner}>
+          <Text style={styles.saveFlashText}>{saveFlash}</Text>
+        </View>
+      ) : null}
       {phase === "meta" ? (
         <View style={[styles.card, styles.panelCard]}>
           <Text style={styles.cardTitle}>
@@ -1429,5 +1456,20 @@ const styles = StyleSheet.create({
     color: "#b91c1c",
     fontSize: 13,
     textAlign: "center",
+  },
+  saveFlashBanner: {
+    backgroundColor: "#ecfdf5",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#a7f3d0",
+    paddingVertical: 10,
+    alignItems: "center",
+    marginBottom: 4,
+    flexShrink: 0,
+  },
+  saveFlashText: {
+    color: "#047857",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
