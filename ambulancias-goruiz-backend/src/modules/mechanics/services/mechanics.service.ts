@@ -2,8 +2,6 @@ import mongoose from "mongoose";
 import path from "path";
 import fs from "fs/promises";
 import MechanicsIssue from "../models/mechanics-issue.model";
-import User from "../../users/models/user.model";
-import { sendPushNotification } from "../../notifications";
 import {
   WorkdaySummaryError,
   resolveAssignmentByAssignmentId,
@@ -154,22 +152,6 @@ export async function reportIssue(
     ...(attachments.length > 0 ? { attachments } : {}),
     ...(dienstCompanyId && { companyId: dienstCompanyId }),
   });
-
-  if (dienstCompanyId) {
-    const adminIds = await User.find(
-      { companyId: dienstCompanyId, role: "admin", isActive: { $ne: false } },
-      { _id: 1 },
-    )
-      .lean()
-      .then((docs) => docs.map((d) => String(d._id)));
-    if (adminIds.length > 0) {
-      void sendPushNotification(
-        adminIds,
-        "Nueva avería reportada",
-        `Amb. ${resolvedAmbulanceNumber} · ${String(issueText).slice(0, 80)}`,
-      );
-    }
-  }
 
   return newIssue;
 }
