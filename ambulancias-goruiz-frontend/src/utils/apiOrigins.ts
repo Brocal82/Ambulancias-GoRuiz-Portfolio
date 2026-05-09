@@ -5,17 +5,23 @@ export const API_ORIGIN = API_BASE.replace(/\/api\/?$/, "");
 
 export function buildImageUrl(pathOrUrl: string): string {
   if (!pathOrUrl) return "";
-  // Si ya es absoluta y no es localhost, devuélvela
+  // External absolute URL (not localhost) — return as-is (CDN, Gravatar, etc.)
   if (/^https?:\/\//i.test(pathOrUrl) && !/localhost:5000/i.test(pathOrUrl)) {
     return pathOrUrl;
   }
-  // Sustituye localhost por el origin correcto
-  const sanitized = pathOrUrl.replace(
-    /^https?:\/\/localhost:5000/i,
-    API_ORIGIN,
-  );
-  // Si empieza por /uploads, unir al origin
-  if (sanitized.startsWith("/uploads")) return `${API_ORIGIN}${sanitized}`;
-  // Si es nombre/relativa, asumir /uploads
-  return `${API_ORIGIN}/uploads/${sanitized}`;
+  // For absolute localhost URLs extract just the pathname
+  let relative = pathOrUrl;
+  if (/^https?:\/\//i.test(relative)) {
+    try {
+      relative = new URL(relative).pathname;
+    } catch {
+      return pathOrUrl;
+    }
+  }
+  const normalized = relative.startsWith("/uploads")
+    ? relative
+    : `/uploads/${relative.replace(/^\//, "")}`;
+  // Dev: use relative path so the Vite proxy forwards to the backend
+  if (import.meta.env.DEV) return normalized;
+  return `${API_ORIGIN}${normalized}`;
 }
