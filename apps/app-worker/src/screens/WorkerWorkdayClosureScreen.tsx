@@ -178,6 +178,7 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
   const [sendingIssue, setSendingIssue] = useState(false);
   const [issueFeedback, setIssueFeedback] = useState<string | undefined>(undefined);
   const [sentIssuesToday, setSentIssuesToday] = useState<MechanicsIssueReport[]>([]);
+  const [issueJustSent, setIssueJustSent] = useState(false);
   const [tripSetup, setTripSetup] = useState<WorkdayTripSetup | null>(null);
   const [checklistItems, setChecklistItems] = useState<Record<string, boolean>>(
     Object.fromEntries(VEHICLE_CHECKLIST.map((item) => [item.key, false])),
@@ -340,6 +341,7 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
     };
     setSendingIssue(true);
     setIssueFeedback(undefined);
+    setIssueJustSent(false);
     try {
       await reportIssue(payload, issuePhotos);
       const mine = await getMyIssueReports(todayDateKey());
@@ -347,7 +349,7 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
       setIssueText("");
       setFinalKm("");
       setIssuePhotos([]);
-      setIssueFeedback("Avería enviada correctamente.");
+      setIssueJustSent(true);
       setActiveKey("inicio");
     } catch (e) {
       if (e instanceof ApiError) {
@@ -445,6 +447,11 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
               <Text style={styles.statPillLabel}>Viajes registrados (hoy)</Text>
               <Text style={styles.statPillValue}>{tripsCounted}</Text>
             </View>
+            {issueJustSent ? (
+              <View style={styles.issueSuccessBanner}>
+                <Text style={styles.issueSuccessText}>Avería enviada correctamente.</Text>
+              </View>
+            ) : null}
             {sentIssuesToday.length > 0 ? (
               <View style={styles.sentIssuesCard}>
                 <Text style={styles.sentIssuesTitle}>
@@ -801,6 +808,7 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
     closureSubmitting,
     finalKm,
     issueFeedback,
+    issueJustSent,
     issuePhotos,
     issueText,
     loadError,
@@ -1340,6 +1348,20 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
+  },
+  issueSuccessBanner: {
+    backgroundColor: "#ecfdf5",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#a7f3d0",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: "center",
+  },
+  issueSuccessText: {
+    color: "#047857",
+    fontSize: 13,
+    fontWeight: "700",
   },
   closureBottomNav: {
     flexDirection: "row",
