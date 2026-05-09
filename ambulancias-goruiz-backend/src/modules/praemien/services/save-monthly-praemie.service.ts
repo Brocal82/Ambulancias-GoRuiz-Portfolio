@@ -1,4 +1,5 @@
 import { endOfMonth, startOfMonth } from "date-fns";
+import { sendPushNotification } from "../../notifications";
 import MonthlyPraemie from "../models/monthly-praemie.model";
 import { computeMonthlyPraemienStatsForUser } from "./get-monthly-summary.service";
 import { getCompanyObjectIdForPraemienUser } from "./resolvePraemienUserCompany";
@@ -61,6 +62,12 @@ export async function saveMonthlyPraemieForUser(
       createdAt: new Date(),
     },
     { upsert: true, new: true },
+  );
+
+  void sendPushNotification(
+    [userId],
+    "Bonificación registrada",
+    `Tu bonificación de ${month}/${year} ha sido calculada.`,
   );
 
   return {
