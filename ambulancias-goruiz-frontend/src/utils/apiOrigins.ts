@@ -5,17 +5,20 @@ export const API_ORIGIN = API_BASE.replace(/\/api\/?$/, "");
 
 export function buildImageUrl(pathOrUrl: string): string {
   if (!pathOrUrl) return "";
-  // Si ya es absoluta y no es localhost, devuélvela
+  // External absolute URL (not localhost) — return as-is (CDN, Gravatar, etc.)
   if (/^https?:\/\//i.test(pathOrUrl) && !/localhost:5000/i.test(pathOrUrl)) {
     return pathOrUrl;
   }
-  // Sustituye localhost por el origin correcto
-  const sanitized = pathOrUrl.replace(
-    /^https?:\/\/localhost:5000/i,
-    API_ORIGIN,
-  );
-  // Si empieza por /uploads, unir al origin
-  if (sanitized.startsWith("/uploads")) return `${API_ORIGIN}${sanitized}`;
-  // Si es nombre/relativa, asumir /uploads
-  return `${API_ORIGIN}/uploads/${sanitized}`;
+  // For localhost absolute URLs extract just the pathname to avoid double-wrapping
+  // when API_ORIGIN equals the stored host (replace would be a no-op).
+  let relative = pathOrUrl;
+  if (/^https?:\/\//i.test(relative)) {
+    try {
+      relative = new URL(relative).pathname;
+    } catch {
+      return pathOrUrl;
+    }
+  }
+  if (relative.startsWith("/uploads")) return `${API_ORIGIN}${relative}`;
+  return `${API_ORIGIN}/uploads/${relative.replace(/^\//, "")}`;
 }
