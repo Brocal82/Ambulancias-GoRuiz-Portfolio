@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout";
+import AdminAppLayout from "./layouts/AdminAppLayout";
+import AdminSidebarLayout from "./layouts/AdminSidebarLayout";
 import { AuthProvider } from "./context/AuthProvider";
 import RequireAuth from "./components/RequireAuth";
 import RequireRole from "./components/RequireRole";
@@ -171,70 +173,77 @@ export default function App() {
                 <Route path="/superadmin/companies/:id" element={<SuperadminCompanyForm />} />
               </Route>
 
-              {/* Admin: protegido por rol */}
-              <Route element={<RequireRole role="admin" />}>
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/users" element={<AdminUsersPage />} />
-                <Route path="/admin/invitations" element={<AdminInvitationsPage />} />
-                <Route element={<RequireModule name="scheduling" />}>
-                  <Route path="/admin/diensts" element={<AdminDienstsPage />} />
-                  <Route
-                    path="/admin/dienst-templates"
-                    element={<AdminDienstTemplatesPage />}
-                  />
-                </Route>
-                <Route element={<RequireModule name="hospitals" />}>
-                  <Route path="/admin/hospitals" element={<AdminHospitalsPage />} />
-                </Route>
-                <Route element={<RequireModule name="vacation" />}>
-                  <Route path="/admin/vacations" element={<AdminVacationsPage />} />
-                </Route>
-                <Route element={<RequireModule name="messages" />}>
-                  <Route path="/admin/messages" element={<AdminMessagesPage />} />
-                  <Route path="/admin/messages/sent" element={<AdminSentMessages />} />
-                </Route>
-                <Route element={<RequireModule name="workday" />}>
-                  <Route path="/admin/summaries" element={<AdminSummariesPage />} />
-                </Route>
-                <Route element={<RequireModule name="ambulances" />}>
-                  <Route path="/admin/ambulances" element={<AdminAmbulancesPage />} />
-                </Route>
-                <Route path="/admin/user/:userId" element={<AdminUserDetailDashboard />} />
-                <Route element={<RequireModule name="mechanics" />}>
-                  <Route path="/admin/mechanics" element={<AdminMechanicsPage />} />
-                </Route>
-                <Route element={<RequireModule name="appointments" />}>
-                  <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
-                </Route>
-                <Route element={<RequireModule name="teams" />}>
-                  <Route path="/admin/teams" element={<AdminTeamsPage />} />
-                </Route>
-                <Route element={<RequireModule name="sick-leaves" />}>
-                  <Route path="/admin/sick-leaves" element={<AdminSickLeavesPage />} />
-                </Route>
-                <Route element={<RequireModule name="payroll" />}>
-                  <Route path="/admin/payroll" element={<AdminPayrollModuleHubPage />} />
-                  <Route path="/admin/payroll/nominas" element={<PayrollYearHubPage />} />
-                  <Route
-                    path="/admin/payroll/month/:year/:month"
-                    element={<AdminPayrollPage />}
-                  />
-                  <Route
-                    path="/admin/payroll/month"
-                    element={<RedirectToCurrentPayrollMonth />}
-                  />
-                </Route>
-                <Route element={<RequireModule name="documents" />}>
-                  <Route
-                    path="/admin/payroll/docs"
-                    element={<AdminDocumentsPage />}
-                  />
-                </Route>
-                <Route element={<RequireModule name="excel-planning" />}>
-                  <Route
-                    path="/admin/excel-planning"
-                    element={<AdminExcelPlanningPage />}
-                  />
+            </Route>
+          </Route>
+
+          {/* Admin: layout propio a pantalla completa */}
+          <Route element={<RequireAuth />}>
+            <Route element={<RequireRole role="admin" />}>
+              <Route element={<AdminAppLayout />}>
+                <Route element={<AdminSidebarLayout />}>
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/users" element={<AdminUsersPage />} />
+                  <Route path="/admin/invitations" element={<AdminInvitationsPage />} />
+                  <Route element={<RequireModule name="scheduling" />}>
+                    <Route path="/admin/diensts" element={<AdminDienstsPage />} />
+                    <Route
+                      path="/admin/dienst-templates"
+                      element={<AdminDienstTemplatesPage />}
+                    />
+                  </Route>
+                  <Route element={<RequireModule name="hospitals" />}>
+                    <Route path="/admin/hospitals" element={<AdminHospitalsPage />} />
+                  </Route>
+                  <Route element={<RequireModule name="vacation" />}>
+                    <Route path="/admin/vacations" element={<AdminVacationsPage />} />
+                  </Route>
+                  <Route element={<RequireModule name="messages" />}>
+                    <Route path="/admin/messages" element={<AdminMessagesPage />} />
+                    <Route path="/admin/messages/sent" element={<AdminSentMessages />} />
+                  </Route>
+                  <Route element={<RequireModule name="workday" />}>
+                    <Route path="/admin/summaries" element={<AdminSummariesPage />} />
+                  </Route>
+                  <Route element={<RequireModule name="ambulances" />}>
+                    <Route path="/admin/ambulances" element={<AdminAmbulancesPage />} />
+                  </Route>
+                  <Route path="/admin/user/:userId" element={<AdminUserDetailDashboard />} />
+                  <Route element={<RequireModule name="mechanics" />}>
+                    <Route path="/admin/mechanics" element={<AdminMechanicsPage />} />
+                  </Route>
+                  <Route element={<RequireModule name="appointments" />}>
+                    <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
+                  </Route>
+                  <Route element={<RequireModule name="teams" />}>
+                    <Route path="/admin/teams" element={<AdminTeamsPage />} />
+                  </Route>
+                  <Route element={<RequireModule name="sick-leaves" />}>
+                    <Route path="/admin/sick-leaves" element={<AdminSickLeavesPage />} />
+                  </Route>
+                  <Route element={<RequireModule name="payroll" />}>
+                    <Route path="/admin/payroll" element={<AdminPayrollModuleHubPage />} />
+                    <Route path="/admin/payroll/nominas" element={<PayrollYearHubPage />} />
+                    <Route
+                      path="/admin/payroll/month/:year/:month"
+                      element={<AdminPayrollPage />}
+                    />
+                    <Route
+                      path="/admin/payroll/month"
+                      element={<RedirectToCurrentPayrollMonth />}
+                    />
+                  </Route>
+                  <Route element={<RequireModule name="documents" />}>
+                    <Route
+                      path="/admin/payroll/docs"
+                      element={<AdminDocumentsPage />}
+                    />
+                  </Route>
+                  <Route element={<RequireModule name="excel-planning" />}>
+                    <Route
+                      path="/admin/excel-planning"
+                      element={<AdminExcelPlanningPage />}
+                    />
+                  </Route>
                 </Route>
               </Route>
             </Route>
