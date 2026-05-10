@@ -3,6 +3,11 @@
 # dependencies
 node_modules/
 
+# Firebase / secrets
+google-services.json
+*-firebase-adminsdk*.json
+android/app/google-services.json
+
 # Expo
 .expo/
 dist/

@@ -17,9 +17,15 @@ export async function registerForPushNotifications(): Promise<void> {
   const projectId =
     Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
 
-  const tokenData = await Notifications.getExpoPushTokenAsync(
-    projectId ? { projectId } : undefined,
-  );
+  let tokenData: Awaited<ReturnType<typeof Notifications.getExpoPushTokenAsync>>;
+  try {
+    tokenData = await Notifications.getExpoPushTokenAsync(
+      projectId ? { projectId } : undefined,
+    );
+  } catch (err) {
+    console.warn("[push] Error al obtener token:", err);
+    return;
+  }
 
   const platform = Platform.OS === "ios" ? "ios" : "android";
 
