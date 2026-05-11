@@ -3,6 +3,14 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { apiRequest } from "./http";
 
+export type NotificationHistoryItem = {
+  _id: string;
+  title: string;
+  body: string;
+  data: Record<string, unknown>;
+  createdAt: string;
+};
+
 export async function registerForPushNotifications(): Promise<void> {
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
@@ -33,5 +41,12 @@ export async function registerForPushNotifications(): Promise<void> {
     method: "POST",
     requiresAuth: true,
     body: JSON.stringify({ token: tokenData.data, platform }),
+  });
+}
+
+export async function getNotificationHistory(): Promise<NotificationHistoryItem[]> {
+  return apiRequest<NotificationHistoryItem[]>("/notifications/history", {
+    method: "GET",
+    requiresAuth: true,
   });
 }
