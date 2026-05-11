@@ -381,16 +381,18 @@ export function WorkerSickLeavesScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Bajas</Text>
         <Pressable
-          style={styles.iconButtonRound}
+          style={({ pressed }) => [styles.iconButtonRound, pressed && styles.iconButtonRoundPressed]}
           onPress={() => void loadAll(true)}
           disabled={isRefreshing}
           accessibilityRole="button"
           accessibilityLabel="Refrescar bajas"
         >
-          {isRefreshing ? (
-            <ActivityIndicator size="small" color="#0f766e" />
-          ) : (
-            <Ionicons name="refresh" size={20} color="#0f766e" />
+          {({ pressed }) => (
+            isRefreshing ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#ffffff"} />
+            )
           )}
         </Pressable>
       </View>
@@ -751,17 +753,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    backgroundColor: "#0f172a",
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e293b",
   },
-  title: { fontSize: 22, fontWeight: "700", color: "#0f172a" },
+  title: { fontSize: 22, fontWeight: "700", color: "#ffffff" },
   iconButtonRound: {
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#334155",
+    backgroundColor: "#1e293b",
     alignItems: "center",
     justifyContent: "center",
+  },
+  iconButtonRoundPressed: {
+    borderColor: "#f97316",
   },
   centerState: {
     flex: 1,
@@ -781,7 +789,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   retryButtonText: { color: "#0f766e", fontWeight: "700" },
-  content: { paddingHorizontal: 16, paddingBottom: 16, gap: 10 },
+  content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 16, gap: 10 },
   card: {
     backgroundColor: "#ffffff",
     borderWidth: 1,

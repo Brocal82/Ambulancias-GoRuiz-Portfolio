@@ -270,7 +270,7 @@ export function WorkerTabsShell({
           <Ionicons
             name="home-outline"
             size={22}
-            color={activeTab === "home" ? "#f97316" : "#94a3b8"}
+            color={activeTab === "home" ? "#f97316" : "#ffffff"}
             style={styles.tabIcon}
           />
           <Text style={[styles.tabText, activeTab === "home" && styles.tabTextActive]} numberOfLines={1}>
@@ -281,7 +281,7 @@ export function WorkerTabsShell({
           <Ionicons
             name="calendar-outline"
             size={22}
-            color={activeTab === "agenda" ? "#f97316" : "#94a3b8"}
+            color={activeTab === "agenda" ? "#f97316" : "#ffffff"}
             style={styles.tabIcon}
           />
           <Text style={[styles.tabText, activeTab === "agenda" && styles.tabTextActive]} numberOfLines={1}>
@@ -293,7 +293,7 @@ export function WorkerTabsShell({
             <Ionicons
               name="today-outline"
               size={22}
-              color={activeTab === "workday" ? "#f97316" : "#94a3b8"}
+              color={activeTab === "workday" ? "#f97316" : "#ffffff"}
               style={styles.tabIcon}
             />
             <Text style={[styles.tabText, activeTab === "workday" && styles.tabTextActive]} numberOfLines={1}>
@@ -306,7 +306,7 @@ export function WorkerTabsShell({
             <Ionicons
               name="airplane-outline"
               size={22}
-              color={activeTab === "vacations" ? "#f97316" : "#94a3b8"}
+              color={activeTab === "vacations" ? "#f97316" : "#ffffff"}
               style={styles.tabIcon}
             />
             <Text style={[styles.tabText, activeTab === "vacations" && styles.tabTextActive]} numberOfLines={1}>
@@ -319,7 +319,7 @@ export function WorkerTabsShell({
             <Ionicons
               name="medkit-outline"
               size={22}
-              color={activeTab === "sickLeaves" ? "#f97316" : "#94a3b8"}
+              color={activeTab === "sickLeaves" ? "#f97316" : "#ffffff"}
               style={styles.tabIcon}
             />
             <Text style={[styles.tabText, activeTab === "sickLeaves" && styles.tabTextActive]} numberOfLines={1}>
@@ -332,7 +332,7 @@ export function WorkerTabsShell({
             <Ionicons
               name="clipboard-outline"
               size={22}
-              color={activeTab === "appointments" ? "#f97316" : "#94a3b8"}
+              color={activeTab === "appointments" ? "#f97316" : "#ffffff"}
               style={styles.tabIcon}
             />
             <Text style={[styles.tabText, activeTab === "appointments" && styles.tabTextActive]} numberOfLines={1}>
@@ -352,7 +352,7 @@ export function WorkerTabsShell({
               <Ionicons
                 name="chatbubble-ellipses-outline"
                 size={22}
-                color={activeTab === "messages" ? "#f97316" : "#94a3b8"}
+                color={activeTab === "messages" ? "#f97316" : "#ffffff"}
                 style={styles.tabIcon}
               />
               {hasMessagesModule && unreadMessagesCount > 0 ? (
@@ -372,7 +372,7 @@ export function WorkerTabsShell({
           <Ionicons
             name="person-circle-outline"
             size={24}
-            color={activeTab === "profile" ? "#f97316" : "#94a3b8"}
+            color={activeTab === "profile" ? "#f97316" : "#ffffff"}
             style={styles.tabIcon}
           />
           <Text style={[styles.tabText, activeTab === "profile" && styles.tabTextActive]} numberOfLines={1}>
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 10,
-    color: "#94a3b8",
+    color: "#ffffff",
     textAlign: "center",
     maxWidth: "100%",
   },

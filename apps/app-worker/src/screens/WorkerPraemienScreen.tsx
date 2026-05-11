@@ -357,16 +357,18 @@ export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
           </Text>
         </View>
         <Pressable
-          style={styles.refreshIconBtn}
+          style={({ pressed }) => [styles.iconButtonRound, pressed && styles.iconButtonRoundPressed]}
           onPress={() => void handleRefresh()}
           disabled={refreshing}
           accessibilityRole="button"
           accessibilityLabel="Refrescar Prämie"
         >
-          {refreshing ? (
-            <ActivityIndicator size="small" color="#0f766e" />
-          ) : (
-            <Ionicons name="refresh" size={20} color="#0f766e" />
+          {({ pressed }) => (
+            refreshing ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#ffffff"} />
+            )
           )}
         </Pressable>
       </View>
@@ -592,9 +594,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0f172a",
     borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
+    borderBottomColor: "#1e293b",
   },
   headerTextWrap: { flex: 1, minWidth: 0 },
   card: {
@@ -606,17 +608,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, padding: 24 },
-  title: { fontSize: 22, fontWeight: "700", color: "#0f172a" },
-  titleMode: { fontSize: 16, fontWeight: "600", color: "#64748b" },
-  refreshIconBtn: {
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
+  title: { fontSize: 22, fontWeight: "700", color: "#ffffff" },
+  titleMode: { fontSize: 16, fontWeight: "600", color: "#94a3b8" },
+  iconButtonRound: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#334155",
+    backgroundColor: "#1e293b",
     alignItems: "center",
     justifyContent: "center",
+  },
+  iconButtonRoundPressed: {
+    borderColor: "#f97316",
   },
   sectionTitle: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
   muted: { fontSize: 13, color: "#64748b" },

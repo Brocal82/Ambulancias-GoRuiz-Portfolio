@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import { ApiError } from "../services/http";
 import {
@@ -165,11 +166,20 @@ export function WorkerDocumentsScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <Text style={styles.title}>Documentos</Text>
+        <View style={styles.headerTopRow}>
+          <Text style={styles.title}>Documentos</Text>
+          <Pressable
+            style={({ pressed }) => [styles.iconButtonRound, pressed && styles.iconButtonRoundPressed]}
+            onPress={() => { void loadAll(); }}
+            accessibilityRole="button"
+            accessibilityLabel="Refrescar documentos"
+          >
+            {({ pressed }) => (
+              <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#ffffff"} />
+            )}
+          </Pressable>
+        </View>
         <Text style={styles.subtitle}>Nominas y documentos con acuse</Text>
-        <Pressable style={styles.refreshButton} onPress={() => void loadAll()}>
-          <Text style={styles.refreshButtonText}>Refrescar</Text>
-        </Pressable>
       </View>
 
       <View style={styles.tabRow}>
@@ -389,30 +399,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 8,
+    gap: 4,
+    backgroundColor: "#0f172a",
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e293b",
+  },
+  headerTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#0f172a",
+    color: "#ffffff",
   },
   subtitle: {
     fontSize: 14,
-    color: "#64748b",
+    color: "#94a3b8",
   },
-  refreshButton: {
-    marginTop: 8,
-    alignSelf: "flex-start",
+  iconButtonRound: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: "#ffffff",
+    borderColor: "#334155",
+    backgroundColor: "#1e293b",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  refreshButtonText: {
-    color: "#334155",
-    fontWeight: "700",
-    fontSize: 12,
+  iconButtonRoundPressed: {
+    borderColor: "#f97316",
   },
   tabRow: {
     flexDirection: "row",
@@ -486,6 +503,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
+    paddingTop: 14,
     paddingBottom: 16,
     gap: 10,
   },

@@ -673,13 +673,15 @@ export function WorkerWorkdayScreen({ user, enabledModules, onOpenWorkdayClosure
               Preparar jornada
             </Text>
             <Pressable
-              style={({ pressed }) => [styles.refreshFab, pressed ? styles.refreshFabPressed : null]}
+              style={({ pressed }) => [styles.iconButtonRound, pressed && styles.iconButtonRoundPressed]}
               onPress={() => void loadWorkday()}
               accessibilityRole="button"
               accessibilityLabel="Refrescar"
               hitSlop={6}
             >
-              <Ionicons name="refresh" size={22} color="#334155" />
+              {({ pressed }: { pressed: boolean }) => (
+                <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#ffffff"} />
+              )}
             </Pressable>
           </View>
         </View>
@@ -736,13 +738,15 @@ export function WorkerWorkdayScreen({ user, enabledModules, onOpenWorkdayClosure
               ) : null}
             </View>
             <Pressable
-              style={({ pressed }) => [styles.refreshFab, pressed ? styles.refreshFabPressed : null]}
+              style={({ pressed }) => [styles.iconButtonRound, pressed && styles.iconButtonRoundPressed]}
               onPress={() => void loadWorkday()}
               accessibilityRole="button"
               accessibilityLabel="Refrescar"
               hitSlop={6}
             >
-              <Ionicons name="refresh" size={22} color="#334155" />
+              {({ pressed }: { pressed: boolean }) => (
+                <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#ffffff"} />
+              )}
             </Pressable>
           </View>
           {headerAssignmentBlock}
@@ -809,8 +813,8 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
-    backgroundColor: "#f8fafc",
+    borderBottomColor: "#1e293b",
+    backgroundColor: "#0f172a",
   },
   headerTopRow: {
     flexDirection: "row",
@@ -829,7 +833,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     fontSize: 22,
     fontWeight: "700",
-    color: "#0f172a",
+    color: "#ffffff",
   },
   headerSummaryIconBtn: {
     height: 32,
@@ -855,20 +859,19 @@ const styles = StyleSheet.create({
     color: "#047857",
     fontVariant: ["tabular-nums"],
   },
-  refreshFab: {
+  iconButtonRound: {
     width: 40,
     height: 40,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#334155",
+    backgroundColor: "#1e293b",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
     flexShrink: 0,
   },
-  refreshFabPressed: {
-    backgroundColor: "#f1f5f9",
-    opacity: 0.92,
+  iconButtonRoundPressed: {
+    borderColor: "#f97316",
   },
   headerMeta: {
     gap: 0,
@@ -895,7 +898,7 @@ const styles = StyleSheet.create({
   headerColLabel: {
     fontSize: 10,
     fontWeight: "600",
-    color: "#64748b",
+    color: "#94a3b8",
     alignSelf: "stretch",
   },
   headerColLabelCenter: {
@@ -907,13 +910,13 @@ const styles = StyleSheet.create({
   headerDienstNumber: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#0f172a",
+    color: "#ffffff",
     alignSelf: "stretch",
   },
   headerSchedule: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#475569",
+    color: "#cbd5e1",
     lineHeight: 15,
     fontVariant: ["tabular-nums"],
     alignSelf: "stretch",
@@ -921,7 +924,7 @@ const styles = StyleSheet.create({
   headerTeamName: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#334155",
+    color: "#e2e8f0",
     lineHeight: 14,
     alignSelf: "stretch",
   },
@@ -948,7 +951,7 @@ const styles = StyleSheet.create({
     maxWidth: "100%",
     fontSize: 11,
     fontWeight: "600",
-    color: "#334155",
+    color: "#e2e8f0",
     lineHeight: 15,
     textAlign: "right",
     alignSelf: "flex-end",
@@ -956,7 +959,7 @@ const styles = StyleSheet.create({
   headerKmNumberOnly: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#475569",
+    color: "#cbd5e1",
     lineHeight: 15,
     fontVariant: ["tabular-nums"],
     textAlign: "right",

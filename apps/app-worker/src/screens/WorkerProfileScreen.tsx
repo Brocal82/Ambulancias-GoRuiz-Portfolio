@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import {
   buildPublicFileCandidates,
@@ -136,26 +137,34 @@ export function WorkerProfileScreen({ user, onRefreshProfile }: Props) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
+        <View style={styles.headerTopRow}>
+          <Text style={styles.title}>Perfil</Text>
+          <Pressable
+            style={({ pressed }) => [styles.iconButtonRound, pressed && styles.iconButtonRoundPressed]}
+            onPress={() => { void onRefresh(); }}
+            disabled={isRefreshing}
+            accessibilityRole="button"
+            accessibilityLabel="Refrescar perfil"
+          >
+            {({ pressed }) => (
+              isRefreshing ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#ffffff"} />
+              )
+            )}
+          </Pressable>
+        </View>
+      </View>
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => void onRefresh()} />}
       >
-        <View style={styles.headerCard}>
-          <Text style={styles.screenTitle}>Perfil</Text>
-          <Text style={styles.screenSubtitle}>Datos de cuenta y documentos</Text>
-          <Pressable
-            style={[styles.refreshButton, isRefreshing && styles.refreshButtonDisabled]}
-            onPress={() => void onRefresh()}
-            disabled={isRefreshing}
-          >
-            <Text style={styles.refreshButtonText}>
-              {isRefreshing ? "Refrescando..." : "Refrescar perfil"}
-            </Text>
-          </Pressable>
-        </View>
 
         <View style={styles.card}>
           <View style={styles.avatarBlock}>
+
             {profileImageUrl ? (
               <Image source={{ uri: profileImageUrl }} style={styles.avatar} />
             ) : (
@@ -240,40 +249,40 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
-  headerCard: {
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    borderRadius: 12,
-    padding: 14,
-    gap: 6,
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
+    backgroundColor: "#0f172a",
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e293b",
   },
-  screenTitle: {
+  headerTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  title: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#0f172a",
+    color: "#ffffff",
   },
-  screenSubtitle: {
+  subtitle: {
     fontSize: 14,
-    color: "#64748b",
+    color: "#94a3b8",
   },
-  refreshButton: {
-    marginTop: 8,
-    alignSelf: "flex-start",
+  iconButtonRound: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#0f766e",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: "#ffffff",
+    borderColor: "#334155",
+    backgroundColor: "#1e293b",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  refreshButtonDisabled: {
-    opacity: 0.7,
-  },
-  refreshButtonText: {
-    color: "#0f766e",
-    fontWeight: "700",
-    fontSize: 12,
+  iconButtonRoundPressed: {
+    borderColor: "#f97316",
   },
   card: {
     backgroundColor: "#ffffff",
