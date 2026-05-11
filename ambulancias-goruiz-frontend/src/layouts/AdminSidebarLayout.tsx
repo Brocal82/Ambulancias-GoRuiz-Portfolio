@@ -11,13 +11,10 @@ import { useUnreadMessagesCount } from "../modules/messages/hooks";
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
 
-function Badge({ count, active = false }: { count: number; active?: boolean }) {
+function Badge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
-    <span className={[
-      "ml-auto min-w-5 h-5 inline-flex items-center justify-center rounded-full text-[10px] font-bold px-1 leading-none shrink-0",
-      active ? "bg-white text-orange-600" : "bg-rose-500 text-white",
-    ].join(" ")}>
+    <span className="ml-auto min-w-5 h-5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-bold px-1 leading-none shrink-0">
       {count > 99 ? "99+" : count}
     </span>
   );
@@ -44,8 +41,8 @@ function NavItem({ to, label, icon, badge = 0, collapsed, end = false }: NavItem
         [
           "relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors",
           isActive
-            ? "bg-orange-500 text-white"
-            : "text-slate-300 hover:bg-slate-700 hover:text-white",
+            ? "border border-orange-500 text-white"
+            : "border border-transparent text-slate-300 hover:bg-slate-700 hover:text-white",
           collapsed ? "justify-center" : "",
         ].join(" ")
       }
@@ -56,7 +53,7 @@ function NavItem({ to, label, icon, badge = 0, collapsed, end = false }: NavItem
             {icon}
           </span>
           {!collapsed && <span className="flex-1 truncate">{label}</span>}
-          {!collapsed && <Badge count={badge} active={isActive} />}
+          {!collapsed && <Badge count={badge} />}
           {collapsed && badge > 0 && (
             <span className={[
               "absolute top-1 right-1 w-2 h-2 rounded-full",
