@@ -11,10 +11,13 @@ import { useUnreadMessagesCount } from "../modules/messages/hooks";
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
 
-function Badge({ count }: { count: number }) {
+function Badge({ count, active = false }: { count: number; active?: boolean }) {
   if (count <= 0) return null;
   return (
-    <span className="ml-auto min-w-5 h-5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-bold px-1 leading-none shrink-0">
+    <span className={[
+      "ml-auto min-w-5 h-5 inline-flex items-center justify-center rounded-full text-[10px] font-bold px-1 leading-none shrink-0",
+      active ? "bg-white text-orange-600" : "bg-rose-500 text-white",
+    ].join(" ")}>
       {count > 99 ? "99+" : count}
     </span>
   );
@@ -41,19 +44,26 @@ function NavItem({ to, label, icon, badge = 0, collapsed, end = false }: NavItem
         [
           "relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors",
           isActive
-            ? "bg-blue-600 text-white"
+            ? "bg-orange-500 text-white"
             : "text-slate-300 hover:bg-slate-700 hover:text-white",
           collapsed ? "justify-center" : "",
         ].join(" ")
       }
     >
-      <span className="shrink-0 w-[18px] h-[18px] flex items-center justify-center">
-        {icon}
-      </span>
-      {!collapsed && <span className="flex-1 truncate">{label}</span>}
-      {!collapsed && <Badge count={badge} />}
-      {collapsed && badge > 0 && (
-        <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500" />
+      {({ isActive }) => (
+        <>
+          <span className="shrink-0 w-[18px] h-[18px] flex items-center justify-center">
+            {icon}
+          </span>
+          {!collapsed && <span className="flex-1 truncate">{label}</span>}
+          {!collapsed && <Badge count={badge} active={isActive} />}
+          {collapsed && badge > 0 && (
+            <span className={[
+              "absolute top-1 right-1 w-2 h-2 rounded-full",
+              isActive ? "bg-white" : "bg-rose-500",
+            ].join(" ")} />
+          )}
+        </>
       )}
     </NavLink>
   );
