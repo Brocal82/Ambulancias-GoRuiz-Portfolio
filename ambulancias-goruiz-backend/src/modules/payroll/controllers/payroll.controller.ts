@@ -280,6 +280,7 @@ export async function uploadPayrollDocument(
         parsedYear && parsedMonth
           ? `Tu nómina de ${parsedMonth}/${parsedYear} está disponible.`
           : "Tienes una nueva nómina disponible.",
+        { screen: "documents" },
       );
 
       const replacedDocument = await replaceExistingConfirmedPayroll({
@@ -341,6 +342,7 @@ export async function uploadPayrollDocument(
         parsedYear && parsedMonth
           ? `Tu nómina de ${parsedMonth}/${parsedYear} está disponible.`
           : "Tienes una nueva nómina disponible.",
+        { screen: "documents" },
       );
 
       const replacedDocument = await replaceExistingConfirmedPayroll({
@@ -752,6 +754,7 @@ export async function assignPayrollDocument(
       payroll.year && payroll.month
         ? `Tu nómina de ${payroll.month}/${payroll.year} está disponible.`
         : "Tienes una nueva nómina disponible.",
+      { screen: "documents" },
     );
 
     const possibleDuplicate = await findPayrollDuplicate(

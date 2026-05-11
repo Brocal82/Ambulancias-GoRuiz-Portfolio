@@ -38,7 +38,7 @@ export async function rejectSickLeaveRecord(sick: any) {
       [userId],
       "Baja rechazada",
       "Tu solicitud de baja no ha podido ser aceptada.",
-      { type: "sick_leave_rejected", sickLeaveId: String(sick._id) },
+      { type: "sick_leave_rejected", sickLeaveId: String(sick._id), screen: "sickLeaves" },
     );
   }
   return sick;

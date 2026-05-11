@@ -68,6 +68,7 @@ export async function saveMonthlyPraemieForUser(
     [userId],
     "Bonificación registrada",
     `Tu bonificación de ${month}/${year} ha sido calculada.`,
+    { screen: "praemien" },
   );
 
   return {
