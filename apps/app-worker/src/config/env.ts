@@ -46,6 +46,14 @@ function resolveApiBaseUrl(): string {
 
 const apiBaseUrl = resolveApiBaseUrl();
 
+// Derive WebSocket URL from apiBaseUrl:
+// http://host:port/api  →  ws://host:port/ws
+// https://host/api      →  wss://host/ws
+const wsBaseUrl = apiBaseUrl
+  .replace(/\/api$/, "/ws")
+  .replace(/^https:/, "wss:")
+  .replace(/^http:/, "ws:");
+
 if (__DEV__) {
   // Keep a visible hint in Metro logs to detect wrong backend target quickly.
   console.info(`[app-worker] API base URL: ${apiBaseUrl}`);
@@ -53,4 +61,5 @@ if (__DEV__) {
 
 export const ENV = {
   apiBaseUrl,
+  wsBaseUrl,
 };
