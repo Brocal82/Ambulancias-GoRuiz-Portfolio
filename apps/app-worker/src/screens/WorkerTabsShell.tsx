@@ -60,9 +60,9 @@ export function WorkerTabsShell({
   onLogout,
   onRefreshProfile,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<WorkerTabKey>(“home”);
+  const [activeTab, setActiveTab] = useState<WorkerTabKey>("home");
   const [initialAgendaDate, setInitialAgendaDate] = useState<string | undefined>(undefined);
-  /** Pantalla completa de cierre / revision desde el chip “jornada en curso”. */
+  /** Pantalla completa de cierre / revision desde el chip "jornada en curso". */
   const [workdayClosureOpen, setWorkdayClosureOpen] = useState(false);
 
   const notifListenerRef = useRef<Notifications.Subscription | null>(null);
@@ -71,18 +71,18 @@ export function WorkerTabsShell({
       (response) => {
         const data = response.notification.request.content.data as Record<string, unknown> | undefined;
         if (!data) return;
-        if (data.screen === “agenda”) {
-          const date = typeof data.date === “string” ? data.date : undefined;
+        if (data.screen === "agenda") {
+          const date = typeof data.date === "string" ? data.date : undefined;
           setInitialAgendaDate(date);
-          setActiveTab(“agenda”);
-        } else if (data.screen === “messages”) {
-          setActiveTab(“messages”);
-        } else if (data.screen === “vacations”) {
-          setActiveTab(“vacations”);
-        } else if (data.screen === “appointments”) {
-          setActiveTab(“appointments”);
-        } else if (data.screen === “sickLeaves”) {
-          setActiveTab(“sickLeaves”);
+          setActiveTab("agenda");
+        } else if (data.screen === "messages") {
+          setActiveTab("messages");
+        } else if (data.screen === "vacations") {
+          setActiveTab("vacations");
+        } else if (data.screen === "appointments") {
+          setActiveTab("appointments");
+        } else if (data.screen === "sickLeaves") {
+          setActiveTab("sickLeaves");
         }
       },
     );
