@@ -22,6 +22,7 @@ type Props = {
   scheduleSource: ScheduleSource;
   hasVacationModule: boolean;
   hasSickLeavesModule: boolean;
+  initialDate?: string;
 };
 
 type DayScheduleItem = {
@@ -206,8 +207,14 @@ function getEmptyDayStatus(
   return "libre";
 }
 
-export function WorkerAgendaScreen({ user, scheduleSource, hasVacationModule, hasSickLeavesModule }: Props) {
-  const [weekStart, setWeekStart] = useState<Date>(() => startOfWeekMonday(new Date()));
+export function WorkerAgendaScreen({ user, scheduleSource, hasVacationModule, hasSickLeavesModule, initialDate }: Props) {
+  const [weekStart, setWeekStart] = useState<Date>(() => {
+    if (initialDate) {
+      const parsed = new Date(initialDate);
+      if (!Number.isNaN(parsed.getTime())) return startOfWeekMonday(parsed);
+    }
+    return startOfWeekMonday(new Date());
+  });
   const [hasManualWeekSelection, setHasManualWeekSelection] = useState(false);
   const [allSchedulesByDate, setAllSchedulesByDate] = useState<Record<string, DayScheduleItem[]>>(
     {},

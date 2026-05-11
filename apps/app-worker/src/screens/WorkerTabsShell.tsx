@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppState, Pressable, StyleSheet, Text, View } from "react-native";
+import * as Notifications from "expo-notifications";
 
 import { AuthUser, CompanyModuleKey, MODULE_KEYS, ScheduleSource } from "../types/auth";
 import { getMyMessages } from "../services/messages";
@@ -59,9 +60,36 @@ export function WorkerTabsShell({
   onLogout,
   onRefreshProfile,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<WorkerTabKey>("home");
+  const [activeTab, setActiveTab] = useState<WorkerTabKey>(“home”);
+  const [initialAgendaDate, setInitialAgendaDate] = useState<string | undefined>(undefined);
   /** Pantalla completa de cierre / revision desde el chip “jornada en curso”. */
   const [workdayClosureOpen, setWorkdayClosureOpen] = useState(false);
+
+  const notifListenerRef = useRef<Notifications.Subscription | null>(null);
+  useEffect(() => {
+    notifListenerRef.current = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data as Record<string, unknown> | undefined;
+        if (!data) return;
+        if (data.screen === “agenda”) {
+          const date = typeof data.date === “string” ? data.date : undefined;
+          setInitialAgendaDate(date);
+          setActiveTab(“agenda”);
+        } else if (data.screen === “messages”) {
+          setActiveTab(“messages”);
+        } else if (data.screen === “vacations”) {
+          setActiveTab(“vacations”);
+        } else if (data.screen === “appointments”) {
+          setActiveTab(“appointments”);
+        } else if (data.screen === “sickLeaves”) {
+          setActiveTab(“sickLeaves”);
+        }
+      },
+    );
+    return () => {
+      notifListenerRef.current?.remove();
+    };
+  }, []);
   const hasWorkdayModule = enabledModules.includes(MODULE_KEYS.WORKDAY);
   const hasAgendaModule =
     enabledModules.includes(MODULE_KEYS.SCHEDULING) ||
@@ -154,6 +182,7 @@ export function WorkerTabsShell({
             scheduleSource={scheduleSource}
             hasVacationModule={hasVacationModule}
             hasSickLeavesModule={hasSickLeavesModule}
+            initialDate={initialAgendaDate}
           />
         );
       case "vacations":
@@ -210,6 +239,7 @@ export function WorkerTabsShell({
     }
   }, [
     activeTab,
+    initialAgendaDate,
     hasWorkdayModule,
     hasAgendaModule,
     hasVacationModule,
