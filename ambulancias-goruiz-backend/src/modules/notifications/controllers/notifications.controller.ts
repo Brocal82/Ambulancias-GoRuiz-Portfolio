@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import { registerPushToken } from "../services/notifications.service";
+import { registerPushToken, getNotificationHistory } from "../services/notifications.service";
 
 const registerSchema = z.object({
   token: z.string().min(1),
@@ -15,4 +15,10 @@ export async function registerToken(req: Request, res: Response): Promise<void> 
   }
   await registerPushToken(req.userId as string, parsed.data.token, parsed.data.platform);
   res.status(200).json({ ok: true });
+}
+
+export async function getHistory(req: Request, res: Response): Promise<void> {
+  const userId = req.userId as string;
+  const history = await getNotificationHistory(userId);
+  res.status(200).json(history);
 }
