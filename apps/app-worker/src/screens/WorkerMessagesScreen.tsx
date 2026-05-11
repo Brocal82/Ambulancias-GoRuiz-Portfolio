@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Linking,
   Modal,
@@ -21,6 +22,10 @@ import {
   WorkerMessage,
 } from "../services/messages";
 import {
+  getNotificationHistory,
+  NotificationHistoryItem,
+} from "../services/pushNotifications";
+import {
   buildPublicFileCandidates,
   downloadAndOpenAuthenticatedFile,
   filenameFromUrlOrPath,
@@ -28,6 +33,7 @@ import {
 
 type Props = {
   userId: string;
+  wsTrigger?: number;
 };
 
 function sortBySentDateDesc(messages: WorkerMessage[]): WorkerMessage[] {
@@ -64,12 +70,15 @@ function isPdfAttachment(attachment: { mimetype: string; originalName: string })
   return (attachment.originalName ?? "").toLowerCase().endsWith(".pdf");
 }
 
-export function WorkerMessagesScreen({ userId }: Props) {
+export function WorkerMessagesScreen({ userId, wsTrigger }: Props) {
+  const [activeSection, setActiveSection] = useState<"messages" | "notifications">("messages");
   const [messages, setMessages] = useState<WorkerMessage[]>([]);
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [notifHistory, setNotifHistory] = useState<NotificationHistoryItem[]>([]);
+  const [isLoadingNotif, setIsLoadingNotif] = useState(false);
 
   const loadMessages = useCallback(async () => {
     setIsLoading(true);
@@ -88,6 +97,24 @@ export function WorkerMessagesScreen({ userId }: Props) {
     }
   }, []);
 
+  const loadNotifHistory = useCallback(async () => {
+    setIsLoadingNotif(true);
+    try {
+      const items = await getNotificationHistory();
+      setNotifHistory(items);
+    } catch {
+      // keep previous list on transient failures
+    } finally {
+      setIsLoadingNotif(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeSection === "notifications" && notifHistory.length === 0) {
+      void loadNotifHistory();
+    }
+  }, [activeSection, notifHistory.length, loadNotifHistory]);
+
   useEffect(() => {
     void loadMessages();
 
@@ -99,6 +126,15 @@ export function WorkerMessagesScreen({ userId }: Props) {
       clearInterval(intervalId);
     };
   }, [loadMessages]);
+
+  const prevWsTrigger = useRef(wsTrigger);
+  useEffect(() => {
+    if (wsTrigger === undefined || wsTrigger === prevWsTrigger.current) return;
+    prevWsTrigger.current = wsTrigger;
+    if (activeSection === "messages") {
+      void loadMessages();
+    }
+  }, [wsTrigger, activeSection, loadMessages]);
 
   const unreadCount = useMemo(() => {
     return messages.reduce((acc, message) => {
@@ -133,18 +169,31 @@ export function WorkerMessagesScreen({ userId }: Props) {
     }
   };
 
-  const handleDelete = async (messageId: string) => {
-    try {
-      await deleteMessageForUser(messageId);
-      setMessages((prev) => prev.filter((message) => message._id !== messageId));
-      setExpandedIds((prev) => {
-        const next = { ...prev };
-        delete next[messageId];
-        return next;
-      });
-    } catch {
-      setErrorMessage("No se pudo eliminar el mensaje.");
-    }
+  const handleDelete = (messageId: string) => {
+    Alert.alert(
+      "Eliminar mensaje",
+      "Este mensaje se eliminara de tu bandeja. Esta accion no se puede deshacer.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteMessageForUser(messageId);
+              setMessages((prev) => prev.filter((message) => message._id !== messageId));
+              setExpandedIds((prev) => {
+                const next = { ...prev };
+                delete next[messageId];
+                return next;
+              });
+            } catch {
+              setErrorMessage("No se pudo eliminar el mensaje.");
+            }
+          },
+        },
+      ],
+    );
   };
 
   const openAttachment = async (
@@ -199,23 +248,74 @@ export function WorkerMessagesScreen({ userId }: Props) {
       <View style={styles.header}>
         <View style={styles.headerTopRow}>
           <View style={styles.headerTitleRow}>
-            <Text style={styles.title}>Mensajes</Text>
-            <Text style={styles.unreadPill}>No leidos: {unreadCount}</Text>
+            <Text style={styles.title}>
+              {activeSection === "messages" ? "Mensajes" : "Notificaciones"}
+            </Text>
+            {activeSection === "messages" && (
+              <Text style={styles.unreadPill}>No leidos: {unreadCount}</Text>
+            )}
           </View>
           <Pressable
             style={({ pressed }) => [styles.iconButtonRound, pressed && styles.iconButtonRoundPressed]}
-            onPress={() => { void loadMessages(); }}
+            onPress={() => {
+              if (activeSection === "messages") {
+                void loadMessages();
+              } else {
+                void loadNotifHistory();
+              }
+            }}
             accessibilityRole="button"
-            accessibilityLabel="Refrescar mensajes"
+            accessibilityLabel="Refrescar"
           >
             {({ pressed }) => (
               <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#ffffff"} />
             )}
           </Pressable>
         </View>
+        <View style={styles.sectionToggle}>
+          <Pressable
+            style={[styles.sectionTab, activeSection === "messages" && styles.sectionTabActive]}
+            onPress={() => setActiveSection("messages")}
+          >
+            <Text style={[styles.sectionTabText, activeSection === "messages" && styles.sectionTabTextActive]}>
+              Mensajes
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.sectionTab, activeSection === "notifications" && styles.sectionTabActive]}
+            onPress={() => setActiveSection("notifications")}
+          >
+            <Text style={[styles.sectionTabText, activeSection === "notifications" && styles.sectionTabTextActive]}>
+              Notificaciones
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
-      {isLoading ? (
+      {activeSection === "notifications" ? (
+        isLoadingNotif ? (
+          <View style={styles.centerState}>
+            <ActivityIndicator size="large" color="#0f766e" />
+            <Text style={styles.centerText}>Cargando notificaciones...</Text>
+          </View>
+        ) : notifHistory.length === 0 ? (
+          <View style={styles.centerState}>
+            <Text style={styles.centerText}>No hay notificaciones recientes.</Text>
+          </View>
+        ) : (
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            {notifHistory.map((item) => (
+              <View key={item._id} style={styles.notifCard}>
+                <Text style={styles.notifTitle}>{item.title}</Text>
+                <Text style={styles.notifBody}>{item.body}</Text>
+                <Text style={styles.notifDate}>
+                  {new Date(item.createdAt).toLocaleString("es-ES")}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        )
+      ) : isLoading ? (
         <View style={styles.centerState}>
           <ActivityIndicator size="large" color="#0f766e" />
           <Text style={styles.centerText}>Cargando mensajes...</Text>
@@ -281,9 +381,7 @@ export function WorkerMessagesScreen({ userId }: Props) {
 
                     <Pressable
                       style={styles.deleteButton}
-                      onPress={() => {
-                        void handleDelete(message._id);
-                      }}
+                      onPress={() => handleDelete(message._id)}
                     >
                       <Text style={styles.deleteButtonText}>Eliminar</Text>
                     </Pressable>
@@ -488,6 +586,54 @@ const styles = StyleSheet.create({
     color: "#b91c1c",
     fontSize: 12,
     fontWeight: "700",
+  },
+  sectionToggle: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 8,
+  },
+  sectionTab: {
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  sectionTabActive: {
+    borderColor: "#f97316",
+    backgroundColor: "#f97316",
+  },
+  sectionTabText: {
+    color: "#94a3b8",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  sectionTabTextActive: {
+    color: "#ffffff",
+  },
+  notifCard: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  notifTitle: {
+    color: "#0f172a",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  notifBody: {
+    color: "#334155",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  notifDate: {
+    color: "#94a3b8",
+    fontSize: 11,
+    marginTop: 2,
   },
   previewOverlay: {
     flex: 1,

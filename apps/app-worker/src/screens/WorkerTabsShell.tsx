@@ -2,6 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppState, Pressable, StyleSheet, Text, View } from "react-native";
 import * as Notifications from "expo-notifications";
+import { ENV } from "../config/env";
+import { getAuthBearerToken } from "../services/http";
 
 import { AuthUser, CompanyModuleKey, MODULE_KEYS, ScheduleSource } from "../types/auth";
 import { getMyMessages } from "../services/messages";
@@ -83,6 +85,12 @@ export function WorkerTabsShell({
           setActiveTab("appointments");
         } else if (data.screen === "sickLeaves") {
           setActiveTab("sickLeaves");
+        } else if (data.screen === "praemien") {
+          setActiveTab("praemien");
+        } else if (data.screen === "documents") {
+          setActiveTab("documents");
+        } else if (data.screen === "workday") {
+          setActiveTab("workday");
         }
       },
     );
@@ -103,6 +111,10 @@ export function WorkerTabsShell({
     enabledModules.includes(MODULE_KEYS.PAYROLL);
   const hasPraemienModule = enabledModules.includes(MODULE_KEYS.PRAEMIEN);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [wsTrigger, setWsTrigger] = useState(0);
+  const wsRef = useRef<WebSocket | null>(null);
+  const wsReconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wsReconnectDelayRef = useRef(1000);
 
   const refreshUnreadMessagesCount = useCallback(async () => {
     if (!hasMessagesModule) {
@@ -126,11 +138,62 @@ export function WorkerTabsShell({
     const appStateSubscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
         void refreshUnreadMessagesCount();
+        void Notifications.setBadgeCountAsync(0);
       }
     });
     return () => {
       clearInterval(intervalId);
       appStateSubscription.remove();
+    };
+  }, [refreshUnreadMessagesCount]);
+
+  useEffect(() => {
+    let active = true;
+
+    const connect = async () => {
+      const token = await getAuthBearerToken();
+      if (!active || !token) return;
+
+      const ws = new WebSocket(`${ENV.wsBaseUrl}?token=${encodeURIComponent(token)}`);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        wsReconnectDelayRef.current = 1000;
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(String(event.data)) as { event?: string };
+          if (msg.event === "new_message") {
+            void refreshUnreadMessagesCount();
+            setWsTrigger((prev) => prev + 1);
+          }
+        } catch {
+          // ignore malformed frames
+        }
+      };
+
+      ws.onclose = () => {
+        wsRef.current = null;
+        if (!active) return;
+        const delay = wsReconnectDelayRef.current;
+        wsReconnectDelayRef.current = Math.min(delay * 2, 30000);
+        wsReconnectTimerRef.current = setTimeout(() => {
+          if (active) void connect();
+        }, delay);
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
+    };
+
+    void connect();
+
+    return () => {
+      active = false;
+      if (wsReconnectTimerRef.current) clearTimeout(wsReconnectTimerRef.current);
+      wsRef.current?.close();
     };
   }, [refreshUnreadMessagesCount]);
 
@@ -216,7 +279,7 @@ export function WorkerTabsShell({
         return <WorkerPraemienScreen hasPraemienModule={hasPraemienModule} userId={user._id} />;
       case "messages":
         return hasMessagesModule ? (
-          <WorkerMessagesScreen userId={user._id} />
+          <WorkerMessagesScreen userId={user._id} wsTrigger={wsTrigger} />
         ) : (
           <PlaceholderScreen
             title="Mensajes"
@@ -252,6 +315,7 @@ export function WorkerTabsShell({
     onRefreshProfile,
     scheduleSource,
     user,
+    wsTrigger,
   ]);
 
   return (

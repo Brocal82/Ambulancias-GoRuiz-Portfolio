@@ -5,6 +5,7 @@ import { env } from "./config/env";
 import { app } from "./app";
 import cleanupOldDiensts from "./utils/cleanupOldDiensts";
 import { emitDailySecurityMonitoringReport } from "./security/security-monitoring";
+import { setupWebSocketServer } from "./modules/notifications";
 
 // Evitar crashes silenciosos: loggear y salir en producción
 process.on("uncaughtException", (err) => {
@@ -101,7 +102,11 @@ mongoose
       );
     }
 
-    server = app.listen(PORT, "0.0.0.0", () => {
+    const httpServer = http.createServer(app);
+    server = httpServer;
+    setupWebSocketServer(httpServer);
+
+    httpServer.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Server listening on http://0.0.0.0:${PORT}`);
       console.log(`🕒 Cron activo: lunes 00:00 (${TZ})`);
       if (env.SECURITY_MONITORING_ENABLED) {
