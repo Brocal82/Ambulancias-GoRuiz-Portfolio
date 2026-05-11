@@ -375,16 +375,18 @@ export function HomeScreen({
         </View>
         <View style={styles.headerActions}>
           <Pressable
-            style={styles.iconButtonRound}
+            style={({ pressed }) => [styles.iconButtonRound, pressed && styles.iconButtonRoundPressed]}
             onPress={handleRefresh}
             disabled={isRefreshing}
             accessibilityRole="button"
             accessibilityLabel="Actualizar"
           >
-            {isRefreshing ? (
-              <ActivityIndicator size="small" color="#0f766e" />
-            ) : (
-              <Ionicons name="refresh" size={20} color="#0f766e" />
+            {({ pressed }) => (
+              isRefreshing ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#ffffff"} />
+              )
             )}
           </Pressable>
           <Pressable
@@ -687,9 +689,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 12,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0f172a",
     borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
+    borderBottomColor: "#1e293b",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -734,14 +736,17 @@ const styles = StyleSheet.create({
     color: "#334155",
   },
   iconButtonRound: {
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#334155",
+    backgroundColor: "#1e293b",
     alignItems: "center",
     justifyContent: "center",
+  },
+  iconButtonRoundPressed: {
+    borderColor: "#f97316",
   },
   scrollContent: {
     paddingHorizontal: 24,
@@ -750,12 +755,12 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    color: "#111827",
+    color: "#ffffff",
     fontWeight: "700",
   },
   meta: {
     fontSize: 13,
-    color: "#64748b",
+    color: "#f97316",
   },
   card: {
     backgroundColor: "#ffffff",

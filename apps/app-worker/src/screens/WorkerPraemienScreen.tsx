@@ -357,16 +357,18 @@ export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
           </Text>
         </View>
         <Pressable
-          style={styles.refreshIconBtn}
+          style={({ pressed }) => [styles.iconButtonRound, pressed && styles.iconButtonRoundPressed]}
           onPress={() => void handleRefresh()}
           disabled={refreshing}
           accessibilityRole="button"
           accessibilityLabel="Refrescar Prämie"
         >
-          {refreshing ? (
-            <ActivityIndicator size="small" color="#0f766e" />
-          ) : (
-            <Ionicons name="refresh" size={20} color="#0f766e" />
+          {({ pressed }) => (
+            refreshing ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#ffffff"} />
+            )
           )}
         </Pressable>
       </View>
@@ -587,16 +589,18 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingTop: 10,
-    paddingBottom: 8,
+    paddingBottom: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#0f172a",
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e293b",
   },
   headerTextWrap: { flex: 1, minWidth: 0 },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
     borderColor: "#e2e8f0",
     borderRadius: 12,
@@ -604,17 +608,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, padding: 24 },
-  title: { fontSize: 22, fontWeight: "700", color: "#0f172a" },
-  titleMode: { fontSize: 16, fontWeight: "600", color: "#64748b" },
-  refreshIconBtn: {
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
+  title: { fontSize: 22, fontWeight: "700", color: "#ffffff" },
+  titleMode: { fontSize: 16, fontWeight: "600", color: "#94a3b8" },
+  iconButtonRound: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#334155",
+    backgroundColor: "#1e293b",
     alignItems: "center",
     justifyContent: "center",
+  },
+  iconButtonRoundPressed: {
+    borderColor: "#f97316",
   },
   sectionTitle: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
   muted: { fontSize: 13, color: "#64748b" },
@@ -626,7 +633,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 7,
     paddingHorizontal: 4,
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
     gap: 3,
   },
   levelTitle: { color: "#0f172a", fontWeight: "700", fontSize: 10, textAlign: "center" },
@@ -641,7 +648,7 @@ const styles = StyleSheet.create({
     borderColor: "#cbd5e1",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
   },
   monthBtnDisabled: { opacity: 0.45 },
   monthBtnText: { color: "#0f766e", fontWeight: "700", fontSize: 17 },
@@ -666,7 +673,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingTop: 4,
     paddingBottom: 3,
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 6,
@@ -704,7 +711,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 9,
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
     color: "#0f172a",
     fontSize: 15,
   },

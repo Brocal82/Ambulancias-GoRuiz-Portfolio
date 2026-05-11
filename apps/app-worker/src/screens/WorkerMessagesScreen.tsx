@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import { ApiError } from "../services/http";
 import {
@@ -196,12 +197,22 @@ export function WorkerMessagesScreen({ userId }: Props) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <Text style={styles.title}>Mensajes</Text>
-        <Text style={styles.subtitle}>Comunicaciones operativas internas</Text>
-        <Text style={styles.badgeUnread}>No leidos: {unreadCount}</Text>
-        <Pressable style={styles.refreshButton} onPress={() => void loadMessages()}>
-          <Text style={styles.refreshButtonText}>Refrescar</Text>
-        </Pressable>
+        <View style={styles.headerTopRow}>
+          <View style={styles.headerTitleRow}>
+            <Text style={styles.title}>Mensajes</Text>
+            <Text style={styles.unreadPill}>No leidos: {unreadCount}</Text>
+          </View>
+          <Pressable
+            style={({ pressed }) => [styles.iconButtonRound, pressed && styles.iconButtonRoundPressed]}
+            onPress={() => { void loadMessages(); }}
+            accessibilityRole="button"
+            accessibilityLabel="Refrescar mensajes"
+          >
+            {({ pressed }) => (
+              <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#ffffff"} />
+            )}
+          </Pressable>
+        </View>
       </View>
 
       {isLoading ? (
@@ -312,43 +323,52 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 8,
-    gap: 2,
+    gap: 6,
+    backgroundColor: "#0f172a",
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e293b",
+  },
+  headerTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headerTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#0f172a",
+    color: "#ffffff",
   },
   subtitle: {
     fontSize: 14,
-    color: "#64748b",
+    color: "#94a3b8",
   },
-  badgeUnread: {
-    marginTop: 6,
-    alignSelf: "flex-start",
+  unreadPill: {
     borderWidth: 1,
-    borderColor: "#0f766e",
+    borderColor: "#f97316",
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    color: "#0f766e",
-    fontSize: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    color: "#f97316",
+    fontSize: 11,
     fontWeight: "700",
   },
-  refreshButton: {
-    marginTop: 6,
-    alignSelf: "flex-start",
+  iconButtonRound: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: "#ffffff",
+    borderColor: "#334155",
+    backgroundColor: "#1e293b",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  refreshButtonText: {
-    color: "#334155",
-    fontWeight: "700",
-    fontSize: 12,
+  iconButtonRoundPressed: {
+    borderColor: "#f97316",
   },
   centerState: {
     flex: 1,
@@ -378,6 +398,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
+    paddingTop: 14,
     paddingBottom: 16,
     gap: 10,
   },

@@ -398,6 +398,16 @@ export function WorkerAgendaScreen({ user, scheduleSource, hasVacationModule, ha
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <Text style={styles.title}>Agenda semanal</Text>
+        <Pressable
+          style={({ pressed }) => [styles.iconButtonRound, pressed && styles.iconButtonRoundPressed]}
+          onPress={() => { void loadAgenda(); }}
+          accessibilityRole="button"
+          accessibilityLabel="Refrescar agenda"
+        >
+          {({ pressed }) => (
+            <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#ffffff"} />
+          )}
+        </Pressable>
       </View>
 
       <View style={styles.weekNav}>
@@ -534,17 +544,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#0f172a",
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e293b",
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#0f172a",
+    color: "#ffffff",
+  },
+  iconButtonRound: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#334155",
+    backgroundColor: "#1e293b",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconButtonRoundPressed: {
+    borderColor: "#f97316",
   },
   weekNav: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 12,
     gap: 6,
   },
