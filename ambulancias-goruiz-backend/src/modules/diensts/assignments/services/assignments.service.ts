@@ -404,14 +404,23 @@ export async function removeAssignment(
       : null;
   if (!callerCo) return null;
 
-  const dienst = await Dienst.findById(dienstId).select("companyId").lean();
+  const dienst = await Dienst.findById(dienstId).select("companyId assignments").lean();
   if (!dienst) return null;
 
   const dc = (dienst as any).companyId;
   if (!dc) return null;
   if (String(dc) !== callerCo) return null;
 
-  return Dienst.findByIdAndUpdate(
+  const matchingSlot = (dienst as any).assignments?.find((a: any) => a.date === date);
+  const removedIds: string[] = [];
+  if (matchingSlot) {
+    const dId = oidStr(matchingSlot.driver);
+    const mId = oidStr(matchingSlot.medic);
+    if (dId) removedIds.push(dId);
+    if (mId && mId !== dId) removedIds.push(mId);
+  }
+
+  const updated = await Dienst.findByIdAndUpdate(
     dienstId,
     { $pull: { assignments: { date } } },
     { new: true },
@@ -419,6 +428,17 @@ export async function removeAssignment(
     .populate("assignments.driver", "name lastName pscheinExpiry")
     .populate("assignments.medic", "name lastName pscheinExpiry")
     .populate("assignments.ambulanceId", "ambulanceNumber brand modelName licensePlate");
+
+  if (updated && removedIds.length > 0) {
+    void sendPushNotification(
+      removedIds,
+      "Asignación eliminada",
+      `Tu asignación del ${date} ha sido eliminada.`,
+      { screen: "agenda", date },
+    );
+  }
+
+  return updated;
 }
 
 export async function clearPeopleForWeek(
@@ -467,6 +487,14 @@ export async function clearPeopleForWeek(
 
   let clearedCount = 0;
 
+  const clearedUserIds = new Set<string>();
+  for (const a of dienst.assignments) {
+    const dId = oidStr((a as any).driver);
+    const mId = oidStr((a as any).medic);
+    if (dId) clearedUserIds.add(dId);
+    if (mId) clearedUserIds.add(mId);
+  }
+
   dienst.assignments = dienst.assignments.map((a) => {
     if (!a?.date || !a?.startTime || !a?.endTime) return a;
     const hadSomething = !!a.driver || !!a.medic || !!a.ambulanceId;
@@ -482,6 +510,15 @@ export async function clearPeopleForWeek(
 
   (dienst as any).weekTeamId = null;
   await dienst.save();
+
+  if (clearedUserIds.size > 0) {
+    void sendPushNotification(
+      [...clearedUserIds],
+      "Asignaciones eliminadas",
+      `Tus asignaciones del Dienst #${dienstNumber} (semana del ${weekStartDate}) han sido eliminadas.`,
+      { screen: "agenda", date: weekStartDate },
+    );
+  }
 
   return {
     message: `Asignaciones (driver/medic/ambulancia) limpiadas para Dienst #${dienstNumber} (${weekStartDate}).`,
@@ -777,6 +814,11 @@ export async function updateDienstPartial(
     }
   }
 
+  const addedUserIds = new Set<string>();
+  const removedUserIds = new Set<string>();
+  const scheduleChangedUserIds = new Set<string>();
+  const ambulanceChangedUserIds = new Set<string>();
+
   for (const incoming of assignments) {
     const updatedCopy: any = { ...incoming };
 
@@ -806,6 +848,10 @@ export async function updateDienstPartial(
 
     if (idx !== -1) {
       const prev = dienst.assignments[idx];
+      const oldDriverId = oidStr((prev as any).driver);
+      const oldMedicId = oidStr((prev as any).medic);
+      const oldStartTime = (prev as any).startTime;
+      const oldEndTime = (prev as any).endTime;
 
       const hasDriverField = Object.prototype.hasOwnProperty.call(
         incoming,
@@ -828,6 +874,9 @@ export async function updateDienstPartial(
         } else {
           prev.driver = updatedCopy.driver;
         }
+        const newDriverId = oidStr((prev as any).driver);
+        if (newDriverId && newDriverId !== oldDriverId) addedUserIds.add(newDriverId);
+        if (oldDriverId && newDriverId !== oldDriverId) removedUserIds.add(oldDriverId);
       }
 
       if (hasMedicField) {
@@ -838,19 +887,40 @@ export async function updateDienstPartial(
         } else {
           prev.medic = updatedCopy.medic;
         }
+        const newMedicId = oidStr((prev as any).medic);
+        if (newMedicId && newMedicId !== oldMedicId) addedUserIds.add(newMedicId);
+        if (oldMedicId && newMedicId !== oldMedicId) removedUserIds.add(oldMedicId);
       }
 
       if (hasAmbulanceField) {
         const amb = (incoming as any).ambulanceId;
+        const oldAmbId = oidStr((prev as any).ambulanceId);
         if (amb === "" || amb === null) {
           (prev as any).ambulanceId = null;
           if ("ambulanceId" in prev) delete (prev as any).ambulanceId;
         } else if (amb !== undefined) {
           (prev as any).ambulanceId = amb;
         }
+        const newAmbId = oidStr((prev as any).ambulanceId);
+        if (newAmbId !== oldAmbId) {
+          const slotDriver = oidStr((prev as any).driver);
+          const slotMedic = oidStr((prev as any).medic);
+          if (slotDriver) ambulanceChangedUserIds.add(slotDriver);
+          if (slotMedic) ambulanceChangedUserIds.add(slotMedic);
+        }
       }
 
       dienst.assignments[idx] = prev as any;
+
+      // Notify workers whose schedule changed but who aren't being newly assigned
+      const timeChanged =
+        updatedCopy.startTime !== oldStartTime || updatedCopy.endTime !== oldEndTime;
+      if (timeChanged) {
+        const stillDriver = oidStr((prev as any).driver);
+        const stillMedic = oidStr((prev as any).medic);
+        if (stillDriver) scheduleChangedUserIds.add(stillDriver);
+        if (stillMedic) scheduleChangedUserIds.add(stillMedic);
+      }
     } else {
       const toInsert: any = {
         date: updatedCopy.date,
@@ -878,6 +948,10 @@ export async function updateDienstPartial(
       }
 
       dienst.assignments.push(toInsert);
+      const pushedDriverId = oidStr(toInsert.driver);
+      const pushedMedicId = oidStr(toInsert.medic);
+      if (pushedDriverId) addedUserIds.add(pushedDriverId);
+      if (pushedMedicId) addedUserIds.add(pushedMedicId);
     }
   }
 
@@ -889,6 +963,55 @@ export async function updateDienstPartial(
   );
 
   await dienst.save();
+
+  const dienstNum = (dienst as any).dienstNumber as number;
+  const rawWs = (dienst as any).weekStartDate;
+  const dienstWeekDate: string =
+    rawWs instanceof Date
+      ? rawWs.toISOString().slice(0, 10)
+      : typeof rawWs === "string"
+        ? rawWs.slice(0, 10)
+        : "";
+
+  if (addedUserIds.size > 0) {
+    void sendPushNotification(
+      [...addedUserIds],
+      "Nueva asignación de turno",
+      `Has sido asignado al Dienst #${dienstNum}.`,
+      { screen: "agenda", date: dienstWeekDate },
+    );
+  }
+  const trulyRemoved = [...removedUserIds].filter((id) => !addedUserIds.has(id));
+  if (trulyRemoved.length > 0) {
+    void sendPushNotification(
+      trulyRemoved,
+      "Asignación eliminada",
+      `Tu asignación al Dienst #${dienstNum} ha sido eliminada.`,
+      { screen: "agenda", date: dienstWeekDate },
+    );
+  }
+  const scheduleChangedOnly = [...scheduleChangedUserIds].filter(
+    (id) => !addedUserIds.has(id),
+  );
+  if (scheduleChangedOnly.length > 0) {
+    void sendPushNotification(
+      scheduleChangedOnly,
+      "Horario modificado",
+      `El horario de tu turno en el Dienst #${dienstNum} ha sido modificado.`,
+      { screen: "agenda", date: dienstWeekDate },
+    );
+  }
+  const ambulanceChangedOnly = [...ambulanceChangedUserIds].filter(
+    (id) => !addedUserIds.has(id),
+  );
+  if (ambulanceChangedOnly.length > 0) {
+    void sendPushNotification(
+      ambulanceChangedOnly,
+      "Ambulancia asignada",
+      `La ambulancia de tu turno en el Dienst #${dienstNum} ha sido actualizada.`,
+      { screen: "agenda", date: dienstWeekDate },
+    );
+  }
 
   const populated = await Dienst.findById(dienstId)
     .populate("assignments.driver", "name lastName pscheinExpiry ambulanceRole")
@@ -1159,6 +1282,7 @@ export async function assignUserToWeek(
     [userId],
     "Nueva asignación de turno",
     `Has sido asignado como ${role} a ${assignedCount} día(s) del Dienst #${dienstNumber}.`,
+    { screen: "agenda", date: weekStartDate },
   );
 
   const partialMinRest = skippedByMinimumRest.length > 0;
@@ -1751,6 +1875,25 @@ export async function assignTeamToWeek(
   (dienst as any).weekTeamId = new mongoose.Types.ObjectId(teamId);
   await dienst.save();
 
+  const driverAssigned = daysAssignedFull.length > 0 || daysAssignedDriverOnly.length > 0;
+  const medicAssigned = daysAssignedFull.length > 0 || daysAssignedMedicOnly.length > 0;
+  if (driverAssigned && driverId) {
+    void sendPushNotification(
+      [driverId],
+      "Nueva asignación de turno",
+      `Has sido asignado como conductor a ${daysAssignedFull.length + daysAssignedDriverOnly.length} día(s) del Dienst #${dienstNumber}.`,
+      { screen: "agenda", date: weekStartDate },
+    );
+  }
+  if (medicAssigned && medicId) {
+    void sendPushNotification(
+      [medicId],
+      "Nueva asignación de turno",
+      `Has sido asignado como sanitario a ${daysAssignedFull.length + daysAssignedMedicOnly.length} día(s) del Dienst #${dienstNumber}.`,
+      { screen: "agenda", date: weekStartDate },
+    );
+  }
+
   const skippedByWeeklyConflict = [...skippedByWeeklyConflictSet].sort();
   const hasPartialRoles =
     daysAssignedDriverOnly.length > 0 || daysAssignedMedicOnly.length > 0;
@@ -2051,6 +2194,15 @@ export async function moveSlotSameWeek(
     });
   } finally {
     await session.endSession();
+  }
+
+  if (userId) {
+    void sendPushNotification(
+      [userId],
+      "Turno reasignado",
+      `Tu turno ha sido movido al ${targetDate}.`,
+      { screen: "agenda", date: targetDate },
+    );
   }
 
   return restResult;
@@ -2482,6 +2634,15 @@ export async function dndCrossDienstSameWeek(
     await session.endSession();
   }
 
+  if (userId) {
+    void sendPushNotification(
+      [userId],
+      "Turno reasignado",
+      `Tu turno ha sido movido a un nuevo Dienst.`,
+      { screen: "agenda", date: targetDate },
+    );
+  }
+
   return restResult;
 }
 
@@ -2573,6 +2734,14 @@ export async function assignAmbulanceToWeek(
 
   let updatedCount = 0;
 
+  const weekWorkerIds = new Set<string>();
+  for (const a of dienst.assignments) {
+    const dId = oidStr((a as any).driver);
+    const mId = oidStr((a as any).medic);
+    if (dId) weekWorkerIds.add(dId);
+    if (mId) weekWorkerIds.add(mId);
+  }
+
   dienst.assignments = dienst.assignments.map((a) => {
     if (!a?.date || !a?.startTime || !a?.endTime) return a;
     updatedCount += 1;
@@ -2581,6 +2750,15 @@ export async function assignAmbulanceToWeek(
   });
 
   await dienst.save();
+
+  if (weekWorkerIds.size > 0) {
+    void sendPushNotification(
+      [...weekWorkerIds],
+      "Ambulancia asignada",
+      `Se ha asignado una ambulancia a tu turno del Dienst #${dienstNumber}.`,
+      { screen: "agenda", date: weekStartDate },
+    );
+  }
 
   return {
     message: `Ambulancia asignada a Dienst #${dienstNumber} (${weekStartDate}). ${updatedCount} días actualizados.`,
