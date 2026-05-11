@@ -490,6 +490,7 @@ export async function markSummaryReviewed(id: string, companyId?: string | null)
       recipientIds,
       "Cierre de jornada revisado",
       `Tu cierre del ${updated.date} ha sido revisado por el administrador.`,
+      { screen: "workday" },
     );
   }
 

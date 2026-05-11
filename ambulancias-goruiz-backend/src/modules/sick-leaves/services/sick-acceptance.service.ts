@@ -72,7 +72,7 @@ export async function acceptSickLeaveWorkflow(sick: any) {
       [userIdStr],
       "Baja aceptada",
       "Tu solicitud de baja ha sido aceptada.",
-      { type: "sick_leave_accepted", sickLeaveId: String(sick._id) },
+      { type: "sick_leave_accepted", sickLeaveId: String(sick._id), screen: "sickLeaves" },
     );
   }
 

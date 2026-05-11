@@ -179,7 +179,7 @@ export const updateVacationRequest = async (
         [push.userId],
         pushTitles[push.status] ?? "Actualización de vacaciones",
         pushBodies[push.status] ?? "Tu solicitud de vacaciones ha sido actualizada.",
-        { type: "vacation_updated", status: push.status },
+        { type: "vacation_updated", status: push.status, screen: "vacations" },
       );
     }
   } catch (err: any) {

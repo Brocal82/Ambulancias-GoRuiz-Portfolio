@@ -179,7 +179,7 @@ export async function proposeSlots(
     [appointment.workerId.toString()],
     "Nueva propuesta de cita",
     "El administrador te ha propuesto horarios para tu cita.",
-    { type: "appointment_proposed", appointmentId: String(appointment._id) },
+    { type: "appointment_proposed", appointmentId: String(appointment._id), screen: "appointments" },
   );
   return saved;
 }
