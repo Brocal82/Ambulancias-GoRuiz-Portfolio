@@ -1,22 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 
 import {
   buildPublicFileCandidates,
   downloadAndOpenAuthenticatedFile,
   filenameFromUrlOrPath,
 } from "../services/secureFiles";
+import { updateMyProfile, uploadMyFiles, UserFileInput } from "../services/users";
 import { AuthUser } from "../types/auth";
 
 type Props = {
@@ -42,7 +47,7 @@ function truncateMiddle(value: string, maxLength: number): string {
   return `${value.slice(0, keep)}...${value.slice(-keep)}`;
 }
 
-function FieldRow({
+function FieldCell({
   label,
   value,
   emptyFallback = "No informado",
@@ -53,11 +58,37 @@ function FieldRow({
 }) {
   const normalized = (value ?? "").toString().trim();
   return (
-    <View style={styles.fieldRow}>
+    <View style={styles.fieldPairItem}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <Text style={styles.fieldValue}>{normalized.length > 0 ? normalized : emptyFallback}</Text>
+      <Text style={styles.fieldValue} numberOfLines={1}>{normalized.length > 0 ? normalized : emptyFallback}</Text>
     </View>
   );
+}
+
+async function pickImage(source: "camera" | "library"): Promise<UserFileInput | null> {
+  const permission =
+    source === "camera"
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+  if (!permission.granted) {
+    Alert.alert("Permiso requerido", "Necesitas permisos para adjuntar archivos.");
+    return null;
+  }
+
+  const result =
+    source === "camera"
+      ? await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.8, mediaTypes: ["images"] })
+      : await ImagePicker.launchImageLibraryAsync({ quality: 0.8, mediaTypes: ["images"] });
+
+  if (result.canceled || result.assets.length === 0) return null;
+
+  const asset = result.assets[0];
+  return {
+    uri: asset.uri,
+    name: asset.fileName ?? `upload-${Date.now()}.jpg`,
+    mimeType: asset.mimeType ?? "image/jpeg",
+  };
 }
 
 export function WorkerProfileScreen({ user, onRefreshProfile }: Props) {
@@ -65,6 +96,15 @@ export function WorkerProfileScreen({ user, onRefreshProfile }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [actionError, setActionError] = useState<string | undefined>(undefined);
   const [isOpeningDocument, setIsOpeningDocument] = useState(false);
+
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editPhone, setEditPhone] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editEmergencyPhone, setEditEmergencyPhone] = useState("");
+  const [pendingProfileImage, setPendingProfileImage] = useState<UserFileInput | null>(null);
+  const [pendingDocument, setPendingDocument] = useState<UserFileInput | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | undefined>(undefined);
 
   const displayName = useMemo(() => {
     return `${user.name ?? ""} ${user.lastName ?? ""}`.trim() || "Usuario";
@@ -95,15 +135,57 @@ export function WorkerProfileScreen({ user, onRefreshProfile }: Props) {
     }
   };
 
+  const handleOpenEdit = () => {
+    setEditPhone(user.phone ?? "");
+    setEditAddress(user.address ?? "");
+    setEditEmergencyPhone(user.emergencyPhone ?? "");
+    setPendingProfileImage(null);
+    setPendingDocument(null);
+    setSaveError(undefined);
+    setEditModalOpen(true);
+  };
+
+  const handlePickProfileImage = async (source: "camera" | "library") => {
+    const file = await pickImage(source);
+    if (file) setPendingProfileImage(file);
+  };
+
+  const handlePickDocument = async (source: "camera" | "library") => {
+    const file = await pickImage(source);
+    if (file) setPendingDocument(file);
+  };
+
+  const handleSave = async () => {
+    setSaveError(undefined);
+    setIsSaving(true);
+    try {
+      if (pendingProfileImage || pendingDocument) {
+        await uploadMyFiles({
+          ...(pendingProfileImage ? { profileImage: pendingProfileImage } : {}),
+          ...(pendingDocument ? { document: pendingDocument } : {}),
+        });
+      }
+      await updateMyProfile(user._id, {
+        phone: editPhone.trim(),
+        address: editAddress.trim(),
+        emergencyPhone: editEmergencyPhone.trim(),
+      });
+      setEditModalOpen(false);
+      await onRefreshProfile();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "No se pudo guardar el perfil.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleOpenPschein = async () => {
     if (!pscheinDocument || isOpeningDocument) return;
     setActionError(undefined);
     setIsOpeningDocument(true);
     try {
       const filename = filenameFromUrlOrPath(pscheinDocument);
-      if (!filename) {
-        throw new Error("No se pudo identificar el documento del perfil.");
-      }
+      if (!filename) throw new Error("No se pudo identificar el documento del perfil.");
       await downloadAndOpenAuthenticatedFile(filename);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "No se pudo abrir el documento.");
@@ -119,7 +201,6 @@ export function WorkerProfileScreen({ user, onRefreshProfile }: Props) {
     let isMounted = true;
     const runInitialRefresh = async () => {
       try {
-        // Silent bootstrap: refresh once without bloquear UI/spinner persistente.
         await Promise.race([
           onRefreshProfile(),
           new Promise((resolve) => setTimeout(resolve, 8000)),
@@ -130,9 +211,7 @@ export function WorkerProfileScreen({ user, onRefreshProfile }: Props) {
       }
     };
     void runInitialRefresh();
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [onRefreshProfile]);
 
   return (
@@ -140,31 +219,42 @@ export function WorkerProfileScreen({ user, onRefreshProfile }: Props) {
       <View style={styles.header}>
         <View style={styles.headerTopRow}>
           <Text style={styles.title}>Perfil</Text>
-          <Pressable
-            style={({ pressed }) => [styles.iconButtonRound, pressed && styles.iconButtonRoundPressed]}
-            onPress={() => { void onRefresh(); }}
-            disabled={isRefreshing}
-            accessibilityRole="button"
-            accessibilityLabel="Refrescar perfil"
-          >
-            {({ pressed }) => (
-              isRefreshing ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#ffffff"} />
-              )
-            )}
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              style={({ pressed }) => [styles.iconButtonRound, pressed && styles.iconButtonRoundPressed]}
+              onPress={handleOpenEdit}
+              accessibilityRole="button"
+              accessibilityLabel="Editar perfil"
+            >
+              {({ pressed }) => (
+                <Ionicons name="pencil" size={18} color={pressed ? "#f97316" : "#ffffff"} />
+              )}
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.iconButtonRound, pressed && styles.iconButtonRoundPressed]}
+              onPress={() => { void onRefresh(); }}
+              disabled={isRefreshing}
+              accessibilityRole="button"
+              accessibilityLabel="Refrescar perfil"
+            >
+              {({ pressed }) => (
+                isRefreshing ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#ffffff"} />
+                )
+              )}
+            </Pressable>
+          </View>
         </View>
       </View>
+
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => void onRefresh()} />}
       >
-
         <View style={styles.card}>
           <View style={styles.avatarBlock}>
-
             {profileImageUrl ? (
               <Image source={{ uri: profileImageUrl }} style={styles.avatar} />
             ) : (
@@ -173,61 +263,50 @@ export function WorkerProfileScreen({ user, onRefreshProfile }: Props) {
               </View>
             )}
             <Text style={styles.nameText}>{displayName}</Text>
+            <View style={styles.avatarMeta}>
+              <Text style={styles.avatarMetaLeft} numberOfLines={1}>{user.email ?? ""}</Text>
+              <Text style={styles.avatarMetaRight} numberOfLines={1}>{user.employeeNumber ?? ""}</Text>
+            </View>
           </View>
 
-          <FieldRow label="Nombre" value={user.name} />
-          <FieldRow label="Apellidos" value={user.lastName} />
-          <FieldRow label="Email" value={user.email} />
-          <FieldRow label="Telefono" value={user.phone} emptyFallback="Sin telefono" />
-          <FieldRow label="Direccion" value={user.address} emptyFallback="Sin direccion" />
-          <FieldRow
-            label="Telefono emergencia"
-            value={user.emergencyPhone}
-            emptyFallback="Sin telefono de emergencia"
-          />
-          <FieldRow label="Numero empleado" value={user.employeeNumber} emptyFallback="Sin numero" />
-          <FieldRow label="Rol ambulancia" value={formatAmbulanceRole(user.ambulanceRole)} />
-          <FieldRow
-            label="P-Schein caducidad"
-            value={user.pscheinExpiry}
-            emptyFallback="Pendiente de validacion"
-          />
+          <View style={[styles.fieldPair, styles.fieldPairFirst]}>
+            <FieldCell label="Nombre" value={user.name} />
+            <FieldCell label="Apellidos" value={user.lastName} />
+          </View>
+          <View style={styles.fieldPair}>
+            <FieldCell label="Telefono" value={user.phone} emptyFallback="Sin telefono" />
+            <FieldCell label="Tel. emergencia" value={user.emergencyPhone} emptyFallback="Sin tel." />
+          </View>
+          <View style={styles.fieldPair}>
+            <FieldCell label="Rol" value={formatAmbulanceRole(user.ambulanceRole)} />
+            <FieldCell label="Direccion" value={user.address} emptyFallback="Sin direccion" />
+          </View>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Documento de perfil</Text>
-          <View
-            style={[styles.documentStatusPill, pscheinDocument ? styles.documentStatusOk : styles.documentStatusEmpty]}
-          >
-            <Text
-              style={[
-                styles.documentStatusText,
-                pscheinDocument ? styles.documentStatusTextOk : styles.documentStatusTextEmpty,
-              ]}
-            >
-              {pscheinDocument ? "Documento disponible" : "Documento no disponible"}
-            </Text>
-          </View>
-          {pscheinDocument ? (
-            <View style={styles.documentRow}>
-              <Text style={styles.documentName} numberOfLines={1}>
-                {truncateMiddle(pscheinFilename ?? "Documento P-Schein", 36)}
+        <View style={[styles.card, styles.pscheinCard]}>
+          <View style={styles.documentRow}>
+            <View style={styles.pscheinInfo}>
+              <Text style={styles.sectionTitle}>P-Schein</Text>
+              <Text style={styles.pscheinExpiry}>
+                {user.pscheinExpiry ? `Caduca: ${user.pscheinExpiry}` : "Caducidad pendiente"}
               </Text>
+            </View>
+            {pscheinDocument ? (
               <Pressable
-                style={[styles.openButton, isOpeningDocument && styles.openButtonDisabled]}
+                style={[styles.pscheinButton, isOpeningDocument && styles.openButtonDisabled]}
                 onPress={() => void handleOpenPschein()}
                 disabled={isOpeningDocument}
               >
                 {isOpeningDocument ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
+                  <ActivityIndicator size="small" color="#ca8a04" />
                 ) : (
-                  <Text style={styles.openButtonText}>Abrir</Text>
+                  <Ionicons name="eye-outline" size={22} color="#ca8a04" />
                 )}
               </Pressable>
-            </View>
-          ) : (
-            <Text style={styles.emptyText}>No hay documento P-Schein cargado.</Text>
-          )}
+            ) : (
+              <Text style={styles.emptyText}>Sin documento</Text>
+            )}
+          </View>
         </View>
 
         {actionError ? (
@@ -236,6 +315,133 @@ export function WorkerProfileScreen({ user, onRefreshProfile }: Props) {
           </View>
         ) : null}
       </ScrollView>
+
+      <Modal
+        visible={editModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setEditModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Editar perfil</Text>
+              <Pressable onPress={() => setEditModalOpen(false)} accessibilityRole="button">
+                <Ionicons name="close" size={22} color="#334155" />
+              </Pressable>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.modalBody}>
+              <Text style={styles.sectionLabel}>Datos de contacto</Text>
+
+              <Text style={styles.inputLabel}>Telefono</Text>
+              <TextInput
+                style={styles.input}
+                value={editPhone}
+                onChangeText={setEditPhone}
+                placeholder="Sin telefono"
+                placeholderTextColor="#94a3b8"
+                keyboardType="phone-pad"
+                autoCorrect={false}
+              />
+
+              <Text style={styles.inputLabel}>Direccion</Text>
+              <TextInput
+                style={styles.input}
+                value={editAddress}
+                onChangeText={setEditAddress}
+                placeholder="Sin direccion"
+                placeholderTextColor="#94a3b8"
+                autoCorrect={false}
+              />
+
+              <Text style={styles.inputLabel}>Telefono de emergencia</Text>
+              <TextInput
+                style={styles.input}
+                value={editEmergencyPhone}
+                onChangeText={setEditEmergencyPhone}
+                placeholder="Sin telefono de emergencia"
+                placeholderTextColor="#94a3b8"
+                keyboardType="phone-pad"
+                autoCorrect={false}
+              />
+
+              <Text style={styles.sectionLabel}>Foto de perfil</Text>
+              <View style={styles.pickRow}>
+                <Pressable style={styles.pickButton} onPress={() => { void handlePickProfileImage("camera"); }}>
+                  <Ionicons name="camera-outline" size={18} color="#0f172a" />
+                  <Text style={styles.pickButtonText}>Camara</Text>
+                </Pressable>
+                <Pressable style={styles.pickButton} onPress={() => { void handlePickProfileImage("library"); }}>
+                  <Ionicons name="image-outline" size={18} color="#0f172a" />
+                  <Text style={styles.pickButtonText}>Galeria</Text>
+                </Pressable>
+              </View>
+              {pendingProfileImage ? (
+                <View style={styles.previewRow}>
+                  <Image source={{ uri: pendingProfileImage.uri }} style={styles.previewThumb} />
+                  <View style={styles.previewInfo}>
+                    <Text style={styles.previewName} numberOfLines={1}>{pendingProfileImage.name}</Text>
+                    <Pressable onPress={() => setPendingProfileImage(null)}>
+                      <Text style={styles.previewRemove}>Quitar</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : null}
+
+              <Text style={styles.sectionLabel}>Documento P-Schein</Text>
+              <View style={styles.pickRow}>
+                <Pressable style={styles.pickButton} onPress={() => { void handlePickDocument("camera"); }}>
+                  <Ionicons name="camera-outline" size={18} color="#0f172a" />
+                  <Text style={styles.pickButtonText}>Camara</Text>
+                </Pressable>
+                <Pressable style={styles.pickButton} onPress={() => { void handlePickDocument("library"); }}>
+                  <Ionicons name="image-outline" size={18} color="#0f172a" />
+                  <Text style={styles.pickButtonText}>Galeria</Text>
+                </Pressable>
+              </View>
+              {pendingDocument ? (
+                <View style={styles.previewRow}>
+                  <Image source={{ uri: pendingDocument.uri }} style={styles.previewThumb} />
+                  <View style={styles.previewInfo}>
+                    <Text style={styles.previewName} numberOfLines={1}>{pendingDocument.name}</Text>
+                    <Pressable onPress={() => setPendingDocument(null)}>
+                      <Text style={styles.previewRemove}>Quitar</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : null}
+
+              {saveError ? (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorText}>{saveError}</Text>
+                </View>
+              ) : null}
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <Pressable
+                style={styles.cancelButton}
+                onPress={() => setEditModalOpen(false)}
+                disabled={isSaving}
+              >
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+                onPress={() => { void handleSave(); }}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Guardar</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -261,6 +467,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  headerActions: {
+    flexDirection: "row",
+    gap: 8,
   },
   title: {
     fontSize: 22,
@@ -295,37 +505,81 @@ const styles = StyleSheet.create({
   avatarBlock: {
     alignItems: "center",
     gap: 8,
+    backgroundColor: "#0f172a",
+    marginHorizontal: -14,
+    marginTop: -14,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 14,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
     marginBottom: 4,
   },
   avatar: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    backgroundColor: "#e2e8f0",
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#1e293b",
   },
   avatarPlaceholder: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    backgroundColor: "#e2e8f0",
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#1e293b",
     alignItems: "center",
     justifyContent: "center",
   },
   avatarPlaceholderText: {
-    color: "#64748b",
+    color: "#94a3b8",
     fontSize: 12,
     fontWeight: "600",
   },
   nameText: {
-    color: "#0f172a",
+    color: "#ffffff",
     fontWeight: "700",
     fontSize: 16,
   },
-  fieldRow: {
+  avatarMeta: {
+    flexDirection: "row",
+    alignSelf: "stretch",
+    justifyContent: "space-between",
+    gap: 8,
+    marginTop: 2,
+  },
+  avatarMetaLeft: {
+    fontSize: 12,
+    color: "#cbd5e1",
+    flex: 1,
+    minWidth: 0,
+  },
+  avatarMetaRight: {
+    fontSize: 12,
+    color: "#f97316",
+    fontWeight: "700",
+    textAlign: "right",
+    flex: 1,
+    minWidth: 0,
+  },
+  fieldPair: {
+    flexDirection: "row",
+    gap: 8,
     borderTopWidth: 1,
     borderTopColor: "#f1f5f9",
     paddingTop: 8,
+  },
+  fieldPairFirst: {
+    borderTopWidth: 0,
+    paddingTop: 0,
+  },
+  fieldPairItem: {
+    flex: 1,
+    minWidth: 0,
     gap: 2,
+  },
+  fieldSolo: {
+    borderTopWidth: 1,
+    borderTopColor: "#f1f5f9",
+    paddingTop: 8,
   },
   fieldLabel: {
     color: "#64748b",
@@ -341,58 +595,35 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 15,
   },
-  documentStatusPill: {
-    alignSelf: "flex-start",
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  documentStatusOk: {
-    borderColor: "#86efac",
-    backgroundColor: "#f0fdf4",
-  },
-  documentStatusEmpty: {
-    borderColor: "#e2e8f0",
-    backgroundColor: "#f8fafc",
-  },
-  documentStatusText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  documentStatusTextOk: {
-    color: "#166534",
-  },
-  documentStatusTextEmpty: {
-    color: "#475569",
-  },
   documentRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
   },
-  documentName: {
-    flex: 1,
-    color: "#334155",
-    fontSize: 13,
+  pscheinCard: {
+    borderColor: "#fde047",
   },
-  openButton: {
-    borderRadius: 8,
-    backgroundColor: "#0f766e",
-    minWidth: 72,
+  pscheinInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  pscheinExpiry: {
+    fontSize: 12,
+    color: "#92400e",
+  },
+  pscheinButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#fde047",
+    backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
   },
   openButtonDisabled: {
-    opacity: 0.7,
-  },
-  openButtonText: {
-    color: "#ffffff",
-    fontWeight: "700",
-    fontSize: 12,
+    opacity: 0.5,
   },
   emptyText: {
     color: "#64748b",
@@ -406,5 +637,156 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: "#b91c1c",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalCard: {
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "90%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+  modalNote: {
+    fontSize: 12,
+    color: "#64748b",
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  modalBody: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 8,
+    gap: 4,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#0f172a",
+    marginTop: 16,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f1f5f9",
+    paddingBottom: 4,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#475569",
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: "#0f172a",
+    backgroundColor: "#f8fafc",
+  },
+  pickRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  pickButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    borderRadius: 10,
+    paddingVertical: 10,
+    backgroundColor: "#f8fafc",
+  },
+  pickButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#0f172a",
+  },
+  previewRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 10,
+    padding: 8,
+    backgroundColor: "#f8fafc",
+  },
+  previewThumb: {
+    width: 52,
+    height: 52,
+    borderRadius: 8,
+    backgroundColor: "#e2e8f0",
+  },
+  previewInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  previewName: {
+    fontSize: 12,
+    color: "#334155",
+  },
+  previewRemove: {
+    fontSize: 12,
+    color: "#dc2626",
+    fontWeight: "600",
+  },
+  modalFooter: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+  },
+  cancelButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    color: "#475569",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: "#f97316",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  saveButtonText: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 14,
   },
 });
