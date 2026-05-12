@@ -602,22 +602,20 @@ export function WorkerSickLeavesScreen() {
                 const hasNote = Boolean(item.note?.trim());
                 const loadingThis = uploadingId === item._id;
                 const canDeleteRejected = item.status === "rejected";
+                const docCount = (item.documents?.length ?? 0) > 0
+                  ? (item.documents?.length ?? 0)
+                  : item.documentUrl ? 1 : 0;
 
                 return (
                   <View
                     key={item._id}
                     style={[styles.requestItem, { borderColor: tone.border }]}
                   >
-                    <View style={styles.requestCompactLeft}>
-                      <View style={styles.requestDateBlock}>
-                        <Text style={styles.requestRangeCompact} numberOfLines={1}>
-                          {formatDateLabel(start)} - {formatDateLabel(end)}
-                        </Text>
-                      </View>
-                      <View style={styles.daysBadge}>
-                        <Text style={styles.daysBadgeText}>{days}d</Text>
-                      </View>
-                    </View>
+                    <Text style={styles.requestRangeCompact} numberOfLines={1}>
+                      {formatDateLabel(start)} - {formatDateLabel(end)}
+                    </Text>
+                    <Text style={styles.daysBadgeText}>{days}d</Text>
+                    <Text style={styles.docCountText}>{docCount > 0 ? `${docCount} Doc` : ""}</Text>
                     <View style={styles.requestCompactRight}>
                       {hasNote ? (
                         <Pressable
@@ -935,23 +933,9 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: "#f8fafc",
   },
-  requestCompactLeft: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    minWidth: 0,
-  },
-  requestDateBlock: { flex: 1, minWidth: 0, gap: 2 },
-  requestRangeCompact: { color: "#0f172a", fontWeight: "700", fontSize: 11 },
-  verificationText: { color: "#64748b", fontSize: 10 },
-  daysBadge: {
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    backgroundColor: "#e2e8f0",
-  },
-  daysBadgeText: { color: "#334155", fontSize: 11, fontWeight: "700" },
+  requestRangeCompact: { flex: 1, color: "#0f172a", fontWeight: "700", fontSize: 11 },
+  daysBadgeText: { width: 32, textAlign: "center", color: "#dc2626", fontSize: 11, fontWeight: "700" },
+  docCountText: { width: 40, textAlign: "center", color: "#0ea5e9", fontSize: 10, fontWeight: "600" },
   requestCompactRight: {
     flexDirection: "row",
     alignItems: "center",
