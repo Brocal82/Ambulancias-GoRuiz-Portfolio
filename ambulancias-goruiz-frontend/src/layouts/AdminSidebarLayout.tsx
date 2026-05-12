@@ -71,7 +71,7 @@ function NavItem({ to, label, icon, badge = 0, collapsed, end = false }: NavItem
 function SectionLabel({ label, collapsed }: { label: string; collapsed: boolean }) {
   if (collapsed) return <hr className="border-slate-700 my-1 mx-1" />;
   return (
-    <p className="px-2.5 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-slate-500 select-none">
+    <p className="px-2.5 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-orange-500 select-none">
       {label}
     </p>
   );
