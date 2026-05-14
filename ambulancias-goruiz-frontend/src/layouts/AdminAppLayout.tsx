@@ -35,7 +35,7 @@ export default function AdminAppLayout() {
   const goHome = () => navigate(homePathForRole(role ?? null));
 
   return (
-    <div className="h-screen flex flex-col bg-slate-100 text-slate-900 overflow-hidden">
+    <div className="fixed inset-0 flex flex-col bg-slate-100 text-slate-900">
       {/* Topbar */}
       <header
         className="shrink-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800"
