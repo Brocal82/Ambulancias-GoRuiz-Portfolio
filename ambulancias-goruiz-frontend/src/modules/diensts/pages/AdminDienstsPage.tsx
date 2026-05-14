@@ -16,6 +16,8 @@ import {
 import { dndMoveCrossDienstSameWeek, updateDienstPartial } from "../domain/api";
 import { buildUpdateAssignment } from "../components/assignmentModal/buildUpdateAssignment";
 
+import DangerDeleteButton from "../../../components/common/actions/DangerDeleteButton";
+import IncidenciasIconButton from "../../../components/common/actions/IncidenciasIconButton";
 import AssignmentModal from "../components/assignmentModal/AssignmentModal";
 import TeamAssignModal from "../components/TeamAssignModal";
 import UserAssignModal from "../components/UserAssignModal";
@@ -98,6 +100,7 @@ function deriveGeneratedWeekTeamSummaryData(
     date: string;
     role: "driver" | "medic";
     reason: "vacation" | "sick";
+    workerName?: string;
   }>,
 ): WeeklyAssignmentSummaryData | null {
   const assignments = dienst.assignments ?? [];
@@ -114,6 +117,15 @@ function deriveGeneratedWeekTeamSummaryData(
         medicName = formatPersonLabel(a.medic);
       }
       if (driverName !== "—" && medicName !== "—") break;
+    }
+
+    if (driverName === "—") {
+      const entry = skippedAbsencesFromApi.find((a) => a.role === "driver" && a.workerName);
+      if (entry?.workerName) driverName = entry.workerName;
+    }
+    if (medicName === "—") {
+      const entry = skippedAbsencesFromApi.find((a) => a.role === "medic" && a.workerName);
+      if (entry?.workerName) medicName = entry.workerName;
     }
 
     const syntheticApi = {
@@ -793,6 +805,11 @@ const AdminPage = () => {
     WeeklyAssignmentSummaryData[]
   >([]);
 
+  /** Last known incidents per week (key = weekStartISO), persists after modal is dismissed. */
+  const [savedWeekIncidencias, setSavedWeekIncidencias] = useState<
+    Record<string, WeeklyAssignmentSummaryData[]>
+  >({});
+
   // Estado para colapsar/desplegar semanas (key = weekStartISO)
   const [collapsedWeeks, setCollapsedWeeks] = useState<Record<string, boolean>>(
     {},
@@ -954,6 +971,10 @@ const AdminPage = () => {
                           );
                           if (summaries.length > 0) {
                             setWeeklySummaryQueue(summaries);
+                            setSavedWeekIncidencias((prev) => ({
+                              ...prev,
+                              [weekStartISO]: summaries,
+                            }));
                           }
                         } catch (err) {
                           console.error("Error al crear plantillas:", err);
@@ -967,10 +988,20 @@ const AdminPage = () => {
                     </button>
                   )}
 
+                  {/* Botón de incidencias: visible cuando hay incidencias guardadas para esta semana */}
+                  {hasWeekDiensts && (savedWeekIncidencias[weekStartISO]?.length ?? 0) > 0 && (
+                    <IncidenciasIconButton
+                      count={savedWeekIncidencias[weekStartISO].length}
+                      onClick={() =>
+                        setWeeklySummaryQueue(savedWeekIncidencias[weekStartISO])
+                      }
+                    />
+                  )}
+
                   {/* Mostrar botón Borrar solo si EXISTEN Diensts esa semana */}
                   {hasWeekDiensts && (
-                    <button
-                      className="inline-flex items-center gap-2 rounded-lg bg-rose-500/90 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-colors"
+                    <DangerDeleteButton
+                      title={t("pages.diensts.adminPage.actions.delete", "Borrar semana")}
                       onClick={async () => {
                         const confirmDelete = confirm(
                           t("pages.diensts.adminPage.confirmDelete", {
@@ -984,6 +1015,11 @@ const AdminPage = () => {
                           toastT.success([
                             "pages.diensts.adminPage.alerts.deleteOk",
                           ]);
+                          setSavedWeekIncidencias((prev) => {
+                            const next = { ...prev };
+                            delete next[weekStartISO];
+                            return next;
+                          });
                           fetchDiensts();
                         } catch (err) {
                           console.error("Error al eliminar diensts:", err);
@@ -992,9 +1028,7 @@ const AdminPage = () => {
                           ]);
                         }
                       }}
-                    >
-                      {t("pages.diensts.adminPage.actions.delete")}
-                    </button>
+                    />
                   )}
                 </div>
               </div>

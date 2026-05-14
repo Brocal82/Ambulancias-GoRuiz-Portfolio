@@ -9,7 +9,7 @@ const DangerDeleteButton = ({ className = "", ...props }: DangerDeleteButtonProp
         <button
             type="button"
             title="Eliminar usuario"
-            className={`inline-flex items-center justify-center w-14 h-14 rounded-full text-2xl border border-transparent hover:bg-rose-200 hover:border-rose-800 focus:outline-none focus:ring-4 focus:ring-rose-300 active:scale-95 disabled:opacity-60 transition ${className}`}
+            className={`inline-flex items-center justify-center w-9 h-9 rounded-full text-lg border border-transparent hover:border-rose-600 hover:-translate-y-0.5 hover:scale-110 active:scale-95 active:translate-y-0 focus:outline-none focus:ring-4 focus:ring-rose-300 disabled:opacity-60 transition-all duration-200 ease-out ${className}`}
             {...props}
         >
             ☠️

@@ -186,6 +186,7 @@ export type GenerateWeekDienstSummary = {
     date: string;
     role: "driver" | "medic";
     reason: "vacation" | "sick";
+    workerName?: string;
   }>;
 };
 
@@ -257,9 +258,9 @@ export async function generateDienstTemplatesForWeek(
         )
           .populate(
             "driver",
-            "companyId ambulanceRole pscheinExpiry pscheinConfirmedAt",
+            "companyId ambulanceRole pscheinExpiry pscheinConfirmedAt name lastName",
           )
-          .populate("medic", "companyId")
+          .populate("medic", "companyId name lastName")
           .lean();
 
   teams = teams.filter((t: any) => {
@@ -446,7 +447,18 @@ export async function generateDienstTemplatesForWeek(
         date: string;
         role: "driver" | "medic";
         reason: "vacation" | "sick";
+        workerName?: string;
       }> = [];
+
+      const workerLabel = (u: any): string | undefined => {
+        if (!u) return undefined;
+        const ln = typeof u.lastName === "string" ? u.lastName : "";
+        const n = typeof u.name === "string" ? u.name : "";
+        const label = `${ln}${ln ? ", " : ""}${n}`.trim();
+        return label || undefined;
+      };
+      const driverWorkerName = workerLabel(assignedTeam?.driver);
+      const medicWorkerName = workerLabel(assignedTeam?.medic);
 
       for (let j = 0; j < 7; j++) {
         const day = new Date(startDate);
@@ -480,32 +492,16 @@ export async function generateDienstTemplatesForWeek(
         const rf = reasonByDate[dateISO];
         if (rf) {
           if (rf.driver.vacation) {
-            skippedAbsences.push({
-              date: dateISO,
-              role: "driver",
-              reason: "vacation",
-            });
+            skippedAbsences.push({ date: dateISO, role: "driver", reason: "vacation", workerName: driverWorkerName });
           }
           if (rf.driver.sick) {
-            skippedAbsences.push({
-              date: dateISO,
-              role: "driver",
-              reason: "sick",
-            });
+            skippedAbsences.push({ date: dateISO, role: "driver", reason: "sick", workerName: driverWorkerName });
           }
           if (rf.medic.vacation) {
-            skippedAbsences.push({
-              date: dateISO,
-              role: "medic",
-              reason: "vacation",
-            });
+            skippedAbsences.push({ date: dateISO, role: "medic", reason: "vacation", workerName: medicWorkerName });
           }
           if (rf.medic.sick) {
-            skippedAbsences.push({
-              date: dateISO,
-              role: "medic",
-              reason: "sick",
-            });
+            skippedAbsences.push({ date: dateISO, role: "medic", reason: "sick", workerName: medicWorkerName });
           }
         }
 

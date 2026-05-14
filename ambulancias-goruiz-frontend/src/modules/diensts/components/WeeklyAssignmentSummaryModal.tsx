@@ -70,6 +70,10 @@ export type AssignmentIssueRow = {
   /** null = API does not distinguish vacation vs sick for this row */
   icon: string | null;
   label: string;
+  dienstNumber: number;
+  workerName: string;
+  dateDisplay: string;
+  reasonText: string;
 };
 
 function asDateArray(v: string[] | undefined): string[] {
@@ -125,9 +129,12 @@ function pushGroupedRows(params: {
   icon: string | null;
   reason: AssignmentIssueReason;
   keyPrefix: string;
+  dienstNumber: number;
+  workerName: string;
+  reasonText: string;
   labelForRun: (run: string[]) => string;
 }): void {
-  const { rows, dates, icon, reason, keyPrefix, labelForRun } = params;
+  const { rows, dates, icon, reason, keyPrefix, dienstNumber, workerName, reasonText, labelForRun } = params;
   const runs = consecutiveRuns(uniqueSorted(dates));
   runs.forEach((run, ri) => {
     rows.push({
@@ -136,6 +143,10 @@ function pushGroupedRows(params: {
       icon,
       reason,
       label: labelForRun(run),
+      dienstNumber,
+      workerName,
+      dateDisplay: rangeLabel(run),
+      reasonText,
     });
   });
 }
@@ -172,6 +183,9 @@ function buildUnifiedIssues(
           icon,
           reason: "absence",
           keyPrefix: `abs-${b.role}-${b.reason}`,
+          dienstNumber: data.dienstNumber,
+          workerName: name,
+          reasonText: b.reason === "vacation" ? "Vacaciones" : "Baja médica",
           labelForRun: (run) =>
             b.reason === "vacation"
               ? t(
@@ -210,6 +224,9 @@ function buildUnifiedIssues(
           icon: null,
           reason: "absence",
           keyPrefix: `vac-${role}`,
+          dienstNumber: data.dienstNumber,
+          workerName: name,
+          reasonText: "Ausencia",
           labelForRun: (run) =>
             t(
               "pages.diensts.adminPage.weeklySummaryCompact.issueTeamAbsenceRange",
@@ -235,6 +252,9 @@ function buildUnifiedIssues(
       icon: ICON.minimumRest,
       reason: "minimum_rest",
       keyPrefix: "mr-team",
+      dienstNumber: data.dienstNumber,
+      workerName: `${data.driverName} / ${data.medicName}`,
+      reasonText: "Descanso mínimo",
       labelForRun: (run) =>
         t(
           "pages.diensts.adminPage.weeklySummaryCompact.issueMinRestTeamRange",
@@ -264,6 +284,9 @@ function buildUnifiedIssues(
         icon: ICON.minimumRest,
         reason: "minimum_rest",
         keyPrefix: `mrr-${role}`,
+        dienstNumber: data.dienstNumber,
+        workerName: name,
+        reasonText: "Descanso mínimo",
         labelForRun: (run) =>
           t(
             "pages.diensts.adminPage.weeklySummaryCompact.issueMinRestTeamRoleRange",
@@ -279,6 +302,9 @@ function buildUnifiedIssues(
       icon: ICON.weeklyConflict,
       reason: "weekly_conflict",
       keyPrefix: "wc",
+      dienstNumber: data.dienstNumber,
+      workerName: `${data.driverName} / ${data.medicName}`,
+      reasonText: "Conflicto semanal",
       labelForRun: (run) =>
         t(
           "pages.diensts.adminPage.weeklySummaryCompact.issueWeeklyConflictRange",
@@ -302,6 +328,14 @@ function buildUnifiedIssues(
       icon: vacIcon,
       reason: "absence",
       keyPrefix: "vac-user",
+      dienstNumber: data.dienstNumber,
+      workerName: worker,
+      reasonText:
+        mode === "vacation"
+          ? "Vacaciones"
+          : mode === "sick"
+            ? "Baja médica"
+            : "Ausencia",
       labelForRun: (run) => {
         const range = rangeLabel(run);
         if (mode === "vacation") {
@@ -332,6 +366,9 @@ function buildUnifiedIssues(
       icon: ICON.minimumRest,
       reason: "minimum_rest",
       keyPrefix: "mr-user",
+      dienstNumber: data.dienstNumber,
+      workerName: worker,
+      reasonText: "Descanso mínimo",
       labelForRun: (run) =>
         t(
           "pages.diensts.adminPage.weeklySummaryCompact.issueMinRestUserRange",
@@ -373,76 +410,62 @@ export default function WeeklyAssignmentSummaryModal({ data, onClose }: Props) {
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div
-        className="relative z-10 flex max-h-[min(72vh,520px)] w-full max-w-sm flex-col rounded-xl bg-white shadow-xl ring-1 ring-slate-200"
+        className="relative z-10 flex max-h-[min(80vh,620px)] w-full max-w-2xl flex-col rounded-xl bg-white shadow-xl ring-1 ring-slate-200"
         role="dialog"
         aria-modal="true"
         aria-labelledby="weekly-assignment-summary-title"
       >
-        <div className="rounded-t-xl border-b border-slate-200/80 bg-slate-50/90 px-4 py-3">
-          <div className="flex items-start justify-between gap-3">
+        {/* Header */}
+        <div className="rounded-t-xl border-b border-slate-200/80 bg-slate-50/90 px-5 py-3">
+          <div className="flex items-center justify-between gap-3">
             <h3
               id="weekly-assignment-summary-title"
               className="text-base font-semibold tracking-tight text-slate-900"
             >
-              {t(
-                "pages.diensts.adminPage.weeklySummaryCompact.headerDienstLabel",
-                "Dienst #{{num}}",
-                { num: data.dienstNumber },
-              )}
+              {t("pages.diensts.adminPage.weeklySummaryCompact.title", "Incidencias")}
             </h3>
             <p className="shrink-0 text-right text-xs text-slate-600">{weekRangeLabel}</p>
           </div>
-          {data.kind === "team" ? (
-            <p className="mt-3 text-sm text-slate-800">
-              <span className="text-slate-500">
-                {t(
-                  "pages.diensts.adminPage.weeklySummaryCompact.teamLabel",
-                  "Team:",
-                )}{" "}
-              </span>
-              <span className="font-medium">{data.driverName}</span>
-              <span className="text-slate-400"> · </span>
-              <span className="font-medium">{data.medicName}</span>
-            </p>
-          ) : (
-            <p className="mt-3 text-sm text-slate-800">
-              <span className="text-slate-500">
-                {t(
-                  "pages.diensts.adminPage.weeklySummaryCompact.userLabel",
-                  "Usuario:",
-                )}{" "}
-              </span>
-              <span className="font-medium">{data.workerName ?? "—"}</span>
-            </p>
-          )}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+        {/* Body */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           {hasIssues && (
             <>
-              <p className="mb-2 text-sm font-medium text-red-600">
-                {t(
-                  "pages.diensts.adminPage.weeklySummaryCompact.incidentCount",
-                  "{{count}} incidencias",
-                  { count: issues.length },
-                )}
-              </p>
-              <ul className="space-y-1.5">
-                {issues.map((row) => (
-                  <li
-                    key={row.key}
-                    className="flex items-start gap-2 rounded-lg border border-slate-100 bg-slate-50/90 px-2 py-1.5 text-xs text-slate-800"
-                  >
-                    <span
-                      className="inline-flex w-5 shrink-0 justify-center pt-px leading-none"
-                      aria-hidden
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-500">
+                    <th className="pb-2 pr-4 text-left font-medium whitespace-nowrap">Dienst</th>
+                    <th className="pb-2 pr-4 text-left font-medium">Trabajador</th>
+                    <th className="pb-2 pr-4 text-left font-medium whitespace-nowrap">Fecha</th>
+                    <th className="pb-2 text-left font-medium">Razón</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {issues.map((row) => (
+                    <tr
+                      key={row.key}
+                      className="border-b border-slate-100 last:border-0"
                     >
-                      {row.icon ?? "\u00A0"}
-                    </span>
-                    <span className="min-w-0 leading-snug">{row.label}</span>
-                  </li>
-                ))}
-              </ul>
+                      <td className="py-2 pr-4 font-semibold text-slate-700 whitespace-nowrap">
+                        #{row.dienstNumber}
+                      </td>
+                      <td className="py-2 pr-4 font-medium text-slate-800">
+                        {row.workerName}
+                      </td>
+                      <td className="py-2 pr-4 text-slate-700 whitespace-nowrap">
+                        {row.dateDisplay}
+                      </td>
+                      <td className="py-2 text-slate-500">
+                        <span className="inline-flex items-center gap-1">
+                          {row.icon && <span aria-hidden>{row.icon}</span>}
+                          {row.reasonText}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </>
           )}
 
@@ -475,7 +498,8 @@ export default function WeeklyAssignmentSummaryModal({ data, onClose }: Props) {
           )}
         </div>
 
-        <div className="border-t border-slate-100 px-4 py-3">
+        {/* Footer */}
+        <div className="border-t border-slate-100 px-5 py-3">
           <button
             type="button"
             className="w-full rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-300"
