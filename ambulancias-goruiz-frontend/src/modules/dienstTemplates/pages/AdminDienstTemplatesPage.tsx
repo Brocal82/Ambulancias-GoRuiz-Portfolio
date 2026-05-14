@@ -135,7 +135,7 @@ const AdminDienstTemplatesPage: React.FC = () => {
 
       {!loading && !error && templates.length > 0 && (
         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
+          <table className="w-full table-fixed divide-y divide-gray-200 text-sm">
             <thead className={APP_NAV_MATCH_TABLE_THEAD}>
               <tr className="text-slate-200">
                 <th className="px-4 py-2 text-left font-medium">
@@ -168,7 +168,7 @@ const AdminDienstTemplatesPage: React.FC = () => {
                   >
                     {/* Nº Dienst + icono de estado */}
                     <td className="px-4 py-2 align-middle">
-                      <div className="flex min-h-[56px] items-center gap-3">
+                      <div className="flex min-h-[44px] items-center gap-3">
                         {/* Icono de estado */}
                         {isActiveTpl ? (
                           <span
@@ -205,7 +205,7 @@ const AdminDienstTemplatesPage: React.FC = () => {
                         return (
                           <td key={dayIndex} className="px-2 py-2 align-middle">
                             <div
-                              className={`flex min-h-[56px] w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-[14px] ${inactiveCardClass}`}
+                              className={`flex min-h-[44px] w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-[14px] ${inactiveCardClass}`}
                             >
                               🌴
                             </div>
@@ -216,7 +216,7 @@ const AdminDienstTemplatesPage: React.FC = () => {
                       return (
                         <td key={dayIndex} className="px-2 py-2 align-middle">
                           <div
-                            className={`flex min-h-[56px] w-full items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-[12px] font-semibold text-blue-900 ${inactiveCardClass}`}
+                            className={`flex min-h-[44px] w-full items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-[12px] font-semibold text-blue-900 ${inactiveCardClass}`}
                           >
                             {startTime} – {endTime}
                           </div>
@@ -226,7 +226,7 @@ const AdminDienstTemplatesPage: React.FC = () => {
 
                     {/* Acciones */}
                     <td className="px-4 py-2 align-middle">
-                      <div className="flex min-h-[56px] items-center justify-end gap-2">
+                      <div className="flex min-h-[44px] items-center justify-end gap-2">
                         <EditIconButton
                           title="Editar plantilla"
                           onClick={() => {
