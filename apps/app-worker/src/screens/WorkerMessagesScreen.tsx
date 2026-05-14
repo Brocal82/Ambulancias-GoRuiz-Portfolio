@@ -268,7 +268,7 @@ export function WorkerMessagesScreen({ userId, wsTrigger }: Props) {
             accessibilityLabel="Refrescar"
           >
             {({ pressed }) => (
-              <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#ffffff"} />
+              <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#334155"} />
             )}
           </Pressable>
         </View>
@@ -422,9 +422,9 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 8,
     gap: 6,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#ffffff",
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
+    borderBottomColor: "#e2e8f0",
   },
   headerTopRow: {
     flexDirection: "row",
@@ -439,11 +439,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#ffffff",
+    color: "#0f172a",
   },
   subtitle: {
-    fontSize: 14,
-    color: "#94a3b8",
+    fontSize: 13,
+    flex: 1,
+    color: "#64748b",
   },
   unreadPill: {
     borderWidth: 1,
@@ -460,8 +461,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#1e293b",
+    borderColor: "#cbd5e1",
+    backgroundColor: "#f1f5f9",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -597,14 +598,14 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "#cbd5e1",
   },
   sectionTabActive: {
     borderColor: "#f97316",
     backgroundColor: "#f97316",
   },
   sectionTabText: {
-    color: "#94a3b8",
+    color: "#64748b",
     fontSize: 13,
     fontWeight: "600",
   },

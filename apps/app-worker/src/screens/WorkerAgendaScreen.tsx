@@ -405,7 +405,7 @@ export function WorkerAgendaScreen({ user, scheduleSource, hasVacationModule, ha
           accessibilityLabel="Refrescar agenda"
         >
           {({ pressed }) => (
-            <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#ffffff"} />
+            <Ionicons name="refresh" size={20} color={pressed ? "#f97316" : "#334155"} />
           )}
         </Pressable>
       </View>
@@ -543,26 +543,26 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingTop: 10,
-    paddingBottom: 8,
+    paddingBottom: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#0f172a",
+    backgroundColor: "#ffffff",
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
+    borderBottomColor: "#e2e8f0",
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#ffffff",
+    color: "#0f172a",
   },
   iconButtonRound: {
     width: 40,
     height: 40,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#1e293b",
+    borderColor: "#cbd5e1",
+    backgroundColor: "#f1f5f9",
     alignItems: "center",
     justifyContent: "center",
   },
