@@ -150,6 +150,7 @@ export type GenerateWeekDienstSummary = {
     date: string;
     role: "driver" | "medic";
     reason: "vacation" | "sick";
+    workerName?: string;
   }>;
 };
 
