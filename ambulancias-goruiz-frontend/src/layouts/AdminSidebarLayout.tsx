@@ -110,7 +110,7 @@ export default function AdminSidebarLayout() {
       {/* ── Sidebar ─────────────────────────────────────────── */}
       <aside
         className={[
-          "flex flex-col bg-slate-900 transition-all duration-200 shrink-0",
+          "h-full flex flex-col bg-slate-900 transition-all duration-200 shrink-0 overflow-hidden",
           collapsed ? "w-14" : "w-56",
         ].join(" ")}
       >
