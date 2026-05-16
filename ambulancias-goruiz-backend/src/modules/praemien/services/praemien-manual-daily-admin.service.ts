@@ -3,6 +3,7 @@ import User from "../../users/models/user.model";
 import WorkdaySummary from "../../workday-summary/models/workday-summary.model";
 import PraemienManualDailyEntry from "../models/praemien-manual-daily-entry.model";
 import type { PraemienManualDailyStatus } from "../models/praemien-manual-daily-entry.model";
+import { sendPushNotification } from "../../notifications";
 import {
   assertManualPraemienDailyApisAllowed,
 } from "./assert-manual-praemien-phase.service";
@@ -158,6 +159,12 @@ async function applyManualDailyPartnerApproveSync(params: {
       date: params.dateStr,
       adminUserId: params.adminUserId,
     });
+    void sendPushNotification(
+      [partnerId],
+      "Prämie manual aprobada",
+      `Tu Prämie manual del ${params.dateStr} ha sido aprobada.`,
+      { screen: "praemien" },
+    );
     return;
   }
 
@@ -206,6 +213,12 @@ async function applyManualDailyPartnerApproveSync(params: {
     date: params.dateStr,
     adminUserId: params.adminUserId,
   });
+  void sendPushNotification(
+    [partnerId],
+    "Prämie manual aprobada",
+    `Tu Prämie manual del ${params.dateStr} ha sido aprobada.`,
+    { screen: "praemien" },
+  );
 }
 
 /**
@@ -317,6 +330,13 @@ export async function adminApproveManualDailyEntry(params: {
     adminUserId: params.adminUserId,
   });
 
+  void sendPushNotification(
+    [params.targetUserId],
+    "Prämie manual aprobada",
+    `Tu Prämie manual del ${params.date} ha sido aprobada.`,
+    { screen: "praemien" },
+  );
+
   const shouldCascade = params.cascadeTeammate !== false;
   if (shouldCascade) {
     await syncTeammateManualDailyToAdminFinal({
@@ -391,6 +411,12 @@ export async function adminRejectManualDailyEntry(params: {
     date: params.date,
     adminUserId: params.adminUserId,
   });
+  void sendPushNotification(
+    [params.targetUserId],
+    "Prämie manual rechazada",
+    `Tu Prämie manual del ${params.date} ha sido rechazada. Revisa el motivo en la app.`,
+    { screen: "praemien" },
+  );
   return { ok: true, entry: await enrichManualDailyDto(dto) };
 }
 

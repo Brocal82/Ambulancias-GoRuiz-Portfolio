@@ -164,7 +164,7 @@ const AdminDashboard = () => {
 
         {hasModule(MODULE_KEYS.PRAEMIEN) && (
           <Link
-            to="/admin/users?praemienPending=1"
+            to="/admin/praemien"
             className={`${centeredCardRelative} ${praemienManualHasPending ? "ring-2 ring-orange-300" : ""}`}
             aria-label={
               praemienManualHasPending

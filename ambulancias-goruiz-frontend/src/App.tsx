@@ -22,6 +22,7 @@ import { ProfilePage } from "./modules/users";
 import WorkerDashboard from "./pages/WorkerDashboard";
 import WorkerDienstsPage from "./modules/diensts/pages/WorkerDienstsPage";
 import WorkerPraemienPage from "./modules/praemien/pages/WorkerPraemienPage";
+import AdminPraemienPage from "./modules/praemien/pages/AdminPraemienPage";
 import WorkerVacationsPage from "./modules/vacation/pages/WorkerVacationsPage";
 import WorkerMessagesPage from "./modules/messages/pages/WorkerMessagesPage";
 import WorkerSickLeavesPage from "./modules/sick/pages/WorkerSickLeavesPage";
@@ -101,6 +102,7 @@ export default function App() {
               <Route element={<RequireModule name="praemien" />}>
                 <Route path="/worker/praemien" element={<WorkerPraemienPage />} />
               </Route>
+
               <Route element={<RequireModule name="vacation" />}>
                 <Route path="/worker/vacations" element={<WorkerVacationsPage />} />
               </Route>
@@ -219,6 +221,9 @@ export default function App() {
                   </Route>
                   <Route element={<RequireModule name="sick-leaves" />}>
                     <Route path="/admin/sick-leaves" element={<AdminSickLeavesPage />} />
+                  </Route>
+                  <Route element={<RequireModule name="praemien" />}>
+                    <Route path="/admin/praemien" element={<AdminPraemienPage />} />
                   </Route>
                   <Route element={<RequireModule name="payroll" />}>
                     <Route path="/admin/payroll" element={<AdminPayrollModuleHubPage />} />
