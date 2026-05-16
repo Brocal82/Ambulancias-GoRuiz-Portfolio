@@ -900,12 +900,12 @@ const AdminPage = () => {
             >
 
               {/* Header de semana */}
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-300 pb-2 mb-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between -mx-3 -mt-3 px-4 pt-3 pb-3 mb-4 rounded-t-2xl bg-slate-900 border-b border-slate-800">
                 {hasWeekDiensts ? (
                   // Si hay Diensts: header clicable con flecha 🔼 / 🔽
                   <button
                     type="button"
-                    className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900 focus:outline-none"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-slate-200 hover:text-white focus:outline-none"
                     onClick={() => toggleWeekCollapsed(weekStartISO)}
                     aria-expanded={!isCollapsed}
                   >
@@ -914,7 +914,7 @@ const AdminPage = () => {
                   </button>
                 ) : (
                   // Si NO hay Diensts: solo texto, sin flecha y sin onClick
-                  <h2 className="text-sm font-medium text-slate-700">{title}</h2>
+                  <h2 className="text-sm font-medium text-slate-200">{title}</h2>
                 )}
 
                 <div className="flex flex-wrap gap-2">

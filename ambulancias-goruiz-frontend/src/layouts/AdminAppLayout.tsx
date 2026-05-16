@@ -38,7 +38,7 @@ export default function AdminAppLayout() {
     <div className="fixed inset-0 flex flex-col bg-slate-100 text-slate-900">
       {/* Topbar */}
       <header
-        className="shrink-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800"
+        className="shrink-0 z-40 bg-slate-900 border-b border-slate-800"
         role="banner"
       >
         <div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
