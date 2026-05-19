@@ -31,6 +31,14 @@ export const authenticateToken = async (
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+
+    // Step-up tokens are single-purpose (MFA confirmation only) and must not
+    // be used as general API Bearer tokens.
+    if ((decoded as any).typ === "step_up") {
+      res.status(401).json({ message: "Token inválido o expirado" });
+      return;
+    }
+
     const userDoc = await User.findById(decoded.userId)
       .select("role companyId tokenVersion isActive")
       .lean();
