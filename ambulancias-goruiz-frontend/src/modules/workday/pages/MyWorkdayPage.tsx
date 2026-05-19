@@ -182,16 +182,24 @@ const MyWorkday = () => {
   });
 
   const handleConfirmAmbulanceData = () => {
-    if (!ambulanceId || !initialAmbulanceKm) {
+    if (!assignedDay) return;
+
+    // When the ambulances module is off the selector is hidden; the ambulance
+    // comes from the dienst assignment so ambulanceId is not required.
+    const needsAmbulanceId = ambulancesModuleOn;
+    if ((needsAmbulanceId && !ambulanceId) || !initialAmbulanceKm) {
       toastT.error(["toasts.workday.needInitialData"]);
       return;
     }
-    if (!assignedDay) return;
 
-    // obtener número real y usarlo al guardar (evita estado desfasado)
-    const selectedAmbulance = ambulances.find((a) => a._id === ambulanceId);
-    const ambulanceNum = selectedAmbulance?.ambulanceNumber || "??";
-    setAmbulanceNumber(ambulanceNum);
+    // Resolve the display number: from the dropdown list (module on) or from
+    // the state already populated by the assignedDay effect (module off).
+    let ambulanceNum = ambulanceNumber;
+    if (ambulancesModuleOn) {
+      const selectedAmbulance = ambulances.find((a) => a._id === ambulanceId);
+      ambulanceNum = selectedAmbulance?.ambulanceNumber || "??";
+      setAmbulanceNumber(ambulanceNum);
+    }
 
     setVehicleConfirmed(true);
     toastT.success(["toasts.workday.initialDataConfirmed"]);
@@ -199,7 +207,7 @@ const MyWorkday = () => {
     saveAmbulanceData(
       assignedDay.assignmentId,
       ambulanceId,
-      ambulanceNum, // < usar el valor real, no el state aún sincrónico
+      ambulanceNum,
       initialAmbulanceKm,
     );
 

@@ -122,8 +122,11 @@ const WorkdayTripEntry: React.FC<Props> = ({
 }) => {
     const { t } = useTranslation();
 
-    const canConfirmVisual =
-        Boolean(ambulanceId) && Boolean(initialAmbulanceKm);
+    // When the ambulance selector is hidden (module off), the ambulance comes
+    // from the dienst assignment — ambulanceId is not required to confirm.
+    const canConfirmVisual = ambulanceSelectorHidden
+        ? Boolean(initialAmbulanceKm)
+        : Boolean(ambulanceId) && Boolean(initialAmbulanceKm);
 
     const [showReports, setShowReports] = React.useState(false);
 
