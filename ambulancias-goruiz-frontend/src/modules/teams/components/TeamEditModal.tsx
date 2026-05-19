@@ -70,6 +70,8 @@ export default function TeamEditModal({
 
       await onConfirm(team._id, payload);
       // El cierre lo hace el padre al terminar bien
+    } catch {
+      // Error ya notificado con toast por el padre; el modal permanece abierto
     } finally {
       setSubmitting(false);
     }

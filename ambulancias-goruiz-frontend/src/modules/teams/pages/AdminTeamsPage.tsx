@@ -135,6 +135,7 @@ export default function AdminTeamsPage() {
     } catch (e: unknown) {
       console.error(e);
       toastT.error(getApiErrorMessage(e, ["pages.adminTeams.createError"]));
+      throw e;
     }
   };
 
@@ -156,6 +157,7 @@ export default function AdminTeamsPage() {
     } catch (e: unknown) {
       console.error(e);
       toastT.error(getApiErrorMessage(e, ["pages.adminTeams.updateError"]));
+      throw e;
     }
   };
 

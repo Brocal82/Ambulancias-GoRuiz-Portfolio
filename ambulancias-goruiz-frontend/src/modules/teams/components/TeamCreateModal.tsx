@@ -70,12 +70,14 @@ export default function TeamCreateModal({
 
       await onConfirm(payload);
 
-      // Reset tras crear
+      // Reset tras crear (solo si onConfirm no lanzó error)
       setValue({ driver: "", medic: "" });
       setRotationMode("rotating");
       setFixedDienstNumber("");
       setAmbulanceId("");
       onClose();
+    } catch {
+      // Error ya notificado con toast por el padre; el modal permanece abierto
     } finally {
       setSubmitting(false);
     }
