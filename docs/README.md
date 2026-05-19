@@ -60,6 +60,14 @@ En `ambulancias-goruiz-backend/docs/security/`:
 - `incident-response.md` — Runbook de incidencias y fugas de datos
 - `governance.md` — Revisión mensual, riesgos residuales
 
+## Guías de usuario (cliente)
+
+Manuales para administradores y trabajadores en **español, alemán e inglés**:
+
+→ [user-guide/README.md](./user-guide/README.md)
+
+---
+
 ## Documentación de dominios de negocio (ya existente)
 
 En `ambulancias-goruiz-backend/docs/`:
