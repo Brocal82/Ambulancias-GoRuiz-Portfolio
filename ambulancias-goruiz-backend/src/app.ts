@@ -42,6 +42,8 @@ import {
   rateLimitInvitationAccept,
   rateLimitInvitationValidate,
   rateLimitGlobal,
+  rateLimitMessages,
+  rateLimitUpload,
 } from "./middlewares/rateLimit";
 
 const allowedFromEnv = (env.ALLOWED_ORIGINS || "")
@@ -119,6 +121,8 @@ app.get("/health", (_req, res) => {
 app.use("/api", rateLimitGlobal);
 
 app.use("/api/users/login", rateLimitLogin);
+app.use("/api/users/me/upload", rateLimitUpload);
+app.use("/api/users/:userId/upload", rateLimitUpload);
 app.use("/api/users", userRoutes);
 app.use("/api/diensts", dienstRoutes);
 app.use("/api/hospitals", hospitalRoutes);
@@ -129,7 +133,7 @@ app.use("/api/workday-summary", workdaySummaryRoutes);
 app.use("/api/praemien", praemienRoutes);
 app.use("/api/vacations", vacationRoutes);
 app.use("/api/ambulances", ambulancesRoutes);
-app.use("/api/messages", messagesRoutes);
+app.use("/api/messages", rateLimitMessages, messagesRoutes);
 app.use("/api/appointments", appointmentsRoutes);
 app.use("/api/teams", teamsRoutes);
 app.use("/api/sick-leaves", sickLeaveRoutes);
@@ -138,6 +142,7 @@ app.use("/api/invitations/validate", rateLimitInvitationValidate);
 app.use("/api/invitations", invitationsRoutes);
 app.use("/api/companies", companiesRoutes);
 app.use("/api/payroll", payrollRoutes);
+app.use("/api/documents/upload", rateLimitUpload);
 app.use("/api/documents", documentsRoutes);
 app.use("/api/excel-planning", excelPlanningRoutes);
 app.use("/api/support-access", supportAccessRoutes);
