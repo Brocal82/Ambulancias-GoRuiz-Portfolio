@@ -40,9 +40,13 @@ Para documentación específica del backend (dominio de negocio, seguridad), ver
 
 ---
 
-## Fase 4 — Frontend y app móvil (pendiente)
+## Fase 4 — Frontend y app móvil (completada)
 
-`frontend/FRONTEND-STRUCTURE.md`, `frontend/WORKER-APP.md`, `frontend/WEBSOCKET.md`
+| Documento | Estado |
+|-----------|--------|
+| [frontend/FRONTEND-STRUCTURE.md](./frontend/FRONTEND-STRUCTURE.md) | Completado |
+| [frontend/WORKER-APP.md](./frontend/WORKER-APP.md) | Completado |
+| [frontend/WEBSOCKET.md](./frontend/WEBSOCKET.md) | Completado |
 
 ---
 
