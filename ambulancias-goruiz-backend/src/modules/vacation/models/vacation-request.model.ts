@@ -26,6 +26,9 @@ const VacationRequestSchema = new Schema<IVacationRequest>({
   userResponse: { type: String, enum: ["accepted", "cancelled"] },
 });
 
+VacationRequestSchema.index({ user: 1, status: 1 });
+VacationRequestSchema.index({ companyId: 1, status: 1, startDate: 1 });
+
 const VacationRequest: Model<IVacationRequest> =
   (models.VacationRequest as Model<IVacationRequest>) ||
   model<IVacationRequest>("VacationRequest", VacationRequestSchema);

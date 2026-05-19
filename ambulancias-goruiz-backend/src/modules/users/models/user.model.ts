@@ -148,5 +148,7 @@ const userSchema = new Schema<IUser>({
   },
 });
 
+userSchema.index({ companyId: 1, isActive: 1 });
+
 const User = mongoose.model<IUser>("User", userSchema);
 export default User;
