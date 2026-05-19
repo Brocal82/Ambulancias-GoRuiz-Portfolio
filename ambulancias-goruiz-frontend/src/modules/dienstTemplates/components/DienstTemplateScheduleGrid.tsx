@@ -60,14 +60,15 @@ const DienstTemplateScheduleGrid: React.FC<Props> = ({
                 <div className="flex h-full flex-col rounded-xl border border-gray-200 bg-white p-2 text-xs shadow-sm">
                     <div className="mb-2 flex items-center justify-between gap-1">
                         <span className="text-[11px] font-semibold text-gray-800">
-                            Nº Dienst
+                            Nº Dienst{" "}
+                            <span className="text-red-500" aria-hidden="true" title="Obligatorio">*</span>
                         </span>
                     </div>
 
                     <div className="space-y-2">
                         <div>
                             <label htmlFor={dienstNumberInputId} className="sr-only">
-                                Número de Dienst
+                                Número de Dienst (obligatorio)
                             </label>
                             <input
                                 id={dienstNumberInputId}
@@ -79,7 +80,12 @@ const DienstTemplateScheduleGrid: React.FC<Props> = ({
                                         e.target.value === "" ? "" : Number(e.target.value),
                                     )
                                 }
-                                className="w-full rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                placeholder="1"
+                                className={`w-full rounded-md border px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                                    dienstNumber === ""
+                                        ? "border-amber-300 bg-amber-50 focus:border-blue-500"
+                                        : "border-gray-300 focus:border-blue-500"
+                                }`}
                             />
                         </div>
 

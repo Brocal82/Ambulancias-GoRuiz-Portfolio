@@ -153,10 +153,20 @@ const CreateDienstTemplateModal: React.FC<CreateDienstTemplateModalProps> = ({
 
 
           {/* Botones */}
-          <div className="mt-2 flex items-center justify-end gap-2 pt-3">
-            <CancelButton onClick={onClose} disabled={saving} />
+          <div className="mt-2 flex items-center justify-between gap-2 pt-3">
+            {!canSave && !saving && (
+              <p className="text-[11px] text-amber-600">
+                {dienstNumber === "" || Number(dienstNumber) <= 0
+                  ? "Indica un número de Dienst válido (*) para continuar."
+                  : "Al menos un día debe tener horario activo."}
+              </p>
+            )}
+            {(canSave || saving) && <span />}
 
-            <SaveIconButton type="submit" disabled={saving || !canSave} />
+            <div className="flex items-center gap-2">
+              <CancelButton onClick={onClose} disabled={saving} />
+              <SaveIconButton type="submit" disabled={saving || !canSave} />
+            </div>
           </div>
         </form>
       </div>
