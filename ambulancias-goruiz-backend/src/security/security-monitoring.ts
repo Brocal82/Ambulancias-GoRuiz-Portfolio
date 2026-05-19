@@ -1,7 +1,7 @@
 import { env } from "../config/env";
 import SupportAccessRequest from "../modules/support-access/models/support-access-request.model";
 import { AUDIT_EVENT } from "./audit-events";
-import { emitAuditLog, emitSecurityAlert } from "./audit-log";
+import { emitAuditLogAsync, emitSecurityAlert } from "./audit-log";
 
 export type SupportAccessDailySummary = {
   since: string;
@@ -110,13 +110,18 @@ export async function buildSecurityMonitoringSnapshot(
 export async function emitDailySecurityMonitoringReport(now = new Date()): Promise<void> {
   const snapshot = await buildSecurityMonitoringSnapshot(24, now);
   const summary = snapshot.supportAccess;
-  emitAuditLog(AUDIT_EVENT.SECURITY_DAILY_MONITORING_REPORTED, "success", {
-    resourceType: "security_monitoring",
-    meta: {
-      windowHours: snapshot.windowHours,
-      supportAccess: snapshot.supportAccess,
+  await emitAuditLogAsync(
+    AUDIT_EVENT.SECURITY_DAILY_MONITORING_REPORTED,
+    "success",
+    {
+      resourceType: "security_monitoring",
+      meta: {
+        windowHours: snapshot.windowHours,
+        supportAccess: snapshot.supportAccess,
+      },
     },
-  });
+    now,
+  );
 
   if (summary.denied >= env.SECURITY_MONITORING_DENIED_THRESHOLD) {
     emitSecurityAlert("security_monitoring_denied_threshold_exceeded", {

@@ -5,6 +5,7 @@ import { env } from "./config/env";
 import { app } from "./app";
 import cleanupOldDiensts from "./utils/cleanupOldDiensts";
 import { emitDailySecurityMonitoringReport } from "./security/security-monitoring";
+import { buildSecurityMonitoringOperationalHealth } from "./security/security-monitoring-health.service";
 import { setupWebSocketServer } from "./modules/notifications";
 
 // Evitar crashes silenciosos: loggear y salir en producción
@@ -100,6 +101,18 @@ mongoose
         },
         { timezone: TZ },
       );
+
+      // Dev/restart safety: cron only fires once daily; emit immediately if stale.
+      try {
+        const health = await buildSecurityMonitoringOperationalHealth();
+        if (health.staleDailyReport) {
+          console.log("[CRON] securityMonitoring bootstrap START (stale daily report)");
+          await emitDailySecurityMonitoringReport(new Date());
+          console.log("[CRON] securityMonitoring bootstrap DONE");
+        }
+      } catch (err) {
+        console.error("[CRON] securityMonitoring bootstrap ERROR:", err);
+      }
     }
 
     const httpServer = http.createServer(app);

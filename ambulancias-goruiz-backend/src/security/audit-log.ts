@@ -33,17 +33,26 @@ export function buildAuditContextFromRequest(req: Request): {
   };
 }
 
+function buildAuditLogEntry(
+  event: AuditEventName,
+  outcome: AuditOutcome,
+  data: Omit<AuditLogEntry, "event" | "outcome" | "at"> = {},
+  at = new Date(),
+): AuditLogEntry {
+  return {
+    event,
+    outcome,
+    at: at.toISOString(),
+    ...data,
+  };
+}
+
 export function emitAuditLog(
   event: AuditEventName,
   outcome: AuditOutcome,
   data: Omit<AuditLogEntry, "event" | "outcome" | "at"> = {},
 ): void {
-  const entry: AuditLogEntry = {
-    event,
-    outcome,
-    at: new Date().toISOString(),
-    ...data,
-  };
+  const entry = buildAuditLogEntry(event, outcome, data);
   console.info("[audit]", JSON.stringify(entry));
   void SecurityAuditLog.create({
     ...entry,
@@ -52,6 +61,27 @@ export function emitAuditLog(
     const message = error instanceof Error ? error.message : String(error);
     console.error("[audit-persistence-error]", message);
   });
+}
+
+/** Persist audit log before returning — for cron jobs that update health checks. */
+export async function emitAuditLogAsync(
+  event: AuditEventName,
+  outcome: AuditOutcome,
+  data: Omit<AuditLogEntry, "event" | "outcome" | "at"> = {},
+  at = new Date(),
+): Promise<void> {
+  const entry = buildAuditLogEntry(event, outcome, data, at);
+  console.info("[audit]", JSON.stringify(entry));
+  try {
+    await SecurityAuditLog.create({
+      ...entry,
+      at: new Date(entry.at),
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[audit-persistence-error]", message);
+    throw error;
+  }
 }
 
 export function emitSecurityAlert(
