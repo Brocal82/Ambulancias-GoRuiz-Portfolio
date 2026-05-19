@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "../api/axios";
+import { loginUser } from "../modules/users/domain/api";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -26,12 +26,11 @@ const Login = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post("/users/login", {
+      const { token, user } = await loginUser({
         email,
         password,
         ...(mfaCode.trim() ? { mfaCode: mfaCode.trim() } : {}),
       });
-      const { token, user } = response.data;
 
       login(token, user._id, user.role, user);
       navigate(homePathForRole(user.role));

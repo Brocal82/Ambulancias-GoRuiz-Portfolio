@@ -122,11 +122,9 @@ export const AuthProvider = ({ children }: Props) => {
   /**
    * Refrescar usuario sin bloquear la app
    */
-  const refreshUser = async (id: string, tkn: string) => {
+  const refreshUser = async (id: string, _tkn: string) => {
     try {
-      const res = await axios.get<User>(`/users/${id}`, {
-        headers: { Authorization: `Bearer ${tkn}` },
-      });
+      const res = await axios.get<User>(`/users/${id}`);
 
       const freshUser: User = res.data;
       setUser(freshUser);
@@ -157,11 +155,9 @@ export const AuthProvider = ({ children }: Props) => {
    * Llamado en background; nunca bloquea el render ni isAuthReady.
    * Superadmin no tiene companyId → 403 esperado → se ignora silenciosamente.
    */
-  const refreshModules = async (tkn: string) => {
+  const refreshModules = async (_tkn: string) => {
     try {
-      const res = await axios.get<Company>("/companies/me", {
-        headers: { Authorization: `Bearer ${tkn}` },
-      });
+      const res = await axios.get<Company>("/companies/me");
       const modules: string[] = Array.isArray(res.data.enabledModules)
         ? res.data.enabledModules
         : [];
