@@ -55,4 +55,10 @@ const DienstSchema = new Schema<IDienst>({
   },
 });
 
+// Compound indexes for the most frequent query patterns:
+// - Calendar views filter by company + week range
+// - Admin lookups filter by company + dienst number
+DienstSchema.index({ companyId: 1, weekStartDate: 1 });
+DienstSchema.index({ companyId: 1, dienstNumber: 1 });
+
 export default mongoose.model<IDienst>("Dienst", DienstSchema);

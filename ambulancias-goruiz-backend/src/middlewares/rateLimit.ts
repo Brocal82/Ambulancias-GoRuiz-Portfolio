@@ -66,3 +66,19 @@ export const rateLimitExcelPlanningImport = rateLimit({
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === "test",
 });
+
+/**
+ * Rate limit global aplicado a todas las rutas /api/*.
+ * Protege contra scraping y abuso de endpoints autenticados.
+ * El límite es deliberadamente alto (default: 300 req/min) para no
+ * afectar el uso normal; ajustable via RATE_LIMIT_GLOBAL_MAX en .env.
+ * Deshabilitado en test.
+ */
+export const rateLimitGlobal = rateLimit({
+  windowMs: env.RATE_LIMIT_GLOBAL_WINDOW_MS,
+  limit: env.RATE_LIMIT_GLOBAL_MAX,
+  message: jsonMessage("Demasiadas solicitudes. Intente más tarde."),
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === "test",
+});

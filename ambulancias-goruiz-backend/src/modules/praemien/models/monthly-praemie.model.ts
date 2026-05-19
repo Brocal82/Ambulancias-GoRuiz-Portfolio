@@ -1,7 +1,7 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface IMonthlyPraemie extends Document {
-  userId: string;
+  userId: Types.ObjectId;
   companyId: mongoose.Types.ObjectId | null;
   year: number;
   month: number; // 1-12
@@ -13,7 +13,7 @@ export interface IMonthlyPraemie extends Document {
 }
 
 const monthlyPraemieSchema = new Schema<IMonthlyPraemie>({
-  userId: { type: String, required: true, index: true },
+  userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
   companyId: { type: mongoose.Schema.Types.ObjectId, default: null },
   year: { type: Number, required: true },
   month: { type: Number, required: true },

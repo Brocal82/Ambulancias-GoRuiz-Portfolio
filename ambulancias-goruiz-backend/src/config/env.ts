@@ -103,6 +103,21 @@ const envSchema = z.object({
       z.number().int().positive().optional(),
     )
     .default(60 * 1000), // 1 min
+
+  // Global API rate limit — applied to all /api/* routes for authenticated requests.
+  // Set high enough to not impact normal usage; protects against scraping/abuse.
+  RATE_LIMIT_GLOBAL_MAX: z
+    .preprocess(
+      (v) => (v === undefined || v === "" ? undefined : Number(v)),
+      z.number().int().min(1).optional(),
+    )
+    .default(300), // 300 req / min per IP
+  RATE_LIMIT_GLOBAL_WINDOW_MS: z
+    .preprocess(
+      (v) => (v === undefined || v === "" ? undefined : Number(v)),
+      z.number().int().positive().optional(),
+    )
+    .default(60 * 1000), // 1 min
 });
 
 // Parseo y validación al importar (si falta algo crítico, el proceso debe fallar)
