@@ -8,10 +8,12 @@ import { MODULE_KEYS } from "../constants/modules";
 
 const WorkerDashboard = () => {
   const { t } = useTranslation();
-  const { hasModule } = useModules();
+  const { hasModule, enabledModules } = useModules();
   const { count: unreadMessages } = useUnreadMessagesCount({
     pollMs: 30000,
-    skip: !hasModule(MODULE_KEYS.MESSAGES),
+    // Skip until modules are loaded to avoid a premature 403 when the
+    // messages module is disabled (requireModule returns 403 before we know).
+    skip: enabledModules === null || !hasModule(MODULE_KEYS.MESSAGES),
   });
 
   // justo encima del return, dentro del componente
