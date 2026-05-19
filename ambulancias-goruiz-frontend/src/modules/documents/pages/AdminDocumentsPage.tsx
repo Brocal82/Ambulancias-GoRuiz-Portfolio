@@ -3,7 +3,12 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toastT } from "../../../utils/toast";
 import { openSecureFile } from "../../../utils/openSecureFile";
-import axiosInstance from "../../../api/axios";
+import {
+  listAdminDocuments,
+  uploadDocumentsBatch,
+  deleteDocument,
+  deleteDocumentBatch,
+} from "../domain/api";
 import PayrollUploadTriggerButton from "../../../components/common/actions/PayrollUploadTriggerButton";
 import SendIconButton from "../../../components/common/actions/SendIconButton";
 import ViewIconButton from "../../../components/common/actions/ViewIconButton";
@@ -133,8 +138,8 @@ const AdminDocumentsPage = () => {
   const fetchDocuments = async () => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get<AdminDocument[]>("/api/documents");
-      setDocuments(response.data);
+      const data = await listAdminDocuments<AdminDocument>();
+      setDocuments(data);
     } catch (err) {
       toastT.apiError(err, "Error al cargar los documentos");
     } finally {
@@ -168,11 +173,7 @@ const AdminDocumentsPage = () => {
 
     setUploading(true);
     try {
-      await axiosInstance.post("/api/documents/upload/batch", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      await uploadDocumentsBatch(formData);
       toastT.success("Documentos enviados correctamente");
       setBatchFiles([]);
       setRequiresAcknowledgmentUpload(false);
@@ -202,7 +203,7 @@ const AdminDocumentsPage = () => {
       return;
     }
     try {
-      await axiosInstance.delete(`/api/documents/${doc.id}`);
+      await deleteDocument(doc.id);
       toastT.success("Documento eliminado correctamente");
       await fetchDocuments();
     } catch (err) {
@@ -220,14 +221,11 @@ const AdminDocumentsPage = () => {
     }
 
     try {
-      const response = await axiosInstance.delete<{
-        message: string;
-        deletedCount?: number;
-      }>(`/api/documents/batch/${uploadBatchId}`);
+      const data = await deleteDocumentBatch(uploadBatchId);
       toastT.success(
-        response.data.deletedCount
-          ? `Lote eliminado correctamente (${response.data.deletedCount} documento${response.data.deletedCount !== 1 ? "s" : ""})`
-          : response.data.message || "Lote eliminado correctamente",
+        data.deletedCount
+          ? `Lote eliminado correctamente (${data.deletedCount} documento${data.deletedCount !== 1 ? "s" : ""})`
+          : data.message || "Lote eliminado correctamente",
       );
       setExpandedBatchIds((prev) => {
         const next = { ...prev };
