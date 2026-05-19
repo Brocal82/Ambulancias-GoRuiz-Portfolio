@@ -1,5 +1,6 @@
 // src/components/RequireRole.tsx
 import { Navigate, Outlet } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
 import { homePathForRole } from "../utils/roleHomePath";
 
@@ -21,10 +22,11 @@ interface RequireRoleProps {
  */
 export default function RequireRole({ role }: RequireRoleProps) {
   const { role: userRole, isAuthReady } = useAuth();
+  const { t } = useTranslation();
   const allowedRoles = Array.isArray(role) ? role : [role];
 
   if (!isAuthReady) {
-    return <div className="p-4">Cargando sesión...</div>;
+    return <div className="p-4">{t("guards.loadingSession")}</div>;
   }
 
   if (!userRole || !allowedRoles.includes(userRole as AppRole)) {
