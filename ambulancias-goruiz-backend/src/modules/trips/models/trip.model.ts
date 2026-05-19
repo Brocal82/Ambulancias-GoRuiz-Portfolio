@@ -64,4 +64,10 @@ const TripSchema = new Schema<ITrip>({
   },
 });
 
+// Compound indexes for the most frequent query patterns:
+// - Trips fetched per assignment slot + day (workday view)
+// - Company-scoped date queries (admin trip history)
+TripSchema.index({ assignmentId: 1, date: 1 });
+TripSchema.index({ companyId: 1, date: 1 });
+
 export const Trip = mongoose.model<ITrip>("Trip", TripSchema);

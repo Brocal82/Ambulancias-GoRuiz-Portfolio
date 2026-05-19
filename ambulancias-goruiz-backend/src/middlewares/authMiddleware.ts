@@ -61,7 +61,13 @@ export const authenticateToken = async (
 
     req.userId = decoded.userId;
     req.userRole = decoded.role;
-    const resolvedCompanyId = decoded.companyId;
+
+    // Prefer the DB-sourced companyId over the JWT claim; the JWT claim may be
+    // stale if the user's company was changed in the DB after token issuance.
+    const resolvedCompanyId = userDoc.companyId
+      ? String(userDoc.companyId)
+      : decoded.companyId;
+
     if (resolvedCompanyId) {
       req.companyId = resolvedCompanyId;
     }

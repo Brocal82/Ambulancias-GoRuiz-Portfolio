@@ -41,6 +41,7 @@ import {
   rateLimitReportIssue,
   rateLimitInvitationAccept,
   rateLimitInvitationValidate,
+  rateLimitGlobal,
 } from "./middlewares/rateLimit";
 
 const allowedFromEnv = (env.ALLOWED_ORIGINS || "")
@@ -112,6 +113,10 @@ app.get("/health", (_req, res) => {
     db: dbState,
   });
 });
+
+// Global rate limit — applied before all /api routes.
+// Specific stricter limits (login, invitations, etc.) are applied below per route.
+app.use("/api", rateLimitGlobal);
 
 app.use("/api/users/login", rateLimitLogin);
 app.use("/api/users", userRoutes);
