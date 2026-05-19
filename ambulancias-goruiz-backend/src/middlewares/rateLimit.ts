@@ -68,6 +68,33 @@ export const rateLimitExcelPlanningImport = rateLimit({
 });
 
 /**
+ * Rate limit para POST /api/messages. Evita spam de mensajes y adjuntos.
+ * 30 mensajes / minuto por IP. Deshabilitado en test.
+ */
+export const rateLimitMessages = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  message: jsonMessage("Demasiados mensajes enviados. Intente más tarde."),
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === "test",
+});
+
+/**
+ * Rate limit para endpoints de subida de archivos (P-Schein, foto de perfil,
+ * documentos batch). Evita abuso de almacenamiento y CPU.
+ * 10 subidas / 5 min por IP. Deshabilitado en test.
+ */
+export const rateLimitUpload = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  limit: 10,
+  message: jsonMessage("Demasiadas subidas de archivos. Intente más tarde."),
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === "test",
+});
+
+/**
  * Rate limit global aplicado a todas las rutas /api/*.
  * Protege contra scraping y abuso de endpoints autenticados.
  * El límite es deliberadamente alto (default: 300 req/min) para no
