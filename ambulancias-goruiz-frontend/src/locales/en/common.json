@@ -24,7 +24,9 @@
             "password": "Password",
             "submit": "Sign in",
             "submitting": "Signing in...",
-            "genericError": "Login failed"
+            "genericError": "Login failed",
+            "rateLimit": "Too many attempts. Please wait a few minutes before trying again.",
+            "rateLimitWithTime": "Too many attempts. Please wait {{seconds}} seconds before trying again."
         },
         "register": {
             "title": "Register",

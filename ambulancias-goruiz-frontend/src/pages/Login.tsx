@@ -35,15 +35,24 @@ const Login = () => {
       login(token, user._id, user.role, user);
       navigate(homePathForRole(user.role));
     } catch (err: unknown) {
-      const maybeCode =
-        err &&
-        typeof err === "object" &&
-        "response" in err &&
-        (err as { response?: { data?: { code?: string } } }).response?.data?.code;
+      const axiosErr = err as { response?: { status?: number; data?: { code?: string; message?: string }; headers?: Record<string, string> } };
+      const status = axiosErr?.response?.status;
+      const maybeCode = axiosErr?.response?.data?.code;
+
       if (maybeCode === "MFA_REQUIRED" || maybeCode === "MFA_INVALID") {
         setNeedsMfa(true);
       }
-      setError(getApiErrorMessage(err, t("pages.login.genericError")));
+
+      if (status === 429) {
+        const retryAfter = axiosErr?.response?.headers?.["retry-after"];
+        const seconds = retryAfter ? parseInt(retryAfter, 10) : null;
+        const waitMsg = seconds && seconds > 0
+          ? t("pages.login.rateLimitWithTime", { seconds })
+          : t("pages.login.rateLimit");
+        setError(waitMsg);
+      } else {
+        setError(getApiErrorMessage(err, t("pages.login.genericError")));
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -61,7 +70,13 @@ const Login = () => {
         </h2>
 
         {error && (
-          <p className="text-red-400 mb-4 text-center font-medium">{error}</p>
+          <div
+            role="alert"
+            className="mb-4 flex items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300"
+          >
+            <span aria-hidden="true" className="mt-0.5 shrink-0">⚠️</span>
+            <span>{error}</span>
+          </div>
         )}
 
         {/* Email */}

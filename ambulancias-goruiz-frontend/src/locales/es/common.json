@@ -24,7 +24,9 @@
             "password": "Contraseña",
             "submit": "Entrar",
             "submitting": "Entrando...",
-            "genericError": "Error al iniciar sesión"
+            "genericError": "Error al iniciar sesión",
+            "rateLimit": "Demasiados intentos. Espera unos minutos antes de volver a intentarlo.",
+            "rateLimitWithTime": "Demasiados intentos. Espera {{seconds}} segundos antes de volver a intentarlo."
         },
         "register": {
             "title": "Registro",

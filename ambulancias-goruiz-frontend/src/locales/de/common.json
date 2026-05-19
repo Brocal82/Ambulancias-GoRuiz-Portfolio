@@ -24,7 +24,9 @@
             "password": "Passwort",
             "submit": "Einloggen",
             "submitting": "Anmelden...",
-            "genericError": "Fehler bei der Anmeldung"
+            "genericError": "Fehler bei der Anmeldung",
+            "rateLimit": "Zu viele Versuche. Bitte warte einige Minuten, bevor du es erneut versuchst.",
+            "rateLimitWithTime": "Zu viele Versuche. Bitte warte {{seconds}} Sekunden, bevor du es erneut versuchst."
         },
         "register": {
             "title": "Registrieren",
