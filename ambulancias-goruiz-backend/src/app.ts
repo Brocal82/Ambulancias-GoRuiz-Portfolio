@@ -28,6 +28,7 @@ import documentsRoutes from "./modules/documents/routes";
 import payrollRoutes from "./modules/payroll/routes";
 import excelPlanningRoutes from "./modules/excel-planning/routes";
 import supportAccessRoutes from "./modules/support-access/routes";
+import adminDashboardRoutes from "./modules/admin-dashboard/routes";
 import { notificationsRoutes } from "./modules/notifications";
 
 import { errorHandler } from "./middlewares/errorHandler";
@@ -146,6 +147,7 @@ app.use("/api/documents/upload", rateLimitUpload);
 app.use("/api/documents", documentsRoutes);
 app.use("/api/excel-planning", excelPlanningRoutes);
 app.use("/api/support-access", supportAccessRoutes);
+app.use("/api/admin", adminDashboardRoutes);
 app.use("/api/notifications", notificationsRoutes);
 
 app.get("/api/files/:filename", authenticateToken, async (req, res) => {

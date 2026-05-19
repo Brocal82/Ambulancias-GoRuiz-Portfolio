@@ -1,57 +1,32 @@
 //frontend/src/pages/AdminDashboard.tsx
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-
-// ? Hook para contador de pendientes de Vacaciones
-import useAdminVacationsPendingCount from "../modules/vacation/hooks/useAdminVacationsPendingCount";
-import useAdminSummariesPendingCount from "../modules/workday/hooks/useAdminSummariesPendingCount";
-import { useAdminAppointmentsPendingCount } from "../modules/appointments";
-import { useAdminIssuesOpenCount } from "../modules/mechanics";
-import useAdminSickLeavesPendingCount from "../modules/sick/hooks/useAdminSickLeavesPendingCount";
-import useAdminManualPraemiePendingCount from "../modules/praemien/hooks/useAdminManualPraemiePendingCount";
+import { useAdminDashboardCounts } from "../modules/admin-dashboard/hooks";
 import { useModules } from "../hooks/useModules";
 import { MODULE_KEYS } from "../constants/modules";
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
   const { hasModule } = useModules();
+  const { counts, isLoading } = useAdminDashboardCounts();
 
-  // ? Contador de solicitudes de vacaciones pendientes
-  const { count: vacationsPendingCount, isLoading: vacationsLoading } =
-    useAdminVacationsPendingCount({
-      skip: !hasModule(MODULE_KEYS.VACATION),
-    });
-  const vacationsHasPending = !vacationsLoading && vacationsPendingCount > 0;
+  const vacationsPendingCount = counts.vacations;
+  const vacationsHasPending = !isLoading && vacationsPendingCount > 0;
 
-  //  Contador de resúmenes pendientes
-  const { count: summariesPendingCount, isLoading: summariesLoading } =
-    useAdminSummariesPendingCount({
-      skip: !hasModule(MODULE_KEYS.WORKDAY),
-    });
-  const summariesHasPending = !summariesLoading && summariesPendingCount > 0;
+  const summariesPendingCount = counts.summaries;
+  const summariesHasPending = !isLoading && summariesPendingCount > 0;
 
-  const { count: apptPending, isLoading: apptLoading } =
-    useAdminAppointmentsPendingCount({ skip: !hasModule(MODULE_KEYS.APPOINTMENTS) });
-  const apptHasPending = !apptLoading && apptPending > 0;
+  const apptPending = counts.appointments;
+  const apptHasPending = !isLoading && apptPending > 0;
 
-  const { count: issuesOpenCount, isLoading: issuesLoading } =
-    useAdminIssuesOpenCount({
-      skip: !hasModule(MODULE_KEYS.MECHANICS),
-    });
-  const issuesHasOpen = !issuesLoading && issuesOpenCount > 0;
+  const issuesOpenCount = counts.mechanics;
+  const issuesHasOpen = !isLoading && issuesOpenCount > 0;
 
-  const { count: sickPendingCount, isLoading: sickLoading } =
-    useAdminSickLeavesPendingCount({
-      skip: !hasModule(MODULE_KEYS.SICK_LEAVES),
-    });
-  const sickHasPending = !sickLoading && sickPendingCount > 0;
+  const sickPendingCount = counts.sickLeaves;
+  const sickHasPending = !isLoading && sickPendingCount > 0;
 
-  const { count: praemienManualPending, isLoading: praemienManualLoading } =
-    useAdminManualPraemiePendingCount({
-      skip: !hasModule(MODULE_KEYS.PRAEMIEN),
-    });
-  const praemienManualHasPending =
-    !praemienManualLoading && praemienManualPending > 0;
+  const praemienManualPending = counts.praemienManual;
+  const praemienManualHasPending = !isLoading && praemienManualPending > 0;
 
   // justo encima del return, dentro del componente
   const centeredCard =
@@ -144,7 +119,7 @@ const AdminDashboard = () => {
                 : t("pages.adminDashboard.summaries.title")
             }
           >
-            {!summariesLoading && summariesPendingCount > 0 && (
+            {!isLoading && summariesPendingCount > 0 && (
               <span
                 className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-orange-400 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
                 aria-label={`${summariesPendingCount} ${t("pages.adminDashboard.summaries.pending") ?? "pendientes"}`}
@@ -173,7 +148,7 @@ const AdminDashboard = () => {
                 : t("pages.adminDashboard.praemien.title")
             }
           >
-            {!praemienManualLoading && praemienManualPending > 0 && (
+            {!isLoading && praemienManualPending > 0 && (
               <span
                 className="absolute -top-2 -right-2 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-orange-400 px-2 text-xs font-semibold text-white shadow"
                 aria-label={`${praemienManualPending} ${t("pages.adminDashboard.praemien.pending")}`}
@@ -218,7 +193,7 @@ const AdminDashboard = () => {
             to="/admin/mechanics"
             className={`${centeredCardRelative} ${issuesHasOpen ? "ring-2 ring-red-300" : ""}`}
           >
-            {!issuesLoading && issuesHasOpen && (
+            {!isLoading && issuesHasOpen && (
               <span className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 px-2 rounded-full bg-red-500 text-white text-xs font-semibold flex items-center justify-center shadow">
                 {issuesOpenCount}
               </span>
@@ -244,7 +219,7 @@ const AdminDashboard = () => {
                 : t("pages.adminDashboard.vacations.title")
             }
           >
-            {!vacationsLoading && vacationsPendingCount > 0 && (
+            {!isLoading && vacationsPendingCount > 0 && (
               <span
                 className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-orange-500 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
                 aria-label={`${vacationsPendingCount} ${t("pages.adminDashboard.vacations.pending") ?? "pendientes"}`}
@@ -273,7 +248,7 @@ const AdminDashboard = () => {
                 : t("pages.adminDashboard.sickLeaves.title")
             }
           >
-            {!sickLoading && sickPendingCount > 0 && (
+            {!isLoading && sickPendingCount > 0 && (
               <span
                 className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full bg-orange-500 text-white text-xs font-semibold h-6 min-w-6 px-2 shadow"
                 aria-label={`${sickPendingCount} ${t("pages.adminDashboard.sickLeaves.pending") ?? "pendientes"}`}
@@ -296,7 +271,7 @@ const AdminDashboard = () => {
             to="/admin/appointments"
             className={`${centeredCardRelative} ${apptHasPending ? "ring-2 ring-orange-300" : ""}`}
           >
-            {!apptLoading && apptHasPending && (
+            {!isLoading && apptHasPending && (
               <span className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 px-2 rounded-full bg-orange-500 text-white text-xs font-semibold flex items-center justify-center shadow">
                 {apptPending}
               </span>

@@ -2,13 +2,11 @@ import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useModules } from "../hooks/useModules";
 import { MODULE_KEYS } from "../constants/modules";
-import useAdminSummariesPendingCount from "../modules/workday/hooks/useAdminSummariesPendingCount";
-import useAdminVacationsPendingCount from "../modules/vacation/hooks/useAdminVacationsPendingCount";
-import useAdminSickLeavesPendingCount from "../modules/sick/hooks/useAdminSickLeavesPendingCount";
-import { useAdminIssuesOpenCount } from "../modules/mechanics";
-import { useAdminAppointmentsPendingCount } from "../modules/appointments";
 import { useUnreadMessagesCount } from "../modules/messages/hooks";
-import useAdminManualPraemiePendingCount from "../modules/praemien/hooks/useAdminManualPraemiePendingCount";
+import {
+  AdminDashboardCountsProvider,
+  useAdminDashboardCounts,
+} from "../modules/admin-dashboard/hooks";
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
 
@@ -81,29 +79,26 @@ function SectionLabel({ label, collapsed }: { label: string; collapsed: boolean 
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function AdminSidebarLayout() {
+  return (
+    <AdminDashboardCountsProvider>
+      <AdminSidebarLayoutInner />
+    </AdminDashboardCountsProvider>
+  );
+}
+
+function AdminSidebarLayoutInner() {
   const [collapsed, setCollapsed] = useState(false);
   const { hasModule } = useModules();
+  const { counts } = useAdminDashboardCounts();
 
-  const { count: summariesCount } = useAdminSummariesPendingCount({
-    skip: !hasModule(MODULE_KEYS.WORKDAY),
-  });
-  const { count: vacationsCount } = useAdminVacationsPendingCount({
-    skip: !hasModule(MODULE_KEYS.VACATION),
-  });
-  const { count: sickCount } = useAdminSickLeavesPendingCount({
-    skip: !hasModule(MODULE_KEYS.SICK_LEAVES),
-  });
+  const summariesCount = counts.summaries;
+  const vacationsCount = counts.vacations;
+  const sickCount = counts.sickLeaves;
+  const appointmentsCount = counts.appointments;
+  const mechanicsCount = counts.mechanics;
+  const praemienCount = counts.praemienManual;
   const { count: messagesCount } = useUnreadMessagesCount({
     skip: !hasModule(MODULE_KEYS.MESSAGES),
-  });
-  const { count: appointmentsCount } = useAdminAppointmentsPendingCount({
-    skip: !hasModule(MODULE_KEYS.APPOINTMENTS),
-  });
-  const { count: mechanicsCount } = useAdminIssuesOpenCount({
-    skip: !hasModule(MODULE_KEYS.MECHANICS),
-  });
-  const { count: praemienCount } = useAdminManualPraemiePendingCount({
-    skip: !hasModule(MODULE_KEYS.PRAEMIEN),
   });
 
   const totalBadge =
