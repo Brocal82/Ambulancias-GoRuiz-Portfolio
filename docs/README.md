@@ -17,21 +17,26 @@ Para documentación específica del backend (dominio de negocio, seguridad), ver
 
 ---
 
-## Fase 2 — Módulos críticos (pendiente)
+## Fase 2 — Módulos críticos (completada)
 
 | Documento | Estado |
 |-----------|--------|
-| `MULTI-TENANT.md` | Pendiente (ampliar `ambulancias-goruiz-backend/docs/POLICY-multi-tenant-legacy-companyId.md`) |
-| `FILE-SECURITY.md` | Pendiente |
-| `domains/DOMAIN-praemien.md` | Pendiente |
-| `domains/DOMAIN-workday.md` | Pendiente |
-| `SECURITY-LAYER.md` | Pendiente |
+| [MULTI-TENANT.md](./MULTI-TENANT.md) | Completado |
+| [FILE-SECURITY.md](./FILE-SECURITY.md) | Completado |
+| [SECURITY-LAYER.md](./SECURITY-LAYER.md) | Completado |
+| [domains/DOMAIN-praemien.md](./domains/DOMAIN-praemien.md) | Completado |
+| [domains/DOMAIN-workday.md](./domains/DOMAIN-workday.md) | Completado |
 
 ---
 
-## Fase 3 — API y base de datos (pendiente)
+## Fase 3 — API y base de datos (completada)
 
-`API-REFERENCE.md`, `DATA-MODELS.md`, `domains/DOMAIN-payroll.md`, `domains/DOMAIN-documents.md`
+| Documento | Estado |
+|-----------|--------|
+| [API-REFERENCE.md](./API-REFERENCE.md) | Completado |
+| [DATA-MODELS.md](./DATA-MODELS.md) | Completado |
+| [domains/DOMAIN-payroll.md](./domains/DOMAIN-payroll.md) | Completado |
+| [domains/DOMAIN-documents.md](./domains/DOMAIN-documents.md) | Completado |
 
 ---
 
