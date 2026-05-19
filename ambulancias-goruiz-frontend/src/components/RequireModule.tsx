@@ -1,5 +1,6 @@
 // src/components/RequireModule.tsx
 import { Navigate, Outlet } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
 import { useModules } from "../hooks/useModules";
 import { homePathForRole } from "../utils/roleHomePath";
@@ -28,14 +29,15 @@ interface RequireModuleProps {
 export default function RequireModule({ name }: RequireModuleProps) {
   const { isAuthReady, role } = useAuth();
   const { hasModule, enabledModules } = useModules();
+  const { t } = useTranslation();
 
   if (!isAuthReady) {
-    return <div className="p-4">Cargando sesión...</div>;
+    return <div className="p-4">{t("guards.loadingSession")}</div>;
   }
 
   // While modules are still loading, show spinner to prevent a false redirect
   if (enabledModules === null && role !== "superadmin") {
-    return <div className="p-4">Cargando...</div>;
+    return <div className="p-4">{t("guards.loadingModules")}</div>;
   }
 
   if (!hasModule(name)) {

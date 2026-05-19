@@ -1,4 +1,8 @@
 {
+    "guards": {
+        "loadingSession": "Loading session...",
+        "loadingModules": "Loading..."
+    },
     "layout": {
         "appName": "GORRUIZ Ambulances",
         "appNamePrefix": "Ambulances",

@@ -1,4 +1,8 @@
 {
+    "guards": {
+        "loadingSession": "Sitzung wird geladen...",
+        "loadingModules": "Wird geladen..."
+    },
     "layout": {
         "appName": "Krankentransport GORRUIZ",
         "appNamePrefix": "Krankentransport",

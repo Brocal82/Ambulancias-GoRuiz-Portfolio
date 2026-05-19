@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout";
 import AdminAppLayout from "./layouts/AdminAppLayout";
@@ -9,57 +10,63 @@ import RequireModule from "./components/RequireModule";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// Páginas públicas
-import Welcome from "./pages/Welcome";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import SuperadminDashboard from "./pages/SuperadminDashboard";
-import AcceptInvitationPage from "./modules/invitations/pages/AcceptInvitationPage";
-import AdminInvitationsPage from "./modules/invitations/pages/AdminInvitationsPage";
+// Layouts, guards and providers load eagerly (needed before auth resolves).
+// All page components are lazy-loaded to reduce the initial bundle size.
 
-// Páginas privadas
-import { ProfilePage } from "./modules/users";
-import WorkerDashboard from "./pages/WorkerDashboard";
-import WorkerDienstsPage from "./modules/diensts/pages/WorkerDienstsPage";
-import WorkerPraemienPage from "./modules/praemien/pages/WorkerPraemienPage";
-import AdminPraemienPage from "./modules/praemien/pages/AdminPraemienPage";
-import WorkerVacationsPage from "./modules/vacation/pages/WorkerVacationsPage";
-import WorkerMessagesPage from "./modules/messages/pages/WorkerMessagesPage";
-import WorkerSickLeavesPage from "./modules/sick/pages/WorkerSickLeavesPage";
-import { MyWorkdayPage, AdminSummariesPage } from "./modules/workday";
-import {
-  AdminHospitalsPage,
-  WorkerHospitalsPage,
-} from "./modules/hospitals";
-import {
-  AdminAppointmentsPage,
-  WorkerAppointmentsPage,
-} from "./modules/appointments";
-import AdminDashboard from "./pages/AdminDashboard";
-import { AdminUsersPage } from "./modules/users";
-import SuperadminMfaSettingsPage from "./modules/users/pages/SuperadminMfaSettingsPage";
-import AdminDienstsPage from "./modules/diensts/pages/AdminDienstsPage";
-import AdminDienstTemplatesPage from "./modules/dienstTemplates/pages/AdminDienstTemplatesPage";
-import AdminVacationsPage from "./modules/vacation/pages/AdminVacationsPage";
-import AdminAmbulancesPage from "./modules/ambulances/pages/AdminAmbulancesPage";
-import {
-  AdminMechanicsPage,
-  WorkerReportMechanicsPage,
-  JefeMecanicosDashboardPage,
-} from "./modules/mechanics";
-import AdminUserDetailDashboard from "./modules/users/pages/AdminUserDetailDashboard";
-import AdminMessagesPage from "./modules/messages/pages/AdminMessagesPage";
-import AdminSentMessages from "./modules/messages/pages/AdminSentMessages";
-import AdminTeamsPage from "./modules/teams/pages/AdminTeamsPage";
-import AdminSickLeavesPage from "./modules/sick/pages/AdminSickLeavesPage";
-import AdminPayrollPage from "./modules/payroll/pages/AdminPayrollPage";
-import PayrollYearHubPage from "./modules/payroll/pages/PayrollYearHubPage";
-import AdminPayrollModuleHubPage from "./modules/payroll/pages/AdminPayrollModuleHubPage";
-import AdminDocumentsPage from "./modules/documents/pages/AdminDocumentsPage";
-import WorkerDocumentsPage from "./modules/documents/pages/WorkerDocumentsPage";
-import AdminExcelPlanningPage from "./modules/excel-planning/pages/AdminExcelPlanningPage";
-import WorkerExcelPlanningPage from "./modules/excel-planning/pages/WorkerExcelPlanningPage";
-import WorkerPayrollPage from "./modules/payroll/pages/WorkerPayrollPage";
+// Páginas públicas
+const Welcome = lazy(() => import("./pages/Welcome"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const SuperadminDashboard = lazy(() => import("./pages/SuperadminDashboard"));
+const AcceptInvitationPage = lazy(() => import("./modules/invitations/pages/AcceptInvitationPage"));
+const AdminInvitationsPage = lazy(() => import("./modules/invitations/pages/AdminInvitationsPage"));
+
+// Páginas trabajador
+const WorkerDashboard = lazy(() => import("./pages/WorkerDashboard"));
+const ProfilePage = lazy(() => import("./modules/users").then((m) => ({ default: m.ProfilePage })));
+const WorkerDienstsPage = lazy(() => import("./modules/diensts/pages/WorkerDienstsPage"));
+const WorkerPraemienPage = lazy(() => import("./modules/praemien/pages/WorkerPraemienPage"));
+const WorkerVacationsPage = lazy(() => import("./modules/vacation/pages/WorkerVacationsPage"));
+const WorkerMessagesPage = lazy(() => import("./modules/messages/pages/WorkerMessagesPage"));
+const WorkerSickLeavesPage = lazy(() => import("./modules/sick/pages/WorkerSickLeavesPage"));
+const MyWorkdayPage = lazy(() => import("./modules/workday").then((m) => ({ default: m.MyWorkdayPage })));
+const WorkerHospitalsPage = lazy(() => import("./modules/hospitals").then((m) => ({ default: m.WorkerHospitalsPage })));
+const WorkerAppointmentsPage = lazy(() => import("./modules/appointments").then((m) => ({ default: m.WorkerAppointmentsPage })));
+const WorkerReportMechanicsPage = lazy(() => import("./modules/mechanics").then((m) => ({ default: m.WorkerReportMechanicsPage })));
+const JefeMecanicosDashboardPage = lazy(() => import("./modules/mechanics").then((m) => ({ default: m.JefeMecanicosDashboardPage })));
+const WorkerPayrollPage = lazy(() => import("./modules/payroll/pages/WorkerPayrollPage"));
+const WorkerDocumentsPage = lazy(() => import("./modules/documents/pages/WorkerDocumentsPage"));
+const WorkerExcelPlanningPage = lazy(() => import("./modules/excel-planning/pages/WorkerExcelPlanningPage"));
+
+// Páginas admin
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminUsersPage = lazy(() => import("./modules/users").then((m) => ({ default: m.AdminUsersPage })));
+const AdminUserDetailDashboard = lazy(() => import("./modules/users/pages/AdminUserDetailDashboard"));
+const SuperadminMfaSettingsPage = lazy(() => import("./modules/users/pages/SuperadminMfaSettingsPage"));
+const AdminDienstsPage = lazy(() => import("./modules/diensts/pages/AdminDienstsPage"));
+const AdminDienstTemplatesPage = lazy(() => import("./modules/dienstTemplates/pages/AdminDienstTemplatesPage"));
+const AdminVacationsPage = lazy(() => import("./modules/vacation/pages/AdminVacationsPage"));
+const AdminAmbulancesPage = lazy(() => import("./modules/ambulances/pages/AdminAmbulancesPage"));
+const AdminMechanicsPage = lazy(() => import("./modules/mechanics").then((m) => ({ default: m.AdminMechanicsPage })));
+const AdminHospitalsPage = lazy(() => import("./modules/hospitals").then((m) => ({ default: m.AdminHospitalsPage })));
+const AdminAppointmentsPage = lazy(() => import("./modules/appointments").then((m) => ({ default: m.AdminAppointmentsPage })));
+const AdminSummariesPage = lazy(() => import("./modules/workday").then((m) => ({ default: m.AdminSummariesPage })));
+const AdminMessagesPage = lazy(() => import("./modules/messages/pages/AdminMessagesPage"));
+const AdminSentMessages = lazy(() => import("./modules/messages/pages/AdminSentMessages"));
+const AdminTeamsPage = lazy(() => import("./modules/teams/pages/AdminTeamsPage"));
+const AdminSickLeavesPage = lazy(() => import("./modules/sick/pages/AdminSickLeavesPage"));
+const AdminPraemienPage = lazy(() => import("./modules/praemien/pages/AdminPraemienPage"));
+const AdminPayrollPage = lazy(() => import("./modules/payroll/pages/AdminPayrollPage"));
+const PayrollYearHubPage = lazy(() => import("./modules/payroll/pages/PayrollYearHubPage"));
+const AdminPayrollModuleHubPage = lazy(() => import("./modules/payroll/pages/AdminPayrollModuleHubPage"));
+const AdminDocumentsPage = lazy(() => import("./modules/documents/pages/AdminDocumentsPage"));
+const AdminExcelPlanningPage = lazy(() => import("./modules/excel-planning/pages/AdminExcelPlanningPage"));
+
+// Páginas superadmin
+const SuperadminCompaniesList = lazy(() => import("./modules/companies/pages/SuperadminCompaniesList"));
+const SuperadminCompanyForm = lazy(() => import("./modules/companies/pages/SuperadminCompanyForm"));
+const SuperadminCreateAdmin = lazy(() => import("./modules/companies/pages/SuperadminCreateAdmin"));
+const SuperadminSecurityMonitoringPage = lazy(() => import("./modules/support-access/pages/SuperadminSecurityMonitoringPage"));
 
 function RedirectToCurrentPayrollMonth() {
   const d = new Date();
@@ -70,15 +77,12 @@ function RedirectToCurrentPayrollMonth() {
     />
   );
 }
-import SuperadminCompaniesList from "./modules/companies/pages/SuperadminCompaniesList";
-import SuperadminCompanyForm from "./modules/companies/pages/SuperadminCompanyForm";
-import SuperadminCreateAdmin from "./modules/companies/pages/SuperadminCreateAdmin";
-import SuperadminSecurityMonitoringPage from "./modules/support-access/pages/SuperadminSecurityMonitoringPage";
 
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <Suspense fallback={<div className="p-4 text-slate-500">Cargando...</div>}>
         <Routes>
           {/* Rutas públicas */}
           <Route path="/" element={<Welcome />} />
@@ -254,6 +258,7 @@ export default function App() {
             </Route>
           </Route>
         </Routes>
+        </Suspense>
 
         <ToastContainer position="top-right" autoClose={3000} />
       </BrowserRouter>
