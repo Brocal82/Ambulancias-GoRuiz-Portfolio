@@ -99,10 +99,12 @@ router.get(
 
 // Worker: list their own payroll documents
 // GET /api/payroll/mine
+// Restricted to employee roles; admins use GET /api/payroll (admin list).
 router.get(
   "/mine",
   authenticateToken,
   requireModule(MODULE_KEYS.PAYROLL),
+  authorizeRole(["worker", "mecanico", "jefe_mecanicos", "jefe_logistica"]),
   listMyPayrollDocuments,
 );
 

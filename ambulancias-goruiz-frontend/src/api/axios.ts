@@ -84,7 +84,22 @@ axiosInstance.interceptors.response.use(
     }
     return res;
   },
-  (err) => Promise.reject(err),
+  (err) => {
+    // On 401: session expired or token revoked mid-session.
+    // Clear the session and redirect to login, unless we are already there
+    // or the 401 came from the login endpoint itself.
+    const status = err?.response?.status;
+    const requestUrl = String(err?.config?.url ?? "");
+    const isLoginEndpoint = requestUrl.includes("/users/login");
+    const alreadyOnLogin = window.location.pathname === "/";
+
+    if (status === 401 && !isLoginEndpoint && !alreadyOnLogin) {
+      sessionStorage.clear();
+      window.location.href = "/";
+    }
+
+    return Promise.reject(err);
+  },
 );
 
 export default axiosInstance;
