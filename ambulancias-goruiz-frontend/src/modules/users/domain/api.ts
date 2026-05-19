@@ -3,7 +3,21 @@ import api from "../../../api/axios";
 import type { User } from "./types";
 import type { UpdateUserPayload, UploadUserFilesPayload } from "./payloads";
 
+export interface LoginPayload {
+  email: string;
+  password: string;
+  mfaCode?: string;
+}
 
+export interface LoginResponse {
+  token: string;
+  user: User;
+}
+
+export const loginUser = async (payload: LoginPayload): Promise<LoginResponse> => {
+  const response = await api.post<LoginResponse>("/users/login", payload);
+  return response.data;
+};
 
 // ✅ Obtener todos los usuarios completos (para Admin)
 export const getAllUsers = async (): Promise<User[]> => {
