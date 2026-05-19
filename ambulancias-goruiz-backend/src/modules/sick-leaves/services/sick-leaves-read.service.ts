@@ -39,6 +39,33 @@ export async function getSickLeaves(input: {
     .lean();
 }
 
+export async function countSickLeavesByStatus(
+  status: string,
+  companyId?: string | null,
+): Promise<number> {
+  const raw = typeof companyId === "string" ? companyId.trim() : "";
+  if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+    return 0;
+  }
+
+  const q: Record<string, unknown> = {};
+  if (["pending", "accepted", "rejected"].includes(status)) {
+    q.status = status;
+  }
+
+  const companyOid = new mongoose.Types.ObjectId(raw);
+  const userIds = await User.find({ companyId: companyOid }).select("_id").lean();
+  const ids = userIds.map(
+    (u) => (u as unknown as { _id: mongoose.Types.ObjectId })._id,
+  );
+  q.$or = [
+    { companyId: companyOid },
+    { companyId: null, user: { $in: ids } },
+  ];
+
+  return SickLeave.countDocuments(q);
+}
+
 export async function getMySickLeaves(input: {
   userId: string;
   status?: string;
