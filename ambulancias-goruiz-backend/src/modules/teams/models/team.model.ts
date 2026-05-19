@@ -66,7 +66,7 @@ const TeamSchema = new Schema<ITeamModel>(
   { timestamps: true },
 );
 
-TeamSchema.index({ driver: 1, medic: 1 }, { unique: true });
+TeamSchema.index({ driver: 1, medic: 1, companyId: 1 }, { unique: true });
 
 export const Team: Model<ITeamModel> =
   (mongoose.models.Team as Model<ITeamModel>) ||
