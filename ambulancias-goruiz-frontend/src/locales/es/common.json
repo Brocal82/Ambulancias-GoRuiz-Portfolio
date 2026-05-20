@@ -128,7 +128,17 @@
             "securityMonitoring": "Monitoreo",
             "securityMonitoringDesc": "Auditoría, riesgo por tenant y salud operativa.",
             "mfa": "MFA",
-            "mfaDesc": "Configuración TOTP y sesiones step-up."
+            "mfaDesc": "Configuración TOTP y sesiones step-up.",
+            "metricsTitle": "Resumen de plataforma",
+            "metricsLoading": "Cargando métricas…",
+            "metricsLoadError": "No se pudieron cargar las métricas globales",
+            "kpiCompaniesTotal": "Empresas",
+            "kpiCompaniesActive": "Activas",
+            "kpiCompaniesInactive": "Inactivas",
+            "kpiOnboarding": "Pendientes onboarding",
+            "kpiUsersActive": "Usuarios activos",
+            "kpiWorkers": "Workers",
+            "kpiAdmins": "Admins"
         },
         "superadminCompanyDetail": {
             "loadError": "No se pudo cargar la empresa",
@@ -158,6 +168,13 @@
                 "jefe_mecanicos": "Jefe mecánicos",
                 "jefe_logistica": "Jefe logística"
             },
+            "metricsTitle": "Métricas operativas",
+            "metricDiensts": "Diensts",
+            "metricTrips": "Viajes",
+            "metricClosures": "Cierres finales",
+            "metricVacationPending": "Vacaciones pendientes",
+            "metricMechanicsOpen": "Averías abiertas",
+            "metricsNone": "Sin métricas de módulos operativos habilitados.",
             "modulesTitle": "Módulos habilitados",
             "usersTitle": "Usuarios",
             "refresh": "Actualizar",

@@ -52,7 +52,7 @@ function parseCompanyOid(id: string): mongoose.Types.ObjectId | null {
   return new mongoose.Types.ObjectId(id);
 }
 
-async function aggregateUsersByRoleForCompanies(
+export async function aggregateUsersByRoleForCompanies(
   companyIds: mongoose.Types.ObjectId[],
 ): Promise<Map<string, CompanyUsersByRole>> {
   const result = new Map<string, CompanyUsersByRole>();

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as companiesService from "../services/companies.service";
+import * as companyMetricsService from "../services/company-metrics.service";
 import { createCompanySchema, updateCompanySchema } from "../schemas/company.schema";
 import { AUDIT_EVENT } from "../../../security/audit-events";
 import {
@@ -42,6 +43,15 @@ export const createCompany = async (req: Request, res: Response): Promise<void> 
       reason: err.message ?? "create_company_error",
     });
     res.status(400).json({ message: err.message ?? "Error al crear empresa" });
+  }
+};
+
+export const getGlobalMetrics = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const metrics = await companyMetricsService.getGlobalSuperadminMetrics();
+    res.status(200).json(metrics);
+  } catch {
+    res.status(500).json({ message: "Error al obtener métricas globales" });
   }
 };
 
@@ -132,6 +142,19 @@ export const getCompanyAdmins = async (req: Request, res: Response): Promise<voi
     res.status(200).json(admins);
   } catch {
     res.status(500).json({ message: "Error al obtener administradores" });
+  }
+};
+
+export const getCompanyMetrics = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const metrics = await companyMetricsService.getCompanyMetrics(req.params.id);
+    if (!metrics) {
+      res.status(404).json({ message: "Empresa no encontrada" });
+      return;
+    }
+    res.status(200).json(metrics);
+  } catch {
+    res.status(500).json({ message: "Error al obtener métricas de empresa" });
   }
 };
 

@@ -87,3 +87,32 @@ export interface CreateAdminInput {
   email: string;
   password: string;
 }
+
+export type GlobalSuperadminMetrics = {
+  generatedAt: string;
+  companies: {
+    total: number;
+    active: number;
+    inactive: number;
+    needingOnboarding: number;
+  };
+  users: {
+    active: number;
+    workers: number;
+    admins: number;
+  };
+};
+
+export type CompanyModuleMetrics = {
+  scheduling: { diensts: number } | null;
+  workday: { trips: number; finalClosures: number } | null;
+  vacation: { pending: number } | null;
+  mechanics: { openIssues: number } | null;
+};
+
+export type CompanyMetrics = {
+  companyId: string;
+  generatedAt: string;
+  enabledModules: string[];
+  modules: CompanyModuleMetrics;
+};

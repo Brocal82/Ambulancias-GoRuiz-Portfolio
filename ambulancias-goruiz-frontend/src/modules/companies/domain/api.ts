@@ -2,12 +2,24 @@ import axios from "../../../api/axios";
 import type {
   Company,
   CompanyAdmin,
+  CompanyMetrics,
   CompanySummary,
   CompanyUsersResponse,
   CreateCompanyInput,
+  GlobalSuperadminMetrics,
   UpdateCompanyInput,
   CreateAdminInput,
 } from "./types";
+
+export const getGlobalSuperadminMetrics = async (): Promise<GlobalSuperadminMetrics> => {
+  const res = await axios.get<GlobalSuperadminMetrics>("/companies/metrics/global");
+  return res.data;
+};
+
+export const getCompanyMetrics = async (companyId: string): Promise<CompanyMetrics> => {
+  const res = await axios.get<CompanyMetrics>(`/companies/${companyId}/metrics`);
+  return res.data;
+};
 
 export const getCompanies = async (): Promise<Company[]> => {
   const res = await axios.get<Company[]>("/companies");
