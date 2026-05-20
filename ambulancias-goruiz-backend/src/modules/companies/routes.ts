@@ -32,7 +32,16 @@ router.get("/me", authenticateToken, getMyCompany);
 
 router.use(authenticateToken, authorizeSuperadmin);
 
-router.post("/", validateBody(createCompanySchema), createCompany);
+router.post(
+  "/",
+  requireStepUp({
+    action: STEP_UP_ACTION.COMPANY_CREATE,
+    event: AUDIT_EVENT.COMPANY_CREATED,
+    resourceType: "company",
+  }),
+  validateBody(createCompanySchema),
+  createCompany,
+);
 router.get("/metrics/global", getGlobalMetrics);
 router.get("/", getAllCompanies);
 router.get("/:id/metrics", validateObjectId("id"), getCompanyMetrics);

@@ -58,11 +58,13 @@ Headers: `x-step-up-token` o `x-step-up-code` (o body `stepUpCode` / `stepUpToke
 
 | Action key | Operación |
 |------------|-----------|
+| `company.create` | `POST /api/companies` |
 | `company.delete` | `DELETE /api/companies/:id` |
 | `company.sensitive_update` | `PATCH` si body incluye `isActive`, `emailDomain`, `enabledModules`, `praemienMode`, `praemienModeEffectiveFrom` |
 | `company.admin.create` | `POST /api/companies/:id/admin` |
+| `support_access.approve` | `POST /api/support-access/requests/:id/review` con `approve: true` |
 
-**No requiere step-up:** crear empresa (`POST /`), patch solo de `name`.
+**No requiere step-up:** denegar JIT (`approve: false`), patch solo de `name`.
 
 ---
 
@@ -73,7 +75,7 @@ Middleware en bloque (salvo `GET /me`): `authenticateToken` + `authorizeSuperadm
 | Método | Ruta | Step-up | Descripción |
 |--------|------|---------|-------------|
 | `GET` | `/me` | — | Empresa del usuario con `companyId` (admin/worker) |
-| `POST` | `/` | No | Crear empresa |
+| `POST` | `/` | Sí | Crear empresa |
 | `GET` | `/` | No | Listar empresas + `adminCount` + `workerCount`* |
 | `GET` | `/:id` | No | Detalle |
 | `PATCH` | `/:id` | Condicional | Actualizar |

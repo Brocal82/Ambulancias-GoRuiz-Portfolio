@@ -228,6 +228,7 @@
             "colApprovals": "Aprobaciones",
             "colActions": "Acciones",
             "approve": "Aprobar",
+            "approveStepUp": "Aprobar acceso break-glass es crítico. Confirma con tu código MFA.",
             "deny": "Denegar",
             "revoke": "Revocar",
             "reviewCommentPrompt": "Comentario de aprobación (opcional)",

@@ -13,6 +13,7 @@ import {
 import { APP_NAV_MATCH_TABLE_THEAD } from "../../../components/ui/appTableHeader";
 import StatusBadge from "../../../components/common/StatusBadge";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
+import { useStepUpSession } from "../../companies/utils/useStepUpSession";
 
 const STATUS_TONES: Record<
   SupportAccessStatus,
@@ -37,6 +38,7 @@ export default function SuperadminSupportAccessPage() {
   const [reason, setReason] = useState("");
   const [ticketId, setTicketId] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(30);
+  const { requestStepUpToken, stepUpModal } = useStepUpSession();
 
   const loadRows = useCallback(async () => {
     setLoading(true);
@@ -104,10 +106,22 @@ export default function SuperadminSupportAccessPage() {
       : window.prompt(t("pages.superadminSupportAccess.denyCommentPrompt"));
     if (comment === null) return;
     try {
-      await reviewSupportAccessRequest(id, {
-        approve,
-        reviewComment: comment.trim() || undefined,
-      });
+      let stepUpToken: string | undefined;
+      if (approve) {
+        stepUpToken =
+          (await requestStepUpToken(
+            t("pages.superadminSupportAccess.approveStepUp"),
+          )) ?? undefined;
+        if (!stepUpToken) return;
+      }
+      await reviewSupportAccessRequest(
+        id,
+        {
+          approve,
+          reviewComment: comment.trim() || undefined,
+        },
+        stepUpToken,
+      );
       toastT.success(
         approve
           ? t("pages.superadminSupportAccess.approveSuccess")
@@ -328,6 +342,8 @@ export default function SuperadminSupportAccessPage() {
       )}
 
       <p className="text-xs text-slate-500">{t("pages.superadminSupportAccess.dualApprovalHint")}</p>
+
+      {stepUpModal}
     </div>
   );
 }

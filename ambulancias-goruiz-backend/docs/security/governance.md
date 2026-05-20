@@ -47,5 +47,13 @@ Sign-off:
 
 - Enforce least-privilege DB credentials for runtime identity.
 - Export audit trail to external immutable sink (SIEM/WORM/object-lock).
-- Add alert routing and escalation policy for denied spikes and off-hours approvals.
+- Route security alerts: set `SECURITY_ALERT_WEBHOOK_URL` in production (Slack/PagerDuty/SIEM ingest). Alerts are also logged to stdout as `[security-alert]`.
+- UI export: superadmin monitoring page supports CSV download for audit and tenant-risk tables.
 - Maintain quarterly tabletop exercise cadence.
+
+## 4) Production superadmin checklist
+
+- `SUPERADMIN_MFA_REQUIRED=true`
+- Every superadmin account has TOTP enrolled before go-live
+- At least two superadmin accounts for dual JIT approval
+- Step-up enforced on: create company, delete company, sensitive company patch, create company admin, **approve** support-access (deny/revoke unchanged)

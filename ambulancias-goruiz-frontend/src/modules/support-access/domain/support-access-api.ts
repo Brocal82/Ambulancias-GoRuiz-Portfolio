@@ -48,10 +48,14 @@ export async function createSupportAccessRequest(
 export async function reviewSupportAccessRequest(
   id: string,
   body: { approve: boolean; reviewComment?: string },
+  stepUpToken?: string,
 ): Promise<SupportAccessRequest> {
   const res = await axios.post<SupportAccessRequest>(
     `/support-access/requests/${id}/review`,
     body,
+    {
+      headers: stepUpToken ? { "x-step-up-token": stepUpToken } : undefined,
+    },
   );
   return res.data;
 }

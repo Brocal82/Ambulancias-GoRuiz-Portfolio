@@ -172,9 +172,11 @@ Definidas en `src/security/step-up-policy.ts`:
 
 | Action key | Operación |
 |------------|-----------|
+| `company.create` | Crear empresa (nuevo tenant) |
 | `company.delete` | Eliminar empresa |
 | `company.sensitive_update` | Actualizar datos sensibles de empresa |
 | `company.admin.create` | Crear administrador de empresa |
+| `support_access.approve` | Aprobar solicitud JIT (solo `approve: true`) |
 
 ---
 

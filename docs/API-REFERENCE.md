@@ -35,7 +35,7 @@ Auth requerida salvo indicación contraria. Formato de auth: `Authorization: Bea
 |--------|------|------|-----|-------------|
 | `GET` | `/companies/metrics/global` | Sí | superadmin | KPIs globales: empresas, usuarios, onboarding pendiente |
 | `GET` | `/companies` | Sí | superadmin | Listar empresas activas (`?includeDeleted=true` incluye archivadas) |
-| `POST` | `/companies` | Sí | superadmin | Crear empresa |
+| `POST` | `/companies` | Sí | superadmin + step-up | Crear empresa |
 | `GET` | `/companies/:id` | Sí | superadmin | Detalle empresa (no archivadas) |
 | `GET` | `/companies/:id/metrics` | Sí | superadmin | Métricas por módulo habilitado (`scheduling`, `workday`, `vacation`, `mechanics`; resto `null`) |
 | `GET` | `/companies/:id/summary` | Sí | superadmin | Resumen: `usersByRole`, flags onboarding |
@@ -264,7 +264,7 @@ Todas las rutas requieren auth + rol `superadmin` (`authorizeSuperadmin`).
 |--------|------|-------------|
 | `POST` | `/support-access/requests` | Crear solicitud (`companyId`, `reason`, `ticketId`, `durationMinutes` 5–240) |
 | `GET` | `/support-access/requests` | Listar solicitudes (`?status=pending\|approved\|denied\|revoked\|expired`) |
-| `POST` | `/support-access/requests/:id/review` | Aprobar o denegar (`approve`, `reviewComment`) — requiere 2 aprobadores distintos |
+| `POST` | `/support-access/requests/:id/review` | Aprobar (step-up + 2 aprobadores) o denegar (`approve`, `reviewComment`) |
 | `POST` | `/support-access/requests/:id/revoke` | Revocar acceso aprobado (`reason`) |
 | `GET` | `/support-access/active` | Comprobar acceso activo (`?companyId=`) |
 

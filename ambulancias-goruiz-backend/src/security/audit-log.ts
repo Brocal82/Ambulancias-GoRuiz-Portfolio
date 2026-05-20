@@ -1,6 +1,7 @@
 import type { Request } from "express";
 import type { AuditLogEntry, AuditOutcome, AuditEventName } from "./audit-events";
 import SecurityAuditLog from "./models/security-audit-log.model";
+import { env } from "../config/env";
 
 function getClientIp(req: Request): string | undefined {
   const forwarded = req.headers["x-forwarded-for"];
@@ -88,12 +89,22 @@ export function emitSecurityAlert(
   type: string,
   data: Record<string, unknown>,
 ): void {
-  console.warn(
-    "[security-alert]",
-    JSON.stringify({
-      type,
-      at: new Date().toISOString(),
-      ...data,
-    }),
-  );
+  const payload = {
+    type,
+    at: new Date().toISOString(),
+    ...data,
+  };
+  console.warn("[security-alert]", JSON.stringify(payload));
+
+  const webhookUrl = env.SECURITY_ALERT_WEBHOOK_URL?.trim();
+  if (!webhookUrl) return;
+
+  void fetch(webhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[security-alert-webhook-error]", message);
+  });
 }

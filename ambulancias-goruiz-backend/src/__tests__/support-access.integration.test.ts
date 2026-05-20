@@ -5,6 +5,7 @@ import { env } from "../config/env";
 import {
   createTestAdminWithCompany,
   createTestSuperadmin,
+  issueTestStepUpToken,
 } from "./test-helpers";
 import SupportAccessRequest from "../modules/support-access/models/support-access-request.model";
 
@@ -13,8 +14,11 @@ const API = "/api";
 describe("Support access (JIT/break-glass)", () => {
   let companyId: string;
   let requesterToken: string;
+  let requesterId: string;
   let reviewerToken1: string;
+  let reviewerId1: string;
   let reviewerToken2: string;
+  let reviewerId2: string;
   let adminToken: string;
   let otherCompanyId: string;
   let otherRequesterToken: string;
@@ -31,8 +35,11 @@ describe("Support access (JIT/break-glass)", () => {
     const saReviewer2 = await createTestSuperadmin();
     const saOtherRequester = await createTestSuperadmin();
     requesterToken = saRequester.superadminToken;
+    requesterId = saRequester.superadminId;
     reviewerToken1 = saReviewer1.superadminToken;
+    reviewerId1 = saReviewer1.superadminId;
     reviewerToken2 = saReviewer2.superadminToken;
+    reviewerId2 = saReviewer2.superadminId;
     otherRequesterToken = saOtherRequester.superadminToken;
   });
 
@@ -58,12 +65,14 @@ describe("Support access (JIT/break-glass)", () => {
     await request(app)
       .post(`${API}/support-access/requests/${requestId}/review`)
       .set("Authorization", `Bearer ${requesterToken}`)
+      .set("x-step-up-token", issueTestStepUpToken(requesterId))
       .send({ approve: true })
       .expect(400);
 
     const approveRes = await request(app)
       .post(`${API}/support-access/requests/${requestId}/review`)
       .set("Authorization", `Bearer ${reviewerToken1}`)
+      .set("x-step-up-token", issueTestStepUpToken(reviewerId1))
       .send({ approve: true, reviewComment: "Approved for incident support" })
       .expect(200);
     expect(approveRes.body.status).toBe("pending");
@@ -80,6 +89,7 @@ describe("Support access (JIT/break-glass)", () => {
     const secondApprove = await request(app)
       .post(`${API}/support-access/requests/${requestId}/review`)
       .set("Authorization", `Bearer ${reviewerToken2}`)
+      .set("x-step-up-token", issueTestStepUpToken(reviewerId2))
       .send({ approve: true, reviewComment: "Second approver confirms" })
       .expect(200);
     expect(secondApprove.body.status).toBe("approved");
@@ -106,6 +116,27 @@ describe("Support access (JIT/break-glass)", () => {
       .set("Authorization", `Bearer ${requesterToken}`)
       .expect(200);
     expect(activeAfterRevoke.body.active).toBe(false);
+  });
+
+  it("rechaza aprobar JIT sin step-up", async () => {
+    const createRes = await request(app)
+      .post(`${API}/support-access/requests`)
+      .set("Authorization", `Bearer ${requesterToken}`)
+      .send({
+        companyId,
+        reason: "Needs MFA on approve",
+        ticketId: "INC-STEPUP",
+        durationMinutes: 15,
+      })
+      .expect(201);
+    const requestId = createRes.body._id ?? createRes.body.id;
+
+    const res = await request(app)
+      .post(`${API}/support-access/requests/${requestId}/review`)
+      .set("Authorization", `Bearer ${reviewerToken1}`)
+      .send({ approve: true, reviewComment: "No step-up token" });
+    expect([401, 403]).toContain(res.status);
+    expect(res.body.code).toBe("STEP_UP_REQUIRED");
   });
 
   it("blocks non-superadmin roles from support-access endpoints", async () => {
@@ -135,11 +166,13 @@ describe("Support access (JIT/break-glass)", () => {
     await request(app)
       .post(`${API}/support-access/requests/${requestId}/review`)
       .set("Authorization", `Bearer ${reviewerToken1}`)
+      .set("x-step-up-token", issueTestStepUpToken(reviewerId1))
       .send({ approve: true, reviewComment: "Approved for isolated support" })
       .expect(200);
     await request(app)
       .post(`${API}/support-access/requests/${requestId}/review`)
       .set("Authorization", `Bearer ${reviewerToken2}`)
+      .set("x-step-up-token", issueTestStepUpToken(reviewerId2))
       .send({ approve: true, reviewComment: "Second approver for activation" })
       .expect(200);
 
@@ -181,11 +214,13 @@ describe("Support access (JIT/break-glass)", () => {
     await request(app)
       .post(`${API}/support-access/requests/${requestId}/review`)
       .set("Authorization", `Bearer ${reviewerToken1}`)
+      .set("x-step-up-token", issueTestStepUpToken(reviewerId1))
       .send({ approve: true, reviewComment: "Approved for short window" })
       .expect(200);
     await request(app)
       .post(`${API}/support-access/requests/${requestId}/review`)
       .set("Authorization", `Bearer ${reviewerToken2}`)
+      .set("x-step-up-token", issueTestStepUpToken(reviewerId2))
       .send({ approve: true, reviewComment: "Second approver for short window" })
       .expect(200);
 

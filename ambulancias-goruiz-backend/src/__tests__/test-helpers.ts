@@ -31,6 +31,15 @@ export function issueTestJwt(
   return jwt.sign(payload, env.JWT_SECRET, { expiresIn: "1h" });
 }
 
+/** Token step-up de prueba (misma forma que `issueSuperadminStepUpSession`). */
+export function issueTestStepUpToken(superadminId: string): string {
+  return jwt.sign(
+    { typ: "step_up", userId: superadminId, role: "superadmin" },
+    env.JWT_SECRET,
+    { expiresIn: "5m" },
+  );
+}
+
 export async function createTestAdminUser(email: string, password: string) {
   const hashedPassword = await bcrypt.hash(password, 10);
   const user = await User.create({
