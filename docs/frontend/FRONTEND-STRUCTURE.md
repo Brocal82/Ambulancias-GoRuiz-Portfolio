@@ -64,17 +64,19 @@ Protegidas por `RequireAuth` + `AppLayout`:
 
 ### Rutas superadmin
 
-Protegidas por `RequireAuth` + `authorizeSuperadmin`:
+Protegidas por `RequireAuth` + `RequireRole("superadmin")`. Layout: `AppLayout` (no `AdminAppLayout`). Ver [SUPERADMIN-FLOW.md](../SUPERADMIN-FLOW.md).
 
-| Path | Componente |
-|------|------------|
-| `/superadmin` | `SuperadminDashboard` |
-| `/superadmin/companies` | `SuperadminCompaniesPage` |
-| `/superadmin/companies/new` | `SuperadminCreateCompanyPage` |
-| `/superadmin/companies/:id` | `SuperadminCompanyDetailPage` |
-| `/superadmin/companies/:id/admin` | `SuperadminCreateAdminPage` |
-| `/superadmin/security-monitoring` | `SuperadminSecurityMonitoringPage` |
-| `/superadmin/security-mfa` | `SuperadminMfaPage` |
+| Path | Componente | Archivo |
+|------|------------|---------|
+| `/superadmin` | `SuperadminDashboard` | `src/pages/SuperadminDashboard.tsx` |
+| `/superadmin/companies` | `SuperadminCompaniesList` | `src/modules/companies/pages/SuperadminCompaniesList.tsx` |
+| `/superadmin/companies/new` | `SuperadminCompanyForm` (create) | `src/modules/companies/pages/SuperadminCompanyForm.tsx` |
+| `/superadmin/companies/:id` | `SuperadminCompanyForm` (edit) | idem |
+| `/superadmin/companies/:id/admin` | `SuperadminCreateAdmin` | `src/modules/companies/pages/SuperadminCreateAdmin.tsx` |
+| `/superadmin/security-monitoring` | `SuperadminSecurityMonitoringPage` | `src/modules/support-access/pages/SuperadminSecurityMonitoringPage.tsx` |
+| `/superadmin/security-mfa` | `SuperadminMfaSettingsPage` | `src/modules/users/pages/SuperadminMfaSettingsPage.tsx` |
+
+**Planificado (Fase 3+):** `SuperadminLayout`, `SuperadminCompanyDetailPage`, `SuperadminSupportAccessPage` — ver [SUPERADMIN-IMPLEMENTATION-PLAN.md](../SUPERADMIN-IMPLEMENTATION-PLAN.md).
 
 ### Rutas admin
 

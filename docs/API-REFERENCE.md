@@ -249,11 +249,27 @@ Ver `docs/domains/DOMAIN-documents.md`.
 
 ## Acceso soporte — `/api/support-access`
 
-| Método | Ruta | Rol | Descripción |
-|--------|------|-----|-------------|
-| `POST` | `/support-access` | superadmin | Crear acceso temporal |
-| `GET` | `/support-access` | superadmin | Listar accesos |
-| `DELETE` | `/support-access/:id` | superadmin | Revocar acceso |
+Todas las rutas requieren auth + rol `superadmin` (`authorizeSuperadmin`).
+
+### Solicitudes JIT (break-glass)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `POST` | `/support-access/requests` | Crear solicitud (`companyId`, `reason`, `ticketId`, `durationMinutes` 5–240) |
+| `GET` | `/support-access/requests` | Listar solicitudes (`?status=pending\|approved\|denied\|revoked\|expired`) |
+| `POST` | `/support-access/requests/:id/review` | Aprobar o denegar (`approve`, `reviewComment`) — requiere 2 aprobadores distintos |
+| `POST` | `/support-access/requests/:id/revoke` | Revocar acceso aprobado (`reason`) |
+| `GET` | `/support-access/active` | Comprobar acceso activo (`?companyId=`) |
+
+### Monitorización (superadmin)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/support-access/monitoring/daily-summary` | Resumen ventana (`?hours=`, default 24, max 168) |
+| `GET` | `/support-access/monitoring/audit-logs` | Consulta audit log persistente (filtros query) |
+| `GET` | `/support-access/monitoring/health` | Salud operacional del monitoreo |
+| `GET` | `/support-access/monitoring/tenant-risk` | Ranking riesgo por tenant (`?hours=`, `?limit=`) |
+| `GET` | `/support-access/monitoring/monthly-review` | Snapshot revisión mensual (`?hours=`) |
 
 ---
 
