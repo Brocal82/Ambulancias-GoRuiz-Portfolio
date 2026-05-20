@@ -348,6 +348,25 @@
                 "revoked": "Revoked",
                 "expired": "Expired",
                 "offHoursFinalApprovals": "Off-hours final approvals"
+            },
+            "sectionSupportAccess": "Break-glass (JIT)",
+            "sectionSupportAccessDesc": "Support access activity in the selected time window.",
+            "sectionOperational": "Monitoring system status and active alerts.",
+            "clearFilters": "Clear filters",
+            "viewCompany": "View company",
+            "enabledYes": "Yes",
+            "enabledNo": "No",
+            "dbOk": "OK",
+            "dbDown": "Down",
+            "riskLevel": {
+                "high": "High",
+                "medium": "Medium",
+                "low": "Low"
+            },
+            "outcome": {
+                "success": "Success",
+                "denied": "Denied",
+                "error": "Error"
             }
         },
         "adminDashboard": {
