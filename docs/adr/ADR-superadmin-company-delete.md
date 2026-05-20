@@ -1,8 +1,8 @@
 # ADR: Borrado de empresas por SuperAdmin
 
-**Estado:** Propuesto (pendiente aprobación)  
+**Estado:** Aceptado (implementado en Fase 2)  
 **Fecha:** 2026-05-20  
-**Fase de implementación:** 2
+**Fase de implementación:** 2 — `feature/superadmin-phase-2-backend`
 
 ## Contexto
 
@@ -28,9 +28,12 @@
 | Mantener DELETE actual | Sin trabajo | Huérfanos, incumplimiento posible |
 | **Soft-delete (elegida)** | Reversible, alinea con `isActive` login | Datos ocupan storage hasta purge programado |
 
+## Implementación
+
+- `DELETE /api/companies/:id` → soft-delete (`deletedAt`, `isActive: false`).
+- Listados superadmin excluyen empresas archivadas (`?includeDeleted=true` opcional).
+- Hard-delete solo vía script ops (fuera de API).
+
 ## Aprobación
 
-- [ ] Producto / negocio
-- [ ] Responsable técnico
-
-Cuando esté aprobado, actualizar estado a **Aceptado** e implementar en `feature/superadmin-phase-2-backend`.
+- [x] Implementado en backend (Fase 2)

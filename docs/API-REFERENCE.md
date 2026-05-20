@@ -33,13 +33,18 @@ Auth requerida salvo indicación contraria. Formato de auth: `Authorization: Bea
 
 | Método | Ruta | Auth | Rol | Descripción |
 |--------|------|------|-----|-------------|
-| `GET` | `/companies` | Sí | superadmin | Listar todas las empresas |
+| `GET` | `/companies` | Sí | superadmin | Listar empresas activas (`?includeDeleted=true` incluye archivadas) |
 | `POST` | `/companies` | Sí | superadmin | Crear empresa |
-| `GET` | `/companies/:id` | Sí | superadmin | Detalle empresa |
+| `GET` | `/companies/:id` | Sí | superadmin | Detalle empresa (no archivadas) |
+| `GET` | `/companies/:id/summary` | Sí | superadmin | Resumen: `usersByRole`, flags onboarding |
+| `GET` | `/companies/:id/users` | Sí | superadmin | Usuarios del tenant (`?role=`, `?isActive=`, `?limit=`, `?skip=`) |
+| `GET` | `/companies/:id/admins` | Sí | superadmin | Solo administradores |
 | `PATCH` | `/companies/:id` | Sí | superadmin + step-up | Actualizar empresa |
-| `DELETE` | `/companies/:id` | Sí | superadmin + step-up | Eliminar empresa |
+| `DELETE` | `/companies/:id` | Sí | superadmin + step-up | Soft-delete (`deletedAt`, `isActive: false`) |
 | `GET` | `/companies/me` | Sí | admin/worker | Datos de la propia empresa |
 | `POST` | `/companies/:id/admin` | Sí | superadmin + step-up | Crear admin para empresa |
+
+Listado: `workerCount` = rol `worker`; `adminCount` = rol `admin`; `userCount` = total; `usersByRole` = desglose completo.
 
 ---
 

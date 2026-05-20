@@ -5,6 +5,8 @@ export interface ICompany extends Document {
   isActive: boolean;
   emailDomain: string;
   createdBy?: Types.ObjectId;
+  /** Set by superadmin soft-delete; company hidden from listings and treated as removed. */
+  deletedAt?: Date | null;
   /**
    * Canonical module keys enabled for this company.
    * An empty array means no modules are explicitly enabled.
@@ -61,6 +63,7 @@ const companySchema = new Schema<ICompany>(
       },
     },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: false },
+    deletedAt: { type: Date, default: null, index: true },
   },
   { timestamps: true },
 );

@@ -4,7 +4,7 @@ Documento **temporal** de seguimiento por fases (rama + PR por fase). No mezclar
 
 **Limpieza al cerrar Fase 6:** eliminar este archivo; actualizar `SUPERADMIN-FLOW.md` como referencia única; mantener ADR si sigue vigente; quitar enlaces obsoletos en `docs/README.md`.
 
-**Estado global:** Fase 1 completada (pendiente sign-off ADR delete). Siguiente: Fase 2.
+**Estado global:** Fase 2 en curso / PR pendiente. Siguiente: Fase 3 (frontend).
 
 ---
 
@@ -13,7 +13,7 @@ Documento **temporal** de seguimiento por fases (rama + PR por fase). No mezclar
 | Fase | Rama sugerida | Objetivo | Entregable principal | Estado |
 |------|----------------|----------|----------------------|--------|
 | **1** | `docs/superadmin-phase-1-audit` | Auditoría y documentación del flujo actual | `SUPERADMIN-FLOW.md`, docs alineadas, ADR delete empresa | Completada* |
-| **2** | `feature/superadmin-phase-2-backend` | Backend mínimo (summary, usuarios read-only, conteos correctos) | Endpoints `GET /companies/:id/summary`, política delete | Pendiente |
+| **2** | `feature/superadmin-phase-2-backend` | Backend mínimo (summary, usuarios read-only, conteos correctos) | Endpoints summary/users, soft-delete | En PR |
 | **3** | `feature/superadmin-phase-3-frontend` | Panel usable (layout, company detail, support-access UI) | `SuperadminLayout`, rutas nuevas | Pendiente |
 | **4** | `feature/superadmin-phase-4-metrics` | Métricas agregadas y dashboard global | Dashboard + APIs agregación por tenant | Pendiente |
 | **5** | `feature/superadmin-phase-5-ux` | UX avanzada (gráficos, invitaciones admin, onboarding) | Wizard onboarding, exports | Pendiente |
