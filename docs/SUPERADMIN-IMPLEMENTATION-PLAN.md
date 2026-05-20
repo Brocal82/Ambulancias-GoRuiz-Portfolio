@@ -4,7 +4,7 @@ Documento **temporal** de seguimiento por fases (rama + PR por fase). No mezclar
 
 **Limpieza al cerrar Fase 6:** eliminar este archivo; actualizar `SUPERADMIN-FLOW.md` como referencia única; mantener ADR si sigue vigente; quitar enlaces obsoletos en `docs/README.md`.
 
-**Estado global:** Fase 4 en rama `feature/superadmin-phase-4-metrics` (PR pendiente). Siguiente tras merge: Fase 5.
+**Estado global:** Fase 4 mergeada (PR #78). Fase 5 en rama `feature/superadmin-phase-5-ux`.
 
 ---
 
@@ -15,8 +15,8 @@ Documento **temporal** de seguimiento por fases (rama + PR por fase). No mezclar
 | **1** | `docs/superadmin-phase-1-audit` | Auditoría y documentación del flujo actual | `SUPERADMIN-FLOW.md`, docs alineadas, ADR delete empresa | Completada (PR #75) |
 | **2** | `feature/superadmin-phase-2-backend` | Backend mínimo (summary, usuarios read-only, conteos correctos) | Endpoints summary/users, soft-delete | Completada (PR #76) |
 | **3** | `feature/superadmin-phase-3-frontend` | Panel usable (layout, company detail, support-access UI) | `SuperadminLayout`, rutas nuevas | Completada (PR #77) |
-| **4** | `feature/superadmin-phase-4-metrics` | Métricas agregadas y dashboard global | Dashboard + APIs agregación por tenant | Pendiente |
-| **5** | `feature/superadmin-phase-5-ux` | UX avanzada (gráficos, invitaciones admin, onboarding) | Wizard onboarding, exports | Pendiente |
+| **4** | `feature/superadmin-phase-4-metrics` | Métricas agregadas y dashboard global | Dashboard + APIs agregación por tenant | **Mergeada (#78)** |
+| **5** | `feature/superadmin-phase-5-ux` | UX avanzada (tabs, onboarding, deep-links) | Tabs detalle empresa | En curso |
 | **6** | `feature/superadmin-phase-6-hardening` | Seguridad y audit (step-up ampliado, MFA prod, SIEM) | Políticas + alertas | Pendiente |
 
 ---
@@ -122,11 +122,16 @@ Documento **temporal** de seguimiento por fases (rama + PR por fase). No mezclar
 
 **Rama:** `feature/superadmin-phase-5-ux`
 
-### Tareas propuestas
-- Gráficos de actividad, export CSV audit por tenant.
-- Invitación admin inicial (reutilizar `invitations`) vs contraseña manual.
-- Wizard onboarding nueva empresa.
-- Company detail con tabs (Users, Modules, Security, Metrics).
+### Entregado en esta fase (PR actual)
+- Company detail con tabs: Overview, Users, Modules, Metrics, Security (`?tab=` en URL).
+- Banner onboarding en Overview si faltan admin/worker/módulos.
+- Tras crear empresa → detalle `?tab=overview`.
+- Monitoreo seguridad: `?tenant=companyId` pre-rellena filtro audit.
+
+### Pendiente (futuro PR o Fase 5b)
+- Gráficos de actividad, export CSV audit dedicado por tenant.
+- Invitación admin inicial (requiere ruta superadmin en `invitations`).
+- Wizard paso a paso alta empresa.
 
 ---
 

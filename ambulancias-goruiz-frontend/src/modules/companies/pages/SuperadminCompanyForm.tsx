@@ -252,7 +252,8 @@ export default function SuperadminCompanyForm() {
         targetId = id;
       }
       if (targetId) {
-        navigate(`/superadmin/companies/${targetId}`);
+        const tabQuery = isCreate ? "?tab=overview" : "";
+        navigate(`/superadmin/companies/${targetId}${tabQuery}`);
       } else {
         navigate("/superadmin/companies");
       }

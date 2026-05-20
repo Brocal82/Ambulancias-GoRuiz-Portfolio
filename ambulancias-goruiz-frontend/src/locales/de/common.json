@@ -160,6 +160,22 @@
             "onboardingAdmin": "Hat Admin",
             "onboardingWorker": "Hat Mitarbeiter",
             "onboardingModules": "Module konfiguriert",
+            "onboardingBannerTitle": "Onboarding unvollstaendig",
+            "onboardingBannerDesc": "Admin, Mitarbeiter und Module einrichten, bevor der Mandant als betriebsbereit gilt.",
+            "tabs": {
+                "overview": "Ueberblick",
+                "users": "Benutzer",
+                "modules": "Module",
+                "metrics": "Metriken",
+                "security": "Sicherheit"
+            },
+            "editModules": "Module bearbeiten",
+            "noModules": "Keine Module aktiv.",
+            "securityTitle": "Sicherheit und Audit",
+            "securityDesc": "Plattform-Zugang und Audit-Spuren fuer diesen Mandanten.",
+            "securityAuditLink": "Audit-Log (Mandantenfilter)",
+            "securitySupportLink": "Support-Zugang (JIT)",
+            "securityMfaLink": "MFA-Einstellungen",
             "rolesTitle": "Benutzer nach Rolle",
             "role": {
                 "admin": "Admins",

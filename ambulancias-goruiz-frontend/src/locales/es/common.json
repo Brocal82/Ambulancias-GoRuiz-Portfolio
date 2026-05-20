@@ -160,6 +160,22 @@
             "onboardingAdmin": "Tiene administrador",
             "onboardingWorker": "Tiene trabajador",
             "onboardingModules": "Módulos configurados",
+            "onboardingBannerTitle": "Onboarding pendiente",
+            "onboardingBannerDesc": "Completa admin, trabajadores y módulos antes de dar el tenant por operativo.",
+            "tabs": {
+                "overview": "Resumen",
+                "users": "Usuarios",
+                "modules": "Módulos",
+                "metrics": "Métricas",
+                "security": "Seguridad"
+            },
+            "editModules": "Editar módulos",
+            "noModules": "Sin módulos habilitados.",
+            "securityTitle": "Seguridad y auditoría",
+            "securityDesc": "Accesos de plataforma y trazas de este tenant.",
+            "securityAuditLink": "Ver auditoría (filtro por empresa)",
+            "securitySupportLink": "Acceso soporte (JIT)",
+            "securityMfaLink": "Configuración MFA",
             "rolesTitle": "Usuarios por rol",
             "role": {
                 "admin": "Admins",
