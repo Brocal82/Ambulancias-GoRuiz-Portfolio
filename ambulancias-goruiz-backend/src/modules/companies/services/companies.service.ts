@@ -6,6 +6,120 @@ import Dienst from "../../diensts/models/dienst.model";
 import { MODULE_KEYS } from "../constants/modules.constants";
 import type { CreateCompanyInput, UpdateCompanyInput } from "../schemas/company.schema";
 
+/** Companies not soft-deleted (legacy rows may lack deletedAt). */
+export const ACTIVE_COMPANY_FILTER = {
+  $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+};
+
+export type CompanyUsersByRole = {
+  admin: number;
+  worker: number;
+  mecanico: number;
+  jefe_mecanicos: number;
+  jefe_logistica: number;
+  total: number;
+};
+
+export type CompanyOnboardingFlags = {
+  hasAdmin: boolean;
+  hasWorker: boolean;
+  hasModulesConfigured: boolean;
+};
+
+export type CompanySummary = {
+  companyId: string;
+  name: string;
+  isActive: boolean;
+  deletedAt: Date | null;
+  emailDomain: string;
+  enabledModules: string[];
+  enabledModulesCount: number;
+  usersByRole: CompanyUsersByRole;
+  onboarding: CompanyOnboardingFlags;
+};
+
+export type CompanyUserListItem = {
+  _id: string;
+  name: string;
+  lastName: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+};
+
+function parseCompanyOid(id: string): mongoose.Types.ObjectId | null {
+  if (!mongoose.Types.ObjectId.isValid(id)) return null;
+  return new mongoose.Types.ObjectId(id);
+}
+
+async function aggregateUsersByRoleForCompanies(
+  companyIds: mongoose.Types.ObjectId[],
+): Promise<Map<string, CompanyUsersByRole>> {
+  const result = new Map<string, CompanyUsersByRole>();
+  if (companyIds.length === 0) return result;
+
+  const rows = await User.aggregate<{
+    _id: { companyId: mongoose.Types.ObjectId; role: string };
+    count: number;
+  }>([
+    {
+      $match: {
+        companyId: { $in: companyIds },
+      },
+    },
+    {
+      $group: {
+        _id: { companyId: "$companyId", role: "$role" },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const empty = (): CompanyUsersByRole => ({
+    admin: 0,
+    worker: 0,
+    mecanico: 0,
+    jefe_mecanicos: 0,
+    jefe_logistica: 0,
+    total: 0,
+  });
+
+  for (const row of rows) {
+    const cid = row._id.companyId.toString();
+    let bucket = result.get(cid);
+    if (!bucket) {
+      bucket = empty();
+      result.set(cid, bucket);
+    }
+    const role = String(row._id.role);
+    const n = row.count;
+    bucket.total += n;
+    if (role === "admin") bucket.admin = n;
+    else if (role === "worker") bucket.worker = n;
+    else if (role === "mecanico") bucket.mecanico = n;
+    else if (role === "jefe_mecanicos") bucket.jefe_mecanicos = n;
+    else if (role === "jefe_logistica") bucket.jefe_logistica = n;
+  }
+
+  for (const cid of companyIds.map((id) => id.toString())) {
+    if (!result.has(cid)) result.set(cid, empty());
+  }
+
+  return result;
+}
+
+function buildOnboardingFlags(
+  usersByRole: CompanyUsersByRole,
+  enabledModules: string[] | undefined,
+): CompanyOnboardingFlags {
+  const modules = Array.isArray(enabledModules) ? enabledModules : [];
+  return {
+    hasAdmin: usersByRole.admin > 0,
+    hasWorker: usersByRole.worker > 0,
+    hasModulesConfigured: modules.length > 0,
+  };
+}
+
 /**
  * Prämien en modo **automático** lee workday-summaries: exige módulo workday.
  * Prämien **manual** (cierres en papel) puede activarse sin jornada digital.
@@ -94,46 +208,158 @@ export async function createCompany(
   return await company.save();
 }
 
-export async function getAllCompanies() {
-  const companies = await Company.find().sort({ createdAt: -1 }).lean();
+export async function getAllCompanies(options?: { includeDeleted?: boolean }) {
+  const filter = options?.includeDeleted ? {} : { ...ACTIVE_COMPANY_FILTER };
+  const companies = await Company.find(filter).sort({ createdAt: -1 }).lean();
+  const companyIds = companies.map((c) => c._id as mongoose.Types.ObjectId);
+  const roleMap = await aggregateUsersByRoleForCompanies(companyIds);
 
-  const [workerCounts, adminCounts] = await Promise.all([
-    User.aggregate<{ _id: mongoose.Types.ObjectId; count: number }>([
-      { $match: { companyId: { $exists: true } } },
-      { $group: { _id: "$companyId", count: { $sum: 1 } } },
-    ]),
-    User.aggregate<{ _id: mongoose.Types.ObjectId; count: number }>([
-      { $match: { companyId: { $exists: true }, role: "admin" } },
-      { $group: { _id: "$companyId", count: { $sum: 1 } } },
-    ]),
-  ]);
-
-  const workerMap = new Map(workerCounts.map((c) => [c._id.toString(), c.count]));
-  const adminMap = new Map(adminCounts.map((c) => [c._id.toString(), c.count]));
-
-  return companies.map((company) => ({
-    ...company,
-    workerCount: workerMap.get(company._id.toString()) ?? 0,
-    adminCount: adminMap.get(company._id.toString()) ?? 0,
-  }));
+  return companies.map((company) => {
+    const usersByRole = roleMap.get(company._id.toString()) ?? {
+      admin: 0,
+      worker: 0,
+      mecanico: 0,
+      jefe_mecanicos: 0,
+      jefe_logistica: 0,
+      total: 0,
+    };
+    return {
+      ...company,
+      adminCount: usersByRole.admin,
+      workerCount: usersByRole.worker,
+      userCount: usersByRole.total,
+      usersByRole,
+    };
+  });
 }
 
 export async function getCompanyById(id: string) {
-  if (!mongoose.Types.ObjectId.isValid(id)) return null;
-  return await Company.findById(id).lean();
+  const oid = parseCompanyOid(id);
+  if (!oid) return null;
+  return await Company.findOne({ _id: oid, ...ACTIVE_COMPANY_FILTER }).lean();
 }
 
+/** Soft-delete: marks deletedAt and deactivates; does not purge tenant data. */
 export async function deleteCompany(id: string) {
-  if (!mongoose.Types.ObjectId.isValid(id)) return null;
-  return await Company.findByIdAndDelete(id).lean();
+  const oid = parseCompanyOid(id);
+  if (!oid) return null;
+  const now = new Date();
+  return await Company.findOneAndUpdate(
+    { _id: oid, ...ACTIVE_COMPANY_FILTER },
+    { $set: { deletedAt: now, isActive: false } },
+    { new: true },
+  ).lean();
 }
 
 export async function getCompanyAdmins(companyId: string) {
-  if (!mongoose.Types.ObjectId.isValid(companyId)) return [];
+  const oid = parseCompanyOid(companyId);
+  if (!oid) return [];
+  const company = await Company.findOne({ _id: oid, ...ACTIVE_COMPANY_FILTER })
+    .select("_id")
+    .lean();
+  if (!company) return [];
   return await User.find(
-    { companyId: new mongoose.Types.ObjectId(companyId), role: "admin" },
+    { companyId: oid, role: "admin" },
     { name: 1, lastName: 1, email: 1, _id: 1 },
   ).lean();
+}
+
+export async function getCompanySummary(id: string): Promise<CompanySummary | null> {
+  const oid = parseCompanyOid(id);
+  if (!oid) return null;
+  const company = await Company.findOne({ _id: oid, ...ACTIVE_COMPANY_FILTER }).lean();
+  if (!company) return null;
+
+  const roleMap = await aggregateUsersByRoleForCompanies([oid]);
+  const usersByRole = roleMap.get(oid.toString()) ?? {
+    admin: 0,
+    worker: 0,
+    mecanico: 0,
+    jefe_mecanicos: 0,
+    jefe_logistica: 0,
+    total: 0,
+  };
+  const enabledModules = Array.isArray(company.enabledModules)
+    ? company.enabledModules
+    : [];
+
+  return {
+    companyId: oid.toString(),
+    name: company.name,
+    isActive: company.isActive,
+    deletedAt: company.deletedAt ?? null,
+    emailDomain: company.emailDomain,
+    enabledModules,
+    enabledModulesCount: enabledModules.length,
+    usersByRole,
+    onboarding: buildOnboardingFlags(usersByRole, enabledModules),
+  };
+}
+
+const COMPANY_USER_LIST_ROLES = [
+  "admin",
+  "worker",
+  "mecanico",
+  "jefe_mecanicos",
+  "jefe_logistica",
+] as const;
+
+export async function getCompanyUsers(
+  companyId: string,
+  options?: {
+    role?: string;
+    isActive?: boolean;
+    limit?: number;
+    skip?: number;
+  },
+): Promise<{ users: CompanyUserListItem[]; total: number } | null> {
+  const oid = parseCompanyOid(companyId);
+  if (!oid) return null;
+  const company = await Company.findOne({ _id: oid, ...ACTIVE_COMPANY_FILTER })
+    .select("_id")
+    .lean();
+  if (!company) return null;
+
+  const query: Record<string, unknown> = { companyId: oid };
+  if (
+    options?.role &&
+    (COMPANY_USER_LIST_ROLES as readonly string[]).includes(options.role)
+  ) {
+    query.role = options.role;
+  }
+  if (options?.isActive === true || options?.isActive === false) {
+    query.isActive = options.isActive;
+  }
+
+  const limit = Math.min(Math.max(options?.limit ?? 50, 1), 200);
+  const skip = Math.max(options?.skip ?? 0, 0);
+
+  const [users, total] = await Promise.all([
+    User.find(query, {
+      name: 1,
+      lastName: 1,
+      email: 1,
+      role: 1,
+      isActive: 1,
+    })
+      .sort({ role: 1, lastName: 1, name: 1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    User.countDocuments(query),
+  ]);
+
+  return {
+    users: users.map((u) => ({
+      _id: String(u._id),
+      name: u.name,
+      lastName: u.lastName,
+      email: u.email,
+      role: u.role,
+      isActive: u.isActive,
+    })),
+    total,
+  };
 }
 
 export async function updateCompany(id: string, data: UpdateCompanyInput) {

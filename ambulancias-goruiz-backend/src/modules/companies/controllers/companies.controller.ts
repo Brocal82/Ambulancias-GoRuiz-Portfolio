@@ -45,9 +45,11 @@ export const createCompany = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-export const getAllCompanies = async (_req: Request, res: Response): Promise<void> => {
+export const getAllCompanies = async (req: Request, res: Response): Promise<void> => {
   try {
-    const companies = await companiesService.getAllCompanies();
+    const includeDeleted =
+      String(req.query.includeDeleted ?? "").toLowerCase() === "true";
+    const companies = await companiesService.getAllCompanies({ includeDeleted });
     res.status(200).json(companies);
   } catch {
     res.status(500).json({ message: "Error al obtener empresas" });
@@ -108,7 +110,10 @@ export const deleteCompany = async (req: Request, res: Response): Promise<void> 
       resourceId: req.params.id,
       statusCode: 200,
     });
-    res.status(200).json({ message: "Empresa eliminada correctamente" });
+    res.status(200).json({
+      message: "Empresa archivada correctamente (soft-delete)",
+      company: deleted,
+    });
   } catch {
     emitAuditLog(AUDIT_EVENT.COMPANY_DELETED, "error", {
       ...auditContext,
@@ -127,6 +132,51 @@ export const getCompanyAdmins = async (req: Request, res: Response): Promise<voi
     res.status(200).json(admins);
   } catch {
     res.status(500).json({ message: "Error al obtener administradores" });
+  }
+};
+
+export const getCompanySummary = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const summary = await companiesService.getCompanySummary(req.params.id);
+    if (!summary) {
+      res.status(404).json({ message: "Empresa no encontrada" });
+      return;
+    }
+    res.status(200).json(summary);
+  } catch {
+    res.status(500).json({ message: "Error al obtener resumen de empresa" });
+  }
+};
+
+export const getCompanyUsers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const role =
+      typeof req.query.role === "string" ? req.query.role : undefined;
+    const isActiveRaw = req.query.isActive;
+    let isActive: boolean | undefined;
+    if (isActiveRaw === "true") isActive = true;
+    if (isActiveRaw === "false") isActive = false;
+    const limit =
+      typeof req.query.limit === "string" ? Number(req.query.limit) : undefined;
+    const skip =
+      typeof req.query.skip === "string" ? Number(req.query.skip) : undefined;
+
+    const result = await companiesService.getCompanyUsers(req.params.id, {
+      role,
+      isActive,
+      limit: Number.isFinite(limit) ? limit : undefined,
+      skip: Number.isFinite(skip) ? skip : undefined,
+    });
+    if (!result) {
+      res.status(404).json({ message: "Empresa no encontrada" });
+      return;
+    }
+    res.status(200).json(result);
+  } catch {
+    res.status(500).json({ message: "Error al obtener usuarios de empresa" });
   }
 };
 

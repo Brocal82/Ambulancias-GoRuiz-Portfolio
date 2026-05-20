@@ -48,6 +48,7 @@ Colección: `companies`
 |-------|------|-------------|
 | `name` | String | Nombre de la empresa |
 | `isActive` | Boolean | Empresa habilitada |
+| `deletedAt` | Date? | Soft-delete superadmin; null = visible en listados |
 | `enabledModules` | String[] | MODULE_KEYs habilitados |
 | `praemienMode` | Enum | `automatic`, `manual` |
 | `praemienModeEffectiveFrom` | `{ year, month }`? | Fecha de vigencia del modo |

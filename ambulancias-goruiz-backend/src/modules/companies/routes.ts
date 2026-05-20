@@ -7,6 +7,8 @@ import {
   updateCompany,
   deleteCompany,
   getCompanyAdmins,
+  getCompanySummary,
+  getCompanyUsers,
 } from "./controllers/companies.controller";
 import { createFirstAdmin } from "./controllers/company-admin.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
@@ -30,8 +32,10 @@ router.use(authenticateToken, authorizeSuperadmin);
 
 router.post("/", validateBody(createCompanySchema), createCompany);
 router.get("/", getAllCompanies);
-router.get("/:id", validateObjectId("id"), getCompanyById);
+router.get("/:id/summary", validateObjectId("id"), getCompanySummary);
+router.get("/:id/users", validateObjectId("id"), getCompanyUsers);
 router.get("/:id/admins", validateObjectId("id"), getCompanyAdmins);
+router.get("/:id", validateObjectId("id"), getCompanyById);
 router.patch(
   "/:id",
   validateObjectId("id"),

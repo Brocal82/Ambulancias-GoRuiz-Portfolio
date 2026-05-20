@@ -295,6 +295,93 @@ describe("Companies - gestión superadmin", () => {
     });
   });
 
+  describe("Superadmin - summary, users y soft-delete", () => {
+    let targetCompanyId: string;
+
+    beforeAll(async () => {
+      const createRes = await request(app)
+        .post(`${API}/companies`)
+        .set("Authorization", `Bearer ${superadminToken}`)
+        .send({
+          name: "Empresa Summary Test",
+          emailDomain: "@summarytest.com",
+          enabledModules: ["scheduling"],
+        })
+        .expect(201);
+      targetCompanyId = createRes.body._id ?? createRes.body.id;
+      const email = `summary-admin-${Date.now()}@summarytest.com`;
+      await request(app)
+        .post(`${API}/companies/${targetCompanyId}/admin`)
+        .set("Authorization", `Bearer ${superadminToken}`)
+        .set("x-step-up-token", await issueStepUpToken())
+        .send({
+          name: "Sum",
+          lastName: "Admin",
+          email,
+          password: "securepass123",
+        })
+        .expect(201);
+    });
+
+    it("GET /companies/:id/summary devuelve conteos y onboarding", async () => {
+      const res = await request(app)
+        .get(`${API}/companies/${targetCompanyId}/summary`)
+        .set("Authorization", `Bearer ${superadminToken}`)
+        .expect(200);
+      expect(res.body.companyId).toBe(targetCompanyId);
+      expect(res.body.usersByRole.admin).toBeGreaterThanOrEqual(1);
+      expect(res.body.onboarding.hasAdmin).toBe(true);
+      expect(res.body.onboarding.hasModulesConfigured).toBe(true);
+    });
+
+    it("GET /companies/:id/users lista usuarios del tenant", async () => {
+      const res = await request(app)
+        .get(`${API}/companies/${targetCompanyId}/users`)
+        .set("Authorization", `Bearer ${superadminToken}`)
+        .expect(200);
+      expect(res.body.total).toBeGreaterThanOrEqual(1);
+      expect(Array.isArray(res.body.users)).toBe(true);
+      expect(res.body.users[0]).not.toHaveProperty("password");
+    });
+
+    it("admin no puede acceder a summary", async () => {
+      const res = await request(app)
+        .get(`${API}/companies/${targetCompanyId}/summary`)
+        .set("Authorization", `Bearer ${adminToken}`);
+      expect(res.status).toBe(403);
+    });
+
+    it("DELETE hace soft-delete y oculta de listado", async () => {
+      const createRes = await request(app)
+        .post(`${API}/companies`)
+        .set("Authorization", `Bearer ${superadminToken}`)
+        .send({ name: "Para Archivar", emailDomain: "@archivar.com" })
+        .expect(201);
+      const id = createRes.body._id ?? createRes.body.id;
+      await request(app)
+        .delete(`${API}/companies/${id}`)
+        .set("Authorization", `Bearer ${superadminToken}`)
+        .set("x-step-up-token", await issueStepUpToken())
+        .expect(200);
+
+      const doc = await Company.findById(id).lean();
+      expect(doc?.deletedAt).toBeDefined();
+      expect(doc?.isActive).toBe(false);
+
+      const list = await request(app)
+        .get(`${API}/companies`)
+        .set("Authorization", `Bearer ${superadminToken}`)
+        .expect(200);
+      const ids = list.body.map((c: { _id: string }) => String(c._id));
+      expect(ids).not.toContain(String(id));
+
+      const detail = await request(app)
+        .get(`${API}/companies/${id}`)
+        .set("Authorization", `Bearer ${superadminToken}`);
+      expect(detail.status).toBe(404);
+    });
+  });
+
   describe("Step-up policy", () => {
     it("rechaza PATCH sensible sin step-up", async () => {
       const createRes = await request(app)
