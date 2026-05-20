@@ -8,6 +8,7 @@ import {
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
 import {
   ALL_MODULE_KEYS,
+  MODULE_ICONS,
   MODULE_KEYS,
   MODULE_LABELS,
   V1_LOCKED_ON_MODULES,
@@ -21,23 +22,6 @@ import {
 import SaveIconButton from "../../../components/common/actions/SaveIconButton";
 import EditIconButton from "../../../components/common/actions/EditIconButton";
 import { useStepUpSession } from "../utils/useStepUpSession";
-
-const MODULE_ICONS: Record<string, string> = {
-  [MODULE_KEYS.HOSPITALS]: "🏥",
-  [MODULE_KEYS.AMBULANCES]: "🚑",
-  [MODULE_KEYS.TEAMS]: "👥",
-  [MODULE_KEYS.SCHEDULING]: "🗓️",
-  [MODULE_KEYS.WORKDAY]: "🚨",
-  [MODULE_KEYS.MECHANICS]: "🔧",
-  [MODULE_KEYS.APPOINTMENTS]: "📕",
-  [MODULE_KEYS.MESSAGES]: "📨",
-  [MODULE_KEYS.VACATION]: "🏖️",
-  [MODULE_KEYS.SICK_LEAVES]: "🤒",
-  [MODULE_KEYS.PRAEMIEN]: "🎖",
-  [MODULE_KEYS.PAYROLL]: "🛠",
-  [MODULE_KEYS.DOCUMENTS]: "📄",
-  [MODULE_KEYS.EXCEL_PLANNING]: "📊",
-};
 
 export default function SuperadminCompanyForm() {
   const { id } = useParams<{ id: string }>();
