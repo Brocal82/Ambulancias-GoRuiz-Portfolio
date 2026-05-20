@@ -19,11 +19,13 @@ function SectionPanel({
   description,
   children,
   variant = "default",
+  className = "",
 }: {
   title: string;
   description?: string;
   children: ReactNode;
   variant?: "default" | "danger";
+  className?: string;
 }) {
   const borderClass =
     variant === "danger" ? "border-rose-200" : "border-slate-200";
@@ -31,7 +33,9 @@ function SectionPanel({
     variant === "danger" ? "border-rose-100 bg-rose-50/50" : "border-slate-100";
 
   return (
-    <section className={`flex h-full flex-col rounded-lg border bg-white shadow-sm ${borderClass}`}>
+    <section
+      className={`flex h-full flex-col rounded-lg border bg-white shadow-sm ${borderClass} ${className}`.trim()}
+    >
       <div className={`shrink-0 border-b px-2.5 py-2 ${headerClass}`}>
         <h2
           className={`text-xs font-semibold ${variant === "danger" ? "text-rose-900" : "text-slate-900"}`}
@@ -190,6 +194,40 @@ export default function SuperadminMfaSettingsPage() {
   const yesNo = (value: boolean) =>
     value ? t("pages.superadminMfaSettings.yes") : t("pages.superadminMfaSettings.no");
 
+  const disablePanel = (
+    <SectionPanel
+      title={t("pages.superadminMfaSettings.step3Title")}
+      description={t("pages.superadminMfaSettings.step3Desc")}
+      variant="danger"
+      className="lg:col-span-4"
+    >
+      <div className="flex flex-col gap-2">
+        <label className="block min-w-0">
+          <span className="mb-0.5 block text-[9px] font-medium uppercase tracking-wide text-rose-700/80">
+            {t("pages.superadminMfaSettings.codeLabel")}
+          </span>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            value={disableCode}
+            onChange={(e) => setDisableCode(e.target.value)}
+            placeholder={t("pages.superadminMfaSettings.disablePlaceholder")}
+            className={`${inputClass} border-rose-300 focus:border-rose-400 focus:ring-rose-400`}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => void disableMfa()}
+          disabled={working || disableCode.trim().length < 6}
+          className={`${btnDanger()} w-full`}
+        >
+          {t("pages.superadminMfaSettings.disableButton")}
+        </button>
+      </div>
+    </SectionPanel>
+  );
+
   const enrollmentPanels = !status?.enabled ? (
     <div className="grid gap-2.5 lg:grid-cols-2 lg:items-stretch">
       <SectionPanel
@@ -304,17 +342,11 @@ export default function SuperadminMfaSettingsPage() {
         </div>
       ) : (
         <>
-          <div
-            className={
-              status?.enabled
-                ? "grid gap-2.5 lg:grid-cols-3 lg:items-stretch"
-                : "space-y-2.5"
-            }
-          >
+          <div className="grid gap-2.5 lg:grid-cols-12 lg:items-stretch">
             <SectionPanel
               title={t("pages.superadminMfaSettings.statusTitle")}
               description={t("pages.superadminMfaSettings.statusDesc")}
-              variant="default"
+              className="lg:col-span-8"
             >
               <div className="space-y-2">
                 <div
@@ -348,76 +380,10 @@ export default function SuperadminMfaSettingsPage() {
               </div>
             </SectionPanel>
 
-            {status?.enabled && (
-              <div className="lg:col-span-2">
-                <SectionPanel
-                  title={t("pages.superadminMfaSettings.step3Title")}
-                  description={t("pages.superadminMfaSettings.step3Desc")}
-                  variant="danger"
-                >
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                    <label className="block min-w-0 flex-1 sm:max-w-xs">
-                      <span className="mb-0.5 block text-[9px] font-medium uppercase tracking-wide text-rose-700/80">
-                        {t("pages.superadminMfaSettings.codeLabel")}
-                      </span>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        value={disableCode}
-                        onChange={(e) => setDisableCode(e.target.value)}
-                        placeholder={t("pages.superadminMfaSettings.disablePlaceholder")}
-                        className={`${inputClass} border-rose-300 focus:border-rose-400 focus:ring-rose-400`}
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => void disableMfa()}
-                      disabled={working || disableCode.trim().length < 6}
-                      className={`${btnDanger()} shrink-0`}
-                    >
-                      {t("pages.superadminMfaSettings.disableButton")}
-                    </button>
-                  </div>
-                </SectionPanel>
-              </div>
-            )}
+            {disablePanel}
           </div>
 
           {enrollmentPanels}
-
-          {!status?.enabled && (
-            <SectionPanel
-              title={t("pages.superadminMfaSettings.step3Title")}
-              description={t("pages.superadminMfaSettings.step3Desc")}
-              variant="danger"
-            >
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end lg:max-w-md">
-                <label className="block min-w-0 flex-1">
-                  <span className="mb-0.5 block text-[9px] font-medium uppercase tracking-wide text-rose-700/80">
-                    {t("pages.superadminMfaSettings.codeLabel")}
-                  </span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    value={disableCode}
-                    onChange={(e) => setDisableCode(e.target.value)}
-                    placeholder={t("pages.superadminMfaSettings.disablePlaceholder")}
-                    className={`${inputClass} border-rose-300 focus:border-rose-400 focus:ring-rose-400`}
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => void disableMfa()}
-                  disabled={working || disableCode.trim().length < 6}
-                  className={`${btnDanger()} shrink-0`}
-                >
-                  {t("pages.superadminMfaSettings.disableButton")}
-                </button>
-              </div>
-            </SectionPanel>
-          )}
         </>
       )}
     </div>
