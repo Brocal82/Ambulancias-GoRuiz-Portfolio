@@ -47,7 +47,8 @@ describe("Support access (JIT/break-glass)", () => {
     await mongoose.disconnect();
   });
 
-  it("requires two independent approvals before access becomes active", async () => {
+  it("activates support access after required approvals", async () => {
+    const required = env.SUPPORT_ACCESS_APPROVALS_REQUIRED;
     const createRes = await request(app)
       .post(`${API}/support-access/requests`)
       .set("Authorization", `Bearer ${requesterToken}`)
@@ -61,40 +62,49 @@ describe("Support access (JIT/break-glass)", () => {
 
     const requestId = createRes.body._id ?? createRes.body.id;
     expect(createRes.body.status).toBe("pending");
+    expect(createRes.body.approvalsRequired).toBe(required);
 
-    await request(app)
-      .post(`${API}/support-access/requests/${requestId}/review`)
-      .set("Authorization", `Bearer ${requesterToken}`)
-      .set("x-step-up-token", issueTestStepUpToken(requesterId))
-      .send({ approve: true })
-      .expect(400);
+    if (required >= 2) {
+      await request(app)
+        .post(`${API}/support-access/requests/${requestId}/review`)
+        .set("Authorization", `Bearer ${requesterToken}`)
+        .set("x-step-up-token", issueTestStepUpToken(requesterId))
+        .send({ approve: true })
+        .expect(400);
 
-    const approveRes = await request(app)
-      .post(`${API}/support-access/requests/${requestId}/review`)
-      .set("Authorization", `Bearer ${reviewerToken1}`)
-      .set("x-step-up-token", issueTestStepUpToken(reviewerId1))
-      .send({ approve: true, reviewComment: "Approved for incident support" })
-      .expect(200);
-    expect(approveRes.body.status).toBe("pending");
-    expect(approveRes.body.approvalsCount).toBe(1);
-    expect(approveRes.body.expiresAt).toBeFalsy();
+      const first = await request(app)
+        .post(`${API}/support-access/requests/${requestId}/review`)
+        .set("Authorization", `Bearer ${reviewerToken1}`)
+        .set("x-step-up-token", issueTestStepUpToken(reviewerId1))
+        .send({ approve: true, reviewComment: "First approver" })
+        .expect(200);
+      expect(first.body.status).toBe("pending");
+      expect(first.body.approvalsCount).toBe(1);
 
-    const activeAfterOneApproval = await request(app)
-      .get(`${API}/support-access/active`)
-      .query({ companyId })
-      .set("Authorization", `Bearer ${requesterToken}`)
-      .expect(200);
-    expect(activeAfterOneApproval.body.active).toBe(false);
+      const activeMid = await request(app)
+        .get(`${API}/support-access/active`)
+        .query({ companyId })
+        .set("Authorization", `Bearer ${requesterToken}`)
+        .expect(200);
+      expect(activeMid.body.active).toBe(false);
 
-    const secondApprove = await request(app)
-      .post(`${API}/support-access/requests/${requestId}/review`)
-      .set("Authorization", `Bearer ${reviewerToken2}`)
-      .set("x-step-up-token", issueTestStepUpToken(reviewerId2))
-      .send({ approve: true, reviewComment: "Second approver confirms" })
-      .expect(200);
-    expect(secondApprove.body.status).toBe("approved");
-    expect(secondApprove.body.approvalsCount).toBe(2);
-    expect(secondApprove.body.expiresAt).toBeDefined();
+      await request(app)
+        .post(`${API}/support-access/requests/${requestId}/review`)
+        .set("Authorization", `Bearer ${reviewerToken2}`)
+        .set("x-step-up-token", issueTestStepUpToken(reviewerId2))
+        .send({ approve: true, reviewComment: "Second approver" })
+        .expect(200);
+    } else {
+      const soloApprove = await request(app)
+        .post(`${API}/support-access/requests/${requestId}/review`)
+        .set("Authorization", `Bearer ${requesterToken}`)
+        .set("x-step-up-token", issueTestStepUpToken(requesterId))
+        .send({ approve: true, reviewComment: "Solo operator approval" })
+        .expect(200);
+      expect(soloApprove.body.status).toBe("approved");
+      expect(soloApprove.body.approvalsCount).toBe(1);
+      expect(soloApprove.body.expiresAt).toBeDefined();
+    }
 
     const activeRes = await request(app)
       .get(`${API}/support-access/active`)
@@ -169,12 +179,14 @@ describe("Support access (JIT/break-glass)", () => {
       .set("x-step-up-token", issueTestStepUpToken(reviewerId1))
       .send({ approve: true, reviewComment: "Approved for isolated support" })
       .expect(200);
-    await request(app)
-      .post(`${API}/support-access/requests/${requestId}/review`)
-      .set("Authorization", `Bearer ${reviewerToken2}`)
-      .set("x-step-up-token", issueTestStepUpToken(reviewerId2))
-      .send({ approve: true, reviewComment: "Second approver for activation" })
-      .expect(200);
+    if (env.SUPPORT_ACCESS_APPROVALS_REQUIRED >= 2) {
+      await request(app)
+        .post(`${API}/support-access/requests/${requestId}/review`)
+        .set("Authorization", `Bearer ${reviewerToken2}`)
+        .set("x-step-up-token", issueTestStepUpToken(reviewerId2))
+        .send({ approve: true, reviewComment: "Second approver for activation" })
+        .expect(200);
+    }
 
     const ownerActive = await request(app)
       .get(`${API}/support-access/active`)
@@ -217,12 +229,14 @@ describe("Support access (JIT/break-glass)", () => {
       .set("x-step-up-token", issueTestStepUpToken(reviewerId1))
       .send({ approve: true, reviewComment: "Approved for short window" })
       .expect(200);
-    await request(app)
-      .post(`${API}/support-access/requests/${requestId}/review`)
-      .set("Authorization", `Bearer ${reviewerToken2}`)
-      .set("x-step-up-token", issueTestStepUpToken(reviewerId2))
-      .send({ approve: true, reviewComment: "Second approver for short window" })
-      .expect(200);
+    if (env.SUPPORT_ACCESS_APPROVALS_REQUIRED >= 2) {
+      await request(app)
+        .post(`${API}/support-access/requests/${requestId}/review`)
+        .set("Authorization", `Bearer ${reviewerToken2}`)
+        .set("x-step-up-token", issueTestStepUpToken(reviewerId2))
+        .send({ approve: true, reviewComment: "Second approver for short window" })
+        .expect(200);
+    }
 
     await SupportAccessRequest.findByIdAndUpdate(requestId, {
       $set: { expiresAt: new Date(Date.now() - 60_000) },

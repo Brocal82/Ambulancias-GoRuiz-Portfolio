@@ -45,6 +45,7 @@ Auth requerida salvo indicación contraria. Formato de auth: `Authorization: Bea
 | `DELETE` | `/companies/:id` | Sí | superadmin + step-up | Soft-delete (`deletedAt`, `isActive: false`) |
 | `GET` | `/companies/me` | Sí | admin/worker | Datos de la propia empresa |
 | `POST` | `/companies/:id/admin` | Sí | superadmin + step-up | Crear admin para empresa |
+| `POST` | `/companies/:id/admin/invitation` | Sí | superadmin + step-up | Invitar admin (`email`, `expiresInDays?`) → enlace `/invitation/accept` |
 
 Listado: `workerCount` = rol `worker`; `adminCount` = rol `admin`; `userCount` = total; `usersByRole` = desglose completo.
 

@@ -6,6 +6,11 @@ import SupportAccessRequest, {
 } from "../models/support-access-request.model";
 import { AUDIT_EVENT } from "../../../security/audit-events";
 import { emitAuditLog, emitSecurityAlert } from "../../../security/audit-log";
+import { env } from "../../../config/env";
+
+function supportAccessApprovalsRequired(): number {
+  return env.SUPPORT_ACCESS_APPROVALS_REQUIRED;
+}
 
 function parseOid(value: string): mongoose.Types.ObjectId {
   if (!mongoose.Types.ObjectId.isValid(value)) {
@@ -47,7 +52,7 @@ export async function createSupportAccessRequest(params: {
     durationMinutes: duration,
     status: "pending",
     approvalActors: [],
-    approvalsRequired: 2,
+    approvalsRequired: supportAccessApprovalsRequired(),
     approvalsCount: 0,
   });
   return doc;
@@ -118,7 +123,11 @@ export async function reviewSupportAccessRequest(params: {
   if (request.status !== "pending") {
     throw new Error("Solo solicitudes pendientes pueden revisarse");
   }
-  if (String(request.requestedBy) === String(params.reviewerUserId)) {
+  const approvalsRequired = request.approvalsRequired ?? supportAccessApprovalsRequired();
+  if (
+    approvalsRequired >= 2 &&
+    String(request.requestedBy) === String(params.reviewerUserId)
+  ) {
     throw new Error("La aprobación requiere un superadmin distinto al solicitante");
   }
 

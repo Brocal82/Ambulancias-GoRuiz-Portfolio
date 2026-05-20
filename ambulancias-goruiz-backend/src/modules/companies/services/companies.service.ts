@@ -223,12 +223,21 @@ export async function getAllCompanies(options?: { includeDeleted?: boolean }) {
       jefe_logistica: 0,
       total: 0,
     };
+    const modules = Array.isArray(company.enabledModules)
+      ? company.enabledModules
+      : [];
+    const needsOnboarding =
+      usersByRole.admin === 0 ||
+      usersByRole.worker === 0 ||
+      modules.length === 0;
+
     return {
       ...company,
       adminCount: usersByRole.admin,
       workerCount: usersByRole.worker,
       userCount: usersByRole.total,
       usersByRole,
+      needsOnboarding,
     };
   });
 }

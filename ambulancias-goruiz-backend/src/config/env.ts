@@ -79,6 +79,13 @@ const envSchema = z.object({
     .default(180),
   /** Optional HTTPS endpoint for SIEM/Slack-style routing of security alerts. */
   SECURITY_ALERT_WEBHOOK_URL: z.string().trim().optional(),
+  /** JIT break-glass: 1 = operador único; 2 = dos superadmins distintos (cuatro ojos). */
+  SUPPORT_ACCESS_APPROVALS_REQUIRED: z
+    .preprocess(
+      (v) => (v === undefined || v === "" ? undefined : Number(v)),
+      z.number().int().min(1).max(2).optional(),
+    )
+    .default(1),
 
   // Rate limiting (opcionales)
   RATE_LIMIT_LOGIN_MAX: z

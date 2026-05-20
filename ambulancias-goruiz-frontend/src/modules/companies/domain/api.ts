@@ -101,3 +101,25 @@ export const createCompanyAdmin = async (
   });
   return res.data;
 };
+
+import type { CreateCompanyAdminInvitationResponse } from "./types";
+
+export type CreateCompanyAdminInvitationInput = {
+  email: string;
+  expiresInDays?: number;
+};
+
+export const createCompanyAdminInvitation = async (
+  companyId: string,
+  data: CreateCompanyAdminInvitationInput,
+  stepUpToken?: string,
+): Promise<CreateCompanyAdminInvitationResponse> => {
+  const res = await axios.post<CreateCompanyAdminInvitationResponse>(
+    `/companies/${companyId}/admin/invitation`,
+    data,
+    {
+      headers: stepUpToken ? { "x-step-up-token": stepUpToken } : undefined,
+    },
+  );
+  return res.data;
+};

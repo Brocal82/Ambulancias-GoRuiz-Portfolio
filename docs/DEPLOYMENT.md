@@ -52,6 +52,7 @@ El backend valida todas las variables al arrancar usando **Zod**. Si falta algun
 | `SECURITY_MONITORING_DENIED_THRESHOLD` | `3` | Nº de accesos denegados que activa alerta en el reporte |
 | `SECURITY_AUDIT_LOG_RETENTION_DAYS` | `180` | Días de retención de logs de auditoría |
 | `SECURITY_ALERT_WEBHOOK_URL` | — | URL opcional (HTTPS) que recibe POST JSON en alertas (`support_access_approved`, umbrales de monitoring, etc.) |
+| `SUPPORT_ACCESS_APPROVALS_REQUIRED` | `1` | Aprobaciones JIT para activar acceso: `1` = operador único; `2` = dos superadmins distintos |
 
 ### Variables de rate limiting
 

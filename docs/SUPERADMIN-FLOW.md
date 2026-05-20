@@ -256,4 +256,4 @@ EMAIL=x@example.com PASSWORD=secret npx ts-node scripts/bootstrap-superadmin.ts
 
 Ubicación: `ambulancias-goruiz-backend/scripts/bootstrap-superadmin.ts`.
 
-Producción: `SUPERADMIN_MFA_REQUIRED=true`, al menos dos cuentas superadmin para aprobación JIT en cuatro ojos.
+Producción: `SUPERADMIN_MFA_REQUIRED=true`. JIT: `SUPPORT_ACCESS_APPROVALS_REQUIRED=1` si solo hay un superadmin; `=2` si hay dos o más (cuatro ojos). Invitar admin: `POST /companies/:id/admin/invitation` (preferido frente a contraseña manual).
