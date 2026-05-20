@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { deleteCompany, getCompanies } from "../domain/api";
 import type { Company } from "../domain/types";
 import { toastT, getApiErrorMessage } from "../../../utils/toast";
@@ -12,6 +13,7 @@ import { useStepUpSession } from "../utils/useStepUpSession";
 
 export default function SuperadminCompaniesList() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const { requestStepUpToken, stepUpModal } = useStepUpSession();
@@ -19,16 +21,16 @@ export default function SuperadminCompaniesList() {
   const handleDelete = async (company: Company) => {
     if (
       !window.confirm(
-        `¿Eliminar la empresa "${company.name}"? Esta acción no se puede deshacer.`,
+        t("pages.superadminCompanyDetail.archiveConfirm", { name: company.name }),
       )
     ) return;
     try {
       const stepUpToken = await requestStepUpToken(
-        "Eliminar una empresa es una acción crítica. Confirma con tu código MFA para continuar.",
+        t("pages.superadminCompanyDetail.archiveStepUp"),
       );
       if (!stepUpToken) return;
       await deleteCompany(company._id, stepUpToken);
-      toastT.success("Empresa eliminada correctamente");
+      toastT.success(t("pages.superadminCompanyDetail.archiveSuccess"));
       setCompanies((prev) => prev.filter((c) => c._id !== company._id));
     } catch (e: unknown) {
       toastT.error(getApiErrorMessage(e, "Error al eliminar la empresa"));
@@ -57,7 +59,9 @@ export default function SuperadminCompaniesList() {
   return (
     <div className="p-4 max-w-5xl mx-auto">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Empresas</h1>
+        <h1 className="text-2xl font-bold text-slate-900">
+          {t("pages.superadminSidebar.companies")}
+        </h1>
         <CreateIconButton
           onClick={() => navigate("/superadmin/companies/new")}
           label="Crear empresa"
@@ -85,7 +89,14 @@ export default function SuperadminCompaniesList() {
             <tbody>
               {companies.map((c) => (
                 <tr key={c._id} className="border-t border-slate-200">
-                  <td className="px-4 py-3 text-slate-900">{c.name}</td>
+                  <td className="px-4 py-3">
+                    <Link
+                      to={`/superadmin/companies/${c._id}`}
+                      className="font-medium text-blue-700 hover:underline"
+                    >
+                      {c.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-slate-500 text-xs">
                     {c.emailDomain ?? <span className="text-slate-400 italic">—</span>}
                   </td>
@@ -106,7 +117,7 @@ export default function SuperadminCompaniesList() {
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center justify-center gap-2">
                       <EditIconButton
-                        onClick={() => navigate(`/superadmin/companies/${c._id}`)}
+                        onClick={() => navigate(`/superadmin/companies/${c._id}/edit`)}
                         title="Editar empresa"
                       />
                       <CreateAdminIconButton
@@ -127,13 +138,6 @@ export default function SuperadminCompaniesList() {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => navigate("/superadmin")}
-        className="mt-6 text-sm text-slate-600 hover:text-slate-900 underline"
-      >
-        ← Volver al panel superadmin
-      </button>
       {stepUpModal}
     </div>
   );

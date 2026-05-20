@@ -36,7 +36,7 @@ export default function SuperadminCreateAdmin() {
       } catch (e: unknown) {
         if (!cancelled) {
           toastT.error(getApiErrorMessage(e, "No se pudo cargar la empresa"));
-          navigate("/superadmin/companies");
+          navigate(`/superadmin/companies/${companyId}`);
         }
       } finally {
         if (!cancelled) setCompanyLoading(false);
@@ -75,7 +75,7 @@ export default function SuperadminCreateAdmin() {
         password,
       }, stepUpToken);
       toastT.success("Administrador de empresa creado correctamente");
-      navigate("/superadmin/companies");
+      navigate(`/superadmin/companies/${companyId}`);
     } catch (err: unknown) {
       toastT.error(getApiErrorMessage(err, "Error al crear el administrador"));
     } finally {
@@ -238,7 +238,7 @@ export default function SuperadminCreateAdmin() {
           </button>
           <button
             type="button"
-            onClick={() => navigate("/superadmin/companies")}
+            onClick={() => navigate(`/superadmin/companies/${companyId}`)}
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             Cancelar

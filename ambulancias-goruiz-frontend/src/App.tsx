@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout";
 import AdminAppLayout from "./layouts/AdminAppLayout";
 import AdminSidebarLayout from "./layouts/AdminSidebarLayout";
+import SuperadminAppLayout from "./layouts/SuperadminAppLayout";
+import SuperadminSidebarLayout from "./layouts/SuperadminSidebarLayout";
 import { AuthProvider } from "./context/AuthProvider";
 import RequireAuth from "./components/RequireAuth";
 import RequireRole from "./components/RequireRole";
@@ -67,6 +69,8 @@ const SuperadminCompaniesList = lazy(() => import("./modules/companies/pages/Sup
 const SuperadminCompanyForm = lazy(() => import("./modules/companies/pages/SuperadminCompanyForm"));
 const SuperadminCreateAdmin = lazy(() => import("./modules/companies/pages/SuperadminCreateAdmin"));
 const SuperadminSecurityMonitoringPage = lazy(() => import("./modules/support-access/pages/SuperadminSecurityMonitoringPage"));
+const SuperadminSupportAccessPage = lazy(() => import("./modules/support-access/pages/SuperadminSupportAccessPage"));
+const SuperadminCompanyDetailPage = lazy(() => import("./modules/companies/pages/SuperadminCompanyDetailPage"));
 
 function RedirectToCurrentPayrollMonth() {
   const d = new Date();
@@ -160,25 +164,37 @@ export default function App() {
                 />
               </Route>
 
-              <Route element={<RequireRole role="superadmin" />}>
-                <Route path="/superadmin" element={<SuperadminDashboard />} />
-                <Route path="/superadmin/companies" element={<SuperadminCompaniesList />} />
-                <Route path="/superadmin/companies/new" element={<SuperadminCompanyForm />} />
-                <Route
-                  path="/superadmin/security-monitoring"
-                  element={<SuperadminSecurityMonitoringPage />}
-                />
-                <Route
-                  path="/superadmin/security-mfa"
-                  element={<SuperadminMfaSettingsPage />}
-                />
-                <Route
-                  path="/superadmin/companies/:id/admin"
-                  element={<SuperadminCreateAdmin />}
-                />
-                <Route path="/superadmin/companies/:id" element={<SuperadminCompanyForm />} />
-              </Route>
+            </Route>
+          </Route>
 
+          {/* Superadmin: layout dedicado (como admin) */}
+          <Route element={<RequireAuth />}>
+            <Route element={<RequireRole role="superadmin" />}>
+              <Route element={<SuperadminAppLayout />}>
+                <Route element={<SuperadminSidebarLayout />}>
+                  <Route path="/superadmin" element={<SuperadminDashboard />} />
+                  <Route path="/superadmin/companies" element={<SuperadminCompaniesList />} />
+                  <Route path="/superadmin/companies/new" element={<SuperadminCompanyForm />} />
+                  <Route path="/superadmin/companies/:id" element={<SuperadminCompanyDetailPage />} />
+                  <Route path="/superadmin/companies/:id/edit" element={<SuperadminCompanyForm />} />
+                  <Route
+                    path="/superadmin/companies/:id/admin"
+                    element={<SuperadminCreateAdmin />}
+                  />
+                  <Route
+                    path="/superadmin/support-access"
+                    element={<SuperadminSupportAccessPage />}
+                  />
+                  <Route
+                    path="/superadmin/security-monitoring"
+                    element={<SuperadminSecurityMonitoringPage />}
+                  />
+                  <Route
+                    path="/superadmin/security-mfa"
+                    element={<SuperadminMfaSettingsPage />}
+                  />
+                </Route>
+              </Route>
             </Route>
           </Route>
 
