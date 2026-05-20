@@ -197,8 +197,9 @@ export default function SuperadminCompanyForm() {
       }
       const enabledModules = Array.from(selectedModules);
       const hasPraemien = enabledModules.includes(MODULE_KEYS.PRAEMIEN);
+      let targetId = id;
       if (isCreate) {
-        await createCompany({
+        const created = await createCompany({
           name: name.trim(),
           emailDomain: domainTrim.toLowerCase(),
           enabledModules,
@@ -212,6 +213,7 @@ export default function SuperadminCompanyForm() {
               }
             : {}),
         });
+        targetId = created._id;
         toastT.success("Empresa creada correctamente");
       } else if (id) {
         const payload: UpdateCompanyInput = {
@@ -247,8 +249,13 @@ export default function SuperadminCompanyForm() {
         }
         await updateCompany(id, payload, stepUpToken);
         toastT.success("Empresa actualizada correctamente");
+        targetId = id;
       }
-      navigate("/superadmin/companies");
+      if (targetId) {
+        navigate(`/superadmin/companies/${targetId}`);
+      } else {
+        navigate("/superadmin/companies");
+      }
     } catch (err: unknown) {
       toastT.error(getApiErrorMessage(err, "Error al guardar la empresa"));
     } finally {
@@ -459,7 +466,11 @@ export default function SuperadminCompanyForm() {
         <div className="flex items-center justify-between gap-3 pt-2">
           <button
             type="button"
-            onClick={() => navigate("/superadmin/companies")}
+            onClick={() =>
+              navigate(
+                id ? `/superadmin/companies/${id}` : "/superadmin/companies",
+              )
+            }
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             Cancelar

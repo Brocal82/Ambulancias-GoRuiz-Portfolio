@@ -2,6 +2,8 @@ import axios from "../../../api/axios";
 import type {
   Company,
   CompanyAdmin,
+  CompanySummary,
+  CompanyUsersResponse,
   CreateCompanyInput,
   UpdateCompanyInput,
   CreateAdminInput,
@@ -14,6 +16,29 @@ export const getCompanies = async (): Promise<Company[]> => {
 
 export const getCompanyById = async (id: string): Promise<Company> => {
   const res = await axios.get<Company>(`/companies/${id}`);
+  return res.data;
+};
+
+export const getCompanySummary = async (id: string): Promise<CompanySummary> => {
+  const res = await axios.get<CompanySummary>(`/companies/${id}/summary`);
+  return res.data;
+};
+
+export const getCompanyUsers = async (
+  companyId: string,
+  params?: { role?: string; isActive?: boolean; limit?: number; skip?: number },
+): Promise<CompanyUsersResponse> => {
+  const search = new URLSearchParams();
+  if (params?.role) search.set("role", params.role);
+  if (params?.isActive === true || params?.isActive === false) {
+    search.set("isActive", String(params.isActive));
+  }
+  if (params?.limit != null) search.set("limit", String(params.limit));
+  if (params?.skip != null) search.set("skip", String(params.skip));
+  const q = search.toString();
+  const res = await axios.get<CompanyUsersResponse>(
+    `/companies/${companyId}/users${q ? `?${q}` : ""}`,
+  );
   return res.data;
 };
 
